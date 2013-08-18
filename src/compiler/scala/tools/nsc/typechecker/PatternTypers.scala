@@ -190,13 +190,12 @@ trait PatternTypers {
       def resultType   = tpe.finalResultType
       def method       = unapplyMember(tpe)
       def paramType    = firstParamType(unapplyType)
-      def rawGet       = if (isBool) UnitTpe else resultOfMatchingMethod(resultType, "get")()
-      def rawTypes     = if (isBool) Nil else if (rawProduct.isEmpty) rawGet :: Nil else rawProduct
+      def rawGet       = if (isBool) UnitTpe else typeOfMemberNamedGetOrSelf(resultType)
+      def rawTypes     = if (isBool) Nil else typesOfSelectorsOrSelf(rawGet)
       def rawArity     = rawTypes.size
       def isBool       = resultType =:= BooleanTpe   // aka "Tuple0" or "Option[Unit]"
+      def isNothing    = rawGet =:= NothingTpe
       def isCase       = method.isCase
-
-      private def rawProduct = getNameBasedProductSelectorTypes(rawGet)
     }
 
     object NoUnapplyMethodInfo extends UnapplyMethodInfo(NoSymbol, NoType) {
@@ -213,7 +212,7 @@ trait PatternTypers {
         case _                     => NoCaseClassInfo
       }
       val exInfo = UnapplyMethodInfo(symbol, tpe)
-      import exInfo.{ rawTypes, isUnapplySeq, rawGet }
+      import exInfo.{ rawGet, rawTypes, isUnapplySeq }
 
       override def toString = s"ExtractorShape($fun, $args)"
 
@@ -223,15 +222,23 @@ trait PatternTypers {
       def caseClass        = ccInfo.clazz
       def enclClass        = symbol.enclClass
 
+      // TODO - merge these. The difference between these two methods is that expectedPatternTypes
+      // expands the list of types so it is the same length as the number of patterns, whereas formals
+      // leaves the varargs type unexpanded.
       def formals   = (
         if (isUnapplySeq) productTypes :+ varargsType
         else if (elementArity == 0) productTypes
-        else if (patternFixedArity == 1) squishIntoOne()
+        else if (isSingle) squishIntoOne()
         else wrongArity(patternFixedArity)
       )
+      def expectedPatternTypes = elementArity match {
+        case 0                                               => productTypes
+        case _ if elementArity > 0 && isUnapplySeq           => productTypes ::: elementTypes
+        case _ if productArity > 1 && patternFixedArity == 1 => squishIntoOne()
+        case _                                               => wrongArity(patternFixedArity)
+      }
 
-      def rawLast     = if (rawTypes.isEmpty) rawGet else rawTypes.last
-      def elementType = unapplySeqElementType(rawLast)
+      def elementType = elementTypeOfLastSelectorOrSelf(rawGet)
 
       private def hasBogusExtractor = directUnapplyMember(tpe).exists && !unapplyMethod.exists
       private def expectedArity = "" + productArity + ( if (isUnapplySeq) "+" else "")
@@ -254,20 +261,21 @@ trait PatternTypers {
 
         rawGet :: Nil
       }
+      // elementArity is the number of non-sequence patterns minus the
+      // the number of non-sequence product elements returned by the extractor.
+      // If it is zero, there is a perfect match between those parts, and
+      // if there is a wildcard star it will match any sequence.
+      // If it is positive, there are more patterns than products,
+      // so a sequence will have to fill in the elements. If it is negative,
+      // there are more products than patterns, which is a compile time error.
+      def elementArity      = patternFixedArity - productArity
       def patternFixedArity = treeInfo effectivePatternArity args
       def productArity      = productTypes.size
-      def elementArity      = patternFixedArity - productArity
+      def isSingle          = !isUnapplySeq && (patternFixedArity == 1)
 
       def productTypes = if (isUnapplySeq) rawTypes dropRight 1 else rawTypes
       def elementTypes = List.fill(elementArity)(elementType)
       def varargsType  = scalaRepeatedType(elementType)
-
-      def expectedPatternTypes = elementArity match {
-        case 0                                               => productTypes
-        case _ if elementArity > 0 && exInfo.isUnapplySeq    => productTypes ::: elementTypes
-        case _ if productArity > 1 && patternFixedArity == 1 => squishIntoOne()
-        case _                                               => wrongArity(patternFixedArity)
-      }
     }
 
     private class VariantToSkolemMap extends TypeMap(trackVariance = true) {

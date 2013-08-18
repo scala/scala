@@ -20,6 +20,7 @@ trait MatchTranslation {
   import definitions._
   import global.analyzer.{ErrorUtils, formalTypes}
   import treeInfo.{ WildcardStarArg, Unapplied, isStar, unbind }
+  import CODE._
 
   // Always map repeated params to sequences
   private def setVarInfo(sym: Symbol, info: Type) =
@@ -252,7 +253,7 @@ trait MatchTranslation {
                 CaseDef(
                   Bind(exSym, Ident(nme.WILDCARD)), // TODO: does this need fixing upping?
                   EmptyTree,
-                  combineCasesNoSubstOnly(CODE.REF(exSym), scrutSym, casesNoSubstOnly, pt, matchOwner, Some(scrut => Throw(CODE.REF(exSym))))
+                  combineCasesNoSubstOnly(REF(exSym), scrutSym, casesNoSubstOnly, pt, matchOwner, Some(scrut => Throw(REF(exSym))))
                 )
               })
         }
@@ -364,8 +365,6 @@ trait MatchTranslation {
     }
 
     abstract class ExtractorCall {
-      import CODE._
-
       def fun: Tree
       def args: List[Tree]
 
@@ -380,12 +379,16 @@ trait MatchTranslation {
       private def hasStar       = nbSubPats > 0 && isStar(args.last)
       private def isNonEmptySeq = nbSubPats > 0 && isSeq
 
-      def isSingle = nbSubPats == 0 && !isSeq
+      /** This is special cased so that a single pattern will accept any extractor
+       *  result, even if it's a tuple (SI-6675)
+       */
+      def isSingle = nbSubPats == 1 && !isSeq
 
       // to which type should the previous binder be casted?
       def paramType  : Type
 
       protected def rawSubPatTypes: List[Type]
+      protected def resultType: Type
 
       /** Create the TreeMaker that embodies this extractor call
        *
@@ -412,16 +415,16 @@ trait MatchTranslation {
 
       def subPatTypes: List[Type] = (
         if (rawSubPatTypes.isEmpty || !isSeq) rawSubPatTypes
-        else if (hasStar) nonStarSubPatTypes :+ rawLast
+        else if (hasStar) nonStarSubPatTypes :+ sequenceType
         else nonStarSubPatTypes
       )
 
+      private def rawGet         = typeOfMemberNamedGetOrSelf(resultType)
       private def emptySub       = rawSubPatTypes.isEmpty
-      private def rawLast        = if (emptySub) NothingTpe else rawSubPatTypes.last
       private def rawInit        = rawSubPatTypes dropRight 1
-      protected def sequenceType = if (emptySub) NothingTpe else rawLast
-      protected def elementType  = if (emptySub) NothingTpe else unapplySeqElementType(rawLast)
-      protected def repeatedType = if (emptySub) NothingTpe else scalaRepeatedType(elementType)
+      protected def sequenceType = typeOfLastSelectorOrSelf(rawGet)
+      protected def elementType  = elementTypeOfLastSelectorOrSelf(rawGet)
+      protected def repeatedType = scalaRepeatedType(elementType)
 
       // rawSubPatTypes.last is the Seq, thus there are `rawSubPatTypes.length - 1` non-seq elements in the tuple
       protected def firstIndexingBinder = rawSubPatTypes.length - 1
@@ -508,6 +511,7 @@ trait MatchTranslation {
 
       // to which type should the previous binder be casted?
       def paramType  = constructorTp.finalResultType
+      def resultType = fun.tpe.finalResultType
 
       def isSeq = isVarArgTypes(rawSubPatTypes)
 
@@ -536,7 +540,7 @@ trait MatchTranslation {
       }
 
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
-      override protected def tupleSel(binder: Symbol)(i: Int): Tree = { import CODE._
+      override protected def tupleSel(binder: Symbol)(i: Int): Tree = {
         val accessors = binder.caseFieldAccessors
         if (accessors isDefinedAt (i-1)) REF(binder) DOT accessors(i-1)
         else codegen.tupleSel(binder)(i) // this won't type check for case classes, as they do not inherit ProductN
@@ -550,7 +554,7 @@ trait MatchTranslation {
 
       def tpe        = fun.tpe
       def paramType  = firstParamType(tpe)
-      def resultType = fun.tpe.finalResultType
+      def resultType = tpe.finalResultType
       def isTyped    = (tpe ne NoType) && fun.isTyped && (resultInMonad ne ErrorType)
       def isSeq      = fun.symbol.name == nme.unapplySeq
       def isBool     = resultType =:= BooleanTpe
@@ -585,20 +589,20 @@ trait MatchTranslation {
       }
 
       override protected def seqTree(binder: Symbol): Tree =
-        if (firstIndexingBinder == 0) CODE.REF(binder)
+        if (firstIndexingBinder == 0) REF(binder)
         else super.seqTree(binder)
 
       // the trees that select the subpatterns on the extractor's result, referenced by `binder`
       // require (nbSubPats > 0 && (!lastIsStar || isSeq))
       override protected def subPatRefs(binder: Symbol): List[Tree] =
-        if (!isSeq && nbSubPats == 1) List(CODE.REF(binder)) // special case for extractors
+        if (isSingle) REF(binder) :: Nil // special case for extractors
         else super.subPatRefs(binder)
 
       protected def spliceApply(binder: Symbol): Tree = {
         object splice extends Transformer {
           override def transform(t: Tree) = t match {
             case Apply(x, List(i @ Ident(nme.SELECTOR_DUMMY))) =>
-              treeCopy.Apply(t, x, List(CODE.REF(binder) setPos i.pos))
+              treeCopy.Apply(t, x, (REF(binder) setPos i.pos) :: Nil)
             case _ =>
               super.transform(t)
           }
@@ -606,20 +610,16 @@ trait MatchTranslation {
         splice transform extractorCallIncludingDummy
       }
 
-      // what's the extractor's result type in the monad?
-      // turn an extractor's result type into something `monadTypeToSubPatTypesAndRefs` understands
-      protected lazy val resultInMonad: Type = if (isBool) UnitTpe else matchMonadResult(resultType) // the type of "get"
+      // what's the extractor's result type in the monad? It is the type of its nullary member `get`.
+      protected lazy val resultInMonad: Type = if (isBool) UnitTpe else typeOfMemberNamedGet(resultType)
 
       protected lazy val rawSubPatTypes = (
         if (isBool) Nil
-        else if (!isSeq && nbSubPats == 1) resultInMonad :: Nil
-        else getNameBasedProductSelectorTypes(resultInMonad) match {
-          case Nil => resultInMonad :: Nil
-          case x   => x
-        }
+        else if (isSingle) resultInMonad :: Nil     // don't go looking for selectors if we only expect one pattern
+        else typesOfSelectorsOrSelf(resultInMonad)
       )
 
-      override def toString() = s"ExtractorCallRegular($fun:${fun.tpe} / ${fun.symbol})"
+      override def toString() = s"ExtractorCallRegular($fun: $tpe / ${fun.symbol})"
     }
 
     /** A conservative approximation of which patterns do not discern anything.

@@ -681,41 +681,23 @@ trait Definitions extends api.StandardDefinitions {
       def isExactProductType(tp: Type): Boolean = isProductNSymbol(tp.typeSymbol)
 
     /** if tpe <: ProductN[T1,...,TN], returns List(T1,...,TN) else Nil */
-    def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNSymbol match {
+    @deprecated("No longer used", "2.11.0") def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNSymbol match {
       case Some(x)  => tpe.baseType(x).typeArgs
       case _        => Nil
     }
-    def getNameBasedProductSelectors(tpe: Type): List[Symbol] = {
-      def loop(n: Int): List[Symbol] = tpe member TermName("_" + n) match {
-        case NoSymbol                => Nil
-        case m if m.paramss.nonEmpty => Nil
-        case m                       => m :: loop(n + 1)
-      }
-      loop(1)
-    }
-    def getNameBasedProductSelectorTypes(tpe: Type): List[Type] = getProductArgs(tpe) match {
-      case xs if xs.nonEmpty => xs
-      case _                 => getterMemberTypes(tpe, getNameBasedProductSelectors(tpe))
+
+    @deprecated("No longer used", "2.11.0") def unapplyUnwrap(tpe:Type) = tpe.finalResultType.dealiasWiden match {
+      case RefinedType(p :: _, _) => p.dealiasWiden
+      case tp                     => tp
     }
 
     def getterMemberTypes(tpe: Type, getters: List[Symbol]): List[Type] =
       getters map (m => dropNullaryMethod(tpe memberType m))
 
-    def getNameBasedProductSeqElementType(tpe: Type) = getNameBasedProductSelectorTypes(tpe) match {
-      case _ :+ elem => unapplySeqElementType(elem)
-      case _         => NoType
-    }
-
     def dropNullaryMethod(tp: Type) = tp match {
       case NullaryMethodType(restpe) => restpe
       case _                         => tp
     }
-
-    def unapplyUnwrap(tpe:Type) = tpe.finalResultType.dealiasWiden match {
-      case RefinedType(p :: _, _) => p.dealiasWiden
-      case tp                     => tp
-    }
-
     def abstractFunctionForFunctionType(tp: Type) = {
       assert(isFunctionType(tp), tp)
       abstractFunctionType(tp.typeArgs.init, tp.typeArgs.last)
@@ -738,12 +720,53 @@ trait Definitions extends api.StandardDefinitions {
     def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg)
     def seqType(arg: Type)           = appliedType(SeqClass, arg)
 
-    def typeOfMemberNamedGet(tp: Type) = resultOfMatchingMethod(tp, nme.get)()
+    // FYI the long clunky name is because it's really hard to put "get" into the
+    // name of a method without it sounding like the method "get"s something, whereas
+    // this method is about a type member which just happens to be named get.
+    def typeOfMemberNamedGet(tp: Type)       = resultOfMatchingMethod(tp, nme.get)()
+    def typeOfMemberNamedHead(tp: Type)      = resultOfMatchingMethod(tp, nme.head)()
+    def typeOfMemberNamedApply(tp: Type)     = resultOfMatchingMethod(tp, nme.apply)()
+    def typeOfMemberNamedGetOrSelf(tp: Type) = typeOfMemberNamedGet(tp) orElse tp
+    def typesOfSelectors(tp: Type)           = getterMemberTypes(tp, productSelectors(tp))
+    def typesOfCaseAccessors(tp: Type)       = getterMemberTypes(tp, tp.typeSymbol.caseFieldAccessors)
 
-    def unapplySeqElementType(seqType: Type) = (
-             resultOfMatchingMethod(seqType, nme.apply)(IntTpe)
-      orElse resultOfMatchingMethod(seqType, nme.head)()
+    /** If this is a case class, the case field accessors (which may be an empty list.)
+     *  Otherwise, if there are any product selectors, that list.
+     *  Otherwise, a list containing only the type itself.
+     */
+    def typesOfSelectorsOrSelf(tp: Type): List[Type] = (
+      if (tp.typeSymbol.isCase)
+        typesOfCaseAccessors(tp)
+      else typesOfSelectors(tp) match {
+        case Nil => tp :: Nil
+        case tps => tps
+      }
     )
+
+    /** If the given type has one or more product selectors, the type of the last one.
+     *  Otherwise, the type itself.
+     */
+    def typeOfLastSelectorOrSelf(tp: Type) = typesOfSelectorsOrSelf(tp).last
+
+    def elementTypeOfLastSelectorOrSelf(tp: Type) = {
+      val last = typeOfLastSelectorOrSelf(tp)
+      ( typeOfMemberNamedHead(last)
+          orElse typeOfMemberNamedApply(last)
+          orElse elementType(ArrayClass, last)
+      )
+    }
+
+    /** Returns the method symbols for members _1, _2, ..., _N
+     *  which exist in the given type.
+     */
+    def productSelectors(tpe: Type): List[Symbol] = {
+      def loop(n: Int): List[Symbol] = tpe member TermName("_" + n) match {
+        case NoSymbol                => Nil
+        case m if m.paramss.nonEmpty => Nil
+        case m                       => m :: loop(n + 1)
+      }
+      loop(1)
+    }
 
     /** If `tp` has a term member `name`, the first parameter list of which
      *  matches `paramTypes`, and which either has no further parameter

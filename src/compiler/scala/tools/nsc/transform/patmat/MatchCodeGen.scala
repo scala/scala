@@ -87,10 +87,8 @@ trait MatchCodeGen extends Interface {
     def _match(n: Name): SelectStart = matchStrategy DOT n
 
     // TODO: error message
-    private lazy val oneType                                 = typer.typedOperator(_match(vpmName.one)).tpe
-    private def oneApplied(tp: Type): Type                   = appliedType(oneType, tp :: Nil)
-    override def pureType(tp: Type): Type                    = firstParamType(oneApplied(tp))
-    override def mapResultType(prev: Type, elem: Type): Type = oneApplied(elem).finalResultType
+    private lazy val oneType              = typer.typedOperator(_match(vpmName.one)).tpe
+    override def pureType(tp: Type): Type = firstParamType(appliedType(oneType, tp :: Nil))
   }
 
   trait PureCodegen extends CodegenCore with PureMatchMonadInterface {
