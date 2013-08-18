@@ -10,38 +10,9 @@ import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 
-
-/** Segregating this super hacky code. */
-trait CpsPatternHacks {
-  self: PatternMatching =>
-
-  import global._
-
-  // duplicated from CPSUtils (avoid dependency from compiler -> cps plugin...)
-  private object CpsSymbols {
-    val MarkerCPSAdaptPlus  = rootMirror.getClassIfDefined("scala.util.continuations.cpsPlus")
-    val MarkerCPSAdaptMinus = rootMirror.getClassIfDefined("scala.util.continuations.cpsMinus")
-    val MarkerCPSSynth      = rootMirror.getClassIfDefined("scala.util.continuations.cpsSynth")
-    val MarkerCPSTypes      = rootMirror.getClassIfDefined("scala.util.continuations.cpsParam")
-    val stripTriggerCPSAnns = Set[Symbol](MarkerCPSSynth, MarkerCPSAdaptMinus, MarkerCPSAdaptPlus)
-    val strippedCPSAnns     = stripTriggerCPSAnns + MarkerCPSTypes
-
-    // when one of the internal cps-type-state annotations is present, strip all CPS annotations
-    // a cps-type-state-annotated type makes no sense as an expected type (matchX.tpe is used as pt in translateMatch)
-    // (only test availability of MarkerCPSAdaptPlus assuming they are either all available or none of them are)
-    def removeCPSFromPt(pt: Type): Type = (
-      if (MarkerCPSAdaptPlus.exists && (stripTriggerCPSAnns exists pt.hasAnnotation))
-        pt filterAnnotations (ann => !(strippedCPSAnns exists ann.matches))
-      else
-        pt
-    )
-  }
-  def removeCPSFromPt(pt: Type): Type = CpsSymbols removeCPSFromPt pt
-}
-
 /** Translate typed Trees that represent pattern matches into the patternmatching IR, defined by TreeMakers.
  */
-trait MatchTranslation extends CpsPatternHacks {
+trait MatchTranslation {
   self: PatternMatching =>
 
   import PatternMatchingStats._

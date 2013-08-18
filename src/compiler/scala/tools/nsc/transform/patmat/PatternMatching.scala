@@ -40,6 +40,7 @@ trait PatternMatching extends Transform with TypingTransformers
                       with MatchTranslation
                       with MatchTreeMaking
                       with MatchCodeGen
+                      with MatchCps
                       with ScalaLogic
                       with Solving
                       with MatchAnalysis
