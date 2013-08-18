@@ -236,60 +236,53 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     false
   }
 
-  /** Filter the diff for conditional blocks.
+  /** Filter the check file for conditional blocks.
    *  The check file can contain lines of the form:
    *  `#partest java7`
    *  where the line contains a conventional flag name.
-   *  In the diff output, these lines have the form:
-   *  `> #partest java7`
-   *  Blocks which don't apply are filtered out,
-   *  and what remains is the desired diff.
-   *  Line edit commands such as `0a1,6` don't count
-   *  as diff, so return a nonempty diff only if
-   *  material diff output was seen.
-   *  Filtering the diff output (instead of every check
-   *  file) means that we only post-process a test that
-   *  might be failing, in the normal case.
+   *  If the flag tests true, succeeding lines are retained
+   *  (removed on false) until the next #partest flag.
+   *  A missing flag evaluates the same as true.
    */
-  def diffilter(d: String) = {
+  def filteredCheck: Seq[String] = {
     import scala.util.Properties.{javaVersion, isAvian}
-    val prefix = "#partest"
-    val margin = "> "
-    val leader = margin + prefix
     // use lines in block so labeled? Default to sorry, Charlie.
-    def retainOn(f: String) = {
+    def retainOn(expr: String) = {
+      val f = expr.trim
+      def flagWasSet(f: String) = suiteRunner.scalacExtraArgs contains f
       val (invert, token) =
         if (f startsWith "!") (true, f drop 1) else (false, f)
-      val cond = token match {
+      val cond = token.trim match {
         case "java7"  => javaVersion startsWith "1.7"
         case "java6"  => javaVersion startsWith "1.6"
         case "avian"  => isAvian
         case "true"   => true
-        case _        => false
+        case "-optimise" | "-optimize"
+                      => flagWasSet("-optimise") || flagWasSet("-optimize")
+        case flag if flag startsWith "-"
+                      => flagWasSet(flag)
+        case rest     => rest.isEmpty
       }
       if (invert) !cond else cond
     }
-    if (d contains prefix) {
-      val sb = new StringBuilder
-      var retain = true           // use the current line
-      var material = false        // saw a line of diff
-      for (line <- d.lines)
-        if (line startsWith leader) {
-          val rest = (line stripPrefix leader).trim
-          retain = retainOn(rest)
-        } else if (retain) {
-          if (line startsWith margin) material = true
-          sb ++= line
-          sb ++= EOL
-        }
-      if (material) sb.toString else ""
-    } else d
+    val prefix = "#partest"
+    val b = new ListBuffer[String]()
+    var on = true
+    for (line <- file2String(checkFile).lines) {
+      if (line startsWith prefix) {
+        on = retainOn(line stripPrefix prefix)
+      } else if (on) {
+        b += line
+      }
+    }
+    b.toList
   }
 
-  def currentDiff = (
-    if (checkFile.canRead) diffilter(compareFiles(original = checkFile, revised = logFile))
-    else compareContents(original = Nil, revised = augmentString(file2String(logFile)).lines.toList)
-  )
+  def currentDiff = {
+    val logged = augmentString(file2String(logFile)).lines.toList
+    val (other, othername) = if (checkFile.canRead) (filteredCheck, checkFile.getName) else (Nil, "empty")
+    compareContents(original = other, revised = logged, originalName = othername, revisedName = logFile.getName)
+  }
 
   val gitRunner = List("/usr/local/bin/git", "/usr/bin/git") map (f => new java.io.File(f)) find (_.canRead)
   val gitDiffOptions = "--ignore-space-at-eol --no-index " + propOrEmpty("partest.git_diff_options")
