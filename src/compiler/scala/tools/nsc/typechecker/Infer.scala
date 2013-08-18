@@ -1157,6 +1157,7 @@ trait Infer extends Checkable {
       val tpparams  = freeTypeParamsOfTerms(pattp)
 
       def ptMatchesPattp = pt matchesPattern pattp.widen
+      def pattpMatchesPt = pattp matchesPattern pt
 
       /* If we can absolutely rule out a match we can fail early.
        * This is the case if the scrutinee has no unresolved type arguments
@@ -1166,15 +1167,9 @@ trait Infer extends Checkable {
         IncompatibleScrutineeTypeError(tree0, pattp, pt)
         return ErrorType
       }
-      // This performs the "reverse" propagation of type information already used
-      // in pattern matcher checkability testing. See pos/t2486.scala for sample
-      // code which would not compile without such propagation.
-      def propagated = propagateKnownTypes(pt, pattp.widen.typeSymbol)
 
-      checkCheckable(tree0, pattp, pt0, inPattern = true, canRemedy)
+      checkCheckable(tree0, pattp, pt, inPattern = true, canRemedy)
       if (pattp <:< pt) ()
-      else if (pattp <:< propagated)
-        log(s"!($pattp <:< $pt), but after propagateKnownTypes we find ($pattp <:< $propagated) - pattern inference improved")
       else {
         debuglog("free type params (1) = " + tpparams)
 
@@ -1191,7 +1186,9 @@ trait Infer extends Checkable {
           val ptvars = ptparams map freshVar
           val pt1    = pt.instantiateTypeParams(ptparams, ptvars)
 
-          if (isPopulated(tp, pt1) && isInstantiatable(tvars ++ ptvars))
+          // See ticket #2486 for an example of code which would incorrectly
+          // fail if we didn't allow for pattpMatchesPt.
+          if (isPopulated(tp, pt1) && isInstantiatable(tvars ++ ptvars) || pattpMatchesPt)
              ptvars foreach instantiateTypeVar
           else {
             PatternTypeIncompatibleWithPtError1(tree0, pattp, pt)
@@ -1244,10 +1241,10 @@ trait Infer extends Checkable {
       // properly, we can avoid it by ignoring type parameters which
       // have type constructors amongst their bounds. See SI-4070.
       def isFreeTypeParamOfTerm(sym: Symbol) = (
-           sym.isAbstractType
-        && sym.owner.isTerm
-        && !sym.info.bounds.exists(_.typeParams.nonEmpty)
-      )
+        sym.isAbstractType
+          && sym.owner.isTerm
+          && !sym.info.bounds.exists(_.typeParams.nonEmpty)
+        )
 
       // Intentionally *not* using `Type#typeSymbol` here, which would normalize `tp`
       // and collect symbols from the result type of any resulting `PolyType`s, which
