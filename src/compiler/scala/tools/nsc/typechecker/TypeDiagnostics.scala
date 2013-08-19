@@ -143,7 +143,7 @@ trait TypeDiagnostics {
     def defaultMessage    = moduleMessage + preResultString + tree.tpe
     def applyMessage      = defaultMessage + tree.symbol.locationString
 
-    if ((sym eq null) || (sym eq NoSymbol)) {
+    if (!tree.hasExistingSymbol) {
       if (isTyperInPattern) patternMessage
       else exprMessage
     }

@@ -734,10 +734,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           sym
         }
 
-        if (sym ne NoSymbol)
-          sym
-        else
-          createBitmap
+        sym orElse createBitmap
       }
 
       def maskForOffset(offset: Int, sym: Symbol, kind: ClassSymbol): Tree = {

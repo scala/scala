@@ -659,7 +659,7 @@ trait MatchTranslation { self: PatternMatching  =>
 
     object Bound {
       def unapply(t: Tree): Option[(Symbol, Tree)] = t match {
-        case t@Bind(n, p) if (t.symbol ne null) && (t.symbol ne NoSymbol) => // pos/t2429 does not satisfy these conditions
+        case t@Bind(n, p) if t.hasExistingSymbol => // pos/t2429 does not satisfy these conditions
           Some((t.symbol, p))
         case _ => None
       }

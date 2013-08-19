@@ -489,7 +489,7 @@ abstract class LambdaLift extends InfoTransform {
           treeCopy.Assign(tree, qual, rhs)
         case Ident(name) =>
           val tree1 =
-            if (sym != NoSymbol && sym.isTerm && !sym.isLabel)
+            if (sym.isTerm && !sym.isLabel)
               if (sym.isMethod)
                 atPos(tree.pos)(memberRef(sym))
               else if (sym.isLocal && !isSameOwnerEnclosure(sym))
