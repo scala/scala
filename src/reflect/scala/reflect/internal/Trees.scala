@@ -185,8 +185,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def replace(from: Tree, to: Tree): Tree =
       new TreeReplacer(from, to, positionAware = false) transform this
 
-    def hasSymbolWhich(f: Symbol => Boolean) =
-      (symbol ne null) && (symbol ne NoSymbol) && f(symbol)
+    def hasExistingSymbol = (symbol ne null) && (symbol ne NoSymbol)
+    def hasSymbolWhich(f: Symbol => Boolean) = hasExistingSymbol && f(symbol)
 
     def isErroneous = (tpe ne null) && tpe.isErroneous
     def isTyped     = (tpe ne null) && !tpe.isErroneous

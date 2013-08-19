@@ -269,7 +269,7 @@ trait Contexts { self: Analyzer =>
 
     /** The next enclosing context (potentially `this`) that is owned by a class or method */
     def enclClassOrMethod: Context =
-      if ((owner eq NoSymbol) || (owner.isClass) || (owner.isMethod)) this
+      if (!owner.exists || owner.isClass || owner.isMethod) this
       else outer.enclClassOrMethod
 
     /** The next enclosing context (potentially `this`) that has a `CaseDef` as a tree */
@@ -653,13 +653,8 @@ trait Contexts { self: Analyzer =>
       lastAccessCheckDetails = ""
       // Console.println("isAccessible(%s, %s, %s)".format(sym, pre, superAccess))
 
-      def accessWithinLinked(ab: Symbol) = {
-        val linked = ab.linkedClassOfClass
-        // don't have access if there is no linked class
-        // (before adding the `ne NoSymbol` check, this was a no-op when linked eq NoSymbol,
-        //  since `accessWithin(NoSymbol) == true` whatever the symbol)
-        (linked ne NoSymbol) && accessWithin(linked)
-      }
+      // don't have access if there is no linked class (so exclude linkedClass=NoSymbol)
+      def accessWithinLinked(ab: Symbol) = ab.linkedClassOfClass.fold(false)(accessWithin)
 
       /* Are we inside definition of `ab`? */
       def accessWithin(ab: Symbol) = {
@@ -957,7 +952,7 @@ trait Contexts { self: Analyzer =>
         //   2) sym.owner is inherited by the correct package object class
         // We try to establish 1) by inspecting the owners directly, and then we try
         // to rule out 2), and only if both those fail do we resort to looking in the info.
-        !sym.isPackage && (sym.owner ne NoSymbol) && (
+        !sym.isPackage && sym.owner.exists && (
           if (sym.owner.isPackageObjectClass)
             sym.owner.owner == pkgClass
           else

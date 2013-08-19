@@ -227,10 +227,7 @@ trait Definitions extends api.StandardDefinitions {
       scope
     }
     /** Is this symbol a member of Object or Any? */
-    def isUniversalMember(sym: Symbol) = (
-         (sym ne NoSymbol)
-      && (ObjectClass isSubClass sym.owner)
-    )
+    def isUniversalMember(sym: Symbol) = ObjectClass isSubClass sym.owner
 
     /** Is this symbol unimportable? Unimportable symbols include:
      *  - constructors, because <init> is not a real name

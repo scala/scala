@@ -297,19 +297,9 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
   def translatePath(path: String) = {
     val sym = if (path endsWith "$") symbolOfTerm(path.init) else symbolOfIdent(path)
-    sym match {
-      case NoSymbol => None
-      case _        => Some(flatPath(sym))
-    }
+    sym.toOption map flatPath
   }
-  def translateEnclosingClass(n: String) = {
-    def enclosingClass(s: Symbol): Symbol =
-      if (s == NoSymbol || s.isClass) s else enclosingClass(s.owner)
-    enclosingClass(symbolOfTerm(n)) match {
-      case NoSymbol => None
-      case c        => Some(flatPath(c))
-    }
-  }
+  def translateEnclosingClass(n: String) = symbolOfTerm(n).enclClass.toOption map flatPath
 
   private class TranslatingClassLoader(parent: ClassLoader) extends util.AbstractFileClassLoader(replOutput.dir, parent) {
     /** Overridden here to try translating a simple name to the generated

@@ -216,7 +216,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             val inherited = clazz.info.nonPrivateMemberAdmitting(member.name, VBRIDGE)
 
             // Delaying calling memberType as long as possible
-            if (inherited ne NoSymbol) {
+            if (inherited.exists) {
               val jtpe = toJavaRepeatedParam(self memberType member)
               // this is a bit tortuous: we look for non-private members or bridges
               // if we find a bridge everything is OK. If we find another member,
@@ -1521,7 +1521,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       checkCompileTimeOnly(sym, tree.pos)
       checkDelayedInitSelect(qual, sym, tree.pos)
 
-      if (sym eq NoSymbol)
+      if (!sym.exists)
         devWarning("Select node has NoSymbol! " + tree + " / " + tree.tpe)
       else if (sym.hasLocalFlag)
         varianceValidator.checkForEscape(sym, currentClass)

@@ -390,9 +390,7 @@ trait Namers extends MethodSynthesis {
      *  has been defined in a separate file.
      */
     private def validateCompanionDefs(tree: ImplDef) {
-      val sym = tree.symbol
-      if (sym eq NoSymbol) return
-
+      val sym    = tree.symbol orElse { return }
       val ctx    = if (context.owner.isPackageObjectClass) context.outer else context
       val module = if (sym.isModule) sym else ctx.scope lookupModule tree.name
       val clazz  = if (sym.isClass) sym else ctx.scope lookupClass tree.name

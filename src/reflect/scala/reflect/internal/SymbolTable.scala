@@ -60,6 +60,7 @@ abstract class SymbolTable extends macros.Universe
 
   def shouldLogAtThisPhase = false
   def isPastTyper = false
+  protected def isDeveloper: Boolean = settings.debug
 
   @deprecated("Give us a reason", "2.10.0")
   def abort(): Nothing = abort("unknown error")
@@ -69,8 +70,12 @@ abstract class SymbolTable extends macros.Universe
 
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
-  def devWarning(msg: => String): Unit = if (settings.debug) Console.err.println(msg)
+  def devWarning(msg: => String): Unit = if (isDeveloper) Console.err.println(msg)
   def throwableAsString(t: Throwable): String = "" + t
+  def throwableAsString(t: Throwable, maxFrames: Int): String = t.getStackTrace take maxFrames mkString "\n  at "
+
+  @inline final def devWarningDumpStack(msg: => String, maxFrames: Int): Unit =
+    devWarning(msg + "\n" + throwableAsString(new Throwable, maxFrames))
 
   /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */
   def debugStack(t: Throwable): Unit  = devWarning(throwableAsString(t))

@@ -269,8 +269,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                   && sym.enclClass != currentClass
                   && !sym.owner.isPackageClass // SI-7091 no accessor needed package owned (ie, top level) symbols
                   && !sym.owner.isTrait
-                  && (sym.owner.enclosingPackageClass != currentClass.enclosingPackageClass)
-                  && (qual.symbol.info.member(sym.name) ne NoSymbol)
+                  && sym.owner.enclosingPackageClass != currentClass.enclosingPackageClass
+                  && qual.symbol.info.member(sym.name).exists
                   && !needsProtectedAccessor(sym, tree.pos)
                 )
                 if (shouldEnsureAccessor) {
