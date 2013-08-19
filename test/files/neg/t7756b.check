@@ -1,0 +1,6 @@
+t7756b.scala:3: warning: comparing values of types Int and String using `==' will always yield false
+    case _ => 0 == ""
+                ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
