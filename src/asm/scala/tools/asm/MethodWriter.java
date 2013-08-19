@@ -37,7 +37,7 @@ package scala.tools.asm;
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
-class MethodWriter extends MethodVisitor {
+public class MethodWriter extends MethodVisitor {
 
     /**
      * Pseudo access flag used to denote constructors.
@@ -223,10 +223,18 @@ class MethodWriter extends MethodVisitor {
      */
     private int maxStack;
 
+    public int getMaxStack() {
+      return maxStack;
+    }
+
     /**
      * Maximum number of local variables for this method.
      */
     private int maxLocals;
+
+    public int getMaxLocals() {
+      return maxLocals;
+    }
 
     /**
      * Number of local variables in the current stack map frame.
