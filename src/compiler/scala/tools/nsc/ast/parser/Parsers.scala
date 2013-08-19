@@ -2799,10 +2799,8 @@ self =>
           val earlyDefs: List[Tree] = body flatMap {
             case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
               List(copyValDef(vdef)(mods = mods | Flags.PRESUPER))
-            case tdef @ TypeDef(mods, name, tparams, rhs) =>
-              List(treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs))
             case stat if !stat.isEmpty =>
-              syntaxError(stat.pos, "only type definitions and concrete field definitions allowed in early object initialization section", skipIt = false)
+              syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", skipIt = false)
               List()
             case _ => List()
           }

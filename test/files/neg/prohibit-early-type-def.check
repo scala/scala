@@ -1,0 +1,4 @@
+prohibit-early-type-def.scala:1: error: only concrete field definitions allowed in early object initialization section
+class C extends { type T = Int } with Any
+                       ^
+one error found
