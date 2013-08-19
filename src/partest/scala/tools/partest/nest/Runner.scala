@@ -322,7 +322,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     val ellipsis   = "" //".../"    // using * looks like a comment
 
     // no spaces in test file paths below root, because otherwise how to detect end of path string?
-    val pathFinder = raw"""(?i)\Q${elided}${File.separator}\E([\${File.separator}\w]*)""".r
+    val pathFinder = raw"""(?i)\Q${elided}${File.separator}\E([\${File.separator}\S]*)""".r
     def canonicalize(s: String): String = (
       pathFinder replaceAllIn (s, m => ellipsis + squashSlashes(m group 1))
     )
