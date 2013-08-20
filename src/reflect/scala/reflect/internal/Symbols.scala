@@ -153,7 +153,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
     def asNameType(n: Name): NameType
 
-    private[this] var _rawowner = initOwner // Syncnote: need not be protected, as only assignment happens in owner_=, which is not exposed to api
+    // Syncnote: need not be protected, as only assignment happens in owner_=, which is not exposed to api
+    // The null check is for NoSymbol, which can't pass a reference to itself to the constructor and also
+    // can't call owner_= due to an assertion it contains.
+    private[this] var _rawowner = if (initOwner eq null) this else initOwner
     private[this] var _rawflags: Long = _
 
     def rawowner = _rawowner
@@ -610,7 +613,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     final def isLazyAccessor       = isLazy && lazyAccessor != NoSymbol
-    final def isOverridableMember  = !(isClass || isEffectivelyFinal) && (this ne NoSymbol) && owner.isClass
+    final def isOverridableMember  = !(isClass || isEffectivelyFinal) && safeOwner.isClass
 
     /** Does this symbol denote a wrapper created by the repl? */
     final def isInterpreterWrapper = (
@@ -999,13 +1002,20 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
 // ------ owner attribute --------------------------------------------------------------
 
+    /** In general when seeking the owner of a symbol, one should call `owner`.
+     *  The other possibilities include:
+     *    - call `safeOwner` if it is expected that the target may be NoSymbol
+     *    - call `assertOwner` if it is an unrecoverable error if the target is NoSymbol
+     *
+     *  `owner` behaves like `safeOwner`, but logs NoSymbol.owner calls under -Xdev.
+     *  `assertOwner` aborts compilation immediately if called on NoSymbol.
+     */
     def owner: Symbol = {
       if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
       rawowner
     }
-
-    // Like owner, but NoSymbol.owner == NoSymbol instead of throwing an exception.
-    final def safeOwner: Symbol = if (this eq NoSymbol) NoSymbol else owner
+    final def safeOwner: Symbol   = if (this eq NoSymbol) NoSymbol else owner
+    final def assertOwner: Symbol = if (this eq NoSymbol) abort("no-symbol does not have an owner") else owner
 
     // TODO - don't allow the owner to be changed without checking invariants, at least
     // when under some flag. Define per-phase invariants for owner/owned relationships,
@@ -1781,10 +1791,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       result
     }
 
-    @inline final def map(f: Symbol => Symbol): Symbol = if (this eq NoSymbol) this else f(this)
-
-    final def toOption: Option[Symbol] = if (exists) Some(this) else None
-
 // ------ cloneing -------------------------------------------------------------------
 
     /** A clone of this symbol. */
@@ -2179,8 +2185,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  the recursive knot.
      */
     private def canMatchInheritedSymbols = (
-         (this ne NoSymbol)
-      && owner.isClass
+         owner.isClass
       && !this.isClass
       && !this.isConstructor
     )
@@ -2352,6 +2357,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     @inline final def orElse(alt: => Symbol): Symbol = if (this ne NoSymbol) this else alt
     @inline final def andAlso(f: Symbol => Unit): Symbol = { if (this ne NoSymbol) f(this) ; this }
+    @inline final def fold[T](none: => T)(f: Symbol => T): T = if (this ne NoSymbol) f(this) else none
+    @inline final def map(f: Symbol => Symbol): Symbol = if (this eq NoSymbol) this else f(this)
+
+    final def toOption: Option[Symbol] = if (exists) Some(this) else None
+
 
 // ------ toString -------------------------------------------------------------------
 
@@ -3340,7 +3350,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def enclosingPackageClass: Symbol = this
     override def enclMethod: Symbol = this
     override def associatedFile = NoAbstractFile
-    override def ownerChain: List[Symbol] = List()
+    override def owner: Symbol = {
+      devWarningDumpStack("NoSymbol.owner", 15)
+      this
+    }
+    override def ownerChain: List[Symbol] = Nil
     override def ownersIterator: Iterator[Symbol] = Iterator.empty
     override def alternatives: List[Symbol] = List()
     override def reset(completer: Type): this.type = this
@@ -3350,9 +3364,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def accessBoundary(base: Symbol): Symbol = enclosingRootClass
     def cloneSymbolImpl(owner: Symbol, newFlags: Long) = abort("NoSymbol.clone()")
     override def originalEnclosingMethod = this
-
-    override def owner: Symbol =
-      abort("no-symbol does not have an owner")
   }
 
   protected def makeNoSymbol: NoSymbol = new NoSymbol

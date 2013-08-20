@@ -525,8 +525,7 @@ abstract class Erasure extends AddInterfaces
     private def isDifferentErasedValueType(tpe: Type, other: Type) =
       isErasedValueType(tpe) && (tpe ne other)
 
-    private def isPrimitiveValueMember(sym: Symbol) =
-      sym != NoSymbol && isPrimitiveValueClass(sym.owner)
+    private def isPrimitiveValueMember(sym: Symbol) = isPrimitiveValueClass(sym.owner)
 
     @inline private def box(tree: Tree, target: => String): Tree = {
       val result = box1(tree)
