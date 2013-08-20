@@ -704,7 +704,7 @@ trait Types
       case OverloadedType(_, alts) =>
         OverloadedType(this, alts)
       case tp =>
-        tp.asSeenFrom(this, sym.owner)
+        if (sym eq NoSymbol) NoType else tp.asSeenFrom(this, sym.owner)
     }
 
     /** Substitute types `to` for occurrences of references to
@@ -4015,9 +4015,12 @@ trait Types
 
   def isErrorOrWildcard(tp: Type) = (tp eq ErrorType) || (tp eq WildcardType)
 
+  /** This appears to be equivalent to tp.isInstanceof[SingletonType],
+   *  except it excludes ConstantTypes.
+   */
   def isSingleType(tp: Type) = tp match {
     case ThisType(_) | SuperType(_, _) | SingleType(_, _) => true
-    case _ => false
+    case _                                                => false
   }
 
   def isConstantType(tp: Type) = tp match {

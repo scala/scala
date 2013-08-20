@@ -116,6 +116,13 @@ abstract class SymbolTable extends macros.Universe
 
     result
   }
+  @inline
+  final private[scala] def debuglogResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
+    if (cond(result))
+      debuglog(msg + ": " + result)
+
+    result
+  }
 
   // For too long have we suffered in order to sort NAMES.
   // I'm pretty sure there's a reasonable default for that.
