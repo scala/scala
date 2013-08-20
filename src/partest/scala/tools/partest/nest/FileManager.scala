@@ -158,7 +158,7 @@ trait FileManager extends FileUtil {
     val xprefix          = "-Xplugin:"
     val (xplugs, others) = args partition (_ startsWith xprefix)
     val Xplugin          = if (xplugs.isEmpty) Nil else List(xprefix +
-      (xplugs map (_ stripPrefix xprefix) flatMap (_ split pathSeparator) map absolutize mkString pathSeparator)
+      (xplugs map (_ stripPrefix xprefix) flatMap (_ split ",") map absolutize mkString ",")
     )
     SCALAC_OPTS.toList ::: others ::: Xplugin
   }

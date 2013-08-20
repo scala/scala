@@ -444,9 +444,28 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // I only changed analyzer.
   //
   // factory for phases: namer, packageobjects, typer
-  lazy val analyzer = new {
-    val global: Global.this.type = Global.this
-  } with Analyzer
+  private var analyzerInitializing = false
+  lazy val analyzer = {
+    def defaultAnalyzer = new { val global: Global.this.type = Global.this } with Analyzer
+    if (!analyzerInitializing) {
+      analyzerInitializing = true
+      val computedAnalyzer = {
+        earlyPlugins.flatMap(_.analyzer) match {
+          case Nil => defaultAnalyzer
+          case analyzer :: Nil => analyzer
+          case analyzer :: others =>
+            val offenders = earlyPlugins.filter(_.analyzer.nonEmpty).map(_.name).mkString(", ")
+            globalError(s"multiple plugins: $offenders attempt to replace the analyzer")
+            defaultAnalyzer
+        }
+      }
+      analyzerInitializing = false
+      computedAnalyzer.asInstanceOf[Analyzer{ val global: Global.this.type }]
+    } else {
+      globalError(s"one of the plugins attempted to induce analyzer initialization loop")
+      defaultAnalyzer
+    }
+  }
 
   // phaseName = "patmat"
   object patmat extends {

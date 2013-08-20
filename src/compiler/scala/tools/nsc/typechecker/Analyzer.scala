@@ -29,9 +29,10 @@ trait Analyzer extends AnyRef
   val global : Global
   import global._
 
-  object namerFactory extends {
+  lazy val namerFactory = new NamerFactory
+
+  class NamerFactory extends SubComponent {
     val global: Analyzer.this.global.type = Analyzer.this.global
-  } with SubComponent {
     val phaseName = "namer"
     val runsAfter = List[String]("parser")
     val runsRightAfter = None
@@ -45,9 +46,10 @@ trait Analyzer extends AnyRef
     }
   }
 
-  object packageObjects extends {
+  lazy val packageObjects = new PackageObjects
+
+  class PackageObjects extends SubComponent {
     val global: Analyzer.this.global.type = Analyzer.this.global
-  } with SubComponent {
     val phaseName = "packageobjects"
     val runsAfter = List[String]()
     val runsRightAfter= Some("namer")
@@ -73,10 +75,11 @@ trait Analyzer extends AnyRef
     }
   }
 
-  object typerFactory extends {
-    val global: Analyzer.this.global.type = Analyzer.this.global
-  } with SubComponent {
+  lazy val typerFactory = new TyperFactory
+
+  class TyperFactory extends SubComponent {
     import scala.reflect.internal.TypesStats.typerNanos
+    val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "typer"
     val runsAfter = List[String]()
     val runsRightAfter = Some("packageobjects")

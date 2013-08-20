@@ -1,0 +1,2 @@
+error: one of the plugins attempted to induce analyzer initialization loop
+one error found

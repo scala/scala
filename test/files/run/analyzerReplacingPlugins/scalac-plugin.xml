@@ -1,0 +1,4 @@
+<plugin>
+  <name>analyzer-replacing-plugin</name>
+  <classname>analyzerReplacingPlugins.Ploogin</classname>
+</plugin>
