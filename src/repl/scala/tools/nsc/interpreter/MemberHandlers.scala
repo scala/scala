@@ -71,7 +71,7 @@ trait MemberHandlers {
     override def definesImplicit = member.mods.isImplicit
     override def definesTerm: Option[TermName] = Some(name.toTermName) filter (_ => name.isTermName)
     override def definesType: Option[TypeName] = Some(name.toTypeName) filter (_ => name.isTypeName)
-    override def definedSymbols = if (symbol eq NoSymbol) Nil else List(symbol)
+    override def definedSymbols = if (symbol.exists) symbol :: Nil else Nil
   }
 
   /** Class to handle one member among all the members included

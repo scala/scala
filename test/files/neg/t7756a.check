@@ -1,0 +1,7 @@
+t7756a.scala:7: error: type arguments [Object] do not conform to trait TA's type parameter bounds [X <: CharSequence]
+        locally(null: TA[Object])
+        ^
+t7756a.scala:7: error: type arguments [Object] do not conform to trait TA's type parameter bounds [X <: CharSequence]
+        locally(null: TA[Object])
+                      ^
+two errors found

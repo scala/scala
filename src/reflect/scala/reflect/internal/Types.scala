@@ -3475,7 +3475,7 @@ trait Types
   def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope) =
     if ((parents eq original.parents) && (decls eq original.decls)) original
     else {
-      val owner = if (original.typeSymbol == NoSymbol) NoSymbol else original.typeSymbol.owner
+      val owner = original.typeSymbol.owner
       val result = refinedType(parents, owner)
       val syms1 = decls.toList
       for (sym <- syms1)

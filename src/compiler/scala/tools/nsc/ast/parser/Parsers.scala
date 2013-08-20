@@ -2693,7 +2693,7 @@ self =>
             syntaxError("traits cannot have type parameters with context bounds `: ...' nor view bounds `<% ...'", skipIt = false)
             classContextBounds = List()
           }
-          val constrAnnots = constructorAnnotations()
+          val constrAnnots = if (!mods.isTrait) constructorAnnotations() else Nil
           val (constrMods, vparamss) =
             if (mods.isTrait) (Modifiers(Flags.TRAIT), List())
             else (accessModifierOpt(), paramClauses(name, classContextBounds, ofCaseClass = mods.isCase))

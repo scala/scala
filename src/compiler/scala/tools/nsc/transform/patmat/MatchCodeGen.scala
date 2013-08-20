@@ -164,13 +164,13 @@ trait MatchCodeGen extends Interface {
         // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
         // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd
         val catchAllDef = matchFailGen map { matchFailGen =>
-          val scrutRef = if(scrutSym ne NoSymbol) REF(scrutSym) else EmptyTree // for alternatives
+          val scrutRef = scrutSym.fold(EmptyTree: Tree)(REF) // for alternatives
 
           LabelDef(_currCase, Nil, matchEnd APPLY (matchFailGen(scrutRef)))
         } toList // at most 1 element
 
         // scrutSym == NoSymbol when generating an alternatives matcher
-        val scrutDef = if(scrutSym ne NoSymbol) List(VAL(scrutSym)  === scrut) else Nil // for alternatives
+        val scrutDef = scrutSym.fold(List[Tree]())(sym => (VAL(sym) === scrut) :: Nil) // for alternatives
 
         // the generated block is taken apart in TailCalls under the following assumptions
         // the assumption is once we encounter a case, the remainder of the block will consist of cases

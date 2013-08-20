@@ -218,7 +218,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
           // so that we don't introduce new aliases for existing symbols, thus keeping the set of bound symbols minimal
           val (boundSubst, unboundSubst) = (subst.from zip subst.to) partition {
             case (f, t) =>
-              t.isInstanceOf[Ident] && (t.symbol ne NoSymbol) && pointsToBound(f)
+              t.isInstanceOf[Ident] && t.symbol.exists && pointsToBound(f)
           }
           val (boundFrom, boundTo) = boundSubst.unzip
           val (unboundFrom, unboundTo) = unboundSubst.unzip
@@ -620,9 +620,9 @@ trait MatchAnalysis extends MatchApproximation {
         private lazy val uniqueEqualTo = equalTo filterNot (subsumed => equalTo.exists(better => (better ne subsumed) && instanceOfTpImplies(better.tp, subsumed.tp)))
         private lazy val prunedEqualTo = uniqueEqualTo filterNot (subsumed => variable.staticTpCheckable <:< subsumed.tp)
         private lazy val ctor       = (prunedEqualTo match { case List(TypeConst(tp)) => tp case _ => variable.staticTpCheckable }).typeSymbol.primaryConstructor
-        private lazy val ctorParams = if (ctor == NoSymbol || ctor.paramss.isEmpty) Nil else ctor.paramss.head
-        private lazy val cls        = if (ctor == NoSymbol) NoSymbol else ctor.owner
-        private lazy val caseFieldAccs = if (cls == NoSymbol) Nil else cls.caseFieldAccessors
+        private lazy val ctorParams = if (ctor.paramss.isEmpty) Nil else ctor.paramss.head
+        private lazy val cls        = ctor.safeOwner
+        private lazy val caseFieldAccs = cls.caseFieldAccessors
 
         def addField(symbol: Symbol, assign: VariableAssignment) {
           // SI-7669 Only register this field if if this class contains it.

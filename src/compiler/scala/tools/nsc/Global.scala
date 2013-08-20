@@ -261,6 +261,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     if (settings.debug)
       body
   }
+
+  override protected def isDeveloper = settings.developer || super.isDeveloper
+
   /** This is for WARNINGS which should reach the ears of scala developers
    *  whenever they occur, but are not useful for normal users. They should
    *  be precise, explanatory, and infrequent. Please don't use this as a
@@ -270,7 +273,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   @inline final override def devWarning(msg: => String): Unit = devWarning(NoPosition, msg)
   @inline final def devWarning(pos: Position, msg: => String) {
     def pos_s = if (pos eq NoPosition) "" else s" [@ $pos]"
-    if (settings.developer || settings.debug)
+    if (isDeveloper)
       warning(pos, "!!! " + msg)
     else
       log(s"!!!$pos_s $msg") // such warnings always at least logged

@@ -597,9 +597,8 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             t.symbol.owner = currentOwner
           case d : DefTree if (d.symbol != NoSymbol) && ((d.symbol.owner == NoSymbol) || (d.symbol.owner == origOwner)) => // don't indiscriminately change existing owners! (see e.g., pos/t3440, pos/t3534, pos/unapplyContexts2)
             debug.patmat("def: "+ ((d, d.symbol.ownerChain, currentOwner.ownerChain)))
-            if(d.symbol.moduleClass ne NoSymbol)
-              d.symbol.moduleClass.owner = currentOwner
 
+            d.symbol.moduleClass andAlso (_.owner = currentOwner)
             d.symbol.owner = currentOwner
           // case _ if (t.symbol != NoSymbol) && (t.symbol ne null) =>
           debug.patmat("untouched "+ ((t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain)))

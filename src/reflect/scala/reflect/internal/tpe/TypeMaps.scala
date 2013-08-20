@@ -524,7 +524,7 @@ private[internal] trait TypeMaps {
     private def correspondingTypeArgument(lhs: Type, rhs: Type): Type = {
       val TypeRef(_, lhsSym, lhsArgs) = lhs
       val TypeRef(_, rhsSym, rhsArgs) = rhs
-      require(lhsSym.safeOwner == rhsSym, s"$lhsSym is not a type parameter of $rhsSym")
+      require(lhsSym.owner == rhsSym, s"$lhsSym is not a type parameter of $rhsSym")
 
       // Find the type parameter position; we'll use the corresponding argument.
       // Why are we checking by name rather than by equality? Because for
@@ -539,7 +539,7 @@ private[internal] trait TypeMaps {
       else {
         // It's easy to get here when working on hardcore type machinery (not to
         // mention when not doing so, see above) so let's provide a standout error.
-        def own_s(s: Symbol) = s.nameString + " in " + s.safeOwner.nameString
+        def own_s(s: Symbol) = s.nameString + " in " + s.owner.nameString
         def explain =
           sm"""|   sought  ${own_s(lhsSym)}
                | classSym  ${own_s(rhsSym)}

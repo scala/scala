@@ -62,6 +62,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   }
 
   sealed abstract class SilentResult[+T] {
+    @inline final def fold[U](none: => U)(f: T => U): U = this match {
+      case SilentResultValue(value) => f(value)
+      case _                        => none
+    }
     @inline final def map[U](f: T => U): SilentResult[U] = this match {
       case SilentResultValue(value) => SilentResultValue(f(value))
       case x: SilentTypeError       => x
