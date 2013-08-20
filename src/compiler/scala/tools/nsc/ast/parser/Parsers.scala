@@ -2257,9 +2257,10 @@ self =>
         }
         if (contextBoundBuf ne null) {
           while (in.token == VIEWBOUND) {
-            contextBoundBuf += atPos(in.skipToken()) {
-              makeFunctionTypeTree(List(Ident(pname)), typ())
-            }
+            val msg = "Use an implicit parameter instead.\nExample: Instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`."
+            if (settings.future)
+              deprecationWarning(in.offset, s"View bounds are deprecated. $msg")
+            contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
           while (in.token == COLON) {
             contextBoundBuf += atPos(in.skipToken()) {
@@ -2690,7 +2691,8 @@ self =>
           classContextBounds = contextBoundBuf.toList
           val tstart = (in.offset :: classContextBounds.map(_.pos.startOrPoint)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
-            syntaxError("traits cannot have type parameters with context bounds `: ...' nor view bounds `<% ...'", skipIt = false)
+            val viewBoundsExist = if (settings.future) "" else " nor view bounds `<% ...'"
+              syntaxError(s"traits cannot have type parameters with context bounds `: ...'$viewBoundsExist", skipIt = false)
             classContextBounds = List()
           }
           val constrAnnots = if (!mods.isTrait) constructorAnnotations() else Nil
