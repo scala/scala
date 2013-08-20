@@ -824,7 +824,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     /* Generate code that loads args into label parameters. */
     def genLoadLabelArguments(args: List[Tree], lblDef: LabelDef, gotoPos: Position) {
-      assert(args forall { a => !a.hasSymbolField || a.hasSymbolWhich( s => !s.isLabel) }, s"SI-6089 at: $gotoPos") // SI-6089
 
       val aps = {
         val params: List[Symbol] = lblDef.params.map(_.symbol)
