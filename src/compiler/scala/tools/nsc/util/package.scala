@@ -8,6 +8,7 @@ package tools
 package nsc
 
 import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter }
+import scala.compat.Platform.EOL
 
 package object util {
 
@@ -76,6 +77,14 @@ package object util {
     val clazz = ex.getClass.getName.split('.').last
 
     s"$clazz$msg @ $frame"
+  }
+
+  def stackTracePrefixString(ex: Throwable)(p: StackTraceElement => Boolean): String = {
+    val frames = ex.getStackTrace takeWhile p map ("  at " + _)
+    val msg    = ex.getMessage match { case null => "" ; case s => s": $s" }
+    val clazz  = ex.getClass.getName
+
+    s"$clazz$msg" +: frames mkString EOL
   }
 
   lazy val trace = new SimpleTracer(System.out)
