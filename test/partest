@@ -46,28 +46,39 @@ if $cygwin; then
     SCALA_HOME=`cygpath --unix "$SCALA_HOME"`
 fi
 
-# Constructing the extension classpath
-EXT_CLASSPATH=""
-if [ -z "$EXT_CLASSPATH" ] ; then
-    if [ -f "$SCALA_HOME/lib/scala-partest.jar" ] ; then
-        for ext in "$SCALA_HOME"/lib/* ; do
-            if [ -z "$EXT_CLASSPATH" ] ; then
-                EXT_CLASSPATH="$ext"
-            else
-                EXT_CLASSPATH="$EXT_CLASSPATH:$ext"
-            fi
-        done
-    elif [ -f "$SCALA_HOME/build/pack/lib/scala-partest.jar" ] ; then
-        for lib in `echo "scala-partest scala-library scala-parser-combinators scala-xml scala-reflect scala-compiler diffutils"`; do
-            ext="$SCALA_HOME/build/pack/lib/$lib.jar"
-            if [ -z "$EXT_CLASSPATH" ] ; then
-                EXT_CLASSPATH="$ext"
-            else
-                EXT_CLASSPATH="$EXT_CLASSPATH:$ext"
-            fi
-        done
+# Let ant construct the classpath used to run partest (downloading partest from maven if necessary)
+# PARTEST_CLASSPATH=""
+if [ -z "$PARTEST_CLASSPATH" ] ; then
+    if [ ! -f "$SCALA_HOME/build/pack/partest.properties" ] ; then
+        (cd "$SCALA_HOME" && ant -q test.suite.init) # builds pack, downloads partest and writes classpath to build/pack/partest.properties
     fi
+
+    PARTEST_CLASSPATH=$( cat "$SCALA_HOME/build/pack/partest.properties" | grep partest.classpath | sed -e 's/\\:/:/g' | cut -f2- -d= )
+
+    # sanity check, disabled to save time
+    # $( javap -classpath $PARTEST_CLASSPATH scala.tools.partest.nest.NestRunner &> /dev/null ) || unset PARTEST_CLASSPATH
 fi
+
+# if [ -z "$PARTEST_CLASSPATH" ] ; then
+#     if [ -f "$SCALA_HOME/lib/scala-partest.jar" ] ; then
+#         for ext in "$SCALA_HOME"/lib/* ; do
+#             if [ -z "$PARTEST_CLASSPATH" ] ; then
+#                 PARTEST_CLASSPATH="$ext"
+#             else
+#                 PARTEST_CLASSPATH="$PARTEST_CLASSPATH:$ext"
+#             fi
+#         done
+#     elif [ -f "$SCALA_HOME/build/pack/lib/scala-partest.jar" ] ; then
+#         for lib in `echo "scala-partest scala-library scala-parser-combinators scala-xml scala-reflect scala-compiler diffutils"`; do
+#             ext="$SCALA_HOME/build/pack/lib/$lib.jar"
+#             if [ -z "$PARTEST_CLASSPATH" ] ; then
+#                 PARTEST_CLASSPATH="$ext"
+#             else
+#                 PARTEST_CLASSPATH="$PARTEST_CLASSPATH:$ext"
+#             fi
+#         done
+#     fi
+# fi
 
 # Locate a javac command
 # Try: JAVA_HOME, sibling to specific JAVACMD, or PATH
@@ -101,7 +112,7 @@ if $cygwin; then
         JAVAC_CMD=`cygpath --$format "$JAVAC_CMD"`
     fi
     SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
-    EXT_CLASSPATH=`cygpath --path --$format "$EXT_CLASSPATH"`
+    PARTEST_CLASSPATH=`cygpath --path --$format "$PARTEST_CLASSPATH"`
 fi
 
 # last arg wins, so if JAVA_OPTS already contains -Xmx or -Xms the
@@ -123,7 +134,7 @@ fi
 # be quoted: otherwise an empty string will appear as a command line
 # argument, and java will think that is the program to run.
 "${JAVACMD:=java}" \
-  $JAVA_OPTS -cp "$EXT_CLASSPATH" \
+  $JAVA_OPTS -cp "$PARTEST_CLASSPATH" \
   ${partestDebugStr} \
   ${color_opts} \
   -Dfile.encoding=UTF-8 \
@@ -132,4 +143,4 @@ fi
   -Dpartest.java_opts="${JAVA_OPTS}" \
   -Dpartest.scalac_opts="${SCALAC_OPTS}" \
   -Dpartest.javac_cmd="${JAVAC_CMD}" \
-  scala.tools.partest.nest.NestRunner "$@"
+  scala.tools.partest.nest.ConsoleRunner "$@"
