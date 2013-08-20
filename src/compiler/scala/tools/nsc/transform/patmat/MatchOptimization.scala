@@ -210,7 +210,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
 //  }
 
   //// SWITCHES -- TODO: operate on Tests rather than TreeMakers
-  trait SwitchEmission extends TreeMakers with OptimizedMatchMonadInterface {
+  trait SwitchEmission extends TreeMakers with MatchMonadInterface {
     import treeInfo.isGuardedCase
 
     abstract class SwitchMaker {

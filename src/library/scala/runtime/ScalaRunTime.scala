@@ -12,7 +12,7 @@ package runtime
 import scala.collection.{ Seq, IndexedSeq, TraversableView, AbstractIterator }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ StringLike, NumericRange, List, Stream, Nil, :: }
-import scala.collection.generic.{ Sorted }
+import scala.collection.generic.{ Sorted, IsTraversableLike }
 import scala.reflect.{ ClassTag, classTag }
 import scala.util.control.ControlThrowable
 import java.lang.{ Class => jClass }
@@ -47,6 +47,10 @@ object ScalaRunTime {
     }
     names.toSet
   }
+
+  // A helper method to make my life in the pattern matcher a lot easier.
+  def drop[Repr](coll: Repr, num: Int)(implicit traversable: IsTraversableLike[Repr]): Repr =
+    traversable conversion coll drop num
 
   /** Return the class object representing an array with element class `clazz`.
    */

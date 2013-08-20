@@ -250,6 +250,13 @@ trait Definitions extends api.StandardDefinitions {
       || tp =:= AnyRefTpe
     )
 
+    def hasMultipleNonImplicitParamLists(member: Symbol): Boolean = hasMultipleNonImplicitParamLists(member.info)
+    def hasMultipleNonImplicitParamLists(info: Type): Boolean = info match {
+      case PolyType(_, restpe)                                   => hasMultipleNonImplicitParamLists(restpe)
+      case MethodType(_, MethodType(p :: _, _)) if !p.isImplicit => true
+      case _                                                     => false
+    }
+
     private def fixupAsAnyTrait(tpe: Type): Type = tpe match {
       case ClassInfoType(parents, decls, clazz) =>
         if (parents.head.typeSymbol == AnyClass) tpe
@@ -381,6 +388,7 @@ trait Definitions extends api.StandardDefinitions {
       def arrayCloneMethod = getMemberMethod(ScalaRunTimeModule, nme.array_clone)
       def ensureAccessibleMethod = getMemberMethod(ScalaRunTimeModule, nme.ensureAccessible)
       def arrayClassMethod = getMemberMethod(ScalaRunTimeModule, nme.arrayClass)
+      def traversableDropMethod = getMemberMethod(ScalaRunTimeModule, nme.drop)
 
     // classes with special meanings
     lazy val StringAddClass             = requiredClass[scala.runtime.StringAdd]
@@ -420,6 +428,15 @@ trait Definitions extends api.StandardDefinitions {
     def isVarArgsList(params: Seq[Symbol])  = params.nonEmpty && isRepeatedParamType(params.last.tpe)
     def isVarArgTypes(formals: Seq[Type])   = formals.nonEmpty && isRepeatedParamType(formals.last)
 
+    def firstParamType(tpe: Type): Type = tpe.paramTypes match {
+      case p :: _ => p
+      case _      => NoType
+    }
+    def isImplicitParamss(paramss: List[List[Symbol]]) = paramss match {
+      case (p :: _) :: _ => p.isImplicit
+      case _             => false
+    }
+
     def hasRepeatedParam(tp: Type): Boolean = tp match {
       case MethodType(formals, restpe) => isScalaVarArgs(formals) || hasRepeatedParam(restpe)
       case PolyType(_, restpe)         => hasRepeatedParam(restpe)
@@ -427,7 +444,12 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     // wrapping and unwrapping
-    def dropByName(tp: Type): Type                           = elementExtract(ByNameParamClass, tp) orElse tp
+    def dropByName(tp: Type): Type = elementExtract(ByNameParamClass, tp) orElse tp
+    def dropRepeated(tp: Type): Type = (
+      if (isJavaRepeatedParamType(tp)) elementExtract(JavaRepeatedParamClass, tp) orElse tp
+      else if (isScalaRepeatedParamType(tp)) elementExtract(RepeatedParamClass, tp) orElse tp
+      else tp
+    )
     def repeatedToSingle(tp: Type): Type                     = elementExtract(RepeatedParamClass, tp) orElse tp
     def repeatedToSeq(tp: Type): Type                        = elementTransform(RepeatedParamClass, tp)(seqType) orElse tp
     def seqToRepeated(tp: Type): Type                        = elementTransform(SeqClass, tp)(scalaRepeatedType) orElse tp
@@ -656,21 +678,23 @@ trait Definitions extends api.StandardDefinitions {
       def isExactProductType(tp: Type): Boolean = isProductNSymbol(tp.typeSymbol)
 
     /** if tpe <: ProductN[T1,...,TN], returns List(T1,...,TN) else Nil */
-    def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNSymbol match {
+    @deprecated("No longer used", "2.11.0") def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNSymbol match {
       case Some(x)  => tpe.baseType(x).typeArgs
       case _        => Nil
     }
+
+    @deprecated("No longer used", "2.11.0") def unapplyUnwrap(tpe:Type) = tpe.finalResultType.dealiasWiden match {
+      case RefinedType(p :: _, _) => p.dealiasWiden
+      case tp                     => tp
+    }
+
+    def getterMemberTypes(tpe: Type, getters: List[Symbol]): List[Type] =
+      getters map (m => dropNullaryMethod(tpe memberType m))
 
     def dropNullaryMethod(tp: Type) = tp match {
       case NullaryMethodType(restpe) => restpe
       case _                         => tp
     }
-
-    def unapplyUnwrap(tpe:Type) = tpe.finalResultType.dealiasWiden match {
-      case RefinedType(p :: _, _) => p.dealiasWiden
-      case tp                     => tp
-    }
-
     def abstractFunctionForFunctionType(tp: Type) = {
       assert(isFunctionType(tp), tp)
       abstractFunctionType(tp.typeArgs.init, tp.typeArgs.last)
@@ -692,6 +716,71 @@ trait Definitions extends api.StandardDefinitions {
     def optionType(tp: Type)         = appliedType(OptionClass, tp)
     def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg)
     def seqType(arg: Type)           = appliedType(SeqClass, arg)
+
+    // FYI the long clunky name is because it's really hard to put "get" into the
+    // name of a method without it sounding like the method "get"s something, whereas
+    // this method is about a type member which just happens to be named get.
+    def typeOfMemberNamedGet(tp: Type)       = resultOfMatchingMethod(tp, nme.get)()
+    def typeOfMemberNamedHead(tp: Type)      = resultOfMatchingMethod(tp, nme.head)()
+    def typeOfMemberNamedApply(tp: Type)     = resultOfMatchingMethod(tp, nme.apply)(IntTpe)
+    def typeOfMemberNamedDrop(tp: Type)      = resultOfMatchingMethod(tp, nme.drop)(IntTpe)
+    def typeOfMemberNamedGetOrSelf(tp: Type) = typeOfMemberNamedGet(tp) orElse tp
+    def typesOfSelectors(tp: Type)           = getterMemberTypes(tp, productSelectors(tp))
+    def typesOfCaseAccessors(tp: Type)       = getterMemberTypes(tp, tp.typeSymbol.caseFieldAccessors)
+
+    /** If this is a case class, the case field accessors (which may be an empty list.)
+     *  Otherwise, if there are any product selectors, that list.
+     *  Otherwise, a list containing only the type itself.
+     */
+    def typesOfSelectorsOrSelf(tp: Type): List[Type] = (
+      if (tp.typeSymbol.isCase)
+        typesOfCaseAccessors(tp)
+      else typesOfSelectors(tp) match {
+        case Nil => tp :: Nil
+        case tps => tps
+      }
+    )
+
+    /** If the given type has one or more product selectors, the type of the last one.
+     *  Otherwise, the type itself.
+     */
+    def typeOfLastSelectorOrSelf(tp: Type) = typesOfSelectorsOrSelf(tp).last
+
+    def elementTypeOfLastSelectorOrSelf(tp: Type) = {
+      val last = typeOfLastSelectorOrSelf(tp)
+      ( typeOfMemberNamedHead(last)
+          orElse typeOfMemberNamedApply(last)
+          orElse elementType(ArrayClass, last)
+      )
+    }
+
+    /** Returns the method symbols for members _1, _2, ..., _N
+     *  which exist in the given type.
+     */
+    def productSelectors(tpe: Type): List[Symbol] = {
+      def loop(n: Int): List[Symbol] = tpe member TermName("_" + n) match {
+        case NoSymbol                => Nil
+        case m if m.paramss.nonEmpty => Nil
+        case m                       => m :: loop(n + 1)
+      }
+      loop(1)
+    }
+
+    /** If `tp` has a term member `name`, the first parameter list of which
+     *  matches `paramTypes`, and which either has no further parameter
+     *  lists or only an implicit one, then the result type of the matching
+     *  method. Otherwise, NoType.
+     */
+    def resultOfMatchingMethod(tp: Type, name: TermName)(paramTypes: Type*): Type = {
+      def matchesParams(member: Symbol) = member.paramss match {
+        case Nil        => paramTypes.isEmpty
+        case ps :: rest => (rest.isEmpty || isImplicitParamss(rest)) && (ps corresponds paramTypes)(_.tpe =:= _)
+      }
+      tp member name filter matchesParams match {
+        case NoSymbol => NoType
+        case member   => (tp memberType member).finalResultType
+      }
+    }
 
     def ClassType(arg: Type) = if (phase.erasedTypes) ClassClass.tpe else appliedType(ClassClass, arg)
 

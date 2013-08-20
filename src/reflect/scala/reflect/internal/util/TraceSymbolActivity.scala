@@ -92,7 +92,7 @@ trait TraceSymbolActivity {
     while (ph != NoPhase && ph.name != "erasure") {
       ph = ph.prev
     }
-    ph
+    if (ph eq NoPhase) phase else ph
   }
   private def runBeforeErasure[T](body: => T): T = enteringPhase(findErasurePhase)(body)
 

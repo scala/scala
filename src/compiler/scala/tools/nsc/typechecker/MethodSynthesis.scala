@@ -25,7 +25,7 @@ trait MethodSynthesis {
     type TT[T]  = ru.TypeTag[T]
     type CT[T] = ClassTag[T]
 
-    def ValOrDefDef(sym: Symbol, body: Tree) =
+    def newValOrDefDef(sym: Symbol, body: Tree) =
       if (sym.isLazy) ValDef(sym, body)
       else DefDef(sym, body)
 
@@ -67,7 +67,7 @@ trait MethodSynthesis {
     }
 
     private def finishMethod(method: Symbol, f: Symbol => Tree): Tree =
-      localTyper typed ValOrDefDef(method, f(method))
+      localTyper typed newValOrDefDef(method, f(method))
 
     private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
       val name1 = name.toTermName

@@ -659,14 +659,14 @@ abstract class ClassfileParser {
                 }
                 accept('>')
                 assert(xs.length > 0, tp)
-                logResult("new existential")(newExistentialType(existentials.toList, typeRef(pre, classSym, xs.toList)))
+                debuglogResult("new existential")(newExistentialType(existentials.toList, typeRef(pre, classSym, xs.toList)))
               }
               // isMonomorphicType is false if the info is incomplete, as it usually is here
               // so have to check unsafeTypeParams.isEmpty before worrying about raw type case below,
               // or we'll create a boatload of needless existentials.
               else if (classSym.isMonomorphicType || classSym.unsafeTypeParams.isEmpty) tp
               // raw type - existentially quantify all type parameters
-              else logResult(s"raw type from $classSym")(unsafeClassExistentialType(classSym))
+              else debuglogResult(s"raw type from $classSym")(unsafeClassExistentialType(classSym))
             case tp =>
               assert(sig.charAt(index) != '<', s"sig=$sig, index=$index, tp=$tp")
               tp

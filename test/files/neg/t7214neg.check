@@ -1,0 +1,7 @@
+t7214neg.scala:28: error: wrong number of patterns for object Extractor offering Any: expected 1, found 0
+    case Extractor() =>
+         ^
+t7214neg.scala:28: error: wrong number of patterns for object Extractor offering Any: expected 1, found 0
+    case Extractor() =>
+                  ^
+two errors found
