@@ -334,8 +334,7 @@ abstract class TreeGen extends macros.TreeBuilder {
         ValDef(mods withAnnotations vd.mods.annotations, vd.name, vd.tpt.duplicate, vd.rhs.duplicate)
       }
     }
-    val (edefs, rest) = body span treeInfo.isEarlyDef
-    val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
+    val (evdefs, rest) = body span treeInfo.isEarlyDef
     val gvdefs = evdefs map {
       case vdef @ ValDef(_, _, tpt, _) =>
         copyValDef(vdef)(
@@ -376,6 +375,6 @@ abstract class TreeGen extends macros.TreeBuilder {
     // Field definitions for the class - remove defaults.
     val fieldDefs = vparamss.flatten map (vd => copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree))
 
-    global.Template(parents, self, gvdefs ::: fieldDefs ::: constrs ::: etdefs ::: rest)
+    global.Template(parents, self, gvdefs ::: fieldDefs ::: constrs ::: rest)
   }
 }

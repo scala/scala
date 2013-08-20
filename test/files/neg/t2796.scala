@@ -7,11 +7,6 @@ trait T1 extends {
   val abstractVal = "T1.abstractVal" // warn
 } with Base
 
-trait T2 extends {
-  type X = Int                       // okay
-} with Base
-
-
 class C1 extends {
   val abstractVal = "C1.abstractVal" // okay
 } with Base
