@@ -28,6 +28,7 @@ class Colors(enabled: => Boolean) {
 object NestUI {
   private val testNum = new java.util.concurrent.atomic.AtomicInteger(1)
   @volatile private var testNumberFmt = "%3d"
+  // @volatile private var testNumber = 1
   private def testNumber = testNumberFmt format testNum.getAndIncrement()
   def resetTestNumber(max: Int = -1) {
     testNum set 1

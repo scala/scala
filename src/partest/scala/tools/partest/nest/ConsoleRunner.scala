@@ -93,6 +93,11 @@ class ConsoleRunner(argstr: String) extends {
   }
 
   def run(): Unit = {
+    if (optDebug) NestUI.setDebug()
+    if (optVerbose) NestUI.setVerbose()
+    if (optTerse) NestUI.setTerse()
+    if (optShowDiff) NestUI.setDiffOnFail()
+
     // Early return on no args, version, or invalid args
     if (optVersion) return echo(versionMsg)
     if (optHelp) return NestUI.usage()
@@ -179,7 +184,7 @@ class ConsoleRunner(argstr: String) extends {
     issueSummaryReport()
     System exit ( if (isSuccess) 0 else 1 )
   }
-
+  
   run()
 }
 
