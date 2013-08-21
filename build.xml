@@ -251,7 +251,10 @@ TODO:
 
 
       <artifact:dependencies pathId="partest.classpath" filesetId="partest.fileset" versionsId="partest.versions">
+        <!-- to facilitate building and publishing partest locally -->
         <localRepository path="${user.home}/.m2/repository"/>
+        <!-- so we don't have to wait for artifacts to synch to maven central: -->
+        <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-partest_${scala.binary.version}" version="${partest.version.number}" />
       </artifact:dependencies>
       <copy-deps fileset.prefix="partest" out="partest"/>
