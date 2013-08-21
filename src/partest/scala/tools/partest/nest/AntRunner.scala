@@ -23,6 +23,13 @@ class AntRunner extends DirectRunner {
     var LATEST_ACTORS: String           = _
     val testRootPath: String            = "test"
     val testRootDir: Directory          = Directory(testRootPath)
+
+    /* documenting that the build supplies the optimise
+     * flag as scalacOpts arg to the task, which updates SCALAC_OPTS.
+    import scala.tools.nsc.Properties.propOrNone
+    for (more <- propOrNone("scalac.args.optimise"))
+      SCALAC_OPTS = SCALAC_OPTS :+ more
+     */
   }
 
   def reflectiveRunTestsForFiles(kindFiles: Array[File], kind: String): List[TestState] =

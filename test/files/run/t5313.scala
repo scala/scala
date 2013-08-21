@@ -48,7 +48,7 @@ object Test extends IcodeTest {
 
   override def show() {
     val storeLocal = "STORE_LOCAL"
-    val lines1 = collectIcode("") filter (_ contains storeLocal) map (x => x.drop(x.indexOf(storeLocal)))
+    val lines1 = collectIcode() filter (_ contains storeLocal) map (x => x.drop(x.indexOf(storeLocal)))
     println(lines1 mkString "\n")
   }
 }
