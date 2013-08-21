@@ -158,7 +158,6 @@ MAIN DISTRIBUTION PACKAGING
     <mvn-copy-lib mvn.artifact.name="scala-compiler"/>
     <mvn-copy-lib mvn.artifact.name="scala-swing"/>
     <mvn-copy-lib mvn.artifact.name="scala-actors"/>
-    <mvn-copy-lib mvn.artifact.name="scala-partest"/>
     <mvn-copy-lib mvn.artifact.name="scalap"/>
   </target>
 
@@ -208,10 +207,6 @@ MAIN DISTRIBUTION PACKAGING
     </jar>
     <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scalap/scalap-docs.jar"
          basedir="${build-docs.dir}/scalap">
-      <include name="**/*"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-partest/scala-partest-docs.jar"
-         basedir="${build-docs.dir}/partest">
       <include name="**/*"/>
     </jar>
     <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/plugins/continuations/continuations-docs.jar"
