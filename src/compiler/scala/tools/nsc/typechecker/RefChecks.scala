@@ -1419,6 +1419,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
     private def applyRefchecksToAnnotations(tree: Tree): Unit = {
       def applyChecks(annots: List[AnnotationInfo]) = {
+        annots foreach (annot => checkCompileTimeOnly(annot.atp.typeSymbol, annot.pos))
         checkAnnotations(annots map (_.atp), tree)
         transformTrees(annots flatMap (_.args))
       }
@@ -1653,6 +1654,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             tree
 
           case Ident(name) =>
+            checkCompileTimeOnly(tree.symbol, tree.pos)
             transformCaseApply(tree,
               if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
                 assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
