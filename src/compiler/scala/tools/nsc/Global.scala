@@ -763,6 +763,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     phaseHelp("new flags", elliptically = false, fmt)
   }
 
+  /** Emit a verbose phase table.
+   *  The table includes the phase id in the current assembly,
+   *  or "oo" to indicate a skipped phase, or "xx" to indicate
+   *  a disabled phase.
+   *
+   *  @param title descriptive header
+   *  @param elliptically whether to truncate the description with an ellipsis (...)
+   *  @param describe how to describe a component
+   */
   def phaseHelp(title: String, elliptically: Boolean, describe: SubComponent => String) = {
     val Limit   = 16    // phase names should not be absurdly long
     val MaxCol  = 80    // because some of us edit on green screens

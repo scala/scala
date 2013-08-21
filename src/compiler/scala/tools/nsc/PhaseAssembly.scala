@@ -150,7 +150,7 @@ trait PhaseAssembly {
           } else if (sanity.length > 1) {
             dump("phase-order")
             val following = (sanity map (_.frm.phasename)).sorted mkString ","
-            throw new FatalError(s"Phase ${sanity.head.to.phasename} has too many followers: $following; created phase-order.dot")
+            throw new FatalError(s"Multiple phases want to run right after ${sanity.head.to.phasename}; followers: $following; created phase-order.dot")
           } else {
 
             val promote = hl.to.before.filter(e => (!e.hard))
