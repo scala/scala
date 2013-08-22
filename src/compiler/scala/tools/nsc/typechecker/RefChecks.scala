@@ -1376,6 +1376,16 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       member.typeParams.map(_.info.bounds.hi.widen) foreach checkAccessibilityOfType
     }
 
+    private def checkByNameRightAssociativeDef(tree: DefDef) {
+      tree match {
+        case DefDef(_, name, _, params :: _, _, _) =>
+          if (settings.lint && !treeInfo.isLeftAssoc(name.decodedName) && params.exists(p => isByName(p.symbol)))
+            unit.warning(tree.pos,
+              "by-name parameters will be evaluated eagerly when called as a right-associative infix operator. For more details, see SI-1980.")
+        case _ =>
+      }
+    }
+
     /** Check that a deprecated val or def does not override a
       * concrete, non-deprecated method.  If it does, then
       * deprecation is meaningless.
@@ -1599,6 +1609,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             if (settings.warnInaccessible) {
               if (!sym.isConstructor && !sym.isEffectivelyFinal && !sym.isSynthetic)
                 checkAccessibilityOfReferencedTypes(tree)
+            }
+            tree match {
+              case dd: DefDef => checkByNameRightAssociativeDef(dd)
+              case _          =>
             }
             tree
 

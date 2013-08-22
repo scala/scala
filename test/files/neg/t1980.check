@@ -1,0 +1,12 @@
+t1980.scala:2: warning: by-name parameters will be evaluated eagerly when called as a right-associative infix operator. For more details, see SI-1980.
+  def op1_:(x: => Any) = ()                 // warn
+      ^
+t1980.scala:3: warning: by-name parameters will be evaluated eagerly when called as a right-associative infix operator. For more details, see SI-1980.
+  def op2_:(x: Any, y: => Any) = ()         // warn
+      ^
+t1980.scala:4: warning: by-name parameters will be evaluated eagerly when called as a right-associative infix operator. For more details, see SI-1980.
+  def op3_:(x: Any, y: => Any)(a: Any) = () // warn
+      ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found
