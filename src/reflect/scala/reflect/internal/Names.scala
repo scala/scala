@@ -28,7 +28,7 @@ trait Names extends api.Names {
   //
   // Discussion: https://groups.google.com/forum/#!search/biased$20scala-internals/scala-internals/0cYB7SkJ-nM/47MLhsgw8jwJ
   protected def synchronizeNames: Boolean = false
-  private val nameLock: Object = new {}
+  private val nameLock: Object = new Object
 
   /** Memory to store all names sequentially. */
   var chrs: Array[Char] = new Array[Char](NAME_SIZE)
@@ -76,18 +76,19 @@ trait Names extends api.Names {
   }
 
   /** Create a term name from the characters in cs[offset..offset+len-1]. */
-  def newTermName(cs: Array[Char], offset: Int, len: Int): TermName =
+  final def newTermName(cs: Array[Char], offset: Int, len: Int): TermName =
     newTermName(cs, offset, len, cachedString = null)
 
-  def newTermName(cs: Array[Char]): TermName = newTermName(cs, 0, cs.length)
-  def newTypeName(cs: Array[Char]): TypeName = newTypeName(cs, 0, cs.length)
+  final def newTermName(cs: Array[Char]): TermName = newTermName(cs, 0, cs.length)
+
+  final def newTypeName(cs: Array[Char]): TypeName = newTypeName(cs, 0, cs.length)
 
   /** Create a term name from the characters in cs[offset..offset+len-1].
    *  TODO - have a mode where name validation is performed at creation time
    *  (e.g. if a name has the string "$class" in it, then fail if that
    *  string is not at the very end.)
    */
-  protected def newTermName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TermName = {
+  final def newTermName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TermName = {
     def body = {
       val h = hashValue(cs, offset, len) & HASH_MASK
       var n = termHashtable(h)
@@ -108,33 +109,35 @@ trait Names extends api.Names {
     if (synchronizeNames) nameLock.synchronized(body) else body
   }
 
-  protected def newTypeName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TypeName =
+  final def newTypeName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TypeName =
     newTermName(cs, offset, len, cachedString).toTypeName
 
   /** Create a term name from string. */
+  @deprecatedOverriding("To synchronize, use `override def synchronizeNames = true`", "2.11.0") // overriden in https://github.com/scala-ide/scala-ide/blob/master/org.scala-ide.sdt.core/src/scala/tools/eclipse/ScalaPresentationCompiler.scala
   def newTermName(s: String): TermName = newTermName(s.toCharArray(), 0, s.length(), null)
 
   /** Create a type name from string. */
+  @deprecatedOverriding("To synchronize, use `override def synchronizeNames = true`", "2.11.0") // overriden in https://github.com/scala-ide/scala-ide/blob/master/org.scala-ide.sdt.core/src/scala/tools/eclipse/ScalaPresentationCompiler.scala
   def newTypeName(s: String): TypeName = newTermName(s).toTypeName
 
   /** Create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1]. */
-  def newTermName(bs: Array[Byte], offset: Int, len: Int): TermName = {
+  final def newTermName(bs: Array[Byte], offset: Int, len: Int): TermName = {
     val chars = Codec.fromUTF8(bs, offset, len)
     newTermName(chars, 0, chars.length)
   }
 
-  def newTermNameCached(s: String): TermName =
+  final def newTermNameCached(s: String): TermName =
     newTermName(s.toCharArray(), 0, s.length(), cachedString = s)
 
-  def newTypeNameCached(s: String): TypeName =
+  final def newTypeNameCached(s: String): TypeName =
     newTypeName(s.toCharArray(), 0, s.length(), cachedString = s)
 
   /** Create a type name from the characters in cs[offset..offset+len-1]. */
-  def newTypeName(cs: Array[Char], offset: Int, len: Int): TypeName =
+  final def newTypeName(cs: Array[Char], offset: Int, len: Int): TypeName =
     newTermName(cs, offset, len, cachedString = null).toTypeName
 
   /** Create a type name from the UTF8 encoded bytes in bs[offset..offset+len-1]. */
-  def newTypeName(bs: Array[Byte], offset: Int, len: Int): TypeName =
+  final def newTypeName(bs: Array[Byte], offset: Int, len: Int): TypeName =
     newTermName(bs, offset, len).toTypeName
 
   /**
