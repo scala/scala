@@ -171,7 +171,7 @@ trait ProcessBuilder extends Source with Sink {
     * a Stream that blocks when lines are not available but the process has not
     * completed.  Standard error is sent to the provided ProcessLogger.  If the
     * process exits with a non-zero value, the Stream will provide all lines up
-    * to termination but will not throw an exception.
+    * to termination and then throw an exception.
     */
   def lines(log: ProcessLogger): Stream[String]
 
