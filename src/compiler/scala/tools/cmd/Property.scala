@@ -57,8 +57,12 @@ trait Property extends Reference {
   def loadProperties(file: File): Properties  =
     returning(new Properties)(_ load new FileInputStream(file.path))
 
-  def systemPropertiesToOptions: List[String] =
-    propertiesToOptions(System.getProperties)
+  def systemPropertiesToOptions: List[String] = {
+    val ps  = new scala.sys.SystemProperties
+    val all = for (n <- ps.names; v <- ps get n) yield (n -> v)
+    propertiesToOptions(all.toList)
+    //propertiesToOptions(System.getProperties) // prone to concurrent modification
+  }
 
   def propertiesToOptions(file: File): List[String] =
     propertiesToOptions(loadProperties(file))
