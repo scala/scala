@@ -723,6 +723,14 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       </span>
       <span class="symbol">
         {
+          mbr match {
+            case nte: NonTemplateMemberEntity if nte.isUseCase =>
+              nte.useCaseOf.flatMap(_.comment).flatMap(_.canonical).map { canonical =>
+                <span class="canonical" title="Canonical / Searchable Name">{canonical}</span>
+              }.getOrElse(NodeSeq.Empty)
+            case _ => NodeSeq.Empty
+          }
+        }{
           val nameClass =
             if (mbr.isImplicitlyInherited)
               if (mbr.isShadowedOrAmbiguousImplicit)
@@ -734,21 +742,10 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
           val nameHtml = {
             val value = if (mbr.isConstructor) tpl.name else mbr.name
-            val span = if (mbr.deprecation.isDefined)
+            if (mbr.deprecation.isDefined)
               <span class={ nameClass + " deprecated"} title={"Deprecated: "+bodyToStr(mbr.deprecation.get)}>{ value }</span>
             else
               <span class={ nameClass }>{ value }</span>
-            val encoded = scala.reflect.NameTransformer.encode(value)
-            if (encoded != value) {
-              span % new UnprefixedAttribute("title",
-                                             "gt4s: " + encoded +
-                                             span.attribute("title").map(
-                                               node => ". " + node
-                                             ).getOrElse(""),
-                                             scala.xml.Null)
-            } else {
-              span
-            }
           }
           if (!nameLink.isEmpty)
             <a href={nameLink}>{nameHtml}</a>

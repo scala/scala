@@ -255,6 +255,8 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *  right hand operand. The element type of the $coll is the most specific superclass encompassing
    *  the element types of the two operands.
    *
+   *  @canonical    addCollection
+   *
    *  @param that   the traversable to append.
    *  @tparam B     the element type of the returned collection.
    *  @tparam That  $thatinfo

@@ -173,6 +173,8 @@ trait TraversableLike[+A, +Repr] extends Any
    *  @return       a new collection of type `That` which contains all elements
    *                of this $coll followed by all elements of `that`.
    *
+   *  @canonical addOtherCollection
+   *
    *  @usecase def ++:[B](that: TraversableOnce[B]): $Coll[B]
    *    @inheritdoc
    *

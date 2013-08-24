@@ -344,6 +344,14 @@ div.members > ol > li:last-child {
   color: darkseagreen;
 }
 
+.signature .symbol .canonical {
+  color: #ccc;
+}
+
+.signature .symbol .canonical:after {
+  content: " ";
+}
+
 .signature .symbol .params > .implicit {
   font-style: italic;
 }
