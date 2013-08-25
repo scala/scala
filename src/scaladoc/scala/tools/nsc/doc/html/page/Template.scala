@@ -723,12 +723,19 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       </span>
       <span class="symbol">
         {
-          mbr match {
+          val maybeCanonical: Option[String] = mbr match {
             case nte: NonTemplateMemberEntity if nte.isUseCase =>
-              nte.useCaseOf.flatMap(_.comment).flatMap(_.canonical).map { canonical =>
-                <span class="canonical" title="Canonical / Searchable Name">{canonical}</span>
-              }.getOrElse(NodeSeq.Empty)
-            case _ => NodeSeq.Empty
+              nte.useCaseOf.flatMap(_.comment).flatMap(_.canonical)
+            case _: MemberEntity if mbr.comment.flatMap(_.canonical).isDefined =>
+              mbr.comment.flatMap(_.canonical)
+            case _ =>
+              None
+          }
+          maybeCanonical match {
+            case Some(canonical) =>
+              <span class="canonical" title="Canonical / Searchable Name">{canonical}</span>
+            case _ =>
+              NodeSeq.Empty
           }
         }{
           val nameClass =
