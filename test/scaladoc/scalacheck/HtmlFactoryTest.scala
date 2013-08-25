@@ -204,18 +204,6 @@ object Test extends Properties("HtmlFactory") {
     createTemplate("Trac4180.scala") != None
   }
 
-  property("Trac #4372") = {
-    createTemplate("Trac4372.scala") match {
-      case node: scala.xml.Node => {
-        val html = node.toString
-        html.contains("<span title=\"gt4s: $plus$colon\" class=\"name\">+:</span>") &&
-          html.contains("<span title=\"gt4s: $minus$colon\" class=\"name\">-:</span>") &&
-            html.contains("""<span class="params">(<span name="n">n: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>""")
-      }
-      case _ => false
-    }
-  }
-
   property("Trac #4374 - public") = {
     val files = createTemplates("Trac4374.scala")
     files("WithPublic.html") match {
@@ -671,12 +659,6 @@ object Test extends Properties("HtmlFactory") {
       case Some(node: scala.xml.Node) => {
         property("implicit convertion") =
           node.toString contains "<span class=\"modifier\">implicit </span>"
-
-        property("gt4s") =
-          node.toString contains "title=\"gt4s: $colon$colon\""
-
-        property("gt4s of a deprecated method") =
-          node.toString contains "title=\"gt4s: $colon$colon$colon$colon. Deprecated: "
         true
       }
       case _ => false
@@ -699,4 +681,21 @@ object Test extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  {
+    val files = createTemplates("canonical.scala")
+
+    property("Foo") = files.get("com/example/p1/Foo.html") match {
+      case Some(node: scala.xml.Node) =>
+        node.toString contains """<span class="canonical" title="Canonical / Searchable Name">addSomething</span>"""
+      case _ => false
+    }
+
+    property("Bar") = files.get("com/example/p1/Bar.html") match {
+      case Some(node: scala.xml.Node) =>
+        node.toString contains """<span class="canonical" title="Canonical / Searchable Name">addSomething</span>"""
+      case _ => false
+    }
+  }
+
 }
