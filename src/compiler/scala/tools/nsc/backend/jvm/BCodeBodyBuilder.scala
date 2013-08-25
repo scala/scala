@@ -858,12 +858,11 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     def genLoadModule(tree: Tree): BType = {
-      // Working around SI-5604.  Rather than failing the compile when we see a package here, check if there's a package object.
       val module = (
         if (!tree.symbol.isPackageClass) tree.symbol
         else tree.symbol.info.member(nme.PACKAGE) match {
           case NoSymbol => abort(s"Cannot use package as value: $tree") ; NoSymbol
-          case s        => devWarning("Bug: found package class where package object expected.  Converting.") ; s.moduleClass
+          case s        => abort("SI-5604: found package class where package object expected.  Converting.")
         }
       )
       lineNumber(tree)
