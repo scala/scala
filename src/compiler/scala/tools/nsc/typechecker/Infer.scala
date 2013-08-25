@@ -159,7 +159,10 @@ trait Infer extends Checkable {
    *  This method seems to be performance critical.
    */
   def normalize(tp: Type): Type = tp match {
-    case PolyType(_, restpe)                                     => logResult(s"Normalizing $tp in infer")(normalize(restpe))
+    case PolyType(_, restpe) =>
+      logResult(sm"""|Normalizing PolyType in infer:
+                     |  was: $restpe
+                     |  now""")(normalize(restpe))
     case mt @ MethodType(_, restpe) if mt.isImplicit             => normalize(restpe)
     case mt @ MethodType(_, restpe) if !mt.isDependentMethodType => functionType(mt.paramTypes, normalize(restpe))
     case NullaryMethodType(restpe)                               => normalize(restpe)
@@ -1095,16 +1098,14 @@ trait Infer extends Checkable {
       val TypeBounds(lo0, hi0)      = tparam.info.bounds
       val tb @ TypeBounds(lo1, hi1) = instBounds(tvar)
       val enclCase                  = context.enclosingCaseDef
+      def enclCase_s                = enclCase.toString.replaceAll("\\n", " ").take(60)
 
-      log("\n" + sm"""
-        |-----
-        |  enclCase: ${enclCase.tree}
-        |     saved: ${enclCase.savedTypeBounds}
-        |    tparam: ${tparam.shortSymbolClass}
-        |     def_s: ${tparam.defString}
-        |    seen_s: ${tparam.defStringSeenAs(tb)}
-        |-----
-        """.trim)
+      if (enclCase.savedTypeBounds.nonEmpty) log(
+        sm"""|instantiateTypeVar with nonEmpty saved type bounds {
+             |  enclosing  $enclCase_s
+             |      saved  ${enclCase.savedTypeBounds}
+             |     tparam  ${tparam.shortSymbolClass} ${tparam.defString}
+             |}""")
 
       if (lo1 <:< hi1) {
         if (lo1 <:< lo0 && hi0 <:< hi1) // bounds unimproved

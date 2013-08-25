@@ -800,7 +800,7 @@ trait Types
       case TypeRef(_, sym, args) =>
         val that1 = existentialAbstraction(args map (_.typeSymbol), that)
         (that ne that1) && (this <:< that1) && {
-          log(s"$this.matchesPattern($that) depended on discarding args and testing <:< $that1")
+          debuglog(s"$this.matchesPattern($that) depended on discarding args and testing <:< $that1")
           true
         }
       case _ =>

@@ -17,12 +17,11 @@ private[internal] trait TypeMaps {
     *  so it is no longer carries the too-stealthy name "deAlias".
     */
   object normalizeAliases extends TypeMap {
-    def apply(tp: Type): Type = tp match {
-      case TypeRef(_, sym, _) if sym.isAliasType =>
-        def msg = if (tp.isHigherKinded) s"Normalizing type alias function $tp" else s"Dealiasing type alias $tp"
-        mapOver(logResult(msg)(tp.normalize))
-      case _                                     => mapOver(tp)
-    }
+    def apply(tp: Type): Type = mapOver(tp match {
+      case TypeRef(_, sym, _) if sym.isAliasType && tp.isHigherKinded => logResult(s"Normalized type alias function $tp")(tp.normalize)
+      case TypeRef(_, sym, _) if sym.isAliasType                      => tp.normalize
+      case tp                                                         => tp
+    })
   }
 
   /** Remove any occurrence of type <singleton> from this type and its parents */
@@ -944,7 +943,7 @@ private[internal] trait TypeMaps {
     }
   }
 
-  /** A map to convert every occurrence of a type variable to a wildcard type. */
+  /** A map to convert each occurrence of a type variable to its origin. */
   object typeVarToOriginMap extends TypeMap {
     def apply(tp: Type): Type = tp match {
       case TypeVar(origin, _) => origin
