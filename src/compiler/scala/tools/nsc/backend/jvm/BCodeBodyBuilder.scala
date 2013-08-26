@@ -36,7 +36,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
      *  it is the host class; otherwise the symbol's owner.
      */
     def findHostClass(selector: Type, sym: Symbol) = selector member sym.name match {
-      case NoSymbol   => log(s"Rejecting $selector as host class for $sym") ; sym.owner
+      case NoSymbol   => debuglog(s"Rejecting $selector as host class for $sym") ; sym.owner
       case _          => selector.typeSymbol
     }
 
@@ -330,7 +330,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val sym = tree.symbol
           generatedType = symInfoTK(sym)
           val hostClass = findHostClass(qualifier.tpe, sym)
-          log(s"Host class of $sym with qual $qualifier (${qualifier.tpe}) is $hostClass")
+          debuglog(s"Host class of $sym with qual $qualifier (${qualifier.tpe}) is $hostClass")
           val qualSafeToElide = treeInfo isQualifierSafeToElide qualifier
 
           def genLoadQualUnlessElidable() { if (!qualSafeToElide) { genLoadQualifier(tree) } }

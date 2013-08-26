@@ -1026,7 +1026,7 @@ trait Contexts { self: Analyzer =>
         (scope lookupUnshadowedEntries name filter (e => qualifies(e.sym))).toList
 
       def newOverloaded(owner: Symbol, pre: Type, entries: List[ScopeEntry]) =
-        logResult(s"!!! lookup overloaded")(owner.newOverloaded(pre, entries map (_.sym)))
+        logResult(s"overloaded symbol in $pre")(owner.newOverloaded(pre, entries map (_.sym)))
 
       // Constructor lookup should only look in the decls of the enclosing class
       // not in the self-type, nor in the enclosing context, nor in imports (SI-4460, SI-6745)

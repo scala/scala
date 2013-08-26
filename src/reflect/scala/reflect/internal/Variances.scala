@@ -92,7 +92,9 @@ trait Variances {
         val relative = relativeVariance(sym)
         val required = relative * variance
         if (!relative.isBivariant) {
-          log(s"verifying $sym (${sym.variance}${sym.locationString}) is $required at $base in ${base.owner}")
+          def sym_s  = s"$sym (${sym.variance}${sym.locationString})"
+          def base_s = s"$base in ${base.owner}" + (if (base.owner.isClass) "" else " in " + base.owner.enclClass)
+          log(s"verifying $sym_s is $required at $base_s")
           if (sym.variance != required)
             issueVarianceError(base, sym, required)
         }
@@ -146,7 +148,7 @@ trait Variances {
       )
       tree match {
         case defn: MemberDef if skip =>
-          log(s"Skipping variance check of ${sym.defString}")
+          debuglog(s"Skipping variance check of ${sym.defString}")
         case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
           validateVariance(sym)
           super.traverse(tree)

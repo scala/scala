@@ -277,7 +277,9 @@ trait Checkable {
           parents foreach (p => checkCheckable(tree, p, X, inPattern, canRemedy))
         case _ =>
           val checker = new CheckabilityChecker(X, P)
-          log(checker.summaryString)
+          if (checker.result == RuntimeCheckable)
+            log(checker.summaryString)
+
           if (checker.neverMatches) {
             val addendum = if (checker.neverSubClass) "" else " (but still might match its erasure)"
             getContext.unit.warning(tree.pos, s"fruitless type test: a value of type $X cannot also be a $P$addendum")

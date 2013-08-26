@@ -44,8 +44,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val uninitializedVals = mutable.Set[Symbol](
         stats collect { case vd: ValDef if checkableForInit(vd.symbol) => vd.symbol.accessedOrSelf }: _*
       )
-      if (uninitializedVals.nonEmpty)
-        log("Checking constructor for init order issues among: " + uninitializedVals.map(_.name).mkString(", "))
+      if (uninitializedVals.size > 1)
+        log("Checking constructor for init order issues among: " + uninitializedVals.toList.map(_.name.toString.trim).distinct.sorted.mkString(", "))
 
       for (stat <- stats) {
         // Checking the qualifier symbol is necessary to prevent a selection on

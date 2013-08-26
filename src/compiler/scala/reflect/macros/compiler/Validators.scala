@@ -57,7 +57,7 @@ trait Validators {
       checkMacroImplResultTypeMismatch(atpeToRtpe(aret), rret)
 
       val maxLubDepth = lubDepth(aparamss.flatten map (_.tpe)) max lubDepth(rparamss.flatten map (_.tpe))
-      val atargs = solvedTypes(atvars, atparams, atparams map varianceInType(aret), upper = false, depth = maxLubDepth)
+      val atargs = solvedTypes(atvars, atparams, atparams map varianceInType(aret), upper = false, maxLubDepth)
       val boundsOk = typer.silent(_.infer.checkBounds(macroDdef, NoPrefix, NoSymbol, atparams, atargs, ""))
       boundsOk match {
         case SilentResultValue(true) => // do nothing, success

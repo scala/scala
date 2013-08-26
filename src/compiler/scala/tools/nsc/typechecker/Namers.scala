@@ -291,10 +291,13 @@ trait Namers extends MethodSynthesis {
     }
 
     private def logAssignSymbol(tree: Tree, sym: Symbol): Symbol = {
-      sym.name.toTermName match {
+      if (isPastTyper) sym.name.toTermName match {
         case nme.IMPORT | nme.OUTER | nme.ANON_CLASS_NAME | nme.ANON_FUN_NAME | nme.CONSTRUCTOR => ()
         case _                                                                                  =>
-          log("[+symbol] " + sym.debugLocationString)
+          tree match {
+            case md: DefDef => log("[+symbol] " + sym.debugLocationString)
+            case _          =>
+          }
       }
       tree.symbol = sym
       sym

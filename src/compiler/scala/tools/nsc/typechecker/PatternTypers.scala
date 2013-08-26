@@ -340,11 +340,7 @@ trait PatternTypers {
 
       // use "tree" for the context, not context.tree: don't make another CaseDef context,
       // as instantiateTypeVar's bounds would end up there
-      log(sm"""|convert to case constructor {
-               |         tree: $tree: ${tree.tpe}
-               |       ptSafe: $ptSafe
-               | context.tree: ${context.tree}: ${context.tree.tpe}
-               |}""".trim)
+      log(s"convert ${tree.summaryString}: ${tree.tpe} to case constructor, pt=$ptSafe")
 
       val ctorContext = context.makeNewScope(tree, context.owner)
       freeVars foreach ctorContext.scope.enter
