@@ -1515,7 +1515,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
     private def checkTypeRef(tp: Type, tree: Tree, skipBounds: Boolean) = tp match {
       case TypeRef(pre, sym, args) =>
-        checkDeprecated(sym, tree.pos)
+        tree match {
+          case tt: TypeTree if tt.original == null => // SI-7783 don't warn about inferred types
+          case _ =>
+            checkDeprecated(sym, tree.pos)
+        }
         if(sym.isJavaDefined)
           sym.typeParams foreach (_.cookJavaRawInfo())
         if (!tp.isHigherKinded && !skipBounds)
