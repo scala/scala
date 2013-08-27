@@ -147,7 +147,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def name: NameType
     def name_=(n: Name): Unit = {
       if (shouldLogAtThisPhase) {
-        val msg = s"Renaming $fullLocationString to $n"
+        def msg = s"In $owner, renaming $name -> $n"
         if (isSpecialized) debuglog(msg) else log(msg)
       }
     }
@@ -2524,7 +2524,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     def infosString = infos.toString
-    def debugLocationString = fullLocationString + " (flags: " + debugFlagString + ")"
+    def debugLocationString = {
+      val pre = flagString match {
+        case ""                  => ""
+        case s if s contains ' ' => "(" + s + ") "
+        case s                   => s + " "
+      }
+      pre + fullLocationString
+    }
 
     private def defStringCompose(infoString: String) = compose(
       flagString,

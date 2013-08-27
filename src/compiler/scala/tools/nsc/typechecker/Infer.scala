@@ -9,6 +9,7 @@ package typechecker
 import scala.collection.{ mutable, immutable }
 import scala.util.control.ControlThrowable
 import symtab.Flags._
+import scala.reflect.internal.Depth
 
 /** This trait contains methods related to type parameter inference.
  *
@@ -21,6 +22,7 @@ trait Infer extends Checkable {
   import global._
   import definitions._
   import typeDebug.ptBlock
+  import typeDebug.str.parentheses
   import typingStack.{ printTyping }
 
   /** The formal parameter types corresponding to `formals`.
@@ -132,34 +134,17 @@ trait Infer extends Checkable {
    *  @param upper      When `true` search for max solution else min.
    *  @throws NoInstance
    */
-  def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol],
-                  variances: List[Variance], upper: Boolean, depth: Int): List[Type] = {
-
-    if (tvars.nonEmpty) {
-      def tp_s = (tparams, tvars).zipped map { case (tp, tv) => s"${tp.name}/$tv" } mkString ","
-      printTyping(s"solving for $tp_s")
+  def solvedTypes(tvars: List[TypeVar], tparams: List[Symbol], variances: List[Variance], upper: Boolean, depth: Depth): List[Type] = {
+    if (tvars.isEmpty) Nil else {
+      printTyping("solving for " + parentheses((tparams, tvars).zipped map ((p, tv) => s"${p.name}: $tv")))
+      // !!! What should be done with the return value of "solve", which is at present ignored?
+      // The historical commentary says "no panic, it's good enough to just guess a solution,
+      // we'll find out later whether it works", meaning don't issue an error here when types
+      // don't conform to bounds. That means you can never trust the results of implicit search.
+      // For an example where this was not being heeded, SI-2421.
+      solve(tvars, tparams, variances, upper, depth)
+      tvars map instantiate
     }
-
-    if (!solve(tvars, tparams, variances, upper, depth)) {
-      // no panic, it's good enough to just guess a solution, we'll find out
-      // later whether it works.  *ZAP* @M danger, Will Robinson! this means
-      // that you should never trust inferred type arguments!
-      //
-      // Need to call checkBounds on the args/typars or type1 on the tree
-      // for the expression that results from type inference see e.g., #2421:
-      // implicit search had been ignoring this caveat
-      // throw new DeferredNoInstance(() =>
-      //   "no solution exists for constraints"+(tvars map boundsString))
-    }
-    for (tvar <- tvars ; if tvar.constr.inst == tvar) {
-      if (tvar.origin.typeSymbol.info eq ErrorType)
-        // this can happen if during solving a cyclic type parameter
-        // such as T <: T gets completed. See #360
-        tvar.constr.inst = ErrorType
-      else
-        abort(tvar.origin+" at "+tvar.origin.typeSymbol.owner)
-    }
-    tvars map instantiate
   }
 
   def skipImplicit(tp: Type) = tp match {
@@ -174,7 +159,10 @@ trait Infer extends Checkable {
    *  This method seems to be performance critical.
    */
   def normalize(tp: Type): Type = tp match {
-    case PolyType(_, restpe)                                     => logResult(s"Normalizing $tp in infer")(normalize(restpe))
+    case PolyType(_, restpe) =>
+      logResult(sm"""|Normalizing PolyType in infer:
+                     |  was: $restpe
+                     |  now""")(normalize(restpe))
     case mt @ MethodType(_, restpe) if mt.isImplicit             => normalize(restpe)
     case mt @ MethodType(_, restpe) if !mt.isDependentMethodType => functionType(mt.paramTypes, normalize(restpe))
     case NullaryMethodType(restpe)                               => normalize(restpe)
@@ -554,10 +542,7 @@ trait Infer extends Checkable {
             "argument expression's type is not compatible with formal parameter type" + foundReqMsg(tp1, pt1))
         }
       }
-      val targs = solvedTypes(
-        tvars, tparams, tparams map varianceInTypes(formals),
-        upper = false, lubDepth(formals) max lubDepth(argtpes)
-      )
+      val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
       // Can warn about inferring Any/AnyVal as long as they don't appear
       // explicitly anywhere amongst the formal, argument, result, or expected type.
       def canWarnAboutAny = !(pt :: restpe :: formals ::: argtpes exists (t => (t contains AnyClass) || (t contains AnyValClass)))
@@ -1030,7 +1015,10 @@ trait Infer extends Checkable {
             val variances  =
               if (ctorTp.paramTypes.isEmpty) undetparams map varianceInType(ctorTp)
               else undetparams map varianceInTypes(ctorTp.paramTypes)
-            val targs      = solvedTypes(tvars, undetparams, variances, upper = true, lubDepth(List(resTp, pt)))
+
+            // Note: this is the only place where solvedTypes (or, indirectly, solve) is called
+            // with upper = true.
+            val targs = solvedTypes(tvars, undetparams, variances, upper = true, lubDepth(resTp :: pt :: Nil))
             // checkBounds(tree, NoPrefix, NoSymbol, undetparams, targs, "inferred ")
             // no checkBounds here. If we enable it, test bug602 fails.
             // TODO: reinstate checkBounds, return params that fail to meet their bounds to undetparams
@@ -1099,7 +1087,7 @@ trait Infer extends Checkable {
       val tvars1 = tvars map (_.cloneInternal)
       // Note: right now it's not clear that solving is complete, or how it can be made complete!
       // So we should come back to this and investigate.
-      solve(tvars1, tvars1 map (_.origin.typeSymbol), tvars1 map (_ => Variance.Covariant), upper = false)
+      solve(tvars1, tvars1 map (_.origin.typeSymbol), tvars1 map (_ => Variance.Covariant), upper = false, Depth.AnyDepth)
     }
 
     // this is quite nasty: it destructively changes the info of the syms of e.g., method type params
@@ -1110,16 +1098,14 @@ trait Infer extends Checkable {
       val TypeBounds(lo0, hi0)      = tparam.info.bounds
       val tb @ TypeBounds(lo1, hi1) = instBounds(tvar)
       val enclCase                  = context.enclosingCaseDef
+      def enclCase_s                = enclCase.toString.replaceAll("\\n", " ").take(60)
 
-      log("\n" + sm"""
-        |-----
-        |  enclCase: ${enclCase.tree}
-        |     saved: ${enclCase.savedTypeBounds}
-        |    tparam: ${tparam.shortSymbolClass}
-        |     def_s: ${tparam.defString}
-        |    seen_s: ${tparam.defStringSeenAs(tb)}
-        |-----
-        """.trim)
+      if (enclCase.savedTypeBounds.nonEmpty) log(
+        sm"""|instantiateTypeVar with nonEmpty saved type bounds {
+             |  enclosing  $enclCase_s
+             |      saved  ${enclCase.savedTypeBounds}
+             |     tparam  ${tparam.shortSymbolClass} ${tparam.defString}
+             |}""")
 
       if (lo1 <:< hi1) {
         if (lo1 <:< lo0 && hi0 <:< hi1) // bounds unimproved

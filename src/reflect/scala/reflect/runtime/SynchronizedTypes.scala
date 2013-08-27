@@ -4,6 +4,7 @@ package runtime
 
 import scala.collection.mutable.WeakHashMap
 import java.lang.ref.WeakReference
+import scala.reflect.internal.Depth
 
 /** This trait overrides methods in reflect.internal, bracketing
  *  them in synchronized { ... } to make them thread-safe
@@ -57,7 +58,7 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   override def isDifferentType(tp1: Type, tp2: Type): Boolean =
     subsametypeLock.synchronized { super.isDifferentType(tp1, tp2) }
 
-  override def isSubType(tp1: Type, tp2: Type, depth: Int): Boolean =
+  override def isSubType(tp1: Type, tp2: Type, depth: Depth): Boolean =
     subsametypeLock.synchronized { super.isSubType(tp1, tp2, depth) }
 
   private object lubglbLock

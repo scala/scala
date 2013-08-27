@@ -3717,7 +3717,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        *
        */
       def mkInvoke(cxTree: Tree, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
-        log(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
+        debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
         val treeInfo.Applied(treeSelection, _, _) = tree
         def isDesugaredApply = treeSelection match {
           case Select(`qual`, nme.apply) => true
