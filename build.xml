@@ -1560,6 +1560,7 @@ TODO:
   <target name="test.junit" depends="test.junit.comp">
     <stopwatch name="test.junit.timer"/>
     <mkdir dir="${test.junit.classes}"/>
+    <echo message="Note: details of failed tests will be output to ${build-junit.dir}"/>
     <junit fork="yes" haltonfailure="yes" printsummary="on">
       <classpath refid="test.junit.compiler.build.path"/>
       <batchtest fork="yes" todir="${build-junit.dir}">
