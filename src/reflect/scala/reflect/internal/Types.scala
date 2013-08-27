@@ -2847,6 +2847,9 @@ trait Types
   // but pattern-matching returned the original constr0 (a bug)
   // now, pattern-matching returns the most recent constr
   object TypeVar {
+    private val ConstantTrue = ConstantType(Constant(true))
+    private val ConstantFalse = ConstantType(Constant(false))
+
     @inline final def trace[T](action: String, msg: => String)(value: T): T = {
       if (traceTypeVars) {
         val s = msg match {
@@ -3003,6 +3006,7 @@ trait Types
         this
       else if (newArgs.size == params.size) {
         val tv = TypeVar(origin, constr, newArgs, params)
+        tv.linkSuspended(this)
         TypeVar.trace("applyArgs", "In " + originLocation + ", apply args " + newArgs.mkString(", ") + " to " + originName)(tv)
       }
       else
@@ -3065,7 +3069,16 @@ trait Types
     // </region>
 
     // ignore subtyping&equality checks while true -- see findMember
-    private[Types] var suspended = false
+    // OPT: This could be Either[TypeVar, Boolean], but this encoding was chosen instead to save allocations.
+    private var _suspended: Type = TypeVar.ConstantFalse
+    private[Types] def suspended: Boolean = (_suspended: @unchecked) match {
+      case TypeVar.ConstantFalse => false
+      case TypeVar.ConstantTrue  => true
+      case tv: TypeVar           => tv.suspended
+    }
+    private[Types] def suspended_=(b: Boolean): Unit = _suspended = if (b) TypeVar.ConstantTrue else TypeVar.ConstantFalse
+    // SI-7785 Link the suspended attribute of a TypeVar created in, say, a TypeMap (e.g. AsSeenFrom) to its originator
+    private[Types] def linkSuspended(origin: TypeVar): Unit = _suspended = origin
 
     /** Called when a TypeVar is involved in a subtyping check.  Result is whether
      *  this TypeVar could plausibly be a [super/sub]type of argument `tp` and if so,
