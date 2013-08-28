@@ -69,7 +69,7 @@ trait BuildUtils { self: SymbolTable =>
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T = { tree.setSymbol(sym); tree }
 
-    def mkAnnotationCtor(tree: Tree, args: List[Tree]): Tree = tree match {
+    def mkAnnotation(tree: Tree, args: List[Tree]): Tree = tree match {
       case ident: Ident => Apply(self.Select(New(ident), nme.CONSTRUCTOR: TermName), args)
       case call @ Apply(Select(New(ident: Ident), nme.CONSTRUCTOR), _) =>
         if (args.nonEmpty)

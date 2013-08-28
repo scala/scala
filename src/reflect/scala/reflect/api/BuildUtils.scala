@@ -76,7 +76,7 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T
 
-    def mkAnnotationCtor(tree: Tree, args: List[Tree]): Tree
+    def mkAnnotation(tree: Tree, args: List[Tree]): Tree
 
     val FlagsAsBits: FlagsAsBitsExtractor
 

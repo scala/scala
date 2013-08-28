@@ -681,7 +681,7 @@ trait StdNames {
     val materializeWeakTypeTag: NameType = "materializeWeakTypeTag"
     val materializeTypeTag: NameType   = "materializeTypeTag"
     val moduleClass : NameType         = "moduleClass"
-    val mkAnnotationCtor: NameType     = "mkAnnotationCtor"
+    val mkAnnotation: NameType         = "mkAnnotation"
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
     val newFreeTerm: NameType          = "newFreeTerm"

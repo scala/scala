@@ -198,11 +198,11 @@ trait Reifiers { self: Quasiquotes =>
         val x: TermName = c.freshName()
         val xToAnnotationCtor = Function(
           List(ValDef(Modifiers(PARAM), x, TypeTree(), EmptyTree)),
-          mirrorBuildCall(nme.mkAnnotationCtor, Ident(x), reify(args)))
+          mirrorBuildCall(nme.mkAnnotation, Ident(x), reify(args)))
         Apply(Select(tree, nme.map), List(xToAnnotationCtor))
     } {
       case AnnotPlaceholder(tree, _: TreeLocation, _, args) =>
-        mirrorBuildCall(nme.mkAnnotationCtor, tree, reify(args))
+        mirrorBuildCall(nme.mkAnnotation, tree, reify(args))
       case other => reify(other)
     }
 
