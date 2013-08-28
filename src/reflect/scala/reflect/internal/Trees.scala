@@ -1617,6 +1617,25 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
+  /** Tracks the classes currently under construction during a transform */
+  trait UnderConstructionTransformer extends Transformer {
+    import collection.mutable
+
+    protected def isUnderConstruction(clazz: Symbol) = selfOrSuperCalls contains clazz
+
+    /** The stack of class symbols in which a call to this() or to the super
+      * constructor, or early definition is active */
+    private val selfOrSuperCalls = mutable.Stack[Symbol]()
+
+    abstract override def transform(tree: Tree) = {
+      if ((treeInfo isSelfOrSuperConstrCall tree) || (treeInfo isEarlyDef tree)) {
+        selfOrSuperCalls push currentOwner.owner
+        try super.transform(tree)
+        finally selfOrSuperCalls.pop()
+      } else super.transform(tree)
+    }
+  }
+
   def duplicateAndKeepPositions(tree: Tree) = new Duplicator(focusPositions = false) transform tree
 
   // ------ copiers -------------------------------------------
