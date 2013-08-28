@@ -253,10 +253,11 @@ TODO:
       <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
 
       <artifact:dependencies pathId="partest.classpath" filesetId="partest.fileset" versionsId="partest.versions">
-        <!-- uncomment the following to facilitate building and publishing modules locally
-             not on by default to avoid using unpublished jars in releases  -->
+        <!-- uncomment the following if you're deploying your own partest locally -->
         <!-- <localRepository path="${user.home}/.m2/repository"/> -->
-        <!-- so we don't have to wait for artifacts to synch to maven central: -->
+        <!-- so we don't have to wait for artifacts to synch to maven central
+            (we don't distribute partest with Scala, so the risk of sonatype and maven being out of synch is irrelevant):
+          -->
         <artifact:remoteRepository refid="sonatype-release"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-partest_${scala.binary.version}" version="${partest.version.number}" />
       </artifact:dependencies>
@@ -271,8 +272,8 @@ TODO:
         <!-- uncomment the following to facilitate building and publishing modules locally
              not on by default to avoid using unpublished jars in releases  -->
         <!-- <localRepository path="${user.home}/.m2/repository"/> -->
-        <!-- so we don't have to wait for artifacts to synch to maven central: -->
-        <artifact:remoteRepository refid="sonatype-release"/>
+        <!-- sonatype is not enabled by default for modules to avoid a Scala release relying on a JAR that's not on maven (yet) -->
+        <!-- <artifact:remoteRepository refid="sonatype-release"/> -->
         <dependency groupId="org.scala-lang.modules" artifactId="scala-xml_${scala.binary.version}" version="${scala-xml.version.number}"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators_${scala.binary.version}" version="${scala-parser-combinators.version.number}"/>
       </artifact:dependencies>
@@ -280,8 +281,8 @@ TODO:
 
       <!-- used by the test.osgi target to create osgi bundles for the xml, parser-combinator jars -->
       <artifact:dependencies pathId="osgi.deps.classpath" filesetId="osgi.deps.fileset" versionsId="osgi.deps.versions">
-        <!-- so we don't have to wait for artifacts to synch to maven central: -->
-        <artifact:remoteRepository refid="sonatype-release"/>
+        <!-- sonatype is not enabled by default for modules to avoid a Scala release relying on a JAR that's not on maven (yet) -->
+        <!-- <artifact:remoteRepository refid="sonatype-release"/> -->
         <dependency groupId="org.scala-lang.modules" artifactId="scala-xml_${scala.binary.version}" version="${scala-xml.version.number}"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators_${scala.binary.version}" version="${scala-parser-combinators.version.number}"/>
       </artifact:dependencies>
