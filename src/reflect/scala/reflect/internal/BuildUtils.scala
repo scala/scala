@@ -47,8 +47,6 @@ trait BuildUtils { self: SymbolTable =>
     def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S =
       sym.setTypeSignature(tpe)
 
-    def flagsFromBits(bits: Long): FlagSet = bits
-
     def This(sym: Symbol): Tree = self.This(sym)
 
     def Select(qualifier: Tree, sym: Symbol): Select = self.Select(qualifier, sym)
@@ -78,7 +76,8 @@ trait BuildUtils { self: SymbolTable =>
       case _ => throw new IllegalArgumentException(s"Tree ${showRaw(tree)} isn't a correct representation of annotation, consider passing Ident as a first argument")
     }
 
-    object FlagsAsBits extends FlagsAsBitsExtractor {
+    object FlagsRepr extends FlagsReprExtractor {
+      def apply(bits: Long): FlagSet = bits
       def unapply(flags: Long): Some[Long] = Some(flags)
     }
 

@@ -229,7 +229,7 @@ trait Reifiers { self: Quasiquotes =>
         case _ :: (second, _) :: Nil =>
           c.abort(second.pos, "Can't splice multiple modifiers, consider merging them into a single modifiers instance")
         case _ =>
-          val baseFlags = reifyBuildCall(nme.flagsFromBits, m.flags)
+          val baseFlags = reifyBuildCall(nme.FlagsRepr, m.flags)
           val reifiedFlags = flags.foldLeft[Tree](baseFlags) { case (flag, (tree, _)) => Apply(Select(flag, nme.OR), List(tree)) }
           mirrorFactoryCall(nme.Modifiers, reifiedFlags, reify(m.privateWithin), reifyAnnotList(annots))
       }
@@ -282,7 +282,7 @@ trait Reifiers { self: Quasiquotes =>
         case _ :: second :: rest =>
           c.abort(second.pos, "Can't extract multiple modifiers together, consider extracting a single modifiers instance")
         case Nil =>
-          mirrorFactoryCall(nme.Modifiers, reifyBuildCall(nme.FlagsAsBits, m.flags),
+          mirrorFactoryCall(nme.Modifiers, reifyBuildCall(nme.FlagsRepr, m.flags),
                                            reify(m.privateWithin), reifyAnnotList(m.annotations))
       }
     }
