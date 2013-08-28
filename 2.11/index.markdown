@@ -7,6 +7,10 @@ The current 2.11 milestone is [M4](https://github.com/scala/scala/releases/tag/v
 
 To contribute to this overview, [please submit a pull request](https://github.com/scala/scala/tree/gh-pages/2.11/index.markdown).
 
+Important note: Scala is now distributed under the standard 3-clause BSD license.
+Originally, the same 3-clause BSD license was adopted, but slightly reworded over the years.
+We're now back to the standard formulation.
+
 # Smaller
 We're modularizing the standard library and the compiler to allow more selective use of Scala's features, and to facilitate contributions to more clearly delineated sub-projects.
 
