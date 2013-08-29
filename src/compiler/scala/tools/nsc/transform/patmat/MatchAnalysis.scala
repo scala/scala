@@ -91,23 +91,7 @@ trait TreeAndTypeAnalysis extends Debugging {
     // approximate a type to the static type that is fully checkable at run time,
     // hiding statically known but dynamically uncheckable information using existential quantification
     // TODO: this is subject to the availability of TypeTags (since an abstract type with a type tag is checkable at run time)
-    def checkableType(tp: Type): Type = {
-      // TODO: this is extremely rough...
-      // replace type args by wildcards, since they can't be checked (don't use existentials: overkill)
-      // TODO: when type tags are available, we will check -- when this is implemented, can we take that into account here?
-      // similar to typer.infer.approximateAbstracts
-      object typeArgsToWildcardsExceptArray extends TypeMap {
-        // SI-6771 dealias would be enough today, but future proofing with the dealiasWiden.
-        // See neg/t6771b.scala for elaboration
-        def apply(tp: Type): Type = tp.dealiasWiden match {
-          case TypeRef(pre, sym, args) if args.nonEmpty && (sym ne ArrayClass) =>
-            TypeRef(pre, sym, args map (_ => WildcardType))
-          case _ =>
-            mapOver(tp)
-        }
-      }
-      debug.patmatResult(s"checkableType($tp)")(typeArgsToWildcardsExceptArray(tp))
-    }
+    def checkableType(tp: Type): Type = debug.patmatResult(s"checkableType($tp)")(typeArgsToWildcards(tp))
 
     // a type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)
     // we consider tuple types with at least one component of a checkable type as a checkable type

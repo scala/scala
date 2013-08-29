@@ -7,6 +7,7 @@ import scala.collection.{ mutable, immutable }
 import Flags._
 import scala.annotation.tailrec
 import Variance._
+import util.shortClassOfInstance
 
 private[internal] trait TypeMaps {
   self: SymbolTable =>
@@ -51,6 +52,24 @@ private[internal] trait TypeMaps {
       case AnnotatedType(_, _, _)                   => mapOver(tp)
       case _                                        => tp             // no recursion - top level only
     }
+  }
+
+  // TODO: this is extremely rough...
+  // replace type args by wildcards, since they can't be checked (don't use existentials: overkill)
+  // TODO: when type tags are available, we will check -- when this is implemented, can we take that into account here?
+  // similar to typer.infer.approximateAbstracts
+  object typeArgsToWildcards extends TypeMap {
+    // SI-6771 dealias would be enough today, but future proofing with the dealiasWiden.
+    // See neg/t6771b.scala for elaboration
+    // Note that this depends on NOT traversing the prefix, else nested classes
+    // which depend on outer pointer semantics (SI-4440) will break.
+    def apply(tp: Type): Type = tp.dealias match {
+      case tp @ TypeRef(pre, ArrayClass, elem :: Nil) => mapOver(tp)
+      case tp @ TypeRef(pre, sym, Nil)                => tp
+      case tp @ TypeRef(pre, sym, args)               => copyTypeRef(tp, pre, sym, args map (_ => WildcardType))
+      case tp                                         => mapOver(tp)
+    }
+    override def toString = shortClassOfInstance(this)
   }
 
   // Set to true for A* => Seq[A]

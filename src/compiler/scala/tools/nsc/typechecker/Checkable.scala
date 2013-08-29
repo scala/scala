@@ -49,41 +49,42 @@ trait Checkable {
   import definitions._
   import CheckabilityChecker.{ isNeverSubType, isNeverSubClass }
 
+  case class TypeInference(tycon: Type, tparams: List[Symbol], tvars: List[TypeVar]) {
+    private def instTypeArgs = tparams zip tvars map {
+      case (_, tvar) if tvar.instValid => tvar.constr.inst
+      case (tparam, _)                 => tparam.tpeHK
+    }
+    def solve = appliedType(tycon, instTypeArgs)
+  }
+
   /** The applied type of class 'to' after inferring anything
    *  possible from the knowledge that 'to' must also be of the
    *  type given in 'from'.
    */
   def propagateKnownTypes(from: Type, to: Symbol): Type = {
-    def tparams  = to.typeParams
-    val tvars    = tparams map (p => TypeVar(p))
-    val tvarType = appliedType(to, tvars: _*)
-    val bases    = from.baseClasses filter (to.baseClasses contains _)
+    withFreshVars(to) { (applied, tvars) =>
+      from.baseClasses filter to.baseClasses.contains foreach { bc =>
+        val tps1 = (from baseType bc).typeArgs
+        val tps2 = (applied baseType bc).typeArgs
+        if (tps1.size != tps2.size)
+          devWarning(s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)")
 
-    bases foreach { bc =>
-      val tps1 = (from baseType bc).typeArgs
-      val tps2 = (tvarType baseType bc).typeArgs
-      if (tps1.size != tps2.size)
-        devWarning(s"Unequally sized type arg lists in propagateKnownTypes($from, $to): ($tps1, $tps2)")
+        (tps1, tps2).zipped foreach (_ =:= _)
+        // Alternate, variance respecting formulation causes
+        // neg/unchecked3.scala to fail (abstract types).  TODO -
+        // figure it out. It seems there is more work to do if I
+        // allow for variance, because the constraints accumulate
+        // as bounds and "tvar.instValid" is false.
+        //
+        // foreach3(tps1, tps2, bc.typeParams)((tp1, tp2, tparam) =>
+        //   if (tparam.initialize.isCovariant) tp1 <:< tp2
+        //   else if (tparam.isContravariant) tp2 <:< tp1
+        //   else tp1 =:= tp2
+        // )
+      }
 
-      (tps1, tps2).zipped foreach (_ =:= _)
-      // Alternate, variance respecting formulation causes
-      // neg/unchecked3.scala to fail (abstract types).  TODO -
-      // figure it out. It seems there is more work to do if I
-      // allow for variance, because the constraints accumulate
-      // as bounds and "tvar.instValid" is false.
-      //
-      // foreach3(tps1, tps2, bc.typeParams)((tp1, tp2, tparam) =>
-      //   if (tparam.initialize.isCovariant) tp1 <:< tp2
-      //   else if (tparam.isContravariant) tp2 <:< tp1
-      //   else tp1 =:= tp2
-      // )
+      TypeInference(to.typeConstructor, to.typeParams, tvars).solve
     }
-
-    val resArgs = tparams zip tvars map {
-      case (_, tvar) if tvar.instValid => tvar.constr.inst
-      case (tparam, _)                 => tparam.tpeHK
-    }
-    appliedType(to, resArgs: _*)
   }
 
   private def isUnwarnableTypeArgSymbol(sym: Symbol) = (

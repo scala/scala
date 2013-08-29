@@ -8,6 +8,7 @@ package object util {
   import StringOps.longestCommonPrefix
 
   def andFalse(body: Unit): Boolean = false
+  def andNone(body: Unit): Option[Nothing] = None
 
   // Shorten a name like Symbols$FooSymbol to FooSymbol.
   private def shortenName(name: String): String = {

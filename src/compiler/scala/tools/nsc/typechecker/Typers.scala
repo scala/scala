@@ -2363,7 +2363,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    def typedCase(cdef: CaseDef, pattpe: Type, pt: Type): CaseDef = {
+    def typedCase(cdef: CaseDef, pattpe0: Type, pt0: Type): CaseDef = {
+      val pattpe = pattpe0.deconst
+      val pt = pt0.deconst
       // verify no _* except in last position
       for (Apply(_, xs) <- cdef.pat ; x <- xs dropRight 1 ; if treeInfo isStar x)
         StarPositionInPatternError(x)
@@ -2394,7 +2396,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         //   infos back to their pre-GADT-constraint state)
         if (isFullyDefined(pt) && !(body1.tpe <:< pt)) {
           log(s"Adding cast to pattern because ${body1.tpe} does not conform to expected type $pt")
-          body1 = typedPos(body1.pos)(gen.mkCast(body1, pt.dealiasWiden))
+          body1 = typedPos(body1.pos)(gen.mkCast(body1, pt.dealias))
         }
       }
 
@@ -2414,7 +2416,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     // takes untyped sub-trees of a match and type checks them
     def typedMatch(selector: Tree, cases: List[CaseDef], mode: Mode, pt: Type, tree: Tree = EmptyTree): Match = {
       val selector1  = checkDead(typedByValueExpr(selector))
-      val selectorTp = packCaptured(selector1.tpe.widen).skolemizeExistential(context.owner, selector)
+      val selectorTp = packCaptured(selector1.tpe).skolemizeExistential(context.owner, selector)
       val casesTyped = typedCases(cases, selectorTp, pt)
 
       def finish(cases: List[CaseDef], matchType: Type) =
@@ -3233,9 +3235,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (!tree.isErrorTyped) setError(tree) else tree
           // @H change to setError(treeCopy.Apply(tree, fun, args))
 
+        case ExtractorType(unapply @ QuasiquoteClass_api_unapply) if mode.inPatternMode =>
+          macroExpandUnapply(this, tree, fun, unapply, args, mode, pt)
+
         case ExtractorType(unapply) if mode.inPatternMode =>
-          if (unapply == QuasiquoteClass_api_unapply) macroExpandUnapply(this, tree, fun, unapply, args, mode, pt)
-          else doTypedUnapply(tree, fun0, fun, args, mode, pt)
+          doTypedUnapply(tree, fun0, fun, args, mode, pt)
 
         case _ =>
           if (treeInfo.isMacroApplication(tree)) duplErrorTree(MacroTooManyArgumentListsError(tree, fun.symbol))
@@ -3589,7 +3593,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val original = tpt1 match {
           case tpt : TypeTree => atPos(tree.pos)(ExistentialTypeTree(tpt.original, tree.whereClauses))
           case _ => {
-            debuglog(s"cannot reconstruct the original for $tree, because $tpt1 is not a TypeTree")
+            devWarning(tree.pos, s"cannot reconstruct the original for $tree, because $tpt1 is not a TypeTree")
             tree
           }
         }
@@ -4720,14 +4724,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedAlternative(alt: Alternative) = {
         context withinPatAlternative (
-          treeCopy.Alternative(tree, alt.trees mapConserve (alt => typed(alt, mode, pt))) setType pt
+          treeCopy.Alternative(tree, alt.trees mapConserve (alt => typed(alt, mode, pt.widen))) setType pt.widen
         )
       }
       def typedStar(tree: Star) = {
         if (!context.starPatterns && !isPastTyper)
           StarPatternWithVarargParametersError(tree)
 
-        treeCopy.Star(tree, typed(tree.elem, mode, pt)) setType makeFullyDefined(pt)
+        treeCopy.Star(tree, typed(tree.elem, mode, pt.widen)) setType makeFullyDefined(pt.widen)
       }
       def issueTryWarnings(tree: Try): Try = {
         def checkForCatchAll(cdef: CaseDef) {

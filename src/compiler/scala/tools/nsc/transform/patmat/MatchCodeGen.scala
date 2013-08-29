@@ -82,7 +82,7 @@ trait MatchCodeGen extends Interface {
       def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)
 
       // the force is needed mainly to deal with the GADT typing hack (we can't detect it otherwise as tp nor pt need contain an abstract type, we're just casting wildly)
-      def _asInstanceOf(b: Symbol, tp: Type): Tree = if (b.info <:< tp) REF(b) else gen.mkCastPreservingAnnotations(REF(b), tp)
+      def _asInstanceOf(b: Symbol, tp: Type): Tree = if (b.info <:< tp) REF(b) else gen.mkCastPreservingAnnotations(REF(b), tp.normalize)
       def _isInstanceOf(b: Symbol, tp: Type): Tree = gen.mkIsInstanceOf(REF(b), tp.withoutAnnotations, any = true, wrapInApply = false)
 
       def mkZero(tp: Type): Tree = gen.mkConstantZero(tp) match {

@@ -27,6 +27,8 @@ trait StringOps {
     }
   }
 
+  def trimTrailingSpace(s: String): String = s.reverse.dropWhile(_.isWhitespace).reverse
+
   def decompose(str: String, sep: Char): List[String] = {
     def ws(start: Int): List[String] =
       if (start == str.length) List()

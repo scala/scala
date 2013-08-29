@@ -74,6 +74,42 @@ trait TypeDebugging {
     def inMagenta(s: String)           = inBold(s, MAGENTA)
     def resetColor(s: String): String  = if (colorsOk) s + RESET else s
 
+    /** Generate a matrix showing how any number of types relate
+     *  to one another with respect to <:< and =:=.
+     */
+    def summarizeTypeRelations(pairs: (String, Type)*): String = {
+      val names = pairs.toVector map (_._1)
+      val types = pairs.toVector map (_._2)
+      val maxName = names map (_.length) max;
+      val fmt = "%" + maxName + "s %s %-" + maxName + "s"
+
+      def findRelation(l: Int, r: Int): String = {
+        val lhs   = types(l)
+        val rhs   = types(r)
+        val lname = names(l)
+        val rname = names(r)
+
+        (lhs <:< rhs, lhs =:= rhs, rhs <:< lhs) match {
+          case (true, true, true)    => fmt.format(lname, "=:=", rname)
+          case (_, true, _)          => fmt.format(lname, "?:?", rname)
+          case (true, false, true)   => fmt.format(lname, "~:=", rname)
+          case (true, false, false)  => fmt.format(lname, "<:<", rname)
+          case (false, false, true)  => fmt.format(rname, "<:<", lname)
+          case (false, false, false) => fmt.format(lname, "!:=", rname)
+        }
+      }
+
+      val headerFmt = "%" + maxName + "s  %s"
+      val headerLines = pairs map { case (name, tp) => headerFmt.format(name, tp) }
+
+      val bodyLines = names.indices map (n1 =>
+        names.indices filter (n1 < _) map (findRelation(n1, _)) mkString "  "
+      )
+
+      val first = s"""Relating types ${names mkString ", "} {"""
+      (first +: (headerLines ++ ("" +: bodyLines)) mkString "\n  ") + "\n}"
+    }
+
     private def to_s(x: Any): String = x match {
       // otherwise case classes are caught looking like products
       case _: Tree | _: Type     => "" + x

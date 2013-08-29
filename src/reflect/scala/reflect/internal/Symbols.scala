@@ -1749,6 +1749,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Overridden in NullClass and NothingClass for custom behavior.
      */
     def isSubClass(that: Symbol) = isNonBottomSubClass(that)
+    def isStrictSubClass(that: Symbol) = (this ne that) && isSubClass(that)
 
     final def isNumericSubClass(that: Symbol): Boolean =
       definitions.isNumericSubClass(this, that)
