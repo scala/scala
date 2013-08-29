@@ -11,14 +11,14 @@ import java.io.{ BufferedReader, FileReader }
 import java.util.concurrent.locks.ReentrantLock
 import scala.sys.process.Process
 import session._
-import scala.util.Properties.{ jdkHome, javaVersion }
+import scala.util.Properties.{ envOrNone, javaHome, jdkHome, javaVersion }
 import scala.tools.util.{ Javap }
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
 import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
 import interpreter._
-import io.{ File, Directory }
+import io.{ File, Directory, Path }
 import scala.reflect.NameTransformer._
 import util.ScalaClassLoader
 import ScalaClassLoader._
@@ -373,18 +373,29 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
   }
 
-  private def findToolsJar() = {
-    val jdkPath = Directory(jdkHome)
-    val jar     = jdkPath / "lib" / "tools.jar" toFile;
+  private[this] lazy val platformTools: Option[File] = {
+    val jarName = "tools.jar"
+    def jarPath(path: Path) = (path / "lib" / jarName).toFile
+    def jarAt(path: Path) = {
+      val f = jarPath(path)
+      if (f.isFile) Some(f) else None
+    }
+    val jdkDir = {
+      val d = Directory(jdkHome)
+      if (d.isDirectory) Some(d) else None
+    }
+    def deeply(dir: Directory) = dir.deepFiles find (_.name == jarName)
 
-    if (jar isFile)
-      Some(jar)
-    else if (jdkPath.isDirectory)
-      jdkPath.deepFiles find (_.name == "tools.jar")
-    else None
-  }
+    val home    = envOrNone("JDK_HOME") orElse envOrNone("JAVA_HOME") map (p => Path(p))
+    val install = Some(Path(javaHome))
+ 
+    (home flatMap jarAt)                   orElse
+    (install flatMap jarAt)                orElse
+    (install map (_.parent) flatMap jarAt) orElse
+    (jdkDir flatMap deeply)
+  } 
   private def addToolsJarToLoader() = {
-    val cl = findToolsJar match {
+    val cl = platformTools match {
       case Some(tools) => ScalaClassLoader.fromURLs(Seq(tools.toURL), intp.classLoader)
       case _           => intp.classLoader
     }
