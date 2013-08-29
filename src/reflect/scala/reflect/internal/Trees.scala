@@ -1001,7 +1001,8 @@ trait Trees extends api.Trees {
   // ---- values and creators ---------------------------------------
 
   /** @param sym       the class symbol
-   *  @return          the implementation template
+   *  @param impl      the implementation template
+   *  @return          the class definition
    */
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
     atPos(sym.pos) {
@@ -1010,6 +1011,25 @@ trait Trees extends api.Trees {
                sym.typeParams map TypeDef,
                impl) setSymbol sym
     }
+
+  /** @param sym       the class symbol
+   *  @param body      trees that constitute the body of the class
+   *  @return          the class definition
+   */
+  def ClassDef(sym: Symbol, body: List[Tree]): ClassDef =
+    ClassDef(sym, Template(sym, body))
+
+  /** @param sym       the template's symbol
+   *  @param body      trees that constitute the body of the template
+   *  @return          the template
+   */
+  def Template(sym: Symbol, body: List[Tree]): Template = {
+    atPos(sym.pos) {
+      Template(sym.info.parents map TypeTree,
+               if (sym.thisSym == sym) noSelfType else ValDef(sym),
+               body)
+    }
+  }
 
   /**
    *  @param sym       the class symbol
