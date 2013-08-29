@@ -1178,6 +1178,17 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         var fullNameOfJavaClass = ownerClazz.getName
         if (childOfClass || childOfTopLevel) fullNameOfJavaClass += "$"
         fullNameOfJavaClass += clazz.name
+
+        // compactify (see SI-7779)
+        fullNameOfJavaClass = fullNameOfJavaClass match {
+          case PackageAndClassPattern(pack, clazzName) =>
+            // in a package
+            pack + compactifyName(clazzName)
+          case _ =>
+            // in the empty package
+            compactifyName(fullNameOfJavaClass)
+        }
+
         if (clazz.isModuleClass) fullNameOfJavaClass += "$"
 
         // println(s"ownerChildren = ${ownerChildren.toList}")
@@ -1186,6 +1197,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       } else
         noClass
     }
+
+    private val PackageAndClassPattern = """(.*\.)(.*)$""".r
 
     private def expandedName(sym: Symbol): String =
       if (sym.isPrivate) nme.expandedName(sym.name.toTermName, sym.owner).toString
@@ -1241,6 +1254,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       case TypeRef(_, ArrayClass, List(elemtpe)) => jArrayClass(typeToJavaClass(elemtpe))
       case TypeRef(_, sym: ClassSymbol, _) => classToJava(sym.asClass)
       case tpe @ TypeRef(_, sym: AliasTypeSymbol, _) => typeToJavaClass(tpe.dealias)
+      case SingleType(_, sym: ModuleSymbol) => classToJava(sym.moduleClass.asClass)
       case _ => throw new NoClassDefFoundError("no Java class corresponding to "+tpe+" found")
     }
   }
