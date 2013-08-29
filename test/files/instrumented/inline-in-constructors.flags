@@ -1,1 +1,1 @@
--optimise
+-optimise -Ydelambdafy:inline
