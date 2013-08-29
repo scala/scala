@@ -43,3 +43,38 @@ class Test2 {
     }
 }
 
+// t5399.scala:42:
+//       case (caller: Task[_], target: Task[_]) => "bazinga!"
+//                     ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Test2.this.Task[_$3]
+//         pt  Test2.this.Task[_$3]
+//      pattp  Test2.this.Task[_]
+//   pattp+pt  Test2.this.Task[_]
+//   pt+pattp  Test2.this.Task[_$3]
+//     result  Test2.this.Task[_$3]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// t5399.scala:42:
+//       case (caller: Task[_], target: Task[_]) => "bazinga!"
+//                                      ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Test2.this.Task[_$3]
+//         pt  Test2.this.Task[_$3]
+//      pattp  Test2.this.Task[_]
+//   pattp+pt  Test2.this.Task[_]
+//   pt+pattp  Test2.this.Task[_$3]
+//     result  Test2.this.Task[_$3]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

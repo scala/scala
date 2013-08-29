@@ -59,3 +59,38 @@ object Test {
     case (Bar3, _) => ()
   }
 }
+// exhausting.scala:17:
+//     case (_: Foo[_], _: Foo[_]) => ()
+//              ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Test.Foo[T]
+//         pt  Test.Foo[T]
+//      pattp  Test.Foo[_]
+//   pattp+pt  Test.Foo[_]
+//   pt+pattp  Test.Foo[T]
+//     result  Test.Foo[T]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// exhausting.scala:17:
+//     case (_: Foo[_], _: Foo[_]) => ()
+//                         ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Test.Foo[T]
+//         pt  Test.Foo[T]
+//      pattp  Test.Foo[_]
+//   pattp+pt  Test.Foo[_]
+//   pt+pattp  Test.Foo[T]
+//     result  Test.Foo[T]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

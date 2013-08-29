@@ -35,3 +35,21 @@ object Test2 {
  }
 
 }
+// gadt-gilles.scala:33:
+//    case t: T[u, v] => new T[u, v]{}
+//            ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Test2.T[Int,Int]
+//         pt  Test2.T[Int,Int]
+//      pattp  Test2.T[u,v]
+//   pattp+pt  Test2.T[u,v]
+//   pt+pattp  Test2.T[Int,Int]
+//     result  Test2.T[Int,Int]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

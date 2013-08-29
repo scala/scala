@@ -91,3 +91,21 @@ package p2 {
     def f(xs: List[Bip[_]]) = xs foreach { case x: BoolBip => g(x.h) }
   }
 }
+// inference-test.scala:21:
+//       case y: Cell[b] => y.thing match { case IntThing => x.value -> y.value }
+//               ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  p0.Cell[a]
+//         pt  p0.Cell[a]
+//      pattp  p0.Cell[b]
+//   pattp+pt  p0.Cell[b]
+//   pt+pattp  p0.Cell[a]
+//     result  p0.Cell[a]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

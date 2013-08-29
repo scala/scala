@@ -72,3 +72,21 @@ object Test {
   //   case _                                       => ()
   // }
 }
+// unchecked.scala:55:
+//     case ArrayApply(x: Exp[Array[T]], _, _) => x // unchecked
+//                        ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Test.Exp[Array[Any]]
+//         pt  Test.Exp[Array[Any]]
+//      pattp  Test.Exp[Array[T]]
+//   pattp+pt  Test.Exp[Array[T]]
+//   pt+pattp  Test.Exp[Array[Any]]
+//     result  Test.Exp[Array[Any]]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

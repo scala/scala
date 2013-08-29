@@ -93,3 +93,514 @@ object Test {
 
   }
 }
+// patmat-behavior.scala:82:
+//     def gd1[A](x: C00[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                   ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C00[A]
+//         pt  s.C00[A]
+//      pattp  s.C10[A]
+//   pattp+pt  s.C10[A] with s.C00[A]
+//   pt+pattp  s.C00[A] with s.C10[A]
+//     result  s.C00[A] with s.C10[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:82:
+//     def gd1[A](x: C00[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                      ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C00[A]
+//         pt  s.C00[A]
+//      pattp  s.C20[A]
+//   pattp+pt  s.C20[A] with s.C00[A]
+//   pt+pattp  s.C00[A] with s.C20[A]
+//     result  s.C00[A] with s.C20[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:82:
+//     def gd1[A](x: C00[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                            ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C00[A]
+//         pt  s.C00[A]
+//      pattp  s.C01[A]
+//   pattp+pt  s.C01[A] with s.C00[A]
+//   pt+pattp  s.C00[A] with s.C01[A]
+//     result  s.C00[A] with s.C01[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:82:
+//     def gd1[A](x: C00[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                                                           ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C00[A]
+//         pt  s.C00[A]
+//      pattp  s.C11[A]
+//   pattp+pt  s.C11[A] with s.C00[A]
+//   pt+pattp  s.C00[A] with s.C11[A]
+//     result  s.C00[A] with s.C11[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:82:
+//     def gd1[A](x: C00[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                                                                                       ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C00[A]
+//         pt  s.C00[A]
+//      pattp  s.C21[A]
+//   pattp+pt  s.C21[A] with s.C00[A]
+//   pt+pattp  s.C00[A] with s.C21[A]
+//     result  s.C00[A] with s.C21[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:83:
+//     def gd2[A](x: C10[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                               ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C10[A]
+//         pt  s.C10[A]
+//      pattp  s.C00[A]
+//   pattp+pt  s.C00[A] with s.C10[A]
+//   pt+pattp  s.C10[A] with s.C00[A]
+//     result  s.C10[A] with s.C00[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:83:
+//     def gd2[A](x: C10[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                      ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C10[A]
+//         pt  s.C10[A]
+//      pattp  s.C20[A]
+//   pattp+pt  s.C20[A] with s.C10[A]
+//   pt+pattp  s.C10[A] with s.C20[A]
+//     result  s.C10[A] with s.C20[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:83:
+//     def gd2[A](x: C10[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                            ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C10[A]
+//         pt  s.C10[A]
+//      pattp  s.C01[A]
+//   pattp+pt  s.C01[A] with s.C10[A]
+//   pt+pattp  s.C10[A] with s.C01[A]
+//     result  s.C10[A] with s.C01[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:83:
+//     def gd2[A](x: C10[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                                                           ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C10[A]
+//         pt  s.C10[A]
+//      pattp  s.C11[A]
+//   pattp+pt  s.C11[A] with s.C10[A]
+//   pt+pattp  s.C10[A] with s.C11[A]
+//     result  s.C10[A] with s.C11[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:83:
+//     def gd2[A](x: C10[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                                                                                       ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C10[A]
+//         pt  s.C10[A]
+//      pattp  s.C21[A]
+//   pattp+pt  s.C21[A] with s.C10[A]
+//   pt+pattp  s.C10[A] with s.C21[A]
+//     result  s.C10[A] with s.C21[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:84:
+//     def gd3[A](x: C20[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                               ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C20[A]
+//         pt  s.C20[A]
+//      pattp  s.C00[A]
+//   pattp+pt  s.C00[A] with s.C20[A]
+//   pt+pattp  s.C20[A] with s.C00[A]
+//     result  s.C20[A] with s.C00[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:84:
+//     def gd3[A](x: C20[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                   ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C20[A]
+//         pt  s.C20[A]
+//      pattp  s.C10[A]
+//   pattp+pt  s.C10[A] with s.C20[A]
+//   pt+pattp  s.C20[A] with s.C10[A]
+//     result  s.C20[A] with s.C10[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:84:
+//     def gd3[A](x: C20[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                            ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C20[A]
+//         pt  s.C20[A]
+//      pattp  s.C01[A]
+//   pattp+pt  s.C01[A] with s.C20[A]
+//   pt+pattp  s.C20[A] with s.C01[A]
+//     result  s.C20[A] with s.C01[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:84:
+//     def gd3[A](x: C20[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                                                           ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C20[A]
+//         pt  s.C20[A]
+//      pattp  s.C11[A]
+//   pattp+pt  s.C11[A] with s.C20[A]
+//   pt+pattp  s.C20[A] with s.C11[A]
+//     result  s.C20[A] with s.C11[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:84:
+//     def gd3[A](x: C20[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                                                                                       ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C20[A]
+//         pt  s.C20[A]
+//      pattp  s.C21[A]
+//   pattp+pt  s.C21[A] with s.C20[A]
+//   pt+pattp  s.C20[A] with s.C21[A]
+//     result  s.C20[A] with s.C21[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:85:
+//     def gd4[A](x: C01[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                               ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C01[A]
+//         pt  s.C01[A]
+//      pattp  s.C00[A]
+//   pattp+pt  s.C00[A] with s.C01[A]
+//   pt+pattp  s.C01[A] with s.C00[A]
+//     result  s.C01[A] with s.C00[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:85:
+//     def gd4[A](x: C01[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                   ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C01[A]
+//         pt  s.C01[A]
+//      pattp  s.C10[A]
+//   pattp+pt  s.C10[A] with s.C01[A]
+//   pt+pattp  s.C01[A] with s.C10[A]
+//     result  s.C01[A] with s.C10[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:85:
+//     def gd4[A](x: C01[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                      ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C01[A]
+//         pt  s.C01[A]
+//      pattp  s.C20[A]
+//   pattp+pt  s.C20[A] with s.C01[A]
+//   pt+pattp  s.C01[A] with s.C20[A]
+//     result  s.C01[A] with s.C20[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:85:
+//     def gd4[A](x: C01[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                                                           ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C01[A]
+//         pt  s.C01[A]
+//      pattp  s.C11[A]
+//   pattp+pt  s.C11[A] with s.C01[A]
+//   pt+pattp  s.C01[A] with s.C11[A]
+//     result  s.C01[A] with s.C11[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:85:
+//     def gd4[A](x: C01[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                                                                                       ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C01[A]
+//         pt  s.C01[A]
+//      pattp  s.C21[A]
+//   pattp+pt  s.C21[A] with s.C01[A]
+//   pt+pattp  s.C01[A] with s.C21[A]
+//     result  s.C01[A] with s.C21[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:86:
+//     def gd5[A](x: C11[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                               ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C11[A]
+//         pt  s.C11[A]
+//      pattp  s.C00[A]
+//   pattp+pt  s.C00[A] with s.C11[A]
+//   pt+pattp  s.C11[A] with s.C00[A]
+//     result  s.C11[A] with s.C00[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:86:
+//     def gd5[A](x: C11[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                   ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C11[A]
+//         pt  s.C11[A]
+//      pattp  s.C10[A]
+//   pattp+pt  s.C10[A] with s.C11[A]
+//   pt+pattp  s.C11[A] with s.C10[A]
+//     result  s.C11[A] with s.C10[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:86:
+//     def gd5[A](x: C11[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                      ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C11[A]
+//         pt  s.C11[A]
+//      pattp  s.C20[A]
+//   pattp+pt  s.C20[A] with s.C11[A]
+//   pt+pattp  s.C11[A] with s.C20[A]
+//     result  s.C11[A] with s.C20[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:86:
+//     def gd5[A](x: C11[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                            ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C11[A]
+//         pt  s.C11[A]
+//      pattp  s.C01[A]
+//   pattp+pt  s.C01[A] with s.C11[A]
+//   pt+pattp  s.C11[A] with s.C01[A]
+//     result  s.C11[A] with s.C01[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:86:
+//     def gd5[A](x: C11[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                                                                                       ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C11[A]
+//         pt  s.C11[A]
+//      pattp  s.C21[A]
+//   pattp+pt  s.C21[A] with s.C11[A]
+//   pt+pattp  s.C11[A] with s.C21[A]
+//     result  s.C11[A] with s.C21[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:87:
+//     def gd6[A](x: C21[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                               ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C21[A]
+//         pt  s.C21[A]
+//      pattp  s.C00[A]
+//   pattp+pt  s.C00[A] with s.C21[A]
+//   pt+pattp  s.C21[A] with s.C00[A]
+//     result  s.C21[A] with s.C00[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:87:
+//     def gd6[A](x: C21[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                   ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C21[A]
+//         pt  s.C21[A]
+//      pattp  s.C10[A]
+//   pattp+pt  s.C10[A] with s.C21[A]
+//   pt+pattp  s.C21[A] with s.C10[A]
+//     result  s.C21[A] with s.C10[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:87:
+//     def gd6[A](x: C21[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                      ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C21[A]
+//         pt  s.C21[A]
+//      pattp  s.C20[A]
+//   pattp+pt  s.C20[A] with s.C21[A]
+//   pt+pattp  s.C21[A] with s.C20[A]
+//     result  s.C21[A] with s.C20[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:87:
+//     def gd6[A](x: C21[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                            ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C21[A]
+//         pt  s.C21[A]
+//      pattp  s.C01[A]
+//   pattp+pt  s.C01[A] with s.C21[A]
+//   pt+pattp  s.C21[A] with s.C01[A]
+//     result  s.C21[A] with s.C01[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat-behavior.scala:87:
+//     def gd6[A](x: C21[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
+//                                                                                                                                           ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  s.C21[A]
+//         pt  s.C21[A]
+//      pattp  s.C11[A]
+//   pattp+pt  s.C11[A] with s.C21[A]
+//   pt+pattp  s.C21[A] with s.C11[A]
+//     result  s.C21[A] with s.C11[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

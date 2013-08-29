@@ -579,3 +579,21 @@ trait Pattern {
       const(num.fromDouble(l.toDouble))
   }
 }
+// patmat-exprs.scala:302:
+//         a => a match { case x: Expr[T] => x.optimizeWith(f) }
+//                                ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Pattern.this.Expr[_$14]
+//         pt  Pattern.this.Expr[_$14]
+//      pattp  Pattern.this.Expr[T]
+//   pattp+pt  Pattern.this.Expr[T]
+//   pt+pattp  Pattern.this.Expr[_$14]
+//     result  Pattern.this.Expr[T]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }

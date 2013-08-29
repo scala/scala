@@ -32,3 +32,21 @@ object Test {
     println(h(null))
   }
 }
+// null-and-intersect.scala:17:
+//     case _: Immortal => 1
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Immutable
+//         pt  Immutable
+//      pattp  Test.Immortal
+//   pattp+pt  Test.Immortal with Immutable
+//   pt+pattp  Immutable with Test.Immortal
+//     result  Immutable with Test.Immortal
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

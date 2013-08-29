@@ -52,3 +52,21 @@ object ExistentialsConsideredHarmful {
     }
   }
 }
+// existentials-harmful.scala:50:
+//     case tb : TransportBox[a] => new BoxCarrier(tb) {
+//               ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  ExistentialsConsideredHarmful.TransportBox[_1]
+//         pt  ExistentialsConsideredHarmful.TransportBox[_1]
+//      pattp  ExistentialsConsideredHarmful.TransportBox[a]
+//   pattp+pt  ExistentialsConsideredHarmful.TransportBox[a]
+//   pt+pattp  ExistentialsConsideredHarmful.TransportBox[_1]
+//     result  ExistentialsConsideredHarmful.TransportBox[_1]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }
