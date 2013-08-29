@@ -206,34 +206,36 @@ trait Reifiers { self: Quasiquotes =>
       case other => reify(other)
     }
 
-    override def reifyModifiers(m: Modifiers) = {
-      val (modsPlaceholders, annots) = m.annotations.partition {
-        case ModsPlaceholder(_, _, _) => true
-        case _ => false
-      }
-      val (mods, flags) = modsPlaceholders.map {
-        case ModsPlaceholder(tree, location, card) => (tree, location)
-      }.partition { case (tree, location) =>
-        location match {
-          case ModsLocation => true
-          case FlagsLocation => false
-          case _ => c.abort(tree.pos, s"$flagsType or $modsType expected but ${tree.tpe} found")
+    override def reifyModifiers(m: Modifiers) =
+      if (m == NoMods) super.reifyModifiers(m)
+      else {
+        val (modsPlaceholders, annots) = m.annotations.partition {
+          case ModsPlaceholder(_, _, _) => true
+          case _ => false
+        }
+        val (mods, flags) = modsPlaceholders.map {
+          case ModsPlaceholder(tree, location, card) => (tree, location)
+        }.partition { case (tree, location) =>
+          location match {
+            case ModsLocation => true
+            case FlagsLocation => false
+            case _ => c.abort(tree.pos, s"$flagsType or $modsType expected but ${tree.tpe} found")
+          }
+        }
+        mods match {
+          case (tree, _) :: Nil =>
+            if (flags.nonEmpty) c.abort(flags(0)._1.pos, "Can't splice flags together with modifiers, consider merging flags into modifiers")
+            if (annots.nonEmpty) c.abort(tree.pos, "Can't splice modifiers together with annotations, consider merging annotations into modifiers")
+            ensureNoExplicitFlags(m, tree.pos)
+            tree
+          case _ :: (second, _) :: Nil =>
+            c.abort(second.pos, "Can't splice multiple modifiers, consider merging them into a single modifiers instance")
+          case _ =>
+            val baseFlags = reifyFlags(m.flags)
+            val reifiedFlags = flags.foldLeft[Tree](baseFlags) { case (flag, (tree, _)) => Apply(Select(flag, nme.OR), List(tree)) }
+            mirrorFactoryCall(nme.Modifiers, reifiedFlags, reify(m.privateWithin), reifyAnnotList(annots))
         }
       }
-      mods match {
-        case (tree, _) :: Nil =>
-          if (flags.nonEmpty) c.abort(flags(0)._1.pos, "Can't splice flags together with modifiers, consider merging flags into modifiers")
-          if (annots.nonEmpty) c.abort(tree.pos, "Can't splice modifiers together with annotations, consider merging annotations into modifiers")
-          ensureNoExplicitFlags(m, tree.pos)
-          tree
-        case _ :: (second, _) :: Nil =>
-          c.abort(second.pos, "Can't splice multiple modifiers, consider merging them into a single modifiers instance")
-        case _ =>
-          val baseFlags = reifyBuildCall(nme.FlagsRepr, m.flags)
-          val reifiedFlags = flags.foldLeft[Tree](baseFlags) { case (flag, (tree, _)) => Apply(Select(flag, nme.OR), List(tree)) }
-          mirrorFactoryCall(nme.Modifiers, reifiedFlags, reify(m.privateWithin), reifyAnnotList(annots))
-      }
-    }
   }
 
   class UnapplyReifier extends Reifier {
@@ -272,19 +274,20 @@ trait Reifiers { self: Quasiquotes =>
         reify(other)
     }
 
-    override def reifyModifiers(m: Modifiers) = {
-      val mods = m.annotations.collect { case ModsPlaceholder(tree, _, _) => tree }
-      mods match {
-        case tree :: Nil =>
-          if (m.annotations.length != 1) c.abort(tree.pos, "Can't extract modifiers together with annotations, consider extracting just modifiers")
-          ensureNoExplicitFlags(m, tree.pos)
-          tree
-        case _ :: second :: rest =>
-          c.abort(second.pos, "Can't extract multiple modifiers together, consider extracting a single modifiers instance")
-        case Nil =>
-          mirrorFactoryCall(nme.Modifiers, reifyBuildCall(nme.FlagsRepr, m.flags),
-                                           reify(m.privateWithin), reifyAnnotList(m.annotations))
+    override def reifyModifiers(m: Modifiers) =
+      if (m == NoMods) super.reifyModifiers(m)
+      else {
+        val mods = m.annotations.collect { case ModsPlaceholder(tree, _, _) => tree }
+        mods match {
+          case tree :: Nil =>
+            if (m.annotations.length != 1) c.abort(tree.pos, "Can't extract modifiers together with annotations, consider extracting just modifiers")
+            ensureNoExplicitFlags(m, tree.pos)
+            tree
+          case _ :: second :: rest =>
+            c.abort(second.pos, "Can't extract multiple modifiers together, consider extracting a single modifiers instance")
+          case Nil =>
+            mirrorFactoryCall(nme.Modifiers, reifyFlags(m.flags), reify(m.privateWithin), reifyAnnotList(m.annotations))
+        }
       }
-    }
   }
 }

@@ -578,6 +578,7 @@ trait StdNames {
     val New: NameType                  = "New"
     val NoFlags: NameType              = "NoFlags"
     val NoSymbol: NameType             = "NoSymbol"
+    val NoMods: NameType               = "NoMods"
     val Nothing: NameType              = "Nothing"
     val Null: NameType                 = "Null"
     val Object: NameType               = "Object"
