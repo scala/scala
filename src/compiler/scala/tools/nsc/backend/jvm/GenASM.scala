@@ -2370,7 +2370,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
             case LOAD_MODULE(module) =>
               // assert(module.isModule, "Expected module: " + module)
               debuglog("generating LOAD_MODULE for: " + module + " flags: " + module.flagString)
-              if (clasz.symbol == module.moduleClass && jMethodName != nme.readResolve.toString) {
+              def inStaticMethod = this.method != null && this.method.symbol.isStaticMember
+              if (clasz.symbol == module.moduleClass && jMethodName != nme.readResolve.toString && !inStaticMethod) {
                 jmethod.visitVarInsn(Opcodes.ALOAD, 0)
               } else {
                 jmethod.visitFieldInsn(
