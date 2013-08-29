@@ -324,7 +324,8 @@ abstract class TreeGen extends macros.TreeBuilder {
    *    body
    *  }
    */
-  def mkTemplate(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], body: List[Tree], superPos: Position): Template = {
+  def mkTemplate(parents: List[Tree], self: ValDef, constrMods: Modifiers,
+                 vparamss: List[List[ValDef]], body: List[Tree], superPos: Position = NoPosition): Template = {
     /* Add constructor to template */
 
     // create parameters for <init> as synthetic trees.
@@ -348,10 +349,10 @@ abstract class TreeGen extends macros.TreeBuilder {
     }
     val lvdefs = evdefs collect { case vdef: ValDef => copyValDef(vdef)(mods = vdef.mods | PRESUPER) }
 
-    val constrs = {
-      if (constrMods hasFlag TRAIT) {
-        if (body forall treeInfo.isInterfaceMember) List()
-        else List(
+    val constr = {
+      if (constrMods.isTrait) {
+        if (body forall treeInfo.isInterfaceMember) None
+        else Some(
           atPos(wrappingPos(superPos, lvdefs)) (
             DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(Nil), TypeTree(), Block(lvdefs, Literal(Constant())))))
       } else {
@@ -365,18 +366,18 @@ abstract class TreeGen extends macros.TreeBuilder {
                                          // (the type macros aren't in the trunk yet, but there is a plan for them to land there soon)
                                          // this means that we don't know what will be the arguments of the super call
                                          // therefore here we emit a dummy which gets populated when the template is named and typechecked
-        List(
+        Some(
           // TODO: previously this was `wrappingPos(superPos, lvdefs ::: argss.flatten)`
           // is it going to be a problem that we can no longer include the `argss`?
           atPos(wrappingPos(superPos, lvdefs)) (
             DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
       }
     }
-    constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus=false))
+    constr foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus=false))
     // Field definitions for the class - remove defaults.
     val fieldDefs = vparamss.flatten map (vd => copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree))
 
-    global.Template(parents, self, gvdefs ::: fieldDefs ::: constrs ::: etdefs ::: rest)
+    global.Template(parents, self, gvdefs ::: fieldDefs ::: constr ++: etdefs ::: rest)
   }
 
   /** Create positioned tree representing an object creation <new parents { stats }
