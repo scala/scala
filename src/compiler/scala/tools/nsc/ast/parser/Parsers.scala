@@ -3012,18 +3012,22 @@ self =>
     def refineStatSeq(): List[Tree] = checkNoEscapingPlaceholders {
       val stats = new ListBuffer[Tree]
       while (!isStatSeqEnd) {
-        if (isDclIntro) { // don't IDE hook
-          stats ++= joinComment(defOrDcl(in.offset, NoMods))
-        } else if (!isStatSep) {
-          syntaxErrorOrIncomplete(
-            "illegal start of declaration"+
-            (if (inFunReturnType) " (possible cause: missing `=' in front of current method body)"
-             else ""), skipIt = true)
-        }
+        stats ++= refineStat()
         if (in.token != RBRACE) acceptStatSep()
       }
       stats.toList
     }
+
+    def refineStat(): List[Tree] =
+      if (isDclIntro) { // don't IDE hook
+        joinComment(defOrDcl(in.offset, NoMods))
+      } else if (!isStatSep) {
+        syntaxErrorOrIncomplete(
+          "illegal start of declaration"+
+          (if (inFunReturnType) " (possible cause: missing `=' in front of current method body)"
+           else ""), skipIt = true)
+        Nil
+      } else Nil
 
     /** overridable IDE hook for local definitions of blockStatSeq
      *  Here's an idea how to fill in start and end positions.

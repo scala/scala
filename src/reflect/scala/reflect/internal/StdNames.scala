@@ -247,8 +247,9 @@ trait StdNames {
     final val Quasiquote: NameType          = "Quasiquote"
 
     // quasiquote-specific names
-    final val QUASIQUOTE_MODS: NameType     = "$quasiquote$mods$"
-    final val QUASIQUOTE_TUPLE: NameType    = "$quasiquote$tuple$"
+    final val QUASIQUOTE_MODS: NameType        = "$quasiquote$mods$"
+    final val QUASIQUOTE_TUPLE: NameType       = "$quasiquote$tuple$"
+    final val QUASIQUOTE_REFINE_STAT: NameType = "$quasiquote$refine$stat$"
 
     // Annotation simple names, used in Namer
     final val BeanPropertyAnnot: NameType = "BeanProperty"
@@ -682,6 +683,7 @@ trait StdNames {
     val materializeTypeTag: NameType   = "materializeTypeTag"
     val moduleClass : NameType         = "moduleClass"
     val mkAnnotation: NameType         = "mkAnnotation"
+    val mkRefineStat: NameType         = "mkRefineStat"
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
     val newFreeTerm: NameType          = "newFreeTerm"

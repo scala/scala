@@ -112,6 +112,13 @@ trait Parsers { self: Quasiquotes =>
         case _ =>
           Nil
       }
+
+      override def refineStat(): List[Tree] =
+        if (isHole && !isDclIntro) {
+          val result = ValDef(NoMods, in.name, Ident(tpnme.QUASIQUOTE_REFINE_STAT), EmptyTree) :: Nil
+          in.nextToken()
+          result
+        } else super.refineStat()
     }
   }
 

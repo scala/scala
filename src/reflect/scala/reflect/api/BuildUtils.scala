@@ -76,6 +76,9 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def mkAnnotation(tree: Tree, args: List[Tree]): Tree
 
+    def mkRefineStat(stat: Tree): Tree
+
+    def mkRefineStat(stats: List[Tree]): List[Tree]
 
     val FlagsRepr: FlagsReprExtractor
 

@@ -35,13 +35,9 @@ trait Reifiers { self: Quasiquotes =>
       reified
     }
 
-    override def reifyTree(tree: Tree): Tree = {
-      val reified =
-        reifyTreePlaceholder(tree) orElse
-        reifyTreeSyntactically(tree)
-      //println(s"reified ${showRaw(tree)} as $reified")
-      reified
-    }
+    override def reifyTree(tree: Tree): Tree =
+      reifyTreePlaceholder(tree) orElse
+      reifyTreeSyntactically(tree)
 
     def reifyTreePlaceholder(tree: Tree): Tree = tree match {
       case Placeholder(tree, TreeLocation(_), _) if isReifyingExpressions => tree
@@ -50,8 +46,16 @@ trait Reifiers { self: Quasiquotes =>
       case TuplePlaceholder(args) => reifyTuple(args)
       case TupleTypePlaceholder(args) => reifyTupleType(args)
       case CasePlaceholder(tree, location, _) => reifyCase(tree, location)
-      case ClassPlaceholder(tree) => reifyClass(tree)
+      case RefineStatPlaceholder(tree, _, _) => reifyRefineStat(tree)
       case _ => EmptyTree
+    }
+
+    override def reifyTreeSyntactically(tree: Tree) = tree match {
+      case SyntacticClassDef(mods, name, tparams, constrmods, vparamss, parents, selfdef, body) =>
+        reifyBuildCall(nme.SyntacticClassDef, mods, name, tparams, constrmods, vparamss,
+                                              parents, selfdef, body)
+      case _ =>
+        super.reifyTreeSyntactically(tree)
     }
 
     override def reifyName(name: Name): Tree = name match {
@@ -86,10 +90,7 @@ trait Reifiers { self: Quasiquotes =>
       case _ => reifyBuildCall(nme.TupleTypeN, args)
     }
 
-    def reifyClass(tree: Tree) = {
-      val SyntacticClassDef(mods, name, tparams, constrmods, argss, parents, selfval, body) = tree
-      reifyBuildCall(nme.SyntacticClassDef, mods, name, tparams, constrmods, argss, parents, selfval, body)
-    }
+    def reifyRefineStat(tree: Tree) = tree
 
     /** Splits list into a list of groups where subsequent elements are considered
      *  similar by the corresponding function.
@@ -143,6 +144,7 @@ trait Reifiers { self: Quasiquotes =>
     override def reifyList(xs: List[Any]): Tree = reifyMultiCardinalityList(xs) {
       case Placeholder(tree, _, DotDot) => tree
       case CasePlaceholder(tree, _, DotDot) => tree
+      case RefineStatPlaceholder(tree, _, DotDot) => reifyRefineStat(tree)
       case List(Placeholder(tree, _, DotDotDot)) => tree
     } {
       reify(_)
@@ -236,6 +238,8 @@ trait Reifiers { self: Quasiquotes =>
             mirrorFactoryCall(nme.Modifiers, reifiedFlags, reify(m.privateWithin), reifyAnnotList(annots))
         }
       }
+
+    override def reifyRefineStat(tree: Tree) = mirrorBuildCall(nme.mkRefineStat, tree)
   }
 
   class UnapplyReifier extends Reifier {

@@ -76,6 +76,18 @@ trait BuildUtils { self: SymbolTable =>
       case _ => throw new IllegalArgumentException(s"Tree ${showRaw(tree)} isn't a correct representation of annotation, consider passing Ident as a first argument")
     }
 
+    def mkRefineStat(stat: Tree): Tree = {
+      stat match {
+        case dd: DefDef => require(dd.rhs.isEmpty, "can't use DefDef with non-empty body as refine stat")
+        case vd: ValDef => require(vd.rhs.isEmpty, "can't use ValDef with non-empty rhs as refine stat")
+        case td: TypeDef =>
+        case _ => throw new IllegalArgumentException(s"not legal refine stat: $stat")
+      }
+      stat
+    }
+
+    def mkRefineStat(stats: List[Tree]): List[Tree] = stats.map(mkRefineStat)
+
     object FlagsRepr extends FlagsReprExtractor {
       def apply(bits: Long): FlagSet = bits
       def unapply(flags: Long): Some[Long] = Some(flags)
