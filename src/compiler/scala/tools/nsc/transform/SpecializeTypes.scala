@@ -1318,7 +1318,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
 
     private def isAccessible(sym: Symbol): Boolean =
-      (currentClass == sym.owner.enclClass) && (currentClass != targetClass)
+      if (currentOwner.isAnonymousFunction) false
+      else (currentClass == sym.owner.enclClass) && (currentClass != targetClass)
 
     private def shouldMakePublic(sym: Symbol): Boolean =
       sym.hasFlag(PRIVATE | PROTECTED) && (addressFields || !nme.isLocalName(sym.name))

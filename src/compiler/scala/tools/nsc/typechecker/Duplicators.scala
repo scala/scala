@@ -15,7 +15,7 @@ import scala.collection.{ mutable, immutable }
  *  @author  Iulian Dragos
  *  @version 1.0
  */
-abstract class Duplicators extends Analyzer {
+abstract class Duplicators extends Analyzer { 
   import global._
   import definitions._
 
@@ -139,8 +139,8 @@ abstract class Duplicators extends Analyzer {
         sym
 
     private def invalidate(tree: Tree, owner: Symbol = NoSymbol) {
-      debuglog("attempting to invalidate " + tree.symbol)
-      if (tree.isDef && tree.symbol != NoSymbol) {
+      debuglog(s"attempting to invalidate symbol = ${tree.symbol}")
+      if ((tree.isDef || tree.isInstanceOf[Function]) && tree.symbol != NoSymbol) {
         debuglog("invalid " + tree.symbol)
         invalidSyms(tree.symbol) = tree
 
@@ -154,7 +154,7 @@ abstract class Duplicators extends Analyzer {
             ldef.symbol = newsym
             debuglog("newsym: " + newsym + " info: " + newsym.info)
 
-          case vdef @ ValDef(mods, name, _, rhs) if mods.hasFlag(Flags.LAZY) =>
+          case vdef @ ValDef(mods, name, _, rhs) if mods.hasFlag(Flags.LAZY) => 
             debuglog("ValDef " + name + " sym.info: " + vdef.symbol.info)
             invalidSyms(vdef.symbol) = vdef
             val newowner = if (owner != NoSymbol) owner else context.owner
@@ -167,6 +167,11 @@ abstract class Duplicators extends Analyzer {
           case DefDef(_, name, tparams, vparamss, _, rhs) =>
             // invalidate parameters
             invalidateAll(tparams ::: vparamss.flatten)
+            tree.symbol = NoSymbol
+            
+          case Function(vparams, _) =>
+            // invalidate parameters
+            invalidateAll(vparams)
             tree.symbol = NoSymbol
 
           case _ =>
@@ -228,6 +233,10 @@ abstract class Duplicators extends Analyzer {
         case ddef @ DefDef(_, _, _, _, tpt, rhs) =>
           ddef.tpt modifyType fixType
           super.typed(ddef.clearType(), mode, pt)
+          
+        case fun: Function =>
+          debuglog("Clearing the type and retyping Function: " + fun)
+          super.typed(fun.clearType, mode, pt)
 
         case vdef @ ValDef(mods, name, tpt, rhs) =>
           // log("vdef fixing tpe: " + tree.tpe + " with sym: " + tree.tpe.typeSymbol + " and " + invalidSyms)
