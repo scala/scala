@@ -15,9 +15,10 @@ import scala.tools.util.{ Signallable, Javap, StringOps }
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
-import util.{ ClassPath, Exceptional, stringFromWriter, stringFromStream }
+import util.{ ClassPath, Exceptional, ScalaClassLoader, stringFromWriter, stringFromStream }
 import interpreter._
-import io.{ File, Sources }
+import io.{ Directory, File, Path, Sources }
+import scala.util.Properties.{ envOrElse, envOrNone, javaHome } 
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -353,8 +354,39 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         p("")
     }
   }
+  private[this] lazy val platformTools: Option[File] = {
+    val jarName = "tools.jar"
+    def jarPath(path: Path) = (path / "lib" / jarName).toFile
+    def jarAt(path: Path) = {
+      val f = jarPath(path)
+      if (f.isFile) Some(f) else None
+    }
+    val jdkHome = envOrElse("JDK_HOME", envOrElse("JAVA_HOME", javaHome))
+    val jdkDir = {
+      val d = Directory(jdkHome)
+      if (d.isDirectory) Some(d) else None
+    }
+    def deeply(dir: Directory) = dir.deepFiles find (_.name == jarName)
 
-  protected def newJavap() = new Javap(intp.classLoader, new IMain.ReplStrippingWriter(intp)) {
+    val home = envOrNone("JDK_HOME") orElse envOrNone("JAVA_HOME") map (p => Path(p))
+    val install = Some(Path(javaHome))
+ 
+    (home flatMap jarAt) orElse
+    (install flatMap jarAt) orElse
+    (install map (_.parent) flatMap jarAt) orElse
+    (jdkDir flatMap deeply)
+  }
+  private def addToolsJarToLoader() = {
+    val loader = platformTools match {
+      case Some(tools) => ScalaClassLoader.fromURLs(Seq(tools.toURL), intp.classLoader)
+      case _ => intp.classLoader
+    }
+    val sample = "sun.tools.javap.JavapPrinter"
+    loader loadClass sample  // let it throw, let it throw, let it throw
+    loader
+  }
+
+  protected def newJavap() = new Javap(addToolsJarToLoader(), new IMain.ReplStrippingWriter(intp)) {
     override def tryClass(path: String): Array[Byte] = {
       val hd :: rest = path split '.' toList;
       // If there are dots in the name, the first segment is the
