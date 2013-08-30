@@ -90,7 +90,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     def genThrow(expr: Tree): BType = {
       val thrownKind = tpeTK(expr)
-      assert(exemplars.get(thrownKind).isSubtypeOf(ThrowableReference))
+      // `throw null` is valid although scala.Null (as defined in src/libray-aux) isn't a subtype of Throwable.
+      // Similarly for scala.Nothing (again, as defined in src/libray-aux).
+      assert(thrownKind.isNullType || thrownKind.isNothingType || exemplars.get(thrownKind).isSubtypeOf(ThrowableReference))
       genLoad(expr, thrownKind)
       lineNumber(expr)
       emit(asm.Opcodes.ATHROW) // ICode enters here into enterIgnoreMode, we'll rely instead on DCE at ClassNode level.
