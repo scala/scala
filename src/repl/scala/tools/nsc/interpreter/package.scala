@@ -15,10 +15,8 @@ import scala.util.control.Exception.catching
 /** The main REPL related classes and values are as follows.
  *  In addition to standard compiler classes Global and Settings, there are:
  *
- *  History: an interface for session history.
- *  Completion: an interface for tab completion.
- *  ILoop (formerly InterpreterLoop): The umbrella class for a session.
- *  IMain (formerly Interpreter): Handles the evolving state of the session
+ *  ILoop: The umbrella class for a session.
+ *  IMain: Handles the evolving state of the session
  *    and handles submitting code to the compiler and handling the output.
  *  InteractiveReader: how ILoop obtains input.
  *  History: an interface for session history.
