@@ -4552,6 +4552,12 @@ trait Types
     else (ps :+ SerializableTpe).toList
   )
 
+  /** Adds the @uncheckedBound annotation if the given `tp` has type arguments */
+  final def uncheckedBounds(tp: Type): Type = {
+    if (tp.typeArgs.isEmpty || UncheckedBoundsClass == NoSymbol) tp // second condition for backwards compatibilty with older scala-reflect.jar
+    else tp.withAnnotation(AnnotationInfo marker UncheckedBoundsClass.tpe)
+  }
+
   /** Members of the given class, other than those inherited
    *  from Any or AnyRef.
    */

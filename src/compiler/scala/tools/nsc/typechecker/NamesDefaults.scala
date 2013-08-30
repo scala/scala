@@ -162,7 +162,7 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos, newFlags = ARTIFACT) setInfo qual.tpe
+        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos, newFlags = ARTIFACT) setInfo uncheckedBounds(qual.tpe)
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
         // it stays in Vegas: SI-5720, SI-5727
@@ -289,9 +289,10 @@ trait NamesDefaults { self: Analyzer =>
               arg.tpe
             }
           ).widen // have to widen or types inferred from literal defaults will be singletons
-          val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos, newFlags = ARTIFACT) setInfo (
-            if (byName) functionType(Nil, argTpe) else argTpe
-          )
+          val s = context.owner.newValue(unit.freshTermName("x$"), arg.pos, newFlags = ARTIFACT) setInfo {
+            val tp = if (byName) functionType(Nil, argTpe) else argTpe
+            uncheckedBounds(tp)
+          }
           Some((context.scope.enter(s), byName, repeated))
       })
       map2(symPs, args) {
