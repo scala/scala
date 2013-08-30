@@ -33,7 +33,15 @@ abstract class BCodeOptIntra extends BCodeSyncAndTry {
   import global._
 
   /*
-   *  All methods in this class can-multi-thread
+   *  All methods in this class can-multi-thread, provided each thread uses a dedicated instance of EssentialCleaner.
+   *
+   *  In more detail:
+   *    - each worker thread has its own dedicated instance of EssentialCleanser,
+   *      and in turn each such instance owns a (thus per-thread) JumpChainsCollapser, etc.
+   *    - an invocation of EssentialCleanser.cleanseMethod() runs without spawning itself any threads,
+   *      in a sequential manner; that's why there's no concurrent access to the same JumpChainsCollapser, etc.
+   *      (otherwise, that would amount to a race-condition).
+   *
    */
   class EssentialCleanser(cnode: asm.tree.ClassNode) {
 
@@ -209,4 +217,3 @@ abstract class BCodeOptIntra extends BCodeSyncAndTry {
   } // end of method refreshInnerClasses()
 
 } // end of class BCodeOptIntra
-

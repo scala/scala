@@ -33,7 +33,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
   /*
    * must-single-thread
    */
-  def getOutFolder(csym: Symbol, cName: String, cunit: CompilationUnit): _root_.scala.tools.nsc.io.AbstractFile = {
+  def getOutFolder(csym: Symbol, cName: String, cunit: CompilationUnit): scala.tools.nsc.io.AbstractFile = {
     try {
       outputDirectory(csym)
     } catch {

@@ -143,7 +143,7 @@ abstract class GenBCode extends BCodeOptIntra {
     }
 
     private val poison2 = Item2(Int.MaxValue, null, null, null, null)
-    private val q2 = new _root_.java.util.concurrent.LinkedBlockingQueue[Item2]
+    private val q2 = new java.util.concurrent.LinkedBlockingQueue[Item2]
 
     /* ---------------- q3 ---------------- */
 
@@ -182,7 +182,7 @@ abstract class GenBCode extends BCodeOptIntra {
      *
      *  must-single-thread (because it relies on typer).
      */
-    class Worker1(needsOutFolder: Boolean) extends _root_.java.lang.Runnable {
+    class Worker1(needsOutFolder: Boolean) extends java.lang.Runnable {
 
       val caseInsensitively = mutable.Map.empty[String, Symbol]
 
@@ -276,7 +276,7 @@ abstract class GenBCode extends BCodeOptIntra {
      *
      *  can-multi-thread
      */
-    class Worker2 extends _root_.java.lang.Runnable {
+    class Worker2 extends java.lang.Runnable {
 
       def run() {
 
@@ -393,7 +393,7 @@ abstract class GenBCode extends BCodeOptIntra {
      */
     private def buildAndSendToDiskInParallel(needsOutFolder: Boolean) {
 
-      new _root_.java.lang.Thread(new Worker1(needsOutFolder), "bcode-typer").start()
+      new java.lang.Thread(new Worker1(needsOutFolder), "bcode-typer").start()
       spawnPipeline2()
       feedPipeline1()
       drainQ3()
@@ -410,7 +410,7 @@ abstract class GenBCode extends BCodeOptIntra {
     private def spawnPipeline2(): IndexedSeq[Thread] = {
       for(i <- 1 to MAX_THREADS) yield {
         val w = new Worker2
-        val t = new _root_.java.lang.Thread(w, "optimizer-" + i)
+        val t = new java.lang.Thread(w, "optimizer-" + i)
         t.start()
         t
       }
