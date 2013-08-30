@@ -55,7 +55,7 @@ extends GenMap[K, V]
    *
    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.
    *
-   *  @param d     the function mapping keys to values, used for non-present keys
+   *  @param d     default value used for non-present keys
    *  @return      a wrapper of the map with a default value
    */
   def withDefaultValue(d: V): scala.collection.parallel.mutable.ParMap[K, V] = new ParMap.WithDefault[K, V](this, x => d)
