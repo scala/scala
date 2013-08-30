@@ -31,7 +31,9 @@ public class UnreachableCode {
 
     /** after transform() has run, this field records whether
      *  at least one pass of this transformer modified something. */
-    public boolean changed = false;
+    private boolean changed = false;
+
+    public boolean changed() { return changed; }
 
     public void transform(final String owner, final MethodNode mnode) throws AnalyzerException {
 
