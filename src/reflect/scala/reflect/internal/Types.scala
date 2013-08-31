@@ -4147,6 +4147,19 @@ trait Types
     corresponds3(tps1, tps2, tparams map (_.variance))(isSubArg)
   }
 
+  def canSpecializeRefinement(tp: Type, sym: Symbol): Boolean = {
+    // Subtyping checks with refined (i.e. potentially structural) types should distinguish
+    // regular methods and macros, otherwise we're going to run into SI-7340.
+    // There's one detail though. Since implicit conversions are looked up using
+    // structural types that look like: "? { def foo: ? }", where question marks
+    // stand for WildcardType, we need to allow such structural types to match
+    // situations when the target member is a macro.
+    val member = tp nonPrivateMember sym.name
+    val macroSpecializesMethod = member.isMacro && !sym.isMacro && sym.isOnlyRefinementMember && sym.info != WildcardType
+    val methodSpecializesMacro = !member.isMacro && sym.isMacro && sym.isOnlyRefinementMember
+    !macroSpecializesMethod && !methodSpecializesMacro
+  }
+
   def specializesSym(tp: Type, sym: Symbol, depth: Depth): Boolean = {
     def directlySpecializedBy(member: Symbol): Boolean = (
          member == sym

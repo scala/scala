@@ -1,0 +1,13 @@
+Test_2.scala:5: error: type mismatch;
+ found   : B
+ required: C.Greeter[_]
+    (which expands to)  AnyRef{def hello: _$1} forSome { type _$1 }
+  val g1: Greeter[_] = new B
+                       ^
+Test_2.scala:6: error: type mismatch;
+ found   : B
+ required: C.Greeter[Unit]
+    (which expands to)  AnyRef{def hello: Unit}
+  val g2: Greeter[Unit] = new B
+                          ^
+two errors found

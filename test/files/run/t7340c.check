@@ -1,0 +1,29 @@
+===== lubs =====
+java.lang.Object
+java.lang.Object
+AnyRef{def foo: Unit}
+AnyRef{def foo: Unit}
+java.lang.Object
+java.lang.Object
+C1
+C1
+C2
+C2
+===== glbs =====
+X
+X
+Y
+Y
+X with Y
+Y with X
+D1
+D1
+D2
+D2
+===== classBound =====
+AnyRef{def foo: Unit}
+C1
+AnyRef{macro foo: Unit}
+C2
+AnyRef{macro foo: Unit}
+AnyRef{def foo: Unit}

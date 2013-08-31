@@ -475,7 +475,7 @@ trait TypeComparers {
         thirdTryRef(tp1, tr2)
       case rt2: RefinedType =>
         (rt2.parents forall (isSubType(tp1, _, depth))) &&
-          (rt2.decls forall (specializesSym(tp1, _, depth)))
+        (rt2.decls forall (sym => canSpecializeRefinement(tp1, sym) && specializesSym(tp1, sym, depth)))
       case et2: ExistentialType =>
         et2.withTypeVars(isSubType(tp1, _, depth), depth) || fourthTry
       case mt2: MethodType =>
