@@ -344,14 +344,6 @@ div.members > ol > li:last-child {
   color: darkseagreen;
 }
 
-.signature .symbol .canonical {
-  color: #ccc;
-}
-
-.signature .symbol .canonical:after {
-  content: " ";
-}
-
 .signature .symbol .params > .implicit {
   font-style: italic;
 }
@@ -577,6 +569,11 @@ div.fullcomment {
 }
 
 #template .shortcomment {
+  margin: 5px 0 0 14.7em;
+  padding: 0;
+}
+
+#template .canonical {
   margin: 5px 0 0 14.7em;
   padding: 0;
 }

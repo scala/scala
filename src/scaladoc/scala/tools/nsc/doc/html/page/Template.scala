@@ -114,6 +114,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       </div>
 
       { signature(tpl, isSelf = true) }
+      { memberToCanonicalName(tpl) }
       { memberToCommentHtml(tpl, tpl.inTemplate, isSelf = true) }
 
       <div id="mbrsel">
@@ -286,6 +287,23 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     </body>
   }
 
+  def memberToCanonicalName(mbr: MemberEntity): NodeSeq = {
+    val maybeCanonical: Option[String] = mbr match {
+      case nte: NonTemplateMemberEntity if nte.isUseCase =>
+        nte.useCaseOf.flatMap(_.comment).flatMap(_.canonical)
+      case _: MemberEntity if mbr.comment.flatMap(_.canonical).isDefined =>
+        mbr.comment.flatMap(_.canonical)
+      case _ =>
+        None
+    }
+    maybeCanonical match {
+      case Some(canonical) =>
+        <p class="canonical">Canonical / Searchable Name: {canonical}</p>
+      case _ =>
+        NodeSeq.Empty
+    }
+  }
+
   def memberToHtml(mbr: MemberEntity, inTpl: DocTemplateEntity): NodeSeq = {
     val memberComment = memberToCommentHtml(mbr, inTpl, isSelf = false)
     <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
@@ -295,6 +313,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       <a id={ mbr.signature }/>
       <a id={ mbr.signatureCompat }/>
       { signature(mbr, isSelf = false) }
+      { memberToCanonicalName(mbr) }
       { memberComment }
     </li>
   }
@@ -723,21 +742,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       </span>
       <span class="symbol">
         {
-          val maybeCanonical: Option[String] = mbr match {
-            case nte: NonTemplateMemberEntity if nte.isUseCase =>
-              nte.useCaseOf.flatMap(_.comment).flatMap(_.canonical)
-            case _: MemberEntity if mbr.comment.flatMap(_.canonical).isDefined =>
-              mbr.comment.flatMap(_.canonical)
-            case _ =>
-              None
-          }
-          maybeCanonical match {
-            case Some(canonical) =>
-              <span class="canonical" title="Canonical / Searchable Name">{canonical}</span>
-            case _ =>
-              NodeSeq.Empty
-          }
-        }{
           val nameClass =
             if (mbr.isImplicitlyInherited)
               if (mbr.isShadowedOrAmbiguousImplicit)

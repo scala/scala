@@ -687,13 +687,13 @@ object Test extends Properties("HtmlFactory") {
 
     property("Foo") = files.get("com/example/p1/Foo.html") match {
       case Some(node: scala.xml.Node) =>
-        node.toString contains """<span class="canonical" title="Canonical / Searchable Name">addSomething</span>"""
+        node.toString contains """<p class="canonical">Canonical / Searchable Name: addSomething</p>"""
       case _ => false
     }
 
     property("Bar") = files.get("com/example/p1/Bar.html") match {
       case Some(node: scala.xml.Node) =>
-        node.toString contains """<span class="canonical" title="Canonical / Searchable Name">addSomething</span>"""
+        node.toString contains """<p class="canonical">Canonical / Searchable Name: addSomething</p>"""
       case _ => false
     }
   }
