@@ -140,6 +140,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     abort("originalOwner is not kept in presentation compiler runs.")
 
   override def forInteractive = true
+  override protected def synchronizeNames = true
 
   override def newAsSeenFromMap(pre: Type, clazz: Symbol): AsSeenFromMap =
     new InteractiveAsSeenFromMap(pre, clazz)

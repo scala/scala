@@ -9,10 +9,7 @@ private[reflect] trait SynchronizedOps extends internal.SymbolTable
 
 // Names
 
-  private lazy val nameLock = new Object
-
-  override def newTermName(s: String): TermName = nameLock.synchronized { super.newTermName(s) }
-  override def newTypeName(s: String): TypeName = nameLock.synchronized { super.newTypeName(s) }
+  override protected def synchronizeNames = true
 
 // BaseTypeSeqs
 
