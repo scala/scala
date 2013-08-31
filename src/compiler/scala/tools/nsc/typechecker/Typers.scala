@@ -4539,7 +4539,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def sym = tree1.symbol
           if (tree.isInstanceOf[PostfixSelect])
             checkFeature(tree.pos, PostfixOpsFeature, name.decode)
-          if (sym != null && sym.isOnlyRefinementMember)
+          if (sym != null && sym.isOnlyRefinementMember && !sym.isMacro)
             checkFeature(tree1.pos, ReflectiveCallsFeature, sym.toString)
 
           qualStableOrError.symbol match {
