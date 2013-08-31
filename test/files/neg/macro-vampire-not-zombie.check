@@ -1,0 +1,6 @@
+Test_2.scala:3: error: type mismatch;
+ found   : AnyRef{macro x: Any; macro y: Any}
+ required: AnyRef{def x: Any; def y: Any}
+  val bar: { def x: Any; def y: Any } = foo
+                                        ^
+one error found
