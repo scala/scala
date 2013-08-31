@@ -2388,6 +2388,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isVariable) "var"
       else if (isPackage) "package"
       else if (isModule) "object"
+      else if (isMacro) "macro"
       else if (isSourceMethod) "def"
       else if (isTerm && (!isParameter || isParamAccessor)) "val"
       else ""
