@@ -1,12 +1,19 @@
-import scala.tools.nsc.backend.bcode.JumpChainsCollapser
-import scala.tools.partest.BytecodeTest
+package scala.tools.nsc.backend.bcode
+
+import org.junit.Assert._
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
+
 import scala.tools.asm
 import scala.collection.JavaConverters._
 
 import scala.tools.asm.Opcodes
 
-object Test extends BytecodeTest {
+@RunWith(classOf[JUnit4])
+class JumpChainsUnit1Test {
 
+  @Test
   def show: Unit = {
     val fst = transformed(before()).instructions.getFirst
     // the first goto of the multi-hop chain in the input

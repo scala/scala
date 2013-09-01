@@ -1,12 +1,19 @@
-import scala.tools.nsc.backend.bcode.DanglingExcHandlers
-import scala.tools.partest.BytecodeTest
+package scala.tools.nsc.backend.bcode
+
+import org.junit.Assert._
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
+
 import scala.tools.asm
 import scala.collection.JavaConverters._
 
 import scala.tools.asm.Opcodes
 
-object Test extends BytecodeTest {
+@RunWith(classOf[JUnit4])
+class DanglingExcHandlersUnit1Test {
 
+  @Test
   def show: Unit = {
     val b   = before()
     assert(b.tryCatchBlocks.size() > 0)
@@ -18,7 +25,10 @@ object Test extends BytecodeTest {
     assert(isa == isb)
   }
 
-  def wrapped(m: asm.tree.MethodNode) = instructions.fromMethod(m)
+  def wrapped(m: asm.tree.MethodNode) = {
+    Util.computeMaxLocalsMaxStack(m)
+    Util.textify(m)
+  }
 
   def mkMethodNode = {
     new asm.tree.MethodNode(

@@ -1,23 +1,32 @@
-import scala.tools.nsc.backend.bcode.LabelsCleanup
-import scala.tools.partest.BytecodeTest
+package scala.tools.nsc.backend.bcode
+
+import org.junit.Assert._
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
+
 import scala.tools.asm
 import scala.collection.JavaConverters._
 
 import scala.tools.asm.Opcodes
 
-object Test extends BytecodeTest {
+@RunWith(classOf[JUnit4])
+class LabelsCleanupUnit1Test {
 
+  @Test
   def show: Unit = {
     val ma  = transformed(before())
     val mb  = after()
     val isa = wrapped(ma)
     val isb = wrapped(mb)
-    // redundant LocalVariableEntry's are removed
-    assert(ma.localVariables.size() == 0)
+    // redundant LineNumberNodes are removed
     assert(isa == isb)
   }
 
-  def wrapped(m: asm.tree.MethodNode) = instructions.fromMethod(m)
+  def wrapped(m: asm.tree.MethodNode) = {
+    Util.computeMaxLocalsMaxStack(m)
+    Util.textify(m)
+  }
 
   def mkMethodNode = {
     new asm.tree.MethodNode(
@@ -30,26 +39,21 @@ object Test extends BytecodeTest {
 
   def before(): asm.tree.MethodNode = {
     val m  = mkMethodNode
-    val L1 = new asm.Label
-    val L2 = new asm.Label
-    // L1:
-    m.visitLabel(L1)
-    //     nop
-    m.visitInsn(Opcodes.NOP)
-    // L2:
-    m.visitLabel(L2)
+    val L = new asm.Label
     //     return
     m.visitInsn(Opcodes.RETURN)
-
-    m.visitLocalVariable("abc", "I", null, L1, L2, 1)
+    // line number 1
+    m.visitLineNumber(1, L)
+    // line number 2
+    m.visitLineNumber(2, L)
+    // L:
+    m.visitLabel(L)
 
     m
   }
 
   def after(): asm.tree.MethodNode = {
     val m  = mkMethodNode
-    //     nop
-    m.visitInsn(Opcodes.NOP)
     //     return
     m.visitInsn(Opcodes.RETURN)
 
