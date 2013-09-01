@@ -9,13 +9,13 @@ package xsbt
 private object DelegatingReporter
 {
 	def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
-		new DelegatingReporter(Command.getWarnFatal(settings), delegate)
+		new DelegatingReporter(Command.getWarnFatal(settings), Command.getNoWarn(settings), delegate)
 }
 
 // The following code is based on scala.tools.nsc.reporters.{AbstractReporter, ConsoleReporter}
 // Copyright 2002-2009 LAMP/EPFL
 // Original author: Martin Odersky
-private final class DelegatingReporter(warnFatal: Boolean, private[this] var delegate: xsbti.Reporter) extends scala.tools.nsc.reporters.Reporter
+private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, private[this] var delegate: xsbti.Reporter) extends scala.tools.nsc.reporters.Reporter
 {
 	import scala.tools.nsc.util.{FakePos,NoPosition,Position}
 
@@ -36,8 +36,11 @@ private final class DelegatingReporter(warnFatal: Boolean, private[this] var del
 	}
 	protected def info0(pos: Position, msg: String, rawSeverity: Severity, force: Boolean)
 	{
-		val severity = if(warnFatal && rawSeverity == WARNING) ERROR else rawSeverity
-		delegate.log(convert(pos), msg, convert(severity))
+		val skip = rawSeverity == WARNING && noWarn
+		if (!skip) {
+			val severity = if(warnFatal && rawSeverity == WARNING) ERROR else rawSeverity
+			delegate.log(convert(pos), msg, convert(severity))
+		}
 	}
 	def convert(posIn: Position): xsbti.Position =
 	{
