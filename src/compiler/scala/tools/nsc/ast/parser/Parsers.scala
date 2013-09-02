@@ -2704,8 +2704,7 @@ self =>
             syntaxError("classes are not allowed to be virtual", skipIt = false)
           }
           val template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
-          if (isInterface(mods1, template.body)) mods1 |= Flags.INTERFACE
-          val result = ClassDef(mods1, name, tparams, template)
+          val result = gen.mkClassDef(mods1, name, tparams, template)
           // Context bounds generate implicit parameters (part of the template) with types
           // from tparams: we need to ensure these don't overlap
           if (!classContextBounds.isEmpty)
@@ -2796,17 +2795,7 @@ self =>
         // @S: pre template body cannot stub like post body can!
         val (self, body) = templateBody(isPre = true)
         if (in.token == WITH && (self eq emptyValDef)) {
-          val earlyDefs: List[Tree] = body flatMap {
-            case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
-              List(copyValDef(vdef)(mods = mods | Flags.PRESUPER))
-            case tdef @ TypeDef(mods, name, tparams, rhs) =>
-              deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.")
-              List(treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs))
-            case stat if !stat.isEmpty =>
-              syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", skipIt = false)
-              List()
-            case _ => List()
-          }
+          val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
           in.nextToken()
           val parents = templateParents()
           val (self1, body1) = templateBodyOpt(parenMeansSyntaxError = false)
@@ -2821,8 +2810,18 @@ self =>
       }
     }
 
-    def isInterface(mods: Modifiers, body: List[Tree]): Boolean =
-      mods.isTrait && (body forall treeInfo.isInterfaceMember)
+    def ensureEarlyDef(tree: Tree): Tree = tree match {
+      case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
+        copyValDef(vdef)(mods = mods | Flags.PRESUPER)
+      case tdef @ TypeDef(mods, name, tparams, rhs) =>
+        deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.")
+        treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
+      case stat if !stat.isEmpty =>
+        syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", skipIt = false)
+        EmptyTree
+      case _ =>
+        EmptyTree
+    }
 
     /** {{{
      *  ClassTemplateOpt ::= `extends' ClassTemplate | [[`extends'] TemplateBody]
@@ -2831,7 +2830,7 @@ self =>
      *  }}}
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
-      val (parents0, self, body) = (
+      val (parents, self, body) = (
         if (in.token == EXTENDS || in.token == SUBTYPE && mods.isTrait) {
           in.nextToken()
           template()
@@ -2842,26 +2841,21 @@ self =>
           (List(), self, body)
         }
       )
-      def anyrefParents() = {
-        val caseParents = if (mods.isCase) List(productConstr, serializableConstr) else Nil
-        parents0 ::: caseParents match {
-          case Nil  => atInPos(scalaAnyRefConstr) :: Nil
-          case ps   => ps
-        }
-      }
       def anyvalConstructor() = (
         // Not a well-formed constructor, has to be finished later - see note
         // regarding AnyVal constructor in AddInterfaces.
         DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, literalUnit))
       )
-      val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
+      val parentPos = o2p(in.offset)
+      val tstart1 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
 
-      atPos(tstart0) {
+      atPos(tstart1) {
         // Exclude only the 9 primitives plus AnyVal.
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
-          Template(parents0, self, anyvalConstructor :: body)
+          Template(parents, self, anyvalConstructor :: body)
         else
-          gen.mkTemplate(anyrefParents(), self, constrMods, vparamss, body, o2p(tstart))
+          gen.mkTemplate(gen.mkParents(mods, parents, parentPos),
+                         self, constrMods, vparamss, body, o2p(tstart))
       }
     }
 

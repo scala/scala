@@ -70,6 +70,19 @@ trait BuildUtils { self: SymbolTable =>
       case _ => throw new IllegalArgumentException(s"Tree ${showRaw(tree)} isn't a correct representation of annotation, consider passing Ident as a first argument")
     }
 
+    def mkVparamss(argss: List[List[ValDef]]): List[List[ValDef]] = {
+      argss.map { _.map {
+        case vd @ ValDef(mods, _, _, EmptyTree) => copyValDef(vd)(mods = mods | PARAM)
+        case vd @ ValDef(mods, _, _, _) => copyValDef(vd)(mods = mods | PARAM | DEFAULTPARAM)
+      } }
+    }
+
+    def mkTparams(tparams: List[Tree]): List[TypeDef] =
+      tparams.map {
+        case td: TypeDef => copyTypeDef(td)(mods = (td.mods | PARAM) & (~DEFERRED))
+        case other => throw new IllegalArgumentException("can't splice $other as type parameter")
+      }
+
     def mkRefineStat(stat: Tree): Tree = {
       stat match {
         case dd: DefDef => require(dd.rhs.isEmpty, "can't use DefDef with non-empty body as refine stat")
@@ -89,6 +102,17 @@ trait BuildUtils { self: SymbolTable =>
         case _ => None
       }
     }
+
+    def mkEarlyDef(defn: Tree): Tree = defn match {
+      case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
+        copyValDef(vdef)(mods = mods | PRESUPER)
+      case tdef @ TypeDef(mods, _, _, _) =>
+        copyTypeDef(tdef)(mods =  mods | PRESUPER)
+      case _ =>
+        throw new IllegalArgumentException(s"not legal early def: $defn")
+    }
+
+    def mkEarlyDef(defns: List[Tree]): List[Tree] = defns.map(mkEarlyDef)
 
     def RefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
 
@@ -121,36 +145,110 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
 
+    private object UnCtor {
+      def unapply(tree: Tree): Option[(Modifiers, List[List[ValDef]], List[Tree])] = tree match {
+        case DefDef(mods, nme.MIXIN_CONSTRUCTOR, _, _, _, Block(lvdefs, _)) =>
+          Some(mods | Flag.TRAIT, Nil, lvdefs)
+        case DefDef(mods, nme.CONSTRUCTOR, Nil, vparamss, _, Block(lvdefs :+ _, _)) =>
+          Some(mods, vparamss, lvdefs)
+        case _ => None
+      }
+    }
+
+    private object UnMkTemplate {
+      def unapply(templ: Template): Option[(List[Tree], ValDef, Modifiers, List[List[ValDef]], List[Tree], List[Tree])] = {
+        val Template(parents, selfdef, tbody) = templ
+        def result(ctorMods: Modifiers, vparamss: List[List[ValDef]], edefs: List[Tree], body: List[Tree]) =
+          Some((parents, selfdef, ctorMods, vparamss, edefs, body))
+        def indexOfCtor(trees: List[Tree]) =
+          trees.indexWhere { case UnCtor(_, _, _) => true ; case _ => false }
+
+        if (tbody forall treeInfo.isInterfaceMember)
+          result(NoMods | Flag.TRAIT, Nil, Nil, tbody)
+        else if (indexOfCtor(tbody) == -1)
+          None
+        else {
+          val (rawEdefs, rest) = tbody.span(treeInfo.isEarlyDef)
+          val (gvdefs, etdefs) = rawEdefs.partition(treeInfo.isEarlyValDef)
+          val (fieldDefs, UnCtor(ctorMods, ctorVparamss, lvdefs) :: body) = rest.splitAt(indexOfCtor(rest))
+          val evdefs = gvdefs.zip(lvdefs).map {
+            case (gvdef @ ValDef(_, _, tpt: TypeTree, _), ValDef(_, _, _, rhs)) =>
+              copyValDef(gvdef)(tpt = tpt.original, rhs = rhs)
+          }
+          val edefs = evdefs ::: etdefs
+          if (ctorMods.isTrait)
+            result(ctorMods, Nil, edefs, body)
+          else {
+            // undo conversion from (implicit ... ) to ()(implicit ... ) when its the only parameter section
+            val vparamssRestoredImplicits = ctorVparamss match {
+              case Nil :: (tail @ ((head :: _) :: _)) if head.mods.isImplicit => tail
+              case other => other
+            }
+            // undo flag modifications by mergeing flag info from constructor args and fieldDefs
+            val modsMap = fieldDefs.map { case ValDef(mods, name, _, _) => name -> mods }.toMap
+            val vparamss = mmap(vparamssRestoredImplicits) { vd =>
+              val originalMods = modsMap(vd.name) | (vd.mods.flags & DEFAULTPARAM)
+              atPos(vd.pos)(ValDef(originalMods, vd.name, vd.tpt, vd.rhs))
+            }
+            result(ctorMods, vparamss, edefs, body)
+          }
+        }
+      }
+    }
+
     object SyntacticClassDef extends SyntacticClassDefExtractor {
       def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef],
-                constrMods: Modifiers, vparamss: List[List[ValDef]], parents: List[Tree],
-                selfdef: ValDef, body: List[Tree]): Tree =
-        ClassDef(mods, name, tparams, gen.mkTemplate(parents, selfdef, constrMods, vparamss, body, NoPosition))
+                constrMods: Modifiers, vparamss: List[List[ValDef]], earlyDefs: List[Tree],
+                parents: List[Tree], selfdef: ValDef, body: List[Tree]): ClassDef = {
+        val extraFlags = PARAMACCESSOR | (if (mods.isCase) CASEACCESSOR else 0L)
+        val vparamss0 = vparamss.map { _.map { vd => copyValDef(vd)(mods = (vd.mods | extraFlags) & (~DEFERRED)) } }
+        val tparams0 = mkTparams(tparams)
+        val parents0 = gen.mkParents(mods,
+          if (mods.isCase) parents.filter {
+            case ScalaDot(tpnme.Product | tpnme.Serializable | tpnme.AnyRef) => false
+            case _ => true
+          } else parents
+        )
+        val body0 = earlyDefs ::: body
+        val templ = gen.mkTemplate(parents0, selfdef, constrMods, vparamss0, body0)
+        gen.mkClassDef(mods, name, tparams0, templ)
+      }
 
-      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers,
-                                       List[List[ValDef]], List[Tree], ValDef, List[Tree])] = tree match {
-        case ClassDef(mods, name, tparams, Template(parents, selfdef, tbody)) =>
-          // extract generated fieldDefs and constructor
-          val (defs, (ctor: DefDef) :: body) = tbody.splitAt(tbody.indexWhere {
-            case DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => true
-            case _ => false
-          })
-          val (earlyDefs, fieldDefs) = defs.span(treeInfo.isEarlyDef)
+      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers, List[List[ValDef]],
+                                       List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
+        case ClassDef(mods, name, tparams, UnMkTemplate(parents, selfdef, ctorMods, vparamss, earlyDefs, body))
+          if !ctorMods.isTrait && !ctorMods.hasFlag(JAVA) =>
+          Some((mods, name, tparams, ctorMods, vparamss, earlyDefs, parents, selfdef, body))
+        case _ =>
+          None
+      }
+    }
 
-          // undo conversion from (implicit ... ) to ()(implicit ... ) when its the only parameter section
-          val vparamssRestoredImplicits = ctor.vparamss match {
-            case Nil :: rest if !rest.isEmpty && !rest.head.isEmpty && rest.head.head.mods.isImplicit => rest
-            case other => other
-          }
+    object SyntacticTraitDef extends SyntacticTraitDefExtractor {
+      def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef], earlyDefs: List[Tree],
+                parents: List[Tree], selfdef: ValDef, body: List[Tree]): ClassDef = {
+        val mods0 = mods | TRAIT | ABSTRACT
+        val templ = gen.mkTemplate(parents, selfdef, Modifiers(TRAIT), Nil, earlyDefs ::: body)
+        gen.mkClassDef(mods0, name, mkTparams(tparams), templ)
+      }
 
-          // undo flag modifications by mergeing flag info from constructor args and fieldDefs
-          val modsMap = fieldDefs.map { case ValDef(mods, name, _, _) => name -> mods }.toMap
-          val vparamss = mmap(vparamssRestoredImplicits) { vd =>
-            val originalMods = modsMap(vd.name) | (vd.mods.flags & DEFAULTPARAM)
-            atPos(vd.pos)(ValDef(originalMods, vd.name, vd.tpt, vd.rhs))
-          }
+      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef],
+                                       List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
+        case ClassDef(mods, name, tparams, UnMkTemplate(parents, selfdef, ctorMods, vparamss, earlyDefs, body))
+          if mods.isTrait =>
+          Some((mods, name, tparams, earlyDefs, parents, selfdef, body))
+        case _ => None
+      }
+    }
 
-          Some((mods, name, tparams, ctor.mods, vparamss, parents, selfdef, earlyDefs ::: body))
+    object SyntacticModuleDef extends SyntacticModuleDefExtractor {
+      def apply(mods: Modifiers, name: TermName, earlyDefs: List[Tree],
+                parents: List[Tree], selfdef: ValDef, body: List[Tree]) =
+        ModuleDef(mods, name, gen.mkTemplate(parents, selfdef, NoMods, Nil, earlyDefs ::: body))
+
+      def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
+        case ModuleDef(mods, name, UnMkTemplate(parents, selfdef, _, _, earlyDefs, body)) =>
+          Some((mods, name, earlyDefs, parents, selfdef, body))
         case _ =>
           None
       }

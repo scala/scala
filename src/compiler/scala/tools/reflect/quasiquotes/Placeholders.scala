@@ -140,4 +140,11 @@ trait Placeholders { self: Quasiquotes =>
       case _ => None
     }
   }
+
+  object EarlyDefPlaceholder {
+    def unapply(tree: Tree): Option[(Tree, Location, Cardinality)] = tree match {
+      case ValDef(_, Placeholder(tree, location, card), Ident(tpnme.QUASIQUOTE_EARLY_DEF), _) => Some((tree, location, card))
+      case _ => None
+    }
+  }
 }
