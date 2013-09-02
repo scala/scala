@@ -53,12 +53,6 @@ trait BuildUtils { self: SymbolTable =>
 
     def Ident(sym: Symbol): Ident = self.Ident(sym)
 
-    def Block(stats: List[Tree]): Block = stats match {
-      case Nil => self.Block(Nil, Literal(Constant(())))
-      case elem :: Nil => self.Block(Nil, elem)
-      case elems => self.Block(elems.init, elems.last)
-    }
-
     def TypeTree(tp: Type): TypeTree = self.TypeTree(tp)
 
     def thisPrefix(sym: Symbol): Type = sym.thisPrefix
@@ -88,25 +82,34 @@ trait BuildUtils { self: SymbolTable =>
 
     def mkRefineStat(stats: List[Tree]): List[Tree] = stats.map(mkRefineStat)
 
+    def RefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
+
     object FlagsRepr extends FlagsReprExtractor {
       def apply(bits: Long): FlagSet = bits
       def unapply(flags: Long): Some[Long] = Some(flags)
     }
 
-    object TypeApplied extends TypeAppliedExtractor {
+    object SyntacticTypeApplied extends SyntacticTypeAppliedExtractor {
+      def apply(tree: Tree, targs: List[Tree]): Tree =
+        if (targs.isEmpty) tree
+        else if (tree.isTerm) TypeApply(tree, targs)
+        else if (tree.isType) AppliedTypeTree(tree, targs)
+        else throw new IllegalArgumentException(s"can't apply types to $tree")
+
       def unapply(tree: Tree): Some[(Tree, List[Tree])] = tree match {
         case TypeApply(fun, targs) => Some((fun, targs))
+        case AppliedTypeTree(tpe, targs) => Some((tpe, targs))
         case _ => Some((tree, Nil))
       }
     }
 
-    object Applied extends AppliedExtractor {
+    object SyntacticApplied extends SyntacticAppliedExtractor {
+      def apply(tree: Tree, argss: List[List[Tree]]): Tree =
+        argss.foldLeft(tree) { Apply(_, _) }
+
       def unapply(tree: Tree): Some[(Tree, List[List[Tree]])] = {
         val treeInfo.Applied(fun, targs, argss) = tree
-        targs match {
-          case Nil => Some((fun, argss))
-          case _ => Some((TypeApply(fun, targs), argss))
-        }
+        Some((SyntacticTypeApplied(fun, targs), argss))
       }
     }
 
@@ -189,7 +192,15 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
 
-    def RefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
+    object SyntacticBlock extends SyntacticBlockExtractor {
+      def apply(stats: List[Tree]): Tree = gen.mkBlock(stats)
+
+      def unapply(tree: Tree): Option[List[Tree]] = tree match {
+        case self.Block(stats, expr) => Some(stats :+ expr)
+        case _ if tree.isTerm => Some(tree :: Nil)
+        case _ => None
+      }
+    }
   }
 
   val build: BuildApi = new BuildImpl

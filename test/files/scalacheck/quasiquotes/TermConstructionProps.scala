@@ -88,7 +88,7 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
   }
 
   property("splice trees into type apply") = forAll { (fun: TreeIsTerm, types: List[Tree]) =>
-    q"$fun[..$types]" ≈ TypeApply(fun, types)
+    q"$fun[..$types]" ≈ (if (types.nonEmpty) TypeApply(fun, types) else fun)
   }
 
   property("splice names into import selector") = forAll {
@@ -122,8 +122,10 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
 
   def blockInvariant(quote: Tree, trees: List[Tree]) =
     quote ≈ (trees match {
-      case Nil => Block(Nil, q"()")
-      case _   => Block(trees.init, trees.last)
+      case Nil => q"()"
+      case _ :+ last if !last.isTerm => Block(trees, q"()")
+      case head :: Nil => head
+      case init :+ last => Block(init, last)
     })
 
   property("splice list of trees into block (1)") = forAll { (trees: List[Tree]) =>

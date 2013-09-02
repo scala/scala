@@ -62,4 +62,9 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     val q"$x match { case ..$cases }" = q"x match { case 1 => case 2 => }"
     x ≈ q"x" && cases ≈ List(cq"1 =>", cq"2 =>")
   }
+
+  property("deconstruct block") = test {
+    val q"{ ..$xs }" = q"{ x1; x2; x3 }"
+    assert(xs ≈ List(q"x1", q"x2", q"x3"))
+  }
 }

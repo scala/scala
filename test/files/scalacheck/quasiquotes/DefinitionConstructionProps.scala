@@ -118,7 +118,7 @@ trait TypeDefConstruction { self: QuasiquoteProperties =>
   property("splice into applied type tree") = forAll { (T1: TypeName, T2: TypeName, args: List[Tree]) =>
     q"type $T1 = $T2[..$args]" ≈
       TypeDef(Modifiers(), T1, List(),
-        AppliedTypeTree(Ident(T2), args))
+        if(args.nonEmpty) AppliedTypeTree(Ident(T2), args) else Ident(T2))
   }
 }
 

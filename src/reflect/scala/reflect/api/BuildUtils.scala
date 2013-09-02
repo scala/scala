@@ -64,8 +64,6 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def Ident(sym: Symbol): Ident
 
-    def Block(stats: List[Tree]): Block
-
     def TypeTree(tp: Type): TypeTree
 
     def thisPrefix(sym: Symbol): Type
@@ -80,6 +78,8 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def mkRefineStat(stats: List[Tree]): List[Tree]
 
+    def RefTree(qual: Tree, sym: Symbol): Tree
+
     val FlagsRepr: FlagsReprExtractor
 
     trait FlagsReprExtractor {
@@ -87,15 +87,17 @@ private[reflect] trait BuildUtils { self: Universe =>
       def unapply(flags: Long): Some[Long]
     }
 
-    val TypeApplied: TypeAppliedExtractor
+    val SyntacticTypeApplied: SyntacticTypeAppliedExtractor
 
-    trait TypeAppliedExtractor {
+    trait SyntacticTypeAppliedExtractor {
+      def apply(tree: Tree, targs: List[Tree]): Tree
       def unapply(tree: Tree): Some[(Tree, List[Tree])]
     }
 
-    val Applied: AppliedExtractor
+    val SyntacticApplied: SyntacticAppliedExtractor
 
-    trait AppliedExtractor {
+    trait SyntacticAppliedExtractor {
+      def apply(tree: Tree, argss: List[List[Tree]]): Tree
       def unapply(tree: Tree): Some[(Tree, List[List[Tree]])]
     }
 
@@ -117,6 +119,11 @@ private[reflect] trait BuildUtils { self: Universe =>
       def unapply(tree: Tree): Option[List[Tree]]
     }
 
-    def RefTree(qual: Tree, sym: Symbol): Tree
+    val SyntacticBlock: SyntacticBlockExtractor
+
+    trait SyntacticBlockExtractor {
+      def apply(stats: List[Tree]): Tree
+      def unapply(tree: Tree): Option[List[Tree]]
+    }
   }
 }

@@ -7,7 +7,7 @@ import scala.reflect.internal.Flags._
 
 trait Reifiers { self: Quasiquotes =>
   import global._
-  import global.build.SyntacticClassDef
+  import global.build.{SyntacticClassDef, SyntacticBlock, SyntacticApplied, SyntacticTypeApplied}
   import global.treeInfo._
   import global.definitions._
   import Cardinality._
@@ -54,6 +54,14 @@ trait Reifiers { self: Quasiquotes =>
       case SyntacticClassDef(mods, name, tparams, constrmods, vparamss, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticClassDef, mods, name, tparams, constrmods, vparamss,
                                               parents, selfdef, body)
+      case SyntacticApplied(fun, argss) if argss.length > 1 =>
+        reifyBuildCall(nme.SyntacticApplied, fun, argss)
+      case SyntacticApplied(fun, argss @ (_ :+ (_ :+ Placeholder(_, _, DotDotDot)))) =>
+        reifyBuildCall(nme.SyntacticApplied, fun, argss)
+      case SyntacticTypeApplied(fun, targs) if targs.nonEmpty =>
+        reifyBuildCall(nme.SyntacticTypeApplied, fun, targs)
+      case Block(stats, last) =>
+        reifyBuildCall(nme.SyntacticBlock, stats :+ last)
       case _ =>
         super.reifyTreeSyntactically(tree)
     }
@@ -169,19 +177,10 @@ trait Reifiers { self: Quasiquotes =>
     def isReifyingExpressions = true
 
     override def reifyTreeSyntactically(tree: Tree): Tree = tree match {
-      case Block(stats, p @ Placeholder(_, _, _)) => reifyBuildCall(nme.Block, stats :+ p)
-      case Apply(f, List(Placeholder(argss, _, DotDotDot))) => reifyCallWithArgss(f, argss)
-      case RefTree(qual, SymbolPlaceholder(tree)) => mirrorBuildCall(nme.RefTree, reify(qual), tree)
-      case _ => super.reifyTreeSyntactically(tree)
-    }
-
-    def reifyCallWithArgss(f: Tree, argss: Tree) = {
-      val f1 = reifyTree(f)
-      val foldLeftF1 = Apply(TypeApply(Select(argss, nme.foldLeft), List(Select(u, tpnme.Tree))), List(f1))
-      val uDotApply = Function(
-        List(gen.mkSyntheticParam(nme.x_1), gen.mkSyntheticParam(nme.x_2)),
-        Apply(Select(u, nme.Apply), List(Ident(nme.x_1), Ident(nme.x_2))))
-      Apply(foldLeftF1, List(uDotApply))
+      case RefTree(qual, SymbolPlaceholder(tree)) =>
+        mirrorBuildCall(nme.RefTree, reify(qual), tree)
+      case _ =>
+        super.reifyTreeSyntactically(tree)
     }
 
     override def reifyMultiCardinalityList[T](xs: List[T])(fill: PartialFunction[T, Tree])(fallback: T => Tree): Tree = xs match {
@@ -244,15 +243,6 @@ trait Reifiers { self: Quasiquotes =>
 
   class UnapplyReifier extends Reifier {
     def isReifyingExpressions = false
-
-    override def reifyTreeSyntactically(tree: Tree): Tree = tree match {
-      case treeInfo.Applied(fun, Nil, argss) if fun != tree && !tree.isInstanceOf[AppliedTypeTree] =>
-        reifyBuildCall(nme.Applied, fun, argss)
-      case treeInfo.Applied(fun, targs, argss) if fun != tree & !tree.isInstanceOf[AppliedTypeTree] =>
-        mirrorBuildCall(nme.Applied, reifyBuildCall(nme.TypeApplied, fun, targs), reifyList(argss))
-      case _ =>
-        super.reifyTreeSyntactically(tree)
-    }
 
     override def scalaFactoryCall(name: String, args: Tree*): Tree =
       call("scala." + name, args: _*)

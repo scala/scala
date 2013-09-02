@@ -79,6 +79,11 @@ trait Parsers { self: Quasiquotes =>
         } else
           super.caseClause()
 
+      override def caseBlock(): Tree = super.caseBlock() match {
+        case Block(Nil, expr) => expr
+        case other => other
+      }
+
       def isHole: Boolean = isIdent && holeMap.contains(in.name)
 
       override def isAnnotation: Boolean = super.isAnnotation || (isHole && lookingAhead { isAnnotation })
