@@ -509,8 +509,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     case _                                                      => tp
   }
 
-  /**
-   *  Interpret one line of input. All feedback, including parse errors
+  /** Interpret one line of input. All feedback, including parse errors
    *  and evaluation results, are printed via the supplied compiler's
    *  reporter. Values defined are available for future interpreted strings.
    *
@@ -519,19 +518,50 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
    */
   def interpret(line: String): IR.Result = interpret(line, synthetic = false)
   def interpretSynthetic(line: String): IR.Result = interpret(line, synthetic = true)
+
+  /** Was the last line successfully compiled?
+   *  This flag is used by `compile` when deciding whether
+   *  to glue successive lines together.
+   */
+  var lastOK = false
   def interpret(line: String, synthetic: Boolean): IR.Result = compile(line, synthetic) match {
-    case Left(result) => result
-    case Right(req)   => new WrappedRequest(req).loadAndRunReq
+    case Left(IR.Incomplete) => IR.Incomplete
+    case Left(result) => lastOK = false ; result
+    case Right(req)   => lastOK = true  ; new WrappedRequest(req).loadAndRunReq
   }
 
+  /** Precompile the current line.
+   *  Parse it silently, then compile the resulting request.
+   *  On a bad parse, parse it again noisily.
+   *  And see if the parse error is recoverable by gluing this line
+   *  onto the previous line.
+   */
   private def compile(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
+    def parseLine = { reset() ; requestFromLine(line, synthetic) }
+    def silentRun = beSilentDuring(parseLine)
+    def noisyRun  = parseLine
+    def accrete   =
+      beSilentDuring { reset() ; requestFromLine(s"${lastRequest.originalLine}\n${line}", synthetic) } match {
+        case ok @ Right(req) if req != null && beSilentDuring(req.compile)
+               => ok                           // hey, it worked!
+        case incomplete @ Left(IR.Incomplete)
+               => incomplete                   // accreted line is incomplete
+        case _ => noisyRun                     // once more with feeling
+      }
+    def reset() = reporter.reset()
+
     if (global == null) Left(IR.Error)
-    else requestFromLine(line, synthetic) match {
-      case Left(result) => Left(result)
-      case Right(req)   =>
-       // null indicates a disallowed statement type; otherwise compile and
-       // fail if false (implying e.g. a type error)
-       if (req == null || !req.compile) Left(IR.Error) else Right(req)
+    else silentRun match {
+      case Left(IR.Error) if lastRequest != null && lastOK
+                   => accrete                  // retry with accretion
+      case incomplete @ Left(IR.Incomplete)
+                   => incomplete               // line is incomplete
+      case Left(_) => noisyRun                 // repeat to report errors
+      // req == null indicates a disallowed statement type;
+      // otherwise, compile == false means failure, e.g., a type error
+      case ok @ Right(req) if req != null && { reset() ; req.compile }
+                   => ok                       // hey, it worked!
+      case _       => Left(IR.Error)           // failed, errors already reported
     }
   }
 
@@ -649,6 +679,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       )
     bindRep.callEither("set", value) match {
       case Left(ex) =>
+        //repldbg(s"Value classloader: ${value.getClass.getClassLoader}")
+        //repldbg(s"IMain sees: ${getClass.getClassLoader.loadClass(boundType).getClassLoader}")
         repldbg("Set failed in bind(%s, %s, %s)".format(name, boundType, value))
         repldbg(util.stackTraceString(ex))
         IR.Error
