@@ -116,7 +116,7 @@ trait Parsers { self: Quasiquotes =>
         case AT =>
           in.nextToken()
           annot :: readAnnots(annot)
-        case _ if isHole && lookingAhead { in.token == AT || isModifier || isDefIntro || isIdent} =>
+        case _ if isHole && lookingAhead { isAnnotation || isModifier || isDefIntro || isIdent || isStatSep || in.token == LPAREN } =>
           val ann = Apply(Select(New(Ident(tpnme.QUASIQUOTE_MODS)), nme.CONSTRUCTOR), List(Literal(Constant(in.name.toString))))
           in.nextToken()
           ann :: readAnnots(annot)
@@ -130,6 +130,11 @@ trait Parsers { self: Quasiquotes =>
           in.nextToken()
           result
         } else super.refineStat()
+
+      override def ensureEarlyDef(tree: Tree) = tree match {
+        case Ident(name: TermName) if isHole(name) => ValDef(NoMods | Flag.PRESUPER, name, Ident(tpnme.QUASIQUOTE_EARLY_DEF), EmptyTree)
+        case _ => super.ensureEarlyDef(tree)
+      }
     }
   }
 

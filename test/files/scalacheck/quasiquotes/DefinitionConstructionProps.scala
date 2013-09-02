@@ -24,6 +24,21 @@ trait ClassConstruction { self: QuasiquoteProperties =>
       Modifiers(), name, List(),
       Template(parents, emptyValDef, emtpyConstructor :: body))
 
+  property("construct case class") = test {
+    val params = q"val x: Int" :: q"val y: Int" :: Nil
+    val name = TypeName("Point")
+    assertEqAst(q"$CASE class $name(..$params)", "case class Point(x: Int, y: Int)")
+  }
+
+  property("case class bare param") = test {
+    assertEqAst(q"$CASE class Point(x: Int, y: Int)", "case class Point(private[this] val x: Int, private[this] val y: Int)")
+  }
+
+  property("generate default constructors automatically") = test {
+    val parents = List.empty[Tree]
+    assertEqAst(q"class Foo extends ..$parents", "class Foo")
+  }
+
   property("splice term name into class") = forAll { (name: TypeName) =>
     eqAst(q"class $name", "class " + name.toString)
   }
@@ -42,10 +57,59 @@ trait ClassConstruction { self: QuasiquoteProperties =>
   property("splice type name into class parents") = forAll { (name: TypeName, parent: TypeName) =>
     q"class $name extends $parent" ≈ classWith(name, parents = List(Ident(parent)))
   }
+
+  property("param flags are consistent with raw code") = test {
+    val pubx = q"val x: Int"
+    val privx = q"private[this] val x: Int"
+    assertEqAst(q"     class C(x: Int)", "     class C(x: Int)                  ")
+    assertEqAst(q"case class C(x: Int)", "case class C(x: Int)                  ")
+    assertEqAst(q"     class C($pubx) ", "     class C(val x: Int)              ")
+    assertEqAst(q"case class C($pubx) ", "case class C(x: Int)                  ")
+    assertEqAst(q"     class C($privx)", "     class C(x: Int)                  ")
+    assertEqAst(q"case class C($privx)", "case class C(private[this] val x: Int)")
+  }
 }
 
 trait TraitConstruction { self: QuasiquoteProperties =>
+  property("splice name into trait def") = test {
+    val Foo = TypeName("Foo")
+    assert(q"trait $Foo" ≈ q"trait Foo")
+  }
 
+  property("splice type params into trait def") = test {
+    val tparams = q"type A" :: q"type B" :: Nil
+    assert(q"trait Foo[..$tparams]" ≈ q"trait Foo[A, B]")
+  }
+
+  property("splice defs into trait body") = test {
+    val body = q"def foo" :: q"val bar: Baz" :: Nil
+    assert(q"trait Foo { ..$body }" ≈ q"trait Foo { def foo; val bar: Baz }")
+  }
+
+  property("splice parents into trait") = test {
+    val parents = tq"A" :: tq"B" :: Nil
+    assert(q"trait Foo extends ..$parents" ≈ q"trait Foo extends A with B")
+  }
+
+  property("splice early valdef into trait") = test {
+    val x = q"val x: Int = 1"
+    assertEqAst(q"trait T extends { $x } with Any", "trait T extends { val x: Int = 1} with Any")
+  }
+
+  property("construct trait with early valdef") = test {
+    assertEqAst(q"trait T extends { val x: Int = 1 } with Any", "trait T extends { val x: Int = 1 } with Any")
+  }
+
+  property("splice defs into early block") = test {
+    val defs = q"val x: Int = 0" :: q"type Foo = Bar" :: Nil
+    assert(q"trait T extends { ..$defs } with Bippy" ≈
+           q"trait T extends { val x: Int = 0; type Foo = Bar} with Bippy")
+  }
+
+  property("fail on splicing of non-valid early tree") = test {
+    val defn = q"def x: Int = 0"
+    assertThrows[IllegalArgumentException] { q"trait T extends { $defn } with Bar" }
+  }
 }
 
 trait TypeDefConstruction { self: QuasiquoteProperties =>

@@ -15,11 +15,32 @@ object DefinitionDeconstructionProps
   with ValVarDeconstruction
 
 trait TraitDeconstruction { self: QuasiquoteProperties =>
-
+  property("exhaustive trait matcher") = test {
+    def matches(line: String) {
+      val q"""$mods trait $name[..$targs]
+              extends { ..$early } with ..$parents { $self => ..$body }""" = parse(line)
+    }
+    matches("trait Foo")
+    matches("trait Foo[T]")
+    matches("trait Foo { def bar }")
+    matches("trait Foo extends Bar with Baz")
+    matches("trait Foo { self: Bippy => val x: Int = 1}")
+    matches("trait Foo extends { val early: Int = 1 } with Bar { val late = early }")
+    matches("private[Gap] trait Foo")
+  }
 }
 
 trait ObjectDeconstruction { self: QuasiquoteProperties =>
-
+  property("exhaustive object matcher") = test {
+    def matches(line: String) = {
+      val q"""$mods object $name extends { ..$early } with ..$parents { $self => ..$body }""" = parse(line)
+    }
+    matches("object Foo")
+    matches("object Foo extends Bar[T]")
+    matches("object Foo extends { val early: T = v } with Bar")
+    matches("object Foo extends Foo { selfy => body }")
+    matches("private[Bippy] object Foo extends Bar with Baz")
+  }
 }
 
 trait ClassDeconstruction { self: QuasiquoteProperties =>
@@ -50,6 +71,26 @@ trait ClassDeconstruction { self: QuasiquoteProperties =>
 
   property("deconstruct bare case class") = test {
     val q"$mods class $name(..$args) extends ..$parents" = q"case class Foo(x: Int)"
+  }
+
+  property("exhaustive class matcher") = test {
+    def matches(line: String) {
+      val q"""$classMods class $name[..$targs] $ctorMods(...$argss)
+              extends { ..$early } with ..$parents { $self => ..$body }""" = parse(line)
+    }
+    matches("class Foo")
+    matches("class Foo[T]")
+    matches("class Foo[T] @annot")
+    matches("class Foo extends Bar with Baz")
+    matches("class Foo { body }")
+    matches("class Foo extends { val early = 0 } with Any")
+    matches("abstract class Foo")
+    matches("private[Baz] class Foo")
+    matches("class Foo(first: A)(second: B)")
+    matches("class Foo(first: A) extends Bar(first) with Baz")
+    matches("class Foo private (first: A) { def bar }")
+    matches("class Foo { self => bar(self) }")
+    matches("case class Foo(x: Int)")
   }
 }
 

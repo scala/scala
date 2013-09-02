@@ -7,7 +7,8 @@ import scala.reflect.internal.Flags._
 
 trait Reifiers { self: Quasiquotes =>
   import global._
-  import global.build.{SyntacticClassDef, SyntacticBlock, SyntacticApplied, SyntacticTypeApplied}
+  import global.build.{SyntacticClassDef, SyntacticTraitDef, SyntacticModuleDef,
+                       SyntacticBlock, SyntacticApplied, SyntacticTypeApplied}
   import global.treeInfo._
   import global.definitions._
   import Cardinality._
@@ -48,13 +49,18 @@ trait Reifiers { self: Quasiquotes =>
       case FunctionTypePlaceholder(argtpes, restpe) => reifyFunctionType(argtpes, restpe)
       case CasePlaceholder(tree, location, _) => reifyCase(tree, location)
       case RefineStatPlaceholder(tree, _, _) => reifyRefineStat(tree)
+      case EarlyDefPlaceholder(tree, _, _) => reifyEarlyDef(tree)
       case _ => EmptyTree
     }
 
     override def reifyTreeSyntactically(tree: Tree) = tree match {
-      case SyntacticClassDef(mods, name, tparams, constrmods, vparamss, parents, selfdef, body) =>
+      case SyntacticTraitDef(mods, name, tparams, earlyDefs, parents, selfdef, body) =>
+        reifyBuildCall(nme.SyntacticTraitDef, mods, name, tparams, earlyDefs, parents, selfdef, body)
+      case SyntacticClassDef(mods, name, tparams, constrmods, vparamss, earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticClassDef, mods, name, tparams, constrmods, vparamss,
-                                              parents, selfdef, body)
+                                              earlyDefs, parents, selfdef, body)
+      case SyntacticModuleDef(mods, name, earlyDefs, parents, selfdef, body) =>
+        reifyBuildCall(nme.SyntacticModuleDef, mods, name, earlyDefs, parents, selfdef, body)
       case SyntacticApplied(fun, argss) if argss.length > 1 =>
         reifyBuildCall(nme.SyntacticApplied, fun, argss)
       case SyntacticApplied(fun, argss @ (_ :+ (_ :+ Placeholder(_, _, DotDotDot)))) =>
@@ -110,6 +116,8 @@ trait Reifiers { self: Quasiquotes =>
 
     def reifyRefineStat(tree: Tree) = tree
 
+    def reifyEarlyDef(tree: Tree) = tree
+
     /** Splits list into a list of groups where subsequent elements are considered
      *  similar by the corresponding function.
      *
@@ -163,6 +171,7 @@ trait Reifiers { self: Quasiquotes =>
       case Placeholder(tree, _, DotDot) => tree
       case CasePlaceholder(tree, _, DotDot) => tree
       case RefineStatPlaceholder(tree, _, DotDot) => reifyRefineStat(tree)
+      case EarlyDefPlaceholder(tree, _, DotDot) => reifyEarlyDef(tree)
       case List(Placeholder(tree, _, DotDotDot)) => tree
     } {
       reify(_)
@@ -170,8 +179,19 @@ trait Reifiers { self: Quasiquotes =>
 
     def reifyAnnotList(annots: List[Tree]): Tree
 
-    def ensureNoExplicitFlags(m: Modifiers, pos: Position) =
-      if ((m.flags & ExplicitFlags) != 0L) c.abort(pos, s"Can't $action modifiers together with flags, consider merging flags into modifiers")
+    // These are explicit flags except those that are used
+    // to overload the same tree for two different concepts:
+    // - MUTABLE that is used to override ValDef for vars
+    // - TRAIT that is used to override ClassDef for traits
+    val nonoverloadedExplicitFlags = ExplicitFlags & ~MUTABLE & ~TRAIT
+
+    def ensureNoExplicitFlags(m: Modifiers, pos: Position) = {
+      // Traits automatically have ABSTRACT flag assigned to
+      // them so in that case it's not an explicit flag
+      val flags = if (m.isTrait) m.flags & ~ABSTRACT else m.flags
+      if ((flags & nonoverloadedExplicitFlags) != 0L)
+        c.abort(pos, s"Can't $action modifiers together with flags, consider merging flags into modifiers")
+    }
 
     override def mirrorSelect(name: String): Tree =
       Select(universe, TermName(name))
@@ -249,6 +269,8 @@ trait Reifiers { self: Quasiquotes =>
       }
 
     override def reifyRefineStat(tree: Tree) = mirrorBuildCall(nme.mkRefineStat, tree)
+
+    override def reifyEarlyDef(tree: Tree) = mirrorBuildCall(nme.mkEarlyDef, tree)
   }
 
   class UnapplyReifier extends Reifier {

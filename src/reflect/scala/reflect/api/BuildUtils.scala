@@ -78,6 +78,10 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def mkRefineStat(stats: List[Tree]): List[Tree]
 
+    def mkEarlyDef(defn: Tree): Tree
+
+    def mkEarlyDef(defns: List[Tree]): List[Tree]
+
     def RefTree(qual: Tree, sym: Symbol): Tree
 
     val ScalaDot: ScalaDotExtractor
@@ -112,10 +116,27 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     trait SyntacticClassDefExtractor {
       def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef],
-                constrMods: Modifiers, vparamss: List[List[ValDef]], parents: List[Tree],
-                selfdef: ValDef, body: List[Tree]): Tree
-      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers,
-                                       List[List[ValDef]], List[Tree], ValDef, List[Tree])]
+                constrMods: Modifiers, vparamss: List[List[ValDef]], earlyDefs: List[Tree],
+                parents: List[Tree], selfdef: ValDef, body: List[Tree]): ClassDef
+      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers, List[List[ValDef]],
+                                       List[Tree], List[Tree], ValDef, List[Tree])]
+    }
+
+    val SyntacticTraitDef: SyntacticTraitDefExtractor
+
+    trait SyntacticTraitDefExtractor {
+      def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef],
+                earlyDefs: List[Tree], parents: List[Tree], selfdef: ValDef, body: List[Tree]): ClassDef
+      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef],
+                                       List[Tree], List[Tree], ValDef, List[Tree])]
+    }
+
+    val SyntacticModuleDef: SyntacticModuleDefExtractor
+
+    trait SyntacticModuleDefExtractor {
+      def apply(mods: Modifiers, name: TermName, earlyDefs: List[Tree],
+                parents: List[Tree], selfdef: ValDef, body: List[Tree]): Tree
+      def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[Tree], ValDef, List[Tree])]
     }
 
     val TupleN: TupleNExtractor
