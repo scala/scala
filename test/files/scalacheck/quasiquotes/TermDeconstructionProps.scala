@@ -7,7 +7,6 @@ import scala.reflect.runtime.universe._
 import Flag._
 
 object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction") {
-
   property("f(..x) = f") = test {
     assertThrows[MatchError] {
       val q"f(..$argss)" = q"f"
@@ -44,56 +43,6 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     argss ≈ List()
   }
 
-  property("@$annot def foo") = forAll { (annotName: TypeName) =>
-    val q"@$annot def foo" = q"@$annotName def foo"
-    annot ≈ Apply(Select(New(Ident(annotName)), nme.CONSTRUCTOR), List())
-  }
-
-  property("@$annot(..$args) def foo") = forAll { (annotName: TypeName, tree: Tree) =>
-    val q"@$annot(..$args) def foo" = q"@$annotName($tree) def foo"
-    annot ≈ Ident(annotName) && args ≈ List(tree)
-  }
-
-  property("@..$annots def foo") = test {
-    val a = annot("a")
-    val b = annot("b")
-    val q"@..$annots def foo" = q"@$a @$b def foo"
-    annots ≈ List(a, b)
-  }
-
-  property("@$annot @..$annots def foo") = test {
-    val a = annot("a")
-    val b = annot("b")
-    val c = annot("c")
-    val q"@$first @..$rest def foo" = q"@$a @$b @$c def foo"
-    first ≈ a && rest ≈ List(b, c)
-  }
-
-  property("class without params") = test {
-    val q"class $name { ..$body }" = q"class Foo { def bar = 3 }"
-    assert(body ≈ List(q"def bar = 3"))
-  }
-
-  property("class constructor") = test {
-    val q"class $name(...$argss)" = q"class Foo(x: Int)(y: Int)"
-    assert(argss.length == 2)
-  }
-
-  property("class parents") = test {
-    val q"class $name extends ..$parents" = q"class Foo extends Bar with Blah"
-    assert(parents ≈ List(tq"Bar", tq"Blah"))
-  }
-
-  property("class selfdef") = test {
-    val q"class $name { $self => }" = q"class Foo { self: T => }"
-    assert(self.name ≈ TermName("self") && self.tpt ≈ tq"T")
-  }
-
-  property("class tparams") = test {
-    val q"class $name[..$tparams]" = q"class Foo[A, B]"
-    assert(tparams.map { _.name } == List(TypeName("A"), TypeName("B")))
-  }
-
   property("deconstruct unit as tuple") = test {
     val q"(..$xs)" = q"()"
     assert(xs.isEmpty)
@@ -112,11 +61,5 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
   property("deconstruct cases") = test {
     val q"$x match { case ..$cases }" = q"x match { case 1 => case 2 => }"
     x ≈ q"x" && cases ≈ List(cq"1 =>", cq"2 =>")
-  }
-
-  property("deconstruct mods") = test {
-    val mods = Modifiers(IMPLICIT | PRIVATE, TermName("foobar"), Nil)
-    val q"$mods0 def foo" = q"$mods def foo"
-    assert(mods0 ≈ mods)
   }
 }
