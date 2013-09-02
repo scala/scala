@@ -33,7 +33,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
   /*
    * must-single-thread
    */
-  def getOutFolder(csym: Symbol, cName: String, cunit: CompilationUnit): _root_.scala.tools.nsc.io.AbstractFile = {
+  def getOutFolder(csym: Symbol, cName: String, cunit: CompilationUnit): scala.tools.nsc.io.AbstractFile = {
     try {
       outputDirectory(csym)
     } catch {
@@ -440,13 +440,11 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
         if (sym0 == definitions.NullClass)    return RT_NULL;
         if (sym0 == definitions.NothingClass) return RT_NOTHING;
 
-        // Working around SI-5604.  Rather than failing the compile when we see
-        // a package here, check if there's a package object.
         val sym = (
           if (!sym0.isPackageClass) sym0
           else sym0.info.member(nme.PACKAGE) match {
             case NoSymbol => abort(s"Cannot use package as value: ${sym0.fullName}")
-            case s        => devWarning("Bug: found package class where package object expected.  Converting.") ; s.moduleClass
+            case s        => abort("SI-5604: found package class where package object expected.")
           }
         )
 

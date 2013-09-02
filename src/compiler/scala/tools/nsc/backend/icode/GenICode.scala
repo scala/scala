@@ -1122,15 +1122,11 @@ abstract class GenICode extends SubComponent  {
       }
 
     private def genLoadModule(ctx: Context, tree: Tree): Context = {
-      // Working around SI-5604.  Rather than failing the compile when we see
-      // a package here, check if there's a package object.
       val sym = (
         if (!tree.symbol.isPackageClass) tree.symbol
         else tree.symbol.info.member(nme.PACKAGE) match {
           case NoSymbol => abort("Cannot use package as value: " + tree)
-          case s        =>
-            devWarning(s"Found ${tree.symbol} where a package object is required. Converting to ${s.moduleClass}")
-            s.moduleClass
+          case s        => abort(s"Found ${tree.symbol} where a package object is required.")
         }
       )
       debuglog("LOAD_MODULE from %s: %s".format(tree.shortClass, sym))

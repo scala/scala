@@ -90,7 +90,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     def genThrow(expr: Tree): BType = {
       val thrownKind = tpeTK(expr)
-      assert(exemplars.get(thrownKind).isSubtypeOf(ThrowableReference))
+      // `throw null` is valid although scala.Null (as defined in src/libray-aux) isn't a subtype of Throwable.
+      // Similarly for scala.Nothing (again, as defined in src/libray-aux).
+      assert(thrownKind.isNullType || thrownKind.isNothingType || exemplars.get(thrownKind).isSubtypeOf(ThrowableReference))
       genLoad(expr, thrownKind)
       lineNumber(expr)
       emit(asm.Opcodes.ATHROW) // ICode enters here into enterIgnoreMode, we'll rely instead on DCE at ClassNode level.
@@ -826,7 +828,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     /* Generate code that loads args into label parameters. */
     def genLoadLabelArguments(args: List[Tree], lblDef: LabelDef, gotoPos: Position) {
-      assert(args forall { a => !a.hasSymbolField || a.hasSymbolWhich( s => !s.isLabel) }, s"SI-6089 at: $gotoPos") // SI-6089
 
       val aps = {
         val params: List[Symbol] = lblDef.params.map(_.symbol)
@@ -859,12 +860,11 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     def genLoadModule(tree: Tree): BType = {
-      // Working around SI-5604.  Rather than failing the compile when we see a package here, check if there's a package object.
       val module = (
         if (!tree.symbol.isPackageClass) tree.symbol
         else tree.symbol.info.member(nme.PACKAGE) match {
-          case NoSymbol => abort(s"Cannot use package as value: $tree") ; NoSymbol
-          case s        => devWarning("Bug: found package class where package object expected.  Converting.") ; s.moduleClass
+          case NoSymbol => abort(s"SI-5604: Cannot use package as value: $tree")
+          case s        => abort(s"SI-5604: found package class where package object expected: $tree")
         }
       )
       lineNumber(tree)
