@@ -36,13 +36,24 @@ abstract class ReplTest extends DirectTest {
  *  after the final `prompt`, including the last space.
  */
 abstract class SessionTest extends ReplTest  {
+  /** Session transcript, as a triple-quoted, multiline, marginalized string. */
   def session: String
-  override final def code = expected filter (_.startsWith(prompt)) map (_.drop(prompt.length)) mkString "\n"
-  def expected = session.stripMargin.lines.toList
+
+  /** Expected output, as an iterator. */
+  def expected = session.stripMargin.lines
+
+  /** Code is the command list culled from the session (or the expected session output).
+   *  Would be nicer if code were lazy lines.
+   */
+  override final def code = expected filter (_ startsWith prompt) map (_ drop prompt.length) mkString "\n"
+
   final def prompt = "scala> "
+
+  /** Default test is to compare expected and actual output and emit the diff on a failed comparison. */
   override def show() = {
-    val out = eval().toList
-    if (out.size != expected.size) Console println s"Expected ${expected.size} lines, got ${out.size}"
-    if (out != expected) Console print nest.FileManager.compareContents(expected, out, "expected", "actual")
+    val evaled = eval().toList
+    val wanted = expected.toList
+    if (evaled.size != wanted.size) Console println s"Expected ${wanted.size} lines, got ${evaled.size}"
+    if (evaled != wanted) Console print nest.FileManager.compareContents(wanted, evaled, "expected", "actual")
   }
 }
