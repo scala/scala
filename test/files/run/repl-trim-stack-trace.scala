@@ -33,9 +33,12 @@ java.lang.Exception
 
 scala> """
 
-  // remove the "elided" lines because the frame count is variable
-  lazy val elided = """\s+\.{3} (?:\d+) elided""".r
-  def filtered(lines: Seq[String]) = lines filter { case elided() => false ; case _ => true }
-  override def eval() = filtered(super.eval().toSeq).iterator
-  override def expected = filtered(super.expected).toList
+  // normalize the "elided" lines because the frame count depends on test context
+  lazy val elided = """(\s+\.{3} )\d+( elided)""".r
+  def normalize(line: String) = line match {
+    case elided(ellipsis, suffix) => s"$ellipsis???$suffix"
+    case s                        => s
+  }
+  override def eval()   = super.eval() map normalize
+  override def expected = super.expected map normalize
 }

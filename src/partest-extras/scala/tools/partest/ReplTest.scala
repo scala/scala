@@ -30,6 +30,11 @@ abstract class ReplTest extends DirectTest {
   def show() = eval() foreach println
 }
 
+/** Run a REPL test from a session transcript.
+ *  The `session` should be a triple-quoted String starting
+ *  with the `Type in expressions` message and ending
+ *  after the final `prompt`, including the last space.
+ */
 abstract class SessionTest extends ReplTest  {
   def session: String
   override final def code = expected filter (_.startsWith(prompt)) map (_.drop(prompt.length)) mkString "\n"
