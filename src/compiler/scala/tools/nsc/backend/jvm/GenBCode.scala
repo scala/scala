@@ -112,10 +112,7 @@ abstract class GenBCode extends BCodeOptIntra {
     override def erasedTypes = true
 
     // number of woker threads for pipeline-2 (the pipeline in charge of most optimizations except inlining).
-    val MAX_THREADS = scala.math.min(
-      4,
-      java.lang.Runtime.getRuntime.availableProcessors
-    )
+    val MAX_THREADS = settings.YbcodeEmitterThreads.value
 
     private val woStarted = new java.util.concurrent.ConcurrentHashMap[Long, Long]  // debug
     private val woExited  = new java.util.concurrent.ConcurrentHashMap[Long, Item2] // debug
