@@ -19,7 +19,7 @@ object TypeDeconstructionProps extends QuasiquoteProperties("type deconstruction
   }
 
   property("tuple type") = test {
-    val tq"(..$empty)" = tq"scala.Unit"
+    val tq"(..$empty)" = tq"_root_.scala.Unit"
     assert(empty.isEmpty)
     val tq"(..$ts)" = tq"(t1, t2)"
     assert(ts ≈ List(tq"t1", tq"t2"))
