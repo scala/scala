@@ -255,6 +255,33 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
 
+    private trait ScalaMemberRef {
+      val symbols: Seq[Symbol]
+      def result(name: Name): Option[Symbol] =
+        symbols.collect { case sym if sym.name == name => sym }.headOption
+      def unapply(tree: Tree): Option[Symbol] = tree match {
+        case id @ Ident(name) if symbols.contains(id.symbol) && name == id.symbol.name =>
+          Some(id.symbol)
+        case Select(scalapkg @ Ident(nme.scala_), name) if scalapkg.symbol == ScalaPackage =>
+          result(name)
+        case Select(Select(Ident(nme.ROOTPKG), nme.scala_), name) =>
+          result(name)
+        case _ => None
+      }
+    }
+    private object TupleClassRef extends ScalaMemberRef {
+      val symbols = TupleClass.filter { _ != null }.toSeq
+    }
+    private object TupleCompanionRef extends ScalaMemberRef {
+      val symbols = TupleClassRef.symbols.map { _.companionModule }
+    }
+    private object UnitClassRef extends ScalaMemberRef {
+      val symbols = Seq(UnitClass)
+    }
+    private object FunctionClassRef extends ScalaMemberRef {
+      val symbols = FunctionClass.toSeq
+    }
+
     object SyntacticTuple extends SyntacticTupleExtractor {
       def apply(args: List[Tree]): Tree = args match {
         case Nil      => Literal(Constant(()))
@@ -266,11 +293,9 @@ trait BuildUtils { self: SymbolTable =>
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
         case Literal(Constant(())) =>
           Some(Nil)
-        case Apply(id: Ident, args)
-          if args.length <= MaxTupleArity && id.symbol == TupleClass(args.length).companionModule =>
-          Some(args)
-        case Apply(Select(Ident(nme.scala_), TermName(tuple)), args)
-          if args.length <= MaxTupleArity && tuple == TupleClass(args.length).name =>
+        case Apply(TupleCompanionRef(sym), args)
+          if args.length <= MaxTupleArity
+          && sym == TupleClass(args.length).companionModule =>
           Some(args)
         case _ =>
           None
@@ -286,13 +311,10 @@ trait BuildUtils { self: SymbolTable =>
       }
 
       def unapply(tree: Tree): Option[List[Tree]] =  tree match {
-        case Select(Ident(nme.scala_), tpnme.Unit) =>
+        case UnitClassRef(_) =>
           Some(Nil)
-        case AppliedTypeTree(id: Ident, args)
-          if args.length <= MaxTupleArity && id.symbol == TupleClass(args.length) =>
-          Some(args)
-        case AppliedTypeTree(Select(id @ Ident(nme.scala_), TermName(tuple)), args)
-          if args.length <= MaxTupleArity && id.symbol == ScalaPackage && tuple == TupleClass(args.length).name =>
+        case AppliedTypeTree(TupleClassRef(sym), args)
+          if args.length <= MaxTupleArity && sym == TupleClass(args.length) =>
           Some(args)
         case _ =>
           None
@@ -306,14 +328,8 @@ trait BuildUtils { self: SymbolTable =>
       }
 
       def unapply(tree: Tree): Option[(List[Tree], Tree)] = tree match {
-        case AppliedTypeTree(id: Ident, args @ (argtpes :+ restpe))
-          if args.length - 1 <= MaxFunctionArity && id.symbol == FunctionClass(args.length - 1) =>
-          Some((argtpes, restpe))
-        case AppliedTypeTree(Select(pack, fun), args @ (argtpes :+ restpe))
-          if args.length - 1 <= MaxFunctionArity && pack.symbol == ScalaPackage && fun == FunctionClass(args.length - 1).name =>
-          Some((argtpes, restpe))
-        case AppliedTypeTree(Select(Select(Ident(nme.ROOTPKG), nme.scala_), fun), args @ (argtpes :+ restpe))
-          if args.length - 1 <= MaxFunctionArity && fun == FunctionClass(args.length - 1).name =>
+        case AppliedTypeTree(FunctionClassRef(sym), args @ (argtpes :+ restpe))
+          if args.length - 1 <= MaxFunctionArity && sym == FunctionClass(args.length - 1) =>
           Some((argtpes, restpe))
         case _ => None
       }
