@@ -8,7 +8,6 @@ package tools
 package nsc
 
 import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter }
-import scala.compat.Platform.EOL
 
 package object util {
 
@@ -79,12 +78,17 @@ package object util {
     s"$clazz$msg @ $frame"
   }
 
-  def stackTracePrefixString(ex: Throwable)(p: StackTraceElement => Boolean): String = {
-    val frames = ex.getStackTrace takeWhile p map ("  at " + _)
-    val msg    = ex.getMessage match { case null => "" ; case s => s": $s" }
-    val clazz  = ex.getClass.getName
-
-    s"$clazz$msg" +: frames mkString EOL
+  implicit class StackTraceOps(val e: Throwable) extends AnyVal with StackTracing {
+    /** Format the stack trace, returning the prefix consisting of frames that satisfy
+     *  a given predicate.
+     *  The format is similar to the typical case described in the JavaDoc
+     *  for [[java.lang.Throwable#printStackTrace]].
+     *  If a stack trace is truncated, it will be followed by a line of the form
+     *  `... 3 elided`, by analogy to the lines `... 3 more` which indicate
+     *  shared stack trace segments.
+     *  @param p the predicate to select the prefix
+     */
+    def stackTracePrefixString(p: StackTraceElement => Boolean): String = stackTracePrefixString(e)(p)
   }
 
   lazy val trace = new SimpleTracer(System.out)
