@@ -845,7 +845,11 @@ TODO:
   <target name="docs.clean"> <clean build="docs"/> <delete dir="${build.dir}/manmaker" includeemptydirs="yes" quiet="yes" failonerror="no"/> </target>
   <target name="dist.clean"> <delete dir="${dists.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/> </target>
 
-  <target name="all.clean" depends="locker.clean, docs.clean"> <clean build="sbt"/> <clean build="osgi"/> </target>
+  <target name="junit.clean"> <clean build="junit"/> </target>
+
+  <target name="all.clean" depends="locker.clean, docs.clean, junit.clean">
+    <clean build="sbt"/> <clean build="osgi"/>
+  </target>
 
   <!-- Used by the scala-installer script -->
   <target name="allallclean" depends="all.clean, dist.clean"/>
