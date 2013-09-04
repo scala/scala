@@ -373,16 +373,10 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The definition tree of the outer accessor of current class
      */
-    def outerAccessorDef: Tree = {
-      val outerAcc = outerAccessor(currentClass)
-      val rhs: Tree =
-        if (outerAcc.isDeferred) EmptyTree
-        else This(currentClass) DOT outerField(currentClass)
-
-      /*  If we don't re-type the tree, we see self-type related crashes like #266.
-       */
-      localTyper typed {
-        (DEF(outerAcc) withPos currentClass.pos withType null) === rhs
+    def outerAccessorDef: Tree = localTyper typed {
+      outerAccessor(currentClass) match {
+        case acc if acc.isDeferred => DefDef(acc, EmptyTree)
+        case acc                   => DefDef(acc, Select(This(currentClass), outerField(currentClass)))
       }
     }
 
@@ -404,12 +398,8 @@ abstract class ExplicitOuter extends InfoTransform
         else if (mixinPrefix.typeArgs.nonEmpty) gen.mkAttributedThis(mixinPrefix.typeSymbol)
         else gen.mkAttributedQualifier(mixinPrefix)
       )
-      localTyper typed {
-        (DEF(outerAcc) withPos currentClass.pos) === {
-          // Need to cast for nested outer refs in presence of self-types. See ticket #3274.
-          gen.mkCast(transformer.transform(path), outerAcc.info.resultType)
-        }
-      }
+      // Need to cast for nested outer refs in presence of self-types. See ticket #3274.
+      localTyper typed DefDef(outerAcc, gen.mkCast(transformer.transform(path), outerAcc.info.resultType))
     }
 
     /** The main transformation method */
