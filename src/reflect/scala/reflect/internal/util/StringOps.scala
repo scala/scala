@@ -64,6 +64,11 @@ trait StringOps {
     if (idx == -1) None
     else Some((str take idx, str drop (if (doDropIndex) idx + 1 else idx)))
 
+  def splitLeft(str: String, ch: Char): Option[(String, String)] = {
+    splitAt(str, str.indexOf(ch), true)
+  }
+
+
   /** Returns a string meaning "n elements".
    *
    *  @param n        ...
