@@ -19,6 +19,9 @@ trait ExistentialsAndSkolems {
    *  can be deskolemized to the original type parameter. (A skolem is a
    *  representation of a bound variable when viewed inside its scope.)
    *  !!!Adriaan: this does not work for hk types.
+   *
+   *  Skolems will be created at level 0, rather than the current value
+   *  of `skolemizationLevel`. (See SI-7782)
    */
   def deriveFreshSkolems(tparams: List[Symbol]): List[Symbol] = {
     class Deskolemizer extends LazyType {
@@ -30,7 +33,11 @@ trait ExistentialsAndSkolems {
         sym setInfo sym.deSkolemize.info.substSym(typeParams, typeSkolems)
       }
     }
-    (new Deskolemizer).typeSkolems
+
+    val saved = skolemizationLevel
+    skolemizationLevel = 0
+    try new Deskolemizer().typeSkolems
+    finally skolemizationLevel = saved
   }
 
   def isRawParameter(sym: Symbol) = // is it a type parameter leaked by a raw type?
