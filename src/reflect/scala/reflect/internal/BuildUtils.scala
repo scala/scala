@@ -358,6 +358,35 @@ trait BuildUtils { self: SymbolTable =>
           None
       }
     }
+
+    object SyntacticDefDef extends SyntacticDefDefExtractor {
+      def apply(mods: Modifiers, name: TermName, tparams: List[Tree], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef =
+        DefDef(mods, name, mkTparams(tparams), mkVparamss(vparamss), tpt, rhs)
+
+      def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[List[ValDef]], Tree, Tree)] = tree match {
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) => Some((mods, name, tparams, vparamss, tpt, rhs))
+        case _ => None
+      }
+    }
+
+    trait SyntacticValDefBase extends SyntacticValDefExtractor {
+      val isMutable: Boolean
+
+      def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) = {
+        val mods1 = if (isMutable) mods | MUTABLE else mods
+        ValDef(mods1, name, tpt, rhs)
+      }
+
+      def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree)] = tree match {
+        case ValDef(mods, name, tpt, rhs) if mods.hasFlag(MUTABLE) == isMutable =>
+          Some((mods, name, tpt, rhs))
+        case _ =>
+          None
+      }
+    }
+
+    object SyntacticValDef extends SyntacticValDefBase { val isMutable = false }
+    object SyntacticVarDef extends SyntacticValDefBase { val isMutable = true }
   }
 
   val build: BuildApi = new BuildImpl
