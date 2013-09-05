@@ -27,4 +27,10 @@ object TypeConstructionProps extends QuasiquoteProperties("type construction")  
     val stats = q"def foo" :: q"val x: Int" :: q"type Y = String" :: Nil
     assert(tq"T { ..$stats }" ≈ tq"T { def foo; val x: Int; type Y = String }")
   }
+
+  property("function type") = test {
+    val argtpes = tq"A" :: tq"B" :: Nil
+    val restpe = tq"C"
+    assert(tq"..$argtpes => $restpe" ≈ tq"(A, B) => C")
+  }
 }

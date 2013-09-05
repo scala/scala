@@ -64,6 +64,10 @@ trait Parsers { self: Quasiquotes =>
           case (head @ Ident(name)) :: Nil if holeMap.contains(name) => Block(Nil, head)
           case _ => super.makeBlock(stats)
         }
+
+        // tq"$a => $b"
+        override def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
+          AppliedTypeTree(Ident(tpnme.QUASIQUOTE_FUNCTION), argtpes :+ restpe)
       }
       import treeBuilder.{global => _, _}
 

@@ -516,8 +516,7 @@ abstract class TreeBuilder {
   }
 
   /** Create a tree representing the function type (argtpes) => restpe */
-  def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
-    AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
+  def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = gen.mkFunctionTypeTree(argtpes, restpe)
 
   /** Append implicit parameter section if `contextBounds` nonempty */
   def addEvidenceParams(owner: Name, vparamss: List[List[ValDef]], contextBounds: List[Tree]): List[List[ValDef]] = {

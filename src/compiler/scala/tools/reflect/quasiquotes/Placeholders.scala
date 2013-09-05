@@ -113,6 +113,13 @@ trait Placeholders { self: Quasiquotes =>
     }
   }
 
+  object FunctionTypePlaceholder {
+    def unapply(tree: Tree): Option[(List[Tree], Tree)] = tree match {
+      case AppliedTypeTree(Ident(tpnme.QUASIQUOTE_FUNCTION), args :+ res) => Some((args, res))
+      case _ => None
+    }
+  }
+
   object SymbolPlaceholder {
     def unapply(scrutinee: Any): Option[Tree] = scrutinee match {
       case Placeholder(tree, SymbolLocation, _) => Some(tree)

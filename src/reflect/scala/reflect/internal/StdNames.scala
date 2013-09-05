@@ -249,6 +249,7 @@ trait StdNames {
     // quasiquote-specific names
     final val QUASIQUOTE_MODS: NameType        = "$quasiquote$mods$"
     final val QUASIQUOTE_TUPLE: NameType       = "$quasiquote$tuple$"
+    final val QUASIQUOTE_FUNCTION: NameType    = "$quasiquote$function$"
     final val QUASIQUOTE_REFINE_STAT: NameType = "$quasiquote$refine$stat$"
 
     // Annotation simple names, used in Namer
@@ -590,6 +591,7 @@ trait StdNames {
     val SyntacticApplied: NameType     = "SyntacticApplied"
     val SyntacticBlock: NameType       = "SyntacticBlock"
     val SyntacticClassDef: NameType    = "SyntacticClassDef"
+    val SyntacticFunctionType: NameType= "SyntacticFunctionType"
     val SyntacticTypeApplied: NameType = "SyntacticTypeApplied"
     val This: NameType                 = "This"
     val ThisType: NameType             = "ThisType"

@@ -45,6 +45,7 @@ trait Reifiers { self: Quasiquotes =>
       case Placeholder(tree, _, card @ Dot()) => c.abort(tree.pos, s"Can't $action with $card here")
       case TuplePlaceholder(args) => reifyTuple(args)
       case TupleTypePlaceholder(args) => reifyTupleType(args)
+      case FunctionTypePlaceholder(argtpes, restpe) => reifyFunctionType(argtpes, restpe)
       case CasePlaceholder(tree, location, _) => reifyCase(tree, location)
       case RefineStatPlaceholder(tree, _, _) => reifyRefineStat(tree)
       case _ => EmptyTree
@@ -103,6 +104,9 @@ trait Reifiers { self: Quasiquotes =>
       case List(other) => reify(other)
       case _ => reifyBuildCall(nme.TupleTypeN, args)
     }
+
+    def reifyFunctionType(argtpes: List[Tree], restpe: Tree) =
+      reifyBuildCall(nme.SyntacticFunctionType, argtpes, restpe)
 
     def reifyRefineStat(tree: Tree) = tree
 

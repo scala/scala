@@ -5,7 +5,7 @@ package internal
 import Flags._
 
 trait BuildUtils { self: SymbolTable =>
-  import definitions.{TupleClass, MaxTupleArity, ScalaPackage, UnitClass}
+  import definitions.{TupleClass, FunctionClass, MaxTupleArity, MaxFunctionArity, ScalaPackage, UnitClass}
 
   class BuildImpl extends BuildApi {
 
@@ -197,6 +197,26 @@ trait BuildUtils { self: SymbolTable =>
           Some(args)
         case _ =>
           None
+      }
+    }
+
+    object SyntacticFunctionType extends SyntacticFunctionTypeExtractor {
+      def apply(argtpes: List[Tree], restpe: Tree): Tree = {
+        require(argtpes.length <= MaxFunctionArity + 1, s"Function types with arity bigger than $MaxFunctionArity aren't supported")
+        gen.mkFunctionTypeTree(argtpes, restpe)
+      }
+
+      def unapply(tree: Tree): Option[(List[Tree], Tree)] = tree match {
+        case AppliedTypeTree(id: Ident, args @ (argtpes :+ restpe))
+          if args.length - 1 <= MaxFunctionArity && id.symbol == FunctionClass(args.length - 1) =>
+          Some((argtpes, restpe))
+        case AppliedTypeTree(Select(pack, fun), args @ (argtpes :+ restpe))
+          if args.length - 1 <= MaxFunctionArity && pack.symbol == ScalaPackage && fun == FunctionClass(args.length - 1).name =>
+          Some((argtpes, restpe))
+        case AppliedTypeTree(Select(Select(Ident(nme.ROOTPKG), nme.scala_), fun), args @ (argtpes :+ restpe))
+          if args.length - 1 <= MaxFunctionArity && fun == FunctionClass(args.length - 1).name =>
+          Some((argtpes, restpe))
+        case _ => None
       }
     }
 
