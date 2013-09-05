@@ -100,20 +100,20 @@ trait Reifiers { self: Quasiquotes =>
     def reifyTuple(args: List[Tree]) = args match {
       case Nil => reify(Literal(Constant(())))
       case List(hole @ Placeholder(_, _, NoDot)) => reify(hole)
-      case List(Placeholder(_, _, _)) => reifyBuildCall(nme.TupleN, args)
+      case List(Placeholder(_, _, _)) => reifyBuildCall(nme.SyntacticTuple, args)
       // in a case we only have one element tuple without
       // any cardinality annotations this means that this is
       // just an expression wrapped in parentheses
       case List(other) => reify(other)
-      case _ => reifyBuildCall(nme.TupleN, args)
+      case _ => reifyBuildCall(nme.SyntacticTuple, args)
     }
 
     def reifyTupleType(args: List[Tree]) = args match {
       case Nil => reify(Select(Ident(nme.scala_), tpnme.Unit))
       case List(hole @ Placeholder(_, _, NoDot)) => reify(hole)
-      case List(Placeholder(_, _, _)) => reifyBuildCall(nme.TupleTypeN, args)
+      case List(Placeholder(_, _, _)) => reifyBuildCall(nme.SyntacticTupleType, args)
       case List(other) => reify(other)
-      case _ => reifyBuildCall(nme.TupleTypeN, args)
+      case _ => reifyBuildCall(nme.SyntacticTupleType, args)
     }
 
     def reifyFunctionType(argtpes: List[Tree], restpe: Tree) =

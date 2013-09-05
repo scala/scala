@@ -255,7 +255,7 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
 
-    object TupleN extends TupleNExtractor {
+    object SyntacticTuple extends SyntacticTupleExtractor {
       def apply(args: List[Tree]): Tree = args match {
         case Nil      => Literal(Constant(()))
         case _        =>
@@ -277,7 +277,7 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
 
-    object TupleTypeN extends TupleNExtractor {
+    object SyntacticTupleType extends SyntacticTupleExtractor {
       def apply(args: List[Tree]): Tree = args match {
         case Nil => self.Select(self.Ident(nme.scala_), tpnme.Unit)
         case _   =>
