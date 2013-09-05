@@ -130,6 +130,8 @@ trait Reifiers { self: Quasiquotes =>
 
     def reifyEarlyDef(tree: Tree) = tree
 
+    def reifyAnnotation(tree: Tree) = tree
+
     /** Splits list into a list of groups where subsequent elements are considered
      *  similar by the corresponding function.
      *
@@ -189,7 +191,12 @@ trait Reifiers { self: Quasiquotes =>
       reify(_)
     }
 
-    def reifyAnnotList(annots: List[Tree]): Tree
+    def reifyAnnotList(annots: List[Tree]): Tree = reifyMultiCardinalityList(annots) {
+      case AnnotPlaceholder(tree, _, DotDot) => reifyAnnotation(tree)
+    } {
+      case AnnotPlaceholder(tree, UnknownLocation | TreeLocation(_), NoDot) => reifyAnnotation(tree)
+      case other => reify(other)
+    }
 
     // These are explicit flags except those that are used
     // to overload the same tree for two different concepts:
@@ -236,19 +243,6 @@ trait Reifiers { self: Quasiquotes =>
         tail.foldLeft[Tree](reifyGroup(head)) { (tree, lst) => Apply(Select(tree, nme.PLUSPLUS), List(reifyGroup(lst))) }
     }
 
-    override def reifyAnnotList(annots: List[Tree]): Tree = reifyMultiCardinalityList(annots) {
-      case AnnotPlaceholder(tree, _, DotDot, args) =>
-        val x: TermName = c.freshName()
-        val xToAnnotationCtor = Function(
-          List(ValDef(Modifiers(PARAM), x, TypeTree(), EmptyTree)),
-          mirrorBuildCall(nme.mkAnnotation, Ident(x), reify(args)))
-        Apply(Select(tree, nme.map), List(xToAnnotationCtor))
-    } {
-      case AnnotPlaceholder(tree, _: TreeLocation, _, args) =>
-        mirrorBuildCall(nme.mkAnnotation, tree, reify(args))
-      case other => reify(other)
-    }
-
     override def reifyModifiers(m: Modifiers) =
       if (m == NoMods) super.reifyModifiers(m)
       else {
@@ -283,6 +277,8 @@ trait Reifiers { self: Quasiquotes =>
     override def reifyRefineStat(tree: Tree) = mirrorBuildCall(nme.mkRefineStat, tree)
 
     override def reifyEarlyDef(tree: Tree) = mirrorBuildCall(nme.mkEarlyDef, tree)
+
+    override def reifyAnnotation(tree: Tree) = mirrorBuildCall(nme.mkAnnotation, tree)
   }
 
   class UnapplyReifier extends Reifier {
@@ -299,17 +295,6 @@ trait Reifiers { self: Quasiquotes =>
         }
       case _ =>
         mkList(xs.map(fallback))
-    }
-
-    override def reifyAnnotList(annots: List[Tree]): Tree = reifyMultiCardinalityList(annots) {
-      case AnnotPlaceholder(tree, _, DotDot, Nil) => tree
-    } {
-      case AnnotPlaceholder(tree, _, NoDot, Nil) => tree
-      case AnnotPlaceholder(tree, _, NoDot, args) =>
-        val selectCONSTRUCTOR = Apply(Select(u, nme.Select), List(Apply(Select(u, nme.New), List(tree)), Select(Select(u, nme.nmeNme), nme.nmeCONSTRUCTOR)))
-        Apply(Select(u, nme.Apply), List(selectCONSTRUCTOR, reify(args)))
-      case other =>
-        reify(other)
     }
 
     override def reifyModifiers(m: Modifiers) =

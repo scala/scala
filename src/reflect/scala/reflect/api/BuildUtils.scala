@@ -72,7 +72,9 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T
 
-    def mkAnnotation(tree: Tree, args: List[Tree]): Tree
+    def mkAnnotation(tree: Tree): Tree
+
+    def mkAnnotation(trees: List[Tree]): List[Tree]
 
     def mkRefineStat(stat: Tree): Tree
 

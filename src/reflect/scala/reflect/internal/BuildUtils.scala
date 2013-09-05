@@ -61,14 +61,15 @@ trait BuildUtils { self: SymbolTable =>
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T = { tree.setSymbol(sym); tree }
 
-    def mkAnnotation(tree: Tree, args: List[Tree]): Tree = tree match {
-      case ident: Ident => Apply(self.Select(New(ident), nme.CONSTRUCTOR: TermName), args)
-      case call @ Apply(Select(New(ident: Ident), nme.CONSTRUCTOR), _) =>
-        if (args.nonEmpty)
-          throw new IllegalArgumentException("Can't splice annotation that already contains args with extra args, consider merging these lists together")
-        call
-      case _ => throw new IllegalArgumentException(s"Tree ${showRaw(tree)} isn't a correct representation of annotation, consider passing Ident as a first argument")
+    def mkAnnotation(tree: Tree): Tree = tree match {
+      case SyntacticNew(Nil, SyntacticApplied(SyntacticTypeApplied(_, _), _) :: Nil, emptyValDef, Nil) =>
+        tree
+      case _ =>
+        throw new IllegalArgumentException(s"Tree ${showRaw(tree)} isn't a correct representation of annotation." +
+                                            """Consider reformatting it into a q"new $name[..$targs](...$argss)" shape""")
     }
+
+    def mkAnnotation(trees: List[Tree]): List[Tree] = trees.map(mkAnnotation)
 
     def mkVparamss(argss: List[List[ValDef]]): List[List[ValDef]] = argss.map(_.map(mkParam))
 
