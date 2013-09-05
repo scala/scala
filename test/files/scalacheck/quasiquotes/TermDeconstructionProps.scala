@@ -67,4 +67,11 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     val q"{ ..$xs }" = q"{ x1; x2; x3 }"
     assert(xs ≈ List(q"x1", q"x2", q"x3"))
   }
+
+  property("exhaustive function matcher") = test {
+    def matches(line: String) { val q"(..$args) => $body" = parse(line) }
+    matches("() => bippy")
+    matches("(y: Y) => y oh y")
+    matches("(x: X, y: Y) => x and y")
+  }
 }

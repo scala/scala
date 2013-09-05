@@ -1445,7 +1445,7 @@ self =>
           // The case still missed is unparenthesized single argument, like "x: Int => x + 1", which
           // may be impossible to distinguish from a self-type and so remains an error.  (See #1564)
           def lhsIsTypedParamList() = t match {
-            case Parens(xs) if xs forall (_.isInstanceOf[Typed]) => true
+            case Parens(xs) if xs.forall(isTypedParam) => true
             case _ => false
           }
           if (in.token == ARROW && (location != InTemplate || lhsIsTypedParamList)) {
@@ -1457,6 +1457,8 @@ self =>
         }
         parseOther
     }
+
+    def isTypedParam(t: Tree) = t.isInstanceOf[Typed]
 
     /** {{{
      *  Expr ::= implicit Id => Expr
