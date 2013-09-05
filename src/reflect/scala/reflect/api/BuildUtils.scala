@@ -139,10 +139,10 @@ private[reflect] trait BuildUtils { self: Universe =>
       def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[Tree], ValDef, List[Tree])]
     }
 
-    val TupleN: TupleNExtractor
-    val TupleTypeN: TupleNExtractor
+    val SyntacticTuple: SyntacticTupleExtractor
+    val SyntacticTupleType: SyntacticTupleExtractor
 
-    trait TupleNExtractor {
+    trait SyntacticTupleExtractor {
       def apply(args: List[Tree]): Tree
       def unapply(tree: Tree): Option[List[Tree]]
     }
