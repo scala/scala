@@ -280,4 +280,14 @@ trait MethodConstruction { self: QuasiquoteProperties =>
       q"@$a(y) def foo"
     }
   }
+
+  property("splice annotation with targs") = test {
+    val a = q"new Foo[A, B]"
+    assertEqAst(q"@$a def foo", "@Foo[A,B] def foo")
+  }
+
+  property("splice annotation with multiple argument lists") = test{
+    val a = q"new Foo(a)(b)"
+    assertEqAst(q"@$a def foo", "@Foo(a)(b) def foo")
+  }
 }
