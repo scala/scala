@@ -34,20 +34,12 @@ object ScalaRunTime {
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
 
   def isValueClass(clazz: jClass[_]) = clazz.isPrimitive()
-  def isTuple(x: Any) = x != null && tupleNames(x.getClass.getName)
+
+  // includes specialized subclasses and future proofed against hypothetical TupleN (for N > 22)
+  def isTuple(x: Any) = x != null && x.getClass.getName.startsWith("scala.Tuple")
   def isAnyVal(x: Any) = x match {
     case _: Byte | _: Short | _: Char | _: Int | _: Long | _: Float | _: Double | _: Boolean | _: Unit => true
     case _                                                                                             => false
-  }
-  // Avoiding boxing which messes up the specialized tests.  Don't ask.
-  private val tupleNames = {
-    var i = 22
-    var names: List[String] = Nil
-    while (i >= 1) {
-      names ::= ("scala.Tuple" + String.valueOf(i))
-      i -= 1
-    }
-    names.toSet
   }
 
   /** Return the class object representing an array with element class `clazz`.
