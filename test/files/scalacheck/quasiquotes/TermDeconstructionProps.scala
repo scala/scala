@@ -74,4 +74,21 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     matches("(y: Y) => y oh y")
     matches("(x: X, y: Y) => x and y")
   }
+
+  property("exhaustive new pattern") = test {
+    def matches(line: String) {
+      val q"new { ..$early } with $name[..$targs](...$vargss) with ..$mixin { $self => ..$body }" = parse(line)
+    }
+    matches("new foo")
+    matches("new foo { body }")
+    matches("new foo[t]")
+    matches("new foo(x)")
+    matches("new foo[t](x)")
+    matches("new foo[t](x) { body }")
+    matches("new foo with bar")
+    matches("new foo with bar { body }")
+    matches("new { anonymous }")
+    matches("new { val early = 1} with Parent[Int] { body }")
+    matches("new Foo { selfie => }")
+  }
 }
