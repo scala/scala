@@ -50,6 +50,10 @@ trait Parsers { self: Quasiquotes =>
     def entryPoint: QuasiquoteParser => Tree
 
     class QuasiquoteParser(source0: SourceFile) extends SourceFileParser(source0) {
+      def isHole: Boolean = isIdent && isHole(in.name)
+
+      def isHole(name: Name): Boolean = holeMap.contains(name)
+
       override val treeBuilder = new ParserTreeBuilder {
         // q"(..$xs)"
         override def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree =
@@ -61,7 +65,7 @@ trait Parsers { self: Quasiquotes =>
 
         // q"{ $x }"
         override def makeBlock(stats: List[Tree]): Tree = stats match {
-          case (head @ Ident(name)) :: Nil if holeMap.contains(name) => Block(Nil, head)
+          case (head @ Ident(name)) :: Nil if isHole(name) => Block(Nil, head)
           case _ => super.makeBlock(stats)
         }
 
@@ -87,8 +91,6 @@ trait Parsers { self: Quasiquotes =>
         case Block(Nil, expr) => expr
         case other => other
       }
-
-      def isHole: Boolean = isIdent && holeMap.contains(in.name)
 
       override def isAnnotation: Boolean = super.isAnnotation || (isHole && lookingAhead { isAnnotation })
 
