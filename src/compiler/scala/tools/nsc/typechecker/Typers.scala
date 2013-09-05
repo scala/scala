@@ -3789,7 +3789,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // we need symbol-ful originals for reification
           // hence we go the extra mile to hand-craft tis guy
           val original = arg1 match {
-            case tt @ TypeTree() => Annotated(ann, tt.original)
+            case tt @ TypeTree() if tt.original != null => Annotated(ann, tt.original)
             // this clause is needed to correctly compile stuff like "new C @D" or "@(inline @getter)"
             case _ => Annotated(ann, arg1)
           }
