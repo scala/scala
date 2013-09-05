@@ -724,6 +724,7 @@ trait StdNames {
     val staticModule : NameType        = "staticModule"
     val staticPackage : NameType       = "staticPackage"
     val synchronized_ : NameType       = "synchronized"
+    val ScalaDot: NameType             = "ScalaDot"
     val TermName: NameType             = "TermName"
     val this_ : NameType               = "this"
     val thisPrefix : NameType          = "thisPrefix"

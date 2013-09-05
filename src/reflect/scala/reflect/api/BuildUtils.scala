@@ -80,6 +80,13 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def RefTree(qual: Tree, sym: Symbol): Tree
 
+    val ScalaDot: ScalaDotExtractor
+
+    trait ScalaDotExtractor {
+      def apply(name: Name): Tree
+      def unapply(tree: Tree): Option[Name]
+    }
+
     val FlagsRepr: FlagsReprExtractor
 
     trait FlagsReprExtractor {

@@ -4,6 +4,7 @@ import Gen._
 import Arbitrary._
 
 import scala.reflect.runtime.universe._
+import scala.reflect.runtime.universe.build.ScalaDot
 import Flag._
 
 object DefinitionConstructionProps
@@ -14,7 +15,7 @@ object DefinitionConstructionProps
   with ValDefConstruction
 
 trait ClassConstruction { self: QuasiquoteProperties =>
-  val anyRef = Select(Ident(TermName("scala")), TypeName("AnyRef"))
+  val anyRef = ScalaDot(TypeName("AnyRef"))
   val emtpyConstructor =
     DefDef(Modifiers(), nme.CONSTRUCTOR, List(),
       List(List()), TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))

@@ -82,6 +82,14 @@ trait BuildUtils { self: SymbolTable =>
 
     def mkRefineStat(stats: List[Tree]): List[Tree] = stats.map(mkRefineStat)
 
+    object ScalaDot extends ScalaDotExtractor {
+      def apply(name: Name): Tree = gen.scalaDot(name)
+      def unapply(tree: Tree): Option[Name] = tree match {
+        case Select(id @ Ident(nme.scala_), name) if id.symbol == ScalaPackage => Some(name)
+        case _ => None
+      }
+    }
+
     def RefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
 
     object FlagsRepr extends FlagsReprExtractor {

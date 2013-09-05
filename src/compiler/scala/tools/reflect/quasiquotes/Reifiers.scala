@@ -62,6 +62,12 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticTypeApplied, fun, targs)
       case Block(stats, last) =>
         reifyBuildCall(nme.SyntacticBlock, stats :+ last)
+      // parser emits trees with scala package symbol to ensure
+      // that some names hygienically point to various scala package
+      // members; we need to preserve this symbol to preserve
+      // correctness of the trees produced by quasiquotes
+      case Select(id @ Ident(nme.scala_), name) if id.symbol == ScalaPackage =>
+        reifyBuildCall(nme.ScalaDot, name)
       case _ =>
         super.reifyTreeSyntactically(tree)
     }
