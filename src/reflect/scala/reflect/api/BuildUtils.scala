@@ -175,5 +175,21 @@ private[reflect] trait BuildUtils { self: Universe =>
 
       def unapply(tree: Tree): Option[(List[ValDef], Tree)]
     }
+
+    val SyntacticDefDef: SyntacticDefDefExtractor
+
+    trait SyntacticDefDefExtractor {
+      def apply(mods: Modifiers, name: TermName, tparams: List[Tree], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
+
+      def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[List[ValDef]], Tree, Tree)]
+    }
+
+    val SyntacticValDef: SyntacticValDefExtractor
+    val SyntacticVarDef: SyntacticValDefExtractor
+
+    trait SyntacticValDefExtractor {
+      def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree): ValDef
+      def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree)]
+    }
   }
 }

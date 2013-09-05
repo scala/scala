@@ -8,6 +8,7 @@ import scala.reflect.internal.Flags._
 trait Reifiers { self: Quasiquotes =>
   import global._
   import global.build.{SyntacticClassDef, SyntacticTraitDef, SyntacticModuleDef,
+                       SyntacticDefDef, SyntacticValDef, SyntacticVarDef,
                        SyntacticBlock, SyntacticApplied, SyntacticTypeApplied,
                        SyntacticFunction, SyntacticNew}
   import global.treeInfo._
@@ -64,6 +65,12 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticModuleDef, mods, name, earlyDefs, parents, selfdef, body)
       case SyntacticNew(earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticNew, earlyDefs, parents, selfdef, body)
+      case SyntacticDefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        reifyBuildCall(nme.SyntacticDefDef, mods, name, tparams, vparamss, tpt, rhs)
+      case SyntacticValDef(mods, name, tpt, rhs) =>
+        reifyBuildCall(nme.SyntacticValDef, mods, name, tpt, rhs)
+      case SyntacticVarDef(mods, name, tpt, rhs) =>
+        reifyBuildCall(nme.SyntacticVarDef, mods, name, tpt, rhs)
       case SyntacticApplied(fun, argss) if argss.length > 1 =>
         reifyBuildCall(nme.SyntacticApplied, fun, argss)
       case SyntacticApplied(fun, argss @ (_ :+ (_ :+ Placeholder(_, _, DotDotDot)))) =>
