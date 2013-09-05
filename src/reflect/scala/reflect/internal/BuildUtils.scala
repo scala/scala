@@ -70,11 +70,12 @@ trait BuildUtils { self: SymbolTable =>
       case _ => throw new IllegalArgumentException(s"Tree ${showRaw(tree)} isn't a correct representation of annotation, consider passing Ident as a first argument")
     }
 
-    def mkVparamss(argss: List[List[ValDef]]): List[List[ValDef]] = {
-      argss.map { _.map {
-        case vd @ ValDef(mods, _, _, EmptyTree) => copyValDef(vd)(mods = mods | PARAM)
-        case vd @ ValDef(mods, _, _, _) => copyValDef(vd)(mods = mods | PARAM | DEFAULTPARAM)
-      } }
+    def mkVparamss(argss: List[List[ValDef]]): List[List[ValDef]] = argss.map(_.map(mkParam))
+
+    def mkParam(vd: ValDef): ValDef = {
+      var newmods = (vd.mods | PARAM) & (~DEFERRED)
+      if (vd.rhs.nonEmpty) newmods |= DEFAULTPARAM
+      copyValDef(vd)(mods = newmods)
     }
 
     def mkTparams(tparams: List[Tree]): List[TypeDef] =
@@ -324,6 +325,21 @@ trait BuildUtils { self: SymbolTable =>
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
         case self.Block(stats, expr) => Some(stats :+ expr)
         case _ if tree.isTerm => Some(tree :: Nil)
+        case _ => None
+      }
+    }
+
+    object SyntacticFunction extends SyntacticFunctionExtractor {
+      def apply(params: List[ValDef], body: Tree): Tree = {
+        val params0 = params.map { arg =>
+          require(arg.rhs.isEmpty, "anonymous functions don't support default values")
+          mkParam(arg)
+        }
+        Function(params0, body)
+      }
+
+      def unapply(tree: Tree): Option[(List[ValDef], Tree)] = tree match {
+        case Function(params, body) => Some((params, body))
         case _ => None
       }
     }

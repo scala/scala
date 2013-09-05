@@ -135,6 +135,11 @@ trait Parsers { self: Quasiquotes =>
         case Ident(name: TermName) if isHole(name) => ValDef(NoMods | Flag.PRESUPER, name, Ident(tpnme.QUASIQUOTE_EARLY_DEF), EmptyTree)
         case _ => super.ensureEarlyDef(tree)
       }
+
+      override def isTypedParam(tree: Tree) = super.isTypedParam(tree) || (tree match {
+        case Ident(name) if isHole(name) => true
+        case _ => false
+      })
     }
   }
 

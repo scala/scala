@@ -160,5 +160,13 @@ private[reflect] trait BuildUtils { self: Universe =>
       def apply(argtpes: List[Tree], restpe: Tree): Tree
       def unapply(tree: Tree): Option[(List[Tree], Tree)]
     }
+
+    val SyntacticFunction: SyntacticFunctionExtractor
+
+    trait SyntacticFunctionExtractor {
+      def apply(params: List[ValDef], body: Tree): Tree
+
+      def unapply(tree: Tree): Option[(List[ValDef], Tree)]
+    }
   }
 }

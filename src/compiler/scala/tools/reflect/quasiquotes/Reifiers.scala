@@ -8,7 +8,8 @@ import scala.reflect.internal.Flags._
 trait Reifiers { self: Quasiquotes =>
   import global._
   import global.build.{SyntacticClassDef, SyntacticTraitDef, SyntacticModuleDef,
-                       SyntacticBlock, SyntacticApplied, SyntacticTypeApplied}
+                       SyntacticBlock, SyntacticApplied, SyntacticTypeApplied,
+                       SyntacticFunction}
   import global.treeInfo._
   import global.definitions._
   import Cardinality._
@@ -67,6 +68,8 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticApplied, fun, argss)
       case SyntacticTypeApplied(fun, targs) if targs.nonEmpty =>
         reifyBuildCall(nme.SyntacticTypeApplied, fun, targs)
+      case SyntacticFunction(args, body) =>
+        reifyBuildCall(nme.SyntacticFunction, args, body)
       case Block(stats, last) =>
         reifyBuildCall(nme.SyntacticBlock, stats :+ last)
       // parser emits trees with scala package symbol to ensure

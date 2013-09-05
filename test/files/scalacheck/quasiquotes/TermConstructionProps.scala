@@ -157,4 +157,14 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     val empty = List[Tree]()
     assert(q"(..$empty)" ≈ q"()")
   }
+
+  property("function param flags are the same") = test {
+    val xy = q"val x: A" :: q"val y: B" :: Nil
+    assertEqAst(q"(..$xy) => x + y", "(x: A, y: B) => x + y")
+  }
+
+  property("anonymous functions don't support default values") = test {
+    val x = q"val x: Int = 1"
+    assertThrows[IllegalArgumentException] { q"($x) => x" }
+  }
 }
