@@ -343,6 +343,21 @@ trait BuildUtils { self: SymbolTable =>
         case _ => None
       }
     }
+
+    object SyntacticNew extends SyntacticNewExtractor {
+      def apply(earlyDefs: List[Tree], parents: List[Tree], selfdef: ValDef, body: List[Tree]): Tree =
+        gen.mkNew(parents, selfdef, earlyDefs ::: body, NoPosition, NoPosition)
+
+      def unapply(tree: Tree): Option[(List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
+        case SyntacticApplied(Select(New(SyntacticTypeApplied(ident, targs)), nme.CONSTRUCTOR), argss) =>
+          Some((Nil, SyntacticApplied(SyntacticTypeApplied(ident, targs), argss) :: Nil, emptyValDef, Nil))
+        case SyntacticBlock(SyntacticClassDef(_, tpnme.ANON_CLASS_NAME, Nil, _, List(Nil), earlyDefs, parents, selfdef, body) ::
+                            Apply(Select(New(Ident(tpnme.ANON_CLASS_NAME)), nme.CONSTRUCTOR), Nil) :: Nil) =>
+          Some((earlyDefs, parents, selfdef, body))
+        case _ =>
+          None
+      }
+    }
   }
 
   val build: BuildApi = new BuildImpl

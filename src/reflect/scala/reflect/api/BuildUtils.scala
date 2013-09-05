@@ -154,6 +154,13 @@ private[reflect] trait BuildUtils { self: Universe =>
       def unapply(tree: Tree): Option[List[Tree]]
     }
 
+    val SyntacticNew: SyntacticNewExtractor
+
+    trait SyntacticNewExtractor {
+      def apply(earlyDefs: List[Tree], parents: List[Tree], selfdef: ValDef, body: List[Tree]): Tree
+      def unapply(tree: Tree): Option[(List[Tree], List[Tree], ValDef, List[Tree])]
+    }
+
     val SyntacticFunctionType: SyntacticFunctionTypeExtractor
 
     trait SyntacticFunctionTypeExtractor {

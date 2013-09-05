@@ -9,7 +9,7 @@ trait Reifiers { self: Quasiquotes =>
   import global._
   import global.build.{SyntacticClassDef, SyntacticTraitDef, SyntacticModuleDef,
                        SyntacticBlock, SyntacticApplied, SyntacticTypeApplied,
-                       SyntacticFunction}
+                       SyntacticFunction, SyntacticNew}
   import global.treeInfo._
   import global.definitions._
   import Cardinality._
@@ -62,6 +62,8 @@ trait Reifiers { self: Quasiquotes =>
                                               earlyDefs, parents, selfdef, body)
       case SyntacticModuleDef(mods, name, earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticModuleDef, mods, name, earlyDefs, parents, selfdef, body)
+      case SyntacticNew(earlyDefs, parents, selfdef, body) =>
+        reifyBuildCall(nme.SyntacticNew, earlyDefs, parents, selfdef, body)
       case SyntacticApplied(fun, argss) if argss.length > 1 =>
         reifyBuildCall(nme.SyntacticApplied, fun, argss)
       case SyntacticApplied(fun, argss @ (_ :+ (_ :+ Placeholder(_, _, DotDotDot)))) =>
