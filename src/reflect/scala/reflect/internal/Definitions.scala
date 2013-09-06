@@ -1227,6 +1227,7 @@ trait Definitions extends api.StandardDefinitions {
     /** Is symbol a value class? */
     def isPrimitiveValueClass(sym: Symbol) = ScalaValueClasses contains sym
     def isPrimitiveValueType(tp: Type)     = isPrimitiveValueClass(tp.typeSymbol)
+    def boxedTypeOrSelf(tp: Type): Type    = (boxedClass get tp.typeSymbol).fold(tp)(_.tpe_*)
 
     /** Is symbol a boxed value class, e.g. java.lang.Integer? */
     def isBoxedValueClass(sym: Symbol) = boxedValueClassesSet(sym)

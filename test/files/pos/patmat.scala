@@ -161,3 +161,38 @@ object Ticket710 {
     }
   }
 }
+// patmat.scala:103:
+//       case dq: DoubleQuoteImpl => dq
+//                ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Core.this.OtherImpl
+//         pt  Core.this.OtherImpl
+//      pattp  Core.this.DoubleQuoteImpl
+//   pattp+pt  Core.this.DoubleQuoteImpl with Core.this.OtherImpl
+//   pt+pattp  Core.this.OtherImpl with Core.this.DoubleQuoteImpl
+//     result  Core.this.OtherImpl with Core.this.DoubleQuoteImpl
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// patmat.scala:112:
+//       case node: IfImpl => node // var node is of type Node with IfImpl!
+//                  ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  IfElseMatcher.this.Node
+//         pt  IfElseMatcher.this.NodeImpl
+//      pattp  IfElseMatcher.this.IfImpl
+//   pattp+pt  IfElseMatcher.this.IfImpl with IfElseMatcher.this.NodeImpl
+//   pt+pattp  IfElseMatcher.this.NodeImpl with IfElseMatcher.this.IfImpl
+//     result  IfElseMatcher.this.NodeImpl with IfElseMatcher.this.IfImpl
+//
+//        pt0 <:< pt             pt0 !:= pattp          pt0 !:= pattp+pt       pt0 !:= pt+pattp       pt0 !:= result
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

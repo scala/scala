@@ -27,3 +27,21 @@ object Test {
     Console.println(emptyStream.zipWithIndex.toList)
   }
 }
+// withIndex.scala:14:
+//         case _: Array[Pair[_,_]] => true
+//                 ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[(String, Int)]
+//         pt  Array[(String, Int)]
+//      pattp  Array[Pair[_,_]]
+//   pattp+pt  Array[Pair[_,_]]
+//   pt+pattp  Array[(String, Int)]
+//     result  Array[(String, Int)]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

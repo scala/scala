@@ -56,3 +56,208 @@ object Test {
     println(f3(null))
   }
 }
+// t2755.scala:14:
+//     case x: Array[Int]      => x(0)
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[_$1]
+//         pt  Array[_$1]
+//      pattp  Array[Int]
+//   pattp+pt  Array[Int]
+//   pt+pattp  Array[_$1]
+//     result  Array[Int]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }// t2755.scala:15:
+//     case x: Array[Double]   => 2
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[_$1]
+//         pt  Array[_$1]
+//      pattp  Array[Double]
+//   pattp+pt  Array[Double]
+//   pt+pattp  Array[_$1]
+//     result  Array[Double]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }// t2755.scala:16:
+//     case x: Array[Float]    => x.sum.toInt
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[_$1]
+//         pt  Array[_$1]
+//      pattp  Array[Float]
+//   pattp+pt  Array[Float]
+//   pt+pattp  Array[_$1]
+//     result  Array[Float]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }// t2755.scala:17:
+//     case x: Array[String]   => x.size
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[_$1]
+//         pt  Array[_$1]
+//      pattp  Array[String]
+//   pattp+pt  Array[String]
+//   pt+pattp  Array[_$1]
+//     result  Array[String]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }// t2755.scala:18:
+//     case x: Array[AnyRef]   => 5
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[_$1]
+//         pt  Array[_$1]
+//      pattp  Array[AnyRef]
+//   pattp+pt  Array[AnyRef]
+//   pt+pattp  Array[_$1]
+//     result  Array[AnyRef]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }// t2755.scala:19:
+//     case x: Array[_]        => 6
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[_$1]
+//         pt  Array[_$1]
+//      pattp  Array[_]
+//   pattp+pt  Array[_]
+//   pt+pattp  Array[_$1]
+//     result  Array[_$1]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// t2755.scala:23:
+//     case x: Array[Int]      => x(0)
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[T]
+//         pt  Array[T]
+//      pattp  Array[Int]
+//   pattp+pt  Array[Int]
+//   pt+pattp  Array[T]
+//     result  Array[Int]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }// t2755.scala:24:
+//     case x: Array[Double]   => 2
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[T]
+//         pt  Array[T]
+//      pattp  Array[Double]
+//   pattp+pt  Array[Double]
+//   pt+pattp  Array[T]
+//     result  Array[Double]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }// t2755.scala:25:
+//     case x: Array[Float]    => x.sum.toInt
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[T]
+//         pt  Array[T]
+//      pattp  Array[Float]
+//   pattp+pt  Array[Float]
+//   pt+pattp  Array[T]
+//     result  Array[Float]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }// t2755.scala:26:
+//     case x: Array[String]   => x.size
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[T]
+//         pt  Array[T]
+//      pattp  Array[String]
+//   pattp+pt  Array[String]
+//   pt+pattp  Array[T]
+//     result  Array[String]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }// t2755.scala:27:
+//     case x: Array[AnyRef]   => 5
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[T]
+//         pt  Array[T]
+//      pattp  Array[AnyRef]
+//   pattp+pt  Array[AnyRef]
+//   pt+pattp  Array[T]
+//     result  Array[AnyRef]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }// t2755.scala:28:
+//     case x: Array[_]        => 6
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[T]
+//         pt  Array[T]
+//      pattp  Array[_]
+//   pattp+pt  Array[_]
+//   pt+pattp  Array[T]
+//     result  Array[T]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

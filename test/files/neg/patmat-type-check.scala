@@ -29,3 +29,21 @@ object Test
   // final, invariant type parameter, should be disallowed
   def f4[T](x: Bop3[Char]) = x match { case Seq('b', 'o', 'b') => true } // fail
 }
+// patmat-type-check.scala:7:
+//   def s2(x: Bop) = x match { case Seq('b', 'o', 'b') => true }
+//                                      ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Test.Bop
+//         pt  Test.Bop
+//      pattp  Seq[A]
+//   pattp+pt  Seq[A] with Test.Bop
+//   pt+pattp  Test.Bop with Seq[A]
+//     result  Test.Bop with Seq[A]
+//
+//        pt0 =:= pt             pt0 !:= pattp     pattp+pt <:< pt0       pt+pattp <:< pt0         result <:< pt0
+//         pt !:= pattp     pattp+pt <:< pt        pt+pattp <:< pt          result <:< pt
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

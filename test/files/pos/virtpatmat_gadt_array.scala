@@ -12,4 +12,21 @@ object Test {
   //         OptionMatching.one(null))): Option[scala.collection.mutable.ArrayOps[T]])): Option[scala.collection.mutable.ArrayOps[T]]).orElse((OptionMatching.zero: Option[scala.collection.mutable.ArrayOps[T]]))))
   
   def refArrayOps[T <: AnyRef](xs: Array[T]): ArrayOps[T] = new ArrayOps.ofRef[T](xs)
-}
+}// virtpatmat_gadt_array.scala:4:
+//     case x: Array[AnyRef]  => refArrayOps[AnyRef](x).asInstanceOf[ArrayOps[T]]
+//             ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Array[T]
+//         pt  Array[T]
+//      pattp  Array[AnyRef]
+//   pattp+pt  Array[AnyRef]
+//   pt+pattp  Array[T]
+//     result  Array[AnyRef]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 ~:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt ~:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp =:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt =:= result
+//   pt+pattp ~:= result
+//
+// }

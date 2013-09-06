@@ -470,3 +470,38 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
 
 
 
+// ParallelIterableCheck.scala:77:
+//     case (m1: GenMap[_, _], m2: GenMap[_, _]) => m1 == m2 && m2 == m1
+//               ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  scala.collection.GenTraversable[T]
+//         pt  scala.collection.GenTraversable[T]
+//      pattp  scala.collection.GenMap[_,_]
+//   pattp+pt  scala.collection.GenMap[_,_] with scala.collection.GenMap[A,B]
+//   pt+pattp  scala.collection.GenMap[A,B] with scala.collection.GenMap[_,_]
+//     result  scala.collection.GenMap[A,B] with scala.collection.GenMap[_,_]
+//
+//        pt0 =:= pt             pt0 !:= pattp          pt0 !:= pattp+pt       pt0 !:= pt+pattp       pt0 !:= result
+//         pt !:= pattp           pt !:= pattp+pt        pt !:= pt+pattp        pt !:= result
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }// ParallelIterableCheck.scala:77:
+//     case (m1: GenMap[_, _], m2: GenMap[_, _]) => m1 == m2 && m2 == m1
+//                                 ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  scala.collection.GenTraversable[T]
+//         pt  scala.collection.GenTraversable[T]
+//      pattp  scala.collection.GenMap[_,_]
+//   pattp+pt  scala.collection.GenMap[_,_] with scala.collection.GenMap[A,B]
+//   pt+pattp  scala.collection.GenMap[A,B] with scala.collection.GenMap[_,_]
+//     result  scala.collection.GenMap[A,B] with scala.collection.GenMap[_,_]
+//
+//        pt0 =:= pt             pt0 !:= pattp          pt0 !:= pattp+pt       pt0 !:= pt+pattp       pt0 !:= result
+//         pt !:= pattp           pt !:= pattp+pt        pt !:= pt+pattp        pt !:= result
+//   pattp+pt <:< pattp     pt+pattp <:< pattp       result <:< pattp
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

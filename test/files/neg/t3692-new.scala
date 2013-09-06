@@ -17,4 +17,21 @@ class Tester {
       case _ => new java.util.HashMap[T, V]
     }
   }
-}
+}// t3692-new.scala:15:
+//       case m1: Map[Int, V] => new java.util.HashMap[Integer, V]
+//                ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  Map[T,V]
+//         pt  scala.collection.immutable.Map[T,V]
+//      pattp  Map[Int,V]
+//   pattp+pt  Map[Int,V]
+//   pt+pattp  scala.collection.immutable.Map[T,V]
+//     result  scala.collection.immutable.Map[T,V]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }

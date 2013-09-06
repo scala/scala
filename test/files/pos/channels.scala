@@ -28,3 +28,21 @@ object Test2 extends App {
   }
 }
  
+// channels.scala:17:
+//     case send: ![c] =>
+//                ^
+// Relating types pt0, pt, pattp, pattp+pt, pt+pattp, result {
+//        pt0  ![b]
+//         pt  ![b]
+//      pattp  ![c]
+//   pattp+pt  ![c]
+//   pt+pattp  ![b]
+//     result  ![b]
+//
+//        pt0 =:= pt             pt0 ~:= pattp          pt0 ~:= pattp+pt       pt0 =:= pt+pattp       pt0 =:= result
+//         pt ~:= pattp           pt ~:= pattp+pt        pt =:= pt+pattp        pt =:= result
+//      pattp =:= pattp+pt     pattp ~:= pt+pattp     pattp ~:= result
+//   pattp+pt ~:= pt+pattp  pattp+pt ~:= result
+//   pt+pattp =:= result
+//
+// }
