@@ -40,6 +40,7 @@ trait StdNames {
     def result: Set[TermName] = try kws finally kws = null
   }
 
+  private[reflect] def compactifyName(orig: String): String = compactify(orig)
   private final object compactify extends (String => String) {
     val md5 = MessageDigest.getInstance("MD5")
 

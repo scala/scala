@@ -3067,7 +3067,7 @@ self =>
       while (!isStatSeqEnd && !isCaseDefStart) {
         if (in.token == IMPORT) {
           stats ++= importClause()
-          acceptStatSep()
+          acceptStatSepOpt()
         }
         else if (isExprIntro) {
           stats += statement(InBlock)
