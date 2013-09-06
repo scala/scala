@@ -273,15 +273,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
       def parse(code: String): Tree = {
         reporter.reset()
-        val file = new BatchSourceFile("<toolbox>", code)
-        val unit = new CompilationUnit(file)
-        val parsed = newUnitParser(unit).parseStats()
+        val tree = gen.mkTreeOrBlock(newUnitParser(code, "<toolbox>").parseStats())
         throwIfErrors()
-        parsed match {
-          case Nil => EmptyTree
-          case expr :: Nil => expr
-          case stats :+ expr => Block(stats, expr)
-        }
+        tree
       }
 
       def showAttributed(artifact: Any, printTypes: Boolean = true, printIds: Boolean = true, printKinds: Boolean = false): String = {

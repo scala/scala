@@ -8,6 +8,7 @@ package ast.parser
 
 import symtab.Flags._
 import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.util.OffsetPosition
 
 /** Methods for building trees, used in the parser.  All the trees
  *  returned by this class must be untyped.
@@ -533,4 +534,14 @@ abstract class TreeBuilder {
         vparamss ::: List(evidenceParams)
     }
   }
+}
+
+abstract class UnitTreeBuilder extends TreeBuilder {
+  import global._
+  def unit: CompilationUnit
+  def freshName(prefix: String): Name               = freshTermName(prefix)
+  def freshTermName(prefix: String): TermName       = unit.freshTermName(prefix)
+  def freshTypeName(prefix: String): TypeName       = unit.freshTypeName(prefix)
+  def o2p(offset: Int): Position                    = new OffsetPosition(unit.source, offset)
+  def r2p(start: Int, mid: Int, end: Int): Position = rangePos(unit.source, start, mid, end)
 }

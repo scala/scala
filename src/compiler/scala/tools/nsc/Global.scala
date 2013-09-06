@@ -110,7 +110,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
 
   /** A spare instance of TreeBuilder left for backwards compatibility. */
-  lazy val treeBuilder: TreeBuilder { val global: Global.this.type } = new syntaxAnalyzer.ParserTreeBuilder
+  lazy val treeBuilder: TreeBuilder { val global: Global.this.type } = new UnitTreeBuilder {
+    val global: Global.this.type = Global.this;
+    val unit = currentUnit
+  }
 
   /** Fold constants */
   object constfold extends {
@@ -1139,11 +1142,20 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         warning("there were %d %s warning(s); re-run with %s for details".format(warnings.size, what, option.name))
   }
 
-  def newCompilationUnit(code: String)                   = new CompilationUnit(newSourceFile(code))
-  def newSourceFile(code: String)                        = new BatchSourceFile("<console>", code)
-  def newUnitScanner(unit: CompilationUnit): UnitScanner = new UnitScanner(unit)
-  def newUnitParser(unit: CompilationUnit): UnitParser   = new UnitParser(unit)
-  def newUnitParser(code: String): UnitParser            = newUnitParser(newCompilationUnit(code))
+  def newSourceFile(code: String, filename: String = "<console>") =
+    new BatchSourceFile(filename, code)
+
+  def newCompilationUnit(code: String, filename: String = "<console>") =
+    new CompilationUnit(newSourceFile(code, filename))
+
+  def newUnitScanner(unit: CompilationUnit): UnitScanner =
+    new UnitScanner(unit)
+
+  def newUnitParser(unit: CompilationUnit): UnitParser =
+    new UnitParser(unit)
+
+  def newUnitParser(code: String, filename: String = "<console>"): UnitParser =
+    newUnitParser(newCompilationUnit(code, filename))
 
   /** A Run is a single execution of the compiler on a sets of units
    */
