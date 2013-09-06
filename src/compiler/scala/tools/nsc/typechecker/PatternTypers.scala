@@ -45,12 +45,6 @@ trait PatternTypers {
     }
   }
 
-  // when true:
-  //  - we may virtualize matches (if -Xexperimental and there's a suitable __match in scope)
-  //  - we synthesize PartialFunction implementations for `x => x match {...}` and `match {...}` when the expected type is PartialFunction
-  // this is disabled by: interactive compilation (we run it for scaladoc due to SI-5933)
-  protected def newPatternMatching = true // presently overridden in the presentation compiler
-
   trait PatternTyper {
     self: Typer =>
 

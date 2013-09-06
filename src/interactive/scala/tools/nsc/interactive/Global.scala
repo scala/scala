@@ -32,7 +32,6 @@ trait InteractiveAnalyzer extends Analyzer {
 
   override def newTyper(context: Context): InteractiveTyper = new Typer(context) with InteractiveTyper
   override def newNamer(context: Context): InteractiveNamer = new Namer(context) with InteractiveNamer
-  override protected def newPatternMatching = false
 
   trait InteractiveTyper extends Typer {
     override def canAdaptConstantTypeToLiteral = false
