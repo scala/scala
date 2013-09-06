@@ -196,12 +196,12 @@ TODO:
   </target>
 
   <macrodef name="copy-deps" description="Copy a file set based on maven dependency resolution to a directory. Currently used by the IntelliJ config files.">
-    <attribute name="fileset.prefix"></attribute>
-    <attribute name="out"></attribute>
+    <attribute name="project" />
+    <attribute name="refid" default="@{project}.fileset"/>
     <sequential>
-      <delete dir="${build-deps.dir}/@{out}" includes="*.jar"/>
-      <copy todir="${build-deps.dir}/@{out}">
-        <fileset refid="@{fileset.prefix}.fileset" />
+      <delete dir="${build-deps.dir}/@{project}" includes="*.jar"/>
+      <copy todir="${build-deps.dir}/@{project}">
+        <resources refid="@{refid}" />
         <mapper type="flatten" />
       </copy>
     </sequential>
@@ -233,7 +233,7 @@ TODO:
       <artifact:dependencies pathId="junit.classpath" filesetId="junit.fileset">
         <dependency groupId="junit" artifactId="junit" version="${junit.version}"/>
       </artifact:dependencies>
-      <copy-deps fileset.prefix="junit" out="junit"/>
+      <copy-deps project="junit"/>
 
       <!-- Pax runner -->
       <property name="pax.exam.version" value="2.5.0"/>
@@ -250,19 +250,90 @@ TODO:
       </artifact:dependencies>
 
 
+      <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
+
       <artifact:dependencies pathId="partest.classpath" filesetId="partest.fileset" versionsId="partest.versions">
-        <!-- to facilitate building and publishing partest locally -->
-        <localRepository path="${user.home}/.m2/repository"/>
-        <!-- so we don't have to wait for artifacts to synch to maven central: -->
-        <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
+        <!-- uncomment the following if you're deploying your own partest locally -->
+        <!-- <localRepository path="${user.home}/.m2/repository"/> -->
+        <!-- so we don't have to wait for artifacts to synch to maven central
+            (we don't distribute partest with Scala, so the risk of sonatype and maven being out of synch is irrelevant):
+          -->
+        <artifact:remoteRepository refid="sonatype-release"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-partest_${scala.binary.version}" version="${partest.version.number}" />
       </artifact:dependencies>
-      <copy-deps fileset.prefix="partest" out="partest"/>
+      <copy-deps project="partest"/>
 
-      <artifact:dependencies pathId="repl.deps.classpath" filesetId="repl.deps.fileset" versionsId="repl.deps.versions">
+      <artifact:dependencies pathId="repl.deps.classpath" filesetId="repl.fileset" versionsId="repl.deps.versions">
         <dependency groupId="jline" artifactId="jline" version="${jline.version}"/>
       </artifact:dependencies>
-      <copy-deps fileset.prefix="repl.deps" out="repl"/>
+      <copy-deps project="repl"/>
+
+      <!-- used by the test.osgi target to create osgi bundles for the xml, parser-combinator jars
+           must specify sourcesFilesetId, javadocFilesetId to download these types of artifacts -->
+      <artifact:dependencies pathId="external-modules.deps.classpath" sourcesFilesetId="external-modules.sources.fileset" javadocFilesetId="external-modules.javadoc.fileset">
+        <!-- sonatype is not enabled by default for modules to avoid a Scala release relying on a JAR that's not on maven (yet) -->
+        <!-- <artifact:remoteRepository refid="sonatype-release"/> -->
+        <dependency groupId="org.scala-lang.modules" artifactId="scala-xml_${scala.binary.version}" version="${scala-xml.version.number}"/>
+        <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators_${scala.binary.version}" version="${scala-parser-combinators.version.number}"/>
+      </artifact:dependencies>
+
+      <!-- External modules, excluding the core -->
+      <path id="external-modules-nocore">
+        <restrict>
+          <path refid="external-modules.deps.classpath"/>
+          <rsel:not><rsel:or>
+            <rsel:name name="scala-library*.jar"/>
+            <rsel:name name="scala-reflect*.jar"/>
+            <rsel:name name="scala-compiler*.jar"/>
+          </rsel:or></rsel:not>
+        </restrict>
+      </path>
+      <copy-deps refid="external-modules-nocore" project="scaladoc"/>
+
+      <!--
+        include partest and its run-time dependencies,
+        but filter out the compiler we just built, as that's what we want to test!
+        TODO: mark partest's compiler dependencies as provided when publishing to maven,
+        so that we don't have to filter them out here...
+      -->
+      <path id="partest-deps-nocore">
+        <restrict>
+          <path refid="partest.classpath"/>
+          <rsel:not><rsel:or>
+            <rsel:name name="scala-library*.jar"/>
+            <rsel:name name="scala-reflect*.jar"/>
+            <rsel:name name="scala-compiler*.jar"/>
+            <!-- TODO: remove actors & scalap, move to external modules -->
+            <rsel:name name="scala-actors*.jar"/>
+            <rsel:name name="scala-scalap*.jar"/>
+          </rsel:or></rsel:not>
+        </restrict>
+      </path>
+
+      <!-- Set property named @{name} to the jar resolved as @{jar}_${scala.binary.version}:jar.
+           @{jar}_${scala.binary.version} must be a maven dependency. -->
+      <macrodef name="propertyForCrossedArtifact">
+          <attribute name="name" />
+          <attribute name="jar" />
+          <sequential>
+            <readProperty name="@{name}"         property="@{jar}_${scala.binary.version}:jar" />
+            <readProperty name="@{name}-sources" property="@{jar}_${scala.binary.version}:java-source:sources" />
+            <readProperty name="@{name}-javadoc" property="@{jar}_${scala.binary.version}:java-source:javadoc" />
+          </sequential>
+      </macrodef>
+
+      <!-- Set property named @{name} to the value of the property named @{property}.
+           Helper for performing nested property expansion without using the ant props lib -->
+      <macrodef name="readProperty">
+        <attribute name="name" />
+        <attribute name="property" />
+        <sequential>
+          <property name="@{name}" value="${@{property}}" />
+        </sequential>
+      </macrodef>
+
+      <propertyForCrossedArtifact name="scala-parser-combinators" jar="org.scala-lang.modules:scala-parser-combinators"/>
+      <propertyForCrossedArtifact name="scala-xml"                jar="org.scala-lang.modules:scala-xml"/>
 
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
@@ -500,7 +571,7 @@ TODO:
       There must be a variable of the shape @{stage}.@{project}.build.path
       for all @{stage} in locker, quick, strap
       and all @{project} in library, reflect, compiler
-        when stage is quick, @{project} also includes: actors, parser-combinators, xml, repl, swing, plugins, scalacheck, interactive, scaladoc, scalap
+        when stage is quick, @{project} also includes: actors, repl, swing, plugins, interactive, scaladoc, scalap
     -->
 
     <!-- LOCKER -->
@@ -541,11 +612,6 @@ TODO:
       <pathelement location="${build-quick.dir}/classes/actors"/>
     </path>
 
-    <path id="quick.parser-combinators.build.path">
-      <path refid="quick.library.build.path"/>
-      <pathelement location="${build-quick.dir}/classes/parser-combinators"/>
-    </path>
-
     <path id="quick.reflect.build.path">
       <path refid="quick.library.build.path"/>
       <pathelement location="${build-quick.dir}/classes/reflect"/>
@@ -561,11 +627,6 @@ TODO:
       <path refid="quick.compiler.build.path"/>
       <pathelement location="${build-quick.dir}/classes/repl"/>
       <path refid="repl.deps.classpath"/>
-    </path>
-
-    <path id="quick.xml.build.path">
-      <path refid="quick.library.build.path"/>
-      <pathelement location="${build-quick.dir}/classes/xml"/>
     </path>
 
     <path id="quick.swing.build.path">
@@ -600,10 +661,9 @@ TODO:
     </path>
 
     <path id="quick.scaladoc.build.path">
-      <path refid="quick.xml.build.path"/>
       <path refid="quick.compiler.build.path"/>
-      <path refid="quick.parser-combinators.build.path"/>
       <path refid="partest.classpath"/>
+      <path refid="external-modules-nocore"/>
       <pathelement location="${build-quick.dir}/classes/scaladoc"/>
     </path>
 
@@ -614,12 +674,11 @@ TODO:
     </path>
 
     <path id="quick.bin.tool.path">
-      <path refid="quick.parser-combinators.build.path"/>
-      <path refid="quick.xml.build.path"/>
       <path refid="quick.repl.build.path"/>
       <path refid="quick.actors.build.path"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
       <pathelement location="${build-quick.dir}/classes/continuations-library"/>
+      <path refid="external-modules-nocore"/>
     </path>
 
     <!-- PACK -->
@@ -634,9 +693,9 @@ TODO:
 
     <path id="pack.bin.tool.path">
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scala-parser-combinators.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-xml.jar"/>
+      <pathelement location="${build-pack.dir}/lib/scala-parser-combinators.jar"/>
+      <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-reflect.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
@@ -662,8 +721,6 @@ TODO:
       <fileset dir="${asm-classes}"/>
     </path>
 
-    <path id="pack.parser-combinators.files">    <fileset dir="${build-quick.dir}/classes/parser-combinators"/> </path>
-    <path id="pack.xml.files">        <fileset dir="${build-quick.dir}/classes/xml"/> </path>
     <path id="pack.swing.files">      <fileset dir="${build-quick.dir}/classes/swing"/> </path>
     <path id="pack.reflect.files">    <fileset dir="${build-quick.dir}/classes/reflect"/> </path>
     <path id="pack.plugins.files">    <fileset dir="${build-quick.dir}/classes/continuations-plugin"/> </path>
@@ -693,12 +750,10 @@ TODO:
 
     <!-- MISC -->
     <path id="docs.compiler.path">
+      <path refid="external-modules-nocore"/>
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scala-parser-combinators.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scala-xml.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-reflect.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
-      <!-- <pathelement location="${build-pack.dir}/lib/scala-partest.jar"/> -->
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
       <pathelement location="${ant.jar}"/>
@@ -727,36 +782,19 @@ TODO:
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-reflect.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scala-parser-combinators.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scala-xml.jar"/>
 
       <!-- to test a quick build without packing, replace the above pathelements with:        (may need a little tweaking)
       <path refid="quick.bin.tool.path">
       <path refid="quick.interactive.build.path">
       -->
 
+      <!-- TODO: move scalap & actors out of repo -->
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
-      <!-- TODO: move scalap out of repo -->
+      <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
 
-      <!--
-        include partest and its run-time dependencies,
-        but filter out the compiler we just built, as that's what we want to test!
-        TODO: mark partest's compiler dependencies as provided when publishing to maven,
-        so that we don't have to filter them out here...
-      -->
-      <restrict>
-          <path refid="partest.classpath"/>
-          <rsel:not><rsel:or>
-            <rsel:name name="scala-library*.jar"/>
-            <rsel:name name="scala-reflect*.jar"/>
-            <rsel:name name="scala-compiler*.jar"/>
-            <rsel:name name="scala-actors*.jar"/>
-            <rsel:name name="scala-scalap*.jar"/>
-            <!-- <rsel:name name="scala-parser-combinators*.jar"/>
-            <rsel:name name="scala-xml*.jar"/> -->
-          </rsel:or></rsel:not>
-      </restrict>
+      <!-- partest dependencies, without the jars we built locally
+           TODO: figure out why scalap tests fail if we move this up-->
+      <path refid="partest-deps-nocore"/>
 
       <!-- partest classes specific to the core compiler build -->
       <pathelement location="${build-pack.dir}/lib/scala-partest-extras.jar"/>
@@ -765,16 +803,6 @@ TODO:
       <!-- sneaky extras used in tests -->
       <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
     </path>
-
-    <!-- obsolete? -->
-    <!-- TODO - segregate swing tests (there can't be many) -->
-    <!--
-    <path id="partest.build.path">
-      <path refid="pack.compiler.path"/>
-      <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
-      <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
-    </path>
-    -->
 
     <path id="test.junit.compiler.build.path">
       <pathelement location="${test.junit.classes}"/>
@@ -788,7 +816,6 @@ TODO:
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-reflect.jar"/>
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-compiler.jar"/>
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-actors.jar"/>
-      <pathelement location="${build-osgi.dir}/org.scala-lang.scala-parser-combinators.jar"/>
       <path refid="pax.exam.classpath"/>
       <path refid="forkjoin.classpath"/>
     </path>
@@ -1233,9 +1260,6 @@ TODO:
   <target name="quick.actors"     depends="quick.lib">
     <staged-build with="locker"   stage="quick" project="actors"/> </target>
 
-  <target name="quick.parser-combinators"    depends="quick.lib">
-    <staged-build with="locker"   stage="quick" project="parser-combinators"/> </target>
-
   <target name="quick.reflect"    depends="quick.lib">
     <staged-build with="locker"   stage="quick" project="reflect"/> </target>
 
@@ -1248,14 +1272,11 @@ TODO:
   <target name="quick.scalap"     depends="quick.repl">
     <staged-build with="locker"   stage="quick" project="scalap"/> </target>
 
-  <target name="quick.scaladoc"   depends="quick.comp, quick.parser-combinators">
+  <target name="quick.scaladoc"   depends="quick.comp">
     <staged-build with="locker"   stage="quick" project="scaladoc" version="scaladoc"/> </target>
 
   <target name="quick.interactive" depends="quick.comp, quick.scaladoc">
     <staged-build with="locker"    stage="quick" project="interactive"/> </target>
-
-  <target name="quick.xml"        depends="quick.lib">
-    <staged-build with="locker"   stage="quick" project="xml"/> </target>
 
   <target name="quick.swing"      depends="quick.actors, quick.lib" if="has.java6">
     <staged-build with="locker"   stage="quick" project="swing"/> </target>
@@ -1287,7 +1308,7 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.repl, quick.scalap, quick.interactive, quick.xml, quick.parser-combinators, quick.swing, quick.plugins, quick.scaladoc">
+  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.repl, quick.scalap, quick.interactive, quick.swing, quick.plugins, quick.scaladoc">
     <staged-bin stage="quick" classpathref="quick.bin.tool.path"/>
   </target>
 
@@ -1302,8 +1323,6 @@ TODO:
     <staged-pack project="library"/></target>
 
   <target name="pack.actors"  depends="quick.lib">                <staged-pack project="actors"/> </target>
-  <target name="pack.xml"     depends="quick.xml">                <staged-pack project="xml"/> </target>
-  <target name="pack.parser-combinators" depends="quick.parser-combinators"> <staged-pack project="parser-combinators"/> </target>
   <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
   <target name="pack.reflect" depends="quick.reflect">            <staged-pack project="reflect"/> </target>
 
@@ -1311,7 +1330,7 @@ TODO:
     <staged-pack project="compiler" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <pre> <!-- TODO the files copied here do not influence actuality of this target (nor does the manifest) -->
         <copy todir="${build-pack.dir}/lib">
-          <resources refid="repl.deps.fileset"/>
+          <resources refid="repl.fileset"/>
           <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper" from="${repl.deps.versions}" to="flatten"/>
         </copy>
         <copy todir="${build-pack.dir}/lib">
@@ -1338,7 +1357,12 @@ TODO:
 
   <target name="pack.scalap"     depends="quick.scalap">     <staged-pack project="scalap"     targetjar="scalap.jar"/> </target>
 
-  <target name="pack.bin" depends="pack.comp, pack.lib, pack.actors, pack.plugins, pack.reflect, pack.scalap, pack.xml, pack.swing, pack.parser-combinators">
+  <target name="pack.bin" depends="pack.comp, pack.lib, pack.actors, pack.plugins, pack.reflect, pack.scalap, pack.swing">
+    <copy todir="${build-pack.dir}/lib">
+      <path refid="external-modules-nocore" />
+      <mapper type="flatten" />
+    </copy>
+
     <staged-bin stage="pack"/>
   </target>
 
@@ -1377,7 +1401,7 @@ TODO:
       <fileset dir="${asm-classes}"/>
     </jar>
     <copy todir="${build-palo.dir}/lib">
-      <resources refid="repl.deps.fileset"/>
+      <resources refid="repl.fileset"/>
       <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper" from="${repl.deps.versions}" to="flatten"/>
     </copy>
   </target>
@@ -1395,13 +1419,14 @@ TODO:
     <macrodef name="make-bundle">
       <attribute name="name" />
       <attribute name="version" />
+      <attribute name="jar" default="${build-pack.dir}/lib/@{name}.jar" />
       <sequential>
         <copy file="${src.dir}/build/bnd/@{name}.bnd" tofile="${build-osgi.dir}/@{name}.bnd" overwrite="true">
           <filterset>
             <filter token="VERSION" value="@{version}" />
           </filterset>
         </copy>
-        <bnd classpath="${build-pack.dir}/lib/@{name}.jar"
+        <bnd classpath="@{jar}"
              eclipse="false"
              failok="false"
              exceptions="true"
@@ -1438,11 +1463,11 @@ TODO:
       <stopwatch name="osgi.bundle.timer"/>
       <make-bundle name="scala-library" version="${osgi.version.number}" />
       <make-bundle name="scala-actors" version="${osgi.version.number}" />
-      <make-bundle name="scala-parser-combinators" version="${osgi.version.number}" />
+      <make-bundle name="scala-parser-combinators" version="${osgi.version.number}" jar="${scala-parser-combinators}"/>
       <make-bundle name="scala-reflect" version="${osgi.version.number}" />
       <make-bundle name="scala-compiler" version="${osgi.version.number}" />
       <make-plugin-bundle name="continuations" version="${osgi.version.number}" />
-      <make-bundle name="scala-xml" version="${osgi.version.number}"/>
+      <make-bundle name="scala-xml" version="${osgi.version.number}" jar="${scala-xml}"/>
       <touch file="${build-osgi.dir}/bundles.complete" verbose="no"/>
 
       <if><isset property="has.java6"/><then>
@@ -1492,6 +1517,7 @@ TODO:
   <target name="test.osgi" depends="test.osgi.comp">
     <stopwatch name="test.osgi.timer"/>
     <mkdir dir="${test.osgi.classes}"/>
+
     <junit fork="yes" haltonfailure="yes">
       <classpath refid="test.osgi.compiler.build.path"/>
       <batchtest fork="yes" todir="${build-osgi.dir}">
@@ -1780,18 +1806,6 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="docs.xml" depends="docs.start">
-    <staged-docs project="xml" title="Scala XML Library" docroot="rootdoc.txt">
-      <include name="**/*.scala"/>
-    </staged-docs>
-  </target>
-
-  <target name="docs.parser-combinators" depends="docs.start">
-    <staged-docs project="parser-combinators" title="Scala Parser Combinator Library" docroot="rootdoc.txt">
-      <include name="**/*.scala"/>
-    </staged-docs>
-  </target>
-
   <target name="docs.comp" depends="docs.start">
     <staged-docs project="compiler" title="Scala Compiler" docroot="rootdoc.txt">
       <include name="**/*.scala"/>
@@ -1847,7 +1861,7 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="docs.done" depends="docs.comp, docs.man, docs.lib, docs.xml, docs.parser-combinators, docs.scalap, docs.continuations-plugin"/>
+  <target name="docs.done" depends="docs.comp, docs.man, docs.lib, docs.scalap, docs.continuations-plugin"/>
 
 <!-- ===========================================================================
                                   DISTRIBUTION
@@ -1879,8 +1893,9 @@ TODO:
       </fileset>
     </copy>
 
+    <!-- TODO -->
     <copy todir="${dist.dir}/lib">
-      <resources refid="repl.deps.fileset"/>
+      <resources refid="repl.fileset"/>
       <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper"
               from="${repl.deps.versions}" to="flatten"/>
     </copy>
@@ -1888,11 +1903,11 @@ TODO:
     <mkdir dir="${dist.dir}/bin"/>
     <!-- TODO - Stop being inefficient and don't copy OSGi bundles overtop other jars. -->
     <copy-bundle name="scala-library"/>
-    <copy-bundle name="scala-reflect"/>
     <copy-bundle name="scala-xml"/>
+    <copy-bundle name="scala-parser-combinators"/>
+    <copy-bundle name="scala-reflect"/>
     <copy-bundle name="scala-swing"/>
     <copy-bundle name="scala-actors"/>
-    <copy-bundle name="scala-parser-combinators"/>
     <copy-bundle name="scala-compiler"/>
     <copy toDir="${dist.dir}/bin">
       <fileset dir="${build-pack.dir}/bin"/>
@@ -1908,6 +1923,11 @@ TODO:
 
   <target name="dist.doc" depends="dist.base, docs.done">
     <mkdir dir="${dist.dir}/doc/scala-devel-docs"/>
+    <copy toDir="${dist.dir}/doc/scala-devel-docs">
+      <file file="${scala-xml-javadoc}"/>
+      <file file="${scala-parser-combinators-javadoc}"/>
+    </copy>
+
     <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc"/>
     <copy file="${docs.dir}/README" toDir="${dist.dir}/doc"/>
     <mkdir dir="${dist.dir}/doc/scala-devel-docs/api"/>
@@ -1937,6 +1957,11 @@ TODO:
 
   <target name="dist.src" depends="dist.base">
     <mkdir dir="${dist.dir}/src"/>
+    <copy toDir="${dist.dir}/src">
+      <file file="${scala-xml-sources}"/>
+      <file file="${scala-parser-combinators-sources}"/>
+    </copy>
+
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-library-src.jar">
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/continuations/library"/>
@@ -1949,10 +1974,8 @@ TODO:
       <fileset dir="${src.dir}/interactive"/>
       <fileset dir="${src.dir}/continuations/plugin"/>
     </jar>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-xml-src.jar" basedir="${src.dir}/xml"/>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-swing-src.jar"    basedir="${src.dir}/swing"/>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-reflect-src.jar"  basedir="${src.dir}/reflect"/>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-parser-combinators-src.jar"  basedir="${src.dir}/parser-combinators"/>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scalap-src.jar"         basedir="${src.dir}/scalap"/>
   </target>
 
@@ -2000,10 +2023,8 @@ TODO:
   <target name="starr.src" depends="starr.jars">
     <jar whenmanifestonly="fail" destfile="${lib.dir}/scala-library-src.jar">
       <fileset dir="${src.dir}/library"/>
-      <fileset dir="${src.dir}/xml"/>
       <fileset dir="${src.dir}/swing"/>
       <fileset dir="${src.dir}/actors"/>
-      <fileset dir="${src.dir}/parser-combinators"/>
       <fileset dir="${src.dir}/forkjoin"/>
     </jar>
     <jar whenmanifestonly="fail" destfile="${lib.dir}/scala-reflect-src.jar" basedir="${src.dir}/reflect"/>

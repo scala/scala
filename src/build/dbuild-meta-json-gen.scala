@@ -16,7 +16,11 @@ val meta =
       Seq(ProjectRef("scala-library", "org.scala-lang"))),
     Project("scala-compiler", "org.scala-lang",
       Seq(ProjectRef("scala-compiler", "org.scala-lang")),
-      Seq(ProjectRef("scala-reflect", "org.scala-lang"))), // asm
+      Seq(ProjectRef("scala-reflect", "org.scala-lang"),
+          ProjectRef("scala-xml", "org.scala-lang.modules"),
+          ProjectRef("scala-parser-combinators", "org.scala-lang.modules")
+          // asm
+         )),
 
     // Project("scala-repl", "org.scala-lang",
     //   Seq(ProjectRef("scala-repl", "org.scala-lang")),
@@ -33,16 +37,10 @@ val meta =
     Project("scala-actors", "org.scala-lang",
       Seq(ProjectRef("scala-actors", "org.scala-lang")),
       Seq(ProjectRef("scala-library", "org.scala-lang"))),
-    Project("scala-xml", "org.scala-lang",
-      Seq(ProjectRef("scala-xml", "org.scala-lang")),
-      Seq(ProjectRef("scala-library", "org.scala-lang"))),
-    Project("scala-parser-combinators", "org.scala-lang",
-      Seq(ProjectRef("scala-parser-combinators", "org.scala-lang")),
-      Seq(ProjectRef("scala-library", "org.scala-lang"))),
 
-    Project("scaladoc", "org.scala-lang",
-      Seq(ProjectRef("scaladoc", "org.scala-lang")),
-      Seq(ProjectRef("scala-compiler", "org.scala-lang"),ProjectRef("scala-partest", "org.scala-lang"), ProjectRef("scala-xml", "org.scala-lang"), ProjectRef("scala-parser-combinators", "org.scala-lang"))),
+    // Project("scaladoc", "org.scala-lang",
+    //   Seq(ProjectRef("scaladoc", "org.scala-lang")),
+    //   Seq(ProjectRef("scala-compiler", "org.scala-lang"),ProjectRef("scala-partest", "org.scala-lang"), ProjectRef("scala-xml", "org.scala-lang"), ProjectRef("scala-parser-combinators", "org.scala-lang"))),
 
     Project("scalap", "org.scala-lang",
       Seq(ProjectRef("scalap", "org.scala-lang")),

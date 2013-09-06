@@ -10,9 +10,12 @@
 PROPERTIES
 ============================================================================ -->
   
-  <property file="${basedir}/build.number.maven"/>
   <!-- the maven stuff requires version.major, version.minor and version.patch properties.
        the "get-scala-revision" script only returns "version.number" -->
+  <property file="${basedir}/build.number.maven"/>
+  <!-- also need to know scala binary version and versions for xml and parsers -->
+  <property file="${basedir}/versions.properties"/>
+
   
 <!-- ===========================================================================
 MAIN DISTRIBUTION PACKAGING
@@ -152,8 +155,6 @@ MAIN DISTRIBUTION PACKAGING
       </sequential>
     </macrodef>
     <mvn-copy-lib mvn.artifact.name="scala-library"/>
-    <mvn-copy-lib mvn.artifact.name="scala-xml"/>
-    <mvn-copy-lib mvn.artifact.name="scala-parser-combinators"/>
     <mvn-copy-lib mvn.artifact.name="scala-reflect"/>
     <mvn-copy-lib mvn.artifact.name="scala-compiler"/>
     <mvn-copy-lib mvn.artifact.name="scala-swing"/>
@@ -191,14 +192,6 @@ MAIN DISTRIBUTION PACKAGING
   <target name="pack-maven.docs" depends="pack-maven.libs, pack-maven.plugins">
     <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"
          basedir="${build-docs.dir}/library">
-      <include name="**/*"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-xml/scala-xml-docs.jar"
-         basedir="${build-docs.dir}/xml">
-      <include name="**/*"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-parser-combinators/scala-parser-combinators-docs.jar"
-         basedir="${build-docs.dir}/parser-combinators">
       <include name="**/*"/>
     </jar>
     <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-compiler/scala-compiler-docs.jar"
