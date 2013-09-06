@@ -1,7 +1,7 @@
-t3160ambiguous.scala:8: error: reference to Node is ambiguous;
+t3160ambiguous.scala:8: error: reference to List is ambiguous;
 it is imported twice in the same scope by
-import scala.xml._
+import scala.collection.immutable._
 and import Bippy._
-  def f(x: Node): String = ???  // ambiguous, because Bippy.Node is accessible
+  def f(x: List[Any]): String = ???  // ambiguous, because Bippy.List is accessible
            ^
 one error found
