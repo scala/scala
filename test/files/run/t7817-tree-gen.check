@@ -11,8 +11,8 @@ Joint Compilation:
            erasure [           O]  -  O.this
        posterasure [           O]  -  C.this.O()
            flatten [           O]  -  C.this.O()
-             mixin [           O] !!! test.`package`.O()
-           cleanup [           O] !!! test.`package`.O()
+             mixin [           O]  -  test.O()
+           cleanup [           O]  -  test.O()
 
              typer [           P]  -  P.this
            pickler [           P]  -  P.this
@@ -63,8 +63,8 @@ Separate Compilation:
            erasure [           O]  -  O.this
        posterasure [           O]  -  C.this.O()
            flatten [           O]  -  C.this.O()
-             mixin [           O] !!! testSep.`package`.O()
-           cleanup [           O] !!! testSep.`package`.O()
+             mixin [           O]  -  testSep.O()
+           cleanup [           O]  -  testSep.O()
 
              typer [           P]  -  P.this
            pickler [           P]  -  P.this
