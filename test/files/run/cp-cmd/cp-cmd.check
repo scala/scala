@@ -1,0 +1,12 @@
+
+scala> res0: String = not found
+
+scala> res0: String = found
+
+scala> haggis
+
+scala> res2: Class[_] = class ClasspathTest
+
+scala> haggis
+
+scala> 

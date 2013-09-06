@@ -591,7 +591,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   /** create a new interpreter and replay the given commands */
   def replay() {
-    reset()
+    closeInterpreter()
+    createInterpreter()
     if (replayCommandStack.isEmpty)
       echo("Nothing to replay.")
     else for (cmd <- replayCommands) {
