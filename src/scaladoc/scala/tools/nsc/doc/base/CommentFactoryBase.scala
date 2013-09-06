@@ -46,7 +46,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     group0:          Option[Body]     = None,
     groupDesc0:      Map[String,Body] = Map.empty,
     groupNames0:     Map[String,Body] = Map.empty,
-    groupPrio0:      Map[String,Body] = Map.empty
+    groupPrio0:      Map[String,Body] = Map.empty,
+    canonical0:      Option[String]   = None
   ) : Comment = new Comment{
     val body           = if(body0 isDefined) body0.get else Body(Seq.empty)
     val authors        = authors0
@@ -92,7 +93,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           case _: java.lang.NumberFormatException => List()
         }
     }
-
+    val canonical = canonical0
   }
 
   private val endOfText = '\u0003'
@@ -344,6 +345,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           Map.empty[String, Body] ++ pairs
         }
 
+        def canonicalText: Option[String] = oneTag(SimpleTagKey("canonical")) match {
+          case Some(Body(List(Paragraph(Chain(List(Summary(Text(canonical)))))))) => Some(canonical.toString.trim)
+          case _ => None
+        }
+
         val com = createComment (
           body0           = Some(parseWikiAtSymbol(docBody.toString, pos, site)),
           authors0        = allTags(SimpleTagKey("author")),
@@ -365,7 +371,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           group0          = oneTag(SimpleTagKey("group")),
           groupDesc0      = allSymsOneTag(SimpleTagKey("groupdesc")),
           groupNames0     = allSymsOneTag(SimpleTagKey("groupname")),
-          groupPrio0      = allSymsOneTag(SimpleTagKey("groupprio"))
+          groupPrio0      = allSymsOneTag(SimpleTagKey("groupprio")),
+          canonical0      = canonicalText
         )
 
         for ((key, _) <- bodyTags)

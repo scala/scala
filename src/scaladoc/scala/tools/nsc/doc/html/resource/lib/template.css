@@ -573,6 +573,11 @@ div.fullcomment {
   padding: 0;
 }
 
+#template .canonical {
+  margin: 5px 0 0 14.7em;
+  padding: 0;
+}
+
 div.fullcomment .block {
   padding: 5px 0 0;
   border-top: 1px solid #EBEBEB;

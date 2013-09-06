@@ -123,9 +123,14 @@ abstract class Comment {
   /** Member group priorities */
   def groupPrio: Map[String,Int]
 
+  /** Canonical Name */
+  def canonical: Option[String]
+
+
   override def toString =
     body.toString + "\n" +
     (authors map ("@author " + _.toString)).mkString("\n") +
     (result map ("@return " + _.toString)).mkString("\n") +
-    (version map ("@version " + _.toString)).mkString
+    (version map ("@version " + _.toString)).mkString("\n") +
+    (canonical map ("@canonical " + _.toString)).mkString
 }

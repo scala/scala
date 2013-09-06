@@ -600,11 +600,11 @@ TODO:
     </path>
 
     <path id="quick.scaladoc.build.path">
+      <pathelement location="${build-quick.dir}/classes/scaladoc"/>
       <path refid="quick.xml.build.path"/>
       <path refid="quick.compiler.build.path"/>
       <path refid="quick.parser-combinators.build.path"/>
       <path refid="partest.classpath"/>
-      <pathelement location="${build-quick.dir}/classes/scaladoc"/>
     </path>
 
     <path id="quick.interactive.build.path">
