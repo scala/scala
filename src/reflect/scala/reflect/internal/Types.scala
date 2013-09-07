@@ -2626,7 +2626,7 @@ trait Types extends api.Types { self: SymbolTable =>
 
     private var isdepmeth: ThreeValue = UNKNOWN
     override def isDependentMethodType: Boolean = {
-      if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(IsDependentCollector.collect(resultType))
+      if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(IsDependentCollector.collect(resultType.dealias))
       toBoolean(isdepmeth)
     }
 
@@ -4807,7 +4807,7 @@ trait Types extends api.Types { self: SymbolTable =>
   object IsDependentCollector extends TypeCollector(false) {
     def traverse(tp: Type) {
       if (tp.isImmediatelyDependent) result = true
-      else if (!result) mapOver(tp)
+      else if (!result) mapOver(tp.dealias)
     }
   }
 
