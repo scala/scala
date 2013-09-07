@@ -21,7 +21,7 @@ import scala.tools.nsc.io.{ AbstractFile, PlainFile }
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.{ Exceptional, ScalaClassLoader, stackTraceString }
 import scala.tools.scalap.Main.decompileScala
-import scala.tools.scalap.scalax.rules.scalasig.ByteCode
+import scala.tools.scalap.scalasig.ByteCode
 import scala.util.{ Try, Success, Failure }
 import ClassPath.{ join, split }
 import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
