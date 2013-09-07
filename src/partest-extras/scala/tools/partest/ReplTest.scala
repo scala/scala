@@ -9,8 +9,8 @@ import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.ILoop
 import java.lang.reflect.{ Method => JMethod, Field => JField }
 
-/** A trait for testing repl code.  It drops the first line
- *  of output because the real repl prints a version number.
+/** A class for testing repl code.
+ *  It filters the line of output that mentions a version number.
  */
 abstract class ReplTest extends DirectTest {
   // override to transform Settings object immediately before the finish
@@ -22,12 +22,30 @@ abstract class ReplTest extends DirectTest {
     s.Xnojline.value = true
     transformSettings(s)
   }
+  def welcoming: Boolean = false
+  lazy val welcome = "(Welcome to Scala) version .*".r
+  def normalize(s: String) = s match {
+    case welcome(w) => w
+    case s          => s
+  }
+  def unwelcoming(s: String) = s match {
+    case welcome(w) => false
+    case _          => true
+  }
   def eval() = {
     val s = settings
     log("eval(): settings = " + s)
-    ILoop.runForTranscript(code, s).lines drop 1
+    //ILoop.runForTranscript(code, s).lines drop 1  // not always first line
+    val lines = ILoop.runForTranscript(code, s).lines
+    if (welcoming) lines map normalize
+    else lines filter unwelcoming
   }
   def show() = eval() foreach println
+}
+
+/** Retain and normalize the welcome message. */
+trait Welcoming { this: ReplTest =>
+  override def welcoming = true
 }
 
 /** Run a REPL test from a session transcript.
