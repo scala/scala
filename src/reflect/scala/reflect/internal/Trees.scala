@@ -185,8 +185,8 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def replace(from: Tree, to: Tree): Tree =
       new TreeReplacer(from, to, positionAware = false) transform this
 
-    def hasSymbolWhich(f: Symbol => Boolean) =
-      (symbol ne null) && (symbol ne NoSymbol) && f(symbol)
+    def hasExistingSymbol = (symbol ne null) && (symbol ne NoSymbol)
+    def hasSymbolWhich(f: Symbol => Boolean) = hasExistingSymbol && f(symbol)
 
     def isErroneous = (tpe ne null) && tpe.isErroneous
     def isTyped     = (tpe ne null) && !tpe.isErroneous
@@ -309,10 +309,18 @@ trait Trees extends api.Trees { self: SymbolTable =>
     def rhs: Tree
   }
 
+  object ValOrDefDef {
+    def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree)] = tree match {
+      case ValDef(mods, name, tpt, rhs)       => Some((mods, name, tpt, rhs))
+      case DefDef(mods, name, _, _, tpt, rhs) => Some((mods, name, tpt, rhs))
+      case _                                  => None
+    }
+  }
+
   case class ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) extends ValOrDefDef with ValDefApi
   object ValDef extends ValDefExtractor
 
-  case class DefDef(mods: Modifiers, name: Name, tparams: List[TypeDef],
+  case class DefDef(mods: Modifiers, name: TermName, tparams: List[TypeDef],
                     vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) extends ValOrDefDef with DefDefApi
   object DefDef extends DefDefExtractor
 
@@ -1017,14 +1025,16 @@ trait Trees extends api.Trees { self: SymbolTable =>
   trait CannotHaveAttrs extends Tree {
     override def canHaveAttrs = false
 
-    private def unsupported(what: String, args: Any*) =
-      throw new UnsupportedOperationException(s"$what($args) inapplicable for "+self.toString)
+    private def requireLegal(value: Any, allowed: Any, what: String) =
+      require(value == allowed, s"can't set $what for $self to value other than $allowed")
 
     super.setPos(NoPosition)
-    override def setPos(pos: Position) = unsupported("setPos", pos)
+    override def setPos(pos: Position) = { requireLegal(pos, NoPosition, "pos"); this }
+    override def pos_=(pos: Position) = setPos(pos)
 
     super.setType(NoType)
-    override def tpe_=(t: Type) = if (t != NoType) unsupported("tpe_=", t)
+    override def setType(t: Type) = { requireLegal(t, NoType, "tpe"); this }
+    override def tpe_=(t: Type) = setType(t)
   }
 
   case object EmptyTree extends TermTree with CannotHaveAttrs { override def isEmpty = true; val asList = List(this) }

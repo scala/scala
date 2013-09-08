@@ -1,4 +1,0 @@
-reflective compilation has failed: 
-
-Companions 'class C' and 'object C' must be defined in same file:
-  Found in <synthetic file name> and <synthetic file name>

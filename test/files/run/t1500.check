@@ -1,3 +1,0 @@
-defined class posingAs
-resolve: [A, B](x: A @posingAs[B])B
-x: Any = 7

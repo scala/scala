@@ -1,0 +1,4 @@
+Test_2.scala:4: error: value class may not be a member of another class
+    case t"$x" => println(x)
+         ^
+one error found

@@ -17,18 +17,31 @@ trait Placeholders { self: Quasiquotes =>
   // Step 1: Transform Scala source with holes into vanilla Scala source
 
   lazy val holeMap = new HoleMap()
+  lazy val posMap = mutable.ListMap[Position, (Int, Int)]()
   lazy val code = {
     val sb = new StringBuilder()
     val sessionSuffix = randomUUID().toString.replace("-", "").substring(0, 8) + "$"
 
-    foreach2(args, parts.init) { (tree, p) =>
-      val (part, cardinality) = parseDots(p)
+    def appendPart(value: String, pos: Position) = {
+      val start = sb.length
+      sb.append(value)
+      val end = sb.length
+      posMap += pos -> (start, end)
+    }
+
+    def appendHole(tree: Tree, cardinality: Cardinality) = {
       val placeholderName = c.freshName(TermName(nme.QUASIQUOTE_PREFIX + sessionSuffix))
-      sb.append(part)
       sb.append(placeholderName)
       holeMap(placeholderName) = Hole(tree, cardinality)
     }
-    sb.append(parts.last)
+
+    foreach2(args, parts.init) { case (tree, (p, pos)) =>
+      val (part, cardinality) = parseDots(p)
+      appendPart(part, pos)
+      appendHole(tree, cardinality)
+    }
+    val (p, pos) = parts.last
+    appendPart(p, pos)
 
     sb.toString
   }

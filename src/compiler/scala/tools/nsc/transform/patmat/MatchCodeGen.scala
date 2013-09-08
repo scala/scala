@@ -62,45 +62,44 @@ trait MatchCodeGen extends Interface {
     def codegen: AbsCodegen
 
     abstract class CommonCodegen extends AbsCodegen { import CODE._
-      def fun(arg: Symbol, body: Tree): Tree           = Function(List(ValDef(arg)), body)
-      def tupleSel(binder: Symbol)(i: Int): Tree       = (REF(binder) DOT nme.productAccessorName(i)) // make tree that accesses the i'th component of the tuple referenced by binder
-      def index(tgt: Tree)(i: Int): Tree               = tgt APPLY (LIT(i))
-      def drop(tgt: Tree)(n: Int): Tree                = (tgt DOT vpmName.drop) (LIT(n))
-      def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)          // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
+      def fun(arg: Symbol, body: Tree): Tree     = Function(List(ValDef(arg)), body)
+      def tupleSel(binder: Symbol)(i: Int): Tree = (REF(binder) DOT nme.productAccessorName(i)) // make tree that accesses the i'th component of the tuple referenced by binder
+      def index(tgt: Tree)(i: Int): Tree         = tgt APPLY (LIT(i))
+
+      // Right now this blindly calls drop on the result of the unapplySeq
+      // unless it verifiably has no drop method (this is the case in particular
+      // with Array.) You should not actually have to write a method called drop
+      // for name-based matching, but this was an expedient route for the basics.
+      def drop(tgt: Tree)(n: Int): Tree = {
+        def callDirect   = fn(tgt, nme.drop, LIT(n))
+        def callRuntime  = Apply(REF(traversableDropMethod), tgt :: LIT(n) :: Nil)
+        def needsRuntime = (tgt.tpe ne null) && (typeOfMemberNamedDrop(tgt.tpe) == NoType)
+
+        if (needsRuntime) callRuntime else callDirect
+      }
+
+      // NOTE: checker must be the target of the ==, that's the patmat semantics for ya
+      def _equals(checker: Tree, binder: Symbol): Tree = checker MEMBER_== REF(binder)
 
       // the force is needed mainly to deal with the GADT typing hack (we can't detect it otherwise as tp nor pt need contain an abstract type, we're just casting wildly)
       def _asInstanceOf(b: Symbol, tp: Type): Tree = if (b.info <:< tp) REF(b) else gen.mkCastPreservingAnnotations(REF(b), tp)
       def _isInstanceOf(b: Symbol, tp: Type): Tree = gen.mkIsInstanceOf(REF(b), tp.withoutAnnotations, any = true, wrapInApply = false)
 
-      // duplicated out of frustration with cast generation
-      def mkZero(tp: Type): Tree = {
-        tp.typeSymbol match {
-          case UnitClass    => Literal(Constant(()))
-          case BooleanClass => Literal(Constant(false))
-          case FloatClass   => Literal(Constant(0.0f))
-          case DoubleClass  => Literal(Constant(0.0d))
-          case ByteClass    => Literal(Constant(0.toByte))
-          case ShortClass   => Literal(Constant(0.toShort))
-          case IntClass     => Literal(Constant(0))
-          case LongClass    => Literal(Constant(0L))
-          case CharClass    => Literal(Constant(0.toChar))
-          case _            => gen.mkAsInstanceOf(Literal(Constant(null)), tp, any = true, wrapInApply = false) // the magic incantation is true/false here
-        }
+      def mkZero(tp: Type): Tree = gen.mkConstantZero(tp) match {
+        case Constant(null) => gen.mkAsInstanceOf(Literal(Constant(null)), tp, any = true, wrapInApply = false) // the magic incantation is true/false here
+        case const          => Literal(const)
       }
     }
   }
 
   trait PureMatchMonadInterface extends MatchMonadInterface {
     val matchStrategy: Tree
-
-    def inMatchMonad(tp: Type): Type = appliedType(oneSig, List(tp)).finalResultType
-    def pureType(tp: Type): Type     = appliedType(oneSig, List(tp)).paramTypes.headOption getOrElse NoType // fail gracefully (otherwise we get crashes)
-    protected def matchMonadSym      = oneSig.finalResultType.typeSymbol
-
     import CODE._
     def _match(n: Name): SelectStart = matchStrategy DOT n
 
-    private lazy val oneSig: Type = typer.typedOperator(_match(vpmName.one)).tpe  // TODO: error message
+    // TODO: error message
+    private lazy val oneType              = typer.typedOperator(_match(vpmName.one)).tpe
+    override def pureType(tp: Type): Type = firstParamType(appliedType(oneType, tp :: Nil))
   }
 
   trait PureCodegen extends CodegenCore with PureMatchMonadInterface {
@@ -132,13 +131,7 @@ trait MatchCodeGen extends Interface {
     }
   }
 
-  trait OptimizedMatchMonadInterface extends MatchMonadInterface {
-    override def inMatchMonad(tp: Type): Type = optionType(tp)
-    override def pureType(tp: Type): Type     = tp
-    override protected def matchMonadSym      = OptionClass
-  }
-
-  trait OptimizedCodegen extends CodegenCore with TypedSubstitution with OptimizedMatchMonadInterface {
+  trait OptimizedCodegen extends CodegenCore with TypedSubstitution with MatchMonadInterface {
     override def codegen: AbsCodegen = optimizedCodegen
 
     // when we know we're targetting Option, do some inlining the optimizer won't do
@@ -154,9 +147,8 @@ trait MatchCodeGen extends Interface {
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
       def matcher(scrut: Tree, scrutSym: Symbol, restpe: Type)(cases: List[Casegen => Tree], matchFailGen: Option[Tree => Tree]): Tree = {
-        val matchEnd = newSynthCaseLabel("matchEnd")
         val matchRes = NoSymbol.newValueParameter(newTermName("x"), NoPosition, newFlags = SYNTHETIC) setInfo restpe.withoutAnnotations
-        matchEnd setInfo MethodType(List(matchRes), restpe)
+        val matchEnd = newSynthCaseLabel("matchEnd") setInfo MethodType(List(matchRes), restpe)
 
         def newCaseSym = newSynthCaseLabel("case") setInfo MethodType(Nil, restpe)
         var _currCase = newCaseSym
@@ -168,23 +160,22 @@ trait MatchCodeGen extends Interface {
 
           LabelDef(currCase, Nil, mkCase(new OptimizedCasegen(matchEnd, nextCase)))
         }
-
         // must compute catchAll after caseLabels (side-effects nextCase)
         // catchAll.isEmpty iff no synthetic default case needed (the (last) user-defined case is a default)
         // if the last user-defined case is a default, it will never jump to the next case; it will go immediately to matchEnd
         val catchAllDef = matchFailGen map { matchFailGen =>
-          val scrutRef = if(scrutSym ne NoSymbol) REF(scrutSym) else EmptyTree // for alternatives
+          val scrutRef = scrutSym.fold(EmptyTree: Tree)(REF) // for alternatives
 
           LabelDef(_currCase, Nil, matchEnd APPLY (matchFailGen(scrutRef)))
         } toList // at most 1 element
 
         // scrutSym == NoSymbol when generating an alternatives matcher
-        val scrutDef = if(scrutSym ne NoSymbol) List(VAL(scrutSym)  === scrut) else Nil // for alternatives
+        val scrutDef = scrutSym.fold(List[Tree]())(sym => (VAL(sym) === scrut) :: Nil) // for alternatives
 
         // the generated block is taken apart in TailCalls under the following assumptions
-          // the assumption is once we encounter a case, the remainder of the block will consist of cases
-          // the prologue may be empty, usually it is the valdef that stores the scrut
-          // val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
+        // the assumption is once we encounter a case, the remainder of the block will consist of cases
+        // the prologue may be empty, usually it is the valdef that stores the scrut
+        // val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
         Block(
           scrutDef ++ caseDefs ++ catchAllDef,
           LabelDef(matchEnd, List(matchRes), REF(matchRes))
@@ -206,15 +197,14 @@ trait MatchCodeGen extends Interface {
         // next: MatchMonad[U]
         // returns MatchMonad[U]
         def flatMap(prev: Tree, b: Symbol, next: Tree): Tree = {
-          val tp      = inMatchMonad(b.tpe)
-          val prevSym = freshSym(prev.pos, tp, "o")
-          val isEmpty = tp member vpmName.isEmpty
-          val get     = tp member vpmName.get
-
+          val prevSym = freshSym(prev.pos, prev.tpe, "o")
           BLOCK(
             VAL(prevSym) === prev,
             // must be isEmpty and get as we don't control the target of the call (prev is an extractor call)
-            ifThenElseZero(NOT(prevSym DOT isEmpty), Substitution(b, prevSym DOT get)(next))
+            ifThenElseZero(
+              NOT(prevSym DOT vpmName.isEmpty),
+              Substitution(b, prevSym DOT vpmName.get)(next)
+            )
           )
         }
 

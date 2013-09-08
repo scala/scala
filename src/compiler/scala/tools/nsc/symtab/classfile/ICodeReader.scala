@@ -20,6 +20,8 @@ import scala.reflect.internal.JavaAccFlags
  */
 abstract class ICodeReader extends ClassfileParser {
   val global: Global
+  val symbolTable: global.type
+  val loaders: global.loaders.type
   import global._
   import icodes._
 
@@ -27,6 +29,95 @@ abstract class ICodeReader extends ClassfileParser {
   var staticCode:   IClass = null          // the ICode class static members
   var method: IMethod = NoIMethod          // the current IMethod
   var isScalaModule = false
+
+  override protected type ThisConstantPool = ICodeConstantPool
+  override protected def newConstantPool = new ICodeConstantPool
+
+  /** Try to force the chain of enclosing classes for the given name. Otherwise
+   *  flatten would not lift classes that were not referenced in the source code.
+   */
+  def forceMangledName(name: Name, module: Boolean): Symbol = {
+    val parts = name.decode.toString.split(Array('.', '$'))
+    var sym: Symbol = rootMirror.RootClass
+
+    // was "at flatten.prev"
+    enteringFlatten {
+      for (part0 <- parts; if !(part0 == ""); part = newTermName(part0)) {
+        val sym1 = enteringIcode {
+          sym.linkedClassOfClass.info
+          sym.info.decl(part.encode)
+        }//.suchThat(module == _.isModule)
+
+        sym = sym1 orElse sym.info.decl(part.encode.toTypeName)
+      }
+    }
+    sym
+  }
+
+  protected class ICodeConstantPool extends ConstantPool {
+    /** Return the symbol of the class member at `index`.
+     *  The following special cases exist:
+     *   - If the member refers to special `MODULE$` static field, return
+     *  the symbol of the corresponding module.
+     *   - If the member is a field, and is not found with the given name,
+     *     another try is made by appending `nme.LOCAL_SUFFIX_STRING`
+     *   - If no symbol is found in the right tpe, a new try is made in the
+     *     companion class, in case the owner is an implementation class.
+     */
+    def getMemberSymbol(index: Int, static: Boolean): Symbol = {
+      if (index <= 0 || len <= index) errorBadIndex(index)
+      var f = values(index).asInstanceOf[Symbol]
+      if (f eq null) {
+        val start = starts(index)
+        val first = in.buf(start).toInt
+        if (first != CONSTANT_FIELDREF &&
+            first != CONSTANT_METHODREF &&
+            first != CONSTANT_INTFMETHODREF) errorBadTag(start)
+        val ownerTpe = getClassOrArrayType(in.getChar(start + 1).toInt)
+        debuglog("getMemberSymbol(static: " + static + "): owner type: " + ownerTpe + " " + ownerTpe.typeSymbol.originalName)
+        val (name0, tpe0) = getNameAndType(in.getChar(start + 3).toInt, ownerTpe)
+        debuglog("getMemberSymbol: name and tpe: " + name0 + ": " + tpe0)
+
+        forceMangledName(tpe0.typeSymbol.name, module = false)
+        val (name, tpe) = getNameAndType(in.getChar(start + 3).toInt, ownerTpe)
+        if (name == nme.MODULE_INSTANCE_FIELD) {
+          val index = in.getChar(start + 1).toInt
+          val name = getExternalName(in.getChar(starts(index).toInt + 1).toInt)
+          //assert(name.endsWith("$"), "Not a module class: " + name)
+          f = forceMangledName(name dropRight 1, module = true)
+          if (f == NoSymbol)
+            f = rootMirror.getModuleByName(name dropRight 1)
+        } else {
+          val origName = nme.unexpandedName(name)
+          val owner = if (static) ownerTpe.typeSymbol.linkedClassOfClass else ownerTpe.typeSymbol
+          f = owner.info.findMember(origName, 0, 0, stableOnly = false).suchThat(_.tpe.widen =:= tpe)
+          if (f == NoSymbol)
+            f = owner.info.findMember(newTermName(origName + nme.LOCAL_SUFFIX_STRING), 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
+          if (f == NoSymbol) {
+            // if it's an impl class, try to find it's static member inside the class
+            if (ownerTpe.typeSymbol.isImplClass) {
+              f = ownerTpe.findMember(origName, 0, 0, stableOnly = false).suchThat(_.tpe =:= tpe)
+            } else {
+              log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
+              f = tpe match {
+                case MethodType(_, _) => owner.newMethod(name.toTermName, owner.pos)
+                case _                => owner.newVariable(name.toTermName, owner.pos)
+              }
+              f setInfo tpe
+              log("created fake member " + f.fullName)
+            }
+          }
+        }
+        assert(f != NoSymbol,
+          s"could not find $name: $tpe in $ownerTpe" + (
+            if (settings.debug.value) ownerTpe.members.mkString(", members are:\n  ", "\n  ", "") else ""
+          )
+        )
+        values(index) = f
+      }
+      f
+    }
+  }
 
   /** Read back bytecode for the given class symbol. It returns
    *  two IClass objects, one for static members and one

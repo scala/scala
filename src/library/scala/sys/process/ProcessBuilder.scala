@@ -127,7 +127,7 @@ import ProcessBuilder._
   *
   * Finally, `!` at the end executes the commands, and returns the exit value.
   * Whatever is printed will be sent to the Scala process standard output. If
-  * we wanted to caputre it, we could run that with `!!` instead.
+  * we wanted to capture it, we could run that with `!!` instead.
   *
   * Note: though it is not shown above, the equivalent of a shell's `;` would be
   * `###`. The reason for this name is that `;` is a reserved token in Scala.
@@ -171,7 +171,7 @@ trait ProcessBuilder extends Source with Sink {
     * a Stream that blocks when lines are not available but the process has not
     * completed.  Standard error is sent to the provided ProcessLogger.  If the
     * process exits with a non-zero value, the Stream will provide all lines up
-    * to termination but will not throw an exception.
+    * to termination and then throw an exception.
     */
   def lines(log: ProcessLogger): Stream[String]
 

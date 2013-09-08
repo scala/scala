@@ -367,29 +367,3 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     }
   }
 }
-/*
-    val ensureNoEscapes = new TypeTraverser {
-      def ensureNoEscape(sym: Symbol) {
-        if (sym.hasFlag(PRIVATE)) {
-          var o = currentOwner;
-          while (o != NoSymbol && o != sym.owner && !o.isLocal && !o.hasFlag(PRIVATE))
-          o = o.owner
-          if (o == sym.owner) sym.makeNotPrivate(base);
-        }
-      }
-      def traverse(t: Type): TypeTraverser = {
-        t match {
-          case TypeRef(qual, sym, args) =>
-            ensureNoEscape(sym)
-            mapOver(t)
-          case ClassInfoType(parents, decls, clazz) =>
-            parents foreach { p => traverse; () }
-            traverse(t.typeOfThis)
-          case _ =>
-            mapOver(t)
-        }
-        this
-      }
-    }
-
-*/

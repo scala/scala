@@ -9,8 +9,7 @@ import java.io.{ PrintWriter, StringWriter, FileReader, FileWriter }
 import scala.collection.mutable
 import mutable.{LinkedHashMap, SynchronizedMap, HashSet, SynchronizedSet}
 import scala.util.control.ControlThrowable
-import scala.tools.nsc.io.{ AbstractFile }
-import scala.tools.nsc.util.MultiHashMap
+import scala.tools.nsc.io.AbstractFile
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile, Position, NoPosition }
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.symtab._
@@ -33,7 +32,6 @@ trait InteractiveAnalyzer extends Analyzer {
 
   override def newTyper(context: Context): InteractiveTyper = new Typer(context) with InteractiveTyper
   override def newNamer(context: Context): InteractiveNamer = new Namer(context) with InteractiveNamer
-  override protected def newPatternMatching = false
 
   trait InteractiveTyper extends Typer {
     override def canAdaptConstantTypeToLiteral = false
@@ -141,6 +139,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     abort("originalOwner is not kept in presentation compiler runs.")
 
   override def forInteractive = true
+  override protected def synchronizeNames = true
 
   override def newAsSeenFromMap(pre: Type, clazz: Symbol): AsSeenFromMap =
     new InteractiveAsSeenFromMap(pre, clazz)
@@ -181,7 +180,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   protected val toBeRemovedAfterRun: mutable.Set[AbstractFile] =
     new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
 
-  class ResponseMap extends MultiHashMap[SourceFile, Response[Tree]] {
+  class ResponseMap extends mutable.HashMap[SourceFile, Set[Response[Tree]]] {
+    override def default(key: SourceFile): Set[Response[Tree]] = Set()
     override def += (binding: (SourceFile, Set[Response[Tree]])) = {
       assert(interruptsEnabled, "delayed operation within an ask")
       super.+=(binding)
@@ -365,13 +365,18 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    */
   override def registerTopLevelSym(sym: Symbol) { currentTopLevelSyms += sym }
 
+  protected type SymbolLoadersInInteractive = GlobalSymbolLoaders {
+    val global: Global.this.type
+    val platform: Global.this.platform.type
+  }
   /** Symbol loaders in the IDE parse all source files loaded from a package for
    *  top-level idents. Therefore, we can detect top-level symbols that have a name
    *  different from their source file
    */
-  override lazy val loaders: SymbolLoaders { val global: Global.this.type } = new BrowsingLoaders {
+  override lazy val loaders: SymbolLoadersInInteractive = new {
     val global: Global.this.type = Global.this
-  }
+    val platform: Global.this.platform.type = Global.this.platform
+  } with BrowsingLoaders
 
   // ----------------- Polling ---------------------------------------
 

@@ -60,7 +60,7 @@ trait Erasure {
    */
   protected def unboundedGenericArrayLevel(tp: Type): Int = tp match {
     case GenericArray(level, core) if !(core <:< AnyRefTpe) => level
-    case RefinedType(ps, _) if ps.nonEmpty                  => logResult(s"Unbounded generic level for $tp is")(ps map unboundedGenericArrayLevel max)
+    case RefinedType(ps, _) if ps.nonEmpty                  => logResult(s"Unbounded generic level for $tp is")((ps map unboundedGenericArrayLevel).max)
     case _                                                  => 0
   }
 

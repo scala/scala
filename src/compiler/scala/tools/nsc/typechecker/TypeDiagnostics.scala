@@ -143,7 +143,7 @@ trait TypeDiagnostics {
     def defaultMessage    = moduleMessage + preResultString + tree.tpe
     def applyMessage      = defaultMessage + tree.symbol.locationString
 
-    if ((sym eq null) || (sym eq NoSymbol)) {
+    if (!tree.hasExistingSymbol) {
       if (isTyperInPattern) patternMessage
       else exprMessage
     }
@@ -167,10 +167,10 @@ trait TypeDiagnostics {
   def explainAlias(tp: Type) = {
     // Don't automatically normalize standard aliases; they still will be
     // expanded if necessary to disambiguate simple identifiers.
-    if ((tp eq tp.normalize) || tp.typeSymbolDirect.isInDefaultNamespace) ""
-    else {
+    val deepDealias = DealiasedType(tp)
+    if (tp eq deepDealias) "" else {
       // A sanity check against expansion being identical to original.
-      val s = "" + DealiasedType(tp)
+      val s = "" + deepDealias
       if (s == "" + tp) ""
       else "\n    (which expands to)  " + s
     }
@@ -350,11 +350,14 @@ trait TypeDiagnostics {
     val strings = mutable.Map[String, Set[TypeDiag]]() withDefaultValue Set()
     val names   = mutable.Map[Name, Set[TypeDiag]]() withDefaultValue Set()
 
-    def record(t: Type, sym: Symbol) = {
-      val diag = TypeDiag(t, sym)
+    val localsSet = locals.toSet
 
-      strings("" + t) += diag
-      names(sym.name) += diag
+    def record(t: Type, sym: Symbol) = {
+      if (!localsSet(sym)) {
+        val diag = TypeDiag(t, sym)
+        strings("" + t) += diag
+        names(sym.name) += diag
+      }
     }
     for (tpe <- types ; t <- tpe) {
       t match {

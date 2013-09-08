@@ -45,6 +45,8 @@ trait GenAnnotationInfos {
         mirrorFactoryCall(nme.ArrayAnnotArg, scalaFactoryCall(nme.Array, args map reifyClassfileAnnotArg: _*))
       case NestedAnnotArg(ann) =>
         mirrorFactoryCall(nme.NestedAnnotArg, reifyAnnotationInfo(ann))
+      case _ =>
+        sys.error(s"Don't know what to do with $arg")
     }
 
     // if you reify originals of anns, you get SO when trying to reify AnnotatedTypes, so screw it - after all, it's not that important

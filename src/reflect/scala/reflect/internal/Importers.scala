@@ -411,6 +411,11 @@ trait Importers extends api.Importers { to: SymbolTable =>
       if (my != null) {
         addFixup(recreatedTreeCompleter(their, my))
         tryFixup()
+        // we have to be careful with position import as some shared trees
+        // like EmptyTree, emptyValDef don't support position assignment
+        if (their.pos != NoPosition) {
+          my.setPos(importPosition(their.pos))
+        }
       }
       my
     }
@@ -434,6 +439,8 @@ trait Importers extends api.Importers { to: SymbolTable =>
         ScalaSigBytes(bytes)
       case from.NestedAnnotArg(annInfo) =>
         NestedAnnotArg(importAnnotationInfo(annInfo))
+      case from.UnmappableAnnotArg =>
+        UnmappableAnnotArg
     }
 
     // todo. careful import of positions

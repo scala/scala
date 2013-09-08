@@ -1,0 +1,24 @@
+f1(Foo(1)) == true
+f1(Foo(1, 2)) == false
+f1(Foo(1, 2, 3)) == false
+
+f2(Foo(1)) == false
+f2(Foo(1, 2)) == true
+f2(Foo(1, 2, 3)) == false
+
+f3(Foo(1)) == false
+f3(Foo(1, 2)) == false
+f3(Foo(1, 2, 3)) == true
+
+f1seq(Foo(1)) == true
+f1seq(Foo(1, 2)) == true
+f1seq(Foo(1, 2, 3)) == true
+
+f2seq(Foo(1)) == false
+f2seq(Foo(1, 2)) == true
+f2seq(Foo(1, 2, 3)) == true
+
+f3seq(Foo(1)) == false
+f3seq(Foo(1, 2)) == false
+f3seq(Foo(1, 2, 3)) == true
+

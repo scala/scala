@@ -22,13 +22,74 @@ if "%~1"=="-toolcp" (
 	goto another_param
 )
 
-set _LINE_PARAMS=%1
+rem We keep in _JAVA_PARAMS all -J-prefixed and -D-prefixed arguments
+set _JAVA_PARAMS=
+
+if [%1]==[] goto param_afterloop
+set _TEST_PARAM=%~1
+if not "%_TEST_PARAM:~0,1%"=="-" goto param_afterloop
+
+rem ignore -e "scala code"
+if "%_TEST_PARAM:~0,2%"=="-e" (
+  shift
+  shift
+  if [%1]==[] goto param_afterloop
+)
+
+set _TEST_PARAM=%~1
+if "%_TEST_PARAM:~0,2%"=="-J" (
+  set _JAVA_PARAMS=%_TEST_PARAM:~2%
+)
+
+if "%_TEST_PARAM:~0,2%"=="-D" (
+  rem test if this was double-quoted property "-Dprop=42"
+  for /F "delims== tokens=1-2" %%G in ("%_TEST_PARAM%") DO (
+    if not "%%G" == "%_TEST_PARAM%" (
+      rem double quoted: "-Dprop=42" -> -Dprop="42"
+      set _JAVA_PARAMS=%%G="%%H"
+    ) else if [%2] neq [] (
+      rem it was a normal property: -Dprop=42 or -Drop="42"
+      set _JAVA_PARAMS=%_TEST_PARAM%=%2
+      shift
+    )
+  )
+)
+
 :param_loop
 shift
+
 if [%1]==[] goto param_afterloop
-set _LINE_PARAMS=%_LINE_PARAMS% %1
+set _TEST_PARAM=%~1
+if not "%_TEST_PARAM:~0,1%"=="-" goto param_afterloop 
+
+rem ignore -e "scala code"
+if "%_TEST_PARAM:~0,2%"=="-e" (
+  shift
+  shift
+  if [%1]==[] goto param_afterloop
+)
+
+set _TEST_PARAM=%~1
+if "%_TEST_PARAM:~0,2%"=="-J" (
+  set _JAVA_PARAMS=%_JAVA_PARAMS% %_TEST_PARAM:~2%
+)
+
+if "%_TEST_PARAM:~0,2%"=="-D" (
+  rem test if this was double-quoted property "-Dprop=42"
+  for /F "delims== tokens=1-2" %%G in ("%_TEST_PARAM%") DO (
+    if not "%%G" == "%_TEST_PARAM%" (
+      rem double quoted: "-Dprop=42" -> -Dprop="42"
+      set _JAVA_PARAMS=%_JAVA_PARAMS% %%G="%%H"
+    ) else if [%2] neq [] (
+      rem it was a normal property: -Dprop=42 or -Drop="42"
+      set _JAVA_PARAMS=%_JAVA_PARAMS% %_TEST_PARAM%=%2
+      shift
+    )
+  )
+)
 goto param_loop
 :param_afterloop
+
 if "%OS%" NEQ "Windows_NT" (
   echo "Warning, your version of Windows is not supported.  Attempting to start scala anyway."
 )
@@ -50,6 +111,9 @@ if "%_JAVACMD%"=="" set _JAVACMD=java
 rem We use the value of the JAVA_OPTS environment variable if defined
 set _JAVA_OPTS=%JAVA_OPTS%
 if not defined _JAVA_OPTS set _JAVA_OPTS=@javaflags@
+
+rem We append _JAVA_PARAMS java arguments to JAVA_OPTS if necessary
+if defined _JAVA_PARAMS set _JAVA_OPTS=%_JAVA_OPTS% %_JAVA_PARAMS%
 
 set _TOOL_CLASSPATH=@classpath@
 if "%_TOOL_CLASSPATH%"=="" (
@@ -89,4 +153,4 @@ goto :eof
 @@endlocal
 
 REM exit code fix, see http://stackoverflow.com/questions/4632891/exiting-batch-with-exit-b-x-where-x-1-acts-as-if-command-completed-successfu
-@@%COMSPEC% /C exit %errorlevel% >nul
+@@"%COMSPEC%" /C exit %errorlevel% >nul

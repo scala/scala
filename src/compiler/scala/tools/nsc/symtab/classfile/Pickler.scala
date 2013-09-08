@@ -88,12 +88,17 @@ abstract class Pickler extends SubComponent {
     /** Returns usually symbol's owner, but picks classfile root instead
      *  for existentially bound variables that have a non-local owner.
      *  Question: Should this be done for refinement class symbols as well?
+     *
+     *  Note: tree pickling also finds its way here; e.g. in SI-7501 the pickling
+     *  of trees in annotation arguments considers the parameter symbol of a method
+     *  called in such a tree as "local". The condition `sym.isValueParameter` was
+     *  added to fix that bug, but there may be a better way.
      */
     private def localizedOwner(sym: Symbol) =
       if (isLocal(sym) && !isRootSym(sym) && !isLocal(sym.owner))
         // don't use a class as the localized owner for type parameters that are not owned by a class: those are not instantiated by asSeenFrom
         // however, they would suddenly be considered by asSeenFrom if their localized owner became a class (causing the crashes of #4079, #2741)
-        (if(sym.isTypeParameter && !sym.owner.isClass) nonClassRoot
+        (if ((sym.isTypeParameter || sym.isValueParameter) && !sym.owner.isClass) nonClassRoot
          else root)
       else sym.owner
 
@@ -486,14 +491,10 @@ abstract class Pickler extends SubComponent {
         }
       }
       def putClassfileAnnotArg(carg: ClassfileAnnotArg) {
-        carg match {
-          case LiteralAnnotArg(const) =>
-            putConstant(const)
-          case ArrayAnnotArg(args) =>
-            if (putEntry(carg))
-              args foreach putClassfileAnnotArg
-          case NestedAnnotArg(annInfo) =>
-            putAnnotation(annInfo)
+        (carg: @unchecked) match {
+          case LiteralAnnotArg(const)  => putConstant(const)
+          case ArrayAnnotArg(args)     => if (putEntry(carg)) args foreach putClassfileAnnotArg
+          case NestedAnnotArg(annInfo) => putAnnotation(annInfo)
         }
       }
       val AnnotationInfo(tpe, args, assocs) = annot
@@ -559,13 +560,10 @@ abstract class Pickler extends SubComponent {
 
     /** Write a ClassfileAnnotArg (argument to classfile annotation) */
     def writeClassfileAnnotArg(carg: ClassfileAnnotArg) {
-      carg match {
-        case LiteralAnnotArg(const) =>
-          writeRef(const)
-        case ArrayAnnotArg(args) =>
-          writeRef(carg)
-        case NestedAnnotArg(annInfo) =>
-          writeRef(annInfo)
+      (carg: @unchecked) match {
+        case LiteralAnnotArg(const)  => writeRef(const)
+        case ArrayAnnotArg(args)     => writeRef(carg)
+        case NestedAnnotArg(annInfo) => writeRef(annInfo)
       }
     }
 

@@ -1,0 +1,3 @@
+deprecate-early-type-defs.scala:1: warning: early type members are deprecated. Move them to the regular body: the semantics are the same.
+object Test extends { type T = Int } with App
+                           ^

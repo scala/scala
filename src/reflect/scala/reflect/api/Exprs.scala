@@ -8,6 +8,7 @@ package reflect
 package api
 
 import scala.reflect.runtime.{universe => ru}
+import scala.annotation.compileTimeOnly
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
@@ -91,7 +92,7 @@ trait Exprs { self: Universe =>
      * }}}
      * because expr of type Expr[T] itself does not have a method foo.
      */
-    // @compileTimeOnly("Cannot use splice outside reify")
+    @compileTimeOnly("splice must be enclosed within a reify {} block")
     def splice: T
 
     /**
@@ -108,7 +109,7 @@ trait Exprs { self: Universe =>
      * object Impls { def foo_impl(c: Context)(x: c.Expr[X]): c.Expr[x.value.T] = ... }
      * }}}
      */
-    // @compileTimeOnly("Cannot use value except for signatures of macro implementations")
+    @compileTimeOnly("cannot use value except for signatures of macro implementations")
     val value: T
 
     override def canEqual(x: Any) = x.isInstanceOf[Expr[_]]

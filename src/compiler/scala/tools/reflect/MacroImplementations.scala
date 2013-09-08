@@ -94,7 +94,8 @@ abstract class MacroImplementations {
       def errorAtIndex(idx: Int, msg: String) = c.error(new OffsetPosition(strTree.pos.source, strTree.pos.point + idx), msg)
       def wrongConversionString(idx: Int) = errorAtIndex(idx, "wrong conversion string")
       def illegalConversionCharacter(idx: Int) = errorAtIndex(idx, "illegal conversion character")
-      def nonEscapedPercent(idx: Int) = errorAtIndex(idx, "percent signs not directly following splicees must be escaped")
+      def nonEscapedPercent(idx: Int) = errorAtIndex(idx,
+        "conversions must follow a splice; use %% for literal %, %n for newline")
 
       // STEP 1: handle argument conversion
       // 1) "...${smth}" => okay, equivalent to "...${smth}%s"

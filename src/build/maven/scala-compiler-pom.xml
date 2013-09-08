@@ -38,14 +38,14 @@
 			<version>@VERSION@</version>
 		</dependency>
 		<dependency> <!-- for scaladoc -->
-			<groupId>org.scala-lang</groupId>
-			<artifactId>scala-xml</artifactId>
-			<version>@VERSION@</version>
+                <groupId>org.scala-lang.modules</groupId>
+                <artifactId>scala-xml_@SCALA_BINARY_VERSION@</artifactId>
+                <version>@XML_VERSION@</version>
 		</dependency>
 		<dependency> <!-- for scaladoc -->
-			<groupId>org.scala-lang</groupId>
-			<artifactId>scala-parser-combinators</artifactId>
-			<version>@VERSION@</version>
+                <groupId>org.scala-lang.modules</groupId>
+                <artifactId>scala-parser-combinators_@SCALA_BINARY_VERSION@</artifactId>
+                <version>@PARSER_COMBINATORS_VERSION@</version>
 		</dependency>
 		<dependency>
 			<groupId>org.scala-lang</groupId>

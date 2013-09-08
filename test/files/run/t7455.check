@@ -1,0 +1,4 @@
+private[package <empty>] def <init>(x$1: String): Outer[E]
+private[package <empty>] def <init>(): Outer$PrivateInner
+private[package <empty>] def <init>(): Outer$PrivateStaticInner
+private[package <empty>] def <init>(x$2: String): Outer$PublicInner

@@ -8,9 +8,8 @@ trait T1 extends {
 } with Base
 
 trait T2 extends {
-  type X = Int                       // okay
+  type X = Int                       // warn
 } with Base
-
 
 class C1 extends {
   val abstractVal = "C1.abstractVal" // okay

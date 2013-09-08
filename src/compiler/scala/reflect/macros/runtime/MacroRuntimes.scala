@@ -1,11 +1,8 @@
 package scala.reflect.macros
 package runtime
 
-import scala.collection.mutable.{Map => MutableMap}
 import scala.reflect.internal.Flags._
 import scala.reflect.runtime.ReflectionUtils
-import scala.tools.nsc.util.ScalaClassLoader
-import scala.tools.nsc.util.AbstractFileClassLoader
 
 trait MacroRuntimes extends JavaReflectionRuntimes with ScalaReflectionRuntimes {
   self: scala.tools.nsc.typechecker.Analyzer =>
