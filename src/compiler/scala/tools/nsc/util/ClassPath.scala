@@ -172,7 +172,7 @@ object ClassPath {
 /**
  * Represents a package which contains classes and other packages
  */
-abstract class ClassPath[T] {
+abstract class ClassPath[T] extends ClassfileLookup {
   type AnyClassRep = ClassPath[T]#ClassRep
 
   /**

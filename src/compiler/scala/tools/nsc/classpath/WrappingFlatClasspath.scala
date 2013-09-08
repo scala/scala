@@ -36,7 +36,9 @@ class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends F
     }
     wrappedPackage
   }
-  
+
+  def findClassFile(name: String): Option[AbstractFile] = wrappedClasspath.findClassFile(name)
+
   protected class WrappingPackageEntry(
       val name: String,
       wrappedPackage: ClassPath[AbstractFile]) extends PackageEntry

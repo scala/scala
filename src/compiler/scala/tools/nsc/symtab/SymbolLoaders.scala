@@ -324,7 +324,10 @@ abstract class SymbolLoaders {
        */
       private type SymbolLoadersRefined = SymbolLoaders { val symbolTable: classfileParser.symbolTable.type }
       val loaders = SymbolLoaders.this.asInstanceOf[SymbolLoadersRefined]
-      def classPath = platform.classPath
+      def classfileLookup: util.ClassfileLookup = settings.YclasspathImpl.value match {
+        case "recursive" => platform.classPath
+        case "flat" => platform.flatClasspath
+      }
     }
 
     protected def description = "class file "+ classfile.toString

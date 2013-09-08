@@ -1,6 +1,7 @@
 package scala.tools.nsc.classpath
 
 import scala.reflect.io.AbstractFile
+import scala.tools.nsc.util.ClassfileLookup
 
 /**
  * An interface for a flat classpath.
@@ -10,7 +11,7 @@ import scala.reflect.io.AbstractFile
  *
  * This is an alternative design compared to scala.tools.nsc.util.ClassPath
  */
-trait FlatClasspath {
+trait FlatClasspath extends ClassfileLookup {
   /** Empty string represents root package */
   def packages(inPackage: String): Seq[PackageEntry]
   def classes(inPackage: String): Seq[ClassfileEntry]
