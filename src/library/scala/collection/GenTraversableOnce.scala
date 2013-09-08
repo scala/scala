@@ -240,7 +240,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  to the list, while `combop` would concatenate two lists from different
    *  partitions together. The initial value `z` would be an empty set.
    *  {{{
-   *    pc.aggregate(Set[Int]())(_ += process(_), _ ++ _)
+   *    pc.aggregate(Set[Int]())(_ + process(_), _ ++ _)
    *  }}}
    *
    *  Another example is calculating geometric mean from a collection of doubles
