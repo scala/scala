@@ -35,8 +35,14 @@ class SymbolTableForUnitTesting extends SymbolTable {
     val symbolTable: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
     lazy val loaders: SymbolTableForUnitTesting.this.loaders.type = SymbolTableForUnitTesting.this.loaders
     def platformPhases: List[SubComponent] = Nil
-    def classPath: ClassPath[AbstractFile] = ???
-    def flatClasspath: FlatClasspath = SymbolTableForUnitTesting.this.flatClasspath
+    def classPath: ClassPath[AbstractFile] = {
+      assert(settings.YclasspathImpl.value == "recursive")
+      new PathResolver(settings).result
+    }
+    def flatClasspath: FlatClasspath = {
+      assert(settings.YclasspathImpl.value == "flat")
+      SymbolTableForUnitTesting.this.flatClasspath
+    }
     def isMaybeBoxed(sym: Symbol): Boolean = ???
     def needCompile(bin: AbstractFile, src: AbstractFile): Boolean = ???
     def externalEquals: Symbol = ???
@@ -70,6 +76,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
     // initialize classpath using java classpath
     s.debug .value = true
     s.usejavacp.value = true
+    s.YclasspathImpl.value = "flat"
     s
   }
 
