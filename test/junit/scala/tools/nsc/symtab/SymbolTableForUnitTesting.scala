@@ -37,7 +37,6 @@ class SymbolTableForUnitTesting extends SymbolTable {
     def platformPhases: List[SubComponent] = Nil
     def classPath: ClassPath[AbstractFile] = ???
     def flatClasspath: FlatClasspath = SymbolTableForUnitTesting.this.flatClasspath
-    def doLoad(cls: ClassPath[AbstractFile]#ClassRep): Boolean = true
     def isMaybeBoxed(sym: Symbol): Boolean = ???
     def needCompile(bin: AbstractFile, src: AbstractFile): Boolean = ???
     def externalEquals: Symbol = ???

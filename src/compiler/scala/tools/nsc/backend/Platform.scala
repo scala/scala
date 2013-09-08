@@ -9,6 +9,7 @@ package backend
 import util.ClassPath
 import io.AbstractFile
 import scala.tools.nsc.classpath.FlatClasspath
+import scala.tools.nsc.util.ClassfileLookup
 
 /** The platform dependent pieces of Global.
  */
