@@ -854,9 +854,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     globalFuture = future {
       intp.initializeSynchronous()
       loopPostInit()
-      loadFiles(settings)
       !intp.reporter.hasErrors
     }
+    loadFiles(settings)
     printWelcome()
 
     try loop()
