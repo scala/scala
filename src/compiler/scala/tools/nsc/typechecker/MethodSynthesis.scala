@@ -397,6 +397,12 @@ trait MethodSynthesis {
         if (mods.isDeferred) basisSym
         else basisSym.getter(enclClass)
       )
+      // Range position errors ensue if we don't duplicate this in some
+      // circumstances (at least: concrete vals with existential types.)
+      private def tptOriginal = (
+        if (mods.isDeferred) tree.tpt                       // keep type tree of original abstract field
+        else tree.tpt.duplicate setPos tree.tpt.pos.focus   // focused position of original tpt
+      )
 
       override def derivedTree: DefDef = {
         // For existentials, don't specify a type for the getter, even one derived
@@ -407,16 +413,11 @@ trait MethodSynthesis {
         // starts compiling (instead of failing like it's supposed to) because the typer
         // expects to be able to identify escaping locals in typedDefDef, and fails to
         // spot that brand of them. In other words it's an artifact of the implementation.
-        val tpt = derivedSym.tpe.finalResultType match {
+        val tpt = atPos(derivedSym.pos.focus)(derivedSym.tpe.finalResultType match {
           case ExistentialType(_, _)  => TypeTree()
           case _ if mods.isDeferred   => TypeTree()
           case tp                     => TypeTree(tp)
-        }
-        tpt setPos derivedSym.pos.focus
-        // keep type tree of original abstract field
-        if (mods.isDeferred)
-          tpt setOriginal tree.tpt
-
+        })
         // TODO - reconcile this with the DefDef creator in Trees (which
         //   at this writing presented no way to pass a tree in for tpt.)
         atPos(derivedSym.pos) {
@@ -425,7 +426,7 @@ trait MethodSynthesis {
             derivedSym.name.toTermName,
             Nil,
             Nil,
-            tpt,
+            tpt setOriginal tptOriginal,
             if (mods.isDeferred) EmptyTree else fieldSelection
           ) setSymbol derivedSym
         }
