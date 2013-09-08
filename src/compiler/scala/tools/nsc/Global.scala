@@ -352,9 +352,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // Here comes another one...
   override protected val enableTypeVarExperimentals = settings.Xexperimental.value
 
-  def getSourceFile(f: AbstractFile): BatchSourceFile =
-    if (settings.script.isSetByUser) ScriptSourceFile(f, reader read f)
-    else new BatchSourceFile(f, reader read f)
+  def getSourceFile(f: AbstractFile): BatchSourceFile = new BatchSourceFile(f, reader read f)
 
   def getSourceFile(name: String): SourceFile = {
     val f = AbstractFile.getFile(name)
@@ -1490,20 +1488,23 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    /** Compile list of source files */
-    def compileSources(sources: List[SourceFile]) {
-      // there is a problem already, e.g. a plugin was passed a bad option
-      if (reporter.hasErrors)
-        return
+    /** Compile list of source files,
+     *  unless there is a problem already,
+     *  such as a plugin was passed a bad option.
+     */
+    def compileSources(sources: List[SourceFile]) = if (!reporter.hasErrors) {
 
-      // nothing to compile, but we should still report use of deprecated options
-      if (sources.isEmpty) {
+      def checkDeprecations() = {
         checkDeprecatedSettings(newCompilationUnit(""))
         reportCompileErrors()
-        return
       }
 
-      compileUnits(sources map (new CompilationUnit(_)), firstPhase)
+      val units = sources map scripted map (new CompilationUnit(_))
+
+      units match {
+        case Nil => checkDeprecations()   // nothing to compile, report deprecated options
+        case _   => compileUnits(units, firstPhase)
+      }
     }
 
     def compileUnits(units: List[CompilationUnit], fromPhase: Phase): Unit =
@@ -1605,12 +1606,18 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       catch { case ex: IOException => globalError(ex.getMessage()) }
     }
 
+    /** If this compilation is scripted, convert the source to a script source. */
+    private def scripted(s: SourceFile) = s match {
+      case b: BatchSourceFile if settings.script.isSetByUser => ScriptSourceFile(b)
+      case _ => s
+    }
+
     /** Compile abstract file until `globalPhase`, but at least
      *  to phase "namer".
      */
     def compileLate(file: AbstractFile) {
       if (!compiledFiles(file.path))
-        compileLate(new CompilationUnit(getSourceFile(file)))
+        compileLate(new CompilationUnit(scripted(getSourceFile(file))))
     }
 
     /** Compile abstract file until `globalPhase`, but at least to phase "namer".
