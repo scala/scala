@@ -1,0 +1,8 @@
+#!/bin/bash
+exec ${SCALA_HOME}/bin/scala "$0" "$@" 2>&1
+!#
+
+Console println s"hello, scripted test"
+
+throw new RuntimeException("failing")  // line 7
+

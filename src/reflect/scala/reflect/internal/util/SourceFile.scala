@@ -86,6 +86,11 @@ object ScriptSourceFile {
 
     stripped
   }
+
+  def apply(underlying: BatchSourceFile) = {
+    val headerLen = headerLength(underlying.content)
+    new ScriptSourceFile(underlying, underlying.content drop headerLen, headerLen)
+  }
 }
 
 class ScriptSourceFile(underlying: BatchSourceFile, content: Array[Char], override val start: Int) extends BatchSourceFile(underlying.file, content) {
