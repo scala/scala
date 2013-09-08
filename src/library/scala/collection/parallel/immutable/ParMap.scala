@@ -63,7 +63,7 @@ self =>
    *
    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.
    *
-   *  @param d     the function mapping keys to values, used for non-present keys
+   *  @param d     default value used for non-present keys
    *  @return      a wrapper of the map with a default value
    */
   def withDefaultValue[U >: V](d: U): scala.collection.parallel.immutable.ParMap[K, U] = new ParMap.WithDefault[K, U](this, x => d)
