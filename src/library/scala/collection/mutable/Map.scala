@@ -43,7 +43,7 @@ trait Map[A, B]
    *
    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.
    *
-   *  @param d     the function mapping keys to values, used for non-present keys
+   *  @param d     default value used for non-present keys
    *  @return      a wrapper of the map with a default value
    */
   def withDefaultValue(d: B): mutable.Map[A, B] = new Map.WithDefault[A, B](this, x => d)
