@@ -297,7 +297,7 @@ abstract class SymbolLoaders {
           val fullName = pkg.name
           val lastDot = fullName.lastIndexOf('.')
           val name = fullName.substring(lastDot+1)
-          val packageLoader = new PackageLoaderUsingFlatClasspath(name, classpath)
+          val packageLoader = new PackageLoaderUsingFlatClasspath(fullName, classpath)
           enterPackage(root, name, packageLoader)
         }
 
