@@ -352,7 +352,7 @@ abstract class ClassfileParser {
   }
 
   private def loadClassSymbol(name: Name): Symbol = {
-    val file = classPath findSourceFile ("" +name) getOrElse {
+    val file = classPath findClassFile ("" +name) getOrElse {
       // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
       // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
       // that are not in their correct place (see bug for details)
@@ -1047,7 +1047,7 @@ abstract class ClassfileParser {
     for (entry <- innerClasses.entries) {
       // create a new class member for immediate inner classes
       if (entry.outerName == currentClass) {
-        val file = classPath.findSourceFile(entry.externalName.toString) getOrElse {
+        val file = classPath.findClassFile(entry.externalName.toString) getOrElse {
           throw new AssertionError(entry.externalName)
         }
         enterClassAndModule(entry, file)
