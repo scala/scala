@@ -1,7 +1,10 @@
-t997.scala:13: error: wrong number of arguments for object Foo
+t997.scala:13: error: wrong number of patterns for object Foo offering (String, String): expected 2, found 3
+"x" match { case Foo(a, b, c) => Console.println((a,b,c)) }
+                 ^
+t997.scala:13: error: wrong number of patterns for object Foo offering (String, String): expected 2, found 3
 "x" match { case Foo(a, b, c) => Console.println((a,b,c)) }
                     ^
 t997.scala:13: error: not found: value a
 "x" match { case Foo(a, b, c) => Console.println((a,b,c)) }
                                                   ^
-two errors found
+three errors found

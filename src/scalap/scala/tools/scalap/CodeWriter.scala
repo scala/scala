@@ -6,13 +6,9 @@
 */
 
 
-package scala
-package tools.scalap
+package scala.tools.scalap
 
-import java.io._
-
-
-class CodeWriter(writer: Writer) {
+class CodeWriter(writer: java.io.Writer) {
 
   private val nl = scala.compat.Platform.EOL
   private var step = "  "

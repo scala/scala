@@ -64,7 +64,6 @@ abstract class UnCurry extends InfoTransform
 
   class UnCurryTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     private var needTryLift       = false
-    private var inPattern         = false
     private var inConstructorFlag = 0L
     private val byNameArgs        = mutable.HashSet[Tree]()
     private val noApply           = mutable.HashSet[Tree]()
@@ -78,12 +77,6 @@ abstract class UnCurry extends InfoTransform
     /** Process synthetic members for `owner`. They are removed form the `newMembers` as a side-effect. */
     @inline private def useNewMembers[T](owner: Symbol)(f: List[Tree] => T): T =
       f(newMembers.remove(owner).getOrElse(Nil).toList)
-
-    @inline private def withInPattern[T](value: Boolean)(body: => T): T = {
-      inPattern = value
-      try body
-      finally inPattern = !value
-    }
 
     private def newFunction0(body: Tree): Tree = {
       val result = localTyper.typedPos(body.pos)(Function(Nil, body)).asInstanceOf[Function]
@@ -119,16 +112,6 @@ abstract class UnCurry extends InfoTransform
       && (isByName(tree.symbol))
     )
 
-    /** Uncurry a type of a tree node.
-     *  This function is sensitive to whether or not we are in a pattern -- when in a pattern
-     *  additional parameter sections of a case class are skipped.
-     */
-    def uncurryTreeType(tp: Type): Type = tp match {
-      case MethodType(params, MethodType(params1, restpe)) if inPattern =>
-        uncurryTreeType(MethodType(params, restpe))
-      case _ =>
-        uncurry(tp)
-    }
 
 // ------- Handling non-local returns -------------------------------------------------
 
@@ -327,7 +310,7 @@ abstract class UnCurry extends InfoTransform
           }
           else {
             def mkArray = mkArrayValue(args drop (formals.length - 1), varargsElemType)
-            if (isJava || inPattern) mkArray
+            if (isJava) mkArray
             else if (args.isEmpty) gen.mkNil  // avoid needlessly double-wrapping an empty argument list
             else arrayToSequence(mkArray, varargsElemType)
           }
@@ -474,10 +457,10 @@ abstract class UnCurry extends InfoTransform
             else
               super.transform(tree)
           case UnApply(fn, args) =>
-            val fn1 = withInPattern(value = false)(transform(fn))
+            val fn1 = transform(fn)
             val args1 = transformTrees(fn.symbol.name match {
               case nme.unapply    => args
-              case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeList(fn.pos, fn.symbol, fn.tpe, args))
+              case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, localTyper.expectedPatternTypes(fn, args))
               case _              => sys.error("internal error: UnApply node has wrong symbol")
             })
             treeCopy.UnApply(tree, fn1, args1)
@@ -510,7 +493,7 @@ abstract class UnCurry extends InfoTransform
             else super.transform(tree)
 
           case CaseDef(pat, guard, body) =>
-            val pat1 = withInPattern(value = true)(transform(pat))
+            val pat1 = transform(pat)
             treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
 
           case fun @ Function(_, _) =>
@@ -532,7 +515,7 @@ abstract class UnCurry extends InfoTransform
         }
       )
       assert(result.tpe != null, result.shortClass + " tpe is null:\n" + result)
-      result setType uncurryTreeType(result.tpe)
+      result modifyType uncurry
     }
 
     def postTransform(tree: Tree): Tree = exitingUncurry {

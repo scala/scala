@@ -1,0 +1,7 @@
+t7501_2.scala:2: error: value name is not a member of A
+  def foo(a: A) = a.name
+                    ^
+t7501_2.scala:4: error: not found: type X
+  type TP = X // already failed before this fix
+            ^
+two errors found

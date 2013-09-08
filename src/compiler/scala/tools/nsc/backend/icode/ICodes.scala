@@ -10,6 +10,7 @@ package icode
 import java.io.PrintWriter
 import analysis.{ Liveness, ReachingDefinitions }
 import scala.tools.nsc.symtab.classfile.ICodeReader
+import scala.reflect.io.AbstractFile
 
 /** Glue together ICode parts.
  *
@@ -108,6 +109,12 @@ abstract class ICodes extends AnyRef
 
   object icodeReader extends ICodeReader {
     lazy val global: ICodes.this.global.type = ICodes.this.global
+    import global._
+    def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol =
+      global.loaders.lookupMemberAtTyperPhaseIfPossible(sym, name)
+    lazy val symbolTable: global.type = global
+    lazy val loaders: global.loaders.type = global.loaders
+    def classPath: util.ClassPath[AbstractFile] = ICodes.this.global.platform.classPath
   }
 
   /** A phase which works on icode. */

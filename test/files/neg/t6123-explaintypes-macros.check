@@ -1,0 +1,9 @@
+c.universe.Expr[Any]* <: c.universe.Expr[String]*?
+false
+BadMac_2.scala:6: error: macro implementation has wrong shape:
+ required: (c: scala.reflect.macros.Context)(format: c.Expr[String], params: c.Expr[Any]*): c.Expr[Unit]
+ found   : (c: scala.reflect.macros.Context)(format: c.Expr[String], params: c.Expr[String]*): c.Expr[Unit]
+type mismatch for parameter params: c.Expr[Any]* does not conform to c.Expr[String]*
+  def printf(format: String, params: Any*): Unit = macro printf_impl
+      ^
+one error found

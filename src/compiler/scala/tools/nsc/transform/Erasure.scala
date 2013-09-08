@@ -525,12 +525,12 @@ abstract class Erasure extends AddInterfaces
     private def isDifferentErasedValueType(tpe: Type, other: Type) =
       isErasedValueType(tpe) && (tpe ne other)
 
-    private def isPrimitiveValueMember(sym: Symbol) =
-      sym != NoSymbol && isPrimitiveValueClass(sym.owner)
+    private def isPrimitiveValueMember(sym: Symbol) = isPrimitiveValueClass(sym.owner)
 
     @inline private def box(tree: Tree, target: => String): Tree = {
       val result = box1(tree)
-      log(s"boxing ${tree.summaryString}: ${tree.tpe} into $target: ${result.tpe}")
+      if (tree.tpe =:= UnitTpe) ()
+      else log(s"boxing ${tree.summaryString}: ${tree.tpe} into $target: ${result.tpe}")
       result
     }
 
@@ -572,7 +572,7 @@ abstract class Erasure extends AddInterfaces
 
     private def unbox(tree: Tree, pt: Type): Tree = {
       val result = unbox1(tree, pt)
-      log(s"unboxing ${tree.summaryString}: ${tree.tpe} with pt=$pt as type ${result.tpe}")
+      log(s"unboxing ${tree.shortClass}: ${tree.tpe} as a ${result.tpe}")
       result
     }
 
@@ -595,7 +595,6 @@ abstract class Erasure extends AddInterfaces
         val tree1 = pt match {
           case ErasedValueType(tref) =>
             val clazz = tref.sym
-            log("not boxed: "+tree)
             lazy val underlying = underlyingOfValueClass(clazz)
             val tree0 =
               if (tree.tpe.typeSymbol == NullClass &&
@@ -623,8 +622,18 @@ abstract class Erasure extends AddInterfaces
     /** Generate a synthetic cast operation from tree.tpe to pt.
      *  @pre pt eq pt.normalize
      */
-    private def cast(tree: Tree, pt: Type): Tree = logResult(s"cast($tree, $pt)") {
-      if (pt.typeSymbol == UnitClass) {
+    private def cast(tree: Tree, pt: Type): Tree = {
+      if ((tree.tpe ne null) && !(tree.tpe =:= ObjectTpe)) {
+        def word = (
+          if (tree.tpe <:< pt) "upcast"
+          else if (pt <:< tree.tpe) "downcast"
+          else if (pt weak_<:< tree.tpe) "coerce"
+          else if (tree.tpe weak_<:< pt) "widen"
+          else "cast"
+        )
+        log(s"erasure ${word}s from ${tree.tpe} to $pt")
+      }
+      if (pt =:= UnitTpe) {
         // See SI-4731 for one example of how this occurs.
         log("Attempted to cast to Unit: " + tree)
         tree.duplicate setType pt
@@ -681,7 +690,7 @@ abstract class Erasure extends AddInterfaces
     private def adaptMember(tree: Tree): Tree = {
       //Console.println("adaptMember: " + tree);
       tree match {
-        case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
+        case Apply(ta @ TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_asInstanceOf =>
           val qual1 = typedQualifier(qual, NOmode, ObjectTpe) // need to have an expected type, see #3037
 
@@ -706,7 +715,8 @@ abstract class Erasure extends AddInterfaces
 //                }
               typed(untyped)
             }
-          } else tree
+          } else treeCopy.Apply(tree, treeCopy.TypeApply(ta, treeCopy.Select(sel, qual1, name), List(targ)), List())
+
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_isInstanceOf =>
           targ.tpe match {

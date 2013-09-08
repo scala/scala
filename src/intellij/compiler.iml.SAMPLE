@@ -19,9 +19,8 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="library" />
     <orderEntry type="module" module-name="reflect" />
-    <orderEntry type="module" module-name="asm" />
-    <orderEntry type="library" name="ant" level="application" />
-    <orderEntry type="library" name="jline" level="project" />
+    <orderEntry type="module" module-name="asm" exported="" />
+    <orderEntry type="library" exported="" name="ant" level="project" />
   </component>
 </module>
 

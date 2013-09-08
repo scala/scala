@@ -4,7 +4,6 @@ class A {
 
 class B {
   val x1 = 5.f
-  val y0 = 055
 }
 
 class D {

@@ -18,6 +18,18 @@ trait Names extends api.Names {
 
   final val nameDebug = false
 
+  // Ideally we would just synchronize unconditionally and let HotSpot's Biased Locking
+  // kick in in the compiler universe, where access to the lock is single threaded. But,
+  // objects created in the first 4seconds of the JVM startup aren't eligible for biased
+  // locking.
+  //
+  // We might also be able to accept the performance hit, but we don't have tools to
+  // detect performance regressions.
+  //
+  // Discussion: https://groups.google.com/forum/#!search/biased$20scala-internals/scala-internals/0cYB7SkJ-nM/47MLhsgw8jwJ
+  protected def synchronizeNames: Boolean = false
+  private val nameLock: Object = new Object
+
   /** Memory to store all names sequentially. */
   var chrs: Array[Char] = new Array[Char](NAME_SIZE)
   private var nc = 0
@@ -64,61 +76,68 @@ trait Names extends api.Names {
   }
 
   /** Create a term name from the characters in cs[offset..offset+len-1]. */
-  def newTermName(cs: Array[Char], offset: Int, len: Int): TermName =
+  final def newTermName(cs: Array[Char], offset: Int, len: Int): TermName =
     newTermName(cs, offset, len, cachedString = null)
 
-  def newTermName(cs: Array[Char]): TermName = newTermName(cs, 0, cs.length)
-  def newTypeName(cs: Array[Char]): TypeName = newTypeName(cs, 0, cs.length)
+  final def newTermName(cs: Array[Char]): TermName = newTermName(cs, 0, cs.length)
+
+  final def newTypeName(cs: Array[Char]): TypeName = newTypeName(cs, 0, cs.length)
 
   /** Create a term name from the characters in cs[offset..offset+len-1].
    *  TODO - have a mode where name validation is performed at creation time
    *  (e.g. if a name has the string "$class" in it, then fail if that
    *  string is not at the very end.)
    */
-  protected def newTermName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TermName = {
-    val h = hashValue(cs, offset, len) & HASH_MASK
-    var n = termHashtable(h)
-    while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
-      n = n.next
+  final def newTermName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TermName = {
+    def body = {
+      val h = hashValue(cs, offset, len) & HASH_MASK
+      var n = termHashtable(h)
+      while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
+        n = n.next
 
-    if (n ne null) n
-    else {
-      // The logic order here is future-proofing against the possibility
-      // that name.toString will become an eager val, in which case the call
-      // to enterChars cannot follow the construction of the TermName.
-      val ncStart = nc
-      enterChars(cs, offset, len)
-      if (cachedString ne null) new TermName_S(ncStart, len, h, cachedString)
-      else new TermName_R(ncStart, len, h)
+      if (n ne null) n
+      else {
+        // The logic order here is future-proofing against the possibility
+        // that name.toString will become an eager val, in which case the call
+        // to enterChars cannot follow the construction of the TermName.
+        val ncStart = nc
+        enterChars(cs, offset, len)
+        if (cachedString ne null) new TermName_S(ncStart, len, h, cachedString)
+        else new TermName_R(ncStart, len, h)
+      }
     }
+    if (synchronizeNames) nameLock.synchronized(body) else body
   }
-  protected def newTypeName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TypeName =
+
+  final def newTypeName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TypeName =
     newTermName(cs, offset, len, cachedString).toTypeName
 
   /** Create a term name from string. */
+  @deprecatedOverriding("To synchronize, use `override def synchronizeNames = true`", "2.11.0") // overriden in https://github.com/scala-ide/scala-ide/blob/master/org.scala-ide.sdt.core/src/scala/tools/eclipse/ScalaPresentationCompiler.scala
   def newTermName(s: String): TermName = newTermName(s.toCharArray(), 0, s.length(), null)
 
   /** Create a type name from string. */
+  @deprecatedOverriding("To synchronize, use `override def synchronizeNames = true`", "2.11.0") // overriden in https://github.com/scala-ide/scala-ide/blob/master/org.scala-ide.sdt.core/src/scala/tools/eclipse/ScalaPresentationCompiler.scala
   def newTypeName(s: String): TypeName = newTermName(s).toTypeName
 
   /** Create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1]. */
-  def newTermName(bs: Array[Byte], offset: Int, len: Int): TermName = {
+  final def newTermName(bs: Array[Byte], offset: Int, len: Int): TermName = {
     val chars = Codec.fromUTF8(bs, offset, len)
     newTermName(chars, 0, chars.length)
   }
 
-  def newTermNameCached(s: String): TermName =
+  final def newTermNameCached(s: String): TermName =
     newTermName(s.toCharArray(), 0, s.length(), cachedString = s)
 
-  def newTypeNameCached(s: String): TypeName =
+  final def newTypeNameCached(s: String): TypeName =
     newTypeName(s.toCharArray(), 0, s.length(), cachedString = s)
 
   /** Create a type name from the characters in cs[offset..offset+len-1]. */
-  def newTypeName(cs: Array[Char], offset: Int, len: Int): TypeName =
+  final def newTypeName(cs: Array[Char], offset: Int, len: Int): TypeName =
     newTermName(cs, offset, len, cachedString = null).toTypeName
 
   /** Create a type name from the UTF8 encoded bytes in bs[offset..offset+len-1]. */
-  def newTypeName(bs: Array[Byte], offset: Int, len: Int): TypeName =
+  final def newTypeName(bs: Array[Byte], offset: Int, len: Int): TypeName =
     newTermName(bs, offset, len).toTypeName
 
   /**
@@ -128,6 +147,8 @@ trait Names extends api.Names {
    *  For those of METHOD sort, its descriptor is stored ie has a leading '('
    *
    *  can-multi-thread
+   *  TODO SI-6240 !!! JZ Really? the constructors TermName and TypeName publish unconstructed `this` references
+   *               into the hash tables; we could observe them here before the subclass constructor completes.
    */
   final def lookupTypeName(cs: Array[Char]): TypeName = { lookupTypeNameIfExisting(cs, true) }
 
@@ -494,23 +515,26 @@ trait Names extends api.Names {
     override def toString = new String(chrs, index, len)
   }
 
+  // SYNCNOTE: caller to constructor must synchronize if `synchronizeNames` is enabled
   sealed abstract class TermName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) {
     type ThisNameType = TermName
     protected[this] def thisName: TermName = this
-
     val next: TermName = termHashtable(hash)
     termHashtable(hash) = this
     def isTermName: Boolean = true
     def isTypeName: Boolean = false
     def toTermName: TermName = this
     def toTypeName: TypeName = {
-      val h = hashValue(chrs, index, len) & HASH_MASK
-      var n = typeHashtable(h)
-      while ((n ne null) && n.start != index)
-        n = n.next
+      def body = {
+        val h = hashValue(chrs, index, len) & HASH_MASK
+        var n = typeHashtable(h)
+        while ((n ne null) && n.start != index)
+          n = n.next
 
-      if (n ne null) n
-      else createCompanionName(h)
+        if (n ne null) n
+        else createCompanionName(h)
+      }
+      if (synchronizeNames) nameLock.synchronized(body) else body
     }
     def newName(str: String): TermName = newTermName(str)
     def companionName: TypeName = toTypeName
@@ -518,6 +542,7 @@ trait Names extends api.Names {
       newTermName(chrs, start + from, to - from)
 
     def nameKind = "term"
+    /** SYNCNOTE: caller must synchronize if `synchronizeNames` is enabled */
     protected def createCompanionName(h: Int): TypeName
   }
 
@@ -534,16 +559,20 @@ trait Names extends api.Names {
 
     val next: TypeName = typeHashtable(hash)
     typeHashtable(hash) = this
+
     def isTermName: Boolean = false
     def isTypeName: Boolean = true
     def toTermName: TermName = {
-      val h = hashValue(chrs, index, len) & HASH_MASK
-      var n = termHashtable(h)
-      while ((n ne null) && n.start != index)
-        n = n.next
+      def body = {
+        val h = hashValue(chrs, index, len) & HASH_MASK
+        var n = termHashtable(h)
+        while ((n ne null) && n.start != index)
+          n = n.next
 
-      if (n ne null) n
-      else createCompanionName(h)
+        if (n ne null) n
+        else createCompanionName(h)
+      }
+      if (synchronizeNames) nameLock.synchronized(body) else body
     }
     def toTypeName: TypeName = this
     def newName(str: String): TypeName = newTypeName(str)
@@ -553,6 +582,7 @@ trait Names extends api.Names {
 
     def nameKind = "type"
     override def decode = if (nameDebug) super.decode + "!" else super.decode
+    /** SYNCNOTE: caller must synchronize if `synchronizeNames` is enabled */
     protected def createCompanionName(h: Int): TermName
   }
 

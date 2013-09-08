@@ -72,7 +72,7 @@ abstract class GenICode extends SubComponent  {
      *  it is the host class; otherwise the symbol's owner.
      */
     def findHostClass(selector: Type, sym: Symbol) = selector member sym.name match {
-      case NoSymbol   => log(s"Rejecting $selector as host class for $sym") ; sym.owner
+      case NoSymbol   => debuglog(s"Rejecting $selector as host class for $sym") ; sym.owner
       case _          => selector.typeSymbol
     }
 
@@ -739,7 +739,7 @@ abstract class GenICode extends SubComponent  {
                 resolveForwardLabel(ctx.defdef, ctx, sym)
                 ctx.labels.get(sym) match {
                   case Some(l) =>
-                    log("Forward jump for " + sym.fullLocationString + ": scan found label " + l)
+                    debuglog("Forward jump for " + sym.fullLocationString + ": scan found label " + l)
                     l
                   case _       =>
                     abort("Unknown label target: " + sym + " at: " + (fun.pos) + ": ctx: " + ctx)
@@ -845,7 +845,7 @@ abstract class GenICode extends SubComponent  {
             val sym = tree.symbol
             generatedType = toTypeKind(sym.info)
             val hostClass = findHostClass(qualifier.tpe, sym)
-            log(s"Host class of $sym with qual $qualifier (${qualifier.tpe}) is $hostClass")
+            debuglog(s"Host class of $sym with qual $qualifier (${qualifier.tpe}) is $hostClass")
             val qualSafeToElide = treeInfo isQualifierSafeToElide qualifier
 
             def genLoadQualUnlessElidable: Context =
@@ -1026,7 +1026,7 @@ abstract class GenICode extends SubComponent  {
      * type Null is holding a null.
      */
     private def adaptNullRef(from: TypeKind, to: TypeKind, ctx: Context, pos: Position) {
-      log(s"GenICode#adaptNullRef($from, $to, $ctx, $pos)")
+      debuglog(s"GenICode#adaptNullRef($from, $to, $ctx, $pos)")
 
       // Don't need to adapt null to unit because we'll just drop it anyway. Don't
       // need to adapt to Object or AnyRef because the JVM is happy with
@@ -1046,7 +1046,7 @@ abstract class GenICode extends SubComponent  {
     private def adapt(from: TypeKind, to: TypeKind, ctx: Context, pos: Position) {
       // An awful lot of bugs explode here - let's leave ourselves more clues.
       // A typical example is an overloaded type assigned after typer.
-      log(s"GenICode#adapt($from, $to, $ctx, $pos)")
+      debuglog(s"GenICode#adapt($from, $to, $ctx, $pos)")
 
       def coerce(from: TypeKind, to: TypeKind) = ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), pos)
 
@@ -1479,26 +1479,18 @@ abstract class GenICode extends SubComponent  {
 
       if (mustUseAnyComparator) {
         // when -optimise is on we call the @inline-version of equals, found in ScalaRunTime
-        val equalsMethod =
+        val equalsMethod: Symbol = {
           if (!settings.optimise) {
-            def default = platform.externalEquals
-            platform match {
-              case x: JavaPlatform =>
-                import x._
-                  if (l.tpe <:< BoxedNumberClass.tpe) {
-                    if (r.tpe <:< BoxedNumberClass.tpe) externalEqualsNumNum
-                    else if (r.tpe <:< BoxedCharacterClass.tpe) externalEqualsNumChar
-                    else externalEqualsNumObject
-                  }
-                  else default
-
-              case _ => default
-            }
-          }
-          else {
+            if (l.tpe <:< BoxedNumberClass.tpe) {
+              if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
+              else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumChar
+              else platform.externalEqualsNumObject
+            } else platform.externalEquals
+          } else {
             ctx.bb.emit(LOAD_MODULE(ScalaRunTimeModule))
             getMember(ScalaRunTimeModule, nme.inlinedEquals)
           }
+        }
 
         val ctx1 = genLoad(l, ctx, ObjectReference)
         val ctx2 = genLoad(r, ctx1, ObjectReference)

@@ -78,10 +78,10 @@ abstract class Inliners extends SubComponent {
       assert(clazz != NoSymbol, "Walked up past Object.superClass looking for " + sym +
                                 ", most likely this reveals the TFA at fault (receiver and callee don't match).")
       if (sym.owner == clazz || isBottomType(clazz)) sym
-      else sym.overridingSymbol(clazz) match {
-        case NoSymbol  => if (sym.owner.isTrait) sym else lookup(clazz.superClass)
-        case imp       => imp
-      }
+      else sym.overridingSymbol(clazz) orElse (
+        if (sym.owner.isTrait) sym
+        else lookup(clazz.superClass)
+      )
     }
     if (needsLookup) {
       val concreteMethod = lookup(clazz)

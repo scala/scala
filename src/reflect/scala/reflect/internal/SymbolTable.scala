@@ -52,8 +52,15 @@ abstract class SymbolTable extends macros.Universe
   def globalError(msg: String): Unit = abort(msg)
   def abort(msg: String): Nothing    = throw new FatalError(supplementErrorMessage(msg))
 
+  protected def elapsedMessage(msg: String, start: Long) =
+    msg + " in " + (System.currentTimeMillis() - start) + "ms"
+
+  def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
+  def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
+
   def shouldLogAtThisPhase = false
   def isPastTyper = false
+  protected def isDeveloper: Boolean = settings.debug
 
   @deprecated("Give us a reason", "2.10.0")
   def abort(): Nothing = abort("unknown error")
@@ -63,8 +70,12 @@ abstract class SymbolTable extends macros.Universe
 
   /** Override with final implementation for inlining. */
   def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
-  def devWarning(msg: => String): Unit = if (settings.debug) Console.err.println(msg)
+  def devWarning(msg: => String): Unit = if (isDeveloper) Console.err.println(msg)
   def throwableAsString(t: Throwable): String = "" + t
+  def throwableAsString(t: Throwable, maxFrames: Int): String = t.getStackTrace take maxFrames mkString "\n  at "
+
+  @inline final def devWarningDumpStack(msg: => String, maxFrames: Int): Unit =
+    devWarning(msg + "\n" + throwableAsString(new Throwable, maxFrames))
 
   /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */
   def debugStack(t: Throwable): Unit  = devWarning(throwableAsString(t))
@@ -102,6 +113,13 @@ abstract class SymbolTable extends macros.Universe
   final private[scala] def logResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
     if (cond(result))
       log(msg + ": " + result)
+
+    result
+  }
+  @inline
+  final private[scala] def debuglogResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
+    if (cond(result))
+      debuglog(msg + ": " + result)
 
     result
   }

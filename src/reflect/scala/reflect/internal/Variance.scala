@@ -60,8 +60,7 @@ final class Variance private (val flags: Int) extends AnyVal {
 
   /** The symbolic annotation used to indicate the given kind of variance. */
   def symbolicString = (
-    if (isBivariant) "+/-"
-    else if (isCovariant) "+"
+    if (isCovariant) "+"
     else if (isContravariant) "-"
     else ""
   )

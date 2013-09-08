@@ -31,8 +31,8 @@ trait Implicits {
   import global._
   import definitions._
   import ImplicitsStats._
-  import typeDebug.{ ptBlock, ptLine }
-  import global.typer.{ printTyping, deindentTyping, indentTyping, printInference }
+  import typingStack.{ printTyping }
+  import typeDebug._
 
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context): SearchResult =
     inferImplicit(tree, pt, reportAmbiguous, isView, context, saveAmbiguousDivergent = true, tree.pos)
@@ -60,25 +60,15 @@ trait Implicits {
    *  @return                        A search result
    */
   def inferImplicit(tree: Tree, pt: Type, reportAmbiguous: Boolean, isView: Boolean, context: Context, saveAmbiguousDivergent: Boolean, pos: Position): SearchResult = {
-    printInference("[infer %s] %s with pt=%s in %s".format(
-      if (isView) "view" else "implicit",
-      tree, pt, context.owner.enclClass)
-    )
-    printTyping(
-      ptBlock("infer implicit" + (if (isView) " view" else ""),
-        "tree"        -> tree,
-        "pt"          -> pt,
-        "undetparams" -> context.outer.undetparams
-      )
-    )
-    indentTyping()
-
+    // Note that the isInvalidConversionTarget seems to make a lot more sense right here, before all the
+    // work is performed, than at the point where it presently exists.
+    val shouldPrint     = printTypings && !context.undetparams.isEmpty
     val rawTypeStart    = if (Statistics.canEnable) Statistics.startCounter(rawTypeImpl) else null
     val findMemberStart = if (Statistics.canEnable) Statistics.startCounter(findMemberImpl) else null
     val subtypeStart    = if (Statistics.canEnable) Statistics.startCounter(subtypeImpl) else null
     val start           = if (Statistics.canEnable) Statistics.startTimer(implicitNanos) else null
-    if (printInfers && !tree.isEmpty && !context.undetparams.isEmpty)
-      printTyping("typing implicit: %s %s".format(tree, context.undetparamsString))
+    if (shouldPrint)
+      typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
     if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.hasErrors) {
@@ -88,15 +78,13 @@ trait Implicits {
       })
       debuglog("update buffer: " + implicitSearchContext.reportBuffer.errors)
     }
-    printInference("[infer implicit] inferred " + result)
     context.undetparams = context.undetparams filterNot result.subst.from.contains
 
     if (Statistics.canEnable) Statistics.stopTimer(implicitNanos, start)
     if (Statistics.canEnable) Statistics.stopCounter(rawTypeImpl, rawTypeStart)
     if (Statistics.canEnable) Statistics.stopCounter(findMemberImpl, findMemberStart)
     if (Statistics.canEnable) Statistics.stopCounter(subtypeImpl, subtypeStart)
-    deindentTyping()
-    printTyping("Implicit search yielded: "+ result)
+
     result
   }
 
@@ -143,6 +131,7 @@ trait Implicits {
   private val implicitsCache = new LinkedHashMap[Type, Infoss]
   private val infoMapCache = new LinkedHashMap[Symbol, InfoMap]
   private val improvesCache = perRunCaches.newMap[(ImplicitInfo, ImplicitInfo), Boolean]()
+  private val implicitSearchId = { var id = 1 ; () => try id finally id += 1 }
 
   private def isInvalidConversionTarget(tpe: Type): Boolean = tpe match {
     case Function1(_, out) => AnyRefClass.tpe <:< out
@@ -325,18 +314,23 @@ trait Implicits {
    *                          (useful when we infer synthetic stuff and pass EmptyTree in the `tree` argument)
    *                          If it's set to NoPosition, then position-based services will use `tree.pos`
    */
-  class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context, pos0: Position = NoPosition)
-    extends Typer(context0) with ImplicitsContextErrors {
-      printTyping(
-        ptBlock("new ImplicitSearch",
-          "tree"        -> tree,
-          "pt"          -> pt,
-          "isView"      -> isView,
-          "context0"    -> context0,
-          "undetparams" -> context.outer.undetparams
-        )
-      )
-//    assert(tree.isEmpty || tree.pos.isDefined, tree)
+  class ImplicitSearch(tree: Tree, pt: Type, isView: Boolean, context0: Context, pos0: Position = NoPosition) extends Typer(context0) with ImplicitsContextErrors {
+    val searchId = implicitSearchId()
+    private def typingLog(what: String, msg: String) =
+      typingStack.printTyping(tree, f"[search #$searchId] $what $msg")
+
+    import infer._
+    if (Statistics.canEnable) Statistics.incCounter(implicitSearchCount)
+
+    /** The type parameters to instantiate */
+    val undetParams = if (isView) Nil else context.outer.undetparams
+    val wildPt = approximate(pt)
+
+    def undet_s = if (undetParams.isEmpty) "" else undetParams.mkString(" inferring ", ", ", "")
+    def tree_s = typeDebug ptTree tree
+    def ctx_s = fullSiteString(context)
+    typingLog("start", s"`$tree_s`$undet_s, searching for adaptation to pt=$pt $ctx_s")
+
     def pos = if (pos0 != NoPosition) pos0 else tree.pos
 
     def failure(what: Any, reason: String, pos: Position = this.pos): SearchResult = {
@@ -344,8 +338,6 @@ trait Implicits {
         reporter.echo(pos, what+" is not a valid implicit value for "+pt+" because:\n"+reason)
       SearchFailure
     }
-
-    import infer._
     /** Is implicit info `info1` better than implicit info `info2`?
      */
     def improves(info1: ImplicitInfo, info2: ImplicitInfo) = {
@@ -418,14 +410,8 @@ trait Implicits {
       overlaps(dtor1, dted1) && (dtor1 =:= dted1 || complexity(dtor1) > complexity(dted1))
     }
 
-    if (Statistics.canEnable) Statistics.incCounter(implicitSearchCount)
-
-    /** The type parameters to instantiate */
-    val undetParams = if (isView) List() else context.outer.undetparams
-
     /** The expected type with all undetermined type parameters replaced with wildcards. */
     def approximate(tp: Type) = deriveTypeWithWildcards(undetParams)(tp)
-    val wildPt = approximate(pt)
 
     /** Try to construct a typed tree from given implicit info with given
      *  expected type.
@@ -582,22 +568,12 @@ trait Implicits {
 
     private def typedImplicit0(info: ImplicitInfo, ptChecked: Boolean, isLocal: Boolean): SearchResult = {
       if (Statistics.canEnable) Statistics.incCounter(plausiblyCompatibleImplicits)
-      printTyping (
-        ptBlock("typedImplicit0",
-          "info.name" -> info.name,
-          "ptChecked" -> ptChecked,
-          "pt"        -> wildPt,
-          "orig"      -> ptBlock("info",
-            "undetParams"           -> undetParams,
-            "info.pre"              -> info.pre
-          ).replaceAll("\\n", "\n  ")
-        )
-      )
-
-      if (ptChecked || matchesPt(info))
-        typedImplicit1(info, isLocal)
-      else
-        SearchFailure
+      val ok = ptChecked || matchesPt(info) && {
+        def word = if (isLocal) "local " else ""
+        typingLog("match", s"$word$info")
+        true
+      }
+      if (ok) typedImplicit1(info, isLocal) else SearchFailure
     }
 
     private def typedImplicit1(info: ImplicitInfo, isLocal: Boolean): SearchResult = {
@@ -618,9 +594,7 @@ trait Implicits {
           Select(gen.mkAttributedQualifier(info.pre), implicitMemberName)
         }
       }
-      printTyping("typedImplicit1 %s, pt=%s, from implicit %s:%s".format(
-        typeDebug.ptTree(itree), wildPt, info.name, info.tpe)
-      )
+      typingLog("considering", typeDebug.ptTree(itree))
 
       def fail(reason: String): SearchResult = failure(itree, reason)
       def fallback = typed1(itree, EXPRmode, wildPt)
@@ -643,13 +617,10 @@ trait Implicits {
 
         if (Statistics.canEnable) Statistics.incCounter(typedImplicits)
 
-        printTyping("typed implicit %s:%s, pt=%s".format(itree1, itree1.tpe, wildPt))
         val itree2 = if (isView) (itree1: @unchecked) match { case Apply(fun, _) => fun }
                      else adapt(itree1, EXPRmode, wildPt)
 
-        printTyping("adapted implicit %s:%s to %s".format(
-          itree1.symbol, itree2.tpe, wildPt)
-        )
+        typingStack.showAdapt(itree, itree2, pt, context)
 
         def hasMatchingSymbol(tree: Tree): Boolean = (tree.symbol == info.sym) || {
           tree match {
@@ -669,18 +640,11 @@ trait Implicits {
           val tvars = undetParams map freshVar
           def ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
 
-          printInference("[search] considering %s (pt contains %s) trying %s against pt=%s".format(
-            if (undetParams.isEmpty) "no tparams" else undetParams.map(_.name).mkString(", "),
-            typeVarsInType(ptInstantiated) filterNot (_.isGround) match { case Nil => "no tvars" ; case tvs => tvs.mkString(", ") },
-            itree2.tpe, pt
-          ))
-
           if (matchesPt(itree2.tpe, ptInstantiated, undetParams)) {
             if (tvars.nonEmpty)
-              printTyping(ptLine("" + info.sym, "tvars" -> tvars, "tvars.constr" -> tvars.map(_.constr)))
+              typingLog("solve", ptLine("tvars" -> tvars, "tvars.constr" -> tvars.map(_.constr)))
 
-            val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt),
-                                    upper = false, lubDepth(List(itree2.tpe, pt)))
+            val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt), upper = false, lubDepth(itree2.tpe :: pt :: Nil))
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
             checkBounds(itree2, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
@@ -729,7 +693,7 @@ trait Implicits {
               case None      =>
                 val result = new SearchResult(itree2, subst)
                 if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
-                printInference("[success] found %s for pt %s".format(result, ptInstantiated))
+                typingLog("success", s"inferred value of type $ptInstantiated is $result")
                 result
             }
           }
@@ -850,7 +814,7 @@ trait Implicits {
           if (search.isDivergent && countdown > 0) {
             countdown -= 1
             implicitSym = i.sym
-            log("discarding divergent implicit ${implicitSym} during implicit search")
+            log(s"discarding divergent implicit $implicitSym during implicit search")
             SearchFailure
           } else search
       }
@@ -868,10 +832,7 @@ trait Implicits {
         matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
       }
       if (eligible.nonEmpty)
-        printInference("[search%s] %s with pt=%s in %s, eligible:\n  %s".format(
-          if (isView) " view" else "",
-          tree, pt, context.owner.enclClass, eligible.mkString("\n  "))
-        )
+        printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
 
       /** Faster implicit search.  Overall idea:
        *   - prune aggressively
@@ -898,10 +859,7 @@ trait Implicits {
                   try improves(i, alt)
                   catch {
                     case e: CyclicReference =>
-                      if (printInfers) {
-                        println(i+" discarded because cyclic reference occurred")
-                        e.printStackTrace()
-                      }
+                      debugwarn(s"Discarding $i during implicit search due to cyclic reference")
                       true
                   }
                 })
@@ -1044,9 +1002,7 @@ trait Implicits {
         tp match {
           case TypeRef(pre, sym, args) =>
             if (sym.isClass) {
-              if (!((sym.name == tpnme.REFINE_CLASS_NAME) ||
-                    (sym.name startsWith tpnme.ANON_CLASS_NAME) ||
-                    (sym.name == tpnme.ROOT))) {
+              if (!sym.isAnonOrRefinementClass && !sym.isRoot) {
                 if (sym.isStatic && !(pending contains sym))
                   infoMap ++= {
                     infoMapCache get sym match {
@@ -1060,7 +1016,7 @@ trait Implicits {
                   }
                 else
                   getClassParts(tp)
-                args foreach (getParts(_))
+                args foreach getParts
               }
             } else if (sym.isAliasType) {
               getParts(tp.normalize) // SI-7180 Normalize needed to expand HK type refs
@@ -1088,9 +1044,9 @@ trait Implicits {
 
       val infoMap = new InfoMap
       getParts(tp)(infoMap, new mutable.HashSet(), Set())
-      printInference(
-        ptBlock("companionImplicitMap " + tp, infoMap.toSeq.map({ case (k, v) => ("" + k, v.mkString(", ")) }): _*)
-      )
+      if (infoMap.nonEmpty)
+        printTyping(tree, infoMap.size + " implicits in companion scope")
+
       infoMap
     }
 
@@ -1380,12 +1336,18 @@ trait Implicits {
         }
       }
       if (result.isSuccess && isView) {
+        def maybeInvalidConversionError(msg: String) {
+          // We have to check context.ambiguousErrors even though we are calling "issueAmbiguousError"
+          // which ostensibly does exactly that before issuing the error. Why? I have no idea. Test is pos/t7690.
+          if (context.ambiguousErrors)
+            context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, msg))
+        }
         if (isInvalidConversionTarget(pt)) {
-          context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, "the result type of an implicit conversion must be more specific than AnyRef"))
+          maybeInvalidConversionError("the result type of an implicit conversion must be more specific than AnyRef")
           result = SearchFailure
         }
         else if (isInvalidConversionSource(pt)) {
-          context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, "an expression of type Null is ineligible for implicit conversion"))
+          maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
           result = SearchFailure
         }
       }

@@ -12,17 +12,13 @@
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$/../partest">
-      <sourceFolder url="file://$MODULE_DIR$/../partest" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/../partest-extras">
+      <sourceFolder url="file://$MODULE_DIR$/../partest-extras" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="library" />
-    <orderEntry type="module" module-name="reflect" />
-    <orderEntry type="module" module-name="actors" />
-    <orderEntry type="module" module-name="scalap" />
-    <orderEntry type="module" module-name="compiler" />
-    <orderEntry type="library" name="ant" level="application" />
+    <orderEntry type="library" name="partest-deps" level="project" />
+    <orderEntry type="module" module-name="repl" />
   </component>
 </module>
 

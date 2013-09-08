@@ -1,0 +1,7 @@
+t7669.scala:9: warning: match may not be exhaustive.
+It would fail on the following input: NotHandled(_)
+  def exhausto(expr: Expr): Unit = expr match {
+                                   ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

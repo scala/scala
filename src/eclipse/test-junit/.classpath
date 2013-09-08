@@ -7,5 +7,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/continuations-library"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>
 	<classpathentry kind="output" path="build-test-junit"/>
 </classpath>

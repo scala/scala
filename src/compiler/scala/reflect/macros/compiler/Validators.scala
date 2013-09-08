@@ -11,8 +11,6 @@ trait Validators {
   import global._
   import analyzer._
   import definitions._
-  import treeInfo._
-  import typer.infer._
 
   def validateMacroImplRef() = {
     sanityCheck()
@@ -59,7 +57,7 @@ trait Validators {
       checkMacroImplResultTypeMismatch(atpeToRtpe(aret), rret)
 
       val maxLubDepth = lubDepth(aparamss.flatten map (_.tpe)) max lubDepth(rparamss.flatten map (_.tpe))
-      val atargs = solvedTypes(atvars, atparams, atparams map varianceInType(aret), upper = false, depth = maxLubDepth)
+      val atargs = solvedTypes(atvars, atparams, atparams map varianceInType(aret), upper = false, maxLubDepth)
       val boundsOk = typer.silent(_.infer.checkBounds(macroDdef, NoPrefix, NoSymbol, atparams, atargs, ""))
       boundsOk match {
         case SilentResultValue(true) => // do nothing, success
@@ -83,7 +81,11 @@ trait Validators {
 
   // Technically this can be just an alias to MethodType, but promoting it to a first-class entity
   // provides better encapsulation and convenient syntax for pattern matching.
-  private case class MacroImplSig(tparams: List[Symbol], paramss: List[List[Symbol]], ret: Type)
+  private case class MacroImplSig(tparams: List[Symbol], paramss: List[List[Symbol]], ret: Type) {
+    private def tparams_s = if (tparams.isEmpty) "" else tparams.map(_.defString).mkString("[", ", ", "]")
+    private def paramss_s = paramss map (ps => ps.map(s => s"${s.name}: ${s.tpe_*}").mkString("(", ", ", ")")) mkString ""
+    override def toString = "MacroImplSig(" + tparams_s + paramss_s + ret + ")"
+  }
 
   /** An actual macro implementation signature extracted from a macro implementation method.
    *

@@ -1,10 +1,10 @@
-import scala.util.parsing.combinator.syntactical.TokenParsers
-import scala.util.parsing.combinator.lexical.StdLexical
-import scala.util.parsing.combinator.token._
+class Tokens { abstract class Token }
+trait TokenParsers { val lexical: Tokens }
+
 
 class MyTokenParsers extends TokenParsers {
   import lexical._
-  type Tokens = StdTokens
-  type Elem = lexical.Token
-  val lexical = new StdLexical
+
+
+  val lexical = new Tokens
 }

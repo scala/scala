@@ -151,7 +151,7 @@ package scala.sys {
     *
     * // An overly complex way of computing size of a compressed file
     * def gzFileSize(name: String) = {
-    *   val cat = Seq("zcat", "name")
+    *   val cat = Seq("zcat", name)
     *   var count = 0
     *   def byteCounter(input: java.io.InputStream) = {
     *     while(input.read() != -1) count += 1

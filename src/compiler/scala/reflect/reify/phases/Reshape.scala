@@ -8,6 +8,7 @@ trait Reshape {
 
   import global._
   import definitions._
+  import treeInfo.Unapplied
 
   /**
    *  Rolls back certain changes that were introduced during typechecking of the reifee.
@@ -65,22 +66,9 @@ trait Reshape {
         case block @ Block(stats, expr) =>
           val stats1 = reshapeLazyVals(trimSyntheticCaseClassCompanions(stats))
           Block(stats1, expr).copyAttrs(block)
-        case unapply @ UnApply(fun, args) =>
-          def extractExtractor(tree: Tree): Tree = {
-            val Apply(fun, args) = tree
-            args match {
-              case List(Ident(special)) if special == nme.SELECTOR_DUMMY =>
-                val Select(extractor, flavor) = fun
-                assert(flavor == nme.unapply || flavor == nme.unapplySeq)
-                extractor
-              case _ =>
-                extractExtractor(fun)
-            }
-          }
-
+        case unapply @ UnApply(Unapplied(Select(fun, nme.unapply | nme.unapplySeq)), args) =>
           if (reifyDebug) println("unapplying unapply: " + tree)
-          val fun1 = extractExtractor(fun)
-          Apply(fun1, args).copyAttrs(unapply)
+          Apply(fun, args).copyAttrs(unapply)
         case _ =>
           tree
       }
@@ -91,20 +79,20 @@ trait Reshape {
     private def undoMacroExpansion(tree: Tree): Tree =
       tree.attachments.get[analyzer.MacroExpansionAttachment] match {
         case Some(analyzer.MacroExpansionAttachment(original, _)) =>
+          def mkImplicitly(tp: Type) = atPos(tree.pos)(
+            gen.mkNullaryCall(Predef_implicitly, List(tp))
+          )
+          val sym = original.symbol
           original match {
             // this hack is necessary until I fix implicit macros
             // so far tag materialization is implemented by sneaky macros hidden in scala-compiler.jar
             // hence we cannot reify references to them, because noone will be able to see them later
             // when implicit macros are fixed, these sneaky macros will move to corresponding companion objects
             // of, say, ClassTag or TypeTag
-            case Apply(TypeApply(_, List(tt)), _) if original.symbol == materializeClassTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(appliedType(ClassTagClass, tt.tpe)))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == materializeWeakTypeTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, WeakTypeTagClass, List(tt.tpe))))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == materializeTypeTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, TypeTagClass, List(tt.tpe))))
-            case _ =>
-              original
+            case Apply(TypeApply(_, List(tt)), _) if sym == materializeClassTag            => mkImplicitly(appliedType(ClassTagClass, tt.tpe))
+            case Apply(TypeApply(_, List(tt)), List(pre)) if sym == materializeWeakTypeTag => mkImplicitly(typeRef(pre.tpe, WeakTypeTagClass, List(tt.tpe)))
+            case Apply(TypeApply(_, List(tt)), List(pre)) if sym == materializeTypeTag     => mkImplicitly(typeRef(pre.tpe, TypeTagClass, List(tt.tpe)))
+            case _                                                                         => original
           }
         case _ => tree
       }
@@ -231,13 +219,10 @@ trait Reshape {
       val args = if (ann.assocs.isEmpty) {
         ann.args
       } else {
-        def toScalaAnnotation(jann: ClassfileAnnotArg): Tree = jann match {
-          case LiteralAnnotArg(const) =>
-            Literal(const)
-          case ArrayAnnotArg(arr) =>
-            Apply(Ident(definitions.ArrayModule), arr.toList map toScalaAnnotation)
-          case NestedAnnotArg(ann) =>
-            toPreTyperAnnotation(ann)
+        def toScalaAnnotation(jann: ClassfileAnnotArg): Tree = (jann: @unchecked) match {
+          case LiteralAnnotArg(const) => Literal(const)
+          case ArrayAnnotArg(arr)     => Apply(Ident(definitions.ArrayModule), arr.toList map toScalaAnnotation)
+          case NestedAnnotArg(ann)    => toPreTyperAnnotation(ann)
         }
 
         ann.assocs map { case (nme, arg) => AssignOrNamedArg(Ident(nme), toScalaAnnotation(arg)) }
@@ -259,7 +244,7 @@ trait Reshape {
       val flags1 = (flags0 & GetterFlags) & ~(STABLE | ACCESSOR | METHOD)
       val mods1 = Modifiers(flags1, privateWithin0, annotations0) setPositions mods0.positions
       val mods2 = toPreTyperModifiers(mods1, ddef.symbol)
-      ValDef(mods2, name1.toTermName, tpt0, extractRhs(rhs0))
+      ValDef(mods2, name1, tpt0, extractRhs(rhs0))
     }
 
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {

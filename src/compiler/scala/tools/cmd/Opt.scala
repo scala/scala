@@ -26,10 +26,10 @@ object Opt {
   trait Implicit {
     def name: String
     def programInfo: Info
-    protected def opt = toOpt(name)
+    protected def opt = fromOpt(name)
 
     def --? : Boolean                       // --opt is set
-    def --> (body: => Unit): Unit           // if --opt is set, execute body
+    def --> (body: => Unit): Boolean        // if --opt is set, execute body
     def --| : Option[String]                // --opt <arg: String> is optional, result is Option[String]
     def --^[T: FromString] : Option[T]      // --opt <arg: T> is optional, result is Option[T]
 
@@ -51,7 +51,7 @@ object Opt {
     import options._
 
     def --?                             = { addUnary(opt) ; false }
-    def --> (body: => Unit)             = { addUnary(opt) }
+    def --> (body: => Unit)             = { addUnary(opt) ; false }
     def --|                             = { addBinary(opt) ; None }
     def --^[T: FromString]              = { addBinary(opt) ; None }
 
@@ -65,7 +65,7 @@ object Opt {
 
   class Instance(val programInfo: Info, val parsed: CommandLine, val name: String) extends Implicit with Error {
     def --?                             = parsed isSet opt
-    def --> (body: => Unit)             = if (parsed isSet opt) body
+    def --> (body: => Unit)             = { val isSet = parsed isSet opt ; if (isSet) body ; isSet }
     def --|                             = parsed get opt
     def --^[T: FromString]              = {
       val fs = implicitly[FromString[T]]

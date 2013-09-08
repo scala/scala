@@ -932,7 +932,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     def emitArgument(av:   asm.AnnotationVisitor,
                      name: String,
                      arg:  ClassfileAnnotArg) {
-      arg match {
+      (arg: @unchecked) match {
 
         case LiteralAnnotArg(const) =>
           if(const.isNonUnitAnyVal) { av.visit(name, const.value) }
@@ -1122,13 +1122,13 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       for (m <- moduleClass.info.membersBasedOnFlags(ExcludedForwarderFlags, Flags.METHOD)) {
         if (m.isType || m.isDeferred || (m.owner eq ObjectClass) || m.isConstructor)
-          debuglog("No forwarder for '%s' from %s to '%s'".format(m, jclassName, moduleClass))
+          debuglog(s"No forwarder for '$m' from $jclassName to '$moduleClass'")
         else if (conflictingNames(m.name))
-          log("No forwarder for " + m + " due to conflict with " + linkedClass.info.member(m.name))
+          log(s"No forwarder for $m due to conflict with " + linkedClass.info.member(m.name))
         else if (m.hasAccessBoundary)
           log(s"No forwarder for non-public member $m")
         else {
-          log("Adding static forwarder for '%s' from %s to '%s'".format(m, jclassName, moduleClass))
+          debuglog(s"Adding static forwarder for '$m' from $jclassName to '$moduleClass'")
           addForwarder(isRemoteClass, jclass, moduleClass, m)
         }
       }

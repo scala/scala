@@ -30,6 +30,7 @@ trait LazyCombiner[Elem, +To, Buff <: Growable[Elem] with Sizing] extends Combin
   def result: To = allocateAndCopy
   def clear() = { chain.clear() }
   def combine[N <: Elem, NewTo >: To](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this ne other) {
+    import language.existentials // FIXME: See SI-7750
     if (other.isInstanceOf[LazyCombiner[_, _, _]]) {
       val that = other.asInstanceOf[LazyCombiner[Elem, To, Buff]]
       newLazyCombiner(chain ++= that.chain)

@@ -1,0 +1,49 @@
+compile-time-only-a.scala:9: error: C3
+@compileTimeOnly("C3") case class C3(x: Int)
+                                  ^
+compile-time-only-a.scala:11: error: C4
+@compileTimeOnly("C4") case class C4(x: Int)
+                                  ^
+compile-time-only-a.scala:16: error: C5
+  implicit class C5(val x: Int) {
+                 ^
+compile-time-only-a.scala:28: error: C1
+  new C1()
+      ^
+compile-time-only-a.scala:32: error: C2
+  C2
+  ^
+compile-time-only-a.scala:34: error: C3
+  new C3(2)
+      ^
+compile-time-only-a.scala:37: error: C4
+  new C4(2)
+      ^
+compile-time-only-a.scala:41: error: C5
+  2.ext
+  ^
+compile-time-only-a.scala:42: error: C5
+  C5(2)
+  ^
+compile-time-only-a.scala:45: error: C6.x
+  val _ = c6.x
+             ^
+compile-time-only-a.scala:46: error: C6.foo
+  c6.foo
+     ^
+compile-time-only-a.scala:48: error: C6.y
+  c6.y = c6.y
+     ^
+compile-time-only-a.scala:48: error: C6.y
+  c6.y = c6.y
+            ^
+compile-time-only-a.scala:54: error: placebo
+@placebo
+ ^
+compile-time-only-a.scala:56: error: placebo
+  @placebo def x = (2: @placebo)
+   ^
+compile-time-only-a.scala:56: error: placebo
+  @placebo def x = (2: @placebo)
+                        ^
+16 errors found

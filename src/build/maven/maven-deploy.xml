@@ -55,6 +55,9 @@
         <copy file="${path}-pom.xml" tofile="${path}-pom-filtered.xml" overwrite="true">
           <filterset>
             <filter token="VERSION" value="@{version}" />
+            <filter token="SCALA_BINARY_VERSION" value="${scala.binary.version}" />
+            <filter token="XML_VERSION" value="${scala-xml.version.number}" />
+            <filter token="PARSER_COMBINATORS_VERSION" value="${scala-parser-combinators.version.number}" />
             <filter token="RELEASE_REPOSITORY" value="${remote.release.repository}" />
             <filter token="SNAPSHOT_REPOSITORY" value="${remote.snapshot.repository}" />
             <filter token="JLINE_VERSION" value="${jline.version}" />
@@ -108,9 +111,6 @@
         <deploy-one                name="scala-actors"   version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-compiler" version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-library"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-        <deploy-one                name="scala-xml"      version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-        <deploy-one                name="scala-parser-combinators"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-        <deploy-one                name="scala-partest"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-reflect"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scala-swing"    version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
         <deploy-one                name="scalap"         version="${maven.version.number}" local="@{local}" signed="@{signed}"/>

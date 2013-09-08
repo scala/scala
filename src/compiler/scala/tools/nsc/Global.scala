@@ -51,7 +51,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
-    def rootLoader: LazyType = platform.rootLoader
+    def rootLoader: LazyType = new loaders.PackageLoader(classPath)
     override def toString = "compiler mirror"
   }
 
@@ -70,6 +70,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   override def settings = currentSettings
 
+  /** Switch to turn on detailed type logs */
+  var printTypings = settings.Ytyperdebug.value
+
   def this(reporter: Reporter) =
     this(new Settings(err => reporter.error(null, err)), reporter)
 
@@ -80,12 +83,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // platform specific elements
 
-  type ThisPlatform = Platform { val global: Global.this.type }
+  protected class GlobalPlatform extends {
+    val global: Global.this.type = Global.this
+    val settings: Settings = Global.this.settings
+  } with JavaPlatform
 
-  lazy val platform: ThisPlatform =
-    new { val global: Global.this.type = Global.this } with JavaPlatform
+  type ThisPlatform = JavaPlatform { val global: Global.this.type }
+  lazy val platform: ThisPlatform  = new GlobalPlatform
 
-  type PlatformClassPath = ClassPath[platform.BinaryRepr]
+  type PlatformClassPath = ClassPath[AbstractFile]
   type OptClassPath = Option[PlatformClassPath]
 
   def classPath: PlatformClassPath = platform.classPath
@@ -214,12 +220,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // not deprecated yet, but a method called "error" imported into
   // nearly every trait really must go.  For now using globalError.
-  def error(msg: String)                = globalError(msg)
-  override def inform(msg: String)      = reporter.echo(msg)
-  override def globalError(msg: String) = reporter.error(NoPosition, msg)
-  override def warning(msg: String)     =
-    if (settings.fatalWarnings) globalError(msg)
-    else reporter.warning(NoPosition, msg)
+  def error(msg: String) = globalError(msg)
+
+  override def inform(msg: String)      = inform(NoPosition, msg)
+  override def globalError(msg: String) = globalError(NoPosition, msg)
+  override def warning(msg: String)     = warning(NoPosition, msg)
+
+  def globalError(pos: Position, msg: String) = reporter.error(pos, msg)
+  def warning(pos: Position, msg: String)     = if (settings.fatalWarnings) globalError(pos, msg) else reporter.warning(pos, msg)
+  def inform(pos: Position, msg: String)      = reporter.echo(pos, msg)
 
   // Getting in front of Predef's asserts to supplement with more info.
   // This has the happy side effect of masking the one argument forms
@@ -252,25 +261,25 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     if (settings.debug)
       body
   }
+
+  override protected def isDeveloper = settings.developer || super.isDeveloper
+
   /** This is for WARNINGS which should reach the ears of scala developers
    *  whenever they occur, but are not useful for normal users. They should
    *  be precise, explanatory, and infrequent. Please don't use this as a
    *  logging mechanism. !!! is prefixed to all messages issued via this route
    *  to make them visually distinct.
    */
-  @inline final override def devWarning(msg: => String) {
-    if (settings.developer || settings.debug)
-      warning("!!! " + msg)
+  @inline final override def devWarning(msg: => String): Unit = devWarning(NoPosition, msg)
+  @inline final def devWarning(pos: Position, msg: => String) {
+    def pos_s = if (pos eq NoPosition) "" else s" [@ $pos]"
+    if (isDeveloper)
+      warning(pos, "!!! " + msg)
     else
-      log("!!! " + msg) // such warnings always at least logged
+      log(s"!!!$pos_s $msg") // such warnings always at least logged
   }
 
-  private def elapsedMessage(msg: String, start: Long) =
-    msg + " in " + (currentTime - start) + "ms"
-
   def informComplete(msg: String): Unit    = reporter.withoutTruncating(inform(msg))
-  def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
-  def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
 
   def logError(msg: String, t: Throwable): Unit = ()
 
@@ -354,9 +363,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     getSourceFile(f)
   }
 
-  lazy val loaders = new SymbolLoaders {
+  lazy val loaders = new {
     val global: Global.this.type = Global.this
-  }
+    val platform: Global.this.platform.type = Global.this.platform
+  } with GlobalSymbolLoaders
 
   /** Returns the mirror that loaded given symbol */
   def mirrorThatLoaded(sym: Symbol): Mirror = rootMirror
@@ -416,10 +426,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
   }
-
-  /** Switch to turn on detailed type logs */
-  val printTypings = settings.Ytyperdebug.value
-  val printInfers = settings.Yinferdebug.value
 
   // phaseName = "parser"
   lazy val syntaxAnalyzer = new {
@@ -915,7 +921,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
              invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]) {
     ifDebug(informProgress(s"syncing $root, $oldEntries -> $newEntries"))
 
-    val getName: ClassPath[platform.BinaryRepr] => String = (_.name)
+    val getName: ClassPath[AbstractFile] => String = (_.name)
     def hasClasses(cp: OptClassPath) = cp.isDefined && cp.get.classes.nonEmpty
     def invalidateOrRemove(root: ClassSymbol) = {
       allEntries match {
@@ -1109,7 +1115,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         "symbol owners"      -> ownerChainString(sym),
         "call site"          -> (site.fullLocationString + " in " + site.enclosingPackage)
       )
-      ("\n" + info1) :: info2 :: context_s :: Nil mkString "\n\n"
+      ("\n  " + errorMessage + "\n" + info1) :: info2 :: context_s :: Nil mkString "\n\n"
     }
     catch { case _: Exception | _: TypeError => errorMessage }
   }
