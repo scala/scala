@@ -66,10 +66,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
    */
   def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], body: List[Tree], superPos: Position): ClassDef = {
     // "if they have symbols they should be owned by `sym`"
-    assert(
-      mforall(vparamss)(p => (p.symbol eq NoSymbol) || (p.symbol.owner == sym)),
-      ((mmap(vparamss)(_.symbol), sym))
-    )
+    assert(mforall(vparamss)(_.symbol.owner == sym), (mmap(vparamss)(_.symbol), sym))
 
     ClassDef(sym,
       gen.mkTemplate(sym.info.parents map TypeTree,

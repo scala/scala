@@ -53,7 +53,7 @@ trait Errors extends Traces {
   // not exactly an error generator, but very related
   // and I dearly wanted to push it away from Macros.scala
   private def checkConforms(slot: String, rtpe: Type, atpe: Type) = {
-    val verbose = macroDebugVerbose || settings.explaintypes.value
+    val verbose = macroDebugVerbose
 
     def check(rtpe: Type, atpe: Type): Boolean = {
       def success() = { if (verbose) println(rtpe + " <: " + atpe + "?" + EOL + "true"); true }
@@ -70,9 +70,12 @@ trait Errors extends Traces {
       if (verbose) withTypesExplained(check(rtpe, atpe))
       else check(rtpe, atpe)
     if (!ok) {
-      if (!macroDebugVerbose)
-        explainTypes(rtpe, atpe)
-      compatibilityError("type mismatch for %s: %s does not conform to %s".format(slot, abbreviateCoreAliases(rtpe.toString), abbreviateCoreAliases(atpe.toString)))
+      if (!verbose) explainTypes(rtpe, atpe)
+      val msg = {
+        val ss = Seq(rtpe, atpe) map (this abbreviateCoreAliases _.toString)
+        s"type mismatch for $slot: ${ss(0)} does not conform to ${ss(1)}"
+      }
+      compatibilityError(msg)
     }
   }
 
@@ -106,8 +109,8 @@ trait Errors extends Traces {
   def MacroImplTargMismatchError(atargs: List[Type], atparams: List[Symbol]) =
     compatibilityError(NotWithinBoundsErrorMessage("", atargs, atparams, macroDebugVerbose || settings.explaintypes.value))
 
-  def MacroImplTparamInstantiationError(atparams: List[Symbol], ex: NoInstance) =
-    compatibilityError(
-      "type parameters "+(atparams map (_.defString) mkString ", ")+" cannot be instantiated\n"+
-      ex.getMessage)
+  def MacroImplTparamInstantiationError(atparams: List[Symbol], e: NoInstance) = {
+    val badps = atparams map (_.defString) mkString ", "
+    compatibilityError(f"type parameters $badps cannot be instantiated%n${e.getMessage}")
+  }
 }

@@ -6,6 +6,8 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="library" />
+    <orderEntry type="module" module-name="xml" />
+    <orderEntry type="module" module-name="parser-combinators" />
     <orderEntry type="module" module-name="reflect" />
     <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="actors" />
@@ -13,6 +15,7 @@
     <orderEntry type="module" module-name="partest" />
     <orderEntry type="module" module-name="asm" />
     <orderEntry type="module" module-name="forkjoin" />
+    <orderEntry type="library" name="junit" level="project" />
   </component>
 </module>
 

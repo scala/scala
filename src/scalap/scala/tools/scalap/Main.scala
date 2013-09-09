@@ -5,16 +5,16 @@
 **
 */
 
-package scala
-package tools.scalap
+package scala.tools.scalap
 
 import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
-import scala.reflect.NameTransformer
-import scalax.rules.scalasig._
+
 import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
-import scala.tools.util.PathResolver
-import ClassPath.DefaultJavaContext
-import scala.tools.nsc.io.{ PlainFile, AbstractFile }
+import scala.tools.nsc.util.ClassPath.DefaultJavaContext
+import scala.tools.nsc.io.AbstractFile
+
+import scala.tools.scalap.scalasig._
+
 
 /**The main object used to execute scalap on the command-line.
  *
@@ -104,7 +104,7 @@ class Main {
         // we have to encode every fragment of a name separately, otherwise the NameTransformer
         // will encode using unicode escaping dot separators as well
         // we can afford allocations because this is not a performance critical code
-        classname.split('.').map(NameTransformer.encode).mkString(".")
+        classname.split('.').map(scala.reflect.NameTransformer.encode).mkString(".")
     }
     val cls = path.findClass(encName)
     if (cls.isDefined && cls.get.binary.isDefined) {
@@ -185,7 +185,7 @@ object Main extends Main {
     val cparg = List("-classpath", "-cp") map (arguments getArgument _) reduceLeft (_ orElse _)
     val path = cparg match {
       case Some(cp) => new JavaClassPath(DefaultJavaContext.classesInExpandedPath(cp), DefaultJavaContext)
-      case _        => PathResolver.fromPathString(".") // include '.' in the default classpath SI-6669
+      case _        => scala.tools.util.PathResolver.fromPathString(".") // include '.' in the default classpath SI-6669
     }
     // print the classpath if output is verbose
     if (verbose)

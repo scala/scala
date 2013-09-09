@@ -517,6 +517,9 @@ trait ContextErrors {
       def TooManyArgsPatternError(fun: Tree) =
         NormalTypeError(fun, "too many arguments for unapply pattern, maximum = "+definitions.MaxTupleArity)
 
+      def WrongShapeExtractorExpansion(fun: Tree) =
+        NormalTypeError(fun, "extractor macros can only expand into extractor calls")
+
       def WrongNumberOfArgsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
 
@@ -593,7 +596,12 @@ trait ContextErrors {
       }
 
       def CaseClassConstructorError(tree: Tree) = {
-        issueNormalTypeError(tree, tree.symbol + " is not a case class constructor, nor does it have an unapply/unapplySeq method")
+        val baseMessage = tree.symbol + " is not a case class constructor, nor does it have an unapply/unapplySeq method"
+        val addendum = directUnapplyMember(tree.symbol.info) match {
+          case sym if hasMultipleNonImplicitParamLists(sym) => s"\nNote: ${sym.defString} exists in ${tree.symbol}, but it cannot be used as an extractor due to its second non-implicit parameter list"
+          case _                                            => ""
+        }
+        issueNormalTypeError(tree, baseMessage + addendum)
         setError(tree)
       }
 

@@ -396,7 +396,6 @@ abstract class CPSAnnotationChecker extends CPSUtils {
      *  for a tree.  All this should do is add annotations. */
 
     override def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Mode, pt: Type): Type = {
-      import scala.util.control._
       if (!cpsEnabled) {
         val report = try hasCpsParamTypes(tpe) catch { case _: MissingRequirementError => false }
         if (report)

@@ -232,9 +232,7 @@ trait TypeComparers {
     )
   }
 
-  def isSubType(tp1: Type, tp2: Type): Boolean = isSubType(tp1, tp2, AnyDepth)
-
-  def isSubType(tp1: Type, tp2: Type, depth: Int): Boolean = try {
+  def isSubType(tp1: Type, tp2: Type, depth: Depth = Depth.AnyDepth): Boolean = try {
     subsametypeRecursions += 1
 
     //OPT cutdown on Function0 allocation
@@ -314,7 +312,7 @@ trait TypeComparers {
     else TriState.Unknown
   }
 
-  private def isSubType1(tp1: Type, tp2: Type, depth: Int): Boolean = typeRelationPreCheck(tp1, tp2) match {
+  private def isSubType1(tp1: Type, tp2: Type, depth: Depth): Boolean = typeRelationPreCheck(tp1, tp2) match {
     case state if state.isKnown                                  => state.booleanValue
     case _ if typeHasAnnotations(tp1) || typeHasAnnotations(tp2) => annotationsConform(tp1, tp2) && (tp1.withoutAnnotations <:< tp2.withoutAnnotations)
     case _                                                       => isSubType2(tp1, tp2, depth)
@@ -338,7 +336,7 @@ trait TypeComparers {
   }
 
   // @assume tp1.isHigherKinded || tp2.isHigherKinded
-  def isHKSubType(tp1: Type, tp2: Type, depth: Int): Boolean = {
+  def isHKSubType(tp1: Type, tp2: Type, depth: Depth): Boolean = {
     def isSub(ntp1: Type, ntp2: Type) = (ntp1.withoutAnnotations, ntp2.withoutAnnotations) match {
       case (TypeRef(_, AnyClass, _), _)                                     => false                    // avoid some warnings when Nothing/Any are on the other side
       case (_, TypeRef(_, NothingClass, _))                                 => false
@@ -357,7 +355,7 @@ trait TypeComparers {
   }
 
   /** Does type `tp1` conform to `tp2`? */
-  private def isSubType2(tp1: Type, tp2: Type, depth: Int): Boolean = {
+  private def isSubType2(tp1: Type, tp2: Type, depth: Depth): Boolean = {
     def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSubType(lhs, rhs, depth)
 
     if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2))

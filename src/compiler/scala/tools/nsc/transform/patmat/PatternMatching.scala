@@ -40,10 +40,12 @@ trait PatternMatching extends Transform with TypingTransformers
                       with MatchTranslation
                       with MatchTreeMaking
                       with MatchCodeGen
+                      with MatchCps
                       with ScalaLogic
                       with Solving
                       with MatchAnalysis
-                      with MatchOptimization {
+                      with MatchOptimization
+                      with MatchWarnings {
   import global._
 
   val phaseName: String = "patmat"
@@ -94,12 +96,17 @@ trait Debugging {
   // TODO: the inliner fails to inline the closures to debug.patmat unless the method is nested in an object
   object debug {
     val printPatmat = global.settings.Ypatmatdebug.value
-    @inline final def patmat(s: => String) = if (printPatmat) println(s)
+    @inline final def patmat(s: => String) = if (printPatmat) Console.err.println(s)
+    @inline final def patmatResult[T](s: => String)(result: T): T = {
+      if (printPatmat) Console.err.println(s + ": " + result)
+      result
+    }
   }
 }
 
 trait Interface extends ast.TreeDSL {
-  import global.{newTermName, analyzer, Type, ErrorType, Symbol, Tree}
+  import global._
+  import definitions._
   import analyzer.Typer
 
   // 2.10/2.11 compatibility
@@ -166,6 +173,10 @@ trait Interface extends ast.TreeDSL {
   trait MatchMonadInterface {
     val typer: Typer
     val matchOwner = typer.context.owner
+    def pureType(tp: Type): Type = tp
+
+    // Extracting from the monad: tp == { def get: T }, result == T
+    def matchMonadResult(tp: Type) = typeOfMemberNamedGet(tp)
 
     def reportUnreachable(pos: Position) = typer.context.unit.warning(pos, "unreachable code")
     def reportMissingCases(pos: Position, counterExamples: List[String]) = {
@@ -175,16 +186,6 @@ trait Interface extends ast.TreeDSL {
 
       typer.context.unit.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
     }
-
-    def inMatchMonad(tp: Type): Type
-    def pureType(tp: Type): Type
-    final def matchMonadResult(tp: Type): Type =
-      tp.baseType(matchMonadSym).typeArgs match {
-        case arg :: Nil => arg
-        case _ => ErrorType
-      }
-
-    protected def matchMonadSym: Symbol
   }
 
 

@@ -510,7 +510,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           if (inInterface) mods1 |= Flags.DEFERRED
           List {
             atPos(pos) {
-              DefDef(mods1, name, tparams, List(vparams), rtpt, body)
+              DefDef(mods1, name.toTermName, tparams, List(vparams), rtpt, body)
             }
           }
         } else {

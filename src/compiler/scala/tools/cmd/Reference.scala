@@ -23,13 +23,13 @@ trait Reference extends Spec {
   def helpMsg     = options.helpMsg
   def propertyArgs: List[String] = Nil
 
-  def isUnaryOption(s: String)  = unary contains toOpt(s)
-  def isBinaryOption(s: String) = binary contains toOpt(s)
-  def isExpandOption(s: String) = expansionMap contains toOpt(s)
+  def isUnaryOption(s: String)  = unary contains fromOpt(s)
+  def isBinaryOption(s: String) = binary contains fromOpt(s)
+  def isExpandOption(s: String) = expansionMap contains fromOpt(s)
 
-  def expandArg(arg: String)      = expansionMap.getOrElse(fromOpt(arg), List(arg))
+  def expandArg(arg: String): List[String] = expansionMap.getOrElse(fromOpt(arg), List(arg))
 
-  protected def help(str: => String)        = addHelp(() => str)
+  protected def help(str: => String): Unit = addHelp(() => str)
 
   type ThisCommandLine <: CommandLine
 
@@ -53,20 +53,20 @@ object Reference {
     def helpFormatStr     = "    %-" + longestArg + "s %s"
     def defaultFormatStr  = (" " * (longestArg + 7)) + "%s"
 
-    def addUnary(s: String)   = _unary +:= s
-    def addBinary(s: String)  = _binary +:= s
+    def addUnary(s: String): Unit  = _unary +:= s
+    def addBinary(s: String): Unit = _binary +:= s
 
     def addExpand(opt: String, expanded: List[String]) =
       _expand += (opt -> expanded)
 
-    def mapHelp(g: String => String) = {
+    def mapHelp(g: String => String): Unit = {
       val idx = _help.length - 1
       val f = _help(idx)
 
       _help(idx) = () => g(f())
     }
 
-    def addHelp(f: () => String)      = _help += f
+    def addHelp(f: () => String): Unit = _help += f
     def addHelpAlias(f: () => String) = mapHelp { s =>
       val str = "alias for '%s'" format f()
       def noHelp = (helpFormatStr.format("", "")).length == s.length
@@ -74,13 +74,13 @@ object Reference {
 
       s + str2
     }
-    def addHelpDefault(f: () => String) = mapHelp { s =>
+    def addHelpDefault(f: () => String): Unit = mapHelp { s =>
       val str = "(default: %s)" format f()
 
       if (s.length + str.length < MaxLine) s + " " + str
       else defaultFormatStr.format(s, str)
     }
-    def addHelpEnvDefault(name: String) = mapHelp { s =>
+    def addHelpEnvDefault(name: String): Unit = mapHelp { s =>
       val line1     = "%s (default: %s)".format(s, name)
       val envNow    = envOrNone(name) map ("'" + _ + "'") getOrElse "unset"
       val line2     = defaultFormatStr.format("Currently " + envNow)

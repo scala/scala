@@ -35,7 +35,8 @@ trait Namers extends MethodSynthesis {
     }
     def apply(tree: Tree) = {
       val r = transform(tree)
-      if (r.exists(_.isEmpty)) TypeTree()
+      if (r exists { case tt: TypeTree => tt.isEmpty case _ => false })
+        TypeTree()
       else r
     }
   }
@@ -290,10 +291,13 @@ trait Namers extends MethodSynthesis {
     }
 
     private def logAssignSymbol(tree: Tree, sym: Symbol): Symbol = {
-      sym.name.toTermName match {
+      if (isPastTyper) sym.name.toTermName match {
         case nme.IMPORT | nme.OUTER | nme.ANON_CLASS_NAME | nme.ANON_FUN_NAME | nme.CONSTRUCTOR => ()
         case _                                                                                  =>
-          log("[+symbol] " + sym.debugLocationString)
+          tree match {
+            case md: DefDef => log("[+symbol] " + sym.debugLocationString)
+            case _          =>
+          }
       }
       tree.symbol = sym
       sym
@@ -389,9 +393,7 @@ trait Namers extends MethodSynthesis {
      *  has been defined in a separate file.
      */
     private def validateCompanionDefs(tree: ImplDef) {
-      val sym = tree.symbol
-      if (sym eq NoSymbol) return
-
+      val sym    = tree.symbol orElse { return }
       val ctx    = if (context.owner.isPackageObjectClass) context.outer else context
       val module = if (sym.isModule) sym else ctx.scope lookupModule tree.name
       val clazz  = if (sym.isClass) sym else ctx.scope lookupClass tree.name
@@ -1084,6 +1086,9 @@ trait Namers extends MethodSynthesis {
             overriddenTp = overriddenTp.resultType
           }
 
+          // SI-7668 Substitute parameters from the parent method with those of the overriding method.
+          overriddenTp = overriddenTp.substSym(overridden.paramss.flatten, vparamss.flatten.map(_.symbol))
+
           overriddenTp match {
             case NullaryMethodType(rtpe) => overriddenTp = rtpe
             case MethodType(List(), rtpe) => overriddenTp = rtpe
@@ -1413,14 +1418,6 @@ trait Namers extends MethodSynthesis {
               annCtx.setReportErrors()
               // need to be lazy, #1782. beforeTyper to allow inferView in annotation args, SI-5892.
               AnnotationInfo lazily {
-                if (typer.context ne ctx)
-                  log(sm"""|The var `typer.context` in ${Namer.this} was mutated before the annotation ${ann} was forced.
-                           |
-                           |current value  = ${typer.context}
-                           |original value = $ctx
-                           |
-                           |This confirms the hypothesis for the cause of SI-7603. If you see this message, please comment on that ticket.""")
-
                 enteringTyper(newTyper(annCtx) typedAnnotation ann)
               }
             }

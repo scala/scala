@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>partest</name>
+        <name>partest-extras</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -17,9 +17,9 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>build-quick-partest</name>
+                        <name>build-quick-partest-extras</name>
 			<type>2</type>
-			<locationURI>SCALA_BASEDIR/build/quick/classes/partest</locationURI>
+                        <locationURI>SCALA_BASEDIR/build/quick/classes/partest-extras</locationURI>
 		</link>
 		<link>
 			<name>lib</name>
@@ -27,9 +27,9 @@
 			<locationURI>SCALA_BASEDIR/lib</locationURI>
 		</link>
 		<link>
-			<name>partest</name>
+                        <name>partest-extras</name>
 			<type>2</type>
-			<locationURI>SCALA_BASEDIR/src/partest</locationURI>
+                        <locationURI>SCALA_BASEDIR/src/partest-extras</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

@@ -7,6 +7,8 @@ import scala.language.existentials // SI-6541
 package object util {
   import StringOps.longestCommonPrefix
 
+  def andFalse(body: Unit): Boolean = false
+
   // Shorten a name like Symbols$FooSymbol to FooSymbol.
   private def shortenName(name: String): String = {
     if (name == "") return ""

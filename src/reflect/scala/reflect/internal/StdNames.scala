@@ -40,6 +40,7 @@ trait StdNames {
     def result: Set[TermName] = try kws finally kws = null
   }
 
+  private[reflect] def compactifyName(orig: String): String = compactify(orig)
   private final object compactify extends (String => String) {
     val md5 = MessageDigest.getInstance("MD5")
 
@@ -626,6 +627,7 @@ trait StdNames {
     val clone_ : NameType              = "clone"
     val collection: NameType           = "collection"
     val conforms: NameType             = "conforms"
+    val compare: NameType              = "compare"
     val copy: NameType                 = "copy"
     val create: NameType               = "create"
     val currentMirror: NameType        = "currentMirror"
@@ -657,6 +659,7 @@ trait StdNames {
     val get: NameType                  = "get"
     val hashCode_ : NameType           = "hashCode"
     val hash_ : NameType               = "hash"
+    val head : NameType                = "head"
     val immutable: NameType            = "immutable"
     val implicitly: NameType           = "implicitly"
     val in: NameType                   = "in"
@@ -725,6 +728,7 @@ trait StdNames {
     val toArray: NameType              = "toArray"
     val toList: NameType               = "toList"
     val toObjectArray : NameType       = "toObjectArray"
+    val toSeq: NameType                = "toSeq"
     val TopScope: NameType             = "TopScope"
     val toString_ : NameType           = "toString"
     val toTypeConstructor: NameType    = "toTypeConstructor"

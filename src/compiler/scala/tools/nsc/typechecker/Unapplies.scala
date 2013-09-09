@@ -12,8 +12,7 @@ import symtab.Flags._
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Unapplies extends ast.TreeDSL
-{
+trait Unapplies extends ast.TreeDSL {
   self: Analyzer =>
 
   import global._
@@ -21,7 +20,8 @@ trait Unapplies extends ast.TreeDSL
   import CODE.{ CASE => _, _ }
   import treeInfo.{ isRepeatedParamType, isByNameParamType }
 
-  private val unapplyParamName = nme.x_0
+  private def unapplyParamName = nme.x_0
+  private def caseMods         = Modifiers(SYNTHETIC | CASE)
 
   // In the typeCompleter (templateSig) of a case class (resp it's module),
   // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
@@ -30,39 +30,17 @@ trait Unapplies extends ast.TreeDSL
   // moduleClass symbol of the companion module.
   class ClassForCaseCompanionAttachment(val caseClass: ClassDef)
 
-  /** returns type list for return type of the extraction
-   * @see extractorFormalTypes
+  /** Returns unapply or unapplySeq if available, without further checks.
    */
-  def unapplyTypeList(pos: Position, ufn: Symbol, ufntpe: Type, args: List[Tree]) = {
-    assert(ufn.isMethod, ufn)
-    val nbSubPats = args.length
-    //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
-    ufn.name match {
-      case nme.unapply | nme.unapplySeq =>
-        val (formals, _) = extractorFormalTypes(pos, unapplyUnwrap(ufntpe), nbSubPats, ufn, treeInfo.effectivePatternArity(args))
-        if (formals == null) throw new TypeError(s"$ufn of type $ufntpe cannot extract $nbSubPats sub-patterns")
-        else formals
-      case _ => throw new TypeError(ufn+" is not an unapply or unapplySeq")
-    }
-  }
+  def directUnapplyMember(tp: Type): Symbol = (tp member nme.unapply) orElse (tp member nme.unapplySeq)
 
-  /** returns unapply or unapplySeq if available */
-  def unapplyMember(tp: Type): Symbol = (tp member nme.unapply) match {
-    case NoSymbol => tp member nme.unapplySeq
-    case unapp    => unapp
-  }
+  /** Filters out unapplies with multiple (non-implicit) parameter lists,
+   *  as they cannot be used as extractors
+   */
+  def unapplyMember(tp: Type): Symbol = directUnapplyMember(tp) filter (sym => !hasMultipleNonImplicitParamLists(sym))
 
   object ExtractorType {
-    def unapply(tp: Type): Option[Symbol] = {
-      val member = unapplyMember(tp)
-      if (member.exists) Some(member) else None
-    }
-  }
-
-  /** returns unapply member's parameter type. */
-  def unapplyParameterType(extractor: Symbol) = extractor.tpe.params match {
-    case p :: Nil => p.tpe.typeSymbol
-    case _        => NoSymbol
+    def unapply(tp: Type): Option[Symbol] = unapplyMember(tp).toOption
   }
 
   def copyUntyped[T <: Tree](tree: T): T =
@@ -93,25 +71,19 @@ trait Unapplies extends ast.TreeDSL
    */
   private def caseClassUnapplyReturnValue(param: Name, caseclazz: ClassDef) = {
     def caseFieldAccessorValue(selector: ValDef): Tree = {
-      val accessorName = selector.name
-      val privateLocalParamAccessor = caseclazz.impl.body.collectFirst {
-        case dd: ValOrDefDef if dd.name == accessorName && dd.mods.isPrivateLocal => dd.symbol
+      // Selecting by name seems to be the most straight forward way here to
+      // avoid forcing the symbol of the case class in order to list the accessors.
+      def selectByName = Ident(param) DOT caseAccessorName(caseclazz.symbol, selector.name)
+      // But, that gives a misleading error message in neg/t1422.scala, where a case
+      // class has an illegal private[this] parameter. We can detect this by checking
+      // the modifiers on the param accessors.
+      // We just generate a call to that param accessor here, which gives us an inaccessible
+      // symbol error, as before.
+      def localAccessor = caseclazz.impl.body find {
+        case t @ ValOrDefDef(mods, selector.name, _, _) => mods.isPrivateLocal
+        case _                                          => false
       }
-      privateLocalParamAccessor match {
-        case None =>
-          // Selecting by name seems to be the most straight forward way here to
-          // avoid forcing the symbol of the case class in order to list the accessors.
-          val maybeRenamedAccessorName = caseAccessorName(caseclazz.symbol, accessorName)
-          Ident(param) DOT maybeRenamedAccessorName
-        case Some(sym) =>
-          // But, that gives a misleading error message in neg/t1422.scala, where a case
-          // class has an illegal private[this] parameter. We can detect this by checking
-          // the modifiers on the param accessors.
-          //
-          // We just generate a call to that param accessor here, which gives us an inaccessible
-          // symbol error, as before.
-          Ident(param) DOT sym
-      }
+      localAccessor.fold(selectByName)(Ident(param) DOT _.symbol)
     }
 
     // Working with trees, rather than symbols, to avoid cycles like SI-5082
@@ -152,8 +124,6 @@ trait Unapplies extends ast.TreeDSL
       cdef.name.toTermName,
       gen.mkTemplate(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
   }
-
-  private val caseMods = Modifiers(SYNTHETIC | CASE)
 
   /** The apply method corresponding to a case class
    */

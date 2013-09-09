@@ -25,7 +25,7 @@ class Crash {
     def unapply(a: Alias): Option[Any] = None
   }
   (t: Any) match {
-    case Extractor() =>
+    case Extractor(_) =>
     case _ =>
   }
 

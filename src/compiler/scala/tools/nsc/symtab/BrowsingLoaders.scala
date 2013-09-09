@@ -12,9 +12,10 @@ import scala.tools.nsc.io.AbstractFile
  *  This class should be used whenever file dependencies and recompile sets
  *  are managed automatically.
  */
-abstract class BrowsingLoaders extends SymbolLoaders {
-  import global._
+abstract class BrowsingLoaders extends GlobalSymbolLoaders {
+  val global: Global
 
+  import global._
   import syntaxAnalyzer.{OutlineParser, MalformedInput}
 
   /** In browse mode, it can happen that an encountered symbol is already

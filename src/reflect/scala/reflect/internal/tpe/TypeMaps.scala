@@ -17,12 +17,11 @@ private[internal] trait TypeMaps {
     *  so it is no longer carries the too-stealthy name "deAlias".
     */
   object normalizeAliases extends TypeMap {
-    def apply(tp: Type): Type = tp match {
-      case TypeRef(_, sym, _) if sym.isAliasType =>
-        def msg = if (tp.isHigherKinded) s"Normalizing type alias function $tp" else s"Dealiasing type alias $tp"
-        mapOver(logResult(msg)(tp.normalize))
-      case _                                     => mapOver(tp)
-    }
+    def apply(tp: Type): Type = mapOver(tp match {
+      case TypeRef(_, sym, _) if sym.isAliasType && tp.isHigherKinded => logResult(s"Normalized type alias function $tp")(tp.normalize)
+      case TypeRef(_, sym, _) if sym.isAliasType                      => tp.normalize
+      case tp                                                         => tp
+    })
   }
 
   /** Remove any occurrence of type <singleton> from this type and its parents */
@@ -395,7 +394,7 @@ private[internal] trait TypeMaps {
             s"Widened lone occurrence of $tp1 inside existential to $word bound"
           }
           if (!repl.typeSymbol.isBottomClass && count == 1 && !containsTypeParam)
-            logResult(msg)(repl)
+            debuglogResult(msg)(repl)
           else
             tp1
         case _ =>
@@ -524,7 +523,7 @@ private[internal] trait TypeMaps {
     private def correspondingTypeArgument(lhs: Type, rhs: Type): Type = {
       val TypeRef(_, lhsSym, lhsArgs) = lhs
       val TypeRef(_, rhsSym, rhsArgs) = rhs
-      require(lhsSym.safeOwner == rhsSym, s"$lhsSym is not a type parameter of $rhsSym")
+      require(lhsSym.owner == rhsSym, s"$lhsSym is not a type parameter of $rhsSym")
 
       // Find the type parameter position; we'll use the corresponding argument.
       // Why are we checking by name rather than by equality? Because for
@@ -539,7 +538,7 @@ private[internal] trait TypeMaps {
       else {
         // It's easy to get here when working on hardcore type machinery (not to
         // mention when not doing so, see above) so let's provide a standout error.
-        def own_s(s: Symbol) = s.nameString + " in " + s.safeOwner.nameString
+        def own_s(s: Symbol) = s.nameString + " in " + s.owner.nameString
         def explain =
           sm"""|   sought  ${own_s(lhsSym)}
                | classSym  ${own_s(rhsSym)}
@@ -944,7 +943,7 @@ private[internal] trait TypeMaps {
     }
   }
 
-  /** A map to convert every occurrence of a type variable to a wildcard type. */
+  /** A map to convert each occurrence of a type variable to its origin. */
   object typeVarToOriginMap extends TypeMap {
     def apply(tp: Type): Type = tp match {
       case TypeVar(origin, _) => origin

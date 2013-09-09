@@ -53,6 +53,42 @@ trait Collections {
     }
     lb.toList
   }
+
+  /** like map2, but returns list `xs` itself - instead of a copy - if function
+   *  `f` maps all elements to themselves.
+   */
+  final def map2Conserve[A <: AnyRef, B](xs: List[A], ys: List[B])(f: (A, B) => A): List[A] = {
+    // Note to developers: there exists a duplication between this function and `List#mapConserve`.
+    // If any successful optimization attempts or other changes are made, please rehash them there too.
+    @tailrec
+    def loop(mapped: ListBuffer[A], unchanged: List[A], pending0: List[A], pending1: List[B]): List[A] = {
+      if (pending0.isEmpty || pending1.isEmpty) {
+        if (mapped eq null) unchanged
+        else mapped.prependToList(unchanged)
+      } else {
+        val head00 = pending0.head
+        val head01 = pending1.head
+        val head1  = f(head00, head01)
+
+        if ((head1 eq head00.asInstanceOf[AnyRef])) {
+          loop(mapped, unchanged, pending0.tail, pending1.tail)
+        } else {
+          val b = if (mapped eq null) new ListBuffer[A] else mapped
+          var xc = unchanged
+          while ((xc ne pending0) && (xc ne pending1)) {
+            b += xc.head
+            xc = xc.tail
+          }
+          b += head1
+          val tail0 = pending0.tail
+          val tail1 = pending1.tail
+          loop(b, tail0, tail0, tail1)
+        }
+      }
+    }
+    loop(null, xs, xs, ys)
+  }
+
   final def map3[A, B, C, D](xs1: List[A], xs2: List[B], xs3: List[C])(f: (A, B, C) => D): List[D] = {
     if (xs1.isEmpty || xs2.isEmpty || xs3.isEmpty) Nil
     else f(xs1.head, xs2.head, xs3.head) :: map3(xs1.tail, xs2.tail, xs3.tail)(f)

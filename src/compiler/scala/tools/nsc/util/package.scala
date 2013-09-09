@@ -78,6 +78,19 @@ package object util {
     s"$clazz$msg @ $frame"
   }
 
+  implicit class StackTraceOps(val e: Throwable) extends AnyVal with StackTracing {
+    /** Format the stack trace, returning the prefix consisting of frames that satisfy
+     *  a given predicate.
+     *  The format is similar to the typical case described in the JavaDoc
+     *  for [[java.lang.Throwable#printStackTrace]].
+     *  If a stack trace is truncated, it will be followed by a line of the form
+     *  `... 3 elided`, by analogy to the lines `... 3 more` which indicate
+     *  shared stack trace segments.
+     *  @param p the predicate to select the prefix
+     */
+    def stackTracePrefixString(p: StackTraceElement => Boolean): String = stackTracePrefixString(e)(p)
+  }
+
   lazy val trace = new SimpleTracer(System.out)
 
   @deprecated("Moved to scala.reflect.internal.util.StringOps", "2.10.0")
@@ -85,12 +98,6 @@ package object util {
 
   @deprecated("Moved to scala.reflect.internal.util.StringOps", "2.10.0")
   type StringOps = scala.reflect.internal.util.StringOps
-
-  @deprecated("Moved to scala.reflect.internal.util.TableDef", "2.10.0")
-  val TableDef = scala.reflect.internal.util.TableDef
-
-  @deprecated("Moved to scala.reflect.internal.util.TableDef", "2.10.0")
-  type TableDef[T] = scala.reflect.internal.util.TableDef[T]
 
   @deprecated("scala.reflect.internal.util.WeakHashSet", "2.10.0")
   type WeakHashSet[T <: AnyRef] = scala.reflect.internal.util.WeakHashSet[T]

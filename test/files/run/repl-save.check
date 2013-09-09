@@ -1,18 +1,3 @@
-Type in expressions to have them evaluated.
-Type :help for more information.
-
-scala> val i = 7
-i: Int = 7
-
-scala> val j = 8
-j: Int = 8
-
-scala> i * j
-res0: Int = 56
-
-scala> :save repl-save-run.obj/session.repl
-
-scala> 
 val i = 7
 val j = 8
 i * j

@@ -1,0 +1,11 @@
+Loading t7805-repl-i.script...
+import util._
+
+Welcome to Scala
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> Console println Try(8)
+Success(8)
+
+scala> 

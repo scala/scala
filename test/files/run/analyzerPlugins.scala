@@ -8,7 +8,9 @@ object Test extends DirectTest {
   def code = """
     class testAnn extends annotation.TypeConstraint
 
-    class A(param: Double) extends { val x: Int = 1; val y = "two"; type T = A } with AnyRef {
+    class A(param: Double) extends { val x: Int = 1; val y = "two" } with AnyRef {
+      type T = A
+
       val inferField = ("str": @testAnn)
       val annotField: Boolean @testAnn = false
 
@@ -81,7 +83,7 @@ object Test extends DirectTest {
         output += s"pluginsPt($pt, ${treeClass(tree)})"
         pt
       }
-  
+
       override def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Mode, pt: Type): Type = {
         output += s"pluginsTyped($tpe, ${treeClass(tree)})"
         tpe
