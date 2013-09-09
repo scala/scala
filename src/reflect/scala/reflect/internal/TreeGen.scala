@@ -185,7 +185,7 @@ abstract class TreeGen extends macros.TreeBuilder {
       val needsPackageQualifier = (
            (sym ne null)
         && qualsym.isPackage
-        && !sym.isDefinedInPackage
+        && !(sym.isDefinedInPackage || sym.moduleClass.isDefinedInPackage) // SI-7817 work around strangeness in post-flatten `Symbol#owner`
       )
       val pkgQualifier =
         if (needsPackageQualifier) {
