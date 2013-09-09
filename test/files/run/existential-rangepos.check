@@ -1,0 +1,13 @@
+[[syntax trees at end of                    patmat]] // newSource1.scala
+[0:76]package [0:0]<empty> {
+  [0:76]abstract class A[[17:18]T[17:18]] extends [20:76][76]scala.AnyRef {
+    [76]def <init>(): [20]A[T] = [76]{
+      [76][76][76]A.super.<init>();
+      [20]()
+    };
+    [24:51]private[this] val foo: [28]Set[_ <: T] = [47:51]null;
+    [28]<stable> <accessor> def foo: [28]Set[_ <: T] = [28][28]A.this.foo;
+    [54:74]<stable> <accessor> def bar: [58]Set[_ <: T]
+  }
+}
+
