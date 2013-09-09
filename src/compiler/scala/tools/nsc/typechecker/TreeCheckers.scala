@@ -376,7 +376,7 @@ abstract class TreeCheckers extends Analyzer {
         val treeInfo = infoOf(tree)
         val treeTpe  = typeOf(tree)
 
-        def isOk(sym: Symbol) = treeSym hasTransOwner sym.safeOwner
+        def isOk(sym: Symbol) = treeSym hasTransOwner sym.enclosingSuchThat(x => !x.isTypeParameterOrSkolem) // account for higher order type params
         def isEligible(sym: Symbol) = (sym ne NoSymbol) && (
              sym.isTypeParameter
           || sym.isLocal
