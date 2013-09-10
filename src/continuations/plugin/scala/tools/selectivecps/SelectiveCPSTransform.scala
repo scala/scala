@@ -330,8 +330,6 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                 }
               }
 
-              def mkBlock(stms: List[Tree], expr: Tree) = if (stms.nonEmpty) Block(stms, expr) else expr
-
               try {
                 if (specialCaseTrivial) {
                   debuglog("will optimize possible tail call: " + bodyExpr)
@@ -350,9 +348,9 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                   val argSym = currentOwner.newValue(vd.symbol.name.toTermName).setInfo(tpe)
                   val argDef = localTyper.typed(ValDef(argSym, Select(ctxRef, ctxRef.tpe.member(cpsNames.getTrivialValue))))
                   val switchExpr = localTyper.typedPos(vd.symbol.pos) {
-                    val body2 = mkBlock(bodyStms, bodyExpr).duplicate // dup before typing!
+                    val body2 = gen.mkBlock(bodyStms :+ bodyExpr).duplicate // dup before typing!
                     If(Select(ctxRef, ctxSym.tpe.member(cpsNames.isTrivial)),
-                      applyTrivial(argSym, mkBlock(argDef::bodyStms, bodyExpr)),
+                      applyTrivial(argSym, gen.mkBlock((argDef :: bodyStms) :+ bodyExpr)),
                       applyCombinatorFun(ctxRef, body2))
                   }
                   (List(ctxDef), switchExpr)
@@ -360,7 +358,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                   // ctx.flatMap { <lhs> => ... }
                   //     or
                   // ctx.map { <lhs> => ... }
-                  (Nil, applyCombinatorFun(rhs1, mkBlock(bodyStms, bodyExpr)))
+                  (Nil, applyCombinatorFun(rhs1, gen.mkBlock(bodyStms :+ bodyExpr)))
                 }
               } catch {
                 case ex:TypeError =>

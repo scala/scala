@@ -1657,6 +1657,22 @@ trait Trees extends api.Trees { self: SymbolTable =>
     case t =>
       sys.error("Not a ValDef: " + t + "/" + t.getClass)
   }
+  def copyTypeDef(tree: Tree)(
+    mods: Modifiers        = null,
+    name: Name             = null,
+    tparams: List[TypeDef] = null,
+    rhs: Tree              = null
+  ): TypeDef = tree match {
+    case TypeDef(mods0, name0, tparams0, rhs0) =>
+      treeCopy.TypeDef(tree,
+        if (mods eq null) mods0 else mods,
+        if (name eq null) name0 else name,
+        if (tparams eq null) tparams0 else tparams,
+        if (rhs eq null) rhs0 else rhs
+      )
+    case t =>
+      sys.error("Not a TypeDef: " + t + "/" + t.getClass)
+  }
   def copyClassDef(tree: Tree)(
     mods: Modifiers        = null,
     name: Name             = null,
