@@ -28,7 +28,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
   class LazyTreeCopier extends super.LazyTreeCopier with TreeCopier
 
   override def isCompilerUniverse: Boolean = true
-  //def classPath = platform.classPath
+  def classPath = platform.classPath
   def flatClasspath: FlatClasspath = DefaultFlatClasspathManager.createClasspath(settings)
 
   object platform extends backend.Platform {
@@ -60,8 +60,10 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
-    def rootLoader: LazyType = 
-      new loaders.PackageLoaderUsingFlatClasspath(FlatClasspath.RootPackage, flatClasspath)
+    def rootLoader: LazyType = settings.YclasspathImpl.value match {
+      case "flat" => new loaders.PackageLoaderUsingFlatClasspath(FlatClasspath.RootPackage, flatClasspath)
+      case "recursive" => new loaders.PackageLoader(classPath)
+    }
     override def toString = "compiler mirror"
   }
 
@@ -76,7 +78,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
     // initialize classpath using java classpath
     s.debug .value = true
     s.usejavacp.value = true
-    s.YclasspathImpl.value = "flat"
+    //s.YclasspathImpl.value = "flat"
     s
   }
 
