@@ -19,6 +19,8 @@ trait Contexts { self: Analyzer =>
   import definitions.{ JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage }
   import ContextMode._
 
+  protected def onTreeCheckerError(pos: Position, msg: String): Unit = ()
+
   object NoContext
     extends Context(EmptyTree, NoSymbol, EmptyScope, NoCompilationUnit,
                     null) { // We can't pass the uninitialized `this`. Instead, we treat null specially in `Context#outer`
@@ -531,8 +533,8 @@ trait Contexts { self: Analyzer =>
       if (msg endsWith ds) msg else msg + ds
     }
 
-    private def unitError(pos: Position, msg: String) =
-      unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
+    private def unitError(pos: Position, msg: String): Unit =
+      if (checking) onTreeCheckerError(pos, msg) else unit.error(pos, msg)
 
     @inline private def issueCommon(err: AbsTypeError)(pf: PartialFunction[AbsTypeError, Unit]) {
       if (settings.Yissuedebug) {

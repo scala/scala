@@ -4036,12 +4036,13 @@ trait Types
 
   def isConstantType(tp: Type) = tp match {
     case ConstantType(_) => true
-    case _ => false
+    case _               => false
   }
 
-  def isExistentialType(tp: Type): Boolean = tp.dealias match {
-    case ExistentialType(_, _) => true
-    case _                     => false
+  def isExistentialType(tp: Type): Boolean = tp match {
+    case _: ExistentialType           => true
+    case tp: Type if tp.dealias ne tp => isExistentialType(tp.dealias)
+    case _                            => false
   }
 
   def isImplicitMethodType(tp: Type) = tp match {
