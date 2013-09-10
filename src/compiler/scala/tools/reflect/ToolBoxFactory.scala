@@ -349,7 +349,8 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     }
 
     def inferImplicitView(tree: u.Tree, from: u.Type, to: u.Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: u.Position = u.NoPosition): u.Tree = {
-      val viewTpe = u.appliedType(u.definitions.FunctionClass(1).toTypeConstructor, List(from, to))
+      val functionTypeCtor = u.definitions.FunctionClass(1).asClass.toTypeConstructor
+      val viewTpe = u.appliedType(functionTypeCtor, List(from, to))
       inferImplicit(tree, viewTpe, isView = true, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = pos)
     }
 
