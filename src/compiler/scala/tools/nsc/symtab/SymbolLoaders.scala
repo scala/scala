@@ -14,6 +14,7 @@ import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
 import scala.tools.nsc.classpath.FlatClasspath
+import scala.tools.nsc.classpath.ClassfileEntry
 
 /** This class ...
  *
@@ -171,7 +172,7 @@ abstract class SymbolLoaders {
   
   /** Initialize toplevel class and module symbols in `owner` from class name
    */
-  def initializeFromClassPath(owner: Symbol, classfileEntry: FlatClasspath#ClassfileEntry) {
+  def initializeFromClassPath(owner: Symbol, classfileEntry: ClassfileEntry) {
     enterClassAndModule(owner, classfileEntry.name, new ClassfileLoader(classfileEntry.file))
   }
 
