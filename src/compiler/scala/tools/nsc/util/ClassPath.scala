@@ -13,7 +13,6 @@ import io.{ File, Directory, Path, Jar, AbstractFile }
 import scala.reflect.internal.util.StringOps.splitWhere
 import Jar.isJarOrZip
 import File.pathSeparator
-import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
 import java.net.MalformedURLException
 import java.util.regex.PatternSyntaxException
 import scala.reflect.runtime.ReflectionUtils
@@ -92,7 +91,9 @@ object ClassPath {
   /** A class modeling aspects of a ClassPath which should be
    *  propagated to any classpaths it creates.
    */
-  abstract class ClassPathContext[T] {
+  abstract class ClassPathContext[T] extends classpath.ClasspathFactory[ClassPath[T]] {
+    def expandPath(path: String, expandStar: Boolean = true): List[String] = ClassPath.this.expandPath(path, expandStar)
+    def expandDir(extdir: String): List[String] = ClassPath.this.expandDir(extdir)
     /** A filter which can be used to exclude entities from the classpath
      *  based on their name.
      */
@@ -108,35 +109,10 @@ object ClassPath {
      */
     def toBinaryName(rep: T): String
 
-    /** Create a new classpath based on the abstract file.
-     */
-    def newClassPath(file: AbstractFile): ClassPath[T]
-
-    /** Creators for sub classpaths which preserve this context.
-     */
     def sourcesInPath(path: String): List[ClassPath[T]] =
       for (file <- expandPath(path, expandStar = false) ; dir <- Option(AbstractFile getDirectory file)) yield
         new SourcePath[T](dir, this)
-
-    def contentsOfDirsInPath(path: String): List[ClassPath[T]] =
-      for (dir <- expandPath(path, expandStar = false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
-        newClassPath(entry)
-
-    def classesInExpandedPath(path: String): IndexedSeq[ClassPath[T]] =
-      classesInPathImpl(path, expand = true).toIndexedSeq
-
-    def classesInPath(path: String) = classesInPathImpl(path, expand = false)
-
-    // Internal
-    private def classesInPathImpl(path: String, expand: Boolean) =
-      for (file <- expandPath(path, expand) ; dir <- Option(AbstractFile getDirectory file)) yield
-        newClassPath(dir)
-
-    def classesInManifest(used: Boolean) =
-      if (used) for (url <- manifests) yield newClassPath(AbstractFile getResources url) else Nil
   }
-
-  def manifests = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF").filter(_.getProtocol() == "jar").toList
 
   class JavaContext extends ClassPathContext[AbstractFile] {
     def toBinaryName(rep: AbstractFile) = {
