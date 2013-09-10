@@ -71,7 +71,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
     rm.asInstanceOf[Mirror]
   }
 
-  def settings: Settings = {
+  lazy val settings: Settings = {
     val s = new Settings
     // initialize classpath using java classpath
     s.debug .value = true
