@@ -32,7 +32,7 @@ trait NodePrinters {
         s = "List\\[List\\[.*?\\].*?\\]".r.replaceAllIn(s, "List")
         s = "List\\[.*?\\]".r.replaceAllIn(s, "List")
         s = s.replace("immutable.this.Nil", "List()")
-        s = """build\.flagsFromBits\((\d+)[lL]\)""".r.replaceAllIn(s, m => {
+        s = """build\.FlagsRepr\((\d+)[lL]\)""".r.replaceAllIn(s, m => {
           flagsAreUsed = true
           show(m.group(1).toLong)
         })

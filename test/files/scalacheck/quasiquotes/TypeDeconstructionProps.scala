@@ -19,11 +19,22 @@ object TypeDeconstructionProps extends QuasiquoteProperties("type deconstruction
   }
 
   property("tuple type") = test {
-    val tq"(..$empty)" = tq"scala.Unit"
+    val tq"(..$empty)" = tq"_root_.scala.Unit"
     assert(empty.isEmpty)
     val tq"(..$ts)" = tq"(t1, t2)"
     assert(ts ≈ List(tq"t1", tq"t2"))
     val tq"($head, ..$tail)" = tq"(t0, t1, t2)"
     assert(head ≈ tq"t0" && tail ≈ List(tq"t1", tq"t2"))
+  }
+
+  property("refined type") = test {
+    val tq"T { ..$stats }" = tq"T { def foo; val x: Int; type Y = String }"
+    assert(stats ≈ (q"def foo" :: q"val x: Int" :: q"type Y = String" :: Nil))
+  }
+
+  property("function type") = test {
+    val tq"..$argtpes => $restpe" = tq"(A, B) => C"
+    assert(argtpes ≈ (tq"A" :: tq"B" :: Nil))
+    assert(restpe ≈ tq"C")
   }
 }

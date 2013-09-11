@@ -229,11 +229,7 @@ abstract class TreeBuilder {
   }
 
   /** Create block of statements `stats`  */
-  def makeBlock(stats: List[Tree]): Tree =
-    if (stats.isEmpty) Literal(Constant(()))
-    else if (!stats.last.isTerm) Block(stats, Literal(Constant(())))
-    else if (stats.length == 1) stats.head
-    else Block(stats.init, stats.last)
+  def makeBlock(stats: List[Tree]): Tree = gen.mkBlock(stats)
 
   def makeFilter(tree: Tree, condition: Tree, scrutineeName: String): Tree = {
     val cases = List(
@@ -520,8 +516,7 @@ abstract class TreeBuilder {
   }
 
   /** Create a tree representing the function type (argtpes) => restpe */
-  def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
-    AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
+  def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = gen.mkFunctionTypeTree(argtpes, restpe)
 
   /** Append implicit parameter section if `contextBounds` nonempty */
   def addEvidenceParams(owner: Name, vparamss: List[List[ValDef]], contextBounds: List[Tree]): List[List[ValDef]] = {

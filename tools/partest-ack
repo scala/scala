@@ -6,6 +6,7 @@ declare quiet failed update partest_debug
 declare cotouched since sortCommand
 declare -a ack_args partest_args scalac_args
 
+partest_args=( --show-diff )
 base="$(cd "$(dirname "$0")"/.. && pwd)"
 cd "$base" || { echo "Could not change to base directory $base" && exit 1; }
 filesdir="test/files"
@@ -134,8 +135,8 @@ count=$(echo $(echo "$paths" | wc -w))
 
 # Output a command line which will re-run these same tests.
 echo "# $count tests to run."
-printf "%-52s %s\n" "$base/test/partest ${partest_args[@]}" "\\"
+printf "%-52s %s\n" "$base/test/partest ${partest_args[*]}" "\\"
 for path in $paths; do  printf "  %-50s %s\n" "$path" "\\"; done
-echo '  ""'
+echo ""
 
-test/partest "${partest_args[@]}" $paths
+test/partest ${partest_args[*]} $paths

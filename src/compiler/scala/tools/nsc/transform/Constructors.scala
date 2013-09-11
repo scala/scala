@@ -174,7 +174,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       omittables ++= outerCandidatesForElision
 
       val bodyOfOuterAccessor: Map[Symbol, DefDef] =
-        defBuf collect { case dd: DefDef if outerCandidatesForElision(dd.symbol) => dd.symbol -> dd } toMap
+        defBuf.collect { case dd: DefDef if outerCandidatesForElision(dd.symbol) => dd.symbol -> dd }.toMap
 
       // no point traversing further once omittables is empty, all candidates ruled out already.
       object detectUsages extends Traverser {

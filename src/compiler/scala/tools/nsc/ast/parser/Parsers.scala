@@ -1445,7 +1445,7 @@ self =>
           // The case still missed is unparenthesized single argument, like "x: Int => x + 1", which
           // may be impossible to distinguish from a self-type and so remains an error.  (See #1564)
           def lhsIsTypedParamList() = t match {
-            case Parens(xs) if xs forall (_.isInstanceOf[Typed]) => true
+            case Parens(xs) if xs.forall(isTypedParam) => true
             case _ => false
           }
           if (in.token == ARROW && (location != InTemplate || lhsIsTypedParamList)) {
@@ -1457,6 +1457,8 @@ self =>
         }
         parseOther
     }
+
+    def isTypedParam(t: Tree) = t.isInstanceOf[Typed]
 
     /** {{{
      *  Expr ::= implicit Id => Expr
@@ -2704,8 +2706,7 @@ self =>
             syntaxError("classes are not allowed to be virtual", skipIt = false)
           }
           val template = templateOpt(mods1, name, constrMods withAnnotations constrAnnots, vparamss, tstart)
-          if (isInterface(mods1, template.body)) mods1 |= Flags.INTERFACE
-          val result = ClassDef(mods1, name, tparams, template)
+          val result = gen.mkClassDef(mods1, name, tparams, template)
           // Context bounds generate implicit parameters (part of the template) with types
           // from tparams: we need to ensure these don't overlap
           if (!classContextBounds.isEmpty)
@@ -2796,19 +2797,7 @@ self =>
         // @S: pre template body cannot stub like post body can!
         val (self, body) = templateBody(isPre = true)
         if (in.token == WITH && (self eq emptyValDef)) {
-          val earlyDefs: List[Tree] = body flatMap {
-            case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
-              List(copyValDef(vdef)(mods = mods | Flags.PRESUPER))
-            case tdef @ TypeDef(mods, name, tparams, rhs) =>
-              deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.")
-              List(treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs))
-            case docdef @ DocDef(comm, rhs) =>
-              List(treeCopy.DocDef(docdef, comm, rhs))
-            case stat if !stat.isEmpty =>
-              syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", skipIt = false)
-              List()
-            case _ => List()
-          }
+          val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
           in.nextToken()
           val parents = templateParents()
           val (self1, body1) = templateBodyOpt(parenMeansSyntaxError = false)
@@ -2823,8 +2812,20 @@ self =>
       }
     }
 
-    def isInterface(mods: Modifiers, body: List[Tree]): Boolean =
-      mods.isTrait && (body forall treeInfo.isInterfaceMember)
+    def ensureEarlyDef(tree: Tree): Tree = tree match {
+      case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
+        copyValDef(vdef)(mods = mods | Flags.PRESUPER)
+      case tdef @ TypeDef(mods, name, tparams, rhs) =>
+        deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.")
+        treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
+      case docdef @ DocDef(comm, rhs) =>
+        treeCopy.DocDef(docdef, comm, rhs)
+      case stat if !stat.isEmpty =>
+        syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", skipIt = false)
+        EmptyTree
+      case _ =>
+        EmptyTree
+    }
 
     /** {{{
      *  ClassTemplateOpt ::= `extends' ClassTemplate | [[`extends'] TemplateBody]
@@ -2833,7 +2834,7 @@ self =>
      *  }}}
      */
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers, vparamss: List[List[ValDef]], tstart: Int): Template = {
-      val (parents0, self, body) = (
+      val (parents, self, body) = (
         if (in.token == EXTENDS || in.token == SUBTYPE && mods.isTrait) {
           in.nextToken()
           template()
@@ -2844,26 +2845,21 @@ self =>
           (List(), self, body)
         }
       )
-      def anyrefParents() = {
-        val caseParents = if (mods.isCase) List(productConstr, serializableConstr) else Nil
-        parents0 ::: caseParents match {
-          case Nil  => atInPos(scalaAnyRefConstr) :: Nil
-          case ps   => ps
-        }
-      }
       def anyvalConstructor() = (
         // Not a well-formed constructor, has to be finished later - see note
         // regarding AnyVal constructor in AddInterfaces.
         DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, literalUnit))
       )
-      val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
+      val parentPos = o2p(in.offset)
+      val tstart1 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
 
-      atPos(tstart0) {
+      atPos(tstart1) {
         // Exclude only the 9 primitives plus AnyVal.
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
-          Template(parents0, self, anyvalConstructor :: body)
+          Template(parents, self, anyvalConstructor :: body)
         else
-          gen.mkTemplate(anyrefParents(), self, constrMods, vparamss, body, o2p(tstart))
+          gen.mkTemplate(gen.mkParents(mods, parents, parentPos),
+                         self, constrMods, vparamss, body, o2p(tstart))
       }
     }
 
@@ -3014,18 +3010,22 @@ self =>
     def refineStatSeq(): List[Tree] = checkNoEscapingPlaceholders {
       val stats = new ListBuffer[Tree]
       while (!isStatSeqEnd) {
-        if (isDclIntro) { // don't IDE hook
-          stats ++= joinComment(defOrDcl(in.offset, NoMods))
-        } else if (!isStatSep) {
-          syntaxErrorOrIncomplete(
-            "illegal start of declaration"+
-            (if (inFunReturnType) " (possible cause: missing `=' in front of current method body)"
-             else ""), skipIt = true)
-        }
+        stats ++= refineStat()
         if (in.token != RBRACE) acceptStatSep()
       }
       stats.toList
     }
+
+    def refineStat(): List[Tree] =
+      if (isDclIntro) { // don't IDE hook
+        joinComment(defOrDcl(in.offset, NoMods))
+      } else if (!isStatSep) {
+        syntaxErrorOrIncomplete(
+          "illegal start of declaration"+
+          (if (inFunReturnType) " (possible cause: missing `=' in front of current method body)"
+           else ""), skipIt = true)
+        Nil
+      } else Nil
 
     /** overridable IDE hook for local definitions of blockStatSeq
      *  Here's an idea how to fill in start and end positions.
