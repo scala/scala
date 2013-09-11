@@ -76,7 +76,6 @@ class SymbolTableForUnitTesting extends SymbolTable {
   lazy val settings: Settings = {
     val s = new Settings
     // initialize classpath using java classpath
-    s.debug .value = true
     s.usejavacp.value = true
     //s.YclasspathImpl.value = "flat"
     s
