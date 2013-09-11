@@ -126,14 +126,15 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 final class FileZipArchive(file: JFile) extends ZipArchive(file) {
-  def iterator: Iterator[Entry] = {
+  lazy val root    = {
+    val root = new DirEntry("/")
+    val dirs = mutable.HashMap[String, DirEntry]("/" -> root)
     val zipFile = try {
       new ZipFile(file)
     } catch {
       case ioe: IOException => throw new IOException("Error accessing " + file.getPath, ioe)
     }
-    val root    = new DirEntry("/")
-    val dirs    = mutable.HashMap[String, DirEntry]("/" -> root)
+    
     val enum    = zipFile.entries()
 
     while (enum.hasMoreElements) {
@@ -151,15 +152,16 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
         dir.entries(f.name) = f
       }
     }
-
-    try root.iterator
-    finally dirs.clear()
+    root
+  }
   def lookupName(name: String, directory: Boolean) = {
     root.lookupName(name, directory)
   }
   def lookupNameUnchecked(name: String, directory: Boolean) = {
     root.lookupPathUnchecked(name, directory)
   }
+  def iterator: Iterator[Entry] = {
+    root.iterator
   }
 
   def name         = file.getName
