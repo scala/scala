@@ -94,5 +94,5 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   /** Returns an abstract file with the given name. It does not
    *  check that it exists.
    */
-  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported()
+  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile = unsupported()
 }
