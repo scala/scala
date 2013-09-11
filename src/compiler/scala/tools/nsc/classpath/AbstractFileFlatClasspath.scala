@@ -2,40 +2,38 @@ package scala.tools.nsc.classpath
 
 import scala.reflect.io.AbstractFile
 import FlatClasspath.RootPackage
+import scala.reflect.io.Path
 
 /** AbstractFile-backed implementation of a classpath. */
 abstract class AbstractFileFlatClasspath(file: AbstractFile) extends FlatClasspath {
-
-  protected class AbstractFilePackageEntry(file: AbstractFile) extends PackageEntry {
-    def name = file.name
-  }
-
-  protected class AbstractFileClassfileEntry(val file: AbstractFile) extends ClassfileEntry {
-    def name = file.name
-  }
-
-  private def getDirectory(forPackage: String): AbstractFile = {
+  import AbstractFileFlatClasspath._
+  private def getDirectory(forPackage: String): Option[AbstractFile] = {
     if (forPackage == RootPackage) {
-      file
+      Some(file)
     } else {
       val dirName = forPackage.replace('.', '/')
-      file.subdirectoryNamed(dirName)
+      // lookupName might return null but Option.apply will turn it into None
+      Option(file.lookupPathUnchecked(dirName, true))
     }
   }
+  
+  def validPackage(name: String)    = (name != "META-INF") && (name != "") && (name.charAt(0) != '.')
 
   def packages(inPackage: String): Seq[PackageEntry] = {
     val dirForPackage = getDirectory(inPackage)
-    val dirs = dirForPackage.iterator.filter(_.isDirectory)
-    val entries = dirs.toSeq  map { file =>
-      new AbstractFilePackageEntry(file)
+    val allEntriesInPackage = dirForPackage.toList.flatMap(_.iterator)
+    val dirs = allEntriesInPackage.filter(file => file.isDirectory && validPackage(file.name))
+    val prefix = if (inPackage == RootPackage) "" else inPackage + "."
+    val entries = dirs.toList  map { file =>
+      PackageEntryImpl(prefix + file.name)
     }
     entries
   }
   def classes(inPackage: String): Seq[ClassfileEntry] = {
     val dirForPackage = getDirectory(inPackage)
-    val classfiles = dirForPackage.iterator.filterNot(_.isDirectory)
-    val entries = classfiles.toSeq map { file =>
-      new AbstractFileClassfileEntry(file)
+    val classfiles = dirForPackage.toList.flatMap(_.iterator.filter(file => !file.isDirectory && file.hasExtension("class")))
+    val entries = classfiles.toList map { file =>
+      ClassfileEntryImpl(file)
     }
     entries
   }
@@ -53,5 +51,15 @@ abstract class AbstractFileFlatClasspath(file: AbstractFile) extends FlatClasspa
       (className.substring(0, lastIndex-1), className.substring(lastIndex+1))
     }
     classes(pkg).find(_.name == simpleClassName).map(_.file)
+  }
+}
+
+object AbstractFileFlatClasspath {
+  private case class PackageEntryImpl(name: String) extends PackageEntry
+  private case class ClassfileEntryImpl(file: AbstractFile) extends ClassfileEntry {
+    def name = {
+      val className = Path(file.path).stripExtension
+      className
+    }
   }
 }
