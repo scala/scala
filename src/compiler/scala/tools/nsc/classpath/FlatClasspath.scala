@@ -29,3 +29,5 @@ trait ClassfileEntry extends ClasspathEntry {
   def file: AbstractFile
 }
 trait PackageEntry extends ClasspathEntry
+
+case class PackageEntryImpl(name: String) extends PackageEntry
