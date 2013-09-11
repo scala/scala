@@ -193,5 +193,12 @@ private[reflect] trait BuildUtils { self: Universe =>
       def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree): ValDef
       def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree)]
     }
+
+    val SyntacticAssign: SyntacticAssignExtractor
+
+    trait SyntacticAssignExtractor {
+      def apply(lhs: Tree, rhs: Tree): Tree
+      def unapply(tree: Tree): Option[(Tree, Tree)]
+    }
   }
 }

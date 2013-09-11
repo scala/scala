@@ -139,7 +139,7 @@ trait BuildUtils { self: SymbolTable =>
 
     object SyntacticApplied extends SyntacticAppliedExtractor {
       def apply(tree: Tree, argss: List[List[Tree]]): Tree =
-        argss.foldLeft(tree) { Apply(_, _) }
+        argss.foldLeft(tree) { (f, args) => Apply(f, args.map(treeInfo.assignmentToMaybeNamedArg)) }
 
       def unapply(tree: Tree): Some[(Tree, List[List[Tree]])] = {
         val treeInfo.Applied(fun, targs, argss) = tree
@@ -400,6 +400,16 @@ trait BuildUtils { self: SymbolTable =>
 
     object SyntacticValDef extends SyntacticValDefBase { val isMutable = false }
     object SyntacticVarDef extends SyntacticValDefBase { val isMutable = true }
+
+    object SyntacticAssign extends SyntacticAssignExtractor {
+      def apply(lhs: Tree, rhs: Tree): Tree = gen.mkAssign(lhs, rhs)
+      def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
+        case Assign(lhs, rhs) => Some((lhs, rhs))
+        case AssignOrNamedArg(lhs, rhs) => Some((lhs, rhs))
+        case Apply(Select(fn, nme.update), args :+ rhs) => Some((atPos(fn.pos)(Apply(fn, args)), rhs))
+        case _ => None
+      }
+    }
   }
 
   val build: BuildApi = new BuildImpl

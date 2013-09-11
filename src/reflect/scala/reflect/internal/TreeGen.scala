@@ -443,4 +443,12 @@ abstract class TreeGen extends macros.TreeBuilder {
     case head :: Nil => head
     case _ => gen.mkBlock(stats)
   }
+
+  /** Create a tree representing an assignment <lhs = rhs> */
+  def mkAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
+    case Apply(fn, args) =>
+      Apply(atPos(fn.pos)(Select(fn, nme.update)), args :+ rhs)
+    case _ =>
+      Assign(lhs, rhs)
+  }
 }
