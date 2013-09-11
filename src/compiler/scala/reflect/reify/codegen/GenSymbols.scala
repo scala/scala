@@ -131,9 +131,9 @@ trait GenSymbols {
       if (sym.isCapturedVariable) {
         assert(binding.isInstanceOf[Ident], showRaw(binding))
         val capturedBinding = referenceCapturedVariable(sym)
-        Reification(name, capturedBinding, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), capturedBinding, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym))))
+        Reification(name, capturedBinding, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), capturedBinding, mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(origin(sym))))
       } else {
-        Reification(name, binding, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), binding, mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym))))
+        Reification(name, binding, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), binding, mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(origin(sym))))
       }
     }
 
@@ -142,7 +142,7 @@ trait GenSymbols {
       if (reifyDebug) println("Free type: %s (%s)".format(sym, sym.accurateKindString))
       state.reificationIsConcrete = false
       val name: TermName = nme.REIFY_FREE_PREFIX append sym.name
-      Reification(name, binding, mirrorBuildCall(nme.newFreeType, reify(sym.name.toString), mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(origin(sym))))
+      Reification(name, binding, mirrorBuildCall(nme.newFreeType, reify(sym.name.toString), mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(origin(sym))))
     }
 
   def reifySymDef(sym: Symbol): Tree =
@@ -150,7 +150,7 @@ trait GenSymbols {
       if (reifyDebug) println("Sym def: %s (%s)".format(sym, sym.accurateKindString))
       val name: TermName = nme.REIFY_SYMDEF_PREFIX append sym.name
       def reifiedOwner = if (sym.owner.isLocatable) reify(sym.owner) else reifySymDef(sym.owner)
-      Reification(name, Ident(sym), mirrorBuildCall(nme.newNestedSymbol, reifiedOwner, reify(sym.name), reify(sym.pos), mirrorBuildCall(nme.flagsFromBits, reify(sym.flags)), reify(sym.isClass)))
+      Reification(name, Ident(sym), mirrorBuildCall(nme.newNestedSymbol, reifiedOwner, reify(sym.name), reify(sym.pos), mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(sym.isClass)))
     }
 
   case class Reification(name: Name, binding: Tree, tree: Tree)
