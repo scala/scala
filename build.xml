@@ -1420,7 +1420,7 @@ TODO:
     </uptodate>
   </target>
 
-  <target name="test.junit.comp" depends="test.junit.init, quick.done" unless="test.junit.available">
+  <target name="test.junit.comp" depends="test.junit.init, pack.done" unless="test.junit.available">
     <stopwatch name="test.junit.compiler.timer"/>
     <mkdir dir="${test.junit.classes}"/>
     <scalacfork
