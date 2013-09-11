@@ -15,6 +15,7 @@ import scala.compat.Platform.EOL
  *  }}}
  *  -- and the generated output will be the icode for everything
  *  in that file.  See scaladoc for possible customizations.
+ *  TODO promote me to partest
  */
 abstract class IcodeComparison extends DirectTest {
   /** The phase after which icode is printed.
