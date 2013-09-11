@@ -19,10 +19,17 @@ class SymbolTableTest {
 
   @Test
   def basicSubTypeCheck = {
-    symbolTable.definitions.init()
-    val listClassTpe = symbolTable.definitions.ListClass.tpe
-    val seqClassTpe = symbolTable.definitions.SeqClass.tpe
-    assertTrue("List should be subclass of Seq", listClassTpe <:< seqClassTpe)
+    var i = 0
+    while (i < 200) {
+      object symbolTable extends SymbolTableForUnitTesting
+//      symbolTable.settings.YclasspathImpl.value = "flat"
+      symbolTable.settings.Ylogcp.value = true
+      symbolTable.definitions.init()
+      val listClassTpe = symbolTable.definitions.ListClass.tpe
+      val seqClassTpe = symbolTable.definitions.SeqClass.tpe
+      assertTrue("List should be subclass of Seq", listClassTpe <:< seqClassTpe)
+      i += 1
+    }
   }
 
   /**

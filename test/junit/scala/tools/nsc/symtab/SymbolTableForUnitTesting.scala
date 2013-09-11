@@ -77,7 +77,6 @@ class SymbolTableForUnitTesting extends SymbolTable {
     val s = new Settings
     // initialize classpath using java classpath
     s.usejavacp.value = true
-    //s.YclasspathImpl.value = "flat"
     s
   }
 
