@@ -4013,15 +4013,11 @@ trait Types
    *  type selections with the same name of equal (as determined by `=:=`) prefixes are
    *  considered equal in regard to `=:=`.
    */
-  def beginsWithTypeVarOrIsRefined(tp: Type): Boolean = tp match {
-    case SingleType(pre, sym) =>
-      !(sym hasFlag PACKAGE) && beginsWithTypeVarOrIsRefined(pre)
-    case tv@TypeVar(_, constr) =>
-      !tv.instValid || beginsWithTypeVarOrIsRefined(constr.inst)
-    case RefinedType(_, _) =>
-      true
-    case _ =>
-      false
+  def isEligibleForPrefixUnification(tp: Type): Boolean = tp match {
+    case SingleType(pre, sym)  => !(sym hasFlag PACKAGE) && isEligibleForPrefixUnification(pre)
+    case tv@TypeVar(_, constr) => !tv.instValid || isEligibleForPrefixUnification(constr.inst)
+    case RefinedType(_, _)     => true
+    case _                     => false
   }
 
   def isErrorOrWildcard(tp: Type) = (tp eq ErrorType) || (tp eq WildcardType)
