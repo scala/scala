@@ -121,9 +121,6 @@ object ClassPath {
       name.substring(0, name.length - 6)
     }
     def newClassPath(dir: AbstractFile): ClassPath[AbstractFile] = {
-      if (dir.isInstanceOf[FileZipArchive])
-        ZipFileIndexClasspath.create(dir.file, this)
-      else
         new DirectoryClassPath(dir, this)
     }
   }
