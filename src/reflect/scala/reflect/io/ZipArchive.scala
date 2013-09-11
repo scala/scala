@@ -66,8 +66,6 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
 
   override def underlyingSource = Some(this)
   def isDirectory = true
-  def lookupName(name: String, directory: Boolean) = unsupported()
-  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported()
   def create()  = unsupported()
   def delete()  = unsupported()
   def output    = unsupported()
@@ -89,11 +87,14 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
   }
   /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
   class DirEntry(path: String) extends Entry(path) {
-    val entries = mutable.HashMap[String, Entry]()
+    val entries = mutable.HashMap[String, Entry]().withDefaultValue(null)
 
     override def isDirectory = true
     override def iterator: Iterator[Entry] = entries.valuesIterator
     override def lookupName(name: String, directory: Boolean): Entry = {
+      lookupNameUnchecked(name, directory)
+    }
+    override def lookupNameUnchecked(name: String, directory: Boolean): Entry = {
       if (directory) entries(name + "/")
       else entries(name)
     }
@@ -113,7 +114,7 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
       case None =>
         val parent = ensureDir(dirs, dirName(path), null)
         val dir    = new DirEntry(path)
-        parent.entries(baseName(path)) = dir
+        parent.entries(baseName(path) + "/") = dir
         dirs(path) = dir
         dir
     }
@@ -153,6 +154,12 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
 
     try root.iterator
     finally dirs.clear()
+  def lookupName(name: String, directory: Boolean) = {
+    root.lookupName(name, directory)
+  }
+  def lookupNameUnchecked(name: String, directory: Boolean) = {
+    root.lookupPathUnchecked(name, directory)
+  }
   }
 
   def name         = file.getName
@@ -170,6 +177,8 @@ final class FileZipArchive(file: JFile) extends ZipArchive(file) {
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 final class URLZipArchive(val url: URL) extends ZipArchive(null) {
+  def lookupName(name: String, directory: Boolean) = unsupported()
+  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported()
   def iterator: Iterator[Entry] = {
     val root     = new DirEntry("/")
     val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
@@ -238,6 +247,8 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
 }
 
 final class ManifestResources(val url: URL) extends ZipArchive(null) {
+  def lookupName(name: String, directory: Boolean) = unsupported()
+  def lookupNameUnchecked(name: String, directory: Boolean) = unsupported()
   def iterator = {
     val root     = new DirEntry("/")
     val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
