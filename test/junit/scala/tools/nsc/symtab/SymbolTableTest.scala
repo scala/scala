@@ -23,7 +23,6 @@ class SymbolTableTest {
     while (i < 200) {
       object symbolTable extends SymbolTableForUnitTesting
 //      symbolTable.settings.YclasspathImpl.value = "flat"
-      symbolTable.settings.Ylogcp.value = true
       symbolTable.definitions.init()
       val listClassTpe = symbolTable.definitions.ListClass.tpe
       val seqClassTpe = symbolTable.definitions.SeqClass.tpe
