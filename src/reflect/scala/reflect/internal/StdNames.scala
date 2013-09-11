@@ -591,6 +591,7 @@ trait StdNames {
     val SelectFromTypeTree: NameType   = "SelectFromTypeTree"
     val StringContext: NameType        = "StringContext"
     val SyntacticApplied: NameType     = "SyntacticApplied"
+    val SyntacticAssign: NameType      = "SyntacticAssign"
     val SyntacticBlock: NameType       = "SyntacticBlock"
     val SyntacticClassDef: NameType    = "SyntacticClassDef"
     val SyntacticDefDef: NameType      = "SyntacticDefDef"

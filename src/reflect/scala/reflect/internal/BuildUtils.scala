@@ -404,6 +404,15 @@ trait BuildUtils { self: SymbolTable =>
 
     object SyntacticValDef extends SyntacticValDefBase { val isMutable = false }
     object SyntacticVarDef extends SyntacticValDefBase { val isMutable = true }
+
+    object SyntacticAssign extends SyntacticAssignExtractor {
+      def apply(lhs: Tree, rhs: Tree): Tree = gen.mkAssign(lhs, rhs)
+      def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
+        case Assign(lhs, rhs) => Some((lhs, rhs))
+        case Apply(Select(fn, nme.update), args :+ rhs) => Some((atPos(fn.pos)(Apply(fn, args)), rhs))
+        case _ => None
+      }
+    }
   }
 
   val build: BuildApi = new BuildImpl
