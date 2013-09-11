@@ -16,6 +16,7 @@ import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps
 import scala.tools.nsc.classpath.ClasspathFactory
+import scala.tools.nsc.classpath.FlatClasspath
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SIW/Classpath
@@ -309,3 +310,9 @@ class PathResolver(settings: Settings, context: JavaContext) extends
 
   def asURLs = result.asURLs
 }
+
+class FlatClasspathResolver(settings: Settings, flatClasspathFactory: ClasspathFactory[FlatClasspath]) extends
+  PathResolverBase[FlatClasspath](settings, flatClasspathFactory) {
+  def containers = Calculated.containers
+}
+
