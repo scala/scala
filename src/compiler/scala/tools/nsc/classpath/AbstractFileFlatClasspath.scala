@@ -58,7 +58,8 @@ object AbstractFileFlatClasspath {
   private case class PackageEntryImpl(name: String) extends PackageEntry
   private case class ClassfileEntryImpl(file: AbstractFile) extends ClassfileEntry {
     def name = {
-      val className = Path(file.path).stripExtension
+      def stripClassExtension(s: String): String = s.substring(0, s.length-6) // ".class".length == 6
+      val className = stripClassExtension(file.name)
       className
     }
   }
