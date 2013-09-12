@@ -231,9 +231,14 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
               .substituteThis(origThis, extensionThis)
               .changeOwner(origMeth -> extensionMeth)
           )
+          val castBody =
+            if (extensionBody.tpe <:< extensionMono.finalResultType)
+              extensionBody
+            else
+              gen.mkCastPreservingAnnotations(extensionBody, extensionMono.finalResultType) // SI-7818 e.g. mismatched existential skolems
 
           // Record the extension method ( FIXME: because... ? )
-          extensionDefs(companion) += atPos(tree.pos)(DefDef(extensionMeth, extensionBody))
+          extensionDefs(companion) += atPos(tree.pos)(DefDef(extensionMeth, castBody))
 
           // These three lines are assembling Foo.bar$extension[T1, T2, ...]($this)
           // which leaves the actual argument application for extensionCall.

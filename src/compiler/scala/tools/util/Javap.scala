@@ -50,7 +50,7 @@ class JavapClass(
     tryFile(path) getOrElse tryClass(path)
 
   def apply(args: Seq[String]): List[JpResult] = {
-    if (failed) Nil
+    if (failed) List(new JpError("Could not load javap tool. Check that JAVA_HOME is correct."))
     else args.toList filterNot (_ startsWith "-") map { path =>
       val bytes = findBytes(path)
       if (bytes.isEmpty) new JpError("Could not find class bytes for '%s'".format(path))
