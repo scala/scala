@@ -29,17 +29,17 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
   override def isCompilerUniverse: Boolean = true
   def classPath = platform.classPath
-  def flatClasspath: FlatClasspath = DefaultFlatClasspathManager.createClasspath(settings)
+  lazy val flatClasspath: FlatClasspath = DefaultFlatClasspathManager.createClasspath(settings)
 
   object platform extends backend.Platform {
     val symbolTable: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
     lazy val loaders: SymbolTableForUnitTesting.this.loaders.type = SymbolTableForUnitTesting.this.loaders
     def platformPhases: List[SubComponent] = Nil
-    def classPath: ClassPath[AbstractFile] = {
+    lazy val classPath: ClassPath[AbstractFile] = {
       assert(settings.YclasspathImpl.value == "recursive")
       new PathResolver(settings).result
     }
-    def flatClasspath: FlatClasspath = {
+    lazy val flatClasspath: FlatClasspath = {
       assert(settings.YclasspathImpl.value == "flat")
       SymbolTableForUnitTesting.this.flatClasspath
     }
