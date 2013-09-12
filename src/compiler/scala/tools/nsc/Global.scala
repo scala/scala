@@ -338,7 +338,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
   }
 
-  if (settings.verbose || settings.Ylogcp) {
+  // TODO: implement classpath printing in FlatClasspath and then e.g. remove this classpathimpl check
+  if ((settings.verbose || settings.Ylogcp) && (settings.YclasspathImpl.value != ClassPathImplementationType.Flat)) {
     reporter.echo(
       s"[search path for source files: ${classPath.sourcepaths.mkString(",")}]\n"+
       s"[search path for class files: ${classPath.asClasspathString}")
@@ -1559,6 +1560,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       checkDeprecatedSettings(unitbuf.head)
       globalPhase = fromPhase
 
+
       while (globalPhase.hasNext && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
@@ -1613,6 +1615,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       // In case no phase was specified for -Xshow-class/object, show it now for sure.
       if (settings.Yshow.isDefault)
         showMembers()
+
 
       if (reporter.hasErrors) {
         for ((sym, file) <- symSource.iterator) {
