@@ -1281,6 +1281,14 @@ TODO:
   <target name="quick.swing"      depends="quick.actors, quick.lib" if="has.java6">
     <staged-build with="locker"   stage="quick" project="swing"/> </target>
 
+  <target name="quick.partest-extras"
+                                  depends="quick.comp">
+    <!-- compile compiler-specific parts of partest -->
+    <staged-build with="starr" stage="quick" project="partest-extras" />
+    <staged-build with="starr" stage="quick" project="partest-javaagent" />
+  </target>
+
+
   <target name="quick.plugins"    depends="quick.comp">
     <staged-uptodate              stage="quick" project="plugins">
       <check><srcfiles dir="${src.dir}/continuations"/></check>
@@ -1308,7 +1316,7 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.repl, quick.scalap, quick.interactive, quick.swing, quick.plugins, quick.scaladoc">
+  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.repl, quick.scalap, quick.interactive, quick.swing, quick.plugins, quick.scaladoc, quick.partest-extras">
     <staged-bin stage="quick" classpathref="quick.bin.tool.path"/>
   </target>
 
@@ -1325,6 +1333,11 @@ TODO:
   <target name="pack.actors"  depends="quick.lib">                <staged-pack project="actors"/> </target>
   <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
   <target name="pack.reflect" depends="quick.reflect">            <staged-pack project="reflect"/> </target>
+  <target name="pack.partest-extras" depends="quick.partest-extras">
+     <staged-pack project="partest-extras"/>
+     <staged-pack project="partest-javaagent"
+                  manifest="${src.dir}/partest-javaagent/scala/tools/partest/javaagent/MANIFEST.MF"/>
+  </target>
 
   <target name="pack.comp"    depends="quick.comp, quick.scaladoc, quick.interactive, quick.repl, asm.done">
     <staged-pack project="compiler" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
@@ -1357,7 +1370,7 @@ TODO:
 
   <target name="pack.scalap"     depends="quick.scalap">     <staged-pack project="scalap"     targetjar="scalap.jar"/> </target>
 
-  <target name="pack.bin" depends="pack.comp, pack.lib, pack.actors, pack.plugins, pack.reflect, pack.scalap, pack.swing">
+  <target name="pack.bin" depends="pack.comp, pack.lib, pack.actors, pack.plugins, pack.reflect, pack.scalap, pack.swing, pack.partest-extras">
     <copy todir="${build-pack.dir}/lib">
       <path refid="external-modules-nocore" />
       <mapper type="flatten" />
@@ -1606,18 +1619,12 @@ TODO:
   </target>
 
   <!-- See test/build-partest.xml for the macro(s) being used here. -->
-  <target name="partest.task" depends="init">
+  <target name="partest.task" depends="init,pack.done">
     <!-- note the classpathref! this is the classpath used to run partest,
     so it must have the new compiler.... -->
     <taskdef
        classpathref="partest.compilation.path"
        resource="scala/tools/partest/antlib.xml"/>
-
-    <!-- compile compiler-specific parts of partest -->
-    <staged-build with="starr" stage="quick" project="partest-extras" />
-    <staged-build with="starr" stage="quick" project="partest-javaagent" />
-    <staged-pack project="partest-extras"/>
-    <staged-pack project="partest-javaagent" manifest="${src.dir}/partest-javaagent/scala/tools/partest/javaagent/MANIFEST.MF"/>
   </target>
 
   <target name="test.suite.init" depends="pack.done, partest.task">

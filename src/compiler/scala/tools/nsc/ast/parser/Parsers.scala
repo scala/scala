@@ -2818,6 +2818,8 @@ self =>
       case tdef @ TypeDef(mods, name, tparams, rhs) =>
         deprecationWarning(tdef.pos.point, "early type members are deprecated. Move them to the regular body: the semantics are the same.")
         treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
+      case docdef @ DocDef(comm, rhs) =>
+        treeCopy.DocDef(docdef, comm, rhs)
       case stat if !stat.isEmpty =>
         syntaxError(stat.pos, "only concrete field definitions allowed in early object initialization section", skipIt = false)
         EmptyTree
