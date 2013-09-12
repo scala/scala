@@ -45,9 +45,98 @@ package util
  *  pos.focus           Converts a range position to an offset position focused on the point
  *  pos.makeTransparent Convert an opaque range into a transparent range
  */
-sealed trait SealedPosition {
+class Position extends scala.reflect.api.Position with InternalPositionImpl with DeprecatedPosition {
+  type Pos = Position
+  def pos: Position = this
+  def withPos(newPos: Position): macros.Attachments { type Pos = Position.this.Pos } = newPos
+
+  protected def fail(what: String) = throw new UnsupportedOperationException(s"Position.$what on $this")
+
+  // If scala-refactoring extends Position directly it seems I have no
+  // choice but to offer all the concrete methods.
+  def isDefined          = false
+  def isRange            = false
+  def source: SourceFile = NoSourceFile
+  def start: Int         = fail("start")
+  def point: Int         = fail("point")
+  def end: Int           = fail("end")
+}
+
+object Position {
+  val tabInc = 8
+
+  private def validate[T <: Position](pos: T): T = {
+    if (pos.isRange)
+      assert(pos.start <= pos.end, s"bad position: ${pos.show}")
+
+    pos
+  }
+
+  /** Prints the message with the given position indication. */
+  def formatMessage(posIn: Position, msg: String, shortenFile: Boolean): String = {
+    val pos    = if (posIn eq null) NoPosition else posIn
+    val prefix = pos.source match {
+      case NoSourceFile     => ""
+      case s if shortenFile => s.file.name + ":"
+      case s                => s.file.path + ":"
+    }
+    prefix + (pos showError msg)
+  }
+
+  def offset(source: SourceFile, point: Int): Position                            = validate(new OffsetPosition(source, point))
+  def range(source: SourceFile, start: Int, point: Int, end: Int): Position       = validate(new RangePosition(source, start, point, end))
+  def transparent(source: SourceFile, start: Int, point: Int, end: Int): Position = validate(new TransparentPosition(source, start, point, end))
+}
+
+class OffsetPosition(sourceIn: SourceFile, pointIn: Int) extends DefinedPosition {
+  override def isRange = false
+  override def source  = sourceIn
+  override def point   = pointIn
+  override def start   = point
+  override def end     = point
+}
+class RangePosition(sourceIn: SourceFile, startIn: Int, pointIn: Int, endIn: Int) extends OffsetPosition(sourceIn, pointIn) {
+  override def isRange = true
+  override def start   = startIn
+  override def end     = endIn
+}
+class TransparentPosition(sourceIn: SourceFile, startIn: Int, pointIn: Int, endIn: Int) extends RangePosition(sourceIn, startIn, pointIn, endIn) {
+  override def isTransparent = true
+}
+case object NoPosition extends UndefinedPosition
+case class FakePos(msg: String) extends UndefinedPosition {
+  override def toString = msg
+}
+
+sealed abstract class DefinedPosition extends Position {
+  final override def isDefined = true
+  override def equals(that: Any) = that match {
+    case that: DefinedPosition => source.file == that.source.file && start == that.start && point == that.point && end == that.end
+    case _                     => false
+  }
+  override def hashCode = Seq[Any](source.file, start, point, end).##
+  override def toString = (
+    if (isRange) s"RangePosition($canonicalPath, $start, $point, $end)"
+    else s"source-$canonicalPath,line-$line,$pointMessage$point"
+  )
+  private def pointMessage  = if (point > source.length) "out-of-bounds-" else "offset="
+  private def canonicalPath = source.file.canonicalPath
+}
+
+sealed abstract class UndefinedPosition extends Position {
+  final override def isDefined = false
+  override def isRange         = false
+  override def source          = NoSourceFile
+  override def start           = fail("start")
+  override def point           = fail("point")
+  override def end             = fail("end")
+}
+
+private[util] trait InternalPositionImpl {
   self: Position =>
 
+  // The methods which would be abstract in Position if it were
+  // possible to change Position.
   def isDefined: Boolean
   def isRange: Boolean
   def source: SourceFile
@@ -86,10 +175,10 @@ sealed trait SealedPosition {
     else pos
   )
 
-  def includes(pos: Position): Boolean         = isRange && pos.isDefined && start <= pos.startOrPoint && pos.endOrPoint <= end
-  def properlyIncludes(pos: Position): Boolean = includes(pos) && (start < pos.startOrPoint || pos.endOrPoint < end)
-  def precedes(pos: Position): Boolean         = bothDefined(pos) && endOrPoint <= pos.startOrPoint
-  def properlyPrecedes(pos: Position): Boolean = bothDefined(pos) && endOrPoint < pos.startOrPoint
+  def includes(pos: Position): Boolean         = isRange && pos.isDefined && start <= pos.start && pos.end <= end
+  def properlyIncludes(pos: Position): Boolean = includes(pos) && (start < pos.start || pos.end < end)
+  def precedes(pos: Position): Boolean         = bothDefined(pos) && end <= pos.start
+  def properlyPrecedes(pos: Position): Boolean = bothDefined(pos) && end < pos.start
   def sameRange(pos: Position): Boolean        = bothRanges(pos) && start == pos.start && end == pos.end
   // This works because it's a range position invariant that S1 < E1 and S2 < E2.
   // So if S1 < E2 and S2 < E1, then both starts precede both ends, which is the
@@ -132,94 +221,8 @@ sealed trait SealedPosition {
   private def bothDefined(that: Position)    = isDefined && that.isDefined
 }
 
-object Position {
-  val tabInc = 8
-
-  private def validate[T <: Position](pos: T): T = {
-    if (pos.isRange)
-      assert(pos.start <= pos.end, s"bad position: ${pos.show}")
-
-    pos
-  }
-
-  /** Prints the message with the given position indication. */
-  def formatMessage(posIn: Position, msg: String, shortenFile: Boolean): String = {
-    val pos    = if (posIn eq null) NoPosition else posIn
-    val prefix = pos.source match {
-      case NoSourceFile     => ""
-      case s if shortenFile => s.file.name + ":"
-      case s                => s.file.path + ":"
-    }
-    prefix + (pos showError msg)
-  }
-
-  def offset(source: SourceFile, point: Int): Position                            = validate(new OffsetPosition(source, point))
-  def range(source: SourceFile, start: Int, point: Int, end: Int): Position       = validate(new RangePosition(source, start, point, end))
-  def transparent(source: SourceFile, start: Int, point: Int, end: Int): Position = validate(new TransparentPosition(source, start, point, end))
-}
-
-// If scala-refactoring extends Position directly it looks like I have no
-// choice but to include all the concrete methods.
-class Position extends scala.reflect.api.Position with SealedPosition with DeprecatedPosition {
-  type Pos = Position
-  def pos: Position = this
-  def withPos(newPos: Position): macros.Attachments { type Pos = Position.this.Pos } = newPos
-
-  protected def fail(what: String) = throw new UnsupportedOperationException(s"Position.$what on $this")
-  def isDefined          = false
-  def isRange            = false
-  def source: SourceFile = NoSourceFile
-  def start: Int         = fail("start")
-  def point: Int         = fail("point")
-  def end: Int           = fail("end")
-}
-
-sealed abstract class DefinedPosition extends Position {
-  final override def isDefined = true
-  override def equals(that: Any) = that match {
-    case that: DefinedPosition => source.file == that.source.file && start == that.start && point == that.point && end == that.end
-    case _                     => false
-  }
-  override def hashCode = Seq[Any](source.file, start, point, end).##
-  override def toString = (
-    if (isRange) s"RangePosition($canonicalPath, $start, $point, $end)"
-    else s"source-$canonicalPath,line-$line,$pointMessage$point"
-  )
-  private def pointMessage  = if (point > source.length) "out-of-bounds-" else "offset="
-  private def canonicalPath = source.file.canonicalPath
-}
-
-sealed abstract class UndefinedPosition extends Position {
-  final override def isDefined = false
-  override def isRange         = false
-  override def source          = NoSourceFile
-  override def start           = fail("start")
-  override def point           = fail("point")
-  override def end             = fail("end")
-}
-
-class OffsetPosition(sourceIn: SourceFile, pointIn: Int) extends DefinedPosition {
-  override def isRange = false
-  override def source  = sourceIn
-  override def point   = pointIn
-  override def start   = point
-  override def end     = point
-}
-class RangePosition(sourceIn: SourceFile, startIn: Int, pointIn: Int, endIn: Int) extends OffsetPosition(sourceIn, pointIn) {
-  override def isRange = true
-  override def start   = startIn
-  override def end     = endIn
-}
-class TransparentPosition(sourceIn: SourceFile, startIn: Int, pointIn: Int, endIn: Int) extends RangePosition(sourceIn, startIn, pointIn, endIn) {
-  override def isTransparent = true
-}
-case object NoPosition extends UndefinedPosition
-case class FakePos(msg: String) extends UndefinedPosition {
-  override def toString = msg
-}
-
 /** Holding cell for methods unused and/or unnecessary. */
-sealed trait DeprecatedPosition {
+private[util] trait DeprecatedPosition {
   self: Position =>
 
   @deprecated("use `point`", "2.9.0")
