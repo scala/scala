@@ -59,11 +59,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
     def rootLoader: LazyType = {
-//      settings.YclasspathImpl.value match {
-//        case "recursive" => new loaders.PackageLoader(classPath)
-//        case "flat" => 
-//      }
-      new loaders.PackageLoader(classPath)
+      settings.YclasspathImpl.value match {
+        case "flat" => new loaders.PackageLoaderUsingFlatClasspath(FlatClasspath.RootPackage, flatClasspath)
+        case "recursive" => new loaders.PackageLoader(classPath)
+      }
     }
     override def toString = "compiler mirror"
   }
