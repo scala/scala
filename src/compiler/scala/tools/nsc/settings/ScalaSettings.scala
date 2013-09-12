@@ -41,6 +41,12 @@ trait ScalaSettings extends AbsScalaSettings
   /** Enabled under -optimise. */
   def optimiseSettings = List[BooleanSetting](inline, inlineHandlers, Xcloselim, Xdce, YconstOptimization)
 
+  /** If any of these settings is enabled, the compiler should print a message and exit.  */
+  def infoSettings = List[Setting](help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
+
+  /** Is an info setting set? */
+  def isInfo = infoSettings exists (_.isSetByUser)
+
   /** Internal use - syntax enhancements. */
   private class EnableSettings[T <: BooleanSetting](val s: T) {
     def enabling(toEnable: List[BooleanSetting]): s.type = s withPostSetHook (_ => toEnable foreach (_.value = s.value))
