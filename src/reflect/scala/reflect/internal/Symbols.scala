@@ -1435,6 +1435,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       assert(isCompilerUniverse)
       if (infos == null || runId(infos.validFrom) == currentRunId) {
         infos
+      } else if (isPackageClass) {
+        // SI-7801 early phase package scopes are mutated in new runs (Namers#enterPackage), so we have to
+        //         discard transformed infos, rather than just marking them as from this run.
+        val oldest = infos.oldest
+        oldest.validFrom = validTo
+        this.infos = oldest
+        oldest
       } else {
         val prev1 = adaptInfos(infos.prev)
         if (prev1 ne infos.prev) prev1
@@ -1444,10 +1451,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           _validTo = period(currentRunId, pid)
           phase   = phaseWithId(pid)
 
-          val info1 = (
-            if (isPackageClass) infos.info
-            else adaptToNewRunMap(infos.info)
-          )
+          val info1 = adaptToNewRunMap(infos.info)
           if (info1 eq infos.info) {
             infos.validFrom = validTo
             infos
@@ -3473,6 +3477,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       "TypeHistory(" + phaseOf(validFrom)+":"+runId(validFrom) + "," + info + "," + prev + ")"
 
     def toList: List[TypeHistory] = this :: ( if (prev eq null) Nil else prev.toList )
+
+    def oldest: TypeHistory = if (prev == null) this else prev.oldest
   }
 
 // ----- Hoisted closures and convenience methods, for compile time reductions -------
