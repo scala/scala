@@ -9,9 +9,10 @@ class FlatClasspathFactory extends ClasspathFactory[FlatClasspath] {
   
   def newClassPath(file: AbstractFile): FlatClasspath = {
     if (file.hasExtension("jar") || file.hasExtension("zip")) {
-      new JarFlatClasspath(file.file)
-//      ZipFileIndex.clearCache()
-//      new ZipFileIndexFlatClasspath(file.file)
+//      new JarFlatClasspath(file.file)
+      // if you want to disable ZipFileIndex caching, uncomment the line below
+      // ZipFileIndex.clearCache()
+      new ZipFileIndexFlatClasspath(file.file)
     } else if (file.isDirectory) {
       new DirectoryFlatClasspath(file.file)
     } else {
