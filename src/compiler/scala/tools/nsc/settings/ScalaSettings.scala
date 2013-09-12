@@ -182,7 +182,6 @@ trait ScalaSettings extends AbsScalaSettings
    */
   val Ydocdebug               = BooleanSetting("-Ydoc-debug", "Trace all scaladoc activity.")
   val Yidedebug               = BooleanSetting("-Yide-debug", "Generate, validate and output trees using the interactive compiler.")
-  val Yinferdebug             = BooleanSetting("-Yinfer-debug", "Trace type inference and implicit search.")
   val Yissuedebug             = BooleanSetting("-Yissue-debug", "Print stack traces when a context issues an error.")
   val YmacrodebugLite         = BooleanSetting("-Ymacro-debug-lite", "Trace essential macro-related activities.")
   val YmacrodebugVerbose      = BooleanSetting("-Ymacro-debug-verbose", "Trace all macro-related activities: compilation, generation of synthetics, classloading, expansion, exceptions.")
@@ -192,6 +191,9 @@ trait ScalaSettings extends AbsScalaSettings
   val Ytyperdebug             = BooleanSetting("-Ytyper-debug", "Trace all type assignments.")
   val Ypatmatdebug            = BooleanSetting("-Ypatmat-debug", "Trace pattern matching translation.")
   val Yquasiquotedebug        = BooleanSetting("-Yquasiquote-debug", "Trace quasiquote-related activities.")
+
+  // TODO 2.12 Remove
+  val Yinferdebug             = BooleanSetting("-Yinfer-debug", "Trace type inference and implicit search.") withDeprecationMessage("Use -Ytyper-debug") enabling(List(Ytyperdebug))
 
   /** Groups of Settings.
    */
