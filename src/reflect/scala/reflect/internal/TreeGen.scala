@@ -437,4 +437,12 @@ abstract class TreeGen extends macros.TreeBuilder {
     else if (!stats.last.isTerm) Block(stats, Literal(Constant(())))
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
+
+  /** Create a tree representing an assignment <lhs = rhs> */
+  def mkAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
+    case Apply(fn, args) =>
+      Apply(atPos(fn.pos)(Select(fn, nme.update)), args :+ rhs)
+    case _ =>
+      Assign(lhs, rhs)
+  }
 }
