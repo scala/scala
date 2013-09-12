@@ -3,6 +3,7 @@ package scala.tools.nsc.classpath
 import scala.reflect.io.AbstractFile
 import java.io.File
 import java.io.FileFilter
+import scala.reflect.io.PlainFile
 
 case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
   import FlatClasspath.RootPackage
@@ -52,9 +53,32 @@ case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
     }
     val entries = classfiles map { file =>
       val wrappedFile = new scala.reflect.io.File(file)
-      ClassfileEntryImpl(AbstractFile.getFile(wrappedFile))
+      ClassfileEntryImpl(new PlainFile(wrappedFile))
     }
     entries
+  }
+  
+  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = {
+    val dirForPackage = getDirectory(inPackage)
+    val files: Array[File] = dirForPackage match {
+      case None => Array.empty
+      case Some(dir) => dir.listFiles()
+    }
+    val packagePrefix = if (inPackage == RootPackage) "" else inPackage + "."
+    val packageBuf = collection.mutable.ArrayBuffer.empty[PackageEntry]
+    val classfileBuf = collection.mutable.ArrayBuffer.empty[ClassfileEntry]
+    for (file <- files) {
+      if (file.isDirectory && validPackage(file.getName)) {
+        val pkgEntry = PackageEntryImpl(packagePrefix + file.getName)
+        packageBuf += pkgEntry
+      } else if (file.getName.endsWith(".class")) {
+        val wrappedClassFile = new scala.reflect.io.File(file)
+        val abstractClassFile = new PlainFile(wrappedClassFile)
+        val classfileEntry = ClassfileEntryImpl(abstractClassFile)
+        classfileBuf += classfileEntry
+      }
+    }
+    (packageBuf, classfileBuf)
   }
   
   def findClassFile(className: String): Option[AbstractFile] = {
@@ -65,7 +89,7 @@ case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
     val classfile = new File(dir, className + ".class")
     if (classfile.exists) {
       val wrappedClassFile = new scala.reflect.io.File(classfile)
-      val abstractClassFile = AbstractFile.getFile(wrappedClassFile) 
+      val abstractClassFile = new PlainFile(wrappedClassFile) 
       Some(abstractClassFile)
     } else None
   }

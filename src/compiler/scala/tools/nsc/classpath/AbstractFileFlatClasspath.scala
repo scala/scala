@@ -37,6 +37,9 @@ abstract class AbstractFileFlatClasspath(file: AbstractFile) extends FlatClasspa
     }
     entries
   }
+  
+  def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = 
+    (packages(inPackage), classes(inPackage))
 
   private def packageForClassName(className: String): String = {
     val lastIndex = className.lastIndexOf('.')

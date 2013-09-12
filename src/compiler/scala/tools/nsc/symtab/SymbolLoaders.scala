@@ -285,8 +285,7 @@ abstract class SymbolLoaders {
       assert(root.isPackageClass, root)
       root.setInfo(new PackageClassInfoType(newScope, root))
       
-      val classes = classpath.classes(packageName)
-      val packages = classpath.packages(packageName)
+      val (packages, classes) = classpath.list(packageName)
 
       if (!root.isRoot) {
         for (clazz <- classes) {

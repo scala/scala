@@ -11,6 +11,10 @@ class AggregateFlatClasspath(aggregates: Seq[FlatClasspath]) extends FlatClasspa
     val aggreagatedClasses = aggregates.map(_.classes(inPackage)).flatten
     aggreagatedClasses
   }
+  def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = {
+    val (packages, classes) = aggregates.map(_.list(inPackage)).unzip
+    (packages.flatten.distinct, classes.flatten)
+  }
   def findClassFile(className: String): Option[AbstractFile] = {
     val lastIndex = className.lastIndexOf('.')
     val (pkg, simpleClassName) = if (lastIndex == -1) (FlatClasspath.RootPackage, className) else {

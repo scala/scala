@@ -15,6 +15,7 @@ trait FlatClasspath extends ClassfileLookup {
   /** Empty string represents root package */
   def packages(inPackage: String): Seq[PackageEntry]
   def classes(inPackage: String): Seq[ClassfileEntry]
+  def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry])
   //def loadClassfile(ClassfileEntry: String): Array[Byte]
 }
 

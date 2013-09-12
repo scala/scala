@@ -22,6 +22,10 @@ class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends F
       classes
     }
   }
+  
+  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = 
+    (packages(inPackage), classes(inPackage))
+  
   def loadClassfile(classfile: String): Array[Byte] = {
     val binaryFile = wrappedClasspath.findClass(classfile).get.binary.get
     binaryFile.toByteArray

@@ -48,6 +48,10 @@ class ZipFileIndexFlatClasspath(zipFile: File) extends FlatClasspath {
     }
     classfileEntries
   }
+  
+  def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = {
+    (packages(inPackage), classes(inPackage))
+  }
 
   def findClassFile(name: String): Option[AbstractFile] = ??? 
 
