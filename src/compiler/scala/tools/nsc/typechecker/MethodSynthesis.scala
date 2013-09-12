@@ -413,7 +413,7 @@ trait MethodSynthesis {
         // starts compiling (instead of failing like it's supposed to) because the typer
         // expects to be able to identify escaping locals in typedDefDef, and fails to
         // spot that brand of them. In other words it's an artifact of the implementation.
-        val tpt = atPos(derivedSym.pos.focus)(derivedSym.tpe.finalResultType match {
+        val tpt = atPos(derivedSym.pos.focus)(derivedSym.tpe_*.finalResultType.widen match {
           case ExistentialType(_, _)  => TypeTree()
           case _ if mods.isDeferred   => TypeTree()
           case tp                     => TypeTree(tp)

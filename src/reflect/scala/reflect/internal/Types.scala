@@ -144,7 +144,6 @@ trait Types
     override def isErroneous = underlying.isErroneous
     override def isStable: Boolean = underlying.isStable
     override def isVolatile = underlying.isVolatile
-    override def finalResultType = underlying.finalResultType
     override def paramSectionCount = underlying.paramSectionCount
     override def paramss = underlying.paramss
     override def params = underlying.params
@@ -189,7 +188,6 @@ trait Types
     override def deconst = maybeRewrap(underlying.deconst)
     override def resultType = maybeRewrap(underlying.resultType)
     override def resultType(actuals: List[Type]) = maybeRewrap(underlying.resultType(actuals))
-    override def finalResultType = maybeRewrap(underlying.finalResultType)
     override def paramSectionCount = 0
     override def paramss: List[List[Symbol]] = List()
     override def params: List[Symbol] = List()
@@ -440,7 +438,7 @@ trait Types
 
     /** For a curried/nullary method or poly type its non-method result type,
      *  the type itself for all other types */
-    def finalResultType: Type = this
+    final def finalResultType: Type = definitions finalResultType this
 
     /** For a method type, the number of its value parameter sections,
      *  0 for all other types */
@@ -1240,7 +1238,6 @@ trait Types
       if (pre.isOmittablePrefix) pre.fullName + ".type"
       else prefixString + "type"
     }
-
 /*
     override def typeOfThis: Type = typeSymbol.typeOfThis
     override def bounds: TypeBounds = TypeBounds(this, this)
@@ -2564,8 +2561,6 @@ trait Types
     //TODO this may be generalised so that the only constraint is dependencies are acyclic
     def approximate: MethodType = MethodType(params, resultApprox)
 
-    override def finalResultType: Type = resultType.finalResultType
-
     override def safeToString = paramString(this) + resultType
 
     override def cloneInfo(owner: Symbol) = {
@@ -2592,7 +2587,6 @@ trait Types
     override def isTrivial = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
     override def prefix: Type = resultType.prefix
     override def narrow: Type = resultType.narrow
-    override def finalResultType: Type = resultType.finalResultType
     override def termSymbol: Symbol = resultType.termSymbol
     override def typeSymbol: Symbol = resultType.typeSymbol
     override def parents: List[Type] = resultType.parents
@@ -2642,7 +2636,6 @@ trait Types
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
     override def isVolatile = resultType.isVolatile
-    override def finalResultType: Type = resultType.finalResultType
 
     /** @M: typeDefSig wraps a TypeBounds in a PolyType
      *  to represent a higher-kinded type parameter

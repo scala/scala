@@ -1048,7 +1048,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
              sym.name.toTermName,
              sym.typeParams map TypeDef,
              vparamss,
-             TypeTree(sym.tpe.finalResultType) setPos sym.pos.focus,
+             TypeTree(sym.tpe_*.finalResultType.widen) setPos sym.pos.focus,
              rhs) setSymbol sym
     }
 
