@@ -2,7 +2,7 @@ package scala.tools.nsc.classpath
 
 import scala.reflect.io.AbstractFile
 
-class AggregateFlatClasspath(aggregates: Seq[FlatClasspath]) extends FlatClasspath {
+case class AggregateFlatClasspath(aggregates: Seq[FlatClasspath]) extends FlatClasspath {
   def packages(inPackage: String): Seq[PackageEntry] = {
     val aggregatedPkgs = aggregates.map(_.packages(inPackage)).flatten.distinct
     aggregatedPkgs

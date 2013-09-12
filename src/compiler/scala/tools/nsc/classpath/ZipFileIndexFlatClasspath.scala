@@ -7,7 +7,7 @@ import scala.tools.nsc.classpath.RelativePath.RelativeDirectory
 import scala.tools.nsc.classpath.ZipFileIndex.Entry
 import scala.collection.JavaConverters._
 
-class ZipFileIndexFlatClasspath(zipFile: File) extends FlatClasspath {
+case class ZipFileIndexFlatClasspath(zipFile: File) extends FlatClasspath {
   import ZipFileIndexFlatClasspath._
   val index = ZipFileIndex.getZipFileIndex(zipFile, null, false, null, false)
   val rootDir = new RelativePath.RelativeDirectory("")
