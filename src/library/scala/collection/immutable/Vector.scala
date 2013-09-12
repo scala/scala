@@ -24,6 +24,10 @@ object Vector extends IndexedSeqFactory[Vector] {
     ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
   override def empty[A]: Vector[A] = NIL
+  
+  // Constants governing concat strategy for performance
+  private final val Log2ConcatFaster = 5
+  private final val TinyAppendFaster = 2
 }
 
 // in principle, most members should be private. however, access privileges must
@@ -205,10 +209,29 @@ override def companion: GenericCompanion[Vector] = Vector
   override /*IterableLike*/ def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
 
 
-  // concat (stub)
-
+  // concat (suboptimal but avoids worst performance gotchas)
   override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
-    super.++(that.seq)
+    if (bf eq IndexedSeq.ReusableCBF) {
+      import Vector.{Log2ConcatFaster, TinyAppendFaster}
+      if (that.isEmpty) this.asInstanceOf[That]
+      else {
+        val again = if (!that.isTraversableAgain) that.toVector else that
+        again.size match {
+          // Often it's better to append small numbers of elements (or prepend if RHS is a vector)
+          case n if n <= TinyAppendFaster || n < (this.size >> Log2ConcatFaster) => 
+            var v: Vector[B] = this
+            for (x <- again) v = v :+ x
+            v.asInstanceOf[That]
+          case n if this.size < (n >> Log2ConcatFaster) && again.isInstanceOf[Vector[_]] =>
+            var v = again.asInstanceOf[Vector[B]]
+            val ri = this.reverseIterator
+            while (ri.hasNext) v = ri.next +: v
+            v.asInstanceOf[That]
+          case _ => super.++(that)
+        }
+      }
+    }
+    else super.++(that.seq)
   }
 
 
