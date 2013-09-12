@@ -115,6 +115,9 @@ trait HasFlags {
   def isSynthetic        = hasFlag(SYNTHETIC)
   def isTrait            = hasFlag(TRAIT) && !hasFlag(PARAM)
 
+  def isDeferredOrDefault  = hasFlag(DEFERRED | DEFAULTMETHOD)
+  def isDeferredNotDefault = isDeferred && !hasFlag(DEFAULTMETHOD)
+
   def flagBitsToString(bits: Long): String = {
     // Fast path for common case
     if (bits == 0L) "" else {
