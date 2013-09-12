@@ -11,9 +11,23 @@ case class AggregateFlatClasspath(aggregates: Seq[FlatClasspath]) extends FlatCl
     val aggreagatedClasses = aggregates.map(_.classes(inPackage)).flatten
     aggreagatedClasses
   }
+  private def distinctClassEntries(classEntries: Seq[ClassfileEntry]): Seq[ClassfileEntry] = {
+    val collectedClassNames = collection.mutable.Set.empty[String]
+    val collectedEntries = collection.mutable.ArrayBuffer.empty[ClassfileEntry]
+    classEntries foreach { classEntry =>
+      val className = classEntry.name
+      if (!collectedClassNames.contains(className)) {
+        collectedClassNames += className
+        collectedEntries += classEntry
+      }
+    }
+    collectedEntries
+  }
   def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = {
     val (packages, classes) = aggregates.map(_.list(inPackage)).unzip
-    (packages.flatten.distinct, classes.flatten)
+    val distinctPackages = packages.flatten.distinct
+    val distinctClasses = distinctClassEntries(classes.flatten)
+    (distinctPackages, distinctClasses)
   }
   def findClassFile(className: String): Option[AbstractFile] = {
     val lastIndex = className.lastIndexOf('.')
