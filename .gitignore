@@ -1,0 +1,48 @@
+#
+# Are you tempted to edit this file?
+#
+# First consider if the changes make sense for all,
+# or if they are specific to your workflow/system.
+# If it is the latter, you can augment this list with
+# entries in .git/info/excludes
+#
+# see also test/files/.gitignore
+#
+
+#
+# JARs aren't checked in, they are fetched by Ant / pull_binary_libs.sh
+#
+# We could be more concise with /lib/**/*.jar but that assumes
+# a late-model git.
+#
+/lib/ant/*.jar
+/lib/*.jar
+/test/files/codelib/*.jar
+/test/files/lib/*.jar
+/test/files/speclib/instrumented.jar
+/tools/*.jar
+
+# Developer specific Ant properties
+/build.properties
+
+# target directories for ant build
+/build/
+/dists/
+
+# other
+/out/
+/bin/
+/sandbox/
+
+# eclipse, intellij
+/.classpath
+/.project
+/src/intellij/*.iml
+/src/intellij/*.ipr
+/src/intellij/*.iws
+/.cache
+/.idea
+/.settings
+
+# Standard symbolic link to build/quick/bin
+/qbin

@@ -2772,6 +2772,8 @@ self =>
               List(copyValDef(vdef)(mods = mods | Flags.PRESUPER))
             case tdef @ TypeDef(mods, name, tparams, rhs) =>
               List(treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs))
+            case docdef @ DocDef(comm, rhs) =>
+              List(treeCopy.DocDef(docdef, comm, rhs))
             case stat if !stat.isEmpty =>
               syntaxError(stat.pos, "only type definitions and concrete field definitions allowed in early object initialization section", false)
               List()
@@ -3067,7 +3069,7 @@ self =>
       while (!isStatSeqEnd && in.token != CASE) {
         if (in.token == IMPORT) {
           stats ++= importClause()
-          acceptStatSep()
+          acceptStatSepOpt()
         }
         else if (isExprIntro) {
           stats += statement(InBlock)
