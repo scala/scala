@@ -1836,12 +1836,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
 
             // ctor
-            mbrs += atPos(m.pos)(DefDef(m, Modifiers(m.flags), mmap(List(vparams))(ValDef), EmptyTree))
+            mbrs += DefDef(m, Modifiers(m.flags), mmap(List(vparams))(ValDef), EmptyTree)
           } else {
-            mbrs += atPos(m.pos)(DefDef(m, { paramss => EmptyTree }))
+            mbrs += DefDef(m, { paramss => EmptyTree })
           }
         } else if (m.isValue) {
-          mbrs += ValDef(m, EmptyTree).setType(NoType).setPos(m.pos)
+          mbrs += ValDef(m).setType(NoType)
         } else if (m.isClass) {
 //           mbrs  +=
 //              ClassDef(m, Template(m.info.parents map TypeTree, emptyValDef, List())
@@ -1853,9 +1853,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val isSpecializedInstance = sClass :: sClass.parentSymbols exists (_ hasFlag SPECIALIZED)
         val sym = sClass.newMethod(nme.SPECIALIZED_INSTANCE, sClass.pos) setInfoAndEnter MethodType(Nil, BooleanTpe)
 
-        mbrs += atPos(sym.pos) {
-          DefDef(sym, Literal(Constant(isSpecializedInstance)).setType(BooleanTpe)).setType(NoType)
-        }
+        mbrs += DefDef(sym, Literal(Constant(isSpecializedInstance)).setType(BooleanTpe)).setType(NoType)
       }
       mbrs.toList
     }

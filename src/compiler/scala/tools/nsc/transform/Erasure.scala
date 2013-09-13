@@ -513,7 +513,7 @@ abstract class Erasure extends AddInterfaces
 
           maybeWrap(bridgingCall)
       }
-      atPos(bridge.pos)(DefDef(bridge, rhs))
+      DefDef(bridge, rhs)
     }
   }
 

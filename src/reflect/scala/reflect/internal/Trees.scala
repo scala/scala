@@ -589,6 +589,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object TypeTree extends TypeTreeExtractor
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
+  def TypeTree(sym: Symbol): TypeTree = atPos(sym.pos.focus)(TypeTree(sym.tpe_*.finalResultType))
+
+  def TypeBoundsTree(bounds: TypeBounds): TypeBoundsTree = TypeBoundsTree(TypeTree(bounds.lo), TypeTree(bounds.hi))
+  def TypeBoundsTree(sym: Symbol): TypeBoundsTree        = atPos(sym.pos)(TypeBoundsTree(sym.info.bounds))
 
   override type TreeCopier <: InternalTreeCopierOps
   abstract class InternalTreeCopierOps extends TreeCopierOps {
@@ -1013,15 +1017,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
       ModuleDef(Modifiers(sym.flags), sym.name.toTermName, impl) setSymbol sym
     }
 
-  def ValDef(sym: Symbol, rhs: Tree): ValDef =
-    atPos(sym.pos) {
-      ValDef(Modifiers(sym.flags), sym.name.toTermName,
-             TypeTree(sym.tpe) setPos sym.pos.focus,
-             rhs) setSymbol sym
-    }
-
-  def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree)
-
   trait CannotHaveAttrs extends Tree {
     override def canHaveAttrs = false
 
@@ -1041,50 +1036,44 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object emptyValDef extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) with CannotHaveAttrs
   object pendingSuperCall extends Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List()) with CannotHaveAttrs
 
-  def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
-    atPos(sym.pos) {
-      assert(sym != NoSymbol)
-      DefDef(mods,
-             sym.name.toTermName,
-             sym.typeParams map TypeDef,
-             vparamss,
-             TypeTree(sym.tpe_*.finalResultType.widen) setPos sym.pos.focus,
-             rhs) setSymbol sym
-    }
+  def newValDef(sym: Symbol, rhs: Tree)(
+    mods: Modifiers = Modifiers(sym.flags),
+    name: TermName  = sym.name.toTermName,
+    tpt: Tree       = TypeTree(sym)
+  ): ValDef = (
+    atPos(sym.pos)(ValDef(mods, name, tpt, rhs)) setSymbol sym
+  )
 
-  def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
-    DefDef(sym, Modifiers(sym.flags), vparamss, rhs)
+  def newDefDef(sym: Symbol, rhs: Tree)(
+    mods: Modifiers              = Modifiers(sym.flags),
+    name: TermName               = sym.name.toTermName,
+    tparams: List[TypeDef]       = sym.typeParams map TypeDef,
+    vparamss: List[List[ValDef]] = mapParamss(sym)(ValDef),
+    tpt: Tree                    = TypeTree(sym)
+  ): DefDef = (
+    atPos(sym.pos)(DefDef(mods, name, tparams, vparamss, tpt, rhs)) setSymbol sym
+  )
 
-  def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef =
-    DefDef(sym, mods, mapParamss(sym)(ValDef), rhs)
+  def newTypeDef(sym: Symbol, rhs: Tree)(
+    mods: Modifiers        = Modifiers(sym.flags),
+    name: TypeName         = sym.name.toTypeName,
+    tparams: List[TypeDef] = sym.typeParams map TypeDef
+  ): TypeDef = (
+    atPos(sym.pos)(TypeDef(mods, name, tparams, rhs)) setSymbol sym
+  )
 
-  /** A DefDef with original trees attached to the TypeTree of each parameter */
-  def DefDef(sym: Symbol, mods: Modifiers, originalParamTpts: Symbol => Tree, rhs: Tree): DefDef = {
-    val paramms = mapParamss(sym){ sym =>
-      val vd = ValDef(sym, EmptyTree)
-      (vd.tpt : @unchecked) match {
-        case tt: TypeTree => tt setOriginal (originalParamTpts(sym) setPos sym.pos.focus)
-      }
-      vd
-    }
-    DefDef(sym, mods, paramms, rhs)
-  }
+  def DefDef(sym: Symbol, rhs: Tree): DefDef                                                = newDefDef(sym, rhs)()
+  def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef                  = newDefDef(sym, rhs)(vparamss = vparamss)
+  def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef                               = newDefDef(sym, rhs)(mods = mods)
+  def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef = newDefDef(sym, rhs)(mods = mods, vparamss = vparamss)
+  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef                          = newDefDef(sym, rhs(sym.info.paramss))()
 
-  def DefDef(sym: Symbol, rhs: Tree): DefDef =
-    DefDef(sym, Modifiers(sym.flags), rhs)
-
-  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef =
-    DefDef(sym, rhs(sym.info.paramss))
-
-  /** A TypeDef node which defines given `sym` with given tight hand side `rhs`. */
-  def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
-    atPos(sym.pos) {
-      TypeDef(Modifiers(sym.flags), sym.name.toTypeName, sym.typeParams map TypeDef, rhs) setSymbol sym
-    }
+  def ValDef(sym: Symbol): ValDef            = newValDef(sym, EmptyTree)()
+  def ValDef(sym: Symbol, rhs: Tree): ValDef = newValDef(sym, rhs)()
 
   /** A TypeDef node which defines abstract type or type parameter for given `sym` */
-  def TypeDef(sym: Symbol): TypeDef =
-    TypeDef(sym, TypeBoundsTree(TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi)))
+  def TypeDef(sym: Symbol): TypeDef            = newTypeDef(sym, TypeBoundsTree(sym))()
+  def TypeDef(sym: Symbol, rhs: Tree): TypeDef = newTypeDef(sym, rhs)()
 
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
     atPos(sym.pos) {

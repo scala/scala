@@ -133,90 +133,6 @@ trait TreeDSL {
       def ==>(body: Tree): CaseDef  = CaseDef(pat, guard, body)
     }
 
-    /** VODD, if it's not obvious, means ValOrDefDef.  This is the
-     *  common code between a tree based on a pre-existing symbol and
-     *  one being built from scratch.
-     */
-    trait VODDStart {
-      def name: Name
-      def defaultMods: Modifiers
-      def defaultTpt: Tree
-      def defaultPos: Position
-
-      type ResultTreeType <: ValOrDefDef
-      def mkTree(rhs: Tree): ResultTreeType
-      def ===(rhs: Tree): ResultTreeType
-
-      private var _tpt: Tree = null
-      private var _pos: Position = null
-
-      def withType(tp: Type): this.type = {
-        _tpt = TypeTree(tp)
-        this
-      }
-      def withPos(pos: Position): this.type = {
-        _pos = pos
-        this
-      }
-
-      final def mods = defaultMods
-      final def tpt  = if (_tpt == null) defaultTpt else _tpt
-      final def pos  = if (_pos == null) defaultPos else _pos
-    }
-    trait SymVODDStart extends VODDStart {
-      def sym: Symbol
-      def symType: Type
-
-      def name        = sym.name
-      def defaultMods = Modifiers(sym.flags)
-      def defaultTpt  = TypeTree(symType) setPos sym.pos.focus
-      def defaultPos  = sym.pos
-
-      final def ===(rhs: Tree): ResultTreeType =
-        atPos(pos)(mkTree(rhs) setSymbol sym)
-    }
-    trait ValCreator {
-      self: VODDStart =>
-
-      type ResultTreeType = ValDef
-      def mkTree(rhs: Tree): ValDef = ValDef(mods, name.toTermName, tpt, rhs)
-    }
-    trait DefCreator {
-      self: VODDStart =>
-
-      def tparams: List[TypeDef]
-      def vparamss: List[List[ValDef]]
-
-      type ResultTreeType = DefDef
-      def mkTree(rhs: Tree): DefDef = DefDef(mods, name.toTermName, tparams, vparamss, tpt, rhs)
-    }
-
-    class DefSymStart(val sym: Symbol) extends SymVODDStart with DefCreator {
-      def symType  = sym.tpe_*.finalResultType
-      def tparams  = sym.typeParams map TypeDef
-      def vparamss = mapParamss(sym)(ValDef)
-    }
-    class ValSymStart(val sym: Symbol) extends SymVODDStart with ValCreator {
-      def symType = sym.tpe
-    }
-
-    trait TreeVODDStart extends VODDStart {
-      def defaultMods = NoMods
-      def defaultTpt  = TypeTree()
-      def defaultPos  = NoPosition
-
-      final def ===(rhs: Tree): ResultTreeType =
-        if (pos == NoPosition) mkTree(rhs)
-        else atPos(pos)(mkTree(rhs))
-    }
-
-    class ValTreeStart(val name: Name) extends TreeVODDStart with ValCreator {
-    }
-    class DefTreeStart(val name: Name) extends TreeVODDStart with DefCreator {
-      def tparams: List[TypeDef] = Nil
-      def vparamss: List[List[ValDef]] = ListOfNil
-    }
-
     class IfStart(cond: Tree, thenp: Tree) {
       def THEN(x: Tree)     = new IfStart(cond, x)
       def ELSE(elsep: Tree) = If(cond, thenp, elsep)
@@ -230,46 +146,23 @@ trait TreeDSL {
     def CASE(pat: Tree): CaseStart  = new CaseStart(pat, EmptyTree)
     def DEFAULT: CaseStart          = new CaseStart(WILD.empty, EmptyTree)
 
-    class SymbolMethods(target: Symbol) {
-      def IS_NULL() = REF(target) OBJ_EQ NULL
-      def GET()     = fn(REF(target), nme.get)
-      def ARGS      = target.paramss.head
-    }
-
-    /** Top level accessible. */
-    def MATCHERROR(arg: Tree) = Throw(MatchErrorClass.tpe, arg)
-    def THROW(sym: Symbol, msg: Tree): Throw = Throw(sym.tpe, msg.TOSTRING())
-
     def NEW(tpt: Tree, args: Tree*): Tree   = New(tpt, List(args.toList))
-    def DEF(sym: Symbol): DefSymStart               = new DefSymStart(sym)
-    def VAL(sym: Symbol): ValSymStart               = new ValSymStart(sym)
 
-    def AND(guards: Tree*) =
-      if (guards.isEmpty) EmptyTree
-      else guards reduceLeft gen.mkAnd
+    def NOT(tree: Tree)   = Select(tree, Boolean_not)
+    def AND(guards: Tree*) = if (guards.isEmpty) EmptyTree else guards reduceLeft gen.mkAnd
 
     def IF(tree: Tree)    = new IfStart(tree, EmptyTree)
     def TRY(tree: Tree)   = new TryStart(tree, Nil, EmptyTree)
     def BLOCK(xs: Tree*)  = Block(xs.init.toList, xs.last)
-    def NOT(tree: Tree)   = Select(tree, Boolean_not)
-    def SOME(xs: Tree*)   = Apply(SomeClass.companionSymbol, makeTupleTerm(xs.toList, flattenUnary = true))
+    def SOME(xs: Tree*)   = Apply(SomeClass.companionSymbol, treeBuilder.makeTupleTerm(xs.toList, flattenUnary = true))
 
     /** Typed trees from symbols. */
-    def THIS(sym: Symbol)             = gen.mkAttributedThis(sym)
-    def ID(sym: Symbol)               = gen.mkAttributedIdent(sym)
-    def REF(sym: Symbol)              = gen.mkAttributedRef(sym)
-    def REF(pre: Type, sym: Symbol)   = gen.mkAttributedRef(pre, sym)
-
-    def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
-      case Nil                        => UNIT
-      case List(tree) if flattenUnary => tree
-      case _                          => Apply(TupleClass(trees.length).companionModule, trees: _*)
-    }
+    def REF(sym: Symbol)            = gen.mkAttributedRef(sym)
+    def REF(pre: Type, sym: Symbol) = gen.mkAttributedRef(pre, sym)
 
     /** Implicits - some of these should probably disappear **/
     implicit def mkTreeMethods(target: Tree): TreeMethods = new TreeMethods(target)
     implicit def mkTreeMethodsFromSymbol(target: Symbol): TreeMethods = new TreeMethods(Ident(target))
-    implicit def mkSymbolMethodsFromSymbol(target: Symbol): SymbolMethods = new SymbolMethods(target)
 
     /** (foo DOT bar) might be simply a Select, but more likely it is to be immediately
      *  followed by an Apply.  We don't want to add an actual apply method to arbitrary

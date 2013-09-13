@@ -752,10 +752,11 @@ abstract class UnCurry extends InfoTransform
 
       // create the symbol
       val forwsym = currentClass.newMethod(dd.name.toTermName, dd.pos, VARARGS | SYNTHETIC | flatdd.symbol.flags) setInfo forwtype
+      def forwParams = forwsym.info.paramss.flatten
 
       // create the tree
       val forwtree = theTyper.typedPos(dd.pos) {
-        val locals = map2(forwsym ARGS, flatparams) {
+        val locals = map2(forwParams, flatparams) {
           case (_, fp) if !rpsymbols(fp.symbol) => null
           case (argsym, fp)                     =>
             Block(Nil,
@@ -765,15 +766,13 @@ abstract class UnCurry extends InfoTransform
               )
             )
         }
-        val seqargs = map2(locals, forwsym ARGS) {
+        val seqargs = map2(locals, forwParams) {
           case (null, argsym) => Ident(argsym)
           case (l, _)         => l
         }
         val end = if (forwsym.isConstructor) List(UNIT) else Nil
 
-        DEF(forwsym) === BLOCK(
-          Apply(gen.mkAttributedRef(flatdd.symbol), seqargs) :: end : _*
-        )
+        DefDef(forwsym, BLOCK(Apply(gen.mkAttributedRef(flatdd.symbol), seqargs) :: end : _*))
       }
 
       // check if the method with that name and those arguments already exists in the template
