@@ -629,7 +629,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   object terminal extends {
     val global: Global.this.type = Global.this
   } with SubComponent {
-    final val phaseName = "terminal"
+    val phaseName = "terminal"
     val runsAfter = List("jvm")
     val runsRightAfter = None
     override val terminal = true
