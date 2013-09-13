@@ -90,7 +90,7 @@ abstract class ExplicitOuter extends InfoTransform
 
     sym expandName clazz
     sym.referenced = clazz
-    sym setInfo MethodType(Nil, restpe)
+    sym setInfo MethodType(Nil, restpe.widen)
   }
   def newOuterField(clazz: Symbol) = {
     val accFlags = SYNTHETIC | ARTIFACT | PARAMACCESSOR | ( if (clazz.isEffectivelyFinal) PrivateLocal else PROTECTED )
