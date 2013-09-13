@@ -146,7 +146,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       lazy val storedCond               = freshSym(pos, BooleanTpe, "rc") setFlag MUTABLE
       lazy val treesToHoist: List[Tree] = {
         nextBinder setFlag MUTABLE
-        List(storedCond, nextBinder) map { b => VAL(b) === codegen.mkZero(b.info) }
+        List(storedCond, nextBinder) map (b => ValDef(b, codegen.mkZero(b.info)))
       }
 
       // TODO: finer-grained duplication
@@ -528,7 +528,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       }
 
       def defaultSym: Symbol = scrutSym
-      def defaultBody: Tree  = { import CODE._; matchFailGenOverride map (gen => gen(REF(scrutSym))) getOrElse MATCHERROR(REF(scrutSym)) }
+      def defaultBody: Tree  = { import CODE._; matchFailGenOverride map (gen => gen(REF(scrutSym))) getOrElse Throw(MatchErrorClass.tpe, REF(scrutSym)) }
       def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
         (DEFAULT IF guard) ==> body
       }}
@@ -546,7 +546,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
             if (scrutSym.tpe =:= IntTpe) REF(scrutSym)
             else (REF(scrutSym) DOT (nme.toInt))
           Some(BLOCK(
-            VAL(scrutSym) === scrut,
+            ValDef(scrutSym, scrut),
             Match(scrutToInt, caseDefsWithDefault) // a switch
           ))
         }

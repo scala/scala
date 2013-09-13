@@ -204,11 +204,6 @@ abstract class TreeBuilder {
     atPos(r2p(start, end, end + op.length)) { new PostfixSelect(od, op.encode) }
   }
 
-  /** A type tree corresponding to (possibly unary) intersection type */
-  def makeIntersectionTypeTree(tps: List[Tree]): Tree =
-    if (tps.tail.isEmpty) tps.head
-    else CompoundTypeTree(Template(tps, emptyValDef, Nil))
-
   /** Create tree representing a while loop */
   def makeWhile(startPos: Int, cond: Tree, body: Tree): Tree = {
     val lname = freshTermName(nme.WHILE_PREFIX)

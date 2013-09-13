@@ -170,7 +170,7 @@ trait MatchCodeGen extends Interface {
         } toList // at most 1 element
 
         // scrutSym == NoSymbol when generating an alternatives matcher
-        val scrutDef = scrutSym.fold(List[Tree]())(sym => (VAL(sym) === scrut) :: Nil) // for alternatives
+        val scrutDef = scrutSym.fold(List[Tree]())(ValDef(_, scrut) :: Nil) // for alternatives
 
         // the generated block is taken apart in TailCalls under the following assumptions
         // the assumption is once we encounter a case, the remainder of the block will consist of cases
@@ -199,7 +199,7 @@ trait MatchCodeGen extends Interface {
         def flatMap(prev: Tree, b: Symbol, next: Tree): Tree = {
           val prevSym = freshSym(prev.pos, prev.tpe, "o")
           BLOCK(
-            VAL(prevSym) === prev,
+            ValDef(prevSym, prev),
             // must be isEmpty and get as we don't control the target of the call (prev is an extractor call)
             ifThenElseZero(
               NOT(prevSym DOT vpmName.isEmpty),
@@ -214,14 +214,12 @@ trait MatchCodeGen extends Interface {
         // next == MatchMonad[U]
         // returns MatchMonad[U]
         def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, next: Tree): Tree = {
-          val rest =
+          val rest = (
             // only emit a local val for `nextBinder` if it's actually referenced in `next`
             if (next.exists(_.symbol eq nextBinder))
-              BLOCK(
-                VAL(nextBinder) === res,
-                next
-              )
+              BLOCK(ValDef(nextBinder, res), next)
             else next
+          )
           ifThenElseZero(cond, rest)
         }
 
