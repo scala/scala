@@ -58,7 +58,6 @@ object TestState {
     def reason = s"caught $caught_s - ${caught.getMessage}"
 
     private def caught_s = (caught.getClass.getName split '.').last
-    private def stack_s  = stackTraceString(caught)
     override def transcriptString = nljoin(super.transcriptString, caught_s)
   }
 }

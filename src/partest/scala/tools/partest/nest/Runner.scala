@@ -14,12 +14,13 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.io.Codec
 import scala.reflect.internal.FatalError
+import scala.reflect.internal.util.ScalaClassLoader
 import scala.sys.process.{ Process, ProcessLogger }
 import scala.tools.nsc.Properties.{ envOrElse, isWin, jdkHome, javaHome, propOrElse, propOrEmpty, setProp, versionMsg, javaVmName, javaVmVersion, javaVmInfo }
 import scala.tools.nsc.{ Settings, CompilerCommand, Global }
-import scala.tools.nsc.io.{ AbstractFile, PlainFile }
+import scala.tools.nsc.io.{ AbstractFile }
 import scala.tools.nsc.reporters.ConsoleReporter
-import scala.tools.nsc.util.{ Exceptional, ScalaClassLoader, stackTraceString }
+import scala.tools.nsc.util.{ Exceptional, stackTraceString }
 import scala.tools.scalap.Main.decompileScala
 import scala.tools.scalap.scalasig.ByteCode
 import scala.util.{ Try, Success, Failure }
@@ -58,7 +59,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
   def isEnumeratedTest = false
 
   private var _lastState: TestState = null
-  private var _transcript = new TestTranscript
+  private val _transcript = new TestTranscript
 
   def lastState                   = if (_lastState == null) Uninitialized(testFile) else _lastState
   def setLastState(s: TestState)  = _lastState = s
@@ -79,7 +80,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
   type RanOneTest = (Boolean, LogContext)
 
   def showCrashInfo(t: Throwable) {
-    System.err.println("Crashed running test $testIdent: " + t)
+    System.err.println(s"Crashed running test $testIdent: " + t)
     if (!isPartestTerse)
       System.err.println(stackTraceString(t))
   }
@@ -454,13 +455,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
 
     def fsString = fs map (_.toString stripPrefix parentFile.toString + "/") mkString " "
     def isOk = result.isOk
-    def mkScalacString(): String = {
-      val flags = file2String(flagsFile) match {
-        case ""   => ""
-        case s    => " " + s
-      }
-      s"""scalac $fsString"""
-    }
+    def mkScalacString(): String = s"""scalac $fsString"""
     override def toString = description + ( if (result.isOk) "" else "\n" + result.status )
   }
   case class OnlyJava(fs: List[File]) extends CompileRound {
@@ -772,7 +767,7 @@ class SuiteRunner(
       if (failed && !runner.logFile.canRead)
         runner.genPass()
       else {
-        val (state, elapsed) =
+        val (state, _) =
           try timed(runner.run())
           catch {
             case t: Throwable => throw new RuntimeException(s"Error running $testFile", t)

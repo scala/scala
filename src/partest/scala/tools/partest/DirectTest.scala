@@ -7,7 +7,7 @@ package scala.tools.partest
 
 import scala.tools.nsc._
 import settings.ScalaVersion
-import util.{ SourceFile, BatchSourceFile }
+import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
 import reporters.{Reporter, ConsoleReporter}
 import scala.tools.cmd.CommandLineParser
 
