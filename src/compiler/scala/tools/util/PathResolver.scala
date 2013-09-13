@@ -15,6 +15,8 @@ import scala.reflect.runtime.ReflectionUtils
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps
+import scala.tools.nsc.classpath.ClassPathFactory
+import scala.tools.nsc.classpath.FlatClassPath
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SIW/Classpath
@@ -197,21 +199,16 @@ object PathResolver {
   }
 }
 
-class PathResolver(settings: Settings, context: JavaContext) {
-  import PathResolver.{ Defaults, Environment, AsLines, MkLines, ppcp }
-
-  def this(settings: Settings) = this(settings,
-      if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
-      else DefaultJavaContext)
-
-  private def cmdLineOrElse(name: String, alt: String) = {
+abstract class PathResolverBase[T](settings: Settings, classPathFactory: ClassPathFactory[T]) {
+  import PathResolver.{Defaults, ppcp, AsLines}
+  protected def cmdLineOrElse(name: String, alt: String) = {
     (commandLineFor(name) match {
       case Some("") => None
       case x        => x
     }) getOrElse alt
   }
 
-  private def commandLineFor(s: String): Option[String] = condOpt(s) {
+  protected def commandLineFor(s: String): Option[String] = condOpt(s) {
     case "javabootclasspath"  => settings.javabootclasspath.value
     case "javaextdirs"        => settings.javaextdirs.value
     case "bootclasspath"      => settings.bootclasspath.value
@@ -256,10 +253,10 @@ class PathResolver(settings: Settings, context: JavaContext) {
       else sys.env.getOrElse("CLASSPATH", ".")
     )
 
-    import context._
+    import classPathFactory._
 
     // Assemble the elements!
-    def basis = List[Traversable[ClassPath[AbstractFile]]](
+    def basis = List[Traversable[T]](
       classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
       classesInExpandedPath(javaUserClassPath),     // 3. The Java application class path.
@@ -285,11 +282,23 @@ class PathResolver(settings: Settings, context: JavaContext) {
       |  sourcePath           = ${ppcp(sourcePath)}
       |}""".asLines
   }
+}
+
+class PathResolver(settings: Settings, context: JavaContext, flatClasspath: => FlatClassPath) extends
+  PathResolverBase[ClassPath[AbstractFile]](settings, context) {
+  import PathResolver.{ Defaults, Environment, MkLines}
+  def this(settings: Settings, flatClasspath: => FlatClassPath) =
+  this(settings,
+      if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
+      else DefaultJavaContext,
+      flatClasspath)
+  def this(settings: Settings, context: JavaContext) = this(settings, context, sys.error("Don't know how to construct FlatClasspath"))
+  def this(settings: Settings) = this(settings, sys.error("Don't know how to construct FlatClasspath"): FlatClassPath)
 
   def containers = Calculated.containers
 
   lazy val result = {
-    val cp = new JavaClassPath(containers.toIndexedSeq, context)
+    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings.YclasspathImpl.value == "flat", flatClasspath)
     if (settings.Ylogcp) {
       Console print f"Classpath built from ${settings.toConciseString} %n"
       Console print s"Defaults: ${PathResolver.Defaults}"
@@ -302,4 +311,9 @@ class PathResolver(settings: Settings, context: JavaContext) {
   }
 
   def asURLs = result.asURLs
+}
+
+class FlatClassPathResolver(settings: Settings, flatClassPathFactory: ClassPathFactory[FlatClassPath]) extends
+  PathResolverBase[FlatClassPath](settings, flatClassPathFactory) {
+  def containers = Calculated.containers
 }

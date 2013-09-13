@@ -6,6 +6,8 @@ import scala.reflect.internal.{Phase, NoPhase, SomePhase}
 import scala.tools.util.PathResolver
 import util.ClassPath
 import io.AbstractFile
+import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.classpath.DefaultFlatClassPathManager
 
 /**
  * A complete SymbolTable implementation designed to be used in JUnit tests.
@@ -26,13 +28,21 @@ class SymbolTableForUnitTesting extends SymbolTable {
   class LazyTreeCopier extends super.LazyTreeCopier with TreeCopier
 
   override def isCompilerUniverse: Boolean = true
-  def classPath = new PathResolver(settings).result
+  def classPath = platform.classPath
+  def flatClasspath: FlatClassPath = platform.flatClasspath
 
   object platform extends backend.Platform {
     val symbolTable: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
     lazy val loaders: SymbolTableForUnitTesting.this.loaders.type = SymbolTableForUnitTesting.this.loaders
     def platformPhases: List[SubComponent] = Nil
-    val classPath: ClassPath[AbstractFile] = new PathResolver(settings).result
+    lazy val classPath: ClassPath[AbstractFile] = {
+      assert(settings.YclasspathImpl.value == "recursive")
+      new PathResolver(settings).result
+    }
+    lazy val flatClasspath: FlatClassPath = {
+      assert(settings.YclasspathImpl.value == "flat")
+      DefaultFlatClassPathManager.createClassPath(settings)
+    }
     def isMaybeBoxed(sym: Symbol): Boolean = ???
     def needCompile(bin: AbstractFile, src: AbstractFile): Boolean = ???
     def externalEquals: Symbol = ???
@@ -50,7 +60,10 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
-    def rootLoader: LazyType = new loaders.PackageLoader(classPath)
+    def rootLoader: LazyType = settings.YclasspathImpl.value match {
+      case "flat" => new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClasspath)
+      case "recursive" => new loaders.PackageLoader(classPath)
+    }
     override def toString = "compiler mirror"
   }
 
@@ -60,7 +73,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
     rm.asInstanceOf[Mirror]
   }
 
-  def settings: Settings = {
+  lazy val settings: Settings = {
     val s = new Settings
     // initialize classpath using java classpath
     s.usejavacp.value = true

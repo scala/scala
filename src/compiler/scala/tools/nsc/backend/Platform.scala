@@ -8,6 +8,8 @@ package backend
 
 import util.ClassPath
 import io.AbstractFile
+import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.util.ClassFileLookup
 
 /** The platform dependent pieces of Global.
  */
@@ -17,6 +19,8 @@ trait Platform {
 
   /** The compiler classpath. */
   def classPath: ClassPath[AbstractFile]
+
+  def flatClasspath: FlatClassPath
 
   /** Update classpath with a substitution that maps entries to entries */
   def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]])

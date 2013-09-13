@@ -13,10 +13,12 @@ import io.{ File, Directory, Path, Jar, AbstractFile }
 import scala.reflect.internal.util.StringOps.splitWhere
 import Jar.isJarOrZip
 import File.pathSeparator
-import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
 import java.net.MalformedURLException
 import java.util.regex.PatternSyntaxException
 import scala.reflect.runtime.ReflectionUtils
+import ClassPath._
+import scala.reflect.io.FileZipArchive
+import scala.tools.nsc.classpath.FlatClassPath
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -89,7 +91,9 @@ object ClassPath {
   /** A class modeling aspects of a ClassPath which should be
    *  propagated to any classpaths it creates.
    */
-  abstract class ClassPathContext[T] {
+  abstract class ClassPathContext[T] extends classpath.ClassPathFactory[ClassPath[T]] {
+    def expandPath(path: String, expandStar: Boolean = true): List[String] = ClassPath.this.expandPath(path, expandStar)
+    def expandDir(extdir: String): List[String] = ClassPath.this.expandDir(extdir)
     /** A filter which can be used to exclude entities from the classpath
      *  based on their name.
      */
@@ -105,35 +109,10 @@ object ClassPath {
      */
     def toBinaryName(rep: T): String
 
-    /** Create a new classpath based on the abstract file.
-     */
-    def newClassPath(file: AbstractFile): ClassPath[T]
-
-    /** Creators for sub classpaths which preserve this context.
-     */
     def sourcesInPath(path: String): List[ClassPath[T]] =
       for (file <- expandPath(path, expandStar = false) ; dir <- Option(AbstractFile getDirectory file)) yield
         new SourcePath[T](dir, this)
-
-    def contentsOfDirsInPath(path: String): List[ClassPath[T]] =
-      for (dir <- expandPath(path, expandStar = false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
-        newClassPath(entry)
-
-    def classesInExpandedPath(path: String): IndexedSeq[ClassPath[T]] =
-      classesInPathImpl(path, expand = true).toIndexedSeq
-
-    def classesInPath(path: String) = classesInPathImpl(path, expand = false)
-
-    // Internal
-    private def classesInPathImpl(path: String, expand: Boolean) =
-      for (file <- expandPath(path, expand) ; dir <- Option(AbstractFile getDirectory file)) yield
-        newClassPath(dir)
-
-    def classesInManifest(used: Boolean) =
-      if (used) for (url <- manifests) yield newClassPath(AbstractFile getResources url) else Nil
   }
-
-  def manifests = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF").filter(_.getProtocol() == "jar").toList
 
   class JavaContext extends ClassPathContext[AbstractFile] {
     def toBinaryName(rep: AbstractFile) = {
@@ -141,7 +120,7 @@ object ClassPath {
       assert(endsClass(name), name)
       name.substring(0, name.length - 6)
     }
-    def newClassPath(dir: AbstractFile) = new DirectoryClassPath(dir, this)
+    def newClassPath(dir: AbstractFile): ClassPath[AbstractFile] = new DirectoryClassPath(dir, this)
   }
 
   object DefaultJavaContext extends JavaContext
@@ -160,12 +139,11 @@ object ClassPath {
     else throw new FatalError("Unexpected source file ending: " + name)
   }
 }
-import ClassPath._
 
 /**
  * Represents a package which contains classes and other packages
  */
-abstract class ClassPath[T] {
+abstract class ClassPath[T] extends ClassFileLookup {
   type AnyClassRep = ClassPath[T]#ClassRep
 
   /**
@@ -238,8 +216,9 @@ abstract class ClassPath[T] {
    */
   def findClass(name: String): Option[AnyClassRep] =
     splitWhere(name, _ == '.', doDropIndex = true) match {
-      case Some((pkg, rest)) =>
-        val rep = packages find (_.name == pkg) flatMap (_ findClass rest)
+      case Some((pkgName, rest)) =>
+        val pkg = packages find (_.name == pkgName)
+        val rep = pkg flatMap (_ findClass rest)
         rep map {
           case x: ClassRep  => x
           case x            => throw new FatalError("Unexpected ClassRep '%s' found searching for name '%s'".format(x, name))
@@ -417,5 +396,26 @@ extends ClassPath[T] {
  */
 class JavaClassPath(
   containers: IndexedSeq[ClassPath[AbstractFile]],
-  context: JavaContext)
-extends MergedClassPath[AbstractFile](containers, context) { }
+  context: JavaContext,
+  // this is required for sbt-interface compatibility because sbt calls findClass and
+  // we have to dispatch it to the correct classpath implementation
+  flatClasspathEnabled: Boolean, flatClasspath: => FlatClassPath)
+extends MergedClassPath[AbstractFile](containers, context) {
+
+  def this(containers: IndexedSeq[ClassPath[AbstractFile]], context: JavaContext) =
+    this(containers, context, false, sys.error("FlatClasspath is disabled."))
+
+  // it's a lazy val so if we do not use flat classpath we shouldn't be forcing this
+  lazy val cachedFlatClasspath = {
+    assert(flatClasspathEnabled, "Flat classpath has been forced (evaluated) unexpectedly")
+    flatClasspath
+  }
+
+  override def findClass(name: String): Option[AnyClassRep] =
+    if (flatClasspathEnabled) {
+      val classfile = cachedFlatClasspath.findClassFile(name)
+      val classRep = classfile.map(file => ClassRep(Some(file), None))
+      classRep
+    } else super.findClass(name)
+
+}
