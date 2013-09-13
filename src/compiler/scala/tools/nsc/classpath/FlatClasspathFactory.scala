@@ -12,7 +12,8 @@ class FlatClasspathFactory extends ClasspathFactory[FlatClasspath] {
 //      new JarFlatClasspath(file.file)
       // if you want to disable ZipFileIndex caching, uncomment the line below
       // ZipFileIndex.clearCache()
-      new ZipFileIndexFlatClasspath(file.file)
+      //new ZipFileIndexFlatClasspath(file.file)
+      ZipArchiveFlatClasspath.create(file.file)
     } else if (file.isDirectory) {
       new DirectoryFlatClasspath(file.file)
     } else {
