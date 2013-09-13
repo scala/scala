@@ -284,10 +284,12 @@ abstract class PathResolverBase[T](settings: Settings, classPathFactory: Classpa
   }
 }
 
-class PathResolver(settings: Settings, context: JavaContext) extends
+class PathResolver(settings: Settings, context: JavaContext, flatClasspath: => FlatClasspath) extends
   PathResolverBase[ClassPath[AbstractFile]](settings, context) {
   import PathResolver.{ Defaults, Environment, MkLines}
-  def this(settings: Settings) = this(settings, if (settings.inline) new JavaContext else DefaultJavaContext)
+  def this(settings: Settings, flatClasspath: => FlatClasspath) = this(settings, if (settings.inline) new JavaContext else DefaultJavaContext, flatClasspath)
+  def this(settings: Settings, context: JavaContext) = this(settings, context, sys.error("Don't know how to construct FlatClasspath"))
+  def this(settings: Settings) = this(settings, sys.error("Don't know how to construct FlatClasspath"): FlatClasspath)
 
   def this(settings: Settings) = this(settings,
       if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
@@ -296,7 +298,7 @@ class PathResolver(settings: Settings, context: JavaContext) extends
   def containers = Calculated.containers
 
   lazy val result = {
-    val cp = new JavaClassPath(containers.toIndexedSeq, context)
+    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings, flatClasspath)
     if (settings.Ylogcp) {
       Console print f"Classpath built from ${settings.toConciseString} %n"
       Console print s"Defaults: ${PathResolver.Defaults}"

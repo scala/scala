@@ -19,6 +19,7 @@ import scala.reflect.runtime.ReflectionUtils
 import ClassPath._
 import scala.reflect.io.FileZipArchive
 import scala.tools.nsc.classpath.ZipFileIndexClasspath
+import scala.tools.nsc.classpath.FlatClasspath
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -381,5 +382,26 @@ extends ClassPath[T] {
  */
 class JavaClassPath(
   containers: IndexedSeq[ClassPath[AbstractFile]],
-  context: JavaContext)
-extends MergedClassPath[AbstractFile](containers, context) { }
+  context: JavaContext,
+  // this is required for sbt-interface compatibility because sbt calls findClass and
+  // we have to dispatch it to the correct classpath implementation
+  // Yes, I know, it's bat shit insane (GK)
+  settings: Settings, flatClasspath: => FlatClasspath)
+extends MergedClassPath[AbstractFile](containers, context) {
+
+  // it's a lazy val so if we do not use flat classpath we shouldn't be forcing this
+  lazy val cachedFlatClasspath = {
+    assert(settings.YclasspathImpl.value == "flat", "Flat classpath has been forced (evaluated) unexpectedly")
+    flatClasspath
+  }
+
+  override def findClass(name: String): Option[AnyClassRep] = settings.YclasspathImpl.value match {
+    case "recursive" => super.findClass(name)
+    case "flat" => {
+      val classfile = cachedFlatClasspath.findClassFile(name)
+      val classRep = classfile.map(file => ClassRep(Some(file), None))
+      classRep
+    }
+  }
+
+}

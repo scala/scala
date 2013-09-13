@@ -21,8 +21,8 @@ trait JavaPlatform extends Platform {
   private var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
 
   def classPath: ClassPath[AbstractFile] = {
-    assert(settings.YclasspathImpl.value == "recursive")
-    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
+    //assert(settings.YclasspathImpl.value == "recursive")
+    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, flatClasspath).result)
     currentClassPath.get
   }
 
