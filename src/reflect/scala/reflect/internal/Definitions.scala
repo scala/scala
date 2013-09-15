@@ -695,6 +695,19 @@ trait Definitions extends api.StandardDefinitions {
       case NullaryMethodType(restpe) => restpe
       case _                         => tp
     }
+
+    /** An implementation of finalResultType which does only what
+     *  finalResultType is documented to do. Defining it externally to
+     *  Type helps ensure people can't come to depend on accidental
+     *  aspects of its behavior. This is all of it!
+     */
+    def finalResultType(tp: Type): Type = tp match {
+      case PolyType(_, restpe)       => finalResultType(restpe)
+      case MethodType(_, restpe)     => finalResultType(restpe)
+      case NullaryMethodType(restpe) => finalResultType(restpe)
+      case _                         => tp
+    }
+
     def abstractFunctionForFunctionType(tp: Type) = {
       assert(isFunctionType(tp), tp)
       abstractFunctionType(tp.typeArgs.init, tp.typeArgs.last)

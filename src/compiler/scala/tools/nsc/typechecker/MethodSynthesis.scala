@@ -21,32 +21,17 @@ trait MethodSynthesis {
   import definitions._
   import CODE._
 
-  object synthesisUtil {
-    type TT[T]  = ru.TypeTag[T]
-    type CT[T] = ClassTag[T]
-
-    def newValOrDefDef(sym: Symbol, body: Tree) =
-      if (sym.isLazy) ValDef(sym, body)
-      else DefDef(sym, body)
-
-    /** The annotations amongst those found on the original symbol which
-     *  should be propagated to this kind of accessor.
-     */
-    def deriveAnnotations(initial: List[AnnotationInfo], category: Symbol, keepClean: Boolean): List[AnnotationInfo] = {
-      initial filter { ann =>
-        // There are no meta-annotation arguments attached to `ann`
-        if (ann.metaAnnotations.isEmpty) {
-          // A meta-annotation matching `annotKind` exists on `ann`'s definition.
-          (ann.defaultTargets contains category) ||
-          // `ann`'s definition has no meta-annotations, and `keepClean` is true.
-          (ann.defaultTargets.isEmpty && keepClean)
-        }
-        // There are meta-annotation arguments, and one of them matches `annotKind`
-        else ann.metaAnnotations exists (_ matches category)
-      }
+  /** The annotations amongst those found on the original symbol which
+   *  should be propagated to this kind of accessor.
+   */
+  def deriveAnnotations(initial: List[AnnotationInfo], category: Symbol, keepClean: Boolean): List[AnnotationInfo] = {
+    def annotationFilter(ann: AnnotationInfo) = ann.metaAnnotations match {
+      case Nil if ann.defaultTargets.isEmpty => keepClean                             // no meta-annotations or default targets
+      case Nil                               => ann.defaultTargets contains category  // default targets exist for ann
+      case metas                             => metas exists (_ matches category)     // meta-annotations attached to ann
     }
+    initial filter annotationFilter
   }
-  import synthesisUtil._
 
   class ClassMethodSynthesis(val clazz: Symbol, localTyper: Typer) {
     def mkThis = This(clazz) setPos clazz.pos.focus
@@ -67,7 +52,10 @@ trait MethodSynthesis {
     }
 
     private def finishMethod(method: Symbol, f: Symbol => Tree): Tree =
-      localTyper typed newValOrDefDef(method, f(method))
+      localTyper typed (
+        if (method.isLazy) ValDef(method, f(method))
+        else DefDef(method, f(method))
+      )
 
     private def createInternal(name: Name, f: Symbol => Tree, info: Type): Tree = {
       val name1 = name.toTermName
@@ -105,7 +93,7 @@ trait MethodSynthesis {
     def createSwitchMethod(name: Name, range: Seq[Int], returnType: Type)(f: Int => Tree) = {
       createMethod(name, List(IntTpe), returnType) { m =>
         val arg0    = Ident(m.firstParam)
-        val default = DEFAULT ==> THROW(IndexOutOfBoundsExceptionClass, arg0)
+        val default = DEFAULT ==> Throw(IndexOutOfBoundsExceptionClass.tpe_*, fn(arg0, nme.toString_))
         val cases   = range.map(num => CASE(LIT(num)) ==> f(num)).toList :+ default
 
         Match(arg0, cases)
@@ -393,18 +381,9 @@ trait MethodSynthesis {
       }
     }
     case class Getter(tree: ValDef) extends BaseGetter(tree) {
-      override def derivedSym = (
-        if (mods.isDeferred) basisSym
-        else basisSym.getter(enclClass)
-      )
-      // Range position errors ensue if we don't duplicate this in some
-      // circumstances (at least: concrete vals with existential types.)
-      private def tptOriginal = (
-        if (mods.isDeferred) tree.tpt                       // keep type tree of original abstract field
-        else tree.tpt.duplicate setPos tree.tpt.pos.focus   // focused position of original tpt
-      )
-
-      override def derivedTree: DefDef = {
+      override def derivedSym = if (mods.isDeferred) basisSym else basisSym.getter(enclClass)
+      private def derivedRhs  = if (mods.isDeferred) EmptyTree else fieldSelection
+      private def derivedTpt = {
         // For existentials, don't specify a type for the getter, even one derived
         // from the symbol! This leads to incompatible existentials for the field and
         // the getter. Let the typer do all the work. You might think "why only for
@@ -413,24 +392,16 @@ trait MethodSynthesis {
         // starts compiling (instead of failing like it's supposed to) because the typer
         // expects to be able to identify escaping locals in typedDefDef, and fails to
         // spot that brand of them. In other words it's an artifact of the implementation.
-        val tpt = atPos(derivedSym.pos.focus)(derivedSym.tpe.finalResultType match {
-          case ExistentialType(_, _)  => TypeTree()
-          case _ if mods.isDeferred   => TypeTree()
+        val tpt = derivedSym.tpe_*.finalResultType.widen match {
+          // Range position errors ensue if we don't duplicate this in some
+          // circumstances (at least: concrete vals with existential types.)
+          case ExistentialType(_, _)  => TypeTree() setOriginal (tree.tpt.duplicate setPos tree.tpt.pos.focus)
+          case _ if mods.isDeferred   => TypeTree() setOriginal tree.tpt // keep type tree of original abstract field
           case tp                     => TypeTree(tp)
-        })
-        // TODO - reconcile this with the DefDef creator in Trees (which
-        //   at this writing presented no way to pass a tree in for tpt.)
-        atPos(derivedSym.pos) {
-          DefDef(
-            Modifiers(derivedSym.flags),
-            derivedSym.name.toTermName,
-            Nil,
-            Nil,
-            tpt setOriginal tptOriginal,
-            if (mods.isDeferred) EmptyTree else fieldSelection
-          ) setSymbol derivedSym
         }
+        tpt setPos tree.tpt.pos.focus
       }
+      override def derivedTree: DefDef = newDefDef(derivedSym, derivedRhs)(tpt = derivedTpt)
     }
     /** Implements lazy value accessors:
      *    - for lazy values of type Unit and all lazy fields inside traits,
@@ -461,8 +432,8 @@ trait MethodSynthesis {
           if (tree.symbol.owner.isTrait || hasUnitType(basisSym)) rhs1
           else gen.mkAssignAndReturn(basisSym, rhs1)
         )
-        derivedSym.setPos(tree.pos) // cannot set it at createAndEnterSymbol because basisSym can possible stil have NoPosition
-        val ddefRes = atPos(tree.pos)(DefDef(derivedSym, new ChangeOwnerAndModuleClassTraverser(basisSym, derivedSym)(body)))
+        derivedSym setPos tree.pos // cannot set it at createAndEnterSymbol because basisSym can possible stil have NoPosition
+        val ddefRes = DefDef(derivedSym, new ChangeOwnerAndModuleClassTraverser(basisSym, derivedSym)(body))
         // ValDef will have its position focused whereas DefDef will have original correct rangepos
         // ideally positions would be correct at the creation time but lazy vals are really a special case
         // here so for the sake of keeping api clean we fix positions manually in LazyValGetter

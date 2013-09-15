@@ -703,14 +703,10 @@ self =>
 
 /* ---------- TREE CONSTRUCTION ------------------------------------------- */
 
-    def atPos[T <: Tree](offset: Int)(t: T): T =
-      global.atPos(r2p(offset, offset, in.lastOffset max offset))(t)
-    def atPos[T <: Tree](start: Int, point: Int)(t: T): T =
-      global.atPos(r2p(start, point, in.lastOffset max start))(t)
-    def atPos[T <: Tree](start: Int, point: Int, end: Int)(t: T): T =
-      global.atPos(r2p(start, point, end))(t)
-    def atPos[T <: Tree](pos: Position)(t: T): T =
-      global.atPos(pos)(t)
+    def atPos[T <: Tree](offset: Int)(t: T): T                      = atPos(r2p(offset, offset, in.lastOffset max offset))(t)
+    def atPos[T <: Tree](start: Int, point: Int)(t: T): T           = atPos(r2p(start, point, in.lastOffset max start))(t)
+    def atPos[T <: Tree](start: Int, point: Int, end: Int)(t: T): T = atPos(r2p(start, point, end))(t)
+    def atPos[T <: Tree](pos: Position)(t: T): T                    = global.atPos(pos)(t)
 
     def atInPos[T <: Tree](t: T): T  = atPos(o2p(in.offset))(t)
     def setInPos[T <: Tree](t: T): T = t setPos o2p(in.offset)
@@ -946,21 +942,23 @@ self =>
           ts += annotType()
         }
         newLineOptWhenFollowedBy(LBRACE)
-        atPos(t.pos.startOrPoint) {
-          if (in.token == LBRACE) {
-            // Warn if they are attempting to refine Unit; we can't be certain it's
-            // scala.Unit they're refining because at this point all we have is an
-            // identifier, but at a later stage we lose the ability to tell an empty
-            // refinement from no refinement at all.  See bug #284.
-            for (Ident(name) <- ts) name.toString match {
-              case "Unit" | "scala.Unit"  =>
-                warning("Detected apparent refinement of Unit; are you missing an '=' sign?")
-              case _ =>
-            }
-            CompoundTypeTree(Template(ts.toList, emptyValDef, refinement()))
-          }
-          else
-            makeIntersectionTypeTree(ts.toList)
+        val types         = ts.toList
+        val braceOffset   = in.offset
+        val hasRefinement = in.token == LBRACE
+        val refinements   = if (hasRefinement) refinement() else Nil
+        // Warn if they are attempting to refine Unit; we can't be certain it's
+        // scala.Unit they're refining because at this point all we have is an
+        // identifier, but at a later stage we lose the ability to tell an empty
+        // refinement from no refinement at all.  See bug #284.
+        if (hasRefinement) types match {
+          case Ident(name) :: Nil if name endsWith "Unit" => warning(braceOffset, "Detected apparent refinement of Unit; are you missing an '=' sign?")
+          case _                                          =>
+        }
+        // The second case includes an empty refinement - refinements is empty, but
+        // it still gets a CompoundTypeTree.
+        ts.toList match {
+          case tp :: Nil if !hasRefinement => tp  // single type, no refinement, already positioned
+          case tps                         => atPos(t.pos.startOrPoint)(CompoundTypeTree(Template(tps, emptyValDef, refinements)))
         }
       }
 
@@ -2776,8 +2774,10 @@ self =>
       def readAppliedParent() = {
         val start = in.offset
         val parent = startAnnotType()
-        val argss = if (in.token == LPAREN) multipleArgumentExprs() else Nil
-        parents += atPos(start)((parent /: argss)(Apply.apply))
+        parents += (in.token match {
+          case LPAREN => atPos(start)((parent /: multipleArgumentExprs())(Apply.apply))
+          case _      => parent
+        })
       }
       readAppliedParent()
       while (in.token == WITH) { in.nextToken(); readAppliedParent() }

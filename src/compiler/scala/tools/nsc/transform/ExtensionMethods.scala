@@ -205,7 +205,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           def makeExtensionMethodSymbol = {
             val extensionName = extensionNames(origMeth).head.toTermName
             val extensionMeth = (
-              companion.moduleClass.newMethod(extensionName, origMeth.pos, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
+              companion.moduleClass.newMethod(extensionName, tree.pos.focus, origMeth.flags & ~OVERRIDE & ~PROTECTED | FINAL)
                 setAnnotations origMeth.annotations
             )
             origMeth.removeAnnotation(TailrecClass) // it's on the extension method, now.
@@ -234,10 +234,10 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
             if (extensionBody.tpe <:< extensionMono.finalResultType)
               extensionBody
             else
-              gen.mkCastPreservingAnnotations(extensionBody, extensionMono.finalResultType) // SI-7818 e.g. mismatched existential skolems        
+              gen.mkCastPreservingAnnotations(extensionBody, extensionMono.finalResultType) // SI-7818 e.g. mismatched existential skolems
 
           // Record the extension method. Later, in `Extender#transformStats`, these will be added to the companion object.
-          extensionDefs(companion) += atPos(tree.pos)(DefDef(extensionMeth, castBody))
+          extensionDefs(companion) += DefDef(extensionMeth, castBody)
 
           // These three lines are assembling Foo.bar$extension[T1, T2, ...]($this)
           // which leaves the actual argument application for extensionCall.
@@ -294,7 +294,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
           val origThis = extensionMeth.owner.companionClass
           val baseType = qual.tpe.baseType(origThis)
           val allTargs = targs.map(_.tpe) ::: baseType.typeArgs
-          val fun = gen.mkAttributedTypeApply(THIS(extensionMeth.owner), extensionMeth, allTargs)
+          val fun = gen.mkAttributedTypeApply(gen.mkAttributedThis(extensionMeth.owner), extensionMeth, allTargs)
           allArgss.foldLeft(fun)(Apply(_, _))
         }
       case _ => super.transform(tree)
