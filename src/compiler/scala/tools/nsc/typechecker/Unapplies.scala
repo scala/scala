@@ -46,11 +46,8 @@ trait Unapplies extends ast.TreeDSL {
   def copyUntyped[T <: Tree](tree: T): T =
     returning[T](tree.duplicate)(UnTyper traverse _)
 
-  def copyUntypedInvariant(td: TypeDef): TypeDef = {
-    val copy = treeCopy.TypeDef(td, td.mods &~ (COVARIANT | CONTRAVARIANT), td.name, td.tparams, td.rhs)
-
-    returning[TypeDef](copy.duplicate)(UnTyper traverse _)
-  }
+  def copyUntypedInvariant(td: TypeDef): TypeDef =
+    copyTypeDef(copyUntyped(td))(mods = td.mods &~ (COVARIANT | CONTRAVARIANT))
 
   private def toIdent(x: DefTree) = Ident(x.name) setPos x.pos.focus
 

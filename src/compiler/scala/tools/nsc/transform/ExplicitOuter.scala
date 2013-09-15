@@ -90,7 +90,7 @@ abstract class ExplicitOuter extends InfoTransform
 
     sym expandName clazz
     sym.referenced = clazz
-    sym setInfo MethodType(Nil, restpe)
+    sym setInfo MethodType(Nil, restpe.widen)
   }
   def newOuterField(clazz: Symbol) = {
     val accFlags = SYNTHETIC | ARTIFACT | PARAMACCESSOR | ( if (clazz.isEffectivelyFinal) PrivateLocal else PROTECTED )
@@ -225,9 +225,10 @@ abstract class ExplicitOuter extends InfoTransform
      *
      * Will return `EmptyTree` if there is no outer accessor because of a premature self reference.
      */
-    protected def outerValue: Tree =
-      if (outerParam != NoSymbol) ID(outerParam)
-      else outerSelect(THIS(currentClass))
+    protected def outerValue: Tree = outerParam match {
+      case NoSymbol   => outerSelect(gen.mkAttributedThis(currentClass))
+      case outerParam => gen.mkAttributedIdent(outerParam)
+    }
 
     /** Select and apply outer accessor from 'base'
      *  The result is typed but not positioned.
@@ -368,8 +369,7 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The definition tree of the outer accessor of current class
      */
-    def outerFieldDef: Tree =
-      VAL(outerField(currentClass)) === EmptyTree
+    def outerFieldDef: Tree = ValDef(outerField(currentClass))
 
     /** The definition tree of the outer accessor of current class
      */

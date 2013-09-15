@@ -158,11 +158,12 @@ abstract class UnCurry extends InfoTransform
      */
     private def nonLocalReturnTry(body: Tree, key: Symbol, meth: Symbol) = {
       localTyper typed {
-        val extpe   = nonLocalReturnExceptionType(meth.tpe.finalResultType)
+        val restpe  = meth.tpe_*.finalResultType
+        val extpe   = nonLocalReturnExceptionType(restpe)
         val ex      = meth.newValue(nme.ex, body.pos) setInfo extpe
-        val argType = meth.tpe.finalResultType withAnnotation (AnnotationInfo marker UncheckedClass.tpe)
+        val argType = restpe withAnnotation (AnnotationInfo marker UncheckedClass.tpe)
         val pat     = gen.mkBindForCase(ex, NonLocalReturnControlClass, List(argType))
-        val rhs = (
+        val rhs     = (
           IF   ((ex DOT nme.key)() OBJ_EQ Ident(key))
           THEN ((ex DOT nme.value)())
           ELSE (Throw(Ident(ex)))
@@ -739,7 +740,7 @@ abstract class UnCurry extends InfoTransform
         case p if rpsymbols(p.symbol) => toArrayType(p.symbol.tpe)
         case p                        => p.symbol.tpe
       }
-      val forwresult = dd.symbol.tpe.finalResultType
+      val forwresult = dd.symbol.tpe_*.finalResultType
       val forwformsyms = map2(forwformals, flatparams)((tp, oldparam) =>
         currentClass.newValueParameter(oldparam.name, oldparam.symbol.pos).setInfo(tp)
       )
@@ -751,10 +752,11 @@ abstract class UnCurry extends InfoTransform
 
       // create the symbol
       val forwsym = currentClass.newMethod(dd.name.toTermName, dd.pos, VARARGS | SYNTHETIC | flatdd.symbol.flags) setInfo forwtype
+      def forwParams = forwsym.info.paramss.flatten
 
       // create the tree
       val forwtree = theTyper.typedPos(dd.pos) {
-        val locals = map2(forwsym ARGS, flatparams) {
+        val locals = map2(forwParams, flatparams) {
           case (_, fp) if !rpsymbols(fp.symbol) => null
           case (argsym, fp)                     =>
             Block(Nil,
@@ -764,15 +766,13 @@ abstract class UnCurry extends InfoTransform
               )
             )
         }
-        val seqargs = map2(locals, forwsym ARGS) {
+        val seqargs = map2(locals, forwParams) {
           case (null, argsym) => Ident(argsym)
           case (l, _)         => l
         }
         val end = if (forwsym.isConstructor) List(UNIT) else Nil
 
-        DEF(forwsym) === BLOCK(
-          Apply(gen.mkAttributedRef(flatdd.symbol), seqargs) :: end : _*
-        )
+        DefDef(forwsym, BLOCK(Apply(gen.mkAttributedRef(flatdd.symbol), seqargs) :: end : _*))
       }
 
       // check if the method with that name and those arguments already exists in the template
