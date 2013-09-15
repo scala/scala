@@ -192,7 +192,7 @@ trait TreeDSL {
     }
 
     class DefSymStart(val sym: Symbol) extends SymVODDStart with DefCreator {
-      def symType  = sym.tpe.finalResultType
+      def symType  = sym.tpe_*.finalResultType
       def tparams  = sym.typeParams map TypeDef
       def vparamss = mapParamss(sym)(ValDef)
     }

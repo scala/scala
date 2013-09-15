@@ -234,7 +234,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
             if (extensionBody.tpe <:< extensionMono.finalResultType)
               extensionBody
             else
-              gen.mkCastPreservingAnnotations(extensionBody, extensionMono.finalResultType) // SI-7818 e.g. mismatched existential skolems        
+              gen.mkCastPreservingAnnotations(extensionBody, extensionMono.finalResultType) // SI-7818 e.g. mismatched existential skolems
 
           // Record the extension method. Later, in `Extender#transformStats`, these will be added to the companion object.
           extensionDefs(companion) += atPos(tree.pos)(DefDef(extensionMeth, castBody))
