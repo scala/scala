@@ -1358,11 +1358,10 @@ TODO:
           <attribute name="Class-Path" value="scala-reflect.jar scala-library.jar"/>
         </manifest>
       </pre>
-      <!-- script api is 2.11-only so far
+      <!-- JSR-223 support introduced in 2.11 -->
       <jar-opts>
         <service type="javax.script.ScriptEngineFactory" provider="scala.tools.nsc.interpreter.IMain$Factory"/>
       </jar-opts>
-      -->
     </staged-pack>
   </target>
 
