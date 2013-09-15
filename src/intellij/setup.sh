@@ -9,7 +9,7 @@ export BASE="$( cd "$( dirname "$0" )"/../.. && pwd )"
 echo "About to delete .ipr and .iml files and replace with the .SAMPLE files. Press enter to continue or CTRL-C to cancel."
 read
 
-(rm *.ipr *.iml 2>/dev/null)
+(rm -f *.ipr *.iml 2>/dev/null)
 for f in $(ls "$SCRIPT_DIR"/*.SAMPLE); do
 	NEW_FILE=`echo $f | perl -pe 's/.SAMPLE//'`;
 
