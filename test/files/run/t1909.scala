@@ -6,3 +6,7 @@ class Ticket1909 {
   def this(value: Int) = this()
   def this(p: String) = this(try 0)
 }
+
+object Test extends App {
+  new Ticket1909("")
+}

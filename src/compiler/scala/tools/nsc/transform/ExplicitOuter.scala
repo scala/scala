@@ -216,7 +216,7 @@ abstract class ExplicitOuter extends InfoTransform
    *  values for outer parameters of constructors.
    *  The class provides methods for referencing via outer.
    */
-  abstract class OuterPathTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+  abstract class OuterPathTransformer(unit: CompilationUnit) extends TypingTransformer(unit) with UnderConstructionTransformer {
     /** The directly enclosing outer parameter, if we are in a constructor */
     protected var outerParam: Symbol = NoSymbol
 
@@ -277,16 +277,6 @@ abstract class ExplicitOuter extends InfoTransform
     }
 
 
-    /** The stack of class symbols in which a call to this() or to the super
-      * constructor, or early definition is active
-      */
-    protected def isUnderConstruction(clazz: Symbol) = selfOrSuperCalls contains clazz
-    protected val selfOrSuperCalls = mutable.Stack[Symbol]()
-    @inline protected def inSelfOrSuperCall[A](sym: Symbol)(a: => A) = {
-      selfOrSuperCalls push sym
-      try a finally selfOrSuperCalls.pop()
-    }
-
     override def transform(tree: Tree): Tree = {
       val savedOuterParam = outerParam
       try {
@@ -300,10 +290,7 @@ abstract class ExplicitOuter extends InfoTransform
             }
           case _ =>
         }
-        if ((treeInfo isSelfOrSuperConstrCall tree) || (treeInfo isEarlyDef tree))
-          inSelfOrSuperCall(currentOwner.owner)(super.transform(tree))
-        else
-          super.transform(tree)
+        super.transform(tree)
       }
       finally outerParam = savedOuterParam
     }
