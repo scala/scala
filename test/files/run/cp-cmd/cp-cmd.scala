@@ -21,25 +21,30 @@ object Test extends App {
    *
    * Just to be sure we then print the content of the file which should be "haggis".
    */
-  val commands = Seq(
-    "if (getClass.getClassLoader.getResourceAsStream(\"test.txt" +
-      "\") eq null) \"not found\" else \"found\"",
-    ":cp test/files/run/cp-cmd",
-    "println(new java.io.BufferedReader(new java.io.InputStreamReader(" +
-      "getClass.getClassLoader.getResourceAsStream(\"test.txt\"))).readLine)",
-    "getClass.getClassLoader.loadClass(\"ClasspathTest\")",
-    "ClasspathTest.test",
-    ":q")
-  val loop = new TestLoop(commands)
+  val code = """
+    |if (getClass.getClassLoader.getResourceAsStream("test.txt") eq null) "not found" else "found"
+    |:cp test/files/run/cp-cmd
+    |{
+    |  import java.io._
+    |  val in = getClass.getClassLoader.getResourceAsStream("test.txt")
+    |  val reader = new BufferedReader(new InputStreamReader(in))
+    |  println(reader.readLine)
+    |}
+    |getClass.getClassLoader.loadClass("ClasspathTest")
+    |ClasspathTest.test
+    |:q
+  """.stripMargin.trim
+
+  val loop = new TestLoop(code)
 
   loop.process(settings)
   println()
 }
 
 class TestLoop(
-  commands: Seq[String]
+  code: String
 ) extends ILoop(
-  Some(new BufferedReader(new StringReader(commands.mkString("\n")))),
+  Some(new BufferedReader(new StringReader(code))),
   new JPrintWriter(Console.out, true)
 ) {
   override protected def echo(msg: String) = ()
