@@ -228,6 +228,8 @@ trait Reifiers { self: Quasiquotes =>
     override def reifyTreeSyntactically(tree: Tree): Tree = tree match {
       case RefTree(qual, SymbolPlaceholder(tree)) =>
         mirrorBuildCall(nme.RefTree, reify(qual), tree)
+      case This(SymbolPlaceholder(tree)) =>
+        mirrorCall(nme.This, tree)
       case _ =>
         super.reifyTreeSyntactically(tree)
     }

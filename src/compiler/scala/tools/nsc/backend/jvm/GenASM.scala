@@ -1479,7 +1479,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           sym.owner.isSynthetic &&
           sym.owner.tpe.parents.exists { t =>
             val TypeRef(_, sym, _) = t
-            FunctionClass contains sym
+            FunctionClass.seq contains sym
           }
         }
 

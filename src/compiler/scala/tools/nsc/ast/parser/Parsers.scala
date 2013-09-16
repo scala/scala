@@ -28,19 +28,13 @@ import util.FreshNameCreator
  */
 trait ParsersCommon extends ScannersCommon { self =>
   val global : Global
-  import global._
+  // the use of currentUnit in the parser should be avoided as it might
+  // cause unexpected behaviour when you work with two units at the
+  // same time; use Parser.unit instead
+  import global.{currentUnit => _, _}
 
   def newLiteral(const: Any) = Literal(Constant(const))
   def literalUnit            = newLiteral(())
-
-  class ParserTreeBuilder extends TreeBuilder {
-    val global: self.global.type = self.global
-    def freshName(prefix: String): Name               = freshTermName(prefix)
-    def freshTermName(prefix: String): TermName       = currentUnit.freshTermName(prefix)
-    def freshTypeName(prefix: String): TypeName       = currentUnit.freshTypeName(prefix)
-    def o2p(offset: Int): Position                    = new OffsetPosition(currentUnit.source, offset)
-    def r2p(start: Int, mid: Int, end: Int): Position = rangePos(currentUnit.source, start, mid, end)
-  }
 
   /** This is now an abstract class, only to work around the optimizer:
    *  methods in traits are never inlined.
@@ -172,6 +166,7 @@ self =>
 
     private val globalFresh = new FreshNameCreator.Default
 
+    def unit = global.currentUnit
     def freshName(prefix: String): Name = freshTermName(prefix)
     def freshTermName(prefix: String): TermName = newTermName(globalFresh.newName(prefix))
     def freshTypeName(prefix: String): TypeName = newTypeName(globalFresh.newName(prefix))
@@ -196,7 +191,7 @@ self =>
      * that we don't have the xml library on the compilation classpath.
      */
     private[this] lazy val xmlp = {
-      currentUnit.encounteredXml(o2p(in.offset))
+      unit.encounteredXml(o2p(in.offset))
       new MarkupParser(this, preserveWS = true)
     }
 
@@ -225,7 +220,7 @@ self =>
     override def templateBody(isPre: Boolean) = skipBraces((emptyValDef, EmptyTree.asList))
   }
 
-  class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) {
+  class UnitParser(override val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) { uself =>
     def this(unit: global.CompilationUnit) = this(unit, Nil)
 
     override def newScanner() = new UnitScanner(unit, patches)
@@ -298,9 +293,10 @@ self =>
 
   import nme.raw
 
-  abstract class Parser extends ParserCommon {
+  abstract class Parser extends ParserCommon { parser =>
     val in: Scanner
 
+    def unit: CompilationUnit
     def freshName(prefix: String): Name
     def freshTermName(prefix: String): TermName
     def freshTypeName(prefix: String): TypeName
@@ -310,8 +306,12 @@ self =>
     /** whether a non-continuable syntax error has been seen */
     private var lastErrorOffset : Int = -1
 
+    class ParserTreeBuilder extends UnitTreeBuilder {
+      val global: self.global.type = self.global
+      def unit = parser.unit
+    }
     val treeBuilder = new ParserTreeBuilder
-    import treeBuilder.{global => _, _}
+    import treeBuilder.{global => _, unit => _, _}
 
     /** The types of the context bounds of type parameters of the surrounding class
      */

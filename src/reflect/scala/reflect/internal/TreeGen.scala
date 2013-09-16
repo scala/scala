@@ -437,4 +437,10 @@ abstract class TreeGen extends macros.TreeBuilder {
     else if (!stats.last.isTerm) Block(stats, Literal(Constant(())))
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
+
+  def mkTreeOrBlock(stats: List[Tree]) = stats match {
+    case Nil => EmptyTree
+    case head :: Nil => head
+    case _ => gen.mkBlock(stats)
+  }
 }
