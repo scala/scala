@@ -1,4 +1,12 @@
+/*DISABLED:
+    For Paul, it steals focus when it runs.
 
+    For me, it fails with some platform specific extra output:
+
+    -ScriptEngineManager providers.next(): javax.script.ScriptEngineFactory: Provider apple.applescript.AppleScriptEngin
+     n: Object = 10
+     12345678910
+*/
 import javax.script._
 import scala.tools.nsc.interpreter.IMain
 
