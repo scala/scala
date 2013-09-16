@@ -49,7 +49,7 @@ trait Parsers { self: Quasiquotes =>
 
     def entryPoint: QuasiquoteParser => Tree
 
-    class QuasiquoteParser(source0: SourceFile) extends SourceFileParser(source0) {
+    class QuasiquoteParser(source0: SourceFile) extends SourceFileParser(source0) { parser =>
       def isHole: Boolean = isIdent && isHole(in.name)
 
       def isHole(name: Name): Boolean = holeMap.contains(name)
@@ -73,7 +73,7 @@ trait Parsers { self: Quasiquotes =>
         override def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
           AppliedTypeTree(Ident(tpnme.QUASIQUOTE_FUNCTION), argtpes :+ restpe)
       }
-      import treeBuilder.{global => _, _}
+      import treeBuilder.{global => _, unit => _, _}
 
       // q"def foo($x)"
       override def allowTypelessParams = true
@@ -144,11 +144,7 @@ trait Parsers { self: Quasiquotes =>
   }
 
   object TermParser extends Parser {
-    def entryPoint = _.templateStats() match {
-      case Nil => EmptyTree
-      case tree :: Nil => tree
-      case stats :+ tree => Block(stats, tree)
-    }
+    def entryPoint = { parser => gen.mkTreeOrBlock(parser.templateStats()) }
   }
 
   object TypeParser extends Parser {

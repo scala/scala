@@ -5,7 +5,7 @@ package internal
 import Flags._
 
 trait BuildUtils { self: SymbolTable =>
-  import definitions.{TupleClass, FunctionClass, MaxTupleArity, MaxFunctionArity, ScalaPackage, UnitClass}
+  import definitions.{TupleClass, FunctionClass, ScalaPackage, UnitClass}
 
   class BuildImpl extends BuildApi {
 
@@ -271,32 +271,30 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
     private object TupleClassRef extends ScalaMemberRef {
-      val symbols = TupleClass.filter { _ != null }.toSeq
+      val symbols = TupleClass.seq
     }
     private object TupleCompanionRef extends ScalaMemberRef {
-      val symbols = TupleClassRef.symbols.map { _.companionModule }
+      val symbols = TupleClass.seq.map { _.companionModule }
     }
     private object UnitClassRef extends ScalaMemberRef {
       val symbols = Seq(UnitClass)
     }
     private object FunctionClassRef extends ScalaMemberRef {
-      val symbols = FunctionClass.toSeq
+      val symbols = FunctionClass.seq
     }
 
     object SyntacticTuple extends SyntacticTupleExtractor {
       def apply(args: List[Tree]): Tree = args match {
         case Nil      => Literal(Constant(()))
         case _        =>
-          require(args.length <= MaxTupleArity, s"Tuples with arity bigger than $MaxTupleArity aren't supported")
+          require(TupleClass(args.length).exists, s"Tuples with ${args.length} arity aren't supported")
           self.Apply(TupleClass(args.length).companionModule, args: _*)
       }
 
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
         case Literal(Constant(())) =>
           Some(Nil)
-        case Apply(TupleCompanionRef(sym), args)
-          if args.length <= MaxTupleArity
-          && sym == TupleClass(args.length).companionModule =>
+        case Apply(TupleCompanionRef(sym), args) if sym == TupleClass(args.length).companionModule =>
           Some(args)
         case _ =>
           None
@@ -307,15 +305,14 @@ trait BuildUtils { self: SymbolTable =>
       def apply(args: List[Tree]): Tree = args match {
         case Nil => self.Select(self.Ident(nme.scala_), tpnme.Unit)
         case _   =>
-          require(args.length <= MaxTupleArity, s"Tuples with arity bigger than $MaxTupleArity aren't supported")
+          require(TupleClass(args.length).exists, s"Tuples with ${args.length} arity aren't supported")
           AppliedTypeTree(Ident(TupleClass(args.length)), args)
       }
 
       def unapply(tree: Tree): Option[List[Tree]] =  tree match {
         case UnitClassRef(_) =>
           Some(Nil)
-        case AppliedTypeTree(TupleClassRef(sym), args)
-          if args.length <= MaxTupleArity && sym == TupleClass(args.length) =>
+        case AppliedTypeTree(TupleClassRef(sym), args) if sym == TupleClass(args.length) =>
           Some(args)
         case _ =>
           None
@@ -324,13 +321,12 @@ trait BuildUtils { self: SymbolTable =>
 
     object SyntacticFunctionType extends SyntacticFunctionTypeExtractor {
       def apply(argtpes: List[Tree], restpe: Tree): Tree = {
-        require(argtpes.length <= MaxFunctionArity + 1, s"Function types with arity bigger than $MaxFunctionArity aren't supported")
+        require(FunctionClass(argtpes.length).exists, s"Function types with ${argtpes.length} arity aren't supported")
         gen.mkFunctionTypeTree(argtpes, restpe)
       }
 
       def unapply(tree: Tree): Option[(List[Tree], Tree)] = tree match {
-        case AppliedTypeTree(FunctionClassRef(sym), args @ (argtpes :+ restpe))
-          if args.length - 1 <= MaxFunctionArity && sym == FunctionClass(args.length - 1) =>
+        case AppliedTypeTree(FunctionClassRef(sym), args @ (argtpes :+ restpe)) if sym == FunctionClass(args.length - 1) =>
           Some((argtpes, restpe))
         case _ => None
       }
