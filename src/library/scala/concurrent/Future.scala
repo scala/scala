@@ -473,6 +473,13 @@ object Future {
    */
   def successful[T](result: T): Future[T] = Promise.successful(result).future
 
+  /** Creates an already completed Future with the specified result or exception.
+   *
+   *  @tparam T       the type of the value in the promise
+   *  @return         the newly created `Future` object
+   */
+  def fromTry[T](result: Try[T]): Future[T] = Promise.fromTry(result).future
+
   /** Starts an asynchronous computation and returns a `Future` object with the result of that computation.
   *
   *  The result becomes available once the asynchronous computation is completed.
