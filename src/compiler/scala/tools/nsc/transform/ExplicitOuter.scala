@@ -90,7 +90,7 @@ abstract class ExplicitOuter extends InfoTransform
 
     sym expandName clazz
     sym.referenced = clazz
-    sym setInfo MethodType(Nil, restpe.widen)
+    sym setInfo MethodType(Nil, restpe)
   }
   def newOuterField(clazz: Symbol) = {
     val accFlags = SYNTHETIC | ARTIFACT | PARAMACCESSOR | ( if (clazz.isEffectivelyFinal) PrivateLocal else PROTECTED )
@@ -361,10 +361,10 @@ abstract class ExplicitOuter extends InfoTransform
     /** The definition tree of the outer accessor of current class
      */
     def outerAccessorDef: Tree = localTyper typed {
-      outerAccessor(currentClass) match {
-        case acc if acc.isDeferred => DefDef(acc, EmptyTree)
-        case acc                   => DefDef(acc, Select(This(currentClass), outerField(currentClass)))
-      }
+      val acc = outerAccessor(currentClass)
+      val rhs = if (acc.isDeferred) EmptyTree else Select(This(currentClass), outerField(currentClass))
+      val tp = (currentClass.thisType memberType acc).finalResultType
+      newDefDef(acc, rhs)(tpt = TypeTree(tp))
     }
 
     /** The definition tree of the outer accessor for class mixinClass.
