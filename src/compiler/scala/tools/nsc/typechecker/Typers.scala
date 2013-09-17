@@ -4878,17 +4878,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         tree.value match {
           case Constant(s: String) =>
-            def names = InterpolatorIdentRegex findAllIn s map (n => newTermName(n stripPrefix "$"))
-            def suspicious = (
-                 (InterpolatorCodeRegex findFirstIn s).nonEmpty
-              || (names exists (n => context.lookupSymbol(n, _ => true).symbol.exists))
-            )
+            def names = InterpolatorIdentRegex findAllIn s map (n => TermName(n stripPrefix "$"))
+            def isSuspiciousExpr = (InterpolatorCodeRegex findFirstIn s).nonEmpty
+            //def isSuspiciousName = names exists symExists
+            def suspiciousName   = names find symExists
+            def symExists(n: TermName) = context.lookupSymbol(n, _ => true).symbol.exists
             val noWarn = (
                  isArgToImplicitNotFound
               || !(s contains ' ') // another heuristic - e.g. a string with only "$asInstanceOf"
             )
-            if (!noWarn && suspicious)
-              unit.warning(tree.pos, "looks like an interpolated String; did you forget the interpolator?")
+            if (!noWarn) {
+              val suggest = "Did you forget the interpolator?"
+              if (isSuspiciousExpr)
+                unit.warning(tree.pos, s"That looks like an interpolated expression! $suggest")
+              else /* if (isSuspiciousName) */ suspiciousName foreach (n =>
+                unit.warning(tree.pos, s"`$$$n` looks like an interpolated identifier! $suggest")
+              )
+            }
           case _ =>
         }
       }
