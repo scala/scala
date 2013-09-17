@@ -12,7 +12,7 @@ PROPERTIES
   
   <!-- the maven stuff requires version.major, version.minor and version.patch properties.
        the "get-scala-revision" script only returns "version.number" -->
-  <property file="${basedir}/build.number.maven"/>
+  <property file="${basedir}/build.number"/>
   <!-- also need to know scala binary version and versions for xml and parsers -->
   <property file="${basedir}/versions.properties"/>
 
