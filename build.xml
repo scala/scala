@@ -1379,7 +1379,7 @@ TODO:
   </target>
 
   <!-- depend on quick.done so quick.bin is run when pack.done is -->
-  <target name="pack.done" depends="quick.done, pack.bin">
+  <target name="pack.done" depends="quick.done, pack.bin, partest.task">
     <!-- copy dependencies to build/pack/lib, it only takes a second so don't bother with uptodate checks -->
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="docs.compiler.path"/>
   </target>
