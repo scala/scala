@@ -2,29 +2,17 @@ class scala.tools.asm.tree.MethodNode
     LDC ""
     ALOAD 0
     INVOKEVIRTUAL java/lang/Object.toString ()Ljava/lang/String;
-    ASTORE 1
-    DUP
-    IFNONNULL L0
-    POP
-    ALOAD 1
-    IFNULL L1
-    GOTO L2
-   L0
-   FRAME FULL [Lean java/lang/String] [java/lang/String]
-    ALOAD 1
     INVOKEVIRTUAL java/lang/Object.equals (Ljava/lang/Object;)Z
-    IFEQ L2
-   L1
-   FRAME SAME
+    IFEQ L0
     ICONST_1
-    GOTO L3
-   L2
+    GOTO L1
+   L0
    FRAME SAME
     ICONST_0
-   L3
+   L1
    FRAME SAME1 I
     POP
     RETURN
     MAXSTACK = 2
-    MAXLOCALS = 2
+    MAXLOCALS = 1
 
