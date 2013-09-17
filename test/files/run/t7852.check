@@ -1,4 +1,4 @@
-class scala.tools.asm.tree.MethodNode
+string
     LDC ""
     ALOAD 0
     INVOKEVIRTUAL java/lang/Object.toString ()Ljava/lang/String;
@@ -15,4 +15,36 @@ class scala.tools.asm.tree.MethodNode
     RETURN
     MAXSTACK = 2
     MAXLOCALS = 1
+
+
+module
+    GETSTATIC scala/collection/immutable/Nil$.MODULE$ : Lscala/collection/immutable/Nil$;
+    ALOAD 0
+    INVOKEVIRTUAL java/lang/Object.toString ()Ljava/lang/String;
+    ASTORE 1
+    DUP
+    IFNONNULL L0
+    POP
+    ALOAD 1
+    IFNULL L1
+    GOTO L2
+   L0
+   FRAME FULL [Lean java/lang/String] [scala/collection/immutable/Nil$]
+    ALOAD 1
+    INVOKEVIRTUAL java/lang/Object.equals (Ljava/lang/Object;)Z
+    IFEQ L2
+   L1
+   FRAME SAME
+    ICONST_1
+    GOTO L3
+   L2
+   FRAME SAME
+    ICONST_0
+   L3
+   FRAME SAME1 I
+    POP
+    RETURN
+    MAXSTACK = 2
+    MAXLOCALS = 2
+
 

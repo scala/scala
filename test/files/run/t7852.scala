@@ -5,16 +5,25 @@ import scala.tools.nsc.util.stringFromWriter
 object Test extends BytecodeTest {
   def show {
     val classNode = loadClassNode("Lean")
-    val meth = getMethod(classNode, "foo")
-    println(meth.getClass)
-    val textifier = new Textifier()
-    meth.accept(new TraceMethodVisitor(textifier))
-    println(stringFromWriter(w => textifier.print(w)))
+    def showMethod(name: String) {
+      val meth = getMethod(classNode, name)
+      println(name)
+      val textifier = new Textifier()
+      meth.accept(new TraceMethodVisitor(textifier))
+      println(stringFromWriter(w => textifier.print(w)))
+      println()
+    }
+    showMethod("string")
+    showMethod("module")
   }
 }
 
 class Lean {
-  def foo {
+  def string {
     "" == toString
+  }
+
+  def module {
+    Nil == (toString: Any)
   }
 }
