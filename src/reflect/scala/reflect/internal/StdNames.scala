@@ -413,32 +413,43 @@ trait StdNames {
     @deprecated("Use Name#getterName", "2.11.0") def getterName(name: TermName): TermName     = name.getterName
     @deprecated("Use Name#getterName", "2.11.0") def setterToGetter(name: TermName): TermName = name.getterName
 
+    /**
+     * Convert `Tuple2$mcII` to `Tuple2`, or `T1$sp` to `T1`.
+     */
     def unspecializedName(name: Name): Name = (
-      if (name endsWith SPECIALIZED_SUFFIX)
-        name.subName(0, name.lastIndexOf('m') - 1)
+      // DUPLICATED LOGIC WITH `splitSpecializedName`
+      if (name endsWith SPECIALIZED_SUFFIX) {
+        val idxM = name.lastIndexOf('m')
+        val to = (if (idxM > 0) idxM - 1 else name.length - SPECIALIZED_SUFFIX.length)
+        name.subName(0, to)
+      }
       else name
     )
 
     /** Return the original name and the types on which this name
     *  is specialized. For example,
     *  {{{
-    *     splitSpecializedName("foo$mIcD$sp") == ('foo', "I", "D")
+    *     splitSpecializedName("foo$mIcD$sp") == ('foo', "D", "I")
     *  }}}
     *  `foo$mIcD$sp` is the name of a method specialized on two type
     *  parameters, the first one belonging to the method itself, on Int,
     *  and another one belonging to the enclosing class, on Double.
+    *
+    *  @return (unspecializedName, class tparam specializations, method tparam specializations)
     */
-    def splitSpecializedName(name: Name): (Name, String, String) =
-    if (name endsWith SPECIALIZED_SUFFIX) {
-      val name1 = name dropRight SPECIALIZED_SUFFIX.length
-      val idxC  = name1 lastIndexOf 'c'
-      val idxM  = name1 lastIndexOf 'm'
-
-      (name1.subName(0, idxM - 1),
-      name1.subName(idxC + 1, name1.length).toString,
-      name1.subName(idxM + 1, idxC).toString)
-    } else
-    (name, "", "")
+    def splitSpecializedName(name: Name): (Name, String, String) = {
+      // DUPLICATED LOGIC WITH `unspecializedName`
+      if (name endsWith SPECIALIZED_SUFFIX) {
+        val name1 = name dropRight SPECIALIZED_SUFFIX.length
+        val idxC  = name1 lastIndexOf 'c'
+        val idxM  = name1 lastIndexOf 'm'
+        if (idxC > idxM && idxM > 0)
+          (name1.subName(0, idxM - 1), name1.subName(idxC + 1, name1.length).toString, name1.subName(idxM + 1, idxC).toString)
+        else
+          (name.subName(0, name.length - SPECIALIZED_SUFFIX.length), "", "")
+      }
+      else (name, "", "")
+    }
 
     // Nominally, name$default$N, encoded for <init>
     def defaultGetterName(name: Name, pos: Int): TermName = (
