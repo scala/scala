@@ -363,8 +363,8 @@ value jZ { // after parser
 
 value jZ { // after explicitouter
   protected val $outer: D.this.type
-  val $outer(): ll.D[T3]
-  val $outer(): ll.C[T1]
+  val $outer(): D.this.type
+  val $outer(): C.this.type
   def thisI(): I.this.type
   def thisC(): C.this.type
   def t2(): T2

@@ -2606,7 +2606,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         val rhs    = methodBodyTyper.virtualizedMatch(match_, mode, B1.tpe)
-        val defdef = newDefDef(methodSym, rhs)(vparamss = mapParamss(methodSym)(newParam))
+        val defdef = newDefDef(methodSym, rhs)(vparamss = mapParamss(methodSym)(newParam), tpt = TypeTree(B1.tpe))
 
         (defdef, matchResTp)
       }
