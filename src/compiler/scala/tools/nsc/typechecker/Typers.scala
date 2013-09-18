@@ -4869,7 +4869,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       // Warn about likely interpolated strings which are missing their interpolators
-      def warnMissingInterpolator(tree: Literal) {
+      def warnMissingInterpolator(tree: Literal) = if (!isPastTyper) {
         // Unfortunately implicit not found strings looks for all the world like
         // missing interpolators.
         def isArgToImplicitNotFound = context.enclosingApply.tree match {
