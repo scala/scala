@@ -589,7 +589,11 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object TypeTree extends TypeTreeExtractor
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
-  def TypeTree(sym: Symbol): TypeTree = atPos(sym.pos.focus)(TypeTree(sym.tpe_*.finalResultType))
+  private def TypeTreeMemberType(sym: Symbol): TypeTree = {
+    // Needed for pos/t4970*.scala. See SI-7853
+    val resType = (sym.owner.thisType memberType sym).finalResultType
+    atPos(sym.pos.focus)(TypeTree(resType))
+  }
 
   def TypeBoundsTree(bounds: TypeBounds): TypeBoundsTree = TypeBoundsTree(TypeTree(bounds.lo), TypeTree(bounds.hi))
   def TypeBoundsTree(sym: Symbol): TypeBoundsTree        = atPos(sym.pos)(TypeBoundsTree(sym.info.bounds))
@@ -1039,7 +1043,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   def newValDef(sym: Symbol, rhs: Tree)(
     mods: Modifiers = Modifiers(sym.flags),
     name: TermName  = sym.name.toTermName,
-    tpt: Tree       = TypeTree(sym)
+    tpt: Tree       = TypeTreeMemberType(sym)
   ): ValDef = (
     atPos(sym.pos)(ValDef(mods, name, tpt, rhs)) setSymbol sym
   )
@@ -1049,7 +1053,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     name: TermName               = sym.name.toTermName,
     tparams: List[TypeDef]       = sym.typeParams map TypeDef,
     vparamss: List[List[ValDef]] = mapParamss(sym)(ValDef),
-    tpt: Tree                    = TypeTree(sym)
+    tpt: Tree                    = TypeTreeMemberType(sym)
   ): DefDef = (
     atPos(sym.pos)(DefDef(mods, name, tparams, vparamss, tpt, rhs)) setSymbol sym
   )
