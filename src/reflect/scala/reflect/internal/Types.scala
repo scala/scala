@@ -2835,9 +2835,6 @@ trait Types
   // but pattern-matching returned the original constr0 (a bug)
   // now, pattern-matching returns the most recent constr
   object TypeVar {
-    private val ConstantTrue = ConstantType(Constant(true))
-    private val ConstantFalse = ConstantType(Constant(false))
-
     @inline final def trace[T](action: String, msg: => String)(value: T): T = {
       if (traceTypeVars) {
         val s = msg match {
@@ -3059,13 +3056,13 @@ trait Types
 
     // ignore subtyping&equality checks while true -- see findMember
     // OPT: This could be Either[TypeVar, Boolean], but this encoding was chosen instead to save allocations.
-    private var _suspended: Type = TypeVar.ConstantFalse
+    private var _suspended: Type = ConstantFalse
     private[Types] def suspended: Boolean = (_suspended: @unchecked) match {
-      case TypeVar.ConstantFalse => false
-      case TypeVar.ConstantTrue  => true
-      case tv: TypeVar           => tv.suspended
+      case ConstantFalse => false
+      case ConstantTrue  => true
+      case tv: TypeVar   => tv.suspended
     }
-    private[Types] def suspended_=(b: Boolean): Unit = _suspended = if (b) TypeVar.ConstantTrue else TypeVar.ConstantFalse
+    private[Types] def suspended_=(b: Boolean): Unit = _suspended = if (b) ConstantTrue else ConstantFalse
     // SI-7785 Link the suspended attribute of a TypeVar created in, say, a TypeMap (e.g. AsSeenFrom) to its originator
     private[Types] def linkSuspended(origin: TypeVar): Unit = _suspended = origin
 

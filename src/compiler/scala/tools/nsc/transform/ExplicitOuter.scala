@@ -276,18 +276,16 @@ abstract class ExplicitOuter extends InfoTransform
       else outerPath(outerSelect(base), from.outerClass, to)
     }
 
-
     override def transform(tree: Tree): Tree = {
+      def sym = tree.symbol
       val savedOuterParam = outerParam
       try {
         tree match {
           case Template(_, _, _) =>
             outerParam = NoSymbol
-          case DefDef(_, _, _, vparamss, _, _) =>
-            if (tree.symbol.isClassConstructor && isInner(tree.symbol.owner)) {
-              outerParam = vparamss.head.head.symbol
-              assert(outerParam.name startsWith nme.OUTER, outerParam.name)
-            }
+          case DefDef(_, _, _, (param :: _) :: _, _, _) if sym.isClassConstructor && isInner(sym.owner) =>
+            outerParam = param.symbol
+            assert(outerParam.name startsWith nme.OUTER, outerParam.name)
           case _ =>
         }
         super.transform(tree)

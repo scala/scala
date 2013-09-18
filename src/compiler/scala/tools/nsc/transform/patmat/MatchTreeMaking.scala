@@ -288,8 +288,8 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       def irrefutableExtractorType(tp: Type): Boolean = tp.resultType.dealias match {
         case TypeRef(_, SomeClass, _) => true
         // probably not useful since this type won't be inferred nor can it be written down (yet)
-        case ConstantType(Constant(true)) => true
-        case _ => false
+        case ConstantTrue => true
+        case _            => false
       }
 
       def unapply(xtm: ExtractorTreeMaker): Option[(Tree, Symbol)] = xtm match {

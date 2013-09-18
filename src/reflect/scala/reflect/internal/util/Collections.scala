@@ -34,13 +34,18 @@ trait Collections {
     xss forall (_ forall p)
   final def mmap[A, B](xss: List[List[A]])(f: A => B) =
     xss map (_ map f)
-  final def mforeach[A](xss: List[List[A]])(f: A => Unit) =
-    xss foreach (_ foreach f)
   final def mfind[A](xss: List[List[A]])(p: A => Boolean): Option[A] = {
     var res: Option[A] = null
     mforeach(xss)(x => if ((res eq null) && p(x)) res = Some(x))
     if (res eq null) None else res
   }
+
+  /** These are all written in terms of List because we're trying to wring all
+   *  the performance we can and List is used almost exclusively in the compiler,
+   *  but people are branching out in their collections so here's an overload.
+   */
+  final def mforeach[A](xss: List[List[A]])(f: A => Unit) = xss foreach (_ foreach f)
+  final def mforeach[A](xss: Traversable[Traversable[A]])(f: A => Unit) = xss foreach (_ foreach f)
 
   final def map2[A, B, C](xs1: List[A], xs2: List[B])(f: (A, B) => C): List[C] = {
     val lb = new ListBuffer[C]
