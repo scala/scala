@@ -18,5 +18,5 @@ Note that AV extends Any, not AnyRef.
 Such types can participate in value classes, but instances
 cannot appear in singleton types or in reference comparisons.
     new AV(0): AnyRef
-    ^
+        ^
 four errors found
