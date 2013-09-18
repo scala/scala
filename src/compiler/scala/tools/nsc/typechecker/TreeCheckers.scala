@@ -171,8 +171,8 @@ abstract class TreeCheckers extends Analyzer {
   )
 
 
-  def errorFn(msg: Any): Unit                = Console.err println "[check: %s] %s".format(phase.prev, msg)
-  def errorFn(pos: Position, msg: Any): Unit = errorFn(posstr(pos) + ": " + msg)
+  def errorFn(pos: Position, msg: Any): Unit = currentUnit.warning(pos, "[check: %s] %s".format(phase.prev, msg))
+  def errorFn(msg: Any): Unit                = errorFn(NoPosition, msg)
 
   def informFn(msg: Any) {
     if (settings.verbose || settings.debug)
