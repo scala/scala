@@ -1,21 +1,26 @@
 import scala.tools.partest.BytecodeTest
+import scala.tools.asm
 import scala.tools.asm.util._
 import scala.tools.nsc.util.stringFromWriter
+import scala.collection.JavaConverters._
 
 object Test extends BytecodeTest {
-  def show {
-    val classNode = loadClassNode("Lean")
-    def showMethod(name: String) {
-      val meth = getMethod(classNode, name)
-      println(name)
-      val textifier = new Textifier()
-      meth.accept(new TraceMethodVisitor(textifier))
-      println(stringFromWriter(w => textifier.print(w)))
-      println()
+  val nullChecks = Set(asm.Opcodes.IFNONNULL, asm.Opcodes.IFNULL)
+
+  def show: Unit = {
+    def test(methodName: String, expected: Int) {
+      val classNode = loadClassNode("Lean")
+      val methodNode = getMethod(classNode, methodName)
+      val got = countNullChecks(methodNode.instructions)
+      assert(got == expected, s"expected $expected but got $got comparisons")
     }
-    showMethod("string")
-    showMethod("module")
+    test("string", expected = 0)
+    test("module", expected = 0)
+    test("moduleIndirect", expected = 2)
   }
+
+  def countNullChecks(insnList: asm.tree.InsnList): Int =
+    insnList.iterator.asScala.map(_.getOpcode).count(nullChecks)
 }
 
 class Lean {
@@ -25,5 +30,10 @@ class Lean {
 
   def module {
     Nil == (toString: Any)
+  }
+
+  def moduleIndirect {
+    val n: Nil.type = null
+    n == (toString: Any) // still need null checks here.
   }
 }
