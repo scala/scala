@@ -10,5 +10,5 @@ trait test {
     override def foo(t : T) = super.foo(t);
   }
   def t : T;
-  M0.foo(t);  
+  M0.foo(t);
 }

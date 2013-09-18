@@ -1,13 +1,13 @@
 // ticket #3432
 object Test {
   trait B[@specialized(Int) T] {
-    def value: T 
+    def value: T
   }
 
-  class A[@specialized(Int) T](x: T) { 
-    def foo: B[T] = new B[T] { 
-      def value = x 
-    } 
+  class A[@specialized(Int) T](x: T) {
+    def foo: B[T] = new B[T] {
+      def value = x
+    }
   }
 
   def main(args: Array[String]) {

@@ -6,7 +6,6 @@
 package scala.tools.partest
 
 import scala.tools.partest.nest.FileManager.compareContents
-import scala.compat.Platform.EOL
 
 /** A class for testing icode.  All you need is this in a
  *  partest source file --
@@ -41,7 +40,7 @@ abstract class IcodeComparison extends DirectTest {
   override def extraSettings: String = "-usejavacp"
 
   /** Compile the test code and return the contents of all
-   *  (sorted) .icode files, which are immediately deleted. 
+   *  (sorted) .icode files, which are immediately deleted.
    *  @param arg0 at least one arg is required
    *  @param args must include -Xprint-icode:phase
    */

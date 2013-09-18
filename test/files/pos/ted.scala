@@ -9,7 +9,7 @@ object App
         case (b, e) => b * exponentiate(b, e - 1)
       }
 
- 
+
 
   def main(args : Array[String]) =
     System.out.println(exponentiate(2, 2))

@@ -44,7 +44,7 @@ class FscSettings(error: String => Unit) extends Settings(error) {
     // we need to ensure the files specified with relative locations are absolutized based on the currentDir
     (r, args map {a => absolutizePath(a)})
   }
-  
+
   /**
    * Take an individual path and if it's not absolute turns it into an absolute path based on currentDir.
    * If it's already absolute then it's left alone.

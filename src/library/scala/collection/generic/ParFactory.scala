@@ -37,8 +37,3 @@ extends GenTraversableFactory[CC]
     override def apply() = newBuilder[A]
   }
 }
-
-
-
-
-

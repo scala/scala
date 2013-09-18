@@ -71,9 +71,3 @@ extends SeqView[A, Coll]
 
   override def stringPrefix = "StreamView"
 }
-
-
-
-
-
-

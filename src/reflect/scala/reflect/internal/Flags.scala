@@ -118,7 +118,7 @@ class ModifierFlags {
   final val PRESUPER      = 1L << 37      // value is evaluated before super call
   final val DEFAULTINIT   = 1L << 41      // symbol is initialized to the default value: used by -Xcheckinit
   final val ARTIFACT      = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
-  final val DEFAULTMETHOD = 1L << 47      // symbol is a java default method  
+  final val DEFAULTMETHOD = 1L << 47      // symbol is a java default method
 
   /** Symbols which are marked ARTIFACT. (Expand this list?)
    *
@@ -440,7 +440,7 @@ class Flags extends ModifierFlags {
     case        TRIEDCOOKING => "<triedcooking>"                      // (1L << 44)
     case        SYNCHRONIZED => "<synchronized>"                      // (1L << 45)
     case            ARTIFACT => "<artifact>"                          // (1L << 46)
-    case       DEFAULTMETHOD => "<defaultmethod>"                     // (1L << 47)      
+    case       DEFAULTMETHOD => "<defaultmethod>"                     // (1L << 47)
     case    0x1000000000000L => ""                                    // (1L << 48)
     case    0x2000000000000L => ""                                    // (1L << 49)
     case    0x4000000000000L => ""                                    // (1L << 50)

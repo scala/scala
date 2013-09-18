@@ -10,7 +10,7 @@ package object bar {
     class Dingus
     object Dingus
     case class Dongus(x: Float)
-    
+
     def apply(xs: Int*) = new Bippy(xs.sum)
     def apply() = new Bippy(5)
   }

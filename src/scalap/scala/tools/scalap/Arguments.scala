@@ -163,5 +163,4 @@ class Arguments {
     bindings get option flatMap (_ get key)
 
   def getOthers: List[String] = others.toList
-
 }

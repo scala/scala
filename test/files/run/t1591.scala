@@ -1,8 +1,8 @@
 abstract class A {
-    
+
     lazy val lazyBar = bar
-    
-    object bar {        
+
+    object bar {
         val foo = 12
     }
 

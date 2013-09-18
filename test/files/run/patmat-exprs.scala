@@ -39,7 +39,7 @@ trait Pattern {
   //
   // type Numeric[T]
   // import java.io.Serializable
-  // 
+  //
   // implicit def compat27a[T](x: Iterable[T]) = new {
   //   def iterator: Iterator[T] = x.elements
   //   def sum: Int = 5
@@ -280,8 +280,8 @@ trait Pattern {
         case Mul(Mul(y, Const(z)), Const(x)) => Mul(const(num.mul(x, z)), y)
 
         case Const(x) if x == num.one => One[T]
-        case Const(x) if x == num.zero => Zero[T]      
-      
+        case Const(x) if x == num.zero => Zero[T]
+
         case Sub(x, Neg(y)) => Add(List(x, y))
         case Sub(Neg(x), y) => Neg(Add(List(x, y)))
         case Neg(Neg(x)) => x

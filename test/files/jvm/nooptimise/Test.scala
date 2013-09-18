@@ -8,7 +8,7 @@ object Test extends BytecodeTest {
     val classNode = loadClassNode("Foo_1")
     val methodNode = getMethod(classNode, "foo")
     // if optimization didn't run then
-    // there should be some useless instructions 
+    // there should be some useless instructions
     // with the magic constant 3
     val expected = 1
     val got = countMagicThrees(methodNode.instructions)

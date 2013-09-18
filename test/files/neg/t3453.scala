@@ -25,7 +25,7 @@ object O {
 
 class T2a {
     import O._
-    
+
     def x: B = {
         val aToB = 3
         // ok: doesn't compile, because aToB method requires 'T.this.' prefix
@@ -39,7 +39,7 @@ class T2a {
 
 class T2b {
     import O.aToB
-    
+
     def x: B = {
         val aToB = 3
         // ok: doesn't compile, because aToB method requires 'T.this.' prefix
@@ -53,7 +53,7 @@ class T2b {
 
 class T3 {
     implicit def aToB(a: A): B = new B
-    
+
     def x: B = {
         val aToB = 3
         // ok: doesn't compile, because aToB method requires 'T.this.' prefix

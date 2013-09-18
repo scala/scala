@@ -45,7 +45,7 @@ scala> val mt1 = memType(S1, fTpe)
 mt1: u.Type = O.X.S1.type
 
 scala> global.typeDeconstruct.show(mt1)
-res0: String = 
+res0: String =
 TypeRef(
   pre = SingleType(pre = ThisType(object O), object X)
   TypeSymbol(class S1 extends C.this.F[T])

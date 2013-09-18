@@ -51,9 +51,6 @@ object IndexModelFactory {
       gather(universe.rootPackage)
 
       result.toMap
-
     }
-
   }
-
 }

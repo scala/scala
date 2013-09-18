@@ -5,7 +5,7 @@ import scala.util.continuations._
 object Test {
 
   def fatal: Int = throw new Exception()
-  
+
   def foo1 = try {
     fatal
     shift((k: Int=>Int) => k(7))

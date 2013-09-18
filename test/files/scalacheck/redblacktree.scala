@@ -205,22 +205,22 @@ package scala.collection.immutable.redblacktree {
       filteredTree == keysIterator(newTree).toList
     }
   }
-  
+
   object TestDrop extends RedBlackTreeTest with RedBlackTreeInvariants  {
     import RB._
-    
+
     override type ModifyParm = Int
     override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, iterator(tree).size)
     override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = drop(tree, parm)
-    
+
     property("drop") = forAll(genInput) { case (tree, parm, newTree) =>
       iterator(tree).drop(parm).toList == iterator(newTree).toList
     }
   }
-  
+
   object TestTake extends RedBlackTreeTest with RedBlackTreeInvariants  {
     import RB._
-    
+
     override type ModifyParm = Int
     override def genParm(tree: Tree[String, Int]): Gen[ModifyParm] = choose(0, iterator(tree).size)
     override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = take(tree, parm)
@@ -229,7 +229,7 @@ package scala.collection.immutable.redblacktree {
       iterator(tree).take(parm).toList == iterator(newTree).toList
     }
   }
-  
+
   object TestSlice extends RedBlackTreeTest with RedBlackTreeInvariants  {
     import RB._
 
@@ -239,7 +239,7 @@ package scala.collection.immutable.redblacktree {
       to <- choose(from, iterator(tree).size)
     } yield (from, to)
     override def modify(tree: Tree[String, Int], parm: ModifyParm): Tree[String, Int] = slice(tree, parm._1, parm._2)
-    
+
     property("slice") = forAll(genInput) { case (tree, parm, newTree) =>
       iterator(tree).slice(parm._1, parm._2).toList == iterator(newTree).toList
     }

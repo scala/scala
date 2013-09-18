@@ -10,7 +10,7 @@ object Test extends App {
       case e: Throwable => println(e)
     }
   }
-  
+
   // test that finally is not covered by any exception handlers.
   def bar {
     try {
@@ -26,7 +26,7 @@ object Test extends App {
   }
 
   // return in catch (finally is executed)
-  def retCatch {      
+  def retCatch {
     try {
       throw new Exception
     } catch {
@@ -37,7 +37,7 @@ object Test extends App {
   }
 
   // throw in catch (finally is executed, exception propagated)
-  def throwCatch {      
+  def throwCatch {
     try {
       throw new Exception
     } catch {
@@ -48,7 +48,7 @@ object Test extends App {
   }
 
   // return inside body (finally is executed)
-  def retBody {      
+  def retBody {
     try {
       return
     } catch {
@@ -75,7 +75,7 @@ object Test extends App {
       finally {
         println("in finally 1")
         return
-      } 
+      }
     } finally println("in finally 2")
   }
 
@@ -94,7 +94,7 @@ object Test extends App {
   }
 
   // nested finallies with return value
-  def nestedFinalies: Int = 
+  def nestedFinalies: Int =
     try {
       try {
         return 10

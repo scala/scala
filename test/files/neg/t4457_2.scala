@@ -22,7 +22,7 @@ object ImplicitConvAmbiguity2 {
   def aFunc[A](a: NQ[A]) = new BB[A]
 
   def bFunc[T](e1: N[T]) = {}
-  
+
   def typeMe2 {
     val x = aFunc(4F)
     bFunc(x)

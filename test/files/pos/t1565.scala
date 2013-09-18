@@ -3,7 +3,7 @@ object Bug1565 {
   def x() = { 0; (a : Int, b : Int) => println(List(a, b)) ; 0  }
 
   (a : Int, b : Int) => println(List(a, b))
-  
+
   // various function syntaxes to exercise the parser
   val xs = List(1,2,3)
   xs.filter(x => x < 2)

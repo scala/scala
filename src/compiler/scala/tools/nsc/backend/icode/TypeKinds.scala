@@ -93,7 +93,7 @@ trait TypeKinds { self: ICodes =>
     /**
      * this is directly assignable to other if no coercion or
      * casting is needed to convert this to other. It's a distinct
-     * relationship from <:< because on the JVM, BOOL, BYTE, CHAR, 
+     * relationship from <:< because on the JVM, BOOL, BYTE, CHAR,
      * SHORT need no coercion to INT even though JVM arrays
      * are covariant, ARRAY[SHORT] is not a subtype of ARRAY[INT]
      */
@@ -101,7 +101,7 @@ trait TypeKinds { self: ICodes =>
       case INT  => this.isIntSizedType
       case _    => this <:< other
     }
-    
+
     /** Is this type a category 2 type in JVM terms? (ie, is it LONG or DOUBLE?) */
     def isWideType: Boolean = false
 

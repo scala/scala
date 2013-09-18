@@ -21,7 +21,7 @@ object Test {
     }
     def and(g: Perturber): Perturber =
       new Perturber(this.labels ++ g.labels, f andThen g.f)
-    
+
     override def toString = labels mkString " -> "
   }
   object Perturber {
@@ -42,14 +42,14 @@ object Test {
       "slice(%d, %d)".format(from, until),
       _.toTraversable.slice(from, until)
     )
-  
+
   val fns = List[Perturber](toV, toI, toS, toIS)
 
   def tds(n: Int): Perturber = p(drop(n), take(n / 2), slice(1, n / 4))
   def dts(n: Int): Perturber = p(take(n), drop(n / 2), slice(1, n / 4))
   def sdt(n: Int): Perturber = p(slice(n, n * 2), drop(n / 2), take(n / 4))
   def std(n: Int): Perturber = p(slice(n, n * 2), take(n / 2), drop(n / 4))
-  
+
   val transforms = (fns.permutations map (xs => p(xs take 3: _*))).toList.distinct
   def mkOps(n: Int) = List[Perturber](tds(n), dts(n), sdt(n), std(n))
   def runOps(n: Int) = {
@@ -63,7 +63,7 @@ object Test {
     }
     ()
   }
-  
+
   def main(args: Array[String]): Unit = {
     runOps(20)
   }

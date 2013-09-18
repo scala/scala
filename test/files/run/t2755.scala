@@ -28,7 +28,7 @@ object Test {
     case x: Array[_]        => 6
     case _                  => 7
   }
-  
+
 
   def main(args: Array[String]): Unit = {
     println(f1(Array(1, 2, 3)))
@@ -38,7 +38,7 @@ object Test {
     println(f1(new Array[Any](10)))    // should match as Array[AnyRef]
     println(f1(Array(1L)))
     println(f1(null))
-    
+
     println(f2(Array(1, 2, 3)))
     println(f2(Array(1.0, -2.0, 3.0, 1.0)))
     println(f2(Array(1.0f, 2.0f, 3.0f, -3.0f)))
@@ -46,7 +46,7 @@ object Test {
     println(f2(new Array[Any](10)))    // should match as Array[AnyRef]
     println(f2(Array(1L)))
     println(f2(null))
-    
+
     println(f3(Array(1, 2, 3)))
     println(f3(Array(1.0, -2.0, 3.0, 1.0)))
     println(f3(Array(1.0f, 2.0f, 3.0f, -3.0f)))

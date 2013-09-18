@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> :type List[1, 2, 3]
 <console>:1: error: identifier expected but integer literal found.
        List[1, 2, 3]
@@ -40,7 +38,7 @@ Int
 scala> :type protected lazy val f = 5
 <console>:5: error: lazy value f cannot be accessed in object $iw
  Access to protected value f not permitted because
- enclosing object $eval in package $line13 is not a subclass of 
+ enclosing object $eval in package $line13 is not a subclass of
  object $iw where target is defined
   lazy val $result = f
                                            ^
@@ -80,7 +78,7 @@ TypeRef(
     TypeRef(
       TypeSymbol(
         sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
-        
+
       )
       args = List(
         TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
@@ -101,7 +99,7 @@ PolyType(
     resultType = TypeRef(
       TypeSymbol(
         abstract trait Set[A] extends Iterable[A] with Set[A] with GenericSetTemplate[A,scala.collection.immutable.Set] with SetLike[A,scala.collection.immutable.Set[A]] with Parallelizable[A,scala.collection.parallel.immutable.ParSet[A]]
-        
+
       )
       args = List(TypeRef(TypeSymbol(abstract class Any extends )))
     )
@@ -147,7 +145,7 @@ TypeRef(
         TypeRef(
           TypeSymbol(
             sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
-            
+
           )
           args = List(
             TypeRef(
@@ -180,7 +178,7 @@ PolyType(
             TypeRef(
               TypeSymbol(
                 sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
-                
+
               )
               args = List(TypeParamTypeRef(TypeParam(T <: AnyVal)))
             )
@@ -203,7 +201,7 @@ PolyType(
     resultType = TypeRef(
       TypeSymbol(
         sealed abstract class List[+A] extends AbstractSeq[A] with LinearSeq[A] with Product with GenericTraversableTemplate[A,List] with LinearSeqOptimized[A,List[A]] with Serializable
-        
+
       )
       args = List(TypeParamTypeRef(TypeParam(U >: T)))
     )
@@ -219,7 +217,5 @@ Unit
 
 scala> :type println("side effect!")
 Unit
-
-scala> 
 
 scala> 

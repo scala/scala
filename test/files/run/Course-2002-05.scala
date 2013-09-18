@@ -129,7 +129,7 @@ object M3 {
       else {
         def isSafe(column: Int, placement: Placement): Boolean =
           placement forall {
-            pos => (pos._2 != column && 
+            pos => (pos._2 != column &&
               abs(pos._2 - column) != row - pos._1)
           }
 

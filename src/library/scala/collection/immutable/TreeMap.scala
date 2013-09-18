@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 package immutable
@@ -194,7 +192,7 @@ class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: Orderi
 
   override def keysIterator: Iterator[A] = RB.keysIterator(tree)
   override def keysIteratorFrom(start: A): Iterator[A] = RB.keysIterator(tree, Some(start))
-  
+
   override def valuesIterator: Iterator[B] = RB.valuesIterator(tree)
   override def valuesIteratorFrom(start: A): Iterator[B] = RB.valuesIterator(tree, Some(start))
 
@@ -203,7 +201,3 @@ class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: Orderi
 
   override def foreach[U](f : ((A,B)) =>  U) = RB.foreach(tree, f)
 }
-
-
-
-

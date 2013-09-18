@@ -6,7 +6,7 @@ t5352.scala:11: error: type mismatch;
          ^
 t5352.scala:14: error: method f in class Bar1 cannot be accessed in boop.Bar1
  Access to protected method f not permitted because
- enclosing object boop is not a subclass of 
+ enclosing object boop is not a subclass of
  class Bar1 in object boop where target is defined
   (new Bar1).f
              ^

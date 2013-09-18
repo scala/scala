@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala
 package collection
 package generic
@@ -49,7 +48,3 @@ trait Shrinkable[-A] {
    */
   def --=(xs: TraversableOnce[A]): this.type = { xs.seq foreach -= ; this }
 }
-
-
-
-

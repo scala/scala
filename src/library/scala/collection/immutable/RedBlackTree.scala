@@ -367,7 +367,7 @@ object RedBlackTree {
   private[this] def rebalance[A, B](tree: Tree[A, B], newLeft: Tree[A, B], newRight: Tree[A, B]) = {
     // This is like drop(n-1), but only counting black nodes
     @tailrec
-    def  findDepth(zipper: NList[Tree[A, B]], depth: Int): NList[Tree[A, B]] = 
+    def  findDepth(zipper: NList[Tree[A, B]], depth: Int): NList[Tree[A, B]] =
       if (zipper eq null) {
         sys.error("Defect: unexpected empty zipper while computing range")
       } else if (isBlackTree(zipper.head)) {
@@ -400,14 +400,14 @@ object RedBlackTree {
       zippedTree
     }
   }
-  
+
   // Null optimized list implementation for tree rebalancing. null presents Nil.
   private[this] final class NList[A](val head: A, val tail: NList[A])
 
   private[this] final object NList {
-    
+
     def cons[B](x: B, xs: NList[B]): NList[B] = new NList(x, xs)
-    
+
     def foldLeft[A, B](xs: NList[A], z: B)(f: (B, A) => B): B = {
       var acc = z
       var these = xs
@@ -417,7 +417,7 @@ object RedBlackTree {
       }
       acc
     }
-    
+
   }
 
   /*

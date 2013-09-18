@@ -18,5 +18,5 @@ object Test extends App {
   var failed = false
   try { Q.withName("x") } catch { case _: NoSuchElementException => failed = true }
   assert(failed)
-  
+
 }

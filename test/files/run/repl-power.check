@@ -21,7 +21,7 @@ scala> tp.memberType(Array_apply)                // evidence
 res1: $r.global.Type = (i: Int)scala.util.Random
 
 scala> val m = LIT(10) MATCH (CASE(LIT(5)) ==> FALSE, DEFAULT ==> TRUE) // treedsl
-m: $r.treedsl.global.Match = 
+m: $r.treedsl.global.Match =
 10 match {
   case 5 => false
   case _ => true

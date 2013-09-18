@@ -18,7 +18,7 @@ package bippy {
   }
   trait Fail4 { }
 
-  object Fail5 extends Fail5 { }    
+  object Fail5 extends Fail5 { }
   class Fail5 {
     def main(args: Array[String]): Unit = ()
   }

@@ -1,4 +1,4 @@
-case class C[T](x: T) 
+case class C[T](x: T)
 
 case class CS(xs: C[_]*)
 

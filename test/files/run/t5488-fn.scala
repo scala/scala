@@ -4,7 +4,7 @@ class C[@specialized(Int, AnyRef) A, @specialized(Int, AnyRef) B, @specialized(I
 object Test {
   def main(args:Array[String]) {
     def show(x: Any) = println(x.getClass.getName)
-    
+
     show(new B((x: Int) => 1))
     show(new B((x: Int) => "abc"))
     show(new B((x: Int) => ()))

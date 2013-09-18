@@ -1,14 +1,14 @@
 object Test extends App {
   import scala.reflect.internal.util.StringContextStripMarginOps
-  def check(actual: Any, expected: Any) = if (actual != expected) sys.error(s"expected: [$expected], actual: [$actual])")
+  def check(actual: Any, expected: Any) = if (actual != expected) sys.error(s"\nexpected:\n$expected\n\nactual:\n$actual")
 
   val bar = "|\n ||"
 
   check(
-    sm"""|ab  
+    sm"""|ab
          |de
          |${bar} | ${1}""",
-      "ab  \nde\n|\n || | 1")
+      "ab\nde\n|\n || | 1")
 
   check(
     sm"|",

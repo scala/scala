@@ -27,7 +27,7 @@ object Test {
   val c1: Class[_] = classOf[T[_]]
   val c2: Class[_] = classOf[C]
   val c3: Class[_] = classOf[Arr]
-  
+
   val c1m = c1.getMethods.toList filter (_.getName == "f") map (_.getGenericReturnType.toString)
   val c2m = c2.getMethods.toList filter (_.getName == "f") map (_.getGenericReturnType.toString)
   val c3m = c3.getDeclaredMethods.toList map (_.toGenericString)

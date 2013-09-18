@@ -8,23 +8,17 @@ package tools.nsc
 package interpreter
 
 import PartialFunction.cond
-
 import scala.language.implicitConversions
-
 import scala.collection.mutable
-
 import scala.concurrent.{ Future, ExecutionContext }
-
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ BeanProperty, ClassTag, classTag }
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
-
 import scala.tools.util.PathResolver
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
 import scala.tools.nsc.util.{ ScalaClassLoader, stringFromWriter, StackTraceOps }
 import scala.tools.nsc.util.Exceptional.unwrap
-
 import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
 
 /** An interpreter for Scala code.

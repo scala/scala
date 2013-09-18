@@ -2,7 +2,7 @@ import java.io.{ByteArrayOutputStream, PrintStream}
 
 object Test extends App {
   val baos = new ByteArrayOutputStream()
-  val ps = new PrintStream(baos) 
+  val ps = new PrintStream(baos)
 
   // first test with the default classpath
   (scala.Console withOut ps) {

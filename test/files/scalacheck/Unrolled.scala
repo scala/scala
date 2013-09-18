@@ -5,7 +5,7 @@ import Gen._
 import collection.mutable.UnrolledBuffer
 
 object Test extends Properties("UnrolledBuffer") {
-  
+
   property("concat size") = forAll { (l1: List[Int], l2: List[Int]) =>
     val u1 = new UnrolledBuffer[Int]
     u1 ++= l1
@@ -15,12 +15,12 @@ object Test extends Properties("UnrolledBuffer") {
     u1 concat u2
     totalsz == u1.size
   }
-  
+
   property("adding") = forAll { (l: List[Int]) =>
     val u = new UnrolledBuffer[Int]
     u ++= l
     u == l
   }
-  
+
 }
 

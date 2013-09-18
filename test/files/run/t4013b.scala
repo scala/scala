@@ -8,7 +8,7 @@ trait Base[B] {
 class M[@specialized(Int) A]
 
 
-class Sub3[@specialized(Int) B](override val data: M[B]) extends Base[B] {  
+class Sub3[@specialized(Int) B](override val data: M[B]) extends Base[B] {
   assert(data != null)
 }
 

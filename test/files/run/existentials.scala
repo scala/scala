@@ -5,7 +5,7 @@ class Foo {
   class Line {
     case class Cell[T](var x: T)
     def f[T](x: Any): Cell[t1] forSome { type t1 } = x match { case y: Cell[t] => y }
-    
+
     var x: Cell[T] forSome { type T } = new Cell(1)
     println({ x = new Cell("abc"); x })
   }
@@ -15,7 +15,7 @@ class FooW {
   class Line {
     case class Cell[T](var x: T)
     def f[T](x: Any): Cell[ _ ] = x match { case y: Cell[t] => y }
-    
+
     var x: Cell[_] = new Cell(1)
     println({ x = new Cell("abc"); x })
   }

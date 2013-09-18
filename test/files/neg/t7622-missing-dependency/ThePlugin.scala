@@ -12,7 +12,7 @@ class ThePlugin(val global: Global) extends Plugin {
   val name = "myplugin"
   val description = "Declares one plugin with a missing requirement"
   val components = List[PluginComponent](thePhase)
-  
+
   private object thePhase extends PluginComponent {
     val global = ThePlugin.this.global
 
@@ -22,9 +22,9 @@ class ThePlugin(val global: Global) extends Plugin {
 
     override val requires = List("missing")
 
-    def newPhase(prev: Phase) = new ThePhase(prev)    
+    def newPhase(prev: Phase) = new ThePhase(prev)
   }
-  
+
   private class ThePhase(prev: Phase) extends Phase(prev) {
     def name = thePhase.phaseName
     def run {}

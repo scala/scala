@@ -1,9 +1,9 @@
 class Jars(jar: Jar)
 
-object Jars {  
+object Jars {
   import scala.util.Properties.javaClassPath
 
-  val scala = fromClasspathString(javaClassPath) 
-    
+  val scala = fromClasspathString(javaClassPath)
+
   def fromClasspathString(s: String): Jars = null
 }

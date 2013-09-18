@@ -1,9 +1,7 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
-scala>     import language.experimental._, reflect.macros.Context
+scala> import language.experimental._, reflect.macros.Context
 import language.experimental._
 import reflect.macros.Context
 
@@ -20,7 +18,5 @@ defined object Test
 
 scala>     object Test { class C(implicit a: Any) { GrabContext.grab } }
 defined object Test
-
-scala> 
 
 scala> 

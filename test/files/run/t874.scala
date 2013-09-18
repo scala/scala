@@ -7,7 +7,7 @@ object Test {
     }
     U("xyz")(2)
   }
-  class Mix extends Base { 
+  class Mix extends Base {
     case class U[A](x1: A)(x2: Int) {
       Console.println("U created with "+x1+" and "+x2)
     }

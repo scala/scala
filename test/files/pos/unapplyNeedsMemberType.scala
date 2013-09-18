@@ -8,7 +8,7 @@ trait Gunk[a] {
     def unapply(s: Seq) = unapply_Cons(s)
   }
   def unapply_Cons(s: Any): Option[Tuple2[a, Seq]]
-}  
+}
 
 class Join[a] extends Gunk[a] {
   type Seq = JoinSeq

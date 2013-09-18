@@ -3,7 +3,7 @@ object Test {
   def f2 = {
     lazy val d = 4D
     lazy val f = 4f
-    
+
     def bar = "Str " + (d + f)
     bar
   }
