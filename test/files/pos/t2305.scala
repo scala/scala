@@ -1,6 +1,6 @@
 import java.util.ArrayList
 
-trait Bind[Z[_]] 
+trait Bind[Z[_]]
 
 class MySerializable[X] extends java.io.Serializable
 
@@ -17,7 +17,7 @@ object works {
 
 object breaks {
 	def runbind(implicit bind: Bind[ArrayList]) {}
-	runbind  
+        runbind
 	/*java.lang.AssertionError: assertion failed: java.io.Serializable
 		at scala.Predef$.assert(Predef.scala:107)
 		at scala.tools.nsc.symtab.Types$TypeRef.transform(Types.scala:1417)

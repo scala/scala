@@ -6,5 +6,5 @@ object test {
 }
 // #1000
 object A {
-  println("""This a "raw" string ending with a "double quote"""") 
+  println("""This a "raw" string ending with a "double quote"""")
 }

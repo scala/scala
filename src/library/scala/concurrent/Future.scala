@@ -254,7 +254,7 @@ trait Future[+T] extends Awaitable[T] {
       case Success(v) => try f(v) match {
         // If possible, link DefaultPromises to avoid space leaks
         case dp: DefaultPromise[_] => dp.asInstanceOf[DefaultPromise[S]].linkRootOf(p)
-        case fut => fut onComplete p.complete 
+        case fut => fut onComplete p.complete
       } catch { case NonFatal(t) => p failure t }
     }
     p.future

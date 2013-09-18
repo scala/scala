@@ -1,1 +1,1 @@
-class CbnParam(s: => String) 
+class CbnParam(s: => String)

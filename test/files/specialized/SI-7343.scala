@@ -1,4 +1,4 @@
-class Parent[@specialized(Int) T] 
+class Parent[@specialized(Int) T]
 
 object Test extends App {
 

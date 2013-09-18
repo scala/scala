@@ -7,7 +7,7 @@ import asm.{AnnotationVisitor, ClassWriter, FieldVisitor, Handle, MethodVisitor,
 import Opcodes._
 
 // This test ensures that we can read JDK 8 (classfile format 52) files, including those
-// with default methods. To do that it first uses ASM to generate an interface called 
+// with default methods. To do that it first uses ASM to generate an interface called
 // HasDefaultMethod. Then it runs a normal compile on Scala source that extends that
 // interface. Any failure will be dumped to std out.
 //
@@ -40,14 +40,14 @@ object Test extends DirectTest {
     val bytes = cw.toByteArray()
 
     val fos = new FileOutputStream(new File(s"${testOutput.path}/$interfaceName.class"))
-    try 
+    try
       fos write bytes
     finally
       fos.close()
 
   }
 
-  def code = 
+  def code =
 """
 class Driver extends HasDefaultMethod {
   println(publicMethod())
@@ -65,12 +65,12 @@ class Driver extends HasDefaultMethod {
         generateInterface()
         compile()
         Class.forName("Driver").newInstance()
-        ()   
+        ()
       } otherwise {
         println("hello from publicMethod")
-        println("hello from staticMethod")        
+        println("hello from staticMethod")
       }
-    } 
+    }
     finally
       System.setErr(prevErr)
   }

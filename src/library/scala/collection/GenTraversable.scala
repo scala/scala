@@ -6,14 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 
-
 import generic._
-
 
 /** A trait for all traversable collections which may possibly
  *  have their operations implemented in parallel.
@@ -31,10 +27,7 @@ extends GenTraversableLike[A, GenTraversable[A]]
   def companion: GenericCompanion[GenTraversable] = GenTraversable
 }
 
-
 object GenTraversable extends GenTraversableFactory[GenTraversable] {
   implicit def canBuildFrom[A] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A] = Traversable.newBuilder
 }
-
-

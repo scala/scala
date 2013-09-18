@@ -4,7 +4,7 @@ class Foo extends TestJava {
 
    // THIS METHOD YIELDS TO CRASH
 /*   def foomethod : Option[String] => Unit = {
-      case None =>  
+      case None =>
         val path = repeatParam("s","a","b","c")
         ()
       case Some(error) =>

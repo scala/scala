@@ -242,7 +242,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
     var minF: B = null.asInstanceOf[B]
     var minElem: A = null.asInstanceOf[A]
     var first = true
-    
+
     for (elem <- self) {
       val fx = f(elem)
       if (first || cmp.lt(fx, minF)) {

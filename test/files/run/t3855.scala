@@ -1,7 +1,7 @@
 object Test {
   def byval[A](a: => A) = a
   def closure[A](f: () => A) = f()
-  
+
   def f1(s: String) = {
     var n = try { s.toInt } catch { case _: Throwable => 1 }
     byval(n)

@@ -15,7 +15,7 @@
 
 //     /**
 //      * this currently passes, but do we want it to?
-//      * does it have meaning to have an empty parallel array? 
+//      * does it have meaning to have an empty parallel array?
 //      */
 //     new ParallelArray(0)
 //     ()

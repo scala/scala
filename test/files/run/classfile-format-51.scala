@@ -91,14 +91,14 @@ object Test extends DirectTest {
     val bytes = cw.toByteArray()
 
     val fos = new FileOutputStream(new File(s"${testOutput.path}/$invokerClassName.class"))
-    try 
+    try
       fos write bytes
     finally
       fos.close()
 
   }
 
-  def code = 
+  def code =
 """
 object Driver {
   val invoker = new DynamicInvoker()
@@ -112,14 +112,14 @@ object Driver {
     System.setErr(System.out)
     try {
       // this test is only valid under JDK 1.7+
-      testUnderJavaAtLeast("1.7") {  
+      testUnderJavaAtLeast("1.7") {
         generateClass()
         compile()
         ()
       } otherwise {
         ()
       }
-    } 
+    }
     finally
       System.setErr(prevErr)
   }

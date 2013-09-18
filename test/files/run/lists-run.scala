@@ -6,7 +6,7 @@ import scala.language.postfixOps
 
 object Test {
   def main(args: Array[String]) {
-    Test_multiset.run() // multiset operations: union, intersect, diff 
+    Test_multiset.run() // multiset operations: union, intersect, diff
     Test1.run() //count, exists, filter, ..
     Test2.run() //#468
     Test3.run() //#1691
@@ -56,7 +56,7 @@ object Test_multiset {
     assert(List(3, 2) == (vs diff xs), "vs_diff_xs")
     assert(isSubListOf(xs filterNot (vs contains), xs diff vs), "xs_subset_vs")
 
-    // tests adapted from Thomas Jung 
+    // tests adapted from Thomas Jung
     assert({
         def sort(zs: List[Int]) = zs sortWith ( _ > _ )
         sort(xs intersect ys) == sort(ys intersect xs)
@@ -64,7 +64,7 @@ object Test_multiset {
     assert({
         def cardinality[A](zs: List[A], e: A): Int = zs count (e == _)
         val intersection = xs intersect ys
-        xs forall (e => cardinality(intersection, e) == (cardinality(xs, e) 
+        xs forall (e => cardinality(intersection, e) == (cardinality(xs, e)
 min cardinality(ys, e)))
       }, "obey min cardinality")
     assert({
@@ -135,7 +135,7 @@ object Test2 {
   def run() {
     val xs1 = List(1, 2, 3)
     val xs2 = List(0)
- 
+
     val ys1 = xs1 ::: List(4)
     assert(List(1, 2, 3, 4) == ys1, "check_:::")
 

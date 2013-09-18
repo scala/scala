@@ -106,7 +106,7 @@ trait IntSeqOperators extends IntOperators with SeqOperators[Int] {
     List(4, 5, 6, 7, 8, 9, 10),
     List(4, 5, 6, 7, 8, 9, 0),
     List(-4, -3, -2, -1)
-  )    
+  )
 }
 
 

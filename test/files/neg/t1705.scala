@@ -17,7 +17,7 @@ object crashing {
     }
   }
 }
-/* 
+/*
 
 Infinite loop in Typer.addLocals. Printing all calls to it:
 

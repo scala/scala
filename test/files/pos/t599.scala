@@ -16,4 +16,4 @@ abstract class FooA {
       val aaa: InnerB.this.B = doB
       aaa.xxx;
     }
-  } 
+  }

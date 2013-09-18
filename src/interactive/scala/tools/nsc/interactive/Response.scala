@@ -99,7 +99,3 @@ class Response[T] {
     cancelled = false
   }
 }
-
-
-
-

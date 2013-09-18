@@ -11,7 +11,6 @@ package collection
 
 import generic._
 
-
 /** A trait for all traversable collections which may possibly
  *  have their operations implemented in parallel.
  *
@@ -28,12 +27,9 @@ extends GenMapLike[A, B, GenMap[A, B]]
   def updated [B1 >: B](key: A, value: B1): GenMap[A, B1]
 }
 
-
 object GenMap extends GenMapFactory[GenMap] {
   def empty[A, B]: immutable.Map[A, B] = immutable.Map.empty
 
   /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), GenMap[A, B]] = new MapCanBuildFrom[A, B]
 }
-
-

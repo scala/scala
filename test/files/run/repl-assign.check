@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> var x = 10
 x: Int = 10
 
@@ -14,7 +12,5 @@ x: Int = 12
 
 scala> y = 13
 y: Int = 13
-
-scala> 
 
 scala> 

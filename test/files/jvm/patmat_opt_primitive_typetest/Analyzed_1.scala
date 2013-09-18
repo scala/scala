@@ -3,7 +3,7 @@
 class SameBytecode {
   case class Foo(x: Int, y: String)
 
-  def a = 
+  def a =
     Foo(1, "a") match {
       case Foo(_: Int, y) => y
     }

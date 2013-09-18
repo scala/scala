@@ -15,7 +15,7 @@ It would fail on the following inputs: Gp(), Gu
     def ma4(x:Deep) = x match { // missing cases: Gu, Gp
                       ^
 patmatexhaust.scala:55: warning: unreachable code
-      case _ if 1 == 0 => 
+      case _ if 1 == 0 =>
                        ^
 patmatexhaust.scala:53: warning: match may not be exhaustive.
 It would fail on the following input: Gp()

@@ -2,7 +2,7 @@ object Geom {
   trait Shape
   case class Point(x: Int, y: Int) extends Shape
   case class Rectangle(ll: Point, ur: Point) extends Shape {
-    def inset(delta: Int) = 
+    def inset(delta: Int) =
       Rectangle(Point(ll.x - delta, ll.y - delta), Point(ur.x + delta, ur.y + delta));
   }
 }
@@ -20,7 +20,7 @@ trait Screen {
 }
 
 object DummyScreen extends Screen {
-  def drawRect(r: Geom.Rectangle, c: Color) { 
+  def drawRect(r: Geom.Rectangle, c: Color) {
     Console.println("draw " + r + " with " + c)
   }
   def fillRect(r: Geom.Rectangle, c: Color) {
@@ -55,7 +55,7 @@ object GUI {
     def mouseDown(p: Geom.Point): Unit
   }
 
-  abstract class Button(scr: Screen, p: Geom.Point, name: String) 
+  abstract class Button(scr: Screen, p: Geom.Point, name: String)
   extends Glyph with MouseCtl {
     var enabled: Boolean = false
     val label = new Label(scr, p, name)
@@ -86,7 +86,7 @@ object GUIClient {
     def quit() { Console.println("application exited") }
   }
 
-  class QuitButton (scr: Screen, p: Geom.Point, name: String, a: App) 
+  class QuitButton (scr: Screen, p: Geom.Point, name: String, a: App)
   extends GUI.Button(scr, p, name) {
     def doit() { a.quit() }
   }

@@ -7,7 +7,7 @@ class C2 {
   @scala.annotation.varargs
   def f(values:String*) = println("Calling C2.f(): "  + values)
   def g(): String => Int = s => s.hashCode
-  
+
   class C3 {
     @scala.annotation.varargs
     def f(values:String*) = println("Calling C3.f(): "  + values)

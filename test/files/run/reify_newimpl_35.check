@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> import scala.reflect.runtime.universe._
 import scala.reflect.runtime.universe._
 
@@ -11,7 +9,5 @@ foo: [T](implicit evidence$1: reflect.runtime.universe.TypeTag[T])reflect.runtim
 
 scala> println(foo)
 Expr[List[Nothing]](Nil)
-
-scala> 
 
 scala> 

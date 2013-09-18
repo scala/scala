@@ -14,7 +14,7 @@ class A {
 
   trait Itf {
     def method1(x: Int): Int
-    
+
     trait Itf2 extends Itf {
       def method2: Unit
     }

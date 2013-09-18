@@ -19,10 +19,10 @@ object Test {
   val y = new C {
     def f = 2
     def g = " world"
-  } 
-    
+  }
+
   val z: T = y
-  
+
   def main(args: Array[String]): Unit = {
     assert(x.f+z.f == 3)
     assert(x.g+z.g == "hello world")

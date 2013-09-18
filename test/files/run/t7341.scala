@@ -4,7 +4,7 @@ object Obj {
   def foo {
     returning(() => cache = ())
   }
- 
+
   def apply(): Any = {
     cache
   }

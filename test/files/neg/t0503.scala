@@ -1,3 +1,3 @@
 val x = new { } with { }
-trait A 
+trait A
 val y = new { } with A

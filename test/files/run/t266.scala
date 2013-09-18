@@ -2,9 +2,9 @@
 
 trait O {
   self: Test.type =>
-  
+
   Nil foreach identity
-  
+
   def f = (1 to 10).toList map identity
 }
 

@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> case class Bippy(x: Int)
 defined class Bippy
 
@@ -47,7 +45,5 @@ repl-out-dir-run.obj
     $repl_$init.class
     Test$.class
     Test.class
-
-scala> 
 
 scala> 

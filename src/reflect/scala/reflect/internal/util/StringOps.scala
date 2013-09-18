@@ -7,7 +7,11 @@
 \*                                                                      */
 
 package scala
-package reflect.internal.util
+package reflect
+package internal
+package util
+
+import scala.compat.Platform.EOL
 
 /** This object provides utility methods to extract elements
  *  from Strings.
@@ -18,14 +22,26 @@ package reflect.internal.util
 trait StringOps {
   def oempty(xs: String*)        = xs filterNot (x => x == null || x == "")
   def ojoin(xs: String*): String = oempty(xs: _*) mkString " "
-  def longestCommonPrefix(xs: List[String]): String = {
-    if (xs.isEmpty || xs.contains("")) ""
-    else xs.head.head match {
-      case ch =>
-        if (xs.tail forall (_.head == ch)) "" + ch + longestCommonPrefix(xs map (_.tail))
-        else ""
-    }
+  def longestCommonPrefix(xs: List[String]): String = xs match {
+    case Nil                  => ""
+    case xs if xs contains "" => ""
+    case x :: xs             =>
+      val ch = x charAt 0
+      if (xs exists (_.head != ch)) ""
+      else "" + ch + longestCommonPrefix(xs map (_ substring 1))
   }
+  /** Like String#trim, but trailing whitespace only.
+   */
+  def trimTrailingSpace(s: String): String = {
+    var end = s.length
+    while (end > 0 && s.charAt(end - 1).isWhitespace)
+      end -= 1
+
+    if (end == s.length) s
+    else s.substring(0, end)
+  }
+  /** Breaks the string into lines and strips each line before reassembling. */
+  def trimAllTrailingSpace(s: String): String = s.lines map trimTrailingSpace mkString EOL
 
   def decompose(str: String, sep: Char): List[String] = {
     def ws(start: Int): List[String] =

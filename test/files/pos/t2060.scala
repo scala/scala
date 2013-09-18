@@ -4,7 +4,7 @@
  * line':
  *
  *   val failure = 1.0 + new Op[Int]
- * 
+ *
  * we reduce the problem to finding a function from Double to
  * {+: _ >: Op[Int] <: Any}, that is, a method which takes
  * an argument which is an Op[Int] or a supertype thereof.

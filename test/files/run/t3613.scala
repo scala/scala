@@ -1,7 +1,7 @@
 class Boopy {
     private val s = new Schnuck
     def observer : PartialFunction[ Any, Unit ] = s.observer
-    
+
     private class Schnuck extends javax.swing.AbstractListModel {
         model =>
         val observer : PartialFunction[ Any, Unit ] = {
@@ -10,13 +10,13 @@ class Boopy {
         def getSize = 0
         def getElementAt( idx: Int ) = ???
     }
-    
+
 }
 
 object Test {
   def main(args: Array[String]): Unit = {
     val x = new Boopy
     val o = x.observer
-    o( "Boopy" ) // --> throws runtime error    
+    o( "Boopy" ) // --> throws runtime error
   }
 }

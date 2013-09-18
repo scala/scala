@@ -25,6 +25,6 @@ object Foo {
 
 class Foo[@specialized(Int) T] {
   val len: List[T] => Int = xs => xs.length
-  
+
   def bar[@specialized(Int) W <: T](ws: List[W]) = len(ws)
 }

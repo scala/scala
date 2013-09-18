@@ -1,7 +1,7 @@
 object Days extends Enumeration {
   type Day = DayValue
   val Mon, Tue, Wed, Thu, Fri, Sat, Sun = new DayValue // DayValue
-    
+
   protected class DayValue extends Val {
     def isWeekday: Boolean =
       this match {
@@ -21,7 +21,7 @@ object Test extends App {
     val d: Day = Mon
     d.toString
   }
-    
+
   def nameOfTue(): String =  {
     import Days._
     val d: Day = Tue

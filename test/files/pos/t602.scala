@@ -10,5 +10,5 @@ case class Span[K <: Ordered[K]](low: Option[K], high: Option[K]) extends Functi
     case Span(Some(low), None) => (k >= low)
     case Span(None, Some(high)) => (k <= high)
     case _ => false
-  } 
+  }
 }

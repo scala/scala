@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> import scala.tools.reflect.ToolBox
 import scala.tools.reflect.ToolBox
 
@@ -16,7 +14,7 @@ scala> val ORef = reify { O }.tree
 ORef: reflect.runtime.universe.Tree = $read.O
 
 scala> val tree = Apply(Block(Nil, Block(Nil, ORef)), Nil)
-tree: reflect.runtime.universe.Apply = 
+tree: reflect.runtime.universe.Apply =
 {
   {
     $read.O
@@ -24,7 +22,7 @@ tree: reflect.runtime.universe.Apply =
 }()
 
 scala> {val tb = reflect.runtime.currentMirror.mkToolBox(); tb.typeCheck(tree): Any}
-res0: Any = 
+res0: Any =
 {
   {
     $read.O.apply()

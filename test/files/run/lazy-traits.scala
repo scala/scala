@@ -1,5 +1,5 @@
 trait A {
-  lazy val z1 = { 
+  lazy val z1 = {
     println("<forced z1>")
     "lazy z1"
   }
@@ -7,7 +7,7 @@ trait A {
 
 /** Simple class which mixes in one lazy val. */
 class Cls extends AnyRef with A {
-  override def toString = 
+  override def toString =
     "z1 = " + z1
 }
 
@@ -18,7 +18,7 @@ class Cls2 extends AnyRef with A {
     "lazy z2"
   }
 
-  override def toString = 
+  override def toString =
     "z1 = " + z1 + " z2 = " + z2
 }
 
@@ -34,7 +34,7 @@ class ClsB extends Object with B {
     println("<forced zc1>")
     "lazy zc1"
   }
-  override def toString = 
+  override def toString =
     "z1 = " + z1 + " zb1 = " + zb1 + " zc1 = " + zc1
 }
 
@@ -73,39 +73,39 @@ class OverflownLazyFields extends Object with A {
   lazy val zc30 = { println("<forced zc30>"); "lazy zc30" }
   lazy val zc31 = { println("<forced zc31>"); "lazy zc31" }
 
-  override def toString = 
-    "\nzc00 = " + zc00 + 
-    "\nzc01 = " + zc01 + 
-    "\nzc02 = " + zc02 + 
-    "\nzc03 = " + zc03 + 
-    "\nzc04 = " + zc04 + 
-    "\nzc05 = " + zc05 + 
-    "\nzc06 = " + zc06 + 
-    "\nzc07 = " + zc07 + 
-    "\nzc08 = " + zc08 + 
-    "\nzc09 = " + zc09 + 
-    "\nzc10 = " + zc10 + 
-    "\nzc11 = " + zc11 + 
-    "\nzc12 = " + zc12 + 
-    "\nzc13 = " + zc13 + 
-    "\nzc14 = " + zc14 + 
-    "\nzc15 = " + zc15 + 
-    "\nzc16 = " + zc16 + 
-    "\nzc17 = " + zc17 + 
-    "\nzc18 = " + zc18 + 
-    "\nzc19 = " + zc19 + 
-    "\nzc20 = " + zc20 + 
-    "\nzc21 = " + zc21 + 
-    "\nzc22 = " + zc22 + 
-    "\nzc23 = " + zc23 + 
-    "\nzc24 = " + zc24 + 
-    "\nzc25 = " + zc25 + 
-    "\nzc26 = " + zc26 + 
-    "\nzc27 = " + zc27 + 
-    "\nzc28 = " + zc28 + 
-    "\nzc29 = " + zc29 + 
-    "\nzc30 = " + zc30 + 
-    "\nzc31 = " + zc31 + 
+  override def toString =
+    "\nzc00 = " + zc00 +
+    "\nzc01 = " + zc01 +
+    "\nzc02 = " + zc02 +
+    "\nzc03 = " + zc03 +
+    "\nzc04 = " + zc04 +
+    "\nzc05 = " + zc05 +
+    "\nzc06 = " + zc06 +
+    "\nzc07 = " + zc07 +
+    "\nzc08 = " + zc08 +
+    "\nzc09 = " + zc09 +
+    "\nzc10 = " + zc10 +
+    "\nzc11 = " + zc11 +
+    "\nzc12 = " + zc12 +
+    "\nzc13 = " + zc13 +
+    "\nzc14 = " + zc14 +
+    "\nzc15 = " + zc15 +
+    "\nzc16 = " + zc16 +
+    "\nzc17 = " + zc17 +
+    "\nzc18 = " + zc18 +
+    "\nzc19 = " + zc19 +
+    "\nzc20 = " + zc20 +
+    "\nzc21 = " + zc21 +
+    "\nzc22 = " + zc22 +
+    "\nzc23 = " + zc23 +
+    "\nzc24 = " + zc24 +
+    "\nzc25 = " + zc25 +
+    "\nzc26 = " + zc26 +
+    "\nzc27 = " + zc27 +
+    "\nzc28 = " + zc28 +
+    "\nzc29 = " + zc29 +
+    "\nzc30 = " + zc30 +
+    "\nzc31 = " + zc31 +
     "\nz1 = " + z1
 }
 

@@ -118,4 +118,4 @@ class CEarly(a: Any) extends {
     object Nested { def xx = x}
     Nested.xx
   }
-} with AnyRef 
+} with AnyRef

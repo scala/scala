@@ -7,5 +7,5 @@ object ScalaForRubyists {
 
   val x = 10.days
   // a couple parser corner cases I wanted not to break
-  val y = 5.0e0 + 5e7  
+  val y = 5.0e0 + 5e7
 }

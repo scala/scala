@@ -46,7 +46,7 @@ object Test {
     println(TwoShort(12, "Hello").getClass().getName());
     println(TwoShort("Hello", 12).getClass().getName());
     println(TwoShort(12, 12).getClass().getName());
-    
+
     println(TwoMinimal("Hello", "World").getClass().getName());
     println(TwoMinimal(12, "Hello").getClass().getName());
     println(TwoMinimal("Hello", 12).getClass().getName());

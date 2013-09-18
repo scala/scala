@@ -1,5 +1,5 @@
 trait Empty[E[_]] {
-  def e[A]: E[A] 
+  def e[A]: E[A]
 }
 
 object T {

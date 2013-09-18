@@ -7,5 +7,5 @@ object Test extends InteractiveTest {
     sourceFiles foreach (src => askLoadedTyped(src).get)
     super.runDefaultTests()
   }
-  
+
 }

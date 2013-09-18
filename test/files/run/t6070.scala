@@ -11,7 +11,7 @@ class StringBomb extends Bomb {
   def size(that: String): Int = that.length
 }
 
-class IntBomb extends Bomb { 
+class IntBomb extends Bomb {
   type T = Int
   val x = 10
 
@@ -22,7 +22,7 @@ case class Mean(var bomb: Bomb)
 
 object Test extends App {
   def foo(x: Mean) = x match {
-    case Mean(b) => 
+    case Mean(b) =>
       // BUG: b is assumed to be a stable identifier, but it can actually be mutated
       println(b.size({ mutate(); b.x }))
   }

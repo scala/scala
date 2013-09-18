@@ -50,13 +50,3 @@ trait DefaultMap[A, +B] extends Map[A, B] { self =>
     b.result()
   }
 }
-
-
-
-
-
-
-
-
-
-

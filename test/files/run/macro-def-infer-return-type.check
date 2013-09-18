@@ -1,5 +1,5 @@
 42
-reflective compilation has failed: 
+reflective compilation has failed:
 
 exception during macro expansion: 
 java.lang.Error: an implementation is missing

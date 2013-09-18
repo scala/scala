@@ -127,7 +127,7 @@ object Test {
     checkBigInt2(biExp2(128) - biExp2(128 - pf))
     checkBigInt2(biExp2(128) - biExp2(128 - pf - 1))
     checkBigInt2(biExp2(128))
-    
+
     checkBigInt2(biExp2(1023))
     checkBigInt2(biExp2(1024) - biExp2(1024 - pd))
     checkBigInt2(biExp2(1024) - biExp2(1024 - pd - 1))

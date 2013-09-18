@@ -10,7 +10,7 @@ object Junk {
     val z = 0
     lazy val s = "abc"
   }
-    
+
   def test4() {
     lazy val x = {
       x
@@ -35,5 +35,5 @@ object Test {
     lazy val f: Int = g
     var x: Int = f
     lazy val g: Int = x
-  }     
+  }
 }
