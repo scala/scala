@@ -285,6 +285,10 @@ trait Definitions extends api.StandardDefinitions {
     lazy val StringTpe       = StringClass.tpe
     lazy val ThrowableTpe    = ThrowableClass.tpe
 
+    lazy val ConstantTrue  = ConstantType(Constant(true))
+    lazy val ConstantFalse = ConstantType(Constant(false))
+    lazy val ConstantNull  = ConstantType(Constant(null))
+
     // Note: this is not the type alias AnyRef, it's a companion-like
     // object used by the @specialize annotation.
     lazy val AnyRefModule = getMemberModule(ScalaPackageClass, nme.AnyRef)

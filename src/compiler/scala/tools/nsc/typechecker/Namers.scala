@@ -1183,8 +1183,8 @@ trait Namers extends MethodSynthesis {
       // value parameters of the base class (whose defaults might be overridden)
       var baseParamss = (vparamss, overridden.tpe.paramss) match {
         // match empty and missing parameter list
-        case (Nil, List(Nil)) => Nil
-        case (List(Nil), Nil) => ListOfNil
+        case (Nil, ListOfNil) => Nil
+        case (ListOfNil, Nil) => ListOfNil
         case (_, paramss)     => paramss
       }
       assert(

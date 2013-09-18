@@ -3,6 +3,7 @@ package reflect
 package internal
 
 import Flags._
+import util._
 
 abstract class TreeGen extends macros.TreeBuilder {
   val global: SymbolTable
@@ -355,8 +356,9 @@ abstract class TreeGen extends macros.TreeBuilder {
         if (body forall treeInfo.isInterfaceMember) None
         else Some(
           atPos(wrappingPos(superPos, lvdefs)) (
-            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, List(), List(Nil), TypeTree(), Block(lvdefs, Literal(Constant())))))
-      } else {
+            DefDef(NoMods, nme.MIXIN_CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(lvdefs, Literal(Constant())))))
+      }
+      else {
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
           vparamss1 = List() :: vparamss1
@@ -416,7 +418,7 @@ abstract class TreeGen extends macros.TreeBuilder {
             atPos(cpos) {
               ClassDef(
                 Modifiers(FINAL), x, Nil,
-                mkTemplate(parents, self, NoMods, List(Nil), stats, cpos.focus))
+                mkTemplate(parents, self, NoMods, ListOfNil, stats, cpos.focus))
             }),
           atPos(npos) {
             New(

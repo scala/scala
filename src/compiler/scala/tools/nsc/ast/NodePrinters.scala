@@ -282,7 +282,7 @@ abstract class NodePrinters {
             traverseList("[]", "type parameter")(tparams)
             vparamss match {
               case Nil        => println("Nil")
-              case Nil :: Nil => println("List(Nil)")
+              case ListOfNil  => println("List(Nil)")
               case ps  :: Nil =>
                 printLine("", "1 parameter list")
                 ps foreach traverse

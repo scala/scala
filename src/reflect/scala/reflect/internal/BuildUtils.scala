@@ -3,6 +3,7 @@ package reflect
 package internal
 
 import Flags._
+import util._
 
 trait BuildUtils { self: SymbolTable =>
   import definitions.{TupleClass, FunctionClass, ScalaPackage, UnitClass}
@@ -364,7 +365,7 @@ trait BuildUtils { self: SymbolTable =>
       def unapply(tree: Tree): Option[(List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
         case SyntacticApplied(Select(New(SyntacticTypeApplied(ident, targs)), nme.CONSTRUCTOR), argss) =>
           Some((Nil, SyntacticApplied(SyntacticTypeApplied(ident, targs), argss) :: Nil, emptyValDef, Nil))
-        case SyntacticBlock(SyntacticClassDef(_, tpnme.ANON_CLASS_NAME, Nil, _, List(Nil), earlyDefs, parents, selfdef, body) ::
+        case SyntacticBlock(SyntacticClassDef(_, tpnme.ANON_CLASS_NAME, Nil, _, ListOfNil, earlyDefs, parents, selfdef, body) ::
                             Apply(Select(New(Ident(tpnme.ANON_CLASS_NAME)), nme.CONSTRUCTOR), Nil) :: Nil) =>
           Some((earlyDefs, parents, selfdef, body))
         case _ =>

@@ -292,6 +292,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
   trait TreesAndTypesDomain extends PropositionalLogic with CheckableTreeAndTypeAnalysis {
     type Type = global.Type
     type Tree = global.Tree
+    import global.definitions.ConstantNull
 
     // resets hash consing -- only supposed to be called by TreeMakersToProps
     def prepareNewAnalysis(): Unit = { Var.resetUniques(); Const.resetUniques() }
@@ -320,7 +321,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       val staticTpCheckable: Type = checkableType(staticTp)
 
       private[this] var _mayBeNull = false
-      def registerNull(): Unit = { ensureCanModify(); if (NullTp <:< staticTpCheckable) _mayBeNull = true }
+      def registerNull(): Unit = { ensureCanModify(); if (ConstantNull <:< staticTpCheckable) _mayBeNull = true }
       def mayBeNull: Boolean = _mayBeNull
 
       // case None => domain is unknown,
@@ -568,7 +569,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
     object TypeConst extends TypeConstExtractor {
       def apply(tp: Type) = {
-        if (tp =:= NullTp) NullConst
+        if (tp =:= ConstantNull) NullConst
         else if (tp.isInstanceOf[SingletonType]) ValueConst.fromType(tp)
         else Const.unique(tp, new TypeConst(tp))
       }
@@ -577,7 +578,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
     // corresponds to a type test that does not imply any value-equality (well, except for outer checks, which we don't model yet)
     sealed class TypeConst(val tp: Type) extends Const {
-      assert(!(tp =:= NullTp))
+      assert(!(tp =:= ConstantNull))
       /*private[this] val id: Int = */ Const.nextTypeId
 
       val wideTp = widenToClass(tp)
@@ -598,7 +599,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       }
       def apply(p: Tree) = {
         val tp = p.tpe.normalize
-        if (tp =:= NullTp) NullConst
+        if (tp =:= ConstantNull) NullConst
         else {
           val wideTp = widenToClass(tp)
 
@@ -626,16 +627,14 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     }
     sealed class ValueConst(val tp: Type, val wideTp: Type, override val toString: String) extends Const {
       // debug.patmat("VC"+(tp, wideTp, toString))
-      assert(!(tp =:= NullTp)) // TODO: assert(!tp.isStable)
+      assert(!(tp =:= ConstantNull)) // TODO: assert(!tp.isStable)
       /*private[this] val id: Int = */Const.nextValueId
       def isValue = true
     }
 
-
-    lazy val NullTp = ConstantType(Constant(null))
     case object NullConst extends Const {
-      def tp     = NullTp
-      def wideTp = NullTp
+      def tp     = ConstantNull
+      def wideTp = ConstantNull
 
       def isValue = true
       override def toString = "null"
