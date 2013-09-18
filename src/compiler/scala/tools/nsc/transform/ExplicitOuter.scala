@@ -363,8 +363,7 @@ abstract class ExplicitOuter extends InfoTransform
     def outerAccessorDef: Tree = localTyper typed {
       val acc = outerAccessor(currentClass)
       val rhs = if (acc.isDeferred) EmptyTree else Select(This(currentClass), outerField(currentClass))
-      val tp = (currentClass.thisType memberType acc).finalResultType
-      newDefDef(acc, rhs)(tpt = TypeTree(tp))
+      DefDef(acc, rhs)
     }
 
     /** The definition tree of the outer accessor for class mixinClass.
