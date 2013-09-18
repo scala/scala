@@ -171,7 +171,7 @@ self =>
    *          fewer elements than size.
    */
   def sliding(size: Int): Iterator[Repr] = sliding(size, 1)
-  
+
   /** Groups elements in fixed size blocks by passing a "sliding window"
    *  over them (as opposed to partitioning them, as is done in grouped.)
    *  @see [[scala.collection.Iterator]], method `sliding`

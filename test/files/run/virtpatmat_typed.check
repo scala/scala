@@ -1,4 +1,4 @@
 virtpatmat_typed.scala:5: warning: unreachable code
-   case x: String => println("FAILED") 
+   case x: String => println("FAILED")
                             ^
 OK foo

@@ -11,8 +11,8 @@ object arrays2 {
 
 // #2422
 object arrays4 {
-  val args = Array[String]("World") 
-  "Hello %1$s".format(args: _*) 
+  val args = Array[String]("World")
+  "Hello %1$s".format(args: _*)
 }
 
 // #2461

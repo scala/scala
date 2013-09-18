@@ -2,7 +2,7 @@ object TestExpressions {
 
   def patmatchScrut {
     lazy val z1: Option[String] = { println("forced <z1>"); Some("lazy z1") }
-    
+
     val res = z1 match {
       case Some(msg) => msg
       case None => "failed"
@@ -17,10 +17,10 @@ object TestExpressions {
   def patmatchCase {
     val t: Option[String] = Some("test")
     val res = t match {
-      case Some(msg) => 
+      case Some(msg) =>
         lazy val z1 = { println("forced <z1>"); "lazy z1" }
         z1
-    
+
       case None => "failed"
     }
     print("lazy val in case: ")
@@ -36,9 +36,9 @@ object TestExpressions {
     print("lazy val in case: ")
     val t: Option[String] = Some("lazy Z1")
     t match {
-      case Some(Z1) => 
+      case Some(Z1) =>
         println("ok")
-    
+
       case None =>
         println("failed")
     }
@@ -60,13 +60,13 @@ object TestExpressions {
     print("lazy val in pattern: ")
     val t: Option[String] = Some("LazyField")
     t match {
-      case Some(LazyField) => 
+      case Some(LazyField) =>
         println("ok")
-    
+
       case None =>
         println("failed")
     }
-  }    
+  }
 
   lazy val (x, y) = ({print("x"); "x"}, {print("y"); "y"})
   def testPatLazyVal {

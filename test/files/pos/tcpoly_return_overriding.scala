@@ -2,7 +2,7 @@ trait Generic[g[x]] {
   def unit: g[Unit]
 }
 
-trait Rep[t] {           
+trait Rep[t] {
   def rep[m[x]](implicit gen: Generic[m]): m[t]
 }
 

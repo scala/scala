@@ -1,4 +1,4 @@
-reflective compilation has failed: 
+reflective compilation has failed:
 
 type mismatch;
  found   : Int(42)

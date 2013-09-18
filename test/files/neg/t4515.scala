@@ -16,7 +16,7 @@ object Main {
                 ctx: PushEventContext[EventType]): Unit
                                             }
   val handlers = new HashMap[DerivedPushNode[_], HandlerBase[_]]
-  
+
   object TimerPushService {
     private val INSTANCE: TimerPushService = new TimerPushService
     def get: TimerPushService = INSTANCE

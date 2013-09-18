@@ -84,16 +84,16 @@ object Test {
     var xs4 = a.slice(0, 4).iterator.toList;
     xs0.length + xs1.length + xs2.length + xs3.length + xs4.length
   }
-  
+
   def check_toSeq: String =
     List(1, 2, 3, 4, 5).iterator.toSeq.mkString("x")
-  
+
   def check_indexOf: String = {
     val i = List(1, 2, 3, 4, 5).indexOf(4)
     val j = List(1, 2, 3, 4, 5).indexOf(16)
     "" + i + "x" + j
   }
-  
+
   def check_findIndexOf: String = {
     val i = List(1, 2, 3, 4, 5).indexWhere { x: Int => x >= 4 }
     val j = List(1, 2, 3, 4, 5).indexWhere { x: Int => x >= 16 }

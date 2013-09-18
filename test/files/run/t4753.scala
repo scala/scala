@@ -1,4 +1,4 @@
-trait A { 
+trait A {
   val actualType: Class[_]
 }
 trait B extends A {

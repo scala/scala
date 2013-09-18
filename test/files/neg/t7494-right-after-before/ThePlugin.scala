@@ -12,7 +12,7 @@ class ThePlugin(val global: Global) extends Plugin {
   val name = "rafter-before-1"
   val description = ""
   val components = List[PluginComponent](thePhase1)
-  
+
   private object thePhase1 extends PluginComponent {
     val global = ThePlugin.this.global
 
@@ -20,9 +20,9 @@ class ThePlugin(val global: Global) extends Plugin {
     override val runsBefore = List[String]("erasure")
     val phaseName = ThePlugin.this.name
 
-    def newPhase(prev: Phase) = new ThePhase(prev)    
+    def newPhase(prev: Phase) = new ThePhase(prev)
   }
-  
+
   private class ThePhase(prev: Phase) extends Phase(prev) {
     def name = ThePlugin.this.name
     def run {}

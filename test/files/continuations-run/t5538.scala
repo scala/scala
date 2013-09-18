@@ -16,13 +16,13 @@ object Test {
 
   class PromiseStream[A] {
     override def toString = xs.toString
-    
+
     var xs: List[A] = Nil
-  
+
     final def +=(elem: A): this.type = { xs :+= elem; this }
 
     final def ++=(elem: Traversable[A]): this.type = { xs ++= elem; this }
-  
+
     final def <<(elem: Future[A]): PromiseStream[A] @cps[Future[Any]] =
       shift { cont: (PromiseStream[A] => Future[Any]) => elem map (a => cont(this += a)) }
 
@@ -40,7 +40,7 @@ object Test {
 
     def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] =
       new Future(in.asInstanceOf[Traversable[Future[A]]].map((f:Future[A])=>f.x)(cbf.asInstanceOf[CanBuildFrom[Traversable[Future[A]], A, M[A]]]))
-    
+
     def flow[A](body: => A @cps[Future[Any]])(implicit executor: ExecutionContext): Future[A] = reset(Future(body)).asInstanceOf[Future[A]]
 
   }

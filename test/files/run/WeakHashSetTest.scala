@@ -33,7 +33,7 @@ package scala.reflect.internal.util {
     def checkEmpty {
       val hs = new WeakHashSet[String]()
       assert(hs.size == 0)
-      hs.diagnostics.fullyValidate    
+      hs.diagnostics.fullyValidate
     }
 
     // make sure += works
@@ -85,7 +85,7 @@ package scala.reflect.internal.util {
       val hs = new WeakHashSet[Collider]()
       val elements = (0 until size).toList map {x => Collider("a" + x)}
       elements foreach (hs += _)
-      // don't throw the following into a retained collection so gc 
+      // don't throw the following into a retained collection so gc
       // can remove them
       for (i <- 0 until size) {
         hs += Collider("b" + i)
@@ -150,9 +150,9 @@ package scala.reflect.internal.util {
       hs.clear()
       assert(hs.size == 0)
       elements foreach {i => assert(!(hs contains i))}
-      hs.diagnostics.fullyValidate    
+      hs.diagnostics.fullyValidate
     }
-    
+
     // check that the iterator covers all the contents
     def checkIterator {
       val hs = new WeakHashSet[String]()
@@ -161,14 +161,14 @@ package scala.reflect.internal.util {
       assert(elements.iterator.toList.sorted == elements.sorted)
       hs.diagnostics.fullyValidate
     }
-    
+
     // check that the iterator covers all the contents even when there is a collision
     def checkIteratorCollisions {
       val hs = new WeakHashSet[Collider]
       val elements = (0 until 20).toList map {x => Collider("a" + x)}
       elements foreach (hs += _)
-      assert(elements.iterator.toList.sorted == elements.sorted) 
+      assert(elements.iterator.toList.sorted == elements.sorted)
       hs.diagnostics.fullyValidate
     }
   }
-}  
+}

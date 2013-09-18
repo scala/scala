@@ -297,7 +297,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       // reporter doesn't accumulate errors, but the front-end does
       def throwIfErrors() = {
         if (frontEnd.hasErrors) throw ToolBoxError(
-          "reflective compilation has failed: " + EOL + EOL + (frontEnd.infos map (_.msg) mkString EOL)
+          "reflective compilation has failed:" + EOL + EOL + (frontEnd.infos map (_.msg) mkString EOL)
         )
       }
     }
@@ -319,7 +319,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         val instance = new ToolBoxGlobal(command.settings, frontEndToReporter(frontEnd, command.settings))
         if (frontEnd.hasErrors) {
           throw ToolBoxError(
-            "reflective compilation has failed: cannot initialize the compiler: " + EOL + EOL +
+            "reflective compilation has failed: cannot initialize the compiler:" + EOL + EOL +
             (frontEnd.infos map (_.msg) mkString EOL)
           )
         }

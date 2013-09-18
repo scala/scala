@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> class M[@specialized T] { override def toString = "mmm" }
 defined class M
 

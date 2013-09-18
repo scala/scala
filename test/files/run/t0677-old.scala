@@ -2,7 +2,7 @@
 
 @deprecated("Suppress warnings", since="2.11")
 object Test extends App {
-  class X[T: ClassManifest] { 
+  class X[T: ClassManifest] {
     val a = Array.ofDim[T](3, 4)
   }
   val x = new X[String]

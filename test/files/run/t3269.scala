@@ -4,6 +4,6 @@ object Test {
     println(it.next)
     it.hasNext
     it.hasNext
-    it.hasNext 
+    it.hasNext
   }
 }

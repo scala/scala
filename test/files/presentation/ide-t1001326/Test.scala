@@ -3,7 +3,7 @@ import scala.reflect.internal.util.SourceFile
 import scala.tools.nsc.interactive.Response
 
 object Test extends InteractiveTest {
-    
+
   override def execute(): Unit = {
     val sf = sourceFiles.find(_.file.name == "A.scala").head
     uniqueParseTree_t1001326(sf)
@@ -11,7 +11,7 @@ object Test extends InteractiveTest {
     neverModifyParseTree_t1001326(sf)
     shouldAlwaysReturnParseTree_t1001326(sf)
   }
-  
+
   /**
    * Asking twice for a parseTree on the same source should always return a new tree
    */
@@ -24,7 +24,7 @@ object Test extends InteractiveTest {
       reporter.println("Unique FAILED")
     }
   }
-  
+
   /**
    * A parseTree should never contain any symbols or types
    */
@@ -35,10 +35,10 @@ object Test extends InteractiveTest {
       reporter.println("Unattributed FAILED")
     }
   }
-  
+
   /**
    * Once you have obtained a parseTree it should never change
-   */  
+   */
   private def neverModifyParseTree_t1001326(sf: SourceFile) {
     val parsedTree = compiler.parseTree(sf)
     loadSourceAndWaitUntilTypechecked(sf)
@@ -48,7 +48,7 @@ object Test extends InteractiveTest {
       reporter.println("NeverModify FAILED")
     }
   }
-  
+
   /**
    * Should always return a parse tree
    */
@@ -60,7 +60,7 @@ object Test extends InteractiveTest {
        reporter.println("AlwaysParseTree FAILED")
      }
    }
-  
+
   /**
    * Load a source and block while it is type-checking.
    */
@@ -71,7 +71,7 @@ object Test extends InteractiveTest {
     res.get
     askLoadedTyped(sf).get
   }
-  
+
   /**
    * Traverses a tree and makes sure that there are no types or symbols present in the tree with
    * the exception of the symbol for the package 'scala'. This is because that symbol will be
@@ -79,13 +79,13 @@ object Test extends InteractiveTest {
    */
   private def noSymbolsOrTypes(tree: compiler.Tree): Boolean = {
     tree.forAll { t =>
-      (t.symbol == null || 
-       t.symbol == compiler.NoSymbol || 
+      (t.symbol == null ||
+       t.symbol == compiler.NoSymbol ||
        t.symbol == compiler.definitions.ScalaPackage // ignore the symbol for the scala package for now
       ) && (
-       t.tpe == null || 
+       t.tpe == null ||
        t.tpe == compiler.NoType)
     }
   }
-  
+
 }

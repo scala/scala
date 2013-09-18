@@ -41,7 +41,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
     takeWhile (_ != -1)
     map (_.toChar)
   )
-  
+
   private def decachedReader: BufferedReader = {
     // Don't want to lose a buffered char sitting in iter either. Yes,
     // this is ridiculous, but if I can't get rid of Source, and all the
@@ -61,7 +61,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
     }
     else charReader
   }
-    
+
 
   class BufferedLineIterator extends AbstractIterator[String] with Iterator[String] {
     private val lineReader = decachedReader
@@ -84,7 +84,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
   }
 
   override def getLines(): Iterator[String] = new BufferedLineIterator
-  
+
   /** Efficiently converts the entire remaining input into a string. */
   override def mkString = {
     // Speed up slurping of whole data set in the simplest cases.

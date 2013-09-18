@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala
 package collection.parallel
 package mutable
-
-
 
 import scala.collection.generic._
 import scala.collection.mutable.DefaultEntry
@@ -19,8 +16,6 @@ import scala.collection.mutable.HashEntry
 import scala.collection.mutable.HashTable
 import scala.collection.mutable.UnrolledBuffer
 import scala.collection.parallel.Task
-
-
 
 /** A parallel hash map.
  *
@@ -145,9 +140,7 @@ self =>
       else ("Element " + e.key + " at " + i + " with " + elemHashCode(e.key) + " maps to " + index(elemHashCode(e.key))) :: check(e.next)
     check(table(i))
   }
-
 }
-
 
 /** $factoryInfo
  *  @define Coll `mutable.ParHashMap`
@@ -162,7 +155,6 @@ object ParHashMap extends ParMapFactory[ParHashMap] {
 
   implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParHashMap[K, V]] = new CanCombineFromMap[K, V]
 }
-
 
 private[mutable] abstract class ParHashMapCombiner[K, V](private val tableLoadFactor: Int)
 extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntry[K, V], ParHashMapCombiner[K, V]](ParHashMapCombiner.numblocks)
@@ -298,9 +290,7 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], Defau
     }
     def shouldSplitFurther = howmany > scala.collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, combinerTaskSupport.parallelismLevel)
   }
-
 }
-
 
 private[parallel] object ParHashMapCombiner {
   private[mutable] val discriminantbits = 5
@@ -310,17 +300,3 @@ private[parallel] object ParHashMapCombiner {
 
   def apply[K, V] = new ParHashMapCombiner[K, V](HashTable.defaultLoadFactor) {} // was: with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

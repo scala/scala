@@ -2,7 +2,7 @@
 
 import scala.collection.immutable.Queue
 import scala.{List=>L}
-  
+
 object Test {
   // redefine some symbols to make it extra hard
   class List
@@ -16,11 +16,11 @@ object Test {
     case _ if (x<10) => x
     case _ => firstDigit(x / 10)
   }
-  
-  
+
+
   {
-    // a basic test case 
-    
+    // a basic test case
+
     val input = L.range(0,20)
     val oddFirstTimesTwo =
       for {x <- input
@@ -32,7 +32,7 @@ object Test {
 
   {
     // a test case with patterns
-    
+
     val input = L.range(0, 20)
     val oddFirstTimesTwo =
       for {x <- input
@@ -43,10 +43,10 @@ object Test {
         yield a + b
     println(oddFirstTimesTwo)
   }
-  
+
   {
     // make sure it works on non-Ls
-    
+
  //   val input: Queue = Queue.Empty[int].incl(L.range(0,20))
     val input = L.range(0, 20).iterator
     val oddFirstTimesTwo =
@@ -54,36 +54,36 @@ object Test {
           xf = firstDigit(x)
           if xf % 2 == 1}
         yield x*2
-    println(oddFirstTimesTwo.toList)    
+    println(oddFirstTimesTwo.toList)
   }
-  
+
   {
     // yield the computed value
-    
+
     val input = L.range(0,20)
     val oddFirstTimesTwo =
       for {x <- input
           xf = firstDigit(x)
           if xf % 2 == 1}
         yield xf*2
-    println(oddFirstTimesTwo)    
+    println(oddFirstTimesTwo)
   }
 
   {
     // make sure the function is only called once
     var count: Int = 0
-    
+
     def fdct(x: Int) = {
       count += 1
       firstDigit(x)
     }
-    
+
     val input = L.range(0,20)
     for {x <- input
          xf = fdct(x)
          if xf % 2 == 1}
       yield xf
-      
+
     println("called " + count + " times")
   }
 

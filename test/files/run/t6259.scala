@@ -37,9 +37,9 @@ object Early extends {
 class DoubleTrouble[X](x: AnyRef)(implicit override val tt: TypeTag[X]) extends A[X]
 
 object DoubleOk extends DoubleTrouble[String]({
-  // Drops to this.getClass and is an issue 
-  object InnerTrouble extends A[String]; 
-  InnerTrouble 
+  // Drops to this.getClass and is an issue
+  object InnerTrouble extends A[String];
+  InnerTrouble
 })
 
 object Test extends App {

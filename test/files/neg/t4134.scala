@@ -3,16 +3,16 @@
 
 trait T1 {
   def f: String
-}                                                                               
+}
 
 trait T2 extends T1 {
   abstract override def f: String = "goo"
   def something = super.f  // So the "abstract override" is needed
-}                                                                               
+}
 
 trait Q1 {
   def f: String = "bippy"
-}                                                                               
+}
 
 //trait T3 extends Q1 with T2 {
 trait T3 extends T2 with Q1 {

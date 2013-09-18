@@ -11,11 +11,11 @@ object AssertionError extends AnyRef with App
     class Manager
     {
         final class B {}
-    
+
         val map = new HashMap[A, B]
     }
-    
-        
+
+
     def test[T](f: => T) { f }
 
     test {

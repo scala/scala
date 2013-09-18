@@ -5,7 +5,7 @@ trait Exp[T]
 
 object Test {
   def f[T](exp: Exp[T]): Exp[T] = (
-    f[T] _ 
+    f[T] _
       compose f[T]
       compose f[T]
       compose f[T]
@@ -42,6 +42,6 @@ object Test {
       compose f[T]
       compose f[T]
       compose f[T]
-      compose f[T]      
+      compose f[T]
     )(exp)
 }

@@ -79,14 +79,14 @@ trait Sorted[K, +This <: Sorted[K, This]] {
     else
       until(next)
   }
-  
+
   /**
    * Creates an iterator over all the keys(or elements)  contained in this
    * collection greater than or equal to `start`
-   * according to the ordering of this collection. x.keysIteratorFrom(y) 
-   * is equivalent to but often more efficient than 
+   * according to the ordering of this collection. x.keysIteratorFrom(y)
+   * is equivalent to but often more efficient than
    * x.from(y).keysIterator.
-   * 
+   *
    * @param start The lower bound (inclusive)
    * on the keys to be returned
    */

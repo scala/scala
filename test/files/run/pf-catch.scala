@@ -8,12 +8,12 @@ object Test {
     case x: java.util.NoSuchElementException    => shortName(x)
     case x: java.lang.IllegalArgumentException  => shortName(x)
   }
-  
+
   def fn[T: Handler](body: => T): T = {
     try body
     catch implicitly[Handler[T]]
   }
-  
+
   def f1 = {
     implicit val myHandler = standardHandler
     println(fn(Nil.head))
@@ -30,7 +30,7 @@ object Test {
   def main(args: Array[String]): Unit = {
     try f1
     catch { case x: Throwable => println(shortName(x) + " slipped by.") }
-    
+
     f2
   }
 }

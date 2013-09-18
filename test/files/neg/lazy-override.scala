@@ -5,7 +5,7 @@
     lazy val y: Int = { print("/*A.y*/"); 2 }
   }
 
-  
+
   class B extends A {
     // lazy overrides strict val
     override lazy val x: Int = { print("/*B.x*/"); 3 }

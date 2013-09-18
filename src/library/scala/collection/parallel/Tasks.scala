@@ -9,17 +9,11 @@
 package scala
 package collection.parallel
 
-
-
 import java.util.concurrent.ThreadPoolExecutor
-
 import scala.concurrent.forkjoin._
 import scala.concurrent.ExecutionContext
 import scala.util.control.Breaks._
-
 import scala.annotation.unchecked.uncheckedVariance
-
-
 
 trait Task[R, +Tp] {
   type Result = R
@@ -436,16 +430,13 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
   }
 
   def parallelismLevel = forkJoinPool.getParallelism
-
 }
-
 
 object ForkJoinTasks {
   val defaultForkJoinPool: ForkJoinPool = new ForkJoinPool() // scala.parallel.forkjoinpool
   // defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors)
   // defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors)
 }
-
 
 /* Some boilerplate due to no deep mixin composition. Not sure if it can be done differently without them.
  */
@@ -457,7 +448,6 @@ trait AdaptiveWorkStealingForkJoinTasks extends ForkJoinTasks with AdaptiveWorkS
   }
 
   def newWrappedTask[R, Tp](b: Task[R, Tp]) = new WrappedTask[R, Tp](b)
-
 }
 
 @deprecated("Use `AdaptiveWorkStealingForkJoinTasks` instead.", "2.11.0")
@@ -469,12 +459,9 @@ trait AdaptiveWorkStealingThreadPoolTasks extends ThreadPoolTasks with AdaptiveW
   }
 
   def newWrappedTask[R, Tp](b: Task[R, Tp]) = new WrappedTask[R, Tp](b)
-
 }
 
-
 trait ExecutionContextTasks extends Tasks {
-
   def executionContext = environment
 
   val environment: ExecutionContext
@@ -494,16 +481,4 @@ trait ExecutionContextTasks extends Tasks {
   def executeAndWaitResult[R, Tp](task: Task[R, Tp]): R = driver executeAndWaitResult task
 
   def parallelismLevel = driver.parallelismLevel
-
 }
-
-
-
-
-
-
-
-
-
-
-

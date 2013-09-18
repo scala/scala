@@ -41,7 +41,7 @@ object Test extends App {
   def powers(x: Int) = if ((x&(x-1)) == 0) Some(x) else None
   println(s3.flatMap(powers).reverse.head)
 
-  // large enough to generate StackOverflows (on most systems) 
+  // large enough to generate StackOverflows (on most systems)
   // unless the following methods are tail call optimized.
   val size = 100000
 

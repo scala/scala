@@ -1,7 +1,7 @@
 class Gox {
   object Zed { }
   class Zed  { }
-}          
+}
 
 object Test {
   type GoxZed = t#Zed forSome { type t <: Gox }

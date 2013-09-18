@@ -25,7 +25,7 @@ object Test extends App {
   }
 
   def testMap[A <% Ordered[A], B](map: SortedMap[A, B], list: List[(A, B)]) {
-    val distinctSorted = distinctByKey(list).sortBy(_._1) 
+    val distinctSorted = distinctByKey(list).sortBy(_._1)
     assertEquals("Map size wasn't the same as list sze", map.size, distinctSorted.size)
 
     for(keyValue <- distinctSorted) {
@@ -35,7 +35,7 @@ object Test extends App {
       check(clazz, list, s"map iteratorFrom $key", s"(map from $key).iterator", iteratorFrom, (map from key).iterator.toList)
       check(clazz, list, s"map iteratorFrom $key", s"distinctSorted dropWhile (_._1 < $key)", iteratorFrom, distinctSorted dropWhile (_._1 < key))
       check(clazz, list, s"map iteratorFrom $key map (_._1)", s"map keysIteratorFrom $key", iteratorFrom map (_._1), (map keysIteratorFrom key).toList)
-      check(clazz, list, s"map iteratorFrom $key map (_._2)", s"map valuesIteratorFrom $key", iteratorFrom map (_._2), (map valuesIteratorFrom key).toList)     
+      check(clazz, list, s"map iteratorFrom $key map (_._2)", s"map valuesIteratorFrom $key", iteratorFrom map (_._2), (map valuesIteratorFrom key).toList)
     }
   }
 
@@ -54,7 +54,7 @@ object Test extends App {
     val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
   }
 
-  0 until maxLength foreach {length => 
+  0 until maxLength foreach {length =>
     val keyValues = (0 until length map {_ => (R nextInt maxKey, R nextInt maxValue)}).toList
     val keys = keyValues map (_._2)
     testSet(immutable.BitSet(keys:_*), keys)

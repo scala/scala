@@ -7,7 +7,7 @@ object Test {
       trait Foo extends Test.Foo0 {
         def foo : B.this.type = B.this;
       }
-      class baz extends Baz with Foo { 
+      class baz extends Baz with Foo {
         override def toString = "baz"
       }
       Console.println(new baz);

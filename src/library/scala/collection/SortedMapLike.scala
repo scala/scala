@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 
@@ -74,7 +72,7 @@ self =>
     for (e <- elems) m = m + e
     m
   }
-  
+
   override def filterKeys(p: A => Boolean): SortedMap[A, B] = new FilteredKeys(p) with SortedMap.Default[A, B] {
     implicit def ordering: Ordering[A] = self.ordering
     override def rangeImpl(from : Option[A], until : Option[A]): SortedMap[A, B] = self.rangeImpl(from, until).filterKeys(p)
@@ -82,7 +80,7 @@ self =>
     override def keysIteratorFrom(start: A) = self keysIteratorFrom start filter p
     override def valuesIteratorFrom(start: A) = self iteratorFrom start collect {case (k,v) if p(k) => v}
   }
-  
+
   override def mapValues[C](f: B => C): SortedMap[A, C] = new MappedValues(f) with SortedMap.Default[A, C] {
     implicit def ordering: Ordering[A] = self.ordering
     override def rangeImpl(from : Option[A], until : Option[A]): SortedMap[A, C] = self.rangeImpl(from, until).mapValues(f)
@@ -90,7 +88,7 @@ self =>
     override def keysIteratorFrom(start: A) = self keysIteratorFrom start
     override def valuesIteratorFrom(start: A) = self valuesIteratorFrom start map f
   }
-  
+
   /** Adds a number of elements provided by a traversable object
    *  and returns a new collection with the added elements.
    *
@@ -98,14 +96,14 @@ self =>
    */
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): SortedMap[A, B1] =
     ((repr: SortedMap[A, B1]) /: xs.seq) (_ + _)
-  
+
   /**
    * Creates an iterator over all the key/value pairs
    * contained in this map having a key greater than or
    * equal to `start` according to the ordering of
    * this map. x.iteratorFrom(y) is equivalent
    * to but often more efficient than x.from(y).iterator.
-   * 
+   *
    * @param start The lower bound (inclusive)
    * on the keys to be returned
    */
@@ -114,15 +112,11 @@ self =>
    * Creates an iterator over all the values contained in this
    * map that are associated with a key greater than or equal to `start`
    * according to the ordering of this map. x.valuesIteratorFrom(y) is
-   * equivalent to but often more efficient than 
+   * equivalent to but often more efficient than
    * x.from(y).valuesIterator.
-   * 
+   *
    * @param start The lower bound (inclusive)
    * on the keys to be returned
    */
   def valuesIteratorFrom(start: A): Iterator[B]
 }
-
-
-
-

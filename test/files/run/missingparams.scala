@@ -6,8 +6,8 @@ final class Foo(val x: Int) {
 
   // test that the closure elimination is not wrongly replacing
   // 'that' by 'this'
-  def intersect(that: Foo) = 
-    filter { dummy => 
+  def intersect(that: Foo) =
+    filter { dummy =>
 //      x // dummy
       that.x > 0
     }

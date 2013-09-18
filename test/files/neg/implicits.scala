@@ -4,14 +4,14 @@ class Super
 
 object Super {
   implicit def pos2int(p: Pos): Int = 0
-}  
+}
 
 object Sub extends Super {
   class Plus(x: Any) {
     def +(y: String): String = x.toString + y
   }
   implicit def any2plus(x: Any): Plus = new Plus(x)
-}  
+}
 
 object Test {
   import Super._
@@ -33,7 +33,7 @@ object test2 {
   val set = HEmpty + 3 + "3"
   implicit def select[T](t: HSome[T,_]) = t.head
   implicit def selectTail[L](t: HSome[_,L]) = t.tail
-  
+
   def foo(x: Int) = 3
   foo(set)
 }
@@ -55,7 +55,7 @@ class Mxml {
 
     }
 
-} 
+}
 
 // SI-5316
 class Test3 {

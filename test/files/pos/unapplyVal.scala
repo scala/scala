@@ -10,7 +10,7 @@ class Buffer {
 
   def joinPat(x: Any): Unit = {
     x match {
-      case Put => 
+      case Put =>
       case Put(y) =>
         println("returning "+y)
     }
@@ -29,7 +29,7 @@ object unapplyJoins extends App { // bug #1257
     object Get extends Sync
 
     val jp: PartialFunction[Any, Any] = {
-      case Get() => 
+      case Get() =>
     }
   }
 

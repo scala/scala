@@ -9,4 +9,3 @@ object Test extends App {
     case null op (0, 0) op (1, 1) op (2, 2) => Console.println("OK")
   }
 }
-  

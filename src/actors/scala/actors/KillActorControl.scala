@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.actors
 
 import scala.util.control.ControlThrowable

@@ -10,7 +10,7 @@ class Counter {
 
 object Test1 {
   var flag = false;
-  def flip: Boolean = { val tmp = flag; flag = !flag; tmp } 
+  def flip: Boolean = { val tmp = flag; flag = !flag; tmp }
   def run: Int = {
     val c = new Counter;
     c.incrThen(flip || flip);

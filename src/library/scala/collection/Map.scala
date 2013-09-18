@@ -52,7 +52,7 @@ object Map extends MapFactory[Map] {
     def iterator                    = underlying.iterator
     override def default(key: A): B = d(key)
   }
-  
+
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */

@@ -2,7 +2,7 @@ abstract class Component
 
 class Button extends Component {
   def sayHey: Unit = Console.println("Hey, I'm a button") }
-  
+
 abstract class Origin {
   val delegate: Component }
 

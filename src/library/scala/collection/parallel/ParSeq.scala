@@ -42,12 +42,9 @@ trait ParSeq[+T] extends GenSeq[T]
   override def stringPrefix = getClass.getSimpleName
 }
 
-
 object ParSeq extends ParFactory[ParSeq] {
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParSeq[T]] = new GenericCanCombineFrom[T]
 
   def newBuilder[T]: Combiner[T, ParSeq[T]] = ParArrayCombiner[T]
-
   def newCombiner[T]: Combiner[T, ParSeq[T]] = ParArrayCombiner[T]
-
 }

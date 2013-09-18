@@ -1,5 +1,5 @@
 P_2.scala:14: error: reference to x is ambiguous;
-it is both defined in object C and imported subsequently by 
+it is both defined in object C and imported subsequently by
 import Q.X._
           println("L14: "+x)   // reference to 'x' is ambiguous here
                           ^

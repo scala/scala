@@ -2,7 +2,7 @@ package test;
 
 abstract class Base {
   type A <: Ax;
-  
+
   abstract class Ax {
     def a = null;
     def string = "A";

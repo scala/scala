@@ -102,7 +102,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   }
 
   def iterator: Iterator[Int] = iteratorFrom(0)
-  
+
   override def keysIteratorFrom(start: Int) = new AbstractIterator[Int] {
     private var current = start
     private val end = nwords * WordLength

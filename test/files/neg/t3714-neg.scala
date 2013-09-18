@@ -29,7 +29,7 @@ object Test {
     case BreakImpl(x) => x
     case _            => -1
   }
-  
+
   def main(args: Array[String]) {
     val break = BreakImpl(22)
     assert(f1(break) == 22)

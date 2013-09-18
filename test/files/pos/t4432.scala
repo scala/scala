@@ -9,7 +9,7 @@ object Main {
     }
     new A
   }
-  
+
   def foo2 = {
     class B {
       val x = {
@@ -38,5 +38,5 @@ object Main {
     }
     new D
   }
-  
+
 }

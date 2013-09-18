@@ -15,10 +15,10 @@ class A {
   val x = "hello"
   val y: Int @Annot(x) = 10
   override def toString = "an A"
-} 
+}
 
 val a = new A
-val y = a.y   // should rewrite "this.x" to "a.x" 
+val y = a.y   // should rewrite "this.x" to "a.x"
 var a2 = new A
 val y2 = a2.y   // should drop the annotation
 

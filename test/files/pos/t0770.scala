@@ -1,7 +1,7 @@
 trait A
 {
 	private[this] val p = 5
-	
+
 	def f = (b: Byte) => p
 }
 

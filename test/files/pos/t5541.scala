@@ -27,7 +27,7 @@ object HASkipList {
     def asBranch : Branch[ S, A ] = this
   }
 }
-sealed trait HASkipList[ S <: Sys[ S ], @specialized( Int ) A ] 
+sealed trait HASkipList[ S <: Sys[ S ], @specialized( Int ) A ]
 
 class HASkipListView[ S <: Sys[ S ], A ]( private val l: HASkipList[ S, A ])( implicit system: S ) {
   import HASkipList.Node

@@ -36,7 +36,7 @@ object MapBug {
       im = im + ((ih,ih))
       mm = mm + ((ih,ih))
     }
-    assert(im == mm)    
+    assert(im == mm)
     val x = IH(6,4)
     im = im - x
     mm = mm - x
