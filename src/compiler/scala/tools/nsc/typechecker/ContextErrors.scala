@@ -145,12 +145,15 @@ trait ContextErrors {
         def errMsg = {
           val paramName = param.name
           val paramTp   = param.tpe
+          def evOrParam = (
+            if (paramName startsWith nme.EVIDENCE_PARAM_PREFIX)
+              "evidence parameter of type"
+            else
+              s"parameter $paramName:"
+          )
           paramTp.typeSymbolDirect match {
-              case ImplicitNotFoundMsg(msg) => msg.format(paramName, paramTp)
-              case _ =>
-                "could not find implicit value for "+
-                   (if (paramName startsWith nme.EVIDENCE_PARAM_PREFIX) "evidence parameter of type "
-                    else "parameter "+paramName+": ")+paramTp
+            case ImplicitNotFoundMsg(msg) => msg.format(paramName, paramTp)
+            case _ => s"could not find implicit value for $evOrParam $paramTp"
           }
         }
         issueNormalTypeError(tree, errMsg)
