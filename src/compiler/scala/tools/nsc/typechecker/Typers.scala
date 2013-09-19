@@ -43,12 +43,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
   final val shortenImports = false
 
+  // allows override of the behavior of the resetTyper method w.r.t comments
+  def resetDocComments() = {
+    clearDocComments()
+  }
+
   def resetTyper() {
     //println("resetTyper called")
     resetContexts()
     resetImplicits()
     transformed.clear()
-    clearDocComments()
+    resetDocComments()
   }
 
   object UnTyper extends Traverser {
