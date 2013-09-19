@@ -1356,17 +1356,25 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         unit.error(clazz.pos, "value class may not be a "+
           (if (clazz.owner.isTerm) "local class" else "member of another class"))
       if (!clazz.isPrimitiveValueClass) {
-        clazz.info.decls.toList.filter(acc => acc.isMethod && acc.isParamAccessor) match {
-          case List(acc) =>
-            def isUnderlyingAcc(sym: Symbol) =
-              sym == acc || acc.hasAccessorFlag && sym == acc.accessed
-            if (acc.accessBoundary(clazz) != rootMirror.RootClass)
-              unit.error(acc.pos, "value class needs to have a publicly accessible val parameter")
-            else if (acc.tpe.typeSymbol.isDerivedValueClass)
-              unit.error(acc.pos, "value class may not wrap another user-defined value class")
-            checkEphemeral(clazz, body filterNot (stat => isUnderlyingAcc(stat.symbol)))
-          case x =>
-            unit.error(clazz.pos, "value class needs to have exactly one public val parameter")
+        clazz.primaryConstructor.paramss match {
+          case List(List(param)) =>
+            val decls = clazz.info.decls
+            val paramAccessor = clazz.constrParamAccessors.head
+            if (paramAccessor.isMutable)
+              unit.error(paramAccessor.pos, "value class parameter must not be a var")
+            val accessor = decls.toList.find(x => x.isMethod && x.accessedOrSelf == paramAccessor)
+            accessor match {
+              case None =>
+                unit.error(paramAccessor.pos, "value class parameter must be a val and not be private[this]")
+              case Some(acc) if acc.isProtectedLocal =>
+                unit.error(paramAccessor.pos, "value class parameter must not be protected[this]")
+              case Some(acc) =>
+                if (acc.tpe.typeSymbol.isDerivedValueClass)
+                  unit.error(acc.pos, "value class may not wrap another user-defined value class")
+                checkEphemeral(clazz, body filterNot (stat => stat.symbol != null && stat.symbol.accessedOrSelf == paramAccessor))
+            }
+          case _ =>
+            unit.error(clazz.pos, "value class needs to have exactly one val parameter")
         }
       }
 
