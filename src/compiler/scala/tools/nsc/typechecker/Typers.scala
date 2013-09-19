@@ -4876,25 +4876,30 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Apply(fn, _) => fn.symbol.enclClass == ImplicitNotFoundClass
           case _            => false
         }
+        def warnAbout(s: String) = {
+          def names = InterpolatorIdentRegex findAllIn s map (n => TermName(n stripPrefix "$"))
+          def isSuspiciousExpr = (InterpolatorCodeRegex findFirstIn s).nonEmpty
+          //def isSuspiciousName = names exists (lookUp _ andThen (_.exists))
+          def suspiciousName   = names find (lookUp _ andThen (_.exists))
+          def lookUp(n: TermName)  = context.lookupSymbol(n, !_.alternatives.exists(symRequiresArg)).symbol
+          def symRequiresArg(s: Symbol) = (
+               s.paramss.nonEmpty
+            && (s.paramss.head.headOption filterNot (_.isImplicit)).isDefined
+          )
+          val suggest = "Did you forget the interpolator?"
+          if (isSuspiciousExpr)
+            unit.warning(tree.pos, s"That looks like an interpolated expression! $suggest")
+          else /* if (isSuspiciousName) */ suspiciousName foreach (n =>
+            unit.warning(tree.pos, s"`$$$n` looks like an interpolated identifier! $suggest")
+          )
+        }
         tree.value match {
           case Constant(s: String) =>
-            def names = InterpolatorIdentRegex findAllIn s map (n => TermName(n stripPrefix "$"))
-            def isSuspiciousExpr = (InterpolatorCodeRegex findFirstIn s).nonEmpty
-            //def isSuspiciousName = names exists symExists
-            def suspiciousName   = names find symExists
-            def symExists(n: TermName) = context.lookupSymbol(n, _ => true).symbol.exists
             val noWarn = (
                  isArgToImplicitNotFound
               || !(s contains ' ') // another heuristic - e.g. a string with only "$asInstanceOf"
             )
-            if (!noWarn) {
-              val suggest = "Did you forget the interpolator?"
-              if (isSuspiciousExpr)
-                unit.warning(tree.pos, s"That looks like an interpolated expression! $suggest")
-              else /* if (isSuspiciousName) */ suspiciousName foreach (n =>
-                unit.warning(tree.pos, s"`$$$n` looks like an interpolated identifier! $suggest")
-              )
-            }
+            if (!noWarn) warnAbout(s)
           case _ =>
         }
       }
