@@ -97,7 +97,7 @@ names-defaults-neg.scala:82: error: type mismatch;
  required: String
 Error occurred in an application involving default arguments.
   new A2[String]()
-  ^
+      ^
 names-defaults-neg.scala:86: error: module extending its companion class cannot use default constructor arguments
     object C extends C()
                      ^

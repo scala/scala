@@ -18,7 +18,7 @@
       [64]case6(){
         [64][64]matchEnd4([64]throw [64][64][64]new [64]MatchError([64]x1))
       };
-      [64]matchEnd4(x: [NoPosition]Unit){
+      [64]matchEnd4(x: [X]Unit){
         [64]x
       }
     }
@@ -44,7 +44,7 @@
       [175]case6(){
         [175][175]matchEnd4([175]throw [175][175][175]new [175]MatchError([175]x1))
       };
-      [175]matchEnd4(x: [NoPosition]Unit){
+      [175]matchEnd4(x: [X]Unit){
         [175]x
       }
     }
@@ -70,7 +70,7 @@
       [273]case6(){
         [273][273]matchEnd4([273]throw [273][273][273]new [273]MatchError([273]x1))
       };
-      [273]matchEnd4(x: [NoPosition]Unit){
+      [273]matchEnd4(x: [X]Unit){
         [273]x
       }
     }

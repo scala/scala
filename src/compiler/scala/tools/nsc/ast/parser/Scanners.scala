@@ -52,6 +52,15 @@ trait Scanners extends ScannersCommon {
   type Offset = Int
 
   trait TokenData extends CommonTokenData {
+    override def toString = s"""
+      |TokenData(
+      |   token  $token  ${token2string(token)}
+      |  offset  $offset
+      |    last  $lastOffset
+      |    name  $name
+      |  strVal  $strVal
+      |    base  $base
+      |)""".stripMargin.trim
 
     /** the next token */
     var token: Int = EMPTY

@@ -5,6 +5,6 @@ class ComplexAnnotation(val value: Annotation) extends ClassfileAnnotation
       ^
 nested-annotation.scala:8: error: nested classfile annotations must be defined in java; found: inline
   @ComplexAnnotation(new inline) def bippy(): Int = 1
-                     ^
+                         ^
 one warning found
 one error found

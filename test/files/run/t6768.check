@@ -1,0 +1,12 @@
+[[syntax trees at end of                     typer]] // newSource1.scala
+[1:58]package [1:1]<empty> {
+  [7/1:58]class A extends [9:58][58]scala.AnyRef {
+    [58]def <init>(): [9]A = [58]{
+      [58][58][58]A.super.<init>();
+      [9]()
+    };
+    [17/13:31]def f1: [17]Some[String] = [26/22:31][22:26][22:26]scala.Some.apply[[22]String]([27:30]"a");
+    [38/34:56]def f2: [38]Some[String] = [47/43:56][47:51][47:51]new [47:51]<type: [47:51]scala.Some>([52:55]"b")
+  }
+}
+

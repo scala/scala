@@ -10,9 +10,9 @@ starting with method cast in object Test1
 divergent-implicit.scala:14: error: diverging implicit expansion for type Test2.Baz => Test2.Bar
 starting with method baz2bar in object Test2
   val x: Bar = new Foo
-               ^
+                   ^
 divergent-implicit.scala:15: error: diverging implicit expansion for type Test2.Foo => Test2.Bar
 starting with method foo2bar in object Test2
   val y: Bar = new Baz
-               ^
+                   ^
 four errors found
