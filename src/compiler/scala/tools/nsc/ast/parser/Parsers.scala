@@ -2902,6 +2902,18 @@ self =>
       makePackaging(start, atPos(start, start, start)(Ident(nme.EMPTY_PACKAGE_NAME)), stats)
     )
 
+    def statSeq(stat: PartialFunction[Int, List[Tree]], errorMsg: String = "illegal start of definition"): List[Tree] = {
+      val stats = new ListBuffer[Tree]
+      def default(tok: Int) =
+        if (isStatSep) Nil
+        else syntaxErrorOrIncompleteAnd(errorMsg, skipIt = true)(Nil)
+      while (!isStatSeqEnd) {
+        stats ++= stat.applyOrElse(in.token, default)
+        acceptStatSepOpt()
+      }
+      stats.toList
+    }
+
     /** {{{
      *  TopStatSeq ::= TopStat {semi TopStat}
      *  TopStat ::= Annotations Modifiers TmplDef
@@ -2911,24 +2923,15 @@ self =>
      *            |
      *  }}}
      */
-    def topStatSeq(): List[Tree] = {
-      val stats = new ListBuffer[Tree]
-      while (!isStatSeqEnd) {
-        stats ++= (in.token match {
-          case PACKAGE  =>
-            packageOrPackageObject(in.skipToken()) :: Nil
-          case IMPORT =>
-            in.flushDoc
-            importClause()
-          case x if isAnnotation || isTemplateIntro || isModifier =>
-            joinComment(topLevelTmplDef :: Nil)
-          case _ =>
-            if (isStatSep) Nil
-            else syntaxErrorOrIncompleteAnd("expected class or object definition", skipIt = true)(Nil)
-        })
-        acceptStatSepOpt()
-      }
-      stats.toList
+    def topStatSeq(): List[Tree] = statSeq(topStat, errorMsg = "expected class or object definition")
+    def topStat: PartialFunction[Int, List[Tree]] = {
+      case PACKAGE  =>
+        packageOrPackageObject(in.skipToken()) :: Nil
+      case IMPORT =>
+        in.flushDoc
+        importClause()
+      case _ if isAnnotation || isTemplateIntro || isModifier =>
+        joinComment(topLevelTmplDef :: Nil)
     }
 
     /** {{{
@@ -2972,23 +2975,16 @@ self =>
      *                     |
      *  }}}
      */
-    def templateStats(): List[Tree] = {
-      val stats = new ListBuffer[Tree]
-      while (!isStatSeqEnd) {
-        if (in.token == IMPORT) {
-          in.flushDoc
-          stats ++= importClause()
-        } else if (isDefIntro || isModifier || isAnnotation) {
-          stats ++= joinComment(nonLocalDefOrDcl)
-        } else if (isExprIntro) {
-          in.flushDoc
-          stats += statement(InTemplate)
-        } else if (!isStatSep) {
-          syntaxErrorOrIncomplete("illegal start of definition", skipIt = true)
-        }
-        acceptStatSepOpt()
-      }
-      stats.toList
+    def templateStats(): List[Tree] = statSeq(templateStat)
+    def templateStat: PartialFunction[Int, List[Tree]] = {
+      case IMPORT =>
+        in.flushDoc
+        importClause()
+      case _ if isDefIntro || isModifier || isAnnotation =>
+        joinComment(nonLocalDefOrDcl)
+      case _ if isExprIntro =>
+        in.flushDoc
+        statement(InTemplate) :: Nil
     }
 
     /** {{{
