@@ -18,6 +18,19 @@ import scala.tools.nsc.typechecker.Analyzer
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 import scala.annotation.{ elidable, tailrec }
 import scala.language.implicitConversions
+import scala.tools.nsc.typechecker.Typers
+
+/**
+ * This trait allows the IDE to have an instance of the PC that
+ * does not clear the comments table at every new typer run (those
+ * being many and close between in this context).
+ */
+
+trait CommentPreservingTypers extends Typers {
+  self: Analyzer =>
+
+  override def resetDocComments() = {}
+}
 
 trait InteractiveScaladocAnalyzer extends InteractiveAnalyzer with ScaladocAnalyzer {
   val global : Global
