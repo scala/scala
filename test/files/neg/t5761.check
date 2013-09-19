@@ -5,7 +5,7 @@ Unspecified value parameter x.
 t5761.scala:8: error: not enough arguments for constructor D: (x: Int)D[Int].
 Unspecified value parameter x.
   println(new D[Int]())   // no crash
-          ^
+              ^
 t5761.scala:9: error: not enough arguments for constructor D: (x: Int)D[Int].
 Unspecified value parameter x.
   println(new D[Int]{})   // crash

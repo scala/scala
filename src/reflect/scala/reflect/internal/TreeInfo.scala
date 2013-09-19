@@ -773,6 +773,13 @@ abstract class TreeInfo {
       unapply(dissectApplied(tree))
   }
 
+  object AppliedArgs {
+    def unapply(tree: Tree): Some[(Tree, List[List[Tree]])] = tree match {
+      case Apply(AppliedArgs(fn, argss), args) => Some((fn, argss :+ args))
+      case _                                   => Some((tree, Nil))
+    }
+  }
+
   /** Locates the synthetic Apply node corresponding to an extractor's call to
    *  unapply (unwrapping nested Applies) and returns the fun part of that Apply.
    */

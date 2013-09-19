@@ -1,6 +1,6 @@
 stringinterpolation_macro-neg.scala:8: error: too few parts
   new StringContext().f()
-  ^
+      ^
 stringinterpolation_macro-neg.scala:9: error: too few arguments for interpolated string
   new StringContext("", " is ", "%2d years old").f(s)
                                                    ^
