@@ -58,9 +58,8 @@ self =>
   /** Add a key/value pair to this map.
    *  @param    kv the key/value pair
    *  @return   A new map with the new binding added to this map
-   *  @note     needs to be overridden in subclasses
    */
-  def + [B1 >: B](kv: (A, B1)): SortedMap[A, B1] = throw new AbstractMethodError("SortedMap.+")
+  def + [B1 >: B](kv: (A, B1)): SortedMap[A, B1]
 
   /** Adds two or more elements to this collection and returns
    *  a new collection.
