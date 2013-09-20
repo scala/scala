@@ -39,7 +39,9 @@ trait ClassConstruction { self: QuasiquoteProperties =>
     assertEqAst(q"class Foo extends ..$parents", "class Foo")
   }
 
-  property("splice term name into class") = forAll { (name: TypeName) =>
+  property("splice term name into class") = forAll { (rname: TypeName) =>
+    // add prefix to avoid failure in case rname is keyword
+    val name = TypeName("prefix$" + rname)
     eqAst(q"class $name", "class " + name.toString)
   }
 
