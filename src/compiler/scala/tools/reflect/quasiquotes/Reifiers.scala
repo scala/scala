@@ -144,7 +144,7 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticNew, earlyDefs, parents, selfdef, body)
       case SyntacticDefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         reifyBuildCall(nme.SyntacticDefDef, mods, name, tparams, vparamss, tpt, rhs)
-      case SyntacticValDef(mods, name, tpt, rhs) =>
+      case SyntacticValDef(mods, name, tpt, rhs) if tree != noSelfType =>
         reifyBuildCall(nme.SyntacticValDef, mods, name, tpt, rhs)
       case SyntacticVarDef(mods, name, tpt, rhs) =>
         reifyBuildCall(nme.SyntacticVarDef, mods, name, tpt, rhs)
