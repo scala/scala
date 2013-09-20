@@ -302,6 +302,8 @@ self =>
     def freshTypeName(prefix: String): TypeName
     def o2p(offset: Int): Position
     def r2p(start: Int, mid: Int, end: Int): Position
+    def r2p(start: Int, mid: Int): Position = r2p(start, mid, in.lastOffset max start)
+    def r2p(offset: Int): Position = r2p(offset, offset)
 
     /** whether a non-continuable syntax error has been seen */
     private var lastErrorOffset : Int = -1
@@ -699,8 +701,8 @@ self =>
 
 /* ---------- TREE CONSTRUCTION ------------------------------------------- */
 
-    def atPos[T <: Tree](offset: Int)(t: T): T                      = atPos(r2p(offset, offset, in.lastOffset max offset))(t)
-    def atPos[T <: Tree](start: Int, point: Int)(t: T): T           = atPos(r2p(start, point, in.lastOffset max start))(t)
+    def atPos[T <: Tree](offset: Int)(t: T): T                      = atPos(r2p(offset))(t)
+    def atPos[T <: Tree](start: Int, point: Int)(t: T): T           = atPos(r2p(start, point))(t)
     def atPos[T <: Tree](start: Int, point: Int, end: Int)(t: T): T = atPos(r2p(start, point, end))(t)
     def atPos[T <: Tree](pos: Position)(t: T): T                    = global.atPos(pos)(t)
 
