@@ -7,10 +7,8 @@ import scala.reflect.internal.Flags._
 
 trait Reifiers { self: Quasiquotes =>
   import global._
-  import global.build.{SyntacticClassDef, SyntacticTraitDef, SyntacticModuleDef,
-                       SyntacticDefDef, SyntacticValDef, SyntacticVarDef,
-                       SyntacticBlock, SyntacticApplied, SyntacticTypeApplied,
-                       SyntacticFunction, SyntacticNew, SyntacticAssign}
+  import global.build.{Select => _, Ident => _, _}
+  import global.treeInfo._
   import global.definitions._
   import Cardinality._
   import universeTypes._
@@ -51,6 +49,7 @@ trait Reifiers { self: Quasiquotes =>
       case CasePlaceholder(tree, location, _) => reifyCase(tree, location)
       case RefineStatPlaceholder(tree, _, _) => reifyRefineStat(tree)
       case EarlyDefPlaceholder(tree, _, _) => reifyEarlyDef(tree)
+      case PackageStatPlaceholder(tree, _, _) => reifyPackageStat(tree)
       case _ => EmptyTree
     }
 
@@ -60,8 +59,10 @@ trait Reifiers { self: Quasiquotes =>
       case SyntacticClassDef(mods, name, tparams, constrmods, vparamss, earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticClassDef, mods, name, tparams, constrmods, vparamss,
                                               earlyDefs, parents, selfdef, body)
-      case SyntacticModuleDef(mods, name, earlyDefs, parents, selfdef, body) =>
-        reifyBuildCall(nme.SyntacticModuleDef, mods, name, earlyDefs, parents, selfdef, body)
+      case SyntacticPackageObjectDef(name, earlyDefs, parents, selfdef, body) =>
+        reifyBuildCall(nme.SyntacticPackageObjectDef, name, earlyDefs, parents, selfdef, body)
+      case SyntacticObjectDef(mods, name, earlyDefs, parents, selfdef, body) =>
+        reifyBuildCall(nme.SyntacticObjectDef, mods, name, earlyDefs, parents, selfdef, body)
       case SyntacticNew(earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticNew, earlyDefs, parents, selfdef, body)
       case SyntacticDefDef(mods, name, tparams, vparamss, tpt, rhs) =>
@@ -131,6 +132,8 @@ trait Reifiers { self: Quasiquotes =>
 
     def reifyAnnotation(tree: Tree) = tree
 
+    def reifyPackageStat(tree: Tree) = tree
+
     /** Splits list into a list of groups where subsequent elements are considered
      *  similar by the corresponding function.
      *
@@ -185,6 +188,8 @@ trait Reifiers { self: Quasiquotes =>
       case CasePlaceholder(tree, _, DotDot) => tree
       case RefineStatPlaceholder(tree, _, DotDot) => reifyRefineStat(tree)
       case EarlyDefPlaceholder(tree, _, DotDot) => reifyEarlyDef(tree)
+      case PackageStatPlaceholder(tree, _, DotDot) => reifyPackageStat(tree)
+
       case List(Placeholder(tree, _, DotDotDot)) => tree
     } {
       reify(_)
@@ -280,6 +285,8 @@ trait Reifiers { self: Quasiquotes =>
     override def reifyEarlyDef(tree: Tree) = mirrorBuildCall(nme.mkEarlyDef, tree)
 
     override def reifyAnnotation(tree: Tree) = mirrorBuildCall(nme.mkAnnotation, tree)
+
+    override def reifyPackageStat(tree: Tree) = mirrorBuildCall(nme.mkPackageStat, tree)
   }
 
   class UnapplyReifier extends Reifier {

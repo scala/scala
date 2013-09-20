@@ -13,6 +13,7 @@ object DefinitionDeconstructionProps
   with ObjectDeconstruction
   with ModsDeconstruction
   with ValVarDeconstruction
+  with PackageDeconstruction
 
 trait TraitDeconstruction { self: QuasiquoteProperties =>
   property("exhaustive trait matcher") = test {
@@ -143,5 +144,28 @@ trait ValVarDeconstruction { self: QuasiquoteProperties =>
     matches("var x: Int = 1")
     matches("var x = 1")
     assertThrows[MatchError] { matches("val x = 1") }
+  }
+}
+
+trait PackageDeconstruction { self: QuasiquoteProperties =>
+  property("exhaustive package matcher") = test {
+    def matches(line: String) { val q"package $name { ..$body }" = parse(line) }
+    matches("package foo { }")
+    matches("package foo { class C }")
+    matches("package foo.bar { }")
+    matches("package bippy.bongo { object A; object B }")
+    matches("package bippy { package bongo { object O } }")
+  }
+
+  property("exhaustive package object matcher") = test {
+    def matches(line: String) {
+      val q"package object $name extends { ..$early } with ..$parents { $self => ..$body }" = parse(line)
+    }
+    matches("package object foo")
+    matches("package object foo { def baz }")
+    matches("package object foo { self => }")
+    matches("package object foo extends mammy with daddy { def baz }")
+    matches("package object foo extends { val early = 1 } with daddy")
+    assertThrows[MatchError] { matches("object foo") }
   }
 }

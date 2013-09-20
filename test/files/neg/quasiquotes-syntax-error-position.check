@@ -10,9 +10,9 @@ quasiquotes-syntax-error-position.scala:7: error: '}' expected but end of quote 
 quasiquotes-syntax-error-position.scala:8: error: '.' expected but splicee found.
   q"import $t $t"
               ^
-quasiquotes-syntax-error-position.scala:9: error: illegal start of definition
+quasiquotes-syntax-error-position.scala:9: error: '{' expected but end of quote found.
   q"package p"
-    ^
+             ^
 quasiquotes-syntax-error-position.scala:10: error: ';' expected but '@' found.
   q"foo@$a"
        ^

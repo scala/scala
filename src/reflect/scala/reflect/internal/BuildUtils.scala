@@ -98,6 +98,18 @@ trait BuildUtils { self: SymbolTable =>
 
     def mkRefineStat(stats: List[Tree]): List[Tree] = stats.map(mkRefineStat)
 
+    def mkPackageStat(stat: Tree): Tree = {
+      stat match {
+        case cd: ClassDef =>
+        case md: ModuleDef =>
+        case pd: PackageDef =>
+        case _ => throw new IllegalArgumentException(s"not legal package stat: $stat")
+      }
+      stat
+    }
+
+    def mkPackageStat(stats: List[Tree]): List[Tree] = stats.map(mkPackageStat)
+
     object ScalaDot extends ScalaDotExtractor {
       def apply(name: Name): Tree = gen.scalaDot(name)
       def unapply(tree: Tree): Option[Name] = tree match {
@@ -110,7 +122,7 @@ trait BuildUtils { self: SymbolTable =>
       case vdef @ ValDef(mods, _, _, _) if !mods.isDeferred =>
         copyValDef(vdef)(mods = mods | PRESUPER)
       case tdef @ TypeDef(mods, _, _, _) =>
-        copyTypeDef(tdef)(mods =  mods | PRESUPER)
+        copyTypeDef(tdef)(mods = mods | PRESUPER)
       case _ =>
         throw new IllegalArgumentException(s"not legal early def: $defn")
     }
@@ -244,7 +256,7 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
 
-    object SyntacticModuleDef extends SyntacticModuleDefExtractor {
+    object SyntacticObjectDef extends SyntacticObjectDefExtractor {
       def apply(mods: Modifiers, name: TermName, earlyDefs: List[Tree],
                 parents: List[Tree], selfdef: ValDef, body: List[Tree]) =
         ModuleDef(mods, name, gen.mkTemplate(parents, selfdef, NoMods, Nil, earlyDefs ::: body))
@@ -252,6 +264,19 @@ trait BuildUtils { self: SymbolTable =>
       def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
         case ModuleDef(mods, name, UnMkTemplate(parents, selfdef, _, _, earlyDefs, body)) =>
           Some((mods, name, earlyDefs, parents, selfdef, body))
+        case _ =>
+          None
+      }
+    }
+
+    object SyntacticPackageObjectDef extends SyntacticPackageObjectDefExtractor {
+      def apply(name: TermName, earlyDefs: List[Tree],
+                parents: List[Tree], selfdef: ValDef, body: List[Tree]): Tree =
+        gen.mkPackageObject(SyntacticObjectDef(NoMods, name, earlyDefs, parents, selfdef, body))
+
+      def unapply(tree: Tree): Option[(TermName, List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
+        case PackageDef(Ident(name: TermName), List(SyntacticObjectDef(NoMods, nme.PACKAGEkw, earlyDefs, parents, selfdef, body))) =>
+          Some((name, earlyDefs, parents, selfdef, body))
         case _ =>
           None
       }

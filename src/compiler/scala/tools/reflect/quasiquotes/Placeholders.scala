@@ -146,4 +146,11 @@ trait Placeholders { self: Quasiquotes =>
       case _ => None
     }
   }
+
+  object PackageStatPlaceholder {
+    def unapply(tree: Tree): Option[(Tree, Location, Cardinality)] = tree match {
+      case ValDef(NoMods, Placeholder(tree, location, card), Ident(tpnme.QUASIQUOTE_PACKAGE_STAT), EmptyTree) => Some((tree, location, card))
+      case _ => None
+    }
+  }
 }

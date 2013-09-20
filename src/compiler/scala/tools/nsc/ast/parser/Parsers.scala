@@ -346,9 +346,10 @@ self =>
      */
     def parse(): Tree = parseRule(_.parseStartRule())
 
-    /** This is alternative entry point for repl, script runner, toolbox and quasiquotes.
+    /** These are alternative entry points for repl, script runner, toolbox and parsing in macros.
      */
     def parseStats(): List[Tree] = parseRule(_.templateStats())
+    def parseStatsOrPackages(): List[Tree] = parseRule(_.templateOrTopStatSeq())
 
     /** This is the parse entry point for code which is not self-contained, e.g.
      *  a script which is a series of template statements.  They will be
@@ -2743,10 +2744,9 @@ self =>
      */
     def packageObjectDef(start: Offset): PackageDef = {
       val defn   = objectDef(in.offset, NoMods)
-      val module = copyModuleDef(defn)(name = nme.PACKAGEkw)
-      val pid    = atPos(o2p(defn.pos.start))(Ident(defn.name))
-
-      makePackaging(start, pid, module :: Nil)
+      val pidPos = o2p(defn.pos.startOrPoint)
+      val pkgPos = r2p(start, pidPos.point)
+      gen.mkPackageObject(defn, pidPos, pkgPos)
     }
     def packageOrPackageObject(start: Offset): Tree = (
       if (in.token == OBJECT)
@@ -2988,6 +2988,8 @@ self =>
         in.flushDoc
         statement(InTemplate) :: Nil
     }
+
+    def templateOrTopStatSeq(): List[Tree] = statSeq(templateStat.orElse(topStat))
 
     /** {{{
      *  RefineStatSeq    ::= RefineStat {semi RefineStat}

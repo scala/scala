@@ -13,6 +13,7 @@ object DefinitionConstructionProps
   with TraitConstruction
   with TypeDefConstruction
   with ValDefConstruction
+  with PackageConstruction
 
 trait ClassConstruction { self: QuasiquoteProperties =>
   val anyRef = ScalaDot(TypeName("AnyRef"))
@@ -291,5 +292,54 @@ trait MethodConstruction { self: QuasiquoteProperties =>
   property("splice annotation with multiple argument lists") = test{
     val a = q"new Foo(a)(b)"
     assertEqAst(q"@$a def foo", "@Foo(a)(b) def foo")
+  }
+}
+
+trait PackageConstruction { self: QuasiquoteProperties =>
+  property("splice select into package name") = test {
+    val name = q"foo.bar"
+    assertEqAst(q"package $name { }", "package foo.bar { }")
+  }
+
+  property("splce name into package name") = test{
+    val name = TermName("bippy")
+    assertEqAst(q"package $name { }", "package bippy { }")
+  }
+
+  property("splice members into package body") = test {
+    val members = q"class C" :: q"object O" :: Nil
+    assertEqAst(q"package foo { ..$members }", "package foo { class C; object O }")
+  }
+
+  property("splice illegal members into package body") = test {
+    val f = q"def f"
+    assertThrows[IllegalArgumentException] { q"package foo { $f }" }
+    val v = q"val v = 0"
+    assertThrows[IllegalArgumentException] { q"package foo { $v }" }
+    val expr = q"x + 1"
+    assertThrows[IllegalArgumentException] { q"package foo { $expr }" }
+  }
+
+  property("splice name into package object") = test {
+    val foo = TermName("foo")
+    assertEqAst(q"package object $foo", "package object foo")
+  }
+
+  property("splice parents into package object") = test {
+    val parents = tq"a" :: tq"b" :: Nil
+    assertEqAst(q"package object foo extends ..$parents",
+                 "package object foo extends a with b")
+  }
+
+  property("splice members into package object") = test {
+    val members = q"def foo" :: q"val x = 1" :: Nil
+    assertEqAst(q"package object foo { ..$members }",
+                 "package object foo { def foo; val x = 1 }")
+  }
+
+  property("splice early def into package object") = test {
+    val edefs = q"val x = 1" :: q"type I = Int" :: Nil
+    assertEqAst(q"package object foo extends { ..$edefs } with Any",
+                 "package object foo extends { val x = 1; type I = Int } with Any")
   }
 }

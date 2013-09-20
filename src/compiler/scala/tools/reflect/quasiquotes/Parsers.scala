@@ -140,11 +140,18 @@ trait Parsers { self: Quasiquotes =>
         case Ident(name) if isHole(name) => true
         case _ => false
       })
+
+      override def topStat = super.topStat.orElse {
+        case _ if isHole =>
+          val stats = ValDef(NoMods, in.name, Ident(tpnme.QUASIQUOTE_PACKAGE_STAT), EmptyTree) :: Nil
+          in.nextToken()
+          stats
+      }
     }
   }
 
   object TermParser extends Parser {
-    def entryPoint = { parser => gen.mkTreeOrBlock(parser.templateStats()) }
+    def entryPoint = { parser => gen.mkTreeOrBlock(parser.templateOrTopStatSeq()) }
   }
 
   object TypeParser extends Parser {

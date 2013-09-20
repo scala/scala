@@ -80,6 +80,10 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def mkRefineStat(stats: List[Tree]): List[Tree]
 
+    def mkPackageStat(stat: Tree): Tree
+
+    def mkPackageStat(stats: List[Tree]): List[Tree]
+
     def mkEarlyDef(defn: Tree): Tree
 
     def mkEarlyDef(defns: List[Tree]): List[Tree]
@@ -133,12 +137,20 @@ private[reflect] trait BuildUtils { self: Universe =>
                                        List[Tree], List[Tree], ValDef, List[Tree])]
     }
 
-    val SyntacticModuleDef: SyntacticModuleDefExtractor
+    val SyntacticObjectDef: SyntacticObjectDefExtractor
 
-    trait SyntacticModuleDefExtractor {
+    trait SyntacticObjectDefExtractor {
       def apply(mods: Modifiers, name: TermName, earlyDefs: List[Tree],
                 parents: List[Tree], selfdef: ValDef, body: List[Tree]): Tree
       def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[Tree], ValDef, List[Tree])]
+    }
+
+    val SyntacticPackageObjectDef: SyntacticPackageObjectDefExtractor
+
+    trait SyntacticPackageObjectDefExtractor {
+      def apply(name: TermName, earlyDefs: List[Tree],
+                parents: List[Tree], selfdef: ValDef, body: List[Tree]): Tree
+      def unapply(tree: Tree): Option[(TermName, List[Tree], List[Tree], ValDef, List[Tree])]
     }
 
     val SyntacticTuple: SyntacticTupleExtractor
