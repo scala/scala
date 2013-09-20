@@ -1961,6 +1961,30 @@ TODO:
     </copy>
   </target>
 
+  <!--
+       A jar-like task that creates an OSGi source bundle. It adds the required MANIFEST.MF headers that allow
+       Eclipse to match sources with the corresponding binaries.
+  -->
+  <macrodef name="osgi.source.bundle">
+    <attribute name="destfile"     description="The jar file name"/>
+    <attribute name="symbolicName" description="The original bundle symbolic name (without .source at the end)"/>
+    <attribute name="bundleName"   description="A value for Bundle-Name, usually a textual description"/>
+    <element   name="file-sets"    description="A sequence of fileset elements to be included in the jar" optional="true" implicit="true"/>
+
+    <sequential>
+      <jar whenmanifestonly="fail" destfile="@{destFile}">
+        <file-sets/>
+        <manifest>
+          <attribute name="Manifest-Version" value="1.0"/>
+          <attribute name="Bundle-Name" value="@{bundleName}"/>
+          <attribute name="Bundle-SymbolicName" value="@{symbolicName}.source"/>
+          <attribute name="Bundle-Version" value="${osgi.version.number}"/>
+          <attribute name="Eclipse-SourceBundle" value="@{symbolicName};version=&quot;${osgi.version.number}&quot;;roots:=&quot;.&quot;" />
+        </manifest>
+      </jar>
+    </sequential>
+  </macrodef>
+
   <target name="dist.src" depends="dist.base">
     <mkdir dir="${dist.dir}/src"/>
     <copy toDir="${dist.dir}/src">
@@ -1968,20 +1992,36 @@ TODO:
       <file file="${scala-parser-combinators-sources}"/>
     </copy>
 
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-library-src.jar">
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-library-src.jar"
+                        symbolicName="org.scala-lang.scala-library"
+                        bundleName="Scala Library Sources">
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/continuations/library"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-actors-src.jar"   basedir="${src.dir}/actors"/>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-compiler-src.jar">
+    </osgi.source.bundle>
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-actors-src.jar"
+                        symbolicName="org.scala-lang.scala-actors"
+                        bundleName="Scala Actors Sources">
+      <fileset dir="${src.dir}/actors"/>
+    </osgi.source.bundle>
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-compiler-src.jar"
+                        symbolicName="org.scala-lang.scala-compiler"
+                        bundleName="Scala Compiler Sources">
       <fileset dir="${src.dir}/compiler"/>
       <fileset dir="${src.dir}/repl"/>
       <fileset dir="${src.dir}/scaladoc"/>
       <fileset dir="${src.dir}/interactive"/>
       <fileset dir="${src.dir}/continuations/plugin"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-swing-src.jar"    basedir="${src.dir}/swing"/>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-reflect-src.jar"  basedir="${src.dir}/reflect"/>
+    </osgi.source.bundle>
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-swing-src.jar"
+                        symbolicName="org.scala-lang.scala-swing"
+                        bundleName="Scala Swing Sources">
+      <fileset dir="${src.dir}/swing"/>
+    </osgi.source.bundle>
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-reflect-src.jar"
+                        symbolicName="org.scala-lang.scala-reflect"
+                        bundleName="Scala Reflect Sources">
+      <fileset dir="${src.dir}/reflect"/>
+    </osgi.source.bundle>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scalap-src.jar"         basedir="${src.dir}/scalap"/>
   </target>
 
