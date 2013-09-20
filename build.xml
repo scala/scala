@@ -1886,13 +1886,52 @@ TODO:
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-library-src.jar">
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/continuations/library"/>
+      <manifest>
+        <attribute name="Manifest-Version" value="1.0"/>
+        <attribute name="Bundle-Name" value="Scala Standard Library Sources"/>
+        <attribute name="Bundle-SymbolicName" value="org.scala-lang.scala-library.source"/>
+        <attribute name="Bundle-Version" value="${osgi.version.number}"/>
+        <attribute name="Eclipse-SourceBundle" value="org.scala-lang.scala-library;version=&quot;${osgi.version.number}&quot;;roots:=&quot;.&quot;" />
+      </manifest>
     </jar>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-reflect-src.jar"  basedir="${src.dir}/reflect"/>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-swing-src.jar"    basedir="${src.dir}/swing"/>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-compiler-src.jar" basedir="${src.dir}/compiler"/>
+    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-reflect-src.jar"  basedir="${src.dir}/reflect">
+      <manifest>
+        <attribute name="Manifest-Version" value="1.0"/>
+        <attribute name="Bundle-Name" value="Scala Reflect Sources"/>
+        <attribute name="Bundle-SymbolicName" value="org.scala-lang.scala-reflect.source"/>
+        <attribute name="Bundle-Version" value="${osgi.version.number}"/>
+        <attribute name="Eclipse-SourceBundle" value="org.scala-lang.scala-reflect;version=&quot;${osgi.version.number}&quot;;roots:=&quot;.&quot;" />
+      </manifest>
+    </jar>
+    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-swing-src.jar"    basedir="${src.dir}/swing">
+      <manifest>
+        <attribute name="Manifest-Version" value="1.0"/>
+        <attribute name="Bundle-Name" value="Scala Swing Sources"/>
+        <attribute name="Bundle-SymbolicName" value="org.scala-lang.scala-swing.source"/>
+        <attribute name="Bundle-Version" value="${osgi.version.number}"/>
+        <attribute name="Eclipse-SourceBundle" value="org.scala-lang.scala-swing;version=&quot;${osgi.version.number}&quot;;roots:=&quot;.&quot;" />
+      </manifest>
+    </jar>
+    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-compiler-src.jar" basedir="${src.dir}/compiler">
+      <manifest>
+        <attribute name="Manifest-Version" value="1.0"/>
+        <attribute name="Bundle-Name" value="Scala Compiler Sources"/>
+        <attribute name="Bundle-SymbolicName" value="org.scala-lang.scala-compiler.source"/>
+        <attribute name="Bundle-Version" value="${osgi.version.number}"/>
+        <attribute name="Eclipse-SourceBundle" value="org.scala-lang.scala-compiler;version=&quot;${osgi.version.number}&quot;;roots:=&quot;.&quot;" />
+      </manifest>
+    </jar>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/fjbg-src.jar"           basedir="${src.dir}/fjbg"/>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/msil-src.jar"           basedir="${src.dir}/msil"/>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-actors-src.jar"   basedir="${src.dir}/actors"/>
+    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-actors-src.jar"   basedir="${src.dir}/actors">
+      <manifest>
+        <attribute name="Manifest-Version" value="1.0"/>
+        <attribute name="Bundle-Name" value="Scala Actors Sources"/>
+        <attribute name="Bundle-SymbolicName" value="org.scala-lang.scala-actors.source"/>
+        <attribute name="Bundle-Version" value="${osgi.version.number}"/>
+        <attribute name="Eclipse-SourceBundle" value="org.scala-lang.scala-actors;version=&quot;${osgi.version.number}&quot;;roots:=&quot;.&quot;" />
+      </manifest>
+    </jar>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scalap-src.jar"         basedir="${src.dir}/scalap"/>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-partest-src.jar"  basedir="${src.dir}/partest"/>
   </target>
