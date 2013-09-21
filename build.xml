@@ -211,6 +211,11 @@ TODO:
     <!-- Set up Ant contrib tasks so we can use <if><then><else> instead of the clunky `unless` attribute -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib-ant.dir}/ant-contrib.jar"/>
 
+    <property name="scala.ant.min.version" value="1.8.2"/>
+    <if><not><antversion atleast="${scala.ant.min.version}"/></not>
+      <then><fail message="Ant version ${scala.ant.min.version} is required. You are running ${ant.version}"/></then>
+    </if>
+
     <!-- Add our maven ant tasks -->
     <path id="maven-ant-tasks.classpath" path="${lib-ant.dir}/maven-ant-tasks-2.1.1.jar" />
     <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
