@@ -1319,6 +1319,8 @@ abstract class GenICode extends SubComponent  {
     /** Some useful equality helpers.
      */
     def isNull(t: Tree) = cond(t) { case Literal(Constant(null)) => true }
+    def isLiteral(t: Tree) = cond(t) { case Literal(_) => true }
+    def isNonNullExpr(t: Tree) = isLiteral(t) || ((t.symbol ne null) && t.symbol.isModule)
 
     /* If l or r is constant null, returns the other ; otherwise null */
     def ifOneIsNull(l: Tree, r: Tree) = if (isNull(l)) r else if (isNull(r)) l else null
@@ -1513,6 +1515,23 @@ abstract class GenICode extends SubComponent  {
           val ctx1 = genLoad(l, ctx, ObjectReference)
           val branchesReachable = !ctx1.bb.ignore
           ctx1.bb emitOnly CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ObjectReference)
+          branchesReachable
+        } else if (isNonNullExpr(l)) {
+          // Avoid null check if L is statically non-null.
+          //
+          // "" == expr -> "".equals(expr)
+          // Nil == expr -> Nil.equals(expr)
+          //
+          // Common enough (through pattern matching) to treat this specially here rather than
+          // hoping that -Yconst-opt is enabled. The impossible branches for null checks lead
+          // to spurious "branch not covered" warnings in Jacoco code coverage.
+          var ctx1 = genLoad(l, ctx, ObjectReference)
+          val branchesReachable = !ctx1.bb.ignore
+          ctx1 = genLoad(r, ctx1, ObjectReference)
+          ctx1.bb emitOnly(
+            CALL_METHOD(Object_equals, Dynamic),
+            CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL)
+          )
           branchesReachable
         } else {
           val eqEqTempLocal = getTempLocal
