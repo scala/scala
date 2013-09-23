@@ -34,6 +34,30 @@ If *all* of these requirements are not met then the code should **not** be merge
 
 All contributed code should come accompanied with documentation. Pull requests containing undocumented code will not be accepted. Both user-facing Scaladoc comments, as well as committer-facing internal documentation (i.e. important design decisions that other maintainers should know about should be placed inline with line comments `//`) should be accompanying all contributed code where possible.
 
+## Testing
+
+All bug-fixes and any non-trivial changes should come with tests.
+
+Scala project has at the moment two main ways of writing tests:
+
+  1. Partest tests located in `test/files`
+  2. JUnit tests located in `test/junit`
+
+Partest is a homegrown testing framework designed for high-level, [functional tests](http://en.wikipedia.org/wiki/Functional_testing). Partest is designed specifically to test Scala compiler and tools surrounding it (like REPL). It achieves that by defining various categories of tests. For example, tests in `test/files/pos` check whether given piece of code compiles (pos stands for "positive"). There are cases where we want to check that given code doesn't compile (e.g. doesn't type check) so we have `test/files/neg` for that. If you want to see the complete list of supported test categories run `test/partest --help` command. Check existing tests in each category to see how write one yourself.
+
+[JUnit](http://junit.org/) tests are [unit tests](http://en.wikipedia.org/wiki/Unit_testing) based on well-known, Java testing framework. Unit tests are meant to test single unit of functionality like a single class that performs a well-defined job. Example of unit tests (in context of Scala project) include:
+
+  * Scala library tests. E.g. all collection tests that assert certain behavior should be written as JUnit tests
+  * Symbol table tests that check correctness and contracts of Trees, Symbols and Types that do not require the whole compile to run (e.g. subtyping can be tested as an unit test)
+  * Single component of Scala compiler can and should be unit tested. For example, if you are writing an optimizer then it's a good idea to test each optimization in separation by passing some inputs (bytecode instructions) and asserting properties of outputs.
+
+In principle, every unit test can be written as partest's `run` test but there are several advantages of writing those tests as JUnit tests:
+
+  * JUnit has native IDE support so you can easily run and debug unit test in your favorite IDE
+  * JUnit tests use proper package structure (tests follow package structure of classes they test) so all tests can be compiled at once which dramatically speeds up compilation of tests
+  * JUnit reuses the same JVM instance to run all tests which speeds up tests execution
+
+Scala project has grown to the size where performance of test execution started to matter a lot. Please take that into account when you are writing your tests.
 
 ## Work In Progress
 
