@@ -191,14 +191,6 @@ abstract class TreeBuilder {
     }
   }
 
-  /** Create a tree representing an assignment <lhs = rhs> */
-  def makeAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
-    case Apply(fn, args) =>
-      Apply(atPos(fn.pos) { Select(fn, nme.update) }, args ::: List(rhs))
-    case _ =>
-      Assign(lhs, rhs)
-  }
-
   /** Tree for `od op`, start is start0 if od.pos is borked. */
   def makePostfixSelect(start0: Int, end: Int, od: Tree, op: Name): Tree = {
     val start = if (od.pos.isDefined) od.pos.startOrPoint else start0

@@ -91,4 +91,24 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     matches("new { val early = 1} with Parent[Int] { body }")
     matches("new Foo { selfie => }")
   }
+
+  property("exhaustive assign pattern") = test {
+    def matches(tree: Tree) { val q"$rhs = $lhs" = tree }
+    matches(parse("left = right"))
+    matches(parse("arr(1) = 2"))
+    matches(AssignOrNamedArg(EmptyTree, EmptyTree))
+  }
+
+  property("deconstruct update 1") = test {
+    val q"$obj(..$args) = $value" = q"foo(bar) = baz"
+    assert(obj ≈ q"foo")
+    assert(args ≈ List(q"bar"))
+    assert(value ≈ q"baz")
+  }
+
+  property("deconstruct update 2") = test {
+    val q"$left = $value" = q"foo(bar) = baz"
+    assert(left ≈ q"foo(bar)")
+    assert(value ≈ q"baz")
+  }
 }
