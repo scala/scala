@@ -1,0 +1,9 @@
+t7848-interp-warn.scala:7: warning: `$foo` looks like an interpolated identifier! Did you forget the interpolator?
+    "An important $foo message!"
+    ^
+t7848-interp-warn.scala:11: warning: That looks like an interpolated expression! Did you forget the interpolator?
+    "A doubly important ${foo * 2} message!"
+    ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found
