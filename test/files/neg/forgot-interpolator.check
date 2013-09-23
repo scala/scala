@@ -1,9 +1,24 @@
-forgot-interpolator.scala:4: warning: looks like an interpolated String; did you forget the interpolator?
+forgot-interpolator.scala:4: warning: `$bippy` looks like an interpolated identifier! Did you forget the interpolator?
   def f = "Put the $bippy in the $bippy!" // warn
           ^
-forgot-interpolator.scala:14: warning: looks like an interpolated String; did you forget the interpolator?
+forgot-interpolator.scala:14: warning: That looks like an interpolated expression! Did you forget the interpolator?
   def f = """Put the ${println("bippy")} in the bippy!""" // warn
           ^
+forgot-interpolator.scala:30: warning: `$beppo` looks like an interpolated identifier! Did you forget the interpolator?
+      def f = "$beppo was a marx bros who saw dollars."  // warn
+              ^
+forgot-interpolator.scala:34: warning: `$aleppo` looks like an interpolated identifier! Did you forget the interpolator?
+    def f = "$aleppo is a pepper and a city."  // warn
+            ^
+forgot-interpolator.scala:40: warning: `$bar` looks like an interpolated identifier! Did you forget the interpolator?
+    def f = "$bar is private, shall we warn just in case?" // warn
+            ^
+forgot-interpolator.scala:45: warning: `$hippo` looks like an interpolated identifier! Did you forget the interpolator?
+    def h = "$hippo takes an implicit"  // warn
+            ^
+forgot-interpolator.scala:37: warning: private method in class Bar is never used
+    private def bar = 8
+                ^
 error: No warnings can be incurred under -Xfatal-warnings.
-two warnings found
+7 warnings found
 one error found
