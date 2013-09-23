@@ -167,4 +167,28 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     val x = q"val x: Int = 1"
     assertThrows[IllegalArgumentException] { q"($x) => x" }
   }
+
+  property("assign variable") = test {
+    val v = q"v"
+    val value = q"foo"
+    assertEqAst(q"$v = $value", "v = foo")
+  }
+
+  property("assign update 1") = test {
+    val v = q"v"
+    val args = q"1" :: q"2" :: Nil
+    val value = q"foo"
+    assertEqAst(q"$v(..$args) = $value", "v(1, 2) = foo")
+  }
+
+  property("assign update 2") = test {
+    val a = q"v(0)"
+    val value = q"foo"
+    assertEqAst(q"$a = $value", "v(0) = foo")
+  }
+
+  property("assign or named arg") = test {
+    val assignx = q"x = 1"
+    assertEqAst(q"f($assignx)", "f(x = 1)")
+  }
 }
