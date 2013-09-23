@@ -66,7 +66,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   val docsourceurl = StringSetting (
     "-doc-source-url",
     "url",
-    "A URL pattern used to build links to template sources; use variables, for example: ?{TPL_NAME} ('Seq'), ?{TPL_OWNER} ('scala.collection'), ?{FILE_PATH} ('scala/collection/Seq')",
+    "A URL pattern used to build links to template sources; use variables, for example: €{TPL_NAME} ('Seq'), €{TPL_OWNER} ('scala.collection'), €{FILE_PATH} ('scala/collection/Seq')",
     ""
   )
 

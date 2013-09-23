@@ -123,7 +123,7 @@ if "%_TOOL_CLASSPATH%"=="" (
 
 if not "%_LINE_TOOLCP%"=="" call :add_cpath "%_LINE_TOOLCP%"
 
-set _PROPS=-Dscala.home="!_SCALA_HOME!" -Denv.emacs="%EMACS%" -Dscala.usejavacp=true @properties@
+set _PROPS=-Dscala.home="!_SCALA_HOME!" -Denv.emacs="%EMACS%" -Dscala.usejavacp=true -Dfile.encoding=UTF-8 @properties@
 
 rem echo "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
 "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
