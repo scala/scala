@@ -784,10 +784,13 @@ abstract class TreeInfo {
    *  unapply (unwrapping nested Applies) and returns the fun part of that Apply.
    */
   object Unapplied {
+    // Duplicated with `spliceApply`
     def unapply(tree: Tree): Option[Tree] = tree match {
-      case Apply(fun, Ident(nme.SELECTOR_DUMMY) :: Nil) => Some(fun)
-      case Apply(fun, _)                                => unapply(fun)
-      case _                                            => None
+      // SI-7868 Admit Select() to account for numeric widening, e.g. <unappplySelector>.toInt
+      case Apply(fun, (Ident(nme.SELECTOR_DUMMY)| Select(Ident(nme.SELECTOR_DUMMY), _)) :: Nil)
+                         => Some(fun)
+      case Apply(fun, _) => unapply(fun)
+      case _             => None
     }
   }
 

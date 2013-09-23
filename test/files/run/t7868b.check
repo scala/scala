@@ -1,0 +1,6 @@
+Expr[Int]({
+  val x = (0: Short): @unchecked match {
+    case A((x @ _)) => x
+  };
+  x
+})
