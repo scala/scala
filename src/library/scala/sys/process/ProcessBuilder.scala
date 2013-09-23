@@ -123,7 +123,7 @@ import ProcessBuilder._
   *   1. `#&&` conditionally executes the second command if the previous one finished with
   *      exit value 0. It mirrors shell's `&&`.
   *   1. `#||` conditionally executes the third command if the exit value of the previous
-  *      command is different than zero. It mirrors shell's `&&`.
+  *      command is different than zero. It mirrors shell's `||`.
   *
   * Finally, `!` at the end executes the commands, and returns the exit value.
   * Whatever is printed will be sent to the Scala process standard output. If
