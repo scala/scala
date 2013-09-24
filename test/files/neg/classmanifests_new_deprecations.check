@@ -1,6 +1,6 @@
 classmanifests_new_deprecations.scala:2: warning: type ClassManifest in object Predef is deprecated: Use `scala.reflect.ClassTag` instead
   def cm1[T: ClassManifest] = ???
-             ^
+           ^
 classmanifests_new_deprecations.scala:3: warning: type ClassManifest in object Predef is deprecated: Use `scala.reflect.ClassTag` instead
   def cm2[T](implicit evidence$1: ClassManifest[T]) = ???
                                   ^
@@ -9,7 +9,7 @@ classmanifests_new_deprecations.scala:4: warning: type ClassManifest in object P
            ^
 classmanifests_new_deprecations.scala:6: warning: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
   def rcm1[T: scala.reflect.ClassManifest] = ???
-                            ^
+            ^
 classmanifests_new_deprecations.scala:7: warning: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
   def rcm2[T](implicit evidence$1: scala.reflect.ClassManifest[T]) = ???
                                                  ^
