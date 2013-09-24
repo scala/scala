@@ -206,13 +206,13 @@ trait Reifiers { self: Quasiquotes =>
     // to overload the same tree for two different concepts:
     // - MUTABLE that is used to override ValDef for vars
     // - TRAIT that is used to override ClassDef for traits
-    val nonoverloadedExplicitFlags = ExplicitFlags & ~MUTABLE & ~TRAIT
+    val nonOverloadedExplicitFlags = ExplicitFlags & ~MUTABLE & ~TRAIT
 
     def ensureNoExplicitFlags(m: Modifiers, pos: Position) = {
       // Traits automatically have ABSTRACT flag assigned to
       // them so in that case it's not an explicit flag
       val flags = if (m.isTrait) m.flags & ~ABSTRACT else m.flags
-      if ((flags & nonoverloadedExplicitFlags) != 0L)
+      if ((flags & nonOverloadedExplicitFlags) != 0L)
         c.abort(pos, s"Can't $action modifiers together with flags, consider merging flags into modifiers")
     }
 
