@@ -7,9 +7,9 @@ lazyvals.scala:9: error: lazy not allowed here. Only vals can be lazy
 lazyvals.scala:12: error: lazy not allowed here. Only vals can be lazy
   lazy def q: Double = 0.0
        ^
-lazyvals.scala:15: error: lazy values may not be abstract
+lazyvals.scala:15: error: '=' expected but ';' found.
     lazy val t;
-             ^
+              ^
 lazyvals.scala:20: error: lazy not allowed here. Only vals can be lazy
   lazy trait T {}
        ^
