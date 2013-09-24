@@ -2462,6 +2462,8 @@ self =>
       }
 
       val trees = (lhses.init flatMap makeValDefs) ::: makePatDef(newmods, ascriptedLhs, rhs)
+      // extend the range of the first valdef to include the var token.
+      trees collectFirst { case vd: ValDef => vd } foreach (t => t setPos t.pos.withStart(pos))
       ensureNonOverlapping(trees.last, trees.init)
       trees
     }
