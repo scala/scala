@@ -1,7 +1,7 @@
-t7473.scala:5: error: for comprehension must start with generator: '<-' expected but '=' found.
-  for (x = Option(i); if x == j) yield 42  //t7473.scala:4: error: '<-' expected but '=' found.
-         ^
-t7473.scala:8: error: for comprehension must start with generator: '<-' expected but '=' found.
+t7473.scala:6: error: '<-' expected but '=' found.
   (for (x = Option(i); if x == j) yield 42) toList
           ^
+t7473.scala:6: error: illegal start of simple expression
+  (for (x = Option(i); if x == j) yield 42) toList
+                     ^
 two errors found

@@ -197,11 +197,10 @@ private[util] trait InternalPositionImpl {
   }
   def showDebug: String = toString
   def show = (
-    if (isOpaqueRange && start != point) s"[$point/$start:$end]"
-    else if (isOpaqueRange) s"[$start:$end]"
+    if (isOpaqueRange) s"[$start:$end]"
     else if (isTransparent) s"<$start:$end>"
     else if (isDefined) s"[$point]"
-    else "[X]"
+    else "[NoPosition]"
   )
 
   private def asOffset(point: Int): Position = Position.offset(source, point)

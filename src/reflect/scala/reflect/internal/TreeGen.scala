@@ -280,7 +280,7 @@ abstract class TreeGen extends macros.TreeBuilder {
 
   /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
-    if (elems.isEmpty) mkUnit()
+    if (elems.isEmpty) Literal(Constant(()))
     else Apply(
       Select(mkAttributedRef(TupleClass(elems.length).caseModule), nme.apply),
       elems)
@@ -326,7 +326,8 @@ abstract class TreeGen extends macros.TreeBuilder {
    *    body
    *  }
    */
-  def mkTemplate(parents: List[Tree], self: ValDef, constrMods: Modifiers, vparamss: List[List[ValDef]], body: List[Tree], superPos: Position = NoPosition): Template = {
+  def mkTemplate(parents: List[Tree], self: ValDef, constrMods: Modifiers,
+                 vparamss: List[List[ValDef]], body: List[Tree], superPos: Position = NoPosition): Template = {
     /* Add constructor to template */
 
     // create parameters for <init> as synthetic trees.
@@ -397,42 +398,52 @@ abstract class TreeGen extends macros.TreeBuilder {
    *  @param npos  the position of the new
    *  @param cpos  the position of the anonymous class starting with parents
    */
-  def mkNew(parents: List[Tree], self: ValDef, stats: List[Tree], npos: Position, cpos: Position): Tree = {
-    def enclosingPos = wrappingPos(cpos, parents ::: List(self) ::: stats)
-    def upos         = cpos union npos
-    def anonTemplate = atPos(cpos)(mkTemplate(parents, self, NoMods, ListOfNil, stats, cpos))
-    def anonClass    = atPos(anonTemplate.pos.makeTransparent)(ClassDef(Modifiers(FINAL), tpnme.ANON_CLASS_NAME, Nil, anonTemplate))
-    def anonNew      = atPos(npos)(New(Ident(tpnme.ANON_CLASS_NAME) setPos cpos.focus, Nil))
-
-    // `Parsers.template` no longer differentiates tpts and their argss
-    // e.g. `C()` will be represented as a single tree Apply(Ident(C), Nil)
-    // instead of parents = Ident(C), argss = Nil as before
-    // this change works great for things that are actually templates
-    // but in this degenerate case we need to perform postprocessing
-    parents match {
-      case Nil                                                         => mkNew(List(scalaAnyRefConstr), self, stats, npos, cpos)
-      case treeInfo.AppliedArgs(callee, argss) :: Nil if stats.isEmpty => atPos(upos)(New(callee, argss))
-      case _                                                           => atPos(upos)(mkBlock(anonClass :: anonNew :: Nil))
+  def mkNew(parents: List[Tree], self: ValDef, stats: List[Tree],
+            npos: Position, cpos: Position): Tree =
+    if (parents.isEmpty)
+      mkNew(List(scalaAnyRefConstr), self, stats, npos, cpos)
+    else if (parents.tail.isEmpty && stats.isEmpty) {
+      // `Parsers.template` no longer differentiates tpts and their argss
+      // e.g. `C()` will be represented as a single tree Apply(Ident(C), Nil)
+      // instead of parents = Ident(C), argss = Nil as before
+      // this change works great for things that are actually templates
+      // but in this degenerate case we need to perform postprocessing
+      val app = treeInfo.dissectApplied(parents.head)
+      atPos(npos union cpos) { New(app.callee, app.argss) }
+    } else {
+      val x = tpnme.ANON_CLASS_NAME
+      atPos(npos union cpos) {
+        Block(
+          List(
+            atPos(cpos) {
+              ClassDef(
+                Modifiers(FINAL), x, Nil,
+                mkTemplate(parents, self, NoMods, ListOfNil, stats, cpos.focus))
+            }),
+          atPos(npos) {
+            New(
+              Ident(x) setPos npos.focus,
+              Nil)
+          }
+        )
+      }
     }
-  }
 
   /** Create a tree representing the function type (argtpes) => restpe */
   def mkFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
     AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
 
-  def mkUnit() = Literal(Constant(()))
-
   /** Create block of statements `stats`  */
-  def mkBlock(stats: List[Tree]): Tree = stats match {
-    case stats if stats.isEmpty || !stats.last.isTerm => mkBlock(stats :+ mkUnit())
-    case stat :: Nil                                  => stat
-    case stats                                        => Block(stats.init, stats.last)
-  }
+  def mkBlock(stats: List[Tree]): Tree =
+    if (stats.isEmpty) Literal(Constant(()))
+    else if (!stats.last.isTerm) Block(stats, Literal(Constant(())))
+    else if (stats.length == 1) stats.head
+    else Block(stats.init, stats.last)
 
   def mkTreeOrBlock(stats: List[Tree]) = stats match {
-    case Nil         => EmptyTree
+    case Nil => EmptyTree
     case head :: Nil => head
-    case _           => gen.mkBlock(stats)
+    case _ => gen.mkBlock(stats)
   }
 
   /** Create a tree representing an assignment <lhs = rhs> */
