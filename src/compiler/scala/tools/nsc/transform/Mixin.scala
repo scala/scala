@@ -89,6 +89,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         settings.checkInit
      && sym.isGetter
      && !sym.isInitializedToDefault
+     && !isConstantType(sym.info.finalResultType) // SI-4742
      && !sym.hasFlag(PARAMACCESSOR | SPECIALIZED | LAZY)
      && !sym.accessed.hasFlag(PRESUPER)
      && !sym.isOuterAccessor
