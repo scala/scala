@@ -130,13 +130,28 @@ trait Imports {
 
     // add code for a new object to hold some imports
     def addWrapper() {
+      if (classBasedWrappers) addClassBasedWrapper()
+      else addObjectBasedWrapper()
+    }
+
+    def addObjectBasedWrapper() {
       val impname = nme.INTERPRETER_IMPORT_WRAPPER
       code append "object %s {\n".format(impname)
       trailingBraces append "}\n"
       accessPath append ("." + impname)
       currentImps.clear()
     }
+
+    def addClassBasedWrapper() {
+      val impname = nme.INTERPRETER_IMPORT_WRAPPER
+      code append "class %sC extends Serializable {\n".format(impname)
+      trailingBraces append "}\nval " + impname + " = new " + impname + "C;\n"
+      accessPath append ("." + impname)
+      currentImps.clear()
+    }
+
     def maybeWrap(names: Name*) = if (names exists currentImps) addWrapper()
+
     def wrapBeforeAndAfter[T](op: => T): T = {
       addWrapper()
       try op finally addWrapper()
@@ -163,7 +178,14 @@ trait Imports {
           case x =>
             for (sym <- x.definedSymbols) {
               maybeWrap(sym.name)
-              code append s"import ${x.path}\n"
+              if (classBasedWrappers) {
+                if (!code.toString.endsWith(".`" + sym.name + "`;\n")) {
+                  val valName = "$VAL" + req.lineRep.lineId
+                  code.append("val " + valName + " = " + req.lineRep.readPath + ".INSTANCE;\n")
+                  code.append("import " + valName + req.accessPath + ".`" + sym.name + "`;\n")
+                }
+              } else
+                code append s"import ${x.path}\n"
               currentImps += sym.name
             }
         }

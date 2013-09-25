@@ -81,6 +81,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private var _classLoader: util.AbstractFileClassLoader = null                              // active classloader
   private val _compiler: ReplGlobal                 = newCompiler(settings, reporter)   // our private compiler
 
+  val classBasedWrappers = settings.Yreplclassbased.value
+
   def compilerClasspath: Seq[java.net.URL] = (
     if (isInitializeComplete) global.classPath.asURLs
     else new PathResolver(settings).result.asURLs  // the compiler's classpath
@@ -175,6 +177,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   object naming extends {
     val global: imain.global.type = imain.global
   } with Naming {
+    def isClassBased = classBasedWrappers
     // make sure we don't overwrite their unwisely named res3 etc.
     def freshUserTermName(): TermName = {
       val name = newTermName(freshUserVarName())
@@ -273,11 +276,13 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     } mkString "."
   )
 
+  def transformPath(p: String): String = if (classBasedWrappers) p replaceFirst("read", "read.INSTANCE") replaceAll("iwC", "iw") else p
+
   abstract class PhaseDependentOps {
     def shift[T](op: => T): T
 
     def path(name: => Name): String = shift(path(symbolOfName(name)))
-    def path(sym: Symbol): String = backticked(shift(sym.fullName))
+    def path(sym: Symbol): String = backticked(transformPath(shift(sym.fullName)))
     def sig(sym: Symbol): String  = shift(sym.defString)
   }
   object typerOp extends PhaseDependentOps {
@@ -700,7 +705,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
    *
    *  Read! Eval! Print! Some of that not yet centralized here.
    */
-  class ReadEvalPrint(lineId: Int) {
+  class ReadEvalPrint(val lineId: Int) {
     def this() = this(freshLineId())
 
     val packageName = sessionNames.line + lineId
@@ -777,7 +782,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       * following accessPath into the outer one.
       */
     def resolvePathToSymbol(accessPath: String): Symbol = {
-      val readRoot  = getModuleIfDefined(readPath)   // the outermost wrapper
+      val readRoot = if (classBasedWrappers) getClassIfDefined(readPath) else getModuleIfDefined(readPath) // the outermost wrapper
       (accessPath split '.').foldLeft(readRoot: Symbol) {
         case (sym, "")    => sym
         case (sym, name)  => exitingTyper(termMember(sym, name))
@@ -854,7 +859,13 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     /** the line of code to compute */
     def toCompute = line
 
-    def fullPath(vname: String) = s"${lineRep.readPath}$accessPath.`$vname`"
+    def fullAccessPath = {
+      if (classBasedWrappers) s"${lineRep.readPath}.INSTANCE$accessPath"
+      else
+        s"${lineRep.readPath}$accessPath"
+    }
+
+    def fullPath(vname: String) = s"$fullAccessPath.`$vname`"
 
     /** generate the source code for the object that computes this request */
     private object ObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
@@ -871,12 +882,20 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
           "def $trees = Nil"
         )
       }
-
-      val preamble = """
-        |object %s {
+      val preambleHeader = if (classBasedWrappers) "class %s extends Serializable {" else "object %s {"
+      val preamble = s"""
+        |$preambleHeader
         |%s%s%s
-      """.stripMargin.format(lineRep.readName, envLines.map("  " + _ + ";\n").mkString, importsPreamble, indentCode(toCompute))
-      val postamble = importsTrailer + "\n}"
+      """.stripMargin.format(lineRep.readName, envLines.map("  " + _ + ";\n").mkString,
+        importsPreamble, indentCode(toCompute))
+
+      val postamble = importsTrailer + "\n}" +
+          (if (classBasedWrappers) s"""
+                                      |object ${lineRep.readName} {
+                                      |val INSTANCE = new ${lineRep.readName}();
+                                      |}""".stripMargin
+          else "")
+
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
     }
 
@@ -898,7 +917,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       |    (""
       """.stripMargin.format(
         lineRep.evalName, evalResult, lineRep.printName,
-        executionWrapper, lineRep.readName + accessPath
+        executionWrapper, fullAccessPath
       )
 
       val postamble = """
@@ -1227,7 +1246,7 @@ object IMain {
   // $line3.$read.$iw.$iw.Bippy =
   //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
   private def removeLineWrapper(s: String) = s.replaceAll("""\$line\d+[./]\$(read|eval|print)[$.]""", "")
-  private def removeIWPackages(s: String)  = s.replaceAll("""\$(iw|read|eval|print)[$.]""", "")
+  private def removeIWPackages(s: String)  = s.replaceAll("""\$(iw|iwC|read|eval|print)[$.]""", "")
   def stripString(s: String)               = removeIWPackages(removeLineWrapper(s))
 
   trait CodeAssembler[T] {
@@ -1247,6 +1266,7 @@ object IMain {
     def stripImpl(str: String): String
     def strip(str: String): String = if (isStripping) stripImpl(str) else str
   }
+
   trait TruncatingWriter {
     def maxStringLength: Int
     def isTruncating: Boolean
@@ -1256,6 +1276,7 @@ object IMain {
       else str
     }
   }
+
   abstract class StrippingTruncatingWriter(out: JPrintWriter)
           extends JPrintWriter(out)
              with StrippingWriter
