@@ -24,7 +24,7 @@ trait HasCompileSocket {
 
     sock.applyReaderAndWriter { (in, out) =>
       out println (compileSocket getPassword sock.getPort())
-      out println (args mkString "\0")
+      out println (args mkString "\u0000")
 
       def loop(): Boolean = in.readLine() match {
         case null => noErrors

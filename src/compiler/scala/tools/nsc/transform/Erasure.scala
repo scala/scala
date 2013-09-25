@@ -88,7 +88,7 @@ abstract class Erasure extends AddInterfaces
   // more rigorous way up front rather than catching it after the fact,
   // but that will be more involved.
   private def dotCleanup(sig: String): String = {
-    var last: Char = '\0'
+    var last: Char = '\u0000'
     sig map {
       case '.' if last != '>' => last = '.' ; '$'
       case ch                 => last = ch ; ch
