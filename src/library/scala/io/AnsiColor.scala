@@ -3,51 +3,51 @@ package io
 
 trait AnsiColor {
   /** Foreground color for ANSI black */
-  final val BLACK      = "\033[30m"
+  final val BLACK      = "\u001b[30m"
   /** Foreground color for ANSI red */
-  final val RED        = "\033[31m"
+  final val RED        = "\u001b[31m"
   /** Foreground color for ANSI green */
-  final val GREEN      = "\033[32m"
+  final val GREEN      = "\u001b[32m"
   /** Foreground color for ANSI yellow */
-  final val YELLOW     = "\033[33m"
+  final val YELLOW     = "\u001b[33m"
   /** Foreground color for ANSI blue */
-  final val BLUE       = "\033[34m"
+  final val BLUE       = "\u001b[34m"
   /** Foreground color for ANSI magenta */
-  final val MAGENTA    = "\033[35m"
+  final val MAGENTA    = "\u001b[35m"
   /** Foreground color for ANSI cyan */
-  final val CYAN       = "\033[36m"
+  final val CYAN       = "\u001b[36m"
   /** Foreground color for ANSI white */
-  final val WHITE      = "\033[37m"
+  final val WHITE      = "\u001b[37m"
 
   /** Background color for ANSI black */
-  final val BLACK_B    = "\033[40m"
+  final val BLACK_B    = "\u001b[40m"
   /** Background color for ANSI red */
-  final val RED_B      = "\033[41m"
+  final val RED_B      = "\u001b[41m"
   /** Background color for ANSI green */
-  final val GREEN_B    = "\033[42m"
+  final val GREEN_B    = "\u001b[42m"
   /** Background color for ANSI yellow */
-  final val YELLOW_B   = "\033[43m"
+  final val YELLOW_B   = "\u001b[43m"
   /** Background color for ANSI blue */
-  final val BLUE_B     = "\033[44m"
+  final val BLUE_B     = "\u001b[44m"
   /** Background color for ANSI magenta */
-  final val MAGENTA_B  = "\033[45m"
+  final val MAGENTA_B  = "\u001b[45m"
   /** Background color for ANSI cyan */
-  final val CYAN_B     = "\033[46m"
+  final val CYAN_B     = "\u001b[46m"
   /** Background color for ANSI white */
-  final val WHITE_B    = "\033[47m"
+  final val WHITE_B    = "\u001b[47m"
 
   /** Reset ANSI styles */
-  final val RESET      = "\033[0m"
+  final val RESET      = "\u001b[0m"
   /** ANSI bold */
-  final val BOLD       = "\033[1m"
+  final val BOLD       = "\u001b[1m"
   /** ANSI underlines */
-  final val UNDERLINED = "\033[4m"
+  final val UNDERLINED = "\u001b[4m"
   /** ANSI blink */
-  final val BLINK      = "\033[5m"
+  final val BLINK      = "\u001b[5m"
   /** ANSI reversed */
-  final val REVERSED   = "\033[7m"
+  final val REVERSED   = "\u001b[7m"
   /** ANSI invisible */
-  final val INVISIBLE  = "\033[8m"
+  final val INVISIBLE  = "\u001b[8m"
 }
 
 object AnsiColor extends AnsiColor { }
