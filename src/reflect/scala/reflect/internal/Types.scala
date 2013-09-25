@@ -2182,19 +2182,6 @@ trait Types
     // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
     override def betaReduce = transform(sym.info.resultType)
 
-    // #3731: return sym1 for which holds: pre bound sym.name to sym and
-    // pre1 now binds sym.name to sym1, conceptually exactly the same
-    // symbol as sym.  The selection of sym on pre must be updated to the
-    // selection of sym1 on pre1, since sym's info was probably updated
-    // by the TypeMap to yield a new symbol, sym1 with transformed info.
-    // @returns sym1
-    override def coevolveSym(pre1: Type): Symbol =
-      if (pre eq pre1) sym else (pre, pre1) match {
-        // don't look at parents -- it would be an error to override alias types anyway
-        case (RefinedType(_, _), RefinedType(_, decls1)) => decls1 lookup sym.name
-        // TODO: is there another way a typeref's symbol can refer to a symbol defined in its pre?
-        case _                                           => sym
-      }
     override def kind = "AliasTypeRef"
   }
 
@@ -2318,7 +2305,27 @@ trait Types
 
     // only need to rebind type aliases, as typeRef already handles abstract types
     // (they are allowed to be rebound more liberally)
-    def coevolveSym(pre1: Type): Symbol = sym
+    // SI-6493 Wrong! we also have to do this when existentially abstracting from `Foo.Bar` to `{ type Bar }#Bar`
+
+    // #3731: return sym1 for which holds: pre bound sym.name to sym and
+    // pre1 now binds sym.name to sym1, conceptually exactly the same
+    // symbol as sym.  The selection of sym on pre must be updated to the
+    // selection of sym1 on pre1, since sym's info was probably updated
+    // by the TypeMap to yield a new symbol, sym1 with transformed info.
+    // @returns sym1
+    final def coevolveSym(pre1: Type): Symbol =
+      if (pre eq pre1) sym else pre1 match {
+        case RefinedType(_, decls1) =>
+          this match {
+            case _: AliasTypeRef =>
+              // Don't look at parents -- it would be an error to override alias types anyway
+              // This code was moved up from `AliasTypeRef` in the fix for SI-6493.
+              (decls1 lookup sym.name)
+            case _ =>
+              pre1.member(sym.name) // pos/t6493b.scala fails if we just look at decls
+          }
+        case _                      => sym
+      }
 
     //@M! use appliedType on the polytype that represents the bounds (or if aliastype, the rhs)
     def transformInfo(tp: Type): Type = appliedType(asSeenFromOwner(tp), args)
