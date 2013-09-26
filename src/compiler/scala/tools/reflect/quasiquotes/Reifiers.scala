@@ -7,7 +7,7 @@ import scala.reflect.internal.Flags._
 
 trait Reifiers { self: Quasiquotes =>
   import global._
-  import global.build.{Select => _, Ident => _, _}
+  import global.build.{Select => _, Ident => _, TypeTree => _, _}
   import global.treeInfo._
   import global.definitions._
   import Cardinality._
@@ -27,12 +27,48 @@ trait Reifiers { self: Quasiquotes =>
     def action = if (isReifyingExpressions) "splice" else "extract"
     def holesHaveTypes = isReifyingExpressions
 
+    def wrap(tree: Tree) =
+      if (isReifyingExpressions) tree
+      else {
+        val freevars = holeMap.toList.map { case (name, _) => Ident(name) }
+        val isVarPattern = tree match { case Bind(name, Ident(nme.WILDCARD)) => true case _ => false }
+        val cases =
+          if(isVarPattern) {
+            val Ident(name) :: Nil = freevars
+            // cq"$name: $treeType => $SomeModule($name)" :: Nil
+            CaseDef(Bind(name, Typed(Ident(nme.WILDCARD), TypeTree(treeType))),
+              EmptyTree, Apply(Ident(SomeModule), List(Ident(name)))) :: Nil
+          } else {
+            val (succ, fail) = freevars match {
+              case Nil =>
+                // (q"true", q"false")
+                (Literal(Constant(true)), Literal(Constant(false)))
+              case head :: Nil =>
+                // (q"$SomeModule($head)", q"$NoneModule")
+                (Apply(Ident(SomeModule), List(head)), Ident(NoneModule))
+              case vars =>
+                // (q"$SomeModule((..$vars))", q"$NoneModule")
+                (Apply(Ident(SomeModule), List(SyntacticTuple(vars))), Ident(NoneModule))
+            }
+            // cq"$tree => $succ" :: cq"_ => $fail" :: Nil
+            CaseDef(tree, EmptyTree, succ) :: CaseDef(Ident(nme.WILDCARD), EmptyTree, fail) :: Nil
+          }
+        // q"new { def unapply(tree: $AnyClass) = tree match { case ..$cases } }.unapply(..$args)"
+        Apply(
+          Select(
+            SyntacticNew(Nil, Nil, noSelfType, List(
+              DefDef(NoMods, nme.unapply, Nil, List(List(ValDef(NoMods, nme.tree, TypeTree(AnyClass.toType), EmptyTree))), TypeTree(),
+                Match(Ident(nme.tree), cases)))),
+            nme.unapply),
+          args)
+      }
+
     def reifyFillingHoles(tree: Tree): Tree = {
       val reified = reifyTree(tree)
       holeMap.unused.foreach { hole =>
         c.abort(holeMap(hole).tree.pos, s"Don't know how to $action here")
       }
-      reified
+      wrap(reified)
     }
 
     override def reifyTree(tree: Tree): Tree =

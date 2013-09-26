@@ -41,10 +41,7 @@ object ErrorProps extends QuasiquoteProperties("errors") {
   property("@..$first @$rest def foo") = fails(
     "Can't extract with .. here",
     """
-      val a = annot("a")
-      val b = annot("b")
-      val c = annot("c")
-      val q"@..$first @$rest def foo" = q"@$a @$b @$c def foo"
+      q"@a @b @c def foo" match { case q"@..$first @$rest def foo" => }
     """)
 
   property("only literal string arguments") = fails(

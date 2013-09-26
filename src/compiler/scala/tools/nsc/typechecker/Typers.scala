@@ -3274,8 +3274,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // SI-7877 `isTerm` needed to exclude `class T[A] { def unapply(..) }; ... case T[X] =>`
         case HasUnapply(unapply) if mode.inPatternMode && fun.isTerm =>
-          if (unapply == QuasiquoteClass_api_unapply) macroExpandUnapply(this, tree, fun, unapply, args, mode, pt)
-          else doTypedUnapply(tree, fun0, fun, args, mode, pt)
+          doTypedUnapply(tree, fun0, fun, args, mode, pt)
 
         case _ =>
           if (treeInfo.isMacroApplication(tree)) duplErrorTree(MacroTooManyArgumentListsError(tree, fun.symbol))

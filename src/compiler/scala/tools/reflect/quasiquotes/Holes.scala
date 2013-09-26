@@ -154,7 +154,7 @@ trait Holes { self: Quasiquotes =>
 
   object Hole {
     def apply(splicee: Tree, holeCard: Cardinality): Hole = {
-      if (splicee.tpe == null) return new Hole(splicee, UnknownLocation, holeCard)
+      if (method == nme.unapply) return new Hole(splicee, UnknownLocation, holeCard)
       val (spliceeCard, elementTpe) = parseCardinality(splicee.tpe)
       def cantSplice() = {
         val holeCardMsg = if (holeCard != NoDot) s" with $holeCard" else ""

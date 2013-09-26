@@ -32,10 +32,17 @@ trait Placeholders { self: Quasiquotes =>
     def appendHole(tree: Tree, cardinality: Cardinality) = {
       val placeholderName = c.freshName(TermName(nme.QUASIQUOTE_PREFIX + sessionSuffix))
       sb.append(placeholderName)
-      holeMap(placeholderName) = Hole(tree, cardinality)
+      val holeTree = if (method == nme.unapply) Bind(placeholderName, Ident(nme.WILDCARD)) else tree
+      holeMap(placeholderName) = Hole(holeTree, cardinality)
     }
 
-    foreach2(args, parts.init) { case (tree, (p, pos)) =>
+    val iargs = method match {
+      case nme.apply   => args
+      case nme.unapply => List.fill(parts.length - 1)(EmptyTree)
+      case _           => global.abort("unreachable")
+    }
+
+    foreach2(iargs, parts.init) { case (tree, (p, pos)) =>
       val (part, cardinality) = parseDots(p)
       appendPart(part, pos)
       appendHole(tree, cardinality)
@@ -47,7 +54,7 @@ trait Placeholders { self: Quasiquotes =>
   }
 
   class HoleMap {
-    private val underlying = mutable.ListMap[String, Hole]()
+    private var underlying = immutable.SortedMap[String, Hole]()
     private val accessed = mutable.Set[String]()
     def unused: Set[Name] = (underlying.keys.toSet -- accessed).map(TermName(_))
     def contains(key: Name) = underlying.contains(key.toString)
@@ -64,6 +71,7 @@ trait Placeholders { self: Quasiquotes =>
       accessed += s
       underlying.get(s)
     }
+    def toList = underlying.toList
   }
 
   // Step 2: Transform vanilla Scala AST into an AST with holes

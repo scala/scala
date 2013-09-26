@@ -14,8 +14,9 @@ abstract class Quasiquotes extends Parsers
   def debug(msg: String): Unit =
     if (settings.Yquasiquotedebug.value) println(msg)
 
-  lazy val (universe: Tree, args, parts, parse, reify) = c.macroApplication match {
+  lazy val (universe: Tree, args, parts, parse, reify, method) = c.macroApplication match {
     case Apply(Select(Select(Apply(Select(universe0, _), List(Apply(_, parts0))), interpolator0), method0), args0) =>
+      debug(s"\nparse prefix:\nuniverse=$universe0\nparts=$parts0\ninterpolator=$interpolator0\nmethod=$method0\nargs=$args0\n")
       val parts1 = parts0.map {
         case lit @ Literal(Constant(s: String)) => s -> lit.pos
         case part => c.abort(part.pos, "Quasiquotes can only be used with literal strings")
@@ -32,7 +33,7 @@ abstract class Quasiquotes extends Parsers
         case nme.pq      => PatternParser.parse(_)
         case other       => global.abort(s"Unknown quasiquote flavor: $other")
       }
-      (universe0, args0, parts1, parse0, reify0)
+      (universe0, args0, parts1, parse0, reify0, method0)
     case _ =>
       global.abort(s"Couldn't parse call prefix tree ${c.macroApplication}.")
   }
@@ -41,6 +42,7 @@ abstract class Quasiquotes extends Parsers
   lazy val universeTypes = new definitions.UniverseDependentTypes(universe)
 
   def expandQuasiquote = {
+    debug(s"\nmacro application:\n${c.macroApplication}\n")
     debug(s"\ncode to parse:\n$code\n")
     val tree = parse(code)
     debug(s"parsed:\n${showRaw(tree)}\n$tree\n")

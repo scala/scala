@@ -8,7 +8,7 @@ trait Quasiquotes { self: Universe =>
   implicit class Quasiquote(ctx: StringContext) {
     protected trait api {
       def apply(args: Any*): Any = macro ???
-      def unapply(subpatterns: Any*): Option[Any] = macro ???
+      def unapply(scrutinee: Any): Any = macro ???
     }
     object q extends api
     object tq extends api
