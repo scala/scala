@@ -85,7 +85,7 @@ class StandardCompileServer extends SocketServer {
     if (input == null || password != guessedPassword)
       return
 
-    val args        = input.split("\0", -1).toList
+    val args        = input.split("\u0000", -1).toList
     val newSettings = new FscSettings(fscError)
     val command     = new OfflineCompilerCommand(args, newSettings)
     this.verbose    = newSettings.verbose.value
