@@ -1381,7 +1381,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       case Star(elem) =>
         treeCopy.Star(tree, transform(elem))
       case UnApply(fun, args) =>
-        treeCopy.UnApply(tree, fun, transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
+        treeCopy.UnApply(tree, transform(fun), transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
       case ArrayValue(elemtpt, trees) =>
         treeCopy.ArrayValue(tree, transform(elemtpt), transformTrees(trees))
       case ApplyDynamic(qual, args) =>

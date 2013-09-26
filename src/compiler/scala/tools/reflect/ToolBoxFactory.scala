@@ -13,6 +13,7 @@ import scala.compat.Platform.EOL
 import scala.reflect.NameTransformer
 import scala.reflect.api.JavaUniverse
 import scala.reflect.io.NoAbstractFile
+import scala.reflect.internal.FatalError
 
 abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
@@ -58,6 +59,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def withCleanupCaches[T](body: => T): T =
         try body
         finally cleanupCaches()
+
+      def wrappingFatalErrors[T](body: => T): T =
+        try body
+        catch { case ex: FatalError => throw ToolBoxError(s"fatal compiler error", ex) }
 
       def verify(expr: Tree): Unit = {
         // Previously toolboxes used to typecheck their inputs before compiling.
@@ -333,16 +338,19 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     lazy val importer = compiler.mkImporter(u)
     lazy val exporter = importer.reverse
 
-    def typeCheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = compiler.withCleanupCaches {
-      if (compiler.settings.verbose) println("importing "+tree+", expectedType = "+expectedType)
-      val ctree: compiler.Tree = importer.importTree(tree)
-      val cexpectedType: compiler.Type = importer.importType(expectedType)
+    def typeCheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree =
+      compiler.wrappingFatalErrors {
+        compiler.withCleanupCaches {
+          if (compiler.settings.verbose) println("importing "+tree+", expectedType = "+expectedType)
+          val ctree: compiler.Tree = importer.importTree(tree)
+          val cexpectedType: compiler.Type = importer.importType(expectedType)
 
-      if (compiler.settings.verbose) println("typing "+ctree+", expectedType = "+expectedType)
-      val ttree: compiler.Tree = compiler.typeCheck(ctree, cexpectedType, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
-      val uttree = exporter.importTree(ttree)
-      uttree
-    }
+          if (compiler.settings.verbose) println("typing "+ctree+", expectedType = "+expectedType)
+          val ttree: compiler.Tree = compiler.typeCheck(ctree, cexpectedType, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
+          val uttree = exporter.importTree(ttree)
+          uttree
+        }
+      }
 
     def inferImplicitValue(pt: u.Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: u.Position = u.NoPosition): u.Tree = {
       inferImplicit(u.EmptyTree, pt, isView = false, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = pos)
@@ -354,40 +362,43 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       inferImplicit(tree, viewTpe, isView = true, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = pos)
     }
 
-    private def inferImplicit(tree: u.Tree, pt: u.Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: u.Position): u.Tree = compiler.withCleanupCaches {
-      if (compiler.settings.verbose) println(s"importing pt=$pt, tree=$tree, pos=$pos")
-      val ctree: compiler.Tree = importer.importTree(tree)
-      val cpt: compiler.Type = importer.importType(pt)
-      val cpos: compiler.Position = importer.importPosition(pos)
+    private def inferImplicit(tree: u.Tree, pt: u.Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: u.Position): u.Tree =
+      compiler.wrappingFatalErrors {
+        compiler.withCleanupCaches {
+          if (compiler.settings.verbose) println(s"importing pt=$pt, tree=$tree, pos=$pos")
+          val ctree: compiler.Tree = importer.importTree(tree)
+          val cpt: compiler.Type = importer.importType(pt)
+          val cpos: compiler.Position = importer.importPosition(pos)
 
-      if (compiler.settings.verbose) println("inferring implicit %s of type %s, macros = %s".format(if (isView) "view" else "value", pt, !withMacrosDisabled))
-      val itree: compiler.Tree = compiler.inferImplicit(ctree, cpt, isView = isView, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = cpos)
-      val uitree = exporter.importTree(itree)
-      uitree
-    }
+          if (compiler.settings.verbose) println("inferring implicit %s of type %s, macros = %s".format(if (isView) "view" else "value", pt, !withMacrosDisabled))
+          val itree: compiler.Tree = compiler.inferImplicit(ctree, cpt, isView = isView, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = cpos)
+          val uitree = exporter.importTree(itree)
+          uitree
+        }
+      }
 
-    def resetAllAttrs(tree: u.Tree): u.Tree = {
+    def resetAllAttrs(tree: u.Tree): u.Tree = compiler.wrappingFatalErrors {
       val ctree: compiler.Tree = importer.importTree(tree)
       val ttree: compiler.Tree = compiler.resetAllAttrs(ctree)
       val uttree = exporter.importTree(ttree)
       uttree
     }
 
-    def resetLocalAttrs(tree: u.Tree): u.Tree = {
+    def resetLocalAttrs(tree: u.Tree): u.Tree = compiler.wrappingFatalErrors {
       val ctree: compiler.Tree = importer.importTree(tree)
       val ttree: compiler.Tree = compiler.resetLocalAttrs(ctree)
       val uttree = exporter.importTree(ttree)
       uttree
     }
 
-    def parse(code: String): u.Tree = {
+    def parse(code: String): u.Tree = compiler.wrappingFatalErrors {
       if (compiler.settings.verbose) println("parsing "+code)
       val ctree: compiler.Tree = compiler.parse(code)
       val utree = exporter.importTree(ctree)
       utree
     }
 
-    def compile(tree: u.Tree): () => Any = {
+    def compile(tree: u.Tree): () => Any = compiler.wrappingFatalErrors {
       if (compiler.settings.verbose) println("importing "+tree)
       val ctree: compiler.Tree = importer.importTree(tree)
 
