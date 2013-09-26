@@ -177,7 +177,6 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   object naming extends {
     val global: imain.global.type = imain.global
   } with Naming {
-    def isClassBased = classBasedWrappers
     // make sure we don't overwrite their unwisely named res3 etc.
     def freshUserTermName(): TermName = {
       val name = newTermName(freshUserVarName())
@@ -275,8 +274,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       case s                                 => s
     } mkString "."
   )
-
-  def transformPath(p: String): String = if (classBasedWrappers) p replaceFirst("read", "read.INSTANCE") replaceAll("iwC", "iw") else p
+  def transformPath(p: String): String = p
+  def readRootPath(readPath: String) = getModuleIfDefined(readPath)
 
   abstract class PhaseDependentOps {
     def shift[T](op: => T): T
@@ -782,7 +781,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       * following accessPath into the outer one.
       */
     def resolvePathToSymbol(accessPath: String): Symbol = {
-      val readRoot = if (classBasedWrappers) getClassIfDefined(readPath) else getModuleIfDefined(readPath) // the outermost wrapper
+      val readRoot = readRootPath(readPath) // the outermost wrapper
       (accessPath split '.').foldLeft(readRoot: Symbol) {
         case (sym, "")    => sym
         case (sym, name)  => exitingTyper(termMember(sym, name))
@@ -859,13 +858,29 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     /** the line of code to compute */
     def toCompute = line
 
-    def fullAccessPath = {
-      if (classBasedWrappers) s"${lineRep.readPath}.INSTANCE$accessPath"
-      else
-        s"${lineRep.readPath}$accessPath"
+    def fullPath(vname: String) = s"${codeWrapper.fullAccessPath}.`$vname`"
+
+    trait ClassBasedWrappers {
+      self: Wrappers =>
+      override def preambleHeader = "class %s extends Serializable {"
+
+      override def fullAccessPath = s"${lineRep.readPath}.INSTANCE$accessPath"
+
+      override def postamble = importsTrailer + "\n}" + s"""
+                                      |object ${lineRep.readName} {
+                                      |val INSTANCE = new ${lineRep.readName}();
+                                      |}""".stripMargin
     }
 
-    def fullPath(vname: String) = s"$fullAccessPath.`$vname`"
+    class Wrappers {
+      def preambleHeader = "object %s {"
+
+      def fullAccessPath = s"${lineRep.readPath}$accessPath"
+
+      def postamble = importsTrailer + "\n}"
+    }
+
+    val codeWrapper = if (!classBasedWrappers) new Wrappers else new Wrappers with ClassBasedWrappers
 
     /** generate the source code for the object that computes this request */
     private object ObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
@@ -882,19 +897,13 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
           "def $trees = Nil"
         )
       }
-      val preambleHeader = if (classBasedWrappers) "class %s extends Serializable {" else "object %s {"
       val preamble = s"""
-        |$preambleHeader
+        |${codeWrapper.preambleHeader}
         |%s%s%s
       """.stripMargin.format(lineRep.readName, envLines.map("  " + _ + ";\n").mkString,
         importsPreamble, indentCode(toCompute))
 
-      val postamble = importsTrailer + "\n}" +
-          (if (classBasedWrappers) s"""
-                                      |object ${lineRep.readName} {
-                                      |val INSTANCE = new ${lineRep.readName}();
-                                      |}""".stripMargin
-          else "")
+      val postamble = codeWrapper.postamble
 
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
     }
@@ -917,7 +926,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       |    (""
       """.stripMargin.format(
         lineRep.evalName, evalResult, lineRep.printName,
-        executionWrapper, fullAccessPath
+        executionWrapper, codeWrapper.fullAccessPath
       )
 
       val postamble = """

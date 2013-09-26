@@ -120,8 +120,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def createInterpreter() {
     if (addedClasspath != "")
       settings.classpath append addedClasspath
-
-    intp = new ILoopInterpreter
+    if (settings.Yreplclassbased.value)
+      intp = new ILoopInterpreter with ClassBasedPaths
+    else intp = new ILoopInterpreter
   }
 
   /** print a friendly help message */
