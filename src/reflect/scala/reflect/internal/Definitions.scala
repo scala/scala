@@ -658,8 +658,8 @@ trait Definitions extends api.StandardDefinitions {
 
     // These "direct" calls perform no dealiasing. They are most needed when
     // printing types when one wants to preserve the true nature of the type.
-    def isFunctionTypeDirect(tp: Type) = isFunctionSymbol(tp.typeSymbolDirect)
-    def isTupleTypeDirect(tp: Type)    = isTupleSymbol(tp.typeSymbolDirect)
+    def isFunctionTypeDirect(tp: Type) = !tp.isHigherKinded && isFunctionSymbol(tp.typeSymbolDirect)
+    def isTupleTypeDirect(tp: Type)    = !tp.isHigherKinded && isTupleSymbol(tp.typeSymbolDirect)
 
     // Note that these call .dealiasWiden and not .normalize, the latter of which
     // tends to change the course of events by forcing types.

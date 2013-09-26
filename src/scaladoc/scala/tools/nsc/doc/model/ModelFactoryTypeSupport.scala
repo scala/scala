@@ -41,8 +41,8 @@ trait ModelFactoryTypeSupport {
 
       private def appendType0(tpe: Type): Unit = tpe match {
         /* Type refs */
-        case tp: TypeRef if definitions.isFunctionType(tp) =>
-          val args = tp.normalize.typeArgs
+        case tp: TypeRef if definitions.isFunctionTypeDirect(tp) =>
+          val args = tp.typeArgs
           nameBuffer append '('
           appendTypes0(args.init, ", ")
           nameBuffer append ") ⇒ "
@@ -53,8 +53,8 @@ trait ModelFactoryTypeSupport {
         case tp: TypeRef if definitions.isByNameParamType(tp) =>
           nameBuffer append "⇒ "
           appendType0(tp.args.head)
-        case tp: TypeRef if definitions.isTupleType(tp) =>
-          val args = tp.normalize.typeArgs
+        case tp: TypeRef if definitions.isTupleTypeDirect(tp) =>
+          val args = tp.typeArgs
           nameBuffer append '('
           appendTypes0(args, ", ")
           nameBuffer append ')'
