@@ -1205,7 +1205,7 @@ abstract class Erasure extends AddInterfaces
           assert(!currentOwner.isImplClass)
           //Console.println("checking no dble defs " + tree)//DEBUG
           checkNoDoubleDefs(tree.symbol.owner)
-          treeCopy.Template(tree, parents, emptyValDef, addBridges(body, currentOwner))
+          treeCopy.Template(tree, parents, noSelfType, addBridges(body, currentOwner))
 
         case Match(selector, cases) =>
           Match(Typed(selector, TypeTree(selector.tpe)), cases)

@@ -217,7 +217,7 @@ self =>
 
     override def blockExpr(): Tree = skipBraces(EmptyTree)
 
-    override def templateBody(isPre: Boolean) = skipBraces((emptyValDef, EmptyTree.asList))
+    override def templateBody(isPre: Boolean) = skipBraces((noSelfType, EmptyTree.asList))
   }
 
   class UnitParser(override val unit: global.CompilationUnit, patches: List[BracePatch]) extends SourceFileParser(unit.source) { uself =>
@@ -429,7 +429,7 @@ self =>
 
       // object Main
       def moduleName  = newTermName(ScriptRunner scriptMain settings)
-      def moduleBody  = Template(atInPos(scalaAnyRefConstr) :: Nil, emptyValDef, List(emptyInit, mainDef))
+      def moduleBody  = Template(atInPos(scalaAnyRefConstr) :: Nil, noSelfType, List(emptyInit, mainDef))
       def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
 
       // package <empty> { ... }
@@ -958,7 +958,7 @@ self =>
         // it still gets a CompoundTypeTree.
         ts.toList match {
           case tp :: Nil if !hasRefinement => tp  // single type, no refinement, already positioned
-          case tps                         => atPos(t.pos.startOrPoint)(CompoundTypeTree(Template(tps, emptyValDef, refinements)))
+          case tps                         => atPos(t.pos.startOrPoint)(CompoundTypeTree(Template(tps, noSelfType, refinements)))
         }
       }
 
@@ -2796,7 +2796,7 @@ self =>
       if (in.token == LBRACE) {
         // @S: pre template body cannot stub like post body can!
         val (self, body) = templateBody(isPre = true)
-        if (in.token == WITH && (self eq emptyValDef)) {
+        if (in.token == WITH && (self eq noSelfType)) {
           val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
           in.nextToken()
           val parents = templateParents()
@@ -2883,7 +2883,7 @@ self =>
           if (parenMeansSyntaxError) syntaxError(s"traits or objects may not have parameters", skipIt = true)
           else abort("unexpected opening parenthesis")
         }
-        (emptyValDef, List())
+        (noSelfType, List())
       }
     }
 
@@ -2939,7 +2939,7 @@ self =>
      * @param isPre specifies whether in early initializer (true) or not (false)
      */
     def templateStatSeq(isPre : Boolean): (ValDef, List[Tree]) = checkNoEscapingPlaceholders {
-      var self: ValDef = emptyValDef
+      var self: ValDef = noSelfType
       var firstOpt: Option[Tree] = None
       if (isExprIntro) {
         in.flushDoc

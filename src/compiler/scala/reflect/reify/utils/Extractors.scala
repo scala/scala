@@ -75,12 +75,12 @@ trait Extractors {
       newTypeName(global.currentUnit.fresh.newName(flavor.toString)),
       List(),
       Template(List(Ident(reifierBase)),
-      emptyValDef,
+      noSelfType,
       List(
         DefDef(NoMods, nme.CONSTRUCTOR, List(), List(List()), TypeTree(), Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(())))),
         DefDef(NoMods,
           reifierName,
-          List(TypeDef(Modifiers(PARAM), tparamu, List(), TypeBoundsTree(Ident(NothingClass), CompoundTypeTree(Template(List(Ident(reifierUniverse), Ident(SingletonClass)), emptyValDef, List()))))),
+          List(TypeDef(Modifiers(PARAM), tparamu, List(), TypeBoundsTree(Ident(NothingClass), CompoundTypeTree(Template(List(Ident(reifierUniverse), Ident(SingletonClass)), noSelfType, List()))))),
           List(List(ValDef(Modifiers(PARAM), nme.MIRROR_UNTYPED, AppliedTypeTree(Ident(MirrorClass), List(Ident(tparamu))), EmptyTree))),
           reifierTpt, reifierBody))))
     Block(tpec, ApplyConstructor(Ident(tpec.name), List()))

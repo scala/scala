@@ -1844,7 +1844,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           mbrs += ValDef(m).setType(NoType)
         } else if (m.isClass) {
 //           mbrs  +=
-//              ClassDef(m, Template(m.info.parents map TypeTree, emptyValDef, List())
+//              ClassDef(m, Template(m.info.parents map TypeTree, noSelfType, List())
 //                         .setSymbol(m.newLocalDummy(m.pos)))
 //            log("created synthetic class: " + m.fullName)
         }
@@ -1866,7 +1866,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           for (((sym1, env), specCls) <- specializedClass if sym1 == tree.symbol) yield {
             debuglog("created synthetic class: " + specCls + " of " + sym1 + " in " + pp(env))
             val parents = specCls.info.parents.map(TypeTree)
-            ClassDef(specCls, atPos(impl.pos)(Template(parents, emptyValDef, List()))
+            ClassDef(specCls, atPos(impl.pos)(Template(parents, noSelfType, List()))
               .setSymbol(specCls.newLocalDummy(sym1.pos))) setPos tree.pos
           }
         case _ => Nil

@@ -63,7 +63,7 @@ trait BuildUtils { self: SymbolTable =>
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T = { tree.setSymbol(sym); tree }
 
     def mkAnnotation(tree: Tree): Tree = tree match {
-      case SyntacticNew(Nil, SyntacticApplied(SyntacticTypeApplied(_, _), _) :: Nil, emptyValDef, Nil) =>
+      case SyntacticNew(Nil, SyntacticApplied(SyntacticTypeApplied(_, _), _) :: Nil, noSelfType, Nil) =>
         tree
       case _ =>
         throw new IllegalArgumentException(s"Tree ${showRaw(tree)} isn't a correct representation of annotation." +
@@ -364,7 +364,7 @@ trait BuildUtils { self: SymbolTable =>
 
       def unapply(tree: Tree): Option[(List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
         case SyntacticApplied(Select(New(SyntacticTypeApplied(ident, targs)), nme.CONSTRUCTOR), argss) =>
-          Some((Nil, SyntacticApplied(SyntacticTypeApplied(ident, targs), argss) :: Nil, emptyValDef, Nil))
+          Some((Nil, SyntacticApplied(SyntacticTypeApplied(ident, targs), argss) :: Nil, noSelfType, Nil))
         case SyntacticBlock(SyntacticClassDef(_, tpnme.ANON_CLASS_NAME, Nil, _, ListOfNil, earlyDefs, parents, selfdef, body) ::
                             Apply(Select(New(Ident(tpnme.ANON_CLASS_NAME)), nme.CONSTRUCTOR), Nil) :: Nil) =>
           Some((earlyDefs, parents, selfdef, body))
