@@ -3,7 +3,7 @@ package scala.tools.reflect
 import scala.reflect.macros.contexts.Context
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Stack
-import scala.reflect.internal.util.OffsetPosition
+import scala.reflect.internal.util.Position
 
 abstract class MacroImplementations {
   val c: Context
@@ -91,7 +91,7 @@ abstract class MacroImplementations {
       def isConversion(idx: Int) = isPercent(idx) && !charAtIndexIs(idx + 1, 'n') && !charAtIndexIs(idx + 1, '%')
       var idx = 0
 
-      def errorAtIndex(idx: Int, msg: String) = c.error(new OffsetPosition(strTree.pos.source, strTree.pos.point + idx), msg)
+      def errorAtIndex(idx: Int, msg: String) = c.error(Position.offset(strTree.pos.source, strTree.pos.point + idx), msg)
       def wrongConversionString(idx: Int) = errorAtIndex(idx, "wrong conversion string")
       def illegalConversionCharacter(idx: Int) = errorAtIndex(idx, "illegal conversion character")
       def nonEscapedPercent(idx: Int) = errorAtIndex(idx,

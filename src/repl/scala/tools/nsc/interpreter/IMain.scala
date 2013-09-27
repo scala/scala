@@ -407,7 +407,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   }
 
   private def safePos(t: Tree, alt: Int): Int =
-    try t.pos.startOrPoint
+    try t.pos.start
     catch { case _: UnsupportedOperationException => alt }
 
   // Given an expression like 10 * 10 * 10 we receive the parent tree positioned

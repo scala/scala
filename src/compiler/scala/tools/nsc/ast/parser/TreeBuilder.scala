@@ -8,7 +8,7 @@ package ast.parser
 
 import symtab.Flags._
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.OffsetPosition
+import scala.reflect.internal.util.Position
 
 /** Methods for building trees, used in the parser.  All the trees
  *  returned by this class must be untyped.
@@ -193,7 +193,7 @@ abstract class TreeBuilder {
 
   /** Tree for `od op`, start is start0 if od.pos is borked. */
   def makePostfixSelect(start0: Int, end: Int, od: Tree, op: Name): Tree = {
-    val start = if (od.pos.isDefined) od.pos.startOrPoint else start0
+    val start = if (od.pos.isDefined) od.pos.start else start0
     atPos(r2p(start, end, end + op.length)) { new PostfixSelect(od, op.encode) }
   }
 
@@ -201,7 +201,7 @@ abstract class TreeBuilder {
   def makeWhile(startPos: Int, cond: Tree, body: Tree): Tree = {
     val lname = freshTermName(nme.WHILE_PREFIX)
     def default = wrappingPos(List(cond, body)) match {
-      case p if p.isDefined => p.endOrPoint
+      case p if p.isDefined => p.end
       case _                => startPos
     }
     val continu = atPos(o2p(body.pos pointOrElse default)) { Apply(Ident(lname), Nil) }
@@ -339,9 +339,9 @@ abstract class TreeBuilder {
     def closurePos(genpos: Position) = {
       val end = body.pos match {
         case NoPosition => genpos.point
-        case bodypos => bodypos.endOrPoint
+        case bodypos => bodypos.end
       }
-      r2p(genpos.startOrPoint, genpos.point, end)
+      r2p(genpos.start, genpos.point, end)
     }
 
 //    val result =
@@ -369,7 +369,7 @@ abstract class TreeBuilder {
           List(ValFrom(pos, defpat1, rhs)),
           Block(pdefs, atPos(wrappingPos(ids)) { makeTupleTerm(ids, flattenUnary = true) }) setPos wrappingPos(pdefs))
         val allpats = (pat :: pats) map (_.duplicate)
-        val vfrom1 = ValFrom(r2p(pos.startOrPoint, pos.point, rhs1.pos.endOrPoint), atPos(wrappingPos(allpats)) { makeTuple(allpats, isType = false) } , rhs1)
+        val vfrom1 = ValFrom(r2p(pos.start, pos.point, rhs1.pos.end), atPos(wrappingPos(allpats)) { makeTuple(allpats, isType = false) } , rhs1)
         makeFor(mapName, flatMapName, vfrom1 :: rest1, body)
       case _ =>
         EmptyTree //may happen for erroneous input
@@ -529,6 +529,6 @@ abstract class UnitTreeBuilder extends TreeBuilder {
   def freshName(prefix: String): Name               = freshTermName(prefix)
   def freshTermName(prefix: String): TermName       = unit.freshTermName(prefix)
   def freshTypeName(prefix: String): TypeName       = unit.freshTypeName(prefix)
-  def o2p(offset: Int): Position                    = new OffsetPosition(unit.source, offset)
+  def o2p(offset: Int): Position                    = Position.offset(unit.source, offset)
   def r2p(start: Int, mid: Int, end: Int): Position = rangePos(unit.source, start, mid, end)
 }

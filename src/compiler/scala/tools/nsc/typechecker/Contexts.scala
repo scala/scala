@@ -1269,7 +1269,7 @@ trait Contexts { self: Analyzer =>
     def importedSymbol(name: Name): Symbol = importedSymbol(name, requireExplicit = false)
 
     private def recordUsage(sel: ImportSelector, result: Symbol) {
-      def posstr = pos.source.file.name + ":" + posOf(sel).safeLine
+      def posstr = pos.source.file.name + ":" + posOf(sel).line
       def resstr = if (tree.symbol.hasCompleteInfo) s"(qual=$qual, $result)" else s"(expr=${tree.expr}, ${result.fullLocationString})"
       debuglog(s"In $this at $posstr, selector '${selectorString(sel)}' resolved to $resstr")
       allUsedSelectors(this) += sel
