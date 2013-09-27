@@ -57,7 +57,7 @@ trait Resolvers {
           val contextField = mkContextValDef(PARAMACCESSOR)
           val contextParam = mkContextValDef(PARAM | PARAMACCESSOR)
           val invokerCtor = DefDef(Modifiers(), nme.CONSTRUCTOR, Nil, List(List(contextParam)), TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
-          val invoker = atPos(bundleClass.pos)(ClassDef(NoMods, invokerName, Nil, Template(List(Ident(bundleClass)), emptyValDef, List(contextField, invokerCtor))))
+          val invoker = atPos(bundleClass.pos)(ClassDef(NoMods, invokerName, Nil, Template(List(Ident(bundleClass)), noSelfType, List(contextField, invokerCtor))))
           currentRun.compileLate(PackageDef(invokerPid, List(invoker)))
         }
 

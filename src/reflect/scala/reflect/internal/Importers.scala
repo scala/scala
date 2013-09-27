@@ -308,8 +308,8 @@ trait Importers extends api.Importers { to: SymbolTable =>
         new PackageDef(importRefTree(pid), stats map importTree)
       case from.ModuleDef(mods, name, impl) =>
         new ModuleDef(importModifiers(mods), importName(name).toTermName, importTemplate(impl))
-      case from.emptyValDef =>
-        emptyValDef
+      case from.noSelfType =>
+        noSelfType
       case from.pendingSuperCall =>
         pendingSuperCall
       case from.ValDef(mods, name, tpt, rhs) =>
@@ -412,7 +412,7 @@ trait Importers extends api.Importers { to: SymbolTable =>
         addFixup(recreatedTreeCompleter(their, my))
         tryFixup()
         // we have to be careful with position import as some shared trees
-        // like EmptyTree, emptyValDef don't support position assignment
+        // like EmptyTree, noSelfType don't support position assignment
         if (their.pos != NoPosition) {
           my.setPos(importPosition(their.pos))
         }

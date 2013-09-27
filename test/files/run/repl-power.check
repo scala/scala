@@ -11,7 +11,8 @@ scala> :power
 scala> // guarding against "error: reference to global is ambiguous"
 
 scala> global.emptyValDef  // "it is imported twice in the same scope by ..."
-res0: $r.global.emptyValDef.type = private val _ = _
+warning: there were 1 deprecation warning(s); re-run with -deprecation for details
+res0: $r.global.noSelfType.type = private val _ = _
 
 scala> val tp = ArrayClass[scala.util.Random]    // magic with tags
 warning: there were 1 feature warning(s); re-run with -feature for details

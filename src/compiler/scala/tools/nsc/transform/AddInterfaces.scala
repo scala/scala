@@ -249,7 +249,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   private def ifaceMemberDef(tree: Tree): Tree = createMemberDef(tree, true)(t => DefDef(t.symbol, EmptyTree))
 
   private def ifaceTemplate(templ: Template): Template =
-    treeCopy.Template(templ, templ.parents, emptyValDef, templ.body map ifaceMemberDef)
+    treeCopy.Template(templ, templ.parents, noSelfType, templ.body map ifaceMemberDef)
 
   /** Transforms the member tree containing the implementation
    *  into a member of the impl class.
@@ -280,7 +280,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
 
   private def implTemplate(clazz: Symbol, templ: Template): Template = atPos(templ.pos) {
     val templ1 = (
-      Template(templ.parents, emptyValDef, addMixinConstructorDef(clazz, templ.body map implMemberDef))
+      Template(templ.parents, noSelfType, addMixinConstructorDef(clazz, templ.body map implMemberDef))
         setSymbol clazz.newLocalDummy(templ.pos)
     )
     templ1.changeOwner(templ.symbol.owner -> clazz, templ.symbol -> templ1.symbol)
@@ -338,7 +338,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
           deriveDefDef(tree)(addMixinConstructorCalls(_, sym.owner)) // (3)
         case Template(parents, self, body) =>
           val parents1 = sym.owner.info.parents map (t => TypeTree(t) setPos tree.pos)
-          treeCopy.Template(tree, parents1, emptyValDef, body)
+          treeCopy.Template(tree, parents1, noSelfType, body)
         case This(_) if sym.needsImplClass =>
           val impl = implClass(sym)
           var owner = currentOwner

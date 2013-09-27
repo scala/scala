@@ -71,8 +71,8 @@ trait GenTrees {
   def reifyTreeSyntactically(tree: Tree) = tree match {
     case global.EmptyTree =>
       reifyMirrorObject(EmptyTree)
-    case global.emptyValDef =>
-      mirrorSelect(nme.emptyValDef)
+    case global.noSelfType =>
+      mirrorSelect(nme.noSelfType)
     case global.pendingSuperCall =>
       mirrorSelect(nme.pendingSuperCall)
     case Literal(const @ Constant(_)) =>

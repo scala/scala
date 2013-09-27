@@ -119,7 +119,7 @@ trait Unapplies extends ast.TreeDSL {
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
-      gen.mkTemplate(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
+      gen.mkTemplate(parents, noSelfType, NoMods, Nil, body, cdef.impl.pos.focus))
   }
 
   /** The apply method corresponding to a case class

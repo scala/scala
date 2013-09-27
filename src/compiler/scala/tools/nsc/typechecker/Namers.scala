@@ -841,7 +841,7 @@ trait Namers extends MethodSynthesis {
     // owner is the class with the self type
     def enterSelf(self: ValDef) {
       val ValDef(_, name, tpt, _) = self
-      if (self eq emptyValDef)
+      if (self eq noSelfType)
         return
 
       val hasName = name != nme.WILDCARD
