@@ -118,7 +118,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def makeTemplate(parents: List[Tree], stats: List[Tree]) =
       Template(
         parents,
-        emptyValDef,
+        noSelfType,
         if (treeInfo.firstConstructor(stats) == EmptyTree) makeConstructor(List()) :: stats
         else stats)
 
@@ -417,7 +417,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         }
         val ts = buf.toList
         if (ts.tail.isEmpty) ts.head
-        else CompoundTypeTree(Template(ts, emptyValDef, List()))
+        else CompoundTypeTree(Template(ts, noSelfType, List()))
       }
 
     def formalParams(): List[ValDef] = {

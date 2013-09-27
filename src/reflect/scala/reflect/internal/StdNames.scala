@@ -661,7 +661,7 @@ trait StdNames {
     val dollarScope: NameType          = "$scope"
     val drop: NameType                 = "drop"
     val elem: NameType                 = "elem"
-    val emptyValDef: NameType          = "emptyValDef"
+    val noSelfType: NameType           = "noSelfType"
     val ensureAccessible : NameType    = "ensureAccessible"
     val eq: NameType                   = "eq"
     val equalsNumChar : NameType       = "equalsNumChar"

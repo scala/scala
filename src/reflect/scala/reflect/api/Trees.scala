@@ -71,20 +71,13 @@ trait Trees { self: Universe =>
 
     /** Is this tree one of the empty trees?
      *
-     *  Empty trees are: the `EmptyTree` null object, `TypeTree` instances that don't carry a type
-     *  and the special `emptyValDef` singleton.
-     *
-     *  In the compiler the `isEmpty` check and the derived `orElse` method are mostly used
-     *  as a check for a tree being a null object (`EmptyTree` for term trees and empty TypeTree for type trees).
-     *
-     *  Unfortunately `emptyValDef` is also considered to be `isEmpty`, but this is deemed to be
-     *  a conceptual mistake pending a fix in https://issues.scala-lang.org/browse/SI-6762.
+     *  Empty trees are: the `EmptyTree` null object and `TypeTree` instances that don't carry a type.
      *
      *  @see `canHaveAttrs`
      */
     def isEmpty: Boolean
 
-    /** Is this tree one of the empty trees?
+    /** Is this tree not an empty tree?
      *
      *  @see `isEmpty`
      */
@@ -92,7 +85,7 @@ trait Trees { self: Universe =>
 
     /** Can this tree carry attributes (i.e. symbols, types or positions)?
      *  Typically the answer is yes, except for the `EmptyTree` null object and
-     *  two special singletons: `emptyValDef` and `pendingSuperCall`.
+     *  two special singletons: `noSelfType` and `pendingSuperCall`.
      */
     def canHaveAttrs: Boolean
 
@@ -856,7 +849,7 @@ trait Trees { self: Universe =>
     def parents: List[Tree]
 
     /** Self type of the template.
-     *  Is equal to `emptyValDef` if the self type is not specified.
+     *  Is equal to `noSelfType` if the self type is not specified.
      */
     def self: ValDef
 
@@ -2121,6 +2114,9 @@ trait Trees { self: Universe =>
    *  no definition of a self value of self type.
    *  @group Trees
    */
+  val noSelfType: ValDef
+
+  @deprecated("Use `noSelfType` instead", "2.11.0")
   val emptyValDef: ValDef
 
   /** An empty superclass constructor call corresponding to:
@@ -2635,7 +2631,7 @@ trait Trees { self: Universe =>
       trees mapConserve (tree => transform(tree).asInstanceOf[TypeDef])
     /** Transforms a `ValDef`. */
     def transformValDef(tree: ValDef): ValDef =
-      if (tree eq emptyValDef) tree
+      if (tree eq noSelfType) tree
       else transform(tree).asInstanceOf[ValDef]
     /** Transforms a list of `ValDef` nodes. */
     def transformValDefs(trees: List[ValDef]): List[ValDef] =

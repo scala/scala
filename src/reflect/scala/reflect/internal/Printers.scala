@@ -549,8 +549,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
           print(")")
         case EmptyTree =>
           print("EmptyTree")
-        case self.emptyValDef =>
-          print("emptyValDef")
+        case self.noSelfType =>
+          print("noSelfType")
         case self.pendingSuperCall =>
           print("pendingSuperCall")
         case tree: Tree =>

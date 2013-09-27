@@ -222,7 +222,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
               obj,
               gen.mkTemplate(
                   List(TypeTree(ObjectTpe)),
-                  emptyValDef,
+                  noSelfType,
                   NoMods,
                   List(),
                   List(methdef),

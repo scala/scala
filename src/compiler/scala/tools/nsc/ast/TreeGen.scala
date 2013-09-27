@@ -261,7 +261,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
    */
   def mkAnonymousNew(stats: List[Tree]): Tree = {
     val stats1 = if (stats.isEmpty) List(Literal(Constant(()))) else stats
-    mkNew(Nil, emptyValDef, stats1, NoPosition, NoPosition)
+    mkNew(Nil, noSelfType, stats1, NoPosition, NoPosition)
   }
 
   def mkSyntheticParam(pname: TermName) =
