@@ -422,31 +422,9 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   private def requestFromLine(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
     val content = indentCode(line)
-    val trees = parse(content) match {
-      case parse.Incomplete     => return Left(IR.Incomplete)
-      case parse.Error          => return Left(IR.Error)
-      case parse.Success(trees) => trees
-    }
-    repltrace(
-      trees map (t => {
-        // [Eugene to Paul] previously it just said `t map ...`
-        // because there was an implicit conversion from Tree to a list of Trees
-        // however Martin and I have removed the conversion
-        // (it was conflicting with the new reflection API),
-        // so I had to rewrite this a bit
-        val subs = t collect { case sub => sub }
-        subs map (t0 =>
-          "  " + safePos(t0, -1) + ": " + t0.shortClass + "\n"
-        ) mkString ""
-      }) mkString "\n"
-    )
-    // If the last tree is a bare expression, pinpoint where it begins using the
-    // AST node position and snap the line off there.  Rewrite the code embodied
-    // by the last tree as a ValDef instead, so we can access the value.
-    val last = trees.lastOption.getOrElse(EmptyTree)
-    last match {
-      case _:Assign                        => // we don't want to include assignments
-      case _:TermTree | _:Ident | _:Select => // ... but do want other unnamed terms.
+    def process(trees: List[Tree]) = {
+      def unrewritten = Right(buildRequest(line, trees))
+      def rewritten(last: Tree) = {
         val varName  = if (synthetic) freshInternalVarName() else freshUserVarName()
         val rewrittenLine = (
           // In theory this would come out the same without the 1-specific test, but
@@ -490,12 +468,39 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
         // Rewriting    "foo ; bar ; 123"
         // to           "foo ; bar ; val resXX = 123"
         requestFromLine(rewrittenLine, synthetic) match {
-          case Right(req) => return Right(req withOriginalLine line)
-          case x          => return x
+          case Right(req) => Right(req withOriginalLine line)
+          case x          => x
         }
-      case _ =>
+      }
+      repltrace(
+        trees map (t => {
+          // [Eugene to Paul] previously it just said `t map ...`
+          // because there was an implicit conversion from Tree to a list of Trees
+          // however Martin and I have removed the conversion
+          // (it was conflicting with the new reflection API),
+          // so I had to rewrite this a bit
+          val subs = t collect { case sub => sub }
+          subs map (t0 =>
+            "  " + safePos(t0, -1) + ": " + t0.shortClass + "\n"
+          ) mkString ""
+        }) mkString "\n"
+      )
+      // If the last tree is a bare expression, pinpoint where it begins using the
+      // AST node position and snap the line off there.  Rewrite the code embodied
+      // by the last tree as a ValDef instead, so we can access the value.
+      val last = trees.lastOption.getOrElse(EmptyTree)
+      last match {
+        case _:Assign => unrewritten          // we don't want to include assignments
+        case _:TermTree | _:Ident | _:Select  // ... but do want other unnamed terms.
+                      => rewritten(last)
+        case _        => unrewritten
+      }
     }
-    Right(buildRequest(line, trees))
+    parse(content) match {
+      case parse.Incomplete     => Left(IR.Incomplete)
+      case parse.Error          => Left(IR.Error)
+      case parse.Success(trees) => process(trees)
+    }
   }
 
   // dealias non-public types so we don't see protected aliases like Self
@@ -504,8 +509,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     case _                                                      => tp
   }
 
-  /**
-   *  Interpret one line of input. All feedback, including parse errors
+  /** Interpret one line of input. All feedback, including parse errors
    *  and evaluation results, are printed via the supplied compiler's
    *  reporter. Values defined are available for future interpreted strings.
    *
@@ -514,19 +518,50 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
    */
   def interpret(line: String): IR.Result = interpret(line, synthetic = false)
   def interpretSynthetic(line: String): IR.Result = interpret(line, synthetic = true)
+
+  /** Was the last line successfully compiled?
+   *  This flag is used by `compile` when deciding whether
+   *  to glue successive lines together.
+   */
+  var lastOK = false
   def interpret(line: String, synthetic: Boolean): IR.Result = compile(line, synthetic) match {
-    case Left(result) => result
-    case Right(req)   => new WrappedRequest(req).loadAndRunReq
+    case Left(IR.Incomplete) => IR.Incomplete
+    case Left(result) => lastOK = false ; result
+    case Right(req)   => lastOK = true  ; new WrappedRequest(req).loadAndRunReq
   }
 
+  /** Precompile the current line.
+   *  Parse it silently, then compile the resulting request.
+   *  On a bad parse, parse it again noisily.
+   *  And see if the parse error is recoverable by gluing this line
+   *  onto the previous line.
+   */
   private def compile(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
+    def parseLine = { reset() ; requestFromLine(line, synthetic) }
+    def silentRun = beSilentDuring(parseLine)
+    def noisyRun  = parseLine
+    def accrete   =
+      beSilentDuring { reset() ; requestFromLine(s"${lastRequest.originalLine}\n${line}", synthetic) } match {
+        case ok @ Right(req) if req != null && beSilentDuring(req.compile)
+               => ok                           // hey, it worked!
+        case incomplete @ Left(IR.Incomplete)
+               => incomplete                   // accreted line is incomplete
+        case _ => noisyRun                     // once more with feeling
+      }
+    def reset() = reporter.reset()
+
     if (global == null) Left(IR.Error)
-    else requestFromLine(line, synthetic) match {
-      case Left(result) => Left(result)
-      case Right(req)   =>
-       // null indicates a disallowed statement type; otherwise compile and
-       // fail if false (implying e.g. a type error)
-       if (req == null || !req.compile) Left(IR.Error) else Right(req)
+    else silentRun match {
+      case Left(IR.Error) if lastRequest != null && lastOK
+                   => accrete                  // retry with accretion
+      case incomplete @ Left(IR.Incomplete)
+                   => incomplete               // line is incomplete
+      case Left(_) => noisyRun                 // repeat to report errors
+      // req == null indicates a disallowed statement type;
+      // otherwise, compile == false means failure, e.g., a type error
+      case ok @ Right(req) if req != null && { reset() ; req.compile }
+                   => ok                       // hey, it worked!
+      case _       => Left(IR.Error)           // failed, errors already reported
     }
   }
 
@@ -644,6 +679,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       )
     bindRep.callEither("set", value) match {
       case Left(ex) =>
+        //repldbg(s"Value classloader: ${value.getClass.getClassLoader}")
+        //repldbg(s"IMain sees: ${getClass.getClassLoader.loadClass(boundType).getClassLoader}")
         repldbg("Set failed in bind(%s, %s, %s)".format(name, boundType, value))
         repldbg(util.stackTraceString(ex))
         IR.Error
