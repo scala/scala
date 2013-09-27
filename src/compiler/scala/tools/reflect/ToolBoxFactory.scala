@@ -2,9 +2,11 @@ package scala
 package tools
 package reflect
 
+import scala.tools.cmd.CommandLineParser
+import scala.tools.nsc.Global
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.CompilerCommand
-import scala.tools.nsc.io.VirtualDirectory
+import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.util.AbstractFileClassLoader
 import scala.reflect.internal.Flags._
 import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, NoFile}
@@ -29,6 +31,13 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, factorySelf.mirror.classLoader)
     lazy val mirror: u.Mirror = u.runtimeMirror(classLoader)
 
+    lazy val arguments = CommandLineParser.tokenize(options)
+    lazy val virtualDirectory =
+      arguments.iterator.sliding(2).collectFirst{ case Seq("-d", dir) => dir } match {
+        case Some(outDir) => AbstractFile.getDirectory(outDir)
+        case None => new VirtualDirectory("(memory)", None)
+      }
+
     class ToolBoxGlobal(settings: scala.tools.nsc.Settings, reporter0: Reporter)
     extends ReflectGlobal(settings, reporter0, toolBoxSelf.classLoader) {
       import definitions._
@@ -47,7 +56,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       }
 
       // should be called after every use of ToolBoxGlobal in order to prevent leaks
-      // there's the `withCleanupCaches` method defined below, which provides a convenient interface for that
       def cleanupCaches(): Unit = {
         perRunCaches.clearAll()
         undoLog.clear()
@@ -55,14 +63,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         lastSeenSourceFile = NoSourceFile
         lastSeenContext = null
       }
-
-      def withCleanupCaches[T](body: => T): T =
-        try body
-        finally cleanupCaches()
-
-      def wrappingFatalErrors[T](body: => T): T =
-        try body
-        catch { case ex: FatalError => throw ToolBoxError(s"fatal compiler error", ex) }
 
       def verify(expr: Tree): Unit = {
         // Previously toolboxes used to typecheck their inputs before compiling.
@@ -307,50 +307,56 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       }
     }
 
-    // todo. is not going to work with quoted arguments with embedded whitespaces
-    lazy val arguments = options.split(" ")
+    trait CompilerApi {
+      val compiler: ToolBoxGlobal
+      val importer: compiler.Importer { val from: u.type }
+      val exporter: u.Importer { val from: compiler.type }
+    }
 
-    lazy val virtualDirectory =
-      (arguments zip arguments.tail).collect{ case ("-d", dir) => dir }.lastOption match {
-        case Some(outDir) => scala.tools.nsc.io.AbstractFile.getDirectory(outDir)
-        case None => new VirtualDirectory("(memory)", None)
+    object withCompilerApi {
+      private object api extends CompilerApi {
+        lazy val compiler: ToolBoxGlobal = {
+          try {
+            val errorFn: String => Unit = msg => frontEnd.log(scala.reflect.internal.util.NoPosition, msg, frontEnd.ERROR)
+            val command = new CompilerCommand(arguments.toList, errorFn)
+            command.settings.outputDirs setSingleOutput virtualDirectory
+            val instance = new ToolBoxGlobal(command.settings, frontEndToReporter(frontEnd, command.settings))
+            if (frontEnd.hasErrors) {
+              throw ToolBoxError(
+                "reflective compilation has failed: cannot initialize the compiler:" + EOL + EOL +
+                (frontEnd.infos map (_.msg) mkString EOL)
+              )
+            }
+            instance
+          } catch {
+            case ex: Throwable =>
+              throw ToolBoxError(s"reflective compilation has failed: cannot initialize the compiler due to $ex", ex)
+          }
+        }
+
+        lazy val importer = compiler.mkImporter(u)
+        lazy val exporter = importer.reverse
       }
 
-    lazy val compiler: ToolBoxGlobal = {
-      try {
-        val errorFn: String => Unit = msg => frontEnd.log(scala.reflect.internal.util.NoPosition, msg, frontEnd.ERROR)
-        val command = new CompilerCommand(arguments.toList, errorFn)
-        command.settings.outputDirs setSingleOutput virtualDirectory
-        val instance = new ToolBoxGlobal(command.settings, frontEndToReporter(frontEnd, command.settings))
-        if (frontEnd.hasErrors) {
-          throw ToolBoxError(
-            "reflective compilation has failed: cannot initialize the compiler:" + EOL + EOL +
-            (frontEnd.infos map (_.msg) mkString EOL)
-          )
-        }
-        instance
-      } catch {
-        case ex: Throwable =>
-          throw ToolBoxError(s"reflective compilation has failed: cannot initialize the compiler due to $ex", ex)
+      def apply[T](f: CompilerApi => T): T = {
+        try f(api)
+        catch { case ex: FatalError => throw ToolBoxError(s"fatal compiler error", ex) }
+        finally api.compiler.cleanupCaches()
       }
     }
 
-    lazy val importer = compiler.mkImporter(u)
-    lazy val exporter = importer.reverse
+    def typeCheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = withCompilerApi { compilerApi =>
+      import compilerApi._
 
-    def typeCheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree =
-      compiler.wrappingFatalErrors {
-        compiler.withCleanupCaches {
-          if (compiler.settings.verbose) println("importing "+tree+", expectedType = "+expectedType)
-          val ctree: compiler.Tree = importer.importTree(tree)
-          val cexpectedType: compiler.Type = importer.importType(expectedType)
+      if (compiler.settings.verbose) println("importing "+tree+", expectedType = "+expectedType)
+      val ctree: compiler.Tree = importer.importTree(tree)
+      val cexpectedType: compiler.Type = importer.importType(expectedType)
 
-          if (compiler.settings.verbose) println("typing "+ctree+", expectedType = "+expectedType)
-          val ttree: compiler.Tree = compiler.typeCheck(ctree, cexpectedType, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
-          val uttree = exporter.importTree(ttree)
-          uttree
-        }
-      }
+      if (compiler.settings.verbose) println("typing "+ctree+", expectedType = "+expectedType)
+      val ttree: compiler.Tree = compiler.typeCheck(ctree, cexpectedType, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
+      val uttree = exporter.importTree(ttree)
+      uttree
+    }
 
     def inferImplicitValue(pt: u.Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: u.Position = u.NoPosition): u.Tree = {
       inferImplicit(u.EmptyTree, pt, isView = false, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = pos)
@@ -362,43 +368,47 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       inferImplicit(tree, viewTpe, isView = true, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = pos)
     }
 
-    private def inferImplicit(tree: u.Tree, pt: u.Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: u.Position): u.Tree =
-      compiler.wrappingFatalErrors {
-        compiler.withCleanupCaches {
-          if (compiler.settings.verbose) println(s"importing pt=$pt, tree=$tree, pos=$pos")
-          val ctree: compiler.Tree = importer.importTree(tree)
-          val cpt: compiler.Type = importer.importType(pt)
-          val cpos: compiler.Position = importer.importPosition(pos)
+    private def inferImplicit(tree: u.Tree, pt: u.Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: u.Position): u.Tree = withCompilerApi { compilerApi =>
+      import compilerApi._
 
-          if (compiler.settings.verbose) println("inferring implicit %s of type %s, macros = %s".format(if (isView) "view" else "value", pt, !withMacrosDisabled))
-          val itree: compiler.Tree = compiler.inferImplicit(ctree, cpt, isView = isView, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = cpos)
-          val uitree = exporter.importTree(itree)
-          uitree
-        }
-      }
+      if (compiler.settings.verbose) println(s"importing pt=$pt, tree=$tree, pos=$pos")
+      val ctree: compiler.Tree = importer.importTree(tree)
+      val cpt: compiler.Type = importer.importType(pt)
+      val cpos: compiler.Position = importer.importPosition(pos)
 
-    def resetAllAttrs(tree: u.Tree): u.Tree = compiler.wrappingFatalErrors {
+      if (compiler.settings.verbose) println("inferring implicit %s of type %s, macros = %s".format(if (isView) "view" else "value", pt, !withMacrosDisabled))
+      val itree: compiler.Tree = compiler.inferImplicit(ctree, cpt, isView = isView, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = cpos)
+      val uitree = exporter.importTree(itree)
+      uitree
+    }
+
+    def resetAllAttrs(tree: u.Tree): u.Tree = withCompilerApi { compilerApi =>
+      import compilerApi._
       val ctree: compiler.Tree = importer.importTree(tree)
       val ttree: compiler.Tree = compiler.resetAllAttrs(ctree)
       val uttree = exporter.importTree(ttree)
       uttree
     }
 
-    def resetLocalAttrs(tree: u.Tree): u.Tree = compiler.wrappingFatalErrors {
+    def resetLocalAttrs(tree: u.Tree): u.Tree = withCompilerApi { compilerApi =>
+      import compilerApi._
       val ctree: compiler.Tree = importer.importTree(tree)
       val ttree: compiler.Tree = compiler.resetLocalAttrs(ctree)
       val uttree = exporter.importTree(ttree)
       uttree
     }
 
-    def parse(code: String): u.Tree = compiler.wrappingFatalErrors {
+    def parse(code: String): u.Tree = withCompilerApi { compilerApi =>
+      import compilerApi._
       if (compiler.settings.verbose) println("parsing "+code)
       val ctree: compiler.Tree = compiler.parse(code)
       val utree = exporter.importTree(ctree)
       utree
     }
 
-    def compile(tree: u.Tree): () => Any = compiler.wrappingFatalErrors {
+    def compile(tree: u.Tree): () => Any = withCompilerApi { compilerApi =>
+      import compilerApi._
+
       if (compiler.settings.verbose) println("importing "+tree)
       val ctree: compiler.Tree = importer.importTree(tree)
 
