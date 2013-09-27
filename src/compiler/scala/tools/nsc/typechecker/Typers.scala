@@ -3245,7 +3245,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (!tree.isErrorTyped) setError(tree) else tree
           // @H change to setError(treeCopy.Apply(tree, fun, args))
 
-        case ExtractorType(unapply) if mode.inPatternMode =>
+        // SI-7877 `isTerm` needed to exclude `class T[A] { def unapply(..) }; ... case T[X] =>`
+        case HasUnapply(unapply) if mode.inPatternMode && fun.isTerm =>
           if (unapply == QuasiquoteClass_api_unapply) macroExpandUnapply(this, tree, fun, unapply, args, mode, pt)
           else doTypedUnapply(tree, fun0, fun, args, mode, pt)
 
