@@ -4,6 +4,9 @@ unreachablechar.scala:4: warning: patterns after a variable pattern cannot match
 unreachablechar.scala:5: warning: unreachable code due to variable pattern on line 4
     case 'f' => println("not stuff?");
                        ^
+unreachablechar.scala:5: warning: unreachable code
+    case 'f' => println("not stuff?");
+                       ^
 error: No warnings can be incurred under -Xfatal-warnings.
-two warnings found
+three warnings found
 one error found
