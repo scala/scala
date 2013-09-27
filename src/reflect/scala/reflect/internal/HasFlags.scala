@@ -168,8 +168,6 @@ trait HasFlags {
   // Backward compat section
   @deprecated( "Use isTrait", "2.10.0")
   def hasTraitFlag = hasFlag(TRAIT)
-  @deprecated("Use hasDefault", "2.10.0")
-  def hasDefaultFlag = hasFlag(DEFAULTPARAM)
   @deprecated("Use flagString", "2.10.0")
   def defaultFlagString = flagString
   @deprecated("Use flagString(mask)", "2.10.0")
