@@ -96,6 +96,12 @@ object ClassPath {
      */
     def isValidName(name: String): Boolean = true
 
+    /** Filters for assessing validity of various entities.
+     */
+    def validClassFile(name: String)  = endsClass(name) && isValidName(name)
+    def validPackage(name: String)    = (name != "META-INF") && (name != "") && (name.charAt(0) != '.')
+    def validSourceFile(name: String) = endsScala(name) || endsJava(name)
+
     /** From the representation to its identifier.
      */
     def toBinaryName(rep: T): String
@@ -208,9 +214,9 @@ abstract class ClassPath[T] {
 
   /** Filters for assessing validity of various entities.
    */
-  def validClassFile(name: String)  = endsClass(name) && context.isValidName(name)
-  def validPackage(name: String)    = (name != "META-INF") && (name != "") && (name.charAt(0) != '.')
-  def validSourceFile(name: String) = endsScala(name) || endsJava(name)
+  def validClassFile(name: String)  = context.validClassFile(name)
+  def validPackage(name: String)    = context.validPackage(name)
+  def validSourceFile(name: String) = context.validSourceFile(name)
 
   /**
    * Find a ClassRep given a class name of the form "package.subpackage.ClassName".
