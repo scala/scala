@@ -25,6 +25,9 @@ t5663-badwarneq.scala:72: warning: ValueClass1 and Int are unrelated: they will 
 t5663-badwarneq.scala:74: warning: comparing values of types Int and ValueClass1 using `==' will always yield false
     println(5 == new ValueClass1(5)) // bad
               ^
+t5663-badwarneq.scala:74: warning: Int and ValueClass1 are unrelated: they will never compare equal
+    println(5 == new ValueClass1(5)) // bad
+              ^
 t5663-badwarneq.scala:78: warning: ValueClass2[String] and String are unrelated: they will never compare equal
     println(new ValueClass2("abc") == "abc") // bad
                                    ^
@@ -38,5 +41,5 @@ t5663-badwarneq.scala:82: warning: comparing values of types ValueClass3 and Int
     println(ValueClass3(5) == 5) // bad
                            ^
 error: No warnings can be incurred under -Xfatal-warnings.
-13 warnings found
+14 warnings found
 one error found

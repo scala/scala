@@ -13,6 +13,9 @@ If you intended to match against value d in class A, you must use backticks, lik
 newpat_unreachable.scala:9: warning: unreachable code due to variable pattern 'b' on line 6
       case _ => println("matched neither")
                        ^
+newpat_unreachable.scala:7: warning: unreachable code
+      case c => println("matched c")
+                       ^
 newpat_unreachable.scala:22: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
 If you intended to match against parameter b of method g, you must use backticks, like: case `b` =>
           case b => 1
@@ -24,6 +27,9 @@ If you intended to match against parameter c of method h, you must use backticks
 newpat_unreachable.scala:24: warning: unreachable code due to variable pattern 'b' on line 22
           case _ => 3
                     ^
+newpat_unreachable.scala:23: warning: unreachable code
+          case c => 2
+                    ^
 error: No warnings can be incurred under -Xfatal-warnings.
-7 warnings found
+9 warnings found
 one error found
