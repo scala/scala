@@ -279,11 +279,13 @@ class Flags extends ModifierFlags {
   final val GetterFlags = ~(PRESUPER | MUTABLE)
   final val SetterFlags = ~(PRESUPER | MUTABLE | STABLE | CASEACCESSOR | IMPLICIT)
 
-  /** When a symbol for a default getter is created, it inherits these
-   *  flags from the method with the default.  Other flags applied at creation
-   *  time are SYNTHETIC, DEFAULTPARAM, and possibly OVERRIDE, and maybe PRESUPER.
+  /** Since DEFAULTPARAM is overloaded with TRAIT, we need some additional
+   *  means of determining what that bit means. Usually DEFAULTPARAM is coupled
+   *  with PARAM, which suffices. Default getters get METHOD instead.
+   *  This constant is the mask of flags which can survive from the parameter modifiers.
+   *  See paramFlagsToDefaultGetter for the full logic.
    */
-  final val DefaultGetterFlags = PRIVATE | PROTECTED | FINAL
+  final val DefaultGetterFlags = PRIVATE | PROTECTED | FINAL | PARAMACCESSOR
 
   /** When a symbol for a method parameter is created, only these flags survive
    *  from Modifiers.  Others which may be applied at creation time are:
@@ -320,6 +322,9 @@ class Flags extends ModifierFlags {
    *  then we don't need unpickling to give a definite answer.
    */
   final val TopLevelPickledFlags = PickledFlags & ~(MODULE | METHOD | PACKAGE | PARAM | EXISTENTIAL)
+
+  def paramFlagsToDefaultGetter(paramFlags: Long): Long =
+    (paramFlags & DefaultGetterFlags) | SYNTHETIC | METHOD | DEFAULTPARAM
 
   def getterFlags(fieldFlags: Long): Long = ACCESSOR + (
     if ((fieldFlags & MUTABLE) != 0) fieldFlags & ~MUTABLE & ~PRESUPER
