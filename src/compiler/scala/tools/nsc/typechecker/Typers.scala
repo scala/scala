@@ -96,7 +96,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
   private final val InterpolatorCodeRegex  = """\$\{.*?\}""".r
-  private final val InterpolatorIdentRegex = """\$\w+""".r
+  private final val InterpolatorIdentRegex = """\$[$\w]+""".r // note that \w doesn't include $
 
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
     import context0.unit
@@ -4878,42 +4878,39 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       // Warn about likely interpolated strings which are missing their interpolators
-      def warnMissingInterpolator(tree: Literal) = if (!isPastTyper) {
+      def warnMissingInterpolator(lit: Literal): Unit = if (!isPastTyper) {
         // attempt to avoid warning about the special interpolated message string
         // for implicitNotFound or any standard interpolation (with embedded $$).
-        def isArgToCertainApply = context.enclosingApply.tree match {
-          case Apply(Select(Apply(Ident(n), parts), _), args) if n.toTypeName == StringContextClass.name
-                 => true    // parts contains tree
-          case Apply(Select(New(Ident(n)), _), _) if n == ImplicitNotFoundClass.name
-                 => true
-          case _ => false
+        def isRecognizablyNotForInterpolation = context.enclosingApply.tree match {
+          case Apply(Select(Apply(RefTree(_, nme.StringContext), _), _), _) => true
+          case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _) => true
+          case _                                                            => false
         }
-        def warnAbout(s: String) = {
-          def names = InterpolatorIdentRegex findAllIn s map (n => TermName(n stripPrefix "$"))
-          def isSuspiciousExpr    = (InterpolatorCodeRegex findFirstIn s).nonEmpty
-          //def isSuspiciousName  = names exists (lookUp _ andThen isCandidate _)
-          def suspiciousName      = names find (n => isCandidate(lookUp(n)))
-          def lookUp(n: TermName) = context.lookupSymbol(n, _ => true).symbol
-          def isCandidate(s: Symbol) = s.exists && s.alternatives.exists(alt => !symRequiresArg(alt))
-          def symRequiresArg(s: Symbol) = (
-               s.paramss.nonEmpty
-            && (s.paramss.head.headOption filterNot (_.isImplicit)).isDefined
-          )
-          val suggest = "Did you forget the interpolator?"
-          if (isSuspiciousExpr)
-            unit.warning(tree.pos, s"That looks like an interpolated expression! $suggest")
-          else /* if (isSuspiciousName) */ suspiciousName foreach (n =>
-            unit.warning(tree.pos, s"`$$$n` looks like an interpolated identifier! $suggest")
+        def requiresNoArgs(tp: Type): Boolean = tp match {
+          case PolyType(_, restpe)     => requiresNoArgs(restpe)
+          case MethodType(Nil, restpe) => requiresNoArgs(restpe)  // may be a curried method - can't tell yet
+          case MethodType(p :: _, _)   => p.isImplicit            // implicit method requires no args
+          case _                       => true                    // catches all others including NullaryMethodType
+        }
+        def isPlausible(m: Symbol) = m.alternatives exists (m => requiresNoArgs(m.info))
+
+        def maybeWarn(s: String): Unit = {
+          def warn(message: String)         = context.unit.warning(lit.pos, s"$message Did you forget the interpolator?")
+          def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
+          def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
+          def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(s drop 1))
+
+          // heuristics - no warning on e.g. a string with only "$asInstanceOf"
+          if (s contains ' ') (
+            if (suspiciousExpr.nonEmpty)
+              warn("That looks like an interpolated expression!") // "${...}"
+            else
+              suspiciousIdents find isPlausible foreach (sym => warn(s"`$$${sym.name}` looks like an interpolated identifier!")) // "$id"
           )
         }
-        tree.value match {
-          case Constant(s: String) =>
-            val noWarn = (
-                 isArgToCertainApply
-              || !(s contains ' ') // another heuristic - e.g. a string with only "$asInstanceOf"
-            )
-            if (!noWarn) warnAbout(s)
-          case _ =>
+        lit match {
+          case Literal(Constant(s: String)) if !isRecognizablyNotForInterpolation => maybeWarn(s)
+          case _                                                                  =>
         }
       }
 
