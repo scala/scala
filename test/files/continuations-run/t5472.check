@@ -6,6 +6,16 @@ t5472.scala:12: warning: expression case4(){
 } is cps-transformed unexpectedly
           (location, accessors) <- new ContinuationizedParallelIterable(map)
                                    ^
+t5472.scala:12: warning: expression case5(){
+  matchEnd3(false)
+} is cps-transformed unexpectedly
+          (location, accessors) <- new ContinuationizedParallelIterable(map)
+                                   ^
+t5472.scala:12: warning: expression matchEnd3(x: Boolean){
+  x
+} is cps-transformed unexpectedly
+          (location, accessors) <- new ContinuationizedParallelIterable(map)
+                                   ^
 t5472.scala:12: warning: expression matchEnd3(x: Int){
   x
 } is cps-transformed unexpectedly

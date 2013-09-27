@@ -9,6 +9,9 @@ If you intended to match against parameter c of method contrivedExample, you mus
 pat_unreachable.scala:24: warning: unreachable code due to variable pattern 'b' on line 22
     case _ => println("matched neither")
                      ^
+pat_unreachable.scala:23: warning: unreachable code
+    case c => println("matched c")
+                     ^
 error: No warnings can be incurred under -Xfatal-warnings.
-three warnings found
+four warnings found
 one error found
