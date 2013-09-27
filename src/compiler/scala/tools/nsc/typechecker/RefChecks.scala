@@ -121,13 +121,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     var checkedCombinations = Set[List[Type]]()
 
     // only one overloaded alternative is allowed to define default arguments
-    private def checkOverloadedRestrictions(clazz: Symbol): Unit = {
+    private def checkOverloadedRestrictions(clazz: Symbol, defaultClass: Symbol): Unit = {
       // Using the default getters (such as methodName$default$1) as a cheap way of
       // finding methods with default parameters. This way, we can limit the members to
       // those with the DEFAULTPARAM flag, and infer the methods. Looking for the methods
       // directly requires inspecting the parameter list of every one. That modification
       // shaved 95% off the time spent in this method.
-      val defaultGetters     = clazz.info.findMembers(0L, DEFAULTPARAM)
+      val defaultGetters     = defaultClass.info.findMembers(0L, DEFAULTPARAM)
       val defaultMethodNames = defaultGetters map (sym => nme.defaultGetterToMethod(sym.name))
 
       defaultMethodNames.toList.distinct foreach { name =>
@@ -1638,7 +1638,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           case Template(parents, self, body) =>
             localTyper = localTyper.atOwner(tree, currentOwner)
             validateBaseTypes(currentOwner)
-            checkOverloadedRestrictions(currentOwner)
+            checkOverloadedRestrictions(currentOwner, currentOwner)
+            // SI-7870 default getters for constructors live in the companion module
+            checkOverloadedRestrictions(currentOwner, currentOwner.companionModule)
             val bridges = addVarargBridges(currentOwner)
             checkAllOverrides(currentOwner)
             checkAnyValSubclass(currentOwner)
