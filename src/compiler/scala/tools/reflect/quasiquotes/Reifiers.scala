@@ -27,9 +27,40 @@ trait Reifiers { self: Quasiquotes =>
     def action = if (isReifyingExpressions) "splice" else "extract"
     def holesHaveTypes = isReifyingExpressions
 
+    /** Map that stores freshly generated names linked to the corresponding names in the reified tree.
+     *  This information is used to reify names created by calls to freshTermName and freshTypeName.
+     */
+    var nameMap = collection.mutable.HashMap.empty[Name, Set[TermName]].withDefault { _ => Set() }
+
+    /** Wraps expressions into:
+     *    a sequence of nested withFreshTermName/withFreshTypeName calls which are required
+     *    to force regeneration of randomly generated names on every evaluation of quasiquote.
+     *
+     *  Wraps patterns into:
+     *    a call into anonymous class' unapply method required by unapply macro expansion:
+     *
+     *      new {
+     *        def unapply(tree) = tree match {
+     *          case pattern if guard => Some(result)
+     *          case _ => None
+     *        }
+     *      }.unapply(<unapply-selector>)
+     *
+     *    where pattern corresponds to reified tree and guard represents conjunction of equalities
+     *    which check that pairs of names in nameMap.values are equal between each other.
+     */
     def wrap(tree: Tree) =
-      if (isReifyingExpressions) tree
-      else {
+      if (isReifyingExpressions) {
+        nameMap.foldLeft(tree) {
+          case (t, (origname, names)) =>
+            assert(names.size == 1)
+            val FreshName(prefix) = origname
+            val ctor = TermName("withFresh" + (if (origname.isTermName) "TermName" else "TypeName"))
+            // q"$u.build.$ctor($prefix) { ${names.head} => $t }"
+            Apply(Apply(Select(Select(u, nme.build), ctor), List(Literal(Constant(prefix)))),
+              List(Function(List(ValDef(Modifiers(PARAM), names.head, TypeTree(), EmptyTree)), t)))
+        }
+      } else {
         val freevars = holeMap.toList.map { case (name, _) => Ident(name) }
         val isVarPattern = tree match { case Bind(name, Ident(nme.WILDCARD)) => true case _ => false }
         val cases =
@@ -50,8 +81,18 @@ trait Reifiers { self: Quasiquotes =>
                 // (q"$SomeModule((..$vars))", q"$NoneModule")
                 (Apply(Ident(SomeModule), List(SyntacticTuple(vars))), Ident(NoneModule))
             }
-            // cq"$tree => $succ" :: cq"_ => $fail" :: Nil
-            CaseDef(tree, EmptyTree, succ) :: CaseDef(Ident(nme.WILDCARD), EmptyTree, fail) :: Nil
+            val guard =
+              nameMap.collect { case (_, nameset) if nameset.size >= 2 =>
+                nameset.toList.sliding(2).map { case List(n1, n2) =>
+                  // q"$n1 == $n2"
+                  Apply(Select(Ident(n1), nme.EQ), List(Ident(n2)))
+                }
+              }.flatten.reduceOption[Tree] { (l, r) =>
+                // q"$l && $r"
+                Apply(Select(l, nme.ZAND), List(r))
+              }.getOrElse { EmptyTree }
+            // cq"$tree if $guard => $succ" :: cq"_ => $fail" :: Nil
+            CaseDef(tree, guard, succ) :: CaseDef(Ident(nme.WILDCARD), EmptyTree, fail) :: Nil
           }
         // q"new { def unapply(tree: $AnyClass) = tree match { case ..$cases } }.unapply(..$args)"
         Apply(
@@ -131,6 +172,12 @@ trait Reifiers { self: Quasiquotes =>
       case Placeholder(tree, location, _) =>
         if (holesHaveTypes && !(location.tpe <:< nameType)) c.abort(tree.pos, s"$nameType expected but ${location.tpe} found")
         tree
+      case FreshName(prefix) if prefix != nme.QUASIQUOTE_NAME_PREFIX =>
+        def fresh() = c.freshName[TermName](nme.QUASIQUOTE_NAME_PREFIX)
+        def introduceName() = { val n = fresh(); nameMap(name) += n; n}
+        def result(n: Name) = if (isReifyingExpressions) Ident(n) else Bind(n, Ident(nme.WILDCARD))
+        if (isReifyingPatterns) result(introduceName())
+        else result(nameMap.get(name).map { _.head }.getOrElse { introduceName() })
       case _ =>
         super.reifyName(name)
     }

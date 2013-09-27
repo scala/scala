@@ -131,6 +131,19 @@ trait BuildUtils { self: SymbolTable =>
 
     def RefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
 
+    def withFreshTermName[T](prefix: String)(f: TermName => T): T = f(TermName(freshName(prefix)))
+
+    def withFreshTypeName[T](prefix: String)(f: TypeName => T): T = f(TypeName(freshName(prefix)))
+
+    object freshName {
+      private val counters = collection.mutable.HashMap[String, Int]() withDefaultValue 0
+      def apply(prefix: String): String = {
+        val safePrefix = prefix.replaceAll("""[<>]""", """\$""")
+        counters(safePrefix) += 1
+        safePrefix + counters(safePrefix)
+      }
+    }
+
     object FlagsRepr extends FlagsReprExtractor {
       def apply(bits: Long): FlagSet = bits
       def unapply(flags: Long): Some[Long] = Some(flags)

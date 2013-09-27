@@ -90,6 +90,10 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def RefTree(qual: Tree, sym: Symbol): Tree
 
+    def withFreshTermName[T](prefix: String)(f: TermName => T): T
+
+    def withFreshTypeName[T](prefix: String)(f: TypeName => T): T
+
     val ScalaDot: ScalaDotExtractor
 
     trait ScalaDotExtractor {

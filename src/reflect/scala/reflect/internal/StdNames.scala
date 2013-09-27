@@ -320,6 +320,7 @@ trait StdNames {
     val REIFY_FREE_VALUE_SUFFIX: NameType  = "$value"
     val REIFY_SYMDEF_PREFIX: NameType      = "symdef$"
     val QUASIQUOTE_PREFIX: String          = "qq$"
+    val QUASIQUOTE_NAME_PREFIX: String     = "nn$"
     val QUASIQUOTE_FILE: String            = "<quasiquote>"
     val QUASIQUOTE_TUPLE: NameType         = "$quasiquote$tuple$"
     val QUASIQUOTE_CASE: NameType          = "$quasiquote$case$"

@@ -6,13 +6,14 @@ import scala.tools.nsc.ast.parser.Tokens._
 import scala.compat.Platform.EOL
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.collection.mutable.ListBuffer
+import scala.util.Try
 
 /** Builds upon the vanilla Scala parser and teams up together with Placeholders.scala to emulate holes.
  *  A principled solution to splicing into Scala syntax would be a parser that natively supports holes.
  *  Unfortunately, that's outside of our reach in Scala 2.11, so we have to emulate.
  */
 trait Parsers { self: Quasiquotes =>
-  import global._
+  import global.{Try => _, _}
 
   abstract class Parser extends {
     val global: self.global.type = self.global
@@ -54,7 +55,13 @@ trait Parsers { self: Quasiquotes =>
 
       def isHole(name: Name): Boolean = holeMap.contains(name)
 
+      override def freshTermName(prefix: String): TermName = unit.freshTermName(nme.QUASIQUOTE_PREFIX + prefix)
+      override def freshTypeName(prefix: String): TypeName = unit.freshTypeName(nme.QUASIQUOTE_PREFIX + prefix)
+
       override val treeBuilder = new ParserTreeBuilder {
+        override def freshTermName(prefix: String): TermName = parser.freshTermName(prefix)
+        override def freshTypeName(prefix: String): TypeName = parser.freshTypeName(prefix)
+
         // q"(..$xs)"
         override def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree =
           Apply(Ident(nme.QUASIQUOTE_TUPLE), trees)
@@ -167,5 +174,15 @@ trait Parsers { self: Quasiquotes =>
       val pat = parser.noSeq.pattern1()
       parser.treeBuilder.patvarTransformer.transform(pat)
     }
+  }
+
+  object FreshName {
+    def unapply(name: Name): Option[String] =
+      name.toString.split("\\$") match {
+        case Array(qq, left, right) if qq + "$" == nme.QUASIQUOTE_PREFIX && Try(right.toInt).isSuccess =>
+          Some(left + "$")
+        case _ =>
+          None
+      }
   }
 }
