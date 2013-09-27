@@ -146,7 +146,7 @@ trait Validators {
       val ctxPrefix =
         if (isImplMethod) singleType(NoPrefix, makeParam(nme.macroContext, macroDdef.pos, ctxTpe, SYNTHETIC))
         else singleType(ThisType(macroImpl.owner), macroImpl.owner.tpe.member(nme.c))
-      var paramss =
+      val paramss =
         if (isImplMethod) List(ctxPrefix.termSymbol) :: mmap(macroDdef.vparamss)(param)
         else mmap(macroDdef.vparamss)(param)
       val macroDefRet =

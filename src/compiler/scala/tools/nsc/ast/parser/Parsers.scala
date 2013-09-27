@@ -649,10 +649,6 @@ self =>
     }
 
     def isDefIntro = isTemplateIntro || isDclIntro
-    def isTopLevelIntro = in.token match {
-      case PACKAGE | IMPORT | AT => true
-      case _                     => isTemplateIntro || isModifier
-    }
 
     def isNumericLit: Boolean = in.token match {
       case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT => true
@@ -2993,13 +2989,6 @@ self =>
         acceptStatSepOpt()
       }
       stats.toList
-    }
-
-    /** Informal - for the repl and other direct parser accessors.
-     */
-    def templateStatsCompat(): List[Tree] = templateStats() match {
-      case Nil => EmptyTree.asList
-      case stats => stats
     }
 
     /** {{{

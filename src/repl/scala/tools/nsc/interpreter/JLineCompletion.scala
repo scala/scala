@@ -17,7 +17,6 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
   import global._
   import definitions._
   import rootMirror.{ RootClass, getModuleIfDefined }
-  type ExecResult = Any
   import intp.{ debugging }
 
   // verbosity goes up with consecutive tabs

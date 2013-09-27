@@ -159,19 +159,12 @@ trait PatternTypers {
       }
     }
 
-    def newExtractorShape(tree: Tree): ExtractorShape = tree match {
-      case Apply(fun, args)   => ExtractorShape(fun, args)
-      case UnApply(fun, args) => ExtractorShape(fun, args)
-    }
     def newExtractorShape(fun: Tree, args: List[Tree]): ExtractorShape = ExtractorShape(fun, args)
 
     case class CaseClassInfo(clazz: Symbol, classType: Type) {
       def constructor     = clazz.primaryConstructor
       def constructorType = classType.prefix memberType clazz memberType constructor
-      def paramTypes      = constructorType.paramTypes
       def accessors       = clazz.caseFieldAccessors
-      def accessorTypes   = accessors map (m => (classType memberType m).finalResultType)
-      // def inverted        = MethodType(clazz :: Nil, tupleType(accessorTypes))
     }
     object NoCaseClassInfo extends CaseClassInfo(NoSymbol, NoType) {
       override def toString = "NoCaseClassInfo"
@@ -186,10 +179,7 @@ trait PatternTypers {
       def paramType    = firstParamType(unapplyType)
       def rawGet       = if (isBool) UnitTpe else typeOfMemberNamedGetOrSelf(resultType)
       def rawTypes     = if (isBool) Nil else typesOfSelectorsOrSelf(rawGet)
-      def rawArity     = rawTypes.size
       def isBool       = resultType =:= BooleanTpe   // aka "Tuple0" or "Option[Unit]"
-      def isNothing    = rawGet =:= NothingTpe
-      def isCase       = method.isCase
     }
 
     object NoUnapplyMethodInfo extends UnapplyMethodInfo(NoSymbol, NoType) {
@@ -213,7 +203,6 @@ trait PatternTypers {
       def unapplyMethod    = exInfo.method
       def unapplyType      = exInfo.unapplyType
       def unapplyParamType = exInfo.paramType
-      def caseClass        = ccInfo.clazz
       def enclClass        = symbol.enclClass
 
       // TODO - merge these. The difference between these two methods is that expectedPatternTypes

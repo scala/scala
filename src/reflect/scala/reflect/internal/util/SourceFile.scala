@@ -34,7 +34,6 @@ abstract class SourceFile {
    */
   def positionInUltimateSource(position: Position) = position
   override def toString() = file.name
-  def dbg(offset: Int) = Position.offset(this, offset).toString
   def path = file.path
 
   def lineToString(index: Int): String =

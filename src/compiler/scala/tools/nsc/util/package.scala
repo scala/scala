@@ -10,9 +10,6 @@ package nsc
 import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter }
 
 package object util {
-
-  implicit def postfixOps = scala.language.postfixOps // make all postfix ops in this package compile without warning
-
   // forwarder for old code that builds against 2.9 and 2.10
   val Chars = scala.reflect.internal.Chars
 

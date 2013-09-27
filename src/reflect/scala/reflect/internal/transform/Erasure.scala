@@ -77,11 +77,6 @@ trait Erasure {
     if (cls.owner.isClass) cls.owner.tpe_* else pre // why not cls.isNestedClass?
   }
 
-  def unboxDerivedValueClassMethod(clazz: Symbol): Symbol =
-    (clazz.info.decl(nme.unbox)) orElse
-    (clazz.info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse
-     NoSymbol)
-
   def underlyingOfValueClass(clazz: Symbol): Type =
     clazz.derivedValueClassUnbox.tpe.resultType
 

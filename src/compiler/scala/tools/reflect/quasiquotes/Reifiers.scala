@@ -11,7 +11,6 @@ trait Reifiers { self: Quasiquotes =>
                        SyntacticDefDef, SyntacticValDef, SyntacticVarDef,
                        SyntacticBlock, SyntacticApplied, SyntacticTypeApplied,
                        SyntacticFunction, SyntacticNew, SyntacticAssign}
-  import global.treeInfo._
   import global.definitions._
   import Cardinality._
   import universeTypes._

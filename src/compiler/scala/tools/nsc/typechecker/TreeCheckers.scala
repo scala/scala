@@ -162,7 +162,6 @@ abstract class TreeCheckers extends Analyzer {
   lazy val tpeOfTree = mutable.HashMap[Tree, Type]()
   private lazy val reportedAlready = mutable.HashSet[(Tree, Symbol)]()
 
-  def posstr(t: Tree): String = if (t eq null) "" else posstr(t.pos)
   def posstr(p: Position): String = (
     if (p eq null) "" else {
       try p.source.path + ":" + p.line
@@ -264,9 +263,7 @@ abstract class TreeCheckers extends Analyzer {
         checkedTyped(tree, mode, pt)
     )
     private def checkedTyped(tree: Tree, mode: Mode, pt: Type): Tree = {
-      def tpe      = try tree.tpe finally tree.clearType()
-      val recorded = tpeOfTree.getOrElseUpdate(tree, tpe)
-      val typed    = wrap(tree)(super.typed(tree, mode, pt))
+      val typed = wrap(tree)(super.typed(tree, mode, pt))
 
       if (tree ne typed)
         treesDiffer(tree, typed)
@@ -365,8 +362,6 @@ abstract class TreeCheckers extends Analyzer {
         def typeOf(t: Tree): Type      = if (t.tpe eq null) NoType else t.tpe
         def infoOf(t: Tree): Type      = symbolOf(t).info
         def referencesInType(tp: Type) = tp collect { case TypeRef(_, sym, _) => sym }
-        def referencesInTree(t: Tree)  = referencesInType(typeOf(t)) ++ referencesInType(infoOf(t))
-        def symbolRefsInTree(t: Tree)  = t collect { case t: RefTree => symbolOf(t) }
         // Accessors are known to steal the type of the underlying field without cloning existential symbols at the new owner.
         // This happens in Namer#accessorTypeCompleter. We just look the other way here.
         if (symbolOf(tree).isAccessor)
@@ -381,10 +376,6 @@ abstract class TreeCheckers extends Analyzer {
              sym.isTypeParameter
           || sym.isLocal
         )
-        val direct = tree match {
-          case _: RefTree => treeSym
-          case _          => NoSymbol
-        }
         val referencedSymbols = (treeSym :: referencesInType(treeInfo)).distinct filter (sym => isEligible(sym) && !isOk(sym))
         def mk[T](what: String, x: T, str: T => String = (x: T) => "" + x): ((Any, String)) =
           x -> s"%10s  %-20s %s".format(what, classString(x), truncate(str(x), 80).trim)
@@ -415,13 +406,7 @@ abstract class TreeCheckers extends Analyzer {
         }
 
         referencedSymbols foreach (sym =>
-          if (reportedAlready((tree, sym))) {
-            def what = tree match {
-              case tt: TypeTree  => s"TypeTree(${tt.tpe})"
-              case _             => tree.shortClass + "(" + tree.symbol.nameString + ")"
-            }
-          }
-          else {
+          if (!reportedAlready((tree, sym))) {
             errorFn("\n" + mkErrorMsg(sym))
             reportedAlready += ((tree, sym))
           }

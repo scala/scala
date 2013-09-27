@@ -14,7 +14,7 @@ import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString, stackTraceHeadString }
+import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString }
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import scala.reflect.io.VirtualFile
@@ -1026,14 +1026,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
      * Then, fsc -Xexperimental clears the nsc project between successive runs of `fsc`.
      */
 
-  /** Remove the current run when not needed anymore. Used by the build
-   *  manager to save on the memory foot print. The current run holds on
-   *  to all compilation units, which in turn hold on to trees.
-   */
-  private [nsc] def dropRun() {
-    curRun = null
-  }
-
   object typeDeconstruct extends {
     val global: Global.this.type = Global.this
   } with typechecker.StructuredTypeStrings
@@ -1083,7 +1075,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   @inline final def enteringIcode[T](op: => T): T         = enteringPhase(currentRun.icodePhase)(op)
   @inline final def enteringMixin[T](op: => T): T         = enteringPhase(currentRun.mixinPhase)(op)
   @inline final def enteringPickler[T](op: => T): T       = enteringPhase(currentRun.picklerPhase)(op)
-  @inline final def enteringRefchecks[T](op: => T): T     = enteringPhase(currentRun.refchecksPhase)(op)
   @inline final def enteringSpecialize[T](op: => T): T    = enteringPhase(currentRun.specializePhase)(op)
   @inline final def enteringTyper[T](op: => T): T         = enteringPhase(currentRun.typerPhase)(op)
   @inline final def enteringUncurry[T](op: => T): T       = enteringPhase(currentRun.uncurryPhase)(op)

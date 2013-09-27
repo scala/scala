@@ -327,13 +327,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       debug.patmat("treeMakers:")
       debug.patmat(alignAcrossRows(cases, ">>"))
     }
-
-    def showTests(testss: List[List[Test]]) = {
-      debug.patmat("tests: ")
-      debug.patmat(alignAcrossRows(testss, "&"))
-    }
   }
-
 }
 
 trait MatchAnalysis extends MatchApproximation {

@@ -106,7 +106,6 @@ trait Debugging {
 
 trait Interface extends ast.TreeDSL {
   import global._
-  import definitions._
   import analyzer.Typer
 
   // 2.10/2.11 compatibility
@@ -117,7 +116,6 @@ trait Interface extends ast.TreeDSL {
 
   object vpmName {
     val one       = newTermName("one")
-    val drop      = newTermName("drop")
     val flatMap   = newTermName("flatMap")
     val get       = newTermName("get")
     val guard     = newTermName("guard")
@@ -174,9 +172,6 @@ trait Interface extends ast.TreeDSL {
     val typer: Typer
     val matchOwner = typer.context.owner
     def pureType(tp: Type): Type = tp
-
-    // Extracting from the monad: tp == { def get: T }, result == T
-    def matchMonadResult(tp: Type) = typeOfMemberNamedGet(tp)
 
     def reportUnreachable(pos: Position) = typer.context.unit.warning(pos, "unreachable code")
     def reportMissingCases(pos: Position, counterExamples: List[String]) = {

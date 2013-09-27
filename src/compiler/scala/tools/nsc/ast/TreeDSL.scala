@@ -7,7 +7,6 @@
 package scala.tools.nsc
 package ast
 
-import PartialFunction._
 import symtab.Flags
 import scala.language.implicitConversions
 
@@ -32,7 +31,6 @@ trait TreeDSL {
     object LIT extends (Any => Literal) {
       def typed(x: Any)   = apply(x) setType ConstantType(Constant(x))
       def apply(x: Any)   = Literal(Constant(x))
-      def unapply(x: Any) = condOpt(x) { case Literal(Constant(value)) => value }
     }
 
     // Boring, predictable trees.
@@ -41,12 +39,6 @@ trait TreeDSL {
     def ZERO  = LIT(0)
     def NULL  = LIT(null)
     def UNIT  = LIT(())
-
-    object WILD {
-      def empty               = Ident(nme.WILDCARD)
-      def apply(tpe: Type)    = Ident(nme.WILDCARD) setType tpe
-      def unapply(other: Any) = cond(other) { case Ident(nme.WILDCARD) => true }
-    }
 
     def fn(lhs: Tree, op:   Name, args: Tree*)  = Apply(Select(lhs, op), args.toList)
     def fn(lhs: Tree, op: Symbol, args: Tree*)  = Apply(Select(lhs, op), args.toList)
@@ -77,7 +69,6 @@ trait TreeDSL {
       def ANY_EQ  (other: Tree)     = OBJ_EQ(other AS ObjectTpe)
       def ANY_==  (other: Tree)     = fn(target, Any_==, other)
       def ANY_!=  (other: Tree)     = fn(target, Any_!=, other)
-      def OBJ_!=  (other: Tree)     = fn(target, Object_!=, other)
       def OBJ_EQ  (other: Tree)     = fn(target, Object_eq, other)
       def OBJ_NE  (other: Tree)     = fn(target, Object_ne, other)
 
@@ -94,7 +85,6 @@ trait TreeDSL {
       /** Apply, Select, Match **/
       def APPLY(params: Tree*)      = Apply(target, params.toList)
       def APPLY(params: List[Tree]) = Apply(target, params)
-      def MATCH(cases: CaseDef*)    = Match(target, cases.toList)
 
       def DOT(member: Name)         = SelectStart(Select(target, member))
       def DOT(sym: Symbol)          = SelectStart(Select(target, sym))
@@ -106,21 +96,14 @@ trait TreeDSL {
       // clear how to proceed, so for now it retains the non-duplicating behavior.
       def ===(rhs: Tree)            = Assign(target, rhs)
 
-      /** Methods for sequences **/
-      def DROP(count: Int): Tree =
-        if (count == 0) target
-        else (target DOT nme.drop)(LIT(count))
-
       /** Casting & type tests -- working our way toward understanding exactly
        *  what differs between the different forms of IS and AS.
        *
        *  See ticket #2168 for one illustration of AS vs. AS_ANY.
        */
       def AS(tpe: Type)       = gen.mkAsInstanceOf(target, tpe, any = true, wrapInApply = false)
-      def IS(tpe: Type)       = gen.mkIsInstanceOf(target, tpe, any = true)
       def IS_OBJ(tpe: Type)   = gen.mkIsInstanceOf(target, tpe, any = false)
 
-      def TOSTRING()          = fn(target, nme.toString_)
       def GETCLASS()          = fn(target, Object_getClass)
     }
 
@@ -144,7 +127,7 @@ trait TreeDSL {
     }
 
     def CASE(pat: Tree): CaseStart  = new CaseStart(pat, EmptyTree)
-    def DEFAULT: CaseStart          = new CaseStart(WILD.empty, EmptyTree)
+    def DEFAULT: CaseStart          = new CaseStart(Ident(nme.WILDCARD), EmptyTree)
 
     def NEW(tpt: Tree, args: Tree*): Tree   = New(tpt, List(args.toList))
 

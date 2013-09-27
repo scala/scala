@@ -31,8 +31,6 @@ abstract class TreeBuilder {
   def scalaDot(name: Name)     = gen.scalaDot(name)
   def scalaAnyRefConstr        = scalaDot(tpnme.AnyRef)
   def scalaUnitConstr          = scalaDot(tpnme.Unit)
-  def productConstr            = scalaDot(tpnme.Product)
-  def serializableConstr       = scalaDot(tpnme.Serializable)
 
   def convertToTypeName(t: Tree) = gen.convertToTypeName(t)
 

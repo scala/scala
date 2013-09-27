@@ -26,7 +26,7 @@ trait Placeholders { self: Quasiquotes =>
       val start = sb.length
       sb.append(value)
       val end = sb.length
-      posMap += pos -> (start, end)
+      posMap += pos -> ((start, end))
     }
 
     def appendHole(tree: Tree, cardinality: Cardinality) = {
