@@ -376,7 +376,7 @@ abstract class TreeGen extends macros.TreeBuilder {
             DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
       }
     }
-    constr foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus=false))
+    constr foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus = false))
     // Field definitions for the class - remove defaults.
     val fieldDefs = vparamss.flatten map (vd => copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree))
 

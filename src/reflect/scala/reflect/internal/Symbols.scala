@@ -571,7 +571,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isValue             = false
     def isValueParameter    = false
     def isVariable          = false
-    override def hasDefault = false
     def isTermMacro         = false
 
     /** Qualities of MethodSymbols, always false for TypeSymbols
@@ -2601,7 +2600,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def companionSymbol: Symbol = companionClass
     override def moduleClass = if (isModule) referenced else NoSymbol
 
-    override def hasDefault         = this hasFlag DEFAULTPARAM // overloaded with TRAIT
     override def isBridge           = this hasFlag BRIDGE
     override def isEarlyInitialized = this hasFlag PRESUPER
     override def isMethod           = this hasFlag METHOD
