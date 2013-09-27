@@ -2553,7 +2553,7 @@ trait Types
 
     private var isdepmeth: ThreeValue = UNKNOWN
     override def isDependentMethodType: Boolean = {
-      if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(IsDependentCollector.collect(resultType))
+      if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(IsDependentCollector.collect(resultType.dealias))
       toBoolean(isdepmeth)
     }
 
