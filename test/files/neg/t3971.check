@@ -1,0 +1,21 @@
+t3971.scala:6: error: type mismatch;
+ found   : Int
+ required: String
+  f(g("abc")("def")) // g returns Int, needs String
+     ^
+t3971.scala:7: error: type mismatch;
+ found   : Int(5)
+ required: String
+  f(5)
+    ^
+t3971.scala:8: error: type mismatch;
+ found   : Int
+ required: String
+  f(h("abc"))
+     ^
+t3971.scala:11: error: type mismatch;
+ found   : Boolean
+ required: String
+  ({"ab".reverse; "ba".equals})(0): String
+                               ^
+four errors found
