@@ -1,0 +1,7 @@
+t2462c.scala:18: error: No C of X$Y
+  f[X$Y]
+   ^
+t2462c.scala:24: error: No C of Foo[Int]
+  f[Foo[Int]]
+   ^
+two errors found

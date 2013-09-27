@@ -4878,18 +4878,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // Warn about likely interpolated strings which are missing their interpolators
       def warnMissingInterpolator(tree: Literal) = if (!isPastTyper) {
-        // Unfortunately implicit not found strings looks for all the world like
-        // missing interpolators.
-        def isArgToImplicitNotFound = context.enclosingApply.tree match {
-          case Apply(fn, _) => fn.symbol != null && fn.symbol.enclClass == ImplicitNotFoundClass
-          case _            => false
+        // attempt to avoid warning about the special interpolated message string
+        // for implicitNotFound or any standard interpolation (with embedded $$).
+        def isArgToCertainApply = context.enclosingApply.tree match {
+          case Apply(Select(Apply(Ident(n), parts), _), args) if n.toTypeName == StringContextClass.name
+                 => true    // parts contains tree
+          case Apply(Select(New(Ident(n)), _), _) if n == ImplicitNotFoundClass.name
+                 => true
+          case _ => false
         }
         def warnAbout(s: String) = {
           def names = InterpolatorIdentRegex findAllIn s map (n => TermName(n stripPrefix "$"))
-          def isSuspiciousExpr = (InterpolatorCodeRegex findFirstIn s).nonEmpty
-          //def isSuspiciousName = names exists (lookUp _ andThen (_.exists))
-          def suspiciousName   = names find (lookUp _ andThen (_.exists))
-          def lookUp(n: TermName)  = context.lookupSymbol(n, !_.alternatives.exists(symRequiresArg)).symbol
+          def isSuspiciousExpr    = (InterpolatorCodeRegex findFirstIn s).nonEmpty
+          //def isSuspiciousName  = names exists (lookUp _ andThen isCandidate _)
+          def suspiciousName      = names find (n => isCandidate(lookUp(n)))
+          def lookUp(n: TermName) = context.lookupSymbol(n, _ => true).symbol
+          def isCandidate(s: Symbol) = s.exists && s.alternatives.exists(alt => !symRequiresArg(alt))
           def symRequiresArg(s: Symbol) = (
                s.paramss.nonEmpty
             && (s.paramss.head.headOption filterNot (_.isImplicit)).isDefined
@@ -4904,7 +4908,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         tree.value match {
           case Constant(s: String) =>
             val noWarn = (
-                 isArgToImplicitNotFound
+                 isArgToCertainApply
               || !(s contains ' ') // another heuristic - e.g. a string with only "$asInstanceOf"
             )
             if (!noWarn) warnAbout(s)

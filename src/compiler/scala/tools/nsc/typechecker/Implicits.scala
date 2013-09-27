@@ -1405,13 +1405,15 @@ trait Implicits {
         case None => Some("Missing argument `msg` on implicitNotFound annotation.")
       })
 
+    // http://dcsobral.blogspot.com/2010/01/string-interpolation-in-scala-with.html
+    private val Intersobralator = """\$\{\s*([^}\s]+)\s*\}""".r
 
     class Message(sym: Symbol, msg: String) {
-      // http://dcsobral.blogspot.com/2010/01/string-interpolation-in-scala-with.html
-      private def interpolate(text: String, vars: Map[String, String]) = {
-        """\$\{([^}]+)\}""".r.replaceAllIn(text, (_: Regex.Match) match {
-          case Regex.Groups(v) => java.util.regex.Matcher.quoteReplacement(vars.getOrElse(v, "")) // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
-        })}
+      private def interpolate(text: String, vars: Map[String, String]) =
+        Intersobralator.replaceAllIn(text, (_: Regex.Match) match {
+          case Regex.Groups(v) => Regex quoteReplacement vars.getOrElse(v, "")
+          // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
+        })
 
       private lazy val typeParamNames: List[String] = sym.typeParams.map(_.decodedName)
 
@@ -1420,17 +1422,16 @@ trait Implicits {
         interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
 
       def validate: Option[String] = {
-        // is there a shorter way to avoid the intermediate toList?
-        val refs = """\$\{([^}]+)\}""".r.findAllIn(msg).matchData.map(_ group 1).toSet
+        val refs  = Intersobralator.findAllMatchIn(msg).map(_ group 1).toSet
         val decls = typeParamNames.toSet
 
         (refs &~ decls) match {
           case s if s.isEmpty => None
-          case unboundNames =>
+          case unboundNames   =>
             val singular = unboundNames.size == 1
-            Some("The type parameter"+( if(singular) " " else "s " )+ unboundNames.mkString(", ")  +
-                  " referenced in the message of the @implicitNotFound annotation "+( if(singular) "is" else "are" )+
-                  " not defined by "+ sym +".")
+            val ess      = if (singular) "" else "s"
+            val bee      = if (singular) "is" else "are"
+            Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @implicitNotFound annotation $bee not defined by $sym.")
         }
       }
     }

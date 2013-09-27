@@ -1458,7 +1458,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           applyChecks(sym.annotations)
           // validate implicitNotFoundMessage
           analyzer.ImplicitNotFoundMsg.check(sym) foreach { warn =>
-            unit.warning(tree.pos, "Invalid implicitNotFound message for %s%s:\n%s".format(sym, sym.locationString, warn))
+            unit.warning(tree.pos, f"Invalid implicitNotFound message for ${sym}%s${sym.locationString}%s:%n$warn")
           }
 
         case tpt@TypeTree() =>
