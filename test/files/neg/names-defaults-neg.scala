@@ -92,6 +92,8 @@ object Test extends App {
   def deprNam3(@deprecatedName('x) a: Int, @deprecatedName('y) b: Int) = a + b
   deprNam3(y = 10, b = 2)
 
+  def deprNam4(@deprecatedName('deprNam4Arg) deprNam4Arg: String) = 0
+  deprNam4(deprNam4Arg = null)
 
   // t3818
   def f3818(x: Int = 1, y: Int, z: Int = 1) = 0

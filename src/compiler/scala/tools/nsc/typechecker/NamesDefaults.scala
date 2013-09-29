@@ -9,6 +9,7 @@ package typechecker
 import symtab.Flags._
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import PartialFunction.{ cond => when }
 
 /**
  *  @author Lukas Rytz
@@ -552,15 +553,22 @@ trait NamesDefaults { self: Analyzer =>
     val namelessArgs = mapWithIndex(args) { (arg, argIndex) =>
       arg match {
         case arg @ AssignOrNamedArg(Ident(name), rhs) =>
-          def matchesName(param: Symbol) = !param.isSynthetic && (
-            (param.name == name) || (param.deprecatedParamName match {
-              case Some(`name`) =>
-                context0.deprecationWarning(arg.pos, param,
+          def matchesName(param: Symbol) = {
+            def checkDeprecation = when(param.deprecatedParamName) { case Some(`name`) => true }
+            def checkName = {
+              val res = param.name == name
+              if (res && checkDeprecation)
+                context0.deprecationWarning(arg.pos, param, s"naming parameter $name has been deprecated.")
+              res
+            }
+            def checkAltName = {
+              val res = checkDeprecation
+              if (res) context0.deprecationWarning(arg.pos, param,
                   s"the parameter name $name has been deprecated. Use ${param.name} instead.")
-                true
-              case _ => false
-            })
-          )
+              res
+            }
+            !param.isSynthetic && (checkName || checkAltName)
+          }
           val paramPos = params indexWhere matchesName
           if (paramPos == -1) {
             if (positionalAllowed) {
