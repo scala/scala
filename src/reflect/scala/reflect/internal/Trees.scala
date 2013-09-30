@@ -22,10 +22,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
   protected def treeStatus(t: Tree, enclosingTree: Tree = null) = {
     val parent = if (enclosingTree eq null) "        " else " P#%5s".format(enclosingTree.id)
 
-    "[L%4s%8s] #%-6s %-15s %-10s // %s".format(t.pos.safeLine, parent, t.id, t.pos.show, t.shortClass, treeLine(t))
+    "[L%4s%8s] #%-6s %-15s %-10s // %s".format(t.pos.line, parent, t.id, t.pos.show, t.shortClass, treeLine(t))
   }
   protected def treeSymStatus(t: Tree) = {
-    val line = if (t.pos.isDefined) "line %-4s".format(t.pos.safeLine) else "         "
+    val line = if (t.pos.isDefined) "line %-4s".format(t.pos.line) else "         "
     "#%-5s %s %-10s // %s".format(t.id, line, t.shortClass,
       if (t.symbol ne NoSymbol) "(" + t.symbol.fullLocationString + ")"
       else treeLine(t)

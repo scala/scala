@@ -27,8 +27,8 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
     rhs.pos match {
       case pos: RangePosition => {
         val source: SourceFile = pos.source
-        val firstIndex = pos.startOrPoint
-        val lastIndex = pos.endOrPoint
+        val firstIndex = pos.start
+        val lastIndex = pos.end
 
         assert(firstIndex < lastIndex, "Invalid position indices for tree " + rhs + " (" + firstIndex + ", " + lastIndex + ")")
         expr.appendAll(source.content, firstIndex, lastIndex - firstIndex)
@@ -39,8 +39,8 @@ trait TreeFactory { thisTreeFactory: ModelFactory with TreeFactory =>
            * stores it in tree.refs with its position
            */
           def makeLink(rhs: Tree){
-            val start = pos.startOrPoint - firstIndex
-            val end = pos.endOrPoint - firstIndex
+            val start = pos.start - firstIndex
+            val end = pos.end - firstIndex
             if(start != end) {
               var asym = rhs.symbol
               if (asym.isClass) makeTemplate(asym) match{

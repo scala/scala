@@ -337,7 +337,7 @@ abstract class UnCurry extends InfoTransform
           arg setType functionType(Nil, arg.tpe)
         }
         else {
-          log(s"Argument '$arg' at line ${arg.pos.safeLine} is $formal from ${fun.fullName}")
+          log(s"Argument '$arg' at line ${arg.pos.line} is $formal from ${fun.fullName}")
           def canUseDirectly(recv: Tree) = (
                recv.tpe.typeSymbol.isSubClass(FunctionClass(0))
             && treeInfo.isExprSafeToInline(recv)

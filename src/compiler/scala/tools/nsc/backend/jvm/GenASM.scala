@@ -2316,8 +2316,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
               lastLineNr = currentLineNr
               val lineLab = new asm.Label
               jmethod.visitLabel(lineLab)
-              val actual = iPos inUltimateSource iPos.source
-              lnEntries ::= LineNumberEntry(actual.line, lineLab)
+              lnEntries ::= LineNumberEntry(iPos.finalPosition.line, lineLab)
             }
           }
 

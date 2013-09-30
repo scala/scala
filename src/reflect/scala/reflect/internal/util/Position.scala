@@ -169,6 +169,20 @@ private[util] trait InternalPositionImpl {
   def focus: Position      = if (this.isRange) asOffset(point) else this
   def focusEnd: Position   = if (this.isRange) asOffset(end) else this
 
+  /** If you have it in for punctuation you might not like these methods.
+   *  However I think they're aptly named.
+   *
+   *    |   means union
+   *    ^   means "the point" (look, it's a caret)
+   *    |^  means union, taking the point of the rhs
+   *    ^|  means union, taking the point of the lhs
+   */
+  def |(that: Position, poses: Position*): Position = poses.foldLeft(this | that)(_ | _)
+  def |(that: Position): Position                   = this union that
+  def ^(point: Int): Position                       = this withPoint point
+  def |^(that: Position): Position                  = (this | that) ^ that.point
+  def ^|(that: Position): Position                  = (this | that) ^ this.point
+
   def union(pos: Position): Position = (
     if (!pos.isRange) this
     else if (this.isRange) copyRange(start = start min pos.start, end = end max pos.end)
@@ -246,9 +260,9 @@ private[util] trait DeprecatedPosition {
   @deprecated("Use `withSource(source)` and `withShift`", "2.11.0")
   def withSource(source: SourceFile, shift: Int): Position = this withSource source withShift shift
 
-  @deprecated("Use `start`", "2.11.0")
+  @deprecated("Use `start` instead", "2.11.0")
   def startOrPoint: Int = if (isRange) start else point
 
-  @deprecated("Use `end`", "2.11.0")
+  @deprecated("Use `end` instead", "2.11.0")
   def endOrPoint: Int = if (isRange) end else point
 }
