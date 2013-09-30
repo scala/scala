@@ -584,6 +584,7 @@ trait StdNames {
     val Select: NameType               = "Select"
     val SelectFromTypeTree: NameType   = "SelectFromTypeTree"
     val SyntacticApplied: NameType     = "SyntacticApplied"
+    val SyntacticApply: NameType       = "SyntacticApply"
     val SyntacticAssign: NameType      = "SyntacticAssign"
     val SyntacticBlock: NameType       = "SyntacticBlock"
     val SyntacticClassDef: NameType    = "SyntacticClassDef"

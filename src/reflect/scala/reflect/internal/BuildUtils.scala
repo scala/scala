@@ -173,6 +173,15 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
 
+    object SyntacticApply extends SyntacticApplyExtractor {
+      def apply(tree: Tree, args: List[Tree]): Tree = SyntacticApplied(tree, List(args))
+
+      def unapply(tree: Tree): Some[(Tree, List[Tree])] = tree match {
+        case Apply(fun, args) => Some((fun, args))
+        case other => Some((other, Nil))
+      }
+    }
+
     private object UnCtor {
       def unapply(tree: Tree): Option[(Modifiers, List[List[ValDef]], List[Tree])] = tree match {
         case DefDef(mods, nme.MIXIN_CONSTRUCTOR, _, _, _, Block(lvdefs, _)) =>

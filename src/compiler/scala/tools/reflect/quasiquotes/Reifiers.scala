@@ -150,6 +150,9 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticVarDef, mods, name, tpt, rhs)
       case SyntacticAssign(lhs, rhs) =>
         reifyBuildCall(nme.SyntacticAssign, lhs, rhs)
+      case SyntacticApplied(fun, List(args))
+        if args.forall { case Placeholder(_, _, DotDotDot) => false case _ => true } =>
+        reifyBuildCall(nme.SyntacticApply, fun, args)
       case SyntacticApplied(fun, argss) if argss.nonEmpty =>
         reifyBuildCall(nme.SyntacticApplied, fun, argss)
       case SyntacticTypeApplied(fun, targs) if targs.nonEmpty =>

@@ -8,9 +8,8 @@ import Flag._
 
 object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction") {
   property("f(..x) = f") = test {
-    assertThrows[MatchError] {
-      val q"f(..$argss)" = q"f"
-    }
+    val q"f(..$args)" = q"f"
+    assert(args ≈ Nil)
   }
 
   property("f(x)") = forAll { (x: Tree) =>
