@@ -500,11 +500,6 @@ trait MatchTranslation {
     // U must have N members _1,..., _N -- the _i are type checked, call their type Ti,
     // for now only used for case classes -- pretending there's an unapplyProd that's the identity (and don't call it)
     class ExtractorCallProd(val fun: Tree, val args: List[Tree]) extends ExtractorCall {
-      // TODO: fix the illegal type bound in pos/t602 -- type inference messes up before we get here:
-      /*override def equals(x$1: Any): Boolean = ...
-             val o5: Option[com.mosol.sl.Span[Any]] =  // Span[Any] --> Any is not a legal type argument for Span!
-      */
-
       private def constructorTp = fun.tpe
 
       def isTyped    = fun.isTyped

@@ -322,7 +322,13 @@ trait PatternTypers {
      *
      * see test/files/../t5189*.scala
      */
-    private def convertToCaseConstructor(tree: Tree, caseClass: Symbol, pt: Type): Tree = {
+    private def convertToCaseConstructor(tree: Tree, caseClass: Symbol, ptIn: Type): Tree = {
+      // Unsoundness looms for those who infer type parameters with pt=Any. See SI-7886.
+      val pt = (
+        if (ptIn =:= AnyTpe && caseClass.typeParams.nonEmpty)
+          devWarningResult(s"Evading kind-polymorphic expected type for case constructor of $caseClass")(caseClass.tpe_*)
+        else ptIn
+      )
       val variantToSkolem     = new VariantToSkolemMap
       val caseConstructorType = tree.tpe.prefix memberType caseClass memberType caseClass.primaryConstructor
       val tree1               = TypeTree(caseConstructorType) setOriginal tree
