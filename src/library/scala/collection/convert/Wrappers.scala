@@ -212,6 +212,12 @@ private[collection] trait Wrappers {
         }
       }
     }
+
+    override def containsKey(key: AnyRef): Boolean = try {
+      underlying.contains(key.asInstanceOf[A])
+    } catch {
+      case ex: ClassCastException => false
+    }
   }
 
   case class MutableMapWrapper[A, B](underlying: mutable.Map[A, B]) extends MapWrapper[A, B](underlying) {
