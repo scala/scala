@@ -587,11 +587,6 @@ TODO:
       <path refid="aux.libs"/>
     </path>
 
-    <path id="locker.actors.build.path">
-      <path refid="locker.library.build.path"/>
-      <pathelement location="${build-locker.dir}/classes/actors"/>
-    </path>
-
     <path id="locker.reflect.build.path">
       <path refid="locker.library.build.path"/>
       <pathelement location="${build-locker.dir}/classes/reflect"/>
@@ -1240,9 +1235,6 @@ TODO:
 
   <target name="locker.lib"    depends="locker.start"     unless="locker.locked">
     <staged-build with="starr" stage="locker" project="library" srcpath="${src.dir}/library" includes="lib.includes"/></target>
-
-  <target name="locker.actors" depends="locker.lib"       unless="locker.locked">
-    <staged-build with="starr" stage="locker" project="actors"/> </target>
 
   <target name="locker.reflect" depends="locker.lib"      unless="locker.locked">
     <staged-build with="starr" stage="locker" project="reflect"/></target>
