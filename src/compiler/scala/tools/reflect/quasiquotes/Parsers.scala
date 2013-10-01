@@ -101,7 +101,7 @@ trait Parsers { self: Quasiquotes =>
 
       override def isAnnotation: Boolean = super.isAnnotation || (isHole && lookingAhead { isAnnotation })
 
-      override def isCaseDefStart: Boolean = super.isCaseDefStart || (in.token == EOF)
+      override def isCaseDefEnd: Boolean = super.isCaseDefEnd || (in.token == EOF)
 
       override def isModifier: Boolean = super.isModifier || (isHole && lookingAhead { isModifier })
 

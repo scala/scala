@@ -635,8 +635,6 @@ self =>
 
     def isAnnotation: Boolean = in.token == AT
 
-    def isCaseDefStart: Boolean = in.token == CASE
-
     def isLocalModifier: Boolean = in.token match {
       case ABSTRACT | FINAL | SEALED | IMPLICIT | LAZY => true
       case _ => false
@@ -686,6 +684,8 @@ self =>
     }
 
     def isStatSeqEnd = in.token == RBRACE || in.token == EOF
+
+    def isCaseDefEnd = in.token == RBRACE || in.token == CASE
 
     def isStatSep(token: Int): Boolean =
       token == NEWLINE || token == NEWLINES || token == SEMI
@@ -1329,7 +1329,7 @@ self =>
               in.nextToken()
               if (in.token != LBRACE) catchFromExpr()
               else inBracesOrNil {
-                if (isCaseDefStart) caseClauses()
+                if (in.token == CASE) caseClauses()
                 else catchFromExpr()
               }
             }
@@ -1640,7 +1640,7 @@ self =>
      */
     def blockExpr(): Tree = atPos(in.offset) {
       inBraces {
-        if (isCaseDefStart) Match(EmptyTree, caseClauses())
+        if (in.token == CASE) Match(EmptyTree, caseClauses())
         else block()
       }
     }
@@ -3057,14 +3057,14 @@ self =>
      */
     def blockStatSeq(): List[Tree] = checkNoEscapingPlaceholders {
       val stats = new ListBuffer[Tree]
-      while (!isStatSeqEnd && !isCaseDefStart) {
+      while (!isStatSeqEnd && !isCaseDefEnd) {
         if (in.token == IMPORT) {
           stats ++= importClause()
           acceptStatSepOpt()
         }
         else if (isExprIntro) {
           stats += statement(InBlock)
-          if (in.token != RBRACE && !isCaseDefStart) acceptStatSep()
+          if (!isCaseDefEnd) acceptStatSep()
         }
         else if (isDefIntro || isLocalModifier || isAnnotation) {
           if (in.token == IMPLICIT) {
