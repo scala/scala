@@ -561,7 +561,8 @@ TODO:
     <if><isset property="locker.skip"/><then>
       <echo message="Using STARR to build the quick stage (skipping locker)."/>
       <path id="locker.compiler.path" refid="starr.compiler.path"/>
-       <!-- this is cheating, but should be close enough: -->
+       <!-- this is cheating (we don't know the classpath used to build starr)
+            but should be close enough: -->
       <path id="locker.compiler.build.path" refid="starr.compiler.path"/>
       <property name="locker.locked" value="locker skipped"/></then>
     <else>
