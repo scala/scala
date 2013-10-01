@@ -5127,7 +5127,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // @M causes cyclic reference error
           devWarning(s"exception when typing $tree, pt=$ptPlugins")
           if (context != null && context.unit.exists && tree != null)
-            logError("AT: " + (tree.pos).dbgString, ex)
+            logError("AT: " + tree.pos, ex)
           throw ex
       }
     }

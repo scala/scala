@@ -8,11 +8,11 @@
 package scala.tools.nsc
 package javac
 
-import scala.reflect.internal.util.OffsetPosition
 import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._
 import scala.language.implicitConversions
+import scala.reflect.internal.util.Position
 
 trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
   val global : Global
@@ -27,7 +27,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def freshTermName(prefix: String): TermName = unit.freshTermName(prefix)
     def freshTypeName(prefix: String): TypeName = unit.freshTypeName(prefix)
     def deprecationWarning(off: Int, msg: String) = unit.deprecationWarning(off, msg)
-    implicit def i2p(offset : Int) : Position = new OffsetPosition(unit.source, offset)
+    implicit def i2p(offset : Int) : Position = Position.offset(unit.source, offset)
     def warning(pos : Int, msg : String) : Unit = unit.warning(pos, msg)
     def syntaxError(pos: Int, msg: String) : Unit = unit.error(pos, msg)
   }
