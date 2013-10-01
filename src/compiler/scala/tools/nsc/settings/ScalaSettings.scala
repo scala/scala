@@ -214,6 +214,13 @@ trait ScalaSettings extends AbsScalaSettings
   val Ybackend = ChoiceSetting ("-Ybackend", "choice of bytecode emitter", "Choice of bytecode emitter.",
                                 List("GenASM", "GenBCode"),
                                 "GenASM")
+
+  val YbcodeEmitterThreads = IntSetting ("-Ybcode-emitter-threads",
+    "Number of threads in the pool betweeen class file building and writing.",
+    scala.math.min(4, java.lang.Runtime.getRuntime.availableProcessors),
+    Some((1, Int.MaxValue)), (_: String) => None
+  )
+
   // Feature extensions
   val XmacroSettings          = MultiStringSetting("-Xmacro-settings", "option", "Custom settings for macros.")
 
