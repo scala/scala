@@ -62,15 +62,6 @@ trait StdAttachments {
     }
   }
 
-  /** Checks whether there is any tree resulting from a macro expansion and associated with the current tree.
-   */
-  object ExpandedIntoTree {
-    def unapply(tree: Tree): Option[Tree] = tree.attachments.get[MacroExpansionAttachment] match {
-      case Some(MacroExpansionAttachment(_, tree: Tree)) => Some(tree)
-      case _ => None
-    }
-  }
-
   /** When present, suppresses macro expansion for the host.
    *  This is occasionally necessary, e.g. to prohibit eta-expansion of macros.
    *

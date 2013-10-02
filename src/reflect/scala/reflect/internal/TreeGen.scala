@@ -209,8 +209,7 @@ abstract class TreeGen extends macros.TreeBuilder {
   /** Builds a type application node if args.nonEmpty, returns fun otherwise. */
   def mkTypeApply(fun: Tree, targs: List[Tree]): Tree =
     if (targs.isEmpty) fun else TypeApply(fun, targs)
-  def mkTypeApply(target: Tree, method: Symbol, targs: List[Type]): Tree =
-    mkTypeApply(Select(target, method), targs map TypeTree)
+
   def mkAttributedTypeApply(target: Tree, method: Symbol, targs: List[Type]): Tree =
     mkTypeApply(mkAttributedSelect(target, method), targs map TypeTree)
 
@@ -298,10 +297,6 @@ abstract class TreeGen extends macros.TreeBuilder {
     mkAttributedRef(ReflectRuntimeUniverse) setType singleType(ReflectRuntimeUniverse.owner.thisPrefix, ReflectRuntimeUniverse)
   }
 
-  def mkPackageDef(packageName: String, stats: List[Tree]): PackageDef = {
-    PackageDef(mkUnattributedRef(newTermName(packageName)), stats)
-  }
-
   def mkSeqApply(arg: Tree): Apply = {
     val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
     Apply(factory, List(arg))
@@ -362,7 +357,6 @@ abstract class TreeGen extends macros.TreeBuilder {
         // convert (implicit ... ) to ()(implicit ... ) if its the only parameter section
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
           vparamss1 = List() :: vparamss1
-        val superRef: Tree = atPos(superPos)(mkSuperInitCall)
         val superCall = pendingSuperCall // we can't know in advance which of the parents will end up as a superclass
                                          // this requires knowing which of the parents is a type macro and which is not
                                          // and that's something that cannot be found out before typer

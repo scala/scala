@@ -23,7 +23,6 @@ import scala.tools.asm
  */
 abstract class BCodeSkelBuilder extends BCodeHelpers {
   import global._
-  import definitions._
 
   /*
    * There's a dedicated PlainClassBuilder for each CompilationUnit,
@@ -270,7 +269,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     var mnode: asm.tree.MethodNode = null
     var jMethodName: String        = null
     var isMethSymStaticCtor        = false
-    var isMethSymBridge            = false
     var returnType: BType          = null
     var methSymbol: Symbol         = null
     // in GenASM this is local to genCode(), ie should get false whenever a new method is emitted (including fabricated ones eg addStaticInit())
@@ -553,7 +551,6 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       jMethodName = methSymbol.javaSimpleName.toString
       returnType  = asmMethodType(dd.symbol).getReturnType
       isMethSymStaticCtor = methSymbol.isStaticConstructor
-      isMethSymBridge     = methSymbol.isBridge
 
       resetMethodBookkeeping(dd)
 

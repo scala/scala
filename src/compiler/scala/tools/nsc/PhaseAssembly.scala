@@ -144,7 +144,7 @@ trait PhaseAssembly {
         rerun = false
         hardlinks = edges.filter(_.hard)
         for (hl <- hardlinks) {
-          var sanity = Nil ++ hl.to.before.filter(_.hard)
+          val sanity = Nil ++ hl.to.before.filter(_.hard)
           if (sanity.length == 0) {
             throw new FatalError("There is no runs right after dependency, where there should be one! This is not supposed to happen!")
           } else if (sanity.length > 1) {

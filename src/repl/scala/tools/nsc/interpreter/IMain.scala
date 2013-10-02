@@ -861,15 +861,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       def path = originalPath("$intp")
       def envLines = {
         if (!isReplPower) Nil // power mode only for now
-        // $intp is not bound; punt, but include the line.
-        else if (path == "$intp") List(
-          "def $line = " + tquoted(originalLine),
-          "def $trees = Nil"
-        )
-        else List(
-          "def $line  = " + tquoted(originalLine),
-          "def $trees = Nil"
-        )
+        else List("def %s = %s".format("$line", tquoted(originalLine)), "def %s = Nil".format("$trees"))
       }
 
       val preamble = """

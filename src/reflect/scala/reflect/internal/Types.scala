@@ -537,8 +537,6 @@ trait Types
       else Nil
     )
 
-    def etaExpand: Type = this
-
     /** Performs a single step of beta-reduction on types.
      *  Given:
      *
@@ -2309,7 +2307,7 @@ trait Types
       || pre.isGround && args.forall(_.isGround)
     )
 
-    override def etaExpand: Type = {
+    def etaExpand: Type = {
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
       if (tpars.isEmpty) this
@@ -2443,7 +2441,8 @@ trait Types
       else
         super.prefixString
     )
-    def copy(pre: Type = this.pre, sym: Symbol = this.sym, args: List[Type] = this.args) = TypeRef(pre, sym, args)
+    // Suppressing case class copy method which risks subverting our single point of creation.
+    private def copy = null
     override def kind = "TypeRef"
   }
 
@@ -4595,9 +4594,6 @@ trait Types
     case ExistentialType(tparams, result) => typeDepth(result) max symTypeDepth(tparams).incr
     case _                                => Depth(1)
   }
-
-  def withUncheckedVariance(tp: Type): Type =
-    tp withAnnotation (AnnotationInfo marker uncheckedVarianceClass.tpe)
 
   //OPT replaced with tailrecursive function to save on #closures
   // was:

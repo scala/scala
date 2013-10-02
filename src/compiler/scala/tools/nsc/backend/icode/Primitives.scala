@@ -80,8 +80,6 @@ trait Primitives { self: ICodes =>
       out.print(s)
       this
     }
-
-    def print(o: AnyRef): PrimitivePrinter = print(o.toString())
   }
 
   /** This class represents a comparison operation. */

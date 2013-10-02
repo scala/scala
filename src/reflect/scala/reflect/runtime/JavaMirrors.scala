@@ -431,8 +431,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           case sym if isGetClass(sym)                 => preciseClass(receiver)
           case Any_asInstanceOf                       => fail("Any.asInstanceOf requires a type argument")
           case Any_isInstanceOf                       => fail("Any.isInstanceOf requires a type argument")
-          case Object_asInstanceOf                    => fail("AnyRef.$asInstanceOf is an internal method")
-          case Object_isInstanceOf                    => fail("AnyRef.$isInstanceOf is an internal method")
+          case Object_asInstanceOf                    => fail("AnyRef.%s is an internal method" format symbol.name)
+          case Object_isInstanceOf                    => fail("AnyRef.%s is an internal method" format symbol.name)
           case Array_length                           => ScalaRunTime.array_length(objReceiver)
           case Array_apply                            => ScalaRunTime.array_apply(objReceiver, args(0).asInstanceOf[Int])
           case Array_update                           => ScalaRunTime.array_update(objReceiver, args(0).asInstanceOf[Int], args(1))
@@ -467,7 +467,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
             extends TemplateMirror {
       def outer: AnyRef
       def erasure: ClassSymbol
-      lazy val signature = typeToScala(classToJava(erasure))
     }
 
     private class JavaClassMirror(val outer: AnyRef, val symbol: ClassSymbol)

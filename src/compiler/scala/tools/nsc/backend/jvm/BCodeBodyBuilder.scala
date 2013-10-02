@@ -43,8 +43,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     /* ---------------- helper utils for generating methods and code ---------------- */
 
     def emit(opc: Int) { mnode.visitInsn(opc) }
-    def emit(i: asm.tree.AbstractInsnNode) { mnode.instructions.add(i) }
-    def emit(is: List[asm.tree.AbstractInsnNode]) { for(i <- is) { mnode.instructions.add(i) } }
 
     def emitZeroOf(tk: BType) {
       (tk.sort: @switch) match {
@@ -411,7 +409,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     /*
      * must-single-thread
      */
-    private def fieldOp(field: Symbol, isLoad: Boolean, hostClass: Symbol = null) {
+    private def fieldOp(field: Symbol, isLoad: Boolean, hostClass: Symbol) {
       // LOAD_FIELD.hostClass , CALL_METHOD.hostClass , and #4283
       val owner      =
         if (hostClass == null) internalName(field.owner)
@@ -950,13 +948,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         || sym.isJavaDefined && sym.isNonBottomSubClass(definitions.ClassfileAnnotationClass)
       )
 
-      def isAccessibleFrom(target: Symbol, site: Symbol): Boolean = {
-        target.isPublic || target.isProtected && {
-          (site.enclClass isSubClass target.enclClass) ||
-          (site.enclosingPackage == target.privateWithin)
-        }
-      }
-
       // whether to reference the type of the receiver or
       // the type of the method owner
       val useMethodOwner = (
@@ -1233,10 +1224,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       }
     }
 
-    /* can-multi-thread */
-    def getMaxType(ts: List[Type]): BType = {
-      ts map toTypeKind reduceLeft maxType
-    }
 
     def genSynchronized(tree: Apply, expectedType: BType): BType
     def genLoadTry(tree: Try): BType

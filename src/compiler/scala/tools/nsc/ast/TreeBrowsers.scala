@@ -49,21 +49,6 @@ abstract class TreeBrowsers {
    * Java Swing pretty printer for Scala abstract syntax trees.
    */
   class SwingBrowser {
-
-    def browse(t: Tree): Tree = {
-      val tm = new ASTTreeModel(t)
-
-      val frame = new BrowserFrame()
-      frame.setTreeModel(tm)
-
-      val lock = new Lock()
-      frame.createFrame(lock)
-
-      // wait for the frame to be closed
-      lock.acquire()
-      t
-    }
-
     def browse(pName: String, units: Iterator[CompilationUnit]): Unit =
       browse(pName, units.toList)
 

@@ -973,22 +973,6 @@ private[internal] trait TypeMaps {
     }
   }
 
-  /** A map to implement the `contains` method. */
-  class ContainsTypeCollector(t: Type) extends TypeCollector(false) {
-    def traverse(tp: Type) {
-      if (!result) {
-        if (tp eq t) result = true
-        else mapOver(tp)
-      }
-    }
-    override def mapOver(arg: Tree) = {
-      for (t <- arg)
-        traverse(t.tpe)
-
-      arg
-    }
-  }
-
   /** A map to implement the `filter` method. */
   class FilterTypeCollector(p: Type => Boolean) extends TypeCollector[List[Type]](Nil) {
     override def collect(tp: Type) = super.collect(tp).reverse

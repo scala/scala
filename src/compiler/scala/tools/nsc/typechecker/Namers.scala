@@ -1675,13 +1675,6 @@ trait Namers extends MethodSynthesis {
     }
   }
 
-  @deprecated("Use underlyingSymbol instead", "2.10.0")
-  def underlying(member: Symbol): Symbol = underlyingSymbol(member)
-  @deprecated("Use `companionSymbolOf` instead", "2.10.0")
-  def companionClassOf(module: Symbol, ctx: Context): Symbol = companionSymbolOf(module, ctx)
-  @deprecated("Use `companionSymbolOf` instead", "2.10.0")
-  def companionModuleOf(clazz: Symbol, ctx: Context): Symbol = companionSymbolOf(clazz, ctx)
-
   /** The companion class or companion module of `original`.
    *  Calling .companionModule does not work for classes defined inside methods.
    *

@@ -178,28 +178,6 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
     }
   }
 
-  /** This must guarantee not to force any evaluation, so we can learn
-   *  a little bit about trees in the midst of compilation without altering
-   *  the natural course of events.
-   */
-  class SafeTreePrinter(out: PrintWriter) extends TreePrinter(out) {
-
-    private def default(t: Tree) = t.getClass.getName.reverse.takeWhile(_ != '.').reverse
-    private def params(trees: List[Tree]): String = trees map safe mkString ", "
-
-    private def safe(name: Name): String = name.decode
-    private def safe(tree: Tree): String = tree match {
-      case Apply(fn, args)        => "%s(%s)".format(safe(fn), params(args))
-      case Select(qual, name)     => safe(qual) + "." + safe(name)
-      case This(qual)             => safe(qual) + ".this"
-      case Ident(name)            => safe(name)
-      case Literal(value)         => value.stringValue
-      case _                      => "(?: %s)".format(default(tree))
-    }
-
-    override def printTree(tree: Tree) { print(safe(tree)) }
-  }
-
   def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes, settings.uniqid, settings.Yshowsymkinds)
   def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes, settings.uniqid, settings.Yshowsymkinds)
   def asCompactDebugString(t: Tree): String = render(t, newCompactTreePrinter, true, true, true)

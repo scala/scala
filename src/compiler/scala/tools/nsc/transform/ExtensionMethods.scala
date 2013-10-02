@@ -288,7 +288,6 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       //         object C   { def meth$extension[M, C](this$: C[C], a: A)
       //                        = { meth$extension[M', C']({ <expr>: C[C'] })(a1) } }
       case treeInfo.Applied(sel @ Select(qual, _), targs, argss) if sel.symbol == origMeth =>
-        import gen.CODE._
         localTyper.typedPos(tree.pos) {
           val allArgss = List(qual) :: argss
           val origThis = extensionMeth.owner.companionClass

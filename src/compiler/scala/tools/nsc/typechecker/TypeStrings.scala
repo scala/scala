@@ -112,11 +112,6 @@ trait StructuredTypeStrings extends DestructureTypes {
     override def emptyTypeName = "Nil"
     override def typeName = "List"
   }
-  class TypeScope(nodes: List[TypeNode]) extends TypeProduct(nodes) {
-    override def grouping = BlockGrouping
-    override def typeName = "Scope"
-    override def emptyTypeName = "EmptyScope"
-  }
 
   object TypeEmpty extends TypeNode {
     override def grouping = NoGrouping

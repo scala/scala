@@ -80,8 +80,6 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     val global: Trees.this.type = self
   } with TreeInfo
 
-  lazy val treePrinter = newTreePrinter()
-
   // --- additional cases in operations ----------------------------------
 
   override protected def xtraverse(traverser: Traverser, tree: Tree): Unit = tree match {
@@ -185,7 +183,6 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
   def resetAllAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(false, leaveAlone).transform(x)
   def resetLocalAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(true, leaveAlone).transform(x)
-  def resetLocalAttrsKeepLabels(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(true, leaveAlone, true).transform(x)
 
   /** A transformer which resets symbol and tpe fields of all nodes in a given tree,
    *  with special treatment of:

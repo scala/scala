@@ -9,14 +9,12 @@ package typechecker
 import scala.collection.mutable
 import scala.reflect.internal.util.{ BatchSourceFile, Statistics }
 import mutable.ListBuffer
-import symtab.Flags._
 import Mode._
 
 trait TypersTracking {
   self: Analyzer =>
 
   import global._
-  import definitions._
   import typeDebug._
 
   // To enable decent error messages when the typer crashes.
@@ -53,7 +51,6 @@ trait TypersTracking {
 
   object typingStack {
     val out = new java.io.PrintWriter(System.err, true)
-    def println(msg: Any) = out println "" + msg
 
     // TODO - account for colors so the color of a multiline string
     // doesn't infect the connector lines
@@ -72,12 +69,7 @@ trait TypersTracking {
       if (s1.length < 60 || settings.debug.value) s1 else s1.take(57) + "..."
     }
 
-    private val nextId = { var x = 1 ; () => try x finally x += 1 }
-    private class Frame(val tree: Tree) {
-      val stamp = System.nanoTime
-      val id    = nextId()
-    }
-    private object NoFrame extends Frame(EmptyTree) { }
+    private class Frame(val tree: Tree) { }
     private def greenType(tp: Type): String = tpe_s(tp, inGreen)
     private def greenType(tree: Tree): String = tree match {
       case null                              => "[exception]"
@@ -108,7 +100,6 @@ trait TypersTracking {
       showPush(tree, NOmode, WildcardType, context)
     }
     def showPush(tree: Tree, mode: Mode, pt: Type, context: Context) {
-      val alreadyTyped = tree.tpe ne null
       def tree_s = truncAndOneLine(ptTree(tree))
       def pt_s = if (pt.isWildcard || context.inTypeConstructorAllowed) "" else s": pt=$pt"
       def all_s = List(tree_s, pt_s, mode, fullSiteString(context)) filterNot (_ == "") mkString " "
@@ -142,9 +133,6 @@ trait TypersTracking {
 
     def nextTyped(tree: Tree, mode: Mode, pt: Type, context: Context)(body: => Tree): Tree =
       nextTypedInternal(tree, showPush(tree, mode, pt, context))(body)
-
-    def nextTyped(tree: Tree, context: Context)(body: => Tree): Tree =
-      nextTypedInternal(tree, showPush(tree, context))(body)
 
     def nextTypedInternal(tree: Tree, pushFn: => Unit)(body: => Tree): Tree = (
       if (noPrintTyping(tree))

@@ -14,23 +14,14 @@ class TableDef[T](_cols: Column[T]*) {
   // These operators are about all there is to it.
   /** Appends a column to the table. */
   def ~(next: Column[T])            = retThis(cols :+= next)
-  /** Creates a right-justified column and appends it. */
-  def >>(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, left = false)
-  /** Creates a left-justified column and appends it. */
-  def <<(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, left = true)
-  /** Specifies a string to separate the previous column from the next.
-    * If none is specified, a space is used. */
-  def >+(sep: String)               = retThis(separators += ((cols.size - 1, sep)))
 
   // Below this point should all be considered private/internal.
   private var cols: List[Column[T]] = _cols.toList
-  private var separators: Map[Int, String] = Map()
 
-  def defaultSep(index: Int) = if (index > (cols.size - 2)) "" else " "
-  def sepAfter(i: Int): String = separators.getOrElse(i, defaultSep(i))
-  def sepWidths = cols.indices map (i => sepAfter(i).length)
+  def defaultSep(index: Int)   = if (index > (cols.size - 2)) "" else " "
+  def sepAfter(i: Int): String = defaultSep(i)
+  def sepWidths                = cols.indices map (i => sepAfter(i).length)
 
-  def columns = cols
   def colNames = cols map (_.name)
   def colFunctions = cols map (_.f)
   def colApply(el: T) = colFunctions map (f => f(el))
@@ -56,8 +47,6 @@ class TableDef[T](_cols: Column[T]*) {
 
     def mkFormatString(sepf: Int => String): String =
       specs.zipWithIndex map { case (c, i) => c + sepf(i) } mkString
-
-    def pp(): Unit = allToSeq foreach println
 
     def toFormattedSeq = argLists map (xs => rowFormat.format(xs: _*))
     def allToSeq = headers ++ toFormattedSeq

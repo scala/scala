@@ -122,10 +122,6 @@ object Utility {
     case '\u0009' | '\u000A' | '\u000D' | '\u0020' => true
     case _                                         => false
   }
-  /** {{{
-   *  (#x20 | #x9 | #xD | #xA)+
-   *  }}} */
-  final def isSpace(cs: Seq[Char]): Boolean = cs.nonEmpty && (cs forall isSpace)
 
   /** {{{
    *  NameChar ::= Letter | Digit | '.' | '-' | '_' | ':'
@@ -164,13 +160,4 @@ object Utility {
       case _                                   => ch == '_'
     }
   }
-
-  /** {{{
-   *  Name ::= ( Letter | '_' ) (NameChar)*
-   *  }}}
-   *  See [5] of XML 1.0 specification.
-   */
-  def isName(s: String) =
-    s.nonEmpty && isNameStart(s.head) && (s.tail forall isNameChar)
-
 }

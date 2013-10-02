@@ -12,7 +12,6 @@ object Properties extends scala.util.PropertiesTrait {
   protected def pickJarBasedOn = classOf[Global]
 
   // settings based on jar properties
-  def fileEndingString     = scalaPropOrElse("file.ending", ".scala|.java")
   def residentPromptString = scalaPropOrElse("resident.prompt", "\nnsc> ")
   def shellPromptString    = scalaPropOrElse("shell.prompt", "\nscala> ")
 

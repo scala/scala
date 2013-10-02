@@ -1,8 +1,6 @@
 package scala.reflect
 package api
 
-import language.experimental.macros
-
 trait Quasiquotes { self: Universe =>
 
   // implementation is hardwired to `dispatch` method of `scala.tools.reflect.quasiquotes.Quasiquotes`

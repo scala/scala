@@ -21,14 +21,10 @@ tp: $r.global.Type = Array[scala.util.Random]
 scala> tp.memberType(Array_apply)                // evidence
 res1: $r.global.Type = (i: Int)scala.util.Random
 
-scala> val m = LIT(10) MATCH (CASE(LIT(5)) ==> FALSE, DEFAULT ==> TRUE) // treedsl
-m: $r.treedsl.global.Match =
-10 match {
-  case 5 => false
-  case _ => true
-}
+scala> val m = LIT(10)                           // treedsl
+m: $r.treedsl.global.Literal = 10
 
 scala> typed(m).tpe                              // typed is in scope
-res2: $r.treedsl.global.Type = Boolean
+res2: $r.treedsl.global.Type = Int(10)
 
 scala> 
