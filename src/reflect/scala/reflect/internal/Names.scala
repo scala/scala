@@ -88,11 +88,12 @@ trait Names extends api.Names {
    *  (e.g. if a name has the string "$class" in it, then fail if that
    *  string is not at the very end.)
    */
-  final def newTermName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TermName = {
+  final def newTermName(cs: Array[Char], offset: Int, len0: Int, cachedString: String): TermName = {
     def body = {
-      require(offset >= 0, "offset must be non-negative, got " + offset)
-      require(len >= 0, "length must be non-negative, got " + len)
+      val len = math.max(len0, 0)
+      //require(len >= 0, "length must be non-negative, got " + len)
       val h = hashValue(cs, offset, len) & HASH_MASK
+      require(offset >= 0, "offset must be non-negative, got " + offset)
       var n = termHashtable(h)
       while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
         n = n.next
