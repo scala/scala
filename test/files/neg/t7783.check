@@ -1,0 +1,16 @@
+t7783.scala:1: error: type D in object O is deprecated: 
+object O { class C; @deprecated("", "") type D = C; def foo: Seq[D] = Nil }
+                                                             ^
+t7783.scala:11: error: type D in object O is deprecated: 
+  type T = O.D
+             ^
+t7783.scala:12: error: type D in object O is deprecated: 
+  locally(null: O.D)
+                  ^
+t7783.scala:13: error: type D in object O is deprecated: 
+  val x: O.D = null
+           ^
+t7783.scala:14: error: type D in object O is deprecated: 
+  locally(null.asInstanceOf[O.D])
+                              ^
+5 errors found

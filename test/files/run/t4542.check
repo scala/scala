@@ -11,9 +11,6 @@ defined class Foo
 scala> val f = new Foo
 <console>:8: warning: class Foo is deprecated: foooo
        val f = new Foo
-           ^
-<console>:8: warning: class Foo is deprecated: foooo
-       val f = new Foo
                    ^
 f: Foo = Bippy
 

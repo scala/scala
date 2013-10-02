@@ -7,9 +7,6 @@ classmanifests_new_deprecations.scala:3: error: type ClassManifest in object Pre
 classmanifests_new_deprecations.scala:4: error: type ClassManifest in object Predef is deprecated: Use scala.reflect.ClassTag instead
   val cm3: ClassManifest[Int] = null
            ^
-classmanifests_new_deprecations.scala:4: error: type ClassManifest in object Predef is deprecated: Use scala.reflect.ClassTag instead
-  val cm3: ClassManifest[Int] = null
-      ^
 classmanifests_new_deprecations.scala:6: error: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
   def rcm1[T: scala.reflect.ClassManifest] = ???
             ^
@@ -19,13 +16,10 @@ classmanifests_new_deprecations.scala:7: error: type ClassManifest in package re
 classmanifests_new_deprecations.scala:8: error: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
   val rcm3: scala.reflect.ClassManifest[Int] = null
                           ^
-classmanifests_new_deprecations.scala:8: error: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
-  val rcm3: scala.reflect.ClassManifest[Int] = null
-      ^
 classmanifests_new_deprecations.scala:10: error: type ClassManifest in object Predef is deprecated: Use scala.reflect.ClassTag instead
   type CM[T] = ClassManifest[T]
                ^
 classmanifests_new_deprecations.scala:15: error: type ClassManifest in package reflect is deprecated: Use scala.reflect.ClassTag instead
   type RCM[T] = scala.reflect.ClassManifest[T]
                               ^
-10 errors found
+8 errors found
