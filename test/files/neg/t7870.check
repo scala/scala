@@ -1,0 +1,4 @@
+t7870.scala:1: error: in class C, multiple overloaded alternatives of constructor C define default arguments.
+class C(a: Int = 0, b: Any) {
+      ^
+one error found

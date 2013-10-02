@@ -7,14 +7,14 @@ object Test {
     case Seq(_, _, _, _, _, x: String) => "ss6"
     case _ => "d"
   }
-  
+
   def f2(x: Any) = x match {
     case Seq("a", "b", _*)  => "s2"
     case Seq(1, _*)         => "s1"
     case Seq(5, 6, 7, _*)   => "s3"
     case _                  => "d"
   }
-  
+
   def main(args: Array[String]): Unit = {
     val xs1 = List(
       List(1,2,3),
@@ -24,9 +24,9 @@ object Test {
       Seq(1, 2, 3, 4, 5, "abcd"),
       "abc"
     ) map f1
-    
+
     xs1 foreach println
-    
+
     val xs2 = List(
       Seq(5, 6, 7),
       Seq(5, 6, 7, 8, 9),
@@ -36,7 +36,7 @@ object Test {
       Nil,
       5
     ) map f2
-    
+
     xs2 foreach println
   }
 }

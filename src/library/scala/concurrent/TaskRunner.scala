@@ -24,5 +24,4 @@ private[scala] trait TaskRunner {
   def execute[S](task: Task[S]): Unit
 
   def shutdown(): Unit
-
 }

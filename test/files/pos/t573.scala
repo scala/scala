@@ -16,15 +16,15 @@ import DirX._;
 
 abstract class Linked {
   type Node <: Node0;
-  
+
   abstract class Node0 {
     self: Node =>
-    
+
   	var next : Node = _;
     var prev : Node = _;
-    
+
     def get(dir : Dir) = if (dir == BEFORE) prev; else next;
-    private def set(dir : Dir, node : Node) = 
+    private def set(dir : Dir, node : Node) =
       if (dir == BEFORE) prev = node; else next = node;
 
     def link(dir : Dir, node : Node) = {
@@ -34,7 +34,7 @@ abstract class Linked {
       node.set(dir.reverse, self);
     }
 
-    
+
     def end(dir : Dir) : Node = {
       if (get(dir) == null) this;
       else get(dir).end(dir);

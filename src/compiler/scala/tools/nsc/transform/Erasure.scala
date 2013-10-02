@@ -88,7 +88,7 @@ abstract class Erasure extends AddInterfaces
   // more rigorous way up front rather than catching it after the fact,
   // but that will be more involved.
   private def dotCleanup(sig: String): String = {
-    var last: Char = '\0'
+    var last: Char = '\u0000'
     sig map {
       case '.' if last != '>' => last = '.' ; '$'
       case ch                 => last = ch ; ch
@@ -268,7 +268,7 @@ abstract class Erasure extends AddInterfaces
             else abbrvTag(sym).toString
           }
           else if (sym.isDerivedValueClass) {
-            val unboxed     = sym.derivedValueClassUnbox.info.finalResultType
+            val unboxed     = sym.derivedValueClassUnbox.tpe_*.finalResultType
             val unboxedSeen = (tp memberType sym.derivedValueClassUnbox).finalResultType
             def unboxedMsg  = if (unboxed == unboxedSeen) "" else s", seen within ${sym.simpleName} as $unboxedSeen"
             logResult(s"Erasure of value class $sym (underlying type $unboxed$unboxedMsg) is") {
@@ -513,7 +513,7 @@ abstract class Erasure extends AddInterfaces
 
           maybeWrap(bridgingCall)
       }
-      atPos(bridge.pos)(DefDef(bridge, rhs))
+      DefDef(bridge, rhs)
     }
   }
 
@@ -1205,7 +1205,7 @@ abstract class Erasure extends AddInterfaces
           assert(!currentOwner.isImplClass)
           //Console.println("checking no dble defs " + tree)//DEBUG
           checkNoDoubleDefs(tree.symbol.owner)
-          treeCopy.Template(tree, parents, emptyValDef, addBridges(body, currentOwner))
+          treeCopy.Template(tree, parents, noSelfType, addBridges(body, currentOwner))
 
         case Match(selector, cases) =>
           Match(Typed(selector, TypeTree(selector.tpe)), cases)

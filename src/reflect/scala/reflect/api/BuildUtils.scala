@@ -58,15 +58,11 @@ private[reflect] trait BuildUtils { self: Universe =>
      */
     def setAnnotations[S <: Symbol](sym: S, annots: List[Annotation]): S
 
-    def flagsFromBits(bits: Long): FlagSet
-
     def This(sym: Symbol): Tree
 
     def Select(qualifier: Tree, sym: Symbol): Select
 
     def Ident(sym: Symbol): Ident
-
-    def Block(stats: List[Tree]): Block
 
     def TypeTree(tp: Type): TypeTree
 
@@ -76,23 +72,45 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T
 
-    def mkAnnotationCtor(tree: Tree, args: List[Tree]): Tree
+    def mkAnnotation(tree: Tree): Tree
 
-    val FlagsAsBits: FlagsAsBitsExtractor
+    def mkAnnotation(trees: List[Tree]): List[Tree]
 
-    trait FlagsAsBitsExtractor {
-      def unapply(flags: Long): Option[Long]
+    def mkRefineStat(stat: Tree): Tree
+
+    def mkRefineStat(stats: List[Tree]): List[Tree]
+
+    def mkEarlyDef(defn: Tree): Tree
+
+    def mkEarlyDef(defns: List[Tree]): List[Tree]
+
+    def RefTree(qual: Tree, sym: Symbol): Tree
+
+    val ScalaDot: ScalaDotExtractor
+
+    trait ScalaDotExtractor {
+      def apply(name: Name): Tree
+      def unapply(tree: Tree): Option[Name]
     }
 
-    val TypeApplied: TypeAppliedExtractor
+    val FlagsRepr: FlagsReprExtractor
 
-    trait TypeAppliedExtractor {
+    trait FlagsReprExtractor {
+      def apply(value: Long): FlagSet
+      def unapply(flags: Long): Some[Long]
+    }
+
+    val SyntacticTypeApplied: SyntacticTypeAppliedExtractor
+
+    trait SyntacticTypeAppliedExtractor {
+      def apply(tree: Tree, targs: List[Tree]): Tree
       def unapply(tree: Tree): Some[(Tree, List[Tree])]
     }
 
-    val Applied: AppliedExtractor
+    val SyntacticApplied: SyntacticAppliedExtractor
 
-    trait AppliedExtractor {
+    trait SyntacticAppliedExtractor {
+      def apply(tree: Tree, argss: List[List[Tree]]): Tree
       def unapply(tree: Tree): Some[(Tree, List[List[Tree]])]
     }
 
@@ -100,20 +118,87 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     trait SyntacticClassDefExtractor {
       def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef],
-                constrMods: Modifiers, vparamss: List[List[ValDef]], parents: List[Tree],
-                selfdef: ValDef, body: List[Tree]): Tree
-      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers,
-                                       List[List[ValDef]], List[Tree], ValDef, List[Tree])]
+                constrMods: Modifiers, vparamss: List[List[ValDef]], earlyDefs: List[Tree],
+                parents: List[Tree], selfdef: ValDef, body: List[Tree]): ClassDef
+      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers, List[List[ValDef]],
+                                       List[Tree], List[Tree], ValDef, List[Tree])]
     }
 
-    val TupleN: TupleNExtractor
-    val TupleTypeN: TupleNExtractor
+    val SyntacticTraitDef: SyntacticTraitDefExtractor
 
-    trait TupleNExtractor {
+    trait SyntacticTraitDefExtractor {
+      def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef],
+                earlyDefs: List[Tree], parents: List[Tree], selfdef: ValDef, body: List[Tree]): ClassDef
+      def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef],
+                                       List[Tree], List[Tree], ValDef, List[Tree])]
+    }
+
+    val SyntacticModuleDef: SyntacticModuleDefExtractor
+
+    trait SyntacticModuleDefExtractor {
+      def apply(mods: Modifiers, name: TermName, earlyDefs: List[Tree],
+                parents: List[Tree], selfdef: ValDef, body: List[Tree]): Tree
+      def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[Tree], ValDef, List[Tree])]
+    }
+
+    val SyntacticTuple: SyntacticTupleExtractor
+    val SyntacticTupleType: SyntacticTupleExtractor
+
+    trait SyntacticTupleExtractor {
       def apply(args: List[Tree]): Tree
       def unapply(tree: Tree): Option[List[Tree]]
     }
 
-    def RefTree(qual: Tree, sym: Symbol): Tree
+    val SyntacticBlock: SyntacticBlockExtractor
+
+    trait SyntacticBlockExtractor {
+      def apply(stats: List[Tree]): Tree
+      def unapply(tree: Tree): Option[List[Tree]]
+    }
+
+    val SyntacticNew: SyntacticNewExtractor
+
+    trait SyntacticNewExtractor {
+      def apply(earlyDefs: List[Tree], parents: List[Tree], selfdef: ValDef, body: List[Tree]): Tree
+      def unapply(tree: Tree): Option[(List[Tree], List[Tree], ValDef, List[Tree])]
+    }
+
+    val SyntacticFunctionType: SyntacticFunctionTypeExtractor
+
+    trait SyntacticFunctionTypeExtractor {
+      def apply(argtpes: List[Tree], restpe: Tree): Tree
+      def unapply(tree: Tree): Option[(List[Tree], Tree)]
+    }
+
+    val SyntacticFunction: SyntacticFunctionExtractor
+
+    trait SyntacticFunctionExtractor {
+      def apply(params: List[ValDef], body: Tree): Tree
+
+      def unapply(tree: Tree): Option[(List[ValDef], Tree)]
+    }
+
+    val SyntacticDefDef: SyntacticDefDefExtractor
+
+    trait SyntacticDefDefExtractor {
+      def apply(mods: Modifiers, name: TermName, tparams: List[Tree], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
+
+      def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[List[ValDef]], Tree, Tree)]
+    }
+
+    val SyntacticValDef: SyntacticValDefExtractor
+    val SyntacticVarDef: SyntacticValDefExtractor
+
+    trait SyntacticValDefExtractor {
+      def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree): ValDef
+      def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree)]
+    }
+
+    val SyntacticAssign: SyntacticAssignExtractor
+
+    trait SyntacticAssignExtractor {
+      def apply(lhs: Tree, rhs: Tree): Tree
+      def unapply(tree: Tree): Option[(Tree, Tree)]
+    }
   }
 }

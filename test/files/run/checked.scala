@@ -23,9 +23,9 @@ trait T {
 // Should not throw
 class D extends B with T {
   val sum = x + y + z + b1 + b2 + t1 + t2
-  override def toString = 
+  override def toString =
     "sum = " + sum
-    
+
 }
 
 abstract class NeedsXEarly {
@@ -91,7 +91,7 @@ class TestInterference extends {
 
 
 object Test extends App {
-  
+
   def shouldThrow(t: => Unit) = try {
     t
     println("[FAIL]: No UFE thrown")

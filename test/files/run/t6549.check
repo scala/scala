@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> case class `X"`(var xxx: Any)
 defined class X$u0022
 
@@ -26,7 +24,5 @@ m(scala.Symbol("s")).xxx: Any = 's
 
 scala> val `"` = 0
 ": Int = 0
-
-scala> 
 
 scala> 

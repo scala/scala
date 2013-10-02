@@ -3,25 +3,25 @@
  * in the copy-propagation performed before ClosureElimination.
  *
  * In the general case, the local variable 'l' is connected through
- * an alias chain with other local variables and at the end of the 
+ * an alias chain with other local variables and at the end of the
  * alias chain there may be a Value, call it 'v'.
  *
  * If 'v' is cheaper to access (it is a Deref(This) or Const(_)), then
- * replace the instruction to load it from the cheaper place. 
+ * replace the instruction to load it from the cheaper place.
  * Otherwise, we use the local variable at the end of the alias chain
  * instead of 'l'.
  */
 
-import scala.tools.partest.IcodeTest
+import scala.tools.partest.IcodeComparison
 
-object Test extends IcodeTest {
+object Test extends IcodeComparison {
   override def printIcodeAfterPhase = "dce"
 }
 
 import scala.util.Random._
 
-/** 
- * The example in the bug report (Issue-5321): an alias chain which store 
+/**
+ * The example in the bug report (Issue-5321): an alias chain which store
  * an Unknown. Should remove local variable 'y'.
  */
 object TestBugReport {
@@ -42,20 +42,20 @@ object TestSetterInline {
 }
 
 
-/** 
+/**
  * The access of the local variable 'y' should be replaced by the
  * constant.
- */ 
+ */
 object TestAliasChainConstat {
 
   def main(args: Array[String]): Unit = {
     val x = 2
     val y = x
-    println(y) 
+    println(y)
   }
 }
 
-/** 
+/**
  * At the end of the alias chain we have a reference to 'this'.
  * The local variables should be all discarded and replace by a
  * direct reference to this
@@ -72,7 +72,7 @@ class TestAliasChainDerefThis {
 /**
  * At the end of the alias chain, there is the value of a field.
  * The use of variable 'y' should be replaced by 'x', not by an access
- * to the field 'f' since it is more costly. 
+ * to the field 'f' since it is more costly.
  */
 object TestAliasChainDerefField {
   def f = nextInt
@@ -86,7 +86,7 @@ object TestAliasChainDerefField {
 
 
 /**
- * The first time 'println' is called, 'x' is replaced by 'y' 
+ * The first time 'println' is called, 'x' is replaced by 'y'
  * and the second time, 'y' is replaced by 'x'. But none of them
  * can be removed.
  */

@@ -50,11 +50,11 @@ trait Position extends Attachments {
   /** If opaque range, make this position transparent. */
   def makeTransparent: Pos
 
-  /** The start of the position's range, error if not a range position. */
+  /** The start of the position's range, or the point if not a range position. */
   def start: Int
 
   /** The start of the position's range, or point if not a range position. */
-  def startOrPoint: Int
+  @deprecated("Use `start` instead", "2.11.0") def startOrPoint: Int
 
   /** The point (where the ^ is) of the position, which is easiest to access using the [[line]] and [[column]] values.
    *  The [[lineContent line content]] is also available.
@@ -67,13 +67,13 @@ trait Position extends Attachments {
    */
   def pointOrElse(default: Int): Int
 
-  /** The end of the position's range, error if not a range position.
+  /** The end of the position's range, or the point if not a range position.
    */
   def end: Int
 
   /** The end of the position's range, or point if not a range position.
    */
-  def endOrPoint: Int
+  @deprecated("Use `end` instead", "2.11.0") def endOrPoint: Int
 
   /** The same position with a different start value (if a range).
    */

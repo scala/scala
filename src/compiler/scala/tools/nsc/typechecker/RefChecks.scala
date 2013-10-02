@@ -121,20 +121,20 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     var checkedCombinations = Set[List[Type]]()
 
     // only one overloaded alternative is allowed to define default arguments
-    private def checkOverloadedRestrictions(clazz: Symbol): Unit = {
+    private def checkOverloadedRestrictions(clazz: Symbol, defaultClass: Symbol): Unit = {
       // Using the default getters (such as methodName$default$1) as a cheap way of
       // finding methods with default parameters. This way, we can limit the members to
       // those with the DEFAULTPARAM flag, and infer the methods. Looking for the methods
       // directly requires inspecting the parameter list of every one. That modification
       // shaved 95% off the time spent in this method.
-      val defaultGetters     = clazz.info.findMembers(0L, DEFAULTPARAM)
+      val defaultGetters     = defaultClass.info.findMembers(excludedFlags = PARAM, requiredFlags = DEFAULTPARAM)
       val defaultMethodNames = defaultGetters map (sym => nme.defaultGetterToMethod(sym.name))
 
       defaultMethodNames.toList.distinct foreach { name =>
-        val methods      = clazz.info.findMember(name, 0L, METHOD, stableOnly = false).alternatives
+        val methods      = clazz.info.findMember(name, 0L, requiredFlags = METHOD, stableOnly = false).alternatives
         def hasDefaultParam(tpe: Type): Boolean = tpe match {
           case MethodType(params, restpe) => (params exists (_.hasDefault)) || hasDefaultParam(restpe)
-          case _ => false
+          case _                          => false
         }
         val haveDefaults = methods filter (sym => hasDefaultParam(sym.info) && !nme.isProtectedAccessorName(sym.name))
 
@@ -411,7 +411,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             overrideError("cannot be used here - classes can only override abstract types")
           } else if (other.isEffectivelyFinal) { // (1.2)
             overrideError("cannot override final member")
-          } else if (!other.isDeferred && !other.hasFlag(DEFAULTMETHOD) && !member.isAnyOverride && !member.isSynthetic) { // (*)
+          } else if (!other.isDeferredOrDefault && !other.hasFlag(DEFAULTMETHOD) && !member.isAnyOverride && !member.isSynthetic) { // (*)
             // (*) Synthetic exclusion for (at least) default getters, fixes SI-5178. We cannot assign the OVERRIDE flag to
             // the default getter: one default getter might sometimes override, sometimes not. Example in comment on ticket.
               if (isNeitherInClass && !(other.owner isSubClass member.owner))
@@ -596,7 +596,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         def checkNoAbstractMembers(): Unit = {
           // Avoid spurious duplicates: first gather any missing members.
           def memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
-          val (missing, rest) = memberList partition (m => m.isDeferred && !ignoreDeferred(m))
+          val (missing, rest) = memberList partition (m => m.isDeferredNotDefault && !ignoreDeferred(m))
           // Group missing members by the name of the underlying symbol,
           // to consolidate getters and setters.
           val grouped = missing groupBy (sym => analyzer.underlyingSymbol(sym).name)
@@ -1458,7 +1458,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           applyChecks(sym.annotations)
           // validate implicitNotFoundMessage
           analyzer.ImplicitNotFoundMsg.check(sym) foreach { warn =>
-            unit.warning(tree.pos, "Invalid implicitNotFound message for %s%s:\n%s".format(sym, sym.locationString, warn))
+            unit.warning(tree.pos, f"Invalid implicitNotFound message for ${sym}%s${sym.locationString}%s:%n$warn")
           }
 
         case tpt@TypeTree() =>
@@ -1638,7 +1638,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           case Template(parents, self, body) =>
             localTyper = localTyper.atOwner(tree, currentOwner)
             validateBaseTypes(currentOwner)
-            checkOverloadedRestrictions(currentOwner)
+            checkOverloadedRestrictions(currentOwner, currentOwner)
+            // SI-7870 default getters for constructors live in the companion module
+            checkOverloadedRestrictions(currentOwner, currentOwner.companionModule)
             val bridges = addVarargBridges(currentOwner)
             checkAllOverrides(currentOwner)
             checkAnyValSubclass(currentOwner)

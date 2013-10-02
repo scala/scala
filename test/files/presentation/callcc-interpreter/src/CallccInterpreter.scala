@@ -2,8 +2,8 @@ object callccInterpreter {
 
   type Answer = Value
 
-  /** 
-   * A continuation monad. 
+  /**
+   * A continuation monad.
    */
   case class M[A](in: (A => Answer) => Answer) {
     def bind[B](k: A => M[B])          = M[B](c => in (a => k(a) in c))

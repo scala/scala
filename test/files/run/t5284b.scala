@@ -23,6 +23,6 @@ object Foo {
 
 class Foo[@specialized(Int) T] {
   val id: T => T = x => x
-  
+
   def bar[@specialized(Int) W <: T, @specialized(Int) S](w: W) = id(w)
 }

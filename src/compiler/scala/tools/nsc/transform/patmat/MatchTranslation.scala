@@ -600,9 +600,15 @@ trait MatchTranslation {
 
       protected def spliceApply(binder: Symbol): Tree = {
         object splice extends Transformer {
+          def binderRef(pos: Position): Tree =
+            REF(binder) setPos pos
           override def transform(t: Tree) = t match {
+            // duplicated with the extractor Unapplied
             case Apply(x, List(i @ Ident(nme.SELECTOR_DUMMY))) =>
-              treeCopy.Apply(t, x, (REF(binder) setPos i.pos) :: Nil)
+              treeCopy.Apply(t, x, binderRef(i.pos) :: Nil)
+            // SI-7868 Account for numeric widening, e.g. <unappplySelector>.toInt
+            case Apply(x, List(i @ (sel @ Select(Ident(nme.SELECTOR_DUMMY), name)))) =>
+              treeCopy.Apply(t, x, treeCopy.Select(sel, binderRef(i.pos), name) :: Nil)
             case _ =>
               super.transform(t)
           }

@@ -1,6 +1,6 @@
-import scala.tools.partest.IcodeTest
+import scala.tools.partest.IcodeComparison
 
-object Test extends IcodeTest {
+object Test extends IcodeComparison {
   override def printIcodeAfterPhase = "inlinehandlers"
 }
 

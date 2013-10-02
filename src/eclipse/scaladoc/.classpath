@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="scaladoc"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/partest"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/scala-partest"/>
 	<classpathentry kind="var" path="SCALA_BASEDIR/lib/ant/ant.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-compiler"/>

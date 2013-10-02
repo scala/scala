@@ -2,7 +2,7 @@ abstract class NullaryTest[T, m[s]] {
   def nullary: String = "a"
   val x = nullary
 
-  def nullary2: T 
+  def nullary2: T
   val x2 = nullary2
 
   def nullary3: m[T]
@@ -16,5 +16,5 @@ class Concrete extends NullaryTest[Int, List] {
 
 object test {
         (new Concrete).nullary2
-        (new Concrete).nullary3        
+        (new Concrete).nullary3
 }

@@ -8,11 +8,11 @@ object Test {
 
   def printResult[A,B](msg: String, obj: A, expected: B)(implicit tag: ClassTag[A], tag2: ClassTag[B]) = {
     print("  :" + msg +": ")
-    val isArray = obj match { 
-      case x: Array[Int] => true 
+    val isArray = obj match {
+      case x: Array[Int] => true
       case _ => false
     }
-    val expectedEquals = 
+    val expectedEquals =
       if(isArray) obj.asInstanceOf[Array[Int]].toSeq == expected.asInstanceOf[Array[Int]].toSeq
       else obj == expected
     val tagEquals = tag == tag2
@@ -49,7 +49,7 @@ object Test {
     printResult("[Copy]   ParVector", col.to[ParVector], testParVector)
     printResult("[Copy]   ParArray ", col.to[ParArray], testParArray)
   }
-  
+
   def main(args: Array[String]): Unit = {
     testConversion("iterator", (1 to 3).iterator)
     testConversion("Vector", Vector(1,2,3))

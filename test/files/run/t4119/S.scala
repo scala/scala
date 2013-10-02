@@ -1,6 +1,6 @@
 class S extends foo.bar.J {
   sss =>
-  
+
   val fn = () => {
     foo(S.this)
   }

@@ -20,7 +20,7 @@ trait M extends B {
   abstract override def foo(t: Int) {
     super.foo(t)
     println("M.foo")
-  } 
+  }
 }
 
 

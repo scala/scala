@@ -8,7 +8,7 @@ final class SparseArray[@specialized(Int) T](private var data: Array[T]) extends
   def use(inData: Array[T]) = {
     data = inData;
   }
-  
+
   def set(that: SparseArray[T]) = {
     use(that.data.clone)
   }

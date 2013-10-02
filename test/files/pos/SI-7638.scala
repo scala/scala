@@ -9,7 +9,7 @@ trait ArrayVectorOrder[@specialized(Int) A] extends Ordering[A] {
 }
 
 object vectorOrder {
-  implicit def arrayOrder[@specialized(Int) A]() = 
+  implicit def arrayOrder[@specialized(Int) A]() =
   /*
    * Before applying patch:
    *
@@ -17,8 +17,8 @@ object vectorOrder {
    *         during phase: mixin
    *      library version: version 2.10.3-20130625-164027-d22e8d282c
    *     compiler version: version 2.10.3-20130627-153946-54cb6af7db
-   *   reconstructed args: 
-   * 
+   *   reconstructed args:
+   *
    *   last tree to typer: TypeTree(class Array)
    *               symbol: class Array in package scala (flags: final)
    *    symbol definition: final class Array[T >: ? <: ?] extends Object
@@ -27,12 +27,12 @@ object vectorOrder {
    *       context owners: anonymous class anon$1 -> package compile
    *
    * == Expanded type of tree ==
-   * 
+   *
    * TypeRef(
    *   TypeSymbol(final class Array[T >: ? <: ?] extends Object)
    *   args = List(TypeRef(TypeSymbol(final abstract class Int extends )))
    * )
-   * 
+   *
    * unhandled exception while transforming SI-7638.scala
    * error: uncaught exception during compilation: java.lang.UnsupportedOperationException
    * error: java.lang.UnsupportedOperationException: tail of empty list

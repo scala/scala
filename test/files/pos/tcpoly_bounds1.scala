@@ -1,6 +1,6 @@
-class Foo[t[x]<: Pair[Int, x]]      
+class Foo[t[x]<: Pair[Int, x]]
 
-// 
+//
 class MyPair[z](a: Int, b: z) extends Pair[Int, z](a,b)
 
 object foo extends Foo[MyPair]

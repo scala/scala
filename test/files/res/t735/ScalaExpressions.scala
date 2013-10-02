@@ -1,6 +1,6 @@
 package t735;
 trait ScalaExpressions {
-  trait ExpressionFactory {   
+  trait ExpressionFactory {
     def foo = 10;
     def bar : Int;
   }

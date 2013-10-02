@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 package mutable
-
 
 /** This class can be used as an adaptor to create mutable sets from
  *  immutable set implementations. Only method `empty` has
@@ -49,6 +46,4 @@ extends AbstractSet[A]
   def -=(elem: A): this.type = { set = set - elem; this }
 
   override def clear(): Unit = { set = set.empty }
-
 }
-

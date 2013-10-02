@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> List[Predef.type]()
 res0: List[scala.Predef.type] = List()
 
@@ -14,7 +12,5 @@ res2: List[scala.collection.immutable.List.type] = List()
 
 scala> List[Set.type]()
 res3: List[Set.type] = List()
-
-scala> 
 
 scala> 

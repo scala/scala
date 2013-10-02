@@ -1,5 +1,5 @@
 
-/** 
+/**
 This is a tricky issue which has to do with the fact that too much conflicting
 type information is propagated into a single implicit search, where the intended
 solution applies two implicit searches.
@@ -35,20 +35,20 @@ class Poly[C <: Ring[C]](val c: C) extends Ring[Poly[C]] {
 }
 
 object Test extends App {
-  
+
   implicit def coef2poly[C <: Ring[C]](c: C): Poly[C] = new Poly(c)
 
   val a = new A
   val x = new Poly(new A)
-  
+
   println(x+a) // works
   println(a+x) // works
-  
+
   val y = new Poly(new Poly(new A))
-  
+
   println(x+y*x) // works
   println(x*y+x) // works
   println(y*x+x) // works
-  
+
   println(x+x*y) // failed before
 }

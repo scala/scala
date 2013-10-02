@@ -2,6 +2,9 @@ package-ob-case.scala:3: warning: it is not recommended to define classes/object
 If possible, define class X in package foo instead.
     case class X(z: Int) { }
                ^
+package-ob-case.scala:3: warning: class X should be placed directly in package foo instead of package object foo. Under some circumstances companion objects and case classes in package objects can fail to recompile. See https://issues.scala-lang.org/browse/SI-5954.
+    case class X(z: Int) { }
+               ^
 error: No warnings can be incurred under -Xfatal-warnings.
-one warning found
+two warnings found
 one error found

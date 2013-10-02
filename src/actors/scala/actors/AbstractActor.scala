@@ -27,5 +27,4 @@ trait AbstractActor extends OutputChannel[Any] with CanReply[Any, Any] {
   private[actors] def unlinkFrom(from: AbstractActor): Unit
 
   private[actors] def exit(from: AbstractActor, reason: AnyRef): Unit
-
 }

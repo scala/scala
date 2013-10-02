@@ -12,7 +12,7 @@ object Test {
   def main(args: Array[String]): Unit = {
     val x = new Bob[List]
     val results = List(x, new Bob[Set], 55) map (x foo _)
-    
+
     assert(results == List(true, true, false))
   }
 }

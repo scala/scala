@@ -43,12 +43,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
   final val shortenImports = false
 
+  // allows override of the behavior of the resetTyper method w.r.t comments
+  def resetDocComments() = {
+    clearDocComments()
+  }
+
   def resetTyper() {
     //println("resetTyper called")
     resetContexts()
     resetImplicits()
     transformed.clear()
-    clearDocComments()
+    resetDocComments()
   }
 
   object UnTyper extends Traverser {
@@ -91,7 +96,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   private final val SYNTHETIC_PRIVATE = TRANS_FLAG
 
   private final val InterpolatorCodeRegex  = """\$\{.*?\}""".r
-  private final val InterpolatorIdentRegex = """\$\w+""".r
+  private final val InterpolatorIdentRegex = """\$[$\w]+""".r // note that \w doesn't include $
 
   abstract class Typer(context0: Context) extends TyperDiagnostics with Adaptation with Tag with PatternTyper with TyperContextErrors {
     import context0.unit
@@ -363,7 +368,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           check(owner, scope, pt, tree setType tp1.typeSymbol.classBound)
         else if (owner == NoSymbol)
           tree setType packSymbols(hiddenSymbols.reverse, tp1)
-        else if (!phase.erasedTypes) { // privates
+        else if (!isPastTyper) { // privates
           val badSymbol = hiddenSymbols.head
           SymbolEscapesScopeError(tree, badSymbol)
         } else tree
@@ -2103,7 +2108,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case PolyType(_, restpe)        => paramssTypes(restpe)
         case _                          => Nil
       }
-      def resultType = meth.tpe.finalResultType
+      def resultType = meth.tpe_*.finalResultType
       def nthParamPos(n1: Int, n2: Int) =
         try ddef.vparamss(n1)(n2).pos catch { case _: IndexOutOfBoundsException => meth.pos }
 
@@ -2598,8 +2603,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             default -> gen.scalaFunctionConstr(List(A1Tpt), B1Tpt)
           )
         }
-        val rhs = methodBodyTyper.virtualizedMatch(match_, mode, B1.tpe)
-        val defdef = DefDef(methodSym, Modifiers(methodSym.flags), originals, rhs)
+        def newParam(param: Symbol): ValDef = {
+          val vd              = ValDef(param, EmptyTree)
+          val tt @ TypeTree() = vd.tpt
+          tt setOriginal (originals(param) setPos param.pos.focus)
+          vd
+        }
+
+        val rhs    = methodBodyTyper.virtualizedMatch(match_, mode, B1.tpe)
+        val defdef = newDefDef(methodSym, rhs)(vparamss = mapParamss(methodSym)(newParam), tpt = TypeTree(B1.tpe))
 
         (defdef, matchResTp)
       }
@@ -3233,7 +3245,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (!tree.isErrorTyped) setError(tree) else tree
           // @H change to setError(treeCopy.Apply(tree, fun, args))
 
-        case ExtractorType(unapply) if mode.inPatternMode =>
+        // SI-7877 `isTerm` needed to exclude `class T[A] { def unapply(..) }; ... case T[X] =>`
+        case HasUnapply(unapply) if mode.inPatternMode && fun.isTerm =>
           if (unapply == QuasiquoteClass_api_unapply) macroExpandUnapply(this, tree, fun, unapply, args, mode, pt)
           else doTypedUnapply(tree, fun0, fun, args, mode, pt)
 
@@ -4165,6 +4178,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case If(_, t, e)                        => treesInResult(t) ++ treesInResult(e)
             case Try(b, catches, _)                 => treesInResult(b) ++ catches
             case Typed(r, Function(Nil, EmptyTree)) => treesInResult(r)
+            case Select(qual, name)                 => treesInResult(qual)
+            case Apply(fun, args)                   => treesInResult(fun) ++ args.flatMap(treesInResult)
+            case TypeApply(fun, args)               => treesInResult(fun) ++ args.flatMap(treesInResult)
             case _                                  => Nil
           })
           def errorInResult(tree: Tree) = treesInResult(tree) exists (_.pos == typeError.errPos)
@@ -4862,27 +4878,39 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       // Warn about likely interpolated strings which are missing their interpolators
-      def warnMissingInterpolator(tree: Literal) {
-        // Unfortunately implicit not found strings looks for all the world like
-        // missing interpolators.
-        def isArgToImplicitNotFound = context.enclosingApply.tree match {
-          case Apply(fn, _) => fn.symbol.enclClass == ImplicitNotFoundClass
-          case _            => false
+      def warnMissingInterpolator(lit: Literal): Unit = if (!isPastTyper) {
+        // attempt to avoid warning about the special interpolated message string
+        // for implicitNotFound or any standard interpolation (with embedded $$).
+        def isRecognizablyNotForInterpolation = context.enclosingApply.tree match {
+          case Apply(Select(Apply(RefTree(_, nme.StringContext), _), _), _) => true
+          case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _) => true
+          case _                                                            => false
         }
-        tree.value match {
-          case Constant(s: String) =>
-            def names = InterpolatorIdentRegex findAllIn s map (n => newTermName(n stripPrefix "$"))
-            def suspicious = (
-                 (InterpolatorCodeRegex findFirstIn s).nonEmpty
-              || (names exists (n => context.lookupSymbol(n, _ => true).symbol.exists))
-            )
-            val noWarn = (
-                 isArgToImplicitNotFound
-              || !(s contains ' ') // another heuristic - e.g. a string with only "$asInstanceOf"
-            )
-            if (!noWarn && suspicious)
-              unit.warning(tree.pos, "looks like an interpolated String; did you forget the interpolator?")
-          case _ =>
+        def requiresNoArgs(tp: Type): Boolean = tp match {
+          case PolyType(_, restpe)     => requiresNoArgs(restpe)
+          case MethodType(Nil, restpe) => requiresNoArgs(restpe)  // may be a curried method - can't tell yet
+          case MethodType(p :: _, _)   => p.isImplicit            // implicit method requires no args
+          case _                       => true                    // catches all others including NullaryMethodType
+        }
+        def isPlausible(m: Symbol) = m.alternatives exists (m => requiresNoArgs(m.info))
+
+        def maybeWarn(s: String): Unit = {
+          def warn(message: String)         = context.unit.warning(lit.pos, s"$message Did you forget the interpolator?")
+          def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
+          def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
+          def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(s drop 1))
+
+          // heuristics - no warning on e.g. a string with only "$asInstanceOf"
+          if (s contains ' ') (
+            if (suspiciousExpr.nonEmpty)
+              warn("That looks like an interpolated expression!") // "${...}"
+            else
+              suspiciousIdents find isPlausible foreach (sym => warn(s"`$$${sym.name}` looks like an interpolated identifier!")) // "$id"
+          )
+        }
+        lit match {
+          case Literal(Constant(s: String)) if !isRecognizablyNotForInterpolation => maybeWarn(s)
+          case _                                                                  =>
         }
       }
 
@@ -5099,7 +5127,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // @M causes cyclic reference error
           devWarning(s"exception when typing $tree, pt=$ptPlugins")
           if (context != null && context.unit.exists && tree != null)
-            logError("AT: " + (tree.pos).dbgString, ex)
+            logError("AT: " + tree.pos, ex)
           throw ex
       }
     }

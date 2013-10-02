@@ -18,8 +18,14 @@ trait DocComments { self: Global =>
 
   val cookedDocComments = mutable.HashMap[Symbol, String]()
 
-  /** The raw doc comment map */
-  val docComments = mutable.HashMap[Symbol, DocComment]()
+  /** The raw doc comment map
+   *
+   * In IDE, background compilation runs get interrupted by
+   * reloading new sourcefiles. This is weak to avoid
+   * memleaks due to the doc of their cached symbols
+   * (e.g. in baseTypeSeq) between periodic doc reloads.
+   */
+  val docComments = mutable.WeakHashMap[Symbol, DocComment]()
 
   def clearDocComments() {
     cookedDocComments.clear()

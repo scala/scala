@@ -211,5 +211,3 @@ trait TraversableViewLike[+A,
 
   override def toString = viewToString
 }
-
-

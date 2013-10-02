@@ -10,7 +10,7 @@ object Test {
   val klist: KCons[Option, KCons[Option, KCons[Option, KNil[Nothing]]]] = ???
 
   // crashes with
-  // "Exception in thread "main" scala.reflect.internal.Types$TypeError: value _1 is not a member 
+  // "Exception in thread "main" scala.reflect.internal.Types$TypeError: value _1 is not a member
   // of KCons[Option,KCons[Option,KNil[Nothing]]]"
   klist match {
    case KCons(KCons(KCons(_))) =>

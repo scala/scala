@@ -3,7 +3,7 @@ object Animal {
 }
 
 class Animal[A <: AwakeOrAsleep] {
-  def goToSleep[B >: A <: Awake]: Animal[Asleep] = new Animal[Asleep] 
+  def goToSleep[B >: A <: Awake]: Animal[Asleep] = new Animal[Asleep]
   def wakeUp[B >: A <: Asleep]: Animal[Awake] = new Animal[Awake]
 }
 

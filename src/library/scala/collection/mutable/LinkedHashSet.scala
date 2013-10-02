@@ -81,7 +81,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
       if (hasNext) { val res = cur.key; cur = cur.later; res }
       else Iterator.empty.next()
   }
-  
+
   override def foreach[U](f: A => U) {
     var cur = firstEntry
     while (cur ne null) {

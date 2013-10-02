@@ -1,6 +1,6 @@
 Macros_1.scala:14: error: macro implementation has wrong shape:
  required: (x: Impls.this.c.Expr[Int]): Impls.this.c.Expr[Any]
- found   : (x: Impls.this.c.universe.Block): Impls.this.c.universe.Apply
+ found   : (x: Impls.this.c.universe.Block): Impls.this.c.universe.Tree
 type mismatch for parameter x: Impls.this.c.Expr[Int] does not conform to Impls.this.c.universe.Block
   def m3(x: Int) = macro Impls.impl3
       ^

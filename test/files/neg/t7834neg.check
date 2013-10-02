@@ -1,0 +1,41 @@
+t7834neg.scala:48: error: type mismatch;
+ found   : C.super.q.type (with underlying type M2)
+ required: C.super.q.type
+  x1 = x2  // fail
+       ^
+t7834neg.scala:50: error: type mismatch;
+ found   : C.super.q.type (with underlying type M1)
+ required: C.super.q.type
+  x2 = x1  // fail
+       ^
+t7834neg.scala:53: error: type mismatch;
+ found   : C.super.q.type (with underlying type M1)
+ required: C.this.q.type
+  x3 = x1  // fail
+       ^
+t7834neg.scala:54: error: type mismatch;
+ found   : C.super.q.type (with underlying type M2)
+ required: C.this.q.type
+  x3 = x2  // fail
+       ^
+t7834neg.scala:69: error: type mismatch;
+ found   : C.super.q.type (with underlying type M2)
+ required: C.super.q.type
+  x1 = super[S2].q  // fail
+                 ^
+t7834neg.scala:71: error: type mismatch;
+ found   : C.super.q.type (with underlying type M1)
+ required: C.super.q.type
+  x2 = super[S1].q  // fail
+                 ^
+t7834neg.scala:74: error: type mismatch;
+ found   : C.super.q.type (with underlying type M1)
+ required: C.this.q.type
+  x3 = super[S1].q  // fail
+                 ^
+t7834neg.scala:75: error: type mismatch;
+ found   : C.super.q.type (with underlying type M2)
+ required: C.this.q.type
+  x3 = super[S2].q  // fail
+                 ^
+8 errors found

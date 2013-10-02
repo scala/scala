@@ -9,8 +9,6 @@
 package scala
 package collection.parallel.immutable
 
-
-
 import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.IterableSplitter
@@ -23,8 +21,6 @@ import scala.collection.generic.GenericParMapCompanion
 import scala.collection.immutable.{ HashMap, TrieIterator }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.parallel.Task
-
-
 
 /** Immutable parallel hash map, based on hash tries.
  *
@@ -136,9 +132,7 @@ self =>
         println("other kind of node")
     }
   }
-
 }
-
 
 /** $factoryInfo
  *  @define Coll `immutable.ParHashMap`
@@ -157,7 +151,6 @@ object ParHashMap extends ParMapFactory[ParHashMap] {
 
   var totalcombines = new java.util.concurrent.atomic.AtomicInteger(0)
 }
-
 
 private[parallel] abstract class HashMapCombiner[K, V]
 extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V), HashMapCombiner[K, V]](HashMapCombiner.rootsize) {
@@ -331,9 +324,7 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V
     }
     def shouldSplitFurther = howmany > scala.collection.parallel.thresholdFromSize(root.length, combinerTaskSupport.parallelismLevel)
   }
-
 }
-
 
 private[parallel] object HashMapCombiner {
   def apply[K, V] = new HashMapCombiner[K, V] {} // was: with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]
@@ -341,20 +332,3 @@ private[parallel] object HashMapCombiner {
   private[immutable] val rootbits = 5
   private[immutable] val rootsize = 1 << 5
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

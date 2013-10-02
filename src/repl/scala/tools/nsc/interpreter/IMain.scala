@@ -8,23 +8,17 @@ package tools.nsc
 package interpreter
 
 import PartialFunction.cond
-
 import scala.language.implicitConversions
-
 import scala.collection.mutable
-
 import scala.concurrent.{ Future, ExecutionContext }
-
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ BeanProperty, ClassTag, classTag }
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
-
 import scala.tools.util.PathResolver
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
 import scala.tools.nsc.util.{ ScalaClassLoader, stringFromWriter, StackTraceOps }
 import scala.tools.nsc.util.Exceptional.unwrap
-
 import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
 
 /** An interpreter for Scala code.
@@ -413,7 +407,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   }
 
   private def safePos(t: Tree, alt: Int): Int =
-    try t.pos.startOrPoint
+    try t.pos.start
     catch { case _: UnsupportedOperationException => alt }
 
   // Given an expression like 10 * 10 * 10 we receive the parent tree positioned

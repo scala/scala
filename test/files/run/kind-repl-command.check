@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> :kind scala.Option
 scala.Option's kind is F[+A]
 
@@ -26,7 +24,5 @@ scala> :k Nonexisting
 <console>:8: error: not found: value Nonexisting
               Nonexisting
               ^
-
-scala> 
 
 scala> 

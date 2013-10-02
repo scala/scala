@@ -11,7 +11,7 @@ t692.scala:13: error: class Foo takes type parameters
   case class BarType[T3 <: Foo](tpeT : RefType[T3]) extends ClassType[Bar[T3],Foo](FooType);
                            ^
 t692.scala:14: error: class Foo takes type parameters
-  implicit def typeOfBar[T4 <: Foo](implicit elem : RefType[T4]) : RefType[Bar[T4]] = 
+  implicit def typeOfBar[T4 <: Foo](implicit elem : RefType[T4]) : RefType[Bar[T4]] =
                                ^
 t692.scala:19: error: class Foo takes type parameters
   class Bar[A <: Foo](implicit tpeA : Type[A]) extends Foo;

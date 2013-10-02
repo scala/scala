@@ -31,10 +31,10 @@ object Test {
   }
 
   def blaX[A] = shift { k:(Bla=>A) => k(new Bla) }
-  
+
   def fooX[A] = blaX[A].x
   def fooY[A] = blaX[A].y[A]
-  
+
   def testPoly() = {
     println(reset(blaX[Bla]).x)
     println(reset(blaX[Int].x))
@@ -52,5 +52,5 @@ object Test {
     testMono()
     testPoly()
   }
-  
+
 }

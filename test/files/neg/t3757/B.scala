@@ -1,5 +1,5 @@
 package b
 
-class B extends a.A { 
+class B extends a.A {
   override def foo = "B"
 }

@@ -391,7 +391,20 @@ object Test {
   def isOdd(xs: List[Int]): TailRec[Boolean] =
     if (xs.isEmpty) done(false) else tailcall(isEven(xs.tail))
 
+  def fib(n: Int): TailRec[Int] =
+    if (n < 2) done(n) else for {
+      x <- tailcall(fib(n - 1))
+      y <- tailcall(fib(n - 2))
+    } yield (x + y)
+
+  def rec(n: Int): TailRec[Int] =
+    if (n == 1) done(n) else for {
+      x <- tailcall(rec(n - 1))
+    } yield x
+
   assert(isEven((1 to 100000).toList).result)
+  //assert(fib(40).result == 102334155) // Commented out, as it takes a long time
+  assert(rec(100000).result == 1)
 
 }
 

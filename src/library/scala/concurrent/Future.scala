@@ -96,11 +96,8 @@ trait Future[+T] extends Awaitable[T] {
   // of the Future trait. Note that this will
   // (modulo bugs) _never_ execute a callback
   // other than those below in this same file.
-  // As a nice side benefit, having this implicit
-  // here forces an ambiguity in those methods
-  // that also have an executor parameter, which
-  // keeps us from accidentally forgetting to use
-  // the executor parameter.
+  //
+  // See the documentation on `InternalCallbackExecutor` for more details.
   private def internalExecutor = Future.InternalCallbackExecutor
 
   /* Callbacks */
@@ -254,7 +251,7 @@ trait Future[+T] extends Awaitable[T] {
       case Success(v) => try f(v) match {
         // If possible, link DefaultPromises to avoid space leaks
         case dp: DefaultPromise[_] => dp.asInstanceOf[DefaultPromise[S]].linkRootOf(p)
-        case fut => fut onComplete p.complete 
+        case fut => fut.onComplete(p.complete)(internalExecutor)
       } catch { case NonFatal(t) => p failure t }
     }
     p.future
@@ -344,7 +341,7 @@ trait Future[+T] extends Awaitable[T] {
   def recoverWith[U >: T](pf: PartialFunction[Throwable, Future[U]])(implicit executor: ExecutionContext): Future[U] = {
     val p = Promise[U]()
     onComplete {
-      case Failure(t) => try pf.applyOrElse(t, (_: Throwable) => this) onComplete p.complete catch { case NonFatal(t) => p failure t }
+      case Failure(t) => try pf.applyOrElse(t, (_: Throwable) => this).onComplete(p.complete)(internalExecutor) catch { case NonFatal(t) => p failure t }
       case other => p complete other
     }
     p.future
@@ -472,6 +469,13 @@ object Future {
    *  @return         the newly created `Future` object
    */
   def successful[T](result: T): Future[T] = Promise.successful(result).future
+
+  /** Creates an already completed Future with the specified result or exception.
+   *
+   *  @tparam T       the type of the value in the promise
+   *  @return         the newly created `Future` object
+   */
+  def fromTry[T](result: Try[T]): Future[T] = Promise.fromTry(result).future
 
   /** Starts an asynchronous computation and returns a `Future` object with the result of that computation.
   *

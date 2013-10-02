@@ -25,7 +25,7 @@ package case1 {
   trait Quux4 extends Quux3 { override object Bar  } // err
 }
 
-// type parameter as-seen-from business 
+// type parameter as-seen-from business
 package case2 {
   // invariance (see pos for the covariant case)
   class Bar[T]

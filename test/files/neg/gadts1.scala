@@ -11,8 +11,8 @@ class IntTerm(n: Int) extends NumTerm(n) with Term[Int]
 
 
 def f[a](t:Term[a], c:Cell[a]): Unit = {
-  t match {  
-    case NumTerm(n) => c.x = Double(1.0) 
+  t match {
+    case NumTerm(n) => c.x = Double(1.0)
   }
   t match {
     // presently testing that this gets past the parser: eventually

@@ -22,7 +22,7 @@ package accessibility {
       this./*!*/ // should not list secretPrivate*
     }
   }
-  
+
   class UnrelatedClass {
     def someTests(foo: Foo) {
       foo./*!*/ // should list public and protected[accessiblity]

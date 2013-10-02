@@ -5,6 +5,6 @@ object Scaladoc6 {
      */
     val i = 23
   }
-  
+
   def f {}
 }

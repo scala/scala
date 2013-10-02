@@ -65,7 +65,7 @@ class Foo_1 {
       return 42
     } catch {
       case x: Throwable => return 2
-    } 
+    }
     return 3
   }
 
@@ -74,7 +74,7 @@ class Foo_1 {
       error("haha")
     } catch {
       case x: Throwable => return 42
-    } 
+    }
     return 3
   }
 

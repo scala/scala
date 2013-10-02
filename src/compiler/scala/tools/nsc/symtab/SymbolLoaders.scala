@@ -164,9 +164,16 @@ abstract class SymbolLoaders {
         if (settings.verbose) inform("[symloader] no class, picked up source file for " + src.path)
         enterToplevelsFromSource(owner, classRep.name, src)
       case (Some(bin), _) =>
-        enterClassAndModule(owner, classRep.name, new ClassfileLoader(bin))
+        enterClassAndModule(owner, classRep.name, newClassLoader(bin))
     }
   }
+
+  /** Create a new loader from a binary classfile.
+   *  This is intented as a hook allowing to support loading symbols from
+   *  files other than .class files.
+   */
+  protected def newClassLoader(bin: AbstractFile): SymbolLoader =
+    new ClassfileLoader(bin)
 
   /**
    * A lazy type that completes itself by calling parameter doComplete.

@@ -100,7 +100,7 @@ object M4 {
 
   def sumInts = sum(x => x)
   def sumCubes = sum(x => x * x * x)
-  def sumReciprocals = sum(1.0/_)  
+  def sumReciprocals = sum(1.0/_)
   def sumPi = { n: Int => 4 + sum(x => 4.0/(4*x+1) - 4.0/(4*x-1))(1, n) }
 
   Console.println(sumInts(1,4))
@@ -194,7 +194,7 @@ object M8 {
 //############################################################################
 
 object M9 {
-  def accumulate[t](combiner: (t, t) => t, nullValue: t, f: Int => t, 
+  def accumulate[t](combiner: (t, t) => t, nullValue: t, f: Int => t,
                     next: Int => Int)(a: Int, b: Int): t =
     if (a > b) nullValue
     else combiner(f(a), accumulate(combiner, nullValue, f, next)(next(a), b))
@@ -328,9 +328,9 @@ object MD {
     iter(a, zero)
   }
 
-  def plus (x:Double,y:Double) = x+y; 
+  def plus (x:Double,y:Double) = x+y;
   val sum: (Int => Double) => (Int, Int) => Double = reduce(plus , 0);
-  def times(x:Double,y:Double) = x*y; 
+  def times(x:Double,y:Double) = x*y;
   val product: (Int => Double) => (Int, Int) => Double = reduce(times, 1);
 
   def factorial(n: Int) = product(x => x)(1 , n)

@@ -25,8 +25,8 @@ object Test extends App {
 2.8 regression: CCE when zipping list projection with stream
 Reported by: 	szeiger 	Owned by: 	odersky
 Priority: 	normal 	Component: 	Standard Library
-Keywords: 	collections, zip 	Cc: 	
-Fixed in version: 	
+Keywords: 	collections, zip 	Cc:
+Fixed in version:
 Description
 
 Welcome to Scala version 2.8.0.r18784-b20090925021043 (Java HotSpot(TM) Client VM, Java 1.6.0_11).

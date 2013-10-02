@@ -1,3 +1,6 @@
 t2106.scala:7: warning: Could not inline required method foo because access level required by callee not matched by caller.
   def main(args: Array[String]): Unit = x.foo
                                           ^
+t2106.scala:7: warning: At the end of the day, could not inline @inline-marked method foo
+  def main(args: Array[String]): Unit = x.foo
+                                          ^

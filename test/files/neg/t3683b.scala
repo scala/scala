@@ -8,7 +8,7 @@ case class Z[T >: Bar <: Foo](
   z1: W[T]
 ) extends W[T]
 
-object Main {  
+object Main {
   // should fail for including X()
   def f1(w: W[Bar]): Int = {
     w match {

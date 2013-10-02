@@ -18,7 +18,7 @@ trait TypesAPI {
 trait TypesUser extends TypesAPI {
   def shouldNotCrash(tp: Type): Unit = {
     tp match {
-      case TypeRef(x) => println("TypeRef") 
+      case TypeRef(x) => println("TypeRef")
       case MethodType(x) => println("MethodType")
       case _ => println("none of the above")
     }
@@ -27,7 +27,7 @@ trait TypesUser extends TypesAPI {
 
 trait TypesImpl extends TypesAPI {
   object TypeRef extends TypeRefExtractor  // this will have a bridged unapply(x: Type) = unapply(x.asInstanceOf[TypeRef])
-  case class TypeRef(n: Int) extends Type // this has a bridge from TypesAPI#Type to TypesImpl#TypeRef 
+  case class TypeRef(n: Int) extends Type // this has a bridge from TypesAPI#Type to TypesImpl#TypeRef
   // --> the cast in the bridge will fail because the pattern matcher can't type test against the abstract types in TypesUser
 }
 

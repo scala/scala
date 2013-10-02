@@ -11,7 +11,7 @@ object Test
   object FromPoly{
     def mainer(args : Array[String]) = (new Bar[AnyRef](Array[AnyRef]("Halp!"))).bar
   }
-  
+
   def main(args: Array[String]): Unit = {
     println(FromMono mainer null mkString)
     println(FromPoly mainer null mkString)

@@ -71,20 +71,13 @@ trait Trees { self: Universe =>
 
     /** Is this tree one of the empty trees?
      *
-     *  Empty trees are: the `EmptyTree` null object, `TypeTree` instances that don't carry a type
-     *  and the special `emptyValDef` singleton.
-     *
-     *  In the compiler the `isEmpty` check and the derived `orElse` method are mostly used
-     *  as a check for a tree being a null object (`EmptyTree` for term trees and empty TypeTree for type trees).
-     *
-     *  Unfortunately `emptyValDef` is also considered to be `isEmpty`, but this is deemed to be
-     *  a conceptual mistake pending a fix in https://issues.scala-lang.org/browse/SI-6762.
+     *  Empty trees are: the `EmptyTree` null object and `TypeTree` instances that don't carry a type.
      *
      *  @see `canHaveAttrs`
      */
     def isEmpty: Boolean
 
-    /** Is this tree one of the empty trees?
+    /** Is this tree not an empty tree?
      *
      *  @see `isEmpty`
      */
@@ -92,7 +85,7 @@ trait Trees { self: Universe =>
 
     /** Can this tree carry attributes (i.e. symbols, types or positions)?
      *  Typically the answer is yes, except for the `EmptyTree` null object and
-     *  two special singletons: `emptyValDef` and `pendingSuperCall`.
+     *  two special singletons: `noSelfType` and `pendingSuperCall`.
      */
     def canHaveAttrs: Boolean
 
@@ -856,7 +849,7 @@ trait Trees { self: Universe =>
     def parents: List[Tree]
 
     /** Self type of the template.
-     *  Is equal to `emptyValDef` if the self type is not specified.
+     *  Is equal to `noSelfType` if the self type is not specified.
      */
     def self: ValDef
 
@@ -2121,6 +2114,9 @@ trait Trees { self: Universe =>
    *  no definition of a self value of self type.
    *  @group Trees
    */
+  val noSelfType: ValDef
+
+  @deprecated("Use `noSelfType` instead", "2.11.0")
   val emptyValDef: ValDef
 
   /** An empty superclass constructor call corresponding to:
@@ -2210,13 +2206,13 @@ trait Trees { self: Universe =>
    *  Flattens directly nested blocks.
    *  @group Factories
    */
-  @deprecated("Use the canonical Block constructor, explicitly specifying its expression if necessary. Flatten directly nested blocks manually if needed", "2.10.1")
+  @deprecated("Use q\"{..$stats}\" instead. Flatten directly nested blocks manually if needed", "2.10.1")
   def Block(stats: Tree*): Block
 
   /** A factory method for `CaseDef` nodes.
    *  @group Factories
    */
-  @deprecated("Use the canonical CaseDef constructor passing EmptyTree for guard", "2.10.1")
+  @deprecated("Use cq\"$pat => $body\" instead", "2.10.1")
   def CaseDef(pat: Tree, body: Tree): CaseDef
 
   /** A factory method for `Bind` nodes.
@@ -2228,50 +2224,50 @@ trait Trees { self: Universe =>
   /** A factory method for `Try` nodes.
    *  @group Factories
    */
-  @deprecated("Use canonical CaseDef constructors to to create exception catching expressions and then wrap them in Try", "2.10.1")
+  @deprecated("Convert cases into casedefs and use q\"try $body catch { case ..$newcases }\" instead", "2.10.1")
   def Try(body: Tree, cases: (Tree, Tree)*): Try
 
   /** A factory method for `Throw` nodes.
    *  @group Factories
    */
-  @deprecated("Use the canonical New constructor to create an object instantiation expression and then wrap it in Throw", "2.10.1")
+  @deprecated("Use q\"throw new $tpe(..$args)\" instead", "2.10.1")
   def Throw(tpe: Type, args: Tree*): Throw
 
   /** Factory method for object creation `new tpt(args_1)...(args_n)`
    *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
    *  @group Factories
    */
-  @deprecated("Use Apply(...Apply(Select(New(tpt), nme.CONSTRUCTOR), args1)...argsN) instead", "2.10.1")
+  @deprecated("Use q\"new $tpt(...$argss)\" instead", "2.10.1")
   def New(tpt: Tree, argss: List[List[Tree]]): Tree
 
   /** 0-1 argument list new, based on a type.
    *  @group Factories
    */
-  @deprecated("Use New(TypeTree(tpe), args.toList) instead", "2.10.1")
+  @deprecated("Use q\"new $tpe(..$args)\" instead", "2.10.1")
   def New(tpe: Type, args: Tree*): Tree
 
   /** 0-1 argument list new, based on a symbol.
    *  @group Factories
    */
-  @deprecated("Use New(sym.toType, args) instead", "2.10.1")
+  @deprecated("Use q\"new ${sym.toType}(..$args)\" instead", "2.10.1")
   def New(sym: Symbol, args: Tree*): Tree
 
   /** A factory method for `Apply` nodes.
    *  @group Factories
    */
-  @deprecated("Use Apply(Ident(sym), args.toList) instead", "2.10.1")
+  @deprecated("Use q\"$sym(..$args)\" instead", "2.10.1")
   def Apply(sym: Symbol, args: Tree*): Tree
 
   /** 0-1 argument list new, based on a type tree.
    *  @group Factories
    */
-  @deprecated("Use Apply(Select(New(tpt), nme.CONSTRUCTOR), args) instead", "2.10.1")
+  @deprecated("Use q\"new $tpt(..$args)\" instead", "2.10.1")
   def ApplyConstructor(tpt: Tree, args: List[Tree]): Tree
 
   /** A factory method for `Super` nodes.
    *  @group Factories
    */
-  @deprecated("Use Super(This(sym), mix) instead", "2.10.1")
+  @deprecated("Use q\"$sym.super[$mix].x\".qualifier instead", "2.10.1")
   def Super(sym: Symbol, mix: TypeName): Tree
 
   /** A factory method for `This` nodes.
@@ -2283,7 +2279,7 @@ trait Trees { self: Universe =>
    *  The string `name` argument is assumed to represent a [[scala.reflect.api.Names#TermName `TermName`]].
    *  @group Factories
    */
-  @deprecated("Use Select(tree, newTermName(name)) instead", "2.10.1")
+  @deprecated("Use Select(tree, TermName(name)) instead", "2.10.1")
   def Select(qualifier: Tree, name: String): Select
 
   /** A factory method for `Select` nodes.
@@ -2294,7 +2290,7 @@ trait Trees { self: Universe =>
   /** A factory method for `Ident` nodes.
    *  @group Factories
    */
-  @deprecated("Use Ident(newTermName(name)) instead", "2.10.1")
+  @deprecated("Use Ident(TermName(name)) instead", "2.10.1")
   def Ident(name: String): Ident
 
   /** A factory method for `Ident` nodes.
@@ -2635,7 +2631,7 @@ trait Trees { self: Universe =>
       trees mapConserve (tree => transform(tree).asInstanceOf[TypeDef])
     /** Transforms a `ValDef`. */
     def transformValDef(tree: ValDef): ValDef =
-      if (tree eq emptyValDef) tree
+      if (tree eq noSelfType) tree
       else transform(tree).asInstanceOf[ValDef]
     /** Transforms a list of `ValDef` nodes. */
     def transformValDefs(trees: List[ValDef]): List[ValDef] =

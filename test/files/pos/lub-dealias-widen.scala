@@ -27,7 +27,7 @@ object Test {
      = p2 >> { (xs: List[String]) => 0 }
 
   // This works after https://github.com/scala/scala/commit/a06d31f6a
-  // Before: error: inferred type arguments [List[String] => String,List[String] => String] 
+  // Before: error: inferred type arguments [List[String] => String,List[String] => String]
   //         do not conform to method &'s type parameter bounds
   //         [G <: H,H >: Int => (Int => String)]
   val s = r & r2

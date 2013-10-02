@@ -5,5 +5,5 @@ public abstract class AbstractTupleSet implements TupleSet {
 
   public void addColumn(String name, String expr) {
     throw new UnsupportedOperationException();
-  }    
+  }
 }

@@ -285,8 +285,8 @@ trait TypeDiagnostics {
           case xs   => xs map (_ => "_") mkString (clazz.name + "[", ",", "]")
         })+ "`"
 
-    "\nNote: if you intended to match against the class, try "+ caseString
-
+    if (!clazz.exists) ""
+    else "\nNote: if you intended to match against the class, try "+ caseString
   }
 
   case class TypeDiag(tp: Type, sym: Symbol) extends Ordered[TypeDiag] {

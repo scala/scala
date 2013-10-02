@@ -10,7 +10,7 @@ class Foo[@specialized A: ClassManifest] {
   def m2[@specialized B <: String](x: B) = x.concat("a")
 
   // conflicting in bounds, no mention of other spec members
-  // expect an overload here plus implementation in 
+  // expect an overload here plus implementation in
   // compatible specialized subclasses
   def m3[@specialized B >: A](x: B) = ()
 
@@ -19,10 +19,10 @@ class Foo[@specialized A: ClassManifest] {
 
   // non-conflicting, expect a normalized overload implementation here
   def m5[@specialized B](x: B) = x
-  
+
   // non-conflicting, expect a normalized implementation here
   // and specialized implementations for all expansions in specialized subclasses
-  def m6[@specialized B](x: B, y: A) = 
+  def m6[@specialized B](x: B, y: A) =
     goal(y)
 
   def goal(x: A) = {

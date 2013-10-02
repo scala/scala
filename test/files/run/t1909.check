@@ -1,0 +1,3 @@
+t1909.scala:7: warning: A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.
+  def this(p: String) = this(try 0)
+                             ^

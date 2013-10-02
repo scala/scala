@@ -28,7 +28,7 @@ import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
  *   scala> mkArray("Japan","Brazil","Germany")
  *   res1: Array[String] = Array(Japan, Brazil, Germany)
  * }}}
- * 
+ *
  * See [[scala.reflect.api.TypeTags]] for more examples, or the
  * [[http://docs.scala-lang.org/overviews/reflection/typetags-manifests.html Reflection Guide: TypeTags]]
  * for more details.

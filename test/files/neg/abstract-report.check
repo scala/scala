@@ -7,7 +7,7 @@ it has 12 unimplemented members.
   def isTraversableAgain: Boolean = ???
   def toIterator: Iterator[String] = ???
   def toStream: Stream[String] = ???
-  
+
   // Members declared in scala.collection.TraversableOnce
   def copyToArray[B >: String](xs: Array[B],start: Int,len: Int): Unit = ???
   def exists(p: String => Boolean): Boolean = ???

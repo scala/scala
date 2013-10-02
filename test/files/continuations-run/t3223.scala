@@ -2,16 +2,16 @@ import scala.util.continuations._
 object Test {
 
   def foo(x:Int) = {
-    try { 
+    try {
       throw new Exception
       shiftUnit0[Int,Int](7)
     } catch {
-      case ex: Throwable =>  
+      case ex: Throwable =>
         val g = (a:Int)=>a
         9
     }
   }
-  
+
   def main(args: Array[String]) {
     println(reset(foo(0)))
   }

@@ -14,11 +14,11 @@ class B {
     def mthd(foo: a2.Foo) = {
         foo match {
             case a2.Foo2(i) => i
-            
-            // Note: This case is impossible.  In fact, scalac 
+
+            // Note: This case is impossible.  In fact, scalac
             // will (correctly) report an error if it is uncommented,
             // but a warning if it is commented.
-            
+
             // case a1.Foo1(i) => i
         }
     }

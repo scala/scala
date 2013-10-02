@@ -8,7 +8,7 @@ package dingus {
 
 package hungus {
   import dingus._
-  
+
   object P {
     class Bar1 extends Foo1("abc")
     class Bar2 extends Foo2("abc")

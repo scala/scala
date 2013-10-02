@@ -32,6 +32,6 @@ object PatternConstructionProps extends QuasiquoteProperties("pattern constructi
   }
 
   property("splice into casedef") = forAll { (pat: Tree, cond: Tree, body: Tree) =>
-    cq"$pat if $cond => $body" ≈ CaseDef(pat, cond, Block(List(), body))
+    cq"$pat if $cond => $body" ≈ CaseDef(pat, cond, body)
   }
 }

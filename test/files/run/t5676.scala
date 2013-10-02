@@ -13,12 +13,12 @@ class Baz[S] extends Foo[S] {
 }
 
 object Test {
-  
+
   def main(a: Array[String]) {
     val b = new Baz[Any]
     println(b.A.foo())
     println(Modifier.isFinal(classOf[Baz[Any]].getModifiers()))
     println(Modifier.isFinal(Test.getClass.getModifiers()))
   }
-  
+
 }

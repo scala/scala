@@ -6,7 +6,7 @@ class Cell[T](x0: T) {
 object Test {
   val str: Cell[String] = new Cell("a")
   val other: Cell[Int]  = new Cell(0)
-  
+
   def main(args: Array[String]): Unit = {
     List(str, other) foreach (_.x1 = new AnyRef)
     str.x1.length

@@ -70,7 +70,7 @@ trait Promise[T] {
     other onComplete { this complete _ }
     this
   }
-  
+
   /** Attempts to complete this promise with the specified future, once that future is completed.
    *
    *  @return   This promise
@@ -115,38 +115,32 @@ trait Promise[T] {
   def tryFailure(@deprecatedName('t) cause: Throwable): Boolean = tryComplete(Failure(cause))
 }
 
-
-
 object Promise {
-
   /** Creates a promise object which can be completed with a value.
-   *  
+   *
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` object
    */
   def apply[T](): Promise[T] = new impl.Promise.DefaultPromise[T]()
 
   /** Creates an already completed Promise with the specified exception.
-   *  
+   *
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` object
    */
-  def failed[T](exception: Throwable): Promise[T] = new impl.Promise.KeptPromise[T](Failure(exception))
+  def failed[T](exception: Throwable): Promise[T] = fromTry(Failure(exception))
 
   /** Creates an already completed Promise with the specified result.
-   *  
+   *
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` object
    */
-  def successful[T](result: T): Promise[T] = new impl.Promise.KeptPromise[T](Success(result))
-  
+  def successful[T](result: T): Promise[T] = fromTry(Success(result))
+
+  /** Creates an already completed Promise with the specified result or exception.
+   *
+   *  @tparam T       the type of the value in the promise
+   *  @return         the newly created `Promise` object
+   */
+  def fromTry[T](result: Try[T]): Promise[T] = new impl.Promise.KeptPromise[T](result)
 }
-
-
-
-
-
-
-
-
-

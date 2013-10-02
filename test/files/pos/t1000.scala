@@ -1,5 +1,5 @@
 object A {
-  println("""This a "raw" string ending with a "double quote"""") 
+  println("""This a "raw" string ending with a "double quote"""")
 }
 
 object Test extends App {

@@ -109,7 +109,7 @@ object testFuncs {
   def f5(f: Int => Int, x: Int) = f(x)
   println(getType(f5 _))
   println(getType(f5(f1, 1)))
-  println  
+  println
 }
 
 class Foo {

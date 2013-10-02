@@ -15,12 +15,10 @@ package plugins
  */
 abstract class PluginComponent extends SubComponent {
 
-  /** Internal flag to tell external from internal phases */
+  /** By definition, plugin phases are externally provided. */
   final override val internal = false
 
-  /** Phases supplied by plugins should not have to supply the
-   *  runsRightAfter constraint, but can override it.
-   */
+  /** Only plugins are granted a reprieve from specifying whether they follow. */
   val runsRightAfter: Option[String] = None
 
   /** Useful for -Xshow-phases. */

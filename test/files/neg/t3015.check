@@ -1,6 +1,6 @@
 t3015.scala:7: error: scrutinee is incompatible with pattern type;
  found   : _$1
  required: String
-  val b(foo) = "foo" 
+  val b(foo) = "foo"
        ^
 one error found

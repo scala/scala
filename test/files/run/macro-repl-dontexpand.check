@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> def bar(c: scala.reflect.macros.Context) = ???
 bar: (c: scala.reflect.macros.Context)Nothing
 

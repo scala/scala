@@ -9,7 +9,7 @@ object Test {
     buf.subscribe(new Subscriber[Message[Int], ObservableBuffer[Int]] {
       def notify(pub: ObservableBuffer[Int], event: Message[Int]) = println(event)
     })
-    
+
     buf += 1 // works
     buf ++= Array(2) // works
     buf ++= ArrayBuffer(3, 4) // works

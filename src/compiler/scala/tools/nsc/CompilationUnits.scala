@@ -9,8 +9,9 @@ import util.FreshNameCreator
 import scala.reflect.internal.util.{ SourceFile, NoSourceFile }
 import scala.collection.mutable
 import scala.collection.mutable.{ LinkedHashSet, ListBuffer }
+import scala.tools.nsc.reporters.Reporter
 
-trait CompilationUnits { self: Global =>
+trait CompilationUnits { global: Global =>
 
   /** An object representing a missing compilation unit.
    */
@@ -118,6 +119,8 @@ trait CompilationUnits { self: Global =>
      *  It is empty up to phase 'icode'.
      */
     val icode: LinkedHashSet[icodes.IClass] = new LinkedHashSet
+
+    def reporter = global.reporter
 
     def echo(pos: Position, msg: String) =
       reporter.echo(pos, msg)

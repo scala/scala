@@ -1,4 +1,4 @@
-class A {    
+class A {
   val n = {
         val z = {
             lazy val bb = 1

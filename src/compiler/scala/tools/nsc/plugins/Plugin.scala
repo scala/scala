@@ -41,12 +41,31 @@ abstract class Plugin {
    */
   val global: Global
 
-  /** Handle any plugin-specific options.  The `-P:plugname:` part
-   *  will not be present.
+  def options: List[String] = {
+    // Process plugin options of form plugin:option
+    def namec = name + ":"
+    global.settings.pluginOptions.value filter (_ startsWith namec) map (_ stripPrefix namec)
+  }
+
+  /** Handle any plugin-specific options.
+   *  The user writes `-P:plugname:opt1,opt2`,
+   *  but the plugin sees `List(opt1, opt2)`.
+   *  The plugin can opt out of further processing
+   *  by returning false.  For example, if the plugin
+   *  has an "enable" flag, now would be a good time
+   *  to sit on the bench.
+   *  @param options plugin arguments
+   *  @param error error function
+   *  @return true to continue, or false to opt out
    */
-  def processOptions(options: List[String], error: String => Unit) {
-    if (!options.isEmpty)
-      error("Error: " + name + " has no options")
+  def init(options: List[String], error: String => Unit): Boolean = {
+    processOptions(options, error)
+    true
+  }
+
+  @deprecated("use Plugin#init instead", since="2.11")
+  def processOptions(options: List[String], error: String => Unit): Unit = {
+    if (!options.isEmpty) error(s"Error: $name takes no options")
   }
 
   /** A description of this plugin's options, suitable as a response

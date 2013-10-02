@@ -17,20 +17,20 @@ import scala.collection.parallel.ops._
 abstract class ParallelHashSetCheck[T](tp: String) extends ParallelSetCheck[T]("mutable.ParHashSet[" + tp + "]") {
   // ForkJoinTasks.defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors * 2)
   // ForkJoinTasks.defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors * 2)
-  
+
   type CollType = ParHashSet[T]
-  
+
   def isCheckingViews = false
-  
+
   def hasStrictOrder = false
 
-  def ofSize(vals: Seq[Gen[T]], sz: Int) = {  
+  def ofSize(vals: Seq[Gen[T]], sz: Int) = {
     val hm = new mutable.HashSet[T]
     val gen = vals(rnd.nextInt(vals.size))
     for (i <- 0 until sz) hm += sample(gen)
     hm
   }
-  
+
   def fromTraversable(t: Traversable[T]) = {
     val phm = new ParHashSet[T]
     var i = 0
@@ -40,7 +40,7 @@ abstract class ParallelHashSetCheck[T](tp: String) extends ParallelSetCheck[T]("
     }
     phm
   }
-  
+
 }
 
 
@@ -54,12 +54,12 @@ with IntValues
     case _ =>
       println("could not match data structure type: " + ds.getClass)
   }
-  
+
   override def checkDataStructureInvariants(orig: Traversable[Int], ds: AnyRef) = ds match {
     // case pm: ParHashSet[t] if 1 == 0 =>
     //   // for an example of how not to write code proceed below
     //   val invs = pm.brokenInvariants
-      
+
     //   val containsall = (for (elem <- orig) yield {
     //     if (pm.asInstanceOf[ParHashSet[Int]](elem) == true) true
     //     else {
@@ -69,8 +69,8 @@ with IntValues
     //       false
     //     }
     //   }).foldLeft(true)(_ && _)
-      
-      
+
+
     //   if (invs.isEmpty) {
     //     if (!containsall) println(pm.debugInformation)
     //     containsall
@@ -80,7 +80,7 @@ with IntValues
     //   }
     case _ => true
   }
-  
+
 }
 
 

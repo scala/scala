@@ -10,12 +10,7 @@ package scala
 package collection
 package generic
 
-
 import java.util.concurrent.atomic.AtomicInteger
-
-
-
-
 
 /**
  * A message interface serves as a unique interface to the
@@ -97,7 +92,6 @@ trait Signalling {
   def tag: Int
 }
 
-
 /**
  * This signalling implementation returns default values and ignores received signals.
  */
@@ -110,12 +104,10 @@ class DefaultSignalling extends Signalling with VolatileAbort {
   def tag = -1
 }
 
-
 /**
  * An object that returns default values and ignores received signals.
  */
 object IdleSignalling extends DefaultSignalling
-
 
 /**
  * A mixin trait that implements abort flag behaviour using volatile variables.
@@ -125,7 +117,6 @@ trait VolatileAbort extends Signalling {
   override def isAborted = abortflag
   override def abort() = abortflag = true
 }
-
 
 /**
  * A mixin trait that implements index flag behaviour using atomic integers.
@@ -154,7 +145,6 @@ trait AtomicIndexFlag extends Signalling {
   }
 }
 
-
 /**
  * An implementation of the signalling interface using delegates.
  */
@@ -175,25 +165,12 @@ trait DelegatedSignalling extends Signalling {
   def tag = signalDelegate.tag
 }
 
-
 /**
  * Class implementing delegated signalling.
  */
 class DelegatedContext(var signalDelegate: Signalling) extends DelegatedSignalling
 
-
 /**
  * Class implementing delegated signalling, but having its own distinct `tag`.
  */
 class TaggedDelegatedContext(deleg: Signalling, override val tag: Int) extends DelegatedContext(deleg)
-
-
-
-
-
-
-
-
-
-
-

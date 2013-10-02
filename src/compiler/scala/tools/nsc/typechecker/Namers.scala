@@ -135,7 +135,8 @@ trait Namers extends MethodSynthesis {
       setPrivateWithin(tree, sym, tree.mods)
 
     def inConstructorFlag: Long = {
-      val termOwnedContexts: List[Context] = context.enclosingContextChain.takeWhile(_.owner.isTerm)
+      val termOwnedContexts: List[Context] =
+        context.enclosingContextChain.takeWhile(c => c.owner.isTerm && !c.owner.isAnonymousFunction)
       val constructorNonSuffix = termOwnedContexts exists (c => c.owner.isConstructor && !c.inConstructorSuffix)
       val earlyInit            = termOwnedContexts exists (_.owner.isEarlyInitialized)
       if (constructorNonSuffix || earlyInit) INCONSTRUCTOR else 0L
@@ -840,7 +841,7 @@ trait Namers extends MethodSynthesis {
     // owner is the class with the self type
     def enterSelf(self: ValDef) {
       val ValDef(_, name, tpt, _) = self
-      if (self eq emptyValDef)
+      if (self eq noSelfType)
         return
 
       val hasName = name != nme.WILDCARD
@@ -1182,8 +1183,8 @@ trait Namers extends MethodSynthesis {
       // value parameters of the base class (whose defaults might be overridden)
       var baseParamss = (vparamss, overridden.tpe.paramss) match {
         // match empty and missing parameter list
-        case (Nil, List(Nil)) => Nil
-        case (List(Nil), Nil) => ListOfNil
+        case (Nil, ListOfNil) => Nil
+        case (ListOfNil, Nil) => ListOfNil
         case (_, paramss)     => paramss
       }
       assert(
@@ -1271,9 +1272,7 @@ trait Namers extends MethodSynthesis {
             val defRhs = copyUntyped(vparam.rhs)
 
             val defaultTree = atPos(vparam.pos.focus) {
-              DefDef(
-                Modifiers(meth.flags & DefaultGetterFlags) | (SYNTHETIC | DEFAULTPARAM | oflag).toLong,
-                name, deftParams, defvParamss, defTpt, defRhs)
+              DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags)) | oflag, name, deftParams, defvParamss, defTpt, defRhs)
             }
             if (!isConstr)
               methOwner.resetFlag(INTERFACE) // there's a concrete member now

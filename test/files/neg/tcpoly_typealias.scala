@@ -12,7 +12,7 @@ trait A3 {
 
 trait FooCov[+x]
 trait FooCon[-x]
-trait FooBound[+x <: String] 
+trait FooBound[+x <: String]
 
 trait BOk1 extends A {
   type m[+x] = FooCov[x]
@@ -30,8 +30,8 @@ trait BOk4 extends A3 {
   type m[+x] = FooCov[x] // weaker variance
 }
 
-// there are two aspects to check: 
- // does type alias signature (not considering RHS) correspond to abstract type member in super class 
+// there are two aspects to check:
+ // does type alias signature (not considering RHS) correspond to abstract type member in super class
  // does RHS correspond to the type alias sig
 trait BInv extends A{
   type m[x] = FooCov[x] // error: invariant x in alias def

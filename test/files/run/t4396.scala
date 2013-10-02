@@ -1,4 +1,4 @@
-// #43896 
+// #43896
 trait M extends DelayedInit {
     def delayedInit(body : => Unit) {
         println("hallo")

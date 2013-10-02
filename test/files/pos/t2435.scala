@@ -9,7 +9,7 @@ object Bug {
   case class FConstant[E <: FChain](constant:String, tail:E) extends FChain {
     type T = tail.T
   }
-  
+
   object FNil extends FChain {
     type T = Unit
   }

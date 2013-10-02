@@ -11,7 +11,7 @@ class NothingBug3 {
 	scala.Option<?> o = scala.None$.MODULE$;
 
         test(o);
-        None.toLeft(new scala.runtime.AbstractFunction0<Integer>() { 
+        None.toLeft(new scala.runtime.AbstractFunction0<Integer>() {
                 public Integer apply() { return 0; }
             });
     }

@@ -78,15 +78,15 @@ it has 24 unimplemented members.
   def retainAll(x$1: java.util.Collection[_]): Boolean = ???
   def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
   def toArray(): Array[Object] = ???
-  
+
   // Members declared in scala.collection.GenTraversableOnce
   def isTraversableAgain: Boolean = ???
   def toIterator: Iterator[(Set[Int], String)] = ???
   def toStream: Stream[(Set[Int], String)] = ???
-  
+
   // Members declared in scala.math.Ordering
   def compare(x: List[Int],y: List[Int]): Int = ???
-  
+
   // Members declared in scala.collection.TraversableOnce
   def copyToArray[B >: (Set[Int], String)](xs: Array[B],start: Int,len: Int): Unit = ???
   def exists(p: ((Set[Int], String)) => Boolean): Boolean = ???

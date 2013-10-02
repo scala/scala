@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> import language.experimental.macros
 import language.experimental.macros
 
@@ -15,7 +13,5 @@ scala> reify
 <console>:12: error: too few argument lists for macro invocation
               reify
               ^
-
-scala> 
 
 scala> 

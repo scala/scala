@@ -6,16 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala
 package collection.parallel
-
 
 import scala.collection.Parallel
 import scala.collection.mutable.Builder
 import scala.collection.generic.Sizing
-
-
 
 /** The base trait for all combiners.
  *  A combiner incremental collection construction just like
@@ -90,9 +86,7 @@ trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
     val res = result()
     setTaskSupport(res, combinerTaskSupport)
   }
-
 }
-
 
 /*
 private[collection] trait EnvironmentPassingCombiner[-Elem, +To] extends Combiner[Elem, To] {
@@ -102,12 +96,3 @@ private[collection] trait EnvironmentPassingCombiner[-Elem, +To] extends Combine
   }
 }
 */
-
-
-
-
-
-
-
-
-
