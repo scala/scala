@@ -1692,19 +1692,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    // TODO: provide a way to specify a pretty name for debugging purposes
-    private def randomFileName() = (
-      "compileLateSynthetic-" + randomUUID().toString.replace("-", "") + ".scala"
-    )
-
-    def compileLate(code: PackageDef) {
+    /** Create and compile a synthetic compilation unit from the provided tree.
+     *
+     *  This needs to create a virtual file underlying the compilation unit in order to appease SBT.
+     *  However this file cannot have a randomly generated name, because then SBT 0.13 goes into a vicious loop
+     *  as described on the mailing list: https://groups.google.com/forum/#!msg/scala-user/r1SgSoVfs0U/Wv4av0LOKukJ
+     *  Therefore I have introduced an additional parameter that makes everyone specify meaningful file names.
+     */
+    def compileLate(virtualFileName: String, code: PackageDef) {
       // compatibility with SBT
       // on the one hand, we need to specify some jfile here, otherwise sbt crashes with an NPE (SI-6870)
       // on the other hand, we can't specify the obvious enclosingUnit, because then sbt somehow fails to run tests using type macros
-      // okay, now let's specify a guaranteedly non-existent file in an existing directory (so that we don't run into permission problems)
-      val syntheticFileName = randomFileName()
-      val fakeJfile = new java.io.File(syntheticFileName)
-      val virtualFile = new VirtualFile(syntheticFileName) { override def file = fakeJfile }
+      val fakeJfile = new java.io.File(virtualFileName)
+      val virtualFile = new VirtualFile(virtualFileName) { override def file = fakeJfile }
       val sourceFile = new BatchSourceFile(virtualFile, code.toString)
       val unit = new CompilationUnit(sourceFile)
       unit.body = code

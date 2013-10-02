@@ -64,7 +64,7 @@ trait Resolvers {
           val bundleParent = gen.mkAppliedTypeTree(Ident(bundleProto), bundleProto.typeParams.map(sym => Ident(sym.name)))
           val bundleTemplate = Template(List(bundleParent), noSelfType, List(contextField, bundleCtor))
           val bundle = atPos(bundleProto.pos)(ClassDef(NoMods, bundleName, bundleProto.typeParams.map(TypeDef(_)), bundleTemplate))
-          currentRun.compileLate(PackageDef(bundlePid, List(bundle)))
+          currentRun.compileLate(bundleName + ".scala", PackageDef(bundlePid, List(bundle)))
         }
 
         // synthesize the macro impl reference, which is going to look like:
