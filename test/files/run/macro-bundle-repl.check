@@ -1,0 +1,24 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> import scala.language.experimental.macros
+import scala.language.experimental.macros
+
+scala> import scala.reflect.macros.Macro
+import scala.reflect.macros.Macro
+
+scala> trait Bar extends Macro { def impl = c.literalUnit };def bar = macro Bar.impl
+defined trait Bar
+defined term macro bar: Unit
+
+scala> bar
+
+scala> trait Foo extends Macro { def impl = c.literalUnit }
+defined trait Foo
+
+scala> def foo = macro Foo.impl
+defined term macro foo: Unit
+
+scala> foo
+
+scala> 
