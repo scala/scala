@@ -40,4 +40,37 @@ trait WhiteboxContext extends BlackboxContext {
   /** @inheritdoc
    */
   def enclosingMacros: List[WhiteboxContext]
+
+  /** Information about one of the currently considered implicit candidates.
+   *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,
+   *  hence implicit searches can recursively trigger other implicit searches.
+   *
+   *  `pre` and `sym` provide information about the candidate itself.
+   *  `pt` and `tree` store the parameters of the implicit search the candidate is participating in.
+   */
+  case class ImplicitCandidate(pre: Type, sym: Symbol, pt: Type, tree: Tree)
+
+  /** Information about one of the currently considered implicit candidates.
+   *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,
+   *  hence implicit searches can recursively trigger other implicit searches.
+   *
+   *  Can be useful to get information about an application with an implicit parameter that is materialized during current macro expansion.
+   *  If we're in an implicit macro being expanded, it's included in this list.
+   *
+   *  Unlike `enclosingImplicits`, this is a def, which means that it gets recalculated on every invocation,
+   *  so it might change depending on what is going on during macro expansion.
+   */
+  def openImplicits: List[ImplicitCandidate]
+
+  /** Information about one of the currently considered implicit candidates.
+   *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,
+   *  hence implicit searches can recursively trigger other implicit searches.
+   *
+   *  Can be useful to get information about an application with an implicit parameter that is materialized during current macro expansion.
+   *  If we're in an implicit macro being expanded, it's included in this list.
+   *
+   *  Unlike `openImplicits`, this is a val, which means that it gets initialized when the context is created
+   *  and always stays the same regardless of whatever happens during macro expansion.
+   */
+  def enclosingImplicits: List[ImplicitCandidate]
 }
