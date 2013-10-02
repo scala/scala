@@ -13,7 +13,7 @@ class B {
     def bar(x: Int): Mom
     def bippy(): List[Mom]
   }
-  
+
   val x: Bippy = new AnyRef {
     type Mom = String
     def bar(x: Int) = 55

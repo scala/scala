@@ -22,10 +22,10 @@ trait Trees extends api.Trees { self: SymbolTable =>
   protected def treeStatus(t: Tree, enclosingTree: Tree = null) = {
     val parent = if (enclosingTree eq null) "        " else " P#%5s".format(enclosingTree.id)
 
-    "[L%4s%8s] #%-6s %-15s %-10s // %s".format(t.pos.safeLine, parent, t.id, t.pos.show, t.shortClass, treeLine(t))
+    "[L%4s%8s] #%-6s %-15s %-10s // %s".format(t.pos.line, parent, t.id, t.pos.show, t.shortClass, treeLine(t))
   }
   protected def treeSymStatus(t: Tree) = {
-    val line = if (t.pos.isDefined) "line %-4s".format(t.pos.safeLine) else "         "
+    val line = if (t.pos.isDefined) "line %-4s".format(t.pos.line) else "         "
     "#%-5s %s %-10s // %s".format(t.id, line, t.shortClass,
       if (t.symbol ne NoSymbol) "(" + t.symbol.fullLocationString + ")"
       else treeLine(t)
@@ -589,6 +589,14 @@ trait Trees extends api.Trees { self: SymbolTable =>
   object TypeTree extends TypeTreeExtractor
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
+  private def TypeTreeMemberType(sym: Symbol): TypeTree = {
+    // Needed for pos/t4970*.scala. See SI-7853
+    val resType = (sym.owner.thisType memberType sym).finalResultType
+    atPos(sym.pos.focus)(TypeTree(resType))
+  }
+
+  def TypeBoundsTree(bounds: TypeBounds): TypeBoundsTree = TypeBoundsTree(TypeTree(bounds.lo), TypeTree(bounds.hi))
+  def TypeBoundsTree(sym: Symbol): TypeBoundsTree        = atPos(sym.pos)(TypeBoundsTree(sym.info.bounds))
 
   override type TreeCopier <: InternalTreeCopierOps
   abstract class InternalTreeCopierOps extends TreeCopierOps {
@@ -1013,15 +1021,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
       ModuleDef(Modifiers(sym.flags), sym.name.toTermName, impl) setSymbol sym
     }
 
-  def ValDef(sym: Symbol, rhs: Tree): ValDef =
-    atPos(sym.pos) {
-      ValDef(Modifiers(sym.flags), sym.name.toTermName,
-             TypeTree(sym.tpe) setPos sym.pos.focus,
-             rhs) setSymbol sym
-    }
-
-  def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree)
-
   trait CannotHaveAttrs extends Tree {
     override def canHaveAttrs = false
 
@@ -1038,53 +1037,49 @@ trait Trees extends api.Trees { self: SymbolTable =>
   }
 
   case object EmptyTree extends TermTree with CannotHaveAttrs { override def isEmpty = true; val asList = List(this) }
-  object emptyValDef extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) with CannotHaveAttrs
+  object noSelfType extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) with CannotHaveAttrs
   object pendingSuperCall extends Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List()) with CannotHaveAttrs
 
-  def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
-    atPos(sym.pos) {
-      assert(sym != NoSymbol)
-      DefDef(mods,
-             sym.name.toTermName,
-             sym.typeParams map TypeDef,
-             vparamss,
-             TypeTree(sym.tpe.finalResultType) setPos sym.pos.focus,
-             rhs) setSymbol sym
-    }
+  @deprecated("Use `noSelfType` instead", "2.11.0") lazy val emptyValDef = noSelfType
 
-  def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
-    DefDef(sym, Modifiers(sym.flags), vparamss, rhs)
+  def newValDef(sym: Symbol, rhs: Tree)(
+    mods: Modifiers = Modifiers(sym.flags),
+    name: TermName  = sym.name.toTermName,
+    tpt: Tree       = TypeTreeMemberType(sym)
+  ): ValDef = (
+    atPos(sym.pos)(ValDef(mods, name, tpt, rhs)) setSymbol sym
+  )
 
-  def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef =
-    DefDef(sym, mods, mapParamss(sym)(ValDef), rhs)
+  def newDefDef(sym: Symbol, rhs: Tree)(
+    mods: Modifiers              = Modifiers(sym.flags),
+    name: TermName               = sym.name.toTermName,
+    tparams: List[TypeDef]       = sym.typeParams map TypeDef,
+    vparamss: List[List[ValDef]] = mapParamss(sym)(ValDef),
+    tpt: Tree                    = TypeTreeMemberType(sym)
+  ): DefDef = (
+    atPos(sym.pos)(DefDef(mods, name, tparams, vparamss, tpt, rhs)) setSymbol sym
+  )
 
-  /** A DefDef with original trees attached to the TypeTree of each parameter */
-  def DefDef(sym: Symbol, mods: Modifiers, originalParamTpts: Symbol => Tree, rhs: Tree): DefDef = {
-    val paramms = mapParamss(sym){ sym =>
-      val vd = ValDef(sym, EmptyTree)
-      (vd.tpt : @unchecked) match {
-        case tt: TypeTree => tt setOriginal (originalParamTpts(sym) setPos sym.pos.focus)
-      }
-      vd
-    }
-    DefDef(sym, mods, paramms, rhs)
-  }
+  def newTypeDef(sym: Symbol, rhs: Tree)(
+    mods: Modifiers        = Modifiers(sym.flags),
+    name: TypeName         = sym.name.toTypeName,
+    tparams: List[TypeDef] = sym.typeParams map TypeDef
+  ): TypeDef = (
+    atPos(sym.pos)(TypeDef(mods, name, tparams, rhs)) setSymbol sym
+  )
 
-  def DefDef(sym: Symbol, rhs: Tree): DefDef =
-    DefDef(sym, Modifiers(sym.flags), rhs)
+  def DefDef(sym: Symbol, rhs: Tree): DefDef                                                = newDefDef(sym, rhs)()
+  def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef                  = newDefDef(sym, rhs)(vparamss = vparamss)
+  def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef                               = newDefDef(sym, rhs)(mods = mods)
+  def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef = newDefDef(sym, rhs)(mods = mods, vparamss = vparamss)
+  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef                          = newDefDef(sym, rhs(sym.info.paramss))()
 
-  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef =
-    DefDef(sym, rhs(sym.info.paramss))
-
-  /** A TypeDef node which defines given `sym` with given tight hand side `rhs`. */
-  def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
-    atPos(sym.pos) {
-      TypeDef(Modifiers(sym.flags), sym.name.toTypeName, sym.typeParams map TypeDef, rhs) setSymbol sym
-    }
+  def ValDef(sym: Symbol): ValDef            = newValDef(sym, EmptyTree)()
+  def ValDef(sym: Symbol, rhs: Tree): ValDef = newValDef(sym, rhs)()
 
   /** A TypeDef node which defines abstract type or type parameter for given `sym` */
-  def TypeDef(sym: Symbol): TypeDef =
-    TypeDef(sym, TypeBoundsTree(TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi)))
+  def TypeDef(sym: Symbol): TypeDef            = newTypeDef(sym, TypeBoundsTree(sym))()
+  def TypeDef(sym: Symbol, rhs: Tree): TypeDef = newTypeDef(sym, rhs)()
 
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
     atPos(sym.pos) {
@@ -1203,7 +1198,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
         traverse(annot); traverse(arg)
       case Template(parents, self, body) =>
         traverseTrees(parents)
-        if (self ne emptyValDef) traverse(self)
+        if (self ne noSelfType) traverse(self)
         traverseStats(body, tree.symbol)
       case Block(stats, expr) =>
         traverseTrees(stats); traverse(expr)
@@ -1388,7 +1383,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
       case Star(elem) =>
         treeCopy.Star(tree, transform(elem))
       case UnApply(fun, args) =>
-        treeCopy.UnApply(tree, fun, transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
+        treeCopy.UnApply(tree, transform(fun), transformTrees(args)) // bq: see test/.../unapplyContexts2.scala
       case ArrayValue(elemtpt, trees) =>
         treeCopy.ArrayValue(tree, transform(elemtpt), transformTrees(trees))
       case ApplyDynamic(qual, args) =>
@@ -1617,6 +1612,25 @@ trait Trees extends api.Trees { self: SymbolTable =>
     }
   }
 
+  /** Tracks the classes currently under construction during a transform */
+  trait UnderConstructionTransformer extends Transformer {
+    import collection.mutable
+
+    protected def isUnderConstruction(clazz: Symbol) = selfOrSuperCalls contains clazz
+
+    /** The stack of class symbols in which a call to this() or to the super
+      * constructor, or early definition is active */
+    private val selfOrSuperCalls = mutable.Stack[Symbol]()
+
+    abstract override def transform(tree: Tree) = {
+      if ((treeInfo isSelfOrSuperConstrCall tree) || (treeInfo isEarlyDef tree)) {
+        selfOrSuperCalls push currentOwner.owner
+        try super.transform(tree)
+        finally selfOrSuperCalls.pop()
+      } else super.transform(tree)
+    }
+  }
+
   def duplicateAndKeepPositions(tree: Tree) = new Duplicator(focusPositions = false) transform tree
 
   // ------ copiers -------------------------------------------
@@ -1656,6 +1670,22 @@ trait Trees extends api.Trees { self: SymbolTable =>
       )
     case t =>
       sys.error("Not a ValDef: " + t + "/" + t.getClass)
+  }
+  def copyTypeDef(tree: Tree)(
+    mods: Modifiers        = null,
+    name: Name             = null,
+    tparams: List[TypeDef] = null,
+    rhs: Tree              = null
+  ): TypeDef = tree match {
+    case TypeDef(mods0, name0, tparams0, rhs0) =>
+      treeCopy.TypeDef(tree,
+        if (mods eq null) mods0 else mods,
+        if (name eq null) name0 else name,
+        if (tparams eq null) tparams0 else tparams,
+        if (rhs eq null) rhs0 else rhs
+      )
+    case t =>
+      sys.error("Not a TypeDef: " + t + "/" + t.getClass)
   }
   def copyClassDef(tree: Tree)(
     mods: Modifiers        = null,

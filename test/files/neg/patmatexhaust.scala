@@ -22,14 +22,14 @@ class TestSealedExhaustive { // compile only
 
     def ma3(x:Mult) = (x,x) match { // not exhaustive
       case (Kult(_), Qult())    => // Kult missing
-      //case Pair(Kult(_), Kult(_))    => 
+      //case Pair(Kult(_), Kult(_))    =>
       case (Qult(), Kult(_))    => // Qult missing
-      //case Pair(Qult(), Qult())    => 
+      //case Pair(Qult(), Qult())    =>
     }
 
     def ma3u(x:Mult) = ((x,x) : @unchecked) match { // not exhaustive, but not checked!
-      case (Kult(_), Qult())    => 
-      case (Qult(), Kult(_))    => 
+      case (Kult(_), Qult())    =>
+      case (Qult(), Kult(_))    =>
     }
 
     sealed abstract class Deep
@@ -37,22 +37,22 @@ class TestSealedExhaustive { // compile only
     case object Ga extends Deep
     sealed class Gp extends Deep
     case object Gu extends Gp
-   
+
     def zma3(x:Deep) = x match { // exhaustive!
       case _ =>
     }
     def zma4(x:Deep) = x match { // exhaustive!
-      case Ga => 
+      case Ga =>
       case _ =>
     }
 
     def ma4(x:Deep) = x match { // missing cases: Gu, Gp
-      case Ga => 
+      case Ga =>
     }
 
     def ma5(x:Deep) = x match {
       case Gu =>
-      case _ if 1 == 0 => 
+      case _ if 1 == 0 =>
       case Ga =>
     }
 
@@ -65,7 +65,7 @@ class TestSealedExhaustive { // compile only
     case 1::2::Nil =>
       case _ =>
   }
-  
+
   sealed class B
   case class B1() extends B
   case object B2 extends B
@@ -76,7 +76,7 @@ class TestSealedExhaustive { // compile only
     case B1() => true       // missing B, which is not abstract so must be included
     case B2   => true
   }
-  
+
   object ob1 {
     sealed abstract class C
     sealed abstract class C1 extends C
@@ -89,7 +89,7 @@ class TestSealedExhaustive { // compile only
       case C2 | C4  => true
     }
   }
-  
+
   object ob2 {
     sealed abstract class C
     abstract class C1 extends C

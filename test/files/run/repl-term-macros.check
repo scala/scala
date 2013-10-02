@@ -1,9 +1,7 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
-scala>   import scala.reflect.macros.Context
+scala> import scala.reflect.macros.Context
 import scala.reflect.macros.Context
 
 scala> import language.experimental.macros
@@ -38,7 +36,5 @@ scala> def foo3(x: Int)(y: Int) = macro impl3
 defined term macro foo3: (x: Int)(y: Int)Unit
 
 scala> foo3(2)(3)
-
-scala> 
 
 scala> 

@@ -36,10 +36,10 @@ object Test {
 
   val immutableBippy = Partial[immutable.HashMap].values[Int]
   def make[T](xs: T*) = immutableBippy[T] ++ xs.zipWithIndex
-  
+
   val n0 = Partial[immutable.HashMap][String][Int] ++ Seq(("a", 1))
   val n1 = Partial.apply[immutable.HashMap].apply[String].apply[Int] ++ Seq(("a", 1))
-  
+
   def main(args: Array[String]): Unit = {
     println(mutableBippy)
     make('a' to 'z': _*).toList.sorted foreach println

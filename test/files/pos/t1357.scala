@@ -6,7 +6,7 @@ object NonEmptyCons {
 object Main {
 
   type BT[+H, +T <: Tuple2[Tuple2[H, T], Tuple2[H, T]]] = Tuple2[H, T]
-  
+
   // type T = Tuple2[String,String]
   type BinaryTree[+E] = BT[E, T forSome { type T <: Tuple2[BT[E, T], BT[E, T]] }]
 

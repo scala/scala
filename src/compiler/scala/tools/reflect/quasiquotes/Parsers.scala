@@ -49,7 +49,11 @@ trait Parsers { self: Quasiquotes =>
 
     def entryPoint: QuasiquoteParser => Tree
 
-    class QuasiquoteParser(source0: SourceFile) extends SourceFileParser(source0) {
+    class QuasiquoteParser(source0: SourceFile) extends SourceFileParser(source0) { parser =>
+      def isHole: Boolean = isIdent && isHole(in.name)
+
+      def isHole(name: Name): Boolean = holeMap.contains(name)
+
       override val treeBuilder = new ParserTreeBuilder {
         // q"(..$xs)"
         override def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree =
@@ -61,11 +65,15 @@ trait Parsers { self: Quasiquotes =>
 
         // q"{ $x }"
         override def makeBlock(stats: List[Tree]): Tree = stats match {
-          case (head @ Ident(name)) :: Nil if holeMap.contains(name) => Block(Nil, head)
+          case (head @ Ident(name)) :: Nil if isHole(name) => Block(Nil, head)
           case _ => super.makeBlock(stats)
         }
+
+        // tq"$a => $b"
+        override def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
+          AppliedTypeTree(Ident(tpnme.QUASIQUOTE_FUNCTION), argtpes :+ restpe)
       }
-      import treeBuilder.{global => _, _}
+      import treeBuilder.{global => _, unit => _, _}
 
       // q"def foo($x)"
       override def allowTypelessParams = true
@@ -79,7 +87,10 @@ trait Parsers { self: Quasiquotes =>
         } else
           super.caseClause()
 
-      def isHole: Boolean = isIdent && holeMap.contains(in.name)
+      override def caseBlock(): Tree = super.caseBlock() match {
+        case Block(Nil, expr) => expr
+        case other => other
+      }
 
       override def isAnnotation: Boolean = super.isAnnotation || (isHole && lookingAhead { isAnnotation })
 
@@ -105,22 +116,35 @@ trait Parsers { self: Quasiquotes =>
         case AT =>
           in.nextToken()
           annot :: readAnnots(annot)
-        case _ if isHole && lookingAhead { in.token == AT || isModifier || isDefIntro || isIdent} =>
+        case _ if isHole && lookingAhead { isAnnotation || isModifier || isDefIntro || isIdent || isStatSep || in.token == LPAREN } =>
           val ann = Apply(Select(New(Ident(tpnme.QUASIQUOTE_MODS)), nme.CONSTRUCTOR), List(Literal(Constant(in.name.toString))))
           in.nextToken()
           ann :: readAnnots(annot)
         case _ =>
           Nil
       }
+
+      override def refineStat(): List[Tree] =
+        if (isHole && !isDclIntro) {
+          val result = ValDef(NoMods, in.name, Ident(tpnme.QUASIQUOTE_REFINE_STAT), EmptyTree) :: Nil
+          in.nextToken()
+          result
+        } else super.refineStat()
+
+      override def ensureEarlyDef(tree: Tree) = tree match {
+        case Ident(name: TermName) if isHole(name) => ValDef(NoMods | Flag.PRESUPER, name, Ident(tpnme.QUASIQUOTE_EARLY_DEF), EmptyTree)
+        case _ => super.ensureEarlyDef(tree)
+      }
+
+      override def isTypedParam(tree: Tree) = super.isTypedParam(tree) || (tree match {
+        case Ident(name) if isHole(name) => true
+        case _ => false
+      })
     }
   }
 
   object TermParser extends Parser {
-    def entryPoint = _.templateStats() match {
-      case Nil => EmptyTree
-      case tree :: Nil => tree
-      case stats :+ tree => Block(stats, tree)
-    }
+    def entryPoint = { parser => gen.mkTreeOrBlock(parser.templateStats()) }
   }
 
   object TypeParser extends Parser {

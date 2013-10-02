@@ -46,7 +46,7 @@ object Test {
     (new Foo).test(42.0)
     (new Foo).test(42.0f)
     (new Foo).test(new Object)
-    
+
     println(runtime.BoxesRunTime.integerBoxCount)
   }
 

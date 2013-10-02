@@ -1,13 +1,13 @@
 
 /*
  * http://local.wasp.uwa.edu.au/~pbourke/miscellaneous/dft/
-   Modification of Paul Bourkes FFT code by Peter Cusack 
+   Modification of Paul Bourkes FFT code by Peter Cusack
    to utilise the Microsoft complex type.
 
-   This computes an in-place complex-to-complex FFT 
+   This computes an in-place complex-to-complex FFT
    x and y are the real and imaginary arrays of 2^m points.
    dir =  1 gives forward transform
-   dir = -1 gives reverse transform 
+   dir = -1 gives reverse transform
 */
 
 import Math.{sqrt, pow}
@@ -24,19 +24,19 @@ object Test  {
     x(j) = tmp
   }
 
-  def times(x: Complex, y: Complex): Complex = 
+  def times(x: Complex, y: Complex): Complex =
     (x._1 * y._1 - x._2 * y._2, x._1 * y._2 + x._2 * y._1)
-    
+
   def div(x: Complex, y: Complex): Complex = {
     val num = pow(y._1, 2) + pow(y._2, 2)
     ((x._1 * y._1 + x._2 * y._2)/num,
      (x._2 * y._1 - x._1 * y._2)/num)
   }
 
-  def div(x: Complex, y: Long) = 
+  def div(x: Complex, y: Long) =
     (x._1 / y, x._2 / y)
 
-  def add(x: Complex, y: Complex) = 
+  def add(x: Complex, y: Complex) =
     (x._1 + y._1, x._2 + y._2)
 
   def minus(x: Complex, y: Complex) =
@@ -49,8 +49,8 @@ object Test  {
 
    /*Calculate the number of points */
    n = 1
-   for (i <- 0l until m) 
-      n <<= 1   
+   for (i <- 0l until m)
+      n <<= 1
 
    /* Do the bit reversal */
    i2 = n >> 1
@@ -86,7 +86,7 @@ object Test  {
        for (i <- j.until(n, l2)) {
          i1 = i + l1;
          t1 = times(u, x(i1.toInt))
-         x(i1.toInt) = minus(x(i.toInt), t1) 
+         x(i1.toInt) = minus(x(i.toInt), t1)
          x(i.toInt) = add(x(i.toInt), t1)
        }
 
@@ -97,7 +97,7 @@ object Test  {
      c = (c._1, sqrt( (1.0 - c._1) / 2.0 ))
      // if (dir == 1)
      //    c.imag(-c.imag());
-     if (dir == 1) 
+     if (dir == 1)
        c = (c._1, -c._2)
 
       // c.real(sqrt((1.0 + c.real()) / 2.0));
@@ -107,8 +107,8 @@ object Test  {
    /* Scaling for forward transform */
    if (dir == 1) {
      for (i <- 0l until n)
-       x(i.toInt) = div(x(i.toInt), n)      
-   }   
+       x(i.toInt) = div(x(i.toInt), n)
+   }
   }
 
   def run() {

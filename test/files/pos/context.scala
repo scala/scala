@@ -12,10 +12,10 @@ class Context {
 abstract class SymbolWrapper {
   val context: Context;
   import context._;
-  
+
   class Symbols {
     self: context.symbols.type =>
-    
+
     abstract class Symbol {
       def typ: types.Type;
       def sym: Symbol = typ.sym;
@@ -29,7 +29,7 @@ abstract class TypeWrapper {
 
   class Types {
     self: context.types.type =>
-    
+
     abstract class Type {
       def sym: symbols.Symbol;
       def typ: Type = sym.typ;

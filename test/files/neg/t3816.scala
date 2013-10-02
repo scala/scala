@@ -1,7 +1,7 @@
 class B {
     def ::(a: List[Int]) {
         a match {
-            case x::xs => 
+            case x::xs =>
             case _ =>
         }
     }
@@ -32,11 +32,11 @@ object Test {
     }
   }
 
-  var foo = 0   
+  var foo = 0
   def testFail2( x: Any ) = {
     x match {
       case Some( `foo` ) =>
       case _ =>
     }
-  }   
+  }
 }

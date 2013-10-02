@@ -9,7 +9,7 @@ package bippy {
       }
       new B with C { }
     }
-    
+
     def g = Class.forName("bippy.A$B$1$class")
   }
 }

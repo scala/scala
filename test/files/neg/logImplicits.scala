@@ -9,9 +9,9 @@ class B {
 
 object C {
   final val x = "abc"
-  
+
   implicit def convert(p: x.type): Int = 123
- 
+
   math.max(122, x: Int)
 }
 

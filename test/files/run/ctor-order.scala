@@ -8,7 +8,7 @@ class Outer {
 
   class X extends {
     /* The constructor of X should set this.$outer to the outer instance
-     * *before* calling the super constructors. This is tested by 
+     * *before* calling the super constructors. This is tested by
      * mixin M1, which tries to access global from the enclosing class.
      */
     val outer = Outer.this

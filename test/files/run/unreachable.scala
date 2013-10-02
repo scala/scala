@@ -66,7 +66,7 @@ object Test extends App {
       return 42
     } catch {
       case x: Throwable => return 2
-    } 
+    }
     return 3
   }
 
@@ -75,7 +75,7 @@ object Test extends App {
       error("haha")
     } catch {
       case x: Throwable => return 42
-    } 
+    }
     return 3
   }
 

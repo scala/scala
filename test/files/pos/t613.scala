@@ -3,9 +3,9 @@ class Outer extends App {
   abstract class C {
     val x: Int
   }
-  val foo = new C { 
+  val foo = new C {
     class I {
-      val z = y 
+      val z = y
     }
     val x = (new I).z
   }

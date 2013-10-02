@@ -11,9 +11,9 @@ object Test {
     // PP: is that something we really want to work? Seems like sketchville.
     //
     // These work, so I moved this out of pending.
-    def testCoercionThis1 = this.baz 
+    def testCoercionThis1 = this.baz
     def testCoercionThis2 = (this: Foo).baz
   }
-  
-  class Bar { def baz = System.out.println("baz") } 
+
+  class Bar { def baz = System.out.println("baz") }
 }

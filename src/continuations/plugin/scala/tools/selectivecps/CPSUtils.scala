@@ -8,7 +8,7 @@ trait CPSUtils {
   val global: Global
   import global._
 
-  var cpsEnabled = false
+  val cpsEnabled: Boolean
   val verbose: Boolean = System.getProperty("cpsVerbose", "false") == "true"
   def vprintln(x: =>Any): Unit = if (verbose) println(x)
 

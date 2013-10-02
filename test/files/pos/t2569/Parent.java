@@ -1,7 +1,7 @@
 package varargs;
-  
+
   public class Parent {
-  
+
       public String concatenate(String... strings) {
           StringBuilder builder = new StringBuilder();
           for (String s : strings) {
@@ -9,5 +9,5 @@ package varargs;
           }
           return builder.toString();
       }
-  
+
   }

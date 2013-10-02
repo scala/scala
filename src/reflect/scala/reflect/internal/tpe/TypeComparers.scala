@@ -35,8 +35,10 @@ trait TypeComparers {
 
   private var subsametypeRecursions: Int = 0
 
-  private def isUnifiable(pre1: Type, pre2: Type) =
-    (beginsWithTypeVarOrIsRefined(pre1) || beginsWithTypeVarOrIsRefined(pre2)) && (pre1 =:= pre2)
+  private def isUnifiable(pre1: Type, pre2: Type) = (
+       (isEligibleForPrefixUnification(pre1) || isEligibleForPrefixUnification(pre2))
+    && (pre1 =:= pre2)
+  )
 
   /** Returns true iff we are past phase specialize,
     *  sym1 and sym2 are two existential skolems with equal names and bounds,
@@ -63,7 +65,6 @@ trait TypeComparers {
     else
       (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
   )
-
 
   def isDifferentType(tp1: Type, tp2: Type): Boolean = try {
     subsametypeRecursions += 1
@@ -207,6 +208,7 @@ trait TypeComparers {
       }
       case _ => false
     }
+
     /*  Those false cases certainly are ugly. There's a proposed SIP to deuglify it.
      *    https://docs.google.com/a/improving.org/document/d/1onPrzSqyDpHScc9PS_hpxJwa3FlPtthxw-bAuuEe8uA
      */
@@ -334,6 +336,14 @@ trait TypeComparers {
       (tparams1 corresponds tparams2)(cmp) && (sub1(res1) <:< sub2(res2))
     }
   }
+  // This is looking for situations such as B.this.x.type <:< B.super.x.type.
+  // If it's a ThisType on the lhs and a SuperType on the right, and they originate
+  // in the same class, and the 'x' in the ThisType has in its override chain
+  // the 'x' in the SuperType, then the types conform.
+  private def isThisAndSuperSubtype(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
+    case (SingleType(ThisType(lpre), v1), SingleType(SuperType(ThisType(rpre), _), v2)) => (lpre == rpre) && (v1.overrideChain contains v2)
+    case _                                                                              => false
+  }
 
   // @assume tp1.isHigherKinded || tp2.isHigherKinded
   def isHKSubType(tp1: Type, tp2: Type, depth: Depth): Boolean = {
@@ -359,7 +369,7 @@ trait TypeComparers {
     def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSubType(lhs, rhs, depth)
 
     if (isSingleType(tp1) && isSingleType(tp2) || isConstantType(tp1) && isConstantType(tp2))
-      return (tp1 =:= tp2) || retry(tp1.underlying, tp2)
+      return (tp1 =:= tp2) || isThisAndSuperSubtype(tp1, tp2) || retry(tp1.underlying, tp2)
 
     if (tp1.isHigherKinded || tp2.isHigherKinded)
       return isHKSubType(tp1, tp2, depth)

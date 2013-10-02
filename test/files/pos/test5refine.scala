@@ -60,7 +60,7 @@ object test {
 
       // Check type j.P
       j.chk_ip(val_mp);
-      j.chk_ip(val_np); 
+      j.chk_ip(val_np);
 
       // Check type i.X
       i.chk_ix(i.val_ix);
@@ -70,6 +70,6 @@ object test {
       // Check j.X
       j.chk_ix(j.val_ix);
       j.chk_ix(j.val_jx);
-      j.chk_ix(val_njx); 
+      j.chk_ix(val_njx);
   }
 }

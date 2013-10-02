@@ -1,6 +1,6 @@
 trait Frog[T] {
-      def hello: T 
-      def size: Int                                                                                                                                                          
+      def hello: T
+      def size: Int
     }
 
     trait OnlyWithFrogs {

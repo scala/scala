@@ -1,6 +1,6 @@
 trait Trait1 {
   // need more work before this one works
-  // @inline 
+  // @inline
   def foo2(n: Int) = n*n
 }
 

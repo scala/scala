@@ -23,5 +23,6 @@ package object nsc {
   type MissingRequirementError = scala.reflect.internal.MissingRequirementError
   val MissingRequirementError = scala.reflect.internal.MissingRequirementError
 
-  val ListOfNil = List(Nil)
+  @deprecated("Use scala.reflect.internal.util.ListOfNil", "2.11.0")
+  lazy val ListOfNil = scala.reflect.internal.util.ListOfNil
 }

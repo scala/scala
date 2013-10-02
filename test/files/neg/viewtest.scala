@@ -37,7 +37,7 @@ object O {
     }
   }
 
-  implicit def view3[a <% Ordered[a]](x: List[a]): Ordered[List[a]] = 
+  implicit def view3[a <% Ordered[a]](x: List[a]): Ordered[List[a]] =
     new Ordered[List[a]] {
       def compareTo [b >: List[a] <% Ordered[b]](y: b): Int = y match {
         case y1: List[a] => compareLists(x, y1)
@@ -72,7 +72,7 @@ class Node[a <% Ordered[a]](elem: a, l: Tree[a], r: Tree[a]) extends Tree[a] {
     if (x == elem) this
     else if (x < elem) new Node(elem, l insert x, r)
     else new Node(elem, l, r insert x)
-  def elements: List[a] = 
+  def elements: List[a] =
     l.elements ::: List(elem) ::: r.elements
 }
 
@@ -86,7 +86,7 @@ case class Str(elem: String) extends Ordered[Str] {
 object Test {
   import O._
 
-  private def toCharList(s: String): List[Char] = 
+  private def toCharList(s: String): List[Char] =
     if (s.length() == 0) List()
     else s.charAt(0) :: toCharList(s.substring(1))
 

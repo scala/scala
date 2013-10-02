@@ -36,7 +36,7 @@ object Test {
     (new TouchGlobal(new Object))
     Global.msg = "ok" // reset the value
     (new TouchGlobal(42))
-    
+
     println(runtime.BoxesRunTime.integerBoxCount)
   }
 }

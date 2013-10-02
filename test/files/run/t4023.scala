@@ -5,8 +5,8 @@ object Test {
     object B3
     private object B4
     object B5 extends B1
-    private object B6 extends B2 
- 
+    private object B6 extends B2
+
     val classes1 = this.getClass.getDeclaredClasses
     val classes2 = C.getClass   .getDeclaredClasses
     val classes3 = getClass     .getDeclaredClasses
@@ -19,7 +19,7 @@ object Test {
     val valuesTry2 = C.classes2.sortBy(_.getName)
     val valuesTry3 = C.classes3.sortBy(_.getName)
   }
-        
+
   def main(args: Array[String]) {
     println("Try 1: (" + TestHelper.valuesTry1.length + " classes)")
     TestHelper.valuesTry1.foreach(println)

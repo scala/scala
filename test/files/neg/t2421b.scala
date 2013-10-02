@@ -12,6 +12,6 @@ object Test {
   f
 }
 
-/* bug: 
+/* bug:
 error: type arguments [Test2.A] do not conform to method b's type parameter bounds [X <: Test2.B]
 */

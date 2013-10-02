@@ -17,6 +17,6 @@ elem: Fooable[T]): Fooable[Coll[T]] = {
     new Fooable[Coll[T]]{}
   }
   def main(args: Array[String]) {
-    implicitly[Fooable[List[Any]]] 
+    implicitly[Fooable[List[Any]]]
   }
 }

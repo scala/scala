@@ -20,7 +20,7 @@ scala> def f = throw new Exception("")
 f: Nothing
 
 scala> f
-java.lang.Exception: 
+java.lang.Exception:
   at .f(<console>:7)
   ... 69 elided
 

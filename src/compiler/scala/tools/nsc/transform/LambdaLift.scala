@@ -436,8 +436,15 @@ abstract class LambdaLift extends InfoTransform {
     private def liftDef(tree: Tree): Tree = {
       val sym = tree.symbol
       val oldOwner = sym.owner
-      if (sym.owner.isAuxiliaryConstructor && sym.isMethod)  // # bug 1909
-    	  sym setFlag STATIC
+      if (sym.isMethod && isUnderConstruction(sym.owner.owner)) { // # bug 1909
+         if (sym.isModule) { // Yes, it can be a module and a method, see comments on `isModuleNotMethod`!
+           // TODO promote to an implementation restriction if we can reason that this *always* leads to VerifyError.
+           // See neg/t1909-object.scala
+           def msg = s"SI-1909 Unable to STATICally lift $sym, which is defined in the self- or super-constructor call of ${sym.owner.owner}. A VerifyError is likely."
+           devWarning(tree.pos, msg)
+          } else sym setFlag STATIC
+      }
+
       sym.owner = sym.owner.enclClass
       if (sym.isClass) sym.owner = sym.owner.toInterface
       if (sym.isMethod) sym setFlag LIFTED

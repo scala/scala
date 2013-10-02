@@ -28,7 +28,7 @@ object Test {
 
     // SI-4547: implicit conversion
     assert(5 + BigDecimal(3) == BigDecimal(8))
-    
+
     // meaningless sanity check
     List[BigDecimal](a, b, c, d, e, f) map (_.scale) foreach println
   }

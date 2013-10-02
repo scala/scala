@@ -13,6 +13,6 @@ trait Foo2 {
 class Bob extends AnyRef with Foo with Foo2 {
   import bip._
   import bar._
-  
+
   def go() = fn()
 }

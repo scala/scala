@@ -23,6 +23,7 @@ import scala.collection.generic.Clearable
 import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
 import java.io.{ BufferedReader, FileReader }
+import scala.reflect.internal.util.StringOps._
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -548,7 +549,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     } else try {
       val s = what
       // line 123, 120+3, -3, 120-123, 120-, note -3 is not 0-3 but (cur-3,cur)
-      val (start, len) = 
+      val (start, len) =
         if ((s indexOf '+') > 0) {
           val (a,b) = s splitAt (s indexOf '+')
           (a.toInt, b.drop(1).toInt)
@@ -885,12 +886,10 @@ object ILoop {
           override def write(str: String) = {
             // completely skip continuation lines
             if (str forall (ch => ch.isWhitespace || ch == '|')) ()
-            // print a newline on empty scala prompts
-            else if ((str contains '\n') && (str.trim == "scala> ")) super.write("\n")
             else super.write(str)
           }
         }
-        val input = new BufferedReader(new StringReader(code)) {
+        val input = new BufferedReader(new StringReader(code.trim + "\n")) {
           override def readLine(): String = {
             val s = super.readLine()
             // helping out by printing the line being interpreted.

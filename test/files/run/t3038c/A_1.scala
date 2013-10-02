@@ -59,7 +59,7 @@ class A {
     lazy val a57 = 58
     lazy val a58 = 59
     lazy val a59 = 60
-    private lazy val a60 = 61 
+    private lazy val a60 = 61
     private lazy val a61 = 62
     private lazy val a62 = 63
     private lazy val a63 = 64
@@ -69,7 +69,7 @@ class A {
     private lazy val a67 = 68
     private lazy val a68 = 69
     private lazy val a69 = 70
-    
+
     def run = {
         println(List(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9,
                 a10, a11, a12, a13, a14, a15, a16, a17, a18, a19,

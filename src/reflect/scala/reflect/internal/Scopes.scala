@@ -460,6 +460,4 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   class ErrorScope(owner: Symbol) extends Scope
 
   private final val maxRecursions = 1000
-
 }
-

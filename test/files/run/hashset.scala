@@ -40,9 +40,9 @@ object Test extends App {
     println((for (i <- 0 until 20) yield i + " " + (h2 contains ("" + i))).toList.sorted mkString(","))
     println
   }
- 
+
    trait Creator {
-     def create[A] : GenSet[A] with Cloneable with FlatHashTable[A] with Growable[A] with Shrinkable[A] 
+     def create[A] : GenSet[A] with Cloneable with FlatHashTable[A] with Growable[A] with Shrinkable[A]
      def hashSetType : String
   }
 }

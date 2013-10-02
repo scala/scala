@@ -9,7 +9,7 @@ import scala.collection.mutable.Builder
 
 
 object Test {
-  
+
     def vector(label: String, n: Int): Vector[String] = {
       val a = new VectorBuilder[String]
       for (i <- 0 until n)
@@ -67,7 +67,7 @@ object Test {
 
   def test1() = {
     println("===== test1 =====")
-    
+
     val N = 150000
     val a = vector("a", N)
     val b = vectorForward("b", N)
@@ -81,22 +81,22 @@ object Test {
     println("===== test2 =====")
 
     var a: Vector[String] = Vector.empty
-    
+
     val rand = new java.util.Random
-    
+
     val N = 150000
     var min = N/2//rand.nextInt(N)
     var max = min
-    
+
     val chunkLimit = 11
-    
+
     def nextChunkSize = 3 //rand.nextInt(chunkLimit)
-    
+
     def seqBack() = for (i <- 0 until Math.min(nextChunkSize, N-max)) { a = a :+ ("a"+max); max += 1 }
     def seqFront() = for (i <- 0 until Math.min(nextChunkSize, min)) { min -= 1; a = ("a"+min) +: a }
-    
+
     try {
-      
+
     while (min > 0 || max < N) {
       seqFront()
       seqBack()
@@ -107,7 +107,7 @@ object Test {
       //a.debug
       throw ex
   }
-    
+
     assertVector(a, "a", 0, N)
   }
 
@@ -122,14 +122,14 @@ object Test {
     val pos = scala.util.Random.shuffle(scala.collection.mutable.WrappedArray.make[Int](Array.tabulate[Int](N)(i => i)))
 
     var b = a
-    
+
     {
       var i = 0
       while (i < N) {
         b = b.updated(pos(i), "b"+(pos(i)))
         i += 1
       }
-      
+
       assertVector(b, "b", 0, N)
     }
 

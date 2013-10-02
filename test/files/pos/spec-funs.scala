@@ -19,7 +19,7 @@ final class IntTest {
     val xs = new Array[Int](10000)
     val f = new AbsFunction1[Int, Int] {
       def apply(x: Int): Int = x * x
-    }    
+    }
     for (j <- 0 until niters) {
       transF(xs, f)
     }

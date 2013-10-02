@@ -7,7 +7,7 @@ case class RS(self: String) {
   }
 
   def split(separator: Char): Array[String] = self.split(escape(separator))
-	
+
   def split(separators: Array[Char]): Array[String] = {
     val re = separators.foldLeft("[")(_+escape(_)) + "]"
     self.split(re)
@@ -27,7 +27,7 @@ object Test {
       case e: Throwable => println(which + " failed with " + e.getClass)
     }
   }
-     
+
   def main(args: Array[String]) {
     val badChars = "?*{+([\\^.$"
 
@@ -46,8 +46,8 @@ object Test {
     for ((c,str) <- badCases)
       test(("a"+c+"b").split(str.toArray),"RichString split(\""+ str + "\")")
     println
-   
+
     for ((c,str) <- badCases)
-      test(RS("a"+c+"b").split(str.toArray),"RS split(\""+ str + "\")")   
+      test(RS("a"+c+"b").split(str.toArray),"RS split(\""+ str + "\")")
   }
 }

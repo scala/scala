@@ -145,18 +145,31 @@ trait ContextErrors {
         def errMsg = {
           val paramName = param.name
           val paramTp   = param.tpe
+          def evOrParam = (
+            if (paramName startsWith nme.EVIDENCE_PARAM_PREFIX)
+              "evidence parameter of type"
+            else
+              s"parameter $paramName:"
+          )
           paramTp.typeSymbolDirect match {
-              case ImplicitNotFoundMsg(msg) => msg.format(paramName, paramTp)
-              case _ =>
-                "could not find implicit value for "+
-                   (if (paramName startsWith nme.EVIDENCE_PARAM_PREFIX) "evidence parameter of type "
-                    else "parameter "+paramName+": ")+paramTp
+            case ImplicitNotFoundMsg(msg) => msg.format(paramName, paramTp)
+            case _ => s"could not find implicit value for $evOrParam $paramTp"
           }
         }
         issueNormalTypeError(tree, errMsg)
       }
 
       def AdaptTypeError(tree: Tree, found: Type, req: Type) = {
+        // SI-3971 unwrapping to the outermost Apply helps prevent confusion with the
+        // error message point.
+        def callee = {
+          def unwrap(t: Tree): Tree = t match {
+            case Apply(app: Apply, _) => unwrap(app)
+            case _                    => t
+          }
+          unwrap(tree)
+        }
+
         // If the expected type is a refinement type, and the found type is a refinement or an anon
         // class, we can greatly improve the error message by retyping the tree to recover the actual
         // members present, then display along with the expected members. This is done here because
@@ -181,7 +194,7 @@ trait ContextErrors {
         }
         assert(!foundType.isErroneous && !req.isErroneous, (foundType, req))
 
-        issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(foundType, req)))
+        issueNormalTypeError(callee, withAddendum(callee.pos)(typeErrorMsg(foundType, req)))
         infer.explainTypes(foundType, req)
       }
 

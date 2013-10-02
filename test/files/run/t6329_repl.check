@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> import scala.reflect.classTag
 import scala.reflect.classTag
 
@@ -33,7 +31,5 @@ res6: scala.reflect.ClassTag[scala.collection.immutable.Set[_]] = scala.collecti
 
 scala> classTag[scala.collection.immutable.Set[_]]
 res7: scala.reflect.ClassTag[scala.collection.immutable.Set[_]] = scala.collection.immutable.Set
-
-scala> 
 
 scala> 

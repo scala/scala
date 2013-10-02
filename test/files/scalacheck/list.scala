@@ -12,7 +12,7 @@ object Test extends Properties("List") {
   property("startsWith/take") = forAll { (xs: List[Int], count: Int) => xs startsWith (xs take count) }
   property("endsWith/takeRight") = forAll { (xs: List[Int], count: Int) => xs endsWith (xs takeRight count) }
   property("fill") = forAll(choose(1, 100)) { count =>
-    forAll { (x: Int) => 
+    forAll { (x: Int) =>
       val xs = List.fill(count)(x)
       (xs.length == count) && (xs.distinct == List(x))
     }

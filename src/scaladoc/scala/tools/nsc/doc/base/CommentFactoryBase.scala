@@ -925,11 +925,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       buffer.substring(start, offset)
     }
 
-
     /* CHARS CLASSES */
 
     def isWhitespace(c: Char) = c == ' ' || c == '\t'
-
   }
-
 }

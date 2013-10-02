@@ -23,5 +23,4 @@ abstract class Set[T <: AnyRef] {
     findEntry(x) ne null
 
   def toList = iterator.toList
-
 }

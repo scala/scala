@@ -18,11 +18,13 @@ abstract class AbstractReporter extends Reporter {
   def display(pos: Position, msg: String, severity: Severity): Unit
   def displayPrompt(): Unit
 
-  private val positions = new mutable.HashMap[Position, Severity]
+  private val positions = mutable.Map[Position, Severity]() withDefaultValue INFO
+  private val messages  = mutable.Map[Position, List[String]]() withDefaultValue Nil
 
   override def reset() {
     super.reset()
     positions.clear()
+    messages.clear()
   }
 
   private def isVerbose   = settings.verbose.value
@@ -37,13 +39,14 @@ abstract class AbstractReporter extends Reporter {
       }
     }
     else {
-      val hidden = testAndLog(pos, severity)
+      val hidden = testAndLog(pos, severity, msg)
       if (severity == WARNING && noWarnings) ()
       else {
         if (!hidden || isPromptSet) {
           severity.count += 1
           display(pos, msg, severity)
-        } else if (settings.debug) {
+        }
+        else if (settings.debug) {
           severity.count += 1
           display(pos, "[ suppressed ] " + msg, severity)
         }
@@ -57,12 +60,20 @@ abstract class AbstractReporter extends Reporter {
   /** Logs a position and returns true if it was already logged.
    *  @note  Two positions are considered identical for logging if they have the same point.
    */
-  private def testAndLog(pos: Position, severity: Severity): Boolean =
+  private def testAndLog(pos: Position, severity: Severity, msg: String): Boolean =
     pos != null && pos.isDefined && {
       val fpos = pos.focus
-      (positions get fpos) match {
-        case Some(level) if level >= severity => true
-        case _                                => positions += (fpos -> severity) ; false
+      val suppress = positions(fpos) match {
+        case ERROR                         => true  // already error at position
+        case highest if highest > severity => true  // already message higher than present severity
+        case `severity`                    => messages(fpos) contains msg // already issued this exact message
+        case _                             => false // good to go
+      }
+
+      suppress || {
+        positions(fpos) = severity
+        messages(fpos) ::= msg
+        false
       }
     }
 }

@@ -1,5 +1,5 @@
 object Breakdown {
-  def unapplySeq(x: Int): Some[List[String]] = Some(List("", "there")) 
+  def unapplySeq(x: Int): Some[List[String]] = Some(List("", "there"))
 }
 object Test {
   42 match {

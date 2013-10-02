@@ -9,7 +9,6 @@
 package scala
 package runtime
 
-
 import scala.util.control.ControlThrowable
 
 class NonLocalReturnControl[@specialized T](val key: AnyRef, val value: T) extends ControlThrowable {

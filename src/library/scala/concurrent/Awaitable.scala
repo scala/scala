@@ -17,7 +17,7 @@ import scala.concurrent.duration.Duration
 /**
  * An object that may eventually be completed with a result value of type `T` which may be
  * awaited using blocking methods.
- * 
+ *
  * The [[Await]] object provides methods that allow accessing the result of an `Awaitable`
  * by blocking the current thread until the `Awaitable` has been completed or a timeout has
  * occurred.
@@ -26,9 +26,9 @@ trait Awaitable[+T] {
 
   /**
    * Await the "completed" state of this `Awaitable`.
-   * 
+   *
    * '''''This method should not be called directly; use [[Await.ready]] instead.'''''
-   * 
+   *
    * @param  atMost
    *         maximum wait time, which may be negative (no waiting is done),
    *         [[scala.concurrent.duration.Duration.Inf Duration.Inf]] for unbounded waiting, or a finite positive
@@ -41,12 +41,12 @@ trait Awaitable[+T] {
   @throws(classOf[TimeoutException])
   @throws(classOf[InterruptedException])
   def ready(atMost: Duration)(implicit permit: CanAwait): this.type
-  
+
   /**
    * Await and return the result (of type `T`) of this `Awaitable`.
-   * 
+   *
    * '''''This method should not be called directly; use [[Await.result]] instead.'''''
-   * 
+   *
    * @param  atMost
    *         maximum wait time, which may be negative (no waiting is done),
    *         [[scala.concurrent.duration.Duration.Inf Duration.Inf]] for unbounded waiting, or a finite positive

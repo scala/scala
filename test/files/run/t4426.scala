@@ -5,7 +5,7 @@ object Test {
       val settings = new Settings()
       settings.classpath.value = System.getProperty("java.class.path")
 
-    object cc extends Global(settings) { 
+    object cc extends Global(settings) {
       object dummy
 
       override def computePluginPhases() = {
@@ -16,9 +16,9 @@ object Test {
     new cc.Run
     ()
   }
-  
+
   def main(args: Array[String]): Unit = {
-    
+
   }
 }
 

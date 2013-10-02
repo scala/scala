@@ -23,10 +23,15 @@ superaccessors   6  add super accessors in traits and nested classes
          mixin  20  mixin composition
        cleanup  21  platform-specific cleanups, generate reflective calls
          icode  22  generate portable intermediate code
+#partest !-optimise
+           jvm  23  generate JVM bytecode
+      terminal  24  the last phase during a compilation run
+#partest -optimise
        inliner  23  optimization: do inlining
 inlinehandlers  24  optimization: inline exception handlers
       closelim  25  optimization: eliminate uncalled closures
       constopt  26  optimization: optimize null and other constants
            dce  27  optimization: eliminate dead code
            jvm  28  generate JVM bytecode
-      terminal  29  The last phase in the compiler chain
+      terminal  29  the last phase during a compilation run
+#partest

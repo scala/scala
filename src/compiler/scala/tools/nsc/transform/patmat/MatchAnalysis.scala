@@ -50,7 +50,7 @@ trait TreeAndTypeAnalysis extends Debugging {
         case UnitClass =>
           Some(List(UnitTpe))
         case BooleanClass =>
-          Some((List(ConstantType(Constant(true)), ConstantType(Constant(false)))))
+          Some(ConstantTrue :: ConstantFalse :: Nil)
         // TODO case _ if tp.isTupleType => // recurse into component types
         case modSym: ModuleClassSymbol =>
           Some(List(tp))
@@ -271,9 +271,9 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
             case SubstOnlyTreeMaker(_, _)                             => True
             case GuardTreeMaker(guard) =>
               guard.tpe match {
-                case ConstantType(Constant(true))  => True
-                case ConstantType(Constant(false)) => False
-                case _                             => handleUnknown(tm)
+                case ConstantTrue  => True
+                case ConstantFalse => False
+                case _             => handleUnknown(tm)
               }
             case ExtractorTreeMaker(_, _, _) |
                  ProductExtractorTreeMaker(_, _) |

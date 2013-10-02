@@ -4,5 +4,5 @@ trait Test[Bracks <: Bracks] {
   class C[T]
   val bracks : Bracks;
   val singletons = f(bracks);
-  
+
 }

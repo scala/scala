@@ -16,44 +16,44 @@ object Main {
     case 'f' | 'g'        => true
     case _                => false
   }
-  
+
   def succ2(c: Char) = (c: @switch) match {
     case 'A' | 'B' | 'C'  => true
     case Other.C2         => true
     case Other.C4         => true
     case _                => false
   }
-  
+
   // has a guard, but since SI-5830 that's ok
   def succ_guard(c: Char) = (c: @switch) match {
     case 'A' | 'B' | 'C'  => true
     case x if x == 'A'    => true
     case _                => false
   }
-  
+
   // throwing in @unchecked on the next two to make sure
   // multiple annotations are processed correctly
-  
+
   // thinks a val in an object is constant... so naive
   def fail2(c: Char) = (c: @switch @unchecked) match {
     case 'A'        => true
     case Other.C1   => true
     case _          => false
   }
-  
+
   // more naivete
   def fail3(c: Char) = (c: @unchecked @switch) match {
     case 'A'        => true
     case Other.C3   => true
     case _          => false
   }
-  
+
   // guard case done correctly
   def succ3(c: Char) = (c: @switch) match {
     case 'A' | 'B' | 'C'  => true
     case x                => x == 'A'
   }
-  
+
   // some ints just to mix it up a bit
   def succ4(x: Int, y: Int) = ((x+y): @switch) match {
     case  1 => 5
@@ -62,5 +62,5 @@ object Main {
     case  4 => 50
     case 5|6|7|8 => 100
     case _  => -1
-  }    
+  }
 }

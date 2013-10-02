@@ -8,7 +8,7 @@
 
 package scala
 
-/** Classes and objects (but note, not traits) inheriting the `DelayedInit` 
+/** Classes and objects (but note, not traits) inheriting the `DelayedInit`
  *  marker trait will have their initialization code rewritten as follows:
  *  `code` becomes `delayedInit(code)`.
  *
@@ -32,7 +32,7 @@ package scala
  *      val c = new C
  *    }
  *  }}}
- *  
+ *
  *  Should result in the following being printed:
  *  {{{
  *    dummy text, printed before initialization of C

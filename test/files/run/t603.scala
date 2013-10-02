@@ -24,7 +24,7 @@ object forceDelay {
 
 object Test {
   import forceDelay._
-  
+
   def main(args: Array[String]) = {
     val s: Susp[Int] = delay { Console.println("evaluating..."); 3 }
     Console.println("s = " + s)

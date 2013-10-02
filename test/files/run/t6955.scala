@@ -1,4 +1,4 @@
-import scala.tools.partest.IcodeTest
+import scala.tools.partest.IcodeComparison
 
 // this class should compile to code that uses switches (twice)
 class Switches {
@@ -20,9 +20,15 @@ class Switches {
   }
 }
 
-object Test extends IcodeTest {
+object Test extends IcodeComparison {
   // ensure we get two switches out of this -- ignore the rest of the output for robustness
   // exclude the constant we emit for the "SWITCH ..." string below (we get the icode for all the code you see in this file)
-  override def show() = println(collectIcode("").filter(x => x.indexOf("SWITCH ...") >= 0 && x.indexOf("CONSTANT(") == -1).size)
+  override def show() = {
+    val expected = 2
+    val actual = (collectIcode() filter {
+      x => x.indexOf("SWITCH ...") >= 0 && x.indexOf("CONSTANT(") == -1
+    }).size
+    assert(actual == expected)
+  }
 }
 

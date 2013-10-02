@@ -9,7 +9,7 @@ trait NonFatalTests {
           new Exception,
           new Throwable,
           new NotImplementedError)
-    
+
     //Fatals
     val fatals: Seq[Throwable] =
       Seq(new InterruptedException,

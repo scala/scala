@@ -89,6 +89,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         settings.checkInit
      && sym.isGetter
      && !sym.isInitializedToDefault
+     && !isConstantType(sym.info.finalResultType) // SI-4742
      && !sym.hasFlag(PARAMACCESSOR | SPECIALIZED | LAZY)
      && !sym.accessed.hasFlag(PRESUPER)
      && !sym.isOuterAccessor
@@ -472,7 +473,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     /** The typer */
     private var localTyper: erasure.Typer = _
     private def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree)
-    private def localTyped(pos: Position, tree: Tree, pt: Type) = localTyper.typed(atPos(pos)(tree), pt)
 
     /** Map lazy values to the fields they should null after initialization. */
     private var lazyValNullables: Map[Symbol, Set[Symbol]] = _
@@ -695,10 +695,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        */
       def completeSuperAccessor(stat: Tree) = stat match {
         case DefDef(_, _, _, vparams :: Nil, _, EmptyTree) if stat.symbol.isSuperAccessor =>
-          val rhs0 = (Super(clazz, tpnme.EMPTY) DOT stat.symbol.alias)(vparams map (v => Ident(v.symbol)): _*)
-          val rhs1 = localTyped(stat.pos, rhs0, stat.symbol.tpe.resultType)
+          val body = atPos(stat.pos)(Apply(Select(Super(clazz, tpnme.EMPTY), stat.symbol.alias), vparams map (v => Ident(v.symbol))))
+          val pt   = stat.symbol.tpe.resultType
 
-          deriveDefDef(stat)(_ => enteringMixin(transform(rhs1)))
+          copyDefDef(stat)(rhs = enteringMixin(transform(localTyper.typed(body, pt))))
         case _ =>
           stat
       }
@@ -724,8 +724,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             case _                                                     =>
           }
           val init = bitmapKind match {
-            case BooleanClass => VAL(sym) === FALSE
-            case _            => VAL(sym) === ZERO
+            case BooleanClass => ValDef(sym, FALSE)
+            case _            => ValDef(sym, ZERO)
           }
 
           sym setFlag PrivateLocal
@@ -775,7 +775,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         defSym setInfoAndEnter MethodType(params, lzyVal.tpe.resultType)
         val rhs: Tree = (gen.mkSynchronizedCheck(attrThis, cond, syncBody, stats)).changeOwner(currentOwner -> defSym)
         val strictSubst = new TreeSymSubstituterWithCopying(args.map(_.symbol), params)
-        addDef(position(defSym), DEF(defSym).mkTree(strictSubst(BLOCK(rhs, retVal))) setSymbol defSym)
+        addDef(position(defSym), DefDef(defSym, strictSubst(BLOCK(rhs, retVal))))
         defSym
       }
 

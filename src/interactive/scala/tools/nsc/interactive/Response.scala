@@ -55,7 +55,10 @@ class Response[T] {
       try {
         wait()
       } catch {
-        case exc: InterruptedException => raise(exc)
+        case exc: InterruptedException => {
+          Thread.currentThread().interrupt()
+          raise(exc)
+        }
       }
     }
     data.get
@@ -73,7 +76,10 @@ class Response[T] {
       try {
         wait(timeout - (current - start))
       } catch {
-        case exc: InterruptedException => raise(exc)
+        case exc: InterruptedException => {
+          Thread.currentThread().interrupt()
+          raise(exc)
+        }
       }
       current = System.currentTimeMillis
     }
@@ -99,7 +105,3 @@ class Response[T] {
     cancelled = false
   }
 }
-
-
-
-

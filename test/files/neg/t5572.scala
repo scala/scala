@@ -16,7 +16,7 @@ class Test {
     Z.transf(a, b) match {
       case sth =>
         run(sth, b)
-    }  
+    }
   }
 
   def run(x: X, z: B): Unit = ()

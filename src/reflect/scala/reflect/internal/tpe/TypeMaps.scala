@@ -841,7 +841,7 @@ private[internal] trait TypeMaps {
   object IsDependentCollector extends TypeCollector(false) {
     def traverse(tp: Type) {
       if (tp.isImmediatelyDependent) result = true
-      else if (!result) mapOver(tp)
+      else if (!result) mapOver(tp.dealias)
     }
   }
 

@@ -5,7 +5,7 @@ object Test {
 
   val y1 = Some(1, 2, 3)
   val y2 = new Some(1, 2, 3)
-  
+
   val z1 = new J2
   val z2 = new J2()
   val z3 = new J2(())
@@ -18,7 +18,7 @@ object Test {
     println(x2)
     println(x3)
     println(y1)
-    
+
     println(z1)
     println(z2)
     println(z3)

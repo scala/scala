@@ -6,11 +6,11 @@ object Test extends Properties("String") {
 
   property("endsWith") = Prop.forAll((a: String, b: String) => (a+b).endsWith(b))
 
-  property("concat") = Prop.forAll((a: String, b: String) => 
+  property("concat") = Prop.forAll((a: String, b: String) =>
     (a+b).length >= a.length && (a+b).length >= b.length
   )
 
-  property("substring") = Prop.forAll((a: String, b: String) => 
+  property("substring") = Prop.forAll((a: String, b: String) =>
     (a+b).substring(a.length) == b
   )
 

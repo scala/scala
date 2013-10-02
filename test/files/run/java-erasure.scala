@@ -3,7 +3,7 @@ object Test {
   list add "a"
   list add "c"
   list add "b"
-  
+
   def main(args: Array[String]): Unit = {
     println(java.util.Collections.max(list))
   }

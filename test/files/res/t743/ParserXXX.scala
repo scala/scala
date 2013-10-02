@@ -1,9 +1,9 @@
 package t743;
 trait ParserXXX {
-  val foo = null; 
-  trait NodeImpl { 
+  val foo = null;
+  trait NodeImpl {
     trait Link extends ParserXXX.this.Link {
-      val from = null; 
+      val from = null;
     }
   }
   trait Link {

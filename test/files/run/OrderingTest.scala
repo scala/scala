@@ -6,7 +6,7 @@ object Test extends App {
     assert((cmp == 0) == (cmp2 == 0))
     assert((cmp > 0) == (cmp2 < 0))
     assert((cmp < 0) == (cmp2 > 0))
-  } 
+  }
 
   def testAll[T](t1 : T, t2 : T)(implicit ord : Ordering[T]) = {
     assert(ord.compare(t1, t2) < 0)
@@ -16,8 +16,8 @@ object Test extends App {
   }
 
   assert(Ordering[String].compare("australopithecus", "brontausaurus") < 0)
-  // assert(Ordering[Unit].compare((), ()) == 0) 
- 
+  // assert(Ordering[Unit].compare((), ()) == 0)
+
   testAll("bar", "foo");
   testAll[Byte](0, 1);
   testAll(false, true)
@@ -28,7 +28,7 @@ object Test extends App {
   testAll[Iterable[Int]](List(1, 2), List(2));
   testAll((1, "bar"), (1, "foo"))
   testAll((1, "foo"), (2, "bar"))
-  
+
   // sortBy
   val words = "The quick brown fox jumped over the lazy dog".split(' ')
   val result = words.sortBy(x => (x.length, x.head))

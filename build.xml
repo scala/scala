@@ -211,6 +211,11 @@ TODO:
     <!-- Set up Ant contrib tasks so we can use <if><then><else> instead of the clunky `unless` attribute -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib-ant.dir}/ant-contrib.jar"/>
 
+    <property name="scala.ant.min.version" value="1.8.2"/>
+    <if><not><antversion atleast="${scala.ant.min.version}"/></not>
+      <then><fail message="Ant version ${scala.ant.min.version} is required. You are running ${ant.version}"/></then>
+    </if>
+
     <!-- Add our maven ant tasks -->
     <path id="maven-ant-tasks.classpath" path="${lib-ant.dir}/maven-ant-tasks-2.1.1.jar" />
     <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
@@ -1281,6 +1286,14 @@ TODO:
   <target name="quick.swing"      depends="quick.actors, quick.lib">
     <staged-build with="locker"   stage="quick" project="swing"/> </target>
 
+  <target name="quick.partest-extras"
+                                  depends="quick.comp">
+    <!-- compile compiler-specific parts of partest -->
+    <staged-build with="starr" stage="quick" project="partest-extras" />
+    <staged-build with="starr" stage="quick" project="partest-javaagent" />
+  </target>
+
+
   <target name="quick.plugins"    depends="quick.comp">
     <staged-uptodate              stage="quick" project="plugins">
       <check><srcfiles dir="${src.dir}/continuations"/></check>
@@ -1308,7 +1321,7 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.repl, quick.scalap, quick.interactive, quick.swing, quick.plugins, quick.scaladoc">
+  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.repl, quick.scalap, quick.interactive, quick.swing, quick.plugins, quick.scaladoc, quick.partest-extras">
     <staged-bin stage="quick" classpathref="quick.bin.tool.path"/>
   </target>
 
@@ -1325,6 +1338,11 @@ TODO:
   <target name="pack.actors"  depends="quick.lib">                <staged-pack project="actors"/> </target>
   <target name="pack.swing"   depends="quick.swing"> <staged-pack project="swing"/> </target>
   <target name="pack.reflect" depends="quick.reflect">            <staged-pack project="reflect"/> </target>
+  <target name="pack.partest-extras" depends="quick.partest-extras">
+     <staged-pack project="partest-extras"/>
+     <staged-pack project="partest-javaagent"
+                  manifest="${src.dir}/partest-javaagent/scala/tools/partest/javaagent/MANIFEST.MF"/>
+  </target>
 
   <target name="pack.comp"    depends="quick.comp, quick.scaladoc, quick.interactive, quick.repl, asm.done">
     <staged-pack project="compiler" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
@@ -1345,11 +1363,10 @@ TODO:
           <attribute name="Class-Path" value="scala-reflect.jar scala-library.jar"/>
         </manifest>
       </pre>
-      <!-- script api is 2.11-only so far
+      <!-- JSR-223 support introduced in 2.11 -->
       <jar-opts>
         <service type="javax.script.ScriptEngineFactory" provider="scala.tools.nsc.interpreter.IMain$Factory"/>
       </jar-opts>
-      -->
     </staged-pack>
   </target>
 
@@ -1357,7 +1374,7 @@ TODO:
 
   <target name="pack.scalap"     depends="quick.scalap">     <staged-pack project="scalap"     targetjar="scalap.jar"/> </target>
 
-  <target name="pack.bin" depends="pack.comp, pack.lib, pack.actors, pack.plugins, pack.reflect, pack.scalap, pack.swing">
+  <target name="pack.bin" depends="pack.comp, pack.lib, pack.actors, pack.plugins, pack.reflect, pack.scalap, pack.swing, pack.partest-extras">
     <copy todir="${build-pack.dir}/lib">
       <path refid="external-modules-nocore" />
       <mapper type="flatten" />
@@ -1603,18 +1620,12 @@ TODO:
   </target>
 
   <!-- See test/build-partest.xml for the macro(s) being used here. -->
-  <target name="partest.task" depends="init">
+  <target name="partest.task" depends="init,pack.done">
     <!-- note the classpathref! this is the classpath used to run partest,
     so it must have the new compiler.... -->
     <taskdef
        classpathref="partest.compilation.path"
        resource="scala/tools/partest/antlib.xml"/>
-
-    <!-- compile compiler-specific parts of partest -->
-    <staged-build with="starr" stage="quick" project="partest-extras" />
-    <staged-build with="starr" stage="quick" project="partest-javaagent" />
-    <staged-pack project="partest-extras"/>
-    <staged-pack project="partest-javaagent" manifest="${src.dir}/partest-javaagent/scala/tools/partest/javaagent/MANIFEST.MF"/>
   </target>
 
   <target name="test.suite.init" depends="pack.done, partest.task">
@@ -1952,6 +1963,30 @@ TODO:
     </copy>
   </target>
 
+  <!--
+       A jar-like task that creates an OSGi source bundle. It adds the required MANIFEST.MF headers that allow
+       Eclipse to match sources with the corresponding binaries.
+  -->
+  <macrodef name="osgi.source.bundle">
+    <attribute name="destfile"     description="The jar file name"/>
+    <attribute name="symbolicName" description="The original bundle symbolic name (without .source at the end)"/>
+    <attribute name="bundleName"   description="A value for Bundle-Name, usually a textual description"/>
+    <element   name="file-sets"    description="A sequence of fileset elements to be included in the jar" optional="true" implicit="true"/>
+
+    <sequential>
+      <jar whenmanifestonly="fail" destfile="@{destFile}">
+        <file-sets/>
+        <manifest>
+          <attribute name="Manifest-Version" value="1.0"/>
+          <attribute name="Bundle-Name" value="@{bundleName}"/>
+          <attribute name="Bundle-SymbolicName" value="@{symbolicName}.source"/>
+          <attribute name="Bundle-Version" value="${osgi.version.number}"/>
+          <attribute name="Eclipse-SourceBundle" value="@{symbolicName};version=&quot;${osgi.version.number}&quot;;roots:=&quot;.&quot;" />
+        </manifest>
+      </jar>
+    </sequential>
+  </macrodef>
+
   <target name="dist.src" depends="dist.base">
     <mkdir dir="${dist.dir}/src"/>
     <copy toDir="${dist.dir}/src">
@@ -1959,20 +1994,36 @@ TODO:
       <file file="${scala-parser-combinators-sources}"/>
     </copy>
 
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-library-src.jar">
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-library-src.jar"
+                        symbolicName="org.scala-lang.scala-library"
+                        bundleName="Scala Library Sources">
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/continuations/library"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-actors-src.jar"   basedir="${src.dir}/actors"/>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-compiler-src.jar">
+    </osgi.source.bundle>
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-actors-src.jar"
+                        symbolicName="org.scala-lang.scala-actors"
+                        bundleName="Scala Actors Sources">
+      <fileset dir="${src.dir}/actors"/>
+    </osgi.source.bundle>
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-compiler-src.jar"
+                        symbolicName="org.scala-lang.scala-compiler"
+                        bundleName="Scala Compiler Sources">
       <fileset dir="${src.dir}/compiler"/>
       <fileset dir="${src.dir}/repl"/>
       <fileset dir="${src.dir}/scaladoc"/>
       <fileset dir="${src.dir}/interactive"/>
       <fileset dir="${src.dir}/continuations/plugin"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-swing-src.jar"    basedir="${src.dir}/swing"/>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scala-reflect-src.jar"  basedir="${src.dir}/reflect"/>
+    </osgi.source.bundle>
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-swing-src.jar"
+                        symbolicName="org.scala-lang.scala-swing"
+                        bundleName="Scala Swing Sources">
+      <fileset dir="${src.dir}/swing"/>
+    </osgi.source.bundle>
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-reflect-src.jar"
+                        symbolicName="org.scala-lang.scala-reflect"
+                        bundleName="Scala Reflect Sources">
+      <fileset dir="${src.dir}/reflect"/>
+    </osgi.source.bundle>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scalap-src.jar"         basedir="${src.dir}/scalap"/>
   </target>
 

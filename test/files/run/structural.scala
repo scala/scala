@@ -2,20 +2,20 @@
 import scala.language.{ reflectiveCalls }
 
 object test1 {
-  
+
   val o1 = new Object { override def toString = "ohone" }
   val o2 = new Object { override def toString = "ohtwo" }
-  
+
   val t1 = new Tata("tieone")
   val t2 = new Tata("tietwo")
-  
+
   class Tata(name: String) {
     override def toString = name
     def tatMe = "oy"
   }
-  
+
   class Titi extends Tata("titi")
-  
+
   object Rec {
     val a = 1
     val b = 2
@@ -44,7 +44,7 @@ object test1 {
     val y: Tata = null
     def z(t: Tata) = ()
   }
-  
+
   type rt = Object {
     val a: Int;
     val c: String;
@@ -68,7 +68,7 @@ object test1 {
     var v: Int
     val y: Tata
   }
-  
+
   def l (r: rt) {
     println(" 1. " + r.c)
     println(" 2. " + r.a + 1)
@@ -97,33 +97,33 @@ object test1 {
     println("25. " + r.y)
     println("26. " + r.e(null))
   }
-  
+
   /*def ma[T](r: Object{def e(x: T): T; val x: T}) {
     println("30. " + r.e(r.x)) // static error
   }*/
-  
+
   def mb(r: Object { def e[T](x: T): T }) {
     println("31. " + r.e[Int](4)) // while this is ok
   }
-  
+
   def m1(r: Object { def z(x: Tata): Unit }) {
     println("32. " + r.z(new Titi)) // while this is ok
   }
-  
+
   def m2[T](r: Object { def e(x: Tata): T; val x: Tata }) {
     println("33. " + r.e(r.x)) // and this too
   }
-  
+
   class Rec3[T] {
     def e(x: T): T = x
   }
-  
+
   def m3[T](r: Rec3[T], x: T) {
     println("33. " + r.e(x)) // and this too
   }
-  
+
   Rec.g(11)
-  
+
   this.l(Rec)
   this.mb(new Object{def e[T](x: T): T = x})
   this.m1(Rec)
@@ -135,7 +135,7 @@ object test2 {
   class C extends { def f() { println("1") } }
   val x1 = new C
   x1.f()
-  
+
   abstract class D extends { def f() }
   val x2 = new D { def f() { println("2") } }
   x2.f()
@@ -156,11 +156,11 @@ object test2 {
 object test3 {
 
   case class Exc() extends Exception
-  
+
   object Rec {
     def f = throw Exc()
   }
-  
+
   def m(r: { def f: Nothing }) =
     try {
       r.f
@@ -169,31 +169,31 @@ object test3 {
       case e: Exc => println("caught")
       case e: Throwable => println(e)
     }
-  
+
   m(Rec)
-  
+
 }
 
 object test4 {
 
   class A
-  
+
   val aar = Array(new A, new A, new A)
   val nar = Array(1, 2)
-  
+
   def f(p: {def size: Int}) = println(p.size)
   //def g[T <: {def size: Int}](p: T) = println(p.size) // open issue
   //def h[T <% {def size: Int}](p: T) = println(p.size) // open issue
-  
+
   f(aar)
   f(nar)
-  
+
   //g(aar)
   //g(nar)
-  
+
   //h(aar)
   //h(nar)
-  
+
 }
 
 object Test extends App {

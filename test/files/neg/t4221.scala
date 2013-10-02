@@ -1,5 +1,5 @@
 class Cl {
-        class Sub[TheSub <: Sub[TheSub]] 
+        class Sub[TheSub <: Sub[TheSub]]
 }
 
 case class Wrapper[T](v: T)

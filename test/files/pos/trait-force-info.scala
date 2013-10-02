@@ -8,7 +8,7 @@ trait MyContextTrees {
   val self: Global
   val NoContext = self.analyzer.NoContext
 }
-// 
+//
 // error: java.lang.AssertionError: assertion failed: trait Contexts.NoContext$ linkedModule: <none>List()
 //  at scala.Predef$.assert(Predef.scala:160)
 //  at scala.tools.nsc.symtab.classfile.ClassfileParser$innerClasses$.innerSymbol$1(ClassfileParser.scala:1211)

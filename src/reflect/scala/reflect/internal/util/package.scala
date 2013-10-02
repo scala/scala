@@ -7,6 +7,9 @@ import scala.language.existentials // SI-6541
 package object util {
   import StringOps.longestCommonPrefix
 
+  // An allocation-avoiding reusable instance of the so-common List(Nil).
+  val ListOfNil: List[List[Nothing]] = Nil :: Nil
+
   def andFalse(body: Unit): Boolean = false
 
   // Shorten a name like Symbols$FooSymbol to FooSymbol.

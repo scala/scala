@@ -15,7 +15,7 @@ object ZipWith {
     def manyApp = n => xs => xs
   }
 
-  implicit def SuccZipWith[N, S, R](implicit zw: ZipWith[N, R]) = 
+  implicit def SuccZipWith[N, S, R](implicit zw: ZipWith[N, R]) =
     new ZipWith[Succ[N],S => R] {
       type T = Stream[S] => zw.T
 
@@ -33,12 +33,12 @@ object ZipWith {
 object Test {
   def zWith[N, S](n: N, s: S)(implicit zw: ZipWith[N, S]): zw.T = zw.zipWith(n)(s)
 
-  def zipWith0: Stream[Int] = zWith(Zero(),0) 
+  def zipWith0: Stream[Int] = zWith(Zero(),0)
 
 // (Stream[A]) => java.lang.Object with ZipWith[Zero,B]{type T = Stream[B]}#T
 // should normalise to: Stream[A] => Stream[B]
   def map[A, B](f: A => B) = zWith(Succ(Zero()),f)
-                               
+
   def zipWith3[A, B, C, D](f: A => B => C => D) = //: Stream[A] => Stream[B] => Stream[C] => Stream[D] = // BUG why do we need a return type?
     zWith(Succ(Succ(Succ(Zero()))),f)
 }

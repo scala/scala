@@ -28,6 +28,9 @@ checksensible.scala:27: warning: comparing values of types Int and Unit using `=
 checksensible.scala:29: warning: comparing values of types Int and String using `==' will always yield false
   1 == "abc"
     ^
+checksensible.scala:29: warning: Int and String are unrelated: they will most likely never compare equal
+  1 == "abc"
+    ^
 checksensible.scala:33: warning: comparing values of types Some[Int] and Int using `==' will always yield false
   Some(1) == 1      // as above
           ^
@@ -61,10 +64,16 @@ checksensible.scala:51: warning: comparing values of types Int and Unit using `!
 checksensible.scala:52: warning: comparing values of types Int and Symbol using `!=' will always yield true
   (1 != 'sym)
      ^
+checksensible.scala:52: warning: Int and Symbol are unrelated: they will most likely always compare unequal
+  (1 != 'sym)
+     ^
 checksensible.scala:58: warning: comparing a fresh object using `==' will always yield false
   ((x: Int) => x + 1) == null
                       ^
 checksensible.scala:59: warning: comparing a fresh object using `==' will always yield false
+  Bep == ((_: Int) + 1)
+      ^
+checksensible.scala:59: warning: Bep.type and Int => Int are unrelated: they will most likely never compare equal
   Bep == ((_: Int) + 1)
       ^
 checksensible.scala:61: warning: comparing a fresh object using `==' will always yield false
@@ -82,6 +91,9 @@ checksensible.scala:66: warning: comparing values of types Int and Null using `=
 checksensible.scala:71: warning: comparing values of types Bip and Bop using `==' will always yield false
   (x1 == x2)
       ^
+checksensible.scala:71: warning: Bip and Bop are unrelated: they will most likely never compare equal
+  (x1 == x2)
+      ^
 checksensible.scala:81: warning: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==' will always yield false
   c3 == z1
      ^
@@ -94,9 +106,12 @@ checksensible.scala:83: warning: comparing values of types EqEqRefTest.this.Z1 a
 checksensible.scala:84: warning: comparing values of types EqEqRefTest.this.C3 and String using `!=' will always yield true
   c3 != "abc"
      ^
+checksensible.scala:84: warning: EqEqRefTest.this.C3 and String are unrelated: they will most likely always compare unequal
+  c3 != "abc"
+     ^
 checksensible.scala:95: warning: comparing values of types Unit and Int using `!=' will always yield true
     while ((c = in.read) != -1)
                          ^
 error: No warnings can be incurred under -Xfatal-warnings.
-33 warnings found
+38 warnings found
 one error found

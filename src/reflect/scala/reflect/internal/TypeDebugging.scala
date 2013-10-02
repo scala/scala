@@ -7,7 +7,7 @@ package scala
 package reflect
 package internal
 
-import util.shortClassOfInstance
+import util._
 
 trait TypeDebugging {
   self: SymbolTable =>
@@ -39,17 +39,17 @@ trait TypeDebugging {
     def skipType(tpe: Type): Boolean = (tpe eq null) || skipSym(tpe.typeSymbolDirect)
 
     def skip(t: Tree): Boolean = t match {
-      case EmptyTree                                           => true
-      case PackageDef(_, _)                                    => true
-      case t: RefTree                                          => skipRefTree(t)
-      case TypeBoundsTree(lo, hi)                              => skip(lo) && skip(hi)
-      case Block(Nil, expr)                                    => skip(expr)
-      case Apply(fn, Nil)                                      => skip(fn)
-      case Block(stmt :: Nil, expr)                            => skip(stmt) && skip(expr)
-      case DefDef(_, nme.CONSTRUCTOR, Nil, Nil :: Nil, _, rhs) => skip(rhs)
-      case Literal(Constant(()))                               => true
-      case tt @ TypeTree()                                     => skipType(tt.tpe)
-      case _                                                   => skipSym(t.symbol)
+      case EmptyTree                                          => true
+      case PackageDef(_, _)                                   => true
+      case t: RefTree                                         => skipRefTree(t)
+      case TypeBoundsTree(lo, hi)                             => skip(lo) && skip(hi)
+      case Block(Nil, expr)                                   => skip(expr)
+      case Apply(fn, Nil)                                     => skip(fn)
+      case Block(stmt :: Nil, expr)                           => skip(stmt) && skip(expr)
+      case DefDef(_, nme.CONSTRUCTOR, Nil, ListOfNil, _, rhs) => skip(rhs)
+      case Literal(Constant(()))                              => true
+      case tt @ TypeTree()                                    => skipType(tt.tpe)
+      case _                                                  => skipSym(t.symbol)
     }
     def apply(t: Tree) = skip(t)
   }

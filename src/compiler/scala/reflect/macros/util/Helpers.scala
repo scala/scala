@@ -23,25 +23,27 @@ trait Helpers {
    *  or to streamline creation of the list of macro arguments.
    */
   def transformTypeTagEvidenceParams(macroImplRef: Tree, transform: (Symbol, Symbol) => Symbol): List[List[Symbol]] = {
+    val MacroContextUniverse = definitions.MacroContextUniverse
     val treeInfo.MacroImplReference(isBundle, _, macroImpl, _) = macroImplRef
     val paramss = macroImpl.paramss
-    if (paramss.isEmpty || paramss.last.isEmpty) return paramss // no implicit parameters in the signature => nothing to do
-    val rc =
-      if (isBundle) macroImpl.owner.tpe.member(nme.c)
-      else {
-        def cparam = paramss.head.head
-        if (paramss.head.isEmpty || !(cparam.tpe <:< MacroContextClass.tpe)) return paramss // no context parameter in the signature => nothing to do
-        cparam
-      }
-    def transformTag(param: Symbol): Symbol = param.tpe.dealias match {
-      case TypeRef(SingleType(SingleType(_, ac), universe), WeakTypeTagClass, targ :: Nil)
-      if ac == rc && universe == MacroContextUniverse =>
-        transform(param, targ.typeSymbol)
-      case _ =>
-        param
+    val ContextParam = paramss match {
+      case Nil | _ :+ Nil                                             => NoSymbol // no implicit parameters in the signature => nothing to do
+      case _ if isBundle                                              => macroImpl.owner.tpe member nme.c
+      case (cparam :: _) :: _ if cparam.tpe <:< MacroContextClass.tpe => cparam
+      case _                                                          => NoSymbol // no context parameter in the signature => nothing to do
     }
-    val transformed = paramss.last map transformTag filter (_ ne NoSymbol)
-    if (transformed.isEmpty) paramss.init else paramss.init :+ transformed
+    def transformTag(param: Symbol): Symbol = param.tpe.dealias match {
+      case TypeRef(SingleType(SingleType(_, ContextParam), MacroContextUniverse), WeakTypeTagClass, targ :: Nil) => transform(param, targ.typeSymbol)
+      case _                                                                                                     => param
+    }
+    ContextParam match {
+      case NoSymbol => paramss
+      case _        =>
+        paramss.last map transformTag filter (_.exists) match {
+          case Nil         => paramss.init
+          case transformed => paramss.init :+ transformed
+        }
+    }
   }
 
   /** Increases metalevel of the type, i.e. transforms:

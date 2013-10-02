@@ -9,7 +9,7 @@ object Test {
         . map(f => f.getAnnotations.toList)
         . filterNot (_.isEmpty) // there are extra fields under -Xcheckinit
     )
-    
+
     println(xs)
   }
 }

@@ -6,13 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala
 package collection
 package parallel.immutable
-
-
-
 
 import scala.collection.generic.{GenericParTemplate, CanCombineFrom, ParFactory}
 import scala.collection.parallel.ParSeqLike
@@ -22,8 +18,6 @@ import mutable.ArrayBuffer
 import immutable.Vector
 import immutable.VectorBuilder
 import immutable.VectorIterator
-
-
 
 /** Immutable parallel vectors, based on vectors.
  *
@@ -83,10 +77,7 @@ extends ParSeq[T]
       splitted.map(v => new ParVector(v).splitter.asInstanceOf[ParVectorIterator])
     }
   }
-
 }
-
-
 
 /** $factoryInfo
  *  @define Coll `immutable.ParVector`
@@ -100,8 +91,6 @@ object ParVector extends ParFactory[ParVector] {
 
   def newCombiner[T]: Combiner[T, ParVector[T]] = new LazyParVectorCombiner[T] // was: with EPC[T, ParVector[T]]
 }
-
-
 
 private[immutable] class LazyParVectorCombiner[T] extends Combiner[T, ParVector[T]] {
 //self: EnvironmentPassingCombiner[T, ParVector[T]] =>
@@ -136,11 +125,4 @@ private[immutable] class LazyParVectorCombiner[T] extends Combiner[T, ParVector[
     vectors ++= that.vectors
     this
   }
-
 }
-
-
-
-
-
-

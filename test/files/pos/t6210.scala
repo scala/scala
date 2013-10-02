@@ -10,9 +10,9 @@ case class TBool() extends Ty
 object Foo {
   def checkExpr(ast: AExpr): Ty = {
     var astTy:Ty = ast match {
-      case AAssign(nm: String, v:AExpr) => TBool() 
+      case AAssign(nm: String, v:AExpr) => TBool()
 
-      case AConstBool(v: Boolean) => TBool() 
+      case AConstBool(v: Boolean) => TBool()
 
       case _                          => throw new Exception(s"Unhandled case check(ast: ${ast.getClass})")
     }

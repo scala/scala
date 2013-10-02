@@ -19,7 +19,7 @@ class Test {
       import scala.util.Properties.lineSeparator
     }
   }
-  
+
   // parses
   def f3 = {
     import scala._

@@ -7,7 +7,7 @@ object Test {
   // this earns a VerifyError.
   trait C { def wait (): Unit }
   class D { }
-  
+
   def main(args: Array[String]): Unit = {
     new B with A { }
     new BB

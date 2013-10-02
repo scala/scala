@@ -7,7 +7,7 @@ object Test {
   def fatal[T]: T = throw new Exception
   def cpsIntStringInt = shift { k:(Int=>String) => k(3); 7 }
   def cpsIntIntString = shift { k:(Int=>Int) => k(3); "7" }
-  
+
   def foo1 = try {
     fatal[Int]
     cpsIntStringInt

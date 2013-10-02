@@ -102,7 +102,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   }
 
   def iterator: Iterator[Int] = iteratorFrom(0)
-  
+
   override def keysIteratorFrom(start: Int) = new AbstractIterator[Int] {
     private var current = start
     private val end = nwords * WordLength
@@ -116,14 +116,20 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   }
 
   override def foreach[B](f: Int => B) {
-    for (i <- 0 until nwords) {
-      val w = word(i)
-      /* NOTE: `until` instead of `to` will not work here because
-         the maximum value of `(i + 1) * WordLength` could be
-         `Int.MaxValue + 1` (i.e. `Int.MinValue`). */
-      for (j <- i * WordLength to (i + 1) * WordLength - 1) {
-        if ((w & (1L << j)) != 0L) f(j)
+    /* NOTE: while loops are significantly faster as of 2.11 and
+       one major use case of bitsets is performance. Also, there
+       is nothing to do when all bits are clear, so use that as
+       the inner loop condition. */
+    var i = 0
+    while (i < nwords) {
+      var w = word(i)
+      var j = i * WordLength
+      while (w != 0L) {
+        if ((w&1L) == 1L) f(j)
+        w = w >>> 1
+        j += 1
       }
+      i += 1
     }
   }
 
@@ -218,9 +224,10 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
 
 /** Companion object for BitSets. Contains private data only */
 object BitSetLike {
-  private[collection] val LogWL = 6
-  private val WordLength = 64
-  private[collection] val MaxSize = (Int.MaxValue >> LogWL) + 1
+  /* Final vals can sometimes be inlined as constants (faster) */
+  private[collection] final val LogWL = 6
+  private final val WordLength = 64
+  private[collection] final val MaxSize = (Int.MaxValue >> LogWL) + 1
 
   private[collection] def updateArray(elems: Array[Long], idx: Int, w: Long): Array[Long] = {
     var len = elems.length
