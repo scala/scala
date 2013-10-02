@@ -16,8 +16,8 @@ object Util {
    */
   def trace[A](a: A) = macro traceImpl[A]
 
-  import scala.reflect.macros.Context
-  def traceImpl[A: c.WeakTypeTag](c: Context)(a: c.Expr[A]): c.Expr[A] = {
+  import scala.reflect.macros.BlackboxContext
+  def traceImpl[A: c.WeakTypeTag](c: BlackboxContext)(a: c.Expr[A]): c.Expr[A] = {
     import c.universe._
     import definitions._
 

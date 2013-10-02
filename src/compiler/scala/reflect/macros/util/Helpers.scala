@@ -27,13 +27,13 @@ trait Helpers {
     import runDefinitions._
 
     val MacroContextUniverse = definitions.MacroContextUniverse
-    val treeInfo.MacroImplReference(isBundle, _, macroImpl, _) = macroImplRef
+    val treeInfo.MacroImplReference(isBundle, _, _, macroImpl, _) = macroImplRef
     val paramss = macroImpl.paramss
     val ContextParam = paramss match {
-      case Nil | _ :+ Nil                                             => NoSymbol // no implicit parameters in the signature => nothing to do
-      case _ if isBundle                                              => macroImpl.owner.tpe member nme.c
-      case (cparam :: _) :: _ if cparam.tpe <:< MacroContextClass.tpe => cparam
-      case _                                                          => NoSymbol // no context parameter in the signature => nothing to do
+      case Nil | _ :+ Nil                                       => NoSymbol // no implicit parameters in the signature => nothing to do
+      case _ if isBundle                                        => macroImpl.owner.tpe member nme.c
+      case (cparam :: _) :: _ if isMacroContextType(cparam.tpe) => cparam
+      case _                                                    => NoSymbol // no context parameter in the signature => nothing to do
     }
     def transformTag(param: Symbol): Symbol = param.tpe.dealias match {
       case TypeRef(SingleType(SingleType(_, ContextParam), MacroContextUniverse), WeakTypeTagClass, targ :: Nil) => transform(param, targ.typeSymbol)

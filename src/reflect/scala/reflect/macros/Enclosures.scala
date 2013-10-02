@@ -7,13 +7,13 @@ import scala.language.existentials // SI-6541
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that exposes
+ *  A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that exposes
  *  enclosing trees (method, class, compilation unit and currently compiled application),
  *  the enclosing position of the macro expansion, as well as macros and implicits
  *  that are currently in-flight.
  */
 trait Enclosures {
-  self: Context =>
+  self: BlackboxContext =>
 
   /** The tree that undergoes macro expansion.
    *  Can be useful to get an offset or a range position of the entire tree being processed.
@@ -43,7 +43,7 @@ trait Enclosures {
    *  Unlike `openMacros`, this is a val, which means that it gets initialized when the context is created
    *  and always stays the same regardless of whatever happens during macro expansion.
    */
-  def enclosingMacros: List[Context]
+  def enclosingMacros: List[BlackboxContext]
 
   /** Information about one of the currently considered implicit candidates.
    *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,

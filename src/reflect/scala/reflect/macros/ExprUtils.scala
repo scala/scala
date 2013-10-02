@@ -5,11 +5,11 @@ package macros
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- * A slice of [[scala.reflect.macros.Context the Scala macros context]] that defines shorthands for the
+ * A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that defines shorthands for the
  *  most common `Expr`-creating functions.
  */
 trait ExprUtils {
-  self: Context =>
+  self: BlackboxContext =>
 
   /** Shorthand for `Literal(Constant(null))` in the underlying `universe`. */
   @deprecated("Use quasiquotes instead", "2.11.0")

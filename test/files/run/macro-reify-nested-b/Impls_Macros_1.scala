@@ -1,8 +1,8 @@
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{universe => ru}
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
-case class Utils[C <: Context]( c:C ) {
+case class Utils[C <: BlackboxContext]( c:C ) {
   import c.universe._
   import c.{Tree=>_}
   object removeDoubleReify extends c.universe.Transformer {
@@ -21,7 +21,7 @@ case class Utils[C <: Context]( c:C ) {
   }
 }
 object QueryableMacros{
-  def _helper[C <: Context,S:c.WeakTypeTag]( c:C )( name:String, projection:c.Expr[_] ) = {
+  def _helper[C <: BlackboxContext,S:c.WeakTypeTag]( c:C )( name:String, projection:c.Expr[_] ) = {
     import c.universe._
     import treeBuild._
     val element_type = implicitly[c.WeakTypeTag[S]].tpe
@@ -34,7 +34,7 @@ object QueryableMacros{
     c.universe.reify{ Queryable.factory[S]( foo.splice )}
   }
   def map[T:c.WeakTypeTag, S:c.WeakTypeTag]
-               (c: scala.reflect.macros.Context)
+               (c: scala.reflect.macros.BlackboxContext)
                (projection: c.Expr[T => S]): c.Expr[Queryable[S]] = _helper[c.type,S]( c )( "_map", projection )
 }
 class Queryable[T]{

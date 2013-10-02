@@ -1,9 +1,9 @@
 package pkg {
-  import scala.reflect.macros.Context
+  import scala.reflect.macros.BlackboxContext
   import scala.language.experimental.macros
 
   object Macros {
-    def impl[T: c.WeakTypeTag](c: Context) = {
+    def impl[T: c.WeakTypeTag](c: BlackboxContext) = {
       import c.universe._
       val sym = c.weakTypeOf[T].typeSymbol
       val g = c.universe.asInstanceOf[scala.tools.nsc.Global]

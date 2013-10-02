@@ -1406,13 +1406,6 @@ TODO:
   <target name="quick.swing"      depends="quick.actors, quick.lib" if="has.java6">
     <staged-build with="locker"   stage="quick" project="swing"/> </target>
 
-  <target name="quick.partest-extras"
-                                  depends="quick.comp">
-    <!-- compile compiler-specific parts of partest -->
-    <staged-build with="starr" stage="quick" project="partest-extras" />
-    <staged-build with="starr" stage="quick" project="partest-javaagent" />
-  </target>
-
 
   <target name="quick.plugins"    depends="quick.comp">
     <staged-uptodate              stage="quick" project="continuations-plugin">
@@ -1504,10 +1497,14 @@ TODO:
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="scaladoc.classpath"/>
   </target>
 
-  <target name="pack.partest-extras" depends="quick.partest-extras">
-     <staged-pack project="partest-extras"/>
-     <staged-pack project="partest-javaagent"
-                  manifest="${src.dir}/partest-javaagent/scala/tools/partest/javaagent/MANIFEST.MF"/>
+  <target name="pack.partest-extras" depends="quick.comp">
+    <!-- compile compiler-specific parts of partest -->
+    <staged-build with="quick" stage="quick" project="partest-extras" />
+    <staged-build with="quick" stage="quick" project="partest-javaagent" />
+
+    <staged-pack project="partest-extras"/>
+    <staged-pack project="partest-javaagent"
+                 manifest="${src.dir}/partest-javaagent/scala/tools/partest/javaagent/MANIFEST.MF"/>
   </target>
 
   <target name="pack.bin" depends="pack.core, pack.modules, pack.partest-extras">
