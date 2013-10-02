@@ -45,7 +45,7 @@ trait MacroRuntimes extends JavaReflectionRuntimes with ScalaReflectionRuntimes 
   type MacroRuntime = MacroArgs => Any
   class MacroRuntimeResolver(val macroDef: Symbol) extends JavaReflectionResolvers
                                                       with ScalaReflectionResolvers {
-    val binding = loadMacroImplBinding(macroDef)
+    val binding = loadMacroImplBinding(macroDef).get
     val isBundle = binding.isBundle
     val className = binding.className
     val methName = binding.methName

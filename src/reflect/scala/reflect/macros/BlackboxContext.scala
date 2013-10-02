@@ -2,14 +2,10 @@ package scala
 package reflect
 package macros
 
-// todo. introduce context hierarchy
-// the most lightweight context should just expose the stuff from the SIP
-// the full context should include all traits from scala.reflect.macros (and probably reside in scala-compiler.jar)
-
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  The Scala macros context.
+ *  The blackbox Scala macros context.
  *
  *  See [[scala.reflect.macros.package the overview page]] for a description of how macros work. This documentation
  *  entry provides information on the API available to macro writers.
@@ -27,17 +23,25 @@ package macros
  *  Other than that, macro contexts provide facilities for typechecking, exploring the compiler's symbol table and
  *  enclosing trees and compilation units, evaluating trees, logging warnings/errors and much more.
  *  Refer to the documentation of top-level traits in this package to learn the details.
+ *
+ *  If a macro def refers to a macro impl that uses `BlackboxContext`, then this macro def becomes a blackbox macro,
+ *  which means that its expansion will be upcast to its return type, enforcing faithfullness of that macro to its
+ *  type signature. Whitebox macros, i.e. the ones defined with `WhiteboxContext`, aren't bound by this restriction,
+ *  which enables a number of important use cases, but they are also going to enjoy less support than blackbox macros,
+ *  so choose wisely. See the [[http://docs.scala-lang.org/overviews/macros.html Macros Guide]] for more information.
+ *
+ *  @see `scala.reflect.macros.WhiteboxContext`
  */
-trait Context extends Aliases
-                 with Enclosures
-                 with Names
-                 with Reifiers
-                 with FrontEnds
-                 with Infrastructure
-                 with Typers
-                 with Parsers
-                 with Evals
-                 with ExprUtils {
+trait BlackboxContext extends Aliases
+                         with Enclosures
+                         with Names
+                         with Reifiers
+                         with FrontEnds
+                         with Infrastructure
+                         with Typers
+                         with Parsers
+                         with Evals
+                         with ExprUtils {
 
   /** The compile-time universe. */
   val universe: Universe
@@ -59,7 +63,7 @@ trait Context extends Aliases
    *  scala> class Coll[T] {
    *       | def filter(p: T => Boolean): Coll[T] = macro M.filter[T]
    *       | }; object M {
-   *       | def filter[T](c: Context { type PrefixType = Coll[T] })
+   *       | def filter[T](c: BlackboxContext { type PrefixType = Coll[T] })
    *       |              (p: c.Expr[T => Boolean]): c.Expr[Coll[T]] =
    *       |   {
    *       |     println(c.prefix.tree)

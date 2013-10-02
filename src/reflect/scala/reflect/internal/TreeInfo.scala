@@ -18,7 +18,7 @@ abstract class TreeInfo {
   val global: SymbolTable
 
   import global._
-  import definitions.{ isTupleSymbol, isVarArgsList, isCastSymbol, ThrowableClass, TupleClass, MacroContextClass, MacroContextPrefixType, uncheckedStableClass }
+  import definitions.{ isTupleSymbol, isVarArgsList, isCastSymbol, ThrowableClass, TupleClass, uncheckedStableClass, isBlackboxMacroBundleType, isWhiteboxContextType }
 
   /* Does not seem to be used. Not sure what it does anyway.
   def isOwnerDefinition(tree: Tree): Boolean = tree match {
@@ -822,13 +822,19 @@ abstract class TreeInfo {
       case ref: RefTree => {
         val qual = ref.qualifier
         val isBundle = definitions.isMacroBundleType(qual.tpe)
+        val isBlackbox =
+          if (isBundle) isBlackboxMacroBundleType(qual.tpe)
+          else ref.symbol.paramss match {
+            case (c :: Nil) :: _ if isWhiteboxContextType(c.info) => false
+            case _ => true
+          }
         val owner =
           if (isBundle) qual.tpe.typeSymbol
           else {
-            val sym = if (qual.hasSymbolField) qual.symbol else NoSymbol
-            if (sym.isModule) sym.moduleClass else sym
+            val qualSym = if (qual.hasSymbolField) qual.symbol else NoSymbol
+            if (qualSym.isModule) qualSym.moduleClass else qualSym
           }
-        Some((isBundle, owner, ref.symbol, dissectApplied(tree).targs))
+        Some((isBundle, isBlackbox, owner, ref.symbol, dissectApplied(tree).targs))
       }
       case _  => None
     }

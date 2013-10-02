@@ -3,7 +3,8 @@ package contexts
 
 import scala.tools.nsc.Global
 
-abstract class Context extends scala.reflect.macros.Context
+abstract class Context extends scala.reflect.macros.BlackboxContext
+                          with scala.reflect.macros.WhiteboxContext
                           with Aliases
                           with Enclosures
                           with Names

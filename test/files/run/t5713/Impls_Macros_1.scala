@@ -1,7 +1,7 @@
 package m
 
 import language.experimental.macros
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Level extends Enumeration {
   val Error = Value(5)
@@ -13,7 +13,7 @@ object Logger {
 
 private object LoggerMacros {
 
-  type LoggerContext = Context { type PrefixType = Logger.type }
+  type LoggerContext = BlackboxContext { type PrefixType = Logger.type }
 
   def error(c: LoggerContext)(message: c.Expr[String]): c.Expr[Unit] =
     log(c)(c.universe.reify(Level.Error), message)

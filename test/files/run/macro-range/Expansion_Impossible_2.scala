@@ -1,7 +1,7 @@
-import reflect.macros.Context
+import reflect.macros.BlackboxContext
 
 object Impls {
-  def foreach(c: Context)(f: c.Expr[Int => Unit]): c.Expr[Unit] = {
+  def foreach(c: BlackboxContext)(f: c.Expr[Int => Unit]): c.Expr[Unit] = {
     // todo. read the compiler config and print if -Ydebug is set
     //println("macro-expand, _this = "+ _this)
     object utils extends Utils { val context: c.type = c }

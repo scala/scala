@@ -5,11 +5,11 @@ package macros
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that
  *  partially exposes the type checker to macro writers.
  */
 trait Typers {
-  self: Context =>
+  self: BlackboxContext =>
 
   /** Contexts that represent macros in-flight, including the current one. Very much like a stack trace, but for macros only.
    *  Can be useful for interoperating with other macros and for imposing compiler-friendly limits on macro expansion.
@@ -21,7 +21,7 @@ trait Typers {
    *  Unlike `enclosingMacros`, this is a def, which means that it gets recalculated on every invocation,
    *  so it might change depending on what is going on during macro expansion.
    */
-  def openMacros: List[Context]
+  def openMacros: List[BlackboxContext]
 
   /** Information about one of the currently considered implicit candidates.
    *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,

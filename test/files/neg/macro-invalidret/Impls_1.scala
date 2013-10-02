@@ -1,7 +1,7 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 import scala.reflect.runtime.{universe => ru}
 
 object Impls {
-  def foo1(c: Context) = 2
-  def foo2(c: Context) = ru.Literal(ru.Constant(42))
+  def foo1(c: BlackboxContext) = 2
+  def foo2(c: BlackboxContext) = ru.Literal(ru.Constant(42))
 }

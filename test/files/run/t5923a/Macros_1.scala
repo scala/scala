@@ -1,4 +1,4 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 import language.experimental.macros
 
 case class C[T](t: String)
@@ -7,7 +7,7 @@ object C {
 }
 
 object Macros {
-  def impl[T](c: Context)(ttag: c.WeakTypeTag[T]) = {
+  def impl[T](c: BlackboxContext)(ttag: c.WeakTypeTag[T]) = {
     import c.universe._
     val ttag0 = ttag;
     {

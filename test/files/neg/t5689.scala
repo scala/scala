@@ -1,6 +1,6 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Macros {
   def returnsString(i: Double): String = macro returnsIntImpl
-  def returnsIntImpl(c: Context)(i: c.Expr[Double]): c.Expr[Int] = ???
+  def returnsIntImpl(c: BlackboxContext)(i: c.Expr[Double]): c.Expr[Int] = ???
 }

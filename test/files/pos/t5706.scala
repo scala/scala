@@ -1,10 +1,15 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.WhiteboxContext
 
 class Logger {
-  def error(message: String) = macro Impls.error
+  def error1(message: String) = macro Impls.error1
+  def error2(message: String) = macro Impls.error2
 }
 
 object Impls {
-  type LoggerContext = Context { type PrefixType = Logger }
-  def error(c: LoggerContext)(message: c.Expr[String]): c.Expr[Unit] = ???
+  type LoggerContext1 = BlackboxContext { type PrefixType = Logger }
+  def error1(c: LoggerContext1)(message: c.Expr[String]): c.Expr[Unit] = ???
+
+  type LoggerContext2 = WhiteboxContext { type PrefixType = Logger }
+  def error2(c: LoggerContext2)(message: c.Expr[String]): c.Expr[Unit] = ???
 }
