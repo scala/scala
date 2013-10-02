@@ -1,0 +1,10 @@
+macro-bundle-polymorphic.scala:10: error: macro bundles must be monomorphic traits extending scala.reflect.macros.Macro and not implementing its `val c: Context` member
+  def foo = macro Bundle.impl
+      ^
+macro-bundle-polymorphic.scala:11: error: macro bundles must be monomorphic traits extending scala.reflect.macros.Macro and not implementing its `val c: Context` member
+  def foo = macro Bundle[Int].impl
+      ^
+macro-bundle-polymorphic.scala:12: error: macro bundles must be monomorphic traits extending scala.reflect.macros.Macro and not implementing its `val c: Context` member
+  def foo = macro Bundle[Int, Nothing].impl
+      ^
+three errors found
