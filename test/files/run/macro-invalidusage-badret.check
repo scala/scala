@@ -1,5 +1,5 @@
 reflective compilation has failed:
 
 type mismatch;
- found   : Int(42)
+ found   : Int
  required: String

@@ -604,21 +604,27 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    */
   def macroExpandApply(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = {
     object expander extends TermMacroExpander(APPLY_ROLE, typer, expandee, mode, pt) {
-      override def onSuccess(expanded: Tree) = {
+      override def onSuccess(expanded0: Tree) = {
+        def approximate(tp: Type) = {
+          // approximation is necessary for whitebox macros to guide type inference
+          // read more in the comments for onDelayed below
+          if (isBlackbox(expandee)) tp
+          else {
+            val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
+            deriveTypeWithWildcards(undetparams)(tp)
+          }
+        }
+        val macroPt = approximate(if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe)
+        val expanded = if (isBlackbox(expandee)) atPos(enclosingMacroPosition.focus)(Typed(expanded0, TypeTree(macroPt))) else expanded0
+
         // prematurely annotate the tree with a macro expansion attachment
         // so that adapt called indirectly by typer.typed knows that it needs to apply the existential fixup
         linkExpandeeAndExpanded(expandee, expanded)
-        // approximation is necessary for whitebox macros to guide type inference
-        // read more in the comments for onDelayed below
-        def approximate(tp: Type) = {
-          val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
-          deriveTypeWithWildcards(undetparams)(tp)
-        }
-        val macroPtApprox = approximate(if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe)
+
         // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
         // therefore we need to re-enable the conversions back temporarily
-        if (macroDebugVerbose) println(s"typecheck #1 (against macroPtApprox = $macroPtApprox): $expanded")
-        val expanded1 = typer.context.withImplicitsEnabled(typer.typed(expanded, mode, macroPtApprox))
+        if (macroDebugVerbose) println(s"typecheck #1 (against macroPt = $macroPt): $expanded")
+        val expanded1 = typer.context.withImplicitsEnabled(typer.typed(expanded, mode, macroPt))
         if (expanded1.isErrorTyped) {
           if (macroDebugVerbose) println(s"typecheck #1 has failed: ${typer.context.reportBuffer.errors}")
           expanded1
