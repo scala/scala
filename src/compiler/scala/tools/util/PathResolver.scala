@@ -11,6 +11,7 @@ import scala.tools.reflect.WrappedProperties.AccessControl
 import scala.tools.nsc.{ Settings }
 import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
 import scala.reflect.io.{ File, Directory, Path, AbstractFile }
+import scala.reflect.runtime.ReflectionUtils
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps
@@ -163,6 +164,12 @@ object PathResolver {
       |}""".asLines
   }
 
+  // used in PathResolver constructor
+  private object NoImplClassJavaContext extends JavaContext {
+    override def isValidName(name: String): Boolean =
+      !ReflectionUtils.scalacShouldntLoadClassfile(name)
+  }
+
   // called from scalap
   def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = {
     val s = new Settings()
@@ -193,7 +200,9 @@ object PathResolver {
 class PathResolver(settings: Settings, context: JavaContext) {
   import PathResolver.{ Defaults, Environment, AsLines, MkLines, ppcp }
 
-  def this(settings: Settings) = this(settings, if (settings.inline) new JavaContext else DefaultJavaContext)
+  def this(settings: Settings) = this(settings,
+      if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
+      else DefaultJavaContext)
 
   private def cmdLineOrElse(name: String, alt: String) = {
     (commandLineFor(name) match {

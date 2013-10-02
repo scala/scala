@@ -144,9 +144,7 @@ object ClassPath {
     def newClassPath(dir: AbstractFile) = new DirectoryClassPath(dir, this)
   }
 
-  object DefaultJavaContext extends JavaContext {
-    override def isValidName(name: String) = !ReflectionUtils.scalacShouldntLoadClassfile(name)
-  }
+  object DefaultJavaContext extends JavaContext
 
   private def endsClass(s: String) = s.length > 6 && s.substring(s.length - 6) == ".class"
   private def endsScala(s: String) = s.length > 6 && s.substring(s.length - 6) == ".scala"
