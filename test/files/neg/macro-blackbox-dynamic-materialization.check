@@ -1,0 +1,4 @@
+Test_2.scala:2: error: I don't like classes that contain integers
+  println(implicitly[Foo[C1]])
+                    ^
+one error found

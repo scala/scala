@@ -1,7 +1,7 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.WhiteboxContext
 
 object Macros {
-  def impl(c: BlackboxContext) = {
+  def impl(c: WhiteboxContext) = {
     import c.universe._
 
     val inscope = c.inferImplicitValue(c.mirror.staticClass("SourceLocation").toType)

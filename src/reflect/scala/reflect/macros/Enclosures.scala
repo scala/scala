@@ -45,18 +45,6 @@ trait Enclosures {
    */
   def enclosingMacros: List[BlackboxContext]
 
-  /** Information about one of the currently considered implicit candidates.
-   *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,
-   *  hence implicit searches can recursively trigger other implicit searches.
-   *
-   *  Can be useful to get information about an application with an implicit parameter that is materialized during current macro expansion.
-   *  If we're in an implicit macro being expanded, it's included in this list.
-   *
-   *  Unlike `openImplicits`, this is a val, which means that it gets initialized when the context is created
-   *  and always stays the same regardless of whatever happens during macro expansion.
-   */
-  def enclosingImplicits: List[ImplicitCandidate]
-
   /** Tries to guess a position for the enclosing application.
    *  But that is simple, right? Just dereference `pos` of `macroApplication`? Not really.
    *  If we're in a synthetic macro expansion (no positions), we must do our best to infer the position of something that triggerd this expansion.
