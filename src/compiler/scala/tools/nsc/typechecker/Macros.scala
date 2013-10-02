@@ -678,7 +678,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         // e.g. for Foo it will be Int :: String :: Boolean :: HNil), there's no way to convey this information
         // to the typechecker. Therefore the typechecker will infer Nothing for L, which is hardly what we want.
         //
-        // =========== THE SOLUTION ===========
+        // =========== THE SOLUTION (ENABLED ONLY FOR WHITEBOX MACROS) ===========
         //
         // To give materializers a chance to say their word before vanilla inference kicks in,
         // we infer as much as possible (e.g. in the example above even though L is hopeless, C still can be inferred to Foo)
@@ -686,9 +686,12 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         // Thanks to that the materializer can take a look at what's going on and react accordingly.
         val shouldInstantiate = typer.context.undetparams.nonEmpty && !mode.inPolyMode
         if (shouldInstantiate) {
-          forced += delayed
-          typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), pt, keepNothings = false)
-          macroExpandApply(typer, delayed, mode, pt)
+          if (isBlackbox(expandee)) typer.instantiatePossiblyExpectingUnit(delayed, mode, pt)
+          else {
+            forced += delayed
+            typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), pt, keepNothings = false)
+            macroExpandApply(typer, delayed, mode, pt)
+          }
         } else delayed
       }
     }
