@@ -182,9 +182,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def substituteThis(clazz: Symbol, to: Tree): Tree =
       new ThisSubstituter(clazz, to) transform this
 
-    def replace(from: Tree, to: Tree): Tree =
-      new TreeReplacer(from, to, positionAware = false) transform this
-
     def hasExistingSymbol = (symbol ne null) && (symbol ne NoSymbol)
     def hasSymbolWhich(f: Symbol => Boolean) = hasExistingSymbol && f(symbol)
 
@@ -1398,9 +1395,6 @@ trait Trees extends api.Trees { self: SymbolTable =>
   private def mclass(sym: Symbol) = sym map (_.asModule.moduleClass)
 
   // --- specific traversers and transformers
-
-  @deprecated("Moved to tree.duplicate", "2.10.0")
-  protected[scala] def duplicateTree(tree: Tree): Tree = tree.duplicate
 
   class ForeachPartialTreeTraverser(pf: PartialFunction[Tree, Tree]) extends Traverser {
     override def traverse(tree: Tree) {

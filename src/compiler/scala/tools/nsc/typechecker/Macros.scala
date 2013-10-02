@@ -854,9 +854,6 @@ object MacrosStats {
 class Fingerprint private[Fingerprint](val value: Int) extends AnyVal {
   def paramPos = { assert(isTag, this); value }
   def isTag = value >= 0
-  def isOther = this == Other
-  def isExpr = this == LiftedTyped
-  def isTree = this == LiftedUntyped
   override def toString = this match {
     case Other => "Other"
     case LiftedTyped => "Expr"

@@ -452,10 +452,6 @@ trait BasicBlocks {
       if (closed) instrs(instrs.length - 1)
       else instructionList.head
 
-    def firstInstruction =
-      if (closed) instrs(0)
-      else instructionList.last
-
     def exceptionSuccessors: List[BasicBlock] =
       exceptionSuccessorsForBlock(this)
 

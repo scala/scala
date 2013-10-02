@@ -430,11 +430,6 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  def isEarlyTypeDef(tree: Tree) = tree match {
-    case TypeDef(mods, _, _, _) => mods hasFlag PRESUPER
-    case _ => false
-  }
-
   /** Is tpt a vararg type of the form T* ? */
   def isRepeatedParamType(tpt: Tree) = tpt match {
     case TypeTree()                                                          => definitions.isRepeatedParamType(tpt.tpe)
@@ -528,21 +523,6 @@ abstract class TreeInfo {
   }
 
   private def hasNoSymbol(t: Tree) = t.symbol == null || t.symbol == NoSymbol
-
-  /** If this CaseDef assigns a name to its top-level pattern,
-   *  in the form 'expr @ pattern' or 'expr: pattern', returns
-   *  the name. Otherwise, nme.NO_NAME.
-   *
-   *  Note: in the case of Constant patterns such as 'case x @ "" =>',
-   *  the pattern matcher eliminates the binding and inlines the constant,
-   *  so as far as this method is likely to be able to determine,
-   *  the name is NO_NAME.
-   */
-  def assignedNameOfPattern(cdef: CaseDef): Name = cdef.pat match {
-    case Bind(name, _)  => name
-    case Ident(name)    => name
-    case _              => nme.NO_NAME
-  }
 
   /** Is this pattern node a synthetic catch-all case, added during PartialFuction synthesis before we know
     * whether the user provided cases are exhaustive. */
@@ -729,25 +709,6 @@ abstract class TreeInfo {
       }
       loop(tree)
     }
-
-    /** The depth of the nested applies: e.g. Apply(Apply(Apply(_, _), _), _)
-     *  has depth 3.  Continues through type applications (without counting them.)
-     */
-    def applyDepth: Int = {
-      def loop(tree: Tree): Int = tree match {
-        case Apply(fn, _)           => 1 + loop(fn)
-        case TypeApply(fn, _)       => loop(fn)
-        case AppliedTypeTree(fn, _) => loop(fn)
-        case _                      => 0
-      }
-      loop(tree)
-    }
-
-    override def toString = {
-      val tstr = if (targs.isEmpty) "" else targs.mkString("[", ", ", "]")
-      val astr = argss map (args => args.mkString("(", ", ", ")")) mkString ""
-      s"$core$tstr$astr"
-    }
   }
 
   /** Returns a wrapper that knows how to destructure and analyze applications.
@@ -835,12 +796,6 @@ abstract class TreeInfo {
       case _                        => false
     }
   }
-  object IsIf extends SeeThroughBlocks[Option[(Tree, Tree, Tree)]] {
-    protected def unapplyImpl(x: Tree) = x match {
-      case If(cond, thenp, elsep) => Some((cond, thenp, elsep))
-      case _                      => None
-    }
-  }
 
   def isApplyDynamicName(name: Name) = (name == nme.updateDynamic) || (name == nme.selectDynamic) || (name == nme.applyDynamic) || (name == nme.applyDynamicNamed)
 
@@ -893,7 +848,4 @@ abstract class TreeInfo {
     case Block(_, expr) => isMacroApplicationOrBlock(expr)
     case tree => isMacroApplication(tree)
   }
-
-  def isNonTrivialMacroApplication(tree: Tree): Boolean =
-    isMacroApplication(tree) && dissectApplied(tree).core != tree
 }

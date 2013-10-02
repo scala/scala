@@ -46,7 +46,6 @@ abstract class BCodeIdiomatic extends BCodeGlue {
 
   val ObjectReference   = brefType("java/lang/Object")
   val AnyRefReference   = ObjectReference
-  val objArrayReference = arrayOf(ObjectReference)
 
   val JAVA_LANG_OBJECT  = ObjectReference
   val JAVA_LANG_STRING  = brefType("java/lang/String")
@@ -72,11 +71,6 @@ abstract class BCodeIdiomatic extends BCodeGlue {
   final def mkArray(xs: List[asm.Label]): Array[asm.Label] = {
     if (xs.isEmpty) { return EMPTY_LABEL_ARRAY }
     val a = new Array[asm.Label](xs.size); xs.copyToArray(a); a
-  }
-  /* can-multi-thread */
-  final def mkArray(xs: List[Int]): Array[Int] = {
-    if (xs.isEmpty) { return EMPTY_INT_ARRAY }
-    val a = new Array[Int](xs.size); xs.copyToArray(a); a
   }
 
   /*
@@ -114,23 +108,6 @@ abstract class BCodeIdiomatic extends BCodeGlue {
   }
 
   /*
-   * can-multi-thread
-   */
-  final def mkArrayReverse(xs: List[asm.Label]): Array[asm.Label] = {
-    val len = xs.size
-    if (len == 0) { return EMPTY_LABEL_ARRAY }
-    val a = new Array[asm.Label](len)
-    var i = len - 1
-    var rest = xs
-    while (!rest.isEmpty) {
-      a(i) = rest.head
-      rest = rest.tail
-      i -= 1
-    }
-    a
-  }
-
-  /*
    * The type of 1-dimensional arrays of `elem` type.
    * The invoker is responsible for tracking (if needed) the inner class given by the elem BType.
    *
@@ -139,20 +116,6 @@ abstract class BCodeIdiomatic extends BCodeGlue {
   final def arrayOf(elem: BType): BType = {
     assert(!(elem.isUnitType), s"The element type of an array can't be: $elem")
     brefType("[" + elem.getDescriptor)
-  }
-
-  /*
-   * The type of N-dimensional arrays of `elem` type.
-   * The invoker is responsible for tracking (if needed) the inner class given by the elem BType.
-   *
-   * must-single-thread
-   */
-  final def arrayN(elem: BType, dims: Int): BType = {
-    assert(dims > 0)
-    assert(!(elem.isUnitType) && !(elem.isPhantomType),
-           "The element type of an array type is necessarily either a primitive type, or a class type, or an interface type.")
-    val desc = ("[" * dims) + elem.getDescriptor
-    brefType(desc)
   }
 
   /* Just a namespace for utilities that encapsulate MethodVisitor idioms.
@@ -165,7 +128,7 @@ abstract class BCodeIdiomatic extends BCodeGlue {
     def jmethod: asm.MethodVisitor
 
     import asm.Opcodes;
-    import icodes.opcodes.{ InvokeStyle, Static, Dynamic,  SuperCall }
+    import icodes.opcodes.{ Static, Dynamic,  SuperCall }
 
     final def emit(opc: Int) { jmethod.visitInsn(opc) }
 
@@ -258,23 +221,6 @@ abstract class BCodeIdiomatic extends BCodeGlue {
       }
 
     } // end of method genPrimitiveShift()
-
-    /*
-     * can-multi-thread
-     */
-    final def genPrimitiveComparison(op: icodes.ComparisonOp, kind: BType) {
-
-      import icodes.{ CMPL, CMP, CMPG }
-
-      ((op, kind): @unchecked) match {
-        case (CMP,  LONG)   => emit(Opcodes.LCMP)
-        case (CMPL, FLOAT)  => emit(Opcodes.FCMPL)
-        case (CMPG, FLOAT)  => emit(Opcodes.FCMPG)
-        case (CMPL, DOUBLE) => emit(Opcodes.DCMPL)
-        case (CMPG, DOUBLE) => emit(Opcodes.DCMPL) // http://docs.oracle.com/javase/specs/jvms/se5.0/html/Instructions2.doc3.html
-      }
-
-    } // end of method genPrimitiveComparison()
 
     /*
      * can-multi-thread
@@ -377,12 +323,6 @@ abstract class BCodeIdiomatic extends BCodeGlue {
           }
       }
     } // end of emitT2T()
-
-    // can-multi-thread
-    final def aconst(cst: AnyRef) {
-      if (cst == null) { emit(Opcodes.ACONST_NULL) }
-      else             { jmethod.visitLdcInsn(cst) }
-    }
 
     // can-multi-thread
     final def boolconst(b: Boolean) { iconst(if (b) 1 else 0) }
@@ -768,22 +708,8 @@ abstract class BCodeIdiomatic extends BCodeGlue {
     }
   }
 
-  implicit class MethodIterClassNode(cnode: asm.tree.ClassNode) {
-
-    @inline final def foreachMethod(f: (asm.tree.MethodNode) => Unit) { toMethodList.foreach(f) }
-
-    @inline final def toMethodList: List[asm.tree.MethodNode] = { JListWrapper(cnode.methods).toList }
-
-    @inline final def toFieldList:  List[asm.tree.FieldNode] = { JListWrapper(cnode.fields).toList }
-
-  }
-
   implicit class InsnIterMethodNode(mnode: asm.tree.MethodNode) {
-
     @inline final def foreachInsn(f: (asm.tree.AbstractInsnNode) => Unit) { mnode.instructions.foreachInsn(f) }
-
-    @inline final def toList: List[asm.tree.AbstractInsnNode] = { mnode.instructions.toList }
-
   }
 
   implicit class InsnIterInsnList(lst: asm.tree.InsnList) {
@@ -794,51 +720,5 @@ abstract class BCodeIdiomatic extends BCodeGlue {
         f(insnIter.next())
       }
     }
-
-    @inline final def toList: List[asm.tree.AbstractInsnNode] = {
-      var result: List[asm.tree.AbstractInsnNode] = Nil
-      lst foreachInsn { insn => if (insn != null) { result ::= insn }  }
-      result.reverse
-    }
-
   }
-
-  /*
-   *  Upon finding a name already seen among previous List elements, adds a numeric postfix to make it unique.
-   */
-  def uniquify(names: List[String]): List[String] = {
-    val seen = mutable.Set.empty[String]
-
-      @scala.annotation.tailrec def uniquified(current: String, attempt: Int): String = {
-        if (seen contains current) {
-          val currentBis = (current + "$" + attempt.toString)
-          if (seen contains currentBis) {
-            uniquified(current, attempt + 1)
-          } else currentBis
-        } else current
-      }
-
-    var rest = names
-    var result: List[String] = Nil
-    while (rest.nonEmpty) {
-      val u    = uniquified(rest.head.trim, 1)
-      seen    += u
-      result ::= u
-      rest     = rest.tail
-    }
-
-    result.reverse
-  }
-
-  def allDifferent[ElemType](xs: Iterable[ElemType]): Boolean = {
-    val seen = mutable.Set.empty[ElemType]
-    val iter = xs.iterator
-    while (iter.hasNext) {
-      val nxt = iter.next()
-      if (seen contains nxt) { return false }
-      seen += nxt
-    }
-    true
-  }
-
 }

@@ -15,10 +15,6 @@ trait Platform {
   val symbolTable: symtab.SymbolTable
   import symbolTable._
 
-  /** The binary classfile representation type */
-  @deprecated("BinaryRepr is not an abstract type anymore. It's an alias that points at AbstractFile. It'll be removed before Scala 2.11 is released.", "2.11.0-M5")
-  type BinaryRepr = AbstractFile
-
   /** The compiler classpath. */
   def classPath: ClassPath[AbstractFile]
 

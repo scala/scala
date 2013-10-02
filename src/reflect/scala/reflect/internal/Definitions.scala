@@ -334,9 +334,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ThrowableClass                 = getClassByName(sn.Throwable)
     lazy val UninitializedErrorClass        = requiredClass[UninitializedFieldError]
 
-    @deprecated("Same effect but more compact: `throw null`. Details in JVM spec, `athrow` instruction.", "2.11.0")
-    lazy val NPEConstructor                = getMemberMethod(NullPointerExceptionClass, nme.CONSTRUCTOR) suchThat (_.paramss.flatten.isEmpty)
-
     lazy val UninitializedFieldConstructor = UninitializedErrorClass.primaryConstructor
 
     // fundamental reference classes
@@ -408,7 +405,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val SerializableClass     = requiredClass[scala.Serializable]
     lazy val JavaSerializableClass = requiredClass[java.io.Serializable] modifyInfo fixupAsAnyTrait
     lazy val ComparableClass       = requiredClass[java.lang.Comparable[_]] modifyInfo fixupAsAnyTrait
-    lazy val CloneableClass        = requiredClass[scala.Cloneable]
     lazy val JavaCloneableClass    = requiredClass[java.lang.Cloneable]
     lazy val JavaNumberClass       = requiredClass[java.lang.Number]
     lazy val RemoteInterfaceClass  = requiredClass[java.rmi.Remote]
@@ -629,8 +625,6 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     def isTupleSymbol(sym: Symbol) = TupleClass.seq contains unspecializedSymbol(sym)
-    def isProductNClass(sym: Symbol) = ProductClass.seq contains sym
-    def tupleField(n: Int, j: Int) = getMemberValue(TupleClass(n), nme.productAccessorName(j))
     def isFunctionSymbol(sym: Symbol) = FunctionClass.seq contains unspecializedSymbol(sym)
     def isProductNSymbol(sym: Symbol) = ProductClass.seq contains unspecializedSymbol(sym)
 
@@ -652,8 +646,6 @@ trait Definitions extends api.StandardDefinitions {
       isNonTrivial && isMacroCompatible
     }
 
-    def isLiftableType(tp: Type) = tp <:< classExistentialType(LiftableClass)
-
     def isIterableType(tp: Type) = tp <:< classExistentialType(IterableClass)
 
     // These "direct" calls perform no dealiasing. They are most needed when
@@ -674,10 +666,6 @@ trait Definitions extends api.StandardDefinitions {
       def Product_canEqual              = getMemberMethod(ProductRootClass, nme.canEqual_)
 
       def productProj(z:Symbol, j: Int): TermSymbol = getMemberValue(z, nme.productAccessorName(j))
-      def productProj(n: Int,   j: Int): TermSymbol = productProj(ProductClass(n), j)
-
-      /** returns true if this type is exactly ProductN[T1,...,Tn], not some subclass */
-      def isExactProductType(tp: Type): Boolean = isProductNSymbol(tp.typeSymbol)
 
     /** if tpe <: ProductN[T1,...,TN], returns List(T1,...,TN) else Nil */
     @deprecated("No longer used", "2.11.0") def getProductArgs(tpe: Type): List[Type] = tpe.baseClasses find isProductNSymbol match {
@@ -728,7 +716,6 @@ trait Definitions extends api.StandardDefinitions {
     def byNameType(arg: Type)        = appliedType(ByNameParamClass, arg)
     def iteratorOfType(tp: Type)     = appliedType(IteratorClass, tp)
     def javaRepeatedType(arg: Type)  = appliedType(JavaRepeatedParamClass, arg)
-    def optionType(tp: Type)         = appliedType(OptionClass, tp)
     def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg)
     def seqType(arg: Type)           = appliedType(SeqClass, arg)
 
@@ -1073,12 +1060,6 @@ trait Definitions extends api.StandardDefinitions {
       attr
     }
 
-    @deprecated("Moved to rootMirror.getClass", "2.10.0")
-    def getClass(fullname: Name): ClassSymbol = rootMirror.getClassByName(fullname)
-
-    @deprecated("Moved to rootMirror.getModule", "2.10.0")
-    def getModule(fullname: Name): ModuleSymbol = rootMirror.getModule(fullname)
-
     private def fatalMissingSymbol(owner: Symbol, name: Name, what: String = "member") = {
       throw new FatalError(owner + " does not have a " + what + " " + name)
     }
@@ -1289,25 +1270,16 @@ trait Definitions extends api.StandardDefinitions {
     } //init
 
     class UniverseDependentTypes(universe: Tree) {
-      lazy val universeType = universe.tpe
-      lazy val universeSym = universe.symbol
-      lazy val nameType = universeMemberType(tpnme.Name)
-      lazy val termNameType = universeMemberType(tpnme.TypeName)
-      lazy val typeNameType = universeMemberType(tpnme.TermName)
-      lazy val modsType = universeMemberType(tpnme.Modifiers)
-      lazy val flagsType = universeMemberType(tpnme.FlagSet)
-      lazy val symbolType = universeMemberType(tpnme.Symbol)
-      lazy val treeType0 = universeMemberType(tpnme.Tree)
-      lazy val treeType = universeMemberType(tpnme.Tree)
-      lazy val typeDefType = universeMemberType(tpnme.TypeDef)
-      lazy val caseDefType = universeMemberType(tpnme.CaseDef)
+      lazy val nameType         = universeMemberType(tpnme.Name)
+      lazy val modsType         = universeMemberType(tpnme.Modifiers)
+      lazy val flagsType        = universeMemberType(tpnme.FlagSet)
+      lazy val symbolType       = universeMemberType(tpnme.Symbol)
+      lazy val treeType         = universeMemberType(tpnme.Tree)
+      lazy val caseDefType      = universeMemberType(tpnme.CaseDef)
       lazy val iterableTreeType = appliedType(IterableClass, treeType)
-      lazy val iterableCaseDefType = appliedType(IterableClass, caseDefType)
-      lazy val iterableIterableTreeType = appliedType(IterableClass, iterableTreeType)
-      lazy val listTreeType = appliedType(ListClass, treeType)
+      lazy val listTreeType     = appliedType(ListClass, treeType)
       lazy val listListTreeType = appliedType(ListClass, listTreeType)
-      lazy val optionTreeType = appliedType(OptionClass, treeType)
-      lazy val optionNameType = appliedType(OptionClass, nameType)
+
       def universeMemberType(name: TypeName) = universe.tpe.memberType(getTypeMember(universe.symbol, name))
     }
   }

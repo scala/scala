@@ -28,5 +28,5 @@ trait ReplStrings {
   def any2stringOf(x: Any, maxlen: Int) =
     "scala.runtime.ScalaRunTime.replStringOf(%s, %s)".format(x, maxlen)
 
-  def words(s: String) = s.trim split "\\s+" filterNot (_ == "") toList
+  def words(s: String) = (s.trim split "\\s+" filterNot (_ == "")).toList
 }

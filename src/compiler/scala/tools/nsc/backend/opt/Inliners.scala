@@ -443,7 +443,6 @@ abstract class Inliners extends SubComponent {
               case DontInlineHere(msg)                       => warnNoInline(msg)
               case NeverSafeToInline                         => false
               case InlineableAtThisCaller                    => true
-              case inl @ FeasibleInline(_, _) if !inl.isSafe => false
               case FeasibleInline(required, toPublicize)     =>
                 for (f <- toPublicize) {
                   inlineLog("access", f, "making public")
@@ -738,16 +737,11 @@ abstract class Inliners extends SubComponent {
      *   - either log the reason for failure --- case (b) ---,
      *   - or perform inlining --- case (a) ---.
      */
-    sealed abstract class InlineSafetyInfo {
-      def isSafe   = false
-    }
+    sealed abstract class InlineSafetyInfo
     case object NeverSafeToInline           extends InlineSafetyInfo
-    case object InlineableAtThisCaller      extends InlineSafetyInfo { override def isSafe = true }
+    case object InlineableAtThisCaller      extends InlineSafetyInfo
     case class  DontInlineHere(msg: String) extends InlineSafetyInfo
-    case class  FeasibleInline(accessNeeded: NonPublicRefs.Value,
-                               toBecomePublic: List[Symbol]) extends InlineSafetyInfo {
-      override def isSafe = true
-    }
+    case class  FeasibleInline(accessNeeded: NonPublicRefs.Value, toBecomePublic: List[Symbol]) extends InlineSafetyInfo
 
     case class AccessReq(
       accessNeeded:   NonPublicRefs.Value,

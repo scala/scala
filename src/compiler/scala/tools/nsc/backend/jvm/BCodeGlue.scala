@@ -119,16 +119,6 @@ abstract class BCodeGlue extends SubComponent {
     }
 
     /*
-     * @param typeDescriptor a field or method type descriptor.
-     *
-     * must-single-thread
-     */
-    def getType(typeDescriptor: String): BType = {
-      val n = global.newTypeName(typeDescriptor)
-      getType(n.start)
-    }
-
-    /*
      * @param methodDescriptor a method descriptor.
      *
      * must-single-thread
@@ -174,20 +164,6 @@ abstract class BCodeGlue extends SubComponent {
       }
       // debug: var check = 0; while (check < args.length) { assert(args(check) != null); check += 1 }
       args
-    }
-
-    /*
-     * Returns the Java types corresponding to the argument types of the given
-     * method descriptor.
-     *
-     * @param methodDescriptor a method descriptor.
-     * @return the Java types corresponding to the argument types of the given method descriptor.
-     *
-     * must-single-thread
-     */
-    def getArgumentTypes(methodDescriptor: String): Array[BType] = {
-      val n = global.newTypeName(methodDescriptor)
-      getArgumentTypes(n.start + 1)
     }
 
     /*
@@ -349,19 +325,6 @@ abstract class BCodeGlue extends SubComponent {
     }
 
     /*
-     * @return the prefix of the internal name until the last '/' (if '/' present), empty string otherwise.
-     *
-     * can-multi-thread
-     */
-    def getRuntimePackage: String = {
-      assert(hasObjectSort, s"not of object sort: $toString")
-      val iname = getInternalName
-      val idx = iname.lastIndexOf('/')
-      if (idx == -1) ""
-      else iname.substring(0, idx)
-    }
-
-    /*
      * @return the suffix of the internal name until the last '/' (if '/' present), internal name otherwise.
      *
      * can-multi-thread
@@ -387,18 +350,6 @@ abstract class BCodeGlue extends SubComponent {
     }
 
     /*
-     * Returns the number of arguments of methods of this type.
-     * This method should only be used for method types.
-     *
-     * @return the number of arguments of methods of this type.
-     *
-     * can-multi-thread
-     */
-    def getArgumentCount: Int = {
-      BType.getArgumentCount(off + 1)
-    }
-
-    /*
      * Returns the return type of methods of this type.
      * This method should only be used for method types.
      *
@@ -411,38 +362,6 @@ abstract class BCodeGlue extends SubComponent {
       var resPos = off + 1
       while (chrs(resPos) != ')') { resPos += 1 }
       BType.getType(resPos + 1)
-    }
-
-    /*
-     *  Given a zero-based formal-param-position, return its corresponding local-var-index,
-     *  taking into account the JVM-type-sizes of preceding formal params.
-     */
-    def convertFormalParamPosToLocalVarIdx(paramPos: Int, isInstanceMethod: Boolean): Int = {
-      assert(sort == asm.Type.METHOD)
-      val paramTypes = getArgumentTypes
-      var local = 0
-      (0 until paramPos) foreach { argPos => local += paramTypes(argPos).getSize }
-
-      local + (if (isInstanceMethod) 1 else 0)
-    }
-
-    /*
-     *  Given a local-var-index, return its corresponding zero-based formal-param-position,
-     *  taking into account the JVM-type-sizes of preceding formal params.
-     */
-    def convertLocalVarIdxToFormalParamPos(localIdx: Int, isInstanceMethod: Boolean): Int = {
-      assert(sort == asm.Type.METHOD)
-      val paramTypes = getArgumentTypes
-      var remaining  = (if (isInstanceMethod) (localIdx - 1) else localIdx)
-      assert(remaining >= 0)
-      var result     = 0
-      while (remaining > 0) {
-        remaining -= paramTypes(result).getSize
-        result    += 1
-      }
-      assert(remaining == 0)
-
-      result
     }
 
     // ------------------------------------------------------------------------
@@ -520,14 +439,6 @@ abstract class BCodeGlue extends SubComponent {
      * can-multi-thread
      */
     def isWideType = (getSize == 2)
-
-    def isCapturedCellRef: Boolean = {
-      this == srBooleanRef || this == srByteRef  ||
-      this == srCharRef    ||
-      this == srIntRef     ||
-      this == srLongRef    ||
-      this == srFloatRef   || this == srDoubleRef
-    }
 
     /*
      * Element vs. Component type of an array:
@@ -750,14 +661,6 @@ abstract class BCodeGlue extends SubComponent {
   val CT_NOTHING = brefType("scala/Nothing") // TODO needed?
   val CT_NULL    = brefType("scala/Null")    // TODO needed?
 
-  val srBooleanRef = brefType("scala/runtime/BooleanRef")
-  val srByteRef    = brefType("scala/runtime/ByteRef")
-  val srCharRef    = brefType("scala/runtime/CharRef")
-  val srIntRef     = brefType("scala/runtime/IntRef")
-  val srLongRef    = brefType("scala/runtime/LongRef")
-  val srFloatRef   = brefType("scala/runtime/FloatRef")
-  val srDoubleRef  = brefType("scala/runtime/DoubleRef")
-
   /*  Map from type kinds to the Java reference types.
    *  Useful when pushing class literals onto the operand stack (ldc instruction taking a class literal).
    *  @see Predef.classOf
@@ -802,80 +705,4 @@ abstract class BCodeGlue extends SubComponent {
       DOUBLE -> MethodNameAndType("unboxToDouble",  "(Ljava/lang/Object;)D")
     )
   }
-
-  /*
-   *  can-multi-thread
-   */
-  def toBType(t: asm.Type): BType = {
-    (t.getSort: @switch) match {
-      case asm.Type.VOID    => BType.VOID_TYPE
-      case asm.Type.BOOLEAN => BType.BOOLEAN_TYPE
-      case asm.Type.CHAR    => BType.CHAR_TYPE
-      case asm.Type.BYTE    => BType.BYTE_TYPE
-      case asm.Type.SHORT   => BType.SHORT_TYPE
-      case asm.Type.INT     => BType.INT_TYPE
-      case asm.Type.FLOAT   => BType.FLOAT_TYPE
-      case asm.Type.LONG    => BType.LONG_TYPE
-      case asm.Type.DOUBLE  => BType.DOUBLE_TYPE
-      case asm.Type.ARRAY   |
-           asm.Type.OBJECT  |
-           asm.Type.METHOD  =>
-        // TODO confirm whether this also takes care of the phantom types.
-        val key =
-          if (t.getSort == asm.Type.METHOD) t.getDescriptor
-          else t.getInternalName
-
-        val n = global.lookupTypeName(key.toCharArray)
-        new BType(t.getSort, n.start, n.length)
-    }
-  }
-
-  /*
-   * ASM trees represent types as strings (internal names, descriptors).
-   * Given that we operate instead on BTypes, conversion is needed when visiting MethodNodes outside GenBCode.
-   *
-   * can-multi-thread
-   */
-  def descrToBType(typeDescriptor: String): BType = {
-    val c: Char = typeDescriptor(0)
-    c match {
-      case 'V' => BType.VOID_TYPE
-      case 'Z' => BType.BOOLEAN_TYPE
-      case 'C' => BType.CHAR_TYPE
-      case 'B' => BType.BYTE_TYPE
-      case 'S' => BType.SHORT_TYPE
-      case 'I' => BType.INT_TYPE
-      case 'F' => BType.FLOAT_TYPE
-      case 'J' => BType.LONG_TYPE
-      case 'D' => BType.DOUBLE_TYPE
-      case 'L' =>
-        val iname = typeDescriptor.substring(1, typeDescriptor.length() - 1)
-        val n = global.lookupTypeName(iname.toCharArray)
-        new BType(asm.Type.OBJECT, n.start, n.length)
-      case _   =>
-        val n = global.lookupTypeName(typeDescriptor.toCharArray)
-        BType.getType(n.start)
-    }
-  }
-
-  /*
-   * Use only to lookup reference types, otherwise use `descrToBType()`
-   *
-   * can-multi-thread
-   */
-  def lookupRefBType(iname: String): BType = {
-    import global.chrs
-    val n    = global.lookupTypeName(iname.toCharArray)
-    val sort = if (chrs(n.start) == '[') BType.ARRAY else BType.OBJECT;
-    new BType(sort, n.start, n.length)
-  }
-
-  def lookupRefBTypeIfExisting(iname: String): BType = {
-    import global.chrs
-    val n    = global.lookupTypeNameIfExisting(iname.toCharArray, false)
-    if (n == null) { return null }
-    val sort = if (chrs(n.start) == '[') BType.ARRAY else BType.OBJECT;
-    new BType(sort, n.start, n.length)
-  }
-
 }

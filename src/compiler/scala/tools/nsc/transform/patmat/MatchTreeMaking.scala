@@ -159,7 +159,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       override def subPatternsAsSubstitution =
         Substitution(subPatBinders, subPatRefs) >> super.subPatternsAsSubstitution
 
-      import CODE._
       def bindSubPats(in: Tree): Tree =
         if (!emitVars) in
         else {

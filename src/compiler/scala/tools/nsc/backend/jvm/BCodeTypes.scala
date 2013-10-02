@@ -24,18 +24,12 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   // when compiling the Scala library, some assertions don't hold (e.g., scala.Boolean has null superClass although it's not an interface)
   val isCompilingStdLib = !(settings.sourcepath.isDefault)
 
-  val srBoxedUnit  = brefType("scala/runtime/BoxedUnit")
-
   // special names
   var StringReference             : BType = null
   var ThrowableReference          : BType = null
   var jlCloneableReference        : BType = null // java/lang/Cloneable
-  var jlNPEReference              : BType = null // java/lang/NullPointerException
   var jioSerializableReference    : BType = null // java/io/Serializable
-  var scalaSerializableReference  : BType = null // scala/Serializable
   var classCastExceptionReference : BType = null // java/lang/ClassCastException
-
-  var lateClosureInterfaces: Array[Tracked] = null // the only interface a Late-Closure-Class implements is scala.Serializable
 
   /* A map from scala primitive type-symbols to BTypes */
   var primitiveTypeMap: Map[Symbol, BType] = null
@@ -52,14 +46,11 @@ abstract class BCodeTypes extends BCodeIdiomatic {
 
   var AndroidParcelableInterface: Symbol = null
   var AndroidCreatorClass       : Symbol = null // this is an inner class, use asmType() to get hold of its BType while tracking in innerClassBufferASM
-  var androidCreatorType        : BType  = null
 
   var BeanInfoAttr: Symbol = null
 
   /* The Object => String overload. */
   var String_valueOf: Symbol = null
-
-  var ArrayInterfaces: Set[Tracked] = null
 
   // scala.FunctionX and scala.runtim.AbstractFunctionX
   val FunctionReference                 = new Array[Tracked](definitions.MaxFunctionArity + 1)
@@ -75,7 +66,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
    * must-single-thread
    */
   def initBCodeTypes() {
-
     import definitions._
 
     primitiveTypeMap =
@@ -138,18 +128,16 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       )
     }
 
-    ArrayInterfaces = Set(JavaCloneableClass, JavaSerializableClass) map exemplar
+    exemplar(JavaCloneableClass).c
+    exemplar(JavaSerializableClass).c
+    exemplar(SerializableClass).c
 
     StringReference             = exemplar(StringClass).c
     StringBuilderReference      = exemplar(StringBuilderClass).c
     ThrowableReference          = exemplar(ThrowableClass).c
     jlCloneableReference        = exemplar(JavaCloneableClass).c
-    jlNPEReference              = exemplar(NullPointerExceptionClass).c
     jioSerializableReference    = exemplar(JavaSerializableClass).c
-    scalaSerializableReference  = exemplar(SerializableClass).c
     classCastExceptionReference = exemplar(ClassCastExceptionClass).c
-
-    lateClosureInterfaces = Array(exemplar(SerializableClass))
 
     /*
      *  The bytecode emitter special-cases String concatenation, in that three methods of `JCodeMethodN`
@@ -215,23 +203,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
    *  All methods of this class can-multi-thread
    */
   case class Tracked(c: BType, flags: Int, sc: Tracked, ifaces: Array[Tracked], innersChain: Array[InnerClassEntry]) {
-
-    // not a case-field because we initialize it only for JVM classes we emit.
-    private var _directMemberClasses: List[BType] = null
-
-    def directMemberClasses: List[BType] = {
-      assert(_directMemberClasses != null, s"getter directMemberClasses() invoked too early for $c")
-      _directMemberClasses
-    }
-
-    def directMemberClasses_=(bs: List[BType]) {
-      if (_directMemberClasses != null) {
-        // TODO we enter here when both mirror class and plain class are emitted for the same ModuleClassSymbol.
-        assert(_directMemberClasses == bs.sortBy(_.off))
-      }
-      _directMemberClasses = bs.sortBy(_.off)
-    }
-
     /* `isCompilingStdLib` saves the day when compiling:
      *     (1) scala.Nothing (the test `c.isNonSpecial` fails for it)
      *     (2) scala.Boolean (it has null superClass and is not an interface)
@@ -246,23 +217,13 @@ abstract class BCodeTypes extends BCodeIdiomatic {
 
     import asm.Opcodes._
     def hasFlags(mask: Int) = (flags & mask) != 0
-    def isPrivate    = hasFlags(ACC_PRIVATE)
-    def isPublic     = hasFlags(ACC_PUBLIC)
-    def isAbstract   = hasFlags(ACC_ABSTRACT)
     def isInterface  = hasFlags(ACC_INTERFACE)
     def isFinal      = hasFlags(ACC_FINAL)
-    def isSynthetic  = hasFlags(ACC_SYNTHETIC)
-    def isSuper      = hasFlags(ACC_SUPER)
-    def isDeprecated = hasFlags(ACC_DEPRECATED)
     def isInnerClass = { innersChain != null }
-    def isTraditionalClosureClass = {
-      isInnerClass && isFinal && (c.getSimpleName.contains(tpnme.ANON_FUN_NAME.toString)) && isFunctionType(c)
-    }
     def isLambda = {
       // ie isLCC || isTraditionalClosureClass
       isFinal && (c.getSimpleName.contains(tpnme.ANON_FUN_NAME.toString)) && isFunctionType(c)
     }
-    def isSerializable = { isSubtypeOf(jioSerializableReference) }
 
     /* can-multi-thread */
     def superClasses: List[Tracked] = {
@@ -370,16 +331,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     minimizeInterfaces(superInterfaces)
   }
 
-  final def exemplarIfExisting(iname: String): Tracked = {
-    val bt = lookupRefBTypeIfExisting(iname)
-    if (bt != null) exemplars.get(bt)
-    else null
-  }
-
-  final def lookupExemplar(iname: String) = {
-    exemplars.get(lookupRefBType(iname))
-  }
-
   /*
    * Records the superClass and supportedInterfaces relations,
    * so that afterwards queries can be answered without resorting to typer.
@@ -419,10 +370,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     tr
   }
 
-  val EMPTY_TRACKED_SET  = Set.empty[Tracked]
-
   val EMPTY_TRACKED_ARRAY  = Array.empty[Tracked]
-  val EMPTY_InnerClassEntry_ARRAY = Array.empty[InnerClassEntry]
 
   /*
    * must-single-thread
@@ -461,12 +409,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     Tracked(key, flags, tsc, ifacesArr, innersChain)
   }
 
-  /* can-multi-thread */
-  final def mkArray(xs: List[Tracked]): Array[Tracked] = {
-    if (xs.isEmpty) { return EMPTY_TRACKED_ARRAY }
-    val a = new Array[Tracked](xs.size); xs.copyToArray(a); a
-  }
-
   // ---------------- utilities around interfaces represented by Tracked instances. ----------------
 
   /*  Drop redundant interfaces (those which are implemented by some other).
@@ -494,21 +436,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
 
   def checkAllInterfaces(ifaces: Iterable[Tracked]) {
     assert(allInterfaces(ifaces), s"Non-interfaces: ${nonInterfaces(ifaces).mkString}")
-  }
-
-  /*
-   *  Returns the intersection of two sets of interfaces.
-   */
-  def intersection(ifacesA: Set[Tracked], ifacesB: Set[Tracked]): Set[Tracked] = {
-    var acc: Set[Tracked] = Set()
-    for(ia <- ifacesA; ib <- ifacesB) {
-      val ab = ia.supportedBranches(ib)
-      val ba = ib.supportedBranches(ia)
-      acc = minimizeInterfaces(acc ++ ab ++ ba)
-    }
-    checkAllInterfaces(acc)
-
-    acc
   }
 
   /*
@@ -650,27 +577,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   }
 
   /*
-   * Whether the argument (the signature of a method) takes as argument
-   * one ore more Function or PartialFunction (in particular an anonymous closure).
-   *
-   * can-multi-thread
-   */
-  final def isHigherOrderMethod(mtype: BType): Boolean = {
-    assert(mtype.sort == BType.METHOD)
-
-    val ats = mtype.getArgumentTypes
-    var idx = 0
-    while (idx < ats.length) {
-      val t = ats(idx)
-      if (isFunctionType(t) || isPartialFunctionType(t)) {
-        return true
-      }
-      idx += 1
-    }
-    false
-  }
-
-  /*
    *  Whether the argument is a subtype of
    *    scala.PartialFunction[-A, +B] extends (A => B)
    *  N.B.: this method returns true for a scala.runtime.AbstractPartialFunction
@@ -679,16 +585,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
    */
   def isPartialFunctionType(t: BType): Boolean = {
     (t.hasObjectSort) && exemplars.get(t).isSubtypeOf(PartialFunctionReference)
-  }
-
-  /*
-   *  Whether the argument is a subtype of
-   *    scala.runtime.AbstractPartialFunction[-T1, +R] extends Function1[T1, R] with PartialFunction[T1, R]
-   *
-   *  can-multi-thread
-   */
-  def isAbstractPartialFunctionType(t: BType): Boolean = {
-    (t.hasObjectSort) && exemplars.get(t).isSubtypeOf(AbstractPartialFunctionReference)
   }
 
   /*
@@ -707,39 +603,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       idx += 1
     }
     false
-  }
-
-  def isClosureClass(bt: BType): Boolean = {
-    val tr = exemplars.get(bt); (tr != null && tr.isLambda)
-  }
-
-  /*
-   *  Whether the argument is a subtype of scala.runtime.AbstractFunctionX where 0 <= X <= definitions.MaxFunctionArity
-   *
-   *  can-multi-thread
-   */
-  def isAbstractFunctionType(t: BType): Boolean = {
-    if (!t.hasObjectSort) return false
-    var idx = 0
-    val et: Tracked = exemplars.get(t)
-    while (idx <= definitions.MaxFunctionArity) {
-      if (et.isSubtypeOf(AbstractFunctionReference(idx).c)) {
-        return true
-      }
-      idx += 1
-    }
-    false
-  }
-
-  /*
-   *  For an argument of exactly one of the types
-   *  scala.runtime.AbstractFunctionX where 0 <= X <= definitions.MaxFunctionArity
-   *  returns the function arity, -1 otherwise.
-   *
-   *  can-multi-thread
-   */
-  def abstractFunctionArity(t: BType): Int = {
-    abstractFunctionArityMap.getOrElse(t, -1)
   }
 
   /*

@@ -442,9 +442,6 @@ trait ContextErrors {
       def ArrayConstantsTypeMismatchError(tree: Tree, pt: Type) =
         NormalTypeError(tree, "found array constant, expected argument of type " + pt)
 
-      def UnexpectedTreeAnnotation(tree: Tree) =
-        NormalTypeError(tree, "unexpected tree in annotation: "+ tree)
-
       def AnnotationTypeMismatchError(tree: Tree, expected: Type, found: Type) =
         NormalTypeError(tree, "expected annotation of type " + expected + ", found " + found)
 

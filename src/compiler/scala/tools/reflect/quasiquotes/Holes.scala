@@ -60,11 +60,11 @@ trait Holes { self: Quasiquotes =>
   }
   object HoleType {
     def unapply(tpe: Type): Option[HoleType] = tpe match {
-      case NativeType(holeTpe) => Some(holeTpe)
-      case LiftableType(holeTpe) => Some(holeTpe)
-      case IterableTreeType(holeTpe) => Some(holeTpe)
+      case NativeType(holeTpe)           => Some(holeTpe)
+      case LiftableType(holeTpe)         => Some(holeTpe)
+      case IterableTreeType(holeTpe)     => Some(holeTpe)
       case IterableLiftableType(holeTpe) => Some(holeTpe)
-      case _ => None
+      case _                             => None
     }
 
     trait HoleTypeExtractor {
@@ -102,7 +102,7 @@ trait Holes { self: Quasiquotes =>
           if (tree.tpe != null && (tree.tpe <:< listTreeType || tree.tpe <:< listListTreeType)) tree
           else atPos(tree.pos)(loop(tree, n))
         }
-        val (card, elementTpe) = parseCardinality(tpe)
+        val card = parseCardinality(tpe)._1
         if (card != NoDot) Some(reifyIterable(_, card)) else None
       }
     }

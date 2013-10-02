@@ -113,7 +113,7 @@ trait TypeDebugging {
       case _                                                 => "" + t.symbol.tpe
     }
     def ptTypeParam(td: TypeDef): String = {
-      val TypeDef(mods, name, tparams, rhs) = td
+      val TypeDef(_, name, tparams, rhs) = td
       name + ptTypeParams(tparams) + ptTree(rhs)
     }
     def ptTypeParams(tparams: List[TypeDef]): String = str brackets (tparams map ptTypeParam)
@@ -147,6 +147,5 @@ trait TypeDebugging {
   }
   def paramString(tp: Type)      = typeDebug.str parentheses (tp.params map (_.defString))
   def typeParamsString(tp: Type) = typeDebug.str brackets (tp.typeParams map (_.defString))
-  def typeArgsString(tp: Type)   = typeDebug.str brackets (tp.typeArgs map (_.safeToString))
   def debugString(tp: Type)      = typeDebug debugString tp
 }

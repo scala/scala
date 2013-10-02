@@ -2836,7 +2836,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
               // default getters are defined twice when multiple overloads have defaults. an
               // error for this is issued in RefChecks.checkDefaultsInOverloaded
-              if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefaultFlag &&
+              if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefault &&
                   !e.sym.hasAnnotation(BridgeClass) && !e1.sym.hasAnnotation(BridgeClass)) {
                 log("Double definition detected:\n  " +
                     ((e.sym.getClass, e.sym.info, e.sym.ownerChain)) + "\n  " +
@@ -2880,7 +2880,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def matches(stat: Tree, synt: Tree) = (stat, synt) match {
             // synt is default arg for stat
             case (DefDef(_, statName, _, _, _, _), DefDef(mods, syntName, _, _, _, _)) =>
-              mods.hasDefaultFlag && syntName.toString.startsWith(statName.toString)
+              mods.hasDefault && syntName.toString.startsWith(statName.toString)
 
             // synt is companion module
             case (ClassDef(_, className, _, _), ModuleDef(_, moduleName, _)) =>
@@ -4729,7 +4729,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * a constructor default, the resulting typer has a constructor context (fixes SI-5543).
        */
       def defDefTyper(ddef: DefDef) = {
-        val isConstrDefaultGetter = ddef.mods.hasDefaultFlag && sym.owner.isModuleClass &&
+        val isConstrDefaultGetter = ddef.mods.hasDefault && sym.owner.isModuleClass &&
             nme.defaultGetterToMethod(sym.name) == nme.CONSTRUCTOR
         newTyper(context.makeNewScope(ddef, sym)).constrTyperIf(isConstrDefaultGetter)
       }

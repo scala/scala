@@ -134,7 +134,6 @@ final class Mode private (val bits: Int) extends AnyVal {
   def typingConstructorPattern    = inAll(PATTERNmode | FUNmode)
   def typingPatternNotConstructor = in(all = PATTERNmode, none = FUNmode)
   def typingPatternOrTypePat      = inAny(PATTERNmode | TYPEPATmode)
-  def typingTypeByValue           = inAll(TYPEmode | BYVALmode)
 
   override def toString =
     if (this == NOmode) "NOmode"

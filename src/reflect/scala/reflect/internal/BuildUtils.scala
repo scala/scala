@@ -83,7 +83,7 @@ trait BuildUtils { self: SymbolTable =>
     def mkTparams(tparams: List[Tree]): List[TypeDef] =
       tparams.map {
         case td: TypeDef => copyTypeDef(td)(mods = (td.mods | PARAM) & (~DEFERRED))
-        case other => throw new IllegalArgumentException("can't splice $other as type parameter")
+        case other => throw new IllegalArgumentException(s"can't splice $other as type parameter")
       }
 
     def mkRefineStat(stat: Tree): Tree = {
@@ -151,9 +151,9 @@ trait BuildUtils { self: SymbolTable =>
     private object UnCtor {
       def unapply(tree: Tree): Option[(Modifiers, List[List[ValDef]], List[Tree])] = tree match {
         case DefDef(mods, nme.MIXIN_CONSTRUCTOR, _, _, _, Block(lvdefs, _)) =>
-          Some(mods | Flag.TRAIT, Nil, lvdefs)
+          Some((mods | Flag.TRAIT, Nil, lvdefs))
         case DefDef(mods, nme.CONSTRUCTOR, Nil, vparamss, _, Block(lvdefs :+ _, _)) =>
-          Some(mods, vparamss, lvdefs)
+          Some((mods, vparamss, lvdefs))
         case _ => None
       }
     }

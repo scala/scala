@@ -384,31 +384,6 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
      *  Number of buckets in the table
      */
     def bucketsCount: Int = table.size
-
-    /**
-     * Number of buckets that don't hold anything
-     */
-    def emptyBucketsCount = bucketsCount - fullBucketsCount
-
-    /**
-     * Number of elements that are in collision. Useful for diagnosing performance issues.
-     */
-    def collisionsCount = size - (fullBucketsCount - collisionBucketsCount)
-
-    /**
-     * A map from a count of elements to the number of buckets with that count
-     */
-    def elementCountDistribution = table map linkedListSize groupBy identity map {case (size, list) => (size, list.size)}
-
-    private def linkedListSize(entry: Entry[A]) = {
-      var e = entry
-      var count = 0
-      while (e != null) {
-        count += 1
-        e = e.tail
-      }
-      count
-    }
   }
 
   private[util] def diagnostics = new Diagnostics

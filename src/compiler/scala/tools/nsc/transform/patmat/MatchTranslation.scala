@@ -53,10 +53,6 @@ trait MatchTranslation {
         case TypeBound(tpe) => tpe
         case tree           => tree.tpe
       }
-      def repeatedType = unbound match {
-        case Star(tpt) => tpt.tpe
-        case _         => NoType
-      }
       def glbWith(other: Type) = glb(tpe :: other :: Nil).normalize
 
       object SymbolAndTypeBound {
@@ -420,7 +416,6 @@ trait MatchTranslation {
       )
 
       private def rawGet         = typeOfMemberNamedGetOrSelf(resultType)
-      private def emptySub       = rawSubPatTypes.isEmpty
       private def rawInit        = rawSubPatTypes dropRight 1
       protected def sequenceType = typeOfLastSelectorOrSelf(rawGet)
       protected def elementType  = elementTypeOfLastSelectorOrSelf(rawGet)
@@ -649,13 +644,6 @@ trait MatchTranslation {
         case Alternative(ps)                      => ps forall unapply
         case Typed(PatternBoundToUnderscore(), _) => true
         case _                                    => false
-      }
-    }
-
-    object Bound {
-      def unapply(t: Tree): Option[(Symbol, Tree)] = t match {
-        case t@Bind(n, p) if t.hasExistingSymbol => Some((t.symbol, p)) // pos/t2429 does not satisfy these conditions
-        case _                                   => None
       }
     }
   }

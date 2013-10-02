@@ -561,9 +561,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
         memberCTK
       }
-
-      exemplar(csym).directMemberClasses = (result ::: lateClosuresBTs)
-
+      exemplar(csym) // side effect city
       result
     }
 
