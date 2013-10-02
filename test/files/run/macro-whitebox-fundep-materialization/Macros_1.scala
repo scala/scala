@@ -1,4 +1,4 @@
-import language.experimental.macros
+import scala.language.experimental.macros
 import scala.reflect.macros.WhiteboxContext
 
 trait Iso[T, U] {
