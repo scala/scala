@@ -114,7 +114,7 @@ object Test {
     val foo2 = new Foo(2)
     def run() {
       val res = (foo1.Bar(2): Any) match {
-        case foo2.Bar(2) => false
+
         case foo1.Bar(2) => true
       }
       assert(res)

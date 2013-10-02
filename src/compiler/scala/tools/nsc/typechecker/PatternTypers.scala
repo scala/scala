@@ -74,7 +74,7 @@ trait PatternTypers {
       case tp                        => tp
     }
 
-    def typedConstructorPattern(fun0: Tree, pt: Type) = {
+    def typedConstructorPattern(fun0: Tree, pt: Type): Tree = {
       // Do some ad-hoc overloading resolution and update the tree's symbol and type
       // do not update the symbol if the tree's symbol's type does not define an unapply member
       // (e.g. since it's some method that returns an object with an unapply member)
@@ -85,7 +85,7 @@ trait PatternTypers {
       // A case class with 23+ params has no unapply method.
       // A case class constructor be overloaded with unapply methods in the companion.
       if (caseClass.isCase && !unapplyMember(fun.tpe).isOverloaded)
-        convertToCaseConstructor(fun, caseClass, pt)
+        logResult(s"convertToCaseConstructor($fun, $caseClass, pt=$pt)")(convertToCaseConstructor(fun, caseClass, pt))
       else if (hasUnapplyMember(fun))
         fun
       else
@@ -275,26 +275,30 @@ trait PatternTypers {
     private class VariantToSkolemMap extends TypeMap(trackVariance = true) {
       private val skolemBuffer = mutable.ListBuffer[TypeSymbol]()
 
+      // !!! FIXME - skipping this when variance.isInvariant allows unsoundness, see SI-5189
+      // Test case which presently requires the exclusion is run/gadts.scala.
+      def eligible(tparam: Symbol) = (
+           tparam.isTypeParameterOrSkolem
+        && tparam.owner.isTerm
+        && (settings.strictInference || !variance.isInvariant)
+      )
+
       def skolems = try skolemBuffer.toList finally skolemBuffer.clear()
       def apply(tp: Type): Type = mapOver(tp) match {
-        // !!! FIXME - skipping this when variance.isInvariant allows unsoundness, see SI-5189
-        case tp @ TypeRef(NoPrefix, tpSym, Nil) if tpSym.isTypeParameterOrSkolem && tpSym.owner.isTerm =>
-          if (variance.isInvariant) {
-            // if (variance.isInvariant) tpSym.tpeHK.bounds
-            devWarning(s"variantToSkolem skipping rewrite of $tpSym due to invariance")
-            return tp
-          }
+        case tp @ TypeRef(NoPrefix, tpSym, Nil) if eligible(tpSym) =>
           val bounds = (
-            if (variance.isPositive) TypeBounds.upper(tpSym.tpeHK)
+            if (variance.isInvariant) tpSym.tpeHK.bounds
+            else if (variance.isPositive) TypeBounds.upper(tpSym.tpeHK)
             else TypeBounds.lower(tpSym.tpeHK)
           )
           // origin must be the type param so we can deskolemize
           val skolem = context.owner.newGADTSkolem(unit.freshTypeName("?"+tpSym.name), tpSym, bounds)
           skolemBuffer += skolem
-          skolem.tpe_*
+          logResult(s"Created gadt skolem $skolem: ${skolem.tpe_*} to stand in for $tpSym")(skolem.tpe_*)
         case tp1 => tp1
       }
     }
+
     /*
      * To deal with the type slack between actual (run-time) types and statically known types, for each abstract type T,
      * reflect its variance as a skolem that is upper-bounded by T (covariant position), or lower-bounded by T (contravariant).
@@ -323,25 +327,24 @@ trait PatternTypers {
      * see test/files/../t5189*.scala
      */
     private def convertToCaseConstructor(tree: Tree, caseClass: Symbol, ptIn: Type): Tree = {
-      // Unsoundness looms for those who infer type parameters with pt=Any. See SI-7886.
-      val pt = (
-        if (ptIn =:= AnyTpe && caseClass.typeParams.nonEmpty)
-          devWarningResult(s"Evading kind-polymorphic expected type for case constructor of $caseClass")(caseClass.tpe_*)
-        else ptIn
+      def untrustworthyPt = (
+           ptIn =:= AnyTpe
+        || ptIn =:= NothingTpe
+        || settings.strictInference && ptIn.typeSymbol != caseClass
       )
       val variantToSkolem     = new VariantToSkolemMap
-      val caseConstructorType = tree.tpe.prefix memberType caseClass memberType caseClass.primaryConstructor
+      val caseClassType       = tree.tpe.prefix memberType caseClass
+      val caseConstructorType = caseClassType memberType caseClass.primaryConstructor
       val tree1               = TypeTree(caseConstructorType) setOriginal tree
+      val pt                  = if (untrustworthyPt) caseClassType else ptIn
 
       // have to open up the existential and put the skolems in scope
       // can't simply package up pt in an ExistentialType, because that takes us back to square one (List[_ <: T] == List[T] due to covariance)
-      val ptSafe   = variantToSkolem(pt) // TODO: pt.skolemizeExistential(context.owner, tree) ?
+      val ptSafe   = logResult(s"case constructor from (${tree.summaryString}, $caseClassType, $pt)")(variantToSkolem(pt))
       val freeVars = variantToSkolem.skolems
 
       // use "tree" for the context, not context.tree: don't make another CaseDef context,
       // as instantiateTypeVar's bounds would end up there
-      log(s"convert ${tree.summaryString}: ${tree.tpe} to case constructor, pt=$ptSafe")
-
       val ctorContext = context.makeNewScope(tree, context.owner)
       freeVars foreach ctorContext.scope.enter
       newTyper(ctorContext).infer.inferConstructorInstance(tree1, caseClass.typeParams, ptSafe)

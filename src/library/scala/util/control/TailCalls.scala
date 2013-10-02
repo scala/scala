@@ -55,7 +55,7 @@ object TailCalls {
         case Done(a) => Call(() => f(a))
         case c@Call(_) => Cont(c, f)
         // Take advantage of the monad associative law to optimize the size of the required stack
-        case Cont(s, g) => Cont(s, (x:Any) => g(x).flatMap(f))
+        case c: Cont[a1, b1] => Cont(c.a, (x: a1) => c f x flatMap f)
       }
 
     /** Returns either the next step of the tailcalling computation,
