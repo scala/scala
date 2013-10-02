@@ -1,0 +1,4 @@
+class SimpleClass extends scala.AnyRef {
+  def this() = { /* compiled code */ }
+  def foo: scala.Int = { /* compiled code */ }
+}

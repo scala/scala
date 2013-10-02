@@ -1,4 +1,4 @@
-names-defaults-neg-ref.scala:3: error: in anonymous class $anon, multiple overloaded alternatives of method f define default arguments.
+names-defaults-neg-ref.scala:3: error: in <$anon: A2235 with B2235>, multiple overloaded alternatives of method f define default arguments.
 The members with defaults are defined in trait B2235 and trait A2235.
   new A2235 with B2235
       ^

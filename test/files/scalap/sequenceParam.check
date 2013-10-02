@@ -1,0 +1,3 @@
+class SequenceParam extends scala.AnyRef {
+  def this(s: scala.Predef.String, i: scala.Int*) = { /* compiled code */ }
+}

@@ -2,6 +2,7 @@ import scala.annotation._
 import scala.util.continuations._
 import java.util.concurrent.atomic._
 
+@deprecated("Suppress warnings", since="2.11")
 object Test {
   def main(args: Array[String]) {
     val map = Map("foo" -> 1, "bar" -> 2)
@@ -15,7 +16,6 @@ object Test {
       println(mapped.toList)
     }
   }
-}
 
 final class ContinuationizedParallelIterable[+A](protected val underline: Iterable[A]) {
   def toList = underline.toList.sortBy(_.toString)
@@ -76,7 +76,7 @@ final class ContinuationizedParallelIterable[+A](protected val underline: Iterab
       new AtomicInteger(underline.size) with ((ContinuationizedParallelIterable[B] => Unit) => Unit) {
         override final def apply(continue: ContinuationizedParallelIterable[B] => Unit) {
           val results = new Array[B](super.get)
-          for ((element, i) <- underline.view zipWithIndex) {
+          for ((element, i) <- underline.view.zipWithIndex) {
             reset {
               val result = f(element)
               results(i) = result
@@ -87,4 +87,5 @@ final class ContinuationizedParallelIterable[+A](protected val underline: Iterab
           }
         }
       })
+}
 }

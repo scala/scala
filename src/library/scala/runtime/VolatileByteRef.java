@@ -17,4 +17,7 @@ public class VolatileByteRef implements java.io.Serializable {
     volatile public byte elem;
     public VolatileByteRef(byte elem) { this.elem = elem; }
     public String toString() { return java.lang.Byte.toString(elem); }
+
+    public static VolatileByteRef create(byte e) { return new VolatileByteRef(e); }
+    public static VolatileByteRef zero() { return new VolatileByteRef((byte)0); }
 }

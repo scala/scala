@@ -1,0 +1,10 @@
+t6666c.scala:2: error: Implementation restriction: access of method x$1 in class D from object X$4, would require illegal premature access to the unconstructed `this` of class D
+class D extends C({def x = 0; object X { x }})
+                                         ^
+t6666c.scala:5: error: Implementation restriction: access of method x$2 in class D1 from object X$5, would require illegal premature access to the unconstructed `this` of class D1
+class D1 extends C1({def x = 0; () => {object X { x }}})
+                                                  ^
+t6666c.scala:8: error: Implementation restriction: access of method x$3 from object X$6, would require illegal premature access to the unconstructed `this` of <$anon: Function0>
+class D2 extends C2({def x = 0; object X { x }})
+                                           ^
+three errors found

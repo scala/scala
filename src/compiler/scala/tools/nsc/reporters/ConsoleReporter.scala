@@ -3,11 +3,13 @@
  * @author Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package reporters
 
 import java.io.{ BufferedReader, IOException, PrintWriter }
 import scala.reflect.internal.util._
+import StringOps._
 
 /**
  * This class implements a Reporter that displays messages on a text
@@ -39,7 +41,10 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     StringOps.countElementsAsString((severity).count, label(severity))
 
   /** Prints the message. */
-  def printMessage(msg: String) { writer.print(msg + "\n"); writer.flush() }
+  def printMessage(msg: String) {
+    writer print trimAllTrailingSpace(msg) + "\n"
+    writer.flush()
+  }
 
   /** Prints the message with the given position indication. */
   def printMessage(posIn: Position, msg: String) {

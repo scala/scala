@@ -6,19 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel
-
-
+package scala
+package collection.parallel
 
 import java.util.concurrent.ThreadPoolExecutor
-
 import scala.concurrent.forkjoin._
 import scala.concurrent.ExecutionContext
 import scala.util.control.Breaks._
-
 import scala.annotation.unchecked.uncheckedVariance
-
-
 
 trait Task[R, +Tp] {
   type Result = R
@@ -54,13 +49,13 @@ trait Task[R, +Tp] {
         leaf(lastres)
         result = result // ensure that effects of `leaf` are visible to readers of `result`
       } catchBreak {
-        signalAbort
+        signalAbort()
       }
     } catch {
       case thr: Exception =>
         result = result // ensure that effects of `leaf` are visible
       throwable = thr
-      signalAbort
+      signalAbort()
     }
   }
 
@@ -71,11 +66,13 @@ trait Task[R, +Tp] {
   }
 
   private[parallel] def mergeThrowables(that: Task[_, _]) {
-    if (this.throwable != null && that.throwable != null) {
-      // merge exceptions, since there were multiple exceptions
-      this.throwable = this.throwable alongWith that.throwable
-    } else if (that.throwable != null) this.throwable = that.throwable
-      else this.throwable = this.throwable
+    // TODO: As soon as we target Java >= 7, use Throwable#addSuppressed
+    // to pass additional Throwables to the caller, e. g.
+    // if (this.throwable != null && that.throwable != null)
+    //   this.throwable.addSuppressed(that.throwable)
+    // For now, we just use whatever Throwable comes across “first”.
+    if (this.throwable == null && that.throwable != null)
+      this.throwable = that.throwable
   }
 
   // override in concrete task implementations to signal abort to other tasks
@@ -191,7 +188,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
           last = t
           t.start()
         }
-      } while (head.body.shouldSplitFurther);
+      } while (head.body.shouldSplitFurther)
       head.next = last
       head
     }
@@ -214,6 +211,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
 
 
 /** An implementation of tasks objects based on the Java thread pooling API. */
+@deprecated("Use `ForkJoinTasks` instead.", "2.11.0")
 trait ThreadPoolTasks extends Tasks {
   import java.util.concurrent._
 
@@ -302,7 +300,7 @@ trait ThreadPoolTasks extends Tasks {
 
     () => {
       t.sync()
-      t.body.forwardThrowable
+      t.body.forwardThrowable()
       t.body.result
     }
   }
@@ -314,7 +312,7 @@ trait ThreadPoolTasks extends Tasks {
     t.start()
 
     t.sync()
-    t.body.forwardThrowable
+    t.body.forwardThrowable()
     t.body.result
   }
 
@@ -322,6 +320,7 @@ trait ThreadPoolTasks extends Tasks {
 
 }
 
+@deprecated("Use `ForkJoinTasks` instead.", "2.11.0")
 object ThreadPoolTasks {
   import java.util.concurrent._
 
@@ -402,8 +401,8 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
     }
 
     () => {
-      fjtask.sync
-      fjtask.body.forwardThrowable
+      fjtask.sync()
+      fjtask.body.forwardThrowable()
       fjtask.body.result
     }
   }
@@ -424,23 +423,20 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
       forkJoinPool.execute(fjtask)
     }
 
-    fjtask.sync
+    fjtask.sync()
     // if (fjtask.body.throwable != null) println("throwing: " + fjtask.body.throwable + " at " + fjtask.body)
-    fjtask.body.forwardThrowable
+    fjtask.body.forwardThrowable()
     fjtask.body.result
   }
 
   def parallelismLevel = forkJoinPool.getParallelism
-
 }
-
 
 object ForkJoinTasks {
   val defaultForkJoinPool: ForkJoinPool = new ForkJoinPool() // scala.parallel.forkjoinpool
   // defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors)
   // defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors)
 }
-
 
 /* Some boilerplate due to no deep mixin composition. Not sure if it can be done differently without them.
  */
@@ -452,10 +448,9 @@ trait AdaptiveWorkStealingForkJoinTasks extends ForkJoinTasks with AdaptiveWorkS
   }
 
   def newWrappedTask[R, Tp](b: Task[R, Tp]) = new WrappedTask[R, Tp](b)
-
 }
 
-
+@deprecated("Use `AdaptiveWorkStealingForkJoinTasks` instead.", "2.11.0")
 trait AdaptiveWorkStealingThreadPoolTasks extends ThreadPoolTasks with AdaptiveWorkStealingTasks {
 
   class WrappedTask[R, Tp](val body: Task[R, Tp])
@@ -464,12 +459,9 @@ trait AdaptiveWorkStealingThreadPoolTasks extends ThreadPoolTasks with AdaptiveW
   }
 
   def newWrappedTask[R, Tp](b: Task[R, Tp]) = new WrappedTask[R, Tp](b)
-
 }
 
-
 trait ExecutionContextTasks extends Tasks {
-
   def executionContext = environment
 
   val environment: ExecutionContext
@@ -489,16 +481,4 @@ trait ExecutionContextTasks extends Tasks {
   def executeAndWaitResult[R, Tp](task: Task[R, Tp]): R = driver executeAndWaitResult task
 
   def parallelismLevel = driver.parallelismLevel
-
 }
-
-
-
-
-
-
-
-
-
-
-

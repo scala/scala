@@ -17,11 +17,11 @@ import scala.collection.parallel.ops._
 abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("ParArray[" + tp + "]") {
   // ForkJoinTasks.defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors * 2)
   // ForkJoinTasks.defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors * 2)
-  
+
   type CollType = ParArray[T]
-  
+
   def isCheckingViews = false
-  
+
   def hasStrictOrder = true
 
   def ofSize(vals: Seq[Gen[T]], sz: Int) = {
@@ -30,7 +30,7 @@ abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("Pa
     for (i <- 0 until sz) a += sample(gen)
     a
   }
-  
+
   def fromSeq(a: Seq[T]) = {
     val pa = new ParArray[T](a.size)
     var i = 0
@@ -40,20 +40,20 @@ abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("Pa
     }
     pa
   }
-  
+
   property("array mappings must be equal") = forAll(collectionPairs) { case (t, coll) =>
     val results = for ((f, ind) <- mapFunctions.zipWithIndex)
       yield ("op index: " + ind) |: t.map(f) == coll.map(f)
     results.reduceLeft(_ && _)
   }
-  
+
 }
 
 
 object IntParallelArrayCheck extends ParallelArrayCheck[Int]("Int") with IntSeqOperators with IntValues {
   override def instances(vals: Seq[Gen[Int]]) = oneOf(super.instances(vals), sized { sz =>
     (0 until sz).toArray.toSeq
-  }, sized { sz => 
+  }, sized { sz =>
     (-sz until 0).toArray.toSeq
   })
 }

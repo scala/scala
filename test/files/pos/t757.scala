@@ -1,4 +1,4 @@
-package foo { 
+package foo {
   object C {
     def foo {
       Console.println("foo")
@@ -6,7 +6,7 @@ package foo {
   }
 }
 
-package bar { 
+package bar {
   object Main extends App {
     foo.C.foo
   }

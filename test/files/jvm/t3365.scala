@@ -1,3 +1,7 @@
+
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors.{ReplyReactor, Channel, Actor, Future}
 
 case class ChannelMsg(chan: Channel[Any])
@@ -27,7 +31,6 @@ class MyActor extends Actor {
   }
 }
 
-object Test {
   def main(args: Array[String]) {
     val a = new MyActor
     a.start()

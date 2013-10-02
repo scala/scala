@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.sys
+package scala
+package sys
 package process
 
 import processInternal._
@@ -17,7 +18,7 @@ private[process] trait ProcessImpl {
 
   /** Runs provided code in a new Thread and returns the Thread instance. */
   private[process] object Spawn {
-    def apply(f: => Unit): Thread = apply(f, false)
+    def apply(f: => Unit): Thread = apply(f, daemon = false)
     def apply(f: => Unit, daemon: Boolean): Thread = {
       val thread = new Thread() { override def run() = { f } }
       thread.setDaemon(daemon)
@@ -32,7 +33,7 @@ private[process] trait ProcessImpl {
         try result set Right(f)
         catch { case e: Exception => result set Left(e) }
 
-      Spawn(run)
+      Spawn(run())
 
       () => result.get match {
         case Right(value)    => value
@@ -68,10 +69,10 @@ private[process] trait ProcessImpl {
 
     protected[this] override def runAndExitValue() = {
       val first = a.run(io)
-      runInterruptible(first.exitValue)(first.destroy()) flatMap { codeA =>
+      runInterruptible(first.exitValue())(first.destroy()) flatMap { codeA =>
         if (evaluateSecondProcess(codeA)) {
           val second = b.run(io)
-          runInterruptible(second.exitValue)(second.destroy())
+          runInterruptible(second.exitValue())(second.destroy())
         }
         else Some(codeA)
       }
@@ -132,10 +133,10 @@ private[process] trait ProcessImpl {
       val first = a.run(firstIO)
       try {
         runInterruptible {
-          val exit1 = first.exitValue
+          val exit1 = first.exitValue()
           currentSource put None
           currentSink put None
-          val exit2 = second.exitValue
+          val exit2 = second.exitValue()
           // Since file redirection (e.g. #>) is implemented as a piped process,
           // we ignore its exit value so cmd #> file doesn't always return 0.
           if (b.hasExitValue) exit2 else exit1
@@ -222,8 +223,8 @@ private[process] trait ProcessImpl {
       p.exitValue()
     }
     override def destroy() = {
-      try{
-        outputThreads foreach (_.stop())
+      try {
+        outputThreads foreach (_.interrupt()) // on destroy, don't bother consuming any more output
         p.destroy()
       }
       finally inputThread.interrupt()

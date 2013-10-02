@@ -1,0 +1,1 @@
+Expr(Block(List(ValDef(Modifiers(), newTermName("v"), Select(Ident(newTermName("A")), newTypeName("I")), Apply(Select(New(Select(Ident(newTermName("A")), newTypeName("I"))), nme.CONSTRUCTOR), List()))), Ident(newTermName("v"))))

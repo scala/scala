@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.math
+package scala
+package math
 
 import java.math.BigInteger
 import scala.language.implicitConversions
@@ -33,9 +34,9 @@ object BigInt {
     if (minCached <= i && i <= maxCached) {
       val offset = i - minCached
       var n = cache(offset)
-      if (n eq null) { n = new BigInt(BigInteger.valueOf(i)); cache(offset) = n }
+      if (n eq null) { n = new BigInt(BigInteger.valueOf(i.toLong)); cache(offset) = n }
       n
-    } else new BigInt(BigInteger.valueOf(i))
+    } else new BigInt(BigInteger.valueOf(i.toLong))
 
   /** Constructs a `BigInt` whose value is equal to that of the
    *  specified long value.
@@ -108,11 +109,11 @@ object BigInt {
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  */
-@deprecatedInheritance("This class will me made final.", "2.10.0")
+@deprecatedInheritance("This class will be made final.", "2.10.0")
 class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericConversions with Serializable {
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int =
-    if (isValidLong) unifiedPrimitiveHashcode
+    if (isValidLong) unifiedPrimitiveHashcode()
     else bigInteger.##
 
   /** Compares this BigInt with the specified value for equality.
@@ -247,7 +248,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
    */
   def gcd (that: BigInt): BigInt = new BigInt(this.bigInteger.gcd(that.bigInteger))
 
-  /** Returns a BigInt whose value is (this mod m).
+  /** Returns a BigInt whose value is (this mod that).
    *  This method differs from `%` in that it always returns a non-negative BigInt.
    */
   def mod (that: BigInt): BigInt = new BigInt(this.bigInteger.mod(that.bigInteger))

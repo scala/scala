@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package runtime
 
 import scala.reflect.internal.settings.MutableSettings
@@ -33,8 +34,9 @@ private[reflect] class Settings extends MutableSettings {
   val XfullLubs         = new BooleanSetting(false)
   val XnoPatmatAnalysis = new BooleanSetting(false)
   val Xprintpos         = new BooleanSetting(false)
-  val Ynotnull          = new BooleanSetting(false)
   val Yshowsymkinds     = new BooleanSetting(false)
+  val Yposdebug         = new BooleanSetting(false)
+  val Yrangepos         = new BooleanSetting(false)
   val debug             = new BooleanSetting(false)
   val deepCloning       = new BooleanSetting(false)
   val explaintypes      = new BooleanSetting(false)
@@ -43,7 +45,6 @@ private[reflect] class Settings extends MutableSettings {
   val uniqid            = new BooleanSetting(false)
   val verbose           = new BooleanSetting(false)
   val breakCycles       = new BooleanSetting(false)
-  val companionsInPkgObjs = new BooleanSetting(false)
 
   val Yrecursion        = new IntSetting(0)
   val maxClassfileName  = new IntSetting(255)

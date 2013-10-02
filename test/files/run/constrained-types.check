@@ -1,10 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
-scala> 
-
 scala> class Annot(obj: Any) extends annotation.Annotation with annotation.TypeConstraint
 defined class Annot
 
@@ -14,7 +10,7 @@ scala> class A {
   val x = "hello"
   val y: Int @Annot(x) = 10
   override def toString = "an A"
-} 
+}
 defined class A
 
 scala> 
@@ -22,7 +18,7 @@ scala>
 scala> val a = new A
 a: A = an A
 
-scala> val y = a.y   // should rewrite "this.x" to "a.x" 
+scala> val y = a.y   // should rewrite "this.x" to "a.x"
 y: Int @Annot(a.x) = 10
 
 scala> var a2 = new A
@@ -75,11 +71,11 @@ scala> var four = "four"
 four: String = four
 
 scala> val four2 = m(four) // should have an existential bound
-warning: there were 1 feature warnings; re-run with -feature for details
+warning: there were 1 feature warning(s); re-run with -feature for details
 four2: String @Annot(x) forSome { val x: String } = four
 
 scala> val four3 = four2   // should have the same type as four2
-warning: there were 1 feature warnings; re-run with -feature for details
+warning: there were 1 feature warning(s); re-run with -feature for details
 four3: String @Annot(x) forSome { val x: String } = four
 
 scala> val stuff = m("stuff") // should not crash
@@ -102,7 +98,7 @@ scala> def m = {
   val y : String @Annot(x) = x
   y
 } // x should not escape the local scope with a narrow type
-warning: there were 1 feature warnings; re-run with -feature for details
+warning: there were 1 feature warning(s); re-run with -feature for details
 m: String @Annot(x) forSome { val x: String }
 
 scala> 
@@ -116,7 +112,7 @@ scala> def n(y: String) = {
   }
   m("stuff".stripMargin)
 } // x should be existentially bound
-warning: there were 1 feature warnings; re-run with -feature for details
+warning: there were 1 feature warning(s); re-run with -feature for details
 n: (y: String)String @Annot(x) forSome { val x: String }
 
 scala> 
@@ -152,7 +148,5 @@ scala>
 
 scala> val x : Int @Where(self > 0 && self < 100) = 3
 x: Int @Where(self.>(0).&&(self.<(100))) = 3
-
-scala> 
 
 scala> 

@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -68,7 +69,7 @@ class DoubleLinkedList[A]() extends AbstractSeq[A]
   override def clone(): DoubleLinkedList[A] = {
     val builder = newBuilder
     builder ++= this
-    builder.result
+    builder.result()
   }
 }
 

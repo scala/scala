@@ -1,5 +1,5 @@
 exhausting.scala:21: warning: match may not be exhaustive.
-It would fail on the following input: List(_, _, _)
+It would fail on the following inputs: List(_), List(_, _, _)
   def fail1[T](xs: List[T]) = xs match {
                               ^
 exhausting.scala:27: warning: match may not be exhaustive.

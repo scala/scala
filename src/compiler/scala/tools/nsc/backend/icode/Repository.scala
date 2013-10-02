@@ -39,7 +39,7 @@ trait Repository {
     } catch {
       case e: Throwable => // possible exceptions are MissingRequirementError, IOException and TypeError -> no better common supertype
         log("Failed to load %s. [%s]".format(sym.fullName, e.getMessage))
-        if (settings.debug.value) { e.printStackTrace }
+        if (settings.debug) { e.printStackTrace }
 
         false
     }

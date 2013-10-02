@@ -1,7 +1,9 @@
-import scala.actors.ReplyReactor
-import scala.actors.Actor._
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.ReplyReactor
+  import scala.actors.Actor._
 
   val NUM = 2000
 

@@ -1,0 +1,152 @@
+==== Direct Calls ====
+
+Any{val y: P} with C{val y: P}
+Any{val y: P} with C{val y: Q}
+Any{val y: P} with C{val y: R forSome { type R <: P with Q }}
+Any{val y: Q} with C{val y: P}
+Any{val y: Q} with C{val y: Q}
+Any{val y: Q} with C{val y: R forSome { type R <: P with Q }}
+Any{val y: R forSome { type R <: P with Q }} with C{val y: P}
+Any{val y: R forSome { type R <: P with Q }} with C{val y: Q}
+Any{val y: R forSome { type R <: P with Q }} with C{val y: R forSome { type R <: P with Q }}
+A{val y: P} with C{val y: P}
+A{val y: P} with C{val y: Q}
+A{val y: P} with C{val y: R forSome { type R <: P with Q }}
+A{val y: Q} with C{val y: P}
+A{val y: Q} with C{val y: Q}
+A{val y: Q} with C{val y: R forSome { type R <: P with Q }}
+A{val y: R forSome { type R <: P with Q }} with C{val y: P}
+A{val y: R forSome { type R <: P with Q }} with C{val y: Q}
+A{val y: R forSome { type R <: P with Q }} with C{val y: R forSome { type R <: P with Q }}
+B{val y: P} with C{val y: P}
+B{val y: P} with C{val y: Q}
+B{val y: P} with C{val y: R forSome { type R <: P with Q }}
+B{val y: Q} with C{val y: P}
+B{val y: Q} with C{val y: Q}
+B{val y: Q} with C{val y: R forSome { type R <: P with Q }}
+B{val y: R forSome { type R <: P with Q }} with C{val y: P}
+B{val y: R forSome { type R <: P with Q }} with C{val y: Q}
+B{val y: R forSome { type R <: P with Q }} with C{val y: R forSome { type R <: P with Q }}
+C{val y: P} with C{val y: P}
+C{val y: P} with C{val y: Q}
+C{val y: P} with C{val y: R forSome { type R <: P with Q }}
+C{val y: Q} with C{val y: P}
+C{val y: Q} with C{val y: Q}
+C{val y: Q} with C{val y: R forSome { type R <: P with Q }}
+C{val y: R forSome { type R <: P with Q }} with C{val y: P}
+C{val y: R forSome { type R <: P with Q }} with C{val y: Q}
+C{val y: R forSome { type R <: P with Q }} with C{val y: R forSome { type R <: P with Q }}
+
+
+==== Reflective Calls ====
+
+Any{val y: P} with Any{val y: P}
+Any{val y: P} with Any{val y: Q}
+Any{val y: P} with Any{val y: R forSome { type R <: P with Q }}
+Any{val y: P} with A{val y: P}
+Any{val y: P} with A{val y: Q}
+Any{val y: P} with A{val y: R forSome { type R <: P with Q }}
+Any{val y: P} with B{val y: P}
+Any{val y: P} with B{val y: Q}
+Any{val y: P} with B{val y: R forSome { type R <: P with Q }}
+Any{val y: Q} with Any{val y: P}
+Any{val y: Q} with Any{val y: Q}
+Any{val y: Q} with Any{val y: R forSome { type R <: P with Q }}
+Any{val y: Q} with A{val y: P}
+Any{val y: Q} with A{val y: Q}
+Any{val y: Q} with A{val y: R forSome { type R <: P with Q }}
+Any{val y: Q} with B{val y: P}
+Any{val y: Q} with B{val y: Q}
+Any{val y: Q} with B{val y: R forSome { type R <: P with Q }}
+Any{val y: R forSome { type R <: P with Q }} with Any{val y: P}
+Any{val y: R forSome { type R <: P with Q }} with Any{val y: Q}
+Any{val y: R forSome { type R <: P with Q }} with Any{val y: R forSome { type R <: P with Q }}
+Any{val y: R forSome { type R <: P with Q }} with A{val y: P}
+Any{val y: R forSome { type R <: P with Q }} with A{val y: Q}
+Any{val y: R forSome { type R <: P with Q }} with A{val y: R forSome { type R <: P with Q }}
+Any{val y: R forSome { type R <: P with Q }} with B{val y: P}
+Any{val y: R forSome { type R <: P with Q }} with B{val y: Q}
+Any{val y: R forSome { type R <: P with Q }} with B{val y: R forSome { type R <: P with Q }}
+A{val y: P} with Any{val y: P}
+A{val y: P} with Any{val y: Q}
+A{val y: P} with Any{val y: R forSome { type R <: P with Q }}
+A{val y: P} with A{val y: P}
+A{val y: P} with A{val y: Q}
+A{val y: P} with A{val y: R forSome { type R <: P with Q }}
+A{val y: P} with B{val y: P}
+A{val y: P} with B{val y: Q}
+A{val y: P} with B{val y: R forSome { type R <: P with Q }}
+A{val y: Q} with Any{val y: P}
+A{val y: Q} with Any{val y: Q}
+A{val y: Q} with Any{val y: R forSome { type R <: P with Q }}
+A{val y: Q} with A{val y: P}
+A{val y: Q} with A{val y: Q}
+A{val y: Q} with A{val y: R forSome { type R <: P with Q }}
+A{val y: Q} with B{val y: P}
+A{val y: Q} with B{val y: Q}
+A{val y: Q} with B{val y: R forSome { type R <: P with Q }}
+A{val y: R forSome { type R <: P with Q }} with Any{val y: P}
+A{val y: R forSome { type R <: P with Q }} with Any{val y: Q}
+A{val y: R forSome { type R <: P with Q }} with Any{val y: R forSome { type R <: P with Q }}
+A{val y: R forSome { type R <: P with Q }} with A{val y: P}
+A{val y: R forSome { type R <: P with Q }} with A{val y: Q}
+A{val y: R forSome { type R <: P with Q }} with A{val y: R forSome { type R <: P with Q }}
+A{val y: R forSome { type R <: P with Q }} with B{val y: P}
+A{val y: R forSome { type R <: P with Q }} with B{val y: Q}
+A{val y: R forSome { type R <: P with Q }} with B{val y: R forSome { type R <: P with Q }}
+B{val y: P} with Any{val y: P}
+B{val y: P} with Any{val y: Q}
+B{val y: P} with Any{val y: R forSome { type R <: P with Q }}
+B{val y: P} with A{val y: P}
+B{val y: P} with A{val y: Q}
+B{val y: P} with A{val y: R forSome { type R <: P with Q }}
+B{val y: P} with B{val y: P}
+B{val y: P} with B{val y: Q}
+B{val y: P} with B{val y: R forSome { type R <: P with Q }}
+B{val y: Q} with Any{val y: P}
+B{val y: Q} with Any{val y: Q}
+B{val y: Q} with Any{val y: R forSome { type R <: P with Q }}
+B{val y: Q} with A{val y: P}
+B{val y: Q} with A{val y: Q}
+B{val y: Q} with A{val y: R forSome { type R <: P with Q }}
+B{val y: Q} with B{val y: P}
+B{val y: Q} with B{val y: Q}
+B{val y: Q} with B{val y: R forSome { type R <: P with Q }}
+B{val y: R forSome { type R <: P with Q }} with Any{val y: P}
+B{val y: R forSome { type R <: P with Q }} with Any{val y: Q}
+B{val y: R forSome { type R <: P with Q }} with Any{val y: R forSome { type R <: P with Q }}
+B{val y: R forSome { type R <: P with Q }} with A{val y: P}
+B{val y: R forSome { type R <: P with Q }} with A{val y: Q}
+B{val y: R forSome { type R <: P with Q }} with A{val y: R forSome { type R <: P with Q }}
+B{val y: R forSome { type R <: P with Q }} with B{val y: P}
+B{val y: R forSome { type R <: P with Q }} with B{val y: Q}
+B{val y: R forSome { type R <: P with Q }} with B{val y: R forSome { type R <: P with Q }}
+C{val y: P} with Any{val y: P}
+C{val y: P} with Any{val y: Q}
+C{val y: P} with Any{val y: R forSome { type R <: P with Q }}
+C{val y: P} with A{val y: P}
+C{val y: P} with A{val y: Q}
+C{val y: P} with A{val y: R forSome { type R <: P with Q }}
+C{val y: P} with B{val y: P}
+C{val y: P} with B{val y: Q}
+C{val y: P} with B{val y: R forSome { type R <: P with Q }}
+C{val y: Q} with Any{val y: P}
+C{val y: Q} with Any{val y: Q}
+C{val y: Q} with Any{val y: R forSome { type R <: P with Q }}
+C{val y: Q} with A{val y: P}
+C{val y: Q} with A{val y: Q}
+C{val y: Q} with A{val y: R forSome { type R <: P with Q }}
+C{val y: Q} with B{val y: P}
+C{val y: Q} with B{val y: Q}
+C{val y: Q} with B{val y: R forSome { type R <: P with Q }}
+C{val y: R forSome { type R <: P with Q }} with Any{val y: P}
+C{val y: R forSome { type R <: P with Q }} with Any{val y: Q}
+C{val y: R forSome { type R <: P with Q }} with Any{val y: R forSome { type R <: P with Q }}
+C{val y: R forSome { type R <: P with Q }} with A{val y: P}
+C{val y: R forSome { type R <: P with Q }} with A{val y: Q}
+C{val y: R forSome { type R <: P with Q }} with A{val y: R forSome { type R <: P with Q }}
+C{val y: R forSome { type R <: P with Q }} with B{val y: P}
+C{val y: R forSome { type R <: P with Q }} with B{val y: Q}
+C{val y: R forSome { type R <: P with Q }} with B{val y: R forSome { type R <: P with Q }}
+
+

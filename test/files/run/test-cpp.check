@@ -1,65 +1,81 @@
-37c37
-<   locals: value args, value x, value y
----
->   locals: value args
-42,43d41
-<     52	CONSTANT(2)
-<     52	STORE_LOCAL(value x)
-45,46d42
-<     53	LOAD_LOCAL(value x)
-<     53	STORE_LOCAL(value y)
-49c45
-<     54	LOAD_LOCAL(value y)
----
->     54	CONSTANT(2)
-92c88
-<   locals: value args, value x, value y
----
->   locals: value args, value x
-101,102d96
-<     82	LOAD_LOCAL(value x)
-<     82	STORE_LOCAL(value y)
-105c99
-<     83	LOAD_LOCAL(value y)
----
->     83	LOAD_LOCAL(value x)
-135c129
-<   locals: value args, value x, value y
----
->   locals: value args
-140,141d133
-<     66	THIS(TestAliasChainDerefThis)
-<     66	STORE_LOCAL(value x)
-143,144d134
-<     67	LOAD_LOCAL(value x)
-<     67	STORE_LOCAL(value y)
-147c137
-<     68	LOAD_LOCAL(value y)
----
->     68	THIS(Object)
-176c166
-<   locals: value x, value y
----
->   locals: value x
-181,182d170
-<     29	LOAD_LOCAL(value x)
-<     29	STORE_LOCAL(value y)
-185c173
-<     30	LOAD_LOCAL(value y)
----
->     30	LOAD_LOCAL(value x)
-223,224d210
-<     97	LOAD_LOCAL(variable x)
-<     97	STORE_LOCAL(variable y)
-227c213
-<     98	LOAD_LOCAL(variable y)
----
->     98	LOAD_LOCAL(variable x)
-233,234d218
-<     101	LOAD_LOCAL(variable y)
-<     101	STORE_LOCAL(variable x)
-236c220
-<     102	LOAD_LOCAL(variable x)
----
->     102	LOAD_LOCAL(variable y)
-
+--- a
++++ b
+@@ -36,3 +36,3 @@
+   def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
+-  locals: value args, value x, value y
++  locals: value args
+   startBlock: 1
+@@ -41,10 +41,6 @@
+   1: 
+-    52	CONSTANT(2)
+-    52	STORE_LOCAL(value x)
+     52	SCOPE_ENTER value x
+-    53	LOAD_LOCAL(value x)
+-    53	STORE_LOCAL(value y)
+     53	SCOPE_ENTER value y
+     54	LOAD_MODULE object Predef
+-    54	LOAD_LOCAL(value y)
++    54	CONSTANT(2)
+     54	BOX INT
+@@ -91,3 +87,3 @@
+   def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
+-  locals: value args, value x, value y
++  locals: value args, value x
+   startBlock: 1
+@@ -100,7 +96,5 @@
+     81	SCOPE_ENTER value x
+-    82	LOAD_LOCAL(value x)
+-    82	STORE_LOCAL(value y)
+     82	SCOPE_ENTER value y
+     83	LOAD_MODULE object Predef
+-    83	LOAD_LOCAL(value y)
++    83	LOAD_LOCAL(value x)
+     83	BOX INT
+@@ -134,3 +128,3 @@
+   def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
+-  locals: value args, value x, value y
++  locals: value args
+   startBlock: 1
+@@ -139,10 +133,6 @@
+   1: 
+-    66	THIS(TestAliasChainDerefThis)
+-    66	STORE_LOCAL(value x)
+     66	SCOPE_ENTER value x
+-    67	LOAD_LOCAL(value x)
+-    67	STORE_LOCAL(value y)
+     67	SCOPE_ENTER value y
+     68	LOAD_MODULE object Predef
+-    68	LOAD_LOCAL(value y)
++    68	THIS(Object)
+     68	CALL_METHOD scala.Predef.println (dynamic)
+@@ -175,3 +165,3 @@
+   def test(x: Int (INT)): Unit {
+-  locals: value x, value y
++  locals: value x
+   startBlock: 1
+@@ -180,7 +170,5 @@
+   1: 
+-    29	LOAD_LOCAL(value x)
+-    29	STORE_LOCAL(value y)
+     29	SCOPE_ENTER value y
+     30	LOAD_MODULE object Predef
+-    30	LOAD_LOCAL(value y)
++    30	LOAD_LOCAL(value x)
+     30	BOX INT
+@@ -222,7 +210,5 @@
+     96	SCOPE_ENTER variable x
+-    97	LOAD_LOCAL(variable x)
+-    97	STORE_LOCAL(variable y)
+     97	SCOPE_ENTER variable y
+     98	LOAD_MODULE object Predef
+-    98	LOAD_LOCAL(variable y)
++    98	LOAD_LOCAL(variable x)
+     98	BOX INT
+@@ -232,6 +218,4 @@
+     100	STORE_LOCAL(variable y)
+-    101	LOAD_LOCAL(variable y)
+-    101	STORE_LOCAL(variable x)
+     102	LOAD_MODULE object Predef
+-    102	LOAD_LOCAL(variable x)
++    102	LOAD_LOCAL(variable y)
+     102	BOX INT

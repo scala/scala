@@ -1,0 +1,11 @@
+[[syntax trees at end of                    parser]] // annodef.java
+package <empty> {
+  object MyAnnotation extends  {
+    def <init>() = _
+  };
+  class MyAnnotation extends scala.annotation.Annotation with _root_.java.lang.annotation.Annotation with scala.annotation.ClassfileAnnotation {
+    def <init>() = _;
+    def value(): String
+  }
+}
+

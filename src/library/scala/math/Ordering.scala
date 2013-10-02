@@ -173,7 +173,7 @@ object Ordering extends LowPriorityOrderingImplicits {
           val ye = y.iterator
 
           while (xe.hasNext && ye.hasNext) {
-            val res = ord.compare(xe.next, ye.next)
+            val res = ord.compare(xe.next(), ye.next())
             if (res != 0) return res
           }
 
@@ -347,7 +347,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         val ye = y.iterator
 
         while (xe.hasNext && ye.hasNext) {
-          val res = ord.compare(xe.next, ye.next)
+          val res = ord.compare(xe.next(), ye.next())
           if (res != 0) return res
         }
 

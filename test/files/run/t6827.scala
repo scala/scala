@@ -28,4 +28,7 @@ object Test extends App {
   tryit("read -1", 0, -1)
   tryit("invalid read 0", 30, 0)
   tryit("invalid read -1", 30, -1)
+
+  // okay, see SI-7128
+  "...".toIterator.copyToArray(new Array[Char](0), 0, 0)
 }

@@ -24,11 +24,11 @@ trait ExceptionHandlers {
 
   class ExceptionHandler(val method: IMethod, val label: TermName, val cls: Symbol, val pos: Position) {
     def loadExceptionClass = if (cls == NoSymbol) ThrowableClass else cls
-    private var _startBlock: BasicBlock = _;
-    var finalizer: Finalizer = _;
+    private var _startBlock: BasicBlock = _
+    var finalizer: Finalizer = _
 
     def setStartBlock(b: BasicBlock) = {
-      _startBlock = b;
+      _startBlock = b
       b.exceptionHandlerStart = true
     }
     def startBlock = _startBlock
@@ -46,11 +46,11 @@ trait ExceptionHandlers {
 
     /** The body of this exception handler. May contain 'dead' blocks (which will not
       * make it into generated code because linearizers may not include them) */
-    var blocks: List[BasicBlock] = Nil;
+    var blocks: List[BasicBlock] = Nil
 
-    def addBlock(b: BasicBlock): Unit = blocks = b :: blocks;
+    def addBlock(b: BasicBlock): Unit = blocks = b :: blocks
 
-    override def toString() = "exh_" + label + "(" + cls.simpleName + ")";
+    override def toString() = "exh_" + label + "(" + cls.simpleName + ")"
 
     /** A standard copy constructor */
     def this(other: ExceptionHandler) = {

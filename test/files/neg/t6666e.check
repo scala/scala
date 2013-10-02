@@ -1,0 +1,4 @@
+t6666e.scala:8: error: Implementation restriction: <$anon: Nothing => Unit> requires premature access to class Crash.
+    this(Nil.collect{case x =>})
+                    ^
+one error found

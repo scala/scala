@@ -1,6 +1,5 @@
 
-
-
+import scala.language.reflectiveCalls
 
 class Slazz {
   val s1 = 'myFirstSymbol

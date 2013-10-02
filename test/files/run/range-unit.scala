@@ -6,14 +6,14 @@ object Test {
     ( (-3 to 3) ++ List(17, 127, Int.MaxValue, Int.MinValue + 1)
     ).distinct.sortBy(n => (math.abs(n), n))
   ) :+ Int.MinValue
-  
+
   // reducing output a little
   val endpoints = numbers filterNot Set(-3, -2, 2, 17, 127)
-  
+
   def num(n: Int) = {
     val frommax = Int.MaxValue - n
     val frommin = Int.MinValue - n
-    
+
     if (n > 0) {
       if (frommax == 0) "MAX"
       else if (frommax < 1000) "MAX-" + frommax
@@ -25,7 +25,7 @@ object Test {
       else "" + n
     }
   }
-  
+
   def run[T](body: => Range): List[Any] = {
     try   { val r = body ; if (r.isEmpty) List(r.length) else List(num(r.length), num(r.head), num(r.last)) }
     catch { case e: IllegalArgumentException => List("---\n    " + e) }

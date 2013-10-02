@@ -7,7 +7,7 @@ trait False extends Bool {
 }
 
 class Field[E, N <: Bool](implicit val w: N#If[E]) {
-  type NotNull = Field[E, False]
+  type NoNull = Field[E, False]
 
-  new NotNull
+  new NoNull
 }

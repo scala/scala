@@ -18,8 +18,14 @@ trait DocComments { self: Global =>
 
   val cookedDocComments = mutable.HashMap[Symbol, String]()
 
-  /** The raw doc comment map */
-  val docComments = mutable.HashMap[Symbol, DocComment]()
+  /** The raw doc comment map
+   *
+   * In IDE, background compilation runs get interrupted by
+   * reloading new sourcefiles. This is weak to avoid
+   * memleaks due to the doc of their cached symbols
+   * (e.g. in baseTypeSeq) between periodic doc reloads.
+   */
+  val docComments = mutable.WeakHashMap[Symbol, DocComment]()
 
   def clearDocComments() {
     cookedDocComments.clear()
@@ -51,6 +57,11 @@ trait DocComments { self: Global =>
   private def allInheritedOverriddenSymbols(sym: Symbol): List[Symbol] = {
     if (!sym.owner.isClass) Nil
     else sym.owner.ancestors map (sym overriddenSymbol _) filter (_ != NoSymbol)
+  }
+
+  def fillDocComment(sym: Symbol, comment: DocComment) {
+    docComments(sym) = comment
+    comment.defineVariables(sym)
   }
 
   /** The raw doc comment of symbol `sym`, minus usecase and define sections, augmented by
@@ -265,7 +276,7 @@ trait DocComments { self: Global =>
               cleanupSectionText(parent.substring(sectionTextBounds._1, sectionTextBounds._2))
             case None =>
               reporter.info(sym.pos, "The \"" + getSectionHeader + "\" annotation of the " + sym +
-                  " comment contains @inheritdoc, but the corresponding section in the parent is not defined.", true)
+                  " comment contains @inheritdoc, but the corresponding section in the parent is not defined.", force = true)
               "<invalid inheritdoc annotation>"
           }
 
@@ -303,7 +314,6 @@ trait DocComments { self: Global =>
   /** Lookup definition of variable.
    *
    *  @param vble  The variable for which a definition is searched
-   *  @param owner The current owner in which variable definitions are searched.
    *  @param site  The class for which doc comments are generated
    */
   def lookupVariable(vble: String, site: Symbol): Option[String] = site match {
@@ -322,10 +332,10 @@ trait DocComments { self: Global =>
   /** Expand variable occurrences in string `str`, until a fix point is reached or
    *  an expandLimit is exceeded.
    *
-   *  @param str   The string to be expanded
-   *  @param sym   The symbol for which doc comments are generated
-   *  @param site  The class for which doc comments are generated
-   *  @return      Expanded string
+   *  @param initialStr   The string to be expanded
+   *  @param sym          The symbol for which doc comments are generated
+   *  @param site         The class for which doc comments are generated
+   *  @return             Expanded string
    */
   protected def expandVariables(initialStr: String, sym: Symbol, site: Symbol): String = {
     val expandLimit = 10
@@ -362,7 +372,10 @@ trait DocComments { self: Global =>
             case vname  =>
               lookupVariable(vname, site) match {
                 case Some(replacement) => replaceWith(replacement)
-                case None              => reporter.warning(sym.pos, "Variable " + vname + " undefined in comment for " + sym + " in " + site)
+                case None              =>
+                  val pos = docCommentPos(sym)
+                  val loc = pos withPoint (pos.start + vstart + 1)
+                  reporter.warning(loc, s"Variable $vname undefined in comment for $sym in $site")
               }
             }
         }
@@ -497,7 +510,7 @@ trait DocComments { self: Global =>
         result
       }
 
-      /**
+      /*
        * work around the backticks issue suggested by Simon in
        * https://groups.google.com/forum/?hl=en&fromgroups#!topic/scala-internals/z7s1CCRCz74
        * ideally, we'd have a removeWikiSyntax method in the CommentFactory to completely eliminate the wiki markup

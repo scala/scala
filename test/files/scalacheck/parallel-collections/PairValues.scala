@@ -17,7 +17,7 @@ import org.scalacheck.Arbitrary._
 trait PairValues[K, V] {
   def kvalues: Seq[Gen[K]]
   def vvalues: Seq[Gen[V]]
-  
+
   def values = for {
     kg <- kvalues
     vg <- vvalues

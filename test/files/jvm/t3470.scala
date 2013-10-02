@@ -1,6 +1,8 @@
-import scala.actors._
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors._
 
   def expectActorState(a: Reactor[T] forSome { type T }, s: Actor.State.Value) {
     var done = false

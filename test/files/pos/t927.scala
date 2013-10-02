@@ -7,5 +7,5 @@ object Test {
     }
   val str: Stream[Int] = List(1,2,3).iterator.toStream
   assert(sum(str) == 6)
-  
+
 }

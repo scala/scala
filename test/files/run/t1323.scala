@@ -3,9 +3,9 @@ object Test extends App {
   println(" 2:" + List(1,2,3,4).indexOfSlice(List(1,2)))        //  0
   println(" 3:" + List(1,2,3,4).indexOfSlice(List(2,3)))        //  1
   println(" 4:" + List(1,2,3,4).indexOfSlice(List(3,4)))        //  2
-  println(" 5:" + List(1,2,3,4).indexOfSlice(List(4,5)))        // -1 
+  println(" 5:" + List(1,2,3,4).indexOfSlice(List(4,5)))        // -1
   println(" 6:" + List(1,2,3,4).indexOfSlice(List(2,4)))        // -1
-  println(" 7:" + List(1,2,3,4).indexOfSlice(List(4,3)))        // -1 
+  println(" 7:" + List(1,2,3,4).indexOfSlice(List(4,3)))        // -1
   println(" 8:" + List(1,2,3,4).indexOfSlice(List(1,3)))        // -1
   println(" 9:" + List(1,2,3,4).indexOfSlice(List(1,3)))        // -1
   println("10:" + List(1,2,3,4).indexOfSlice(List(1,2,3,4)))    //  0

@@ -1,0 +1,3 @@
+val i = 7
+val j = 8
+i * j

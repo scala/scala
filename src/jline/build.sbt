@@ -4,9 +4,9 @@ name := "jline"
 
 organization := "org.scala-lang"
 
-version := "2.10.0-SNAPSHOT"
+version := "2.11.0-SNAPSHOT"
 
-scalaVersion := "2.9.0-1"
+scalaVersion := "2.10.1"
 
 // Only need these because of weird testing jline issues.
 retrieveManaged := true
@@ -14,11 +14,11 @@ retrieveManaged := true
 parallelExecution in Test := false
 
 libraryDependencies ++= Seq(
-	"org.fusesource.jansi" % "jansi" % "1.4",
-	"com.novocode" % "junit-interface" % "0.7" % "test->default"
+	"org.fusesource.jansi" % "jansi" % "1.10",
+	"com.novocode" % "junit-interface" % "0.9" % "test->default"
 )
 
-javacOptions ++= Seq("-target", "1.5")
+javacOptions ++= Seq("-source", "1.5", "-target", "1.5")
 
 proguardOptions ++= Seq(
   "-dontshrink",

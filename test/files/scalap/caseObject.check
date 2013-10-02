@@ -1,0 +1,10 @@
+case object CaseObject extends scala.AnyRef with scala.Product with scala.Serializable {
+  def bar: scala.Int = { /* compiled code */ }
+  override def productPrefix: java.lang.String = { /* compiled code */ }
+  def productArity: scala.Int = { /* compiled code */ }
+  def productElement(x$1: scala.Int): scala.Any = { /* compiled code */ }
+  override def productIterator: scala.collection.Iterator[scala.Any] = { /* compiled code */ }
+  def canEqual(x$1: scala.Any): scala.Boolean = { /* compiled code */ }
+  override def hashCode(): scala.Int = { /* compiled code */ }
+  override def toString(): java.lang.String = { /* compiled code */ }
+}

@@ -5,11 +5,11 @@ object Test extends App {
     try {
       1
     } catch {
-      case e =>
+      case e: Throwable =>
     } finally {
       try {
       } catch {
-        case e =>
+        case e: Throwable =>
       }
     }
     1

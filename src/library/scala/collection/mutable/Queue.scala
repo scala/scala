@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -178,7 +179,7 @@ extends MutableList[A]
   override def clone(): Queue[A] = {
     val bf = newBuilder
     bf ++= seq
-    bf.result
+    bf.result()
   }
 
   private[this] def decrementLength() {

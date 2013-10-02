@@ -8,10 +8,7 @@
 
 package scala.tools.scalap
 
-import java.io._
-
-
-class CodeWriter(writer: Writer) {
+class CodeWriter(writer: java.io.Writer) {
 
   private val nl = scala.compat.Platform.EOL
   private var step = "  "
@@ -97,9 +94,9 @@ class CodeWriter(writer: Writer) {
 
   def print(value: Boolean): CodeWriter = print(String.valueOf(value))
 
-  def print(value: Byte): CodeWriter = print(String.valueOf(value))
+  def print(value: Byte): CodeWriter = print(String.valueOf(value.toInt))
 
-  def print(value: Short): CodeWriter = print(String.valueOf(value))
+  def print(value: Short): CodeWriter = print(String.valueOf(value.toInt))
 
   def print(value: Char): CodeWriter = print(String.valueOf(value))
 

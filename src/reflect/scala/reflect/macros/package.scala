@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>

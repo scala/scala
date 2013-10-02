@@ -1,0 +1,4 @@
+t6728.scala:4: error: '(' expected but '}' found.
+  }
+  ^
+one error found

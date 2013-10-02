@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import Flags._
@@ -35,7 +36,7 @@ trait Mirrors extends api.Mirrors {
       else definitions.findNamedMember(segs.tail, RootClass.info member segs.head)
     }
 
-    /** Todo: organize similar to mkStatic in reflect.Base */
+    /** Todo: organize similar to mkStatic in scala.reflect.Base */
     private def getModuleOrClass(path: Name, len: Int): Symbol = {
       val point = path lastPos('.', len - 1)
       val owner =
@@ -46,7 +47,7 @@ trait Mirrors extends api.Mirrors {
       val result = if (path.isTermName) sym.suchThat(_ hasFlag MODULE) else sym
       if (result != NoSymbol) result
       else {
-        if (settings.debug.value) { log(sym.info); log(sym.info.members) }//debug
+        if (settings.debug) { log(sym.info); log(sym.info.members) }//debug
         thisMirror.missingHook(owner, name) orElse {
           MissingRequirementError.notFound((if (path.isTermName) "object " else "class ")+path+" in "+thisMirror)
         }
@@ -175,6 +176,9 @@ trait Mirrors extends api.Mirrors {
     def getPackage(fullname: TermName): ModuleSymbol =
       ensurePackageSymbol(fullname.toString, getModuleOrClass(fullname), allowModules = true)
 
+    def getPackageIfDefined(fullname: TermName): Symbol =
+      wrapMissing(getPackage(fullname))
+
     @deprecated("Use getPackage", "2.11.0") def getRequiredPackage(fullname: String): ModuleSymbol =
       getPackage(newTermNameCached(fullname))
 
@@ -197,8 +201,8 @@ trait Mirrors extends api.Mirrors {
     /************************ helpers ************************/
 
     def erasureName[T: ClassTag] : String = {
-      /** We'd like the String representation to be a valid
-       *  scala type, so we have to decode the jvm's secret language.
+      /* We'd like the String representation to be a valid
+       * scala type, so we have to decode the jvm's secret language.
        */
       def erasureString(clazz: Class[_]): String = {
         if (clazz.isArray) "Array[" + erasureString(clazz.getComponentType) + "]"

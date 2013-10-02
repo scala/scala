@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 /**
@@ -50,7 +51,8 @@ package api
  *
  *  @contentDiagram hideNodes "*Api"
  */
-trait Types { self: Universe =>
+trait Types {
+  self: Universe =>
 
   /** The type of Scala types, and also Scala type signatures.
    *  (No difference is internally made between the two).
@@ -58,12 +60,6 @@ trait Types { self: Universe =>
    *  @group Types
    */
   type Type >: Null <: TypeApi
-
-  /** A tag that preserves the identity of the `Type` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypeTagg: ClassTag[Type]
 
   /** This constant is used as a special value that indicates that no meaningful type exists.
    *  @group Types
@@ -149,7 +145,7 @@ trait Types { self: Universe =>
     def =:= (that: Type): Boolean
 
     /** The list of all base classes of this type (including its own typeSymbol)
-     *  in reverse linearization order, starting with the class itself and ending
+     *  in linearization order, starting with the class itself and ending
      *  in class Any.
      */
     def baseClasses: List[Symbol]
@@ -214,6 +210,12 @@ trait Types { self: Universe =>
 
     /******************* helpers *******************/
 
+    /** Provides an alternate if type is NoType.
+     *
+     *  @group Helpers
+     */
+    def orElse(alt: => Type): Type
+
     /** Substitute symbols in `to` for corresponding occurrences of references to
      *  symbols `from` in this type.
      */
@@ -256,12 +258,6 @@ trait Types { self: Universe =>
    */
   type SingletonType >: Null <: Type
 
-  /** A tag that preserves the identity of the `SingletonType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val SingletonTypeTag: ClassTag[SingletonType]
-
   /** A singleton type that describes types of the form on the left with the
    *  corresponding `ThisType` representation to the right:
    *  {{{
@@ -271,12 +267,6 @@ trait Types { self: Universe =>
    *  @group Types
    */
   type ThisType >: Null <: AnyRef with SingletonType with ThisTypeApi
-
-  /** A tag that preserves the identity of the `ThisType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ThisTypeTag: ClassTag[ThisType]
 
   /** The constructor/extractor for `ThisType` instances.
    *  @group Extractors
@@ -315,12 +305,6 @@ trait Types { self: Universe =>
    *  @group Types
    */
   type SingleType >: Null <: AnyRef with SingletonType with SingleTypeApi
-
-  /** A tag that preserves the identity of the `SingleType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val SingleTypeTag: ClassTag[SingleType]
 
   /** The constructor/extractor for `SingleType` instances.
    *  @group Extractors
@@ -361,12 +345,6 @@ trait Types { self: Universe =>
    */
   type SuperType >: Null <: AnyRef with SingletonType with SuperTypeApi
 
-  /** A tag that preserves the identity of the `SuperType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val SuperTypeTag: ClassTag[SuperType]
-
   /** The constructor/extractor for `SuperType` instances.
    *  @group Extractors
    */
@@ -406,12 +384,6 @@ trait Types { self: Universe =>
    */
   type ConstantType >: Null <: AnyRef with SingletonType with ConstantTypeApi
 
-  /** A tag that preserves the identity of the `ConstantType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ConstantTypeTag: ClassTag[ConstantType]
-
   /** The constructor/extractor for `ConstantType` instances.
    *  @group Extractors
    */
@@ -449,12 +421,6 @@ trait Types { self: Universe =>
    *  @group Types
    */
   type TypeRef >: Null <: AnyRef with Type with TypeRefApi
-
-  /** A tag that preserves the identity of the `TypeRef` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypeRefTag: ClassTag[TypeRef]
 
   /** The constructor/extractor for `TypeRef` instances.
    *  @group Extractors
@@ -497,12 +463,6 @@ trait Types { self: Universe =>
    */
   type CompoundType >: Null <: AnyRef with Type
 
-  /** A tag that preserves the identity of the `CompoundType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val CompoundTypeTag: ClassTag[CompoundType]
-
   /** The `RefinedType` type defines types of any of the forms on the left,
    *  with their RefinedType representations to the right.
    *  {{{
@@ -514,12 +474,6 @@ trait Types { self: Universe =>
    *  @group Types
    */
   type RefinedType >: Null <: AnyRef with CompoundType with RefinedTypeApi
-
-  /** A tag that preserves the identity of the `RefinedType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val RefinedTypeTag: ClassTag[RefinedType]
 
   /** The constructor/extractor for `RefinedType` instances.
    *  @group Extractors
@@ -567,12 +521,6 @@ trait Types { self: Universe =>
    */
   type ClassInfoType >: Null <: AnyRef with CompoundType with ClassInfoTypeApi
 
-  /** A tag that preserves the identity of the `ClassInfoType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ClassInfoTypeTag: ClassTag[ClassInfoType]
-
   /** The constructor/extractor for `ClassInfoType` instances.
    *  @group Extractors
    */
@@ -609,12 +557,6 @@ trait Types { self: Universe =>
    *  @group Types
    */
   type MethodType >: Null <: AnyRef with Type with MethodTypeApi
-
-  /** A tag that preserves the identity of the `MethodType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val MethodTypeTag: ClassTag[MethodType]
 
   /** The constructor/extractor for `MethodType` instances.
    *  @group Extractors
@@ -660,12 +602,6 @@ trait Types { self: Universe =>
    */
   type NullaryMethodType >: Null <: AnyRef with Type with NullaryMethodTypeApi
 
-  /** A tag that preserves the identity of the `NullaryMethodType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val NullaryMethodTypeTag: ClassTag[NullaryMethodType]
-
   /** The constructor/extractor for `NullaryMethodType` instances.
    *  @group Extractors
    */
@@ -695,12 +631,6 @@ trait Types { self: Universe =>
    *  @group Types
    */
   type PolyType >: Null <: AnyRef with Type with PolyTypeApi
-
-  /** A tag that preserves the identity of the `PolyType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val PolyTypeTag: ClassTag[PolyType]
 
   /** The constructor/extractor for `PolyType` instances.
    *  @group Extractors
@@ -736,12 +666,6 @@ trait Types { self: Universe =>
    */
   type ExistentialType >: Null <: AnyRef with Type with ExistentialTypeApi
 
-  /** A tag that preserves the identity of the `ExistentialType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ExistentialTypeTag: ClassTag[ExistentialType]
-
   /** The constructor/extractor for `ExistentialType` instances.
    *  @group Extractors
    */
@@ -776,12 +700,6 @@ trait Types { self: Universe =>
    *  @group Types
    */
   type AnnotatedType >: Null <: AnyRef with Type with AnnotatedTypeApi
-
-  /** A tag that preserves the identity of the `AnnotatedType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val AnnotatedTypeTag: ClassTag[AnnotatedType]
 
   /** The constructor/extractor for `AnnotatedType` instances.
    *  @group Extractors
@@ -827,12 +745,6 @@ trait Types { self: Universe =>
    *  @group Types
    */
   type TypeBounds >: Null <: AnyRef with Type with TypeBoundsApi
-
-  /** A tag that preserves the identity of the `TypeBounds` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val TypeBoundsTag: ClassTag[TypeBounds]
 
   /** The constructor/extractor for `TypeBounds` instances.
    *  @group Extractors
@@ -884,12 +796,6 @@ trait Types { self: Universe =>
    *  @group Types
    */
   type BoundedWildcardType >: Null <: AnyRef with Type with BoundedWildcardTypeApi
-
-  /** A tag that preserves the identity of the `BoundedWildcardType` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val BoundedWildcardTypeTag: ClassTag[BoundedWildcardType]
 
   /** The constructor/extractor for `BoundedWildcardType` instances.
    *  @group Extractors

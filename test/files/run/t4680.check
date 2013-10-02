@@ -1,3 +1,9 @@
+t4680.scala:51: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+    new C { 5 }
+            ^
+t4680.scala:69: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+    new { val x = 5 } with E() { 5 }
+                                 ^
 
 
 // new C { }

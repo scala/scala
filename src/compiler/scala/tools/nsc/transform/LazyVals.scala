@@ -183,7 +183,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
 
       if (bmps.isEmpty) rhs else rhs match {
         case Block(assign, l @ LabelDef(name, params, _))
-          if name.toString == ("_" + methSym.name) && isMatch(params) =>
+          if (name string_== "_" + methSym.name) && isMatch(params) =>
             Block(assign, deriveLabelDef(l)(rhs => typed(prependStats(bmps, rhs))))
 
         case _ => prependStats(bmps, rhs)
@@ -199,14 +199,15 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       if (bitmaps.contains(lzyVal))
         bitmaps(lzyVal).map(_.owner = defSym)
       val rhs: Tree = (gen.mkSynchronizedCheck(clazz, cond, syncBody, stats)).changeOwner(currentOwner -> defSym)
-      DEF(defSym).mkTree(addBitmapDefs(lzyVal, BLOCK(rhs, retVal))) setSymbol defSym
+
+      DefDef(defSym, addBitmapDefs(lzyVal, BLOCK(rhs, retVal)))
     }
 
 
     def mkFastPathBody(clazz: Symbol, lzyVal: Symbol, cond: Tree, syncBody: List[Tree],
                        stats: List[Tree], retVal: Tree): (Tree, Tree) = {
       val slowPathDef: Tree = mkSlowPathDef(clazz, lzyVal, cond, syncBody, stats, retVal)
-      (If(cond, Apply(ID(slowPathDef.symbol), List()), retVal), slowPathDef)
+      (If(cond, Apply(Ident(slowPathDef.symbol), Nil), retVal), slowPathDef)
     }
 
     /** return a 'lazified' version of rhs. Rhs should conform to the
@@ -277,7 +278,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       if (bmps.length > n)
         bmps(n)
       else {
-        val sym = meth.newVariable(nme.newBitmapName(nme.BITMAP_NORMAL, n), meth.pos).setInfo(ByteClass.tpe)
+        val sym = meth.newVariable(nme.newBitmapName(nme.BITMAP_NORMAL, n), meth.pos).setInfo(ByteTpe)
         enteringTyper {
           sym addAnnotation VolatileAttr
         }

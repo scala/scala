@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 import java.io.{ PrintWriter, StringWriter }
@@ -47,7 +48,7 @@ import java.io.{ PrintWriter, StringWriter }
  *  res1: String = Block(List(
  *    ClassDef(Modifiers(FINAL), newTypeName("C"), List(), Template(
  *      List(Ident(newTypeName("AnyRef"))),
- *      emptyValDef,
+ *      noSelfType,
  *      List(
  *        DefDef(Modifiers(), nme.CONSTRUCTOR, List(), List(List()), TypeTree(),
  *          Block(List(
@@ -71,7 +72,7 @@ import java.io.{ PrintWriter, StringWriter }
  *  res2: String = Block[1](List(
  *    ClassDef[2](Modifiers(FINAL), newTypeName("C"), List(), Template[3](
  *      List(Ident[4](newTypeName("AnyRef"))),
- *      emptyValDef,
+ *      noSelfType,
  *      List(
  *        DefDef[2](Modifiers(), nme.CONSTRUCTOR, List(), List(List()), TypeTree[3](),
  *          Block[1](List(
@@ -157,12 +158,14 @@ trait Printers { self: Universe =>
   }
 
   /** @group Printers */
-  case class BooleanFlag(val value: Option[Boolean])
+  case class BooleanFlag(value: Option[Boolean])
   /** @group Printers */
   object BooleanFlag {
     import scala.language.implicitConversions
     implicit def booleanToBooleanFlag(value: Boolean): BooleanFlag = BooleanFlag(Some(value))
     implicit def optionToBooleanFlag(value: Option[Boolean]): BooleanFlag = BooleanFlag(value)
+    import scala.reflect.internal.settings.MutableSettings
+    implicit def settingToBooleanFlag(setting: MutableSettings#BooleanSetting): BooleanFlag = BooleanFlag(Some(setting.value))
   }
 
   /** @group Printers */

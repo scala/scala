@@ -4,7 +4,7 @@ object FooSeq {
       val y = x.asInstanceOf[Bar]
       Some(y.size, y.name)
     } else None
-  } 
+  }
 
   def main(args:Array[String]) = {
     val b = new Bar

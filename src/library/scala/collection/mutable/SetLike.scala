@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -120,7 +121,9 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *             which `p` returns `true` are retained in the set; all others
    *             are removed.
    */
-  def retain(p: A => Boolean): Unit = for (elem <- this.toList) if (!p(elem)) this -= elem
+  def retain(p: A => Boolean): Unit =
+    for (elem <- this.toList) // SI-7269 toList avoids ConcurrentModificationException
+      if (!p(elem)) this -= elem
 
   /** Removes all elements from the set. After this operation is completed,
    *  the set will be empty.
@@ -210,7 +213,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    def <<(cmd: Message[A]): Unit = cmd match {
      case Include(_, x)     => this += x
      case Remove(_, x)      => this -= x
-     case Reset()           => clear
+     case Reset()           => clear()
      case s: Script[_]      => s.iterator foreach <<
      case _                 => throw new UnsupportedOperationException("message " + cmd + " not understood")
    }

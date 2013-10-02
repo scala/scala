@@ -1,6 +1,6 @@
 t6829.scala:35: error: type mismatch;
  found   : AgentSimulation.this.state.type (with underlying type G#State)
- required: _10.State
+ required: _9.State
     lazy val actions: Map[G#Agent,G#Action] = agents.map(a => a -> a.chooseAction(state)).toMap
                                                                                   ^
 t6829.scala:45: error: trait AgentSimulation takes type parameters
@@ -17,12 +17,12 @@ t6829.scala:49: error: not found: value nextState
                                              ^
 t6829.scala:50: error: type mismatch;
  found   : s.type (with underlying type Any)
- required: _54.State where val _54: G
+ required: _53.State where val _53: G
         val r = rewards(agent).r(s,a,s2)
                                  ^
 t6829.scala:51: error: type mismatch;
  found   : s.type (with underlying type Any)
- required: _51.State
+ required: _50.State
         agent.learn(s,a,s2,r): G#Agent
                     ^
 t6829.scala:53: error: not found: value nextState

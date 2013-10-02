@@ -1,3 +1,5 @@
+import scala.language.existentials
+
 class Base
 class Derived extends Base
 

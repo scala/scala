@@ -1,0 +1,7 @@
+<init>: List(throws[NullPointerException](""))
+bar: List(throws[E1](""))
+baz: List(throws[IllegalStateException](""))
+=============
+<init>: List(throws[NullPointerException](""))
+bar: List(throws[E1](""))
+baz: List(throws[IllegalStateException](""))

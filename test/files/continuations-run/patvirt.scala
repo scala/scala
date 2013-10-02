@@ -2,11 +2,11 @@ import scala.util.continuations._
 
 object Test {
   def sh(x1:Int) = shift( (k: Int => Int) => k(k(k(x1))))
-  
+
   def test(x1: Int) = {
     val o7 = {
       val o6 = {
-        val o3 = 
+        val o3 =
           if (7 == x1) Some(x1)
           else None
 
@@ -25,7 +25,7 @@ object Test {
     o7.get
   }
 
-  def main(args: Array[String]): Any = {
+  def main(args: Array[String]): Unit = {
     println(reset(1 + test(7)))
     println(reset(1 + test(8)))
   }

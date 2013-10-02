@@ -1,0 +1,2 @@
+class annotations: List(scala.reflect.ScalaLongSignature)
+3001 decls via runtime reflection

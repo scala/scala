@@ -1,6 +1,8 @@
 import scala.util.continuations._
 import scala.collection.generic.CanBuildFrom
 
+import scala.language.{ implicitConversions }
+
 object Test {
 
   class ExecutionContext
@@ -14,13 +16,13 @@ object Test {
 
   class PromiseStream[A] {
     override def toString = xs.toString
-    
+
     var xs: List[A] = Nil
-  
+
     final def +=(elem: A): this.type = { xs :+= elem; this }
 
     final def ++=(elem: Traversable[A]): this.type = { xs ++= elem; this }
-  
+
     final def <<(elem: Future[A]): PromiseStream[A] @cps[Future[Any]] =
       shift { cont: (PromiseStream[A] => Future[Any]) => elem map (a => cont(this += a)) }
 
@@ -38,12 +40,12 @@ object Test {
 
     def sequence[A, M[_] <: Traversable[_]](in: M[Future[A]])(implicit cbf: CanBuildFrom[M[Future[A]], A, M[A]], executor: ExecutionContext): Future[M[A]] =
       new Future(in.asInstanceOf[Traversable[Future[A]]].map((f:Future[A])=>f.x)(cbf.asInstanceOf[CanBuildFrom[Traversable[Future[A]], A, M[A]]]))
-    
+
     def flow[A](body: => A @cps[Future[Any]])(implicit executor: ExecutionContext): Future[A] = reset(Future(body)).asInstanceOf[Future[A]]
 
   }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val p = new PromiseStream[Int]
     println(Future.flow(p << (Future(1), Future(2), Future(3), Future(4), Future(5))))
   }

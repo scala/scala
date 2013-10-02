@@ -150,7 +150,7 @@ extends AbstractSeq[T]
    *
    *  @param f The function to drain to.
    */
-  def drain(f: T => Unit) = while (!isEmpty) f(pop)
+  def drain(f: T => Unit) = while (!isEmpty) f(pop())
 
   /** Pushes all the provided elements in the traversable object onto the stack.
    *
@@ -190,7 +190,7 @@ extends AbstractSeq[T]
    *
    *  @param f   The function to apply to the top two elements.
    */
-  def combine(f: (T, T) => T): Unit = push(f(pop, pop))
+  def combine(f: (T, T) => T): Unit = push(f(pop(), pop()))
 
   /** Repeatedly combine the top elements of the stack until the stack contains only
    *  one element.

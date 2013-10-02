@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import mutable.{ Builder, ListBuffer }
@@ -220,10 +221,10 @@ object NumericRange {
         if (!isInclusive && zero == remainder) 0 else 1
       )
 
-      /** The edge cases keep coming.  Since e.g.
-       *    Long.MaxValue + 1 == Long.MinValue
-       *  we do some more improbable seeming checks lest
-       *  overflow turn up as an empty range.
+      /* The edge cases keep coming.  Since e.g.
+       * Long.MaxValue + 1 == Long.MinValue
+       * we do some more improbable seeming checks lest
+       * overflow turn up as an empty range.
        */
       // The second condition contradicts an empty result.
       val isOverflow = longCount == 0 && num.lt(num.plus(start, step), end) == upward

@@ -82,7 +82,7 @@ Array
 it's important to print the list of Array's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
 constructor Array: (_length: Int)Array[T]
-constructor Object: ()java.lang.Object
+constructor Cloneable: ()java.lang.Cloneable
 method !=: (x$1: Any)Boolean
 method !=: (x$1: AnyRef)Boolean
 method ##: ()Int

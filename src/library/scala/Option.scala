@@ -128,7 +128,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * val textField = new JComponent(initalText.orNull,20)
    * }}}
    */
-  @inline final def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this getOrElse null
+  @inline final def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this getOrElse ev(null)
 
   /** Returns a $some containing the result of applying $f to this $option's
    * value if this $option is nonempty.
@@ -210,7 +210,7 @@ sealed abstract class Option[+A] extends Product with Serializable {
   }
 
   /** Tests whether the option contains a given value as an element.
-   * 
+   *
    *  @param elem the element to test.
    *  @return `true` if the option has an element that is equal (as
    *  determined by `==`) to `elem`, `false` otherwise.

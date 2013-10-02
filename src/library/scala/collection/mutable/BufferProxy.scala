@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import script._
@@ -124,7 +125,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
 
   /** Clears the buffer contents.
    */
-  def clear() { self.clear }
+  def clear() { self.clear() }
 
   /** Send a message to this scriptable object.
    *

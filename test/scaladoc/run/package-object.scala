@@ -11,6 +11,7 @@ object Test extends ScaladocModelTest {
     val p = root._package("test")
     println(p.linearizationTemplates)
     println(p.linearizationTypes)
+    println(p.inSource)
   }
 }
 

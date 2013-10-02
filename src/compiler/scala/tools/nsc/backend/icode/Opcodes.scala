@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package backend
 package icode
 
@@ -64,7 +65,7 @@ import scala.reflect.internal.util.{Position,NoPosition}
  * in the source files.
  */
 trait Opcodes { self: ICodes =>
-  import global.{Symbol, NoSymbol, Name, Constant};
+  import global.{Symbol, NoSymbol, Name, Constant}
 
   // categories of ICode instructions
   final val localsCat =  1
@@ -195,7 +196,7 @@ trait Opcodes { self: ICodes =>
     case class LOAD_FIELD(field: Symbol, isStatic: Boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "LOAD_FIELD " + (if (isStatic) field.fullName else field.toString());
+        "LOAD_FIELD " + (if (isStatic) field.fullName else field.toString())
 
       override def consumed = if (isStatic) 0 else 1
       override def produced = 1
@@ -257,16 +258,17 @@ trait Opcodes { self: ICodes =>
     case class STORE_FIELD(field: Symbol, isStatic: Boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "STORE_FIELD "+field + (if (isStatic) " (static)" else " (dynamic)");
+        "STORE_FIELD "+field + (if (isStatic) " (static)" else " (dynamic)")
 
-      override def consumed = if(isStatic) 1 else 2;
-      override def produced = 0;
+      override def consumed = if(isStatic) 1 else 2
+
+      override def produced = 0
 
       override def consumedTypes =
         if (isStatic)
           toTypeKind(field.tpe) :: Nil
         else
-          REFERENCE(field.owner) :: toTypeKind(field.tpe) :: Nil;
+          REFERENCE(field.owner) :: toTypeKind(field.tpe) :: Nil
 
       override def category = fldsCat
     }
@@ -394,6 +396,25 @@ trait Opcodes { self: ICodes =>
       override def category = mthdsCat
     }
 
+    /**
+     * A place holder entry that allows us to parse class files with invoke dynamic
+     * instructions. Because the compiler doesn't yet really understand the
+     * behavior of invokeDynamic, this op acts as a poison pill. Any attempt to analyze
+     * this instruction will cause a failure. The only optimization that
+     * should ever look at non-Scala generated icode is the inliner, and it
+     * has been modified to not examine any method with invokeDynamic
+     * instructions. So if this poison pill ever causes problems then
+     * there's been a serious misunderstanding
+     */
+    // TODO do the real thing
+    case class INVOKE_DYNAMIC(poolEntry: Int) extends Instruction {
+      private def error = sys.error("INVOKE_DYNAMIC is not fully implemented and should not be analyzed")
+      override def consumed = error
+      override def produced = error
+      override def producedTypes = error
+      override def category = error
+    }
+
     case class BOX(boxType: TypeKind) extends Instruction {
       assert(boxType.isValueType && (boxType ne UNIT)) // documentation
       override def toString(): String = "BOX " + boxType
@@ -420,10 +441,12 @@ trait Opcodes { self: ICodes =>
      */
     case class NEW(kind: REFERENCE) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "NEW "+ kind;
+      override def toString(): String = "NEW "+ kind
 
-      override def consumed = 0;
-      override def produced = 1;
+      override def consumed = 0
+
+      override def produced = 1
+
       override def producedTypes = kind :: Nil
 
       /** The corresponding constructor call. */
@@ -439,11 +462,13 @@ trait Opcodes { self: ICodes =>
      */
     case class CREATE_ARRAY(elem: TypeKind, dims: Int) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CREATE_ARRAY "+elem + " x " + dims;
+      override def toString(): String ="CREATE_ARRAY "+elem + " x " + dims
 
-      override def consumed = dims;
+      override def consumed = dims
+
       override def consumedTypes = List.fill(dims)(INT)
-      override def produced = 1;
+      override def produced = 1
+
       override def producedTypes = ARRAY(elem) :: Nil
 
       override def category = arraysCat
@@ -532,7 +557,7 @@ trait Opcodes { self: ICodes =>
       override def toString(): String = (
         "CJUMP (" + kind + ")" +
         cond + " ? "+successBlock.label+" : "+failureBlock.label
-      );
+      )
 
       override def consumed = 2
       override def produced = 0
@@ -555,7 +580,7 @@ trait Opcodes { self: ICodes =>
       override def toString(): String = (
         "CZJUMP (" + kind + ")" +
         cond + " ? "+successBlock.label+" : "+failureBlock.label
-      );
+      )
 
       override def consumed = 1
       override def produced = 0
@@ -647,10 +672,11 @@ trait Opcodes { self: ICodes =>
      */
     case class MONITOR_EXIT() extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="MONITOR_EXIT";
+      override def toString(): String ="MONITOR_EXIT"
 
-      override def consumed = 1;
-      override def produced = 0;
+      override def consumed = 1
+
+      override def produced = 0
 
       override def consumedTypes = ObjectReference :: Nil
 
@@ -699,6 +725,8 @@ trait Opcodes { self: ICodes =>
       /** Is this a static method call? */
       def isStatic: Boolean = false
 
+      def isSuper: Boolean = false
+
       /** Is this an instance method call? */
       def hasInstance: Boolean = true
 
@@ -732,6 +760,7 @@ trait Opcodes { self: ICodes =>
      *  On JVM, translated to `invokespecial`.
      */
     case class SuperCall(mix: Name) extends InvokeStyle {
+      override def isSuper = true
       override def toString(): String = { "super(" + mix + ")" }
     }
   }

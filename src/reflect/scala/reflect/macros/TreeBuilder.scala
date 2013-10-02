@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 /**
@@ -72,6 +73,6 @@ abstract class TreeBuilder {
 
   def mkNullaryCall(method: Symbol, targs: List[Type]): Tree
 
-  /** A tree that refers to the runtime reflexive universe, ``scala.reflect.runtime.universe''. */
+  /** A tree that refers to the runtime reflexive universe, `scala.reflect.runtime.universe`. */
   def mkRuntimeUniverseRef: Tree
 }

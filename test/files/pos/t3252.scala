@@ -8,8 +8,8 @@ class A {
         }
     }
 
-    private def g[T](block : => T) = error("")
+    private def g[T](block : => T) = sys.error("")
 }
 object B {
-    def h(block : => Unit) : Nothing = error("")
+    def h(block : => Unit) : Nothing = sys.error("")
 }

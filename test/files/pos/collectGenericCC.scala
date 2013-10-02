@@ -7,8 +7,8 @@ object Test {
     r foreach ((a: A) => b += a)
     b.result
   }
-  
-  collect[Int, Vector[Int]](List(1,2,3,4)) 
+
+  collect[Int, Vector[Int]](List(1,2,3,4))
   collect[Char, String](List('1','2','3','4'))
-  collect[Char, Array[Char]](List('1','2','3','4'))  
+  collect[Char, Array[Char]](List('1','2','3','4'))
 }

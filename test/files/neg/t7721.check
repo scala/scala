@@ -1,0 +1,27 @@
+t7721.scala:11: warning: abstract type pattern A.this.Foo is unchecked since it is eliminated by erasure
+    case x: Foo with Concrete => x.bippy + x.conco
+            ^
+t7721.scala:15: warning: abstract type pattern A.this.Foo is unchecked since it is eliminated by erasure
+    case x: Concrete with Foo => x.bippy + x.conco
+            ^
+t7721.scala:19: warning: abstract type pattern A.this.Foo is unchecked since it is eliminated by erasure
+    case x: Foo with Bar => x.bippy + x.barry
+            ^
+t7721.scala:19: warning: abstract type pattern A.this.Bar is unchecked since it is eliminated by erasure
+    case x: Foo with Bar => x.bippy + x.barry
+            ^
+t7721.scala:39: warning: abstract type pattern B.this.Foo is unchecked since it is eliminated by erasure
+    case x: Foo with Concrete => x.bippy + x.dingo + x.conco
+            ^
+t7721.scala:43: warning: abstract type pattern B.this.Foo is unchecked since it is eliminated by erasure
+    case x: Concrete with Foo => x.bippy + x.dingo + x.conco
+            ^
+t7721.scala:47: warning: abstract type pattern B.this.Foo is unchecked since it is eliminated by erasure
+    case x: Foo with Bar with Concrete => x.bippy + x.barry + x.dingo + x.conco + x.bongo
+            ^
+t7721.scala:47: warning: abstract type pattern B.this.Bar is unchecked since it is eliminated by erasure
+    case x: Foo with Bar with Concrete => x.bippy + x.barry + x.dingo + x.conco + x.bongo
+            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+8 warnings found
+one error found

@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -92,8 +93,8 @@ extends AbstractSet[A]
   /** Toggles whether a size map is used to track hash map statistics.
    */
   def useSizeMap(t: Boolean) = if (t) {
-    if (!isSizeMapDefined) sizeMapInitAndRebuild
-  } else sizeMapDisable
+    if (!isSizeMapDefined) sizeMapInitAndRebuild()
+  } else sizeMapDisable()
 
 }
 

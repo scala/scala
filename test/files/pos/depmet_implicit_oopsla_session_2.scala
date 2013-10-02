@@ -36,7 +36,7 @@ object Sessions {
   implicit def InDual[Data, Cont](implicit cont: Session[Cont]) = new Session[In[Data, Cont]] {
     type Dual = Out[Data, cont.Dual]
 
-    def run(self: Self, dual: Dual): Unit = 
+    def run(self: Self, dual: Dual): Unit =
       cont.run(self.recv(dual.data), dual.cont)
   }
 
@@ -46,13 +46,13 @@ object Sessions {
   implicit def OutDual[Data, Cont](implicit cont: Session[Cont]) = new Session[Out[Data, Cont]] {
     type Dual = In[Data, cont.Dual]
 
-    def run(self: Self, dual: Dual): Unit = 
+    def run(self: Self, dual: Dual): Unit =
       cont.run(self.cont, dual.recv(self.data))
   }
 
   // a concrete session
   def addServer =
-    In{x: Int => 
+    In{x: Int =>
     In{y: Int => System.out.println("Thinking")
     Out(x+y,
     Stop())}}
@@ -71,7 +71,7 @@ object Sessions {
 
   // def runSession[S, D](p: S, dp: D)(implicit s: Session[S]#HasDual[D]) =
   //   s.run(p, dp)
-  // 
+  //
   // def runSession[S, D](p: S, dp: D)(implicit s: Session[S]{type Dual=D}) =
   //   s.run(p, dp)
 

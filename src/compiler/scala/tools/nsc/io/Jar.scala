@@ -10,7 +10,7 @@ import java.io.{ InputStream, OutputStream, IOException, FileNotFoundException, 
 import java.util.jar._
 import scala.collection.JavaConverters._
 import Attributes.Name
-import scala.language.implicitConversions
+import scala.language.{ implicitConversions, postfixOps }
 
 // Attributes.Name instances:
 //
@@ -115,9 +115,9 @@ class JarWriter(val file: File, val manifest: Manifest) {
     val buf = new Array[Byte](10240)
     def loop(): Unit = in.read(buf, 0, buf.length) match {
       case -1 => in.close()
-      case n  => out.write(buf, 0, n) ; loop
+      case n  => out.write(buf, 0, n) ; loop()
     }
-    loop
+    loop()
   }
 
   def close() = out.close()
@@ -159,7 +159,7 @@ object Jar {
   private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
   private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)
 
-  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, true)
+  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, examineFile = true)
   def isJarOrZip(f: Path, examineFile: Boolean): Boolean =
     f.hasExtension("zip", "jar") || (examineFile && magicNumberIsZip(f))
 

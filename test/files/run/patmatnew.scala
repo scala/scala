@@ -1,3 +1,6 @@
+
+import scala.language.{ postfixOps }
+
 object Test {
 
   def main(args: Array[String]) {
@@ -251,7 +254,7 @@ object Test {
   }
 
   // (not regular) fancy guards / bug#644
-  object TestSequence06 { 
+  object TestSequence06 {
 
     case class A(i: Any)
 
@@ -447,7 +450,7 @@ object Test {
       object Get extends Sync
 
       var ps: PartialFunction[Any, Any] = {
-        case Get(y) if y > 4 => // y gets a wildcard type for some reason?! hack 
+        case Get(y) if y > 4 => // y gets a wildcard type for some reason?! hack
       }
     }
     def run() {

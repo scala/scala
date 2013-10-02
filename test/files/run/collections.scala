@@ -1,5 +1,6 @@
-import collection._
+import scala.collection._
 import scala.compat.Platform.currentTime
+import scala.language.postfixOps
 
 object Test extends App {
 
@@ -61,7 +62,7 @@ object Test extends App {
     }
     time {
       var x = 0
-      for (i <- 0 to 10000) 
+      for (i <- 0 to 10000)
         s get i match {
           case Some(i) => x += i
           case None =>
@@ -96,7 +97,7 @@ object Test extends App {
     }
     time {
       var x = 0
-      for (i <- 0 to 10000) 
+      for (i <- 0 to 10000)
         s get i match {
           case Some(i) => x += i
           case None =>

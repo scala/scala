@@ -6,17 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection
+package scala
+package collection
 package parallel.mutable
-
-
-
 
 import scala.collection.mutable.HashEntry
 import scala.collection.parallel.IterableSplitter
-
-
 
 /** Provides functionality for hash tables with linked list buckets,
  *  enriching the data structure by fulfilling certain requirements
@@ -145,11 +140,4 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends scala.collec
       c
     }
   }
-
 }
-
-
-
-
-
-

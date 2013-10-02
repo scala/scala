@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.reflect
+package scala
+package reflect
 
 /** One of the branches of an [[scala.reflect.OptManifest]].
   */

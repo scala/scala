@@ -12,7 +12,7 @@ object Test {
   }
   def main(args: Array[String]) {
     val rng = new scala.util.Random(java.lang.Integer.parseInt("kmp",36))
-    
+
     // Make sure we agree with naive implementation
     for (h <- Array(2,5,1000)) {
       for (i <- 0 to 100) {
@@ -38,7 +38,7 @@ object Test {
         }
       }
     }
-    
+
     // Check performance^Wcorrectness of common small test cases
     val haystacks = List[Seq[Int]](
       Array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15),
@@ -52,8 +52,8 @@ object Test {
       List(1,1,1,1,1,2),
       5 to 9
     )
-    (haystacks zip needles) foreach { 
-      case (hay, nee) => 
+    (haystacks zip needles) foreach {
+      case (hay, nee) =>
         println(hay.indexOfSlice(nee,2) + " " + hay.lastIndexOfSlice(nee,13))
     }
   }

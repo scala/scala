@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 package object convert {
   val decorateAsJava  = new DecorateAsJava { }

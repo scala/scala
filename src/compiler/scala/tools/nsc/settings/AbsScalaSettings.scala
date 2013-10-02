@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.tools.nsc
+package scala
+package tools.nsc
 package settings
 
 trait AbsScalaSettings {
@@ -32,11 +33,4 @@ trait AbsScalaSettings {
   def PhasesSetting(name: String, descr: String, default: String): PhasesSetting
   def StringSetting(name: String, helpArg: String, descr: String, default: String): StringSetting
   def PrefixSetting(name: String, prefix: String, descr: String): PrefixSetting
-
-  /** **/
-  abstract class SettingGroup(val prefix: String) extends AbsSetting {
-    def name = prefix
-    def helpDescription: String = sys.error("todo")
-    def unparse: List[String] = List(name)
-  }
 }

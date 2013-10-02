@@ -16,4 +16,7 @@ public class VolatileDoubleRef implements java.io.Serializable {
     volatile public double elem;
     public VolatileDoubleRef(double elem) { this.elem = elem; }
     public String toString() { return java.lang.Double.toString(elem); }
+
+    public static VolatileDoubleRef create(double e) { return new VolatileDoubleRef(e); }
+    public static VolatileDoubleRef zero() { return new VolatileDoubleRef(0); }
 }

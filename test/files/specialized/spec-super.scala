@@ -7,13 +7,13 @@ object Test {
 
     val i = new Extended(1)
     println(i.foo) //infinite loop with StackOverflowError
-    
+
     println(runtime.BoxesRunTime.integerBoxCount)
   }
 }
 
-class Base[@specialized(Int) T](val t: T) { 
-  def foo() :T = t 
+class Base[@specialized(Int) T](val t: T) {
+  def foo() :T = t
 }
 class Extended [@specialized(Int) T](t: T) extends Base[T](t) {
   override def foo() :T = super.foo

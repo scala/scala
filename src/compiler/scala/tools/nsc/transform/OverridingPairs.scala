@@ -86,10 +86,10 @@ abstract class OverridingPairs {
     { def fillDecls(bcs: List[Symbol], deferredflag: Int) {
         if (!bcs.isEmpty) {
           fillDecls(bcs.tail, deferredflag)
-          var e = bcs.head.info.decls.elems;
+          var e = bcs.head.info.decls.elems
           while (e ne null) {
             if (e.sym.getFlag(DEFERRED) == deferredflag.toLong && !exclude(e.sym))
-              decls enter e.sym;
+              decls enter e.sym
             e = e.next
           }
         }
@@ -134,7 +134,7 @@ abstract class OverridingPairs {
     private val subParents = new Array[BitSet](size)
 
     { for (i <- List.range(0, size))
-        subParents(i) = new BitSet(size);
+        subParents(i) = new BitSet(size)
       for (p <- parents) {
         val pIndex = index(p.typeSymbol)
         if (pIndex >= 0)
@@ -190,7 +190,7 @@ abstract class OverridingPairs {
         if (nextEntry ne null) {
           do {
             do {
-              nextEntry = decls.lookupNextEntry(nextEntry);
+              nextEntry = decls.lookupNextEntry(nextEntry)
               /* DEBUG
               if ((nextEntry ne null) &&
                   !(nextEntry.sym hasFlag PRIVATE) &&
@@ -208,19 +208,19 @@ abstract class OverridingPairs {
             // overriding and nextEntry.sym
           } while ((nextEntry ne null) && (hasCommonParentAsSubclass(overriding, nextEntry.sym)))
           if (nextEntry ne null) {
-            overridden = nextEntry.sym;
+            overridden = nextEntry.sym
             //Console.println("yield: " + overriding + overriding.locationString + " / " + overridden + overridden.locationString);//DEBUG
           } else {
             do {
               curEntry = curEntry.next
-            } while ((curEntry ne null) && (visited contains curEntry));
+            } while ((curEntry ne null) && (visited contains curEntry))
             nextEntry = curEntry
-            next
+            next()
           }
         }
       }
     }
 
-    next
+    next()
   }
 }

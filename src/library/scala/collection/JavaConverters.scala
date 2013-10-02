@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import convert._
 
@@ -54,15 +55,4 @@ import convert._
  *  @author Martin Odersky
  *  @since  2.8.1
  */
-object JavaConverters extends DecorateAsJava with DecorateAsScala {
-  @deprecated("Don't access these decorators directly.", "2.10.0")
-  type AsJava[A]            = Decorators.AsJava[A]
-  @deprecated("Don't access these decorators directly.", "2.10.0")
-  type AsScala[A]           = Decorators.AsScala[A]
-  @deprecated("Don't access these decorators directly.", "2.10.0")
-  type AsJavaCollection[A]  = Decorators.AsJavaCollection[A]
-  @deprecated("Don't access these decorators directly.", "2.10.0")
-  type AsJavaEnumeration[A] = Decorators.AsJavaEnumeration[A]
-  @deprecated("Don't access these decorators directly.", "2.10.0")
-  type AsJavaDictionary[A, B]  = Decorators.AsJavaDictionary[A, B]
-}
+object JavaConverters extends DecorateAsJava with DecorateAsScala

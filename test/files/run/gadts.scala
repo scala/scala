@@ -2,8 +2,8 @@ abstract class Term[T]
 case class Lit(x: Int) extends Term[Int]
 case class Succ(t: Term[Int]) extends Term[Int]
 case class IsZero(t: Term[Int]) extends Term[Boolean]
-case class If[T](c: Term[Boolean], 
-                 t1: Term[T], 
+case class If[T](c: Term[Boolean],
+                 t1: Term[T],
                  t2: Term[T]) extends Term[T]
 
 object Test extends App {

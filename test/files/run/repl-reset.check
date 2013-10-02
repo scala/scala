@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> val x1 = 1
 x1: Int = 1
 
@@ -49,7 +47,5 @@ defined class BippyBungus
 
 scala> { new BippyBungus ; x1 }
 res2: Int = 4
-
-scala> 
 
 scala> 

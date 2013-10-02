@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import Flags._
@@ -80,7 +81,7 @@ trait HasFlags {
   // identically, testing for a single flag.
   def hasAbstractFlag    = hasFlag(ABSTRACT)
   def hasAccessorFlag    = hasFlag(ACCESSOR)
-  def hasDefault         = hasAllFlags(DEFAULTPARAM | PARAM)
+  def hasDefault         = hasFlag(DEFAULTPARAM) && hasFlag(METHOD | PARAM) // Second condition disambiguates with TRAIT
   def hasLocalFlag       = hasFlag(LOCAL)
   def hasModuleFlag      = hasFlag(MODULE)
   def hasPackageFlag     = hasFlag(PACKAGE)
@@ -114,6 +115,9 @@ trait HasFlags {
   def isSuperAccessor    = hasFlag(SUPERACCESSOR)
   def isSynthetic        = hasFlag(SYNTHETIC)
   def isTrait            = hasFlag(TRAIT) && !hasFlag(PARAM)
+
+  def isDeferredOrDefault  = hasFlag(DEFERRED | DEFAULTMETHOD)
+  def isDeferredNotDefault = isDeferred && !hasFlag(DEFAULTMETHOD)
 
   def flagBitsToString(bits: Long): String = {
     // Fast path for common case

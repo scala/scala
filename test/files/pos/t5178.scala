@@ -4,7 +4,7 @@ abstract class FileOps {
 
 trait DefaultFileOps {
   self: DefaultPath =>
-  
+
   override def withLock[R](start: Long = 5): Option[R] = None
 }
 

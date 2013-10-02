@@ -1,0 +1,4 @@
+class ImplicitParam extends scala.AnyRef {
+  def this() = { /* compiled code */ }
+  def foo(i: scala.Int)(implicit f: scala.Float, d: scala.Double): scala.Int = { /* compiled code */ }
+}

@@ -7,13 +7,16 @@
 \*                                                                      */
 
 
-package scala.reflect
+package scala
+package reflect
 package io
 
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, PrintWriter, Closeable => JCloseable }
-import java.io.{ File => JFile }
+  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, PrintWriter, Closeable => JCloseable,
+  File => JFile
+}
+
 import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
 import scala.language.{reflectiveCalls, implicitConversions}
@@ -72,7 +75,7 @@ class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) w
 
   /** Wraps a BufferedWriter around the result of writer().
    */
-  def bufferedWriter(): BufferedWriter = bufferedWriter(false)
+  def bufferedWriter(): BufferedWriter = bufferedWriter(append = false)
   def bufferedWriter(append: Boolean): BufferedWriter = bufferedWriter(append, creationCodec)
   def bufferedWriter(append: Boolean, codec: Codec): BufferedWriter =
     new BufferedWriter(writer(append, codec))

@@ -7,8 +7,6 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.{ mutable, immutable }
-import scala.xml.{ EntityRef, Text }
-import scala.xml.XML.{ xmlns }
 import symtab.Flags.MUTABLE
 import scala.reflect.internal.util.StringOps.splitWhere
 
@@ -132,7 +130,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
       case (Some(pre), rest)  => (const(pre), const(rest))
       case _                  => (wild, const(n))
     }
-    mkXML(pos, true, prepat, labpat, null, null, false, args)
+    mkXML(pos, isPattern = true, prepat, labpat, null, null, empty = false, args)
   }
 
   protected def convertToTextPat(t: Tree): Tree = t match {
@@ -143,14 +141,12 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     (buf map convertToTextPat).toList
 
   def parseAttribute(pos: Position, s: String): Tree = {
-    val ts = scala.xml.Utility.parseAttributeValue(s) map {
-      case Text(s)      => text(pos, s)
-      case EntityRef(s) => entityRef(pos, s)
-    }
-    ts.length match {
-      case 0 => gen.mkNil
-      case 1 => ts.head
-      case _ => makeXMLseq(pos, ts.toList)
+    import xml.Utility.parseAttributeValue
+
+    parseAttributeValue(s, text(pos, _), entityRef(pos, _)) match {
+      case Nil      => gen.mkNil
+      case t :: Nil => t
+      case ts       => makeXMLseq(pos, ts.toList)
     }
   }
 
@@ -168,7 +164,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   }
 
   /** Returns (Some(prefix) | None, rest) based on position of ':' */
-  def splitPrefix(name: String): (Option[String], String) = splitWhere(name, _ == ':', true) match {
+  def splitPrefix(name: String): (Option[String], String) = splitWhere(name, _ == ':', doDropIndex = true) match {
     case Some((pre, rest))  => (Some(pre), rest)
     case _                  => (None, name)
   }
@@ -196,9 +192,9 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
       uri1
     }
 
-    /** Extract all the namespaces from the attribute map. */
+    /* Extract all the namespaces from the attribute map. */
     val namespaces: List[Tree] =
-      for (z <- attrMap.keys.toList ; if z startsWith xmlns) yield {
+      for (z <- attrMap.keys.toList ; if z startsWith "xmlns") yield {
         val ns = splitPrefix(z) match {
           case (Some(_), rest)  => rest
           case _                => null
@@ -246,7 +242,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
 
     val body = mkXML(
       pos.makeTransparent,
-      false,
+      isPattern = false,
       const(pre),
       const(newlabel),
       makeSymbolicAttrs,

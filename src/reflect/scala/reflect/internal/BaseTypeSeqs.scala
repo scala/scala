@@ -2,7 +2,8 @@
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.reflect
+package scala
+package reflect
 package internal
 
 // todo implement in terms of BitSet
@@ -65,15 +66,14 @@ trait BaseTypeSeqs {
             pending += i
             try {
               mergePrefixAndArgs(variants, Variance.Contravariant, lubDepth(variants)) match {
-                case Some(tp0) =>
+                case NoType => typeError("no common type instance of base types "+(variants mkString ", and ")+" exists.")
+                case tp0    =>
                   pending(i) = false
                   elems(i) = tp0
                   tp0
-                case None =>
-                  typeError(
-                    "no common type instance of base types "+(variants mkString ", and ")+" exists.")
               }
-            } catch {
+            }
+            catch {
               case CyclicInheritance =>
                 typeError(
                   "computing the common type instance of base types "+(variants mkString ", and ")+" leads to a cycle.")
@@ -130,9 +130,9 @@ trait BaseTypeSeqs {
 
     lazy val maxDepth = maxDepthOfElems
 
-    protected def maxDepthOfElems: Int = {
-      var d = 0
-      for (i <- 1 until length) d = max(d, typeDepth(elems(i)))
+    protected def maxDepthOfElems: Depth = {
+      var d = Depth.Zero
+      1 until length foreach (i => d = d max typeDepth(elems(i)))
       d
     }
 
@@ -180,7 +180,7 @@ trait BaseTypeSeqs {
       def nextRawElem(i: Int): Type = {
         val j = index(i)
         val pbts = pbtss(i)
-        if (j < pbts.length) pbts.rawElem(j) else AnyClass.tpe
+        if (j < pbts.length) pbts.rawElem(j) else AnyTpe
       }
       var minSym: Symbol = NoSymbol
       while (minSym != AnyClass) {
@@ -234,7 +234,7 @@ trait BaseTypeSeqs {
     override def map(g: Type => Type) = lateMap(g)
     override def lateMap(g: Type => Type) = orig.lateMap(x => g(f(x)))
     override def exists(p: Type => Boolean) = elems exists (x => p(f(x)))
-    override protected def maxDepthOfElems: Int = elems.map(x => typeDepth(f(x))).max
+    override protected def maxDepthOfElems: Depth = elems.map(x => typeDepth(f(x))).max
     override def toString = elems.mkString("MBTS(", ",", ")")
   }
 

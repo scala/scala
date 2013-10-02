@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package api
 
 import scala.collection.immutable.ListMap
@@ -45,12 +46,6 @@ trait Annotations { self: Universe =>
    */
   type Annotation >: Null <: AnyRef with AnnotationApi
 
-  /** A tag that preserves the identity of the `Annotation` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val AnnotationTag: ClassTag[Annotation]
-
    /** The constructor/extractor for `Annotation` instances.
     *  @group Extractors
     */
@@ -90,23 +85,12 @@ trait Annotations { self: Universe =>
    */
   type JavaArgument >: Null <: AnyRef
 
-  /** A tag that preserves the identity of the `JavaArgument` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val JavaArgumentTag: ClassTag[JavaArgument]
 
   /** A literal argument to a Java annotation as `"Use X instead"` in `@Deprecated("Use X instead")`
    *  @template
    *  @group Annotations
    */
   type LiteralArgument >: Null <: AnyRef with JavaArgument with LiteralArgumentApi
-
-  /** A tag that preserves the identity of the `LiteralArgument` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val LiteralArgumentTag: ClassTag[LiteralArgument]
 
   /** The constructor/extractor for `LiteralArgument` instances.
    *  @group Extractors
@@ -137,12 +121,6 @@ trait Annotations { self: Universe =>
    */
   type ArrayArgument >: Null <: AnyRef with JavaArgument with ArrayArgumentApi
 
-  /** A tag that preserves the identity of the `ArrayArgument` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val ArrayArgumentTag: ClassTag[ArrayArgument]
-
   /** The constructor/extractor for `ArrayArgument` instances.
    *  @group Extractors
    */
@@ -171,12 +149,6 @@ trait Annotations { self: Universe =>
    *  @group Annotations
    */
   type NestedArgument >: Null <: AnyRef with JavaArgument with NestedArgumentApi
-
-  /** A tag that preserves the identity of the `NestedArgument` abstract type from erasure.
-   *  Can be used for pattern matching, instance tests, serialization and likes.
-   *  @group Tags
-   */
-  implicit val NestedArgumentTag: ClassTag[NestedArgument]
 
   /** The constructor/extractor for `NestedArgument` instances.
    *  @group Extractors

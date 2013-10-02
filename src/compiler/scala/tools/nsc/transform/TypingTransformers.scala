@@ -17,7 +17,7 @@ trait TypingTransformers {
   abstract class TypingTransformer(unit: CompilationUnit) extends Transformer {
     var localTyper: analyzer.Typer =
       if (phase.erasedTypes)
-        erasure.newTyper(erasure.rootContext(unit, EmptyTree, true)).asInstanceOf[analyzer.Typer]
+        erasure.newTyper(erasure.rootContext(unit, EmptyTree, erasedTypes = true)).asInstanceOf[analyzer.Typer]
       else
         analyzer.newTyper(analyzer.rootContext(unit, EmptyTree, true))
     protected var curTree: Tree = _

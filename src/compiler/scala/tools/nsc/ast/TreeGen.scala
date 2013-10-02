@@ -19,23 +19,20 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   import global._
   import definitions._
 
-  def mkCheckInit(tree: Tree): Tree = {
-    val tpe =
-      if (tree.tpe != null || !tree.hasSymbolField) tree.tpe
-      else tree.symbol.tpe
-
-    if (!global.phase.erasedTypes && settings.warnSelectNullable.value &&
-        tpe <:< NotNullClass.tpe && !tpe.isNotNull)
-      mkRuntimeCall(nme.checkInitialized, List(tree))
-    else
-      tree
-  }
-
-  /** Builds a fully attributed wildcard import node.
+  /** Builds a fully attributed, synthetic wildcard import node.
    */
-  def mkWildcardImport(pkg: Symbol): Import = {
-    assert(pkg ne null, this)
-    val qual = gen.mkAttributedStableRef(pkg)
+  def mkWildcardImport(pkg: Symbol): Import =
+    mkImportFromSelector(pkg, ImportSelector.wildList)
+
+  /** Builds a fully attributed, synthetic import node.
+    * import `qualSym`.{`name` => `toName`}
+    */
+  def mkImport(qualSym: Symbol, name: Name, toName: Name): Import =
+    mkImportFromSelector(qualSym, ImportSelector(name, 0, toName, 0) :: Nil)
+
+  private def mkImportFromSelector(qualSym: Symbol, selector: List[ImportSelector]): Import = {
+    assert(qualSym ne null, this)
+    val qual = gen.mkAttributedStableRef(qualSym)
     val importSym = (
       NoSymbol
         newImport NoPosition
@@ -43,7 +40,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
           setInfo analyzer.ImportType(qual)
     )
     val importTree = (
-      Import(qual, ImportSelector.wildList)
+      Import(qual, selector)
         setSymbol importSym
           setType NoType
     )
@@ -115,7 +112,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
       else AppliedTypeTree(Ident(clazz), targs map TypeTree)
     ))
   }
-  def mkSuperInitCall: Select = Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR)
 
   def wildcardStar(tree: Tree) =
     atPos(tree.pos) { Typed(tree, Ident(tpnme.WILDCARD_STAR)) }
@@ -258,4 +254,16 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
       attrThis,
       If(cond, Block(syncBody: _*), EmptyTree)) ::
       stats: _*)
+
+  /** Creates a tree representing new Object { stats }.
+   *  To make sure an anonymous subclass of Object is created,
+   *  if there are no stats, a () is added.
+   */
+  def mkAnonymousNew(stats: List[Tree]): Tree = {
+    val stats1 = if (stats.isEmpty) List(Literal(Constant(()))) else stats
+    mkNew(Nil, noSelfType, stats1, NoPosition, NoPosition)
+  }
+
+  def mkSyntheticParam(pname: TermName) =
+    ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
 }

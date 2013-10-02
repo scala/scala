@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** A stack implements a data structure which allows to store and retrieve
@@ -58,7 +59,7 @@ trait StackProxy[A] extends Stack[A] with Proxy {
     self.push(elem)
     this
   }
-  
+
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no
    *  element on the stack.
@@ -69,13 +70,13 @@ trait StackProxy[A] extends Stack[A] with Proxy {
 
   /** Removes the top element from the stack.
    */
-  override def pop(): A = self.pop
+  override def pop(): A = self.pop()
 
   /**
    * Removes all elements from the stack. After this operation completed,
    * the stack will be empty.
    */
-  override def clear(): Unit = self.clear
+  override def clear(): Unit = self.clear()
 
   /** Returns an iterator over all elements on the stack. This iterator
    *  is stable with respect to state changes in the stack object; i.e.

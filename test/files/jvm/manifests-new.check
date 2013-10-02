@@ -31,8 +31,8 @@ x=Foo, t=TypeTag[Foo[List[Int]]], k=TypeRef, s=class Foo
 x=Foo, t=TypeTag[Foo[Foo[Int]]], k=TypeRef, s=class Foo
 x=Foo, t=TypeTag[Foo[List[Foo[Int]]]], k=TypeRef, s=class Foo
 
-x=Test1$$anon$1, t=TypeTag[Bar[String]], k=RefinedType, s=<local Test1>
-x=Test1$$anon$2, t=TypeTag[Bar[String]], k=RefinedType, s=<local Test1>
+x=Test1$$anon$1, t=TypeTag[Bar[String]], k=RefinedType, s=<refinement of Bar[String]>
+x=Test1$$anon$2, t=TypeTag[Bar[String]], k=RefinedType, s=<refinement of Bar[String]>
 
 ()=()
 true=true

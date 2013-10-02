@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -85,14 +86,14 @@ self =>
    */
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): immutable.Map[A, B1] =
     ((repr: immutable.Map[A, B1]) /: xs.seq) (_ + _)
-  
+
   /** Filters this map by retaining only keys satisfying a predicate.
    *  @param  p   the predicate used to test keys
    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
    */
   override def filterKeys(p: A => Boolean): Map[A, B] = new FilteredKeys(p) with DefaultMap[A, B]
-  
+
   /** Transforms this map by applying a function to every retrieved value.
    *  @param  f   the function used to transform values of this map.
    *  @return a map view which maps every key of this map
@@ -123,7 +124,7 @@ self =>
   def transform[C, That](f: (A, B) => C)(implicit bf: CanBuildFrom[This, (A, C), That]): That = {
     val b = bf(repr)
     for ((key, value) <- this) b += ((key, f(key, value)))
-    b.result
+    b.result()
   }
 }
 

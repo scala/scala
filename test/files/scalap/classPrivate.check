@@ -1,0 +1,10 @@
+class ClassPrivate extends scala.AnyRef {
+  def this() = { /* compiled code */ }
+  def baz: scala.Int = { /* compiled code */ }
+  class Outer extends scala.AnyRef {
+    def this() = { /* compiled code */ }
+    private[ClassPrivate] def qux: scala.Int = { /* compiled code */ }
+  }
+  protected def quux: scala.Int = { /* compiled code */ }
+  private[ClassPrivate] def bar: scala.Int = { /* compiled code */ }
+}

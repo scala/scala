@@ -8,6 +8,6 @@ trait PlusOne extends Value[Int] {
 
 object Test extends App {
  object boom extends Value[java.lang.String]("foo") with PlusOne
-       
+
  println(boom.value) // class cast exception!
 }

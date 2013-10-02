@@ -161,6 +161,41 @@ object Iterator {
     def hasNext = true
     def next = elem
   }
+
+  /** Avoid stack overflows when applying ++ to lots of iterators by
+   *  flattening the unevaluated iterators out into a vector of closures.
+   */
+  private[scala] final class ConcatIterator[+A](initial: Vector[() => Iterator[A]]) extends Iterator[A] {
+    // current set to null when all iterators are exhausted
+    private[this] var current: Iterator[A] = Iterator.empty
+    private[this] var queue: Vector[() => Iterator[A]] = initial
+    // Advance current to the next non-empty iterator
+    private[this] def advance(): Boolean = {
+      if (queue.isEmpty) {
+        current = null
+        false
+      }
+      else {
+        current = queue.head()
+        queue = queue.tail
+        current.hasNext || advance()
+      }
+    }
+    def hasNext = (current ne null) && (current.hasNext || advance())
+    def next()  = if (hasNext) current.next else Iterator.empty.next
+
+    override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] =
+      new ConcatIterator(queue :+ (() => that.toIterator))
+  }
+
+  private[scala] final class JoinIterator[+A](lhs: Iterator[A], that: => GenTraversableOnce[A]) extends Iterator[A] {
+    private[this] lazy val rhs: Iterator[A] = that.toIterator
+    def hasNext = lhs.hasNext || rhs.hasNext
+    def next    = if (lhs.hasNext) lhs.next else rhs.next
+
+    override def ++[B >: A](that: => GenTraversableOnce[B]) =
+      new ConcatIterator(Vector(() => this, () => that.toIterator))
+  }
 }
 
 import Iterator.empty
@@ -338,24 +373,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @usecase def ++(that: => Iterator[A]): Iterator[A]
    *    @inheritdoc
    */
-  def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new AbstractIterator[B] {
-    // optimize a little bit to prevent n log n behavior.
-    private var cur : Iterator[B] = self
-    private var selfExhausted : Boolean = false
-    // since that is by-name, make sure it's only referenced once -
-    // if "val it = that" is inside the block, then hasNext on an empty
-    // iterator will continually reevaluate it.  (ticket #3269)
-    lazy val it = that.toIterator
-    // the eq check is to avoid an infinite loop on "x ++ x"
-    def hasNext = cur.hasNext || (!selfExhausted && {
-      it.hasNext && {
-        cur = it
-        selfExhausted = true
-        true
-      }
-    })
-    def next() = { hasNext; cur.next() }
-  }
+  def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] = new Iterator.JoinIterator(self, that)
 
   /** Creates a new iterator by applying a function to all values produced by this iterator
    *  and concatenating the results.
@@ -368,7 +386,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def flatMap[B](f: A => GenTraversableOnce[B]): Iterator[B] = new AbstractIterator[B] {
     private var cur: Iterator[B] = empty
     def hasNext: Boolean =
-      cur.hasNext || self.hasNext && { cur = f(self.next).toIterator; hasNext }
+      cur.hasNext || self.hasNext && { cur = f(self.next()).toIterator; hasNext }
     def next(): B = (if (hasNext) cur else empty).next()
   }
 
@@ -408,7 +426,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def corresponds[B](that: GenTraversableOnce[B])(p: (A, B) => Boolean): Boolean = {
     val that0 = that.toIterator
     while (hasNext && that0.hasNext)
-      if (!p(next, that0.next)) return false
+      if (!p(next(), that0.next())) return false
 
     hasNext == that0.hasNext
   }
@@ -555,7 +573,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def span(p: A => Boolean): (Iterator[A], Iterator[A]) = {
     val self = buffered
 
-    /**
+    /*
      * Giving a name to following iterator (as opposed to trailing) because
      * anonymous class is represented as a structural type that trailing
      * iterator is referring (the finish() method) and thus triggering
@@ -630,7 +648,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def zip[B](that: Iterator[B]): Iterator[(A, B)] = new AbstractIterator[(A, B)] {
     def hasNext = self.hasNext && that.hasNext
-    def next = (self.next, that.next)
+    def next = (self.next(), that.next())
   }
 
   /** Appends an element value to this iterator until a given target length is reached.
@@ -650,9 +668,9 @@ trait Iterator[+A] extends TraversableOnce[A] {
     def hasNext = self.hasNext || count < len
     def next = {
       count += 1
-      if (self.hasNext) self.next
+      if (self.hasNext) self.next()
       else if (count <= len) elem
-      else empty.next
+      else empty.next()
     }
   }
 
@@ -667,7 +685,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
     var idx = 0
     def hasNext = self.hasNext
     def next = {
-      val ret = (self.next, idx)
+      val ret = (self.next(), idx)
       idx += 1
       ret
     }
@@ -1052,12 +1070,12 @@ trait Iterator[+A] extends TraversableOnce[A] {
           val e = self.next()
           gap enqueue e
           e
-        } else gap.dequeue
+        } else gap.dequeue()
       }
       // to verify partnerhood we use reference equality on gap because
       // type testing does not discriminate based on origin.
       private def compareGap(queue: scala.collection.mutable.Queue[A]) = gap eq queue
-      override def hashCode = gap.hashCode
+      override def hashCode = gap.hashCode()
       override def equals(other: Any) = other match {
         case x: Partner   => x.compareGap(gap) && gap.isEmpty
         case _            => super.equals(other)
@@ -1109,7 +1127,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *    $willNotTerminateInf
    */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit = {
-    require(start >= 0 && start < xs.length, s"start $start out of range ${xs.length}")
+    require(start >= 0 && (start < xs.length || xs.length == 0), s"start $start out of range ${xs.length}")
     var i = start
     val end = start + math.min(len, xs.length - start)
     while (i < end && hasNext) {
@@ -1139,7 +1157,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def toTraversable: Traversable[A] = toStream
   def toIterator: Iterator[A] = self
   def toStream: Stream[A] =
-    if (self.hasNext) Stream.cons(self.next, self.toStream)
+    if (self.hasNext) Stream.cons(self.next(), self.toStream)
     else Stream.empty[A]
 
 

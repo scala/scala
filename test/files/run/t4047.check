@@ -1,3 +1,15 @@
+t4047.scala:23: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+  a.foo
+    ^
+t4047.scala:24: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+  a.foo
+    ^
+t4047.scala:26: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+  b.foo
+    ^
+t4047.scala:27: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+  b.foo
+    ^
 Unit: called A.foo
 Unit: called B.foo
 Unit: called C.foo

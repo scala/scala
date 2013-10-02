@@ -21,5 +21,5 @@ object Test extends App {
   }
 
   bar(null, null)
-  x  
+  x
 }

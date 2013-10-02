@@ -28,7 +28,8 @@
  *   into a [[java.lang.String]].
  *
  */
-package scala.util.matching
+package scala
+package util.matching
 
 import scala.collection.AbstractIterator
 import java.util.regex.{ Pattern, Matcher }
@@ -193,6 +194,44 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     else None
   }
 
+  /** Tries to match the String representation of a [[scala.Char]].
+   *  If the match succeeds, the result is the first matching
+   *  group if any groups are defined, or an empty Sequence otherwise.
+   *
+   *  For example:
+   *
+   *  {{{
+   *  val cat = "cat"
+   *  // the case must consume the group to match
+   *  val r = """(\p{Lower})""".r
+   *  cat(0) match { case r(x) => true }
+   *  cat(0) match { case r(_) => true }
+   *  cat(0) match { case r(_*) => true }
+   *  cat(0) match { case r() => true }     // no match
+   *
+   *  // there is no group to extract
+   *  val r = """\p{Lower}""".r
+   *  cat(0) match { case r(x) => true }    // no match
+   *  cat(0) match { case r(_) => true }    // no match
+   *  cat(0) match { case r(_*) => true }   // matches
+   *  cat(0) match { case r() => true }     // matches
+   *
+   *  // even if there are multiple groups, only one is returned
+   *  val r = """((.))""".r
+   *  cat(0) match { case r(_) => true }    // matches
+   *  cat(0) match { case r(_,_) => true }  // no match
+   *  }}}
+   *
+   *  @param  c     The Char to match
+   *  @return       The match
+   */
+  def unapplySeq(c: Char): Option[Seq[Char]] = {
+    val m = pattern matcher c.toString
+    if (runMatcher(m)) {
+      if (m.groupCount > 0) Some(m group 1) else Some(Nil)
+    } else None
+  }
+
   /** Tries to match on a [[scala.util.matching.Regex.Match]].
    *  A previously failed match results in None.
    *  If a successful match was made against the current pattern, then that result is used.
@@ -203,6 +242,20 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     if (m.matched == null) None
     else if (m.matcher.pattern == this.pattern) Some(1 to m.groupCount map m.group)
     else unapplySeq(m.matched)
+
+  /** Tries to match target.
+   *  @param target The string to match
+   *  @return       The matches
+   */
+  @deprecated("Extracting a match result from anything but a CharSequence or Match is deprecated", "2.11.0")
+  def unapplySeq(target: Any): Option[List[String]] = target match {
+    case s: CharSequence =>
+      val m = pattern matcher s
+      if (runMatcher(m)) Some((1 to m.groupCount).toList map m.group)
+      else None
+    case m: Match => unapplySeq(m.matched)
+    case _ => None
+  }
 
   //  @see UnanchoredRegex
   protected def runMatcher(m: Matcher) = m.matches()
@@ -233,7 +286,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     new Iterator[Match] {
       def hasNext = matchIterator.hasNext
       def next: Match = {
-        matchIterator.next;
+        matchIterator.next()
         new Match(matchIterator.source, matchIterator.matcher, matchIterator.groupNames).force
       }
     }
@@ -622,14 +675,14 @@ object Regex {
     /** Convert to an iterator that yields MatchData elements instead of Strings */
     def matchData: Iterator[Match] = new AbstractIterator[Match] {
       def hasNext = self.hasNext
-      def next = { self.next; new Match(source, matcher, groupNames).force }
+      def next = { self.next(); new Match(source, matcher, groupNames).force }
     }
 
     /** Convert to an iterator that yields MatchData elements instead of Strings and has replacement support */
     private[matching] def replacementData = new AbstractIterator[Match] with Replacement {
       def matcher = self.matcher
       def hasNext = self.hasNext
-      def next = { self.next; new Match(source, matcher, groupNames).force }
+      def next = { self.next(); new Match(source, matcher, groupNames).force }
     }
   }
 

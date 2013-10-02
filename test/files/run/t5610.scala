@@ -20,7 +20,7 @@ object Test {
     val f: (String, Int*) => Unit = m(2, 3)
     f("", 5, 6)
   }
-  
+
   def foo(s: => String)(dummy: Int) = () => println(s)
 
   def m(a: Int*)(z: String, b: Int*) {

@@ -12,6 +12,7 @@ package immutable
 
 import scala.collection.generic.{ CanBuildFrom, BitOperations }
 import scala.collection.mutable.{ Builder, MapBuilder }
+import scala.annotation.tailrec
 
 /** Utility class for long maps.
  *  @author David MacIver
@@ -96,7 +97,7 @@ private[immutable] abstract class LongMapIterator[V, T](it: LongMap[V]) extends 
     buffer(index) = x.asInstanceOf[AnyRef]
     index += 1
   }
-  push(it);
+  push(it)
 
   /**
    * What value do we assign to a tip?
@@ -177,7 +178,7 @@ extends AbstractMap[Long, T]
    */
   override final def foreach[U](f: ((Long, T)) =>  U): Unit = this match {
     case LongMap.Bin(_, _, left, right) => { left.foreach(f); right.foreach(f) }
-    case LongMap.Tip(key, value) => f((key, value));
+    case LongMap.Tip(key, value) => f((key, value))
     case LongMap.Nil =>
   }
 
@@ -416,5 +417,20 @@ extends AbstractMap[Long, T]
 
   def ++[S >: T](that: LongMap[S]) =
     this.unionWith[S](that, (key, x, y) => y)
+
+  @tailrec
+  final def firstKey: Long = this match {
+    case LongMap.Bin(_, _, l, r) => l.firstKey
+    case LongMap.Tip(k, v) => k
+    case LongMap.Nil => sys.error("Empty set")
+  }
+
+  @tailrec
+  final def lastKey: Long = this match {
+    case LongMap.Bin(_, _, l, r) => r.lastKey
+    case LongMap.Tip(k , v) => k
+    case LongMap.Nil => sys.error("Empty set")
+  }
+
 }
 

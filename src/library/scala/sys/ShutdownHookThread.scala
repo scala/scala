@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.sys
+package scala
+package sys
 
 /** A minimal Thread wrapper to enhance shutdown hooks.  It knows
  *  how to unregister itself.

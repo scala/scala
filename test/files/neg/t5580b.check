@@ -1,0 +1,6 @@
+t5580b.scala:11: error: polymorphic expression cannot be instantiated to expected type;
+ found   : [A]scala.collection.mutable.Set[A]
+ required: scala.collection.mutable.Map[bar,scala.collection.mutable.Set[bar]]
+    if (map.get(tmp).isEmpty) map.put(tmp,collection.mutable.Set())
+                                                                ^
+one error found

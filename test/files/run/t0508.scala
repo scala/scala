@@ -9,5 +9,5 @@ object Test extends App {
     }
   }
 
-  foo(Foo.unapply, Foo("this might be fun", 10)) 
+  foo(Foo.unapply, Foo("this might be fun", 10))
 }

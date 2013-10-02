@@ -15,9 +15,12 @@ package reflect
 object NameTransformer {
   // XXX Short term: providing a way to alter these without having to recompile
   // the compiler before recompiling the compiler.
-  val MODULE_SUFFIX_STRING = sys.props.getOrElse("SCALA_MODULE_SUFFIX_STRING", "$")
-  val NAME_JOIN_STRING     = sys.props.getOrElse("SCALA_NAME_JOIN_STRING", "$")
-  val MODULE_INSTANCE_NAME = "MODULE$"
+  val MODULE_SUFFIX_STRING          = sys.props.getOrElse("SCALA_MODULE_SUFFIX_STRING", "$")
+  val NAME_JOIN_STRING              = sys.props.getOrElse("SCALA_NAME_JOIN_STRING", "$")
+  val MODULE_INSTANCE_NAME          = "MODULE$"
+  val LOCAL_SUFFIX_STRING           = " "
+  val SETTER_SUFFIX_STRING          = "_$eq"
+  val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
 
   private val nops = 128
   private val ncodes = 26 * 26
@@ -27,9 +30,9 @@ object NameTransformer {
   private val op2code = new Array[String](nops)
   private val code2op = new Array[OpCodes](ncodes)
   private def enterOp(op: Char, code: String) = {
-    op2code(op) = code
+    op2code(op.toInt) = code
     val c = (code.charAt(1) - 'a') * 26 + code.charAt(2) - 'a'
-    code2op(c) = new OpCodes(op, code, code2op(c))
+    code2op(c.toInt) = new OpCodes(op, code, code2op(c))
   }
 
   /* Note: decoding assumes opcodes are only ever lowercase. */
@@ -63,12 +66,12 @@ object NameTransformer {
     var i = 0
     while (i < len) {
       val c = name charAt i
-      if (c < nops && (op2code(c) ne null)) {
+      if (c < nops && (op2code(c.toInt) ne null)) {
         if (buf eq null) {
           buf = new StringBuilder()
           buf.append(name.substring(0, i))
         }
-        buf.append(op2code(c))
+        buf.append(op2code(c.toInt))
       /* Handle glyphs that are not valid Java/JVM identifiers */
       }
       else if (!Character.isJavaIdentifierPart(c)) {
@@ -94,7 +97,7 @@ object NameTransformer {
   def decode(name0: String): String = {
     //System.out.println("decode: " + name);//DEBUG
     val name = if (name0.endsWith("<init>")) name0.stripSuffix("<init>") + "this"
-               else name0;
+               else name0
     var buf: StringBuilder = null
     val len = name.length()
     var i = 0

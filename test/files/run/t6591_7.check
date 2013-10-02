@@ -1,0 +1,4 @@
+name = x, stable = true
+name = y, stable = true
+name = z, stable = false
+name = C, stable = true

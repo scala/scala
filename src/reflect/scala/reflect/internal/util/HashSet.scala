@@ -3,7 +3,9 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect.internal.util
+package scala
+package reflect
+package internal.util
 
 object HashSet {
   def apply[T >: Null <: AnyRef](initialCapacity: Int): HashSet[T] = this("No Label", initialCapacity)

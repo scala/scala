@@ -36,12 +36,12 @@ package object duration {
   final val NANOSECONDS  = java.util.concurrent.TimeUnit.NANOSECONDS
   final val SECONDS      = java.util.concurrent.TimeUnit.SECONDS
 
-  implicit def pairIntToDuration(p: (Int, TimeUnit)): Duration         = Duration(p._1, p._2)
+  implicit def pairIntToDuration(p: (Int, TimeUnit)): Duration         = Duration(p._1.toLong, p._2)
   implicit def pairLongToDuration(p: (Long, TimeUnit)): FiniteDuration = Duration(p._1, p._2)
   implicit def durationToPair(d: Duration): (Long, TimeUnit)           = (d.length, d.unit)
 
   implicit final class DurationInt(val n: Int) extends AnyVal with DurationConversions {
-    override protected def durationIn(unit: TimeUnit): FiniteDuration = Duration(n, unit)
+    override protected def durationIn(unit: TimeUnit): FiniteDuration = Duration(n.toLong, unit)
   }
 
   implicit final class DurationLong(val n: Long) extends AnyVal with DurationConversions {
@@ -60,16 +60,16 @@ package object duration {
    * Avoid reflection based invocation by using non-duck type
    */
   implicit final class IntMult(val i: Int) extends AnyVal {
-    def *(d: Duration) = d * i
-    def *(d: FiniteDuration) = d * i
+    def *(d: Duration) = d * i.toDouble
+    def *(d: FiniteDuration) = d * i.toLong
   }
 
   implicit final class LongMult(val i: Long) extends AnyVal {
-    def *(d: Duration) = d * i
-    def *(d: FiniteDuration) = d * i
+    def *(d: Duration) = d * i.toDouble
+    def *(d: FiniteDuration) = d * i.toLong
   }
 
   implicit final class DoubleMult(val f: Double) extends AnyVal {
-    def *(d: Duration) = d * f
+    def *(d: Duration) = d * f.toDouble
   }
 }

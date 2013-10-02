@@ -1,0 +1,4 @@
+B_2.scala:5: error: object s.Outer$Triple$ is not a value
+    println( s.Outer$Triple$ )
+               ^
+one error found

@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** This class is used internally. It implements the mutable `Map`
@@ -18,6 +19,7 @@ package mutable
  *  @version 1.0, 08/07/2003
  *  @since   1
  */
+@deprecated("This trait will be removed.", "2.11.0")
 trait DefaultMapModel[A, B] extends Map[A, B] {
 
   type Entry = DefaultEntry[A, B]

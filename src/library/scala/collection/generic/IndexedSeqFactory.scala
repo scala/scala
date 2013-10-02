@@ -6,14 +6,15 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package generic
 
 import language.higherKinds
 
 /** A template for companion objects of IndexedSeq and subclasses thereof.
  *
- *  @since 2.10
+ *  @since 2.11
  */
 abstract class IndexedSeqFactory[CC[X] <: IndexedSeq[X] with GenericTraversableTemplate[X, CC]] extends SeqFactory[CC] {
   override def ReusableCBF: GenericCanBuildFrom[Nothing] =

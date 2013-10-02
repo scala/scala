@@ -88,10 +88,19 @@ trait TypeKinds { self: ICodes =>
     final def isNumericType: Boolean = isIntegralType | isRealType
 
     /** Simple subtyping check */
-    def <:<(other: TypeKind): Boolean = (this eq other) || (this match {
-      case BOOL | BYTE | SHORT | CHAR => other == INT || other == LONG
-      case _                          => this eq other
-    })
+    def <:<(other: TypeKind): Boolean
+
+    /**
+     * this is directly assignable to other if no coercion or
+     * casting is needed to convert this to other. It's a distinct
+     * relationship from <:< because on the JVM, BOOL, BYTE, CHAR,
+     * SHORT need no coercion to INT even though JVM arrays
+     * are covariant, ARRAY[SHORT] is not a subtype of ARRAY[INT]
+     */
+    final def isAssignabledTo(other: TypeKind): Boolean = other match {
+      case INT  => this.isIntSizedType
+      case _    => this <:< other
+    }
 
     /** Is this type a category 2 type in JVM terms? (ie, is it LONG or DOUBLE?) */
     def isWideType: Boolean = false
@@ -111,6 +120,7 @@ trait TypeKinds { self: ICodes =>
     override def toString = {
       this.getClass.getName stripSuffix "$" dropWhile (_ != '$') drop 1
     }
+    def <:<(other: TypeKind): Boolean = this eq other
   }
 
   /**
@@ -120,21 +130,21 @@ trait TypeKinds { self: ICodes =>
    * The lub is based on the lub of scala types.
    */
   def lub(a: TypeKind, b: TypeKind): TypeKind = {
-    /** The compiler's lub calculation does not order classes before traits.
-     *  This is apparently not wrong but it is inconvenient, and causes the
-     *  icode checker to choke when things don't match up.  My attempts to
-     *  alter the calculation at the compiler level were failures, so in the
-     *  interests of a working icode checker I'm making the adjustment here.
+    /* The compiler's lub calculation does not order classes before traits.
+     * This is apparently not wrong but it is inconvenient, and causes the
+     * icode checker to choke when things don't match up.  My attempts to
+     * alter the calculation at the compiler level were failures, so in the
+     * interests of a working icode checker I'm making the adjustment here.
      *
-     *  Example where we'd like a different answer:
+     * Example where we'd like a different answer:
      *
-     *    abstract class Tom
-     *    case object Bob extends Tom
-     *    case object Harry extends Tom
-     *    List(Bob, Harry)  // compiler calculates "Product with Tom" rather than "Tom with Product"
+     *   abstract class Tom
+     *   case object Bob extends Tom
+     *   case object Harry extends Tom
+     *   List(Bob, Harry)  // compiler calculates "Product with Tom" rather than "Tom with Product"
      *
-     *  Here we make the adjustment by rewinding to a pre-erasure state and
-     *  sifting through the parents for a class type.
+     * Here we make the adjustment by rewinding to a pre-erasure state and
+     * sifting through the parents for a class type.
      */
     def lub0(tk1: TypeKind, tk2: TypeKind): Type = enteringUncurry {
       val tp = global.lub(List(tk1.toType, tk2.toType))
@@ -280,7 +290,7 @@ trait TypeKinds { self: ICodes =>
     }
 
     /** Checks subtyping relationship. */
-    override def <:<(other: TypeKind) = isNothingType || (other match {
+    def <:<(other: TypeKind) = isNothingType || (other match {
       case REFERENCE(cls2)  => cls.tpe <:< cls2.tpe
       case ARRAY(_)         => cls == NullClass
       case _                => false
@@ -294,7 +304,7 @@ trait TypeKinds { self: ICodes =>
     else ARRAY(ArrayN(elem, dims - 1))
   }
 
-  final case class ARRAY(val elem: TypeKind) extends TypeKind {
+  final case class ARRAY(elem: TypeKind) extends TypeKind {
     override def toString    = "ARRAY[" + elem + "]"
     override def isArrayType = true
     override def dimensions  = 1 + elem.dimensions
@@ -318,7 +328,7 @@ trait TypeKinds { self: ICodes =>
 
     /** Array subtyping is covariant, as in Java. Necessary for checking
      *  code that interacts with Java. */
-    override def <:<(other: TypeKind) = other match {
+    def <:<(other: TypeKind) = other match {
       case ARRAY(elem2)                         => elem <:< elem2
       case REFERENCE(AnyRefClass | ObjectClass) => true // TODO: platform dependent!
       case _                                    => false
@@ -336,7 +346,7 @@ trait TypeKinds { self: ICodes =>
     }
 
     /** Checks subtyping relationship. */
-    override def <:<(other: TypeKind) = other match {
+    def <:<(other: TypeKind) = other match {
       case BOXED(`kind`)                        => true
       case REFERENCE(AnyRefClass | ObjectClass) => true // TODO: platform dependent!
       case _                                    => false
@@ -349,6 +359,7 @@ trait TypeKinds { self: ICodes =>
   */
   case object ConcatClass extends TypeKind {
     override def toString = "ConcatClass"
+    def <:<(other: TypeKind): Boolean = this eq other
 
     /**
      * Approximate `lub`. The common type of two references is
@@ -359,19 +370,16 @@ trait TypeKinds { self: ICodes =>
       case REFERENCE(_) => AnyRefReference
       case _            => uncomparable(other)
     }
-
-    /** Checks subtyping relationship. */
-    override def <:<(other: TypeKind) = this eq other
   }
 
   ////////////////// Conversions //////////////////////////////
 
   /** Return the TypeKind of the given type
    *
-   *  Call to .normalize fixes #3003 (follow type aliases). Otherwise,
+   *  Call to dealiasWiden fixes #3003 (follow type aliases). Otherwise,
    *  arrayOrClassType below would return ObjectReference.
    */
-  def toTypeKind(t: Type): TypeKind = t.normalize match {
+  def toTypeKind(t: Type): TypeKind = t.dealiasWiden match {
     case ThisType(ArrayClass)            => ObjectReference
     case ThisType(sym)                   => REFERENCE(sym)
     case SingleType(_, sym)              => primitiveOrRefType(sym)

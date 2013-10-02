@@ -5,38 +5,23 @@
 
 package scala.tools.nsc
 package backend.jvm
-import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.symtab._
 
-/** Code shared between the legagy backend [[scala.tools.nsc.backend.jvm.GenJVM]]
-  * and the new backend [[scala.tools.nsc.backend.jvm.GenASM]]. There should be
-  * more here, but for now I'm starting with the refactorings that are either
-  * straightforward to review or necessary for maintenance.
-  */
+/** Code shared between the erstwhile legacy backend (aka GenJVM)
+ *  and the new backend [[scala.tools.nsc.backend.jvm.GenASM]]. There should be
+ *  more here, but for now I'm starting with the refactorings that are either
+ *  straightforward to review or necessary for maintenance.
+ */
 trait GenJVMASM {
   val global: Global
   import global._
   import icodes._
   import definitions._
 
-  protected def outputDirectory(sym: Symbol): AbstractFile =
-    settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
-
-  protected def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
-    var dir = base
-    val pathParts = clsName.split("[./]").toList
-    for (part <- pathParts.init) {
-      dir = dir.subdirectoryNamed(part)
-    }
-    dir.fileNamed(pathParts.last + suffix)
-  }
-  protected def getFile(sym: Symbol, clsName: String, suffix: String): AbstractFile =
-    getFile(outputDirectory(sym), clsName, suffix)
-
-  protected val ExcludedForwarderFlags = {
+  val ExcludedForwarderFlags = {
     import Flags._
     // Should include DEFERRED but this breaks findMember.
-    ( CASE | SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags | MACRO )
+    ( SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags | MACRO )
   }
 
   protected def isJavaEntryPoint(icls: IClass) = {
@@ -67,7 +52,6 @@ trait GenJVMASM {
       // Before erasure so we can identify generic mains.
       enteringErasure {
         val companion     = sym.linkedClassOfClass
-        val companionMain = companion.tpe.member(nme.main)
 
         if (hasJavaMainMethod(companion))
           failNoForwarder("companion contains its own main method")

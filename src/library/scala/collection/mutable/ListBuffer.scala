@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -137,7 +138,7 @@ final class ListBuffer[A]
     if (n < 0 || n >= len) throw new IndexOutOfBoundsException(n.toString)
     if (exported) copy()
     if (n == 0) {
-      val newElem = new :: (x, start.tail);
+      val newElem = new :: (x, start.tail)
       if (last0 eq start) {
         last0 = newElem
       }
@@ -261,7 +262,7 @@ final class ListBuffer[A]
    *  @param n         the index which refers to the first element to remove.
    *  @param count     the number of elements to remove.
    */
-  @annotation.migration("Invalid input values will be rejected in future releases.", "2.11")
+  @scala.annotation.migration("Invalid input values will be rejected in future releases.", "2.11")
   override def remove(n: Int, count: Int) {
     if (n >= len)
       return

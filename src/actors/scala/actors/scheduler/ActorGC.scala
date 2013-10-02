@@ -23,6 +23,7 @@ import scala.collection.mutable
  * (e.g. act method finishes, exit explicitly called, an exception is thrown),
  * the ActorGC is informed via the `terminated` method.
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 trait ActorGC extends TerminationMonitor {
   self: IScheduler =>
 

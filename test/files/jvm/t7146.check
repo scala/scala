@@ -1,0 +1,5 @@
+should be scala.concurrent.impl.ExecutionContextImpl == true
+should be scala.concurrent.forkjoin.ForkJoinPool == true
+should have non-null UncaughtExceptionHandler == true
+should be a scala.concurrent.impl.ExecutionContextImpl UncaughtExceptionHandler == true
+should just print out on uncaught == true

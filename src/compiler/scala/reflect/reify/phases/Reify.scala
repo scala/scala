@@ -26,13 +26,16 @@ trait Reify extends GenSymbols
       finally currents = currents.tail
     }
   }
-  def currentQuantified = flatCollect(reifyStack.currents)({ case ExistentialType(quantified, _) => quantified })
+  def boundSymbolsInCallstack = flatCollect(reifyStack.currents) {
+    case ExistentialType(quantified, _) => quantified
+    case PolyType(typeParams, _) => typeParams
+  }
   def current = reifyStack.currents.head
   def currents = reifyStack.currents
 
   /**
    *  Reifies any supported value.
-   *  For internal use only, use ``reified'' instead.
+   *  For internal use only, use `reified` instead.
    */
   def reify(reifee: Any): Tree = reifyStack.push(reifee)(reifee match {
     // before adding some case here, in global scope, please, consider

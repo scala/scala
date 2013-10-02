@@ -6,7 +6,7 @@ object Test {
     buf prependToList List(4, 5, 6)
     l
   }
-  
+
   def main(args: Array[String]): Unit = {
     println(f)
   }

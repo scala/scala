@@ -6,7 +6,7 @@ abstract class  A {
 
 case class B() extends A {
   // overloaded version is implemented, causing toString not to be implemented?
-  def toString(sb: StringBuilder): StringBuilder = error("")
+  def toString(sb: StringBuilder): StringBuilder = sys.error("")
 }
 
 object Test extends App {

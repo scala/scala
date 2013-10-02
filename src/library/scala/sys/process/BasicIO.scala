@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.sys
+package scala
+package sys
 package process
 
 import processInternal._
@@ -46,7 +47,7 @@ object BasicIO {
       def next(): Stream[T] = q.take match {
         case Left(0)    => Stream.empty
         case Left(code) => if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else Stream.empty
-        case Right(s)   => Stream.cons(s, next)
+        case Right(s)   => Stream.cons(s, next())
       }
       new Streamed((s: T) => q put Right(s), code => q put Left(code), () => next())
     }
@@ -161,21 +162,29 @@ object BasicIO {
     */
   def processFully(processLine: String => Unit): InputStream => Unit = in => {
     val reader = new BufferedReader(new InputStreamReader(in))
-    processLinesFully(processLine)(reader.readLine)
-    reader.close()
+    try processLinesFully(processLine)(reader.readLine)
+    finally reader.close()
   }
 
   /** Calls `processLine` with the result of `readLine` until the latter returns
-    * `null`.
-    */
+   *  `null` or the current thread is interrupted.
+   */
   def processLinesFully(processLine: String => Unit)(readLine: () => String) {
-    def readFully() {
-      val line = readLine()
-      if (line != null) {
-        processLine(line)
-        readFully()
+    def working = (Thread.currentThread.isInterrupted == false)
+    def halting = { Thread.currentThread.interrupt(); null }
+    def readFully(): Unit =
+      if (working) {
+        val line =
+          try readLine()
+          catch {
+            case _: InterruptedException    => halting
+            case e: IOException if !working => halting
+          }
+        if (line != null) {
+          processLine(line)
+          readFully()
+        }
       }
-    }
     readFully()
   }
 

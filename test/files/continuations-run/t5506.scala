@@ -4,11 +4,11 @@ object Test {
 
 def g: List[Int] @suspendable = List(1,2,3)
 
-def fp10: List[Int] @suspendable = {  
+def fp10: List[Int] @suspendable = {
 g.map(x => x)
 }
 
-def fp11: List[Int] @suspendable = {  
+def fp11: List[Int] @suspendable = {
 val z = g.map(x => x)
 z
 }
@@ -42,12 +42,12 @@ z
 }
 
 
-def main(args: Array[String]) = {
+def main(args: Array[String]) {
   reset {
     println(fp10)
     println(fp11)
     println(fp12)
-    
+
     println(fp20)
     println(fp21)
     println(fp22)

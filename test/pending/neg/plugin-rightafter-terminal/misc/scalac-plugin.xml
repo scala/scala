@@ -1,5 +1,0 @@
-<plugin>
-  <name>beforeparser</name>
-  <classname>scala.test.plugins.ThePlugin</classname>
-</plugin>
-

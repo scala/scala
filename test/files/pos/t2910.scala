@@ -9,9 +9,9 @@ object Test {
     lazy val s = "abc"
   }
 
-  def test3 { 
+  def test3 {
     lazy val lazyBar = bar
-    object bar {        
+    object bar {
       val foo = 12
     }
     lazy val lazyBar2 = bar
@@ -29,5 +29,5 @@ object Test {
     lazy val f: Int = g
     Console.println("foo")
     lazy val g: Int = f
-  } 
+  }
 }

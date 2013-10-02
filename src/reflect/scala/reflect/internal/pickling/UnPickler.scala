@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 package pickling
 
@@ -21,15 +22,15 @@ import scala.annotation.switch
  *  @version 1.0
  */
 abstract class UnPickler {
-  val global: SymbolTable
-  import global._
+  val symbolTable: SymbolTable
+  import symbolTable._
 
   /** Unpickle symbol table information descending from a class and/or module root
    *  from an array of bytes.
    *  @param bytes      bytearray from which we unpickle
    *  @param offset     offset from which unpickling starts
-   *  @param classroot  the top-level class which is unpickled, or NoSymbol if inapplicable
-   *  @param moduleroot the top-level module which is unpickled, or NoSymbol if inapplicable
+   *  @param classRoot  the top-level class which is unpickled, or NoSymbol if inapplicable
+   *  @param moduleRoot the top-level module which is unpickled, or NoSymbol if inapplicable
    *  @param filename   filename associated with bytearray, only used for error messages
    */
   def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {
@@ -516,18 +517,18 @@ abstract class UnPickler {
       var mods: Modifiers = null
       var name: Name = null
 
-      /** Read a Symbol, Modifiers, and a Name */
+      /* Read a Symbol, Modifiers, and a Name */
       def setSymModsName() {
         symbol = readSymbolRef()
         mods = readModifiersRef()
         name = readNameRef()
       }
-      /** Read a Symbol and a Name */
+      /* Read a Symbol and a Name */
       def setSymName() {
         symbol = readSymbolRef()
         name = readNameRef()
       }
-      /** Read a Symbol */
+      /* Read a Symbol */
       def setSym() {
         symbol = readSymbolRef()
       }
@@ -851,7 +852,8 @@ abstract class UnPickler {
       private val p = phase
       override def complete(sym: Symbol) : Unit = try {
         val tp = at(i, () => readType(sym.isTerm)) // after NMT_TRANSITION, revert `() => readType(sym.isTerm)` to `readType`
-        enteringPhase(p) (sym setInfo tp)
+        if (p ne null)
+          enteringPhase(p) (sym setInfo tp)
         if (currentRunId != definedAtRunId)
           sym.setInfo(adaptToNewRunMap(tp))
       }

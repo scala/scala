@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 /** A default map which implements the `+` and `-` methods of maps.
  *
@@ -30,7 +31,7 @@ trait DefaultMap[A, +B] extends Map[A, B] { self =>
     val b = Map.newBuilder[A, B1]
     b ++= this
     b += ((kv._1, kv._2))
-    b.result
+    b.result()
   }
 
   /** A default implementation which creates a new immutable map.
@@ -38,6 +39,6 @@ trait DefaultMap[A, +B] extends Map[A, B] { self =>
   override def - (key: A): Map[A, B] = {
     val b = newBuilder
     b ++= this filter (key != _._1)
-    b.result
+    b.result()
   }
 }

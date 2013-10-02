@@ -15,7 +15,7 @@ class FX2 extends P {
 object Test extends App {
   val fx = new FX
   val p = new P
- 
+
   println(fx.a(3))
   println((fx: P).a(3))
   println((fx: P).a(3.0))

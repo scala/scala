@@ -8,11 +8,4 @@
 
 package scala.collection.concurrent;
 
-
-
-
-
-
-final class Gen {
-}
-
+final class Gen {}

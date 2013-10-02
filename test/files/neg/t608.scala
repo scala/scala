@@ -2,7 +2,7 @@ trait CrashDueToTypeError {
   def id[a](x :a) :a = x
 
   trait Bifunctor {
-    type a; //   content 
+    type a; //   content
     type s <: Bifunctor
 
     // uncomment        this-vvvvvvvvvvvvvvvvvvvvvvvvvvvv, and it compiles

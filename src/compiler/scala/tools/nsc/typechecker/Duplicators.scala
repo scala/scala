@@ -17,7 +17,7 @@ import scala.collection.{ mutable, immutable }
  */
 abstract class Duplicators extends Analyzer {
   import global._
-  import definitions.{ AnyRefClass, AnyValClass }
+  import definitions._
 
   /** Retype the given tree in the given context. Use this method when retyping
    *  a method in a different class. The typer will replace references to the this of
@@ -28,10 +28,11 @@ abstract class Duplicators extends Analyzer {
     if (oldThis ne newThis) {
       oldClassOwner = oldThis
       newClassOwner = newThis
-    } else resetClassOwners
+    } else resetClassOwners()
 
     envSubstitution = new SubstSkolemsTypeMap(env.keysIterator.toList, env.valuesIterator.toList)
     debuglog("retyped with env: " + env)
+
     newBodyDuplicator(context).typed(tree)
   }
 
@@ -73,22 +74,19 @@ abstract class Duplicators extends Analyzer {
 
       override def mapOver(tpe: Type): Type = tpe match {
         case TypeRef(NoPrefix, sym, args) if sym.isTypeParameterOrSkolem =>
-          var sym1 = context.scope.lookup(sym.name)
-          if (sym1 eq NoSymbol) {
-            // try harder (look in outer scopes)
-            // with virtpatmat, this can happen when the sym is referenced in the scope of a LabelDef but is defined in the scope of an outer DefDef (e.g., in AbstractPartialFunction's andThen)
-            BodyDuplicator.super.silent(_.typedType(Ident(sym.name))) match {
-              case SilentResultValue(t) =>
-                sym1 = t.symbol
-                debuglog("fixed by trying harder: "+(sym, sym1, context))
-              case _ =>
-            }
-          }
-//          assert(sym1 ne NoSymbol, tpe)
-          if ((sym1 ne NoSymbol) && (sym1 ne sym)) {
-            debuglog("fixing " + sym + " -> " + sym1)
+          val sym1 = (
+            context.scope lookup sym.name orElse {
+              // try harder (look in outer scopes)
+              // with virtpatmat, this can happen when the sym is referenced in the scope of a LabelDef but
+              // is defined in the scope of an outer DefDef (e.g., in AbstractPartialFunction's andThen)
+              BodyDuplicator.super.silent(_ typedType Ident(sym.name)).fold(NoSymbol: Symbol)(_.symbol)
+            } filter (_ ne sym)
+          )
+          if (sym1.exists) {
+            debuglog(s"fixing $sym -> $sym1")
             typeRef(NoPrefix, sym1, mapOverArgs(args, sym1.typeParams))
-          } else super.mapOver(tpe)
+          }
+          else super.mapOver(tpe)
 
         case TypeRef(pre, sym, args) =>
           val newsym = updateSym(sym)
@@ -156,7 +154,7 @@ abstract class Duplicators extends Analyzer {
           case vdef @ ValDef(mods, name, _, rhs) if mods.hasFlag(Flags.LAZY) =>
             debuglog("ValDef " + name + " sym.info: " + vdef.symbol.info)
             invalidSyms(vdef.symbol) = vdef
-            val newowner = if (owner != NoSymbol) owner else context.owner
+            val newowner = owner orElse context.owner
             val newsym = vdef.symbol.cloneSymbol(newowner)
             newsym.setInfo(fixType(vdef.symbol.info))
             vdef.symbol = newsym
@@ -331,7 +329,7 @@ abstract class Duplicators extends Analyzer {
           super.typed(atPos(tree.pos)(tree1))
 */
         case Match(scrut, cases) =>
-          val scrut1   = typed(scrut, EXPRmode | BYVALmode, WildcardType)
+          val scrut1   = typedByValueExpr(scrut)
           val scrutTpe = scrut1.tpe.widen
           val cases1 = {
             if (scrutTpe.isFinalType) cases filter {
@@ -346,13 +344,13 @@ abstract class Duplicators extends Analyzer {
             // Without this, AnyRef specializations crash on patterns like
             //   case _: Boolean => ...
             // Not at all sure this is safe.
-            else if (scrutTpe <:< AnyRefClass.tpe)
-              cases filterNot (_.pat.tpe <:< AnyValClass.tpe)
+            else if (scrutTpe <:< AnyRefTpe)
+              cases filterNot (_.pat.tpe <:< AnyValTpe)
             else
               cases
           }
 
-          super.typedPos(tree.pos, mode, pt)(Match(scrut, cases1))
+          super.typed(atPos(tree.pos)(Match(scrut, cases1)), mode, pt)
 
         case EmptyTree =>
           // no need to do anything, in particular, don't set the type to null, EmptyTree.tpe_= asserts
@@ -361,9 +359,9 @@ abstract class Duplicators extends Analyzer {
         case _ =>
           debuglog("Duplicators default case: " + tree.summaryString)
           debuglog(" ---> " + tree)
-          if (tree.hasSymbolField && tree.symbol != NoSymbol && (tree.symbol.owner == definitions.AnyClass)) {
+          if (tree.hasSymbolField && tree.symbol.safeOwner == AnyClass)
             tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
-          }
+
           val ntree = castType(tree, pt)
           super.typed(ntree, mode, pt)
       }

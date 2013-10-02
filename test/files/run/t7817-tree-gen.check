@@ -1,0 +1,104 @@
+
+
+Joint Compilation:
+
+             typer [           O]  -  O.this
+           pickler [           O]  -  O.this
+         refchecks [           O]  -  O.this
+           uncurry [           O]  -  O.this
+        specialize [           O]  -  O.this
+     explicitouter [           O]  -  O.this
+           erasure [           O]  -  O.this
+       posterasure [           O]  -  C.this.O()
+           flatten [           O]  -  C.this.O()
+             mixin [           O]  -  test.O()
+           cleanup [           O]  -  test.O()
+
+             typer [           P]  -  P.this
+           pickler [           P]  -  P.this
+         refchecks [           P]  -  P.this
+           uncurry [           P]  -  P.this
+        specialize [           P]  -  P.this
+     explicitouter [           P]  -  P.this
+           erasure [           P]  -  P.this
+       posterasure [           P]  -  D.this.P()
+           flatten [           P]  -  D.this.P()
+             mixin [           P]  -  P()
+           cleanup [           P]  -  P()
+
+             typer [    test2.PO]  -  PO.this
+           pickler [    test2.PO]  -  PO.this
+         refchecks [    test2.PO]  -  PO.this
+           uncurry [    test2.PO]  -  PO.this
+        specialize [    test2.PO]  -  PO.this
+     explicitouter [    test2.PO]  -  PO.this
+           erasure [    test2.PO]  -  PO.this
+       posterasure [    test2.PO]  -  test2.`package`.PO
+           flatten [    test2.PO]  -  test2.`package`.PO
+             mixin [    test2.PO]  -  test2.package$PO
+           cleanup [    test2.PO]  -  test2.package$PO
+
+             typer [   test2.bar]  -  `package`.this.bar
+           pickler [   test2.bar]  -  `package`.this.bar
+         refchecks [   test2.bar]  -  `package`.this.bar
+           uncurry [   test2.bar]  -  `package`.this.bar
+        specialize [   test2.bar]  -  `package`.this.bar
+     explicitouter [   test2.bar]  -  `package`.this.bar
+           erasure [   test2.bar]  -  `package`.this.bar
+       posterasure [   test2.bar]  -  test2.`package`.bar
+           flatten [   test2.bar]  -  test2.`package`.bar
+             mixin [   test2.bar]  -  test2.`package`.bar
+           cleanup [   test2.bar]  -  test2.`package`.bar
+
+
+
+Separate Compilation:
+
+             typer [           O]  -  O.this
+           pickler [           O]  -  O.this
+         refchecks [           O]  -  O.this
+           uncurry [           O]  -  O.this
+        specialize [           O]  -  O.this
+     explicitouter [           O]  -  O.this
+           erasure [           O]  -  O.this
+       posterasure [           O]  -  C.this.O()
+           flatten [           O]  -  C.this.O()
+             mixin [           O]  -  testSep.O()
+           cleanup [           O]  -  testSep.O()
+
+             typer [           P]  -  P.this
+           pickler [           P]  -  P.this
+         refchecks [           P]  -  P.this
+           uncurry [           P]  -  P.this
+        specialize [           P]  -  P.this
+     explicitouter [           P]  -  P.this
+           erasure [           P]  -  P.this
+       posterasure [           P]  -  DSep.this.P()
+           flatten [           P]  -  DSep.this.P()
+             mixin [           P]  -  P()
+           cleanup [           P]  -  P()
+
+             typer [          PO]  -  PO.this
+           pickler [          PO]  -  PO.this
+         refchecks [          PO]  -  PO.this
+           uncurry [          PO]  -  PO.this
+        specialize [          PO]  -  PO.this
+     explicitouter [          PO]  -  PO.this
+           erasure [          PO]  -  PO.this
+       posterasure [          PO]  -  test2.`package`.PO
+           flatten [          PO]  -  test2.`package`.PO
+             mixin [          PO]  -  test2.package$PO
+           cleanup [          PO]  -  test2.package$PO
+
+             typer [testSep2.bar]  -  `package`.this.bar
+           pickler [testSep2.bar]  -  `package`.this.bar
+         refchecks [testSep2.bar]  -  `package`.this.bar
+           uncurry [testSep2.bar]  -  `package`.this.bar
+        specialize [testSep2.bar]  -  `package`.this.bar
+     explicitouter [testSep2.bar]  -  `package`.this.bar
+           erasure [testSep2.bar]  -  `package`.this.bar
+       posterasure [testSep2.bar]  -  test2.`package`.bar
+           flatten [testSep2.bar]  -  test2.`package`.bar
+             mixin [testSep2.bar]  -  test2.`package`.bar
+           cleanup [testSep2.bar]  -  test2.`package`.bar
+

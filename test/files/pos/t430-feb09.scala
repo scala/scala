@@ -13,12 +13,12 @@ package c.scala {
   case class C[T]()
 }
 
-// Doesn't compile: type Nothing is not a member of d.scala 
+// Doesn't compile: type Nothing is not a member of d.scala
 package d.scala.d {
   case class D[T]()
 }
 
-// Doesn't compile: type Any is not a member of e.scala 
+// Doesn't compile: type Any is not a member of e.scala
 package e.scala {
   case class E[T >: Nothing]()
 }

@@ -1,4 +1,4 @@
-package test; 
+package test;
 trait B {
   type Node <: NodeImpl;
   trait NodeImpl {

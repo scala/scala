@@ -1,0 +1,7 @@
+t7877.scala:6: error: not found: value Y
+    case Y() => ()             // not allowed
+         ^
+t7877.scala:7: error: OnNext[Any] does not take parameters
+    case OnNext[Any]() => ()   // should *not* be allowed, but was.
+                    ^
+two errors found

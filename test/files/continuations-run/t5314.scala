@@ -1,14 +1,14 @@
 import scala.util.continuations._
 
-class ReturnRepro { 
-  def s1: Int @cpsParam[Any, Unit] = shift { k => k(5) } 
+class ReturnRepro {
+  def s1: Int @cpsParam[Any, Unit] = shift { k => k(5) }
   def caller = reset { println(p(3)) }
   def caller2 = reset { println(p2(3)) }
 
-  def p(i: Int): Int @cpsParam[Unit, Any] = { 
-    val v= s1 + 3 
-    return v 
-  } 
+  def p(i: Int): Int @cpsParam[Unit, Any] = {
+    val v= s1 + 3
+    return v
+  }
 
   def p2(i: Int): Int @cpsParam[Unit, Any] = {
     val v = s1 + 3
@@ -38,7 +38,7 @@ object Test extends App {
   println(reset { bar3(10) })
   println(reset { bar4(10) })
   println(reset { bar5(10) })
-  
+
   /* original test case */
   val repro = new ReturnRepro
   repro.caller

@@ -2,7 +2,8 @@
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 /** A common class for lightweight sets.
  */
@@ -22,5 +23,4 @@ abstract class Set[T <: AnyRef] {
     findEntry(x) ne null
 
   def toList = iterator.toList
-
 }

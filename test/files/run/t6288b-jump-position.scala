@@ -1,6 +1,6 @@
-import scala.tools.partest.IcodeTest
+import scala.tools.partest.IcodeComparison
 
-object Test extends IcodeTest {
+object Test extends IcodeComparison {
   override def code =
     """object Case3 {                                // 01
      |  def unapply(z: Any): Option[Int] = Some(-1)  // 02
@@ -15,8 +15,5 @@ object Test extends IcodeTest {
      |  }
      |}""".stripMargin
 
-  override def show() {
-    val lines1 = collectIcode("")
-    println(lines1 mkString "\n")
-  }
+  override def show() = showIcode()
 }

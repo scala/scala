@@ -1,13 +1,13 @@
 <project
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.scala-lang</groupId>
 	<artifactId>scala-compiler</artifactId>
 	<packaging>jar</packaging>
 	<version>@VERSION@</version>
-  <name>Scala Compiler</name>
-  <description>Compiler for the Scala Programming Language</description>
+	<name>Scala Compiler</name>
+	<description>Compiler for the Scala Programming Language</description>
 	<url>http://www.scala-lang.org/</url>
 	<inceptionYear>2002</inceptionYear>
 	<organization>
@@ -23,12 +23,12 @@
 		</license>
 	</licenses>
 	<scm>
-                <connection>scm:git:git://github.com/scala/scala.git</connection>
-                <url>https://github.com/scala/scala.git</url>
+		<connection>scm:git:git://github.com/scala/scala.git</connection>
+		<url>https://github.com/scala/scala.git</url>
 	</scm>
 	<issueManagement>
-                <system>JIRA</system>
-                <url>https://issues.scala-lang.org/</url>
+		<system>JIRA</system>
+		<url>https://issues.scala-lang.org/</url>
 	</issueManagement>
 
 	<dependencies>
@@ -37,17 +37,27 @@
 			<artifactId>scala-library</artifactId>
 			<version>@VERSION@</version>
 		</dependency>
+		<dependency> <!-- for scaladoc -->
+                <groupId>org.scala-lang.modules</groupId>
+                <artifactId>scala-xml_@SCALA_BINARY_VERSION@</artifactId>
+                <version>@XML_VERSION@</version>
+		</dependency>
+		<dependency> <!-- for scaladoc -->
+                <groupId>org.scala-lang.modules</groupId>
+                <artifactId>scala-parser-combinators_@SCALA_BINARY_VERSION@</artifactId>
+                <version>@PARSER_COMBINATORS_VERSION@</version>
+		</dependency>
 		<dependency>
 			<groupId>org.scala-lang</groupId>
 			<artifactId>scala-reflect</artifactId>
 			<version>@VERSION@</version>
 		</dependency>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>jline</artifactId>
-      <version>@VERSION@</version>
-      <optional>true</optional>
-    </dependency>
+		<dependency>
+			<groupId>jline</groupId>
+			<artifactId>jline</artifactId>
+			<version>@JLINE_VERSION@</version>
+			<optional>true</optional>
+		</dependency>
 	</dependencies>
 	<distributionManagement>
 		<repository>
@@ -60,14 +70,14 @@
 			<uniqueVersion>false</uniqueVersion>
 		</snapshotRepository>
 	</distributionManagement>
-  <developers>
-    <developer>
-      <id>lamp</id>
-      <name>EPFL LAMP</name>
-    </developer>
-    <developer>
-      <id>Typesafe</id>
-      <name>Typesafe, Inc.</name>
-    </developer>
-  </developers>
+	<developers>
+		<developer>
+			<id>lamp</id>
+			<name>EPFL LAMP</name>
+		</developer>
+		<developer>
+			<id>Typesafe</id>
+			<name>Typesafe, Inc.</name>
+		</developer>
+	</developers>
 </project>

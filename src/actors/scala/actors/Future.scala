@@ -21,6 +21,7 @@ import scala.concurrent.SyncVar
  *
  *  @author Philipp Haller
  */
+@deprecated("Use the scala.concurrent.Future instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 abstract class Future[+T] extends Responder[T] with Function0[T] {
 
   @volatile
@@ -107,6 +108,7 @@ private class FutureActor[T](fun: SyncVar[T] => Unit, channel: Channel[T]) exten
  *
  *  @author Philipp Haller
  */
+@deprecated("Use the object scala.concurrent.Future instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 object Futures {
 
   /** Arranges for the asynchronous execution of `body`,

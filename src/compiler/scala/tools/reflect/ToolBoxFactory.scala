@@ -1,16 +1,21 @@
-package scala.tools
+package scala
+package tools
 package reflect
 
-import scala.tools.nsc.EXPRmode
+import scala.tools.cmd.CommandLineParser
+import scala.tools.nsc.Global
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.CompilerCommand
-import scala.tools.nsc.io.VirtualDirectory
-import scala.tools.nsc.interpreter.AbstractFileClassLoader
+import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
+import scala.tools.nsc.util.AbstractFileClassLoader
+import scala.reflect.internal.Flags._
 import scala.reflect.internal.util.{BatchSourceFile, NoSourceFile, NoFile}
 import java.lang.{Class => jClass}
 import scala.compat.Platform.EOL
 import scala.reflect.NameTransformer
 import scala.reflect.api.JavaUniverse
+import scala.reflect.io.NoAbstractFile
+import scala.reflect.internal.FatalError
 
 abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
@@ -25,6 +30,13 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
     lazy val classLoader = new AbstractFileClassLoader(virtualDirectory, factorySelf.mirror.classLoader)
     lazy val mirror: u.Mirror = u.runtimeMirror(classLoader)
+
+    lazy val arguments = CommandLineParser.tokenize(options)
+    lazy val virtualDirectory =
+      arguments.iterator.sliding(2).collectFirst{ case Seq("-d", dir) => dir } match {
+        case Some(outDir) => AbstractFile.getDirectory(outDir)
+        case None => new VirtualDirectory("(memory)", None)
+      }
 
     class ToolBoxGlobal(settings: scala.tools.nsc.Settings, reporter0: Reporter)
     extends ReflectGlobal(settings, reporter0, toolBoxSelf.classLoader) {
@@ -44,7 +56,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       }
 
       // should be called after every use of ToolBoxGlobal in order to prevent leaks
-      // there's the `withCleanupCaches` method defined below, which provides a convenient interface for that
       def cleanupCaches(): Unit = {
         perRunCaches.clearAll()
         undoLog.clear()
@@ -52,10 +63,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         lastSeenSourceFile = NoSourceFile
         lastSeenContext = null
       }
-
-      def withCleanupCaches[T](body: => T): T =
-        try body
-        finally cleanupCaches()
 
       def verify(expr: Tree): Unit = {
         // Previously toolboxes used to typecheck their inputs before compiling.
@@ -128,21 +135,23 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         // it inaccessible then please put it somewhere designed for that
         // rather than polluting the empty package with synthetics.
         val ownerClass    = rootMirror.EmptyPackageClass.newClassSymbol(newTypeName("<expression-owner>"))
-        build.setTypeSignature(ownerClass, ClassInfoType(List(ObjectClass.tpe), newScope, ownerClass))
+        build.setTypeSignature(ownerClass, ClassInfoType(List(ObjectTpe), newScope, ownerClass))
         val owner         = ownerClass.newLocalDummy(expr.pos)
         val currentTyper  = analyzer.newTyper(analyzer.rootContext(NoCompilationUnit, EmptyTree).make(expr, owner))
         val wrapper1      = if (!withImplicitViewsDisabled) (currentTyper.context.withImplicitsEnabled[Tree] _) else (currentTyper.context.withImplicitsDisabled[Tree] _)
         val wrapper2      = if (!withMacrosDisabled) (currentTyper.context.withMacrosEnabled[Tree] _) else (currentTyper.context.withMacrosDisabled[Tree] _)
         def wrapper       (tree: => Tree) = wrapper1(wrapper2(tree))
 
-        phase = (new Run).typerPhase // need to set a phase to something <= typerPhase, otherwise implicits in typedSelect will be disabled
+        val run = new Run
+        run.symSource(ownerClass) = NoAbstractFile // need to set file to something different from null, so that currentRun.defines works
+        phase = run.typerPhase // need to set a phase to something <= typerPhase, otherwise implicits in typedSelect will be disabled
         currentTyper.context.setReportErrors() // need to manually set context mode, otherwise typer.silent will throw exceptions
         reporter.reset()
 
         val expr1 = wrapper(transform(currentTyper, expr))
         var (dummies1, unwrapped) = expr1 match {
-          case Block(dummies, unwrapped) => (dummies, unwrapped)
-          case unwrapped => (Nil, unwrapped)
+          case Block(dummies, unwrapped) => ((dummies, unwrapped))
+          case unwrapped                 => ((Nil, unwrapped))
         }
         val invertedIndex = freeTerms map (_.swap)
         // todo. also fixup singleton types
@@ -164,7 +173,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         transformDuringTyper(expr, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, expr) => {
             trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, true, true, settings.Yshowsymkinds.value))
-            currentTyper.silent(_.typed(expr, EXPRmode, pt)) match {
+            currentTyper.silent(_.typed(expr, pt), reportAmbiguousErrors = false) match {
               case analyzer.SilentResultValue(result) =>
                 trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
                 result
@@ -179,15 +188,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         transformDuringTyper(tree, withImplicitViewsDisabled = false, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, tree) => {
             trace("inferring implicit %s (macros = %s): ".format(if (isView) "view" else "value", !withMacrosDisabled))(showAttributed(pt, true, true, settings.Yshowsymkinds.value))
-            val context = currentTyper.context
-            analyzer.inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos) match {
-              case failure if failure.tree.isEmpty =>
-                trace("implicit search has failed. to find out the reason, turn on -Xlog-implicits: ")(failure.tree)
-                if (context.hasErrors) throw ToolBoxError("reflective implicit search has failed: %s".format(context.errBuffer.head.errMsg))
-                EmptyTree
-              case success =>
-                success.tree
-            }
+            analyzer.inferImplicit(tree, pt, isView, currentTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw ToolBoxError(msg))
           })
 
       def compile(expr0: Tree): () => Any = {
@@ -203,16 +204,17 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           val (obj, _) = rootMirror.EmptyPackageClass.newModuleAndClassSymbol(
             nextWrapperModuleName())
 
-          val minfo = ClassInfoType(List(ObjectClass.tpe), newScope, obj.moduleClass)
+          val minfo = ClassInfoType(List(ObjectTpe), newScope, obj.moduleClass)
           obj.moduleClass setInfo minfo
           obj setInfo obj.moduleClass.tpe
 
           val meth = obj.moduleClass.newMethod(newTermName(wrapperMethodName))
           def makeParam(schema: (FreeTermSymbol, TermName)) = {
+            // see a detailed explanation of the STABLE trick in `GenSymbols.reifyFreeTerm`
             val (fv, name) = schema
-            meth.newValueParameter(name) setInfo appliedType(definitions.FunctionClass(0).tpe, List(fv.tpe.resultType))
+            meth.newValueParameter(name, newFlags = if (fv.hasStableFlag) STABLE else 0) setInfo appliedType(definitions.FunctionClass(0).tpe, List(fv.tpe.resultType))
           }
-          meth setInfo MethodType(freeTerms.map(makeParam).toList, AnyClass.tpe)
+          meth setInfo MethodType(freeTerms.map(makeParam).toList, AnyTpe)
           minfo.decls enter meth
           def defOwner(tree: Tree): Symbol = tree find (_.isDef) map (_.symbol) match {
             case Some(sym) if sym != null && sym != NoSymbol => sym.owner
@@ -223,9 +225,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
           val moduledef = ModuleDef(
               obj,
-              Template(
-                  List(TypeTree(ObjectClass.tpe)),
-                  emptyValDef,
+              gen.mkTemplate(
+                  List(TypeTree(ObjectTpe)),
+                  noSelfType,
                   NoMods,
                   List(),
                   List(methdef),
@@ -248,7 +250,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         throwIfErrors()
 
         val className = mdef.symbol.fullName
-        if (settings.debug.value) println("generated: "+className)
+        if (settings.debug) println("generated: "+className)
         def moduleFileName(className: String) = className + "$"
         val jclazz = jClass.forName(moduleFileName(className), true, classLoader)
         val jmeth = jclazz.getDeclaredMethods.find(_.getName == wrapperMethodName).get
@@ -275,20 +277,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       }
 
       def parse(code: String): Tree = {
-        val run = new Run
         reporter.reset()
-        val wrappedCode = "object wrapper {" + EOL + code + EOL + "}"
-        val file = new BatchSourceFile("<toolbox>", wrappedCode)
-        val unit = new CompilationUnit(file)
-        phase = run.parserPhase
-        val parser = new syntaxAnalyzer.UnitParser(unit)
-        val wrappedTree = parser.parse()
+        val tree = gen.mkTreeOrBlock(newUnitParser(code, "<toolbox>").parseStats())
         throwIfErrors()
-        val PackageDef(_, List(ModuleDef(_, _, Template(_, _, _ :: parsed)))) = wrappedTree
-        parsed match {
-          case expr :: Nil => expr
-          case stats :+ expr => Block(stats, expr)
-        }
+        tree
       }
 
       def showAttributed(artifact: Any, printTypes: Boolean = true, printIds: Boolean = true, printKinds: Boolean = false): String = {
@@ -310,48 +302,57 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       // reporter doesn't accumulate errors, but the front-end does
       def throwIfErrors() = {
         if (frontEnd.hasErrors) throw ToolBoxError(
-          "reflective compilation has failed: " + EOL + EOL + (frontEnd.infos map (_.msg) mkString EOL)
+          "reflective compilation has failed:" + EOL + EOL + (frontEnd.infos map (_.msg) mkString EOL)
         )
       }
     }
 
-    // todo. is not going to work with quoted arguments with embedded whitespaces
-    lazy val arguments = options.split(" ")
+    trait CompilerApi {
+      val compiler: ToolBoxGlobal
+      val importer: compiler.Importer { val from: u.type }
+      val exporter: u.Importer { val from: compiler.type }
+    }
 
-    lazy val virtualDirectory =
-      (arguments zip arguments.tail).collect{ case ("-d", dir) => dir }.lastOption match {
-        case Some(outDir) => scala.tools.nsc.io.AbstractFile.getDirectory(outDir)
-        case None => new VirtualDirectory("(memory)", None)
+    object withCompilerApi {
+      private object api extends CompilerApi {
+        lazy val compiler: ToolBoxGlobal = {
+          try {
+            val errorFn: String => Unit = msg => frontEnd.log(scala.reflect.internal.util.NoPosition, msg, frontEnd.ERROR)
+            val command = new CompilerCommand(arguments.toList, errorFn)
+            command.settings.outputDirs setSingleOutput virtualDirectory
+            val instance = new ToolBoxGlobal(command.settings, frontEndToReporter(frontEnd, command.settings))
+            if (frontEnd.hasErrors) {
+              throw ToolBoxError(
+                "reflective compilation has failed: cannot initialize the compiler:" + EOL + EOL +
+                (frontEnd.infos map (_.msg) mkString EOL)
+              )
+            }
+            instance
+          } catch {
+            case ex: Throwable =>
+              throw ToolBoxError(s"reflective compilation has failed: cannot initialize the compiler due to $ex", ex)
+          }
+        }
+
+        lazy val importer = compiler.mkImporter(u)
+        lazy val exporter = importer.reverse
       }
 
-    lazy val compiler: ToolBoxGlobal = {
-      try {
-        val errorFn: String => Unit = msg => frontEnd.log(scala.reflect.internal.util.NoPosition, msg, frontEnd.ERROR)
-        val command = new CompilerCommand(arguments.toList, errorFn)
-        command.settings.outputDirs setSingleOutput virtualDirectory
-        val instance = new ToolBoxGlobal(command.settings, frontEndToReporter(frontEnd, command.settings))
-        if (frontEnd.hasErrors) {
-          throw ToolBoxError(
-            "reflective compilation has failed: cannot initialize the compiler: " + EOL + EOL +
-            (frontEnd.infos map (_.msg) mkString EOL)
-          )
-        }
-        instance
-      } catch {
-        case ex: Throwable =>
-          throw ToolBoxError(s"reflective compilation has failed: cannot initialize the compiler due to $ex", ex)
+      def apply[T](f: CompilerApi => T): T = {
+        try f(api)
+        catch { case ex: FatalError => throw ToolBoxError(s"fatal compiler error", ex) }
+        finally api.compiler.cleanupCaches()
       }
     }
 
-    lazy val importer = compiler.mkImporter(u)
-    lazy val exporter = importer.reverse
+    def typeCheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = withCompilerApi { compilerApi =>
+      import compilerApi._
 
-    def typeCheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = compiler.withCleanupCaches {
-      if (compiler.settings.verbose.value) println("importing "+tree+", expectedType = "+expectedType)
+      if (compiler.settings.verbose) println("importing "+tree+", expectedType = "+expectedType)
       val ctree: compiler.Tree = importer.importTree(tree)
       val cexpectedType: compiler.Type = importer.importType(expectedType)
 
-      if (compiler.settings.verbose.value) println("typing "+ctree+", expectedType = "+expectedType)
+      if (compiler.settings.verbose) println("typing "+ctree+", expectedType = "+expectedType)
       val ttree: compiler.Tree = compiler.typeCheck(ctree, cexpectedType, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
       val uttree = exporter.importTree(ttree)
       uttree
@@ -362,52 +363,59 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     }
 
     def inferImplicitView(tree: u.Tree, from: u.Type, to: u.Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: u.Position = u.NoPosition): u.Tree = {
-      val viewTpe = u.appliedType(u.definitions.FunctionClass(1).toTypeConstructor, List(from, to))
+      val functionTypeCtor = u.definitions.FunctionClass(1).asClass.toTypeConstructor
+      val viewTpe = u.appliedType(functionTypeCtor, List(from, to))
       inferImplicit(tree, viewTpe, isView = true, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = pos)
     }
 
-    private def inferImplicit(tree: u.Tree, pt: u.Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: u.Position): u.Tree = compiler.withCleanupCaches {
-      if (compiler.settings.verbose.value) println("importing "+pt, ", tree = "+tree+", pos = "+pos)
+    private def inferImplicit(tree: u.Tree, pt: u.Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: u.Position): u.Tree = withCompilerApi { compilerApi =>
+      import compilerApi._
+
+      if (compiler.settings.verbose) println(s"importing pt=$pt, tree=$tree, pos=$pos")
       val ctree: compiler.Tree = importer.importTree(tree)
       val cpt: compiler.Type = importer.importType(pt)
       val cpos: compiler.Position = importer.importPosition(pos)
 
-      if (compiler.settings.verbose.value) println("inferring implicit %s of type %s, macros = %s".format(if (isView) "view" else "value", pt, !withMacrosDisabled))
+      if (compiler.settings.verbose) println("inferring implicit %s of type %s, macros = %s".format(if (isView) "view" else "value", pt, !withMacrosDisabled))
       val itree: compiler.Tree = compiler.inferImplicit(ctree, cpt, isView = isView, silent = silent, withMacrosDisabled = withMacrosDisabled, pos = cpos)
       val uitree = exporter.importTree(itree)
       uitree
     }
 
-    def resetAllAttrs(tree: u.Tree): u.Tree = {
+    def resetAllAttrs(tree: u.Tree): u.Tree = withCompilerApi { compilerApi =>
+      import compilerApi._
       val ctree: compiler.Tree = importer.importTree(tree)
       val ttree: compiler.Tree = compiler.resetAllAttrs(ctree)
       val uttree = exporter.importTree(ttree)
       uttree
     }
 
-    def resetLocalAttrs(tree: u.Tree): u.Tree = {
+    def resetLocalAttrs(tree: u.Tree): u.Tree = withCompilerApi { compilerApi =>
+      import compilerApi._
       val ctree: compiler.Tree = importer.importTree(tree)
       val ttree: compiler.Tree = compiler.resetLocalAttrs(ctree)
       val uttree = exporter.importTree(ttree)
       uttree
     }
 
-    def parse(code: String): u.Tree = {
-      if (compiler.settings.verbose.value) println("parsing "+code)
+    def parse(code: String): u.Tree = withCompilerApi { compilerApi =>
+      import compilerApi._
+      if (compiler.settings.verbose) println("parsing "+code)
       val ctree: compiler.Tree = compiler.parse(code)
       val utree = exporter.importTree(ctree)
       utree
     }
 
-    def compile(tree: u.Tree): () => Any = {
-      if (compiler.settings.verbose.value) println("importing "+tree)
+    def compile(tree: u.Tree): () => Any = withCompilerApi { compilerApi =>
+      import compilerApi._
+
+      if (compiler.settings.verbose) println("importing "+tree)
       val ctree: compiler.Tree = importer.importTree(tree)
 
-      if (compiler.settings.verbose.value) println("compiling "+ctree)
+      if (compiler.settings.verbose) println("compiling "+ctree)
       compiler.compile(ctree)
     }
 
     def eval(tree: u.Tree): Any = compile(tree)()
   }
 }
-

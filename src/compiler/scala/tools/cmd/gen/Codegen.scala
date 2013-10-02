@@ -6,11 +6,9 @@
 package scala.tools.cmd
 package gen
 
-import scala.language.postfixOps
-
 class Codegen(args: List[String]) extends {
   val parsed = CodegenSpec(args: _*)
-} with CodegenSpec with Instance { }
+} with CodegenSpec with Instance
 
 object Codegen {
   def echo(msg: String) = Console println msg
@@ -23,7 +21,7 @@ object Codegen {
       return println (CodegenSpec.helpMsg)
 
     val out = outDir getOrElse { return println("--out is required.") }
-    val all = genall || (!anyvals && !products)
+    val all = genall || !anyvals
 
     echo("Generating sources into " + out)
 
@@ -31,7 +29,7 @@ object Codegen {
       val av = new AnyVals { }
 
       av.make() foreach { case (name, code ) =>
-        val file = out / (name + ".scala") toFile;
+        val file = (out / (name + ".scala")).toFile
         echo("Writing: " + file)
         file writeAll code
       }

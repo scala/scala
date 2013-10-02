@@ -1,0 +1,15 @@
+prefix = Expr[Nothing]({
+  final class $anon extends AnyRef with Base {
+    def <init>(): <$anon: Base> = {
+      $anon.super.<init>();
+      ()
+    };
+    <empty>
+  };
+  new $anon()
+})
+it works
+prefix = Expr[Nothing](Macros)
+it works
+prefix = Expr[Nothing](new Macros())
+it works

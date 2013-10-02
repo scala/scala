@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util
+package scala
+package util
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.generic.CanBuildFrom
@@ -117,7 +118,7 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
       swap(n - 1, k)
     }
 
-    (bf(xs) ++= buf).result
+    (bf(xs) ++= buf).result()
   }
 
   /** Returns a Stream of pseudorandomly chosen alphanumeric characters,

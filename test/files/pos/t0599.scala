@@ -15,4 +15,4 @@ abstract class FooA {
       a.xxx;
       doB.xxx;
     }
-  } 
+  }

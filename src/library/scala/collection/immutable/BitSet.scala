@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -71,7 +72,7 @@ object BitSet extends BitSetFactory[BitSet] {
   def newBuilder: Builder[Int, BitSet] = new Builder[Int, BitSet] {
     private[this] val b = new mutable.BitSet
     def += (x: Int) = { b += x; this }
-    def clear() = b.clear
+    def clear() = b.clear()
     def result() = b.toImmutable
   }
 

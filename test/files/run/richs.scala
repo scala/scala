@@ -11,8 +11,8 @@ trait RichTest {
     val cn = this.getClass().getName()
     cn.substring(0, cn.length-1)
   }
-  def length[A](it: Iterator[A]) = it.toList length
-  def length[A](it: Iterable[A]) = it.toList length
+  def length[A](it: Iterator[A]) = it.toList.length
+  def length[A](it: Iterable[A]) = it.toList.length
   def run: Unit
 }
 object RichCharTest1 extends RichTest {

@@ -1,4 +1,5 @@
-Impls_Macros_Test_1.scala:36: error: macro implementation not found: foo (the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)
+Impls_Macros_Test_1.scala:36: error: macro implementation not found: foo
+(the most common reason for that is that you cannot use macro implementations in the same compilation run that defines them)
   println(foo(2) + Macros.bar(2) * new Macros().quux(4))
              ^
 one error found

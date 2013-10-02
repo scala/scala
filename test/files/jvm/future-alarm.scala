@@ -1,6 +1,8 @@
-import scala.actors.Futures
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.Futures
   def main(args: Array[String]) {
     try {
     for (i <- 1 to 100000) {

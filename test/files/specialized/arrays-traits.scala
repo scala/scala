@@ -23,7 +23,7 @@ object Test {
     (new BaseS(new Array[String](1)): SuperS[String]).bar(new Array[String](1))
     println(arrayApplyCount)
     println(arrayUpdateCount)
-    
+
     (new BaseG(new Array[String](1)): SuperG[String]).foo
     println(arrayApplyCount)
     (new BaseG(new Array[String](1)): SuperG[String]).bar(new Array[String](1))

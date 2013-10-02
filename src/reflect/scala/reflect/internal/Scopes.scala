@@ -3,8 +3,11 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
+
+import scala.annotation.tailrec
 
 trait Scopes extends api.Scopes { self: SymbolTable =>
 
@@ -65,6 +68,11 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** a cache for all elements, to be used by symbol iterator.
      */
     private var elemsCache: List[Symbol] = null
+    private var cachedSize = -1
+    private def flushElemsCache() {
+      elemsCache = null
+      cachedSize = -1
+    }
 
     /** size and mask of hash tables
      *  todo: make hashtables grow?
@@ -86,6 +94,12 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     /** the number of entries in this scope */
     override def size: Int = {
+      if (cachedSize < 0)
+        cachedSize = directSize
+
+      cachedSize
+    }
+    private def directSize: Int = {
       var s = 0
       var e = elems
       while (e ne null) {
@@ -98,7 +112,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** enter a scope entry
      */
     protected def enterEntry(e: ScopeEntry) {
-      elemsCache = null
+      flushElemsCache()
       if (hashtable ne null)
         enterInHash(e)
       else if (size >= MIN_HASH)
@@ -188,18 +202,18 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
         if (e1 == e) {
           hashtable(index) = e.tail
         } else {
-          while (e1.tail != e) e1 = e1.tail;
+          while (e1.tail != e) e1 = e1.tail
           e1.tail = e.tail
         }
       }
-      elemsCache = null
+      flushElemsCache()
     }
 
     /** remove symbol */
     def unlink(sym: Symbol) {
       var e = lookupEntry(sym.name)
       while (e ne null) {
-        if (e.sym == sym) unlink(e);
+        if (e.sym == sym) unlink(e)
         e = lookupNextEntry(e)
       }
     }
@@ -300,20 +314,47 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       if (hashtable ne null)
         do { e = e.tail } while ((e ne null) && e.sym.name != entry.sym.name)
       else
-        do { e = e.next } while ((e ne null) && e.sym.name != entry.sym.name);
+        do { e = e.next } while ((e ne null) && e.sym.name != entry.sym.name)
       e
+    }
+
+    /** TODO - we can test this more efficiently than checking isSubScope
+     *  in both directions. However the size test might be enough to quickly
+     *  rule out most failures.
+     */
+    def isSameScope(other: Scope) = (
+         (size == other.size)     // optimization - size is cached
+      && (this isSubScope other)
+      && (other isSubScope this)
+    )
+
+    def isSubScope(other: Scope) = {
+      def scopeContainsSym(sym: Symbol): Boolean = {
+        @tailrec def entryContainsSym(e: ScopeEntry): Boolean = e match {
+          case null => false
+          case _    =>
+            val comparableInfo = sym.info.substThis(sym.owner, e.sym.owner)
+            (e.sym.info =:= comparableInfo) || entryContainsSym(lookupNextEntry(e))
+        }
+        entryContainsSym(this lookupEntry sym.name)
+      }
+      other.toList forall scopeContainsSym
     }
 
     /** Return all symbols as a list in the order they were entered in this scope.
      */
     override def toList: List[Symbol] = {
       if (elemsCache eq null) {
-        elemsCache = Nil
+        var symbols: List[Symbol] = Nil
+        var count = 0
         var e = elems
         while ((e ne null) && e.owner == this) {
-          elemsCache = e.sym :: elemsCache
+          count += 1
+          symbols ::= e.sym
           e = e.next
         }
+        elemsCache = symbols
+        cachedSize = count
       }
       elemsCache
     }
@@ -419,6 +460,4 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   class ErrorScope(owner: Symbol) extends Scope
 
   private final val maxRecursions = 1000
-
 }
-

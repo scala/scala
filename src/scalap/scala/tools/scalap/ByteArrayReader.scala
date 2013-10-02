@@ -5,12 +5,9 @@
 **
 */
 
-
 package scala.tools.scalap
 
-
 class ByteArrayReader(content: Array[Byte]) {
-  import java.io._
 
   /** the buffer containing the file
    */
@@ -104,9 +101,6 @@ class ByteArrayReader(content: Array[Byte]) {
   def getDouble(bp: Int): Double = java.lang.Double.longBitsToDouble(getLong(bp))
 
    /** skip next 'n' bytes
-  */
-  def skip(n: Int) {
-    bp += n
-  }
-
+    */
+  def skip(n: Int): Unit = bp += n
 }

@@ -1,3 +1,5 @@
+import scala.language.reflectiveCalls
+
 class A {
   override def equals(other: Any) = other match {
     case _: this.type => true

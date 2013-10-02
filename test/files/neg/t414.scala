@@ -3,7 +3,7 @@ case class Node[a](left: IntMap[a], keyVal: Pair[Int, a], right: IntMap[a]) exte
 abstract class IntMap[a] {
         def lookup(key: Int): a = this match {
                 case Empty =>
-                        error("clef inexistante")
+                        sys.error("clef inexistante")
                 case _ =>
         };
 

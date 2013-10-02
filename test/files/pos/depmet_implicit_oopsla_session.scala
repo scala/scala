@@ -11,19 +11,19 @@ object Sessions {
     def run(p: Stop, dp: Stop): Unit = {}
   }
 
-  implicit def InDual[A, B](implicit sessionDIn: Session[B]) = 
+  implicit def InDual[A, B](implicit sessionDIn: Session[B]) =
     new Session[In[A, B]] {
       type Dual = Out[A, sessionDIn.Dual]
 
-      def run(p: In[A, B], dp: Dual): Unit = 
+      def run(p: In[A, B], dp: Dual): Unit =
         sessionDIn.run(p.func(dp.x), dp.y)
   }
 
-  implicit def OutDual[A, B](implicit sessionDOut: Session[B]) = 
+  implicit def OutDual[A, B](implicit sessionDOut: Session[B]) =
     new Session[Out[A, B]] {
      type Dual = In[A, sessionDOut.Dual]
 
-     def run(p: Out[A, B], dp: Dual): Unit = 
+     def run(p: Out[A, B], dp: Dual): Unit =
        sessionDOut.run(p.y, dp.func(p.x))
   }
 
@@ -32,7 +32,7 @@ object Sessions {
   sealed case class Out[+A, +B](x: A, y: B)
 
   def addServer =
-    In{x: Int => 
+    In{x: Int =>
     In{y: Int => System.out.println("Thinking")
     Out(x+y,
     Stop())}}
@@ -48,7 +48,7 @@ object Sessions {
 
   // def runSession[S, D](p: S, dp: D)(implicit s: Session[S]#HasDual[D]) =
   //   s.run(p, dp)
-  // 
+  //
   // def runSession[S, D](p: S, dp: D)(implicit s: Session[S]{type Dual=D}) =
   //   s.run(p, dp)
 

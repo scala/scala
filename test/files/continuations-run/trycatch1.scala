@@ -5,12 +5,12 @@ import scala.util.continuations._
 object Test {
 
   def fatal: Int = throw new Exception()
-  
+
   def foo1 = try {
     fatal
     shift((k: Int=>Int) => k(7))
   } catch {
-    case ex =>
+    case ex: Throwable =>
       9
   }
 
@@ -18,7 +18,7 @@ object Test {
     shift((k: Int=>Int) => k(7))
     fatal
   } catch {
-    case ex =>
+    case ex: Throwable =>
       9
   }
 
@@ -26,7 +26,7 @@ object Test {
     fatal
     7
   } catch {
-    case ex =>
+    case ex: Throwable =>
       shiftUnit0[Int,Int](9) // regular shift causes no-symbol doesn't have owner
   }
 
@@ -34,7 +34,7 @@ object Test {
     7
     fatal
   } catch {
-    case ex =>
+    case ex: Throwable =>
       shiftUnit0[Int,Int](9) // regular shift causes no-symbol doesn't have owner
   }
 

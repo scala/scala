@@ -6,9 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -55,6 +54,12 @@ import java.io._
  *  val shorter =  mainList.tail  // costs nothing as it uses the same 2::1::Nil instances as mainList
  *  }}}
  *
+ *  @note The functional list is characterized by persistence and structural sharing, thus offering considerable
+ *        performance and space consumption benefits in some scenarios if used correctly.
+ *        However, note that objects having multiple references into the same functional list (that is,
+ *        objects that rely on structural sharing), will be serialized and deserialized with multiple lists, one for
+ *        each reference to it. I.e. structural sharing is lost after serialization/deserialization.
+ *
  *  @author  Martin Odersky and others
  *  @version 2.8
  *  @since   1.0
@@ -79,7 +84,8 @@ sealed abstract class List[+A] extends AbstractSeq[A]
                                   with LinearSeq[A]
                                   with Product
                                   with GenericTraversableTemplate[A, List]
-                                  with LinearSeqOptimized[A, List[A]] {
+                                  with LinearSeqOptimized[A, List[A]]
+                                  with Serializable {
   override def companion: GenericCompanion[List] = List
 
   import scala.collection.{Iterable, Traversable, Seq, IndexedSeq}
@@ -153,6 +159,8 @@ sealed abstract class List[+A] extends AbstractSeq[A]
    *    @inheritdoc
    */
   @inline final def mapConserve[B >: A <: AnyRef](f: A => B): List[B] = {
+    // Note to developers: there exists a duplication between this function and `reflect.internal.util.Collections#map2Conserve`.
+    // If any successful optimization attempts or other changes are made, please rehash them there too.
     @tailrec
     def loop(mapped: ListBuffer[B], unchanged: List[A], pending: List[A]): List[B] =
       if (pending.isEmpty) {
@@ -306,6 +314,9 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     result
   }
 
+  override def foldRight[B](z: B)(op: (A, B) => B): B =
+    reverse.foldLeft(z)((right, left) => op(left, right))
+
   override def stringPrefix = "List"
 
   override def toStream : Stream[A] =
@@ -347,25 +358,8 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
   override def tail : List[B] = tl
   override def isEmpty: Boolean = false
 
-  private def writeObject(out: ObjectOutputStream) {
-    out.writeObject(ListSerializeStart) // needed to differentiate with the legacy `::` serialization
-    out.writeObject(this.hd)
-    out.writeObject(this.tl)
-  }
-
   private def readObject(in: ObjectInputStream) {
-    val obj = in.readObject()
-    if (obj == ListSerializeStart) {
-      this.hd = in.readObject().asInstanceOf[B]
-      this.tl = in.readObject().asInstanceOf[List[B]]
-    } else oldReadObject(in, obj)
-  }
-
-  /* The oldReadObject method exists here for compatibility reasons.
-   * :: objects used to be serialized by serializing all the elements to
-   * the output stream directly, but this was broken (see SI-5374).
-   */
-  private def oldReadObject(in: ObjectInputStream, firstObject: AnyRef) {
+    val firstObject = in.readObject()
     hd = firstObject.asInstanceOf[B]
     assert(hd != ListSerializeEnd)
     var current: ::[B] = this
@@ -373,11 +367,17 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
       case ListSerializeEnd =>
         current.tl = Nil
         return
-      case a : Any =>
+      case a =>
         val list : ::[B] = new ::(a.asInstanceOf[B], Nil)
         current.tl = list
         current = list
     }
+  }
+
+  private def writeObject(out: ObjectOutputStream) {
+    var xs: List[B] = this
+    while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
+    out.writeObject(ListSerializeEnd)
   }
 }
 
@@ -398,10 +398,5 @@ object List extends SeqFactory[List] {
 }
 
 /** Only used for list serialization */
-@SerialVersionUID(0L - 8287891243975527522L)
-private[scala] case object ListSerializeStart
-
-/** Only used for list serialization */
 @SerialVersionUID(0L - 8476791151975527571L)
 private[scala] case object ListSerializeEnd
-

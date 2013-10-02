@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.generic
+package scala
+package collection
+package generic
 
 import scala.collection.parallel.ParIterable
 import scala.collection.parallel.Combiner
@@ -35,8 +37,3 @@ extends GenTraversableFactory[CC]
     override def apply() = newBuilder[A]
   }
 }
-
-
-
-
-

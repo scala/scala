@@ -65,7 +65,7 @@ class Pack200Task extends ScalaMatchingTask {
 
   /** Set the flag to specify if file reordering should be performed. Reordering
     * is used to remove empty packages and improve pack200 optimization.
-    * @param keep
+    * @param x
     *         `'''true'''` to retain file ordering.
     *         `'''false'''` to optimize directory structure (DEFAULT).  */
   def setKeepFileOrder(x: Boolean) { keepFileOrder = x }

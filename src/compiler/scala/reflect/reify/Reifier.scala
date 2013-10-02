@@ -6,10 +6,11 @@ import scala.reflect.macros.UnexpectedReificationException
 import scala.reflect.reify.utils.Utils
 
 /** Given a tree or a type, generate a tree that when executed at runtime produces the original tree or type.
- *  See more info in the comments to ``reify'' in scala.reflect.api.Universe.
+ *  See more info in the comments to `reify` in scala.reflect.api.Universe.
  *
- *  @author Martin Odersky
- *  @version 2.10
+ *  @author   Martin Odersky
+ *  @version  2.10
+ *  @since    2.10
  */
 abstract class Reifier extends States
                           with Phases
@@ -31,20 +32,20 @@ abstract class Reifier extends States
     this.asInstanceOf[Reifier { val global: Reifier.this.global.type }]
   override def hasReifier = true
 
-  /**
-   *  For ``reifee'' and other reification parameters, generate a tree of the form
-   *
+  /** For `reifee` and other reification parameters, generate a tree of the form
+   *  {{{
    *    {
-   *      val $u: universe.type = <[ universe ]>
-   *      val $m: $u.Mirror = <[ mirror ]>
-   *      $u.Expr[T](rtree)       // if data is a Tree
-   *      $u.TypeTag[T](rtree)    // if data is a Type
+   *      val \$u: universe.type = <[ universe ]>
+   *      val \$m: \$u.Mirror = <[ mirror ]>
+   *      \$u.Expr[T](rtree)       // if data is a Tree
+   *      \$u.TypeTag[T](rtree)    // if data is a Type
    *    }
+   *  }}}
    *
    *  where
    *
-   *    - `universe` is the tree that represents the universe the result will be bound to
-   *    - `mirror` is the tree that represents the mirror the result will be initially bound to
+   *    - `universe` is the tree that represents the universe the result will be bound to.
+   *    - `mirror` is the tree that represents the mirror the result will be initially bound to.
    *    - `rtree` is code that generates `reifee` at runtime.
    *    - `T` is the type that corresponds to `data`.
    *
@@ -57,7 +58,7 @@ abstract class Reifier extends States
 
       val result = reifee match {
         case tree: Tree =>
-          reifyTrace("reifying = ")(if (settings.Xshowtrees.value || settings.XshowtreesCompact.value || settings.XshowtreesStringified.value) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
+          reifyTrace("reifying = ")(if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) "\n" + nodePrinters.nodeToString(tree).trim else tree.toString)
           reifyTrace("reifee is located at: ")(tree.pos)
           reifyTrace("universe = ")(universe)
           reifyTrace("mirror = ")(mirror)

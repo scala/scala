@@ -5,28 +5,25 @@
 **
 */
 
-
 package scala.tools.scalap
 
-import java.io._
 import scala.reflect.NameTransformer
 
-class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer) {
+class JavaWriter(classfile: Classfile, writer: java.io.Writer) extends CodeWriter(writer) {
 
   val cf = classfile
 
   def flagsToStr(clazz: Boolean, flags: Int): String = {
     val buffer = new StringBuffer()
-    var x: StringBuffer = buffer
     if (((flags & 0x0007) == 0) &&
       ((flags & 0x0002) != 0))
-      x = buffer.append("private ")
+      buffer.append("private ")
     if ((flags & 0x0004) != 0)
-      x = buffer.append("protected ")
+      buffer.append("protected ")
     if ((flags & 0x0010) != 0)
-      x = buffer.append("final ")
+      buffer.append("final ")
     if ((flags & 0x0400) != 0)
-      x = if (clazz) buffer.append("abstract ")
+      if (clazz) buffer.append("abstract ")
           else buffer.append("/*deferred*/ ")
     buffer.toString()
   }

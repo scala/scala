@@ -8,7 +8,7 @@ object Test {
     try {
       try {
 	      Console.println("hi!")
-        error("xx")
+        sys.error("xx")
       }
       finally Console.println("ho!")
     }

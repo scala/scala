@@ -1,42 +1,41 @@
-
-
-
+/*
+ * scalac: -deprecation
+ * scalacheck: -workers 1 -minSize 0 -maxSize 4000 -minSuccessfulTests 5
+ */
 
 import org.scalacheck._
-
 import scala.collection.parallel._
-
 
 class ParCollProperties extends Properties("Parallel collections") {
   /*   Collections   */
-  
+
   // parallel arrays
   include(mutable.IntParallelArrayCheck)
-  
+
   // parallel ranges
   include(immutable.ParallelRangeCheck)
-  
+
   // parallel immutable hash maps (tries)
   include(immutable.IntIntParallelHashMapCheck)
-  
+
   // parallel immutable hash sets (tries)
   include(immutable.IntParallelHashSetCheck)
-  
+
   // parallel mutable hash maps (tables)
   include(mutable.IntIntParallelHashMapCheck)
-  
+
   // parallel ctrie
   include(mutable.IntIntParallelConcurrentTrieMapCheck)
-  
+
   // parallel mutable hash sets (tables)
   include(mutable.IntParallelHashSetCheck)
-  
+
   // parallel vectors
   include(immutable.IntParallelVectorCheck)
 }
 
-
-object Test {
+object Test extends ParCollProperties {
+  /*
   def main(args: Array[String]) {
     val pc = new ParCollProperties
     org.scalacheck.Test.checkProperties(
@@ -51,4 +50,5 @@ object Test {
       pc
     )
   }
+  */
 }

@@ -1,0 +1,5 @@
+package object PackageObject extends scala.AnyRef {
+  def this() = { /* compiled code */ }
+  type A = scala.Predef.String
+  def foo(i: scala.Int): scala.Int = { /* compiled code */ }
+}

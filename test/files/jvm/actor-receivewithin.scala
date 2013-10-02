@@ -1,3 +1,7 @@
+
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors.{Actor, TIMEOUT}
 
 object A extends Actor {
@@ -62,7 +66,6 @@ object B extends Actor {
   }
 }
 
-object Test {
   def main(args:Array[String]) {
     B.start()
   }

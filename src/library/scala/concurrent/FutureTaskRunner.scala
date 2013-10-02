@@ -16,7 +16,7 @@ import scala.language.{implicitConversions, higherKinds}
  *  @author Philipp Haller
  */
 @deprecated("Use `ExecutionContext` instead.", "2.10.0")
-trait FutureTaskRunner extends TaskRunner {
+private[scala] trait FutureTaskRunner extends TaskRunner {
 
   /** The type of the futures that the underlying task runner supports.
    */

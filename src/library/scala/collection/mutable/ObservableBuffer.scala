@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import script._
@@ -65,7 +66,7 @@ trait ObservableBuffer[A] extends Buffer[A] with Publisher[Message[A] with Undoa
   }
 
   abstract override def clear(): Unit = {
-    super.clear
+    super.clear()
     publish(new Reset with Undoable {
       def undo() { throw new UnsupportedOperationException("cannot undo") }
     })

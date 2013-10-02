@@ -1,3 +1,5 @@
+import scala.language.implicitConversions
+
 object Test {
   abstract class Unit
   object NoUnit extends Unit

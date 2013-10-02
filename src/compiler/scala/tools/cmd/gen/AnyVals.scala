@@ -6,24 +6,23 @@
 package scala.tools.cmd
 package gen
 
-/** Code generation of the AnyVal types and their companions.
- */
+/** Code generation of the AnyVal types and their companions. */
 trait AnyValReps {
   self: AnyVals =>
 
-  sealed abstract class AnyValNum(name: String, repr: Option[String], javaEquiv: String) extends AnyValRep(name,repr,javaEquiv) {
+  sealed abstract class AnyValNum(name: String, repr: Option[String], javaEquiv: String)
+      extends AnyValRep(name,repr,javaEquiv) {
 
-    case class Op(val op : String, val doc : String)
+    case class Op(op : String, doc : String)
 
     private def companionCoercions(tos: AnyValRep*) = {
       tos.toList map (to =>
-        """implicit def @javaequiv@2%s(x: @name@): %s = x.to%s""".format(to.javaEquiv, to.name, to.name)
+        s"implicit def @javaequiv@2${to.javaEquiv}(x: @name@): ${to.name} = x.to${to.name}"
       )
     }
-    def coercionCommentExtra = ""
-    def coercionComment = """
-  /** Language mandated coercions from @name@ to "wider" types.%s
-   */""".format(coercionCommentExtra)
+    def coercionComment =
+"""/** Language mandated coercions from @name@ to "wider" types. */
+import scala.language.implicitConversions"""
 
     def implicitCoercions: List[String] = {
       val coercions = this match {
@@ -35,18 +34,14 @@ trait AnyValReps {
         case _     => Nil
       }
       if (coercions.isEmpty) Nil
-      else coercionComment :: coercions
+      else coercionComment.lines.toList ++ coercions
     }
 
     def isCardinal: Boolean = isIntegerType(this)
     def unaryOps = {
       val ops = List(
-        Op("+", "/**\n" +
-                " * Returns this value, unmodified.\n" +
-                " */"),
-        Op("-", "/**\n" +
-                " * Returns the negation of this value.\n" +
-                " */"))
+        Op("+", "/** Returns this value, unmodified. */"),
+        Op("-", "/** Returns the negation of this value. */"))
 
       if(isCardinal)
         Op("~", "/**\n" +
@@ -95,7 +90,7 @@ trait AnyValReps {
                      "  */"))
       else Nil
 
-    def shiftOps            =
+    def shiftOps =
       if (isCardinal)
         List(
           Op("<<",  "/**\n" +
@@ -127,20 +122,20 @@ trait AnyValReps {
                        "  */"))
       else Nil
 
-    def comparisonOps       = List(
-      Op("==", "/**\n  * Returns `true` if this value is equal to x, `false` otherwise.\n  */"),
-      Op("!=", "/**\n  * Returns `true` if this value is not equal to x, `false` otherwise.\n  */"),
-      Op("<",  "/**\n  * Returns `true` if this value is less than x, `false` otherwise.\n  */"),
-      Op("<=", "/**\n  * Returns `true` if this value is less than or equal to x, `false` otherwise.\n  */"),
-      Op(">",  "/**\n  * Returns `true` if this value is greater than x, `false` otherwise.\n  */"),
-      Op(">=", "/**\n  * Returns `true` if this value is greater than or equal to x, `false` otherwise.\n  */"))
+    def comparisonOps = List(
+      Op("==", "/** Returns `true` if this value is equal to x, `false` otherwise. */"),
+      Op("!=", "/** Returns `true` if this value is not equal to x, `false` otherwise. */"),
+      Op("<",  "/** Returns `true` if this value is less than x, `false` otherwise. */"),
+      Op("<=", "/** Returns `true` if this value is less than or equal to x, `false` otherwise. */"),
+      Op(">",  "/** Returns `true` if this value is greater than x, `false` otherwise. */"),
+      Op(">=", "/** Returns `true` if this value is greater than or equal to x, `false` otherwise. */"))
 
     def otherOps = List(
-      Op("+", "/**\n  * Returns the sum of this value and `x`.\n  */"),
-      Op("-", "/**\n  * Returns the difference of this value and `x`.\n  */"),
-      Op("*", "/**\n  * Returns the product of this value and `x`.\n  */"),
-      Op("/", "/**\n  * Returns the quotient of this value and `x`.\n  */"),
-      Op("%", "/**\n  * Returns the remainder of the division of this value by `x`.\n  */"))
+      Op("+", "/** Returns the sum of this value and `x`. */"),
+      Op("-", "/** Returns the difference of this value and `x`. */"),
+      Op("*", "/** Returns the product of this value and `x`. */"),
+      Op("/", "/** Returns the quotient of this value and `x`. */"),
+      Op("%", "/** Returns the remainder of the division of this value by `x`. */"))
 
     // Given two numeric value types S and T , the operation type of S and T is defined as follows:
     // If both S and T are subrange types then the operation type of S and T is Int.
@@ -183,7 +178,7 @@ trait AnyValReps {
     }
     def objectLines = {
       val comp = if (isCardinal) cardinalCompanion else floatingCompanion
-      (comp + allCompanions + "\n" + nonUnitCompanions).trim.lines.toList ++ implicitCoercions map interpolate
+      interpolate(comp + allCompanions + "\n" + nonUnitCompanions).trim.lines.toList ++ (implicitCoercions map interpolate)
     }
 
     /** Makes a set of binary operations based on the given set of ops, args, and resultFn.
@@ -209,11 +204,14 @@ trait AnyValReps {
     )
 
     def lcname = name.toLowerCase
+    def boxedSimpleName = this match {
+      case C => "Character"
+      case I => "Integer"
+      case _ => name
+    }
     def boxedName = this match {
       case U => "scala.runtime.BoxedUnit"
-      case C => "java.lang.Character"
-      case I => "java.lang.Integer"
-      case _ => "java.lang." + name
+      case _ => "java.lang." + boxedSimpleName
     }
     def zeroRep = this match {
       case L => "0L"
@@ -228,7 +226,13 @@ trait AnyValReps {
     def indentN(s: String) = s.lines map indent mkString "\n"
 
     def boxUnboxImpls = Map(
+      "@boxRunTimeDoc@" -> """
+ *  Runtime implementation determined by `scala.runtime.BoxesRunTime.boxTo%s`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
+ *""".format(boxedSimpleName),
       "@boxImpl@"   -> "%s.valueOf(x)".format(boxedName),
+      "@unboxRunTimeDoc@" -> """
+ *  Runtime implementation determined by `scala.runtime.BoxesRunTime.unboxTo%s`. See [[https://github.com/scala/scala src/library/scala/runtime/BoxesRunTime.java]].
+ *""".format(name),
       "@unboxImpl@" -> "x.asInstanceOf[%s].%sValue()".format(boxedName, lcname),
       "@unboxDoc@"  -> "the %s resulting from calling %sValue() on `x`".format(name, lcname)
     )
@@ -269,8 +273,7 @@ trait AnyValReps {
 }
 
 trait AnyValTemplates {
-  def headerTemplate = ("""
-/*                     __                                               *\
+  def headerTemplate = """/*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
 **    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
@@ -278,12 +281,13 @@ trait AnyValTemplates {
 **                          |/                                          **
 \*                                                                      */
 
-%s
+// DO NOT EDIT, CHANGES WILL BE LOST
+// This auto-generated code can be modified in scala.tools.cmd.gen.
+// Afterwards, running tools/codegen-anyvals regenerates this source file.
+
 package scala
 
-import scala.language.implicitConversions
-
-""".trim.format(timestampString) + "\n\n")
+"""
 
   def classDocTemplate = ("""
 /** `@name@`@representation@ (equivalent to Java's `@javaequiv@` primitive type) is a
@@ -295,11 +299,9 @@ import scala.language.implicitConversions
  */
 """.trim + "\n")
 
-  def timestampString = "// DO NOT EDIT, CHANGES WILL BE LOST.\n"
-
   def allCompanions = """
 /** Transform a value type into a boxed reference type.
- *
+ *@boxRunTimeDoc@
  *  @param  x   the @name@ to be boxed
  *  @return     a @boxed@ offering `x` as its underlying value.
  */
@@ -308,27 +310,24 @@ def box(x: @name@): @boxed@ = @boxImpl@
 /** Transform a boxed type into a value type.  Note that this
  *  method is not typesafe: it accepts any Object, but will throw
  *  an exception if the argument is not a @boxed@.
- *
+ *@unboxRunTimeDoc@
  *  @param  x   the @boxed@ to be unboxed.
  *  @throws     ClassCastException  if the argument is not a @boxed@
  *  @return     @unboxDoc@
  */
 def unbox(x: java.lang.Object): @name@ = @unboxImpl@
 
-/** The String representation of the scala.@name@ companion object.
- */
+/** The String representation of the scala.@name@ companion object. */
 override def toString = "object scala.@name@"
 """
 
   def nonUnitCompanions = ""  // todo
 
   def cardinalCompanion = """
-/** The smallest value representable as a @name@.
- */
+/** The smallest value representable as a @name@. */
 final val MinValue = @boxed@.MIN_VALUE
 
-/** The largest value representable as a @name@.
- */
+/** The largest value representable as a @name@. */
 final val MaxValue = @boxed@.MAX_VALUE
 """
 
@@ -363,18 +362,16 @@ class AnyVals extends AnyValReps with AnyValTemplates {
   object D extends AnyValNum("Double",  Some("64-bit IEEE-754 floating point number"), "double")
   object Z extends AnyValRep("Boolean", None,                                          "boolean") {
     def classLines = """
-/**
- * Negates a Boolean expression.
- *
- * - `!a` results in `false` if and only if `a` evaluates to `true` and
- * - `!a` results in `true` if and only if `a` evaluates to `false`.
- *
- * @return the negated expression
- */
+/** Negates a Boolean expression.
+  *
+  * - `!a` results in `false` if and only if `a` evaluates to `true` and
+  * - `!a` results in `true` if and only if `a` evaluates to `false`.
+  *
+  * @return the negated expression
+  */
 def unary_! : Boolean
 
-/**
-  * Compares two Boolean expressions and returns `true` if they evaluate to the same value.
+/** Compares two Boolean expressions and returns `true` if they evaluate to the same value.
   *
   * `a == b` returns `true` if and only if
   *  - `a` and `b` are `true` or
@@ -391,8 +388,7 @@ def ==(x: Boolean): Boolean
   */
 def !=(x: Boolean): Boolean
 
-/**
-  * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
+/** Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
   *
   * `a || b` returns `true` if and only if
   *  - `a` is `true` or
@@ -405,8 +401,7 @@ def !=(x: Boolean): Boolean
   */
 def ||(x: Boolean): Boolean
 
-/**
-  * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
+/** Compares two Boolean expressions and returns `true` if both of them evaluate to true.
   *
   * `a && b` returns `true` if and only if
   *  - `a` and `b` are `true`.
@@ -421,8 +416,7 @@ def &&(x: Boolean): Boolean
 // def ||(x: => Boolean): Boolean
 // def &&(x: => Boolean): Boolean
 
-/**
-  * Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
+/** Compares two Boolean expressions and returns `true` if one or both of them evaluate to true.
   *
   * `a | b` returns `true` if and only if
   *  - `a` is `true` or
@@ -433,8 +427,7 @@ def &&(x: Boolean): Boolean
   */
 def |(x: Boolean): Boolean
 
-/**
-  * Compares two Boolean expressions and returns `true` if both of them evaluate to true.
+/** Compares two Boolean expressions and returns `true` if both of them evaluate to true.
   *
   * `a & b` returns `true` if and only if
   *  - `a` and `b` are `true`.
@@ -443,8 +436,7 @@ def |(x: Boolean): Boolean
   */
 def &(x: Boolean): Boolean
 
-/**
-  * Compares two Boolean expressions and returns `true` if they evaluate to a different value.
+/** Compares two Boolean expressions and returns `true` if they evaluate to a different value.
   *
   * `a ^ b` returns `true` if and only if
   *  - `a` is `true` and `b` is `false` or
@@ -471,7 +463,9 @@ override def getClass(): Class[Boolean] = null
     def objectLines = interpolate(allCompanions).lines.toList
 
     override def boxUnboxImpls = Map(
+      "@boxRunTimeDoc@" -> "",
       "@boxImpl@"   -> "scala.runtime.BoxedUnit.UNIT",
+      "@unboxRunTimeDoc@" -> "",
       "@unboxImpl@" -> "()",
       "@unboxDoc@"  -> "the Unit value ()"
     )
@@ -488,5 +482,3 @@ override def getClass(): Class[Boolean] = null
 
   def make() = values map (x => (x.name, x.make()))
 }
-
-object AnyVals extends AnyVals { }

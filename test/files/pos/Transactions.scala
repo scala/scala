@@ -28,7 +28,7 @@ class Transaction {
   var next: Transaction = null
 
   def this(hd: Transaction, tl: Transaction) = { this(); this.head = head; this.next = next }
-  
+
   def makeAbort() = synchronized {
     while (status != Transaction.Aborted && status != Transaction.Committed) {
       status = Transaction.Abortable
@@ -48,7 +48,7 @@ class Transaction {
       case ex: AbortException => abort(); None
       case ex: Throwable => abort(); throw ex
     }
-  
+
 }
 
 trait Transactional {
@@ -58,7 +58,7 @@ trait Transactional {
 
   /** copy back snapshot */
   def rollBack(): Unit
-  
+
   var readers: Transaction
   var writer: Transaction
 
@@ -66,11 +66,11 @@ trait Transactional {
     if (writer == null) null
     else if (writer.status == Transaction.Running) writer
     else {
-      if (writer.status != Transaction.Committed) rollBack(); 
-      writer = null; 
-      null 
+      if (writer.status != Transaction.Committed) rollBack();
+      writer = null;
+      null
     }
-  
+
   def getter(thisTrans: Transaction) {
     if (writer == thisTrans) return
     var r = readers
@@ -96,7 +96,7 @@ trait Transactional {
     synchronized {
       val w = currentWriter()
       if (w != null)
-        if (thisTrans.id < w.id) { w.makeAbort(); rollBack() } 
+        if (thisTrans.id < w.id) { w.makeAbort(); rollBack() }
         else throw new AbortException
       var r = readers
       while (r != null && r.head.status != Transaction.Running) { r = r.next; readers = r }
@@ -111,4 +111,3 @@ trait Transactional {
     }
   }
 }
-      

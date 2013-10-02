@@ -400,9 +400,9 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
           try {
             val Some((a, b)) = cpsR
-            /** Since shiftUnit is bounded [A,B,C>:B] this may not typecheck
-             *  if C is overly specific.  So if !(B <:< C), call shiftUnit0
-             *  instead, which takes only two type arguments.
+            /* Since shiftUnit is bounded [A,B,C>:B] this may not typecheck
+             * if C is overly specific.  So if !(B <:< C), call shiftUnit0
+             * instead, which takes only two type arguments.
              */
             val conforms = a <:< b
             val call = localTyper.typedPos(tree.pos)(

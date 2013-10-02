@@ -14,7 +14,6 @@ import java.util.zip.ZipException
 
 import scala.collection.mutable.ListBuffer
 import scala.util.{ Try, Success, Failure }
-import scala.xml.XML
 
 /** Information about a plugin loaded from a jar file.
  *
@@ -42,12 +41,31 @@ abstract class Plugin {
    */
   val global: Global
 
-  /** Handle any plugin-specific options.  The `-P:plugname:` part
-   *  will not be present.
+  def options: List[String] = {
+    // Process plugin options of form plugin:option
+    def namec = name + ":"
+    global.settings.pluginOptions.value filter (_ startsWith namec) map (_ stripPrefix namec)
+  }
+
+  /** Handle any plugin-specific options.
+   *  The user writes `-P:plugname:opt1,opt2`,
+   *  but the plugin sees `List(opt1, opt2)`.
+   *  The plugin can opt out of further processing
+   *  by returning false.  For example, if the plugin
+   *  has an "enable" flag, now would be a good time
+   *  to sit on the bench.
+   *  @param options plugin arguments
+   *  @param error error function
+   *  @return true to continue, or false to opt out
    */
-  def processOptions(options: List[String], error: String => Unit) {
-    if (!options.isEmpty)
-      error("Error: " + name + " has no options")
+  def init(options: List[String], error: String => Unit): Boolean = {
+    processOptions(options, error)
+    true
+  }
+
+  @deprecated("use Plugin#init instead", since="2.11")
+  def processOptions(options: List[String], error: String => Unit): Unit = {
+    if (!options.isEmpty) error(s"Error: $name takes no options")
   }
 
   /** A description of this plugin's options, suitable as a response
@@ -81,27 +99,25 @@ object Plugin {
   private def loadDescriptionFromJar(jarp: Path): Try[PluginDescription] = {
     // XXX Return to this once we have more ARM support
     def read(is: Option[InputStream]) = is match {
-      case None => throw new RuntimeException(s"Missing $PluginXML in $jarp")
-      case _    => PluginDescription fromXML (XML load is.get)
+      case None     => throw new RuntimeException(s"Missing $PluginXML in $jarp")
+      case Some(is) => PluginDescription.fromXML(is)
     }
     Try(new Jar(jarp.jfile).withEntryStream(PluginXML)(read))
   }
 
   private def loadDescriptionFromFile(f: Path): Try[PluginDescription] =
-    Try(XML loadFile f.jfile) map (PluginDescription fromXML _)
+    Try(PluginDescription.fromXML(new java.io.FileInputStream(f.jfile)))
 
   type AnyClass = Class[_]
 
   /** Use a class loader to load the plugin class.
-   *
-   *  @return `None` on failure
    */
-  def load(pd: PluginDescription, loader: ClassLoader): Try[AnyClass] = {
+  def load(classname: String, loader: ClassLoader): Try[AnyClass] = {
     Try[AnyClass] {
-      loader loadClass pd.classname
+      loader loadClass classname
     } recoverWith {
       case _: Exception =>
-        Failure(new RuntimeException(s"Warning: class not found: ${pd.classname}"))
+        Failure(new RuntimeException(s"Warning: class not found: ${classname}"))
     }
   }
 
@@ -137,9 +153,8 @@ object Plugin {
       case _                   => false
     }
     val (locs, pds) = ((explicit ::: exploded ::: included) filterNot ignored).unzip
-
     val loader = loaderFor(locs.distinct)
-    pds filter (_.isSuccess) map (_.get) map (Plugin load (_, loader))
+    (pds filter (_.isSuccess) map (_.get.classname)).distinct map (Plugin load (_, loader))
   }
 
   /** Instantiate a plugin class, given the class and

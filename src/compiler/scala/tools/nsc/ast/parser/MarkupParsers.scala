@@ -10,8 +10,7 @@ import scala.collection.mutable
 import mutable.{ Buffer, ArrayBuffer, ListBuffer }
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.CharArrayReader
-import scala.xml.TextBuffer
-import scala.xml.parsing.MarkupParserCommon
+import scala.tools.nsc.ast.parser.xml.{MarkupParserCommon, Utility}
 import scala.reflect.internal.Chars.{ SU, LF }
 
 // XXX/Note: many/most of the functions in here are almost direct cut and pastes
@@ -42,7 +41,7 @@ trait MarkupParsers {
   import global._
 
   class MarkupParser(parser: SourceFileParser, final val preserveWS: Boolean) extends MarkupParserCommon {
-
+    import Utility.{ isNameStart, isSpace }
     import Tokens.{ LBRACE, RBRACE }
 
     type PositionType = Position
@@ -99,7 +98,7 @@ trait MarkupParsers {
      */
     def xCheckEmbeddedBlock: Boolean = {
       // attentions, side-effect, used in xText
-      xEmbeddedBlock = (ch == '{') && { nextch; (ch != '{') }
+      xEmbeddedBlock = (ch == '{') && { nextch(); (ch != '{') }
       xEmbeddedBlock
     }
 
@@ -115,7 +114,7 @@ trait MarkupParsers {
       while (isNameStart(ch)) {
         val start = curOffset
         val key = xName
-        xEQ
+        xEQ()
         val mid = curOffset
         val value: Tree = ch match {
           case '"' | '\'' =>
@@ -128,7 +127,7 @@ trait MarkupParsers {
             }
 
           case '{'  =>
-            nextch
+            nextch()
             xEmbeddedExpr
           case SU =>
             throw TruncatedXMLControl
@@ -141,7 +140,7 @@ trait MarkupParsers {
 
         aMap(key) = value
         if (ch != '/' && ch != '>')
-          xSpace
+          xSpace()
       }
       aMap
     }
@@ -172,22 +171,31 @@ trait MarkupParsers {
       xTakeUntil(handle.comment, () => r2p(start, start, curOffset), "-->")
     }
 
-    def appendText(pos: Position, ts: Buffer[Tree], txt: String) {
-      val toAppend =
-        if (preserveWS) Seq(txt)
-        else TextBuffer.fromString(txt).toText map (_.text)
+    def appendText(pos: Position, ts: Buffer[Tree], txt: String): Unit = {
+      def append(t: String) = ts append handle.text(pos, t)
 
-      toAppend foreach (t => ts append handle.text(pos, t))
+      if (preserveWS) append(txt)
+      else {
+        val sb = new StringBuilder()
+
+        txt foreach { c =>
+          if (!isSpace(c)) sb append c
+          else if (sb.isEmpty || !isSpace(sb.last)) sb append ' '
+        }
+
+        val trimmed = sb.toString.trim
+        if (!trimmed.isEmpty) append(trimmed)
+      }
     }
 
     /** adds entity/character to ts as side-effect
      *  @precond ch == '&'
      */
     def content_AMP(ts: ArrayBuffer[Tree]) {
-      nextch
+      nextch()
       val toAppend = ch match {
         case '#' => // CharacterRef
-          nextch
+          nextch()
           val theChar = handle.text(tmppos, xCharRef)
           xToken(';')
           theChar
@@ -216,8 +224,8 @@ trait MarkupParsers {
         return true   // end tag
 
       val toAppend = ch match {
-        case '!'    => nextch ; if (ch =='[') xCharData else xComment // CDATA or Comment
-        case '?'    => nextch ; xProcInstr                            // PI
+        case '!'    => nextch() ; if (ch =='[') xCharData else xComment // CDATA or Comment
+        case '?'    => nextch() ; xProcInstr                            // PI
         case _      => element                                        // child node
       }
 
@@ -234,7 +242,7 @@ trait MarkupParsers {
           tmppos = o2p(curOffset)
           ch match {
             // end tag, cdata, comment, pi or child node
-            case '<'  => nextch ; if (content_LT(ts)) return ts
+            case '<'  => nextch() ; if (content_LT(ts)) return ts
             // either the character '{' or an embedded scala block }
             case '{'  => content_BRACE(tmppos, ts)  // }
             // EntityRef or CharRef
@@ -256,7 +264,7 @@ trait MarkupParsers {
       val (qname, attrMap) = xTag(())
       if (ch == '/') { // empty element
         xToken("/>")
-        handle.element(r2p(start, start, curOffset), qname, attrMap, true, new ListBuffer[Tree])
+        handle.element(r2p(start, start, curOffset), qname, attrMap, empty = true, new ListBuffer[Tree])
       }
       else { // handle content
         xToken('>')
@@ -266,11 +274,11 @@ trait MarkupParsers {
         debugLastStartElement.push((start, qname))
         val ts = content
         xEndTag(qname)
-        debugLastStartElement.pop
+        debugLastStartElement.pop()
         val pos = r2p(start, start, curOffset)
         qname match {
           case "xml:group" => handle.group(pos, ts)
-          case _ => handle.element(pos, qname, attrMap, false, ts)
+          case _ => handle.element(pos, qname, attrMap, empty = false, ts)
         }
       }
     }
@@ -285,12 +293,12 @@ trait MarkupParsers {
 
       while (ch != SU) {
         if (ch == '}') {
-          if (charComingAfter(nextch) == '}') nextch
+          if (charComingAfter(nextch()) == '}') nextch()
           else errorBraces()
         }
 
         buf append ch
-        nextch
+        nextch()
         if (xCheckEmbeddedBlock || ch == '<' ||  ch == '&')
           return done
       }
@@ -337,12 +345,12 @@ trait MarkupParsers {
         content_LT(ts)
 
         // parse more XML ?
-        if (charComingAfter(xSpaceOpt) == '<') {
-          xSpaceOpt
+        if (charComingAfter(xSpaceOpt()) == '<') {
+          xSpaceOpt()
           while (ch == '<') {
-            nextch
+            nextch()
             ts append element
-            xSpaceOpt
+            xSpaceOpt()
           }
           handle.makeXMLseq(r2p(start, start, curOffset), ts)
         }
@@ -363,7 +371,7 @@ trait MarkupParsers {
         saving[Boolean, Tree](handle.isPattern, handle.isPattern = _) {
           handle.isPattern = true
           val tree = xPattern
-          xSpaceOpt
+          xSpaceOpt()
           tree
         }
       },
@@ -401,10 +409,10 @@ trait MarkupParsers {
       val start = curOffset
       val qname = xName
       debugLastStartElement.push((start, qname))
-      xSpaceOpt
+      xSpaceOpt()
 
       val ts = new ArrayBuffer[Tree]
-      val isEmptyTag = (ch == '/') && { nextch ; true }
+      val isEmptyTag = (ch == '/') && { nextch() ; true }
       xToken('>')
 
       if (!isEmptyTag) {
@@ -414,13 +422,13 @@ trait MarkupParsers {
           if (xEmbeddedBlock) ts ++= xScalaPatterns
           else ch match {
             case '<'  => // tag
-              nextch
+              nextch()
               if (ch != '/') ts append xPattern   // child
               else return false                   // terminate
 
             case '{'  => // embedded Scala patterns
               while (ch == '{') {
-                nextch
+                nextch()
                 ts ++= xScalaPatterns
               }
               assert(!xEmbeddedBlock, "problem with embedded block")
@@ -438,7 +446,7 @@ trait MarkupParsers {
 
         while (doPattern) { }  // call until false
         xEndTag(qname)
-        debugLastStartElement.pop
+        debugLastStartElement.pop()
       }
 
       handle.makeXMLpat(r2p(start, start, curOffset), qname, ts)

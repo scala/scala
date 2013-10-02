@@ -1,0 +1,5 @@
+class ClassWithSelfAnnotation extends scala.AnyRef {
+ this: ClassWithSelfAnnotation with java.lang.CharSequence =>
+  def this() = { /* compiled code */ }
+  def foo: scala.Int = { /* compiled code */ }
+}

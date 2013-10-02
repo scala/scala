@@ -1,5 +1,5 @@
 // Some iterator grouped/sliding unit tests
-object Test {  
+object Test {
   def it = (1 to 10).iterator
   def assertThat[T](expectedLength: Int, expectedLast: Seq[T])(it: Iterator[Seq[T]]) {
     val xs = it.toList
@@ -7,15 +7,15 @@ object Test {
     assert(xs.size == expectedLength, fail("expected length " + expectedLength))
     assert(xs.last == expectedLast, fail("expected last " + expectedLast))
   }
-  
+
   def main(args: Array[String]): Unit = {
     val itSum = it.toStream.sum
     for (i <- it) {
       // sum of the groups == sum of the original
       val thisSum = ((it grouped i) map (_.sum)).toStream.sum
-      assert(thisSum == itSum, thisSum + " != " + itSum) 
+      assert(thisSum == itSum, thisSum + " != " + itSum)
     }
-    
+
     // grouped
     assertThat(4, List(10)) { it grouped 3 }
     assertThat(3, List(7, 8, 9)) { it grouped 3 withPartial false }
@@ -32,11 +32,11 @@ object Test {
     assertThat(1, (1 to 8).toList) { it.sliding(8, 8) withPartial false }
     assertThat(2, List(9, 10, -1, -1, -1)) { it.sliding(5, 8) withPadding -1 }
     assertThat(1, (1 to 5).toList) { it.sliding(5, 8) withPartial false }
-    
+
     // larger step than window
     assertThat(5, List(9)) { it.sliding(1, 2) }
     assertThat(3, List(9, 10)) { it.sliding(2, 4) }
-    
+
     // make sure it throws past the end
     val thrown = try {
       val it = List(1,2,3).sliding(2)

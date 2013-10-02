@@ -5,12 +5,12 @@ trait Base[B] {
 }
 
 
-class Suba[@specialized B](override val data: Array[B]) extends Base[B] {  
+class Suba[@specialized B](override val data: Array[B]) extends Base[B] {
   assert(data != null)
 }
 
 
-class Subopt[@specialized B](override val data: Option[B]) extends Base[B] {  
+class Subopt[@specialized B](override val data: Option[B]) extends Base[B] {
   assert(data != null)
 }
 

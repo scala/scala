@@ -113,8 +113,8 @@ object FunctionZero extends Function(0) {
 
 object FunctionOne extends Function(1) {
   override def classAnnotation    = "@annotation.implicitNotFound(msg = \"No implicit view available from ${T1} => ${R}.\")\n"
-  override def contravariantSpecs = "@specialized(scala.Int, scala.Long, scala.Float, scala.Double/*, scala.AnyRef*/) "
-  override def covariantSpecs     = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double/*, scala.AnyRef*/) "
+  override def contravariantSpecs = "@specialized(scala.Int, scala.Long, scala.Float, scala.Double) "
+  override def covariantSpecs     = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) "
 
   override def descriptiveComment = "  " + functionNTemplate.format("succ", "anonfun1",
 """
@@ -319,6 +319,7 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity {
  *  @constructor  Create a new tuple with {i} elements.{idiomatic}
 {params}
  */
+@deprecatedInheritance("Tuples will be made final in a future version.", "2.11.0")
 case class {className}{covariantArgs}({fields})
   extends {Product.className(i)}{invariantArgs}
 {{

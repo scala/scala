@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 // todo. introduce context hierarchy
@@ -36,8 +37,7 @@ trait Context extends Aliases
                  with Typers
                  with Parsers
                  with Evals
-                 with ExprUtils
-                 with Synthetics {
+                 with ExprUtils {
 
   /** The compile-time universe. */
   val universe: Universe

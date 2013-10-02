@@ -6,8 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection
+package scala
+package collection
 package generic
 
 /** This trait forms part of collections that can be reduced
@@ -48,7 +48,3 @@ trait Shrinkable[-A] {
    */
   def --=(xs: TraversableOnce[A]): this.type = { xs.seq foreach -= ; this }
 }
-
-
-
-

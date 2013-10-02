@@ -1,0 +1,4 @@
+Test_2.scala:2: error: aborted
+  Macros.abort
+         ^
+one error found

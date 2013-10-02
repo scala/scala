@@ -1,0 +1,3 @@
+t1368.scala:7: warning: Reference to uninitialized value blurp
+  def go3 = (new AnyRef with Happy with Sad { override val status = blurp ; val blurp = "happysad" }).status
+                                                                    ^

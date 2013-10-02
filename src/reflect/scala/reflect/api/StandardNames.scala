@@ -2,7 +2,8 @@
 * Copyright 2005-2013 LAMP/EPFL
 * @author  Martin Odersky
 */
-package scala.reflect
+package scala
+package reflect
 package api
 
 // Q: I have a pretty name. Can I put it here?

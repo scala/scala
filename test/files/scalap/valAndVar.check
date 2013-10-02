@@ -1,0 +1,5 @@
+class ValAndVar extends scala.AnyRef {
+  def this() = { /* compiled code */ }
+  val foo: java.lang.String = { /* compiled code */ }
+  var bar: scala.Int = { /* compiled code */ }
+}

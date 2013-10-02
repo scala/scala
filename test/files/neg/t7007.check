@@ -1,0 +1,7 @@
+t7007.scala:5: error: Implementation restriction: <$anon: A => B> requires premature access to class Crash.
+  def this(a: Seq[A]) = this(a.collect{ case b: B => b}, a.collect{ case b: B => b})
+                                      ^
+t7007.scala:5: error: Implementation restriction: <$anon: A => B> requires premature access to class Crash.
+  def this(a: Seq[A]) = this(a.collect{ case b: B => b}, a.collect{ case b: B => b})
+                                                                  ^
+two errors found

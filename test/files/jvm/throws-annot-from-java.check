@@ -1,0 +1,47 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> :power
+** Power User mode enabled - BEEP WHIR GYVE **
+** :phase has been set to 'typer'.          **
+** scala.tools.nsc._ has been imported      **
+** global._, definitions._ also imported    **
+** Try  :help, :vals, power.<tab>           **
+
+scala> :paste
+// Entering paste mode (ctrl-D to finish)
+
+{
+  val clazz = rootMirror.getClassByName(newTermName("test.ThrowsDeclaration_2"));
+  {
+  	val method = clazz.info.member(newTermName("foo"))
+  	val throwsAnn = method.annotations.head
+  	val atp = throwsAnn.atp
+  	println("foo")
+  	println("atp.typeParams.isEmpty: " + atp.typeParams.isEmpty)
+  	println(throwsAnn)
+  }
+  println
+
+  {
+  	val method = clazz.info.member(newTermName("bar"))
+  	val throwsAnn = method.annotations.head
+  	val Literal(const) = throwsAnn.args.head
+  	val tp = const.typeValue
+  	println("bar")
+  	println("tp.typeParams.isEmpty: " + tp.typeParams.isEmpty)
+  	println(throwsAnn)
+  }
+}
+
+// Exiting paste mode, now interpreting.
+
+foo
+atp.typeParams.isEmpty: true
+throws[IllegalStateException](classOf[java.lang.IllegalStateException])
+
+bar
+tp.typeParams.isEmpty: true
+throws[test.PolymorphicException[_]](classOf[test.PolymorphicException])
+
+scala> 

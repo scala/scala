@@ -1,0 +1,36 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> :power
+** Power User mode enabled - BEEP WHIR GYVE **
+** :phase has been set to 'typer'.          **
+** scala.tools.nsc._ has been imported      **
+** global._, definitions._ also imported    **
+** Try  :help, :vals, power.<tab>           **
+
+scala> val u = rootMirror.universe
+u: $r.intp.global.type = <global>
+
+scala> import u._, scala.reflect.internal.Flags
+import u._
+import scala.reflect.internal.Flags
+
+scala> class C
+defined class C
+
+scala> val sym = u.typeOf[C].typeSymbol
+sym: u.Symbol = class C
+
+scala> sym.isContravariant
+res0: Boolean = false
+
+scala> sym setFlag Flags.INCONSTRUCTOR
+res1: sym.type = class C
+
+scala> sym.isClassLocalToConstructor
+res2: Boolean = true
+
+scala> sym.isContravariant // was true
+res3: Boolean = false
+
+scala> 

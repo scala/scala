@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.hashing
+package scala
+package util.hashing
 
 
 
@@ -16,20 +17,20 @@ package scala.util.hashing
 /** A fast multiplicative hash by Phil Bagwell.
  */
 final class ByteswapHashing[T] extends Hashing[T] {
-  
+
   def hash(v: T) = byteswap32(v.##)
-  
+
 }
 
 
 object ByteswapHashing {
-  
+
   private class Chained[T](h: Hashing[T]) extends Hashing[T] {
     def hash(v: T) = byteswap32(h.hash(v))
   }
-  
+
   /** Composes another `Hashing` with the Byteswap hash.
    */
   def chain[T](h: Hashing[T]): Hashing[T] = new Chained(h)
-  
+
 }

@@ -52,6 +52,6 @@ package scala
  * as well as in [[http://docs.scala-lang.org/sips/pending/value-classes.html SIP-15: Value Classes]],
  * the Scala Improvement Proposal.
  */
-abstract class AnyVal extends Any with NotNull {
+abstract class AnyVal extends Any {
   def getClass(): Class[_ <: AnyVal] = null
 }

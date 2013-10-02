@@ -1,0 +1,7 @@
+t7299.scala:4: error: implementation restricts functions to 22 parameters
+   val eta1 = f _
+              ^
+t7299.scala:5: error: implementation restricts functions to 22 parameters
+   val eta2 = g[Any] _
+               ^
+two errors found

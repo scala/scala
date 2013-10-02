@@ -6,12 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
+package scala
+package runtime
 
-
-package scala.runtime
-
-trait Boxed {
-
-}
-
-
+trait Boxed { }

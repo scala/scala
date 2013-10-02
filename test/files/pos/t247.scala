@@ -12,7 +12,7 @@ class TreeMapFactory[KEY](newOrder:Order[KEY]) extends MapFactory[KEY] {
   def Empty[V] = new TreeMap[KEY,V](new TreeMapFactory[KEY](order));
 }
 
-class Tree[KEY,Entry](order:Order[KEY]) { 
+class Tree[KEY,Entry](order:Order[KEY]) {
   def size =0;
 }
 

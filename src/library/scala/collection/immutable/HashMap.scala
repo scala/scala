@@ -247,7 +247,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def removed0(key: A, hash: Int, level: Int): HashMap[A, B] =
       if (hash == this.hash) {
         val kvs1 = kvs - key
-        if (kvs1.isEmpty)
+        if (kvs1 eq kvs)
+          this
+        else if (kvs1.isEmpty)
           HashMap.empty[A,B]
         else if(kvs1.tail.isEmpty) {
           val kv = kvs1.head
@@ -395,7 +397,7 @@ time { mNew.iterator.foreach( p => ()) }
 */
 
     override def foreach[U](f: ((A, B)) =>  U): Unit = {
-      var i = 0;
+      var i = 0
       while (i < elems.length) {
         elems(i).foreach(f)
         i += 1

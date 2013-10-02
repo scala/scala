@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import generic._
 import mutable.{ Builder, ArrayBuffer }
@@ -210,5 +211,3 @@ trait TraversableViewLike[+A,
 
   override def toString = viewToString
 }
-
-
