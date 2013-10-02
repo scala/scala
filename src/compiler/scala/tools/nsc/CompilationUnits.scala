@@ -5,8 +5,7 @@
 
 package scala.tools.nsc
 
-import util.FreshNameCreator
-import scala.reflect.internal.util.{ SourceFile, NoSourceFile }
+import scala.reflect.internal.util.{ SourceFile, NoSourceFile, FreshNameCreator }
 import scala.collection.mutable
 import scala.collection.mutable.{ LinkedHashSet, ListBuffer }
 import scala.tools.nsc.reporters.Reporter
@@ -27,7 +26,7 @@ trait CompilationUnits { global: Global =>
   class CompilationUnit(val source: SourceFile) extends CompilationUnitContextApi { self =>
 
     /** the fresh name creator */
-    val fresh: FreshNameCreator = new FreshNameCreator.Default
+    val fresh: FreshNameCreator = new FreshNameCreator
 
     def freshTermName(prefix: String): TermName = newTermName(fresh.newName(prefix))
     def freshTypeName(prefix: String): TypeName = newTypeName(fresh.newName(prefix))

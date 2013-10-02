@@ -13,9 +13,8 @@ import scala.collection.{ mutable, immutable }
 import mutable.{ ListBuffer, StringBuilder }
 import scala.reflect.internal.{ ModifierFlags => Flags }
 import scala.reflect.internal.Chars.{ isScalaLetter }
-import scala.reflect.internal.util.{ SourceFile, Position }
+import scala.reflect.internal.util.{ SourceFile, Position, FreshNameCreator }
 import Tokens._
-import util.FreshNameCreator
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
  *  but at a time when that Parsers had been replaced by a different one.
@@ -164,7 +163,7 @@ self =>
     val in = newScanner()
     in.init()
 
-    private val globalFresh = new FreshNameCreator.Default
+    private val globalFresh = new FreshNameCreator
 
     def unit = global.currentUnit
     def freshName(prefix: String): Name = freshTermName(prefix)
