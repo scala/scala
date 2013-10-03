@@ -40,7 +40,7 @@
 /src/intellij/*.iml
 /src/intellij/*.ipr
 /src/intellij/*.iws
-/.cache
+**/.cache
 /.idea
 /.settings
 
