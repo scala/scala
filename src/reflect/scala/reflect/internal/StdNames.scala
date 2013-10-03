@@ -407,11 +407,8 @@ trait StdNames {
      */
     def unspecializedName(name: Name): Name = (
       // DUPLICATED LOGIC WITH `splitSpecializedName`
-      if (name endsWith SPECIALIZED_SUFFIX) {
-        val idxM = name.lastIndexOf('m')
-        val to = (if (idxM > 0) idxM - 1 else name.length - SPECIALIZED_SUFFIX.length)
-        name.subName(0, to)
-      }
+      if (name endsWith SPECIALIZED_SUFFIX)
+        name.subName(0, name.lastIndexOf('m') - 1)
       else name
     )
 
@@ -426,19 +423,18 @@ trait StdNames {
     *
     *  @return (unspecializedName, class tparam specializations, method tparam specializations)
     */
-    def splitSpecializedName(name: Name): (Name, String, String) = {
+    def splitSpecializedName(name: Name): (Name, String, String) =
       // DUPLICATED LOGIC WITH `unspecializedName`
-      if (name endsWith SPECIALIZED_SUFFIX) {
-        val name1 = name dropRight SPECIALIZED_SUFFIX.length
-        val idxC  = name1 lastIndexOf 'c'
-        val idxM  = name1 lastIndexOf 'm'
-        if (idxC > idxM && idxM > 0)
-          (name1.subName(0, idxM - 1), name1.subName(idxC + 1, name1.length).toString, name1.subName(idxM + 1, idxC).toString)
-        else
-          (name.subName(0, name.length - SPECIALIZED_SUFFIX.length), "", "")
-      }
-      else (name, "", "")
-    }
+    if (name endsWith SPECIALIZED_SUFFIX) {
+      val name1 = name dropRight SPECIALIZED_SUFFIX.length
+      val idxC  = name1 lastIndexOf 'c'
+      val idxM  = name1 lastIndexOf 'm'
+
+      (name1.subName(0, idxM - 1),
+      name1.subName(idxC + 1, name1.length).toString,
+      name1.subName(idxM + 1, idxC).toString)
+    } else
+    (name, "", "")
 
     // Nominally, name$default$N, encoded for <init>
     def defaultGetterName(name: Name, pos: Int): TermName = (

@@ -54,7 +54,7 @@ object Bippy {
       val run = new compiler.Run()
       run.compileSources(List(src))
     }
-    (output split "\\n").toList
+    output.linesIterator.toList
   }
   def showClass(name: String) = lines("-Yshow:typer", "-Xshow-class", name)
   def showObject(name: String) = lines("-Yshow:typer", "-Xshow-object", name)
