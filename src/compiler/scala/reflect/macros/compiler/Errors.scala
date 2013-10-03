@@ -29,6 +29,10 @@ trait Errors extends Traces {
 
   def MacroImplWrongNumberOfTypeArgumentsError() = implRefError(TypedApplyWrongNumberOfTpeParametersErrorMessage(macroImplRef))
 
+  def MacroBundleNonStaticError() = implRefError("macro bundles must be static")
+
+  def MacroBundleWrongShapeError() = implRefError("macro bundles must be monomorphic traits extending scala.reflect.macros.Macro and not implementing its `val c: Context` member")
+
   // compatibility errors
 
   // helpers
