@@ -1,0 +1,21 @@
+run-gadts-strict.scala:12: error: type mismatch;
+ found   : n.type (with underlying type Int)
+ required: T
+    case Lit(n)        => n
+                          ^
+run-gadts-strict.scala:13: error: type mismatch;
+ found   : Int
+ required: T
+    case Succ(u)       => eval(u) + 1
+                                  ^
+run-gadts-strict.scala:14: error: type mismatch;
+ found   : Boolean
+ required: T
+    case IsZero(u)     => eval(u) == 0
+                                  ^
+run-gadts-strict.scala:15: error: type mismatch;
+ found   : T(in class If)
+ required: T(in method eval)
+    case If(c, u1, u2) => eval(if (eval(c)) u1 else u2)
+                              ^
+four errors found
