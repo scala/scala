@@ -191,6 +191,9 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
             checkNonCyclic(currentOwner.pos, Set(), currentOwner) */
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
             currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
+            // SI-7859 make param accessors accessible so the erasure can generate unbox operations.
+            val paramAccessors = currentOwner.info.decls.filter(sym => sym.isParamAccessor && sym.isMethod)
+            paramAccessors.foreach(_.makeNotPrivate(currentOwner))
             super.transform(tree)
           } else if (currentOwner.isStaticOwner) {
             super.transform(tree)
