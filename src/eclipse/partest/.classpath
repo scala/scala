@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-        <classpathentry kind="src" path="partest-extras"/>
+	<classpathentry kind="src" path="partest-extras"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asm"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/repl"/>
 	<classpathentry kind="var" path="M2_REPO/com/googlecode/java-diff-utils/diffutils/1.3.0/diffutils-1.3.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/scala-tools/testing/test-interface/0.5/test-interface-0.5.jar"/>
-        <classpathentry kind="var" path="M2_REPO/org/scala-lang/modules/scala-partest_2.11.0-M4/1.0-RC3/scala-partest_2.11.0-M4-1.0-RC3.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/scala-lang/modules/scala-partest_2.11.0-M4/1.0-RC4/scala-partest_2.11.0-M4-1.0-RC4.jar"/>
 	<classpathentry kind="var" path="SCALA_BASEDIR/lib/ant/ant.jar"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_COMPILER_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-        <classpathentry kind="output" path="build-quick-partest-extras"/>
+	<classpathentry kind="output" path="build-quick-partest-extras"/>
 </classpath>

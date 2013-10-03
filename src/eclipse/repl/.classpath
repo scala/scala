@@ -6,5 +6,6 @@
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_COMPILER_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="var" path="SCALA_BASEDIR/build/deps/repl/jline-2.11.jar"/>
 	<classpathentry kind="output" path="build-quick-repl"/>
 </classpath>
