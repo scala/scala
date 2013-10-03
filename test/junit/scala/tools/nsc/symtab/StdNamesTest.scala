@@ -28,8 +28,8 @@ class StdNamesTest {
     test(TermName("Tuple2"), TermName("Tuple2$mcII" + SPECIALIZED_SUFFIX))
     test(TermName("foo"), TermName("foo$mIcD" + SPECIALIZED_SUFFIX))
     test(TermName("foo"), TermName("foo$mIc" + SPECIALIZED_SUFFIX))
-    test(TermName("T1"), TermName(s"T1$SPECIALIZED_SUFFIX"))
-    test(TermName(""), SPECIALIZED_SUFFIX)
+    test(nme.EMPTY, TermName(s"T1$SPECIALIZED_SUFFIX"))
+    test(nme.EMPTY, SPECIALIZED_SUFFIX)
   }
 
   @Test
@@ -40,7 +40,7 @@ class StdNamesTest {
     test((TermName("Tuple2"), "II", ""), TermName("Tuple2$mcII" + SPECIALIZED_SUFFIX))
     test((TermName("foo"), "D", "I"), TermName("foo$mIcD" + SPECIALIZED_SUFFIX))
     test((TermName("foo"), "", "I"), TermName("foo$mIc" + SPECIALIZED_SUFFIX))
-    test((TermName("T1"), "", ""), TermName(s"T1$SPECIALIZED_SUFFIX"))
-    test((TermName(""), "", ""), SPECIALIZED_SUFFIX)
+    test((nme.EMPTY, "T1", ""), TermName(s"T1$SPECIALIZED_SUFFIX"))
+    test((nme.EMPTY, "", ""), SPECIALIZED_SUFFIX)
   }
 }
