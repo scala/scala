@@ -214,6 +214,7 @@ trait StdNames {
     final val WILDCARD_STAR: NameType                  = "_*"
     final val REIFY_TREECREATOR_PREFIX: NameType       = "$treecreator"
     final val REIFY_TYPECREATOR_PREFIX: NameType       = "$typecreator"
+    final val MACRO_BUNDLE_SUFFIX: NameType            = "$Bundle"
 
     final val Any: NameType             = "Any"
     final val AnyVal: NameType          = "AnyVal"
@@ -307,9 +308,6 @@ trait StdNames {
     val FAKE_LOCAL_THIS: NameType          = "this$"
     val LAZY_LOCAL: NameType               = "$lzy"
     val LAZY_SLOW_SUFFIX: NameType         = "$lzycompute"
-    val MACRO_INVOKER_PACKAGE: NameType    = "scala.reflect.macros.synthetic"
-    // TODO: if I use dollars in MACRO_INVOKER_SUFFIX, as in "$Invoker$", then Scala reflection fails to load implementations
-    val MACRO_INVOKER_SUFFIX: NameType     = "Invoker"
     val UNIVERSE_BUILD_PREFIX: NameType    = "$u.build."
     val UNIVERSE_PREFIX: NameType          = "$u."
     val UNIVERSE_SHORT: NameType           = "$u"

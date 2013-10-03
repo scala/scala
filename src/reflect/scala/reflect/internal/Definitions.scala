@@ -541,6 +541,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val LiftableClass         = getClassIfDefined("scala.reflect.api.Liftable")    // defined in scala-reflect.jar, so we need to be careful
 
     lazy val MacroClass                   = getClassIfDefined("scala.reflect.macros.Macro") // defined in scala-reflect.jar, so we need to be careful
+         def MacroContextValue            = MacroClass.map(sym => getMemberValue(sym, nme.c))
     lazy val MacroContextClass            = getClassIfDefined("scala.reflect.macros.Context") // defined in scala-reflect.jar, so we need to be careful
          def MacroContextPrefix           = MacroContextClass.map(sym => getMemberMethod(sym, nme.prefix))
          def MacroContextPrefixType       = MacroContextClass.map(sym => getTypeMember(sym, tpnme.PrefixType))
@@ -640,10 +641,21 @@ trait Definitions extends api.StandardDefinitions {
     def unspecializedTypeArgs(tp: Type): List[Type] =
       (tp baseType unspecializedSymbol(tp.typeSymbolDirect)).typeArgs
 
-    def isMacroBundleType(tp: Type) = {
+    def isMacroBundleType(tp: Type) = tp.baseClasses match {
+      case _ :: proto :: _ if isMacroBundleProtoType(proto.tpe) => true
+      case _ => false
+    }
+
+    def isMacroBundleProtoType(tp: Type) = {
+      val sym = tp.typeSymbol
       val isNonTrivial = tp != ErrorType && tp != NothingTpe && tp != NullTpe
-      val isMacroCompatible = MacroClass != NoSymbol && tp <:< MacroClass.tpe
-      isNonTrivial && isMacroCompatible
+      val isMacroCompatible = MacroClass != NoSymbol && tp.baseClasses.contains(MacroClass)
+      val isBundlePrototype = sym != MacroClass && sym.isTrait && {
+        val c = sym.info.member(nme.c)
+        val cIsOk = c.overrideChain.contains(MacroContextValue) && c.isDeferred
+        cIsOk && sym.isMonomorphicType
+      }
+      isNonTrivial && isMacroCompatible && isBundlePrototype
     }
 
     def isIterableType(tp: Type) = tp <:< classExistentialType(IterableClass)
