@@ -5,7 +5,7 @@ object Test {
       val g = (1 to 10 map { i => return 16 ; i }).sum
       g
     }
-    catch { case x: runtime.NonLocalReturnControl[_] => 
+    catch { case x: runtime.NonLocalReturnControl[_] =>
       println(x.getClass.getName)
       x.value.asInstanceOf[Int]
     }

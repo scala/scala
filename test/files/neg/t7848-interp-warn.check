@@ -1,0 +1,12 @@
+t7848-interp-warn.scala:8: warning: `$foo` looks like an interpolated identifier! Did you forget the interpolator?
+    "An important $foo message!"
+    ^
+t7848-interp-warn.scala:12: warning: That looks like an interpolated expression! Did you forget the interpolator?
+    "A doubly important ${foo * 2} message!"
+    ^
+t7848-interp-warn.scala:16: warning: `$bar` looks like an interpolated identifier! Did you forget the interpolator?
+  def j = s"Try using '${ "something like $bar" }' instead."  // warn
+                          ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

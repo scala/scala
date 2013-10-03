@@ -26,16 +26,16 @@ trait SyncIterator extends AbsIterator {
     }
 }
 trait LoggedIterator extends AbsIterator {
-  abstract override def next: T = { 
-    val x = super.next; println("log: " + x); x 
+  abstract override def next: T = {
+    val x = super.next; println("log: " + x); x
   }
 }
-class Iter2(s: String) extends StringIterator(s) 
-               with SyncIterator with LoggedIterator;         
+class Iter2(s: String) extends StringIterator(s)
+               with SyncIterator with LoggedIterator;
 object Test {
   def main(args: Array[String]) {
     class Iter extends StringIterator(args(0)) with RichIterator with SyncIterator with LoggedIterator
     val iter = new Iter
-    iter foreach Console.println 
+    iter foreach Console.println
   }
 }

@@ -70,7 +70,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
     ClassDef(sym,
       gen.mkTemplate(sym.info.parents map TypeTree,
-                    if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
+                    if (sym.thisSym == sym || phase.erasedTypes) noSelfType else ValDef(sym.thisSym),
                     constrMods, vparamss, body, superPos))
   }
 

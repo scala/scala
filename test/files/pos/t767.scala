@@ -4,7 +4,7 @@ abstract class AbsCell {
   private var value: T = init
   def get: T = value
   def set (x: T) { value = x }
-    
+
   class Node {
     val foo = 1
   }

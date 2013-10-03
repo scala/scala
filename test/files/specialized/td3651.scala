@@ -11,7 +11,7 @@ object Test {
     val b: Base[Double] = new Derived(10)
     b.a
     println(runtime.BoxesRunTime.doubleBoxCount)
-    
+
     val der = new Derived(10)
     der.a
     println(runtime.BoxesRunTime.doubleBoxCount)

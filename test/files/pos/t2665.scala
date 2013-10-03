@@ -1,3 +1,3 @@
 object Test {
-  val x: Unit = Array("") 
+  val x: Unit = Array("")
 }

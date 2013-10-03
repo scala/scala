@@ -13,7 +13,7 @@ object Test {
     // without type ascription for the one in the body of the last flatmap of each alternative, type inference borks on the existentials
     // def splitArray[T >: Nothing <: Any](ad: Array[Iterable[T]]): Any = { import OptionMatching._
     //   runOrElse(ad.apply(0))(((x1: Iterable[T]) => (
-    //     or(((x4: Iterable[T]) => one(null)), 
+    //     or(((x4: Iterable[T]) => one(null)),
     //       guard(x1.isInstanceOf[Iterable[T] with Test.HashMapCollision1[_,_]], x1.asInstanceOf[Iterable[T] with Test.HashMapCollision1[_,_]]).flatMap(((x2: Iterable[T] with Test.HashMapCollision1[_,_]) => one(x2))),
     //       guard(x1.isInstanceOf[Test.HashSetCollision1[_]], x1.asInstanceOf[Iterable[T] with Test.HashSetCollision1[_]]).flatMap(((x3: Iterable[T] with Test.HashSetCollision1[_]) => one(x3)))): Option[Any]).orElse(
     //     (zero: Option[Any])))

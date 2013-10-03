@@ -5,10 +5,10 @@ object Test {
       case s      => s.length
     }
   }
-  
+
   def main(args: Array[String]): Unit = {
     println(f("abc"))
-    println(f("def")) 
+    println(f("def"))
     println(PartialFunction.empty[String, Int] isDefinedAt "abc")
   }
 }

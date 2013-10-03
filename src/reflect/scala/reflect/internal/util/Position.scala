@@ -1,273 +1,227 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
- *
  */
 
 package scala
-package reflect.internal.util
+package reflect
+package internal
+package util
 
-import scala.reflect.ClassTag
-import scala.reflect.internal.FatalError
-import scala.reflect.macros.Attachments
+/** The Position class and its subclasses represent positions of ASTs and symbols.
+ *  Every subclass of DefinedPosition refers to a SourceFile and three character
+ *  offsets within it: start, end, and point. The point is where the ^ belongs when
+ *  issuing an error message, usually a Name. A range position can be designated
+ *  as transparent, which excuses it from maintaining the invariants to follow. If
+ *  a transparent position has opaque children, those are considered as if they were
+ *  the direct children of the transparent position's parent.
+ *
+ *  Note: some of these invariants actually apply to the trees which carry
+ *  the positions, but they are phrased as if the positions themselves were
+ *  the parent/children for conciseness.
+ *
+ *  Invariant 1: in a focused/offset position, start == point == end
+ *  Invariant 2: in a range position,          start <= point <  end
+ *  Invariant 3: an offset position never has a child with a range position
+ *  Invariant 4: every range position child of a range position parent is contained within its parent
+ *  Invariant 5: opaque range position siblings overlap at most at a single point
+ *
+ *  The following tests are useful on positions:
+ *
+ *  pos.isDefined     true if position is not an UndefinedPosition (those being NoPosition and FakePos)
+ *  pos.isRange       true if position is a range (opaque or transparent) which implies start < end
+ *  pos.isOpaqueRange true if position is an opaque range
+ *
+ *  The following accessor methods are provided - an exception will be thrown if
+ *  point/start/end are attempted on an UndefinedPosition.
+ *
+ *  pos.source       The source file of the position, or NoSourceFile if unavailable
+ *  pos.point        The offset of the point
+ *  pos.start        The (inclusive) start offset, or the point of an offset position
+ *  pos.end          The (exclusive) end offset, or the point of an offset position
+ *
+ *  The following conversion methods are often used:
+ *
+ *  pos.focus           Converts a range position to an offset position focused on the point
+ *  pos.makeTransparent Convert an opaque range into a transparent range
+ */
+class Position extends scala.reflect.api.Position with InternalPositionImpl with DeprecatedPosition {
+  type Pos = Position
+  def pos: Position = this
+  def withPos(newPos: Position): macros.Attachments { type Pos = Position.this.Pos } = newPos
+
+  protected def fail(what: String) = throw new UnsupportedOperationException(s"Position.$what on $this")
+
+  // If scala-refactoring extends Position directly it seems I have no
+  // choice but to offer all the concrete methods.
+  def isDefined          = false
+  def isRange            = false
+  def source: SourceFile = NoSourceFile
+  def start: Int         = fail("start")
+  def point: Int         = fail("point")
+  def end: Int           = fail("end")
+}
 
 object Position {
   val tabInc = 8
 
+  private def validate[T <: Position](pos: T): T = {
+    if (pos.isRange)
+      assert(pos.start <= pos.end, s"bad position: ${pos.show}")
+
+    pos
+  }
+
   /** Prints the message with the given position indication. */
   def formatMessage(posIn: Position, msg: String, shortenFile: Boolean): String = {
-    val pos = (
-      if (posIn eq null) NoPosition
-      else if (posIn.isDefined) posIn.inUltimateSource(posIn.source)
-      else posIn
-    )
-    val prefix = if (shortenFile) pos.sourceName else pos.sourcePath
-
-    pos match {
-      case FakePos(fmsg) => fmsg+" "+msg
-      case NoPosition    => msg
-      case _             => "%s:%s: %s\n%s\n%s".format(prefix, pos.line, msg, pos.lineContent, pos.lineCarat)
+    val pos    = if (posIn eq null) NoPosition else posIn
+    val prefix = pos.source match {
+      case NoSourceFile     => ""
+      case s if shortenFile => s.file.name + ":"
+      case s                => s.file.path + ":"
     }
-  }
-}
-
-/** The Position class and its subclasses represent positions of ASTs and symbols.
- *  Except for NoPosition and FakePos, every position refers to a SourceFile
- *  and to an offset in the sourcefile (its `point`). For batch compilation,
- *  that's all. For interactive IDE's there are also RangePositions
- *  and TransparentPositions. A RangePosition indicates a start and an end
- *  in addition to its point. TransparentPositions are a subclass of RangePositions.
- *  Range positions that are not transparent are called opaque.
- *  Trees with RangePositions need to satisfy the following invariants.
- *
- *  INV1: A tree with an offset position never contains a child
- *        with a range position
- *  INV2: If the child of a tree with a range position also has a range position,
- *        then the child's range is contained in the parent's range.
- *  INV3: Opaque range positions of children of the same node are non-overlapping
- *        (this means their overlap is at most a single point).
- *
- *  The following tests are useful on positions:
- *
- *  pos.isDefined     true if position is not a NoPosition nor a FakePosition
- *  pos.isRange       true if position is a range
- *  pos.isOpaqueRange true if position is an opaque range
- *
- *  The following accessor methods are provided:
- *
- *  pos.source        The source file of the position, which must be defined
- *  pos.point         The offset of the position's point, which must be defined
- *  pos.start         The start of the position, which must be a range
- *  pos.end           The end of the position, which must be a range
- *
- *  There are also convenience methods, such as
- *
- *  pos.startOrPoint
- *  pos.endOrPoint
- *  pos.pointOrElse(default)
- *
- *  These are less strict about the kind of position on which they can be applied.
- *
- *  The following conversion methods are often used:
- *
- *  pos.focus           converts a range position to an offset position, keeping its point;
- *                      returns all other positions unchanged.
- *  pos.makeTransparent converts an opaque range position into a transparent one.
- *                      returns all other positions unchanged.
- */
-abstract class Position extends scala.reflect.api.Position { self =>
-
-  type Pos = Position
-
-  def pos: Position = this
-
-  def withPos(newPos: Position): Attachments { type Pos = self.Pos } = newPos
-
-  /** An optional value containing the source file referred to by this position, or
-   *  None if not defined.
-   */
-  def source: SourceFile = throw new UnsupportedOperationException(s"Position.source on ${this.getClass}")
-
-  /** Is this position neither a NoPosition nor a FakePosition?
-   *  If isDefined is true, offset and source are both defined.
-   */
-  def isDefined: Boolean = false
-
-  /** Is this position a transparent position? */
-  def isTransparent: Boolean = false
-
-  /** Is this position a range position? */
-  def isRange: Boolean = false
-
-  /** Is this position a non-transparent range position? */
-  def isOpaqueRange: Boolean = false
-
-  /** if opaque range, make this position transparent */
-  def makeTransparent: Position = this
-
-  /** The start of the position's range, error if not a range position */
-  def start: Int = throw new UnsupportedOperationException(s"Position.start on ${this.getClass}")
-
-  /** The start of the position's range, or point if not a range position */
-  def startOrPoint: Int = point
-
-  /**  The point (where the ^ is) of the position */
-  def point: Int = throw new UnsupportedOperationException(s"Position.point on ${this.getClass}")
-
-  /**  The point (where the ^ is) of the position, or else `default` if undefined */
-  def pointOrElse(default: Int): Int = default
-
-  /** The end of the position's range, error if not a range position */
-  def end: Int = throw new UnsupportedOperationException(s"Position.end on ${this.getClass}")
-
-  /** The end of the position's range, or point if not a range position */
-  def endOrPoint: Int = point
-
-  @deprecated("use point instead", "2.9.0")
-  def offset: Option[Int] = if (isDefined) Some(point) else None // used by sbt
-
-  /** The same position with a different start value (if a range) */
-  def withStart(off: Int): Position = this
-
-  /** The same position with a different end value (if a range) */
-  def withEnd(off: Int): Position = this
-
-  /** The same position with a different point value (if a range or offset) */
-  def withPoint(off: Int): Position = this
-
-  /** The same position with a different source value, and its values shifted by given offset */
-  def withSource(source: SourceFile, shift: Int): Position = this
-
-  /** If this is a range, the union with the other range, with the point of this position.
-   *  Otherwise, this position
-   */
-  def union(pos: Position): Position = this
-
-  /** If this is a range position, the offset position of its start.
-   *  Otherwise the position itself
-   */
-  def focusStart: Position = this
-
-  /** If this is a range position, the offset position of its point.
-   *  Otherwise the position itself
-   */
-  def focus: Position = this
-
-  /** If this is a range position, the offset position of its end.
-   *  Otherwise the position itself
-   */
-  def focusEnd: Position = this
-
-  /** Does this position include the given position `pos`.
-   *  This holds if `this` is a range position and its range [start..end]
-   *  is the same or covers the range of the given position, which may or may not be a range position.
-   */
-  def includes(pos: Position): Boolean = false
-
-  /** Does this position properly include the given position `pos` ("properly" meaning their
-   *  ranges are not the same)?
-   */
-  def properlyIncludes(pos: Position): Boolean =
-    includes(pos) && (start < pos.startOrPoint || pos.endOrPoint < end)
-
-  /** Does this position precede that position?
-   *  This holds if both positions are defined and the end point of this position
-   *  is not larger than the start point of the given position.
-   */
-  def precedes(pos: Position): Boolean =
-    isDefined && pos.isDefined && endOrPoint <= pos.startOrPoint
-
-  /** Does this position properly precede the given position `pos` ("properly" meaning their ranges
-   *  do not share a common point).
-   */
-  def properlyPrecedes(pos: Position): Boolean =
-    isDefined && pos.isDefined && endOrPoint < pos.startOrPoint
-
-  /** Does this position overlap with that position?
-   *  This holds if both positions are ranges and there is an interval of
-   *  non-zero length that is shared by both position ranges.
-   */
-  def overlaps(pos: Position): Boolean =
-    isRange && pos.isRange &&
-    ((pos.start < end && start < pos.end) || (start < pos.end && pos.start < end))
-
-  /** Does this position cover the same range as that position?
-   *  Holds only if both position are ranges
-   */
-  def sameRange(pos: Position): Boolean =
-    isRange && pos.isRange && start == pos.start && end == pos.end
-
-  def line: Int = throw new UnsupportedOperationException("Position.line")
-
-  def column: Int = throw new UnsupportedOperationException("Position.column")
-
-  /** A line with a ^ padded with the right number of spaces.
-   */
-  def lineCarat: String = " " * (column - 1) + "^"
-
-  /** The line of code and the corresponding carat pointing line, trimmed
-   *  to the maximum specified width, with the trimmed versions oriented
-   *  around the point to give maximum context.
-   */
-  def lineWithCarat(maxWidth: Int): (String, String) = {
-    val radius = maxWidth / 2
-    var start  = scala.math.max(column - radius, 0)
-    var result = lineContent drop start take maxWidth
-
-    if (result.length < maxWidth) {
-      result = lineContent takeRight maxWidth
-      start = lineContent.length - result.length
-    }
-
-    (result, lineCarat drop start take maxWidth)
+    prefix + (pos showError msg)
   }
 
-  /** Convert this to a position around `point` that spans a single source line */
-  def toSingleLine: Position = this
-
-  /** The source code corresponding to the range, if this is a range position.
-   *  Otherwise the empty string.
-   */
-  def sourceCode    = ""
-  def sourceName    = "<none>"
-  def sourcePath    = "<none>"
-  def lineContent   = "<none>"
-  def lengthInChars = 0
-  def lengthInLines = 0
-
-  /** Map this position to a position in an original source
-   * file.  If the SourceFile is a normal SourceFile, simply
-   * return this.
-   */
-  def inUltimateSource(source : SourceFile): Position =
-    if (source == null) this else source.positionInUltimateSource(this)
-
-  def dbgString: String = toString
-  def safeLine: Int = try line catch { case _: UnsupportedOperationException => -1 }
-
-  def show: String = "["+toString+"]"
+  def offset(source: SourceFile, point: Int): Position                            = validate(new OffsetPosition(source, point))
+  def range(source: SourceFile, start: Int, point: Int, end: Int): Position       = validate(new RangePosition(source, start, point, end))
+  def transparent(source: SourceFile, start: Int, point: Int, end: Int): Position = validate(new TransparentPosition(source, start, point, end))
 }
 
-case object NoPosition extends Position {
-  override def dbgString = toString
+class OffsetPosition(sourceIn: SourceFile, pointIn: Int) extends DefinedPosition {
+  override def isRange = false
+  override def source  = sourceIn
+  override def point   = pointIn
+  override def start   = point
+  override def end     = point
 }
-
-case class FakePos(msg: String) extends Position {
+class RangePosition(sourceIn: SourceFile, startIn: Int, pointIn: Int, endIn: Int) extends OffsetPosition(sourceIn, pointIn) {
+  override def isRange = true
+  override def start   = startIn
+  override def end     = endIn
+}
+class TransparentPosition(sourceIn: SourceFile, startIn: Int, pointIn: Int, endIn: Int) extends RangePosition(sourceIn, startIn, pointIn, endIn) {
+  override def isTransparent = true
+}
+case object NoPosition extends UndefinedPosition
+case class FakePos(msg: String) extends UndefinedPosition {
   override def toString = msg
 }
 
-class OffsetPosition(override val source: SourceFile, override val point: Int) extends Position {
-  override def isDefined = true
-  override def pointOrElse(default: Int): Int = point
-  override def withPoint(off: Int) = new OffsetPosition(source, off)
-  override def withSource(source: SourceFile, shift: Int) = new OffsetPosition(source, point + shift)
+sealed abstract class DefinedPosition extends Position {
+  final override def isDefined = true
+  override def equals(that: Any) = that match {
+    case that: DefinedPosition => source.file == that.source.file && start == that.start && point == that.point && end == that.end
+    case _                     => false
+  }
+  override def hashCode = Seq[Any](source.file, start, point, end).##
+  override def toString = (
+    if (isRange) s"RangePosition($canonicalPath, $start, $point, $end)"
+    else s"source-$canonicalPath,line-$line,$pointMessage$point"
+  )
+  private def pointMessage  = if (point > source.length) "out-of-bounds-" else "offset="
+  private def canonicalPath = source.file.canonicalPath
+}
 
-  override def line        = source.offsetToLine(point) + 1
-  override def sourceName  = source.file.name
-  override def sourcePath  = source.file.path
-  override def lineContent = source.lineToString(line - 1)
+sealed abstract class UndefinedPosition extends Position {
+  final override def isDefined = false
+  override def isRange         = false
+  override def source          = NoSourceFile
+  override def start           = fail("start")
+  override def point           = fail("point")
+  override def end             = fail("end")
+}
 
-  override def column: Int = {
+private[util] trait InternalPositionImpl {
+  self: Position =>
+
+  // The methods which would be abstract in Position if it were
+  // possible to change Position.
+  def isDefined: Boolean
+  def isRange: Boolean
+  def source: SourceFile
+  def start: Int
+  def point: Int
+  def end: Int
+
+  /** Map this position to its position in the original source file
+   *  (which may be this position unchanged.)
+   */
+  def finalPosition: Pos = source positionInUltimateSource this
+
+  def isTransparent              = false
+  def isOffset                   = isDefined && !isRange
+  def isOpaqueRange              = isRange && !isTransparent
+  def pointOrElse(alt: Int): Int = if (isDefined) point else alt
+  def makeTransparent: Position  = if (isOpaqueRange) Position.transparent(source, start, point, end) else this
+
+  /** Copy a range position with a changed value.
+   */
+  def withStart(start: Int): Position          = copyRange(start = start)
+  def withPoint(point: Int): Position          = if (isRange) copyRange(point = point) else Position.offset(source, point)
+  def withEnd(end: Int): Position              = copyRange(end = end)
+  def withSource(source: SourceFile): Position = copyRange(source = source)
+  def withShift(shift: Int): Position          = Position.range(source, start + shift, point + shift, end + shift)
+
+  /** Convert a range position to a simple offset.
+   */
+  def focusStart: Position = if (this.isRange) asOffset(start) else this
+  def focus: Position      = if (this.isRange) asOffset(point) else this
+  def focusEnd: Position   = if (this.isRange) asOffset(end) else this
+
+  /** If you have it in for punctuation you might not like these methods.
+   *  However I think they're aptly named.
+   *
+   *    |   means union
+   *    ^   means "the point" (look, it's a caret)
+   *    |^  means union, taking the point of the rhs
+   *    ^|  means union, taking the point of the lhs
+   */
+  def |(that: Position, poses: Position*): Position = poses.foldLeft(this | that)(_ | _)
+  def |(that: Position): Position                   = this union that
+  def ^(point: Int): Position                       = this withPoint point
+  def |^(that: Position): Position                  = (this | that) ^ that.point
+  def ^|(that: Position): Position                  = (this | that) ^ this.point
+
+  def union(pos: Position): Position = (
+    if (!pos.isRange) this
+    else if (this.isRange) copyRange(start = start min pos.start, end = end max pos.end)
+    else pos
+  )
+
+  def includes(pos: Position): Boolean         = isRange && pos.isDefined && start <= pos.start && pos.end <= end
+  def properlyIncludes(pos: Position): Boolean = includes(pos) && (start < pos.start || pos.end < end)
+  def precedes(pos: Position): Boolean         = bothDefined(pos) && end <= pos.start
+  def properlyPrecedes(pos: Position): Boolean = bothDefined(pos) && end < pos.start
+  def sameRange(pos: Position): Boolean        = bothRanges(pos) && start == pos.start && end == pos.end
+  // This works because it's a range position invariant that S1 < E1 and S2 < E2.
+  // So if S1 < E2 and S2 < E1, then both starts precede both ends, which is the
+  // necessary condition to establish that there is overlap.
+  def overlaps(pos: Position): Boolean         = bothRanges(pos) && start < pos.end && pos.start < end
+
+  def line: Int           = if (hasSource) source.offsetToLine(point) + 1 else 0
+  def column: Int         = if (hasSource) calculateColumn() else 0
+  def lineContent: String = if (hasSource) source.lineToString(line - 1) else ""
+  def lineCarat: String   = if (hasSource) " " * (column - 1) + "^" else ""
+
+  def showError(msg: String): String = finalPosition match {
+    case FakePos(fmsg) => s"$fmsg $msg"
+    case NoPosition    => msg
+    case pos           => s"${pos.line}: $msg\n${pos.lineContent}\n${pos.lineCarat}"
+  }
+  def showDebug: String = toString
+  def show = (
+    if (isOpaqueRange) s"[$start:$end]"
+    else if (isTransparent) s"<$start:$end>"
+    else if (isDefined) s"[$point]"
+    else "[NoPosition]"
+  )
+
+  private def asOffset(point: Int): Position = Position.offset(source, point)
+  private def copyRange(source: SourceFile = source, start: Int = start, point: Int = point, end: Int = end): Position =
+    Position.range(source, start, point, end)
+
+  private def calculateColumn(): Int = {
     var idx = source.lineToOffset(source.offsetToLine(point))
     var col = 0
     while (idx != point) {
@@ -276,18 +230,39 @@ class OffsetPosition(override val source: SourceFile, override val point: Int) e
     }
     col + 1
   }
+  private def hasSource                      = source ne NoSourceFile
+  private def bothRanges(that: Position)     = isRange && that.isRange
+  private def bothDefined(that: Position)    = isDefined && that.isDefined
+}
 
-  override def union(pos: Position) = if (pos.isRange) pos else this
+/** Holding cell for methods unused and/or unnecessary. */
+private[util] trait DeprecatedPosition {
+  self: Position =>
 
-  override def equals(that : Any) = that match {
-    case that : OffsetPosition => point == that.point && source.file == that.source.file
-    case that => false
-  }
-  override def hashCode = point * 37 + source.file.hashCode
+  @deprecated("use `point`", "2.9.0")
+  def offset: Option[Int] = if (isDefined) Some(point) else None // used by sbt
 
-  override def toString = {
-    val pointmsg = if (point > source.length) "out-of-bounds-" else "offset="
-    "source-%s,line-%s,%s%s".format(source.file.canonicalPath, line, pointmsg, point)
-  }
-  override def show = "["+point+"]"
+  @deprecated("use `focus`", "2.11.0")
+  def toSingleLine: Position = this
+
+  @deprecated("use `line`", "2.11.0")
+  def safeLine: Int = line
+
+  @deprecated("use `showDebug`", "2.11.0")
+  def dbgString: String = showDebug
+
+  @deprecated("use `finalPosition`", "2.11.0")
+  def inUltimateSource(source: SourceFile): Position = source positionInUltimateSource this
+
+  @deprecated("use `lineCarat`", "2.11.0")
+  def lineWithCarat(maxWidth: Int): (String, String) = ("", "")
+
+  @deprecated("Use `withSource(source)` and `withShift`", "2.11.0")
+  def withSource(source: SourceFile, shift: Int): Position = this withSource source withShift shift
+
+  @deprecated("Use `start` instead", "2.11.0")
+  def startOrPoint: Int = if (isRange) start else point
+
+  @deprecated("Use `end` instead", "2.11.0")
+  def endOrPoint: Int = if (isRange) end else point
 }

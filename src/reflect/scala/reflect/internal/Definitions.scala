@@ -285,6 +285,10 @@ trait Definitions extends api.StandardDefinitions {
     lazy val StringTpe       = StringClass.tpe
     lazy val ThrowableTpe    = ThrowableClass.tpe
 
+    lazy val ConstantTrue  = ConstantType(Constant(true))
+    lazy val ConstantFalse = ConstantType(Constant(false))
+    lazy val ConstantNull  = ConstantType(Constant(null))
+
     // Note: this is not the type alias AnyRef, it's a companion-like
     // object used by the @specialize annotation.
     lazy val AnyRefModule = getMemberModule(ScalaPackageClass, nme.AnyRef)
@@ -585,30 +589,29 @@ trait Definitions extends api.StandardDefinitions {
     def hasJavaMainMethod(sym: Symbol): Boolean =
       (sym.tpe member nme.main).alternatives exists isJavaMainMethod
 
-    // Product, Tuple, Function, AbstractFunction
-    private def mkArityArray(name: String, arity: Int, countFrom: Int): Array[ClassSymbol] = {
-      val list = countFrom to arity map (i => getRequiredClass("scala." + name + i))
-      list.toArray
-    }
-    def prepend[S >: ClassSymbol : ClassTag](elem0: S, elems: Array[ClassSymbol]): Array[S] = elem0 +: elems
-
-    private def aritySpecificType[S <: Symbol](symbolArray: Array[S], args: List[Type], others: Type*): Type = {
-      val arity = args.length
-      if (arity >= symbolArray.length) NoType
-      else appliedType(symbolArray(arity), args ++ others: _*)
+    class VarArityClass(name: String, maxArity: Int, countFrom: Int = 0, init: Option[ClassSymbol] = None) extends (Int => Symbol) {
+      private val offset = countFrom - init.size
+      private def isDefinedAt(i: Int) = i < seq.length + offset && i >= offset
+      val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) }).toVector
+      def apply(i: Int) = if (isDefinedAt(i)) seq(i - offset) else NoSymbol
+      def specificType(args: List[Type], others: Type*): Type = {
+        val arity = args.length
+        if (!isDefinedAt(arity)) NoType
+        else appliedType(apply(arity), args ++ others: _*)
+      }
     }
 
     val MaxTupleArity, MaxProductArity, MaxFunctionArity = 22
 
-    lazy val ProductClass: Array[ClassSymbol] = prepend(UnitClass, mkArityArray("Product", MaxProductArity, 1))
-    lazy val TupleClass: Array[Symbol]        = prepend(null, mkArityArray("Tuple", MaxTupleArity, 1))
-    lazy val FunctionClass                    = mkArityArray("Function", MaxFunctionArity, 0)
-    lazy val AbstractFunctionClass            = mkArityArray("runtime.AbstractFunction", MaxFunctionArity, 0)
+    lazy val ProductClass          = new VarArityClass("Product", MaxProductArity, countFrom = 1, init = Some(UnitClass))
+    lazy val TupleClass            = new VarArityClass("Tuple", MaxTupleArity, countFrom = 1)
+    lazy val FunctionClass         = new VarArityClass("Function", MaxFunctionArity)
+    lazy val AbstractFunctionClass = new VarArityClass("runtime.AbstractFunction", MaxFunctionArity)
 
     /** Creators for TupleN, ProductN, FunctionN. */
-    def tupleType(elems: List[Type])                            = aritySpecificType(TupleClass, elems)
-    def functionType(formals: List[Type], restpe: Type)         = aritySpecificType(FunctionClass, formals, restpe)
-    def abstractFunctionType(formals: List[Type], restpe: Type) = aritySpecificType(AbstractFunctionClass, formals, restpe)
+    def tupleType(elems: List[Type])                            = TupleClass.specificType(elems)
+    def functionType(formals: List[Type], restpe: Type)         = FunctionClass.specificType(formals, restpe)
+    def abstractFunctionType(formals: List[Type], restpe: Type) = AbstractFunctionClass.specificType(formals, restpe)
 
     def wrapArrayMethodName(elemtp: Type): TermName = elemtp.typeSymbol match {
       case ByteClass    => nme.wrapByteArray
@@ -625,12 +628,11 @@ trait Definitions extends api.StandardDefinitions {
         else nme.genericWrapArray
     }
 
-    // NOTE: returns true for NoSymbol since it's included in the TupleClass array -- is this intensional?
-    def isTupleSymbol(sym: Symbol) = TupleClass contains unspecializedSymbol(sym)
-    def isProductNClass(sym: Symbol) = ProductClass contains sym
+    def isTupleSymbol(sym: Symbol) = TupleClass.seq contains unspecializedSymbol(sym)
+    def isProductNClass(sym: Symbol) = ProductClass.seq contains sym
     def tupleField(n: Int, j: Int) = getMemberValue(TupleClass(n), nme.productAccessorName(j))
-    def isFunctionSymbol(sym: Symbol) = FunctionClass contains unspecializedSymbol(sym)
-    def isProductNSymbol(sym: Symbol) = ProductClass contains unspecializedSymbol(sym)
+    def isFunctionSymbol(sym: Symbol) = FunctionClass.seq contains unspecializedSymbol(sym)
+    def isProductNSymbol(sym: Symbol) = ProductClass.seq contains unspecializedSymbol(sym)
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
@@ -656,8 +658,8 @@ trait Definitions extends api.StandardDefinitions {
 
     // These "direct" calls perform no dealiasing. They are most needed when
     // printing types when one wants to preserve the true nature of the type.
-    def isFunctionTypeDirect(tp: Type) = isFunctionSymbol(tp.typeSymbolDirect)
-    def isTupleTypeDirect(tp: Type)    = isTupleSymbol(tp.typeSymbolDirect)
+    def isFunctionTypeDirect(tp: Type) = !tp.isHigherKinded && isFunctionSymbol(tp.typeSymbolDirect)
+    def isTupleTypeDirect(tp: Type)    = !tp.isHigherKinded && isTupleSymbol(tp.typeSymbolDirect)
 
     // Note that these call .dealiasWiden and not .normalize, the latter of which
     // tends to change the course of events by forcing types.
@@ -695,6 +697,19 @@ trait Definitions extends api.StandardDefinitions {
       case NullaryMethodType(restpe) => restpe
       case _                         => tp
     }
+
+    /** An implementation of finalResultType which does only what
+     *  finalResultType is documented to do. Defining it externally to
+     *  Type helps ensure people can't come to depend on accidental
+     *  aspects of its behavior. This is all of it!
+     */
+    def finalResultType(tp: Type): Type = tp match {
+      case PolyType(_, restpe)       => finalResultType(restpe)
+      case MethodType(_, restpe)     => finalResultType(restpe)
+      case NullaryMethodType(restpe) => finalResultType(restpe)
+      case _                         => tp
+    }
+
     def abstractFunctionForFunctionType(tp: Type) = {
       assert(isFunctionType(tp), tp)
       abstractFunctionType(tp.typeArgs.init, tp.typeArgs.last)
@@ -1220,7 +1235,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val symbolsNotPresentInBytecode = syntheticCoreClasses ++ syntheticCoreMethods ++ hijackedCoreClasses
 
     /** Is the symbol that of a parent which is added during parsing? */
-    lazy val isPossibleSyntheticParent = ProductClass.toSet[Symbol] + ProductRootClass + SerializableClass
+    lazy val isPossibleSyntheticParent = ProductClass.seq.toSet[Symbol] + ProductRootClass + SerializableClass
 
     private lazy val boxedValueClassesSet = boxedClass.values.toSet[Symbol] + BoxedUnitClass
 

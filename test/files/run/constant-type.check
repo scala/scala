@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> :power
 ** Power User mode enabled - BEEP WHIR GYVE **
 ** :phase has been set to 'typer'.          **
@@ -24,7 +22,5 @@ Class[String](classOf[java.lang.String])
 
 scala> { ConstantType(Constant(s)); exitingPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))); }
 Class(classOf[java.lang.String])
-
-scala> 
 
 scala> 

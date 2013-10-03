@@ -1,18 +1,18 @@
 class A {
   def f1 = {
     val x = 5
-  
+
 """
 hi"""
   }
   def f2 = {
     val x = 5
-  
+
     """hi"""
-  }  
+  }
   def f3 = {
     val x = 5
-  
+
     "\nhi"
   }
 }

@@ -9,21 +9,21 @@ object Winners {
 
   @tailrec def loopsucc1(x: Int): Int = loopsucc1(x - 1)
   @tailrec def loopsucc2[T](x: Int): Int = loopsucc2[T](x - 1)
-  
+
   def ding() {
     object dong {
       @tailrec def loopsucc3(x: Int): Int = loopsucc3(x)
     }
     ()
   }
-  
+
   def inner(q: Int) = {
     @tailrec
     def loopsucc4(x: Int): Int = loopsucc4(x + 1)
-    
+
     loopsucc4(q)
   }
-  
+
   object innerBob {
     @tailrec def loopsucc5(x: Int): Int = loopsucc5(x)
   }
@@ -45,19 +45,19 @@ object Failures {
     else n * facfail(n - 1)
 }
 
-class Failures {  
+class Failures {
   // not private, not final
   @tailrec def fail1(x: Int): Int = fail1(x)
-  
+
   // a typical between-chair-and-keyboard error
   @tailrec final def fail2[T](xs: List[T]): List[T] = xs match {
     case Nil      => Nil
     case x :: xs  => x :: fail2[T](xs)
   }
-  
+
   // unsafe
   @tailrec final def fail3[T](x: Int): Int = fail3(x - 1)
-  
+
   // unsafe
   class Tom[T](x: Int) {
     @tailrec final def fail4[U](other: Tom[U], x: Int): Int = other.fail4[U](other, x - 1)

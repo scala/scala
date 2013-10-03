@@ -9,6 +9,6 @@ object Test extends App {
   flush
   println("..")
   println(1)
-  printf("Argument nr. %d has value %1.2f\n", 
+  printf("Argument nr. %d has value %1.2f\n",
          1, 10.0/3)
 }

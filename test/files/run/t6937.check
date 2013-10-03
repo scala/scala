@@ -1,9 +1,7 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
-scala>     import scala.reflect.runtime.{universe => ru}
+scala> import scala.reflect.runtime.{universe => ru}
 import scala.reflect.runtime.{universe=>ru}
 
 scala>     import scala.reflect.runtime.{currentMirror => cm}
@@ -20,7 +18,5 @@ apiru: scala.reflect.api.Universe = <lazy>
 
 scala>     apiru.typeTag[A].in(cm)
 res0: reflect.runtime.universe.TypeTag[A] = TypeTag[A]
-
-scala> 
 
 scala> 

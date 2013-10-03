@@ -174,7 +174,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           else {
             // only store binders actually used
             val (subPatBindersStored, subPatRefsStored) = stored.filter{case (b, _) => usedBinders(b)}.unzip
-            Block(map2(subPatBindersStored.toList, subPatRefsStored.toList)(VAL(_) === _), in)
+            Block(map2(subPatBindersStored.toList, subPatRefsStored.toList)(ValDef(_, _)), in)
           }
         }
     }
@@ -288,8 +288,8 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       def irrefutableExtractorType(tp: Type): Boolean = tp.resultType.dealias match {
         case TypeRef(_, SomeClass, _) => true
         // probably not useful since this type won't be inferred nor can it be written down (yet)
-        case ConstantType(Constant(true)) => true
-        case _ => false
+        case ConstantTrue => true
+        case _            => false
       }
 
       def unapply(xtm: ExtractorTreeMaker): Option[(Tree, Symbol)] = xtm match {
@@ -328,9 +328,9 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
         def outerTest(testedBinder: Symbol, expectedTp: Type): Tree = {
           val expectedOuter = expectedTp.prefix match {
-            case ThisType(clazz)      => THIS(clazz)
-            case pre if pre != NoType => REF(pre.prefix, pre.termSymbol)
-            case _ => mkTRUE // fallback for SI-6183
+            case ThisType(clazz) => This(clazz)
+            case NoType          => mkTRUE // fallback for SI-6183
+            case pre             => REF(pre.prefix, pre.termSymbol)
           }
 
           // ExplicitOuter replaces `Select(q, outerSym) OBJ_EQ expectedPrefix` by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
@@ -527,8 +527,9 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
 
     // pt is the fully defined type of the cases (either pt or the lub of the types of the cases)
     def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree =
-      fixerUpper(owner, scrut.pos){
-        def matchFailGen = (matchFailGenOverride orElse Some(CODE.MATCHERROR(_: Tree)))
+      fixerUpper(owner, scrut.pos) {
+        def matchFailGen = matchFailGenOverride orElse Some(Throw(MatchErrorClass.tpe, _: Tree))
+
         debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
         val (suppression, requireSwitch): (Suppression, Boolean) =

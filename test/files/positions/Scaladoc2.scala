@@ -4,13 +4,13 @@ object Scaladoc2 {
      * Foo
      */
     def g {}
-    
+
     /*
      * Blah blah
      */
     def h{}
     h
   }
-  
+
   def h {}
 }

@@ -9,8 +9,6 @@
 package scala
 package collection.parallel.mutable
 
-
-
 import scala.collection.generic._
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.IterableSplitter
@@ -23,8 +21,6 @@ import scala.collection.concurrent.SNode
 import scala.collection.concurrent.INode
 import scala.collection.concurrent.TrieMap
 import scala.collection.concurrent.TrieMapIterator
-
-
 
 /** Parallel TrieMap collection.
  *
@@ -117,9 +113,7 @@ extends ParMap[K, V]
     def shouldSplitFurther = howmany > 1
     override def merge(that: Size) = result = result + that.result
   }
-
 }
-
 
 private[collection] class ParTrieMapSplitter[K, V](lev: Int, ct: TrieMap[K, V], mustInit: Boolean)
 extends TrieMapIterator[K, V](lev, ct, mustInit)
@@ -155,7 +149,6 @@ extends TrieMapIterator[K, V](lev, ct, mustInit)
   def remaining: Int = totalsize - iterated
 }
 
-
 /** Only used within the `ParTrieMap`. */
 private[mutable] trait ParTrieMapCombiner[K, V] extends Combiner[(K, V), ParTrieMap[K, V]] {
 
@@ -173,24 +166,11 @@ private[mutable] trait ParTrieMapCombiner[K, V] extends Combiner[(K, V), ParTrie
   }
 
   override def canBeShared = true
-
 }
 
-
 object ParTrieMap extends ParMapFactory[ParTrieMap] {
-
   def empty[K, V]: ParTrieMap[K, V] = new ParTrieMap[K, V]
-
   def newCombiner[K, V]: Combiner[(K, V), ParTrieMap[K, V]] = new ParTrieMap[K, V]
 
   implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParTrieMap[K, V]] = new CanCombineFromMap[K, V]
-
 }
-
-
-
-
-
-
-
-

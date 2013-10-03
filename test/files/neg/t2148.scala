@@ -1,6 +1,6 @@
-class A { 
+class A {
   var i = 0
-  trait A1 extends A { 
+  trait A1 extends A {
     i += 1
   }
 }

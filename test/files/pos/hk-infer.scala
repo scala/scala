@@ -31,7 +31,7 @@ object DoesWorkHK {
     def BOOP(ys: Seq[M[_]]) = new Booper[M](xs ++ ys)
   }
   implicit def mkBoop[M[_]](xs: Seq[M[_]]) = new Booper[M](xs)
-  
+
   def f1 = x BOOP y BOOP x1 BOOP x2
 }
 

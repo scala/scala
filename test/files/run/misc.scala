@@ -60,7 +60,7 @@ object Test {
     Console.println;
     val x = 13;
     x;
-    // !!! why are DefDef replaced by Block(Tree[0])? we should use Empty!    
+    // !!! why are DefDef replaced by Block(Tree[0])? we should use Empty!
     def f = 19;
     f;
     def f0() = 11;

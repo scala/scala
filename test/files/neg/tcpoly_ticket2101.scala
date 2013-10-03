@@ -4,10 +4,10 @@ class T2[X] extends T[T2, X] // ill-typed
 // Forall Y. T2[Y] <: T[T2, X]
 
 // debugging before fix:
-// def isSubType0 -->       
+// def isSubType0 -->
 // case (PolyType(tparams1, res1), PolyType(tparams2, res2)) => println("<:<PT: "+((tparams1, res1), (tparams2, res2))) //@MDEBUG
 //   (tparams1.length == tparams2.length &&
-//    List.forall2(tparams1, tparams2) 
+//    List.forall2(tparams1, tparams2)
 //      ((p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
 //    res1 <:< res2.substSym(tparams2, tparams1))
 
@@ -22,7 +22,7 @@ class T2[X] extends T[T2, X] // ill-typed
 //   (tparams1.length == tparams2.length &&
 //    {
 //      val tpsFresh = cloneSymbols(tparams1) // @M cloneSymbols(tparams2) should be equivalent -- TODO: check
-//      List.forall2(tparams1, tparams2) 
+//      List.forall2(tparams1, tparams2)
 //         ((p1, p2) => p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh)) &&
-//       res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh)   
+//       res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh)
 //    })

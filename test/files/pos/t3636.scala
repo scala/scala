@@ -5,11 +5,11 @@ class CTxnLocal[ T ] {
 }
 
 trait Txn
-    
+
 trait ProcTxn {
     def ccstm: Txn
 }
-    
+
 trait TxnLocal[ @specialized T ] {
    def apply()( implicit tx: ProcTxn ) : T
    def set( v: T )( implicit tx: ProcTxn ) : Unit

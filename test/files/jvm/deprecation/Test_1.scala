@@ -7,7 +7,7 @@ class Test {
     val i = new d.Inner
     val w = i.buz()
   }
-  
+
   @deprecated("no longer!", "") class Inner {
     @deprecated("uncool", "") def f: Int = 1
     @deprecated("this one as well!", "") var g = -1

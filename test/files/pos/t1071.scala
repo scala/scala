@@ -12,6 +12,6 @@ object Test {
 
   val c = new C
   (c: D).a // works
-  c.a // error  
+  c.a // error
 }
 

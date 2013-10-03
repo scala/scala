@@ -47,7 +47,7 @@ self =>
    * greater than or equal to `start` according to the ordering of
    * this collection. x.iteratorFrom(y) is equivalent to but will usually
    * be more efficient than x.from(y).iterator
-   * 
+   *
    * @param start The lower-bound (inclusive) of the iterator
    */
   def iteratorFrom(start: A): Iterator[A] = keysIteratorFrom(start)

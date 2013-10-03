@@ -1,6 +1,6 @@
 object Test {
   def f = "abc".count(_ > 'a')
-  
+
   class A {
     private val count: Int = 0
   }

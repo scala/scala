@@ -52,7 +52,7 @@ package scala.collection.mutable {
     } yield {
       // selected mustn't be in elements already
       val list = makeAllBalancedTree(elements.sorted.distinct.map(_*2))
-      (selected*2+1, list) 
+      (selected*2+1, list)
     }
 
     def genInputDelete: org.scalacheck.Gen[(Int, List[AVLTree[Int]])] = for {
@@ -63,7 +63,7 @@ package scala.collection.mutable {
     } yield {
       // selected must be in elements already
       val list = makeAllBalancedTree(e)
-      (e(selected), list) 
+      (e(selected), list)
     }
   }
 
@@ -76,7 +76,7 @@ package scala.collection.mutable {
     }
 
     def setup(invariant: AVLTree[Int] => Boolean) = forAll(genInput) {
-      case (selected: Int, trees: List[AVLTree[Int]]) => 
+      case (selected: Int, trees: List[AVLTree[Int]]) =>
       trees.map(tree => invariant(tree)).fold(true)((a, b) => a && b)
     }
 

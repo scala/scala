@@ -4,16 +4,16 @@ import java.io._
 import java.net.{InetAddress,ServerSocket,Socket,SocketException}
 import java.util.Random
 
-/** 
- * Simple client/server application using Java sockets. 
- * 
- * The server simply generates random integer values and 
- * the clients provide a filter function to the server 
- * to get only values they interested in (eg. even or 
- * odd values, and so on). 
+/**
+ * Simple client/server application using Java sockets.
+ *
+ * The server simply generates random integer values and
+ * the clients provide a filter function to the server
+ * to get only values they interested in (eg. even or
+ * odd values, and so on).
  */
 object randomclient {
-     
+
   def main(args: Array[String]) {
     val filter/*?*/ = try {
       Integer.parseInt(args(0)/*?*/) match {

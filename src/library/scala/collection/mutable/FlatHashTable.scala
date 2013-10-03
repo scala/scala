@@ -107,7 +107,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   /** Finds an entry in the hash table if such an element exists. */
-  protected def findEntry(elem: A): Option[A] = 
+  protected def findEntry(elem: A): Option[A] =
     findElemImpl(elem) match {
       case null => None
       case entry => Some(entryToElem(entry))
@@ -136,10 +136,10 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   protected def addElem(elem: A) : Boolean = {
     addEntry(elemToEntry(elem))
   }
-  
+
   /**
    * Add an entry (an elem converted to an entry via elemToEntry) if not yet in
-   * table. 
+   * table.
    *  @return Returns `true` if a new elem was added, `false` otherwise.
    */
   protected def addEntry(newEntry : AnyRef) : Boolean = {
@@ -156,10 +156,10 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     nnSizeMapAdd(h)
     if (tableSize >= threshold) growTable()
     true
-    
+
   }
 
-  /** 
+  /**
    * Removes an elem from the hash table returning true if the element was found (and thus removed)
    * or false if it didn't exist.
    */
@@ -231,7 +231,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
       if (table(i) != null && !containsElem(entryToElem(table(i))))
         assert(assertion = false, i+" "+table(i)+" "+table.mkString)
   }
- 
+
 
   /* Size map handling code */
 
@@ -374,7 +374,7 @@ private[collection] object FlatHashTable {
   final def seedGenerator = new ThreadLocal[scala.util.Random] {
     override def initialValue = new scala.util.Random
   }
-  
+
   private object NullSentinel {
     override def hashCode = 0
     override def toString = "NullSentinel"
@@ -421,18 +421,18 @@ private[collection] object FlatHashTable {
       val rotated = (improved >>> rotation) | (improved << (32 - rotation))
       rotated
     }
-         
+
     /**
      * Elems have type A, but we store AnyRef in the table. Plus we need to deal with
      * null elems, which need to be stored as NullSentinel
      */
-    protected final def elemToEntry(elem : A) : AnyRef = 
+    protected final def elemToEntry(elem : A) : AnyRef =
       if (null == elem) NullSentinel else elem.asInstanceOf[AnyRef]
-    
+
     /**
      * Does the inverse translation of elemToEntry
      */
-    protected final def entryToElem(entry : AnyRef) : A = 
+    protected final def entryToElem(entry : AnyRef) : A =
       (if (entry.isInstanceOf[NullSentinel.type]) null else entry).asInstanceOf[A]
   }
 

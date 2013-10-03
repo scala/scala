@@ -16,9 +16,9 @@ object Test {
 
   def ticketExample {
     var big = 100000
-    
+
     var aSortedSet: SortedSet[Int] = TreeSet(big)
-    
+
     for (i <- 1 until N) {
       aSortedSet = (aSortedSet - big) ++ (TreeSet(i, big - 1))
       big -= 1
@@ -42,7 +42,7 @@ object Test {
       }
     }
   }
-  
+
 }
 
 

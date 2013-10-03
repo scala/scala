@@ -37,10 +37,10 @@ object dynamicMixin extends dynamicAbstractClass with dynamicTrait {
 
 
 object Test {
-  
+
   def main(args: Array[String]) {
     val cls = new dynamicClass
     dynamicMixin
   }
-  
+
 }

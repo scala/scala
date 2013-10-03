@@ -17,6 +17,6 @@ class [Lscala.runtime.BoxedUnit;
 class [I
 class [D
 class [Lscala.collection.immutable.List;
-Functions: 
+Functions:
 interface scala.Function2
 interface scala.Function1

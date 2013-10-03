@@ -9,7 +9,7 @@ import util.InterruptReq
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
 import io.{ AbstractFile, PlainFile }
 import util.EmptyAction
-import scala.reflect.internal.util.{ RangePosition, OffsetPosition, TransparentPosition }
+import scala.reflect.internal.util.Position
 import Pickler._
 import scala.collection.mutable
 import mutable.ListBuffer
@@ -65,20 +65,20 @@ trait Picklers { self: Global =>
       f => f.file ~ delta(f.file, f.content)
     }.asClass (classOf[BatchSourceFile])
 
-  lazy val offsetPosition: CondPickler[OffsetPosition] =
+  lazy val offsetPosition: CondPickler[Position] =
     (pkl[SourceFile] ~ pkl[Int])
-      .wrapped { case x ~ y => new OffsetPosition(x, y) } { p => p.source ~ p.point }
-      .asClass (classOf[OffsetPosition])
+      .wrapped { case x ~ y => Position.offset(x, y) } { p => p.source ~ p.point }
+      .asClass (classOf[Position])
 
-  lazy val rangePosition: CondPickler[RangePosition] =
+  lazy val rangePosition: CondPickler[Position] =
     (pkl[SourceFile] ~ pkl[Int] ~ pkl[Int] ~ pkl[Int])
-      .wrapped { case source ~ start ~ point ~ end => new RangePosition(source, start, point, end) } { p => p.source ~ p.start ~ p.point ~ p.end }
-      .asClass (classOf[RangePosition])
+      .wrapped { case source ~ start ~ point ~ end => Position.range(source, start, point, end) } { p => p.source ~ p.start ~ p.point ~ p.end }
+      .asClass (classOf[Position])
 
-  lazy val transparentPosition: CondPickler[TransparentPosition] =
+  lazy val transparentPosition: CondPickler[Position] =
     (pkl[SourceFile] ~ pkl[Int] ~ pkl[Int] ~ pkl[Int])
-      .wrapped { case source ~ start ~ point ~ end => new TransparentPosition(source, start, point, end) } { p => p.source ~ p.start ~ p.point ~ p.end }
-      .asClass (classOf[TransparentPosition])
+      .wrapped { case source ~ start ~ point ~ end => Position.range(source, start, point, end).makeTransparent } { p => p.source ~ p.start ~ p.point ~ p.end }
+      .asClass (classOf[Position])
 
   lazy val noPosition = singletonPickler(NoPosition)
 

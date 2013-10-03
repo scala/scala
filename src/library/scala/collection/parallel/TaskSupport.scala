@@ -6,17 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 package scala
 package collection.parallel
-
-
 
 import java.util.concurrent.ThreadPoolExecutor
 import scala.concurrent.forkjoin.ForkJoinPool
 import scala.concurrent.ExecutionContext
-
-
 
 /** A trait implementing the scheduling of a parallel collection operation.
  *
@@ -54,7 +49,6 @@ import scala.concurrent.ExecutionContext
  */
 trait TaskSupport extends Tasks
 
-
 /** A task support that uses a fork join pool to schedule tasks.
  *
  *  @see [[scala.collection.parallel.TaskSupport]] for more information.
@@ -69,7 +63,6 @@ extends TaskSupport with AdaptiveWorkStealingForkJoinTasks
 @deprecated("Use `ForkJoinTaskSupport` instead.", "2.11.0")
 class ThreadPoolTaskSupport(val environment: ThreadPoolExecutor = ThreadPoolTasks.defaultThreadPool)
 extends TaskSupport with AdaptiveWorkStealingThreadPoolTasks
-
 
 /** A task support that uses an execution context to schedule tasks.
  *
@@ -86,22 +79,3 @@ extends TaskSupport with AdaptiveWorkStealingThreadPoolTasks
  */
 class ExecutionContextTaskSupport(val environment: ExecutionContext = scala.concurrent.ExecutionContext.global)
 extends TaskSupport with ExecutionContextTasks
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

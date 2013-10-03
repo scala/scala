@@ -5,4 +5,3 @@ case class nil[T]() extends Lst[T]
 object test {
   Console.println(cons(1, nil()))
 }
-  

@@ -9,7 +9,7 @@ object Test {
     case class Bar(i:Int)
   }
 
-  
+
   class Test717 {
     val foo1 = new Foo(1)
 
@@ -27,7 +27,7 @@ object Test {
     class Baz
     object Bam
     object Bar
-    
+
     def unapply(s : String) : Option[Bar] = Some(new Bar(s))
   }
 

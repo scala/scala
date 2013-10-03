@@ -14,10 +14,10 @@ object Test {
   }
 
   def main(args: Array[String]) {
-    
+
     println(reset(m0()))
     println(reset(m1()))
-    
+
   }
-  
+
 }

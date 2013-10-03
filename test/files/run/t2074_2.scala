@@ -12,7 +12,7 @@ object Test {
     def iterator = underlying.iterator
   }
   val w = IndexedSeq(1, 2, 3).view
-  
+
   def main(args: Array[String]): Unit = {
     println(v)
     println(w)

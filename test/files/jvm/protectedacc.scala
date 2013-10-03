@@ -16,7 +16,7 @@ object Test {
 
     val ji = new p.b.JavaInteraction(Array('a', 'b', 'c'));
     (new ji.Inner).m;
-    
+
     (new p.b.OuterObj.Inner).m
   }
 }
@@ -36,13 +36,13 @@ package p {
 
       def getA: this.type = this;
     }
-    
+
     /** Test type members */
     trait HighlighterXXX {
       type Node;
       protected def highlight(node : Node) : Unit;
     }
-    
+
     /** Test type parameters */
     abstract class PolyA[a] {
       protected def m(x: a): Unit;
@@ -119,22 +119,22 @@ package p {
 
           val inc = meth2(1)_;
           Console.println("100 = " + inc("10"));
-          
+
           getA.x;
         }
       }
     }
-    
+
     trait ScalaAutoEditXXX extends HighlighterXXX {
-      trait NodeImpl { 
+      trait NodeImpl {
         def self : Node;
         highlight(self);
       }
     }
-    
+
     abstract class X[T] extends PolyA[T] {
 
-      trait Inner extends B { 
+      trait Inner extends B {
         def self: T;
         def self2: Node;
         def getB: Inner;

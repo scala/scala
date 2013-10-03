@@ -39,18 +39,15 @@ trait Unapplies extends ast.TreeDSL {
    */
   def unapplyMember(tp: Type): Symbol = directUnapplyMember(tp) filter (sym => !hasMultipleNonImplicitParamLists(sym))
 
-  object ExtractorType {
+  object HasUnapply {
     def unapply(tp: Type): Option[Symbol] = unapplyMember(tp).toOption
   }
 
   def copyUntyped[T <: Tree](tree: T): T =
     returning[T](tree.duplicate)(UnTyper traverse _)
 
-  def copyUntypedInvariant(td: TypeDef): TypeDef = {
-    val copy = treeCopy.TypeDef(td, td.mods &~ (COVARIANT | CONTRAVARIANT), td.name, td.tparams, td.rhs)
-
-    returning[TypeDef](copy.duplicate)(UnTyper traverse _)
-  }
+  def copyUntypedInvariant(td: TypeDef): TypeDef =
+    copyTypeDef(copyUntyped(td))(mods = td.mods &~ (COVARIANT | CONTRAVARIANT))
 
   private def toIdent(x: DefTree) = Ident(x.name) setPos x.pos.focus
 
@@ -122,7 +119,7 @@ trait Unapplies extends ast.TreeDSL {
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
-      gen.mkTemplate(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
+      gen.mkTemplate(parents, noSelfType, NoMods, Nil, body, cdef.impl.pos.focus))
   }
 
   /** The apply method corresponding to a case class

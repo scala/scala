@@ -43,24 +43,24 @@ object TestThrows {
 
 /** Test the top-level mirror that is has the annotations. */
 object TL {
-  
+
   @throws(classOf[IOException])
   def read(): Int = 0
-  
+
   @throws(classOf[ClassCastException])
   @throws(classOf[IOException])
   def readWith2(): Int = 0
-  
+
   @throws(classOf[IOException])
   @Deprecated
   @throws(classOf[NullPointerException])
   def readMixed(): Int = 0
-  
+
   @Deprecated
   @throws(classOf[IOException])
   @throws(classOf[NullPointerException])
   def readMixed2(): Int = 0
-  
+
   @Deprecated
   def readNoEx(): Int = 0
 }

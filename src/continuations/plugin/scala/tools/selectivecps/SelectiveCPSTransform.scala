@@ -330,6 +330,8 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                 }
               }
 
+              // TODO use gen.mkBlock after 2.11.0-M6. Why wait? It allows us to still build in development
+              // mode with `ant -DskipLocker=1`
               def mkBlock(stms: List[Tree], expr: Tree) = if (stms.nonEmpty) Block(stms, expr) else expr
 
               try {

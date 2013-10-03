@@ -7,6 +7,3 @@ trait Meh[-From, +To]
 
 @implicitNotFound(msg = "Cannot construct a collection of type ${To} ${Elem}.")
 trait Meh2[-From, +To]
-
-class thankyoupartest { def x = 42 }
-class testmustfail extends thankyoupartest { def x = 43 }

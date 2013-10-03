@@ -7,7 +7,7 @@ public class J_2 {
       String name = fields[i].getName();
       if (name.length() >= 7 && name.substring(0, 7).equals("bitmap$")) { }
       else System.out.println("(" + name + "," + fields[i].getGenericType() + ")");
-    }    
+    }
   }
   public void f2(Class<?> clazz) {
     Method[] methods = clazz.getDeclaredMethods();
@@ -15,7 +15,7 @@ public class J_2 {
       String name = methods[i].getName();
       if (name.length() >= 7 && name.substring(0, 7).equals("bitmap$")) { }
       else System.out.println("(" + name + "," + methods[i].getGenericReturnType() + ")");
-    }    
+    }
   }
 
   public void javaRun() {

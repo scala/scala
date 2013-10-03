@@ -21,8 +21,6 @@ import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.immutable.ParRange
 import scala.language.implicitConversions
 
-
-
 /** A template view of a non-strict view of parallel iterable collection.
  *
  *  '''Note:''' Regular view traits have type parameters used to carry information
@@ -190,16 +188,4 @@ self =>
     protected[this] def newSubtask(p: IterableSplitter[T]) = new Force(cbf, p)
     override def merge(that: Force[U, That]) = result = result combine that.result
   }
-
 }
-
-
-
-
-
-
-
-
-
-
-

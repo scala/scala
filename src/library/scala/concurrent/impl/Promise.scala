@@ -155,7 +155,7 @@ private[concurrent] object Promise {
 
     /** Get the root promise for this promise, compressing the link chain to that
      *  promise if necessary.
-     *    
+     *
      *  For promises that are not linked, the result of calling
      *  `compressedRoot()` will the promise itself. However for linked promises,
      *  this method will traverse each link until it locates the root promise at

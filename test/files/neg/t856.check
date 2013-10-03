@@ -5,7 +5,7 @@ it has 2 unimplemented members.
  */
   // Members declared in scala.Equals
   def canEqual(that: Any): Boolean = ???
-  
+
   // Members declared in scala.Product2
   def _2: Double = ???
 

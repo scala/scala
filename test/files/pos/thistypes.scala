@@ -5,4 +5,4 @@ trait B {
 
 trait C extends B {
   def foo: C.this.I;
-} 
+}

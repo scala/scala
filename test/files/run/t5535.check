@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> def h()(i: Int) = 1 + i
 h: ()(i: Int)Int
 
@@ -14,7 +12,5 @@ f: Int => Int = <function1>
 
 scala> println(f(10))
 11
-
-scala> 
 
 scala> 

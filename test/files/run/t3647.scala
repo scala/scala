@@ -13,10 +13,10 @@ object Test {
       "line4"
     ).iterator)
     assert(ps.filter(_ == '\n').size == 3)
-    
+
     val ps1 = PagedSeq.fromLines(List("Ok").iterator)
     assert(ps1.filter(_ == '\n').size == 0)
-    
+
     val eps = PagedSeq.fromLines(List().iterator)
     assert(eps.filter(_ == '\n').size == 0)
   }

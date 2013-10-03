@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 package collection
 package mutable
@@ -151,9 +149,7 @@ extends AbstractSeq[A]
     bf ++= seq
     bf.result()
   }
-
 }
-
 
 object MutableList extends SeqFactory[MutableList] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, MutableList[A]] =

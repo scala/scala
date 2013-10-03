@@ -1,4 +1,4 @@
 package p;
-class J { 
-  J() {} 
+class J {
+  J() {}
 }

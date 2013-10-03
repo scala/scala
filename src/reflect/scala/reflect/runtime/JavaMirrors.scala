@@ -1241,7 +1241,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       val effectiveParamClasses =
         if (!constr.owner.owner.isStaticOwner) jclazz.getEnclosingClass +: paramClasses
         else paramClasses
-      jclazz getConstructor (effectiveParamClasses: _*)
+      jclazz getDeclaredConstructor (effectiveParamClasses: _*)
     }
 
     private def jArrayClass(elemClazz: jClass[_]): jClass[_] = {

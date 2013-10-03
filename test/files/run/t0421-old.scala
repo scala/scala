@@ -9,17 +9,17 @@ object Test extends App {
   }
 
   def scalprod(xs: Array[Double], ys: Array[Double]) = {
-    var acc = 0.0 
-    for ((x, y) <- xs zip ys) acc = acc + x * y  
+    var acc = 0.0
+    for ((x, y) <- xs zip ys) acc = acc + x * y
     acc
   }
 
   def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
-    val ysst = transpose(yss) 
+    val ysst = transpose(yss)
     val ysst1: Array[Array[Double]] = yss.transpose
     assert(ysst.deep == ysst1.deep)
     for (xs <- xss) yield
-      for (yst <- ysst) yield 
+      for (yst <- ysst) yield
         scalprod(xs, yst)
   }
 
@@ -27,6 +27,6 @@ object Test extends App {
   println(transpose(a1).deep.mkString("[", ",", "]"))
 
   println(matmul(Array(Array(2, 3)), Array(Array(5), Array(7))).deep.mkString("[", ",", "]"))
-  
+
   println(matmul(Array(Array(4)), Array(Array(6, 8))).deep.mkString("[", ",", "]"))
 }

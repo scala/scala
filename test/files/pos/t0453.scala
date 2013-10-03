@@ -1,5 +1,5 @@
 object Test {
-  val foo = new { 
+  val foo = new {
     trait Bar
     def l () : Bar = { new Bar {} }
   }

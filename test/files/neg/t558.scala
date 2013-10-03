@@ -11,7 +11,7 @@ abstract class NewModel {
     val parent : SymbolURL;
     final val top = parent.top;
     final val source = top.file;
-    
+
   }
   abstract class RootURL extends SymbolURL {
     final val top   : RootURL = this;

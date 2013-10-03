@@ -368,7 +368,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @param    cmp   An ordering to be used for comparing elements.
    *  @tparam   B     The result type of the function f.
    *  @param    f     The measuring function.
-   *  @return   the first element of this $coll with the largest value measured by function f 
+   *  @return   the first element of this $coll with the largest value measured by function f
    *  with respect to the ordering `cmp`.
    *
    *  @usecase def maxBy[B](f: A => B): A
@@ -383,7 +383,7 @@ trait GenTraversableOnce[+A] extends Any {
    *  @param    cmp   An ordering to be used for comparing elements.
    *  @tparam   B     The result type of the function f.
    *  @param    f     The measuring function.
-   *  @return   the first element of this $coll with the smallest value measured by function f 
+   *  @return   the first element of this $coll with the smallest value measured by function f
    *  with respect to the ordering `cmp`.
    *
    *  @usecase def minBy[B](f: A => B): A

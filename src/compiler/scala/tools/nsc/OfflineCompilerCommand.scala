@@ -27,7 +27,7 @@ class OfflineCompilerCommand(arguments: List[String], settings: FscSettings) ext
       val baseDirectory = {
         val pwd = System.getenv("PWD")
         if (pwd == null || isWin) Directory.Current getOrElse Directory("/")
-        else Directory(pwd) 
+        else Directory(pwd)
       }
       currentDir.value = baseDirectory.path
     }

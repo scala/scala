@@ -5,7 +5,7 @@ import scala.actors.Actor
 /* This test is a regression test for SI-4759.
  */
   val Runs = 5
-  
+
   def main(args: Array[String]) = {
     var i = 0
     while (i < Runs) {

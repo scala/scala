@@ -19,7 +19,7 @@ object A extends A0 {}
 
 abstract class B0 extends M {
     type mType = B0
-    def fs: List[fType] = Nil 
+    def fs: List[fType] = Nil
 }
 
 object B extends B0 {}

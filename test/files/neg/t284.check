@@ -1,8 +1,6 @@
 t284.scala:2: warning: Detected apparent refinement of Unit; are you missing an '=' sign?
-    def f1(a: T): Unit { }
-                       ^
-t284.scala:5: error: Unmatched closing brace '}' ignored here
-  }
-  ^
+  def f1(a: T): Unit { }
+                     ^
+error: No warnings can be incurred under -Xfatal-warnings.
 one warning found
 one error found

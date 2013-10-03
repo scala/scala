@@ -11,5 +11,5 @@ object test {
       def h() = x;
     }
     g() + new inner().g();
-  }		
+  }
 }

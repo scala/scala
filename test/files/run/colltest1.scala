@@ -65,7 +65,7 @@ object Test extends App {
     assert(ten.toStream == ten)
     assert(ten.toString endsWith "(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)")
     assert(ten.mkString("[", "; ", "]") endsWith "[1; 2; 3; 4; 5; 6; 7; 8; 9; 10]")
-  }                               
+  }
 
   def orderedIterableTest(empty: Iterable[Int]) {
     orderedTraversableTest(empty)
@@ -88,7 +88,7 @@ object Test extends App {
     assert(ten(0) == 1 && ten(9) == 10)
     assert((ten lengthCompare 10) == 0 && (ten lengthCompare 1) > 0 && (ten lengthCompare 11) < 0)
     assert((ten isDefinedAt 0) && (ten isDefinedAt 9))
-    assert(!(ten isDefinedAt -1)); 
+    assert(!(ten isDefinedAt -1));
     assert(!(ten isDefinedAt 10))
     val tenten = ten zip ten
     assert((tenten map (_._1)) == ten)
@@ -178,8 +178,8 @@ object Test extends App {
     m ++= ('J' to 'Z') map (x => (x.toString -> x.toString))
     println(m.toList.sorted)
     assert(!m.isEmpty)
-    assert(m.keySet forall (k => (m get k) == Some(k))) 
-    assert(m.keySet forall (k => (m apply k) == k)) 
+    assert(m.keySet forall (k => (m get k) == Some(k)))
+    assert(m.keySet forall (k => (m apply k) == k))
     assert(m.keySet forall (m contains))
     assert(m.getOrElse("7", "@") == "@")
     assert(m.keySet.size == 26)

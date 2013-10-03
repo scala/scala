@@ -94,7 +94,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           if (!isFinal)
             varSym.addAnnotation(VolatileAttr)
 
-          val varDef = typedPos( VAL(varSym) === forInit )
+          val varDef = typedPos(ValDef(varSym, forInit))
           newStaticMembers append transform(varDef)
 
           val varInit = typedPos( REF(varSym) === forInit )
@@ -155,13 +155,13 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             val methodSym = reflMethodSym.newVariable(mkTerm("method"), ad.pos) setInfo MethodClass.tpe
 
             BLOCK(
-              VAL(methodCache) === getPolyCache,
+              ValDef(methodCache, getPolyCache),
               IF (REF(methodCache) OBJ_EQ NULL) THEN BLOCK(
                 REF(methodCache) === NEW(TypeTree(EmptyMethodCacheClass.tpe)),
                 REF(reflPolyCacheSym) === gen.mkSoftRef(REF(methodCache))
               ) ENDIF,
 
-              VAL(methodSym) === (REF(methodCache) DOT methodCache_find)(REF(forReceiverSym)),
+              ValDef(methodSym, (REF(methodCache) DOT methodCache_find)(REF(forReceiverSym))),
               IF (REF(methodSym) OBJ_NE NULL) .
                 THEN (Return(REF(methodSym)))
               ELSE {
@@ -372,7 +372,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             qual = REF(sym)
 
             BLOCK(
-              VAL(sym) === qual0,
+              ValDef(sym, qual0),
               callAsReflective(mparams map (_.tpe), resType)
             )
           }
@@ -543,7 +543,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         )
 
         // create field definition and initialization
-        val stfieldDef  = theTyper.typedPos(pos)(VAL(stfieldSym) === rhs)
+        val stfieldDef  = theTyper.typedPos(pos)(ValDef(stfieldSym, rhs))
         val stfieldInit = theTyper.typedPos(pos)(REF(stfieldSym) === rhs)
 
         // add field definition to new defs

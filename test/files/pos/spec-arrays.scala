@@ -20,7 +20,7 @@ abstract class AbsArray[T] {
   def updateBoolean(idx: Int, elem: Boolean) = update(idx, elem.asInstanceOf[T])
   def applyObject(idx: Int): Object = apply(idx).asInstanceOf[Object]
   def updateObject(idx: Int, elem: Object) = update(idx, elem.asInstanceOf[T])
-}  
+}
 
 final class IntArray(arr: Array[Int]) extends AbsArray[Int] {
   def apply(idx: Int): Int = applyInt(idx)
@@ -64,7 +64,7 @@ class ScalaSpecTest extends Test {
     while (i < arr.length) { acc = acc + arr.applyInt(i); i += 1 }
     acc
   }
-  
+
   def modify(j: Int) = {
     val base = j * 100 % 1000
     var i = 0
@@ -74,7 +74,7 @@ class ScalaSpecTest extends Test {
     }
   }
 }
-    
+
 class ScalaSpec2Test extends Test {
   val arr: AbsArray[Int] = new IntArray(new Array[Int](1000))
 
@@ -84,7 +84,7 @@ class ScalaSpec2Test extends Test {
     while (i < arr.length) { acc = acc + arr.applyInt(i); i += 1 }
     acc
   }
-  
+
   def modify(j: Int) = {
     val base = j * 100 % 1000
     var i = 0
@@ -94,7 +94,7 @@ class ScalaSpec2Test extends Test {
     }
   }
 }
-    
+
 class ScalaWrapTest extends Test {
   val arr: AbsArray[Int] = new ArraySeq(new Array[Int](1000))
 
@@ -104,7 +104,7 @@ class ScalaWrapTest extends Test {
     while (i < arr.length) { acc = acc + arr.applyInt(i); i += 1 }
     acc
   }
-  
+
   def modify(j: Int) = {
     val base = j * 100 % 1000
     var i = 0
@@ -114,7 +114,7 @@ class ScalaWrapTest extends Test {
     }
   }
 }
-    
+
 class ScalaGenTest extends Test {
   val arr: AbsArray[Integer] = new ArraySeq(new Array[Integer](1000))
   for (i <- 0 until arr.length) arr(i) = new Integer(0)
@@ -125,7 +125,7 @@ class ScalaGenTest extends Test {
     while (i < arr.length) { acc = acc + arr.apply(i).intValue; i += 1 }
     acc
   }
-  
+
   def modify(j: Int) = {
     val base = j * 100 % 1000
     var i = 0
@@ -135,7 +135,7 @@ class ScalaGenTest extends Test {
     }
   }
 }
-    
+
 class JavaTest extends Test {
   val arr = new Array[Int](1000)
 
@@ -145,7 +145,7 @@ class JavaTest extends Test {
     while (i < arr.length) { acc = acc + arr(i); i += 1 }
     acc
   }
-  
+
   def modify(j: Int) = {
     val base = j * 100 % 1000
     var i = 0
@@ -166,7 +166,7 @@ class ScalaSpec3Test extends Test {
     while (i < arr.length) { acc = acc + arr(i); i += 1 }
     acc
   }
-  
+
   def modify(j: Int) = {
     val base = j * 100 % 1000
     var i = 0

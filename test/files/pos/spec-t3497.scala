@@ -10,7 +10,7 @@ object B extends A[ Array[Byte], Int ] {
         return -1
       }
     }
-    
+
     return 0
   }
 }

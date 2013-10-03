@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> // basics
 
 scala> 3+4
@@ -301,7 +299,7 @@ scala> <a>
   c="c"
   d="dd"
 /></a>
-res8: scala.xml.Elem = 
+res8: scala.xml.Elem =
 <a>
 <b c="c" d="dd"/></a>
 
@@ -324,7 +322,7 @@ scala> """
 hello
 there
 """
-res12: String = 
+res12: String =
 "
 hello
 there
@@ -362,8 +360,6 @@ It would fail on the following inputs: Exp(), Term()
        def f(e: Exp) = e match {  // non-exhaustive warning here
                        ^
 f: (e: Exp)Int
-
-scala> 
 
 scala> 
 plusOne: (x: Int)Int

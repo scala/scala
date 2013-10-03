@@ -257,11 +257,3 @@ trait WrapAsJava {
 }
 
 object WrapAsJava extends WrapAsJava { }
-
-
-
-
-
-
-
-

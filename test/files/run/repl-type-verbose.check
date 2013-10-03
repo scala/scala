@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> // verbose!
 
 scala> :type -v def f = 5
@@ -165,7 +163,7 @@ PolyType(
       normalize = TypeRef(
         TypeSymbol(
           abstract trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializable
-          
+
         )
         args = List(TypeParamTypeRef(TypeParam(T)))
       )
@@ -188,7 +186,5 @@ PolyType(
     TypeRef(TypeSymbol(final abstract class Int extends AnyVal))
   )
 )
-
-scala> 
 
 scala> 

@@ -144,7 +144,6 @@ trait Types
     override def isErroneous = underlying.isErroneous
     override def isStable: Boolean = underlying.isStable
     override def isVolatile = underlying.isVolatile
-    override def finalResultType = underlying.finalResultType
     override def paramSectionCount = underlying.paramSectionCount
     override def paramss = underlying.paramss
     override def params = underlying.params
@@ -189,7 +188,6 @@ trait Types
     override def deconst = maybeRewrap(underlying.deconst)
     override def resultType = maybeRewrap(underlying.resultType)
     override def resultType(actuals: List[Type]) = maybeRewrap(underlying.resultType(actuals))
-    override def finalResultType = maybeRewrap(underlying.finalResultType)
     override def paramSectionCount = 0
     override def paramss: List[List[Symbol]] = List()
     override def params: List[Symbol] = List()
@@ -440,7 +438,7 @@ trait Types
 
     /** For a curried/nullary method or poly type its non-method result type,
      *  the type itself for all other types */
-    def finalResultType: Type = this
+    final def finalResultType: Type = definitions finalResultType this
 
     /** For a method type, the number of its value parameter sections,
      *  0 for all other types */
@@ -1240,7 +1238,6 @@ trait Types
       if (pre.isOmittablePrefix) pre.fullName + ".type"
       else prefixString + "type"
     }
-
 /*
     override def typeOfThis: Type = typeSymbol.typeOfThis
     override def bounds: TypeBounds = TypeBounds(this, this)
@@ -2556,15 +2553,13 @@ trait Types
 
     private var isdepmeth: ThreeValue = UNKNOWN
     override def isDependentMethodType: Boolean = {
-      if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(IsDependentCollector.collect(resultType))
+      if (isdepmeth == UNKNOWN) isdepmeth = fromBoolean(IsDependentCollector.collect(resultType.dealias))
       toBoolean(isdepmeth)
     }
 
     // implicit args can only be depended on in result type:
     //TODO this may be generalised so that the only constraint is dependencies are acyclic
     def approximate: MethodType = MethodType(params, resultApprox)
-
-    override def finalResultType: Type = resultType.finalResultType
 
     override def safeToString = paramString(this) + resultType
 
@@ -2592,7 +2587,6 @@ trait Types
     override def isTrivial = resultType.isTrivial && (resultType eq resultType.withoutAnnotations)
     override def prefix: Type = resultType.prefix
     override def narrow: Type = resultType.narrow
-    override def finalResultType: Type = resultType.finalResultType
     override def termSymbol: Symbol = resultType.termSymbol
     override def typeSymbol: Symbol = resultType.typeSymbol
     override def parents: List[Type] = resultType.parents
@@ -2642,7 +2636,6 @@ trait Types
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
     override def isVolatile = resultType.isVolatile
-    override def finalResultType: Type = resultType.finalResultType
 
     /** @M: typeDefSig wraps a TypeBounds in a PolyType
      *  to represent a higher-kinded type parameter
@@ -2842,9 +2835,6 @@ trait Types
   // but pattern-matching returned the original constr0 (a bug)
   // now, pattern-matching returns the most recent constr
   object TypeVar {
-    private val ConstantTrue = ConstantType(Constant(true))
-    private val ConstantFalse = ConstantType(Constant(false))
-
     @inline final def trace[T](action: String, msg: => String)(value: T): T = {
       if (traceTypeVars) {
         val s = msg match {
@@ -3066,13 +3056,13 @@ trait Types
 
     // ignore subtyping&equality checks while true -- see findMember
     // OPT: This could be Either[TypeVar, Boolean], but this encoding was chosen instead to save allocations.
-    private var _suspended: Type = TypeVar.ConstantFalse
+    private var _suspended: Type = ConstantFalse
     private[Types] def suspended: Boolean = (_suspended: @unchecked) match {
-      case TypeVar.ConstantFalse => false
-      case TypeVar.ConstantTrue  => true
-      case tv: TypeVar           => tv.suspended
+      case ConstantFalse => false
+      case ConstantTrue  => true
+      case tv: TypeVar   => tv.suspended
     }
-    private[Types] def suspended_=(b: Boolean): Unit = _suspended = if (b) TypeVar.ConstantTrue else TypeVar.ConstantFalse
+    private[Types] def suspended_=(b: Boolean): Unit = _suspended = if (b) ConstantTrue else ConstantFalse
     // SI-7785 Link the suspended attribute of a TypeVar created in, say, a TypeMap (e.g. AsSeenFrom) to its originator
     private[Types] def linkSuspended(origin: TypeVar): Unit = _suspended = origin
 
@@ -4013,15 +4003,11 @@ trait Types
    *  type selections with the same name of equal (as determined by `=:=`) prefixes are
    *  considered equal in regard to `=:=`.
    */
-  def beginsWithTypeVarOrIsRefined(tp: Type): Boolean = tp match {
-    case SingleType(pre, sym) =>
-      !(sym hasFlag PACKAGE) && beginsWithTypeVarOrIsRefined(pre)
-    case tv@TypeVar(_, constr) =>
-      !tv.instValid || beginsWithTypeVarOrIsRefined(constr.inst)
-    case RefinedType(_, _) =>
-      true
-    case _ =>
-      false
+  def isEligibleForPrefixUnification(tp: Type): Boolean = tp match {
+    case SingleType(pre, sym)  => !(sym hasFlag PACKAGE) && isEligibleForPrefixUnification(pre)
+    case tv@TypeVar(_, constr) => !tv.instValid || isEligibleForPrefixUnification(constr.inst)
+    case RefinedType(_, _)     => true
+    case _                     => false
   }
 
   def isErrorOrWildcard(tp: Type) = (tp eq ErrorType) || (tp eq WildcardType)
@@ -4036,12 +4022,13 @@ trait Types
 
   def isConstantType(tp: Type) = tp match {
     case ConstantType(_) => true
-    case _ => false
+    case _               => false
   }
 
-  def isExistentialType(tp: Type): Boolean = tp.dealias match {
-    case ExistentialType(_, _) => true
-    case _                     => false
+  def isExistentialType(tp: Type): Boolean = tp match {
+    case _: ExistentialType           => true
+    case tp: Type if tp.dealias ne tp => isExistentialType(tp.dealias)
+    case _                            => false
   }
 
   def isImplicitMethodType(tp: Type) = tp match {

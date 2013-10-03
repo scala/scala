@@ -10,7 +10,7 @@ public class Context<ParentType> {
     public void setParent(ParentType parent) {
          this.parent = parent;
     }
-    
+
     public Field<Integer> intField() {
         return new Field<Integer>() {
             @Override

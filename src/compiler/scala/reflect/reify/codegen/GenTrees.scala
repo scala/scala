@@ -71,8 +71,8 @@ trait GenTrees {
   def reifyTreeSyntactically(tree: Tree) = tree match {
     case global.EmptyTree =>
       reifyMirrorObject(EmptyTree)
-    case global.emptyValDef =>
-      mirrorSelect(nme.emptyValDef)
+    case global.noSelfType =>
+      mirrorSelect(nme.noSelfType)
     case global.pendingSuperCall =>
       mirrorSelect(nme.pendingSuperCall)
     case Literal(const @ Constant(_)) =>
@@ -83,8 +83,12 @@ trait GenTrees {
       reifyProduct(tree)
   }
 
+  def reifyFlags(flags: FlagSet) =
+    if (flags != 0) reifyBuildCall(nme.FlagsRepr, flags) else mirrorSelect(nme.NoFlags)
+
   def reifyModifiers(m: global.Modifiers) =
-    mirrorFactoryCall(nme.Modifiers, mirrorBuildCall(nme.flagsFromBits, reify(m.flags)), reify(m.privateWithin), reify(m.annotations))
+    if (m == NoMods) mirrorSelect(nme.NoMods)
+    else mirrorFactoryCall(nme.Modifiers, reifyFlags(m.flags), reify(m.privateWithin), reify(m.annotations))
 
   private def spliceTree(tree: Tree): Tree = {
     tree match {

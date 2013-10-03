@@ -12,7 +12,7 @@ object Test {
   }
 
   def test(x: Buffer[String]) {
-    // testing method += 
+    // testing method +=
     x += "one"
     assert(x(0) == "one", "retrieving 'one'")
     assert(x.length == 1, "length A")
@@ -25,10 +25,10 @@ object Test {
 
     assert(x.length == 1, "length C")
 
-    try { x(1); sys.error("no exception for removed element") } 
+    try { x(1); sys.error("no exception for removed element") }
     catch { case i:IndexOutOfBoundsException => }
 
-    try { x.remove(1); sys.error("no exception for removed element") } 
+    try { x.remove(1); sys.error("no exception for removed element") }
     catch { case i:IndexOutOfBoundsException => }
 
     x += "two2"

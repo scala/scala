@@ -3,7 +3,7 @@ object Test {
   case object Bar1 extends Foo[Int]
   case object Bar2 extends Foo[String]
   case object Bar3 extends Foo[Any]
-  
+
   def ex1[T](xs: List[T]) = xs match {
     case ys: List[_]  => "ok"
   }

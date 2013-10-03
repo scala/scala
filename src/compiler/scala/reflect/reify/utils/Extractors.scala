@@ -75,12 +75,12 @@ trait Extractors {
       newTypeName(global.currentUnit.fresh.newName(flavor.toString)),
       List(),
       Template(List(Ident(reifierBase)),
-      emptyValDef,
+      noSelfType,
       List(
         DefDef(NoMods, nme.CONSTRUCTOR, List(), List(List()), TypeTree(), Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(())))),
         DefDef(NoMods,
           reifierName,
-          List(TypeDef(Modifiers(PARAM), tparamu, List(), TypeBoundsTree(Ident(NothingClass), CompoundTypeTree(Template(List(Ident(reifierUniverse), Ident(SingletonClass)), emptyValDef, List()))))),
+          List(TypeDef(Modifiers(PARAM), tparamu, List(), TypeBoundsTree(Ident(NothingClass), CompoundTypeTree(Template(List(Ident(reifierUniverse), Ident(SingletonClass)), noSelfType, List()))))),
           List(List(ValDef(Modifiers(PARAM), nme.MIRROR_UNTYPED, AppliedTypeTree(Ident(MirrorClass), List(Ident(tparamu))), EmptyTree))),
           reifierTpt, reifierBody))))
     Block(tpec, ApplyConstructor(Ident(tpec.name), List()))
@@ -164,6 +164,16 @@ trait Extractors {
     }
   }
 
+  // abstract over possible additional .apply select
+  // which is sometimes inserted after desugaring of calls
+  object ApplyCall {
+    def unapply(tree: Tree): Option[(Tree, List[Tree])] = tree match {
+      case Apply(Select(id, nme.apply), args) => Some((id, args))
+      case Apply(id, args) => Some((id, args))
+      case _ => None
+    }
+  }
+
   sealed abstract class FreeDefExtractor(acceptTerms: Boolean, acceptTypes: Boolean) {
     def unapply(tree: Tree): Option[(Tree, TermName, Tree, Long, String)] = {
       def acceptFreeTermFactory(name: Name) = {
@@ -175,10 +185,10 @@ trait Extractors {
           ValDef(_, name, _, Apply(
             Select(Select(uref1 @ Ident(_), build1), freeTermFactory),
             _ :+
-            Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))) :+
+            ApplyCall(Select(Select(uref2 @ Ident(_), build2), flagsRepr), List(Literal(Constant(flags: Long)))) :+
             Literal(Constant(origin: String))))
         if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && acceptFreeTermFactory(freeTermFactory) &&
-           uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
+           uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsRepr == nme.FlagsRepr =>
           Some((uref1, name, reifyBinding(tree), flags, origin))
         case _ =>
           None
@@ -208,10 +218,10 @@ trait Extractors {
             _,
             _,
             _,
-            Apply(Select(Select(uref2 @ Ident(_), build2), flagsFromBits), List(Literal(Constant(flags: Long)))),
+            ApplyCall(Select(Select(uref2 @ Ident(_), build2), flagsRepr), List(Literal(Constant(flags: Long)))),
             Literal(Constant(isClass: Boolean)))))
       if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newNestedSymbol == nme.newNestedSymbol &&
-         uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsFromBits == nme.flagsFromBits =>
+         uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsRepr == nme.FlagsRepr =>
         Some((uref1, name, flags, isClass))
       case _ =>
         None
