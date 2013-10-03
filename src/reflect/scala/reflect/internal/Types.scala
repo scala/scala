@@ -4156,6 +4156,14 @@ trait Types
     def specializedBy(member: Symbol): Boolean = (
       if (member eq NoSymbol) false
       else if (member.isOverloaded) member.alternatives exists directlySpecializedBy
+      // Subtyping checks between structural types should distinguish
+      // regular methods and macros, otherwise we're going to run into SI-7340.
+      // There's one detail though. Since implicit conversions are looked up using
+      // structural types that look like: "? { def foo: ? }", where question marks
+      // stand for WildcardType, we need to allow such structural types to match
+      // situations when the target member is a macro.
+      else if (member.isMacro && !sym.isMacro && sym.isOnlyRefinementMember && sym.info != WildcardType) false
+      else if (!member.isMacro && sym.isMacro) false
       else directlySpecializedBy(member)
     )
 
