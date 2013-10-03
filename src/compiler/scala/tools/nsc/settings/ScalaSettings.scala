@@ -111,6 +111,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Xshowobj      = StringSetting     ("-Xshow-object", "object", "Show internal representation of object.", "")
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases.")
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
+  val strictInference = BooleanSetting  ("-Xstrict-inference", "Don't infer known-unsound types")
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs     = BooleanSetting    ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")

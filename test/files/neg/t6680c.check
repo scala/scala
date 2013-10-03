@@ -1,0 +1,6 @@
+t6680c.scala:15: error: type mismatch;
+ found   : String("a string!")
+ required: S
+    res match { case Unfold(s, f) => f("a string!") }
+                                       ^
+one error found

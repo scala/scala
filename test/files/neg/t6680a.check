@@ -1,0 +1,11 @@
+t6680a.scala:10: error: type mismatch;
+ found   : String("abc")
+ required: A
+    y.x = "abc"
+          ^
+t6680a.scala:17: error: type mismatch;
+ found   : String("")
+ required: A
+  case class C[A](f:A=>A);def f(x:Any)=x match { case C(f)=>f("") };f(C[Int](x=>x))
+                                                              ^
+two errors found

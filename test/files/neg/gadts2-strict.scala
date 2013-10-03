@@ -1,3 +1,4 @@
+// A copy of pos/gadts2, which must fail under -Xstrict-inference.
 object Test {
 
   abstract class Number
