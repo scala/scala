@@ -9,7 +9,7 @@ of Scala. To do so enter the following commands one after the other:
 
         git clone https://github.com/scala-ide/scala-ide.git
         cd scala-ide
-        ./build-all.sh clean install -Pscala-2.11.x -Psbt-new -Peclipse-kepler -DskipTests
+        ./build-all.sh clean install -Pscala-2.11.x -Peclipse-kepler -DskipTests
 
   After that you have an update site in `scala-ide/org.scala-ide.sdt.update-site/target/site`, which needs to be
 installed in Eclipse.
