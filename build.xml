@@ -1623,7 +1623,7 @@ TODO:
   </target>
 
   <!-- See test/build-partest.xml for the macro(s) being used here. -->
-  <target name="partest.task" depends="init,pack.done">
+  <target name="partest.task" depends="pack.done">
     <!-- note the classpathref! this is the classpath used to run partest,
     so it must have the new compiler.... -->
     <taskdef
@@ -1631,7 +1631,7 @@ TODO:
        resource="scala/tools/partest/antlib.xml"/>
   </target>
 
-  <target name="test.suite.init" depends="pack.done, partest.task">
+  <target name="test.suite.init" depends="partest.task">
     <!-- read by test/partest to determine classpath used to run partest -->
     <propertyfile file = "build/pack/partest.properties">
       <entry key       = "partest.classpath" value="${toString:partest.compilation.path}"/>
