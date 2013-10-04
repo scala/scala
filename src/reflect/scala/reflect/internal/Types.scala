@@ -979,6 +979,18 @@ trait Types
       else (baseClasses.head.newOverloaded(this, alts))
     }
 
+    /** Find all members meeting the flag requirements.
+     *
+     * If you require a DEFERRED member, you will get it if it exists -- even if there's an overriding concrete member.
+     * If you exclude DEFERRED members, or don't specify any requirements,
+     *    you won't get deferred members (whether they have an overriding concrete member or not)
+     *
+     * Thus, findMember requiring DEFERRED flags yields deferred members,
+     * while `findMember(excludedFlags = 0, requiredFlags = 0).filter(_.isDeferred)` may not (if there's a corresponding concrete member)
+     *
+     * Requirements take precedence over exclusions, so requiring and excluding DEFERRED will yield a DEFERRED member (if there is one).
+     *
+     */
     def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
       def findMembersInternal: Scope = {
         var members: Scope = null
@@ -988,10 +1000,10 @@ trait Types
         //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
         var required = requiredFlags
         var excluded = excludedFlags | DEFERRED
-        var continue = true
+        var retryForDeferred = true
         var self: Type = null
-        while (continue) {
-          continue = false
+        while (retryForDeferred) {
+          retryForDeferred = false
           val bcs0 = baseClasses
           var bcs = bcs0
           while (!bcs.isEmpty) {
@@ -1023,7 +1035,7 @@ trait Types
                   }
                   if (others eq null) members enter sym
                 } else if (excl == DEFERRED) {
-                  continue = true
+                  retryForDeferred = (excludedFlags & DEFERRED) == 0
                 }
               }
               entry = entry.next
@@ -1033,7 +1045,7 @@ trait Types
           } // while (!bcs.isEmpty)
           required |= DEFERRED
           excluded &= ~(DEFERRED.toLong)
-        } // while (continue)
+        } // while (retryForDeferred)
         if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
         if (members eq null) EmptyScope else members
       }
