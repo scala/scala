@@ -2846,18 +2846,45 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       block
     }
 
-
+    /** Type check a function literal.
+     *
+     * Based on the expected type pt, potentially synthesize an instance of
+     *   - PartialFunction,
+     *   - a type with a Single Abstract Method (under -Xexperimental for now).
+     */
     private def typedFunction(fun: Function, mode: Mode, pt: Type): Tree = {
       val numVparams = fun.vparams.length
-      if (numVparams > definitions.MaxFunctionArity)
-        return MaxFunctionArityError(fun)
+      val FunctionSymbol =
+        if (numVparams > definitions.MaxFunctionArity) NoSymbol
+        else FunctionClass(numVparams)
 
-      val FunctionSymbol = FunctionClass(numVparams)
-      val (argpts, respt) = pt baseType FunctionSymbol match {
-        case TypeRef(_, FunctionSymbol, args :+ res) => (args, res)
-        case _                                       => (fun.vparams map (_ => NoType), WildcardType)
-      }
-      if (argpts.lengthCompare(numVparams) != 0)
+      /* The Single Abstract Member of pt, unless pt is the built-in function type of the expected arity,
+       * as `(a => a): Int => Int` should not (yet) get the sam treatment.
+       */
+      val sam =
+        if (!settings.Xexperimental || pt.typeSymbol == FunctionSymbol) NoSymbol
+        else samOf(pt)
+
+      /* The SAM case comes first so that this works:
+       *   abstract class MyFun extends (Int => Int)
+       *   (a => a): MyFun
+       *
+       * Note that the arity of the sam must correspond to the arity of the function.
+       */
+      val (argpts, respt) =
+        if (sam.exists && sameLength(sam.info.params, fun.vparams)) {
+          val samInfo = pt memberInfo sam
+          (samInfo.paramTypes, samInfo.resultType)
+        } else {
+          pt baseType FunctionSymbol match {
+            case TypeRef(_, FunctionSymbol, args :+ res) => (args, res)
+            case _                                       => (fun.vparams map (_ => NoType), WildcardType)
+          }
+        }
+
+      if (!FunctionSymbol.exists)
+        MaxFunctionArityError(fun)
+      else if (argpts.lengthCompare(numVparams) != 0)
         WrongNumberOfParametersError(fun, argpts)
       else {
         foreach2(fun.vparams, argpts) { (vparam, argpt) =>
@@ -2868,7 +2895,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 fun match {
                   case etaExpansion(vparams, fn, args) =>
                     silent(_.typed(fn, mode.forFunMode, pt)) filter (_ => context.undetparams.isEmpty) map { fn1 =>
-                        // if context,undetparams is not empty, the function was polymorphic,
+                        // if context.undetparams is not empty, the function was polymorphic,
                         // so we need the missing arguments to infer its type. See #871
                         //println("typing eta "+fun+":"+fn1.tpe+"/"+context.undetparams)
                         val ftpe = normalize(fn1.tpe) baseType FunctionClass(numVparams)
@@ -2896,6 +2923,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
 
             outerTyper.synthesizePartialFunction(p.name, p.pos, fun.body, mode, pt)
+
+          // Use synthesizeSAMFunction to expand `(p1: T1, ..., pN: TN) => body`
+          // to an instance of the corresponding anonymous subclass of `pt`.
+          case _ if sam.exists =>
+            newTyper(context.outer).synthesizeSAMFunction(sam, fun, respt, pt, mode)
+
+          // regular Function
           case _ =>
             val vparamSyms = fun.vparams map { vparam =>
               enterSym(context, vparam)
