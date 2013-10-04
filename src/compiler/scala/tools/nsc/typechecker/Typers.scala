@@ -2693,6 +2693,160 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
     }
 
+    /** Synthesize and type check the implementation of a type with a Single Abstract Method
+     *
+     *  `{ (p1: T1, ..., pN: TN) => body } : S`
+     *
+     *  expands to (where `S` is the expected type that defines a single abstract method named `apply`)
+     *
+     *  `{
+     *    def apply$body(p1: T1, ..., pN: TN): T = body
+     *    new S {
+     *     def apply(p1: T1, ..., pN: TN): T = apply$body(p1,..., pN)
+     *    }
+     *  }`
+     *
+     * If 'T' is not fully defined, it is inferred by type checking
+     * `apply$body` without a result type before type checking the block.
+     * The method's inferred result type is used instead of T`. [See test/files/pos/sammy_poly.scala]
+     *
+     * The `apply` method is identified by the argument `sam`; `S` corresponds to the argument `samClassTp`,
+     * and `resPt` is derived from `samClassTp` -- it may be fully defined, or not...
+     *
+     * The function's body is put in a method outside of the class definition to enforce scoping.
+     * S's members should not be in scope in `body`.
+     *
+     * The restriction on implicit arguments (neither S's constructor, nor sam may take an implicit argument list),
+     * is largely to keep the implementation of type inference (the computation of `samClassTpFullyDefined`) simple.
+     *
+     * NOTE: it would be nicer to not have to type check `apply$body` separately when `T` is not fully defined.
+     * However T must be fully defined before we type the instantiation, as it'll end up as a parent type,
+     * which must be fully defined. Would be nice to have some kind of mechanism to insert type vars in a block of code,
+     * and have the instantiation of the first occurrence propagate to the rest of the block.
+     */
+    def synthesizeSAMFunction(sam: Symbol, fun: Function, resPt: Type, samClassTp: Type, mode: Mode): Tree = {
+      // assert(fun.vparams forall (vp => isFullyDefined(vp.tpt.tpe))) -- by construction, as we take them from sam's info
+      val sampos = fun.pos
+
+      // if the expected sam type is fully defined, use it for the method's result type
+      // otherwise, NoType, so that type inference will determine the method's result type
+      // resPt is syntactically contained in samClassTp, so if the latter is fully defined, so is the former
+      // ultimately, we want to fully define samClassTp as it is used as the superclass of our anonymous class
+      val samDefTp = if (isFullyDefined(resPt)) resPt else NoType
+      val bodyName = newTermName(sam.name + "$body")
+
+      // `def '${sam.name}\$body'($p1: $T1, ..., $pN: $TN): $resPt = $body`
+      val samBodyDef =
+        DefDef(NoMods,
+          bodyName,
+          Nil,
+          List(fun.vparams.map(_.duplicate)), // must duplicate as we're also using them for `samDef`
+          TypeTree(samDefTp) setPos sampos.focus,
+          fun.body)
+
+      // If we need to enter the sym for the body def before type checking the block,
+      // we'll create a nested context, as explained below.
+      var nestedTyper = this
+
+      // Type check body def before classdef to fully determine samClassTp (if necessary).
+      // As `samClassTp` determines a parent type for the class,
+      // we can't type check `block` in one go unless `samClassTp` is fully defined.
+      val samClassTpFullyDefined =
+        if (isFullyDefined(samClassTp)) samClassTp
+        else try {
+          // This creates a symbol for samBodyDef with a type completer that'll be triggered immediately below.
+          // The symbol is entered in the same scope used for the block below, and won't thus be reentered later.
+          // It has to be a new scope, though, or we'll "get ambiguous reference to overloaded definition" [pos/sammy_twice.scala]
+          // makeSilent: [pos/nonlocal-unchecked.scala -- when translation all functions to sams]
+          val nestedCtx = enterSym(context.makeNewScope(context.tree, context.owner).makeSilent(), samBodyDef)
+          nestedTyper = newTyper(nestedCtx)
+
+          // NOTE: this `samBodyDef.symbol.info` runs the type completer set up by the enterSym above
+          val actualSamType = samBodyDef.symbol.info
+
+          // println(samClassTp)
+
+          // we're trying to fully define the type arguments for this type constructor
+          val samTyCon  = samClassTp.typeSymbol.typeConstructor
+
+          // the unknowns
+          val tparams   = samClassTp.typeSymbol.typeParams
+          // ... as typevars
+          val tvars     = tparams map freshVar
+
+          // 1. Recover partial information:
+          //   - derive a type from samClassTp that has the corresponding tparams for type arguments that aren't fully defined
+          //   - constrain typevars to be equal to type args that are fully defined
+          val samClassTpMoreDefined = appliedType(samTyCon,
+            (samClassTp.typeArgs, tparams, tvars).zipped map {
+              case (a, _, tv) if isFullyDefined(a) => tv =:= a; a
+              case (_, p, _)                       => p.typeConstructor
+            })
+
+          // the method type we're expecting the synthesized sam to have, based on the expected sam type,
+          // where fully defined type args to samClassTp have been preserved,
+          // with the unknown args replaced by their corresponding type param
+          val expectedSamType = samClassTpMoreDefined.memberInfo(sam)
+
+          // 2. make sure the body def's actual type (formals and result) conforms to
+          //    sam's expected type (in terms of the typevars that represent the sam's class's type params)
+          actualSamType <:< expectedSamType.substituteTypes(tparams, tvars)
+
+          // solve constraints tracked by tvars
+          val targs = solvedTypes(tvars, tparams, tparams map varianceInType(sam.info), upper = false, lubDepth(sam.info :: Nil))
+
+          debuglog(s"sam infer: $samClassTp --> ${appliedType(samTyCon, targs)} by ${actualSamType} <:< ${expectedSamType} --> $targs for $tparams")
+
+          // a fully defined samClassTp
+          appliedType(samTyCon, targs)
+        } catch {
+          case _: NoInstance | _: TypeError =>
+            println("TODO: OOPS")
+            samClassTp
+        }
+
+      // `final override def ${sam.name}($p1: $T1, ..., $pN: $TN): $resPt = ${sam.name}\$body'($p1, ..., $pN)`
+      val samDef =
+        DefDef(Modifiers(FINAL | OVERRIDE),
+          sam.name.toTermName,
+          Nil,
+          List(fun.vparams),
+          TypeTree(samBodyDef.tpt.tpe) setPos sampos.focus,
+          Apply(Ident(bodyName), fun.vparams map (p => Ident(p.name)))
+        )
+
+      val serializableParentAddendum =
+        if (typeIsSubTypeOfSerializable(samClassTp)) Nil
+        else List(TypeTree(SerializableTpe))
+
+      val classDef =
+        ClassDef(Modifiers(FINAL), tpnme.ANON_FUN_NAME, tparams = Nil,
+          gen.mkTemplate(
+            parents    = TypeTree(samClassTpFullyDefined) :: serializableParentAddendum,
+            self       = emptyValDef,
+            constrMods = NoMods,
+            vparamss   = ListOfNil,
+            body       = List(samDef),
+            superPos   = sampos.focus
+          )
+        )
+
+      // type checking the whole block, so that everything is packaged together nicely
+      // and we don't have to create any symbols by hand
+      val block =
+        nestedTyper.typedPos(sampos, mode, samClassTpFullyDefined) {
+          Block(
+            samBodyDef,
+            classDef,
+            Apply(Select(New(Ident(tpnme.ANON_FUN_NAME)), nme.CONSTRUCTOR), Nil)
+          )
+        }
+
+      classDef.symbol addAnnotation AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
+      block
+    }
+
+
     private def typedFunction(fun: Function, mode: Mode, pt: Type): Tree = {
       val numVparams = fun.vparams.length
       if (numVparams > definitions.MaxFunctionArity)
