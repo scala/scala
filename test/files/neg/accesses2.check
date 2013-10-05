@@ -1,0 +1,4 @@
+accesses2.scala:5: error: class B1 needs to be abstract, since method f2 in class A of type ()Int is not defined
+  class B1 extends A {
+        ^
+one error found
