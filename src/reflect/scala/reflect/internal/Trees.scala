@@ -8,10 +8,66 @@ package reflect
 package internal
 
 import Flags._
-import scala.collection.mutable.{ListBuffer, LinkedHashSet}
+import pickling.PickleFormat._
+import scala.collection.{ mutable, immutable }
 import util.Statistics
 
 trait Trees extends api.Trees { self: SymbolTable =>
+
+  def picklesSymbol(code: Int): Boolean = (code: @annotation.switch) match {
+    case PACKAGEtree | CLASStree | MODULEtree | VALDEFtree | DEFDEFtree | TYPEDEFtree | LABELtree => true
+    case IMPORTtree | TEMPLATEtree | BINDtree | FUNCTIONtree | RETURNtree                         => true
+    case APPLYDYNAMICtree | SUPERtree | THIStree | SELECTtree | IDENTtree                         => true
+    case _                                                                                        => false
+  }
+
+  def picklesSymbol(tree: Tree): Boolean = picklesSymbol(picklerTreeTag(tree))
+
+  def picklerTreeTag(tree: Tree): Int = tree match {
+    case EmptyTree              => EMPTYtree
+    case _: PackageDef          => PACKAGEtree
+    case _: ClassDef            => CLASStree
+    case _: ModuleDef           => MODULEtree
+    case _: ValDef              => VALDEFtree
+    case _: DefDef              => DEFDEFtree
+    case _: TypeDef             => TYPEDEFtree
+    case _: LabelDef            => LABELtree
+    case _: Import              => IMPORTtree
+    // case _: DocDef              => DOCDEFtree
+    case _: Template            => TEMPLATEtree
+    case _: Block               => BLOCKtree
+    case _: CaseDef             => CASEtree
+    case _: Alternative         => ALTERNATIVEtree
+    case _: Star                => STARtree
+    case _: Bind                => BINDtree
+    case _: UnApply             => UNAPPLYtree
+    case _: ArrayValue          => ARRAYVALUEtree
+    case _: Function            => FUNCTIONtree
+    case _: Assign              => ASSIGNtree
+    case _: If                  => IFtree
+    case _: Match               => MATCHtree
+    case _: Return              => RETURNtree
+    case _: Try                 => TREtree     // TREtree?
+    case _: Throw               => THROWtree
+    case _: New                 => NEWtree
+    case _: Typed               => TYPEDtree
+    case _: TypeApply           => TYPEAPPLYtree
+    case _: Apply               => APPLYtree
+    case _: ApplyDynamic        => APPLYDYNAMICtree
+    case _: Super               => SUPERtree
+    case _: This                => THIStree
+    case _: Select              => SELECTtree
+    case _: Ident               => IDENTtree
+    case _: Literal             => LITERALtree
+    case _: TypeTree            => TYPEtree
+    case _: Annotated           => ANNOTATEDtree
+    case _: SingletonTypeTree   => SINGLETONTYPEtree
+    case _: SelectFromTypeTree  => SELECTFROMTYPEtree
+    case _: CompoundTypeTree    => COMPOUNDTYPEtree
+    case _: AppliedTypeTree     => APPLIEDTYPEtree
+    case _: TypeBoundsTree      => TYPEBOUNDStree
+    case _: ExistentialTypeTree => EXISTENTIALTYPEtree
+  }
 
   private[scala] var nodeCount = 0
 
@@ -160,7 +216,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def freeTypes: List[FreeTypeSymbol] = freeSyms[FreeTypeSymbol](_.isFreeType, _.typeSymbol)
 
     private def freeSyms[S <: Symbol](isFree: Symbol => Boolean, symOfType: Type => Symbol): List[S] = {
-      val s = scala.collection.mutable.LinkedHashSet[S]()
+      val s = mutable.LinkedHashSet[S]()
       def addIfFree(sym: Symbol): Unit = if (sym != null && isFree(sym)) s += sym.asInstanceOf[S]
       for (t <- this) {
         addIfFree(t.symbol)
@@ -1159,6 +1215,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
 
   override protected def itraverse(traverser: Traverser, tree: Tree): Unit = {
     import traverser._
+
     tree match {
       case EmptyTree =>
         ;
@@ -1169,84 +1226,123 @@ trait Trees extends api.Trees { self: SymbolTable =>
         }
       case ClassDef(mods, name, tparams, impl) =>
         atOwner(tree.symbol) {
-          traverseTrees(mods.annotations); traverseTrees(tparams); traverse(impl)
+          traverseModifiers(mods)
+          traverseName(name)
+          traverseTrees(tparams)
+          traverse(impl)
         }
       case ModuleDef(mods, name, impl) =>
         atOwner(mclass(tree.symbol)) {
-          traverseTrees(mods.annotations); traverse(impl)
+          traverseModifiers(mods)
+          traverseName(name)
+          traverse(impl)
         }
       case ValDef(mods, name, tpt, rhs) =>
         atOwner(tree.symbol) {
-          traverseTrees(mods.annotations); traverse(tpt); traverse(rhs)
+          traverseModifiers(mods)
+          traverseName(name)
+          traverse(tpt)
+          traverse(rhs)
         }
       case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         atOwner(tree.symbol) {
-          traverseTrees(mods.annotations); traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
+          traverseModifiers(mods)
+          traverseName(name)
+          traverseTrees(tparams)
+          traverseTreess(vparamss)
+          traverse(tpt)
+          traverse(rhs)
         }
       case TypeDef(mods, name, tparams, rhs) =>
         atOwner(tree.symbol) {
-          traverseTrees(mods.annotations); traverseTrees(tparams); traverse(rhs)
+          traverseModifiers(mods)
+          traverseName(name)
+          traverseTrees(tparams)
+          traverse(rhs)
         }
       case LabelDef(name, params, rhs) =>
-        traverseTrees(params); traverse(rhs)
+        traverseName(name)
+        traverseTrees(params)
+        traverse(rhs)
       case Import(expr, selectors) =>
         traverse(expr)
       case Annotated(annot, arg) =>
-        traverse(annot); traverse(arg)
+        traverse(annot)
+        traverse(arg)
       case Template(parents, self, body) =>
         traverseTrees(parents)
         if (self ne noSelfType) traverse(self)
         traverseStats(body, tree.symbol)
       case Block(stats, expr) =>
-        traverseTrees(stats); traverse(expr)
+        traverseTrees(stats)
+        traverse(expr)
       case CaseDef(pat, guard, body) =>
-        traverse(pat); traverse(guard); traverse(body)
+        traverse(pat)
+        traverse(guard)
+        traverse(body)
       case Alternative(trees) =>
         traverseTrees(trees)
       case Star(elem) =>
         traverse(elem)
       case Bind(name, body) =>
+        traverseName(name)
         traverse(body)
       case UnApply(fun, args) =>
-        traverse(fun); traverseTrees(args)
+        traverse(fun)
+        traverseTrees(args)
       case ArrayValue(elemtpt, trees) =>
-        traverse(elemtpt); traverseTrees(trees)
+        traverse(elemtpt)
+        traverseTrees(trees)
       case Function(vparams, body) =>
         atOwner(tree.symbol) {
-          traverseTrees(vparams); traverse(body)
+          traverseTrees(vparams)
+          traverse(body)
         }
       case Assign(lhs, rhs) =>
-        traverse(lhs); traverse(rhs)
+        traverse(lhs)
+        traverse(rhs)
       case AssignOrNamedArg(lhs, rhs) =>
-        traverse(lhs); traverse(rhs)
+        traverse(lhs)
+        traverse(rhs)
       case If(cond, thenp, elsep) =>
-        traverse(cond); traverse(thenp); traverse(elsep)
+        traverse(cond)
+        traverse(thenp)
+        traverse(elsep)
       case Match(selector, cases) =>
-        traverse(selector); traverseTrees(cases)
+        traverse(selector)
+        traverseTrees(cases)
       case Return(expr) =>
         traverse(expr)
       case Try(block, catches, finalizer) =>
-        traverse(block); traverseTrees(catches); traverse(finalizer)
+        traverse(block)
+        traverseTrees(catches)
+        traverse(finalizer)
       case Throw(expr) =>
         traverse(expr)
       case New(tpt) =>
         traverse(tpt)
       case Typed(expr, tpt) =>
-        traverse(expr); traverse(tpt)
+        traverse(expr)
+        traverse(tpt)
       case TypeApply(fun, args) =>
-        traverse(fun); traverseTrees(args)
+        traverse(fun)
+        traverseTrees(args)
       case Apply(fun, args) =>
-        traverse(fun); traverseTrees(args)
+        traverse(fun)
+        traverseTrees(args)
       case ApplyDynamic(qual, args) =>
-        traverse(qual); traverseTrees(args)
-      case Super(qual, _) =>
         traverse(qual)
-      case This(_) =>
-        ;
+        traverseTrees(args)
+      case Super(qual, mix) =>
+        traverse(qual)
+        traverseName(mix)
+      case This(qual) =>
+        traverseName(qual)
       case Select(qualifier, selector) =>
         traverse(qualifier)
-      case Ident(_) =>
-        ;
+        traverseName(selector)
+      case Ident(name) =>
+        traverseName(name)
       case ReferenceToBoxed(idt) =>
         traverse(idt)
       case Literal(_) =>
@@ -1257,15 +1353,20 @@ trait Trees extends api.Trees { self: SymbolTable =>
         traverse(ref)
       case SelectFromTypeTree(qualifier, selector) =>
         traverse(qualifier)
+        traverseName(selector)
       case CompoundTypeTree(templ) =>
         traverse(templ)
       case AppliedTypeTree(tpt, args) =>
-        traverse(tpt); traverseTrees(args)
+        traverse(tpt)
+        traverseTrees(args)
       case TypeBoundsTree(lo, hi) =>
-        traverse(lo); traverse(hi)
+        traverse(lo)
+        traverse(hi)
       case ExistentialTypeTree(tpt, whereClauses) =>
-        traverse(tpt); traverseTrees(whereClauses)
-      case _ => xtraverse(traverser, tree)
+        traverse(tpt)
+        traverseTrees(whereClauses)
+      case _ =>
+        xtraverse(traverser, tree)
     }
   }
 
@@ -1563,7 +1664,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   }
 
   class FilterTreeTraverser(p: Tree => Boolean) extends Traverser {
-    val hits = new ListBuffer[Tree]
+    val hits = mutable.ListBuffer[Tree]()
     override def traverse(t: Tree) {
       if (p(t)) hits += t
       super.traverse(t)
@@ -1571,7 +1672,7 @@ trait Trees extends api.Trees { self: SymbolTable =>
   }
 
   class CollectTreeTraverser[T](pf: PartialFunction[Tree, T]) extends Traverser {
-    val results = new ListBuffer[T]
+    val results = mutable.ListBuffer[T]()
     override def traverse(t: Tree) {
       if (pf.isDefinedAt(t)) results += pf(t)
       super.traverse(t)
