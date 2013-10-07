@@ -913,12 +913,13 @@ trait Infer extends Checkable {
       val targs  = exprTypeArgs(tvars, tparams, treeTp, pt, useWeaklyCompatible)
       def infer_s = map3(tparams, tvars, targs)((tparam, tvar, targ) => s"$tparam=$tvar/$targ") mkString ","
       printTyping(tree, s"infer expr instance from pt=$pt, $infer_s")
+      def targsStrict = if (targs eq null) null else targs mapConserve dropByName
 
       if (keepNothings || (targs eq null)) { //@M: adjustTypeArgs fails if targs==null, neg/t0226
-        substExpr(tree, tparams, targs, pt)
+        substExpr(tree, tparams, targsStrict, pt)
         List()
       } else {
-        val AdjustedTypeArgs.Undets(okParams, okArgs, leftUndet) = adjustTypeArgs(tparams, tvars, targs)
+        val AdjustedTypeArgs.Undets(okParams, okArgs, leftUndet) = adjustTypeArgs(tparams, tvars, targsStrict)
         def solved_s = map2(okParams, okArgs)((p, a) => s"$p=$a") mkString ","
         def undet_s = leftUndet match {
           case Nil => ""
