@@ -2498,9 +2498,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       // targs must conform to Any for us to synthesize an applyOrElse (fallback to apply otherwise -- typically for @cps annotated targs)
       val targsValidParams = targs forall (_ <:< AnyTpe)
 
-      val anonClass = (context.owner
-        newAnonymousFunctionClass tree.pos
-        addAnnotation AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List()))
+      val anonClass = context.owner newAnonymousFunctionClass tree.pos addAnnotation SerialVersionUIDAnnotation
 
       import CODE._
 
@@ -2795,19 +2793,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // solve constraints tracked by tvars
           val targs = solvedTypes(tvars, tparams, tparams map varianceInType(sam.info), upper = false, lubDepth(sam.info :: Nil))
 
-          debuglog(s"sam infer: $samClassTp --> ${appliedType(samTyCon, targs)} by ${actualSamType} <:< ${expectedSamType} --> $targs for $tparams")
+          debuglog(s"sam infer: $samClassTp --> ${appliedType(samTyCon, targs)} by $actualSamType <:< $expectedSamType --> $targs for $tparams")
 
           // a fully defined samClassTp
           appliedType(samTyCon, targs)
         } catch {
           case _: NoInstance | _: TypeError =>
-            println("TODO: OOPS")
+            devWarning(sampos, s"Could not define type $samClassTp using ${samBodyDef.symbol.rawInfo} <:< ${samClassTp memberInfo sam} (for $sam)")
             samClassTp
         }
 
       // `final override def ${sam.name}($p1: $T1, ..., $pN: $TN): $resPt = ${sam.name}\$body'($p1, ..., $pN)`
       val samDef =
-        DefDef(Modifiers(FINAL | OVERRIDE),
+        DefDef(Modifiers(FINAL | OVERRIDE | SYNTHETIC),
           sam.name.toTermName,
           Nil,
           List(fun.vparams),
@@ -2842,7 +2840,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           )
         }
 
-      classDef.symbol addAnnotation AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
+      classDef.symbol addAnnotation SerialVersionUIDAnnotation
       block
     }
 
