@@ -2392,9 +2392,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (pat1.tpe.paramSectionCount > 0)
         pat1 modifyType (_.finalResultType)
 
-      for (bind @ Bind(name, _) <- cdef.pat)
-        if (name.toTermName != nme.WILDCARD && bind.symbol != null && bind.symbol != NoSymbol)
-          namer.enterIfNotThere(bind.symbol)
+      for (bind @ Bind(name, _) <- cdef.pat) {
+        val sym = bind.symbol
+        if (name.toTermName != nme.WILDCARD && sym != null) {
+          if (sym == NoSymbol) {
+            if (context.scope.lookup(name) == NoSymbol)
+              namer.enterInScope(context.owner.newErrorSymbol(name))
+          } else
+            namer.enterIfNotThere(sym)
+        }
+      }
 
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
                          else typed(cdef.guard, BooleanTpe)
