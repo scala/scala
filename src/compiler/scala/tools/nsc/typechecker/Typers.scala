@@ -2871,8 +2871,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        *
        * Note that the arity of the sam must correspond to the arity of the function.
        */
+      val samViable = sam.exists && sameLength(sam.info.params, fun.vparams)
       val (argpts, respt) =
-        if (sam.exists && sameLength(sam.info.params, fun.vparams)) {
+        if (samViable) {
           val samInfo = pt memberInfo sam
           (samInfo.paramTypes, samInfo.resultType)
         } else {
@@ -2926,7 +2927,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           // Use synthesizeSAMFunction to expand `(p1: T1, ..., pN: TN) => body`
           // to an instance of the corresponding anonymous subclass of `pt`.
-          case _ if sam.exists =>
+          case _ if samViable =>
             newTyper(context.outer).synthesizeSAMFunction(sam, fun, respt, pt, mode)
 
           // regular Function
