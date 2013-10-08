@@ -79,12 +79,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case SilentResultValue(value) if !p(value) => SilentTypeError(TypeErrorWrapper(new TypeError(NoPosition, "!p")))
       case _                                     => this
   }
-    @inline final def orElse[T1 >: T](f: AbsTypeError => T1): T1 = this match {
+    @inline final def orElse[T1 >: T](f: Seq[AbsTypeError] => T1): T1 = this match {
       case SilentResultValue(value) => value
-      case SilentTypeError(err)     => f(err)
+      case s : SilentTypeError      => f(s.errors)
     }
   }
-  case class SilentTypeError(err: AbsTypeError) extends SilentResult[Nothing] { }
+  class SilentTypeError private(val errors: Seq[AbsTypeError]) extends SilentResult[Nothing] {
+    def err: AbsTypeError = errors.head
+  }
+  object SilentTypeError {
+    def apply(errors: AbsTypeError*): SilentTypeError = new SilentTypeError(errors)
+    def unapply(error: SilentTypeError): Option[AbsTypeError] = error.errors.headOption
+  }
+
   case class SilentResultValue[+T](value: T) extends SilentResult[T] { }
 
   def newTyper(context: Context): Typer = new NormalTyper(context)
@@ -682,14 +689,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           context.undetparams = context1.undetparams
           context.savedTypeBounds = context1.savedTypeBounds
           context.namedApplyBlockInfo = context1.namedApplyBlockInfo
-          context1.firstError match {
-            case Some(err) =>
-              stopStats()
-              SilentTypeError(err)
-            case None =>
-              // If we have a successful result, emit any warnings it created.
-              context1.flushAndIssueWarnings()
-              SilentResultValue(result)
+          if (context1.hasErrors) {
+            stopStats()
+            SilentTypeError(context1.errors: _*)
+          } else {
+            // If we have a successful result, emit any warnings it created.
+            context1.flushAndIssueWarnings()
+            SilentResultValue(result)
           }
         } else {
           assert(context.bufferErrors || isPastTyper, "silent mode is not available past typer")
@@ -1258,9 +1264,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           reportError
       }
 
-      silent(_.adaptToMember(qual, HasMember(name), reportAmbiguous = false)) orElse (err =>
+      silent(_.adaptToMember(qual, HasMember(name), reportAmbiguous = false)) orElse (errs =>
         onError {
-          if (reportAmbiguous) context issue err
+          if (reportAmbiguous) errs foreach (context issue _)
           setError(tree)
         }
       )
@@ -3786,7 +3792,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         }
       }
-      def wrapErrors(tree: Tree, typeTree: Typer => Tree): Tree = silent(typeTree) orElse (err => DynamicRewriteError(tree, err))
+      def wrapErrors(tree: Tree, typeTree: Typer => Tree): Tree = silent(typeTree) orElse (err => DynamicRewriteError(tree, err.head))
     }
 
     def typed1(tree: Tree, mode: Mode, pt: Type): Tree = {
@@ -4173,7 +4179,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val start = if (Statistics.canEnable) Statistics.startTimer(failedApplyNanos) else null
 
-        def onError(typeError: AbsTypeError): Tree = {
+        def onError(typeErrors: Seq[AbsTypeError]): Tree = {
           if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, start)
 
           // If the problem is with raw types, copnvert to existentials and try again.
@@ -4198,13 +4204,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case TypeApply(fun, args)               => treesInResult(fun) ++ args.flatMap(treesInResult)
             case _                                  => Nil
           })
-          def errorInResult(tree: Tree) = treesInResult(tree) exists (_.pos == typeError.errPos)
+          def errorInResult(tree: Tree) = treesInResult(tree) exists (err => typeErrors.exists(_.errPos == err.pos))
 
-          val retry = (typeError.errPos != null) && (fun :: tree :: args exists errorInResult)
+          val retry = (typeErrors.forall(_.errPos != null)) && (fun :: tree :: args exists errorInResult)
           typingStack.printTyping({
             val funStr = ptTree(fun) + " and " + (args map ptTree mkString ", ")
             if (retry) "second try: " + funStr
-            else "no second try: " + funStr + " because error not in result: " + typeError.errPos+"!="+tree.pos
+            else "no second try: " + funStr + " because error not in result: " + typeErrors.head.errPos+"!="+tree.pos
           })
           if (retry) {
             val Select(qual, name) = fun
@@ -4220,7 +4226,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case _ => ()
             }
           }
-          issue(typeError)
+          typeErrors foreach issue
           setError(treeCopy.Apply(tree, fun, args))
         }
 

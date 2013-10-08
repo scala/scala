@@ -7,6 +7,11 @@ names-defaults-neg.scala:5: error: type mismatch;
  required: Int
   test1(b = 2, a = "#")
                    ^
+names-defaults-neg.scala:5: error: type mismatch;
+ found   : Int(2)
+ required: String
+  test1(b = 2, a = "#")
+            ^
 names-defaults-neg.scala:8: error: positional after named argument.
   test1(b = "(*", 23)
                   ^
@@ -122,6 +127,12 @@ names-defaults-neg.scala:131: error: reference to var2 is ambiguous; it is both 
 names-defaults-neg.scala:134: error: missing parameter type for expanded function ((x$1) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
+names-defaults-neg.scala:134: error: not found: value a
+  val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
+                                     ^
+names-defaults-neg.scala:134: error: not found: value get
+  val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
+                                                ^
 names-defaults-neg.scala:135: error: parameter 'a' is already specified at parameter position 1
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
@@ -131,6 +142,9 @@ names-defaults-neg.scala:136: error: missing parameter type for expanded functio
 names-defaults-neg.scala:136: error: missing parameter type for expanded function ((x$4) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
+names-defaults-neg.scala:136: error: not found: value b
+  val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
+                                                  ^
 names-defaults-neg.scala:144: error: variable definition needs type because 'x' is used as a named argument in its body.
   def t3 { var x = t.f(x = 1) }
                ^
@@ -168,4 +182,4 @@ names-defaults-neg.scala:180: error: reference to x is ambiguous; it is both a m
   class u18 { var x: Int = u.f(x = 1) }
                                  ^
 four warnings found
-42 errors found
+46 errors found
