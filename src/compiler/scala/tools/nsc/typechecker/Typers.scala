@@ -81,14 +81,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   }
     @inline final def orElse[T1 >: T](f: Seq[AbsTypeError] => T1): T1 = this match {
       case SilentResultValue(value) => value
-      case s : SilentTypeError      => f(s.errors)
+      case s : SilentTypeError      => f(s.reportableErrors)
     }
   }
-  class SilentTypeError private(val errors: Seq[AbsTypeError]) extends SilentResult[Nothing] {
+  class SilentTypeError private(val errors: List[AbsTypeError]) extends SilentResult[Nothing] {
     def err: AbsTypeError = errors.head
+    def reportableErrors = errors match {
+      case (e1: AmbiguousImplicitTypeError) +: _ =>
+        List(e1) // DRYer error reporting for neg/t6436b.scala
+      case all =>
+        all
+    }
   }
   object SilentTypeError {
-    def apply(errors: AbsTypeError*): SilentTypeError = new SilentTypeError(errors)
+    def apply(errors: AbsTypeError*): SilentTypeError = new SilentTypeError(errors.toList)
     def unapply(error: SilentTypeError): Option[AbsTypeError] = error.errors.headOption
   }
 
@@ -2714,7 +2720,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val FunctionSymbol = FunctionClass(numVparams)
       val (argpts, respt) = pt baseType FunctionSymbol match {
         case TypeRef(_, FunctionSymbol, args :+ res) => (args, res)
-        case _                                       => (fun.vparams map (_ => NoType), WildcardType)
+        case _                                       => (fun.vparams map (_ => if (pt == ErrorType) ErrorType else NoType), WildcardType)
       }
       if (argpts.lengthCompare(numVparams) != 0)
         WrongNumberOfParametersError(fun, argpts)
@@ -4278,8 +4284,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               tryTypedApply(fun2, args)
             else
               doTypedApply(tree, fun2, args, mode, pt)
-          case SilentTypeError(err) =>
-            onError({ issue(err); setError(tree) })
+          case err: SilentTypeError =>
+            onError({
+              err.reportableErrors foreach issue
+              args foreach (arg => typed(arg, mode, ErrorType))
+              setError(tree)
+            })
         }
       }
 

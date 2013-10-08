@@ -1,0 +1,13 @@
+t7895c.scala:2: error: not found: value bong
+  def booboo = bong + booble + bippity - bazingo
+               ^
+t7895c.scala:2: error: not found: value booble
+  def booboo = bong + booble + bippity - bazingo
+                      ^
+t7895c.scala:2: error: not found: value bippity
+  def booboo = bong + booble + bippity - bazingo
+                               ^
+t7895c.scala:2: error: not found: value bazingo
+  def booboo = bong + booble + bippity - bazingo
+                                         ^
+four errors found
