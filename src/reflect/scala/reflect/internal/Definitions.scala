@@ -709,7 +709,82 @@ trait Definitions extends api.StandardDefinitions {
       case NullaryMethodType(restpe) => finalResultType(restpe)
       case _                         => tp
     }
+    /** Similarly, putting all the isStable logic in one place.
+     *  This makes it like 1000x easier to see the overall logic
+     *  of the method.
+     */
+    def isStable(tp: Type): Boolean = tp match {
+      case _: SingletonType                             => true
+      case NoPrefix                                     => true
+      case TypeRef(_, NothingClass | SingletonClass, _) => true
+      case TypeRef(_, sym, _) if sym.isAbstractType     => tp.bounds.hi.typeSymbol isSubClass SingletonClass
+      case TypeRef(pre, sym, _) if sym.isModuleClass    => isStable(pre)
+      case TypeRef(_, _, _) if tp ne tp.dealias         => isStable(tp.dealias)
+      case TypeVar(origin, _)                           => isStable(origin)
+      case AnnotatedType(_, atp, _)                     => isStable(atp)    // Really?
+      case _: SimpleTypeProxy                           => isStable(tp.underlying)
+      case _                                            => false
+    }
+    def isVolatile(tp: Type): Boolean = {
+      // need to be careful not to fall into an infinite recursion here
+      // because volatile checking is done before all cycles are detected.
+      // the case to avoid is an abstract type directly or
+      // indirectly upper-bounded by itself. See #2918
+      def isVolatileAbstractType: Boolean = {
+        def sym = tp.typeSymbol
+        def volatileUpperBound = isVolatile(tp.bounds.hi)
+        def safeIsVolatile = (
+          if (volatileRecursions < TypeConstants.LogVolatileThreshold)
+            volatileUpperBound
+          // we can return true when pendingVolatiles contains sym, because
+          // a cycle will be detected afterwards and an error will result anyway.
+          else pendingVolatiles(sym) || {
+            pendingVolatiles += sym
+            try volatileUpperBound finally pendingVolatiles -= sym
+          }
+        )
+        volatileRecursions += 1
+        try safeIsVolatile finally volatileRecursions -= 1
+      }
+      /** A refined type P1 with ... with Pn { decls } is volatile if
+       *  one of the parent types Pi is an abstract type, and
+       *  either i > 1, or decls or a following parent Pj, j > 1, contributes
+       *  an abstract member.
+       *  A type contributes an abstract member if it has an abstract member which
+       *  is also a member of the whole refined type. A scope `decls` contributes
+       *  an abstract member if it has an abstract definition which is also
+       *  a member of the whole type.
+       */
+      def isVolatileRefinedType: Boolean = {
+        val RefinedType(parents, decls)         = tp
+        def isVisibleDeferred(m: Symbol)        = m.isDeferred && ((tp nonPrivateMember m.name).alternatives contains m)
+        def contributesAbstractMembers(p: Type) = p.deferredMembers exists isVisibleDeferred
+        def dropConcreteParents                 = parents dropWhile (p => !p.typeSymbol.isAbstractType)
 
+        (parents exists isVolatile) || {
+          dropConcreteParents match {
+            case Nil => false
+            case ps  => (ps ne parents) || (ps.tail exists contributesAbstractMembers) || (decls exists isVisibleDeferred)
+          }
+        }
+      }
+
+      tp match {
+        case ThisType(_)                              => false
+        case SingleType(_, sym)                       => isVolatile(tp.underlying) && (sym.hasVolatileType || !sym.isStable)
+        case NullaryMethodType(restpe)                => isVolatile(restpe)
+        case PolyType(_, restpe)                      => isVolatile(restpe)
+        case TypeRef(_, _, _) if tp ne tp.dealias     => isVolatile(tp.dealias)
+        case TypeRef(_, sym, _) if sym.isAbstractType => isVolatileAbstractType
+        case RefinedType(_, _)                        => isVolatileRefinedType
+        case TypeVar(origin, _)                       => isVolatile(origin)
+        case _: SimpleTypeProxy                       => isVolatile(tp.underlying)
+        case _                                        => false
+      }
+    }
+
+    private[this] var volatileRecursions: Int = 0
+    private[this] val pendingVolatiles = mutable.HashSet[Symbol]()
     def abstractFunctionForFunctionType(tp: Type) = {
       assert(isFunctionType(tp), tp)
       abstractFunctionType(tp.typeArgs.init, tp.typeArgs.last)
