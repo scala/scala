@@ -6,221 +6,33 @@
 package scala.tools.nsc
 package transform
 
-import scala.collection.mutable
 import symtab.Flags._
-import util.HashSet
-import scala.annotation.tailrec
+import scala.reflect.internal.SymbolPairs
 
 /** A class that yields a kind of iterator (`Cursor`),
- *  which yields all pairs of overriding/overridden symbols
- *  that are visible in some baseclass, unless there's a parent class
- *  that already contains the same pairs.
- *  @author Martin Odersky
- *  @version 1.0
+ *  which yields pairs of corresponding symbols visible in some base class,
+ *  unless there's a parent class that already contains the same pairs.
+ *  Most of the logic is in SymbolPairs, which contains generic
+ *  pair-oriented traversal logic.
  */
-abstract class OverridingPairs {
-
-  val global: Global
+abstract class OverridingPairs extends SymbolPairs {
   import global._
 
-  /** The cursor class
-   *  @param base   the base class that contains the overriding pairs
-   */
-  class Cursor(base: Symbol) {
+  class Cursor(base: Symbol) extends super.Cursor(base) {
+    lazy val relatively = new RelativeTo(base.thisType)
 
-    private val self = base.thisType
-
-    /** Symbols to exclude: Here these are constructors, private locals,
-     *  and hidden symbols, including bridges. But it may be refined in subclasses.
-     *
+    /** Symbols to exclude: Here these are constructors and private/artifact symbols,
+     *  including bridges. But it may be refined in subclasses.
      */
-    protected def exclude(sym: Symbol): Boolean =
-      sym.isConstructor || sym.isPrivateLocal || sym.isArtifact
+    override protected def exclude(sym: Symbol) = (sym hasFlag PRIVATE | ARTIFACT) || sym.isConstructor
 
-    /** The parents of base (may also be refined).
+    /** Types always match. Term symbols match if their member types
+     *  relative to `self` match.
      */
-    protected def parents: List[Type] = base.info.parents
-
-    /** Does `sym1` match `sym2` so that it qualifies as overriding.
-     *  Types always match. Term symbols match if their membertypes
-     *  relative to <base>.this do
-     */
-    protected def matches(sym1: Symbol, sym2: Symbol): Boolean = {
-      def tp_s(s: Symbol) = self.memberType(s) + "/" + self.memberType(s).getClass
-      val result = sym1.isType || (self.memberType(sym1) matches self.memberType(sym2))
-      debuglog("overriding-pairs? %s matches %s (%s vs. %s) == %s".format(
-        sym1.fullLocationString, sym2.fullLocationString, tp_s(sym1), tp_s(sym2), result))
-
-      result
-    }
-
-    /** An implementation of BitSets as arrays (maybe consider collection.BitSet
-     *  for that?) The main purpose of this is to implement
-     *  intersectionContainsElement efficiently.
-     */
-    private type BitSet = Array[Int]
-
-    private def include(bs: BitSet, n: Int) {
-      val nshifted = n >> 5
-      val nmask = 1 << (n & 31)
-      bs(nshifted) = bs(nshifted) | nmask
-    }
-
-    /** Implements `bs1 * bs2 * {0..n} != 0.
-     *  Used in hasCommonParentAsSubclass */
-    private def intersectionContainsElementLeq(bs1: BitSet, bs2: BitSet, n: Int): Boolean = {
-      val nshifted = n >> 5
-      val nmask = 1 << (n & 31)
-      var i = 0
-      while (i < nshifted) {
-        if ((bs1(i) & bs2(i)) != 0) return true
-        i += 1
-      }
-      (bs1(nshifted) & bs2(nshifted) & (nmask | nmask - 1)) != 0
-    }
-
-    /** The symbols that can take part in an overriding pair */
-    private val decls = newScope
-
-    // fill `decls` with overriding shadowing overridden */
-    { def fillDecls(bcs: List[Symbol], deferredflag: Int) {
-        if (!bcs.isEmpty) {
-          fillDecls(bcs.tail, deferredflag)
-          var e = bcs.head.info.decls.elems
-          while (e ne null) {
-            if (e.sym.getFlag(DEFERRED) == deferredflag.toLong && !exclude(e.sym))
-              decls enter e.sym
-            e = e.next
-          }
-        }
-      }
-      // first, deferred (this wil need to change if we change lookup rules!
-      fillDecls(base.info.baseClasses, DEFERRED)
-      // then, concrete.
-      fillDecls(base.info.baseClasses, 0)
-    }
-
-    private val size = base.info.baseClasses.length
-
-    /** A map from baseclasses of <base> to ints, with smaller ints meaning lower in
-     *  linearization order.
-     *  symbols that are not baseclasses map to -1.
-     */
-    private val index = new mutable.HashMap[Symbol, Int] {
-      override def default(key: Symbol) = -1
-    }
-
-    // Note: overridingPairs can be called at odd instances by the Eclipse plugin
-    // Soemtimes symbols are not yet defined and we get missing keys.
-    // The implementation here is hardened so that it does not crash on a missing key.
-
-    { var i = 0
-      for (bc <- base.info.baseClasses) {
-        index(bc) = i
-        i += 1
-      }
-    }
-
-    /** A mapping from all base class indices to a bitset
-     *  which indicates whether parents are subclasses.
-     *
-     *   i \in subParents(j)   iff
-     *   exists p \in parents, b \in baseClasses:
-     *     i = index(p)
-     *     j = index(b)
-     *     p isSubClass b
-     *     p.baseType(b) == self.baseType(b)
-     */
-    private val subParents = new Array[BitSet](size)
-
-    { for (i <- List.range(0, size))
-        subParents(i) = new BitSet(size)
-      for (p <- parents) {
-        val pIndex = index(p.typeSymbol)
-        if (pIndex >= 0)
-          for (bc <- p.baseClasses)
-            if (p.baseType(bc) =:= self.baseType(bc)) {
-              val bcIndex = index(bc)
-              if (bcIndex >= 0)
-                include(subParents(bcIndex), pIndex)
-            }
-      }
-   }
-
-    /** Do `sym1` and `sym2` have a common subclass in `parents`?
-     *  In that case we do not follow their overriding pairs
-     */
-    private def hasCommonParentAsSubclass(sym1: Symbol, sym2: Symbol) = {
-      val index1 = index(sym1.owner)
-      (index1 >= 0) && {
-        val index2 = index(sym2.owner)
-        (index2 >= 0) && {
-          intersectionContainsElementLeq(
-            subParents(index1), subParents(index2), index1 min index2)
-        }
-      }
-    }
-
-    /** The scope entries that have already been visited as overridden
-     *  (maybe excluded because of hasCommonParentAsSubclass).
-     *  These will not appear as overriding
-     */
-    private val visited = HashSet[ScopeEntry]("visited", 64)
-
-    /** The current entry candidate for overriding
-     */
-    private var curEntry = decls.elems
-
-    /** The current entry candidate for overridden */
-    private var nextEntry = curEntry
-
-    /** The current candidate symbol for overriding */
-    var overriding: Symbol = _
-
-    /** If not null: The symbol overridden by overriding */
-    var overridden: Symbol = _
-
-    //@M: note that next is called once during object initialization
-    def hasNext: Boolean = curEntry ne null
-
-    @tailrec
-    final def next() {
-      if (curEntry ne null) {
-        overriding = curEntry.sym
-        if (nextEntry ne null) {
-          do {
-            do {
-              nextEntry = decls.lookupNextEntry(nextEntry)
-              /* DEBUG
-              if ((nextEntry ne null) &&
-                  !(nextEntry.sym hasFlag PRIVATE) &&
-                  !(overriding.owner == nextEntry.sym.owner) &&
-                  !matches(overriding, nextEntry.sym))
-                println("skipping "+overriding+":"+self.memberType(overriding)+overriding.locationString+" to "+nextEntry.sym+":"+self.memberType(nextEntry.sym)+nextEntry.sym.locationString)
-              */
-              } while ((nextEntry ne null) &&
-                     ((nextEntry.sym hasFlag PRIVATE) ||
-                      (overriding.owner == nextEntry.sym.owner) ||
-                      (!matches(overriding, nextEntry.sym)) ||
-                      (exclude(overriding))))
-            if (nextEntry ne null) visited addEntry nextEntry
-            // skip nextEntry if a class in `parents` is a subclass of the owners of both
-            // overriding and nextEntry.sym
-          } while ((nextEntry ne null) && (hasCommonParentAsSubclass(overriding, nextEntry.sym)))
-          if (nextEntry ne null) {
-            overridden = nextEntry.sym
-            //Console.println("yield: " + overriding + overriding.locationString + " / " + overridden + overridden.locationString);//DEBUG
-          } else {
-            do {
-              curEntry = curEntry.next
-            } while ((curEntry ne null) && (visited contains curEntry))
-            nextEntry = curEntry
-            next()
-          }
-        }
-      }
-    }
-
-    next()
+    override protected def matches(sym1: Symbol, sym2: Symbol) = sym1.isType || (
+         (sym1.owner != sym2.owner)
+      && !exclude(sym2)
+      && relatively.matches(sym1, sym2)
+    )
   }
 }
