@@ -2879,30 +2879,39 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         }
 
+      // undo eta-expansion and try again...
+      lazy val retryUnEta: Tree =
+        fun match {
+          case etaExpansion(_, partialApplication, _) =>
+            silent(_.typed(partialApplication, mode.forFunMode, pt)) filter (_ => context.undetparams.isEmpty) map { partialApplicationTyped =>
+              // if context.undetparams is not empty, the function was polymorphic,
+              // so we need the missing arguments to infer its type. See #871
+              //println("typing eta "+fun+":"+partialApplicationTyped.tpe+"/"+context.undetparams)
+              val ftpe = normalize(partialApplicationTyped.tpe) baseType FunctionClass(numVparams)
+              // TODO: (isFunctionType(ftpe) || (settings.Xexperimental && samOf(ftpe).exists && sameLength(samOf(ftpe).info.params, fun.vparams)))
+              if (isFunctionType(ftpe) && isFullyDefined(ftpe))
+                typedFunction(fun, mode, ftpe)
+              else EmptyTree
+            } orElse { _ => EmptyTree }
+          case _ => EmptyTree
+        }
+
       if (!FunctionSymbol.exists)
         MaxFunctionArityError(fun)
       else if (argpts.lengthCompare(numVparams) != 0)
         WrongNumberOfParametersError(fun, argpts)
       else {
+        // TODO: separate error reporting from error-recovery (retryUnEta)
         foreach2(fun.vparams, argpts) { (vparam, argpt) =>
           if (vparam.tpt.isEmpty) {
             vparam.tpt.tpe =
               if (isFullyDefined(argpt)) argpt
-              else {
-                fun match {
-                  case etaExpansion(vparams, fn, args) =>
-                    silent(_.typed(fn, mode.forFunMode, pt)) filter (_ => context.undetparams.isEmpty) map { fn1 =>
-                        // if context.undetparams is not empty, the function was polymorphic,
-                        // so we need the missing arguments to infer its type. See #871
-                        //println("typing eta "+fun+":"+fn1.tpe+"/"+context.undetparams)
-                        val ftpe = normalize(fn1.tpe) baseType FunctionClass(numVparams)
-                        if (isFunctionType(ftpe) && isFullyDefined(ftpe))
-                          return typedFunction(fun, mode, ftpe)
-                    }
-                  case _ =>
-                }
-                MissingParameterTypeError(fun, vparam, pt)
-                ErrorType
+              else retryUnEta match {
+                case EmptyTree =>
+                  MissingParameterTypeError(fun, vparam, pt)
+                  ErrorType
+                case res       =>
+                  return res
               }
             if (!vparam.tpt.pos.isDefined) vparam.tpt setPos vparam.pos.focus
           }
