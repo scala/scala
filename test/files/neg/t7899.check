@@ -1,0 +1,6 @@
+t7899.scala:5: error: type mismatch;
+ found   : Int => Int
+ required: (=> Int) => ?
+    foo(identity)()
+        ^
+one error found
