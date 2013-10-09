@@ -85,9 +85,6 @@ abstract class UnCurry extends InfoTransform
       transformFunction(result)
     }
 
-    private lazy val serialVersionUIDAnnotation =
-      AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
-
     // I don't have a clue why I'm catching TypeErrors here, but it's better
     // than spewing stack traces at end users for internal errors. Examples
     // which hit at this point should not be hard to come by, but the immediate
@@ -220,7 +217,7 @@ abstract class UnCurry extends InfoTransform
         case fun1 if fun1 ne fun => fun1
         case _ =>
           val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
-          val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation serialVersionUIDAnnotation
+          val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
           anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
           val targs     = fun.tpe.typeArgs
