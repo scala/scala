@@ -569,13 +569,10 @@ abstract class Pickler extends SubComponent {
 
     /** Write an entry */
     private def writeEntry(entry: AnyRef) {
-      def writeBody(entry: AnyRef): Int = entry match {
-        case name: Name =>
-          writeName(name)
-          if (name.isTermName) TERMname else TYPEname
-        case NoSymbol =>
+      def writeSymbolBody(sym: Symbol): Int = {
+        if (sym eq NoSymbol)
           NONEsym
-        case sym: Symbol if !isLocal(sym) =>
+        else if (!isLocal(sym)) {
           val tag =
             if (sym.isModuleClass) {
               writeRef(sym.name.toTermName); EXTMODCLASSref
@@ -584,17 +581,26 @@ abstract class Pickler extends SubComponent {
             }
           if (!sym.owner.isRoot) writeRef(sym.owner)
           tag
-        case sym: ClassSymbol =>
-          writeSymInfo(sym)
-          if (sym.thisSym.tpe_* != sym.tpe_*) writeRef(sym.typeOfThis)
-          CLASSsym
-        case sym: TypeSymbol =>
-          writeSymInfo(sym)
-          if (sym.isAbstractType) TYPEsym else ALIASsym
-        case sym: TermSymbol =>
-          writeSymInfo(sym)
-          if (sym.alias != NoSymbol) writeRef(sym.alias)
-          if (sym.isModule) MODULEsym else VALsym
+        }
+        else sym match {
+          case sym: ClassSymbol =>
+            writeSymInfo(sym)
+            if (sym.thisSym.tpe_* != sym.tpe_*)
+              writeRef(sym.typeOfThis)
+
+            CLASSsym
+          case sym: TypeSymbol =>
+            writeSymInfo(sym)
+            if (sym.isAbstractType) TYPEsym else ALIASsym
+          case sym: TermSymbol =>
+            writeSymInfo(sym)
+            if (sym.alias != NoSymbol)
+              writeRef(sym.alias)
+
+            if (sym.isModule) MODULEsym else VALsym
+        }
+      }
+      def writeTypeBody(tpe: Type): Int = tpe match {
         case NoType =>
           NOtpe
         case NoPrefix =>
@@ -627,15 +633,6 @@ abstract class Pickler extends SubComponent {
           writeRef(restpe); writeRefs(tparams); POLYtpe
         case ExistentialType(tparams, restpe) =>
           writeRef(restpe); writeRefs(tparams); EXISTENTIALtpe
-        case c @ Constant(_) =>
-          if (c.tag == BooleanTag) writeLong(if (c.booleanValue) 1 else 0)
-          else if (ByteTag <= c.tag && c.tag <= LongTag) writeLong(c.longValue)
-          else if (c.tag == FloatTag) writeLong(floatToIntBits(c.floatValue).toLong)
-          else if (c.tag == DoubleTag) writeLong(doubleToLongBits(c.doubleValue))
-          else if (c.tag == StringTag) writeRef(newTermName(c.stringValue))
-          else if (c.tag == ClazzTag) writeRef(c.typeValue)
-          else if (c.tag == EnumTag) writeRef(c.symbolValue)
-          LITERAL + c.tag // also treats UnitTag, NullTag; no value required
         case AnnotatedType(annotations, tp, selfsym) =>
           annotations filter (_.isStatic) match {
             case Nil          => writeBody(tp) // write the underlying type if there are no annotations
@@ -646,21 +643,9 @@ abstract class Pickler extends SubComponent {
               writeRefs(staticAnnots)
               ANNOTATEDtpe
           }
-        // annotations attached to a symbol (i.e. annots on terms)
-        case (target: Symbol, annot@AnnotationInfo(_, _, _)) =>
-          writeRef(target)
-          writeAnnotation(annot)
-          SYMANNOT
+      }
 
-        case ArrayAnnotArg(args) =>
-          args foreach writeClassfileAnnotArg
-          ANNOTARGARRAY
-
-        case (target: Symbol, children: List[_]) =>
-          writeRef(target)
-          writeRefs(children.asInstanceOf[List[Symbol]])
-          CHILDREN
-
+      def writeTreeBody(tree: Tree): Int = tree match {
         case EmptyTree =>
           writeNat(EMPTYtree)
           TREE
@@ -669,7 +654,6 @@ abstract class Pickler extends SubComponent {
           writeNat(PACKAGEtree)
           writeRef(tree.tpe)
           writeRef(tree.symbol)
-          writeRef(tree.mods)
           writeRef(pid)
           writeRefs(stats)
           TREE
@@ -680,8 +664,8 @@ abstract class Pickler extends SubComponent {
           writeRef(tree.symbol)
           writeRef(mods)
           writeRef(name)
+          writeRefsWithLength(tparams)
           writeRef(impl)
-          writeRefs(tparams)
           TREE
 
         case tree@ModuleDef(mods, name, impl) =>
@@ -722,8 +706,8 @@ abstract class Pickler extends SubComponent {
           writeRef(tree.symbol)
           writeRef(mods)
           writeRef(name)
+          writeRefsWithLength(tparams)
           writeRef(rhs)
-          writeRefs(tparams)
           TREE
 
         case tree@LabelDef(name, params, rhs) =>
@@ -731,8 +715,8 @@ abstract class Pickler extends SubComponent {
           writeRef(tree.tpe)
           writeRef(tree.symbol)
           writeRef(name)
+          writeRefsWithLength(params)
           writeRef(rhs)
-          writeRefs(params)
           TREE
 
         case tree@Import(expr, selectors) =>
@@ -765,8 +749,8 @@ abstract class Pickler extends SubComponent {
         case tree@Block(stats, expr) =>
           writeNat(BLOCKtree)
           writeRef(tree.tpe)
-          writeRef(expr)
           writeRefs(stats)
+          writeRef(expr)
           TREE
 
         case tree@CaseDef(pat, guard, body) =>
@@ -815,8 +799,8 @@ abstract class Pickler extends SubComponent {
           writeNat(FUNCTIONtree)
           writeRef(tree.tpe)
           writeRef(tree.symbol)
+          writeRefsWithLength(vparams)
           writeRef(body)
-          writeRefs(vparams)
           TREE
 
         case tree@Assign(lhs, rhs) =>
@@ -852,8 +836,8 @@ abstract class Pickler extends SubComponent {
           writeNat(TREtree)
           writeRef(tree.tpe)
           writeRef(block)
+          writeRefsWithLength(catches)
           writeRef(finalizer)
-          writeRefs(catches)
           TREE
 
         case tree@Throw(expr) =>
@@ -984,6 +968,42 @@ abstract class Pickler extends SubComponent {
           writeRef(tpt)
           writeRefs(whereClauses)
           TREE
+      }
+
+      def writeBody(entry: AnyRef): Int = entry match {
+        case tree: Tree  => writeTreeBody(tree)
+        case sym: Symbol => writeSymbolBody(sym)
+        case tpe: Type   => writeTypeBody(tpe)
+        case name: Name  =>
+          writeName(name)
+          if (name.isTermName) TERMname else TYPEname
+
+        case c @ Constant(_) =>
+          if (c.tag == BooleanTag) writeLong(if (c.booleanValue) 1 else 0)
+          else if (ByteTag <= c.tag && c.tag <= LongTag) writeLong(c.longValue)
+          else if (c.tag == FloatTag) writeLong(floatToIntBits(c.floatValue).toLong)
+          else if (c.tag == DoubleTag) writeLong(doubleToLongBits(c.doubleValue))
+          else if (c.tag == StringTag) writeRef(newTermName(c.stringValue))
+          else if (c.tag == ClazzTag) writeRef(c.typeValue)
+          else if (c.tag == EnumTag) writeRef(c.symbolValue)
+          LITERAL + c.tag // also treats UnitTag, NullTag; no value required
+
+        // annotations attached to a symbol (i.e. annots on terms)
+        // !!! Seriously?
+        case (target: Symbol, annot@AnnotationInfo(_, _, _)) =>
+          writeRef(target)
+          writeAnnotation(annot)
+          SYMANNOT
+
+        // !!!
+        case (target: Symbol, children: List[_]) =>
+          writeRef(target)
+          writeRefs(children.asInstanceOf[List[Symbol]])
+          CHILDREN
+
+        case ArrayAnnotArg(args) =>
+          args foreach writeClassfileAnnotArg
+          ANNOTARGARRAY
 
         case Modifiers(flags, privateWithin, _) =>
           val pflags = rawToPickledFlags(flags)
@@ -1004,7 +1024,8 @@ abstract class Pickler extends SubComponent {
       // begin writeEntry
       val startpos = writeIndex
       // reserve some space so that the patchNat's most likely won't need to shift
-      writeByte(0); writeByte(0)
+      writeByte(0)
+      writeByte(0)
       patchNat(startpos, writeBody(entry))
       patchNat(startpos + 1, writeIndex - (startpos + 2))
     }

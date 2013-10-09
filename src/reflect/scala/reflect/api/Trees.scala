@@ -2547,6 +2547,12 @@ trait Trees { self: Universe =>
     /** Traverses a single tree. */
     def traverse(tree: Tree): Unit = itraverse(this, tree)
 
+    def traverseName(name: Name): Unit = ()
+
+    def traverseModifiers(mods: Modifiers) {
+      traverseTrees(mods.annotations)
+    }
+
     /** Traverses a list of trees. */
     def traverseTrees(trees: List[Tree]) {
       trees foreach traverse
