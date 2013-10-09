@@ -2762,8 +2762,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // NOTE: this `samBodyDef.symbol.info` runs the type completer set up by the enterSym above
           val actualSamType = samBodyDef.symbol.info
 
-          // println(samClassTp)
-
           // we're trying to fully define the type arguments for this type constructor
           val samTyCon  = samClassTp.typeSymbol.typeConstructor
 
