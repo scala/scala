@@ -152,7 +152,7 @@ self =>
    *
    *  @param size the number of elements per group
    *  @return An iterator producing ${coll}s of size `size`, except the
-   *          last will be truncated if the elements don't divide evenly.
+   *          last will be kept if the elements don't divide evenly.
    */
   def grouped(size: Int): Iterator[Repr] =
     for (xs <- iterator grouped size) yield {
