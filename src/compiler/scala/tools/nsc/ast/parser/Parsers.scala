@@ -40,9 +40,6 @@ trait ParsersCommon extends ScannersCommon { self =>
    */
   abstract class ParserCommon {
     val in: ScannerCommon
-    def freshName(prefix: String): Name
-    def freshTermName(prefix: String): TermName
-    def freshTypeName(prefix: String): TypeName
     def deprecationWarning(off: Int, msg: String): Unit
     def accept(token: Int): Int
 
@@ -163,15 +160,7 @@ self =>
     val in = newScanner()
     in.init()
 
-    private val globalFresh = new FreshNameCreator
-
     def unit = global.currentUnit
-    def freshName(prefix: String): Name = freshTermName(prefix)
-    def freshTermName(prefix: String): TermName = newTermName(globalFresh.newName(prefix))
-    def freshTypeName(prefix: String): TypeName = newTypeName(globalFresh.newName(prefix))
-
-    def o2p(offset: Int): Position = Position.offset(source, offset)
-    def r2p(start: Int, mid: Int, end: Int): Position = rangePos(source, start, mid, end)
 
     // suppress warnings; silent abort on errors
     def warning(offset: Int, msg: String) {}
@@ -223,9 +212,6 @@ self =>
     def this(unit: global.CompilationUnit) = this(unit, Nil)
 
     override def newScanner() = new UnitScanner(unit, patches)
-
-    override def freshTermName(prefix: String): TermName = unit.freshTermName(prefix)
-    override def freshTypeName(prefix: String): TypeName = unit.freshTypeName(prefix)
 
     override def warning(offset: Int, msg: String) {
       unit.warning(o2p(offset), msg)
@@ -294,25 +280,26 @@ self =>
 
   abstract class Parser extends ParserCommon { parser =>
     val in: Scanner
-
     def unit: CompilationUnit
-    def freshName(prefix: String): Name
-    def freshTermName(prefix: String): TermName
-    def freshTypeName(prefix: String): TypeName
-    def o2p(offset: Int): Position
-    def r2p(start: Int, mid: Int, end: Int): Position
-    def r2p(start: Int, mid: Int): Position = r2p(start, mid, in.lastOffset max start)
-    def r2p(offset: Int): Position = r2p(offset, offset)
+    def source: SourceFile
+
+    class ParserTreeBuilder extends TreeBuilder {
+      val global: self.global.type = self.global
+      def unit = parser.unit
+      def source = parser.source
+    }
+    val treeBuilder = new ParserTreeBuilder
+    import treeBuilder.{global => _, unit => _, source => _, fresh => _, _}
+
+    implicit def fresh: FreshNameCreator = unit.fresh
+
+    def o2p(offset: Int): Position                    = Position.offset(source, offset)
+    def r2p(start: Int, mid: Int, end: Int): Position = rangePos(source, start, mid, end)
+    def r2p(start: Int, mid: Int): Position           = r2p(start, mid, in.lastOffset max start)
+    def r2p(offset: Int): Position                    = r2p(offset, offset)
 
     /** whether a non-continuable syntax error has been seen */
     private var lastErrorOffset : Int = -1
-
-    class ParserTreeBuilder extends UnitTreeBuilder {
-      val global: self.global.type = self.global
-      def unit = parser.unit
-    }
-    val treeBuilder = new ParserTreeBuilder
-    import treeBuilder.{global => _, unit => _, _}
 
     /** The types of the context bounds of type parameters of the surrounding class
      */
@@ -1162,7 +1149,7 @@ self =>
     /** Consume a USCORE and create a fresh synthetic placeholder param. */
     private def freshPlaceholder(): Tree = {
       val start = in.offset
-      val pname = freshName("x$")
+      val pname = freshTermName()
       in.nextToken()
       val id = atPos(start)(Ident(pname))
       val param = atPos(id.pos.focus)(gen.mkSyntheticParam(pname.toTermName))
@@ -2247,7 +2234,7 @@ self =>
           }
         }
         val nameOffset = in.offset
-        // TODO AM: freshName(o2p(in.skipToken()), "_$$"), will need to update test suite
+        // TODO AM: freshTermName(o2p(in.skipToken()), "_$$"), will need to update test suite
         val pname: TypeName = wildcardOrIdent().toTypeName
         val param = atPos(start, nameOffset) {
           val tparams = typeParamClauseOpt(pname, null) // @M TODO null --> no higher-order context bounds for now
@@ -2459,7 +2446,6 @@ self =>
           EmptyTree
         }
       def mkDefs(p: Tree, tp: Tree, rhs: Tree): List[Tree] = {
-        //Console.println("DEBUG: p = "+p.toString()); // DEBUG
         val trees =
           makePatDef(newmods,
                      if (tp.isEmpty) p

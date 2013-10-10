@@ -4,7 +4,7 @@ package quasiquotes
 import scala.tools.nsc.ast.parser.{Parsers => ScalaParser}
 import scala.tools.nsc.ast.parser.Tokens._
 import scala.compat.Platform.EOL
-import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
+import scala.reflect.internal.util.{BatchSourceFile, SourceFile, FreshNameCreator}
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
@@ -55,12 +55,12 @@ trait Parsers { self: Quasiquotes =>
 
       def isHole(name: Name): Boolean = holeMap.contains(name)
 
-      override def freshTermName(prefix: String): TermName = unit.freshTermName(nme.QUASIQUOTE_PREFIX + prefix)
-      override def freshTypeName(prefix: String): TypeName = unit.freshTypeName(nme.QUASIQUOTE_PREFIX + prefix)
+      override implicit def fresh = new FreshNameCreator {
+        override def newName(prefix: String) = super.newName(nme.QUASIQUOTE_PREFIX + prefix)
+      }
 
       override val treeBuilder = new ParserTreeBuilder {
-        override def freshTermName(prefix: String): TermName = parser.freshTermName(prefix)
-        override def freshTypeName(prefix: String): TypeName = parser.freshTypeName(prefix)
+        override implicit def fresh = parser.fresh
 
         // q"(..$xs)"
         override def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree =

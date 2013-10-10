@@ -131,11 +131,11 @@ trait BuildUtils { self: SymbolTable =>
 
     def RefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
 
-    def withFreshTermName[T](prefix: String)(f: TermName => T): T = f(TermName(freshNameCreator.newName(prefix)))
+    def withFreshTermName[T](prefix: String)(f: TermName => T): T = f(freshTermName(prefix))
 
-    def withFreshTypeName[T](prefix: String)(f: TypeName => T): T = f(TypeName(freshNameCreator.newName(prefix)))
+    def withFreshTypeName[T](prefix: String)(f: TypeName => T): T = f(freshTypeName(prefix))
 
-    private val freshNameCreator = new util.FreshNameCreator
+    private implicit val fresh = new FreshNameCreator
 
     object FlagsRepr extends FlagsReprExtractor {
       def apply(bits: Long): FlagSet = bits
