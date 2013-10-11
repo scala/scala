@@ -7,6 +7,7 @@ package scala.reflect.internal
 package util
 
 import scala.collection.mutable
+import scala.reflect.NameTransformer
 
 class FreshNameCreator {
   protected var counter = 0
@@ -18,9 +19,8 @@ class FreshNameCreator {
    * call to this function (provided the prefix does not end in a digit).
    */
   def newName(prefix: String): String = {
-    val safePrefix = prefix.replaceAll("""[<>]""", """\$""")
+    val safePrefix = NameTransformer.encode(prefix)
     counters(safePrefix) += 1
-
     safePrefix + counters(safePrefix)
   }
 
