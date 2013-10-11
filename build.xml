@@ -1186,44 +1186,46 @@ TODO:
       <staged-uptodate stage="docs" project="@{project}">
         <check><srcfiles dir="${src.dir}/@{dir}"/></check>
         <do>
-          <stopwatch name="docs.@{project}.timer"/>
-          <mkdir dir="${build-docs.dir}/@{project}"/>
-          <if><equals arg1="@{docroot}" arg2="NOT SET"/><then>
-            <!-- TODO: introduce docs.@{project}.build.path for classpathref -->
-            <scaladoc
-              destdir="${build-docs.dir}/@{project}"
-              doctitle="@{title}"
-              docversion="${version.number}"
-              sourcepath="${src.dir}"
-              classpathref="docs.compiler.path"
-              srcdir="${src.dir}/@{dir}"
-              addparams="${scalac.args.all}"
-              implicits="on"
-              diagrams="on"
-              groups="on"
-              rawOutput="${scaladoc.raw.output}"
-              noPrefixes="${scaladoc.no.prefixes}">
-              <includes/>
-            </scaladoc>
-          </then><else>
-            <scaladoc
-              destdir="${build-docs.dir}/@{project}"
-              doctitle="@{title}"
-              docversion="${version.number}"
-              sourcepath="${src.dir}"
-              classpathref="docs.compiler.path"
-              srcdir="${src.dir}/@{dir}"
-              docRootContent="${src.dir}/@{project}/@{docroot}"
-              addparams="${scalac.args.all}"
-              implicits="on"
-              diagrams="on"
-              groups="on"
-              rawOutput="${scaladoc.raw.output}"
-              noPrefixes="${scaladoc.no.prefixes}">
-              <includes/>
-            </scaladoc>
-          </else></if>
-          <stopwatch name="docs.@{project}.timer" action="total"/>
+          <if><not><isset property="docs.skip"/></not><then>
+            <stopwatch name="docs.@{project}.timer"/>
+            <mkdir dir="${build-docs.dir}/@{project}"/>
+            <if><equals arg1="@{docroot}" arg2="NOT SET"/><then>
+              <!-- TODO: introduce docs.@{project}.build.path for classpathref -->
+              <scaladoc
+                destdir="${build-docs.dir}/@{project}"
+                doctitle="@{title}"
+                docversion="${version.number}"
+                sourcepath="${src.dir}"
+                classpathref="docs.compiler.path"
+                srcdir="${src.dir}/@{dir}"
+                addparams="${scalac.args.all}"
+                implicits="on"
+                diagrams="on"
+                groups="on"
+                rawOutput="${scaladoc.raw.output}"
+                noPrefixes="${scaladoc.no.prefixes}">
+                <includes/>
+              </scaladoc>
+            </then><else>
+              <scaladoc
+                destdir="${build-docs.dir}/@{project}"
+                doctitle="@{title}"
+                docversion="${version.number}"
+                sourcepath="${src.dir}"
+                classpathref="docs.compiler.path"
+                srcdir="${src.dir}/@{dir}"
+                docRootContent="${src.dir}/@{project}/@{docroot}"
+                addparams="${scalac.args.all}"
+                implicits="on"
+                diagrams="on"
+                groups="on"
+                rawOutput="${scaladoc.raw.output}"
+                noPrefixes="${scaladoc.no.prefixes}">
+                <includes/>
+              </scaladoc>
+            </else></if>
+            <stopwatch name="docs.@{project}.timer" action="total"/>
+          </then></if>
         </do>
       </staged-uptodate>
     </sequential>
