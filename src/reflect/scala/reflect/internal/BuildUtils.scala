@@ -135,7 +135,7 @@ trait BuildUtils { self: SymbolTable =>
 
     def withFreshTypeName[T](prefix: String)(f: TypeName => T): T = f(freshTypeName(prefix))
 
-    private implicit val fresh = new FreshNameCreator
+    private implicit def fresh: FreshNameCreator = self.currentFreshNameCreator
 
     object FlagsRepr extends FlagsReprExtractor {
       def apply(bits: Long): FlagSet = bits
