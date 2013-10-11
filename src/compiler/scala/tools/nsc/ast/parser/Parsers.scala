@@ -671,7 +671,7 @@ self =>
 
     def isStatSeqEnd = in.token == RBRACE || in.token == EOF
 
-    def isCaseDefEnd = in.token == RBRACE || in.token == CASE
+    def isCaseDefEnd = in.token == RBRACE || in.token == CASE || in.token == EOF
 
     def isStatSep(token: Int): Boolean =
       token == NEWLINE || token == NEWLINES || token == SEMI
