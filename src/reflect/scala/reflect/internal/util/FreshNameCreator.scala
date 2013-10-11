@@ -6,12 +6,13 @@
 package scala.reflect.internal
 package util
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
 import scala.reflect.NameTransformer
 
 class FreshNameCreator {
-  protected var counter = 0
-  protected val counters = mutable.HashMap[String, Int]() withDefaultValue 0
+  protected val counters = new ConcurrentHashMap[String, AtomicLong]()
 
   /**
    * Create a fresh name with the given prefix. It is guaranteed
@@ -20,12 +21,7 @@ class FreshNameCreator {
    */
   def newName(prefix: String): String = {
     val safePrefix = NameTransformer.encode(prefix)
-    counters(safePrefix) += 1
-    safePrefix + counters(safePrefix)
-  }
-
-  def newName(): String = {
-    counter += 1
-    "$" + counter + "$"
+    counters.putIfAbsent(safePrefix, new AtomicLong(0));
+    safePrefix + counters.get(safePrefix).incrementAndGet();
   }
 }
