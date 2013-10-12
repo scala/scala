@@ -7,4 +7,7 @@ Note that implicit conversions are not applicable because they are ambiguous:
  are possible conversion functions from String("abc") to reflect.runtime.universe.Name
   val x2 = ("abc": Name) drop 1         // error
             ^
-one error found
+reflection-names-neg.scala:5: error: value drop is not a member of reflect.runtime.universe.Name
+  val x2 = ("abc": Name) drop 1         // error
+                         ^
+two errors found

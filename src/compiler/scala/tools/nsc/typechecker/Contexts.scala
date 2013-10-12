@@ -329,6 +329,7 @@ trait Contexts { self: Analyzer =>
 
     /** The first error, if any, in the report buffer */
     def firstError: Option[AbsTypeError] = reportBuffer.firstError
+    def errors: Seq[AbsTypeError] = reportBuffer.errors
     /** Does the report buffer contain any errors? */
     def hasErrors = reportBuffer.hasErrors
 
