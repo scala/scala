@@ -3,4 +3,9 @@ typeerror.scala:6: error: type mismatch;
  required: scala.Long
     else add2(x.head, y.head) :: add(x.tail, y.tail)
                 ^
-one error found
+typeerror.scala:6: error: type mismatch;
+ found   : Long(in method add)
+ required: scala.Long
+    else add2(x.head, y.head) :: add(x.tail, y.tail)
+                        ^
+two errors found
