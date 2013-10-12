@@ -124,6 +124,10 @@ abstract class SymbolTable extends macros.Universe
     result
   }
 
+  @inline final def findSymbol(xs: TraversableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
+    xs find p getOrElse NoSymbol
+  }
+
   // For too long have we suffered in order to sort NAMES.
   // I'm pretty sure there's a reasonable default for that.
   // Notice challenge created by Ordering's invariance.

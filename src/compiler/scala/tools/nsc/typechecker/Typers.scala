@@ -3418,7 +3418,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val nvPairs = args map {
               case arg @ AssignOrNamedArg(Ident(name), rhs) =>
                 val sym = if (isJava) annScope.lookup(name)
-                          else typedFun.tpe.params.find(p => p.name == name).getOrElse(NoSymbol)
+                          else findSymbol(typedFun.tpe.params)(_.name == name)
                 if (sym == NoSymbol) {
                   reportAnnotationError(UnknownAnnotationNameError(arg, name))
                   (nme.ERROR, None)
