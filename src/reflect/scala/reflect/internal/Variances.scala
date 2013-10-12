@@ -142,7 +142,8 @@ trait Variances {
       // No variance check for object-private/protected methods/values.
       // Or constructors, or case class factory or extractor.
       def skip = (
-           sym.hasLocalFlag
+           sym == NoSymbol
+        || sym.hasLocalFlag
         || sym.owner.isConstructor
         || sym.owner.isCaseApplyOrUnapply
       )

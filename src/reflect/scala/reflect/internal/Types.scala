@@ -1471,6 +1471,14 @@ trait Types
     }
   }
 
+  object CompoundType {
+    def unapply(tp: Type): Option[(List[Type], Scope, Symbol)] = tp match {
+      case ClassInfoType(parents, decls, clazz) => Some((parents, decls, clazz))
+      case RefinedType(parents, decls)          => Some((parents, decls, tp.typeSymbol))
+      case _                                    => None
+    }
+  }
+
   /** A common base class for intersection types and class types
    */
   abstract class CompoundType extends Type {
@@ -3292,6 +3300,13 @@ trait Types
     else AnnotatedType(annots, underlying, selfsym)
 
   object AnnotatedType extends AnnotatedTypeExtractor
+
+  object StaticallyAnnotatedType {
+    def unapply(tp: Type): Option[(List[AnnotationInfo], Type)] = tp.staticAnnotations match {
+      case Nil    => None
+      case annots => Some((annots, tp.withoutAnnotations))
+    }
+  }
 
   /** A class representing types with a name. When an application uses
    *  named arguments, the named argument types for calling isApplicable

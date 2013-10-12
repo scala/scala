@@ -41,6 +41,7 @@ abstract class SymbolTable extends macros.Universe
                               with StdCreators
                               with BuildUtils
                               with PrivateWithin
+                              with pickling.Translations
 {
 
   val gen = new TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
