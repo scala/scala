@@ -371,17 +371,14 @@ abstract class Erasure extends AddInterfaces
     val opc = enteringExplicitOuter {
       new overridingPairs.Cursor(root) {
         override def parents              = List(root.info.firstParent)
-        override def exclude(sym: Symbol) = !sym.isMethod || sym.isPrivate || super.exclude(sym)
+        override def exclude(sym: Symbol) = !sym.isMethod || super.exclude(sym)
       }
     }
 
     def compute(): (List[Tree], immutable.Set[Symbol]) = {
       while (opc.hasNext) {
-        val member = opc.overriding
-        val other  = opc.overridden
-        //println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString)//DEBUG
-        if (enteringExplicitOuter(!member.isDeferred))
-          checkPair(member, other)
+        if (enteringExplicitOuter(!opc.low.isDeferred))
+          checkPair(opc.currentPair)
 
         opc.next()
       }
@@ -438,8 +435,15 @@ abstract class Erasure extends AddInterfaces
       noclash
     }
 
-    def checkPair(member: Symbol, other: Symbol) {
-      val otpe = specialErasure(root)(other.tpe)
+    /** TODO - work through this logic with a fine-toothed comb, incorporating
+     *  into SymbolPairs where appropriate.
+     */
+    def checkPair(pair: SymbolPair) {
+      import pair._
+      val member = low
+      val other  = high
+      val otpe   = highErased
+
       val bridgeNeeded = exitingErasure (
         !member.isMacro &&
         !(other.tpe =:= member.tpe) &&
@@ -844,6 +848,47 @@ abstract class Erasure extends AddInterfaces
 
   /** The erasure transformer */
   class ErasureTransformer(unit: CompilationUnit) extends Transformer {
+    import overridingPairs.Cursor
+
+    private def doubleDefError(pair: SymbolPair) {
+      import pair._
+
+      if (!pair.isErroneous) {
+        val what = (
+          if (low.owner == high.owner) "double definition"
+          else if (low.owner == base) "name clash between defined and inherited member"
+          else "name clash between inherited members"
+        )
+        val when = if (exitingRefchecks(lowType matches highType)) "" else " after erasure: " + exitingPostErasure(highType)
+
+        unit.error(pos,
+          s"""|$what:
+              |${exitingRefchecks(highString)} and
+              |${exitingRefchecks(lowString)}
+              |have same type$when""".trim.stripMargin
+        )
+      }
+      low setInfo ErrorType
+    }
+
+    /** TODO - adapt SymbolPairs so it can be used here. */
+    private def checkNoDeclaredDoubleDefs(base: Symbol) {
+      val decls = base.info.decls
+      var e = decls.elems
+      while (e ne null) {
+        if (e.sym.isTerm) {
+          var e1 = decls lookupNextEntry e
+          while (e1 ne null) {
+            if (exitingPostErasure(e1.sym.info =:= e.sym.info))
+              doubleDefError(new SymbolPair(base, e.sym, e1.sym))
+
+            e1 = decls lookupNextEntry e1
+          }
+        }
+        e = e.next
+      }
+    }
+
     /** Emit an error if there is a double definition. This can happen if:
      *
      *  - A template defines two members with the same name and erased type.
@@ -853,78 +898,24 @@ abstract class Erasure extends AddInterfaces
      *    but their erased types are the same.
      */
     private def checkNoDoubleDefs(root: Symbol) {
-      def doubleDefError(sym1: Symbol, sym2: Symbol) {
-        // the .toString must also be computed at the earlier phase
-        val tpe1 = exitingRefchecks(root.thisType.memberType(sym1))
-        val tpe2 = exitingRefchecks(root.thisType.memberType(sym2))
-        if (!tpe1.isErroneous && !tpe2.isErroneous)
-          unit.error(
-          if (sym1.owner == root) sym1.pos else root.pos,
-          (if (sym1.owner == sym2.owner) "double definition:\n"
-           else if (sym1.owner == root) "name clash between defined and inherited member:\n"
-           else "name clash between inherited members:\n") +
-          sym1 + ":" + exitingRefchecks(tpe1.toString) +
-            (if (sym1.owner == root) "" else sym1.locationString) + " and\n" +
-          sym2 + ":" + exitingRefchecks(tpe2.toString) +
-            (if (sym2.owner == root) " at line " + (sym2.pos).line else sym2.locationString) +
-          "\nhave same type" +
-          (if (exitingRefchecks(tpe1 =:= tpe2)) "" else " after erasure: " + exitingPostErasure(sym1.tpe)))
-        sym1.setInfo(ErrorType)
-      }
-
-      val decls = root.info.decls
-      var e = decls.elems
-      while (e ne null) {
-        if (e.sym.isTerm) {
-          var e1 = decls.lookupNextEntry(e)
-          while (e1 ne null) {
-            if (exitingPostErasure(e1.sym.info =:= e.sym.info)) doubleDefError(e.sym, e1.sym)
-            e1 = decls.lookupNextEntry(e1)
-          }
-        }
-        e = e.next
-      }
-
-      val opc = new overridingPairs.Cursor(root) {
+      checkNoDeclaredDoubleDefs(root)
+      object opc extends Cursor(root) {
+        // specialized members have no type history before 'specialize', causing double def errors for curried defs
         override def exclude(sym: Symbol): Boolean = (
-             !sym.isTerm || sym.isPrivate || super.exclude(sym)
-          // specialized members have no type history before 'specialize', causing double def errors for curried defs
+             sym.isType
+          || sym.isPrivate
+          || super.exclude(sym)
           || !sym.hasTypeAt(currentRun.refchecksPhase.id)
         )
-
-        override def matches(sym1: Symbol, sym2: Symbol): Boolean =
-          exitingPostErasure(sym1.tpe =:= sym2.tpe)
+        override def matches(sym1: Symbol, sym2: Symbol) = true
       }
-      while (opc.hasNext) {
-        if (!exitingRefchecks(
-              root.thisType.memberType(opc.overriding) matches
-              root.thisType.memberType(opc.overridden))) {
-          debuglog("" + opc.overriding.locationString + " " +
-                     opc.overriding.infosString +
-                     opc.overridden.locationString + " " +
-                     opc.overridden.infosString)
-          doubleDefError(opc.overriding, opc.overridden)
-        }
-        opc.next()
+      def sameTypeAfterErasure(pair: SymbolPair) = {
+        import pair._
+        log(s"Considering for erasure clash:\n$pair")
+        !exitingRefchecks(lowType matches highType) && exitingPostErasure(low.tpe =:= high.tpe)
       }
+      opc.iterator filter sameTypeAfterErasure foreach doubleDefError
     }
-
-/*
-      for (bc <- root.info.baseClasses.tail; other <- bc.info.decls.toList) {
-        if (other.isTerm && !other.isConstructor && !(other hasFlag (PRIVATE | BRIDGE))) {
-          for (member <- root.info.nonPrivateMember(other.name).alternatives) {
-            if (member != other &&
-                !(member hasFlag BRIDGE) &&
-                exitingErasure(member.tpe =:= other.tpe) &&
-                !exitingRefchecks(
-                  root.thisType.memberType(member) matches root.thisType.memberType(other))) {
-              debuglog("" + member.locationString + " " + member.infosString + other.locationString + " " + other.infosString);
-              doubleDefError(member, other)
-            }
-          }
-        }
-      }
-*/
 
     /**  Add bridge definitions to a template. This means:
      *
@@ -940,7 +931,6 @@ abstract class Erasure extends AddInterfaces
      */
     private def bridgeDefs(owner: Symbol): (List[Tree], immutable.Set[Symbol]) = {
       assert(phase == currentRun.erasurePhase, phase)
-      debuglog("computing bridges for " + owner)
       new ComputeBridges(unit, owner) compute()
     }
 

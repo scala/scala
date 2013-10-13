@@ -18,6 +18,7 @@ import util.Statistics
 import util.ThreeValues._
 import Variance._
 import Depth._
+import TypeConstants._
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -90,10 +91,6 @@ trait Types
   private var explainSwitch = false
   private final val emptySymbolSet = immutable.Set.empty[Symbol]
 
-  protected[internal] final val DefaultLogThreshhold = 50
-  private final val LogPendingBaseTypesThreshold = DefaultLogThreshhold
-  private final val LogVolatileThreshold = DefaultLogThreshhold
-
   private final val traceTypeVars = sys.props contains "scalac.debug.tvar"
   private final val breakCycles = settings.breakCycles.value
   /** In case anyone wants to turn off type parameter bounds being used
@@ -142,8 +139,6 @@ trait Types
     override def typeConstructor: Type = underlying.typeConstructor
     override def isError = underlying.isError
     override def isErroneous = underlying.isErroneous
-    override def isStable: Boolean = underlying.isStable
-    override def isVolatile = underlying.isVolatile
     override def paramSectionCount = underlying.paramSectionCount
     override def paramss = underlying.paramss
     override def params = underlying.params
@@ -270,7 +265,7 @@ trait Types
     def takesTypeArgs: Boolean = this.isHigherKinded
 
     /** Does this type denote a stable reference (i.e. singleton type)? */
-    def isStable: Boolean = false
+    final def isStable: Boolean = definitions isStable this
 
     /** Is this type dangerous (i.e. it might contain conflicting
      *  type information when empty, so that it can be constructed
@@ -278,7 +273,7 @@ trait Types
      *  type of the form T_1 with T_n { decls }, where one of the
      *  T_i (i > 1) is an abstract type.
      */
-    def isVolatile: Boolean = false
+    final def isVolatile: Boolean = definitions isVolatile this
 
     /** Is this type a structural refinement type (it ''refines'' members that have not been inherited) */
     def isStructuralRefinement: Boolean = false
@@ -1233,8 +1228,6 @@ trait Types
   abstract class SingletonType extends SubType with SimpleTypeProxy {
     def supertype = underlying
     override def isTrivial = false
-    override def isStable = true
-    override def isVolatile = underlying.isVolatile
     override def widen: Type = underlying.widen
     override def baseTypeSeq: BaseTypeSeq = {
       if (Statistics.canEnable) Statistics.incCounter(singletonBaseTypeSeqCount)
@@ -1312,7 +1305,6 @@ trait Types
   /** An object representing a non-existing prefix */
   case object NoPrefix extends Type {
     override def isTrivial: Boolean = true
-    override def isStable: Boolean = true
     override def prefixString = ""
     override def safeToString: String = "<noprefix>"
     override def kind = "NoPrefixType"
@@ -1330,7 +1322,6 @@ trait Types
     override def isTrivial: Boolean = sym.isPackageClass
     override def typeSymbol = sym
     override def underlying: Type = sym.typeOfThis
-    override def isVolatile = false
     override def isHigherKinded = sym.isRefinementClass && underlying.isHigherKinded
     override def prefixString =
       if (settings.debug) sym.nameString + ".this."
@@ -1379,8 +1370,6 @@ trait Types
 
     // more precise conceptually, but causes cyclic errors:    (paramss exists (_ contains sym))
     override def isImmediatelyDependent = (sym ne NoSymbol) && (sym.owner.isMethod && sym.isValueParameter)
-
-    override def isVolatile : Boolean = underlying.isVolatile && (sym.hasVolatileType || !sym.isStable)
 /*
     override def narrow: Type = {
       if (phase.erasedTypes) this
@@ -1776,33 +1765,6 @@ trait Types
             typeSymbol))
       } else super.normalize
     }
-
-    /** A refined type P1 with ... with Pn { decls } is volatile if
-     *  one of the parent types Pi is an abstract type, and
-     *  either i > 1, or decls or a following parent Pj, j > 1, contributes
-     *  an abstract member.
-     *  A type contributes an abstract member if it has an abstract member which
-     *  is also a member of the whole refined type. A scope `decls` contributes
-     *  an abstract member if it has an abstract definition which is also
-     *  a member of the whole type.
-     */
-    override def isVolatile = {
-      def isVisible(m: Symbol) =
-        this.nonPrivateMember(m.name).alternatives contains m
-      def contributesAbstractMembers(p: Type) =
-        p.deferredMembers exists isVisible
-
-      ((parents exists (_.isVolatile))
-       ||
-       (parents dropWhile (! _.typeSymbol.isAbstractType) match {
-         case ps @ (_ :: ps1) =>
-           (ps ne parents) ||
-           (ps1 exists contributesAbstractMembers) ||
-           (decls.iterator exists (m => m.isDeferred && isVisible(m)))
-         case _ =>
-           false
-       }))
-    }
     override def kind = "RefinedType"
   }
 
@@ -2038,7 +2000,6 @@ trait Types
   class ModuleTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
     require(sym.isModuleClass, sym)
     private[this] var narrowedCache: Type = _
-    override def isStable = pre.isStable
     override def narrow = {
       if (narrowedCache eq null)
         narrowedCache = singleType(pre, sym.sourceModule)
@@ -2053,7 +2014,6 @@ trait Types
   }
   class PackageTypeRef(pre0: Type, sym0: Symbol) extends ModuleTypeRef(pre0, sym0) {
     require(sym.isPackageClass, sym)
-    override def isStable = true
     override protected def finishPrefix(rest: String) = packagePrefix + rest
   }
   class RefinementTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
@@ -2160,8 +2120,6 @@ trait Types
     require(sym.isAliasType, sym)
 
     override def dealias    = if (typeParamsMatchArgs) betaReduce.dealias else super.dealias
-    override def isStable   = normalize.isStable
-    override def isVolatile = normalize.isVolatile
     override def narrow     = normalize.narrow
     override def thisInfo   = normalize
     override def prefix     = if (this ne normalize) normalize.prefix else pre
@@ -2216,30 +2174,6 @@ trait Types
     private var symInfoCache: Type = _
     private var thisInfoCache: Type = _
 
-    override def isVolatile = {
-      // need to be careful not to fall into an infinite recursion here
-      // because volatile checking is done before all cycles are detected.
-      // the case to avoid is an abstract type directly or
-      // indirectly upper-bounded by itself. See #2918
-      try {
-        volatileRecursions += 1
-        if (volatileRecursions < LogVolatileThreshold)
-          bounds.hi.isVolatile
-        else if (pendingVolatiles(sym))
-          true // we can return true here, because a cycle will be detected
-               // here afterwards and an error will result anyway.
-        else
-          try {
-            pendingVolatiles += sym
-            bounds.hi.isVolatile
-          } finally {
-            pendingVolatiles -= sym
-          }
-      } finally {
-        volatileRecursions -= 1
-      }
-    }
-
     override def thisInfo   = {
       val symInfo = sym.info
       if (thisInfoCache == null || (symInfo ne symInfoCache)) {
@@ -2254,7 +2188,6 @@ trait Types
       }
       thisInfoCache
     }
-    override def isStable = bounds.hi.typeSymbol isSubClass SingletonClass
     override def bounds   = thisInfo.bounds
     override protected[Types] def baseTypeSeqImpl: BaseTypeSeq = transform(bounds.hi).baseTypeSeq prepend this
     override def kind = "AbstractTypeRef"
@@ -2340,7 +2273,6 @@ trait Types
 
     override def baseClasses      = thisInfo.baseClasses
     override def baseTypeSeqDepth = baseTypeSeq.maxDepth
-    override def isStable         = (sym eq NothingClass) || (sym eq SingletonClass)
     override def prefix           = pre
     override def termSymbol       = super.termSymbol
     override def termSymbolDirect = super.termSymbol
@@ -2607,7 +2539,6 @@ trait Types
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def boundSyms = resultType.boundSyms
-    override def isVolatile = resultType.isVolatile
     override def safeToString: String = "=> "+ resultType
     override def kind = "NullaryMethodType"
   }
@@ -2646,7 +2577,6 @@ trait Types
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
-    override def isVolatile = resultType.isVolatile
 
     /** @M: typeDefSig wraps a TypeBounds in a PolyType
      *  to represent a higher-kinded type parameter
@@ -2691,7 +2621,6 @@ trait Types
     override protected def rewrap(newtp: Type) = existentialAbstraction(quantified, newtp)
 
     override def isTrivial = false
-    override def isStable: Boolean = false
     override def bounds = TypeBounds(maybeRewrap(underlying.bounds.lo), maybeRewrap(underlying.bounds.hi))
     override def parents = underlying.parents map maybeRewrap
     override def boundSyms = quantified.toSet
@@ -3251,8 +3180,6 @@ trait Types
       else super.normalize
     )
     override def typeSymbol = origin.typeSymbol
-    override def isStable = origin.isStable
-    override def isVolatile = origin.isVolatile
 
     private def tparamsOfSym(sym: Symbol) = sym.info match {
       case PolyType(tparams, _) if tparams.nonEmpty =>
@@ -4661,6 +4588,12 @@ trait Types
 
   Statistics.newView("#unique types") { if (uniques == null) 0 else uniques.size }
 
+}
+
+object TypeConstants {
+  final val DefaultLogThreshhold         = 50
+  final val LogPendingBaseTypesThreshold = DefaultLogThreshhold
+  final val LogVolatileThreshold         = DefaultLogThreshhold
 }
 
 object TypesStats {

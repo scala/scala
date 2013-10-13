@@ -12,7 +12,7 @@ trait TypeComparers {
   import definitions._
   import TypesStats._
 
-  private final val LogPendingSubTypesThreshold = DefaultLogThreshhold
+  private final val LogPendingSubTypesThreshold = TypeConstants.DefaultLogThreshhold
 
   private val pendingSubTypes = new mutable.HashSet[SubTypePair]
 
