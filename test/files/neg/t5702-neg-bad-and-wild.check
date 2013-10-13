@@ -13,7 +13,7 @@ t5702-neg-bad-and-wild.scala:14: error: use _* to match a sequence
 t5702-neg-bad-and-wild.scala:15: error: trailing * is not a valid pattern
       case List(x*, 1) => // trailing * is not a valid pattern
                   ^
-t5702-neg-bad-and-wild.scala:16: error: trailing * is not a valid pattern
+t5702-neg-bad-and-wild.scala:16: error: illegal start of simple pattern
       case (1, x*) => // trailing * is not a valid pattern
                  ^
 t5702-neg-bad-and-wild.scala:17: error: bad use of _* (sequence pattern not allowed)

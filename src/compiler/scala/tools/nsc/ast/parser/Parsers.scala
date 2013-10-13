@@ -11,7 +11,7 @@ package ast.parser
 
 import scala.collection.{ mutable, immutable }
 import mutable.{ ListBuffer, StringBuilder }
-import scala.reflect.internal.{ ModifierFlags => Flags }
+import scala.reflect.internal.{ Precedence, ModifierFlags => Flags }
 import scala.reflect.internal.Chars.{ isScalaLetter }
 import scala.reflect.internal.util.{ SourceFile, Position }
 import Tokens._
@@ -137,7 +137,9 @@ self =>
   val global: Global
   import global._
 
-  case class OpInfo(operand: Tree, operator: Name, offset: Offset)
+  case class OpInfo(lhs: Tree, operator: TermName, offset: Offset) {
+    def precedence = Precedence(operator.toString)
+  }
 
   class SourceFileParser(val source: SourceFile) extends Parser {
 
@@ -149,17 +151,6 @@ self =>
       else () => scriptBody()
 
     def newScanner(): Scanner = new SourceFileScanner(source)
-
-    /** Scoping operator used to temporarily look into the future.
-     *  Backs up scanner data before evaluating a block and restores it after.
-     */
-    def lookingAhead[T](body: => T): T = {
-      val snapshot = (new ScannerData{}).copyFrom(in)
-      in.nextToken()
-      val res = body
-      in copyFrom snapshot
-      res
-    }
 
     val in = newScanner()
     in.init()
@@ -303,6 +294,15 @@ self =>
     def o2p(offset: Int): Position
     def r2p(start: Int, mid: Int, end: Int): Position
 
+    /** Scoping operator used to temporarily look into the future.
+     *  Backs up scanner data before evaluating a block and restores it after.
+     */
+    @inline final def lookingAhead[T](body: => T): T = {
+      val saved = new ScannerData {} copyFrom in
+      in.nextToken()
+      try body finally in copyFrom saved
+    }
+
     /** whether a non-continuable syntax error has been seen */
     private var lastErrorOffset : Int = -1
 
@@ -321,6 +321,7 @@ self =>
       try op
       finally classContextBounds = saved
     }
+
 
     /** Are we inside the Scala package? Set for files that start with package scala
      */
@@ -654,6 +655,10 @@ self =>
       case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT => true
       case _ => false
     }
+
+    def isIdentExcept(except: Name) = isIdent && in.name != except
+    def isIdentOf(name: Name)       = isIdent && in.name == name
+
     def isUnaryOp = isIdent && raw.isUnary(in.name)
     def isRawStar = isIdent && in.name == raw.STAR
     def isRawBar  = isIdent && in.name == raw.BAR
@@ -764,49 +769,60 @@ self =>
 
     var opstack: List[OpInfo] = Nil
 
-    def precedence(operator: Name): Int =
-      if (operator eq nme.ERROR) -1
-      else {
-        val firstCh = operator.startChar
-        if (isScalaLetter(firstCh)) 1
-        else if (nme.isOpAssignmentName(operator)) 0
-        else firstCh match {
-          case '|'             => 2
-          case '^'             => 3
-          case '&'             => 4
-          case '=' | '!'       => 5
-          case '<' | '>'       => 6
-          case ':'             => 7
-          case '+' | '-'       => 8
-          case '*' | '/' | '%' => 9
-          case _               => 10
-        }
-      }
+    @deprecated("Use `scala.reflect.internal.Precdence`", "2.11.0")
+    def precedence(operator: Name): Int = Precedence(operator.toString).level
 
-    def checkAssoc(offset: Int, op: Name, leftAssoc: Boolean) =
+    private def opHead = opstack.head
+    private def headPrecedence = opHead.precedence
+    private def popOpInfo(): OpInfo = try opHead finally opstack = opstack.tail
+    private def pushOpInfo(top: Tree) {
+      val opinfo = OpInfo(top, in.name, in.offset)
+      opstack ::= opinfo
+      ident()
+    }
+
+    def checkHeadAssoc(leftAssoc: Boolean) { checkAssoc(opHead.offset, opHead.operator, leftAssoc) }
+    def checkAssoc(offset: Int, op: Name, leftAssoc: Boolean) {
       if (treeInfo.isLeftAssoc(op) != leftAssoc)
-        syntaxError(
-          offset, "left- and right-associative operators with same precedence may not be mixed", skipIt = false)
+        syntaxError(offset, "left- and right-associative operators with same precedence may not be mixed", skipIt = false)
+    }
 
-    def reduceStack(isExpr: Boolean, base: List[OpInfo], top0: Tree, prec: Int, leftAssoc: Boolean): Tree = {
-      var top = top0
-      if (opstack != base && precedence(opstack.head.operator) == prec)
-        checkAssoc(opstack.head.offset, opstack.head.operator, leftAssoc)
-      while (opstack != base &&
-             (prec < precedence(opstack.head.operator) ||
-              leftAssoc && prec == precedence(opstack.head.operator))) {
-        val opinfo = opstack.head
-        opstack = opstack.tail
-        val opPos = r2p(opinfo.offset, opinfo.offset, opinfo.offset+opinfo.operator.length)
-        val lPos = opinfo.operand.pos
-        val start = if (lPos.isDefined) lPos.start else  opPos.start
-        val rPos = top.pos
-        val end = if (rPos.isDefined) rPos.end else opPos.end
-        top = atPos(start, opinfo.offset, end) {
-          makeBinop(isExpr, opinfo.operand, opinfo.operator.toTermName, top, opPos)
-        }
-      }
-      top
+    def finishPostfixOp(start: Int, base: List[OpInfo], opinfo: OpInfo): Tree = {
+      val od = stripParens(reduceExprStack(base, opinfo.lhs))
+      makePostfixSelect(start, opinfo.offset, od, opinfo.operator)
+    }
+
+    def finishBinaryOp(isExpr: Boolean, opinfo: OpInfo, rhs: Tree): Tree = {
+      import opinfo._
+      val operatorPos: Position = Position.range(rhs.pos.source, offset, offset, offset + operator.length)
+      val pos                   = lhs.pos union rhs.pos union operatorPos withPoint offset
+
+      atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos))
+    }
+
+    def reduceExprStack(base: List[OpInfo], top: Tree): Tree    = reduceStack(isExpr = true, base, top)
+    def reducePatternStack(base: List[OpInfo], top: Tree): Tree = reduceStack(isExpr = false, base, top)
+
+    def reduceStack(isExpr: Boolean, base: List[OpInfo], top: Tree): Tree = {
+      val opPrecedence = if (isIdent) Precedence(in.name.toString) else Precedence(0)
+      val leftAssoc    = !isIdent || (treeInfo isLeftAssoc in.name)
+
+      reduceStack(isExpr, base, top, opPrecedence, leftAssoc)
+    }
+
+    def reduceStack(isExpr: Boolean, base: List[OpInfo], top: Tree, opPrecedence: Precedence, leftAssoc: Boolean): Tree = {
+      def isDone          = opstack == base
+      def lowerPrecedence = !isDone && (opPrecedence < headPrecedence)
+      def samePrecedence  = !isDone && (opPrecedence == headPrecedence)
+      def canReduce       = lowerPrecedence || leftAssoc && samePrecedence
+
+      if (samePrecedence)
+        checkHeadAssoc(leftAssoc)
+
+      def loop(top: Tree): Tree =
+        if (canReduce) loop(finishBinaryOp(isExpr, popOpInfo(), top)) else top
+
+      loop(top)
     }
 
 /* -------- IDENTIFIERS AND LITERALS ------------------------------------------- */
@@ -1485,28 +1501,19 @@ self =>
     def postfixExpr(): Tree = {
       val start = in.offset
       val base  = opstack
-      var top   = prefixExpr()
 
-      while (isIdent) {
-        top = reduceStack(isExpr = true, base, top, precedence(in.name), leftAssoc = treeInfo.isLeftAssoc(in.name))
-        val op = in.name
-        opstack = OpInfo(top, op, in.offset) :: opstack
-        ident()
+      def loop(top: Tree): Tree = if (!isIdent) top else {
+        pushOpInfo(reduceExprStack(base, top))
         newLineOptWhenFollowing(isExprIntroToken)
-        if (isExprIntro) {
-          val next = prefixExpr()
-          if (next == EmptyTree)
-            return reduceStack(isExpr = true, base, top, 0, leftAssoc = true)
-          top = next
-        } else {
-          // postfix expression
-          val topinfo = opstack.head
-          opstack = opstack.tail
-          val od = stripParens(reduceStack(isExpr = true, base, topinfo.operand, 0, leftAssoc = true))
-          return makePostfixSelect(start, topinfo.offset, od, topinfo.operator)
-        }
+        if (isExprIntro)
+          prefixExpr() match {
+            case EmptyTree => reduceExprStack(base, top)
+            case next      => loop(next)
+          }
+        else finishPostfixOp(start, base, popOpInfo())
       }
-      reduceStack(isExpr = true, base, top, 0, leftAssoc = true)
+
+      reduceExprStack(base, loop(prefixExpr()))
     }
 
     /** {{{
@@ -1825,69 +1832,52 @@ self =>
        *  }}}
        */
       def pattern3(): Tree = {
-        var top = simplePattern(badPattern3)
-        // after peekahead
-        def acceptWildStar() = atPos(top.pos.start, in.prev.offset)(Star(stripParens(top)))
-        def peekahead() = {
-          in.prev copyFrom in
-          in.nextToken()
-        }
-        def pushback() = {
-          in.next copyFrom in
-          in copyFrom in.prev
-        }
+        val top = simplePattern(badPattern3)
+        val base = opstack
         // See SI-3189, SI-4832 for motivation. Cf SI-3480 for counter-motivation.
         // TODO: dredge out the remnants of regexp patterns.
-        // /{/ peek for _*) or _*} (for xml escape)
-        if (isSequenceOK) {
-          top match {
-            case Ident(nme.WILDCARD) if (isRawStar) =>
-              peekahead()
-              in.token match {
-                case RBRACE if (isXML) => return acceptWildStar()
-                case RPAREN if (!isXML) => return acceptWildStar()
-                case _ => pushback()
-              }
-            case _ =>
+        def peekaheadDelim() = {
+          def isCloseDelim = in.token match {
+            case RBRACE => isXML
+            case RPAREN => !isXML
+            case _      => false
           }
+          lookingAhead(isCloseDelim) && { in.nextToken() ; true }
         }
-        val base = opstack
-        while (isIdent && in.name != raw.BAR) {
-          top = reduceStack(isExpr = false, base, top, precedence(in.name), leftAssoc = treeInfo.isLeftAssoc(in.name))
-          val op = in.name
-          opstack = OpInfo(top, op, in.offset) :: opstack
-          ident()
-          top = simplePattern(badPattern3)
+        def isWildStar = top match {
+          case Ident(nme.WILDCARD) if isRawStar => peekaheadDelim()
+          case _                                => false
         }
-        stripParens(reduceStack(isExpr = false, base, top, 0, leftAssoc = true))
+        def loop(top: Tree): Tree = reducePatternStack(base, top) match {
+          case next if isIdentExcept(raw.BAR) => pushOpInfo(next) ; loop(simplePattern(badPattern3))
+          case next                           => next
+        }
+        if (isSequenceOK && isWildStar)
+          atPos(top.pos.start, in.prev.offset)(Star(stripParens(top)))
+        else
+          stripParens(loop(top))
       }
+
       def badPattern3(): Tree = {
-        def isComma = in.token == COMMA
-        def isAnyBrace = in.token == RPAREN || in.token == RBRACE
-        val badStart = "illegal start of simple pattern"
+        def isComma                = in.token == COMMA
+        def isDelimeter            = in.token == RPAREN || in.token == RBRACE
+        def isCommaOrDelimeter     = isComma || isDelimeter
+        val (isUnderscore, isStar) = opstack match {
+          case OpInfo(Ident(nme.WILDCARD), nme.STAR, _) :: _ => (true,   true)
+          case OpInfo(_, nme.STAR, _) :: _                   => (false,  true)
+          case _                                             => (false, false)
+        }
+        def isSeqPatternClose = isUnderscore && isStar && isSequenceOK && isDelimeter
+        val msg = (isUnderscore, isStar, isSequenceOK) match {
+          case (true, true, true) if isComma             => "bad use of _* (a sequence pattern must be the last pattern)"
+          case (true, true, true) if isDelimeter         => "bad brace or paren after _*"
+          case (true, true, false) if isDelimeter        => "bad use of _* (sequence pattern not allowed)"
+          case (false, true, true) if isDelimeter        => "use _* to match a sequence"
+          case (false, true, true) if isCommaOrDelimeter => "trailing * is not a valid pattern"
+          case _                                         => "illegal start of simple pattern"
+        }
         // better recovery if don't skip delims of patterns
-        var skip = !(isComma || isAnyBrace)
-        val msg = if (!opstack.isEmpty && opstack.head.operator == nme.STAR) {
-            opstack.head.operand match {
-              case Ident(nme.WILDCARD) =>
-                if (isSequenceOK && isComma)
-                  "bad use of _* (a sequence pattern must be the last pattern)"
-                else if (isSequenceOK && isAnyBrace) {
-                  skip = true  // do skip bad paren; scanner may skip bad brace already
-                  "bad brace or paren after _*"
-                } else if (!isSequenceOK && isAnyBrace)
-                  "bad use of _* (sequence pattern not allowed)"
-                else badStart
-              case _ =>
-                if (isSequenceOK && isAnyBrace)
-                  "use _* to match a sequence"
-                else if (isComma || isAnyBrace)
-                  "trailing * is not a valid pattern"
-                else badStart
-            }
-          } else {
-            badStart
-          }
+        val skip = !isCommaOrDelimeter || isSeqPatternClose
         syntaxErrorOrIncompleteAnd(msg, skip)(errorPatternTree)
       }
 
