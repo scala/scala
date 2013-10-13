@@ -41,17 +41,12 @@ trait GenTrees {
     // the first prototype of reification reified all types and symbols for all trees => this quickly became unyieldy
     // the second prototype reified external types, but avoided reifying local ones => this created an ugly irregularity
     // current approach is uniform and compact
-    var rtree = tree match {
-      case FreeDef(_, _, _, _, _) =>
-        reifyNestedFreeDef(tree)
-      case FreeRef(_, _) =>
-        reifyNestedFreeRef(tree)
-      case BoundTerm(tree) =>
-        reifyBoundTerm(tree)
-      case BoundType(tree) =>
-        reifyBoundType(tree)
-      case _ =>
-        reifyTreeSyntactically(tree)
+    var rtree: Tree = tree match {
+      case FreeDef(_, _, _, _, _) => reifyNestedFreeDef(tree)
+      case FreeRef(_, _)          => reifyNestedFreeRef(tree)
+      case BoundTerm(tree)        => reifyBoundTerm(tree)
+      case BoundType(tree)        => reifyBoundType(tree)
+      case _                      => reifyTreeSyntactically(tree)
     }
 
     // usually we don't reify symbols/types, because they can be re-inferred during subsequent reflective compilation
@@ -68,19 +63,13 @@ trait GenTrees {
     rtree
   }
 
-  def reifyTreeSyntactically(tree: Tree) = tree match {
-    case global.EmptyTree =>
-      reifyMirrorObject(EmptyTree)
-    case global.noSelfType =>
-      mirrorSelect(nme.noSelfType)
-    case global.pendingSuperCall =>
-      mirrorSelect(nme.pendingSuperCall)
-    case Literal(const @ Constant(_)) =>
-      mirrorCall(nme.Literal, reifyProduct(const))
-    case Import(expr, selectors) =>
-      mirrorCall(nme.Import, reify(expr), mkList(selectors map reifyProduct))
-    case _ =>
-      reifyProduct(tree)
+  def reifyTreeSyntactically(tree: Tree): Tree = tree match {
+    case global.EmptyTree             => reifyMirrorObject(EmptyTree)
+    case global.noSelfType            => mirrorSelect(nme.noSelfType)
+    case global.pendingSuperCall      => mirrorSelect(nme.pendingSuperCall)
+    case Literal(const @ Constant(_)) => mirrorCall(nme.Literal, reifyProduct(const))
+    case Import(expr, selectors)      => mirrorCall(nme.Import, reify(expr), mkList(selectors map reifyProduct))
+    case _                            => reifyProduct(tree)
   }
 
   def reifyFlags(flags: FlagSet) =
