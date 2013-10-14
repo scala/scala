@@ -799,6 +799,44 @@ trait Definitions extends api.StandardDefinitions {
       (sym eq PartialFunctionClass) || (sym eq AbstractPartialFunctionClass)
     }
 
+    /** The single abstract method declared by type `tp` (or `NoSymbol` if it cannot be found).
+     *
+     * The method must be monomorphic and have exactly one parameter list.
+     * The class defining the method is a supertype of `tp` that
+     * has a public no-arg primary constructor.
+     */
+    def samOf(tp: Type): Symbol = {
+      // if tp has a constructor, it must be public and must not take any arguments
+      // (not even an implicit argument list -- to keep it simple for now)
+      val tpSym  = tp.typeSymbol
+      val ctor   = tpSym.primaryConstructor
+      val ctorOk = !ctor.exists || (!ctor.isOverloaded && ctor.isPublic && ctor.info.params.isEmpty && ctor.info.paramSectionCount <= 1)
+
+      if (tpSym.exists && ctorOk) {
+        // find the single abstract member, if there is one
+        // don't go out requiring DEFERRED members, as you will get them even if there's a concrete override:
+        //    scala> abstract class X { def m: Int }
+        //    scala> class Y extends X { def m: Int = 1}
+        //    scala> typeOf[Y].deferredMembers
+        //    Scopes(method m, method getClass)
+        //
+        //    scala> typeOf[Y].members.filter(_.isDeferred)
+        //    Scopes()
+        // must filter out "universal" members (getClass is deferred for some reason)
+        val deferredMembers = (
+          tp membersBasedOnFlags (excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD)
+          filter (mem => mem.isDeferredNotDefault && !isUniversalMember(mem)) // TODO: test
+        )
+
+        // if there is only one, it's monomorphic and has a single argument list
+        if (deferredMembers.size == 1 &&
+            deferredMembers.head.typeParams.isEmpty &&
+            deferredMembers.head.info.paramSectionCount == 1)
+          deferredMembers.head
+        else NoSymbol
+      } else NoSymbol
+    }
+
     def arrayType(arg: Type)         = appliedType(ArrayClass, arg)
     def byNameType(arg: Type)        = appliedType(ByNameParamClass, arg)
     def iteratorOfType(tp: Type)     = appliedType(IteratorClass, tp)
@@ -1089,6 +1127,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaInlineClass           = requiredClass[scala.inline]
     lazy val ScalaNoInlineClass         = requiredClass[scala.noinline]
     lazy val SerialVersionUIDAttr       = requiredClass[scala.SerialVersionUID]
+    lazy val SerialVersionUIDAnnotation = AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
     lazy val SpecializedClass           = requiredClass[scala.specialized]
     lazy val ThrowsClass                = requiredClass[scala.throws[_]]
     lazy val TransientAttr              = requiredClass[scala.transient]
