@@ -2544,18 +2544,32 @@ trait Trees { self: Universe =>
   class Traverser {
     protected[scala] var currentOwner: Symbol = rootMirror.RootClass
 
+    /** Traverse something which Trees contain, but which isn't a Tree itself. */
+    def traverseName(name: Name): Unit                    = ()
+    def traverseConstant(c: Constant): Unit               = ()
+    def traverseImportSelector(sel: ImportSelector): Unit = ()
+    def traverseModifiers(mods: Modifiers): Unit          = traverseAnnotations(mods.annotations)
+
     /** Traverses a single tree. */
-    def traverse(tree: Tree): Unit = itraverse(this, tree)
+    def traverse(tree: Tree): Unit              = itraverse(this, tree)
+    def traversePattern(pat: Tree): Unit        = traverse(pat)
+    def traverseGuard(guard: Tree): Unit        = traverse(guard)
+    def traverseTypeAscription(tpt: Tree): Unit = traverse(tpt)
+    // Special handling of noSelfType necessary for backward compat: existing
+    // traversers break down when they see the unexpected tree.
+    def traverseSelfType(self: ValDef): Unit    = if (self ne noSelfType) traverse(self)
 
     /** Traverses a list of trees. */
-    def traverseTrees(trees: List[Tree]) {
-      trees foreach traverse
-    }
+    def traverseTrees(trees: List[Tree]): Unit          = trees foreach traverse
+    def traverseTypeArgs(args: List[Tree]): Unit        = traverseTrees(args)
+    def traverseParents(parents: List[Tree]): Unit      = traverseTrees(parents)
+    def traverseCases(cases: List[CaseDef]): Unit       = traverseTrees(cases)
+    def traverseAnnotations(annots: List[Tree]): Unit   = traverseTrees(annots)
 
     /** Traverses a list of lists of trees. */
-    def traverseTreess(treess: List[List[Tree]]) {
-      treess foreach traverseTrees
-    }
+    def traverseTreess(treess: List[List[Tree]]): Unit    = treess foreach traverseTrees
+    def traverseParams(params: List[Tree]): Unit          = traverseTrees(params)
+    def traverseParamss(vparamss: List[List[Tree]]): Unit = vparamss foreach traverseParams
 
     /** Traverses a list of trees with a given owner symbol. */
     def traverseStats(stats: List[Tree], exprOwner: Symbol) {

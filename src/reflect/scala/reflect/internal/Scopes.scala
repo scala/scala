@@ -221,8 +221,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** Lookup a module or a class, filtering out matching names in scope
      *  which do not match that requirement.
      */
-    def lookupModule(name: Name): Symbol = lookupAll(name.toTermName) find (_.isModule) getOrElse NoSymbol
-    def lookupClass(name: Name): Symbol  = lookupAll(name.toTypeName) find (_.isClass) getOrElse NoSymbol
+    def lookupModule(name: Name): Symbol = findSymbol(lookupAll(name.toTermName))(_.isModule)
+    def lookupClass(name: Name): Symbol  = findSymbol(lookupAll(name.toTypeName))(_.isClass)
 
     /** True if the name exists in this scope, false otherwise. */
     def containsName(name: Name) = lookupEntry(name) != null

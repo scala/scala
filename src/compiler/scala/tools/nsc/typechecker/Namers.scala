@@ -425,11 +425,10 @@ trait Namers extends MethodSynthesis {
       sym
     }
 
-    /** Enter a module symbol. The tree parameter can be either
-     *  a module definition or a class definition.
+    /** Enter a module symbol.
      */
     def enterModuleSymbol(tree : ModuleDef): Symbol = {
-      var m: Symbol = context.scope lookupAll tree.name find (_.isModule) getOrElse NoSymbol
+      var m: Symbol = context.scope lookupModule tree.name
       val moduleFlags = tree.mods.flags | MODULE
       if (m.isModule && !m.isPackage && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
         updatePosFlags(m, tree.pos, moduleFlags)
