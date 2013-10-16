@@ -41,6 +41,7 @@ abstract class SymbolTable extends macros.Universe
                               with StdCreators
                               with BuildUtils
                               with PrivateWithin
+                              with pickling.Translations
 {
 
   val gen = new TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
@@ -122,6 +123,10 @@ abstract class SymbolTable extends macros.Universe
       debuglog(msg + ": " + result)
 
     result
+  }
+
+  @inline final def findSymbol(xs: TraversableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
+    xs find p getOrElse NoSymbol
   }
 
   // For too long have we suffered in order to sort NAMES.

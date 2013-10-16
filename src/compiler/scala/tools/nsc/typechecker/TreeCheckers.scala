@@ -283,6 +283,9 @@ abstract class TreeCheckers extends Analyzer {
       }
 
       private def traverseInternal(tree: Tree) {
+        if (!tree.canHaveAttrs)
+          return
+
         checkSymbolRefsRespectScope(enclosingMemberDefs takeWhile (md => !md.symbol.hasPackageFlag), tree)
         checkReturnReferencesDirectlyEnclosingDef(tree)
 
@@ -329,10 +332,9 @@ abstract class TreeCheckers extends Analyzer {
             return
           case _ =>
         }
-
-        if (tree.canHaveAttrs && tree.pos == NoPosition)
+        if (tree.pos == NoPosition)
           noPos(tree)
-        else if (tree.tpe == null && phase.id > currentRun.typerPhase.id)
+        else if (tree.tpe == null && isPastTyper)
           noType(tree)
         else if (tree.isDef) {
           checkSym(tree)

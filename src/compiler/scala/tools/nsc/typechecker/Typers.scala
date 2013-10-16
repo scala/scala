@@ -13,7 +13,7 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.collection.mutable
+import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.util.{ BatchSourceFile, Statistics, shortClassOfInstance }
 import mutable.ListBuffer
 import symtab.Flags._
@@ -3590,7 +3590,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           else {
             val annScope = annType.decls
                 .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
-            val names = new scala.collection.mutable.HashSet[Symbol]
+            val names = mutable.Set[Symbol]()
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
 
@@ -3603,7 +3603,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val nvPairs = args map {
               case arg @ AssignOrNamedArg(Ident(name), rhs) =>
                 val sym = if (isJava) annScope.lookup(name)
-                          else typedFun.tpe.params.find(p => p.name == name).getOrElse(NoSymbol)
+                          else findSymbol(typedFun.tpe.params)(_.name == name)
                 if (sym == NoSymbol) {
                   reportAnnotationError(UnknownAnnotationNameError(arg, name))
                   (nme.ERROR, None)
@@ -3730,8 +3730,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           while (o != owner && o != NoSymbol && !o.hasPackageFlag) o = o.owner
           o == owner && !isVisibleParameter(sym)
         }
-      var localSyms = scala.collection.immutable.Set[Symbol]()
-      var boundSyms = scala.collection.immutable.Set[Symbol]()
+      var localSyms = immutable.Set[Symbol]()
+      var boundSyms = immutable.Set[Symbol]()
       def isLocal(sym: Symbol): Boolean =
         if (sym == NoSymbol || sym.isRefinementClass || sym.isLocalDummy) false
         else if (owner == NoSymbol) tree exists (defines(_, sym))
@@ -4311,7 +4311,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           NotAMemberError(tpt, TypeTree(tp), nme.CONSTRUCTOR)
           setError(tpt)
         }
-        else if (!(  tp == sym.thisSym.tpe_* // when there's no explicit self type -- with (#3612) or without self variable
+        else if (!(  tp == sym.typeOfThis // when there's no explicit self type -- with (#3612) or without self variable
                      // sym.thisSym.tpe == tp.typeOfThis (except for objects)
                   || narrowRhs(tp) <:< tp.typeOfThis
                   || phase.erasedTypes
