@@ -579,7 +579,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     def apply(line: String): Result = line match {
       case ""   => showUsage()
       case _    =>
-        val toRun = classOf[ProcessResult].getName + "(" + string2codeQuoted(line) + ")"
+        val toRun = s"new ${classOf[ProcessResult].getName}(${string2codeQuoted(line)})"
         intp interpret toRun
         ()
     }
