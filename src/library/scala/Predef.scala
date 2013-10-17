@@ -244,33 +244,33 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   // implicit classes -----------------------------------------------------
 
-  implicit final class ArrowAssoc[A](val __leftOfArrow: A) extends AnyVal {
-    @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(__leftOfArrow, y)
+  implicit final class ArrowAssoc[A](private val self: A) extends AnyVal {
+    @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }
 
-  implicit final class Ensuring[A](val __resultOfEnsuring: A) extends AnyVal {
-    def ensuring(cond: Boolean): A = { assert(cond); __resultOfEnsuring }
-    def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); __resultOfEnsuring }
-    def ensuring(cond: A => Boolean): A = { assert(cond(__resultOfEnsuring)); __resultOfEnsuring }
-    def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(__resultOfEnsuring), msg); __resultOfEnsuring }
+  implicit final class Ensuring[A](private val self: A) extends AnyVal {
+    def ensuring(cond: Boolean): A = { assert(cond); self }
+    def ensuring(cond: Boolean, msg: => Any): A = { assert(cond, msg); self }
+    def ensuring(cond: A => Boolean): A = { assert(cond(self)); self }
+    def ensuring(cond: A => Boolean, msg: => Any): A = { assert(cond(self), msg); self }
   }
 
-  implicit final class StringFormat[A](val __stringToFormat: A) extends AnyVal {
+  implicit final class StringFormat[A](private val self: A) extends AnyVal {
     /** Returns string formatted according to given `format` string.
      *  Format strings are as for `String.format`
      *  (@see java.lang.String.format).
      */
-    @inline def formatted(fmtstr: String): String = fmtstr format __stringToFormat
+    @inline def formatted(fmtstr: String): String = fmtstr format self
   }
 
-  implicit final class StringAdd[A](val __thingToAdd: A) extends AnyVal {
-    def +(other: String) = String.valueOf(__thingToAdd) + other
+  implicit final class StringAdd[A](private val self: A) extends AnyVal {
+    def +(other: String) = String.valueOf(self) + other
   }
 
-  implicit final class RichException(val __throwableToEnrich: Throwable) extends AnyVal {
+  implicit final class RichException(private val self: Throwable) extends AnyVal {
     import scala.compat.Platform.EOL
-    @deprecated("Use Throwable#getStackTrace", "2.11.0") def getStackTraceString = __throwableToEnrich.getStackTrace().mkString("", EOL, EOL)
+    @deprecated("Use Throwable#getStackTrace", "2.11.0") def getStackTraceString = self.getStackTrace().mkString("", EOL, EOL)
   }
 
   implicit final class SeqCharSequence(val __sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
