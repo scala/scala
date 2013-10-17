@@ -759,7 +759,7 @@ self =>
 
     var opstack: List[OpInfo] = Nil
 
-    @deprecated("Use `scala.reflect.internal.Precdence`", "2.11.0")
+    @deprecated("Use `scala.reflect.internal.Precedence`", "2.11.0")
     def precedence(operator: Name): Int = Precedence(operator.toString).level
 
     private def opHead = opstack.head
@@ -1825,7 +1825,6 @@ self =>
         val top = simplePattern(badPattern3)
         val base = opstack
         // See SI-3189, SI-4832 for motivation. Cf SI-3480 for counter-motivation.
-        // TODO: dredge out the remnants of regexp patterns.
         def peekaheadDelim() = {
           def isCloseDelim = in.token match {
             case RBRACE => isXML
@@ -1850,24 +1849,26 @@ self =>
 
       def badPattern3(): Tree = {
         def isComma                = in.token == COMMA
-        def isDelimeter            = in.token == RPAREN || in.token == RBRACE
-        def isCommaOrDelimeter     = isComma || isDelimeter
+        def isDelimiter            = in.token == RPAREN || in.token == RBRACE
+        def isCommaOrDelimiter     = isComma || isDelimiter
         val (isUnderscore, isStar) = opstack match {
           case OpInfo(Ident(nme.WILDCARD), nme.STAR, _) :: _ => (true,   true)
           case OpInfo(_, nme.STAR, _) :: _                   => (false,  true)
           case _                                             => (false, false)
         }
-        def isSeqPatternClose = isUnderscore && isStar && isSequenceOK && isDelimeter
-        val msg = (isUnderscore, isStar, isSequenceOK) match {
-          case (true, true, true) if isComma             => "bad use of _* (a sequence pattern must be the last pattern)"
-          case (true, true, true) if isDelimeter         => "bad brace or paren after _*"
-          case (true, true, false) if isDelimeter        => "bad use of _* (sequence pattern not allowed)"
-          case (false, true, true) if isDelimeter        => "use _* to match a sequence"
-          case (false, true, true) if isCommaOrDelimeter => "trailing * is not a valid pattern"
-          case _                                         => "illegal start of simple pattern"
+        def isSeqPatternClose = isUnderscore && isStar && isSequenceOK && isDelimiter
+        val preamble = "bad simple pattern:"
+        val subtext = (isUnderscore, isStar, isSequenceOK) match {
+          case (true,  true, true)  if isComma            => "bad use of _* (a sequence pattern must be the last pattern)"
+          case (true,  true, true)  if isDelimiter        => "bad brace or paren after _*"
+          case (true,  true, false) if isDelimiter        => "bad use of _* (sequence pattern not allowed)"
+          case (false, true, true)  if isDelimiter        => "use _* to match a sequence"
+          case (false, true, _)     if isCommaOrDelimiter => "trailing * is not a valid pattern"
+          case _                                          => null
         }
+        val msg = if (subtext != null) s"$preamble $subtext" else "illegal start of simple pattern"
         // better recovery if don't skip delims of patterns
-        val skip = !isCommaOrDelimeter || isSeqPatternClose
+        val skip = !isCommaOrDelimiter || isSeqPatternClose
         syntaxErrorOrIncompleteAnd(msg, skip)(errorPatternTree)
       }
 
