@@ -71,18 +71,20 @@ object Impls14 {
 
 object Impls15 {
   def foo[T: c.WeakTypeTag, U: c.WeakTypeTag, V](c: Context)(implicit V: c.WeakTypeTag[V]): c.Expr[Unit] = {
+    import c.universe._
     println(implicitly[c.WeakTypeTag[T]])
     println(implicitly[c.WeakTypeTag[U]])
     println(V)
-    c.literalUnit
+    c.Expr[Unit](Literal(Constant(())))
   }
 }
 
 object Impls16 {
   def foo[T: c.WeakTypeTag, U: c.WeakTypeTag, V](c: Context)(implicit V: c.WeakTypeTag[V]): c.Expr[Unit] = {
+    import c.universe._
     println(implicitly[c.WeakTypeTag[T]])
     println(implicitly[c.WeakTypeTag[U]])
     println(V)
-    c.literalUnit
+    c.Expr[Unit](Literal(Constant(())))
   }
 }

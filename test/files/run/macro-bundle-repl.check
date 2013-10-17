@@ -7,13 +7,13 @@ import scala.language.experimental.macros
 scala> import scala.reflect.macros.Macro
 import scala.reflect.macros.Macro
 
-scala> trait Bar extends Macro { def impl = c.literalUnit };def bar = macro Bar.impl
+scala> trait Bar extends Macro { def impl = { import c.universe._; c.Expr[Unit](Literal(Constant(()))) } };def bar = macro Bar.impl
 defined trait Bar
 defined term macro bar: Unit
 
 scala> bar
 
-scala> trait Foo extends Macro { def impl = c.literalUnit }
+scala> trait Foo extends Macro { def impl = { import c.universe._; c.Expr[Unit](Literal(Constant(()))) } }
 defined trait Foo
 
 scala> def foo = macro Foo.impl

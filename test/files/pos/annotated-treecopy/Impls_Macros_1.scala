@@ -38,10 +38,10 @@ object Macros {
         val reifiedExpr = c.Expr[scala.reflect.runtime.universe.Expr[T => U]](reifiedTree)
         val template =
           c.universe.reify(new (T => U) with TypedFunction {
-            override def toString = c.literal(tp+" => "+ttag.tpe+" { "+b1.toString+" } ").splice // DEBUG
+            override def toString = c.Expr[String](Literal(Constant(tp+" => "+ttag.tpe+" { "+b1.toString+" } "))).splice // DEBUG
             def tree = reifiedExpr.splice.tree
-            val typeIn = c.literal(tp.toString).splice
-            val typeOut = c.literal(ttag.tpe.toString).splice
+            val typeIn = c.Expr[String](Literal(Constant((tp.toString)))).splice
+            val typeOut = c.Expr[String](Literal(Constant((ttag.tpe.toString)))).splice
             def apply(_arg: T): U = c.Expr[U](b1)(ttag.asInstanceOf[c.WeakTypeTag[U]]).splice
           })
         val untyped = c.resetLocalAttrs(template.tree)

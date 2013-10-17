@@ -7,12 +7,12 @@ object Test extends DirectTest {
     import scala.reflect.macros.Context
 
     object Impls {
-      def impl(c: Context) = c.literalUnit
+      def impl(c: Context) = { import c.universe._; c.Expr[Unit](Literal(Constant(()))) }
     }
 
     object Macros {
       //import Impls._
-      def impl(c: Context) = c.literalUnit
+      def impl(c: Context) = { import c.universe._; c.Expr[Unit](Literal(Constant(()))) }
       def foo = macro impl
     }
   """
