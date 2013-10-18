@@ -273,6 +273,8 @@ trait StdNames {
     final val SourceFileATTR: NameType             = "SourceFile"
     final val SyntheticATTR: NameType              = "Synthetic"
 
+    final val scala_ : NameType = "scala"
+
     def dropSingletonName(name: Name): TypeName = (name dropRight SINGLETON_SUFFIX.length).toTypeName
     def singletonName(name: Name): TypeName     = (name append SINGLETON_SUFFIX).toTypeName
     def implClassName(name: Name): TypeName     = (name append IMPL_CLASS_SUFFIX).toTypeName

@@ -1480,6 +1480,7 @@ TODO:
       <srcfiles dir="${build-pack.dir}">
         <include name="**/*"/>
       </srcfiles>
+      <srcfiles file="${build-pack.dir}/lib/*.jar"/>
     </uptodate>
 
     <if><not><isset property="osgi.bundles.available"/></not><then>
@@ -1541,6 +1542,7 @@ TODO:
     <stopwatch name="test.osgi.timer"/>
     <mkdir dir="${test.osgi.classes}"/>
 
+    <echo message="Running OSGi JUnit tests. Output in ${build-osgi.dir}"/>
     <junit fork="yes" haltonfailure="yes">
       <classpath refid="test.osgi.compiler.build.path"/>
       <batchtest fork="yes" todir="${build-osgi.dir}">
@@ -1548,7 +1550,7 @@ TODO:
           <include name="**/*Test.class"/>
         </fileset>
       </batchtest>
-      <formatter type="brief" /> <!-- silenced by having it use a file; I tried for an hour to use other formatters but classpath issues drove me to this usefile="false" -->
+      <formatter type="xml" /> <!-- silenced by having it use a file; I tried for an hour to use other formatters but classpath issues drove me to this usefile="false" -->
     </junit>
     <stopwatch name="test.osgi.timer" action="total"/>
   </target>

@@ -242,11 +242,19 @@ abstract class SymbolTable extends macros.Universe
     finally popPhase(saved)
   }
 
+  def slowButSafeEnteringPhase[T](ph: Phase)(op: => T): T = {
+    if (isCompilerUniverse) enteringPhase(ph)(op)
+    else op
+  }
+
   @inline final def exitingPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph.next)(op)
   @inline final def enteringPrevPhase[T](op: => T): T       = enteringPhase(phase.prev)(op)
 
   @inline final def enteringPhaseNotLaterThan[T](target: Phase)(op: => T): T =
     if (isAtPhaseAfter(target)) enteringPhase(target)(op) else op
+
+  def slowButSafeEnteringPhaseNotLaterThan[T](target: Phase)(op: => T): T =
+    if (isCompilerUniverse) enteringPhaseNotLaterThan(target)(op) else op
 
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {

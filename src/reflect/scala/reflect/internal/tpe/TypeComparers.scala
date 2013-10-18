@@ -14,7 +14,8 @@ trait TypeComparers {
 
   private final val LogPendingSubTypesThreshold = TypeConstants.DefaultLogThreshhold
 
-  private val pendingSubTypes = new mutable.HashSet[SubTypePair]
+  private val _pendingSubTypes = new mutable.HashSet[SubTypePair]
+  def pendingSubTypes = _pendingSubTypes
 
   class SubTypePair(val tp1: Type, val tp2: Type) {
     override def hashCode = tp1.hashCode * 41 + tp2.hashCode
@@ -33,7 +34,9 @@ trait TypeComparers {
     override def toString = tp1+" <:<? "+tp2
   }
 
-  private var subsametypeRecursions: Int = 0
+  private var _subsametypeRecursions: Int = 0
+  def subsametypeRecursions = _subsametypeRecursions
+  def subsametypeRecursions_=(value: Int) = _subsametypeRecursions = value
 
   private def isUnifiable(pre1: Type, pre2: Type) = (
        (isEligibleForPrefixUnification(pre1) || isEligibleForPrefixUnification(pre2))
@@ -100,17 +103,13 @@ trait TypeComparers {
     //      isSameType1(tp1, tp2)
     //    }
 
-    undoLog.lock()
+    val before = undoLog.log
+    var result = false
     try {
-      val before = undoLog.log
-      var result = false
-      try {
-        result = isSameType1(tp1, tp2)
-      }
-      finally if (!result) undoLog.undoTo(before)
-      result
+      result = isSameType1(tp1, tp2)
     }
-    finally undoLog.unlock()
+    finally if (!result) undoLog.undoTo(before)
+    result
   }
   finally {
     subsametypeRecursions -= 1
@@ -256,30 +255,27 @@ trait TypeComparers {
     //      }
     //    }
 
-    undoLog.lock()
-    try {
-      val before = undoLog.log
-      var result = false
+    val before = undoLog.log
+    var result = false
 
-      try result = { // if subtype test fails, it should not affect constraints on typevars
-        if (subsametypeRecursions >= LogPendingSubTypesThreshold) {
-          val p = new SubTypePair(tp1, tp2)
-          if (pendingSubTypes(p))
-            false
-          else
-            try {
-              pendingSubTypes += p
-              isSubType1(tp1, tp2, depth)
-            } finally {
-              pendingSubTypes -= p
-            }
-        } else {
-          isSubType1(tp1, tp2, depth)
-        }
-      } finally if (!result) undoLog.undoTo(before)
+    try result = { // if subtype test fails, it should not affect constraints on typevars
+      if (subsametypeRecursions >= LogPendingSubTypesThreshold) {
+        val p = new SubTypePair(tp1, tp2)
+        if (pendingSubTypes(p))
+          false
+        else
+          try {
+            pendingSubTypes += p
+            isSubType1(tp1, tp2, depth)
+          } finally {
+            pendingSubTypes -= p
+          }
+      } else {
+        isSubType1(tp1, tp2, depth)
+      }
+    } finally if (!result) undoLog.undoTo(before)
 
-      result
-    } finally undoLog.unlock()
+    result
   } finally {
     subsametypeRecursions -= 1
     // XXX AM TODO: figure out when it is safe and needed to clear the log -- the commented approach below is too eager (it breaks #3281, #3866)

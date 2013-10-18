@@ -10,7 +10,9 @@ private[internal] trait TypeToStrings {
     */
   final val maxTostringRecursions = 50
 
-  private var tostringRecursions = 0
+  private var _tostringRecursions = 0
+  def tostringRecursions = _tostringRecursions
+  def tostringRecursions_=(value: Int) = _tostringRecursions = value
 
   protected def typeToString(tpe: Type): String =
     if (tostringRecursions >= maxTostringRecursions) {
