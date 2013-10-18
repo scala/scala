@@ -22,8 +22,7 @@ object Impls5 {
 object Impls6 {
   def fooNullary(c: Context) = {
     import c.universe._
-    val body = Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant("it works"))))
-    c.Expr[Unit](body)
+    c.Expr[Unit](q"""Predef.println("it works")""")
   }
 
   def fooEmpty(c: Context)() = fooNullary(c)

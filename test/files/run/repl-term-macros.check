@@ -9,7 +9,7 @@ import language.experimental.macros
 
 scala> 
 
-scala> def impl1(c: Context) = { import c.universe._; c.Expr[Unit](Literal(Constant(()))) }
+scala> def impl1(c: Context) = { import c.universe._; c.Expr[Unit](q"()") }
 impl1: (c: scala.reflect.macros.Context)c.Expr[Unit]
 
 scala> def foo1 = macro impl1
@@ -19,7 +19,7 @@ scala> foo1
 
 scala> 
 
-scala> def impl2(c: Context)() = { import c.universe._; c.Expr[Unit](Literal(Constant(()))) }
+scala> def impl2(c: Context)() = { import c.universe._; c.Expr[Unit](q"()") }
 impl2: (c: scala.reflect.macros.Context)()c.Expr[Unit]
 
 scala> def foo2() = macro impl2
@@ -29,7 +29,7 @@ scala> foo2()
 
 scala> 
 
-scala> def impl3(c: Context)(x: c.Expr[Int])(y: c.Expr[Int]) = { import c.universe._; c.Expr[Unit](Literal(Constant(()))) }
+scala> def impl3(c: Context)(x: c.Expr[Int])(y: c.Expr[Int]) = { import c.universe._; c.Expr[Unit](q"()") }
 impl3: (c: scala.reflect.macros.Context)(x: c.Expr[Int])(y: c.Expr[Int])c.Expr[Unit]
 
 scala> def foo3(x: Int)(y: Int) = macro impl3

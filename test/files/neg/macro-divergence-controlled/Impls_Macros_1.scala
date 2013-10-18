@@ -15,7 +15,7 @@ object Complex {
       val recur = c.inferImplicitValue(trecur, silent = true)
       if (recur == EmptyTree) c.abort(c.enclosingPosition, s"couldn't synthesize $trecur")
     }
-    c.Expr[Null](Literal(Constant(null)))
+    c.Expr[Null](q"null")
   }
 
   implicit object ComplexString extends Complex[String]
