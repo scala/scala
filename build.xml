@@ -1475,6 +1475,10 @@ TODO:
       <srcfiles dir="${basedir}">
         <include name="build.xml"/>
         <include name="src/build/bnd/*.bnd"/>
+        <include name="${build-pack.dir}/lib/*.jar"/>
+      </srcfiles>
+      <srcfiles dir="${build-pack.dir}">
+        <include name="**/*"/>
       </srcfiles>
     </uptodate>
 
