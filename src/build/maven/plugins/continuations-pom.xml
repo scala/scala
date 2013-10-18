@@ -16,9 +16,8 @@
 	</organization>
 	<licenses>
 		<license>
-			<name>BSD-like</name>
-			<url>http://www.scala-lang.org/downloads/license.html
-			</url>
+                        <name>BSD 3-Clause</name>
+                        <url>http://www.scala-lang.org/license.html</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
