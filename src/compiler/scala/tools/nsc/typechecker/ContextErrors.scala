@@ -702,6 +702,11 @@ trait ContextErrors {
         setError(tree)
       }
 
+      def MacroSuperCtorError(tree: Tree) = {
+        issueNormalTypeError(tree, "illegal inheritance; super class constructor can't be a macro")
+        setError(tree)
+      }
+
       def MacroTooManyArgumentListsError(expandee: Tree, fun: Symbol) = {
         NormalTypeError(expandee, "too many argument lists for " + fun)
       }

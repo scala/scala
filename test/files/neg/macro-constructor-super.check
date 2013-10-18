@@ -1,0 +1,4 @@
+Test_2.scala:1: error: illegal inheritance; super class constructor can't be a macro
+class D extends C(42)
+                ^
+one error found
