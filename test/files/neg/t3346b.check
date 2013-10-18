@@ -1,0 +1,4 @@
+t3346b.scala:14: error: could not find implicit value for evidence parameter of type TC[Any]
+  val y = foo(1)
+             ^
+one error found

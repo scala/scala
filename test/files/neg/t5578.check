@@ -1,4 +1,7 @@
-t5578.scala:33: error: No Manifest available for T.
+t5578.scala:33: error: type mismatch;
+ found   : NumericOpsExp.this.Plus[T]
+ required: NumericOpsExp.this.Rep[T]
+    (which expands to)  NumericOpsExp.this.Exp[T]
   def plus[T: Numeric](x: Rep[T], y: Rep[T]): Rep[T] = Plus[T](x,y)
                                                               ^
 one error found
