@@ -21,19 +21,24 @@ trait ScannersCommon {
   val global : Global
   import global._
 
+  /** Offset into source character array */
+  type Offset = Int
+
+  type Token = Int
+
   trait CommonTokenData {
-    def token: Int
+    def token: Token
     def name: TermName
   }
 
   trait ScannerCommon extends CommonTokenData {
     // things to fill in, in addition to buf, decodeUni which come from CharArrayReader
-    def error  (off: Int, msg: String): Unit
-    def incompleteInputError(off: Int, msg: String): Unit
-    def deprecationWarning(off: Int, msg: String): Unit
+    def error(off: Offset, msg: String): Unit
+    def incompleteInputError(off: Offset, msg: String): Unit
+    def deprecationWarning(off: Offset, msg: String): Unit
   }
 
-  def createKeywordArray(keywords: Seq[(Name, Int)], defaultToken: Int): (Int, Array[Int]) = {
+  def createKeywordArray(keywords: Seq[(Name, Token)], defaultToken: Token): (Token, Array[Token]) = {
     val names = keywords sortBy (_._1.start) map { case (k, v) => (k.start, v) }
     val low   = names.head._1
     val high  = names.last._1
@@ -48,13 +53,10 @@ trait Scanners extends ScannersCommon {
   val global : Global
   import global._
 
-  /** Offset into source character array */
-  type Offset = Int
-
   trait TokenData extends CommonTokenData {
 
     /** the next token */
-    var token: Int = EMPTY
+    var token: Token = EMPTY
 
     /** the offset of the first character of the current token */
     var offset: Offset = 0
@@ -169,7 +171,7 @@ trait Scanners extends ScannersCommon {
 
     def isAtEnd = charOffset >= buf.length
 
-    def resume(lastCode: Int) = {
+    def resume(lastCode: Token) = {
       token = lastCode
       if (next.token != EMPTY && !reporter.hasErrors)
         syntaxError("unexpected end of input: possible missing '}' in XML block")
@@ -194,7 +196,7 @@ trait Scanners extends ScannersCommon {
     protected def emitIdentifierDeprecationWarnings = true
 
     /** Clear buffer and set name and token */
-    private def finishNamed(idtoken: Int = IDENTIFIER) {
+    private def finishNamed(idtoken: Token = IDENTIFIER) {
       name = newTermName(cbuf.toString)
       cbuf.clear()
       token = idtoken
@@ -225,7 +227,7 @@ trait Scanners extends ScannersCommon {
      *            (the STRINGLIT appears twice in succession on the stack iff the
      *             expression is a multiline string literal).
      */
-    var sepRegions: List[Int] = List()
+    var sepRegions: List[Token] = List()
 
 // Get next token ------------------------------------------------------------
 
@@ -583,7 +585,7 @@ trait Scanners extends ScannersCommon {
     }
 
     /** Can token start a statement? */
-    def inFirstOfStat(token: Int) = token match {
+    def inFirstOfStat(token: Token) = token match {
       case EOF | CATCH | ELSE | EXTENDS | FINALLY | FORSOME | MATCH | WITH | YIELD |
            COMMA | SEMI | NEWLINE | NEWLINES | DOT | COLON | EQUALS | ARROW | LARROW |
            SUBTYPE | VIEWBOUND | SUPERTYPE | HASH | RPAREN | RBRACKET | RBRACE | LBRACKET =>
@@ -593,7 +595,7 @@ trait Scanners extends ScannersCommon {
     }
 
     /** Can token end a statement? */
-    def inLastOfStat(token: Int) = token match {
+    def inLastOfStat(token: Token) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT | STRINGLIT | SYMBOLLIT |
            IDENTIFIER | BACKQUOTED_IDENT | THIS | NULL | TRUE | FALSE | RETURN | USCORE |
            TYPE | XMLSTART | RPAREN | RBRACKET | RBRACE =>
@@ -1122,7 +1124,7 @@ trait Scanners extends ScannersCommon {
     def applyBracePatch(): Boolean = false
 
     /** overridden in UnitScanners */
-    def parenBalance(token: Int) = 0
+    def parenBalance(token: Token) = 0
 
     /** overridden in UnitScanners */
     def healBraces(): List[BracePatch] = List()
@@ -1137,7 +1139,7 @@ trait Scanners extends ScannersCommon {
 
   // ------------- keyword configuration -----------------------------------
 
-  private val allKeywords = List[(Name, Int)](
+  private val allKeywords = List[(Name, Token)](
     nme.ABSTRACTkw  -> ABSTRACT,
     nme.CASEkw      -> CASE,
     nme.CATCHkw     -> CATCH,
@@ -1191,8 +1193,8 @@ trait Scanners extends ScannersCommon {
     nme.MACROkw     -> IDENTIFIER,
     nme.THENkw      -> IDENTIFIER)
 
-  private var kwOffset: Int = -1
-  private val kwArray: Array[Int] = {
+  private var kwOffset: Offset = -1
+  private val kwArray: Array[Token] = {
     val (offset, arr) = createKeywordArray(allKeywords, IDENTIFIER)
     kwOffset = offset
     arr
@@ -1203,7 +1205,7 @@ trait Scanners extends ScannersCommon {
 // Token representation ----------------------------------------------------
 
   /** Returns the string representation of given token. */
-  def token2string(token: Int): String = (token: @switch) match {
+  def token2string(token: Token): String = (token: @switch) match {
     case IDENTIFIER | BACKQUOTED_IDENT => "identifier"
     case CHARLIT => "character literal"
     case INTLIT => "integer literal"
@@ -1234,7 +1236,7 @@ trait Scanners extends ScannersCommon {
       }
   }
 
-  class MalformedInput(val offset: Int, val msg: String) extends Exception
+  class MalformedInput(val offset: Offset, val msg: String) extends Exception
 
   /** A scanner for a given source file not necessarily attached to a compilation unit.
    *  Useful for looking inside source files that aren not currently compiled to see what's there
@@ -1262,7 +1264,7 @@ trait Scanners extends ScannersCommon {
 
     lazy val parensAnalyzer = new ParensAnalyzer(unit, List())
 
-    override def parenBalance(token: Int) = parensAnalyzer.balance(token)
+    override def parenBalance(token: Token) = parensAnalyzer.balance(token)
 
     override def healBraces(): List[BracePatch] = {
       var patches: List[BracePatch] = List()
@@ -1412,7 +1414,7 @@ trait Scanners extends ScannersCommon {
 
     var tabSeen = false
 
-    def line(offset: Int): Int = {
+    def line(offset: Offset): Int = {
       def findLine(lo: Int, hi: Int): Int = {
         val mid = (lo + hi) / 2
         if (offset < lineStart(mid)) findLine(lo, mid - 1)
@@ -1423,7 +1425,7 @@ trait Scanners extends ScannersCommon {
       else findLine(0, lineStart.length - 1)
     }
 
-    def column(offset: Int): Int = {
+    def column(offset: Offset): Int = {
       var col = 0
       var i = offset - 1
       while (i >= 0 && buf(i) != CR && buf(i) != LF) {
@@ -1485,6 +1487,6 @@ trait Scanners extends ScannersCommon {
     // when skimming through the source file trying to heal braces
     override def emitIdentifierDeprecationWarnings = false
 
-    override def error(offset: Int, msg: String) {}
+    override def error(offset: Offset, msg: String) {}
   }
 }
