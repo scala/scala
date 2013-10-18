@@ -1868,7 +1868,7 @@ TODO:
           srcdir="${build-docs.dir}/manual/genman"
           destdir="${build-docs.dir}/manual/man"
           eol="unix" includes="**/*.1"/>
-        <copy todir="${build-docs.dir}/manual/html">
+        <copy todir="${build-docs.dir}/manual/html" overwrite="true">
           <fileset dir="${src.dir}/manual/scala/tools/docutil/resources">
             <include name="**/*.html"/>
             <include name="**/*.css"/>
@@ -1893,7 +1893,7 @@ TODO:
       <attribute name="name" />
       <sequential>
         <copy file="${build-osgi.dir}/org.scala-lang.@{name}.jar"
-          tofile="${dist.dir}/lib/@{name}.jar"/>
+          tofile="${dist.dir}/lib/@{name}.jar" overwrite="true"/>
       </sequential>
     </macrodef>
     <macrodef name="copy-plugin-bundle">
@@ -1901,19 +1901,19 @@ TODO:
       <sequential>
         <copy file="${build-osgi.dir}/org.scala-lang.plugins.@{name}.jar"
           tofile="${dist.dir}/misc/scala-devel/plugins/@{name}.jar"
-          overwrite="yes"/>
+          overwrite="true"/>
       </sequential>
     </macrodef>
 
     <mkdir dir="${dist.dir}/lib"/>
-    <copy toDir="${dist.dir}/lib">
+    <copy toDir="${dist.dir}/lib" overwrite="true">
       <fileset dir="${build-pack.dir}/lib">
         <include name="scalap.jar"/>
       </fileset>
     </copy>
 
     <!-- TODO -->
-    <copy todir="${dist.dir}/lib">
+    <copy todir="${dist.dir}/lib" overwrite="true">
       <resources refid="repl.fileset"/>
       <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper"
               from="${repl.deps.versions}" to="flatten"/>
@@ -1928,7 +1928,7 @@ TODO:
     <copy-bundle name="scala-swing"/>
     <copy-bundle name="scala-actors"/>
     <copy-bundle name="scala-compiler"/>
-    <copy toDir="${dist.dir}/bin">
+    <copy toDir="${dist.dir}/bin" overwrite="true">
       <fileset dir="${build-pack.dir}/bin"/>
     </copy>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scala"/>
@@ -1942,34 +1942,35 @@ TODO:
 
   <target name="dist.doc" depends="dist.base, docs.done">
     <mkdir dir="${dist.dir}/doc/scala-devel-docs"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs">
+    <copy toDir="${dist.dir}/doc/scala-devel-docs" overwrite="true">
       <file file="${scala-xml-javadoc}"/>
       <file file="${scala-parser-combinators-javadoc}"/>
     </copy>
 
-    <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc"/>
-    <copy file="${docs.dir}/README" toDir="${dist.dir}/doc"/>
+    <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc" overwrite="true"/>
+    <copy file="${docs.dir}/README" toDir="${dist.dir}/doc" overwrite="true"/>
     <mkdir dir="${dist.dir}/doc/scala-devel-docs/api"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/api">
+    <copy toDir="${dist.dir}/doc/scala-devel-docs/api" overwrite="true">
       <fileset dir="${build-docs.dir}/library"/>
     </copy>
     <mkdir dir="${dist.dir}/doc/scala-devel-docs/examples"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/examples">
+    <copy toDir="${dist.dir}/doc/scala-devel-docs/examples" overwrite="true">
       <fileset dir="${docs.dir}/examples">
         <exclude name="**/*.desired.sha1"/>
       </fileset>
     </copy>
     <mkdir dir="${dist.dir}/doc/scala-devel-docs/tools"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/tools">
+    <copy toDir="${dist.dir}/doc/scala-devel-docs/tools" overwrite="true">
       <fileset dir="${build-docs.dir}/manual/html"/>
     </copy>
     <copy file="${src.dir}/swing/doc/README"
-          toFile="${dist.dir}/doc/scala-devel-docs/README.scala-swing"/>
+          toFile="${dist.dir}/doc/scala-devel-docs/README.scala-swing"
+          overwrite="true"/>
   </target>
 
   <target name="dist.man" depends="dist.base">
     <mkdir dir="${dist.dir}/man"/>
-    <copy toDir="${dist.dir}/man">
+    <copy toDir="${dist.dir}/man" overwrite="true">
       <fileset dir="${build-docs.dir}/manual/man"/>
     </copy>
   </target>
@@ -2000,7 +2001,7 @@ TODO:
 
   <target name="dist.src" depends="dist.base">
     <mkdir dir="${dist.dir}/src"/>
-    <copy toDir="${dist.dir}/src">
+    <copy toDir="${dist.dir}/src" overwrite="true">
       <file file="${scala-xml-sources}"/>
       <file file="${scala-parser-combinators-sources}"/>
     </copy>
@@ -2040,7 +2041,7 @@ TODO:
 
   <target name="dist.partial" depends="dist.base">
     <if><not><os family="windows"/></not><then>
-      <symlink link="${dists.dir}/latest" resource="${dist.name}" overwrite="yes"/>
+      <symlink link="${dists.dir}/latest" resource="${dist.name}" overwrite="true"/>
     </then><else> <!-- XXX THIS PROBABLY DOES NOT WORK: copying must happen last during dist.done! is this guaranteed? -->
       <copydir dest="${dists.dir}/latest" src="${dist.dir}"/>
     </else></if>
@@ -2070,7 +2071,7 @@ TODO:
   </target>
 
   <target name="starr.jars" depends="starr.start">
-    <copy toDir="${lib.dir}" overwrite="yes">
+    <copy toDir="${lib.dir}" overwrite="true">
       <fileset dir="${build-pack.dir}/lib">
         <include name="scala-library.jar"/>
         <include name="scala-reflect.jar"/>
