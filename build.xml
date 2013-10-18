@@ -749,18 +749,33 @@ TODO:
       <path refid="asm.classpath"/>
     </path>
 
-    <!-- MISC -->
-    <path id="docs.compiler.path">
+    <!-- DOCS -->
+    <path id="docs.compiler.build.path">             <path refid="quick.compiler.build.path"/> </path>
+    <path id="docs.scalap.build.path">               <path refid="quick.scalap.build.path"/>   </path>
+    <path id="docs.continuations-plugin.build.path"> <path refid="quick.plugins.build.path"/>  </path>
+    <path id="docs.library.build.path">
+      <path refid="quick.reflect.build.path"/>
+      <path refid="quick.actors.build.path"/>
+    </path>
+
+    <!-- run-time classpath for scaladoc: should be resolved through maven once it's an actual module -->
+    <path id="scaladoc.classpath">
       <path refid="external-modules-nocore"/>
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-reflect.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
       <pathelement location="${ant.jar}"/>
       <path refid="aux.libs"/>
     </path>
 
+    <path id="manual.build.path">
+      <path refid="external-modules-nocore"/> <!-- xml -->
+      <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
+      <pathelement location="${build.dir}/manmaker/classes"/>
+      <path refid="aux.libs"/>  <!-- for ant -->
+    </path>
+
+    <!-- MISC -->
     <path id="sbt.compile.build.path">
       <path refid="quick.compiler.build.path"/>
       <pathelement location="${build-quick.dir}/classes/repl"/>
@@ -769,10 +784,6 @@ TODO:
       <pathelement location="${sbt.interface.jar}"/>
     </path>
 
-    <path id="manual.classpath">
-      <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
-      <pathelement location="${build.dir}/manmaker/classes"/>
-    </path>
 
     <!--
        This is the classpath used to run partest, which is what it uses to run the compiler and find other required jars.
@@ -1186,13 +1197,12 @@ TODO:
             <stopwatch name="docs.@{project}.timer"/>
             <mkdir dir="${build-docs.dir}/@{project}"/>
             <if><equals arg1="@{docroot}" arg2="NOT SET"/><then>
-              <!-- TODO: introduce docs.@{project}.build.path for classpathref -->
               <scaladoc
                 destdir="${build-docs.dir}/@{project}"
                 doctitle="@{title}"
                 docversion="${version.number}"
                 sourcepath="${src.dir}"
-                classpathref="docs.compiler.path"
+                classpathref="docs.@{project}.build.path"
                 srcdir="${src.dir}/@{dir}"
                 addparams="${scalac.args.all}"
                 implicits="on"
@@ -1208,7 +1218,7 @@ TODO:
                 doctitle="@{title}"
                 docversion="${version.number}"
                 sourcepath="${src.dir}"
-                classpathref="docs.compiler.path"
+                classpathref="docs.@{project}.build.path"
                 srcdir="${src.dir}/@{dir}"
                 docRootContent="${src.dir}/@{project}/@{docroot}"
                 addparams="${scalac.args.all}"
@@ -1381,7 +1391,7 @@ TODO:
   <!-- depend on quick.done so quick.bin is run when pack.done is -->
   <target name="pack.done" depends="quick.done, pack.bin">
     <!-- copy dependencies to build/pack/lib, it only takes a second so don't bother with uptodate checks -->
-    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="docs.compiler.path"/>
+    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="scaladoc.classpath"/>
   </target>
 
 
@@ -1786,7 +1796,7 @@ TODO:
             docversion="${version.number}"
             docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
             sourcepath="${src.dir}"
-            classpathref="docs.compiler.path"
+            classpathref="docs.library.build.path"
             addparams="${scalac.args.all}"
             docRootContent="${src.dir}/library/rootdoc.txt"
             implicits="on"
@@ -1845,16 +1855,16 @@ TODO:
         <mkdir dir="${build.dir}/manmaker/classes"/>
         <scalac
           destdir="${build.dir}/manmaker/classes"
-          classpathref="docs.compiler.path"
+          classpathref="manual.build.path"
           srcdir="${src.dir}/manual"
           includes="**/*.scala"
-          addparams="${scalac.args.all}"/>
+          addparams="${scalac.args.all} -language:implicitConversions"/>
         <mkdir dir="${build-docs.dir}/manual/man/man1"/>
         <mkdir dir="${build-docs.dir}/manual/html"/>
         <mkdir dir="${build-docs.dir}/manual/genman/man1"/>
         <taskdef name="genman"
                  classname="scala.tools.docutil.ManMaker"
-                 classpathref="manual.classpath"/>
+                 classpathref="manual.build.path"/>
         <genman command="fsc, scala, scalac, scaladoc, scalap"
                 htmlout="${build-docs.dir}/manual/html"
                 manout="${build-docs.dir}/manual/genman"/>
