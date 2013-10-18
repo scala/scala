@@ -55,12 +55,12 @@ trait Parsers { self: Quasiquotes =>
 
       def isHole(name: Name): Boolean = holeMap.contains(name)
 
-      override implicit def fresh = new FreshNameCreator {
+      override implicit def fresh: FreshNameCreator = new FreshNameCreator {
         override def newName(prefix: String) = super.newName(nme.QUASIQUOTE_PREFIX + prefix)
       }
 
       override val treeBuilder = new ParserTreeBuilder {
-        override implicit def fresh = parser.fresh
+        override implicit def fresh: FreshNameCreator = parser.fresh
 
         // q"(..$xs)"
         override def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree =
