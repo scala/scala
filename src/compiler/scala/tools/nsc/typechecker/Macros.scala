@@ -687,6 +687,11 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       } else delayed
     }
     override def onFallback(fallback: Tree) = typer.typed(fallback, mode, outerPt)
+    import typer.TyperErrorGen._
+    expandee match {
+      case Applied(RefTree(Super(_, _), nme.CONSTRUCTOR), _, _) => MacroSuperCtorError(expandee)
+      case _ => expandee
+    }
   }
 
   /** Expands a term macro used in apply role as `M(2)(3)` in `val x = M(2)(3)`.
