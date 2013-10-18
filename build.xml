@@ -1779,41 +1779,43 @@ TODO:
       <do>
         <stopwatch name="docs.lib.timer"/>
         <mkdir dir="${build-docs.dir}/library"/>
-        <!-- last three attributes not supported by staged-docs: -->
-        <scaladoc
-          destdir="${build-docs.dir}/library"
-          doctitle="Scala Standard Library API (Scaladoc)"
-          docversion="${version.number}"
-          docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
-          sourcepath="${src.dir}"
-          classpathref="docs.compiler.path"
-          addparams="${scalac.args.all}"
-          docRootContent="${src.dir}/library/rootdoc.txt"
-          implicits="on"
-          diagrams="on"
-          groups="on"
-          rawOutput="${scaladoc.raw.output}"
-          noPrefixes="${scaladoc.no.prefixes}"
-          docfooter="epfl"
-          docUncompilable="${src.dir}/library-aux"
-          skipPackages="scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io:scala.concurrent.impl">
-          <src>
-            <files includes="${src.dir}/actors"/>
-            <files includes="${src.dir}/library"/>
-            <files includes="${src.dir}/reflect"/>
-            <files includes="${src.dir}/swing"/>
-            <files includes="${src.dir}/continuations/library"/>
-          </src>
-          <include name="**/*.scala"/>
-          <exclude name="reflect/Code.scala"/>
-          <exclude name="reflect/Print.scala"/>
-          <exclude name="reflect/Symbol.scala"/>
-          <exclude name="reflect/Tree.scala"/>
-          <exclude name="reflect/Type.scala"/>
-          <exclude name="runtime/*$.scala"/>
-          <exclude name="runtime/ScalaRunTime.scala"/>
-          <exclude name="runtime/StringAdd.scala"/>
-        </scaladoc>
+        <if><not><isset property="docs.skip"/></not><then>
+          <!-- last three attributes not supported by staged-docs: -->
+          <scaladoc
+            destdir="${build-docs.dir}/library"
+            doctitle="Scala Standard Library API (Scaladoc)"
+            docversion="${version.number}"
+            docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
+            sourcepath="${src.dir}"
+            classpathref="docs.compiler.path"
+            addparams="${scalac.args.all}"
+            docRootContent="${src.dir}/library/rootdoc.txt"
+            implicits="on"
+            diagrams="on"
+            groups="on"
+            rawOutput="${scaladoc.raw.output}"
+            noPrefixes="${scaladoc.no.prefixes}"
+            docfooter="epfl"
+            docUncompilable="${src.dir}/library-aux"
+            skipPackages="scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io:scala.concurrent.impl">
+            <src>
+              <files includes="${src.dir}/actors"/>
+              <files includes="${src.dir}/library"/>
+              <files includes="${src.dir}/reflect"/>
+              <files includes="${src.dir}/swing"/>
+              <files includes="${src.dir}/continuations/library"/>
+            </src>
+            <include name="**/*.scala"/>
+            <exclude name="reflect/Code.scala"/>
+            <exclude name="reflect/Print.scala"/>
+            <exclude name="reflect/Symbol.scala"/>
+            <exclude name="reflect/Tree.scala"/>
+            <exclude name="reflect/Type.scala"/>
+            <exclude name="runtime/*$.scala"/>
+            <exclude name="runtime/ScalaRunTime.scala"/>
+            <exclude name="runtime/StringAdd.scala"/>
+          </scaladoc>
+        </then></if>
         <stopwatch name="docs.lib.timer" action="total"/>
       </do>
     </staged-uptodate>

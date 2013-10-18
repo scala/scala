@@ -56,7 +56,7 @@ MAIN DISTRIBUTION PACKAGING
     <checksum file="${dists.dir}/archives/${dist.name}.zip" fileext=".md5"/>
   </target>
 
-  <target name="pack-devel-docs.tar" depends="pack-archives.zip">
+  <target name="pack-devel-docs.tar" depends="pack-archives.zip" unless="docs.skip">
     <tar destfile="${dists.dir}/archives/${dist.name}-devel-docs.tar"
          compression="none" longfile="gnu">
       <tarfileset dir="${dist.dir}/doc/scala-devel-docs" prefix="${dist.name}-devel-docs"/>
@@ -189,7 +189,7 @@ MAIN DISTRIBUTION PACKAGING
     </jar>
   </target>
 
-  <target name="pack-maven.docs" depends="pack-maven.libs, pack-maven.plugins">
+  <target name="pack-maven.docs" depends="pack-maven.libs, pack-maven.plugins" unless="docs.skip">
     <jar whenmanifestonly="fail" destfile="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"
          basedir="${build-docs.dir}/library">
       <include name="**/*"/>
