@@ -284,6 +284,25 @@ self =>
       try body finally in copyFrom saved
     }
 
+    /** Perform an operation while peeking ahead.
+     *  Pushback if the operation yields an empty tree or blows to pieces.
+     */
+    @inline def peekingAhead(tree: =>Tree): Tree = {
+      @inline def peekahead() = {
+        in.prev copyFrom in
+        in.nextToken()
+      }
+      @inline def pushback() = {
+        in.next copyFrom in
+        in copyFrom in.prev
+      }
+      peekahead()
+      // try it, in case it is recoverable
+      val res = try tree catch { case e: Exception => pushback() ; throw e }
+      if (res.isEmpty) pushback()
+      res
+    }
+
     class ParserTreeBuilder extends TreeBuilder {
       val global: self.global.type = self.global
       def unit = parser.unit
@@ -1825,26 +1844,23 @@ self =>
         val top = simplePattern(badPattern3)
         val base = opstack
         // See SI-3189, SI-4832 for motivation. Cf SI-3480 for counter-motivation.
-        def peekaheadDelim() = {
-          def isCloseDelim = in.token match {
-            case RBRACE => isXML
-            case RPAREN => !isXML
-            case _      => false
-          }
-          lookingAhead(isCloseDelim) && { in.nextToken() ; true }
+        def isCloseDelim = in.token match {
+          case RBRACE => isXML
+          case RPAREN => !isXML
+          case _      => false
         }
-        def isWildStar = top match {
-          case Ident(nme.WILDCARD) if isRawStar => peekaheadDelim()
-          case _                                => false
+        def checkWildStar: Tree = top match {
+          case Ident(nme.WILDCARD) if isSequenceOK && isRawStar => peekingAhead (
+            if (isCloseDelim) atPos(top.pos.start, in.prev.offset)(Star(stripParens(top)))
+            else EmptyTree
+          )
+          case _ => EmptyTree
         }
         def loop(top: Tree): Tree = reducePatternStack(base, top) match {
           case next if isIdentExcept(raw.BAR) => pushOpInfo(next) ; loop(simplePattern(badPattern3))
           case next                           => next
         }
-        if (isSequenceOK && isWildStar)
-          atPos(top.pos.start, in.prev.offset)(Star(stripParens(top)))
-        else
-          stripParens(loop(top))
+        checkWildStar orElse stripParens(loop(top))
       }
 
       def badPattern3(): Tree = {
