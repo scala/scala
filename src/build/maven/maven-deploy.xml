@@ -74,12 +74,21 @@
               <artifact:attach type="jar" file="${path}-docs.jar" classifier="javadoc" />
             </artifact:deploy>
           </then><else>
-            <artifact:install file="${path}.jar">
-              <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
-              <artifact:pom refid="@{name}.pom" />
-              <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
-              <artifact:attach type="jar" file="${path}-docs.jar" classifier="javadoc" />
-            </artifact:install>
+            <if><isset property="docs.skip"/><then>
+               <artifact:install file="${path}.jar">
+                 <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
+                 <artifact:pom refid="@{name}.pom" />
+                 <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
+               </artifact:install>
+            </then>
+            <else>
+              <artifact:install file="${path}.jar">
+                <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
+                <artifact:pom refid="@{name}.pom" />
+                <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
+              </artifact:install>
+            </else>
+            </if>
           </else></if>
         </then><else>
           <local name="repo"/>
