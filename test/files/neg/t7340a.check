@@ -1,0 +1,7 @@
+Test_2.scala:5: error: type mismatch;
+ found   : B
+ required: C.Greeter
+    (which expands to)  AnyRef{def hello(): Unit}
+  val g: Greeter = new B
+                   ^
+one error found
