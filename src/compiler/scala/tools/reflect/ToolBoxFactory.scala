@@ -280,7 +280,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
       def parse(code: String): Tree = {
         reporter.reset()
-        val tree = gen.mkTreeOrBlock(newUnitParser(code, "<toolbox>").parseStats())
+        val tree = gen.mkTreeOrBlock(newUnitParser(code, "<toolbox>").parseStatsOrPackages())
         throwIfErrors()
         tree
       }

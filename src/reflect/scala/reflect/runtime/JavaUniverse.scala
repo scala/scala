@@ -21,6 +21,8 @@ class JavaUniverse extends internal.SymbolTable with JavaUniverseForce with Refl
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
   def newLazyTreeCopier: TreeCopier = new LazyTreeCopier
 
+  val currentFreshNameCreator = new reflect.internal.util.FreshNameCreator
+
   // can't put this in runtime.Trees since that's mixed with Global in ReflectGlobal, which has the definition from internal.Trees
   object treeInfo extends {
     val global: JavaUniverse.this.type = JavaUniverse.this

@@ -383,6 +383,11 @@ abstract class SymbolTable extends macros.Universe
    * Adds the `sm` String interpolator to a [[scala.StringContext]].
    */
   implicit val StringContextStripMarginOps: StringContext => StringContextStripMarginOps = util.StringContextStripMarginOps
+
+  // fresh name creation
+  def currentFreshNameCreator: FreshNameCreator
+  def freshTermName(prefix: String = "x$")(implicit creator: FreshNameCreator): TermName = newTermName(creator.newName(prefix))
+  def freshTypeName(prefix: String)(implicit creator: FreshNameCreator): TypeName        = newTypeName(creator.newName(prefix))
 }
 
 object SymbolTableStats {

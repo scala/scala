@@ -448,4 +448,10 @@ abstract class TreeGen extends macros.TreeBuilder {
     case _ =>
       Assign(lhs, rhs)
   }
+
+  def mkPackageObject(defn: ModuleDef, pidPos: Position = NoPosition, pkgPos: Position = NoPosition) = {
+    val module = copyModuleDef(defn)(name = nme.PACKAGEkw)
+    val pid    = atPos(pidPos)(Ident(defn.name))
+    atPos(pkgPos)(PackageDef(pid, module :: Nil))
+  }
 }

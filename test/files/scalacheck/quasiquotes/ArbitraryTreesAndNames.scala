@@ -257,7 +257,7 @@ trait ArbitraryTreesAndNames {
 
   /*  These are marker types that allow to write tests that
    *  depend specificly on Trees that are terms or types.
-   *  They are transperantly tranformed to trees through
+   *  They are transparently tranformed to trees through
    *  implicit conversions and liftables for quasiquotes.
    */
 
