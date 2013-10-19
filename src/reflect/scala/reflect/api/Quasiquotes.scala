@@ -7,7 +7,7 @@ trait Quasiquotes { self: Universe =>
   // using the mechanism implemented in `scala.tools.reflect.FastTrack`
   implicit class Quasiquote(ctx: StringContext) {
     protected trait api {
-      def apply(args: Any*): Any = macro ???
+      def apply[T](args: T*): Any = macro ???
       def unapply(scrutinee: Any): Any = macro ???
     }
     object q extends api
