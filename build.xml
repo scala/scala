@@ -1944,7 +1944,7 @@ TODO:
 
   <target name="dist.doc" depends="dist.base, docs.done">
     <mkdir dir="${dist.dir}/doc/scala-devel-docs"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs" overwrite="true">
+    <copy toDir="${dist.dir}/doc/scala-devel-docs" overwrite="true" flatten="true">
       <file file="${scala-xml-javadoc}"/>
       <file file="${scala-parser-combinators-javadoc}"/>
     </copy>
@@ -2003,7 +2003,7 @@ TODO:
 
   <target name="dist.src" depends="dist.base">
     <mkdir dir="${dist.dir}/src"/>
-    <copy toDir="${dist.dir}/src" overwrite="true">
+    <copy toDir="${dist.dir}/src" overwrite="true" flatten="true">
       <file file="${scala-xml-sources}"/>
       <file file="${scala-parser-combinators-sources}"/>
     </copy>
