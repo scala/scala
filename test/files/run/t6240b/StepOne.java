@@ -12,7 +12,7 @@ import java.net.MalformedURLException;
 public class StepOne {
   public static void main(String[] args)
   throws MalformedURLException, ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, IOException {
-    String[] launchPaths = System.getProperty("launch.classpath").split(":");
+    String[] launchPaths = System.getProperty("launch.classpath").split(File.pathSeparator);
 
     // move away StepThree
     File tempDir = File.createTempFile("temp", Long.toString(System.nanoTime()));
