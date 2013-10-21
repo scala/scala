@@ -75,6 +75,21 @@ TODO:
   <target name="distpack-opt" description="Builds an optimised distribution."> <optimized name="distpack"/></target>
   <target name="distpack-maven-opt" description="Builds an optimised maven distribution."><optimized name="distpack-maven"/></target>
 
+  <target name="publish-core-signed-opt" description="Builds an untested optimised core (library/reflect/compiler) and publishes to maven, signed.">
+    <optimized name="publish-core-signed"/>
+  </target>
+  <target name="publish-core-signed-opt-nodocs" description="Builds an untested, undocumented optimised core (library/reflect/compiler) and publishes to maven, signed.">
+    <antcall target="publish-core-signed">
+      <param name="docs.skip" value="1"/>
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
+  </target>
+  <target name="publish-core-local-nodocs" description="Builds an untested, undocumented core (library/reflect/compiler) and locally publishes to maven">
+    <antcall target="publish-core-local">
+      <param name="docs.skip" value="1"/>
+    </antcall>
+  </target>
+
   <target name="all.done" depends="test.done, distpack"/>
 
   <target name="nightly-nopt" depends="all.done"/>
@@ -1892,31 +1907,31 @@ TODO:
     </staged-docs>
   </target>
 
-  <target name="docs.actors" depends="docs.start">
+  <target name="docs.actors" depends="docs.start" unless="docs.skip">
     <staged-docs project="actors" title="Scala Actors Library">
       <include name="**/*.scala"/>
     </staged-docs>
   </target>
 
-  <target name="docs.swing" depends="docs.start">
+  <target name="docs.swing" depends="docs.start" unless="docs.skip">
     <staged-docs project="swing" title="Scala Swing Library">
       <include name="**/*.scala"/>
     </staged-docs>
   </target>
 
-  <target name="docs.scalap" depends="docs.start">
+  <target name="docs.scalap" depends="docs.start" unless="docs.skip">
     <staged-docs project="scalap" title="Scalap">
       <include name="**/*.scala"/>
     </staged-docs>
   </target>
 
-  <target name="docs.continuations-plugin" depends="docs.start">
+  <target name="docs.continuations-plugin" depends="docs.start" unless="docs.skip">
     <staged-docs project="continuations-plugin" dir="continuations/plugin" title="Delimited Continuations Compiler Plugin">
       <include name="**/*.scala"/>
     </staged-docs>
   </target>
 
-  <target name="docs.continuations-library" depends="docs.start">
+  <target name="docs.continuations-library" depends="docs.start" unless="docs.skip">
     <staged-docs project="continuations-library" dir="continuations/library" title="Delimited Continuations Library">
       <include name="**/*.scala"/>
     </staged-docs>
@@ -1999,8 +2014,8 @@ TODO:
     <copy-bundle name="scala-swing"/>
     <copy-bundle name="scala-actors"/>
 
-    <copy-bundle pkg="modules." name="scala-xml.jar" srcjar="${scala-xml-sources}"/>
-    <copy-bundle pkg="modules." name="scala-parser-combinators.jar" srcjar="${scala-parser-combinators-sources}"/>
+    <copy-bundle pkg="modules." name="scala-xml" srcjar="${scala-xml-sources}"/>
+    <copy-bundle pkg="modules." name="scala-parser-combinators" srcjar="${scala-parser-combinators-sources}"/>
     <copy-bundle pkg="plugins." name="continuations" lib="misc/scala-devel/plugins/"/>
 
     <!-- scalap -->
@@ -2041,10 +2056,6 @@ TODO:
         <exclude name="**/*.desired.sha1"/>
       </fileset>
     </copy>
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs/tools"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/tools" overwrite="true">
-      <fileset dir="${build-docs.dir}/manual/html"/>
-    </copy>
     <copy file="${src.dir}/swing/doc/README"
           toFile="${dist.dir}/doc/scala-devel-docs/README.scala-swing"
           overwrite="true"/>
@@ -2054,6 +2065,10 @@ TODO:
     <mkdir dir="${dist.dir}/man"/>
     <copy toDir="${dist.dir}/man" overwrite="true">
       <fileset dir="${build-docs.dir}/manual/man"/>
+    </copy>
+    <mkdir dir="${dist.dir}/doc/scala-devel-docs/tools"/>
+    <copy toDir="${dist.dir}/doc/scala-devel-docs/tools" overwrite="true">
+      <fileset dir="${build-docs.dir}/manual/html"/>
     </copy>
   </target>
 
@@ -2245,6 +2260,22 @@ MAIN DISTRIBUTION PACKAGING
   <target name="publish"        depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the maven repo.">       <deploy dir="${maven-base}/"/> </target>
   <target name="publish.local"  depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the local maven repo."> <deploy dir="${maven-base}/" local="true"/> </target>
   <target name="publish.signed" depends="pack-maven.base, init.maven" description="Publishes signed artifacts to the remote maven repo.">  <deploy dir="${maven-base}/" signed="true"/> </target>
+
+  <target name="publish-core"   depends="pack-maven.core, init.maven">
+    <deploy-one dir="${maven-base}/" name="scala-compiler" version="${maven.version.number}" />
+    <deploy-one dir="${maven-base}/" name="scala-library"  version="${maven.version.number}" />
+    <deploy-one dir="${maven-base}/" name="scala-reflect"  version="${maven.version.number}" />
+  </target>
+  <target name="publish-core-local" depends="pack-maven.core, init.maven">
+    <deploy-one dir="${maven-base}/" name="scala-compiler" version="${maven.version.number}" local="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-library"  version="${maven.version.number}" local="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-reflect"  version="${maven.version.number}" local="true"/>
+  </target>
+  <target name="publish-core-signed" depends="pack-maven.core, init.maven">
+    <deploy-one dir="${maven-base}/" name="scala-compiler" version="${maven.version.number}" signed="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-library"  version="${maven.version.number}" signed="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-reflect"  version="${maven.version.number}" signed="true"/>
+  </target>
 
 <!-- ===========================================================================
                                   STABLE REFERENCE (STARR)
