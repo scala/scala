@@ -2012,10 +2012,10 @@ TODO:
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/continuations/library"/>
     </osgi.source.bundle>
-    <osgi.source.bundle destfile="${dist.dir}/src/scala-actors-src.jar"
-                        symbolicName="org.scala-lang.scala-actors"
-                        bundleName="Scala Actors Sources">
-      <fileset dir="${src.dir}/actors"/>
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-reflect-src.jar"
+                        symbolicName="org.scala-lang.scala-reflect"
+                        bundleName="Scala Reflect Sources">
+      <fileset dir="${src.dir}/reflect"/>
     </osgi.source.bundle>
     <osgi.source.bundle destfile="${dist.dir}/src/scala-compiler-src.jar"
                         symbolicName="org.scala-lang.scala-compiler"
@@ -2024,17 +2024,22 @@ TODO:
       <fileset dir="${src.dir}/repl"/>
       <fileset dir="${src.dir}/scaladoc"/>
       <fileset dir="${src.dir}/interactive"/>
+    </osgi.source.bundle>
+
+    <osgi.source.bundle destfile="${dist.dir}/src/scala-actors-src.jar"
+                        symbolicName="org.scala-lang.scala-actors"
+                        bundleName="Scala Actors Sources">
+      <fileset dir="${src.dir}/actors"/>
+    </osgi.source.bundle>
+    <osgi.source.bundle destfile="${dist.dir}/src/continuations-src.jar"
+                        symbolicName="org.scala-lang.plugins.continuations"
+                        bundleName="Scala Continuations Plugin Sources">
       <fileset dir="${src.dir}/continuations/plugin"/>
     </osgi.source.bundle>
     <osgi.source.bundle destfile="${dist.dir}/src/scala-swing-src.jar"
                         symbolicName="org.scala-lang.scala-swing"
                         bundleName="Scala Swing Sources">
       <fileset dir="${src.dir}/swing"/>
-    </osgi.source.bundle>
-    <osgi.source.bundle destfile="${dist.dir}/src/scala-reflect-src.jar"
-                        symbolicName="org.scala-lang.scala-reflect"
-                        bundleName="Scala Reflect Sources">
-      <fileset dir="${src.dir}/reflect"/>
     </osgi.source.bundle>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scalap-src.jar"         basedir="${src.dir}/scalap"/>
   </target>
