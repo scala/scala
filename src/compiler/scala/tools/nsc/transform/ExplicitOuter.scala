@@ -225,10 +225,8 @@ abstract class ExplicitOuter extends InfoTransform
      *
      * Will return `EmptyTree` if there is no outer accessor because of a premature self reference.
      */
-    protected def outerValue: Tree = outerParam match {
-      case NoSymbol   => outerSelect(gen.mkAttributedThis(currentClass))
-      case outerParam => gen.mkAttributedIdent(outerParam)
-    }
+    protected def outerValue    : Tree = outerParam.fold(outerSelect(gen.mkAttributedThis(currentClass)))(gen.mkAttributedIdent)
+    protected def outerValueType: Type = outerParam.fold(outerSelectType(currentClass.thisType))         (singleType(NoPrefix, _))
 
     /** Select and apply outer accessor from 'base'
      *  The result is typed but not positioned.
@@ -240,28 +238,40 @@ abstract class ExplicitOuter extends InfoTransform
     private def outerSelect(base: Tree): Tree = {
       val baseSym = base.tpe.typeSymbol.toInterface
       val outerAcc = outerAccessor(baseSym)
-      if (outerAcc == NoSymbol && baseSym.ownersIterator.exists(isUnderConstruction)) {
-         // e.g neg/t6666.scala
-         // The caller will report the error with more information.
-         EmptyTree
-      } else {
-        val currentClass = this.currentClass //todo: !!! if this line is removed, we get a build failure that protected$currentClass need an override modifier
-        // outerFld is the $outer field of the current class, if the reference can
-        // use it (i.e. reference is allowed to be of the form this.$outer),
-        // otherwise it is NoSymbol
-        val outerFld =
-          if (outerAcc.owner == currentClass &&
-            base.tpe =:= currentClass.thisType &&
-            outerAcc.owner.isEffectivelyFinal)
-            outerField(currentClass) suchThat (_.owner == currentClass)
-          else
-            NoSymbol
-        val path =
-          if (outerFld != NoSymbol) Select(base, outerFld)
-          else Apply(Select(base, outerAcc), Nil)
+      if (outerAcc == NoSymbol && baseSym.ownersIterator.exists(isUnderConstruction))
+        EmptyTree // e.g neg/t6666.scala The caller will report the error with more contextual information.
+      else
+        outerSelectFromFieldOrAccessor(base, baseSym, outerAcc)
+    }
 
-        localTyper typed path
-      }
+    private def outerSelectType(base: Type): Type = {
+      val baseSym = base.typeSymbol.toInterface
+      val outerAcc = outerAccessor(baseSym)
+      if (outerAcc == NoSymbol) NoType
+      else singleType(base, outerAcc)
+    }
+
+    /** Construct one of:
+      * {{{
+      *   $base.`$outer `   // outer field selection
+      *   $base.`$outer`()  // outer accessor selection
+      * }}}
+      *
+      * The former is only possible if the
+      */
+    private def outerSelectFromFieldOrAccessor(base: Tree, baseSym: Symbol, outerAcc: Symbol): Tree = {
+      // outerFld is the $outer field of the current class, if the reference can
+      // use it (i.e. reference is allowed to be of the form this.$outer),
+      // otherwise it is NoSymbol
+      val outerFld =
+        if (outerAcc.owner == currentClass &&
+          base.tpe =:= currentClass.thisType &&
+          outerAcc.owner.isEffectivelyFinal)
+          outerField(currentClass) suchThat (_.owner == currentClass)
+        else
+          NoSymbol
+      val outerSym = outerFld.orElse(outerAcc)
+      gen.mkApplyIfNeeded(gen.mkAttributedSelect(base, outerSym))
     }
 
     /** The path
@@ -272,9 +282,40 @@ abstract class ExplicitOuter extends InfoTransform
     protected def outerPath(base: Tree, from: Symbol, to: Symbol): Tree = {
       //Console.println("outerPath from "+from+" to "+to+" at "+base+":"+base.tpe)
       //assert(base.tpe.widen.baseType(from.toInterface) != NoType, ""+base.tpe.widen+" "+from.toInterface)//DEBUG
-      if (from == to || from.isImplClass && from.toInterface == to) base
-      else outerPath(outerSelect(base), from.outerClass, to)
+      if (needsOuterPath(from, to))
+        outerPath(outerSelect(base), from.outerClass, to)
+      else
+        base
     }
+
+    protected def outerPathType(base: Type, from: Symbol, to: Symbol): Type = {
+      if (needsOuterPath(from, to))
+        outerPathType(outerSelectType(base), from.outerClass, to)
+      else
+        base
+    }
+
+    private def needsOuterPath(from: Symbol, to: Symbol) =
+      !(from == to || from.isImplClass && from.toInterface == to)
+
+    /**
+     * Substitute `Enclosing.this.type` with an outer path.
+     *
+     * This is not currently used in the explicitouter InfoTransformer,
+     * we run it over the types of TypeTrees as a minimal fix for SI-7598.
+     */
+    protected def substituteThisTypeWithOuter(info: Type): Type =
+      info map {
+        case thisTp @ ThisType(sym) =>
+          if (sym == currentClass || sym.hasModuleFlag && sym.isStatic) thisTp
+          else currentClass.outerClass.fold[Type](thisTp) { outerClass =>
+            outerValueType match {
+              case NoType         => thisTp // robustness against ill-scoped ThisTypes, e.g. tailrec + value classes in pos/t6891.scala
+              case outerValueType => outerPathType(outerValueType, outerClass, sym)
+            }
+          }
+        case x => x
+      }
 
     override def transform(tree: Tree): Tree = {
       def sym = tree.symbol
@@ -495,7 +536,16 @@ abstract class ExplicitOuter extends InfoTransform
         case _ =>
           val x = super.transform(tree)
           if (x.tpe eq null) x
-          else x setType transformInfo(currentOwner, x.tpe)
+          else x setType {
+            val tp = transformInfo(currentOwner, x.tpe)
+            tree match {
+              case TypeTree() if !currentClass.isTopLevel =>
+                // SI-7598 ThisTypes in type trees should also use an outer path. Otherwise things explode
+                //         when erasure transform `x.isInstanceOf[Outer.this.type]` into `x eq Outer.this`.
+                substituteThisTypeWithOuter(tp)
+              case _ => tp
+            }
+          }
       }
     }
 
