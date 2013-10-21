@@ -4,6 +4,7 @@
   xmlns:artifact="urn:maven-artifact-ant"
   xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
   <include file="test/build-partest.xml" as="partest"/>
+  <include file="src/build/maven/maven-deploy.xml" as="maven-deploy"/>
 
   <description>
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
@@ -2202,9 +2203,36 @@ MAIN DISTRIBUTION PACKAGING
           file="${src.dir}/build/maven/maven-deploy.xml"/>
     <!-- export properties for use when deploying -->
     <echoproperties destfile="${maven-base}/build.properties"/>
-
   </target>
 
+  <!-- keep these properties out of ${maven-base}/build.properties, dumped in pack-maven.done -->
+  <target name="init.maven" depends="init">
+    <property name="remote.snapshot.repository" value="https://oss.sonatype.org/content/repositories/snapshots" />
+    <property name="remote.release.repository"  value="https://oss.sonatype.org/service/local/staging/deploy/maven2" />
+
+    <property name="local.snapshot.repository" value="${user.home}/.m2/repository" />
+    <property name="local.release.repository"  value="${user.home}/.m2/repository" />
+
+    <property name="repository.credentials.id" value="sonatype-nexus" />
+    <property name="settings.file" value="${user.home}/.m2/settings.xml" />
+
+    <if><contains string="${maven.version.number}" substring="-SNAPSHOT"/><then>
+      <property name="remote.repository" value="${remote.snapshot.repository}"/>
+      <property name="local.repository"  value="${local.snapshot.repository}"/>
+    </then><else>
+      <property name="remote.repository" value="${remote.release.repository}"/>
+      <property name="local.repository"  value="${local.release.repository}"/>
+    </else></if>
+  </target>
+
+
+<!-- ===========================================================================
+                                  MAVEN PUBLISHING
+============================================================================ -->
+  <!-- TODO: inline maven-deploy.xml here and remove it, once jenkins jobs no longer rely on it -->
+  <target name="publish"        depends="pack-maven.done, init.maven" description="Publishes unsigned artifacts to the maven repo.">       <deploy dir="${maven-base}/"/> </target>
+  <target name="publish.local"  depends="pack-maven.done, init.maven" description="Publishes unsigned artifacts to the local maven repo."> <deploy dir="${maven-base}/" local="true"/> </target>
+  <target name="publish.signed" depends="pack-maven.done, init.maven" description="Publishes signed artifacts to the remote maven repo.">  <deploy dir="${maven-base}/" signed="true"/> </target>
 
 <!-- ===========================================================================
                                   STABLE REFERENCE (STARR)
