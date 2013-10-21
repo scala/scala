@@ -720,7 +720,7 @@ object Properties extends scala.util.PropertiesTrait {
 
 /** Extended by Ant- and ConsoleRunner for running a set of tests. */
 class SuiteRunner(
-  val testSourcePath: String,
+  val testSourcePath: String, // relative path, like "files", or "pending"
   val fileManager: FileManager,
   val updateCheck: Boolean,
   val failed: Boolean,
