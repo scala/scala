@@ -750,13 +750,14 @@ TODO:
     </path>
 
     <!-- DOCS -->
-    <path id="docs.compiler.build.path">             <path refid="quick.compiler.build.path"/> </path>
-    <path id="docs.scalap.build.path">               <path refid="quick.scalap.build.path"/>   </path>
-    <path id="docs.continuations-plugin.build.path"> <path refid="quick.plugins.build.path"/>  </path>
-    <path id="docs.library.build.path">
-      <path refid="quick.reflect.build.path"/>
-      <path refid="quick.actors.build.path"/>
-    </path>
+    <path id="docs.library.build.path">               <path refid="quick.library.build.path"/>  </path>
+    <path id="docs.reflect.build.path">               <path refid="quick.reflect.build.path"/>  </path>
+    <path id="docs.compiler.build.path">              <path refid="quick.compiler.build.path"/> </path>
+    <path id="docs.scalap.build.path">                <path refid="quick.scalap.build.path"/>   </path>
+    <path id="docs.continuations-plugin.build.path">  <path refid="quick.plugins.build.path"/>  </path>
+    <path id="docs.continuations-library.build.path"> <path refid="quick.plugins.build.path"/>  </path>
+    <path id="docs.actors.build.path">                <path refid="quick.actors.build.path"/>   </path>
+    <path id="docs.swing.build.path">                 <path refid="quick.swing.build.path"/>    </path>
 
     <!-- run-time classpath for scaladoc: should be resolved through maven once it's an actual module -->
     <path id="scaladoc.classpath">
@@ -1187,19 +1188,22 @@ TODO:
     <attribute name="dir" default="@{project}"/>
     <attribute name="title"/>
     <attribute name="docroot" default="NOT SET"/>
+    <attribute name="skipPackages" default=""/>
+
     <element name="includes" implicit="true"/>
 
     <sequential>
-      <staged-uptodate stage="docs" project="@{project}">
-        <check><srcfiles dir="${src.dir}/@{dir}"/></check>
-        <do>
-          <if><not><isset property="docs.skip"/></not><then>
+      <if><not><isset property="docs.skip"/></not><then>
+        <staged-uptodate stage="docs" project="@{project}">
+          <check><srcfiles dir="${src.dir}/@{dir}"/></check>
+          <do>
             <stopwatch name="docs.@{project}.timer"/>
             <mkdir dir="${build-docs.dir}/@{project}"/>
             <if><equals arg1="@{docroot}" arg2="NOT SET"/><then>
               <scaladoc
                 destdir="${build-docs.dir}/@{project}"
                 doctitle="@{title}"
+                docfooter="epfl"
                 docversion="${version.number}"
                 sourcepath="${src.dir}"
                 classpathref="docs.@{project}.build.path"
@@ -1209,13 +1213,16 @@ TODO:
                 diagrams="on"
                 groups="on"
                 rawOutput="${scaladoc.raw.output}"
-                noPrefixes="${scaladoc.no.prefixes}">
+                noPrefixes="${scaladoc.no.prefixes}"
+                docUncompilable="${src.dir}/library-aux"
+                skipPackages="@{skipPackages}">
                 <includes/>
               </scaladoc>
             </then><else>
               <scaladoc
                 destdir="${build-docs.dir}/@{project}"
                 doctitle="@{title}"
+                docfooter="epfl"
                 docversion="${version.number}"
                 sourcepath="${src.dir}"
                 classpathref="docs.@{project}.build.path"
@@ -1226,14 +1233,16 @@ TODO:
                 diagrams="on"
                 groups="on"
                 rawOutput="${scaladoc.raw.output}"
-                noPrefixes="${scaladoc.no.prefixes}">
+                noPrefixes="${scaladoc.no.prefixes}"
+                docUncompilable="${src.dir}/library-aux"
+                skipPackages="@{skipPackages}">
                 <includes/>
               </scaladoc>
             </else></if>
             <stopwatch name="docs.@{project}.timer" action="total"/>
-          </then></if>
-        </do>
-      </staged-uptodate>
+          </do>
+        </staged-uptodate>
+      </then></if>
     </sequential>
   </macrodef>
 
@@ -1777,61 +1786,41 @@ TODO:
   </target>
 
   <target name="docs.lib" depends="docs.start">
-    <staged-uptodate stage="docs" project="library">
-      <check><srcfiles dir="${src.dir}">
-        <include name="library/**"/>
-        <include name="swing/**"/>
-        <include name="actors/**"/>
-        <include name="reflect/**"/>
-        <include name="continuations/library/**"/>
-      </srcfiles></check>
-      <do>
-        <stopwatch name="docs.lib.timer"/>
-        <mkdir dir="${build-docs.dir}/library"/>
-        <if><not><isset property="docs.skip"/></not><then>
-          <!-- last three attributes not supported by staged-docs: -->
-          <scaladoc
-            destdir="${build-docs.dir}/library"
-            doctitle="Scala Standard Library API (Scaladoc)"
-            docversion="${version.number}"
-            docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
-            sourcepath="${src.dir}"
-            classpathref="docs.library.build.path"
-            addparams="${scalac.args.all}"
-            docRootContent="${src.dir}/library/rootdoc.txt"
-            implicits="on"
-            diagrams="on"
-            groups="on"
-            rawOutput="${scaladoc.raw.output}"
-            noPrefixes="${scaladoc.no.prefixes}"
-            docfooter="epfl"
-            docUncompilable="${src.dir}/library-aux"
-            skipPackages="scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io:scala.concurrent.impl">
-            <src>
-              <files includes="${src.dir}/actors"/>
-              <files includes="${src.dir}/library"/>
-              <files includes="${src.dir}/reflect"/>
-              <files includes="${src.dir}/swing"/>
-              <files includes="${src.dir}/continuations/library"/>
-            </src>
-            <include name="**/*.scala"/>
-            <exclude name="reflect/Code.scala"/>
-            <exclude name="reflect/Print.scala"/>
-            <exclude name="reflect/Symbol.scala"/>
-            <exclude name="reflect/Tree.scala"/>
-            <exclude name="reflect/Type.scala"/>
-            <exclude name="runtime/*$.scala"/>
-            <exclude name="runtime/ScalaRunTime.scala"/>
-            <exclude name="runtime/StringAdd.scala"/>
-          </scaladoc>
-        </then></if>
-        <stopwatch name="docs.lib.timer" action="total"/>
-      </do>
-    </staged-uptodate>
+    <staged-docs project="library" title="Scala Standard Library" docroot="rootdoc.txt"
+                 skipPackages="scala.concurrent.impl">
+      <include name="**/*.scala"/>
+      <exclude name="runtime/*$.scala"/>
+      <exclude name="runtime/ScalaRunTime.scala"/>
+      <exclude name="runtime/StringAdd.scala"/>
+    </staged-docs>
+  </target>
+
+  <target name="docs.reflect" depends="docs.start">
+    <staged-docs project="reflect" title="Scala Reflection Library"
+                 skipPackages="scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io">
+      <include name="**/*.scala"/>
+      <exclude name="reflect/Code.scala"/>
+      <exclude name="reflect/Print.scala"/>
+      <exclude name="reflect/Symbol.scala"/>
+      <exclude name="reflect/Tree.scala"/>
+      <exclude name="reflect/Type.scala"/>
+    </staged-docs>
   </target>
 
   <target name="docs.comp" depends="docs.start">
     <staged-docs project="compiler" title="Scala Compiler" docroot="rootdoc.txt">
+      <include name="**/*.scala"/>
+    </staged-docs>
+  </target>
+
+  <target name="docs.actors" depends="docs.start">
+    <staged-docs project="actors" title="Scala Actors Library">
+      <include name="**/*.scala"/>
+    </staged-docs>
+  </target>
+
+  <target name="docs.swing" depends="docs.start">
+    <staged-docs project="swing" title="Scala Swing Library">
       <include name="**/*.scala"/>
     </staged-docs>
   </target>
@@ -1844,6 +1833,12 @@ TODO:
 
   <target name="docs.continuations-plugin" depends="docs.start">
     <staged-docs project="continuations-plugin" dir="continuations/plugin" title="Delimited Continuations Compiler Plugin">
+      <include name="**/*.scala"/>
+    </staged-docs>
+  </target>
+
+  <target name="docs.continuations-library" depends="docs.start">
+    <staged-docs project="continuations-library" dir="continuations/library" title="Delimited Continuations Library">
       <include name="**/*.scala"/>
     </staged-docs>
   </target>
@@ -1885,7 +1880,7 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="docs.done" depends="docs.comp, docs.man, docs.lib, docs.scalap, docs.continuations-plugin"/>
+  <target name="docs.done" depends="docs.lib, docs.reflect, docs.comp, docs.man, docs.actors, docs.swing, docs.scalap, docs.continuations-plugin, docs.continuations-library"/>
 
 <!-- ===========================================================================
                                   DISTRIBUTION
