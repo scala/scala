@@ -112,7 +112,8 @@ class ConsoleRunner(argstr: String) extends {
 
     optTimeout foreach (x => setProp("partest.timeout", x))
 
-    NestUI echo banner
+    if (!isPartestTerse)
+      NestUI echo banner
 
     val partestTests = (
       if (optSelfTest) TestKinds.testsForPartest
