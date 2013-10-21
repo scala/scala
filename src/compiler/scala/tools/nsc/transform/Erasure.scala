@@ -996,9 +996,21 @@ abstract class Erasure extends AddInterfaces
                   List()) setPos tree.pos
               targ.tpe match {
                 case SingleType(_, _) | ThisType(_) | SuperType(_, _) =>
+                  // Translate type tests to equality.
+                  // class C { object X; X.isInstanceOf[X.type] } => X eq X
                   val cmpOp = if (targ.tpe <:< AnyValTpe) Any_equals else Object_eq
+                  val tree = gen.mkAttributedQualifier(targ.tpe)
+                  // SI-7598 `tree` might by `Outer.this`, but if we're in an inner class we must
+                  //         explicitly access that through our $outer pointer.
+                  //
+                  //         class C { object X; class Inner { X.isInstanceOf[X.type] } }
+                  //
+                  //         Calling the explicit outer transformer seems to do the trick here. An alternative
+                  //         fix might be to change the explicitouter tree transformer phase to transform
+                  //         type trees, rather than just terms trees. Then we would already have `isInstanceOf[$outer.X.type]`.
+                  val outerTransformed = explicitOuter.transformTreeAtOwner(currentOwner, tree)
                   atPos(tree.pos) {
-                    Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
+                    Apply(Select(qual, cmpOp), List(outerTransformed))
                   }
                 case RefinedType(parents, decls) if (parents.length >= 2) =>
                   gen.evalOnce(qual, currentOwner, unit) { q =>

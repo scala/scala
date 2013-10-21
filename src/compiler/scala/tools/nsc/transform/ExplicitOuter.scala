@@ -294,6 +294,13 @@ abstract class ExplicitOuter extends InfoTransform
     }
   }
 
+  final def transformTreeAtOwner(owner: Symbol, tree: Tree): Tree = {
+    val explicitOuterTransformer = new explicitOuter.ExplicitOuterTransformer(currentUnit)
+    explicitOuterTransformer.atOwner(owner) {
+      explicitOuterTransformer.transform(tree)
+    }
+  }
+
   /** <p>
    *    The phase performs the following transformations on terms:
    *  </p>
