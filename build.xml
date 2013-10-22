@@ -1288,9 +1288,6 @@ TODO:
   <target name="quick.lib"        depends="quick.start">
     <staged-build with="locker"   stage="quick" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/></target>
 
-  <target name="quick.actors"     depends="quick.lib">
-    <staged-build with="locker"   stage="quick" project="actors"/> </target>
-
   <target name="quick.reflect"    depends="quick.lib">
     <staged-build with="locker"   stage="quick" project="reflect"/> </target>
 
@@ -1300,14 +1297,17 @@ TODO:
   <target name="quick.repl"       depends="quick.comp">
     <staged-build with="locker"   stage="quick" project="repl"/> </target>
 
-  <target name="quick.scalap"     depends="quick.repl">
-    <staged-build with="locker"   stage="quick" project="scalap"/> </target>
-
   <target name="quick.scaladoc"   depends="quick.comp">
     <staged-build with="locker"   stage="quick" project="scaladoc" version="scaladoc"/> </target>
 
   <target name="quick.interactive" depends="quick.comp, quick.scaladoc">
     <staged-build with="locker"    stage="quick" project="interactive"/> </target>
+
+  <target name="quick.scalap"     depends="quick.repl">
+    <staged-build with="locker"   stage="quick" project="scalap"/> </target>
+
+  <target name="quick.actors"     depends="quick.lib">
+    <staged-build with="locker"   stage="quick" project="actors"/> </target>
 
   <target name="quick.swing"      depends="quick.actors, quick.lib" if="has.java6">
     <staged-build with="locker"   stage="quick" project="swing"/> </target>
@@ -1347,7 +1347,9 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.repl, quick.scalap, quick.interactive, quick.swing, quick.plugins, quick.scaladoc, quick.partest-extras">
+  <target name="quick.modules" depends="quick.repl, quick.scaladoc, quick.interactive, quick.scalap, quick.swing, quick.plugins"/>
+
+  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.modules">
     <staged-bin stage="quick" classpathref="quick.bin.tool.path"/>
   </target>
 
@@ -1358,17 +1360,9 @@ TODO:
 <!-- ===========================================================================
                                   PACKED QUICK BUILD (PACK)
 ============================================================================ -->
-  <target name="pack.lib"    depends="quick.lib, quick.plugins, forkjoin.done">
-    <staged-pack project="library"/></target>
+  <target name="pack.lib"    depends="quick.lib, quick.plugins, forkjoin.done"> <staged-pack project="library"/></target>
 
-  <target name="pack.actors"  depends="quick.lib">                <staged-pack project="actors"/> </target>
-  <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
-  <target name="pack.reflect" depends="quick.reflect">            <staged-pack project="reflect"/> </target>
-  <target name="pack.partest-extras" depends="quick.partest-extras">
-     <staged-pack project="partest-extras"/>
-     <staged-pack project="partest-javaagent"
-                  manifest="${src.dir}/partest-javaagent/scala/tools/partest/javaagent/MANIFEST.MF"/>
-  </target>
+  <target name="pack.reflect" depends="quick.reflect"> <staged-pack project="reflect"/> </target>
 
   <target name="pack.comp"    depends="quick.comp, quick.scaladoc, quick.interactive, quick.repl, asm.done">
     <staged-pack project="compiler" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
@@ -1396,21 +1390,30 @@ TODO:
     </staged-pack>
   </target>
 
+  <target name="pack.actors" depends="quick.actors"> <staged-pack project="actors"/> </target>
+  <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
+
   <target name="pack.plugins"    depends="quick.plugins">    <staged-pack project="plugins"    targetdir="misc/scala-devel/plugins" targetjar="continuations.jar"/> </target>
 
   <target name="pack.scalap"     depends="quick.scalap">     <staged-pack project="scalap"     targetjar="scalap.jar"/> </target>
 
-  <target name="pack.core" depends="pack.reflect, pack.comp, pack.lib">
-    <!-- can't define task until we built jars for the core -->
-    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="scaladoc.classpath"/>
-  </target>
+  <target name="pack.core" depends="pack.reflect, pack.comp, pack.lib"/>
 
-  <target name="pack.bin" depends="pack.core, pack.actors, pack.plugins, pack.scalap, pack.swing, pack.partest-extras">
+  <target name="pack.modules" depends="pack.core, pack.actors, pack.swing, pack.plugins, pack.scalap">
     <copy todir="${build-pack.dir}/lib">
       <path refid="external-modules-nocore" />
       <mapper type="flatten" />
     </copy>
+    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="scaladoc.classpath"/>
+  </target>
 
+  <target name="pack.partest-extras" depends="quick.partest-extras">
+     <staged-pack project="partest-extras"/>
+     <staged-pack project="partest-javaagent"
+                  manifest="${src.dir}/partest-javaagent/scala/tools/partest/javaagent/MANIFEST.MF"/>
+  </target>
+
+  <target name="pack.bin" depends="pack.core, pack.modules, pack.partest-extras">
     <staged-bin stage="pack"/>
   </target>
 
@@ -1858,7 +1861,7 @@ TODO:
 <!-- ===========================================================================
                                   DOCUMENTATION
 ============================================================================ -->
-  <target name="docs.start" depends="pack.comp" unless="docs.skip">
+  <target name="docs.start" depends="pack.modules" unless="docs.skip">
     <!-- Set the github commit scaladoc sources point to -->
     <!-- For releases, look for the tag with the same name as the maven version -->
     <condition property="scaladoc.git.commit" value="v${maven.version.number}">
@@ -2173,16 +2176,17 @@ MAIN DISTRIBUTION PACKAGING
     <attribute name="pkg"    default=""/>
     <attribute name="project"/>
     <attribute name="name"   default="scala-@{project}"/>
-    <sequential>
-      <local name="path"/> <property name="path" value="${maven-base}/@{dir}@{name}"/>
 
-      <mkdir dir="${path}"/>
-      <copy tofile="${path}/@{name}.jar"     file="${build-osgi.dir}/org.scala-lang.@{pkg}@{name}.jar" overwrite="true"/>
-      <copy tofile="${path}/@{name}-src.jar" file="${build-osgi.dir}/@{name}-src.jar" overwrite="true"/>
-      <copy tofile="${path}/@{name}-pom.xml" file="${src.dir}/build/maven/@{dir}/@{name}-pom.xml" overwrite="true"/>
+    <sequential>
+      <local name="artifact-base"/> <property name="artifact-base" value="${maven-base}/@{dir}@{name}/@{name}"/>
+
+      <mkdir dir="${maven-base}/@{dir}@{name}"/>
+      <copy tofile="${artifact-base}.jar"     file="${build-osgi.dir}/org.scala-lang.@{pkg}@{name}.jar" overwrite="true"/>
+      <copy tofile="${artifact-base}-src.jar" file="${build-osgi.dir}/@{name}-src.jar" overwrite="true"/>
+      <copy tofile="${artifact-base}-pom.xml" file="${src.dir}/build/maven/@{dir}/@{name}-pom.xml" overwrite="true"/>
 
       <if><not><isset property="docs.skip"/></not><then>
-        <jar basedir="${build-docs.dir}/@{project}" destfile="${path}/@{name}-docs.jar" whenmanifestonly="fail">
+        <jar destfile="${artifact-base}-docs.jar" basedir="${build-docs.dir}/@{project}" whenmanifestonly="fail">
           <include name="**/*"/>
         </jar>
       </then></if>
@@ -2262,19 +2266,19 @@ MAIN DISTRIBUTION PACKAGING
   <target name="publish.signed" depends="pack-maven.base, init.maven" description="Publishes signed artifacts to the remote maven repo.">  <deploy dir="${maven-base}/" signed="true"/> </target>
 
   <target name="publish-core"   depends="pack-maven.core, init.maven">
-    <deploy-one dir="${maven-base}/" name="scala-compiler" version="${maven.version.number}" />
-    <deploy-one dir="${maven-base}/" name="scala-library"  version="${maven.version.number}" />
-    <deploy-one dir="${maven-base}/" name="scala-reflect"  version="${maven.version.number}" />
+    <deploy-one dir="${maven-base}/" name="scala-compiler" />
+    <deploy-one dir="${maven-base}/" name="scala-library"  />
+    <deploy-one dir="${maven-base}/" name="scala-reflect"  />
   </target>
   <target name="publish-core-local" depends="pack-maven.core, init.maven">
-    <deploy-one dir="${maven-base}/" name="scala-compiler" version="${maven.version.number}" local="true"/>
-    <deploy-one dir="${maven-base}/" name="scala-library"  version="${maven.version.number}" local="true"/>
-    <deploy-one dir="${maven-base}/" name="scala-reflect"  version="${maven.version.number}" local="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-compiler" local="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-library"  local="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-reflect"  local="true"/>
   </target>
   <target name="publish-core-signed" depends="pack-maven.core, init.maven">
-    <deploy-one dir="${maven-base}/" name="scala-compiler" version="${maven.version.number}" signed="true"/>
-    <deploy-one dir="${maven-base}/" name="scala-library"  version="${maven.version.number}" signed="true"/>
-    <deploy-one dir="${maven-base}/" name="scala-reflect"  version="${maven.version.number}" signed="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-compiler" signed="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-library"  signed="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-reflect"  signed="true"/>
   </target>
 
 <!-- ===========================================================================
