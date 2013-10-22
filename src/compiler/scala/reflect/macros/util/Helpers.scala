@@ -55,6 +55,13 @@ trait Helpers {
     case tp => typeRef(pre, MacroContextExprClass, List(tp))
   }
 
+  /** Transforms c.Expr[T] types into c.Tree and leaves the rest unchanged.
+   */
+  def untypeMetalevel(tp: Type): Type = transparentShallowTransform(RepeatedParamClass, tp) {
+    case ExprClassOf(_) => typeRef(tp.prefix, TreesTreeType, Nil)
+    case tp => tp
+  }
+
   /** Decreases metalevel of the type, i.e. transforms:
    *    * c.Expr[T] to T
    *    * Anything else to Any
