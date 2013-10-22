@@ -2,10 +2,7 @@ import scala.reflect.runtime.universe._
 import scala.reflect.macros.Context
 
 object Impls1 {
-  def foo[U: c.WeakTypeTag: Numeric](c: Context) = {
-    import c.universe._
-    Literal(Constant(42))
-  }
+  def foo[U: c.WeakTypeTag: Numeric](c: Context) = { import c.universe._; q"42" }
 }
 
 object Impls2 {
@@ -28,12 +25,11 @@ object Impls6 {
   def foo[T, U: c.WeakTypeTag](c: Context)(implicit x: c.Expr[Int]) = {
     import c.{prefix => prefix}
     import c.universe._
-    val body = Block(List(
-      Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant("invoking foo_targs...")))),
-      Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant("type of prefix is: " + prefix.staticType)))),
-      Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant("U is: " + implicitly[c.WeakTypeTag[U]].tpe))))),
-      Literal(Constant(())))
-    c.Expr[Unit](body)
+    c.Expr[Unit](q"""
+      println("invoking foo_targs...")
+      println("type of prefix is: " + ${prefix.staticType.toString})
+      println("U is: " + ${implicitly[c.WeakTypeTag[U]].tpe.toString})
+    """)
   }
 }
 
@@ -71,18 +67,20 @@ object Impls14 {
 
 object Impls15 {
   def foo[T: c.WeakTypeTag, U: c.WeakTypeTag, V](c: Context)(implicit V: c.WeakTypeTag[V]): c.Expr[Unit] = {
+    import c.universe._
     println(implicitly[c.WeakTypeTag[T]])
     println(implicitly[c.WeakTypeTag[U]])
     println(V)
-    c.literalUnit
+    c.Expr[Unit](q"()")
   }
 }
 
 object Impls16 {
   def foo[T: c.WeakTypeTag, U: c.WeakTypeTag, V](c: Context)(implicit V: c.WeakTypeTag[V]): c.Expr[Unit] = {
+    import c.universe._
     println(implicitly[c.WeakTypeTag[T]])
     println(implicitly[c.WeakTypeTag[U]])
     println(V)
-    c.literalUnit
+    c.Expr[Unit](q"()")
   }
 }

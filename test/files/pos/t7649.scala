@@ -4,7 +4,7 @@ object Test {
   reify {
     // The lookup of the implicit WeakTypeTag[Any]
     // was triggering an unpositioned tree.
-    c.Expr[Any](Literal(Constant(0))).splice
+    c.Expr[Any](q"0").splice
   }
 
   import scala.reflect.ClassTag

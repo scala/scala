@@ -4,8 +4,8 @@ import scala.language.experimental.macros
 
 object Enclosing {
   trait Impl extends Macro {
-    def mono = c.literalUnit
-    def poly[T: c.WeakTypeTag] = c.literal(c.weakTypeOf[T].toString)
+    def mono = { import c.universe._; c.Expr[Unit](q"()") }
+    def poly[T: c.WeakTypeTag] = { import c.universe._; c.Expr[String](q"${c.weakTypeOf[T].toString}") }
     def weird = macro mono
   }
 }
@@ -18,8 +18,8 @@ object Macros {
 package pkg {
   object Enclosing {
     trait Impl extends Macro {
-      def mono = c.literalTrue
-      def poly[T: c.WeakTypeTag] = c.literal(c.weakTypeOf[T].toString + c.weakTypeOf[T].toString)
+      def mono = { import c.universe._; c.Expr[Boolean](q"true") }
+      def poly[T: c.WeakTypeTag] = { import c.universe._; c.Expr[String](q"${c.weakTypeOf[T].toString + c.weakTypeOf[T].toString}") }
       def weird = macro mono
     }
   }

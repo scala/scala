@@ -111,7 +111,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *  with synthetic content that carries the payload described in `MacroImplBinding`.
    *
    *  For example, for a pair of macro definition and macro implementation:
-   *    def impl(c: scala.reflect.macros.Context): c.Expr[Unit] = c.literalUnit;
+   *    def impl(c: scala.reflect.macros.Context): c.Expr[Unit] = ???
    *    def foo: Unit = macro impl
    *
    *  We will have the following annotation added on the macro definition `foo`:

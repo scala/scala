@@ -12,7 +12,7 @@ object Macros {
     } catch {
       case _: Exception =>
     }
-    c.literalNull
+    c.Expr[Null](Literal(Constant(null)))
   }
 
   def foo = macro impl

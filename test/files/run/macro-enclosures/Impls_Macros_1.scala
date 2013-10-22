@@ -1,13 +1,16 @@
 import scala.reflect.macros.Context
 
 object Macros {
-  def impl(c: Context) = c.universe.reify {
-    println("enclosingPackage = " + c.literal(c.enclosingPackage.toString).splice)
-    println("enclosingClass = " + c.literal(c.enclosingClass.toString).splice)
-    println("enclosingImpl = " + c.literal(c.enclosingImpl.toString).splice)
-    println("enclosingTemplate = " + c.literal(c.enclosingTemplate.toString).splice)
-    println("enclosingMethod = " + c.literal(c.enclosingMethod.toString).splice)
-    println("enclosingDef = " + c.literal(c.enclosingDef.toString).splice)
+  def impl(c: Context) = {
+    import c.universe._
+    reify {
+      println("enclosingPackage = " + c.Expr[String](Literal(Constant(c.enclosingPackage.toString))).splice)
+      println("enclosingClass = " + c.Expr[String](Literal(Constant(c.enclosingClass.toString))).splice)
+      println("enclosingImpl = " + c.Expr[String](Literal(Constant(c.enclosingImpl.toString))).splice)
+      println("enclosingTemplate = " + c.Expr[String](Literal(Constant(c.enclosingTemplate.toString))).splice)
+      println("enclosingMethod = " + c.Expr[String](Literal(Constant(c.enclosingMethod.toString))).splice)
+      println("enclosingDef = " + c.Expr[String](Literal(Constant(c.enclosingDef.toString))).splice)
+    }
   }
 
   def foo = macro impl
