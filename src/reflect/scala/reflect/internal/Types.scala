@@ -3385,7 +3385,11 @@ trait Types
   /** Rebind symbol `sym` to an overriding member in type `pre`. */
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     if (!sym.isOverridableMember || sym.owner == pre.typeSymbol) sym
-    else pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || (sym.isStable && !sym.hasVolatileType)) orElse sym
+    else pre.nonPrivateMember(sym.name).suchThat(sym =>
+      // SI-7928 `isModuleNotMethod` is here to avoid crashing with overloaded module accessor and module symbols
+      //         after refchecks eliminates a ModuleDef that implements and interface.
+      sym.isType || (!sym.isModuleNotMethod && sym.isStable && !sym.hasVolatileType)
+    ) orElse sym
   }
 
   /** Convert a `super` prefix to a this-type if `sym` is abstract or final. */
