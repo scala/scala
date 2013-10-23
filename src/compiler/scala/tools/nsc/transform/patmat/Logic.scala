@@ -113,7 +113,7 @@ trait Logic extends Debugging  {
 
     // symbols are propositions
     abstract case class Sym(variable: Var, const: Const) extends Prop {
-      private[this] val id = Sym.nextSymId
+      private val id: Int = Sym.nextSymId
 
       override def toString = variable +"="+ const +"#"+ id
     }
@@ -125,6 +125,7 @@ trait Logic extends Debugging  {
         (uniques findEntryOrUpdate newSym)
       }
       private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
+      implicit val SymOrdering: Ordering[Sym] = Ordering.by(_.id)
     }
 
     def /\(props: Iterable[Prop]) = if (props.isEmpty) True else props.reduceLeft(And(_, _))
@@ -279,7 +280,7 @@ trait Logic extends Debugging  {
     def eqFreePropToSolvable(p: Prop): Formula
     def cnfString(f: Formula): String
 
-    type Model = Map[Sym, Boolean]
+    type Model = collection.immutable.SortedMap[Sym, Boolean]
     val EmptyModel: Model
     val NoModel: Model
 

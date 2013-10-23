@@ -26,9 +26,12 @@ trait Solving extends Logic {
     type Formula = FormulaBuilder
     def formula(c: Clause*): Formula = ArrayBuffer(c: _*)
 
-    type Clause  = Set[Lit]
+    type Clause  = collection.Set[Lit]
     // a clause is a disjunction of distinct literals
-    def clause(l: Lit*): Clause = l.toSet
+    def clause(l: Lit*): Clause = (
+      // neg/t7020.scala changes output 1% of the time, the non-determinism is quelled with this linked set
+      mutable.LinkedHashSet(l: _*)
+    )
 
     type Lit
     def Lit(sym: Sym, pos: Boolean = true): Lit
@@ -134,7 +137,7 @@ trait Solving extends Logic {
     def cnfString(f: Formula) = alignAcrossRows(f map (_.toList) toList, "\\/", " /\\\n")
 
     // adapted from http://lara.epfl.ch/w/sav10:simple_sat_solver (original by Hossein Hojjat)
-    val EmptyModel = Map.empty[Sym, Boolean]
+    val EmptyModel = collection.immutable.SortedMap.empty[Sym, Boolean]
     val NoModel: Model = null
 
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
@@ -229,9 +232,8 @@ trait Solving extends Logic {
             }
         }
 
-        if (Statistics.canEnable) Statistics.stopTimer(patmatAnaDPLL, start)
-
-        satisfiableWithModel
+      if (Statistics.canEnable) Statistics.stopTimer(patmatAnaDPLL, start)
+      satisfiableWithModel
     }
   }
 }

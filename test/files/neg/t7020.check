@@ -1,0 +1,19 @@
+t7020.scala:3: warning: match may not be exhaustive.
+It would fail on the following inputs: List((x: Int forSome x not in (1, 2, 4, 5, 6, 7))), List((x: Int forSome x not in (1, 2, 4, 5, 6, 7)), _), List(1, _), List(2, _), List(4, _), List(5, _), List(6, _), List(7, _), List(_, _)
+  List(5) match {
+      ^
+t7020.scala:10: warning: match may not be exhaustive.
+It would fail on the following inputs: List((x: Int forSome x not in (1, 2, 4, 5, 6, 7))), List((x: Int forSome x not in (1, 2, 4, 5, 6, 7)), _), List(1, _), List(2, _), List(4, _), List(5, _), List(6, _), List(7, _), List(_, _)
+  List(5) match {
+      ^
+t7020.scala:17: warning: match may not be exhaustive.
+It would fail on the following inputs: List((x: Int forSome x not in (1, 2, 4, 5, 6, 7))), List((x: Int forSome x not in (1, 2, 4, 5, 6, 7)), _), List(1, _), List(2, _), List(4, _), List(5, _), List(6, _), List(7, _), List(_, _)
+  List(5) match {
+      ^
+t7020.scala:24: warning: match may not be exhaustive.
+It would fail on the following inputs: List((x: Int forSome x not in (1, 2, 4, 5, 6, 7))), List((x: Int forSome x not in (1, 2, 4, 5, 6, 7)), _), List(1, _), List(2, _), List(4, _), List(5, _), List(6, _), List(7, _), List(_, _)
+  List(5) match {
+      ^
+error: No warnings can be incurred under -Xfatal-warnings.
+four warnings found
+one error found
