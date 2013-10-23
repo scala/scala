@@ -394,20 +394,24 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     (install map (_.parent) flatMap jarAt) orElse
     (jdkDir flatMap deeply)
   } 
-  private def addToolsJarToLoader() = {
-    val cl = platformTools match {
-      case Some(tools) => ScalaClassLoader.fromURLs(Seq(tools.toURL), intp.classLoader)
-      case _           => intp.classLoader
-    }
-    if (Javap.isAvailable(cl)) {
-      repldbg(":javap available.")
-      cl
-    }
-    else {
-      repldbg(":javap unavailable: no tools.jar at " + jdkHome)
+  private def addToolsJarToLoader() = (
+    if (Javap isAvailable intp.classLoader) {
+      repldbg(":javap available on interpreter class path.")
       intp.classLoader
+    } else {
+      val cl = platformTools match {
+        case Some(tools) => ScalaClassLoader.fromURLs(Seq(tools.toURL), intp.classLoader)
+        case _           => intp.classLoader
+      }
+      if (Javap isAvailable cl) {
+        repldbg(":javap available on extended class path.")
+        cl
+      } else {
+        repldbg(s":javap unavailable: no tools.jar at $jdkHome")
+        intp.classLoader
+      }
     }
-  }
+  )
 
   protected def newJavap() = new JavapClass(addToolsJarToLoader(), new IMain.ReplStrippingWriter(intp)) {
     override def tryClass(path: String): Array[Byte] = {
