@@ -44,14 +44,18 @@ trait Errors extends Traces {
     message + suffix
   }
 
-  private def abbreviateCoreAliases(s: String): String = List("WeakTypeTag", "Expr").foldLeft(s)((res, x) => res.replace("c.universe." + x, "c." + x))
+  private def abbreviateCoreAliases(s: String): String = {
+    val coreAliases = List("WeakTypeTag", "Expr", "Tree")
+    coreAliases.foldLeft(s)((res, x) => res.replace("c.universe." + x, "c." + x))
+  }
 
-  private def showMeth(pss: List[List[Symbol]], restpe: Type, abbreviate: Boolean) = {
-    var argsPart = (pss map (ps => ps map (_.defString) mkString ("(", ", ", ")"))).mkString
-    if (abbreviate) argsPart = abbreviateCoreAliases(argsPart)
-    var retPart = restpe.toString
+  private def showMeth(pss: List[List[Symbol]], restpe: Type, abbreviate: Boolean, untype: Boolean) = {
+    def preprocess(tpe: Type) = if (untype) untypeMetalevel(tpe) else tpe
+    var pssPart = (pss map (ps => ps map (p => p.defStringSeenAs(preprocess(p.info))) mkString ("(", ", ", ")"))).mkString
+    if (abbreviate) pssPart = abbreviateCoreAliases(pssPart)
+    var retPart = preprocess(restpe).toString
     if (abbreviate || macroDdef.tpt.tpe == null) retPart = abbreviateCoreAliases(retPart)
-    argsPart + ": " + retPart
+    pssPart + ": " + retPart
   }
 
   // not exactly an error generator, but very related
@@ -86,8 +90,9 @@ trait Errors extends Traces {
   private def compatibilityError(message: String) =
     implRefError(
       "macro implementation has wrong shape:"+
-      "\n required: " + showMeth(rparamss, rret, abbreviate = true) +
-      "\n found   : " + showMeth(aparamss, aret, abbreviate = false) +
+      "\n required: " + showMeth(rparamss, rret, abbreviate = true, untype = false) +
+      "\n or      : " + showMeth(rparamss, rret, abbreviate = true, untype = true) +
+      "\n found   : " + showMeth(aparamss, aret, abbreviate = false, untype = false) +
       "\n" + message)
 
   def MacroImplNonTagImplicitParameters(params: List[Symbol]) = compatibilityError("macro implementations cannot have implicit parameters other than WeakTypeTag evidences")
