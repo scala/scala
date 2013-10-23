@@ -673,7 +673,11 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         } else delayed
       }
     }
-    expander(expandee)
+    import typer.TyperErrorGen._
+    expandee match {
+      case Applied(RefTree(Super(_, _), nme.CONSTRUCTOR), _, _) => MacroSuperCtorError(expandee)
+      case _ => expander(expandee)
+    }
   }
 
   /** Expands a term macro used in unapply role as `u.Quasiquote(StringContext("", "")).q.unapply(x)` in `case q"$x" => ...`.

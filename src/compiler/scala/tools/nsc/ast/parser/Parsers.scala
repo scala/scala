@@ -2509,13 +2509,26 @@ self =>
       in.nextToken()
       if (in.token == THIS) {
         atPos(start, in.skipToken()) {
+          var newmods = mods
           val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), ofCaseClass = false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs = in.token match {
-            case LBRACE   => atPos(in.offset) { constrBlock(vparamss) }
-            case _        => accept(EQUALS) ; atPos(in.offset) { constrExpr(vparamss) }
+            case LBRACE =>
+              atPos(in.offset) { constrBlock(vparamss) }
+            case EQUALS =>
+              in.nextTokenAllow(nme.MACROkw)
+              if (in.token == IDENTIFIER && in.name == nme.MACROkw) {
+                in.nextToken()
+                newmods |= Flags.MACRO
+                expr()
+              } else {
+                atPos(in.offset) { constrExpr(vparamss) }
+              }
+            case _ =>
+              accept(EQUALS)
+              atPos(in.offset) { constrExpr(vparamss) }
           }
-          DefDef(mods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), rhs)
+          DefDef(newmods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), rhs)
         }
       }
       else {
