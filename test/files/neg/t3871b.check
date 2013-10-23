@@ -1,0 +1,97 @@
+t3871b.scala:61: error: not found: value protOT
+    protOT // not allowed
+    ^
+t3871b.scala:77: error: method prot in class A cannot be accessed in E.this.A
+ Access to protected method prot not permitted because
+ prefix type E.this.A does not conform to
+ class B in class E where the access take place
+      a.prot    // not allowed, prefix type `A` does not conform to `B`
+        ^
+t3871b.scala:79: error: value protT is not a member of E.this.B
+      b.protT   // not allowed
+        ^
+t3871b.scala:80: error: value protT is not a member of E.this.C
+      c.protT   // not allowed
+        ^
+t3871b.scala:81: error: value protT is not a member of E.this.A
+      a.protT   // not allowed
+        ^
+t3871b.scala:91: error: method prot in class A cannot be accessed in E.this.A
+ Access to protected method prot not permitted because
+ prefix type E.this.A does not conform to
+ object B in class E where the access take place
+      a.prot    // not allowed
+        ^
+t3871b.scala:93: error: value protT is not a member of E.this.B
+      b.protT   // not allowed
+        ^
+t3871b.scala:94: error: value protT is not a member of E.this.C
+      c.protT   // not allowed
+        ^
+t3871b.scala:95: error: value protT is not a member of E.this.A
+      a.protT   // not allowed
+        ^
+t3871b.scala:102: error: method prot in class A cannot be accessed in E.this.B
+ Access to protected method prot not permitted because
+ enclosing class Z in class E is not a subclass of
+ class A in class E where target is defined
+      b.prot    // not allowed
+        ^
+t3871b.scala:103: error: method prot in class A cannot be accessed in E.this.C
+ Access to protected method prot not permitted because
+ enclosing class Z in class E is not a subclass of
+ class A in class E where target is defined
+      c.prot    // not allowed
+        ^
+t3871b.scala:104: error: method prot in class A cannot be accessed in E.this.A
+ Access to protected method prot not permitted because
+ enclosing class Z in class E is not a subclass of
+ class A in class E where target is defined
+      a.prot    // not allowed
+        ^
+t3871b.scala:109: error: value protT is not a member of E.this.B
+      b.protT   // not allowed
+        ^
+t3871b.scala:110: error: value protT is not a member of E.this.C
+      c.protT   // not allowed
+        ^
+t3871b.scala:111: error: value protT is not a member of E.this.A
+      a.protT   // not allowed
+        ^
+t3871b.scala:120: error: method prot in class A cannot be accessed in Other.this.e.B
+ Access to protected method prot not permitted because
+ enclosing class Other is not a subclass of
+ class A in class E where target is defined
+    b.prot    // not allowed
+      ^
+t3871b.scala:121: error: method prot in class A cannot be accessed in Other.this.e.C
+ Access to protected method prot not permitted because
+ enclosing class Other is not a subclass of
+ class A in class E where target is defined
+    c.prot    // not allowed
+      ^
+t3871b.scala:122: error: method prot in class A cannot be accessed in Other.this.e.A
+ Access to protected method prot not permitted because
+ enclosing class Other is not a subclass of
+ class A in class E where target is defined
+    a.prot    // not allowed
+      ^
+t3871b.scala:123: error: method protE in class A cannot be accessed in Other.this.e.B
+ Access to protected method protE not permitted because
+ enclosing class Other is not a subclass of
+ class A in class E where target is defined
+    b.protE   // not allowed
+      ^
+t3871b.scala:124: error: method protE in class A cannot be accessed in Other.this.e.A
+ Access to protected method protE not permitted because
+ enclosing class Other is not a subclass of
+ class A in class E where target is defined
+    a.protE   // not allowed
+      ^
+t3871b.scala:125: error: method protE in class A cannot be accessed in Other.this.e.C
+ Access to protected method protE not permitted because
+ enclosing class Other is not a subclass of
+ class A in class E where target is defined
+    c.protE   // not allowed
+      ^
+21 errors found
