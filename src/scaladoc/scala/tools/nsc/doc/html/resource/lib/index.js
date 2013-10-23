@@ -383,51 +383,56 @@ function compilePattern(query) {
 // Filters all focused templates and packages. This function should be made less-blocking.
 //   @param query The string of the query
 function textFilter() {
-    scheduler.clear("filter");
-
-    $('#tpl').html('');
-
     var query = $("#textfilter input").attr("value") || '';
     var queryRegExp = compilePattern(query);
 
-    var index = 0;
+    if ((typeof textFilter.lastQuery === "undefined") || (textFilter.lastQuery !== query)) {
 
-    var searchLoop = function () {
-        var packages = Index.keys(Index.PACKAGES).sort();
+        textFilter.lastQuery = query;
 
-        while (packages[index]) {
-            var pack = packages[index];
-            var children = Index.PACKAGES[pack];
-            index++;
+        scheduler.clear("filter");
 
-            if (focusFilterState) {
-                if (pack == focusFilterState ||
-                    pack.indexOf(focusFilterState + '.') == 0) {
-                    ;
-                } else {
-                    continue;
+        $('#tpl').html('');
+
+        var index = 0;
+
+        var searchLoop = function () {
+            var packages = Index.keys(Index.PACKAGES).sort();
+
+            while (packages[index]) {
+                var pack = packages[index];
+                var children = Index.PACKAGES[pack];
+                index++;
+
+                if (focusFilterState) {
+                    if (pack == focusFilterState ||
+                        pack.indexOf(focusFilterState + '.') == 0) {
+                        ;
+                    } else {
+                        continue;
+                    }
+                }
+
+                var matched = $.grep(children, function (child, i) {
+                    return queryRegExp.test(child.name);
+                });
+
+                if (matched.length > 0) {
+                    $('#tpl').append(Index.createPackageTree(pack, matched,
+                                                             focusFilterState));
+                    scheduler.add('filter', searchLoop);
+                    return;
                 }
             }
 
-            var matched = $.grep(children, function (child, i) {
-                return queryRegExp.test(child.name);
+            $('#tpl a.packfocus').click(function () {
+                focusFilter($(this).parent().parent());
             });
+            configureHideFilter();
+        };
 
-            if (matched.length > 0) {
-                $('#tpl').append(Index.createPackageTree(pack, matched,
-                                                         focusFilterState));
-                scheduler.add('filter', searchLoop);
-                return;
-            }
-        }
-
-        $('#tpl a.packfocus').click(function () {
-            focusFilter($(this).parent().parent());
-        });
-        configureHideFilter();
-    };
-
-    scheduler.add('filter', searchLoop);
+        scheduler.add('filter', searchLoop);
+    }
 }
 
 /* Configures the hide tool by adding the hide link to all packages. */
