@@ -97,9 +97,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
       if (isCompilerUniverse) super.enter(sym)
       else {
         val existing = super.lookupEntry(sym.name)
-        // commented out to provide a hotfix for strange class files that javac sometimes emits
-        // see more details at: https://groups.google.com/forum/#!topic/scala-internals/hcnUFk75MgQ
-        // assert(existing == null || existing.sym.isMethod, s"pkgClass = $pkgClass, sym = $sym, existing = $existing")
+        assert(existing == null || existing.sym.isMethod, s"pkgClass = $pkgClass, sym = $sym, existing = $existing")
         super.enter(sym)
       }
     }

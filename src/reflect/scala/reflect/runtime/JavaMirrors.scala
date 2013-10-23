@@ -18,7 +18,7 @@ import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
 import scala.collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
-import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance, scalacShouldntLoadClass}
+import ReflectionUtils._
 import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 
@@ -777,33 +777,19 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     /**
      * The Scala owner of the Scala class corresponding to the Java class `jclazz`
      */
-    private def sOwner(jclazz: jClass[_]): Symbol =
-      if (jclazz.isMemberClass) {
-        val jEnclosingClass = jclazz.getEnclosingClass
-        val sEnclosingClass = classToScala(jEnclosingClass)
-        followStatic(sEnclosingClass, jclazz.javaFlags)
-      } else if (jclazz.isLocalClass0) {
-        val jEnclosingMethod = jclazz.getEnclosingMethod
-        if (jEnclosingMethod != null) {
-          methodToScala(jEnclosingMethod)
-        } else {
-          val jEnclosingConstructor = jclazz.getEnclosingConstructor
-          constructorToScala(jEnclosingConstructor)
-        }
-      } else if (jclazz.isPrimitive || jclazz.isArray) {
-        ScalaPackageClass
-      } else if (jclazz.getPackage != null) {
-        val jPackage = jclazz.getPackage
-        packageToScala(jPackage).moduleClass
-      } else {
-        // @eb: a weird classloader might return a null package for something with a non-empty package name
-        // for example, http://groups.google.com/group/scala-internals/browse_thread/thread/7be09ff8f67a1e5c
-        // in that case we could invoke packageNameToScala(jPackageName) and, probably, be okay
-        // however, I think, it's better to blow up, since weirdness of the class loader might bite us elsewhere
-        // [martin] I think it's better to be forgiving here. Restoring packageNameToScala.
-        val jPackageName = jclazz.getName take jclazz.getName.lastIndexOf('.')
-        packageNameToScala(jPackageName).moduleClass
-      }
+    // @eb: a weird classloader might return a null package for something with a non-empty package name
+    // for example, http://groups.google.com/group/scala-internals/browse_thread/thread/7be09ff8f67a1e5c
+    // in that case we could invoke packageNameToScala(jPackageName) and, probably, be okay
+    // however, I think, it's better to blow up, since weirdness of the class loader might bite us elsewhere
+    // [martin] I think it's better to be forgiving here. Restoring packageNameToScala.
+    private def sOwner(jclazz: jClass[_]): Symbol = jclazz match {
+      case PrimitiveOrArray()            => ScalaPackageClass
+      case EnclosedInMethod(jowner)      => methodToScala(jowner)
+      case EnclosedInConstructor(jowner) => constructorToScala(jowner)
+      case EnclosedInClass(jowner)       => followStatic(classToScala(jowner), jclazz.javaFlags)
+      case EnclosedInPackage(jowner)     => packageToScala(jowner).moduleClass
+      case _                             => packageNameToScala(jclazz.getName take jclazz.getName.lastIndexOf('.')).moduleClass
+    }
 
     /**
      * The Scala owner of the Scala symbol corresponding to the Java member `jmember`

@@ -84,4 +84,18 @@ private[scala] object ReflectionUtils {
   def scalacShouldntLoadClassfile(fileName: String) = isTraitImplementation(fileName)
 
   def scalacShouldntLoadClass(name: scala.reflect.internal.SymbolTable#Name) = scalacShouldntLoadClassfile(name + ".class")
+
+  object PrimitiveOrArray {
+    def unapply(jclazz: jClass[_]) = jclazz.isPrimitive || jclazz.isArray
+  }
+
+  class EnclosedIn[T](enclosure: jClass[_] => T) {
+    def unapply(jclazz: jClass[_]): Option[T] = if (enclosure(jclazz) != null) Some(enclosure(jclazz)) else None
+  }
+
+  object EnclosedInMethod extends EnclosedIn(_.getEnclosingMethod)
+  object EnclosedInConstructor extends EnclosedIn(_.getEnclosingConstructor)
+  object EnclosedInClass extends EnclosedIn(_.getEnclosingClass)
+  object EnclosedInPackage extends EnclosedIn(_.getPackage)
 }
+
