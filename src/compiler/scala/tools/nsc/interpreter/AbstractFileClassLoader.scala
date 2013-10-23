@@ -7,7 +7,7 @@ package interpreter
 
 import scala.tools.nsc.io.{ File, AbstractFile }
 import util.ScalaClassLoader
-import java.net.URL
+import java.net.{ URL, URLConnection, URLStreamHandler }
 import scala.collection.{ mutable, immutable }
 
 /**
@@ -55,10 +55,24 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
     return file
   }
 
+  // parent delegation in JCL uses getResource; so either add parent.getResAsStream
+  // or implement findResource, which we do here as a study in scarlet (my complexion
+  // after looking at CLs and URLs)
+  override def findResource(name: String): URL = findAbstractFile(name) match {
+    case null => null
+    case file => new URL(null, "repldir:" + file.path, new URLStreamHandler {
+      override def openConnection(url: URL): URLConnection = new URLConnection(url) {
+        override def connect() { }
+        override def getInputStream = file.input
+      }
+    })
+  }
+  // this inverts delegation order: super.getResAsStr calls parent.getRes if we fail
   override def getResourceAsStream(name: String) = findAbstractFile(name) match {
     case null => super.getResourceAsStream(name)
     case file => file.input
   }
+  // ScalaClassLoader.classBytes uses getResAsStream, so we'll try again before delegating 
   override def classBytes(name: String): Array[Byte] = findAbstractFile(name) match {
     case null => super.classBytes(name)
     case file => file.toByteArray
