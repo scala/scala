@@ -184,43 +184,9 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
 			val phaseName = Dependency.name
 			val runsAfter = List(API.name)
 			override val runsBefore = List("refchecks")
-			/* We set runsRightAfter to work-around a bug with phase ordering related to
-			 * continuations plugin. See SI-7217.
-			 *
-			 * If runsRightAfter == None, we get the following set of phases (with continuations
-			 * begin enabled):
-			 *
-			 *           typer   4  the meat and potatoes: type the trees
-			 *  superaccessors   5  add super accessors in traits and nested classes
-			 *         pickler   6  serialize symbol tables
-			 *        xsbt-api   7
-			 *    selectiveanf   8
-			 * xsbt-dependency   9
-			 *       refchecks  10  reference/override checking, translate nested objects
-			 *    selectivecps  11
-			 *        liftcode  12  reify trees
-			 *         uncurry  13  uncurry, translate function values to anonymous classes
-			 *
-			 * Notice that `selectiveanf` (one of continuations phases) runs before `refchecks`
-			 * and that causes NPEs in `selectiveansf`.
-			 * However, the default ordering for Scala 2.9.2 is:
-			 *
-			 *          typer   4  the meat and potatoes: type the trees
-			 * superaccessors   5  add super accessors in traits and nested classes
-			 *        pickler   6  serialize symbol tables
-			 *      refchecks   7  reference/override checking, translate nested objects
-			 *   selectiveanf   8
-			 *       liftcode   9  reify trees
-			 *   selectivecps  10
-			 *        uncurry  11  uncurry, translate function values to anonymous classes
-			 *
-			 * Here `selectiveanf` runs after refchecks and that's the correct ordering. The
-			 * true issue is that `selectiveanf` has hidden dependency on `refchecks` and
-			 * that bites us when we insert xsbt-dependency phase.
-			 *
-			 * By declaring `runsRightAfter` we make the phase ordering algorithm to schedule
-			 * `selectiveanf` to run after `refchecks` again.
-			 */
+			// keep API and dependency close to each other
+			// we might want to merge them in the future and even if don't
+			// do that then it makes sense to run those phases next to each other
 			val runsRightAfter = Some(API.name)
 		}
 		with SubComponent
@@ -276,7 +242,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
 			for( (what, warnings) <- seq; (pos, msg) <- warnings) yield
 				callback.problem(what, drep.convert(pos), msg, Severity.Warn, false)
 		}
-		
+
 		def set(callback: AnalysisCallback, dreporter: DelegatingReporter)
 		{
 			this.callback0 = callback
