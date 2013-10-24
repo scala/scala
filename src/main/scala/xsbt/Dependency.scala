@@ -13,6 +13,21 @@ object Dependency
 {
 	def name = "xsbt-dependency"
 }
+/**
+ * Extracts dependency information from each compilation unit.
+ *
+ * This phase uses CompilationUnit.depends and CallbackGlobal.inheritedDependencies
+ * to collect all symbols that given compilation unit depends on. Those symbols are
+ * guaranteed to represent Class-like structures.
+ *
+ * The CallbackGlobal.inheritedDependencies is populated by the API phase. See,
+ * ExtractAPI class.
+ *
+ * When dependency symbol is processed, it is mapped back to either source file where
+ * it's defined in (if it's available in current compilation run) or classpath entry
+ * where it originates from. The Symbol->Classfile mapping is implemented by
+ * LocateClassFile that we inherit from.
+ */
 final class Dependency(val global: CallbackGlobal) extends LocateClassFile
 {
 	import global._
