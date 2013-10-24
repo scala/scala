@@ -31,7 +31,6 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile
 			{
 				// build dependencies structure
 				val sourceFile = unit.source.file.file
-				callback.beginSource(sourceFile)
 				for(on <- unit.depends) processDependency(on, inherited=false)
 				for(on <- inheritedDependencies.getOrElse(sourceFile, Nil: Iterable[Symbol])) processDependency(on, inherited=true)
 				def processDependency(on: Symbol, inherited: Boolean)
@@ -75,7 +74,6 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile
 					else
 						addGenerated(false)
 				}
-				callback.endSource(sourceFile)
 			}
 		}
 	}
