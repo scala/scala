@@ -688,7 +688,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       uncurry                 -> "uncurry, translate function values to anonymous classes",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
-      explicitOuter           -> "this refs to outer pointers, translate patterns",
+      explicitOuter           -> "this refs to outer pointers",
       erasure                 -> "erase types, add interfaces for traits",
       postErasure             -> "clean up erased inline classes",
       lazyVals                -> "allocate bitmaps, translate lazy vals into lazified defs",
