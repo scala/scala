@@ -212,6 +212,15 @@ private[collection] trait Wrappers {
         }
       }
     }
+
+    override def containsKey(key: AnyRef): Boolean = try {
+      // Note: Subclass of collection.Map with specific key type may redirect generic
+      // contains to specific contains, which will throw a ClassCastException if the
+      // wrong type is passed. This is why we need a type cast to A inside a try/catch.
+      underlying.contains(key.asInstanceOf[A])
+    } catch {
+      case ex: ClassCastException => false
+    }
   }
 
   case class MutableMapWrapper[A, B](underlying: mutable.Map[A, B]) extends MapWrapper[A, B](underlying) {
