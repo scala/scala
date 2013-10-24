@@ -1,0 +1,4 @@
+Use_2.scala:6: error: No implicit view available from String => K.
+  val x: Q = ex.Mac.mac("asdf")
+                       ^
+one error found
