@@ -63,7 +63,7 @@
         </then><else>
           <property name="repo" value="${local.repository}"/>
         </else></if>
-        <artifact:mvn>
+        <artifact:mvn failonerror="true">
           <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
           <arg value="-Durl=${repo}" />
           <arg value="-DrepositoryId=${repository.credentials.id}" />
