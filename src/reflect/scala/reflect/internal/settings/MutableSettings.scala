@@ -33,23 +33,26 @@ abstract class MutableSettings extends AbsSettings {
     }
   }
 
-  def overrideObjects: BooleanSetting
-  def printtypes: BooleanSetting
-  def debug: BooleanSetting
-  def explaintypes: BooleanSetting
-  def verbose: BooleanSetting
-  def uniqid: BooleanSetting
-  def Yshowsymkinds: BooleanSetting
+  def Xexperimental: BooleanSetting
+  def XfullLubs: BooleanSetting
+  def XnoPatmatAnalysis: BooleanSetting
+  def Xprintpos: BooleanSetting
   def Yposdebug: BooleanSetting
   def Yrangepos: BooleanSetting
-  def Xprintpos: BooleanSetting
+  def Yshowsymkinds: BooleanSetting
+  def breakCycles: BooleanSetting
+  def debug: BooleanSetting
+  def developer: BooleanSetting
+  def explaintypes: BooleanSetting
+  def overrideObjects: BooleanSetting
+  def printtypes: BooleanSetting
+  def uniqid: BooleanSetting
+  def verbose: BooleanSetting
+
   def Yrecursion: IntSetting
   def maxClassfileName: IntSetting
-  def Xexperimental: BooleanSetting
-  def XnoPatmatAnalysis: BooleanSetting
-  def XfullLubs: BooleanSetting
-  def breakCycles: BooleanSetting
 }
+
 object MutableSettings {
   import scala.language.implicitConversions
   /** Support the common use case, `if (settings.debug) println("Hello, martin.")` */

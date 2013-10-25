@@ -115,14 +115,17 @@ trait Types
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
    */
-  var skolemizationLevel = 0
+  private var _skolemizationLevel = 0
+  def skolemizationLevel = _skolemizationLevel
+  def skolemizationLevel_=(value: Int) = _skolemizationLevel = value
 
   /** A map from lists to compound types that have the given list as parents.
    *  This is used to avoid duplication in the computation of base type sequences and baseClasses.
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  val intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
+  private val _intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
+  def intersectionWitness = _intersectionWitness
 
   /** A proxy for a type (identified by field `underlying`) that forwards most
    *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations).
@@ -974,6 +977,18 @@ trait Types
       else (baseClasses.head.newOverloaded(this, alts))
     }
 
+    /** Find all members meeting the flag requirements.
+     *
+     * If you require a DEFERRED member, you will get it if it exists -- even if there's an overriding concrete member.
+     * If you exclude DEFERRED members, or don't specify any requirements,
+     *    you won't get deferred members (whether they have an overriding concrete member or not)
+     *
+     * Thus, findMember requiring DEFERRED flags yields deferred members,
+     * while `findMember(excludedFlags = 0, requiredFlags = 0).filter(_.isDeferred)` may not (if there's a corresponding concrete member)
+     *
+     * Requirements take precedence over exclusions, so requiring and excluding DEFERRED will yield a DEFERRED member (if there is one).
+     *
+     */
     def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
       def findMembersInternal: Scope = {
         var members: Scope = null
@@ -983,10 +998,10 @@ trait Types
         //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
         var required = requiredFlags
         var excluded = excludedFlags | DEFERRED
-        var continue = true
+        var retryForDeferred = true
         var self: Type = null
-        while (continue) {
-          continue = false
+        while (retryForDeferred) {
+          retryForDeferred = false
           val bcs0 = baseClasses
           var bcs = bcs0
           while (!bcs.isEmpty) {
@@ -1018,7 +1033,7 @@ trait Types
                   }
                   if (others eq null) members enter sym
                 } else if (excl == DEFERRED) {
-                  continue = true
+                  retryForDeferred = (excludedFlags & DEFERRED) == 0
                 }
               }
               entry = entry.next
@@ -1028,7 +1043,7 @@ trait Types
           } // while (!bcs.isEmpty)
           required |= DEFERRED
           excluded &= ~(DEFERRED.toLong)
-        } // while (continue)
+        } // while (retryForDeferred)
         if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
         if (members eq null) EmptyScope else members
       }
@@ -1468,6 +1483,14 @@ trait Types
     def lower(lo: Type): TypeBounds = apply(lo, AnyTpe)
     def apply(lo: Type, hi: Type): TypeBounds = {
       unique(new UniqueTypeBounds(lo, hi)).asInstanceOf[TypeBounds]
+    }
+  }
+
+  object CompoundType {
+    def unapply(tp: Type): Option[(List[Type], Scope, Symbol)] = tp match {
+      case ClassInfoType(parents, decls, clazz) => Some((parents, decls, clazz))
+      case RefinedType(parents, decls)          => Some((parents, decls, tp.typeSymbol))
+      case _                                    => None
     }
   }
 
@@ -1954,12 +1977,12 @@ trait Types
     def apply(value: Constant) = unique(new UniqueConstantType(value))
   }
 
-  /* Syncnote: The `volatile` var and `pendingVolatiles` mutable set need not be protected
-   * with synchronized, because they are accessed only from isVolatile, which is called only from
-   * Typer.
-   */
-  private var volatileRecursions: Int = 0
-  private val pendingVolatiles = new mutable.HashSet[Symbol]
+  private var _volatileRecursions: Int = 0
+  def volatileRecursions = _volatileRecursions
+  def volatileRecursions_=(value: Int) = _volatileRecursions = value
+
+  private val _pendingVolatiles = new mutable.HashSet[Symbol]
+  def pendingVolatiles = _pendingVolatiles
 
   class ArgsTypeRef(pre0: Type, sym0: Symbol, args0: List[Type]) extends TypeRef(pre0, sym0, args0) {
     require(args0.nonEmpty, this)
@@ -3293,6 +3316,13 @@ trait Types
 
   object AnnotatedType extends AnnotatedTypeExtractor
 
+  object StaticallyAnnotatedType {
+    def unapply(tp: Type): Option[(List[AnnotationInfo], Type)] = tp.staticAnnotations match {
+      case Nil    => None
+      case annots => Some((annots, tp.withoutAnnotations))
+    }
+  }
+
   /** A class representing types with a name. When an application uses
    *  named arguments, the named argument types for calling isApplicable
    *  are represented as NamedType.
@@ -3355,7 +3385,11 @@ trait Types
   /** Rebind symbol `sym` to an overriding member in type `pre`. */
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     if (!sym.isOverridableMember || sym.owner == pre.typeSymbol) sym
-    else pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || (sym.isStable && !sym.hasVolatileType)) orElse sym
+    else pre.nonPrivateMember(sym.name).suchThat(sym =>
+      // SI-7928 `isModuleNotMethod` is here to avoid crashing with overloaded module accessor and module symbols
+      //         after refchecks eliminates a ModuleDef that implements and interface.
+      sym.isType || (!sym.isModuleNotMethod && sym.isStable && !sym.hasVolatileType)
+    ) orElse sym
   }
 
   /** Convert a `super` prefix to a this-type if `sym` is abstract or final. */
@@ -3920,9 +3954,12 @@ trait Types
    */
   final def hasLength(xs: List[_], len: Int) = xs.lengthCompare(len) == 0
 
-  private var basetypeRecursions: Int = 0
-  private val pendingBaseTypes = new mutable.HashSet[Type]
+  private var _basetypeRecursions: Int = 0
+  def basetypeRecursions = _basetypeRecursions
+  def basetypeRecursions_=(value: Int) = _basetypeRecursions = value
 
+  private val _pendingBaseTypes = new mutable.HashSet[Type]
+  def pendingBaseTypes = _pendingBaseTypes
 
   /** Does this type have a prefix that begins with a type variable,
    *  or is it a refinement type? For type prefixes that fulfil this condition,
@@ -4422,7 +4459,9 @@ trait Types
   }
 
   /** The current indentation string for traces */
-  protected[internal] var indent: String = ""
+  private var _indent: String = ""
+  protected def indent = _indent
+  protected def indent_=(value: String) = _indent = value
 
   /** Perform operation `p` on arguments `tp1`, `arg2` and print trace of computation. */
   protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {

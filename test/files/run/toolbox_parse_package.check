@@ -1,0 +1,8 @@
+package foo {
+  object bar extends scala.AnyRef {
+    def <init>() = {
+      super.<init>();
+      ()
+    }
+  }
+}

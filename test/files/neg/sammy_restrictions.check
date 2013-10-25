@@ -1,0 +1,49 @@
+sammy_restrictions.scala:31: error: type mismatch;
+ found   : () => Int
+ required: NoAbstract
+  (() => 0)      : NoAbstract
+      ^
+sammy_restrictions.scala:32: error: type mismatch;
+ found   : Int => Int
+ required: TwoAbstract
+  ((x: Int) => 0): TwoAbstract
+            ^
+sammy_restrictions.scala:34: error: class type required but DerivedOneAbstract with OneAbstract found
+  ((x: Int) => 0): NonClassType                 // "class type required". I think we should avoid SAM translation here.
+            ^
+sammy_restrictions.scala:35: error: type mismatch;
+ found   : Int => Int
+ required: NoEmptyConstructor
+  ((x: Int) => 0): NoEmptyConstructor
+            ^
+sammy_restrictions.scala:37: error: type mismatch;
+ found   : Int => Int
+ required: OneEmptySecondaryConstructor
+  ((x: Int) => 0): OneEmptySecondaryConstructor // derived class must have an empty *primary* to call.
+            ^
+sammy_restrictions.scala:38: error: type mismatch;
+ found   : Int => Int
+ required: MultipleConstructorLists
+  ((x: Int) => 0): MultipleConstructorLists
+            ^
+sammy_restrictions.scala:39: error: type mismatch;
+ found   : Int => Int
+ required: MultipleMethodLists
+  ((x: Int) => 0): MultipleMethodLists
+            ^
+sammy_restrictions.scala:40: error: type mismatch;
+ found   : Int => Int
+ required: ImplicitConstructorParam
+  ((x: Int) => 0): ImplicitConstructorParam
+            ^
+sammy_restrictions.scala:41: error: type mismatch;
+ found   : Int => Int
+ required: ImplicitMethodParam
+  ((x: Int) => 0): ImplicitMethodParam
+            ^
+sammy_restrictions.scala:44: error: type mismatch;
+ found   : Int => Int
+ required: PolyMethod
+  ((x: Int) => 0): PolyMethod
+            ^
+10 errors found

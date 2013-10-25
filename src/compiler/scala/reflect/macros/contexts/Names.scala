@@ -4,7 +4,7 @@ package contexts
 trait Names {
   self: Context =>
 
-  lazy val freshNameCreator = callsiteTyper.context.unit.fresh
+  def freshNameCreator = callsiteTyper.context.unit.fresh
 
   def fresh(): String =
     freshName()
@@ -16,7 +16,7 @@ trait Names {
     freshName[NameType](name)
 
   def freshName(): String =
-    freshNameCreator.newName()
+    freshName("fresh$")
 
   def freshName(name: String): String =
     freshNameCreator.newName(name)

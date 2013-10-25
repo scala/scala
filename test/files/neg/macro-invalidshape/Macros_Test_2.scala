@@ -3,7 +3,7 @@ object Macros {
   def foo2(x: Any) = macro Impls.foo(null)(null)
   def foo3(x: Any) = macro {2; Impls.foo}
   {
-    def impl(c: scala.reflect.macros.Context) = c.literalUnit
+    def impl(c: scala.reflect.macros.Context) = { import c.universe._; c.Expr[Unit](q"()") }
     def foo = macro impl
     foo
   }

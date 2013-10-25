@@ -30,13 +30,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   //protected var lockedSyms = scala.collection.immutable.Set[Symbol]()
 
   /** Used to keep track of the recursion depth on locked symbols */
-  private var recursionTable = immutable.Map.empty[Symbol, Int]
+  private var _recursionTable = immutable.Map.empty[Symbol, Int]
+  def recursionTable = _recursionTable
+  def recursionTable_=(value: immutable.Map[Symbol, Int]) = _recursionTable = value
 
-  private var nextexid = 0
-  protected def freshExistentialName(suffix: String) = {
-    nextexid += 1
-    newTypeName("_" + nextexid + suffix)
-  }
+  private var existentialIds = 0
+  protected def nextExistentialId() = { existentialIds += 1; existentialIds }
+  protected def freshExistentialName(suffix: String) = newTypeName("_" + nextExistentialId() + suffix)
 
   // Set the fields which point companions at one another.  Returns the module.
   def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol = {
@@ -110,10 +110,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       children
     }
 
+    def selfType = {
+      if (!isCompilerUniverse && needsInitialize(isFlagRelated = false, mask = 0)) initialize
+      typeOfThis
+    }
+
     def baseClasses                       = info.baseClasses
     def module                            = sourceModule
     def thisPrefix: Type                  = thisType
-    def selfType: Type                    = typeOfThis
     def typeSignature: Type               = { fullyInitializeSymbol(this); info }
     def typeSignatureIn(site: Type): Type = { fullyInitializeSymbol(this); site memberInfo this }
 
@@ -126,6 +130,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def getter: Symbol = getter(owner)
     def setter: Symbol = setter(owner)
   }
+
+  private[reflect] case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
 
   /** The class for all symbols */
   abstract class Symbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: Name)
@@ -800,7 +806,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      * Stability and volatility are checked separately to allow volatile paths in patterns that amount to equality checks. SI-6815
      */
-    final def isStable        = isTerm && !isMutable && !(hasFlag(BYNAMEPARAM)) && (!isMethod || hasStableFlag)
+          def isStable        = isTerm && !isMutable && !(hasFlag(BYNAMEPARAM)) && (!isMethod || hasStableFlag)
     final def hasVolatileType = tpe.isVolatile && !hasAnnotation(uncheckedStableClass)
 
     /** Does this symbol denote the primary constructor of its enclosing class? */
@@ -948,6 +954,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def isInitialized: Boolean =
       validTo != NoPeriod
+
+    /** Some completers call sym.setInfo when still in-flight and then proceed with initialization (e.g. see LazyPackageType)
+     *  setInfo sets _validTo to current period, which means that after a call to setInfo isInitialized will start returning true.
+     *  Unfortunately, this doesn't mean that info becomes ready to be used, because subsequent initialization might change the info.
+     *  Therefore we need this method to distinguish between initialized and really initialized symbol states.
+     */
+    final def isFullyInitialized: Boolean = _validTo != NoPeriod && (flags & LOCKED) == 0
 
     /** Can this symbol be loaded by a reflective mirror?
      *
@@ -1563,6 +1576,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  assumption: if a type starts out as monomorphic, it will not acquire
      *  type parameters later.
      */
+    // NOTE: overridden in SynchronizedSymbols with the code copy/pasted
+    // don't forget to modify the code over there if you modify this method
     def unsafeTypeParams: List[Symbol] =
       if (isMonomorphicType) Nil
       else enteringPhase(unsafeTypeParamPhase)(rawInfo.typeParams)
@@ -1571,6 +1586,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  assumption: if a type starts out as monomorphic, it will not acquire
      *  type parameters later.
      */
+    // NOTE: overridden in SynchronizedSymbols with the code copy/pasted
+    // don't forget to modify the code over there if you modify this method
     def typeParams: List[Symbol] =
       if (isMonomorphicType) Nil
       else {
@@ -1858,6 +1875,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      */
     def thisSym: Symbol = this
+
+    def hasSelfType = thisSym.tpeHK != this.tpeHK
 
     /** The type of `this` in a class, or else the type of the symbol itself. */
     def typeOfThis = thisSym.tpe_*
@@ -2391,7 +2410,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isTerm && (!isParameter || isParamAccessor)) "val"
       else ""
 
-    private case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
     private def symbolKind: SymbolKind = {
       var kind =
         if (isTermMacro) ("term macro", "macro method", "MACM")
@@ -3122,8 +3140,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def thisType: Type = {
       val period = thisTypePeriod
       if (period != currentPeriod) {
-        thisTypePeriod = currentPeriod
         if (!isValid(period)) thisTypeCache = ThisType(this)
+        thisTypePeriod = currentPeriod
       }
       thisTypeCache
     }
@@ -3211,9 +3229,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def typeOfThis = {
       val period = typeOfThisPeriod
       if (period != currentPeriod) {
-        typeOfThisPeriod = currentPeriod
         if (!isValid(period))
           typeOfThisCache = singleType(owner.thisType, sourceModule)
+        typeOfThisPeriod = currentPeriod
       }
       typeOfThisCache
     }
@@ -3224,9 +3242,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         // Skip a package object class, because the members are also in
         // the package and we wish to avoid spurious ambiguities as in pos/t3999.
         if (!isPackageObjectClass) {
+          implicitMembersCacheValue = tp.implicitMembers
           implicitMembersCacheKey1 = tp
           implicitMembersCacheKey2 = tp.decls.elems
-          implicitMembersCacheValue = tp.implicitMembers
         }
       }
       implicitMembersCacheValue
@@ -3334,10 +3352,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def name = nme.NO_NAME
     override def name_=(n: Name) = abort("Cannot set NoSymbol's name to " + n)
 
-    synchronized {
-      setInfo(NoType)
-      privateWithin = this
-    }
+    // Syncnote: no need to synchronize this, because NoSymbol's initialization is triggered by JavaUniverse.init
+    // which is called in universe's constructor - something that's inherently single-threaded
+    setInfo(NoType)
+    privateWithin = this
+
     override def info_=(info: Type) = {
       infos = TypeHistory(1, NoType, null)
       unlock()

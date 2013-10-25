@@ -289,12 +289,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ConstantFalse = ConstantType(Constant(false))
     lazy val ConstantNull  = ConstantType(Constant(null))
 
-    // Note: this is not the type alias AnyRef, it's a companion-like
-    // object used by the @specialize annotation.
-    lazy val AnyRefModule = getMemberModule(ScalaPackageClass, nme.AnyRef)
-    @deprecated("Use AnyRefModule", "2.10.0")
-    def Predef_AnyRef = AnyRefModule
-
     lazy val AnyValClass: ClassSymbol = (ScalaPackageClass.info member tpnme.AnyVal orElse {
       val anyval    = enterNewClass(ScalaPackageClass, tpnme.AnyVal, AnyTpe :: Nil, ABSTRACT)
       val av_constr = anyval.newClassConstructor(NoPosition)
@@ -799,6 +793,44 @@ trait Definitions extends api.StandardDefinitions {
       (sym eq PartialFunctionClass) || (sym eq AbstractPartialFunctionClass)
     }
 
+    /** The single abstract method declared by type `tp` (or `NoSymbol` if it cannot be found).
+     *
+     * The method must be monomorphic and have exactly one parameter list.
+     * The class defining the method is a supertype of `tp` that
+     * has a public no-arg primary constructor.
+     */
+    def samOf(tp: Type): Symbol = {
+      // if tp has a constructor, it must be public and must not take any arguments
+      // (not even an implicit argument list -- to keep it simple for now)
+      val tpSym  = tp.typeSymbol
+      val ctor   = tpSym.primaryConstructor
+      val ctorOk = !ctor.exists || (!ctor.isOverloaded && ctor.isPublic && ctor.info.params.isEmpty && ctor.info.paramSectionCount <= 1)
+
+      if (tpSym.exists && ctorOk) {
+        // find the single abstract member, if there is one
+        // don't go out requiring DEFERRED members, as you will get them even if there's a concrete override:
+        //    scala> abstract class X { def m: Int }
+        //    scala> class Y extends X { def m: Int = 1}
+        //    scala> typeOf[Y].deferredMembers
+        //    Scopes(method m, method getClass)
+        //
+        //    scala> typeOf[Y].members.filter(_.isDeferred)
+        //    Scopes()
+        // must filter out "universal" members (getClass is deferred for some reason)
+        val deferredMembers = (
+          tp membersBasedOnFlags (excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD)
+          filter (mem => mem.isDeferredNotDefault && !isUniversalMember(mem)) // TODO: test
+        )
+
+        // if there is only one, it's monomorphic and has a single argument list
+        if (deferredMembers.size == 1 &&
+            deferredMembers.head.typeParams.isEmpty &&
+            deferredMembers.head.info.paramSectionCount == 1)
+          deferredMembers.head
+        else NoSymbol
+      } else NoSymbol
+    }
+
     def arrayType(arg: Type)         = appliedType(ArrayClass, arg)
     def byNameType(arg: Type)        = appliedType(ByNameParamClass, arg)
     def iteratorOfType(tp: Type)     = appliedType(IteratorClass, tp)
@@ -1089,6 +1121,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaInlineClass           = requiredClass[scala.inline]
     lazy val ScalaNoInlineClass         = requiredClass[scala.noinline]
     lazy val SerialVersionUIDAttr       = requiredClass[scala.SerialVersionUID]
+    lazy val SerialVersionUIDAnnotation = AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
     lazy val SpecializedClass           = requiredClass[scala.specialized]
     lazy val ThrowsClass                = requiredClass[scala.throws[_]]
     lazy val TransientAttr              = requiredClass[scala.transient]
@@ -1141,14 +1174,21 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     lazy val AnnotationDefaultAttr: ClassSymbol = {
-      val attr = enterNewClass(RuntimePackageClass, tpnme.AnnotationDefaultATTR, List(AnnotationClass.tpe))
-      // This attribute needs a constructor so that modifiers in parsed Java code make sense
-      attr.info.decls enter attr.newClassConstructor(NoPosition)
-      attr
+      val sym = RuntimePackageClass.newClassSymbol(tpnme.AnnotationDefaultATTR, NoPosition, 0L)
+      sym setInfo ClassInfoType(List(AnnotationClass.tpe), newScope, sym)
+      RuntimePackageClass.info.decls.toList.filter(_.name == sym.name) match {
+        case existing :: _ =>
+          existing.asInstanceOf[ClassSymbol]
+        case _ =>
+          RuntimePackageClass.info.decls enter sym
+          // This attribute needs a constructor so that modifiers in parsed Java code make sense
+          sym.info.decls enter sym.newClassConstructor(NoPosition)
+          sym
+      }
     }
 
-    private def fatalMissingSymbol(owner: Symbol, name: Name, what: String = "member") = {
-      throw new FatalError(owner + " does not have a " + what + " " + name)
+    private def fatalMissingSymbol(owner: Symbol, name: Name, what: String = "member", addendum: String = "") = {
+      throw new FatalError(owner + " does not have a " + what + " " + name + addendum)
     }
 
     def getLanguageFeature(name: String, owner: Symbol = languageFeatureModule): Symbol = getMember(owner, newTypeName(name))
@@ -1183,7 +1223,8 @@ trait Definitions extends api.StandardDefinitions {
     def getMemberModule(owner: Symbol, name: Name): ModuleSymbol = {
       getMember(owner, name.toTermName) match {
         case x: ModuleSymbol => x
-        case _               => fatalMissingSymbol(owner, name, "member object")
+        case NoSymbol        => fatalMissingSymbol(owner, name, "member object")
+        case other           => fatalMissingSymbol(owner, name, "member object", addendum = s". A symbol ${other} of kind ${other.accurateKindString} already exists.")
       }
     }
     def getTypeMember(owner: Symbol, name: Name): TypeSymbol = {
@@ -1349,10 +1390,13 @@ trait Definitions extends api.StandardDefinitions {
       else flatNameString(etp.typeSymbol, '.')
     }
 
+    // documented in JavaUniverse.init
     def init() {
       if (isInitialized) return
-      // force initialization of every symbol that is synthesized or hijacked by the compiler
-      val _ = symbolsNotPresentInBytecode
+      ObjectClass.initialize
+      ScalaPackageClass.initialize
+      val forced1 = symbolsNotPresentInBytecode
+      val forced2 = NoSymbol
       isInitialized = true
     } //init
 

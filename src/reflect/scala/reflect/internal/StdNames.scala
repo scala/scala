@@ -247,11 +247,12 @@ trait StdNames {
     final val Quasiquote: NameType          = "Quasiquote"
 
     // quasiquote-specific names
-    final val QUASIQUOTE_MODS: NameType        = "$quasiquote$mods$"
-    final val QUASIQUOTE_TUPLE: NameType       = "$quasiquote$tuple$"
-    final val QUASIQUOTE_FUNCTION: NameType    = "$quasiquote$function$"
-    final val QUASIQUOTE_REFINE_STAT: NameType = "$quasiquote$refine$stat$"
-    final val QUASIQUOTE_EARLY_DEF: NameType   = "$quasiquote$early$def$"
+    final val QUASIQUOTE_MODS: NameType         = "$quasiquote$mods$"
+    final val QUASIQUOTE_TUPLE: NameType        = "$quasiquote$tuple$"
+    final val QUASIQUOTE_FUNCTION: NameType     = "$quasiquote$function$"
+    final val QUASIQUOTE_REFINE_STAT: NameType  = "$quasiquote$refine$stat$"
+    final val QUASIQUOTE_EARLY_DEF: NameType    = "$quasiquote$early$def$"
+    final val QUASIQUOTE_PACKAGE_STAT: NameType = "$quasiquote$package$stat$"
 
     // Annotation simple names, used in Namer
     final val BeanPropertyAnnot: NameType = "BeanProperty"
@@ -272,6 +273,8 @@ trait StdNames {
     final val SignatureATTR: NameType              = "Signature"
     final val SourceFileATTR: NameType             = "SourceFile"
     final val SyntheticATTR: NameType              = "Synthetic"
+
+    final val scala_ : NameType = "scala"
 
     def dropSingletonName(name: Name): TypeName = (name dropRight SINGLETON_SUFFIX.length).toTypeName
     def singletonName(name: Name): TypeName     = (name append SINGLETON_SUFFIX).toTypeName
@@ -319,6 +322,7 @@ trait StdNames {
     val REIFY_FREE_VALUE_SUFFIX: NameType  = "$value"
     val REIFY_SYMDEF_PREFIX: NameType      = "symdef$"
     val QUASIQUOTE_PREFIX: String          = "qq$"
+    val QUASIQUOTE_NAME_PREFIX: String     = "nn$"
     val QUASIQUOTE_FILE: String            = "<quasiquote>"
     val QUASIQUOTE_TUPLE: NameType         = "$quasiquote$tuple$"
     val QUASIQUOTE_CASE: NameType          = "$quasiquote$case$"
@@ -582,13 +586,15 @@ trait StdNames {
     val Select: NameType               = "Select"
     val SelectFromTypeTree: NameType   = "SelectFromTypeTree"
     val SyntacticApplied: NameType     = "SyntacticApplied"
+    val SyntacticApply: NameType       = "SyntacticApply"
     val SyntacticAssign: NameType      = "SyntacticAssign"
     val SyntacticBlock: NameType       = "SyntacticBlock"
     val SyntacticClassDef: NameType    = "SyntacticClassDef"
     val SyntacticDefDef: NameType      = "SyntacticDefDef"
     val SyntacticFunction: NameType    = "SyntacticFunction"
-    val SyntacticFunctionType: NameType= "SyntacticFunctionType"
-    val SyntacticModuleDef: NameType   = "SyntacticModuleDef"
+    val SyntacticFunctionType: NameType = "SyntacticFunctionType"
+    val SyntacticPackageObjectDef: NameType = "SyntacticPackageObjectDef"
+    val SyntacticObjectDef: NameType   = "SyntacticObjectDef"
     val SyntacticNew: NameType         = "SyntacticNew"
     val SyntacticTraitDef: NameType    = "SyntacticTraitDef"
     val SyntacticTuple: NameType       = "SyntacticTuple"
@@ -683,6 +689,7 @@ trait StdNames {
     val mkAnnotation: NameType         = "mkAnnotation"
     val mkRefineStat: NameType         = "mkRefineStat"
     val mkEarlyDef: NameType           = "mkEarlyDef"
+    val mkPackageStat: NameType        = "mkPackageStat"
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
     val newFreeTerm: NameType          = "newFreeTerm"

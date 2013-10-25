@@ -1,0 +1,18 @@
+t7783.scala:1: warning: type D in object O is deprecated:
+object O { class C; @deprecated("", "") type D = C; def foo: Seq[D] = Nil }
+                                                             ^
+t7783.scala:11: warning: type D in object O is deprecated:
+  type T = O.D
+             ^
+t7783.scala:12: warning: type D in object O is deprecated:
+  locally(null: O.D)
+                  ^
+t7783.scala:13: warning: type D in object O is deprecated:
+  val x: O.D = null
+           ^
+t7783.scala:14: warning: type D in object O is deprecated:
+  locally(null.asInstanceOf[O.D])
+                              ^
+error: No warnings can be incurred under -Xfatal-warnings.
+5 warnings found
+one error found

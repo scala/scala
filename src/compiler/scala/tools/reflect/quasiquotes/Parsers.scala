@@ -4,15 +4,16 @@ package quasiquotes
 import scala.tools.nsc.ast.parser.{Parsers => ScalaParser}
 import scala.tools.nsc.ast.parser.Tokens._
 import scala.compat.Platform.EOL
-import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
+import scala.reflect.internal.util.{BatchSourceFile, SourceFile, FreshNameCreator}
 import scala.collection.mutable.ListBuffer
+import scala.util.Try
 
 /** Builds upon the vanilla Scala parser and teams up together with Placeholders.scala to emulate holes.
  *  A principled solution to splicing into Scala syntax would be a parser that natively supports holes.
  *  Unfortunately, that's outside of our reach in Scala 2.11, so we have to emulate.
  */
 trait Parsers { self: Quasiquotes =>
-  import global._
+  import global.{Try => _, _}
 
   abstract class Parser extends {
     val global: self.global.type = self.global
@@ -54,7 +55,13 @@ trait Parsers { self: Quasiquotes =>
 
       def isHole(name: Name): Boolean = holeMap.contains(name)
 
+      override implicit def fresh: FreshNameCreator = new FreshNameCreator {
+        override def newName(prefix: String) = super.newName(nme.QUASIQUOTE_PREFIX + prefix)
+      }
+
       override val treeBuilder = new ParserTreeBuilder {
+        override implicit def fresh: FreshNameCreator = parser.fresh
+
         // q"(..$xs)"
         override def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree =
           Apply(Ident(nme.QUASIQUOTE_TUPLE), trees)
@@ -93,8 +100,6 @@ trait Parsers { self: Quasiquotes =>
       }
 
       override def isAnnotation: Boolean = super.isAnnotation || (isHole && lookingAhead { isAnnotation })
-
-      override def isCaseDefStart: Boolean = super.isCaseDefStart || (in.token == EOF)
 
       override def isModifier: Boolean = super.isModifier || (isHole && lookingAhead { isModifier })
 
@@ -140,11 +145,18 @@ trait Parsers { self: Quasiquotes =>
         case Ident(name) if isHole(name) => true
         case _ => false
       })
+
+      override def topStat = super.topStat.orElse {
+        case _ if isHole =>
+          val stats = ValDef(NoMods, in.name, Ident(tpnme.QUASIQUOTE_PACKAGE_STAT), EmptyTree) :: Nil
+          in.nextToken()
+          stats
+      }
     }
   }
 
   object TermParser extends Parser {
-    def entryPoint = { parser => gen.mkTreeOrBlock(parser.templateStats()) }
+    def entryPoint = { parser => gen.mkTreeOrBlock(parser.templateOrTopStatSeq()) }
   }
 
   object TypeParser extends Parser {
@@ -160,5 +172,15 @@ trait Parsers { self: Quasiquotes =>
       val pat = parser.noSeq.pattern1()
       parser.treeBuilder.patvarTransformer.transform(pat)
     }
+  }
+
+  object FreshName {
+    def unapply(name: Name): Option[String] =
+      name.toString.split("\\$") match {
+        case Array(qq, left, right) if qq + "$" == nme.QUASIQUOTE_PREFIX && Try(right.toInt).isSuccess =>
+          Some(left + "$")
+        case _ =>
+          None
+      }
   }
 }

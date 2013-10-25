@@ -41,6 +41,7 @@ abstract class SymbolTable extends macros.Universe
                               with StdCreators
                               with BuildUtils
                               with PrivateWithin
+                              with pickling.Translations
 {
 
   val gen = new TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
@@ -122,6 +123,10 @@ abstract class SymbolTable extends macros.Universe
       debuglog(msg + ": " + result)
 
     result
+  }
+
+  @inline final def findSymbol(xs: TraversableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
+    xs find p getOrElse NoSymbol
   }
 
   // For too long have we suffered in order to sort NAMES.
@@ -237,11 +242,19 @@ abstract class SymbolTable extends macros.Universe
     finally popPhase(saved)
   }
 
+  def slowButSafeEnteringPhase[T](ph: Phase)(op: => T): T = {
+    if (isCompilerUniverse) enteringPhase(ph)(op)
+    else op
+  }
+
   @inline final def exitingPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph.next)(op)
   @inline final def enteringPrevPhase[T](op: => T): T       = enteringPhase(phase.prev)(op)
 
   @inline final def enteringPhaseNotLaterThan[T](target: Phase)(op: => T): T =
     if (isAtPhaseAfter(target)) enteringPhase(target)(op) else op
+
+  def slowButSafeEnteringPhaseNotLaterThan[T](target: Phase)(op: => T): T =
+    if (isCompilerUniverse) enteringPhaseNotLaterThan(target)(op) else op
 
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {
@@ -370,6 +383,11 @@ abstract class SymbolTable extends macros.Universe
    * Adds the `sm` String interpolator to a [[scala.StringContext]].
    */
   implicit val StringContextStripMarginOps: StringContext => StringContextStripMarginOps = util.StringContextStripMarginOps
+
+  // fresh name creation
+  def currentFreshNameCreator: FreshNameCreator
+  def freshTermName(prefix: String = "x$")(implicit creator: FreshNameCreator): TermName = newTermName(creator.newName(prefix))
+  def freshTypeName(prefix: String)(implicit creator: FreshNameCreator): TypeName        = newTypeName(creator.newName(prefix))
 }
 
 object SymbolTableStats {

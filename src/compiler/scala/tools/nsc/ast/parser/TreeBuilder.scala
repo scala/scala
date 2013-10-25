@@ -8,24 +8,21 @@ package ast.parser
 
 import symtab.Flags._
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{Position, SourceFile, FreshNameCreator}
 
 /** Methods for building trees, used in the parser.  All the trees
  *  returned by this class must be untyped.
  */
 abstract class TreeBuilder {
-
   val global: Global
   import global._
 
-  def freshName(): Name = freshName("x$")
-  def freshTermName(): TermName = freshTermName("x$")
+  def unit: CompilationUnit
+  def source: SourceFile
 
-  def freshName(prefix: String): Name
-  def freshTermName(prefix: String): TermName
-  def freshTypeName(prefix: String): TypeName
-  def o2p(offset: Int): Position
-  def r2p(start: Int, point: Int, end: Int): Position
+  implicit def fresh: FreshNameCreator              = unit.fresh
+  def o2p(offset: Int): Position                    = Position.offset(source, offset)
+  def r2p(start: Int, mid: Int, end: Int): Position = rangePos(source, start, mid, end)
 
   def rootScalaDot(name: Name) = gen.rootScalaDot(name)
   def scalaDot(name: Name)     = gen.scalaDot(name)
@@ -325,7 +322,7 @@ abstract class TreeBuilder {
     /* If `pat` is not yet a `Bind` wrap it in one with a fresh name */
     def makeBind(pat: Tree): Tree = pat match {
       case Bind(_, _) => pat
-      case _ => Bind(freshName(), pat) setPos pat.pos
+      case _ => Bind(freshTermName(), pat) setPos pat.pos
     }
 
     /* A reference to the name bound in Bind `pat`. */
@@ -416,7 +413,7 @@ abstract class TreeBuilder {
    *    }
    */
   def makeCatchFromExpr(catchExpr: Tree): CaseDef = {
-    val binder   = freshTermName("x")
+    val binder   = freshTermName()
     val pat      = Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable)))
     val catchDef = ValDef(Modifiers(ARTIFACT), freshTermName("catchExpr"), TypeTree(), catchExpr)
     val catchFn  = Ident(catchDef.name)
@@ -519,14 +516,4 @@ abstract class TreeBuilder {
         vparamss ::: List(evidenceParams)
     }
   }
-}
-
-abstract class UnitTreeBuilder extends TreeBuilder {
-  import global._
-  def unit: CompilationUnit
-  def freshName(prefix: String): Name               = freshTermName(prefix)
-  def freshTermName(prefix: String): TermName       = unit.freshTermName(prefix)
-  def freshTypeName(prefix: String): TypeName       = unit.freshTypeName(prefix)
-  def o2p(offset: Int): Position                    = Position.offset(unit.source, offset)
-  def r2p(start: Int, mid: Int, end: Int): Position = rangePos(unit.source, start, mid, end)
 }

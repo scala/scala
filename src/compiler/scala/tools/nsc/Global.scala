@@ -110,9 +110,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
 
   /** A spare instance of TreeBuilder left for backwards compatibility. */
-  lazy val treeBuilder: TreeBuilder { val global: Global.this.type } = new UnitTreeBuilder {
+  lazy val treeBuilder: TreeBuilder { val global: Global.this.type } = new TreeBuilder {
     val global: Global.this.type = Global.this;
-    val unit = currentUnit
+    def unit = currentUnit
+    def source = currentUnit.source
   }
 
   /** Fold constants */
@@ -687,7 +688,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       uncurry                 -> "uncurry, translate function values to anonymous classes",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
-      explicitOuter           -> "this refs to outer pointers, translate patterns",
+      explicitOuter           -> "this refs to outer pointers",
       erasure                 -> "erase types, add interfaces for traits",
       postErasure             -> "clean up erased inline classes",
       lazyVals                -> "allocate bitmaps, translate lazy vals into lazified defs",
@@ -1049,6 +1050,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def currentRun: Run              = curRun
   def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
+  def currentFreshNameCreator      = currentUnit.fresh
 
   def isGlobalInitialized = (
        definitions.isDefinitionsInitialized
