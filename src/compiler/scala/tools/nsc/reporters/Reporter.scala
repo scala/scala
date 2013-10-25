@@ -7,6 +7,7 @@ package scala.tools.nsc
 package reporters
 
 import scala.reflect.internal.util._
+import scala.util.DynamicVariable
 
 /**
  * This interface provides methods to issue information, warning and
@@ -33,22 +34,17 @@ abstract class Reporter {
    *  debugging information (like printing the classpath) is not rendered
    *  invisible due to the max message length.
    */
-  private var _truncationOK: Boolean = true
-  def truncationOK = _truncationOK
-  def withoutTruncating[T](body: => T): T = {
-    val saved = _truncationOK
-    _truncationOK = false
-    try body
-    finally _truncationOK = saved
+  private val _truncationOK = new DynamicVariable(true)
+  def truncationOK = _truncationOK.value
+  def withoutTruncating[T](thunk: => T) = {
+    _truncationOK.withValue(false)(thunk)
   }
 
-  private var incompleteHandler: (Position, String) => Unit = null
-  def incompleteHandled = incompleteHandler != null
+  private val _incompleteHandler: DynamicVariable[Option[(Position, String) => Unit]] = new DynamicVariable(None)
+  def incompleteHandler = _incompleteHandler.value
+  def incompleteHandled = _incompleteHandler.value.isDefined
   def withIncompleteHandler[T](handler: (Position, String) => Unit)(thunk: => T) = {
-    val saved = incompleteHandler
-    incompleteHandler = handler
-    try thunk
-    finally incompleteHandler = saved
+    _incompleteHandler.withValue(Some(handler))(thunk)
   }
 
   var cancelled   = false
@@ -68,8 +64,7 @@ abstract class Reporter {
   def warning(pos: Position, msg: String): Unit              = withoutTruncating(info0(pos, msg, WARNING, force = false))
   def error(pos: Position, msg: String): Unit                = withoutTruncating(info0(pos, msg, ERROR, force = false))
   def incompleteInputError(pos: Position, msg: String): Unit = {
-    if (incompleteHandled) incompleteHandler(pos, msg)
-    else error(pos, msg)
+    incompleteHandler.getOrElse(error(_, _))(pos, msg)
   }
 
   def comment(pos: Position, msg: String) { }

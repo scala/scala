@@ -19,6 +19,7 @@ import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
 import scala.tools.nsc.util.{ ScalaClassLoader, stringFromWriter, StackTraceOps }
 import scala.tools.nsc.util.Exceptional.unwrap
+import scala.util.DynamicVariable
 import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
 
 /** An interpreter for Scala code.
@@ -64,12 +65,21 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   // Used in a test case.
   def showDirectory() = replOutput.show(out)
 
-  private[nsc] var printResults               = true      // whether to print result lines
-  private[nsc] var totalSilence               = false     // whether to print anything
+  private val _printResults   = new DynamicVariable(true)  // whether to print result lines
+  private val _totalSilence   = new DynamicVariable(false) // whether to print anything
+  private val _bindExceptions = new DynamicVariable(true)  // whether to bind the lastException variable
+
   private var _initializeComplete             = false     // compiler is initialized
   private var _isInitialized: Future[Boolean] = null      // set up initialization future
-  private var bindExceptions                  = true      // whether to bind the lastException variable
   private var _executionWrapper               = ""        // code to be wrapped around all lines
+
+  private[nsc] def printResults   = _printResults.value
+  private[nsc] def totalSilence   = _totalSilence.value
+  private      def bindExceptions = _bindExceptions.value
+
+  private[nsc] def switchPrintResults() = {
+    _printResults.value = !_printResults.value
+  }
 
   /** We're going to go to some trouble to initialize the compiler asynchronously.
    *  It's critical that nothing call into it until it's been initialized or we will
@@ -195,29 +205,21 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   import memberHandlers._
 
   /** Temporarily be quiet */
-  def beQuietDuring[T](body: => T): T = {
-    val saved = printResults
-    printResults = false
-    try body
-    finally printResults = saved
+  def beQuietDuring[T](thunk: => T): T = {
+	  _printResults.withValue(false)(thunk)
   }
-  def beSilentDuring[T](operation: => T): T = {
-    val saved = totalSilence
-    totalSilence = true
-    try operation
-    finally totalSilence = saved
+  def beSilentDuring[T](thunk: => T): T = {
+    _totalSilence.withValue(true)(thunk)
   }
 
   def quietRun[T](code: String) = beQuietDuring(interpret(code))
 
   /** takes AnyRef because it may be binding a Throwable or an Exceptional */
-  private def withLastExceptionLock[T](body: => T, alt: => T): T = {
+  private def withLastExceptionLock[T](thunk: => T, alt: => T): T = {
     assert(bindExceptions, "withLastExceptionLock called incorrectly.")
-    bindExceptions = false
 
-    try     beQuietDuring(body)
-    catch   logAndDiscard("withLastExceptionLock", alt)
-    finally bindExceptions = true
+    try   _bindExceptions.withValue(false)(beQuietDuring(thunk))
+    catch logAndDiscard("withLastExceptionLock", alt)
   }
 
   def executionWrapper = _executionWrapper
