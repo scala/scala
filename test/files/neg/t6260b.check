@@ -1,0 +1,7 @@
+t6260b.scala:3: error: bridge generated for member method apply: ()X in <$anon: () => X>
+which overrides method apply: ()R in trait Function0
+clashes with definition of the member itself;
+both have erased type ()Object
+class Y { def f = new X("") or new X("") }
+                               ^
+one error found

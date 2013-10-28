@@ -3341,18 +3341,25 @@ trait Types
   /** A temporary type representing the erasure of a user-defined value type.
    *  Created during phase erasure, eliminated again in posterasure.
    *
-   *  @param   original  The underlying type before erasure
+   *  SI-6385 Erasure's creation of bridges considers method signatures `exitingErasure`,
+   *          which contain `ErasedValueType`-s. In order to correctly consider the overriding
+   *          and overriden signatures as equivalent in `run/t6385.scala`, it is critical that
+   *          this type contains the erasure of the wrapped type, rather than the unerased type
+   *          of the value class itself, as was originally done.
+   *
+   *  @param   valueClazz        The value class symbol
+   *  @param   erasedUnderlying  The erased type of the unboxed value
    */
-  abstract case class ErasedValueType(original: TypeRef) extends UniqueType {
-    override def safeToString = "ErasedValueType("+original+")"
+  abstract case class ErasedValueType(valueClazz: Symbol, erasedUnderlying: Type) extends UniqueType {
+    override def safeToString = s"ErasedValueType($valueClazz, $erasedUnderlying)"
   }
 
-  final class UniqueErasedValueType(original: TypeRef) extends ErasedValueType(original)
+  final class UniqueErasedValueType(valueClazz: Symbol, erasedUnderlying: Type) extends ErasedValueType(valueClazz, erasedUnderlying)
 
   object ErasedValueType {
-    def apply(original: TypeRef): Type = {
-      assert(original.sym ne NoSymbol, "ErasedValueType over NoSymbol")
-      unique(new UniqueErasedValueType(original))
+    def apply(valueClazz: Symbol, erasedUnderlying: Type): Type = {
+      assert(valueClazz ne NoSymbol, "ErasedValueType over NoSymbol")
+      unique(new UniqueErasedValueType(valueClazz, erasedUnderlying))
     }
   }
 

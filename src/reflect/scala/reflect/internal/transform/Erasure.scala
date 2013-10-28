@@ -257,11 +257,11 @@ trait Erasure {
 
   /** This is used as the Scala erasure during the erasure phase itself
    *  It differs from normal erasure in that value classes are erased to ErasedValueTypes which
-   *  are then later converted to the underlying parameter type in phase posterasure.
+   *  are then later unwrapped to the underlying parameter type in phase posterasure.
    */
   object specialScalaErasure extends ScalaErasureMap {
     override def eraseDerivedValueClassRef(tref: TypeRef): Type =
-      ErasedValueType(tref)
+      ErasedValueType(tref.sym, erasedValueClassArg(tref))
   }
 
   object javaErasure extends JavaErasureMap

@@ -545,8 +545,7 @@ abstract class Erasure extends AddInterfaces
         ldef setType ldef.rhs.tpe
       case _ =>
         val tree1 = tree.tpe match {
-          case ErasedValueType(tref) =>
-            val clazz = tref.sym
+          case ErasedValueType(clazz, _) =>
             New(clazz, cast(tree, underlyingOfValueClass(clazz)))
           case _ =>
             tree.tpe.typeSymbol match {
@@ -597,9 +596,7 @@ abstract class Erasure extends AddInterfaces
         ldef setType ldef.rhs.tpe
       case _ =>
         val tree1 = pt match {
-          case ErasedValueType(tref) =>
-            val clazz = tref.sym
-            lazy val underlying = underlyingOfValueClass(clazz)
+          case ErasedValueType(clazz, underlying) =>
             val tree0 =
               if (tree.tpe.typeSymbol == NullClass &&
                   isPrimitiveValueClass(underlying.typeSymbol)) {
@@ -697,13 +694,11 @@ abstract class Erasure extends AddInterfaces
         case Apply(ta @ TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_asInstanceOf =>
           val qual1 = typedQualifier(qual, NOmode, ObjectTpe) // need to have an expected type, see #3037
-
+          // !!! Make pending/run/t5866b.scala work. The fix might be here and/or in unbox1.
           if (isPrimitiveValueType(targ.tpe) || isErasedValueType(targ.tpe)) {
             val noNullCheckNeeded = targ.tpe match {
-              case ErasedValueType(tref) =>
-                enteringPhase(currentRun.erasurePhase) {
-                  isPrimitiveValueClass(erasedValueClassArg(tref).typeSymbol)
-                }
+              case ErasedValueType(_, underlying) =>
+                isPrimitiveValueClass(underlying.typeSymbol)
               case _ =>
                 true
             }
@@ -724,7 +719,7 @@ abstract class Erasure extends AddInterfaces
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List())
         if tree.symbol == Any_isInstanceOf =>
           targ.tpe match {
-            case ErasedValueType(tref) => targ.setType(tref.sym.tpe)
+            case ErasedValueType(clazz, _) => targ.setType(clazz.tpe)
             case _ =>
           }
             tree
@@ -787,11 +782,11 @@ abstract class Erasure extends AddInterfaces
             (tree.attachments.get[TypeRefAttachment]: @unchecked) match {
               case Some(itype) =>
                 val tref = itype.tpe
-                val argPt = enteringPhase(currentRun.erasurePhase)(erasedValueClassArg(tref))
+                val argPt = enteringErasure(erasedValueClassArg(tref))
                 log(s"transforming inject $arg -> $tref/$argPt")
                 val result = typed(arg, mode, argPt)
                 log(s"transformed inject $arg -> $tref/$argPt = $result:${result.tpe}")
-                return result setType ErasedValueType(tref)
+                return result setType ErasedValueType(tref.sym, result.tpe)
 
             }
           case _ =>

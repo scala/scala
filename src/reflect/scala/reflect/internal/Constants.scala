@@ -223,7 +223,15 @@ trait Constants extends api.Constants {
         case ClazzTag  =>
           def show(tpe: Type) = "classOf[" + signature(tpe) + "]"
           typeValue match {
-            case ErasedValueType(orig) => show(orig)
+            case ErasedValueType(clazz, underlying) =>
+              // A note on tpe_* usage here:
+              //
+              // We've intentionally erased the type arguments to the value class so that different
+              // instantiations of a particular value class that erase to the same underlying type
+              // don't result in spurious bridges (e.g. run/t6385.scala). I don't think that matters;
+              // printing trees of `classOf[ValueClass[String]]` shows `classOf[ValueClass]` at phase
+              // erasure both before and after the use of `tpe_*` here.
+              show(clazz.tpe_*)
             case _ => show(typeValue)
           }
         case CharTag   => "'" + escapedChar(charValue) + "'"
