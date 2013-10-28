@@ -20,9 +20,9 @@ object Test extends Properties("concurrent.TrieMap") {
 
   /* generators */
 
-  val sizes = choose(0, 200000)
+  val sizes = choose(0, 50000)
 
-  val threadCounts = choose(2, 16)
+  val threadCounts = choose(2, 8)
 
   val threadCountsAndSizes = for {
     p <- threadCounts

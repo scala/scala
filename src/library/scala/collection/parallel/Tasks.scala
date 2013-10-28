@@ -433,9 +433,7 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
 }
 
 object ForkJoinTasks {
-  val defaultForkJoinPool: ForkJoinPool = new ForkJoinPool() // scala.parallel.forkjoinpool
-  // defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors)
-  // defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors)
+  val defaultForkJoinPool: ForkJoinPool = new ForkJoinPool()
 }
 
 /* Some boilerplate due to no deep mixin composition. Not sure if it can be done differently without them.
@@ -461,6 +459,53 @@ trait AdaptiveWorkStealingThreadPoolTasks extends ThreadPoolTasks with AdaptiveW
   def newWrappedTask[R, Tp](b: Task[R, Tp]) = new WrappedTask[R, Tp](b)
 }
 
+class ExecutionContextProxyTasks(executor: ExecutionContext) extends Tasks {
+  import scala.concurrent._
+
+  val environment = executor
+
+  private def toSubtasks[R, Tp](task: Task[R, Tp]): Seq[Task[R, Tp]] = {
+    val queue = collection.mutable.Queue(task)
+    while (queue.size < parallelismLevel && queue.head.shouldSplitFurther) {
+      val first = queue.dequeue()
+      val firstSubs = first.split
+      queue.enqueue(firstSubs: _*)
+    }
+    queue
+  }
+
+  private def exec[R, Tp](task: Task[R, Tp]): Future[R] = {
+    implicit val ec = executor
+    val subtasks = toSubtasks(task)
+    val executedSubtasks = for (s <- subtasks) yield Future {
+      s.tryLeaf(None)
+      s
+    }
+    val mergedTask = executedSubtasks reduceLeft { (acc, f) =>
+      for {
+        x <- acc
+        y <- f
+      } yield {
+        x tryMerge y.repr
+        x
+      }
+    }
+    mergedTask.map(_.result)
+  }
+
+  def execute[R, Tp](task: Task[R, Tp]): () => R = {
+    () => {
+      Await.result(exec(task), scala.concurrent.duration.Duration.Inf)
+    }
+  }
+
+  def executeAndWaitResult[R, Tp](task: Task[R, Tp]): R = {
+    execute(task)()
+  }
+
+  def parallelismLevel = Runtime.getRuntime.availableProcessors
+}
+
 trait ExecutionContextTasks extends Tasks {
   def executionContext = environment
 
@@ -470,10 +515,9 @@ trait ExecutionContextTasks extends Tasks {
   val driver: Tasks = executionContext match {
     case eci: scala.concurrent.impl.ExecutionContextImpl => eci.executor match {
       case fjp: ForkJoinPool => new ForkJoinTaskSupport(fjp)
-      case tpe: ThreadPoolExecutor => new ThreadPoolTaskSupport(tpe)
-      case _ => ???
+      case _ => new ExecutionContextProxyTasks(environment)
     }
-    case _ => ???
+    case _ => new ExecutionContextProxyTasks(environment)
   }
 
   def execute[R, Tp](task: Task[R, Tp]): () => R = driver execute task

@@ -7,10 +7,13 @@ import org.scalacheck._
 import scala.collection.parallel._
 
 class ParCollProperties extends Properties("Parallel collections") {
-  /*   Collections   */
+  // parallel arrays with default task support
+  include(new mutable.IntParallelArrayCheck(defaultTaskSupport))
 
-  // parallel arrays
-  include(mutable.IntParallelArrayCheck)
+  // parallel arrays with thread pool executors
+  val ec = scala.concurrent.ExecutionContext.fromExecutor(java.util.concurrent.Executors.newFixedThreadPool(5))
+  val ectasks = new collection.parallel.ExecutionContextTaskSupport(ec)
+  include(new mutable.IntParallelArrayCheck(ectasks))
 
   // parallel ranges
   include(immutable.ParallelRangeCheck)
