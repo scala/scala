@@ -24,6 +24,8 @@ abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("Pa
 
   def hasStrictOrder = true
 
+  def tasksupport: TaskSupport
+
   def ofSize(vals: Seq[Gen[T]], sz: Int) = {
     val a = new mutable.ArrayBuffer[T](sz)
     val gen = vals(rnd.nextInt(vals.size))
@@ -33,6 +35,7 @@ abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("Pa
 
   def fromSeq(a: Seq[T]) = {
     val pa = new ParArray[T](a.size)
+    pa.tasksupport = tasksupport
     var i = 0
     for (elem <- a.toList) {
       pa(i) = elem
@@ -50,7 +53,7 @@ abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("Pa
 }
 
 
-object IntParallelArrayCheck extends ParallelArrayCheck[Int]("Int") with IntSeqOperators with IntValues {
+class IntParallelArrayCheck(val tasksupport: TaskSupport) extends ParallelArrayCheck[Int]("Int") with IntSeqOperators with IntValues {
   override def instances(vals: Seq[Gen[Int]]) = oneOf(super.instances(vals), sized { sz =>
     (0 until sz).toArray.toSeq
   }, sized { sz =>

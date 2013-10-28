@@ -24,6 +24,8 @@ abstract class ParallelHashSetCheck[T](tp: String) extends ParallelSetCheck[T]("
 
   def hasStrictOrder = false
 
+  def tasksupport: TaskSupport
+
   def ofSize(vals: Seq[Gen[T]], sz: Int) = {
     val hm = new mutable.HashSet[T]
     val gen = vals(rnd.nextInt(vals.size))
@@ -32,19 +34,20 @@ abstract class ParallelHashSetCheck[T](tp: String) extends ParallelSetCheck[T]("
   }
 
   def fromTraversable(t: Traversable[T]) = {
-    val phm = new ParHashSet[T]
+    val phs = new ParHashSet[T]
+    phs.tasksupport = tasksupport
     var i = 0
     for (kv <- t.toList) {
-      phm += kv
+      phs += kv
       i += 1
     }
-    phm
+    phs
   }
 
 }
 
 
-object IntParallelHashSetCheck extends ParallelHashSetCheck[Int]("Int")
+class IntParallelHashSetCheck(val tasksupport: TaskSupport) extends ParallelHashSetCheck[Int]("Int")
 with IntOperators
 with IntValues
 {

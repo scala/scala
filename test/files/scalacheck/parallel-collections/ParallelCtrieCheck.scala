@@ -25,6 +25,8 @@ abstract class ParallelConcurrentTrieMapCheck[K, V](tp: String) extends Parallel
 
   def hasStrictOrder = false
 
+  def tasksupport: TaskSupport
+
   def ofSize(vals: Seq[Gen[(K, V)]], sz: Int) = {
     val ct = new concurrent.TrieMap[K, V]
     val gen = vals(rnd.nextInt(vals.size))
@@ -34,6 +36,7 @@ abstract class ParallelConcurrentTrieMapCheck[K, V](tp: String) extends Parallel
 
   def fromTraversable(t: Traversable[(K, V)]) = {
     val pct = new ParTrieMap[K, V]
+    pct.tasksupport = tasksupport
     var i = 0
     for (kv <- t.toList) {
       pct += kv
@@ -45,7 +48,7 @@ abstract class ParallelConcurrentTrieMapCheck[K, V](tp: String) extends Parallel
 }
 
 
-object IntIntParallelConcurrentTrieMapCheck extends ParallelConcurrentTrieMapCheck[Int, Int]("Int, Int")
+class IntIntParallelConcurrentTrieMapCheck(val tasksupport: TaskSupport) extends ParallelConcurrentTrieMapCheck[Int, Int]("Int, Int")
 with PairOperators[Int, Int]
 with PairValues[Int, Int]
 {
