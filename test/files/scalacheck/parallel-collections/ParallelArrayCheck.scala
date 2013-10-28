@@ -50,7 +50,7 @@ abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("Pa
 }
 
 
-object IntParallelArrayCheck extends ParallelArrayCheck[Int]("Int") with IntSeqOperators with IntValues {
+class IntParallelArrayCheck(tasksupport: TaskSupport) extends ParallelArrayCheck[Int]("Int") with IntSeqOperators with IntValues {
   override def instances(vals: Seq[Gen[Int]]) = oneOf(super.instances(vals), sized { sz =>
     (0 until sz).toArray.toSeq
   }, sized { sz =>
