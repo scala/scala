@@ -216,7 +216,8 @@ trait Implicits {
       case NullaryMethodType(restpe) =>
         containsError(restpe)
       case mt @ MethodType(_, restpe) =>
-        (mt.paramTypes exists typeIsError) || containsError(restpe)
+        // OPT avoiding calling `mt.paramTypes` which creates a new list.
+        (mt.params exists symTypeIsError) || containsError(restpe)
       case _ =>
         tp.isError
     }

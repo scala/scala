@@ -4540,7 +4540,7 @@ trait Types
   private[scala] val typeIsNonClassType = (tp: Type) => tp.typeSymbolDirect.isNonClassType
   private[scala] val typeIsExistentiallyBound = (tp: Type) => tp.typeSymbol.isExistentiallyBound
   private[scala] val typeIsErroneous = (tp: Type) => tp.isErroneous
-  private[scala] val typeIsError = (tp: Type) => tp.isError
+  private[scala] val symTypeIsError = (sym: Symbol) => sym.tpe.isError
   private[scala] val typeHasAnnotations = (tp: Type) => tp.annotations.nonEmpty
   private[scala] val boundsContainType = (bounds: TypeBounds, tp: Type) => bounds containsType tp
   private[scala] val typeListIsEmpty = (ts: List[Type]) => ts.isEmpty
