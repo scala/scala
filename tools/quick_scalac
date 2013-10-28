@@ -1,6 +1,0 @@
-#!/bin/sh
-#
-
-CP=$($(dirname $BASH_SOURCE)/quickcp)
-
-java $JAVA_OPTS -classpath "$CP" scala.tools.nsc.Main -usejavacp "$@"

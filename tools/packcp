@@ -1,5 +1,0 @@
-#!/bin/sh
-#
-
-dir=$(dirname $0)
-$dir/cpof $dir/../build/pack/lib
