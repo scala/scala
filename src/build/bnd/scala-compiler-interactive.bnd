@@ -1,0 +1,6 @@
+Bundle-Name: Scala Interactive Compiler
+Bundle-SymbolicName: org.scala-lang.modules.scala-compiler-interactive_@SCALA_BINARY_VERSION@
+ver: @SCALA_COMPILER_INTERACTIVE_VERSION@
+Bundle-Version: ${ver}
+Export-Package: *;version=${ver}
+Import-Package: *

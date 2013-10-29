@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.scala-lang</groupId>
-  <artifactId>scala-compiler</artifactId>
+  <groupId>org.scala-lang.modules</groupId>
+  <artifactId>scala-compiler-interactive_@SCALA_BINARY_VERSION@</artifactId>
   <packaging>jar</packaging>
-  <version>@VERSION@</version>
-  <name>Scala Compiler</name>
-  <description>Compiler for the Scala Programming Language</description>
+  <version>@SCALA_COMPILER_INTERACTIVE_VERSION@</version>
+  <name>Scala Interactive Compiler</name>
+  <description>Interactive Compiler for the Scala Programming Language</description>
   <url>http://www.scala-lang.org/</url>
   <inceptionYear>2002</inceptionYear>
   <organization>
@@ -31,19 +31,8 @@
   <dependencies>
     <dependency>
       <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
+      <artifactId>scala-compiler</artifactId>
       <version>@VERSION@</version>
-    </dependency>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-reflect</artifactId>
-      <version>@VERSION@</version>
-    </dependency>
-    <dependency> <!-- for repl -->
-      <groupId>jline</groupId>
-      <artifactId>jline</artifactId>
-      <version>@JLINE_VERSION@</version>
-      <optional>true</optional>
     </dependency>
   </dependencies>
   <distributionManagement>

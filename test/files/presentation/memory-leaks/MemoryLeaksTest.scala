@@ -25,7 +25,20 @@ import scala.tools.nsc.doc
 object Test extends InteractiveTest {
   final val mega = 1024 * 1024
 
-  override val withDocComments = true
+  trait InteractiveScaladocAnalyzer extends InteractiveAnalyzer with scala.tools.nsc.doc.ScaladocAnalyzer {
+    val global : Global
+    override def newTyper(context: Context) = new Typer(context) with InteractiveTyper with ScaladocTyper {
+      override def canAdaptConstantTypeToLiteral = false
+    }
+  }
+
+  private class ScaladocEnabledGlobal extends Global(settings, compilerReporter) {
+    override lazy val analyzer = new {
+      val global: ScaladocEnabledGlobal.this.type = ScaladocEnabledGlobal.this
+    } with InteractiveScaladocAnalyzer
+  }
+
+  override def createGlobal: Global = new ScaladocEnabledGlobal
 
   override def execute(): Unit = memoryConsumptionTest()
 
