@@ -1,0 +1,7 @@
+t6260c.scala:4: error: bridge generated for member method f: ()Option[A] in class Bar1
+which overrides method f: ()A in class Foo1
+clashes with definition of the member itself;
+both have erased type ()Object
+         class Bar1[A] extends Foo1[Option[A]] { def f(): Option[A] = ??? }
+                                                     ^
+one error found
