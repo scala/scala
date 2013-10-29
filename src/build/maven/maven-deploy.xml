@@ -6,10 +6,106 @@
     SuperSabbus extension for deploying a distribution to Maven. THIS FILE IS MEANT TO BE RUN STANDALONE IN THE MAVEN "distpack" DIRECTORY
   </description>
 
-  <target name="boot">
+  <macrodef name="deploy-one">
+    <attribute name="dir" default=""/>
+    <attribute name="name" />
+    <attribute name="local"  default="false"/>
+    <attribute name="signed" default="false"/>
+
+    <sequential>
+      <local name="path"/> <property name="path" value="@{dir}@{name}/@{name}"/>
+
+      <echo>Deploying ${path}-[pom.xml|src.jar|docs.jar].</echo>
+
+      <copy file="${path}-pom.xml" tofile="${path}-pom-filtered.xml" overwrite="true">
+        <filterset>
+          <filter token="VERSION" value="${maven.version.number}" />
+          <filter token="SCALA_BINARY_VERSION" value="${scala.binary.version}" />
+          <filter token="XML_VERSION" value="${scala-xml.version.number}" />
+          <filter token="PARSER_COMBINATORS_VERSION" value="${scala-parser-combinators.version.number}" />
+          <filter token="RELEASE_REPOSITORY" value="${remote.release.repository}" />
+          <filter token="SNAPSHOT_REPOSITORY" value="${remote.snapshot.repository}" />
+          <filter token="JLINE_VERSION" value="${jline.version}" />
+        </filterset>
+      </copy>
+      <artifact:pom id="@{name}.pom" file="${path}-pom-filtered.xml" />
+
+      <if><equals arg1="@{signed}" arg2="false"/><then>
+        <if><equals arg1="@{local}" arg2="false"/><then>
+          <artifact:deploy file="${path}.jar" settingsFile="${settings.file}">
+            <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
+            <artifact:pom refid="@{name}.pom" />
+            <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
+            <artifact:attach type="jar" file="${path}-docs.jar" classifier="javadoc" />
+          </artifact:deploy>
+        </then><else>
+          <if><isset property="docs.skip"/><then>
+             <artifact:install file="${path}.jar">
+               <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
+               <artifact:pom refid="@{name}.pom" />
+               <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
+             </artifact:install>
+          </then>
+          <else>
+            <artifact:install file="${path}.jar">
+              <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
+              <artifact:pom refid="@{name}.pom" />
+              <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
+              <artifact:attach type="jar" file="${path}-docs.jar" classifier="javadoc" />
+            </artifact:install>
+          </else>
+          </if>
+        </else></if>
+      </then><else>
+        <local name="repo"/>
+        <if><equals arg1="@{local}" arg2="false"/><then>
+          <property name="repo" value="${remote.repository}"/>
+        </then><else>
+          <property name="repo" value="${local.repository}"/>
+        </else></if>
+        <artifact:mvn failonerror="true">
+          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
+          <arg value="-Durl=${repo}" />
+          <arg value="-DrepositoryId=${repository.credentials.id}" />
+          <arg value="-DpomFile=${path}-pom-filtered.xml" />
+          <arg value=   "-Dfile=${path}.jar" />
+          <arg value="-Dsources=${path}-src.jar" />
+          <arg value="-Djavadoc=${path}-docs.jar" />
+          <arg value="-Pgpg" />
+          <arg value="-Dgpg.useagent=true" />
+        </artifact:mvn>
+      </else></if>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="deploy">
+    <attribute name="dir"    default=""/>
+    <attribute name="local"  default="false"/>
+    <attribute name="signed" default="false"/>
+
+    <sequential>
+      <deploy-one dir="@{dir}"          name="scala-library"     local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}"          name="scala-reflect"     local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}"          name="scala-compiler"    local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}"          name="scala-actors"      local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}"          name="scala-swing"       local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}"          name="scalap"            local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}plugins/"  name="continuations"     local="@{local}" signed="@{signed}"/>
+    </sequential>
+  </macrodef>
+
+  <target name="boot.maven">
     <!-- Pull in properties from build -->
     <property file="build.properties" />
+    <!-- Set up Ant contrib tasks so we can use <if><then><else> instead of the clunky `unless` attribute -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="ant-contrib.jar"/>
 
+    <!-- Add our maven ant tasks -->
+    <path id="maven-ant-tasks.classpath" path="maven-ant-tasks-2.1.1.jar" />
+    <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
+  </target>
+
+  <target name="init.maven" depends="boot.maven">
     <property name="remote.snapshot.repository" value="https://oss.sonatype.org/content/repositories/snapshots" />
     <property name="remote.release.repository"  value="https://oss.sonatype.org/service/local/staging/deploy/maven2" />
 
@@ -19,15 +115,6 @@
     <property name="repository.credentials.id" value="sonatype-nexus" />
     <property name="settings.file" value="${user.home}/.m2/settings.xml" />
 
-    <!-- Set up Ant contrib tasks so we can use <if><then><else> instead of the clunky `unless` attribute -->
-    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="ant-contrib.jar"/>
-
-    <!-- Add our maven ant tasks -->
-    <path id="maven-ant-tasks.classpath" path="maven-ant-tasks-2.1.1.jar" />
-    <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
-  </target>
-
-  <target name="init" depends="boot">
     <if><contains string="${maven.version.number}" substring="-SNAPSHOT"/><then>
       <property name="remote.repository" value="${remote.snapshot.repository}"/>
       <property name="local.repository"  value="${local.snapshot.repository}"/>
@@ -39,96 +126,9 @@
     <echo>Using server[${repository.credentials.id}] for maven repository credentials.
        Please make sure that your ~/.m2/settings.xml has the needed username/password for this server id
     </echo>
-
-    <macrodef name="deploy-one">
-      <attribute name="dir" default=""/>
-      <attribute name="name" />
-      <attribute name="version" />
-      <attribute name="local" />
-      <attribute name="signed" />
-
-      <sequential>
-        <local name="path"/> <property name="path" value="@{dir}@{name}/@{name}"/>
-
-        <echo>Deploying ${path}-[pom.xml|src.jar|docs.jar].</echo>
-
-        <copy file="${path}-pom.xml" tofile="${path}-pom-filtered.xml" overwrite="true">
-          <filterset>
-            <filter token="VERSION" value="@{version}" />
-            <filter token="SCALA_BINARY_VERSION" value="${scala.binary.version}" />
-            <filter token="XML_VERSION" value="${scala-xml.version.number}" />
-            <filter token="PARSER_COMBINATORS_VERSION" value="${scala-parser-combinators.version.number}" />
-            <filter token="RELEASE_REPOSITORY" value="${remote.release.repository}" />
-            <filter token="SNAPSHOT_REPOSITORY" value="${remote.snapshot.repository}" />
-            <filter token="JLINE_VERSION" value="${jline.version}" />
-          </filterset>
-        </copy>
-        <artifact:pom id="@{name}.pom" file="${path}-pom-filtered.xml" />
-
-        <if><equals arg1="@{signed}" arg2="false"/><then>
-          <if><equals arg1="@{local}" arg2="false"/><then>
-            <artifact:deploy file="${path}.jar" settingsFile="${settings.file}">
-              <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
-              <artifact:pom refid="@{name}.pom" />
-              <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
-              <artifact:attach type="jar" file="${path}-docs.jar" classifier="javadoc" />
-            </artifact:deploy>
-          </then><else>
-            <if><isset property="docs.skip"/><then>
-               <artifact:install file="${path}.jar">
-                 <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
-                 <artifact:pom refid="@{name}.pom" />
-                 <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
-               </artifact:install>
-            </then>
-            <else>
-              <artifact:install file="${path}.jar">
-                <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
-                <artifact:pom refid="@{name}.pom" />
-                <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
-              </artifact:install>
-            </else>
-            </if>
-          </else></if>
-        </then><else>
-          <local name="repo"/>
-          <if><equals arg1="@{local}" arg2="false"/><then>
-            <property name="repo" value="${remote.repository}"/>
-          </then><else>
-            <property name="repo" value="${local.repository}"/>
-          </else></if>
-          <artifact:mvn>
-            <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
-            <arg value="-Durl=${repo}" />
-            <arg value="-DrepositoryId=${repository.credentials.id}" />
-            <arg value="-DpomFile=${path}-pom-filtered.xml" />
-            <arg value=   "-Dfile=${path}.jar" />
-            <arg value="-Dsources=${path}-src.jar" />
-            <arg value="-Djavadoc=${path}-docs.jar" />
-            <arg value="-Pgpg" />
-            <arg value="-Dgpg.useagent=true" />
-          </artifact:mvn>
-        </else></if>
-      </sequential>
-    </macrodef>
-
-    <macrodef name="deploy">
-      <attribute name="local"  default="false"/>
-      <attribute name="signed" default="false"/>
-
-      <sequential>
-        <deploy-one                name="scala-actors"   version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-        <deploy-one                name="scala-compiler" version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-        <deploy-one                name="scala-library"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-        <deploy-one                name="scala-reflect"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-        <deploy-one                name="scala-swing"    version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-        <deploy-one                name="scalap"         version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-        <deploy-one dir="plugins/" name="continuations"  version="${maven.version.number}" local="@{local}" signed="@{signed}"/>
-      </sequential>
-    </macrodef>
   </target>
 
-  <target name="deploy"        depends="init" description="Deploys unsigned artifacts to the maven repo.">       <deploy/> </target>
-  <target name="deploy.local"  depends="init" description="Deploys unsigned artifacts to the local maven repo."> <deploy local="true"/> </target>
-  <target name="deploy.signed" depends="init" description="Deploys signed artifacts to the remote maven repo.">  <deploy signed="true"/> </target>
+  <target name="deploy"        depends="init.maven" description="Deploys unsigned artifacts to the maven repo.">       <deploy/> </target>
+  <target name="deploy.local"  depends="init.maven" description="Deploys unsigned artifacts to the local maven repo."> <deploy local="true"/> </target>
+  <target name="deploy.signed" depends="init.maven" description="Deploys signed artifacts to the remote maven repo.">  <deploy signed="true"/> </target>
 </project>

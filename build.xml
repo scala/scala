@@ -4,6 +4,7 @@
   xmlns:artifact="urn:maven-artifact-ant"
   xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
   <include file="test/build-partest.xml" as="partest"/>
+  <include file="src/build/maven/maven-deploy.xml" as="maven-deploy"/>
 
   <description>
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
@@ -28,7 +29,10 @@ scalacArgs examples:
   "-Dscalac.args=\"-Yrangepos\" -Dpartest.scalac_opts=\"-Yrangepos\""
 
 targets exercised:
-  locker.done build-opt nightly test.suite test.continuations.suite test.scaladoc
+  distpack-maven-opt nightly locker.done build-opt test.suite test.continuations.suite test.scaladoc
+
+NOTE: after distpack-maven-opt, it is expected there's a build file in dists/maven/latest that defines targets deploy and deploy.local
+TODO: get rid of this separate step
 -->
 
 <!-- To use Zinc with the ant build:
@@ -65,20 +69,30 @@ TODO:
   <target name="fastdist-opt"    description="Optimized version of fastdist.">    <optimized name="fastdist"/></target>
 
   <!-- packaging -->
-  <target name="distpack" depends="dist.done, docs.done">
-    <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/></target>
-
-  <target name="distpack-maven" depends="dist.done, docs.done">
-    <ant antfile="${src.dir}/build/pack.xml" target="pack-maven.done" inheritall="yes" inheritrefs="yes"/></target>
+  <target name="distpack" depends="pack-archives.done, pack-maven.done"/>
+  <target name="distpack-maven" depends="pack-maven.done"/>
 
   <target name="distpack-opt" description="Builds an optimised distribution."> <optimized name="distpack"/></target>
   <target name="distpack-maven-opt" description="Builds an optimised maven distribution."><optimized name="distpack-maven"/></target>
 
-  <target name="all.done" depends="dist.done, test.done"/>
+  <target name="publish-core-signed-opt" description="Builds an untested optimised core (library/reflect/compiler) and publishes to maven, signed.">
+    <optimized name="publish-core-signed"/>
+  </target>
+  <target name="publish-core-signed-opt-nodocs" description="Builds an untested, undocumented optimised core (library/reflect/compiler) and publishes to maven, signed.">
+    <antcall target="publish-core-signed">
+      <param name="docs.skip" value="1"/>
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
+  </target>
+  <target name="publish-core-local-nodocs" description="Builds an untested, undocumented core (library/reflect/compiler) and locally publishes to maven">
+    <antcall target="publish-core-local">
+      <param name="docs.skip" value="1"/>
+    </antcall>
+  </target>
 
-  <!-- must use depends for all.done, not antcall: need the properties defined in there (dist.dir) -->
-  <target name="nightly-nopt" depends="all.done, docs.done">
-    <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/></target>
+  <target name="all.done" depends="test.done, distpack"/>
+
+  <target name="nightly-nopt" depends="all.done"/>
   <target name="nightly"><optimized name="nightly-nopt"/></target>
 
   <target name="nightly.checkall">
@@ -561,7 +575,8 @@ TODO:
     <if><isset property="locker.skip"/><then>
       <echo message="Using STARR to build the quick stage (skipping locker)."/>
       <path id="locker.compiler.path" refid="starr.compiler.path"/>
-       <!-- this is cheating, but should be close enough: -->
+       <!-- this is cheating (we don't know the classpath used to build starr)
+            but should be close enough: -->
       <path id="locker.compiler.build.path" refid="starr.compiler.path"/>
       <property name="locker.locked" value="locker skipped"/></then>
     <else>
@@ -584,11 +599,6 @@ TODO:
       <pathelement location="${build-locker.dir}/classes/library"/>
       <path refid="forkjoin.classpath"/>
       <path refid="aux.libs"/>
-    </path>
-
-    <path id="locker.actors.build.path">
-      <path refid="locker.library.build.path"/>
-      <pathelement location="${build-locker.dir}/classes/actors"/>
     </path>
 
     <path id="locker.reflect.build.path">
@@ -753,18 +763,34 @@ TODO:
       <path refid="asm.classpath"/>
     </path>
 
-    <!-- MISC -->
-    <path id="docs.compiler.path">
+    <!-- DOCS -->
+    <path id="docs.library.build.path">               <path refid="quick.library.build.path"/>  </path>
+    <path id="docs.reflect.build.path">               <path refid="quick.reflect.build.path"/>  </path>
+    <path id="docs.compiler.build.path">              <path refid="quick.compiler.build.path"/> </path>
+    <path id="docs.scalap.build.path">                <path refid="quick.scalap.build.path"/>   </path>
+    <path id="docs.continuations-plugin.build.path">  <path refid="quick.plugins.build.path"/>  </path>
+    <path id="docs.continuations-library.build.path"> <path refid="quick.plugins.build.path"/>  </path>
+    <path id="docs.actors.build.path">                <path refid="quick.actors.build.path"/>   </path>
+    <path id="docs.swing.build.path">                 <path refid="quick.swing.build.path"/>    </path>
+
+    <!-- run-time classpath for scaladoc: should be resolved through maven once it's an actual module -->
+    <path id="scaladoc.classpath">
       <path refid="external-modules-nocore"/>
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-reflect.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
-      <pathelement location="${build-pack.dir}/lib/scala-actors.jar"/>
       <pathelement location="${ant.jar}"/>
       <path refid="aux.libs"/>
     </path>
 
+    <path id="manual.build.path">
+      <path refid="external-modules-nocore"/> <!-- xml -->
+      <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
+      <pathelement location="${build.dir}/manmaker/classes"/>
+      <path refid="aux.libs"/>  <!-- for ant -->
+    </path>
+
+    <!-- MISC -->
     <path id="sbt.compile.build.path">
       <path refid="quick.compiler.build.path"/>
       <pathelement location="${build-quick.dir}/classes/repl"/>
@@ -773,10 +799,6 @@ TODO:
       <pathelement location="${sbt.interface.jar}"/>
     </path>
 
-    <path id="manual.classpath">
-      <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
-      <pathelement location="${build.dir}/manmaker/classes"/>
-    </path>
 
     <!--
        This is the classpath used to run partest, which is what it uses to run the compiler and find other required jars.
@@ -1180,52 +1202,57 @@ TODO:
     <attribute name="dir" default="@{project}"/>
     <attribute name="title"/>
     <attribute name="docroot" default="NOT SET"/>
+    <attribute name="skipPackages" default=""/>
+
     <element name="includes" implicit="true"/>
 
     <sequential>
       <staged-uptodate stage="docs" project="@{project}">
         <check><srcfiles dir="${src.dir}/@{dir}"/></check>
         <do>
-          <if><not><isset property="docs.skip"/></not><then>
-            <stopwatch name="docs.@{project}.timer"/>
-            <mkdir dir="${build-docs.dir}/@{project}"/>
-            <if><equals arg1="@{docroot}" arg2="NOT SET"/><then>
-              <!-- TODO: introduce docs.@{project}.build.path for classpathref -->
-              <scaladoc
-                destdir="${build-docs.dir}/@{project}"
-                doctitle="@{title}"
-                docversion="${version.number}"
-                sourcepath="${src.dir}"
-                classpathref="docs.compiler.path"
-                srcdir="${src.dir}/@{dir}"
-                addparams="${scalac.args.all}"
-                implicits="on"
-                diagrams="on"
-                groups="on"
-                rawOutput="${scaladoc.raw.output}"
-                noPrefixes="${scaladoc.no.prefixes}">
-                <includes/>
-              </scaladoc>
-            </then><else>
-              <scaladoc
-                destdir="${build-docs.dir}/@{project}"
-                doctitle="@{title}"
-                docversion="${version.number}"
-                sourcepath="${src.dir}"
-                classpathref="docs.compiler.path"
-                srcdir="${src.dir}/@{dir}"
-                docRootContent="${src.dir}/@{project}/@{docroot}"
-                addparams="${scalac.args.all}"
-                implicits="on"
-                diagrams="on"
-                groups="on"
-                rawOutput="${scaladoc.raw.output}"
-                noPrefixes="${scaladoc.no.prefixes}">
-                <includes/>
-              </scaladoc>
-            </else></if>
-            <stopwatch name="docs.@{project}.timer" action="total"/>
-          </then></if>
+          <stopwatch name="docs.@{project}.timer"/>
+          <mkdir dir="${build-docs.dir}/@{project}"/>
+          <if><equals arg1="@{docroot}" arg2="NOT SET"/><then>
+            <scaladoc
+              destdir="${build-docs.dir}/@{project}"
+              doctitle="@{title}"
+              docfooter="epfl"
+              docversion="${version.number}"
+              sourcepath="${src.dir}"
+              classpathref="docs.@{project}.build.path"
+              srcdir="${src.dir}/@{dir}"
+              addparams="${scalac.args.all}"
+              implicits="on"
+              diagrams="on"
+              groups="on"
+              rawOutput="${scaladoc.raw.output}"
+              noPrefixes="${scaladoc.no.prefixes}"
+              docUncompilable="${src.dir}/library-aux"
+              skipPackages="@{skipPackages}">
+              <includes/>
+            </scaladoc>
+          </then><else>
+            <scaladoc
+              destdir="${build-docs.dir}/@{project}"
+              doctitle="@{title}"
+              docfooter="epfl"
+              docversion="${version.number}"
+              sourcepath="${src.dir}"
+              classpathref="docs.@{project}.build.path"
+              srcdir="${src.dir}/@{dir}"
+              docRootContent="${src.dir}/@{project}/@{docroot}"
+              addparams="${scalac.args.all}"
+              implicits="on"
+              diagrams="on"
+              groups="on"
+              rawOutput="${scaladoc.raw.output}"
+              noPrefixes="${scaladoc.no.prefixes}"
+              docUncompilable="${src.dir}/library-aux"
+              skipPackages="@{skipPackages}">
+              <includes/>
+            </scaladoc>
+          </else></if>
+          <stopwatch name="docs.@{project}.timer" action="total"/>
         </do>
       </staged-uptodate>
     </sequential>
@@ -1239,9 +1266,6 @@ TODO:
 
   <target name="locker.lib"    depends="locker.start"     unless="locker.locked">
     <staged-build with="starr" stage="locker" project="library" srcpath="${src.dir}/library" includes="lib.includes"/></target>
-
-  <target name="locker.actors" depends="locker.lib"       unless="locker.locked">
-    <staged-build with="starr" stage="locker" project="actors"/> </target>
 
   <target name="locker.reflect" depends="locker.lib"      unless="locker.locked">
     <staged-build with="starr" stage="locker" project="reflect"/></target>
@@ -1264,9 +1288,6 @@ TODO:
   <target name="quick.lib"        depends="quick.start">
     <staged-build with="locker"   stage="quick" project="library" srcpath="${src.dir}/library" includes="lib.rootdoc.includes"/></target>
 
-  <target name="quick.actors"     depends="quick.lib">
-    <staged-build with="locker"   stage="quick" project="actors"/> </target>
-
   <target name="quick.reflect"    depends="quick.lib">
     <staged-build with="locker"   stage="quick" project="reflect"/> </target>
 
@@ -1276,14 +1297,17 @@ TODO:
   <target name="quick.repl"       depends="quick.comp">
     <staged-build with="locker"   stage="quick" project="repl"/> </target>
 
-  <target name="quick.scalap"     depends="quick.repl">
-    <staged-build with="locker"   stage="quick" project="scalap"/> </target>
-
   <target name="quick.scaladoc"   depends="quick.comp">
     <staged-build with="locker"   stage="quick" project="scaladoc" version="scaladoc"/> </target>
 
   <target name="quick.interactive" depends="quick.comp, quick.scaladoc">
     <staged-build with="locker"    stage="quick" project="interactive"/> </target>
+
+  <target name="quick.scalap"     depends="quick.repl">
+    <staged-build with="locker"   stage="quick" project="scalap"/> </target>
+
+  <target name="quick.actors"     depends="quick.lib">
+    <staged-build with="locker"   stage="quick" project="actors"/> </target>
 
   <target name="quick.swing"      depends="quick.actors, quick.lib" if="has.java6">
     <staged-build with="locker"   stage="quick" project="swing"/> </target>
@@ -1323,7 +1347,9 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.repl, quick.scalap, quick.interactive, quick.swing, quick.plugins, quick.scaladoc, quick.partest-extras">
+  <target name="quick.modules" depends="quick.repl, quick.scaladoc, quick.interactive, quick.scalap, quick.swing, quick.plugins"/>
+
+  <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.modules">
     <staged-bin stage="quick" classpathref="quick.bin.tool.path"/>
   </target>
 
@@ -1334,17 +1360,9 @@ TODO:
 <!-- ===========================================================================
                                   PACKED QUICK BUILD (PACK)
 ============================================================================ -->
-  <target name="pack.lib"    depends="quick.lib, quick.plugins, forkjoin.done">
-    <staged-pack project="library"/></target>
+  <target name="pack.lib"    depends="quick.lib, quick.plugins, forkjoin.done"> <staged-pack project="library"/></target>
 
-  <target name="pack.actors"  depends="quick.lib">                <staged-pack project="actors"/> </target>
-  <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
-  <target name="pack.reflect" depends="quick.reflect">            <staged-pack project="reflect"/> </target>
-  <target name="pack.partest-extras" depends="quick.partest-extras">
-     <staged-pack project="partest-extras"/>
-     <staged-pack project="partest-javaagent"
-                  manifest="${src.dir}/partest-javaagent/scala/tools/partest/javaagent/MANIFEST.MF"/>
-  </target>
+  <target name="pack.reflect" depends="quick.reflect"> <staged-pack project="reflect"/> </target>
 
   <target name="pack.comp"    depends="quick.comp, quick.scaladoc, quick.interactive, quick.repl, asm.done">
     <staged-pack project="compiler" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
@@ -1372,24 +1390,38 @@ TODO:
     </staged-pack>
   </target>
 
+  <target name="pack.actors" depends="quick.actors"> <staged-pack project="actors"/> </target>
+  <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
+
   <target name="pack.plugins"    depends="quick.plugins">    <staged-pack project="plugins"    targetdir="misc/scala-devel/plugins" targetjar="continuations.jar"/> </target>
 
   <target name="pack.scalap"     depends="quick.scalap">     <staged-pack project="scalap"     targetjar="scalap.jar"/> </target>
 
-  <target name="pack.bin" depends="pack.comp, pack.lib, pack.actors, pack.plugins, pack.reflect, pack.scalap, pack.swing, pack.partest-extras">
+  <target name="pack.core" depends="pack.reflect, pack.comp, pack.lib"/>
+
+  <target name="pack.modules" depends="pack.core, pack.actors, pack.swing, pack.plugins, pack.scalap">
     <copy todir="${build-pack.dir}/lib">
       <path refid="external-modules-nocore" />
       <mapper type="flatten" />
     </copy>
+  </target>
 
+  <target name="scaladoc.task" depends="pack.modules" unless="docs.skip">
+    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="scaladoc.classpath"/>
+  </target>
+
+  <target name="pack.partest-extras" depends="quick.partest-extras">
+     <staged-pack project="partest-extras"/>
+     <staged-pack project="partest-javaagent"
+                  manifest="${src.dir}/partest-javaagent/scala/tools/partest/javaagent/MANIFEST.MF"/>
+  </target>
+
+  <target name="pack.bin" depends="pack.core, pack.modules, pack.partest-extras">
     <staged-bin stage="pack"/>
   </target>
 
   <!-- depend on quick.done so quick.bin is run when pack.done is -->
-  <target name="pack.done" depends="quick.done, pack.bin">
-    <!-- copy dependencies to build/pack/lib, it only takes a second so don't bother with uptodate checks -->
-    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="docs.compiler.path"/>
-  </target>
+  <target name="pack.done" depends="quick.done, pack.bin"/>
 
 
 <!-- ===========================================================================
@@ -1431,73 +1463,121 @@ TODO:
 <!-- ===========================================================================
                                   OSGi Artifacts
 ============================================================================ -->
-  <target name="osgi.done" depends="pack.done">
+  <macrodef name="make-bundle">
+    <attribute name="name" />
+    <attribute name="bundleName"   description="A value for Bundle-Name, usually a textual description"/>
+    <attribute name="jar" default="${build-pack.dir}/lib/@{name}.jar" />
+    <element   name="srcs" description="Sources for this bundle" optional="true" implicit="true"/>
+    <attribute name="src" default="true"/>
+    <attribute name="version" default="${osgi.version.number}"/>
+    <attribute name="namesuffix" default=""/>
+    <attribute name="pkg" default=""/>
+
+    <sequential>
+      <copy file="${src.dir}/build/bnd/@{name}.bnd" tofile="${build-osgi.dir}/@{name}.bnd" overwrite="true">
+        <filterset>
+          <filter token="VERSION" value="${osgi.version.number}" />
+          <filter token="SCALA_BINARY_VERSION" value="${scala.binary.version}" />
+        </filterset>
+      </copy>
+      <bnd classpath="@{jar}"
+           eclipse="false"
+           failok="false"
+           exceptions="true"
+           files="${build-osgi.dir}/@{name}.bnd"
+           output="${build-osgi.dir}"/>
+      <if><equals arg1="@{src}" arg2="true"/><then>
+        <!--
+             A jar-like task that creates an OSGi source bundle. It adds the required MANIFEST.MF headers that allow
+             Eclipse to match sources with the corresponding binaries.
+        -->
+          <jar whenmanifestonly="fail" destfile="${build-osgi.dir}/@{name}-src.jar">
+            <srcs/>
+            <manifest>
+              <attribute name="Manifest-Version" value="1.0"/>
+              <attribute name="Bundle-Name" value="@{bundleName} Sources"/>
+              <attribute name="Bundle-SymbolicName" value="org.scala-lang.@{pkg}@{name}@{namesuffix}.source"/>
+              <attribute name="Bundle-Version" value="@{version}"/>
+              <attribute name="Eclipse-SourceBundle" value="org.scala-lang.@{pkg}@{name}@{namesuffix};version=&quot;@{version}&quot;;roots:=&quot;.&quot;" />
+            </manifest>
+          </jar>
+      </then></if>
+    </sequential>
+  </macrodef>
+
+
+  <target name="osgi.core" depends="pack.core">
     <mkdir dir="${build-osgi.dir}"/>
 
-    <!-- simplify fixing pom versions -->
-    <macrodef name="make-bundle">
-      <attribute name="name" />
-      <attribute name="version" />
-      <attribute name="jar" default="${build-pack.dir}/lib/@{name}.jar" />
-      <sequential>
-        <copy file="${src.dir}/build/bnd/@{name}.bnd" tofile="${build-osgi.dir}/@{name}.bnd" overwrite="true">
-          <filterset>
-            <filter token="VERSION" value="@{version}" />
-          </filterset>
-        </copy>
-        <bnd classpath="@{jar}"
-             eclipse="false"
-             failok="false"
-             exceptions="true"
-             files="${build-osgi.dir}/@{name}.bnd"
-             output="${build-osgi.dir}"/>
-      </sequential>
-    </macrodef>
-    <macrodef name="make-plugin-bundle">
-      <attribute name="name" />
-      <attribute name="version" />
-      <sequential>
-        <copy file="${src.dir}/build/bnd/@{name}.bnd" tofile="${build-osgi.dir}/@{name}.bnd" overwrite="true">
-          <filterset>
-            <filter token="VERSION" value="@{version}" />
-          </filterset>
-        </copy>
-        <bnd classpath="${build-pack.dir}/misc/scala-devel/plugins/@{name}.jar"
-             eclipse="false"
-             failok="false"
-             exceptions="true"
-             files="${build-osgi.dir}/@{name}.bnd"
-             output="${build-osgi.dir}"/>
-      </sequential>
-    </macrodef>
-
-    <uptodate property="osgi.bundles.available" targetfile="${build-osgi.dir}/bundles.complete">
+    <uptodate property="osgi.bundles.available" targetfile="${build-osgi.dir}/bundles.core.complete">
       <srcfiles dir="${basedir}">
         <include name="build.xml"/>
         <include name="src/build/bnd/*.bnd"/>
-        <include name="${build-pack.dir}/lib/*.jar"/>
+        <include name="${build-pack.dir}/lib/scala-library.jar"/>
+        <include name="${build-pack.dir}/lib/scala-reflect.jar"/>
+        <include name="${build-pack.dir}/lib/scala-compiler.jar"/>
       </srcfiles>
-      <srcfiles dir="${build-pack.dir}">
-        <include name="**/*"/>
-      </srcfiles>
-      <srcfiles file="${build-pack.dir}/lib/*.jar"/>
     </uptodate>
 
     <if><not><isset property="osgi.bundles.available"/></not><then>
-      <stopwatch name="osgi.bundle.timer"/>
-      <make-bundle name="scala-library" version="${osgi.version.number}" />
-      <make-bundle name="scala-actors" version="${osgi.version.number}" />
-      <make-bundle name="scala-parser-combinators" version="${osgi.version.number}" jar="${scala-parser-combinators}"/>
-      <make-bundle name="scala-reflect" version="${osgi.version.number}" />
-      <make-bundle name="scala-compiler" version="${osgi.version.number}" />
-      <make-plugin-bundle name="continuations" version="${osgi.version.number}" />
-      <make-bundle name="scala-xml" version="${osgi.version.number}" jar="${scala-xml}"/>
-      <touch file="${build-osgi.dir}/bundles.complete" verbose="no"/>
+      <stopwatch name="osgi.core.timer"/>
+      <make-bundle name="scala-library" bundleName="Scala Library">
+        <fileset dir="${src.dir}/library"/>
+        <fileset dir="${src.dir}/continuations/library"/>
+      </make-bundle>
+
+      <make-bundle name="scala-reflect" bundleName="Scala Reflect">
+        <fileset dir="${src.dir}/reflect"/>
+      </make-bundle>
+
+      <make-bundle name="scala-compiler" bundleName="Scala Compiler">
+        <fileset dir="${src.dir}/compiler"/>
+        <fileset dir="${src.dir}/repl"/>
+        <fileset dir="${src.dir}/scaladoc"/>
+        <fileset dir="${src.dir}/interactive"/>
+      </make-bundle>
+
+      <touch file="${build-osgi.dir}/bundles.core.complete" verbose="no"/>
+      <stopwatch name="osgi.core.timer" action="total"/>
+    </then></if>
+  </target>
+
+  <target name="osgi.done" depends="pack.done, osgi.core">
+    <uptodate property="osgi.bundles.available" targetfile="${build-osgi.dir}/bundles.all.complete">
+      <srcfiles dir="${basedir}">
+        <include name="build.xml"/>
+        <include name="src/build/bnd/*.bnd"/>
+        <include name="${build-pack.dir}/lib/scala-actors.jar"/>
+        <include name="${build-pack.dir}/misc/scala-devel/plugins/continuations.jar"/>
+        <include name="${build-pack.dir}/lib/scala-swing.jar"/>
+        <include name="${scala-parser-combinators}"/>
+        <include name="${scala-xml}"/>
+      </srcfiles>
+    </uptodate>
+
+    <if><not><isset property="osgi.bundles.available"/></not><then>
+      <stopwatch name="osgi.all.timer"/>
+
+
+      <make-bundle name="scala-actors" bundleName="Scala Actors">
+        <fileset dir="${src.dir}/actors"/>
+      </make-bundle>
+
+      <make-bundle name="continuations" pkg="plugins." jar="${build-pack.dir}/misc/scala-devel/plugins/continuations.jar" bundleName="Scala Continuations Plugin">
+        <fileset dir="${src.dir}/continuations/plugin"/>
+      </make-bundle>
 
       <if><isset property="has.java6"/><then>
-        <make-bundle name="scala-swing" version="${osgi.version.number}"/></then>
-      </if>
-      <stopwatch name="osgi.bundle.timer" action="total"/>
+        <make-bundle name="scala-swing" version="${osgi.version.number}" bundleName="Scala Swing">
+          <fileset dir="${src.dir}/swing"/>
+        </make-bundle>
+      </then></if>
+
+      <make-bundle name="scala-parser-combinators" pkg="modules." jar="${scala-parser-combinators}" src="false" bundleName="Scala Parser Combinators"/>
+      <make-bundle name="scala-xml" pkg="modules." jar="${scala-xml}" src="false" bundleName="Scala XML"/>
+
+      <touch file="${build-osgi.dir}/bundles.all.complete" verbose="no"/>
+      <stopwatch name="osgi.all.timer" action="total"/>
     </then></if>
   </target>
 
@@ -1752,7 +1832,7 @@ TODO:
 <!-- ===========================================================================
                                   DOCUMENTATION
 ============================================================================ -->
-  <target name="docs.start" depends="pack.done">
+  <target name="docs.start" depends="scaladoc.task" unless="docs.skip">
     <!-- Set the github commit scaladoc sources point to -->
     <!-- For releases, look for the tag with the same name as the maven version -->
     <condition property="scaladoc.git.commit" value="v${maven.version.number}">
@@ -1773,74 +1853,60 @@ TODO:
     <property name="scaladoc.no.prefixes" value="no"/>
   </target>
 
-  <target name="docs.lib" depends="docs.start">
-    <staged-uptodate stage="docs" project="library">
-      <check><srcfiles dir="${src.dir}">
-        <include name="library/**"/>
-        <include name="swing/**"/>
-        <include name="actors/**"/>
-        <include name="reflect/**"/>
-        <include name="continuations/library/**"/>
-      </srcfiles></check>
-      <do>
-        <stopwatch name="docs.lib.timer"/>
-        <mkdir dir="${build-docs.dir}/library"/>
-        <if><not><isset property="docs.skip"/></not><then>
-          <!-- last three attributes not supported by staged-docs: -->
-          <scaladoc
-            destdir="${build-docs.dir}/library"
-            doctitle="Scala Standard Library API (Scaladoc)"
-            docversion="${version.number}"
-            docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
-            sourcepath="${src.dir}"
-            classpathref="docs.compiler.path"
-            addparams="${scalac.args.all}"
-            docRootContent="${src.dir}/library/rootdoc.txt"
-            implicits="on"
-            diagrams="on"
-            groups="on"
-            rawOutput="${scaladoc.raw.output}"
-            noPrefixes="${scaladoc.no.prefixes}"
-            docfooter="epfl"
-            docUncompilable="${src.dir}/library-aux"
-            skipPackages="scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io:scala.concurrent.impl">
-            <src>
-              <files includes="${src.dir}/actors"/>
-              <files includes="${src.dir}/library"/>
-              <files includes="${src.dir}/reflect"/>
-              <files includes="${src.dir}/swing"/>
-              <files includes="${src.dir}/continuations/library"/>
-            </src>
-            <include name="**/*.scala"/>
-            <exclude name="reflect/Code.scala"/>
-            <exclude name="reflect/Print.scala"/>
-            <exclude name="reflect/Symbol.scala"/>
-            <exclude name="reflect/Tree.scala"/>
-            <exclude name="reflect/Type.scala"/>
-            <exclude name="runtime/*$.scala"/>
-            <exclude name="runtime/ScalaRunTime.scala"/>
-            <exclude name="runtime/StringAdd.scala"/>
-          </scaladoc>
-        </then></if>
-        <stopwatch name="docs.lib.timer" action="total"/>
-      </do>
-    </staged-uptodate>
+  <target name="docs.lib" depends="docs.start" unless="docs.skip">
+    <staged-docs project="library" title="Scala Standard Library" docroot="rootdoc.txt"
+                 skipPackages="scala.concurrent.impl">
+      <include name="**/*.scala"/>
+      <exclude name="runtime/*$.scala"/>
+      <exclude name="runtime/ScalaRunTime.scala"/>
+      <exclude name="runtime/StringAdd.scala"/>
+    </staged-docs>
   </target>
 
-  <target name="docs.comp" depends="docs.start">
+  <target name="docs.reflect" depends="docs.start" unless="docs.skip">
+    <staged-docs project="reflect" title="Scala Reflection Library"
+                 skipPackages="scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io">
+      <include name="**/*.scala"/>
+      <exclude name="reflect/Code.scala"/>
+      <exclude name="reflect/Print.scala"/>
+      <exclude name="reflect/Symbol.scala"/>
+      <exclude name="reflect/Tree.scala"/>
+      <exclude name="reflect/Type.scala"/>
+    </staged-docs>
+  </target>
+
+  <target name="docs.comp" depends="docs.start" unless="docs.skip">
     <staged-docs project="compiler" title="Scala Compiler" docroot="rootdoc.txt">
       <include name="**/*.scala"/>
     </staged-docs>
   </target>
 
-  <target name="docs.scalap" depends="docs.start">
+  <target name="docs.actors" depends="docs.start" unless="docs.skip">
+    <staged-docs project="actors" title="Scala Actors Library">
+      <include name="**/*.scala"/>
+    </staged-docs>
+  </target>
+
+  <target name="docs.swing" depends="docs.start" unless="docs.skip">
+    <staged-docs project="swing" title="Scala Swing Library">
+      <include name="**/*.scala"/>
+    </staged-docs>
+  </target>
+
+  <target name="docs.scalap" depends="docs.start" unless="docs.skip">
     <staged-docs project="scalap" title="Scalap">
       <include name="**/*.scala"/>
     </staged-docs>
   </target>
 
-  <target name="docs.continuations-plugin" depends="docs.start">
+  <target name="docs.continuations-plugin" depends="docs.start" unless="docs.skip">
     <staged-docs project="continuations-plugin" dir="continuations/plugin" title="Delimited Continuations Compiler Plugin">
+      <include name="**/*.scala"/>
+    </staged-docs>
+  </target>
+
+  <target name="docs.continuations-library" depends="docs.start" unless="docs.skip">
+    <staged-docs project="continuations-library" dir="continuations/library" title="Delimited Continuations Library">
       <include name="**/*.scala"/>
     </staged-docs>
   </target>
@@ -1852,16 +1918,16 @@ TODO:
         <mkdir dir="${build.dir}/manmaker/classes"/>
         <scalac
           destdir="${build.dir}/manmaker/classes"
-          classpathref="docs.compiler.path"
+          classpathref="manual.build.path"
           srcdir="${src.dir}/manual"
           includes="**/*.scala"
-          addparams="${scalac.args.all}"/>
+          addparams="${scalac.args.all} -language:implicitConversions"/>
         <mkdir dir="${build-docs.dir}/manual/man/man1"/>
         <mkdir dir="${build-docs.dir}/manual/html"/>
         <mkdir dir="${build-docs.dir}/manual/genman/man1"/>
         <taskdef name="genman"
                  classname="scala.tools.docutil.ManMaker"
-                 classpathref="manual.classpath"/>
+                 classpathref="manual.build.path"/>
         <genman command="fsc, scala, scalac, scaladoc, scalap"
                 htmlout="${build-docs.dir}/manual/html"
                 manout="${build-docs.dir}/manual/genman"/>
@@ -1882,54 +1948,59 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="docs.done" depends="docs.comp, docs.man, docs.lib, docs.scalap, docs.continuations-plugin"/>
+  <target name="docs.core" depends="docs.lib, docs.reflect, docs.comp" unless="docs.skip"/>
+  <target name="docs.done" depends="docs.core, docs.actors, docs.swing, docs.scalap, docs.continuations-plugin, docs.continuations-library" unless="docs.skip"/>
 
 <!-- ===========================================================================
                                   DISTRIBUTION
 ============================================================================ -->
-  <target name="dist.base" depends="pack.done, osgi.done">
+  <target name="dist.base" depends="osgi.done">
     <property name="dist.name" value="scala-${version.number}"/>
     <property name="dist.dir" value="${dists.dir}/${dist.name}"/>
 
     <macrodef name="copy-bundle">
       <attribute name="name" />
+      <attribute name="pkg"    default=""/>
+      <attribute name="lib"    default="lib/"/>
+      <attribute name="srcjar" default="${build-osgi.dir}/@{name}-src.jar"/>
+
       <sequential>
-        <copy file="${build-osgi.dir}/org.scala-lang.@{name}.jar"
-          tofile="${dist.dir}/lib/@{name}.jar" overwrite="true"/>
-      </sequential>
-    </macrodef>
-    <macrodef name="copy-plugin-bundle">
-      <attribute name="name" />
-      <sequential>
-        <copy file="${build-osgi.dir}/org.scala-lang.plugins.@{name}.jar"
-          tofile="${dist.dir}/misc/scala-devel/plugins/@{name}.jar"
-          overwrite="true"/>
+        <copy tofile="${dist.dir}/@{lib}@{name}.jar"   file="${build-osgi.dir}/org.scala-lang.@{pkg}@{name}.jar" overwrite="true"/>
+        <copy tofile="${dist.dir}/src/@{name}-src.jar" file="@{srcjar}" overwrite="true"/>
       </sequential>
     </macrodef>
 
     <mkdir dir="${dist.dir}/lib"/>
-    <copy toDir="${dist.dir}/lib" overwrite="true">
-      <fileset dir="${build-pack.dir}/lib">
-        <include name="scalap.jar"/>
-      </fileset>
-    </copy>
+    <mkdir dir="${dist.dir}/misc/scala-devel/plugins"/>
+    <mkdir dir="${dist.dir}/src"/>
 
-    <!-- TODO -->
     <copy todir="${dist.dir}/lib" overwrite="true">
       <resources refid="repl.fileset"/>
       <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper"
               from="${repl.deps.versions}" to="flatten"/>
     </copy>
 
-    <mkdir dir="${dist.dir}/bin"/>
-    <!-- TODO - Stop being inefficient and don't copy OSGi bundles overtop other jars. -->
+    <!-- copy classfile jars and source jars from osgi build to dist -->
     <copy-bundle name="scala-library"/>
-    <copy-bundle name="scala-xml"/>
-    <copy-bundle name="scala-parser-combinators"/>
     <copy-bundle name="scala-reflect"/>
+    <copy-bundle name="scala-compiler"/>
+
     <copy-bundle name="scala-swing"/>
     <copy-bundle name="scala-actors"/>
-    <copy-bundle name="scala-compiler"/>
+
+    <copy-bundle pkg="modules." name="scala-xml" srcjar="${scala-xml-sources}"/>
+    <copy-bundle pkg="modules." name="scala-parser-combinators" srcjar="${scala-parser-combinators-sources}"/>
+    <copy-bundle pkg="plugins." name="continuations" lib="misc/scala-devel/plugins/"/>
+
+    <!-- scalap -->
+    <copy toDir="${dist.dir}/lib" overwrite="true">
+      <fileset dir="${build-pack.dir}/lib">
+        <include name="scalap.jar"/>
+      </fileset>
+    </copy>
+    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scalap-src.jar" basedir="${src.dir}/scalap"/>
+
+    <mkdir dir="${dist.dir}/bin"/>
     <copy toDir="${dist.dir}/bin" overwrite="true">
       <fileset dir="${build-pack.dir}/bin"/>
     </copy>
@@ -1938,8 +2009,6 @@ TODO:
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scalap"/>
-    <mkdir dir="${dist.dir}/misc/scala-devel/plugins"/>
-    <copy-plugin-bundle name="continuations"/>
   </target>
 
   <target name="dist.doc" depends="dist.base, docs.done">
@@ -1961,85 +2030,22 @@ TODO:
         <exclude name="**/*.desired.sha1"/>
       </fileset>
     </copy>
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs/tools"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/tools" overwrite="true">
-      <fileset dir="${build-docs.dir}/manual/html"/>
-    </copy>
     <copy file="${src.dir}/swing/doc/README"
           toFile="${dist.dir}/doc/scala-devel-docs/README.scala-swing"
           overwrite="true"/>
   </target>
 
-  <target name="dist.man" depends="dist.base">
+  <target name="dist.man" depends="dist.base, docs.man">
     <mkdir dir="${dist.dir}/man"/>
     <copy toDir="${dist.dir}/man" overwrite="true">
       <fileset dir="${build-docs.dir}/manual/man"/>
     </copy>
-  </target>
-
-  <!--
-       A jar-like task that creates an OSGi source bundle. It adds the required MANIFEST.MF headers that allow
-       Eclipse to match sources with the corresponding binaries.
-  -->
-  <macrodef name="osgi.source.bundle">
-    <attribute name="destfile"     description="The jar file name"/>
-    <attribute name="symbolicName" description="The original bundle symbolic name (without .source at the end)"/>
-    <attribute name="bundleName"   description="A value for Bundle-Name, usually a textual description"/>
-    <element   name="file-sets"    description="A sequence of fileset elements to be included in the jar" optional="true" implicit="true"/>
-
-    <sequential>
-      <jar whenmanifestonly="fail" destfile="@{destFile}">
-        <file-sets/>
-        <manifest>
-          <attribute name="Manifest-Version" value="1.0"/>
-          <attribute name="Bundle-Name" value="@{bundleName}"/>
-          <attribute name="Bundle-SymbolicName" value="@{symbolicName}.source"/>
-          <attribute name="Bundle-Version" value="${osgi.version.number}"/>
-          <attribute name="Eclipse-SourceBundle" value="@{symbolicName};version=&quot;${osgi.version.number}&quot;;roots:=&quot;.&quot;" />
-        </manifest>
-      </jar>
-    </sequential>
-  </macrodef>
-
-  <target name="dist.src" depends="dist.base">
-    <mkdir dir="${dist.dir}/src"/>
-    <copy toDir="${dist.dir}/src" overwrite="true" flatten="true">
-      <file file="${scala-xml-sources}"/>
-      <file file="${scala-parser-combinators-sources}"/>
+    <mkdir dir="${dist.dir}/doc/scala-devel-docs/tools"/>
+    <copy toDir="${dist.dir}/doc/scala-devel-docs/tools" overwrite="true">
+      <fileset dir="${build-docs.dir}/manual/html"/>
     </copy>
-
-    <osgi.source.bundle destfile="${dist.dir}/src/scala-library-src.jar"
-                        symbolicName="org.scala-lang.scala-library"
-                        bundleName="Scala Library Sources">
-      <fileset dir="${src.dir}/library"/>
-      <fileset dir="${src.dir}/continuations/library"/>
-    </osgi.source.bundle>
-    <osgi.source.bundle destfile="${dist.dir}/src/scala-actors-src.jar"
-                        symbolicName="org.scala-lang.scala-actors"
-                        bundleName="Scala Actors Sources">
-      <fileset dir="${src.dir}/actors"/>
-    </osgi.source.bundle>
-    <osgi.source.bundle destfile="${dist.dir}/src/scala-compiler-src.jar"
-                        symbolicName="org.scala-lang.scala-compiler"
-                        bundleName="Scala Compiler Sources">
-      <fileset dir="${src.dir}/compiler"/>
-      <fileset dir="${src.dir}/repl"/>
-      <fileset dir="${src.dir}/scaladoc"/>
-      <fileset dir="${src.dir}/interactive"/>
-      <fileset dir="${src.dir}/continuations/plugin"/>
-    </osgi.source.bundle>
-    <osgi.source.bundle destfile="${dist.dir}/src/scala-swing-src.jar"
-                        symbolicName="org.scala-lang.scala-swing"
-                        bundleName="Scala Swing Sources">
-      <fileset dir="${src.dir}/swing"/>
-    </osgi.source.bundle>
-    <osgi.source.bundle destfile="${dist.dir}/src/scala-reflect-src.jar"
-                        symbolicName="org.scala-lang.scala-reflect"
-                        bundleName="Scala Reflect Sources">
-      <fileset dir="${src.dir}/reflect"/>
-    </osgi.source.bundle>
-    <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scalap-src.jar"         basedir="${src.dir}/scalap"/>
   </target>
+
 
   <target name="dist.partial" depends="dist.base">
     <if><not><os family="windows"/></not><then>
@@ -2049,8 +2055,205 @@ TODO:
     </else></if>
   </target>
 
-  <target name="dist.done" depends="dist.doc, dist.man, dist.src, dist.partial"/>
+  <target name="dist.done" depends="dist.doc, dist.man, dist.partial"/>
 
+<!-- ===========================================================================
+MAIN DISTRIBUTION PACKAGING
+============================================================================ -->
+
+  <target name="pack-archives.done" depends="dist.done, docs.done">
+    <macrodef name="tarz">
+      <attribute name="name"     description="The tar file name (without extension)."/>
+      <element   name="file-sets"    description="A sequence of fileset elements to be included in the tar balls." optional="false" implicit="true"/>
+
+      <sequential>
+        <tar destfile="@{name}.tar" compression="none" longfile="gnu">
+          <file-sets/>
+        </tar>
+        <gzip src="@{name}.tar" destfile="@{name}.tgz"/>
+        <if>
+          <not><equals arg1="${archives.skipxz}" arg2="true" /></not>
+          <then>
+            <exec executable="xz" failifexecutionfails="false">
+              <arg line="-k -9e -S .xz @{name}.tar"/>
+            </exec>
+            <move file="@{name}.tar.xz" tofile="@{name}.txz" failonerror="false"/>
+          </then>
+        </if>
+        <delete file="@{name}.tar" />
+      </sequential>
+    </macrodef>
+
+    <mkdir dir="${dists.dir}/archives"/>
+    <property name="archive-base" value="${dists.dir}/archives/${dist.name}"/>
+
+    <tarz name="${archive-base}">
+      <tarfileset dir="${dist.dir}" prefix="${dist.name}" includes="bin/**" mode="755"/>
+      <tarfileset dir="${dist.dir}" prefix="${dist.name}" excludes="bin/**"/>
+    </tarz>
+
+    <zip destfile="${archive-base}.zip">
+      <zipfileset prefix="${dist.name}" dir="${dist.dir}"/>
+    </zip>
+
+    <if><not><isset property="docs.skip"/></not><then>
+      <tarz name="${archive-base}-devel-docs">
+        <tarfileset dir="${dist.dir}/doc/scala-devel-docs" prefix="${dist.name}-devel-docs"/>
+      </tarz>
+    </then></if>
+
+    <tarz name="${archive-base}-sources">
+      <tarfileset dir="${basedir}" prefix="${dist.name}-sources">
+        <exclude name="bin/**"/>
+        <exclude name="build/**"/>
+        <exclude name="debian/**"/>
+        <exclude name="dists/**"/>
+        <exclude name="logs/**"/>
+        <exclude name="sandbox/**"/>
+        <exclude name="test/partest"/>
+        <exclude name=".git"/>
+      </tarfileset>
+      <tarfileset dir="${basedir}" prefix="${dist.name}-sources" filemode="755">
+        <include name="test/partest"/>
+      </tarfileset>
+    </tarz>
+
+    <!-- checksum everything -->
+    <checksum fileext=".md5">
+      <fileset dir="${dists.dir}/archives">
+        <include name="${dist.name}*"/>
+      </fileset>
+    </checksum>
+
+    <!-- UNUSED: create 'scala-latest-sources.tgz' alias (or copy, on windows)
+         we use github's source download feature
+    <if><isset property="os.win"/><then>
+      <copy tofile="${dists.dir}/archives/scala-latest-sources.tgz" overwrite="true">
+        <fileset dir="${dists.dir}/archives">
+           <include name="scala-${version.number}-sources.tgz"/>
+        </fileset>
+      </copy>
+    </then><else>
+      (be sure to use a relative symlink to make the distribution portable,
+          `resource` is relative to directory of `link`)
+      <symlink link="${dists.dir}/archives/scala-latest-sources.tgz"
+               resource="scala-${version.number}-sources.tgz"
+               overwrite="true"/>
+    </else></if> -->
+  </target>
+
+  <macrodef name="mvn-package">
+    <attribute name="dir"    default=""/>
+    <attribute name="pkg"    default=""/>
+    <attribute name="project"/>
+    <attribute name="name"   default="scala-@{project}"/>
+    <attribute name="jarsuffix" default=""/>
+
+    <sequential>
+      <local name="artifact-base"/> <property name="artifact-base" value="${maven-base}/@{dir}@{name}/@{name}"/>
+
+      <mkdir dir="${maven-base}/@{dir}@{name}"/>
+      <copy tofile="${artifact-base}.jar" file="${build-osgi.dir}/org.scala-lang.@{pkg}@{name}@{jarsuffix}.jar" overwrite="true"/>
+      <copy tofile="${artifact-base}-src.jar" file="${build-osgi.dir}/@{name}-src.jar" overwrite="true"/>
+      <copy tofile="${artifact-base}-pom.xml" file="${src.dir}/build/maven/@{dir}/@{name}-pom.xml" overwrite="true"/>
+
+      <if><not><isset property="docs.skip"/></not><then>
+        <jar destfile="${artifact-base}-docs.jar" basedir="${build-docs.dir}/@{project}" whenmanifestonly="fail">
+          <include name="**/*"/>
+        </jar>
+      </then></if>
+    </sequential>
+  </macrodef>
+
+  <target name="pack-maven.core" depends="osgi.core, docs.core">
+    <property name="maven-base" value="${dists.dir}/maven/${version.number}"/>
+    <mkdir dir="${maven-base}"/>
+
+    <mvn-package project="library"/>
+    <mvn-package project="reflect"/>
+    <mvn-package project="compiler"/>
+  </target>
+
+  <target name="pack-maven.base" depends="pack-maven.core, osgi.done, docs.done">
+    <mvn-package project="swing"/>
+    <mvn-package project="actors"/>
+    <mvn-package project="continuations-plugin" name="continuations" dir="plugins/" pkg="plugins."/>
+
+    <!-- don't bother fitting scalap into the mould: it will move out soon -->
+    <copy tofile="${maven-base}/scalap/scalap-pom.xml" file="${src.dir}/build/maven/scalap-pom.xml" overwrite="true"/>
+    <copy tofile="${maven-base}/scalap/scalap.jar" file="${build-pack.dir}/lib/scalap.jar" overwrite="true"/>
+    <jar destfile="${maven-base}/scalap/scalap-src.jar" basedir="${src.dir}/scalap" whenmanifestonly="fail"/>
+    <if><not><isset property="docs.skip"/></not><then>
+      <jar destfile="${maven-base}/scalap/scalap-docs.jar" basedir="${build-docs.dir}/scalap"/>
+    </then></if>
+  </target>
+
+  <target name="pack-maven.done" depends="pack-maven.base">
+    <!-- Create dists/maven/latest alias and copy maven-deploy ant build there. -->
+    <if><isset property="os.win"/><then>
+      <copy todir="${dists.dir}/maven/latest" overwrite="true">
+        <fileset dir="${maven-base}"/>
+      </copy>
+    </then><else>
+      <symlink link="${dists.dir}/maven/latest"
+               resource="${version.number}"
+               overwrite="true"/>
+    </else></if>
+    <!-- copy build file and its dependencies -->
+    <copy todir="${maven-base}"
+          file="${lib-ant.dir}/ant-contrib.jar" overwrite="true"/>
+    <copy todir="${maven-base}"
+          file="${lib-ant.dir}/maven-ant-tasks-2.1.1.jar" overwrite="true"/>
+    <copy tofile="${maven-base}/build.xml"
+          file="${src.dir}/build/maven/maven-deploy.xml"/>
+    <!-- export properties for use when deploying -->
+    <echoproperties destfile="${maven-base}/build.properties"/>
+  </target>
+
+  <!-- keep these properties out of ${maven-base}/build.properties, dumped in pack-maven.done -->
+  <target name="init.maven" depends="init">
+    <property name="remote.snapshot.repository" value="https://oss.sonatype.org/content/repositories/snapshots" />
+    <property name="remote.release.repository"  value="https://oss.sonatype.org/service/local/staging/deploy/maven2" />
+
+    <property name="local.snapshot.repository" value="${user.home}/.m2/repository" />
+    <property name="local.release.repository"  value="${user.home}/.m2/repository" />
+
+    <property name="repository.credentials.id" value="sonatype-nexus" />
+    <property name="settings.file" value="${user.home}/.m2/settings.xml" />
+
+    <if><contains string="${maven.version.number}" substring="-SNAPSHOT"/><then>
+      <property name="remote.repository" value="${remote.snapshot.repository}"/>
+      <property name="local.repository"  value="${local.snapshot.repository}"/>
+    </then><else>
+      <property name="remote.repository" value="${remote.release.repository}"/>
+      <property name="local.repository"  value="${local.release.repository}"/>
+    </else></if>
+  </target>
+
+
+<!-- ===========================================================================
+                                  MAVEN PUBLISHING
+============================================================================ -->
+  <!-- TODO: inline maven-deploy.xml here and remove it, once jenkins jobs no longer rely on it -->
+  <target name="publish"        depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the maven repo.">       <deploy dir="${maven-base}/"/> </target>
+  <target name="publish.local"  depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the local maven repo."> <deploy dir="${maven-base}/" local="true"/> </target>
+  <target name="publish.signed" depends="pack-maven.base, init.maven" description="Publishes signed artifacts to the remote maven repo.">  <deploy dir="${maven-base}/" signed="true"/> </target>
+
+  <target name="publish-core"   depends="pack-maven.core, init.maven">
+    <deploy-one dir="${maven-base}/" name="scala-compiler" />
+    <deploy-one dir="${maven-base}/" name="scala-library"  />
+    <deploy-one dir="${maven-base}/" name="scala-reflect"  />
+  </target>
+  <target name="publish-core-local" depends="pack-maven.core, init.maven">
+    <deploy-one dir="${maven-base}/" name="scala-compiler" local="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-library"  local="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-reflect"  local="true"/>
+  </target>
+  <target name="publish-core-signed" depends="pack-maven.core, init.maven">
+    <deploy-one dir="${maven-base}/" name="scala-compiler" signed="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-library"  signed="true"/>
+    <deploy-one dir="${maven-base}/" name="scala-reflect"  signed="true"/>
+  </target>
 
 <!-- ===========================================================================
                                   STABLE REFERENCE (STARR)
