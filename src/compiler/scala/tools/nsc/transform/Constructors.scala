@@ -362,6 +362,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
        * be an error to pass it to array_update(.., .., Object).
        */
       def rewriteArrayUpdate(tree: Tree): Tree = {
+        val arrayUpdateMethod = currentRun.runDefinitions.arrayUpdateMethod
         val adapter = new Transformer {
           override def transform(t: Tree): Tree = t match {
             case Apply(fun @ Select(receiver, method), List(xs, idx, v)) if fun.symbol == arrayUpdateMethod =>

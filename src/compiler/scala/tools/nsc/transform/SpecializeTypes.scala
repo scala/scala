@@ -101,6 +101,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private val concreteSpecMethods = perRunCaches.newWeakSet[Symbol]()
 
   private def specializedOn(sym: Symbol): List[Symbol] = {
+    val GroupOfSpecializable = currentRun.runDefinitions.GroupOfSpecializable
     sym getAnnotation SpecializedClass match {
       case Some(AnnotationInfo(_, Nil, _)) => specializableTypes.map(_.typeSymbol)
       case Some(ann @ AnnotationInfo(_, args, _)) => {

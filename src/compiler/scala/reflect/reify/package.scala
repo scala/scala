@@ -63,11 +63,11 @@ package object reify {
     tpe.dealiasWiden match {
       case TypeRef(_, ArrayClass, componentTpe :: Nil) =>
         val componentErasure = reifyRuntimeClass(global)(typer0, componentTpe, concrete)
-        gen.mkMethodCall(arrayClassMethod, List(componentErasure))
+        gen.mkMethodCall(currentRun.runDefinitions.arrayClassMethod, List(componentErasure))
       case _ =>
         var erasure = tpe.erasure
         if (tpe.typeSymbol.isDerivedValueClass && global.phase.id < global.currentRun.erasurePhase.id) erasure = tpe
-        gen.mkNullaryCall(Predef_classOf, List(erasure))
+        gen.mkNullaryCall(currentRun.runDefinitions.Predef_classOf, List(erasure))
     }
   }
 

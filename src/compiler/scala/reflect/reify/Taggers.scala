@@ -8,6 +8,8 @@ abstract class Taggers {
 
   import c.universe._
   import definitions._
+  private val runDefinitions = currentRun.runDefinitions
+  import runDefinitions._
 
   val coreTags = Map(
     ByteTpe -> nme.Byte,

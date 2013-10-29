@@ -60,6 +60,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     val universe: thisUniverse.type = thisUniverse
 
     import definitions._
+    private[reflect] lazy val runDefinitions = new definitions.RunDefinitions // only one "run" in the reflection universe
+    import runDefinitions._
 
     override lazy val RootPackage = new RootPackage with SynchronizedTermSymbol
     override lazy val RootClass = new RootClass with SynchronizedModuleClassSymbol
@@ -306,7 +308,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     lazy val bytecodefulObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,
                                         Object_notify, Object_notifyAll) ++ ObjectClass.info.member(nme.wait_).asTerm.alternatives.map(_.asMethod)
     private def isBytecodelessMethod(meth: MethodSymbol): Boolean = {
-      if (isGetClass(meth) || isStringConcat(meth) || meth.owner.isPrimitiveValueClass || meth == Predef_classOf || meth.isMacro) return true
+      if (isGetClass(meth) || isStringConcat(meth) || meth.owner.isPrimitiveValueClass || meth == runDefinitions.Predef_classOf || meth.isMacro) return true
       bytecodelessMethodOwners(meth.owner) && !bytecodefulObjectMethods(meth)
     }
 

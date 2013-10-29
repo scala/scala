@@ -115,6 +115,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     import context0.unit
     import typeDebug.{ ptTree, ptBlock, ptLine, inGreen, inRed }
     import TyperErrorGen._
+    val runDefinitions = currentRun.runDefinitions
+    import runDefinitions._
 
     val infer = new Inferencer(context0) {
       // See SI-3281 re undoLog
@@ -3847,7 +3849,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (sameLength(tparams, args)) {
           val targs = args map (_.tpe)
           checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, "")
-          if (fun.symbol == Predef_classOf)
+          if (isPredefClassOf(fun.symbol))
             typedClassOf(tree, args.head, noGen = true)
           else {
             if (!isPastTyper && fun.symbol == Any_isInstanceOf && targs.nonEmpty) {
@@ -4807,7 +4809,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               typed1(This(sym.owner) setPos tree.pos, mode, pt)
           // Inferring classOf type parameter from expected type.  Otherwise an
           // actual call to the stubbed classOf method is generated, returning null.
-            else if (isPredefMemberNamed(sym, nme.classOf) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty)
+            else if (isPredefClassOf(sym) && pt.typeSymbol == ClassClass && pt.typeArgs.nonEmpty)
             typedClassOf(tree, TypeTree(pt.typeArgs.head))
           else {
               val pre1  = if (sym.isTopLevel) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe

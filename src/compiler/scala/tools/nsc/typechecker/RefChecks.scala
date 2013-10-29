@@ -945,7 +945,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     }
 
     def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.lint) (fn, args) match {
-      case (tap@TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == Option_apply =>
+      case (tap@TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == currentRun.runDefinitions.Option_apply =>
         unit.warning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.") // SI-6567
       case _ =>
     }

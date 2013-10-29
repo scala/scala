@@ -104,7 +104,10 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     targs: List[Tree]) {
 
     // Was this binding derived from a `def ... = macro ???` definition?
-    def is_??? = className == Predef_???.owner.javaClassName && methName == Predef_???.name.encoded
+    def is_??? = {
+      val Predef_??? = currentRun.runDefinitions.Predef_???
+      className == Predef_???.owner.javaClassName && methName == Predef_???.name.encoded
+    }
   }
 
   /** Macro def -> macro impl bindings are serialized into a `macroImpl` annotation
@@ -146,6 +149,8 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       }
 
     def pickle(macroImplRef: Tree): Tree = {
+      val runDefinitions = currentRun.runDefinitions
+      import runDefinitions._
       val MacroImplReference(isBundle, owner, macroImpl, targs) = macroImplRef
 
       // todo. refactor when fixing SI-5498
@@ -311,7 +316,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       def fail() = { if (macroDef != null) macroDef setFlag IS_ERROR; macroDdef setType ErrorType; EmptyTree }
       def success(macroImplRef: Tree) = { bindMacroImpl(macroDef, macroImplRef); macroImplRef }
 
-      if (!typer.checkFeature(macroDdef.pos, MacrosFeature, immediate = true)) {
+      if (!typer.checkFeature(macroDdef.pos, currentRun.runDefinitions.MacrosFeature, immediate = true)) {
         macroLogVerbose("typecheck terminated unexpectedly: language.experimental.macros feature is not enabled")
         fail()
       } else {

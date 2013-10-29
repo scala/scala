@@ -358,6 +358,21 @@ abstract class SymbolTable extends macros.Universe
     def newMap[K, V]()            = recordCache(mutable.HashMap[K, V]())
     def newSet[K]()               = recordCache(mutable.HashSet[K]())
     def newWeakSet[K <: AnyRef]() = recordCache(new WeakHashSet[K]())
+    def newGeneric[T](f: => T): () => T = {
+      val NoCached: T = null.asInstanceOf[T]
+      var cached: T = NoCached
+      var cachedRunId = NoRunId
+      caches += new Clearable {
+        def clear(): Unit = cached = NoCached
+      }
+      () => {
+        if (currentRunId != cachedRunId || cached == NoCached) {
+          cached = f
+          cachedRunId = currentRunId
+        }
+        cached
+      }
+    }
   }
 
   /** The set of all installed infotransformers. */

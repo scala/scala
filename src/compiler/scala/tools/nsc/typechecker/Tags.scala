@@ -10,6 +10,9 @@ trait Tags {
   trait Tag {
     self: Typer =>
 
+    private val runDefinitions = currentRun.runDefinitions
+    import runDefinitions._
+
     private def resolveTag(pos: Position, taggedTp: Type, allowMaterialization: Boolean) = enteringTyper {
       def wrapper (tree: => Tree): Tree = if (allowMaterialization) (context.withMacrosEnabled[Tree](tree)) else (context.withMacrosDisabled[Tree](tree))
       wrapper(inferImplicit(

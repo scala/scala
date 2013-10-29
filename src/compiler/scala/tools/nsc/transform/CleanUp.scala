@@ -168,7 +168,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                 def methodSymRHS  = ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), REF(reflParamsCacheSym)))
                 def cacheRHS      = ((REF(methodCache) DOT methodCache_add)(REF(forReceiverSym), REF(methodSym)))
                 BLOCK(
-                  REF(methodSym)        === (REF(ensureAccessibleMethod) APPLY (methodSymRHS)),
+                  REF(methodSym)        === (REF(currentRun.runDefinitions.ensureAccessibleMethod) APPLY (methodSymRHS)),
                   REF(reflPolyCacheSym) === gen.mkSoftRef(cacheRHS),
                   Return(REF(methodSym))
                 )
@@ -181,11 +181,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         def testForName(name: Name): Tree => Tree = t => (
           if (nme.CommonOpNames(name))
-            gen.mkMethodCall(Boxes_isNumberOrBool, t :: Nil)
+            gen.mkMethodCall(currentRun.runDefinitions.Boxes_isNumberOrBool, t :: Nil)
           else if (nme.BooleanOpNames(name))
             t IS_OBJ BoxedBooleanClass.tpe
           else
-            gen.mkMethodCall(Boxes_isNumber, t :: Nil)
+            gen.mkMethodCall(currentRun.runDefinitions.Boxes_isNumber, t :: Nil)
         )
 
         /*  The Tree => Tree function in the return is necessary to prevent the original qual
@@ -219,6 +219,9 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         /* ### CALLING THE APPLY ### */
         def callAsReflective(paramTypes: List[Type], resType: Type): Tree = {
+          val runDefinitions = currentRun.runDefinitions
+          import runDefinitions._
+
           gen.evalOnce(qual, currentOwner, unit) { qual1 =>
             /* Some info about the type of the method being called. */
             val methSym       = ad.symbol
@@ -518,7 +521,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       //
       // See SI-6611; we must *only* do this for literal vararg arrays.
       case Apply(appMeth, List(Apply(wrapRefArrayMeth, List(arg @ StripCast(ArrayValue(_, _)))), _))
-      if wrapRefArrayMeth.symbol == Predef_wrapRefArray && appMeth.symbol == ArrayModule_genericApply =>
+      if wrapRefArrayMeth.symbol == currentRun.runDefinitions.Predef_wrapRefArray && appMeth.symbol == ArrayModule_genericApply =>
         super.transform(arg)
       case Apply(appMeth, List(elem0, Apply(wrapArrayMeth, List(rest @ ArrayValue(elemtpt, _)))))
       if wrapArrayMeth.symbol == Predef_wrapArray(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>

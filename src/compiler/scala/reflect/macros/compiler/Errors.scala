@@ -12,6 +12,8 @@ trait Errors extends Traces {
   import definitions._
   import typer.TyperErrorGen._
   import typer.infer.InferErrorGen._
+  private val runDefinitions = currentRun.runDefinitions
+  import runDefinitions._
   def globalSettings = global.settings
 
   // sanity check errors

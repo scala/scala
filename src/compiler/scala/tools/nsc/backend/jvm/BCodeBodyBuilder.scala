@@ -623,14 +623,14 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
               abort(s"Cannot instantiate $tpt of kind: $generatedType")
           }
 
-        case Apply(fun @ _, List(expr)) if definitions.isBox(fun.symbol) =>
+        case Apply(fun @ _, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
           val nativeKind = tpeTK(expr)
           genLoad(expr, nativeKind)
           val MethodNameAndType(mname, mdesc) = asmBoxTo(nativeKind)
           bc.invokestatic(BoxesRunTime.getInternalName, mname, mdesc)
           generatedType = boxResultType(fun.symbol) // was toTypeKind(fun.symbol.tpe.resultType)
 
-        case Apply(fun @ _, List(expr)) if definitions.isUnbox(fun.symbol) =>
+        case Apply(fun @ _, List(expr)) if currentRun.runDefinitions.isUnbox(fun.symbol) =>
           genLoad(expr)
           val boxType = unboxResultType(fun.symbol) // was toTypeKind(fun.symbol.owner.linkedClassOfClass.tpe)
           generatedType = boxType

@@ -9,6 +9,8 @@ trait Reshape {
   import global._
   import definitions._
   import treeInfo.Unapplied
+  private val runDefinitions = currentRun.runDefinitions
+  import runDefinitions._
 
   /**
    *  Rolls back certain changes that were introduced during typechecking of the reifee.

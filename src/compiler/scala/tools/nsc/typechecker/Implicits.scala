@@ -338,7 +338,7 @@ trait Implicits {
     val wildPt = approximate(pt)
 
     private val runDefintions = currentRun.runDefinitions
-    import runDefintions.{ TagMaterializers, TagSymbols, Predef_conforms, PartialManifestClass, ManifestSymbols }
+    import runDefintions._
 
     def undet_s = if (undetParams.isEmpty) "" else undetParams.mkString(" inferring ", ", ", "")
     def tree_s = typeDebug ptTree tree
