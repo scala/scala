@@ -304,7 +304,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ReflectPackage
     definitions.ReflectApiPackage
     definitions.ReflectRuntimePackage
-    definitions.PartialManifestClass
     definitions.PartialManifestModule
     definitions.FullManifestClass
     definitions.FullManifestModule

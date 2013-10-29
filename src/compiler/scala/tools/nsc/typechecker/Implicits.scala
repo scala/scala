@@ -337,6 +337,9 @@ trait Implicits {
     val undetParams = if (isView) Nil else context.outer.undetparams
     val wildPt = approximate(pt)
 
+    private val runDefintions = currentRun.runDefinitions
+    import runDefintions.{ TagMaterializers, TagSymbols, Predef_conforms, PartialManifestClass, ManifestSymbols }
+
     def undet_s = if (undetParams.isEmpty) "" else undetParams.mkString(" inferring ", ", ", "")
     def tree_s = typeDebug ptTree tree
     def ctx_s = fullSiteString(context)
@@ -806,7 +809,7 @@ trait Implicits {
 
       private def isIneligible(info: ImplicitInfo) = (
            info.isCyclicOrErroneous
-        || isView && isPredefMemberNamed(info.sym, nme.conforms)
+        || isView && (info.sym eq Predef_conforms)
         || shadower.isShadowed(info.name)
         || (!context.macrosEnabled && info.sym.isTermMacro)
       )
@@ -1105,13 +1108,6 @@ trait Implicits {
       }
     }
 
-    private def TagSymbols =  TagMaterializers.keySet
-    private val TagMaterializers = Map[Symbol, Symbol](
-      ClassTagClass    -> materializeClassTag,
-      WeakTypeTagClass -> materializeWeakTypeTag,
-      TypeTagClass     -> materializeTypeTag
-    )
-
     /** Creates a tree will produce a tag of the requested flavor.
       * An EmptyTree is returned if materialization fails.
       */
@@ -1172,8 +1168,6 @@ trait Implicits {
       // this is ugly but temporary, since all this code will be removed once I fix implicit macros
       else SearchFailure
     }
-
-    private val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
 
     /** Creates a tree that calls the relevant factory method in object
       * scala.reflect.Manifest for type 'tp'. An EmptyTree is returned if
