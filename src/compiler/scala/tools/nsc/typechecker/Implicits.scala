@@ -17,7 +17,7 @@ import scala.collection.{ mutable, immutable }
 import mutable.{ LinkedHashMap, ListBuffer }
 import scala.util.matching.Regex
 import symtab.Flags._
-import scala.reflect.internal.util.Statistics
+import scala.reflect.internal.util.{TriState, Statistics}
 import scala.language.implicitConversions
 
 /** This trait provides methods to find various kinds of implicits.
@@ -194,6 +194,7 @@ trait Implicits {
    */
   class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
     private var tpeCache: Type = null
+    private var isCyclicOrErroneousCache: TriState = TriState.Unknown
 
     /** Computes member type of implicit from prefix `pre` (cached). */
     def tpe: Type = {
@@ -201,7 +202,12 @@ trait Implicits {
       tpeCache
     }
 
-    def isCyclicOrErroneous =
+    def isCyclicOrErroneous: Boolean = {
+      if (!isCyclicOrErroneousCache.isKnown) isCyclicOrErroneousCache = computeIsCyclicOrErroneous
+      isCyclicOrErroneousCache.booleanValue
+    }
+
+    private[this] final def computeIsCyclicOrErroneous =
       try sym.hasFlag(LOCKED) || containsError(tpe)
       catch { case _: CyclicReference => true }
 
