@@ -2233,14 +2233,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               DeprecatedParamNameError(p, n)
           }
         }
-      }
-      if (meth.isStructuralRefinementMember)
-        checkMethodStructuralCompatible(ddef)
+        if (meth.isStructuralRefinementMember)
+          checkMethodStructuralCompatible(ddef)
 
-      if (meth.isImplicit && !meth.isSynthetic) meth.info.paramss match {
-        case List(param) :: _ if !param.isImplicit =>
-          checkFeature(ddef.pos, ImplicitConversionsFeature, meth.toString)
-        case _ =>
+        if (meth.isImplicit && !meth.isSynthetic) meth.info.paramss match {
+          case List(param) :: _ if !param.isImplicit =>
+            checkFeature(ddef.pos, ImplicitConversionsFeature, meth.toString)
+          case _ =>
+        }
       }
 
       treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
