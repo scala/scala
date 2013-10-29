@@ -359,11 +359,7 @@ trait Definitions extends api.StandardDefinitions {
       def Predef_???                 = getMemberMethod(PredefModule, nme.???)
       def Predef_implicitly          = getMemberMethod(PredefModule, nme.implicitly)
 
-    /** Is `sym` a member of Predef with the given name?
-     *  Note: DON't replace this by sym == Predef_conforms/etc, as Predef_conforms is a `def`
-     *  which does a member lookup (it can't be a lazy val because we might reload Predef
-     *  during resident compilations).
-     */
+    @deprecated("use sym = currentRun.runDefinitions.Predef_xxx", "2.11.0")
     def isPredefMemberNamed(sym: Symbol, name: Name) = (
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )
@@ -496,7 +492,6 @@ trait Definitions extends api.StandardDefinitions {
          def ReflectRuntimeUniverse      = ReflectRuntimePackage.map(sym => getMemberValue(sym, nme.universe))
          def ReflectRuntimeCurrentMirror = ReflectRuntimePackage.map(sym => getMemberMethod(sym, nme.currentMirror))
 
-    lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
     lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifestFactory.type]
     lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
     lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]
@@ -1412,6 +1407,21 @@ trait Definitions extends api.StandardDefinitions {
       lazy val listListTreeType = appliedType(ListClass, listTreeType)
 
       def universeMemberType(name: TypeName) = universe.tpe.memberType(getTypeMember(universe.symbol, name))
+    }
+
+    /** Efficient access to member symbols which must be looked up each run. Access via `currentRun.runRefinitions` */
+    final class RunDefinitions {
+      lazy val TagMaterializers = Map[Symbol, Symbol](
+        ClassTagClass    -> materializeClassTag,
+        WeakTypeTagClass -> materializeWeakTypeTag,
+        TypeTagClass     -> materializeTypeTag
+      )
+      lazy val TagSymbols = TagMaterializers.keySet
+      lazy val Predef_conforms = getMemberMethod(PredefModule, nme.conforms)
+      lazy val Predef_classOf  = DefinitionsClass.this.Predef_classOf
+
+      lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
+      val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
     }
   }
 }
