@@ -78,7 +78,11 @@ trait Implicits {
       })
       debuglog("update buffer: " + implicitSearchContext.reportBuffer.errors)
     }
-    context.undetparams = context.undetparams filterNot result.subst.from.contains
+    // SI-7944 undetermined type parameters that result from inference within typedImplicit land in
+    //         `implicitSearchContext.undetparams`, *not* in `context.undetparams`
+    //         Here, we copy them up to parent context (analogously to the way the errors are copied above),
+    //         and then filter out any which *were* inferred and are part of the substitutor in the implicit search result.
+    context.undetparams = ((context.undetparams ++ implicitSearchContext.undetparams) filterNot result.subst.from.contains).distinct
 
     if (Statistics.canEnable) Statistics.stopTimer(implicitNanos, start)
     if (Statistics.canEnable) Statistics.stopCounter(rawTypeImpl, rawTypeStart)
