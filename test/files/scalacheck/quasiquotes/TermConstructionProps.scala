@@ -148,8 +148,8 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     val a1 = q"a1"
     val a2 = q"a2"
     val as = List(a1, a2)
-    assert(q"(..$as)" ≈ q"Tuple2($a1, $a2)")
-    assert(q"(a0, ..$as)" ≈ q"Tuple3(a0, $a1, $a2)")
+    assert(q"(..$as)" ≈ q"scala.Tuple2($a1, $a2)")
+    assert(q"(a0, ..$as)" ≈ q"scala.Tuple3(a0, $a1, $a2)")
   }
 
   property("splice empty list into tuple") = test {

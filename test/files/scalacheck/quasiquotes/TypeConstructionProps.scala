@@ -18,9 +18,9 @@ object TypeConstructionProps extends QuasiquoteProperties("type construction")  
   property("tuple type") = test {
     val empty = List[Tree]()
     val ts = List(tq"t1", tq"t2")
-    assert(tq"(..$empty)" ≈ tq"scala.Unit")
-    assert(tq"(..$ts)" ≈ tq"Tuple2[t1, t2]")
-    assert(tq"(t0, ..$ts)" ≈ tq"Tuple3[t0, t1, t2]")
+    assert(tq"(..$empty)" ≈ build.ScalaDot(TypeName("Unit")))
+    assert(tq"(..$ts)" ≈ tq"scala.Tuple2[t1, t2]")
+    assert(tq"(t0, ..$ts)" ≈ tq"scala.Tuple3[t0, t1, t2]")
   }
 
   property("refined type") = test {

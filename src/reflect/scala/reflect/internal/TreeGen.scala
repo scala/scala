@@ -279,11 +279,23 @@ abstract class TreeGen extends macros.TreeBuilder {
   def mkNamedArg(lhs: Tree, rhs: Tree): Tree = atPos(rhs.pos)(AssignOrNamedArg(lhs, rhs))
 
   /** Builds a tuple */
-  def mkTuple(elems: List[Tree]): Tree =
-    if (elems.isEmpty) Literal(Constant(()))
-    else Apply(
-      Select(mkAttributedRef(TupleClass(elems.length).caseModule), nme.apply),
-      elems)
+  def mkTuple(elems: List[Tree], flattenUnary: Boolean = true): Tree = elems match {
+    case Nil =>
+      Literal(Constant(()))
+    case tree :: Nil if flattenUnary =>
+      tree
+    case _ =>
+      Apply(scalaDot(TupleClass(elems.length).companionModule.name), elems)
+  }
+
+  def mkTupleType(elems: List[Tree], flattenUnary: Boolean = true): Tree = elems match {
+    case Nil =>
+      scalaDot(tpnme.Unit)
+    case List(tree) if flattenUnary =>
+      tree
+    case _ =>
+      AppliedTypeTree(scalaDot(TupleClass(elems.length).name), elems)
+  }
 
   // tree1 AND tree2
   def mkAnd(tree1: Tree, tree2: Tree): Tree =

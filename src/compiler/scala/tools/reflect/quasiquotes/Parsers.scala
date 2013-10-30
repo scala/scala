@@ -63,11 +63,11 @@ trait Parsers { self: Quasiquotes =>
         override implicit def fresh: FreshNameCreator = parser.fresh
 
         // q"(..$xs)"
-        override def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree =
+        override def makeTupleTerm(trees: List[Tree]): Tree =
           Apply(Ident(nme.QUASIQUOTE_TUPLE), trees)
 
         // tq"(..$xs)"
-        override def makeTupleType(trees: List[Tree], flattenUnary: Boolean): Tree =
+        override def makeTupleType(trees: List[Tree]): Tree =
           AppliedTypeTree(Ident(tpnme.QUASIQUOTE_TUPLE), trees)
 
         // q"{ $x }"

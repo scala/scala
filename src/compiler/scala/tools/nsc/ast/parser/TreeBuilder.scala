@@ -121,25 +121,12 @@ abstract class TreeBuilder {
   def makeImportSelector(name: Name, nameOffset: Int): ImportSelector =
     ImportSelector(name, nameOffset, name, nameOffset)
 
-  private def makeTuple(trees: List[Tree], isType: Boolean): Tree = {
-    val tupString = "Tuple" + trees.length
-    Apply(scalaDot(if (isType) newTypeName(tupString) else newTermName(tupString)), trees)
-  }
+  def makeTupleTerm(elems: List[Tree]) = gen.mkTuple(elems)
 
-  def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
-    case Nil => Literal(Constant(()))
-    case List(tree) if flattenUnary => tree
-    case _ => makeTuple(trees, isType = false)
-  }
-
-  def makeTupleType(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
-    case Nil => scalaUnitConstr
-    case List(tree) if flattenUnary => tree
-    case _ => AppliedTypeTree(scalaDot(newTypeName("Tuple" + trees.length)), trees)
-  }
+  def makeTupleType(elems: List[Tree]) = gen.mkTupleType(elems)
 
   def stripParens(t: Tree) = t match {
-    case Parens(ts) => atPos(t.pos) { makeTupleTerm(ts, flattenUnary = true) }
+    case Parens(ts) => atPos(t.pos) { makeTupleTerm(ts) }
     case _ => t
   }
 
@@ -362,9 +349,9 @@ abstract class TreeBuilder {
         val ids = (defpat1 :: defpats) map makeValue
         val rhs1 = makeForYield(
           List(ValFrom(pos, defpat1, rhs)),
-          Block(pdefs, atPos(wrappingPos(ids)) { makeTupleTerm(ids, flattenUnary = true) }) setPos wrappingPos(pdefs))
+          Block(pdefs, atPos(wrappingPos(ids)) { makeTupleTerm(ids) }) setPos wrappingPos(pdefs))
         val allpats = (pat :: pats) map (_.duplicate)
-        val vfrom1 = ValFrom(r2p(pos.start, pos.point, rhs1.pos.end), atPos(wrappingPos(allpats)) { makeTuple(allpats, isType = false) } , rhs1)
+        val vfrom1 = ValFrom(r2p(pos.start, pos.point, rhs1.pos.end), atPos(wrappingPos(allpats)) { makeTupleTerm(allpats) } , rhs1)
         makeFor(mapName, flatMapName, vfrom1 :: rest1, body)
       case _ =>
         EmptyTree //may happen for erroneous input
@@ -473,7 +460,7 @@ abstract class TreeBuilder {
           rhs1,
           List(
             atPos(pat1.pos) {
-              CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident.apply, flattenUnary = true))
+              CaseDef(pat1, EmptyTree, makeTupleTerm(vars map (_._1) map Ident.apply))
             }
           ))
       }
