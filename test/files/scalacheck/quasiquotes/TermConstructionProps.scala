@@ -188,11 +188,11 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
 
   property("fresh names are regenerated at each evaluation") = test {
     def plusOne = q"{ _ + 1 }"
-    assert(!(plusOne ≈ plusOne))
+    assert(!plusOne.equalsStructure(plusOne))
     def whileTrue = q"while(true) false"
-    assert(!(whileTrue ≈ whileTrue))
+    assert(!whileTrue.equalsStructure(whileTrue))
     def withEvidence = q"def foo[T: X]"
-    assert(!(withEvidence ≈ withEvidence))
+    assert(!withEvidence.equalsStructure(withEvidence))
   }
 
   property("make sure inference doesn't infer any") = test {

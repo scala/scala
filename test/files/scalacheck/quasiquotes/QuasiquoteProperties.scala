@@ -16,8 +16,30 @@ trait Helpers {
       Result(Prop.Proof)
     }
 
+  object simplify extends Transformer {
+    object SimplifiedName {
+      def unapply[T <: Name](name: T): Option[T] =
+        name.toString.split("\\$").toSeq match {
+          case first :+ last if scala.util.Try(last.toInt).isSuccess && first.nonEmpty =>
+            val value = first.mkString("", "$", "$")
+            Some((if (name.isTermName) TermName(value) else TypeName(value)).asInstanceOf[T])
+          case _ => None
+        }
+    }
+
+    override def transform(tree: Tree): Tree = tree match {
+      case Ident(SimplifiedName(name))                  => Ident(name)
+      case ValDef(mods, SimplifiedName(name), tpt, rhs) => ValDef(mods, name, tpt, rhs)
+      case Bind(SimplifiedName(name), rhs)              => Bind(name, rhs)
+      case _ =>
+        super.transform(tree)
+    }
+
+    def apply(tree: Tree): Tree = transform(tree)
+  }
+
   implicit class TestSimilarTree(tree1: Tree) {
-    def ≈(tree2: Tree) = tree1.equalsStructure(tree2)
+    def ≈(tree2: Tree) = simplify(tree1).equalsStructure(simplify(tree2))
   }
 
   implicit class TestSimilarListTree(lst: List[Tree]) {
