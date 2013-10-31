@@ -53,8 +53,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.perRunCaches
     this.FixedMirrorTreeCreator
     this.FixedMirrorTypeCreator
-    this.BackquotedIdentifierAttachment
     this.CompoundTypeTreeOriginalAttachment
+    this.BackquotedIdentifierAttachment
     this.noPrint
     this.typeDebug
     // inaccessible: this.maxFree

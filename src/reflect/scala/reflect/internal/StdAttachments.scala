@@ -22,13 +22,13 @@ trait StdAttachments {
     def setPos(newpos: Position): this.type = { pos = newpos; this }
   }
 
-  /** When present, indicates that the host `Ident` has been created from a backquoted identifier.
-   */
-  case object BackquotedIdentifierAttachment
-
   /** Stores the trees that give rise to a refined type to be used in reification.
    *  Unfortunately typed `CompoundTypeTree` is lacking essential info, and the reifier cannot use `CompoundTypeTree.tpe`.
    *  Therefore we need this hack (see `Reshape.toPreTyperTypeTree` for a detailed explanation).
    */
   case class CompoundTypeTreeOriginalAttachment(parents: List[Tree], stats: List[Tree])
+
+  /** When present, indicates that the host `Ident` has been created from a backquoted identifier.
+   */
+  case object BackquotedIdentifierAttachment extends PlainAttachment
 }

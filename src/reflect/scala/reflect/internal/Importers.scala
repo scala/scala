@@ -8,6 +8,16 @@ import scala.ref.WeakReference
 // SI-6241: move importers to a mirror
 trait Importers extends api.Importers { to: SymbolTable =>
 
+  /** Attachment that knows how to import itself into another universe. */
+  trait ImportableAttachment {
+    def importAttachment(importer: Importer): this.type
+  }
+
+  /** Attachment that doesn't contain any reflection artificats and can be imported as-is. */
+  trait PlainAttachment extends ImportableAttachment {
+    def importAttachment(importer: Importer): this.type = this
+  }
+
   def mkImporter(from0: api.Universe): Importer { val from: from0.type } = (
     if (to eq from0) {
       new Importer {
@@ -417,10 +427,14 @@ trait Importers extends api.Importers { to: SymbolTable =>
           my.setPos(importPosition(their.pos))
         }
       }
+      importAttachments(their.attachments.all).foreach { my.updateAttachment(_) }
       my
     }
 
     // ============== MISCELLANEOUS ==============
+
+    def importAttachments(attachments: Set[Any]): Set[Any] =
+      attachments.collect { case ia: ImportableAttachment => ia.importAttachment(this) }
 
     def importAnnotationInfo(ann: from.AnnotationInfo): AnnotationInfo = {
       val atp1 = importType(ann.atp)
