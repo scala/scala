@@ -42,6 +42,7 @@ import scala.collection.parallel.immutable.ParRange
  *         and its complexity is O(1).
  */
 @SerialVersionUID(7618862778670199309L)
+@deprecatedInheritance("The implementation details of Range makes inheriting from it unwise.", "2.11.0")
 class Range(val start: Int, val end: Int, val step: Int)
 extends scala.collection.AbstractSeq[Int]
    with IndexedSeq[Int]

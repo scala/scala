@@ -117,7 +117,10 @@ extends AbstractMap[Key, Value]
     put(key, hashOf(key), value)
   }
 
+  @deprecatedOverriding("+= should not be overridden in order to maintain consistency with put.", "2.11.0")
   def += (kv: (Key, Value)): this.type = { put(kv._1, kv._2); this }
+  
+  @deprecatedOverriding("-= should not be overridden in order to maintain consistency with remove.", "2.11.0")
   def -= (key: Key): this.type = { remove(key); this }
 
   override def put(key: Key, value: Value): Option[Value] =

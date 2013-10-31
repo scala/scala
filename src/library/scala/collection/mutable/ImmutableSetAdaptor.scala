@@ -20,6 +20,7 @@ package mutable
  *  @version 1.0, 21/07/2003
  *  @since   1
  */
+@deprecated("Adaptors are inherently unreliable and prone to performance problems.", "2.11.0")
 class ImmutableSetAdaptor[A](protected var set: immutable.Set[A])
 extends AbstractSet[A]
    with Set[A]

@@ -50,7 +50,10 @@ extends AbstractMap[A, B]
   def get(key: A): Option[B] = elems find (_._1 == key) map (_._2)
   def iterator: Iterator[(A, B)] = elems.iterator
 
+  @deprecatedOverriding("No sensible way to override += as private remove is used in multiple places internally.", "2.11.0")
   def += (kv: (A, B)) = { elems = remove(kv._1, elems, List()); elems = kv :: elems; siz += 1; this }
+
+  @deprecatedOverriding("No sensible way to override -= as private remove is used in multiple places internally.", "2.11.0")
   def -= (key: A) = { elems = remove(key, elems, List()); this }
 
   @tailrec
@@ -61,7 +64,10 @@ extends AbstractMap[A, B]
   }
 
 
+  @deprecatedOverriding("No sensible way to override as this functionality relies upon access to private methods.", "2.11.0")
   override def clear() = { elems = List(); siz = 0 }
+
+  @deprecatedOverriding("No sensible way to override as this functionality relies upon access to private methods.", "2.11.0")
   override def size: Int = siz
 }
 

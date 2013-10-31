@@ -24,6 +24,7 @@ package mutable
  *  @define Coll `SynchronizedPriorityQueue`
  *  @define coll synchronized priority queue
  */
+@deprecated("Comprehensive synchronization via selective overriding of methods is inherently unreliable.  Consider java.util.concurrent.ConcurrentSkipListSet as an alternative.", "2.11.0")
 class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQueue[A] {
 
   /** Checks if the queue is empty.

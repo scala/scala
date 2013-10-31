@@ -184,6 +184,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param cmd  the message to send.
    */
+  @deprecated("Scripting is deprecated.", "2.11.0")
   def <<(cmd: Message[A]): Unit = cmd match {
     case Include(Start, x)      => prepend(x)
     case Include(End, x)        => append(x)

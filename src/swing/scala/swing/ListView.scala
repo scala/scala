@@ -200,9 +200,7 @@ class ListView[A] extends Component {
     /**
      * The currently selected items.
      */
-    object items extends scala.collection.SeqProxy[A] {
-      def self = peer.getSelectedValues.map(_.asInstanceOf[A])
-    }
+    lazy val items = peer.getSelectedValues.map(_.asInstanceOf[A])
 
     def intervalMode: IntervalMode.Value = IntervalMode(peer.getSelectionModel.getSelectionMode)
     def intervalMode_=(m: IntervalMode.Value) { peer.getSelectionModel.setSelectionMode(m.id) }

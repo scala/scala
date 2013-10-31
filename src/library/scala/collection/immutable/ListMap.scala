@@ -49,6 +49,7 @@ object ListMap extends ImmutableMapFactory[ListMap] {
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(301002838095710379L)
+@deprecatedInheritance("The semantics of immutable collections makes inheriting from ListMap error-prone.", "2.11.0")
 class ListMap[A, +B]
 extends AbstractMap[A, B]
    with Map[A, B]
