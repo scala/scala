@@ -18,8 +18,8 @@ trait Helpers {
    *  if no exception has been thrown while executing code
    *  block. This is useful for simple one-off tests.
    */
-  def test[T](block: => T)=
-    Prop { (params) =>
+  def test[T](block: => T) =
+    Prop { params =>
       block
       Result(Prop.Proof)
     }
@@ -67,6 +67,18 @@ trait Helpers {
   val parse = toolbox.parse(_)
   val compile = toolbox.compile(_)
   val eval = toolbox.eval(_)
+
+  def typecheck(tree: Tree) = toolbox.typeCheck(tree)
+
+  def typecheckTyp(tree: Tree) = {
+    val q"type $_ = $res" = typecheck(q"type T = $tree")
+    res
+  }
+
+  def typecheckPat(tree: Tree) = {
+    val q"$_ match { case $res => }" = typecheck(q"((): Any) match { case $tree => }")
+    res
+  }
 
   def fails(msg: String, block: String) = {
     def result(ok: Boolean, description: String = "") = {

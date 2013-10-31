@@ -12,4 +12,5 @@ object Test extends Properties("quasiquotes") {
   include(DefinitionConstructionProps)
   include(DefinitionDeconstructionProps)
   include(DeprecationProps)
+  include(TypecheckedProps)
 }

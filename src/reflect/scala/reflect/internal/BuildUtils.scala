@@ -326,7 +326,9 @@ trait BuildUtils { self: SymbolTable =>
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
         case Literal(Constant(())) =>
           Some(Nil)
-        case Apply(TupleCompanionRef(sym), args) if sym == TupleClass(args.length).companionModule =>
+        case Apply(MaybeTypeTreeOriginal(SyntacticTypeApplied(MaybeSelectApply(TupleCompanionRef(sym)), targs)), args)
+          if sym == TupleClass(args.length).companionModule
+          && (targs.isEmpty || targs.length == args.length) =>
           Some(args)
         case _ =>
           None
@@ -339,10 +341,11 @@ trait BuildUtils { self: SymbolTable =>
         gen.mkTupleType(args, flattenUnary = false)
       }
 
-      def unapply(tree: Tree): Option[List[Tree]] =  tree match {
-        case UnitClassRef(_) =>
+      def unapply(tree: Tree): Option[List[Tree]] = tree match {
+        case MaybeTypeTreeOriginal(UnitClassRef(_)) =>
           Some(Nil)
-        case AppliedTypeTree(TupleClassRef(sym), args) if sym == TupleClass(args.length) =>
+        case MaybeTypeTreeOriginal(AppliedTypeTree(TupleClassRef(sym), args))
+          if sym == TupleClass(args.length) =>
           Some(args)
         case _ =>
           None
@@ -356,7 +359,8 @@ trait BuildUtils { self: SymbolTable =>
       }
 
       def unapply(tree: Tree): Option[(List[Tree], Tree)] = tree match {
-        case AppliedTypeTree(FunctionClassRef(sym), args @ (argtpes :+ restpe)) if sym == FunctionClass(args.length - 1) =>
+        case MaybeTypeTreeOriginal(AppliedTypeTree(FunctionClassRef(sym), args @ (argtpes :+ restpe)))
+          if sym == FunctionClass(args.length - 1) =>
           Some((argtpes, restpe))
         case _ => None
       }
@@ -435,6 +439,22 @@ trait BuildUtils { self: SymbolTable =>
         case AssignOrNamedArg(lhs, rhs) => Some((lhs, rhs))
         case Apply(Select(fn, nme.update), args :+ rhs) => Some((atPos(fn.pos)(Apply(fn, args)), rhs))
         case _ => None
+      }
+    }
+
+    // use typetree's original instead of typetree itself
+    protected object MaybeTypeTreeOriginal {
+      def unapply(tree: Tree): Some[Tree] = tree match {
+        case tt: TypeTree => Some(tt.original)
+        case _            => Some(tree)
+      }
+    }
+
+    // drop potential extra call to .apply
+    protected object MaybeSelectApply {
+      def unapply(tree: Tree): Some[Tree] = tree match {
+        case Select(f, nme.apply) => Some(f)
+        case other                => Some(other)
       }
     }
   }
