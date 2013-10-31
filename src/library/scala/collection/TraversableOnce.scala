@@ -97,7 +97,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   // for internal use
   protected[this] def reversed = {
     var elems: List[A] = Nil
-    self.seq foreach (elems ::= _)
+    self foreach (elems ::= _)
     elems
   }
 
@@ -140,7 +140,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var result = z
-    this.seq foreach (x => result = op(result, x))
+    this foreach (x => result = op(result, x))
     result
   }
 

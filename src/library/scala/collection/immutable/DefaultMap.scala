@@ -46,7 +46,7 @@ trait DefaultMap[A, +B] extends Map[A, B] { self =>
    */
   override def - (key: A): Map[A, B] = {
     val b = newBuilder
-    for (kv <- this.seq ; if kv._1 != key) b += kv
+    for (kv <- this ; if kv._1 != key) b += kv
     b.result()
   }
 }
