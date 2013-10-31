@@ -574,7 +574,8 @@ abstract class TreeGen extends macros.TreeBuilder {
      * the limits given by pat and body.
      */
     def makeClosure(pos: Position, pat: Tree, body: Tree): Tree = {
-      def splitpos = wrappingPos(List(pat, body)).withPoint(pos.point).makeTransparent
+      def wrapped  = wrappingPos(List(pat, body))
+      def splitpos = (if (pos != NoPosition) wrapped.withPoint(pos.point) else pos).makeTransparent
       matchVarPattern(pat) match {
         case Some((name, tpt)) =>
           Function(
@@ -590,7 +591,8 @@ abstract class TreeGen extends macros.TreeBuilder {
     /* Make an application  qual.meth(pat => body) positioned at `pos`.
      */
     def makeCombination(pos: Position, meth: TermName, qual: Tree, pat: Tree, body: Tree): Tree =
-      Apply(Select(qual, meth) setPos qual.pos, List(makeClosure(pos, pat, body))) setPos pos
+      Apply(Select(qual, meth) setPos qual.pos updateAttachment ForAttachment,
+        List(makeClosure(pos, pat, body))) setPos pos
 
     /* If `pat` is not yet a `Bind` wrap it in one with a fresh name */
     def makeBind(pat: Tree): Tree = pat match {
@@ -604,13 +606,15 @@ abstract class TreeGen extends macros.TreeBuilder {
     }
 
     /* The position of the closure that starts with generator at position `genpos`. */
-    def closurePos(genpos: Position) = {
-      val end = body.pos match {
-        case NoPosition => genpos.point
-        case bodypos => bodypos.end
+    def closurePos(genpos: Position) =
+      if (genpos == NoPosition) NoPosition
+      else {
+        val end = body.pos match {
+          case NoPosition => genpos.point
+          case bodypos => bodypos.end
+        }
+        rangePos(genpos.source, genpos.start, genpos.point, end)
       }
-      rangePos(genpos.source ,genpos.start, genpos.point, end)
-    }
 
     enums match {
       case (t @ ValFrom(pat, rhs)) :: Nil =>
@@ -634,10 +638,14 @@ abstract class TreeGen extends macros.TreeBuilder {
           List(ValFrom(defpat1, rhs).setPos(t.pos)),
           Yield(Block(pdefs, atPos(wrappingPos(ids)) { mkTuple(ids) }) setPos wrappingPos(pdefs)))
         val allpats = (pat :: pats) map (_.duplicate)
-        val vfrom1 = ValFrom(atPos(wrappingPos(allpats)) { mkTuple(allpats) }, rhs1).setPos(rangePos(t.pos.source, t.pos.start, t.pos.point, rhs1.pos.end))
+        val pos1 =
+          if (t.pos == NoPosition) NoPosition
+          else rangePos(t.pos.source, t.pos.start, t.pos.point, rhs1.pos.end)
+        val vfrom1 = ValFrom(atPos(wrappingPos(allpats)) { mkTuple(allpats) }, rhs1).setPos(pos1)
         mkFor(vfrom1 :: rest1, sugarBody)
       case _ =>
         EmptyTree //may happen for erroneous input
+
     }
   }
 

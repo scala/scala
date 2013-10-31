@@ -244,5 +244,13 @@ private[reflect] trait BuildUtils { self: Universe =>
       def apply(test: Tree): Tree
       def unapply(tree: Tree): Option[(Tree)]
     }
+
+    val SyntacticFor: SyntacticForExtractor
+    val SyntacticForYield: SyntacticForExtractor
+
+    trait SyntacticForExtractor {
+      def apply(enums: List[Tree], body: Tree): Tree
+      def unapply(tree: Tree): Option[(List[Tree], Tree)]
+    }
   }
 }
