@@ -1,10 +1,5 @@
-import org.scalacheck._
-import Prop._
-import Gen._
-import Arbitrary._
-
-import scala.reflect.runtime.universe._
-import Flag._
+import org.scalacheck._, Prop._, Gen._, Arbitrary._
+import scala.reflect.runtime.universe._, Flag._
 
 object TypeConstructionProps extends QuasiquoteProperties("type construction")  {
   property("bare idents contain type names") = test {

@@ -1,15 +1,7 @@
-import scala.reflect.runtime.universe._
-import scala.reflect.runtime.universe.definitions._
-import scala.reflect.runtime.universe.Flag._
-import scala.reflect.runtime.currentMirror
-import scala.reflect.api.{Liftable, Universe}
-import scala.reflect.macros.TypecheckException
+import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.tools.reflect.{ToolBox, ToolBoxError}
-
-import org.scalacheck._
-import Prop._
-import Gen._
-import Arbitrary._
+import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.universe._, Flag._
 
 class QuasiquoteProperties(name: String) extends Properties(name) with ArbitraryTreesAndNames with Helpers
 
