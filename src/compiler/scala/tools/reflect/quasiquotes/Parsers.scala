@@ -152,6 +152,13 @@ trait Parsers { self: Quasiquotes =>
           in.nextToken()
           stats
       }
+
+      override def enumerator(isFirst: Boolean, allowNestedIf: Boolean = true) =
+        if (isHole && lookingAhead { in.token == EOF || in.token == RPAREN || isStatSep }) {
+          val res = build.SyntacticValFrom(Bind(in.name, Ident(nme.WILDCARD)), Ident(nme.QUASIQUOTE_FOR_ENUM)) :: Nil
+          in.nextToken()
+          res
+        } else super.enumerator(isFirst, allowNestedIf)
     }
   }
 
@@ -174,11 +181,21 @@ trait Parsers { self: Quasiquotes =>
     }
   }
 
+  object ForEnumeratorParser extends Parser {
+    def entryPoint = { parser =>
+      val enums = parser.enumerator(isFirst = false, allowNestedIf = false)
+      assert(enums.length == 1)
+      enums.head
+    }
+  }
+
   object FreshName {
     def unapply(name: Name): Option[String] =
-      name.toString.split("\\$") match {
-        case Array(qq, left, right) if qq + "$" == nme.QUASIQUOTE_PREFIX && Try(right.toInt).isSuccess =>
-          Some(left + "$")
+      name.toString.split("\\$").toSeq match {
+        case qq +: (middle :+ last)
+          if qq + "$" == nme.QUASIQUOTE_PREFIX
+          && Try(last.toInt).isSuccess && middle.nonEmpty =>
+          Some(middle.mkString("", "$", "$"))
         case _ =>
           None
       }

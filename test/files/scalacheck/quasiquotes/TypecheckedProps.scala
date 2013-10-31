@@ -27,4 +27,16 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked") {
     assert(originals(argtpes) ≈ intint)
     assert(original(restpe).get ≈ int)
   }
+
+  property("for/for-yield") = test {
+    val enums = fq"x <- xs" :: fq"x1 = x + 1" :: fq"if x1 % 2 == 0" :: Nil
+    val body = q"x1"
+    val xs = q"val xs = List(1, 2, 3)"
+    val q"$_; for(..$enums0) yield $body0" = typecheck(q"$xs; for(..$enums) yield $body")
+    assert(enums0 ≈ enums)
+    assert(body0 ≈ body)
+    val q"$_; for(..$enums1) $body1" = typecheck(q"$xs; for(..$enums) $body")
+    assert(enums1 ≈ enums)
+    assert(body1 ≈ body)
+  }
 }

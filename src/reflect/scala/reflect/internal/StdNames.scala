@@ -327,6 +327,7 @@ trait StdNames {
     val QUASIQUOTE_FILE: String            = "<quasiquote>"
     val QUASIQUOTE_TUPLE: NameType         = "$quasiquote$tuple$"
     val QUASIQUOTE_CASE: NameType          = "$quasiquote$case$"
+    val QUASIQUOTE_FOR_ENUM: NameType      = "$quasiquote$for$enum$"
     val MIXIN_CONSTRUCTOR: NameType        = "$init$"
     val MODULE_INSTANCE_FIELD: NameType    = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                    = "$outer"
@@ -592,6 +593,9 @@ trait StdNames {
     val SyntacticBlock: NameType       = "SyntacticBlock"
     val SyntacticClassDef: NameType    = "SyntacticClassDef"
     val SyntacticDefDef: NameType      = "SyntacticDefDef"
+    val SyntacticFilter: NameType      = "SyntacticFilter"
+    val SyntacticFor: NameType         = "SyntacticFor"
+    val SyntacticForYield: NameType    = "SyntacticForYield"
     val SyntacticFunction: NameType    = "SyntacticFunction"
     val SyntacticFunctionType: NameType = "SyntacticFunctionType"
     val SyntacticPackageObjectDef: NameType = "SyntacticPackageObjectDef"
@@ -602,6 +606,8 @@ trait StdNames {
     val SyntacticTupleType: NameType   = "SyntacticTupleType"
     val SyntacticTypeApplied: NameType = "SyntacticTypeApplied"
     val SyntacticValDef: NameType      = "SyntacticValDef"
+    val SyntacticValEq: NameType       = "SyntacticValEq"
+    val SyntacticValFrom: NameType     = "SyntacticValFrom"
     val SyntacticVarDef: NameType      = "SyntacticVarDef"
     val This: NameType                 = "This"
     val ThisType: NameType             = "ThisType"
@@ -745,7 +751,6 @@ trait StdNames {
     val typedProductIterator: NameType = "typedProductIterator"
     val TypeName: NameType             = "TypeName"
     val typeTagToManifest: NameType    = "typeTagToManifest"
-
     val unapply: NameType              = "unapply"
     val unapplySeq: NameType           = "unapplySeq"
     val unbox: NameType                = "unbox"
@@ -764,6 +769,7 @@ trait StdNames {
     val tq: NameType                   = "tq"
     val cq: NameType                   = "cq"
     val pq: NameType                   = "pq"
+    val fq: NameType                   = "fq"
 
     // unencoded operators
     object raw {

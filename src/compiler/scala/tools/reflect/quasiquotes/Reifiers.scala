@@ -127,6 +127,7 @@ trait Reifiers { self: Quasiquotes =>
       case RefineStatPlaceholder(tree, _, _) => reifyRefineStat(tree)
       case EarlyDefPlaceholder(tree, _, _) => reifyEarlyDef(tree)
       case PackageStatPlaceholder(tree, _, _) => reifyPackageStat(tree)
+      case ForEnumPlaceholder(tree, _, _) => tree
       case _ => EmptyTree
     }
 
@@ -148,6 +149,16 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticValDef, mods, name, tpt, rhs)
       case SyntacticVarDef(mods, name, tpt, rhs) =>
         reifyBuildCall(nme.SyntacticVarDef, mods, name, tpt, rhs)
+      case SyntacticValFrom(pat, rhs) =>
+        reifyBuildCall(nme.SyntacticValFrom, pat, rhs)
+      case SyntacticValEq(pat, rhs) =>
+        reifyBuildCall(nme.SyntacticValEq, pat, rhs)
+      case SyntacticFilter(cond) =>
+        reifyBuildCall(nme.SyntacticFilter, cond)
+      case SyntacticFor(enums, body) =>
+        reifyBuildCall(nme.SyntacticFor, enums, body)
+      case SyntacticForYield(enums, body) =>
+        reifyBuildCall(nme.SyntacticForYield, enums, body)
       case SyntacticAssign(lhs, rhs) =>
         reifyBuildCall(nme.SyntacticAssign, lhs, rhs)
       case SyntacticApplied(fun, List(args))
@@ -275,7 +286,7 @@ trait Reifiers { self: Quasiquotes =>
       case RefineStatPlaceholder(tree, _, DotDot) => reifyRefineStat(tree)
       case EarlyDefPlaceholder(tree, _, DotDot) => reifyEarlyDef(tree)
       case PackageStatPlaceholder(tree, _, DotDot) => reifyPackageStat(tree)
-
+      case ForEnumPlaceholder(tree, _, DotDot) => tree
       case List(Placeholder(tree, _, DotDotDot)) => tree
     } {
       reify(_)
