@@ -31,4 +31,8 @@ trait StdAttachments {
   /** When present, indicates that the host `Ident` has been created from a backquoted identifier.
    */
   case object BackquotedIdentifierAttachment extends PlainAttachment
+
+  /** Identifies trees are either result or intermidiate value of for loop desugaring.
+   */
+  case object ForAttachment extends PlainAttachment
 }

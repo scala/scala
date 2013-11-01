@@ -53,13 +53,6 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     NewFromConstructor(constructor, expr)
   }
 
-  // annotate the expression with @unchecked
-  def mkUnchecked(expr: Tree): Tree = atPos(expr.pos) {
-    // This can't be "Annotated(New(UncheckedClass), expr)" because annotations
-    // are very picky about things and it crashes the compiler with "unexpected new".
-    Annotated(New(scalaDot(UncheckedClass.name), Nil), expr)
-  }
-
   // Builds a tree of the form "{ lhs = rhs ; lhs  }"
   def mkAssignAndReturn(lhs: Symbol, rhs: Tree): Tree = {
     def lhsRef = if (lhs.owner.isClass) Select(This(lhs.owner), lhs) else Ident(lhs)
@@ -263,7 +256,4 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     val stats1 = if (stats.isEmpty) List(Literal(Constant(()))) else stats
     mkNew(Nil, noSelfType, stats1, NoPosition, NoPosition)
   }
-
-  def mkSyntheticParam(pname: TermName) =
-    ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
 }

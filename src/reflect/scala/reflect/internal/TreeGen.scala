@@ -4,6 +4,7 @@ package internal
 
 import Flags._
 import util._
+import scala.collection.mutable.ListBuffer
 
 abstract class TreeGen extends macros.TreeBuilder {
   val global: SymbolTable
@@ -311,7 +312,7 @@ abstract class TreeGen extends macros.TreeBuilder {
   }
 
   def mkSeqApply(arg: Tree): Apply = {
-    val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
+    val factory = Select(mkAttributedRef(SeqModule), nme.apply)
     Apply(factory, List(arg))
   }
 
@@ -448,17 +449,15 @@ abstract class TreeGen extends macros.TreeBuilder {
     else Block(stats.init, stats.last)
 
   def mkTreeOrBlock(stats: List[Tree]) = stats match {
-    case Nil => EmptyTree
+    case Nil         => EmptyTree
     case head :: Nil => head
-    case _ => gen.mkBlock(stats)
+    case _           => mkBlock(stats)
   }
 
   /** Create a tree representing an assignment <lhs = rhs> */
   def mkAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
-    case Apply(fn, args) =>
-      Apply(atPos(fn.pos)(Select(fn, nme.update)), args :+ rhs)
-    case _ =>
-      Assign(lhs, rhs)
+    case Apply(fn, args) => Apply(atPos(fn.pos)(Select(fn, nme.update)), args :+ rhs)
+    case _               => Assign(lhs, rhs)
   }
 
   def mkPackageObject(defn: ModuleDef, pidPos: Position = NoPosition, pkgPos: Position = NoPosition) = {
@@ -466,4 +465,14 @@ abstract class TreeGen extends macros.TreeBuilder {
     val pid    = atPos(pidPos)(Ident(defn.name))
     atPos(pkgPos)(PackageDef(pid, module :: Nil))
   }
+
+  // annotate the expression with @unchecked
+  def mkUnchecked(expr: Tree): Tree = atPos(expr.pos) {
+    // This can't be "Annotated(New(UncheckedClass), expr)" because annotations
+    // are very picky about things and it crashes the compiler with "unexpected new".
+    Annotated(New(scalaDot(tpnme.unchecked), Nil), expr)
+  }
+
+  def mkSyntheticParam(pname: TermName) =
+    ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
 }

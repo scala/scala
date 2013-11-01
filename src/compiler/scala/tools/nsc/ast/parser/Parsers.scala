@@ -1394,7 +1394,7 @@ self =>
           newLinesOpt()
           if (in.token == YIELD) {
             in.nextToken()
-            makeForYield(enums, expr())
+            makeFor(enums, Yield(expr()))
           } else {
             makeFor(enums, expr())
           }
@@ -1700,22 +1700,25 @@ self =>
      *                |  val Pattern1 `=' Expr
      *  }}}
      */
-    def enumerators(): List[Enumerator] = {
-      val enums = new ListBuffer[Enumerator]
-      generator(enums, eqOK = false)
+    def enumerators(): List[Tree] = {
+      val enums = new ListBuffer[Tree]
+      enums ++= enumerator(isFirst = true)
       while (isStatSep) {
         in.nextToken()
-        if (in.token == IF) enums += makeFilter(in.offset, guard())
-        else generator(enums, eqOK = true)
+        enums ++= enumerator(isFirst = false)
       }
       enums.toList
     }
+
+    def enumerator(isFirst: Boolean, allowNestedIf: Boolean = true): List[Tree] =
+      if (in.token == IF && !isFirst) makeFilter(in.offset, guard()) :: Nil
+      else generator(!isFirst, allowNestedIf)
 
     /** {{{
      *  Generator ::= Pattern1 (`<-' | `=') Expr [Guard]
      *  }}}
      */
-    def generator(enums: ListBuffer[Enumerator], eqOK: Boolean) {
+    def generator(eqOK: Boolean, allowNestedIf: Boolean = true): List[Tree] = {
       val start  = in.offset
       val hasVal = in.token == VAL
       if (hasVal)
@@ -1733,10 +1736,19 @@ self =>
       if (hasEq && eqOK) in.nextToken()
       else accept(LARROW)
       val rhs = expr()
-      enums += makeGenerator(r2p(start, point, in.lastOffset max start), pat, hasEq, rhs)
-      // why max above? IDE stress tests have shown that lastOffset could be less than start,
+
+      def loop(): List[Tree] =
+        if (in.token != IF) Nil
+        else makeFilter(in.offset, guard()) :: loop()
+
+      val tail =
+        if (allowNestedIf) loop()
+        else Nil
+
+      // why max? IDE stress tests have shown that lastOffset could be less than start,
       // I guess this happens if instead if a for-expression we sit on a closing paren.
-      while (in.token == IF) enums += makeFilter(in.offset, guard())
+      val genPos = r2p(start, point, in.lastOffset max start)
+      makeGenerator(genPos, pat, hasEq, rhs) :: tail
     }
 
     def makeFilter(start: Offset, tree: Tree) = Filter(r2p(start, tree.pos.point, tree.pos.end), tree)
