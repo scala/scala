@@ -861,7 +861,7 @@ private[internal] trait TypeMaps {
   class InstantiateDependentMap(params: List[Symbol], actuals0: List[Type]) extends TypeMap with KeepOnlyTypeConstraints {
     private val actuals      = actuals0.toIndexedSeq
     private val existentials = new Array[Symbol](actuals.size)
-    def existentialsNeeded: List[Symbol] = existentials.filter(_ ne null).toList
+    def existentialsNeeded: List[Symbol] = existentials.iterator.filter(_ ne null).toList
 
     private object StableArg {
       def unapply(param: Symbol) = Arg unapply param map actuals filter (tp =>
