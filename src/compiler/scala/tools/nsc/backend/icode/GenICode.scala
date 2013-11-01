@@ -46,8 +46,10 @@ abstract class GenICode extends SubComponent  {
     var unit: CompilationUnit = NoCompilationUnit
 
     override def run() {
-      scalaPrimitives.init()
-      classes.clear()
+      if (!settings.isBCodeActive) {
+        scalaPrimitives.init()
+        classes.clear()
+      }
       super.run()
     }
 
