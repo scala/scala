@@ -128,6 +128,7 @@ abstract class TailCalls extends Transform {
         logResult(msg)(method.newValue(nme.THIS, pos, SYNTHETIC) setInfo currentClass.typeOfThis)
       }
       override def toString = s"${method.name} tparams=$tparams tailPos=$tailPos label=$label label info=${label.info}"
+
     }
 
     object EmptyTailContext extends TailContext {
@@ -185,6 +186,18 @@ abstract class TailCalls extends Transform {
     private def noTailContext()  = new ClonedTailContext(ctx, tailPos = false)
     private def yesTailContext() = new ClonedTailContext(ctx, tailPos = true)
 
+
+    override def transformUnit(unit: CompilationUnit): Unit = {
+      try {
+        super.transformUnit(unit)
+      } finally {
+        // OPT clear these after each compilation unit
+        failPositions.clear()
+        failReasons.clear()
+        accessed.clear()
+      }
+    }
+
     /** Rewrite this tree to contain no tail recursive calls */
     def transform(tree: Tree, nctx: TailContext): Tree = {
       val saved = ctx
@@ -218,12 +231,12 @@ abstract class TailCalls extends Transform {
          */
         def fail(reason: String) = {
           debuglog("Cannot rewrite recursive call at: " + fun.pos + " because: " + reason)
-          failReasons(ctx) = reason
+          if (ctx.isMandatory) failReasons(ctx) = reason
           treeCopy.Apply(tree, noTailTransform(target), transformArgs)
         }
         /* Position of failure is that of the tree being considered. */
         def failHere(reason: String) = {
-          failPositions(ctx) = fun.pos
+          if (ctx.isMandatory) failPositions(ctx) = fun.pos
           fail(reason)
         }
         def rewriteTailCall(recv: Tree): Tree = {
