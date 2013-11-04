@@ -98,6 +98,27 @@ trait CompilationUnits { global: Global =>
       override def toString = map.toString
     }
 
+    // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
+    // is cached and re-used in typedDefDef / typedValDef
+    // Also used to cache imports type-checked by namer.
+    // These are currently transported as tree attachments, but that fact is encapsulated here.
+    object transformed {
+      def update(t1: Tree, t2: Tree): Unit = {
+        if (t1 ne t2)
+          t1.updateAttachment(TransformedTreeAttachment(t2))
+      }
+      def remove(t: Tree): Option[Tree] = {
+        val result = get(t)
+        if (result.isDefined) t.removeAttachment[TransformedTreeAttachment]
+        result
+      }
+      def get(t: Tree): Option[Tree] = t.attachments.get[TransformedTreeAttachment].map(_.newTree)
+      def getOrElse(t: Tree, default: => Tree): Tree = apply(t).orElse(default)
+      def apply(t: Tree): Tree = get(t).getOrElse(EmptyTree)
+      def contains(t: Tree): Boolean = t.hasAttachment[TransformedTreeAttachment]
+      def clear(): Unit = ()
+    }
+
     /** things to check at end of compilation unit */
     val toCheck = new ListBuffer[() => Unit]
 

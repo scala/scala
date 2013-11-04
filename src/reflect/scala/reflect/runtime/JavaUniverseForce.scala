@@ -60,6 +60,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ForAttachment
     this.SyntheticUnitAttachment
     this.SubpatternsAttachment
+    this.TransformedTreeAttachment
     this.noPrint
     this.typeDebug
     // inaccessible: this.maxFree

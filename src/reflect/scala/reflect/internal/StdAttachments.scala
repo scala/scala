@@ -42,4 +42,7 @@ trait StdAttachments {
 
   /** Untyped list of subpatterns attached to selector dummy. */
   case class SubpatternsAttachment(patterns: List[Tree])
+
+  /** Stores typechecked trees created by the Namer when computing signature types. The typer reuses these to avoid repeating work. */
+  final case class TransformedTreeAttachment(newTree: Tree)
 }
