@@ -237,7 +237,8 @@ abstract class TailCalls extends Transform {
 
         if (!ctx.isEligible)            fail("it is neither private nor final so can be overridden")
         else if (!isRecursiveCall) {
-          if (receiverIsSuper)          failHere("it contains a recursive call targeting a supertype")
+          if (ctx.isMandatory && receiverIsSuper) // OPT expensive check, avoid unless we will actually report the error
+                                        failHere("it contains a recursive call targeting a supertype")
           else                          failHere(defaultReason)
         }
         else if (!matchesTypeArgs)      failHere("it is called recursively with different type arguments")
