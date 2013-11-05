@@ -170,7 +170,7 @@ trait Parsers { self: Quasiquotes =>
   object PatternParser extends Parser {
     def entryPoint = { parser =>
       val pat = parser.noSeq.pattern1()
-      parser.treeBuilder.patvarTransformer.transform(pat)
+      gen.patvarTransformer.transform(pat)
     }
   }
 

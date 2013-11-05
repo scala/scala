@@ -1394,9 +1394,9 @@ self =>
           newLinesOpt()
           if (in.token == YIELD) {
             in.nextToken()
-            makeFor(enums, Yield(expr()))
+            gen.mkFor(enums, gen.Yield(expr()))
           } else {
-            makeFor(enums, expr())
+            gen.mkFor(enums, expr())
           }
         }
         def adjustStart(tree: Tree) =
@@ -1748,10 +1748,10 @@ self =>
       // why max? IDE stress tests have shown that lastOffset could be less than start,
       // I guess this happens if instead if a for-expression we sit on a closing paren.
       val genPos = r2p(start, point, in.lastOffset max start)
-      makeGenerator(genPos, pat, hasEq, rhs) :: tail
+      gen.mkGenerator(genPos, pat, hasEq, rhs) :: tail
     }
 
-    def makeFilter(start: Offset, tree: Tree) = Filter(r2p(start, tree.pos.point, tree.pos.end), tree)
+    def makeFilter(start: Offset, tree: Tree) = gen.Filter(tree).setPos(r2p(start, tree.pos.point, tree.pos.end))
 
 /* -------- PATTERNS ------------------------------------------- */
 
@@ -2466,11 +2466,10 @@ self =>
           EmptyTree
         }
       def mkDefs(p: Tree, tp: Tree, rhs: Tree): List[Tree] = {
-        val trees =
-          makePatDef(newmods,
-                     if (tp.isEmpty) p
-                     else Typed(p, tp) setPos (p.pos union tp.pos),
-                     rhs)
+        val trees = {
+          val pat = if (tp.isEmpty) p else Typed(p, tp) setPos (p.pos union tp.pos)
+          gen.mkPatDef(newmods, pat, rhs)
+        }
         if (newmods.isDeferred) {
           trees match {
             case List(ValDef(_, _, _, EmptyTree)) =>
