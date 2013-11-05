@@ -284,17 +284,17 @@ abstract class TreeInfo {
   /** Is tree a self constructor call this(...)? I.e. a call to a constructor of the
    *  same object?
    */
-  def isSelfConstrCall(tree: Tree): Boolean = tree match {
-    case Applied(Ident(nme.CONSTRUCTOR), _, _)           => true
-    case Applied(Select(This(_), nme.CONSTRUCTOR), _, _) => true
-    case _                                               => false
+  def isSelfConstrCall(tree: Tree): Boolean = dissectApplied(tree).core match {
+    case Ident(nme.CONSTRUCTOR)           => true
+    case Select(This(_), nme.CONSTRUCTOR) => true
+    case _                                => false
   }
 
   /** Is tree a super constructor call?
    */
-  def isSuperConstrCall(tree: Tree): Boolean = tree match {
-    case Applied(Select(Super(_, _), nme.CONSTRUCTOR), _, _) => true
-    case _                                                   => false
+  def isSuperConstrCall(tree: Tree): Boolean = dissectApplied(tree).core match {
+    case Select(Super(_, _), nme.CONSTRUCTOR) => true
+    case _                                    => false
   }
 
   /**
