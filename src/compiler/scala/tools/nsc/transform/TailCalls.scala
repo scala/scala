@@ -245,6 +245,11 @@ abstract class TailCalls extends Transform {
         else if (!receiverIsSame)       failHere("it changes type of 'this' on a polymorphic recursive call")
         else                            rewriteTailCall(receiver)
       }
+      
+      def isEligible(tree: DefDef) = {
+        val sym = tree.symbol
+        !(sym.hasAccessorFlag || sym.isConstructor)
+      }
 
       tree match {
         case ValDef(_, _, _, _) =>
@@ -253,7 +258,7 @@ abstract class TailCalls extends Transform {
 
           super.transform(tree)
 
-        case dd @ DefDef(_, name, _, vparamss0, _, rhs0) if !dd.symbol.hasAccessorFlag =>
+        case dd @ DefDef(_, name, _, vparamss0, _, rhs0) if isEligible(dd) =>
           val newCtx = new DefDefTailContext(dd)
           if (newCtx.isMandatory && !(newCtx containsRecursiveCall rhs0))
             unit.error(tree.pos, "@tailrec annotated method contains no recursive calls")
