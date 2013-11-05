@@ -416,8 +416,8 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  may be invoked arbitrary number of times.
    *
    *  For example, one might want to process some elements and then produce a `Set`. In this
-   *  case, `seqop` would process an element and append it to the list, while `combop`
-   *  would concatenate two lists from different partitions together. The initial value
+   *  case, `seqop` would process an element and append it to the set, while `combop`
+   *  would concatenate two sets from different partitions together. The initial value
    *  `z` would be an empty set.
    *
    *  {{{
