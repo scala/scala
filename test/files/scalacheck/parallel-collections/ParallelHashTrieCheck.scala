@@ -24,6 +24,8 @@ abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelMapCheck[K
 
   def hasStrictOrder = false
 
+  def tasksupport: TaskSupport
+
   def ofSize(vals: Seq[Gen[(K, V)]], sz: Int) = {
     var hm = new immutable.HashMap[K, V]
     val gen = vals(rnd.nextInt(vals.size))
@@ -33,6 +35,7 @@ abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelMapCheck[K
 
   def fromTraversable(t: Traversable[(K, V)]) = {
     var phm = new ParHashMap[K, V]
+    phm.tasksupport = tasksupport
     var i = 0
     for (kv <- t.toList) {
       phm += kv
@@ -44,7 +47,7 @@ abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelMapCheck[K
 }
 
 
-object IntIntParallelHashMapCheck extends ParallelHashMapCheck[Int, Int]("Int, Int")
+class IntIntParallelHashMapCheck(val tasksupport: TaskSupport) extends ParallelHashMapCheck[Int, Int]("Int, Int")
 with PairOperators[Int, Int]
 with PairValues[Int, Int]
 {
@@ -76,6 +79,8 @@ abstract class ParallelHashSetCheck[T](tp: String) extends ParallelSetCheck[T]("
 
   def hasStrictOrder = false
 
+  def tasksupport: TaskSupport
+
   def ofSize(vals: Seq[Gen[T]], sz: Int) = {
     var hm = new immutable.HashSet[T]
     val gen = vals(rnd.nextInt(vals.size))
@@ -84,13 +89,14 @@ abstract class ParallelHashSetCheck[T](tp: String) extends ParallelSetCheck[T]("
   }
 
   def fromTraversable(t: Traversable[T]) = {
-    var phm = new ParHashSet[T]
+    var phs = new ParHashSet[T]
+    phs.tasksupport = tasksupport
     var i = 0
     for (kv <- t.toList) {
-      phm += kv
+      phs += kv
       i += 1
     }
-    phm
+    phs
   }
 
   override def printDataStructureDebugInfo(ds: AnyRef) = ds match {
@@ -103,7 +109,7 @@ abstract class ParallelHashSetCheck[T](tp: String) extends ParallelSetCheck[T]("
 }
 
 
-object IntParallelHashSetCheck extends ParallelHashSetCheck[Int]("Int")
+class IntParallelHashSetCheck(val tasksupport: TaskSupport) extends ParallelHashSetCheck[Int]("Int")
 with IntOperators
 with IntValues
 {
