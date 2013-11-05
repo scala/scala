@@ -223,5 +223,26 @@ private[reflect] trait BuildUtils { self: Universe =>
       def apply(lhs: Tree, rhs: Tree): Tree
       def unapply(tree: Tree): Option[(Tree, Tree)]
     }
+
+    val SyntacticValFrom: SyntacticValFromExtractor
+
+    trait SyntacticValFromExtractor {
+      def apply(pat: Tree, rhs: Tree): Tree
+      def unapply(tree: Tree): Option[(Tree, Tree)]
+    }
+
+    val SyntacticValEq: SyntacticValEqExtractor
+
+    trait SyntacticValEqExtractor {
+      def apply(pat: Tree, rhs: Tree): Tree
+      def unapply(tree: Tree): Option[(Tree, Tree)]
+    }
+
+    val SyntacticFilter: SyntacticFilterExtractor
+
+    trait SyntacticFilterExtractor {
+      def apply(test: Tree): Tree
+      def unapply(tree: Tree): Option[(Tree)]
+    }
   }
 }

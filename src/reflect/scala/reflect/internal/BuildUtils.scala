@@ -442,6 +442,68 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
 
+    object SyntacticValFrom extends SyntacticValFromExtractor {
+      def apply(pat: Tree, rhs: Tree): Tree = gen.ValFrom(pat, gen.mkCheckIfRefutable(pat, rhs))
+      def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
+        case gen.ValFrom(pat, UnCheckIfRefutable(pat1, rhs1)) if pat.equalsStructure(pat1) =>
+          Some((pat, rhs1))
+        case gen.ValFrom(pat, rhs) =>
+          Some((pat, rhs))
+        case _ => None
+      }
+    }
+
+    object SyntacticValEq extends SyntacticValEqExtractor {
+      def apply(pat: Tree, rhs: Tree): Tree         = gen.ValEq(pat, rhs)
+      def unapply(tree: Tree): Option[(Tree, Tree)] = gen.ValEq.unapply(tree)
+    }
+
+    object SyntacticFilter extends SyntacticFilterExtractor {
+      def apply(tree: Tree): Tree           = gen.Filter(tree)
+      def unapply(tree: Tree): Option[Tree] = gen.Filter.unapply(tree)
+    }
+
+    // undo gen.mkSyntheticParam
+    protected object UnSyntheticParam {
+      def unapply(tree: Tree): Option[TermName] = tree match {
+        case ValDef(mods, name, _, EmptyTree)
+          if mods.hasFlag(SYNTHETIC) && mods.hasFlag(PARAM) =>
+          Some(name)
+        case _ => None
+      }
+    }
+
+    // undo gen.mkVisitor
+    protected object UnVisitor {
+      def unapply(tree: Tree): Option[(TermName, List[CaseDef])] = tree match {
+        case Function(UnSyntheticParam(x1) :: Nil, Match(MaybeUnchecked(Ident(x2)), cases))
+          if x1 == x2 =>
+          Some((x1, cases))
+        case _ => None
+      }
+    }
+
+    // match call to either withFilter or filter
+    protected object FilterCall {
+      def unapply(tree: Tree): Option[(Tree,Tree)] = tree match {
+        case Apply(Select(obj, nme.withFilter | nme.filter), arg :: Nil) =>
+          Some(obj, arg)
+        case _ => None
+      }
+    }
+
+    // undo gen.mkCheckIfRefutable
+    protected object UnCheckIfRefutable {
+      def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
+        case FilterCall(rhs, UnVisitor(name,
+            CaseDef(pat, EmptyTree, Literal(Constant(true))) ::
+            CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(Constant(false))) :: Nil))
+          if name.toString.contains(nme.CHECK_IF_REFUTABLE_STRING) =>
+          Some((pat, rhs))
+        case _ => None
+      }
+    }
+
     // use typetree's original instead of typetree itself
     protected object MaybeTypeTreeOriginal {
       def unapply(tree: Tree): Some[Tree] = tree match {
@@ -455,6 +517,18 @@ trait BuildUtils { self: SymbolTable =>
       def unapply(tree: Tree): Some[Tree] = tree match {
         case Select(f, nme.apply) => Some(f)
         case other                => Some(other)
+      }
+    }
+
+    // drop potential @scala.unchecked annotation
+    protected object MaybeUnchecked {
+      def unapply(tree: Tree): Some[Tree] = tree match {
+        case Annotated(SyntacticNew(Nil, Apply(ScalaDot(tpnme.unchecked), Nil) :: Nil, noSelfType, Nil), annottee) =>
+          Some(annottee)
+        case Typed(annottee, MaybeTypeTreeOriginal(
+          Annotated(SyntacticNew(Nil, Apply(ScalaDot(tpnme.unchecked), Nil) :: Nil, noSelfType, Nil), _))) =>
+          Some(annottee)
+        case annottee => Some(annottee)
       }
     }
   }
