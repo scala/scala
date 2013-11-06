@@ -3404,8 +3404,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  @return           the new list of info-adjusted symbols
    */
   def deriveSymbols(syms: List[Symbol], symFn: Symbol => Symbol): List[Symbol] = {
-    val syms1 = syms map symFn
-    syms1 map (_ substInfo (syms, syms1))
+    val syms1 = mapList(syms)(symFn)
+    mapList(syms1)(_ substInfo (syms, syms1))
   }
 
   /** Derives a new Type by first deriving new symbols as in deriveSymbols,
@@ -3445,9 +3445,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  @return           the newly created, info-adjusted symbols
    */
   def cloneSymbolsAndModify(syms: List[Symbol], infoFn: Type => Type): List[Symbol] =
-    cloneSymbols(syms) map (_ modifyInfo infoFn)
+    mapList(cloneSymbols(syms))(_ modifyInfo infoFn)
   def cloneSymbolsAtOwnerAndModify(syms: List[Symbol], owner: Symbol, infoFn: Type => Type): List[Symbol] =
-    cloneSymbolsAtOwner(syms, owner) map (_ modifyInfo infoFn)
+    mapList(cloneSymbolsAtOwner(syms, owner))(_ modifyInfo infoFn)
 
   /** Functions which perform the standard clone/substituting on the given symbols and type,
    *  then call the creator function with the new symbols and type as arguments.
