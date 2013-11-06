@@ -75,11 +75,8 @@ TODO:
   <target name="distpack-opt" description="Builds an optimised distribution."> <optimized name="distpack"/></target>
   <target name="distpack-maven-opt" description="Builds an optimised maven distribution."><optimized name="distpack-maven"/></target>
 
-  <target name="publish-core-signed-opt" description="Builds an untested optimised core (library/reflect/compiler) and publishes to maven, signed.">
-    <optimized name="publish-core-signed"/>
-  </target>
-  <target name="publish-core-signed-opt-nodocs" description="Builds an untested, undocumented optimised core (library/reflect/compiler) and publishes to maven, signed.">
-    <antcall target="publish-core-signed">
+  <target name="publish-core-opt-nodocs" description="Builds an untested, undocumented optimised core (library/reflect/compiler) and publishes to maven.">
+    <antcall target="publish-core">
       <param name="docs.skip" value="1"/>
       <param name="scalac.args.optimise" value="-optimise"/>
     </antcall>
@@ -2320,10 +2317,9 @@ MAIN DISTRIBUTION PACKAGING
     <deploy-one dir="${maven-base}/" name="scala-library"  local="true"/>
     <deploy-one dir="${maven-base}/" name="scala-reflect"  local="true"/>
   </target>
-  <target name="publish-core-signed" depends="pack-maven.core, init.maven">
-    <deploy-one dir="${maven-base}/" name="scala-compiler" signed="true"/>
-    <deploy-one dir="${maven-base}/" name="scala-library"  signed="true"/>
-    <deploy-one dir="${maven-base}/" name="scala-reflect"  signed="true"/>
+
+  <target name="publish-core-opt" description="Builds an untested optimised core (library/reflect/compiler) and publishes to maven.">
+    <optimized name="publish-core"/>
   </target>
 
 <!-- ===========================================================================
