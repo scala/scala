@@ -416,6 +416,17 @@ TODO:
     <echo message="     OSGi version: ${osgi.version.number}" />
     <echo message="canonical version: ${version.number}" />
 
+    <echoproperties destfile="buildcharacter.properties">
+      <propertyset>
+        <propertyref regex="time.*" />
+        <propertyref regex="git.*" />
+        <propertyref name="java.vm.name" />
+        <propertyref regex=".*version.*" />
+        <propertyref regex="scalac.args.*" />
+        <propertyref name="scalacfork.jvmargs" />
+      </propertyset>
+    </echoproperties>
+
     <!-- validate version suffixes -->
     <if><equals arg1="${maven.version.suffix}" arg2="-SNAPSHOT"/><then>
       <condition property="version.suffixes.consistent"><and>
