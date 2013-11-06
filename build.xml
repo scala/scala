@@ -240,12 +240,15 @@ TODO:
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
 
+      <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
+
       <!-- Download STARR via maven if `starr.use.released` is set,
            and `starr.version` is specified (see the starr.number properties file).
            Want to slow down STARR changes, using only released versions. -->
       <if><isset property="starr.use.released"/><then>
         <echo message="Using Scala ${starr.version} for STARR."/>
         <artifact:dependencies pathId="starr.core.path">
+          <artifact:remoteRepository refid="extra-repo"/>
           <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
           <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
           <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
