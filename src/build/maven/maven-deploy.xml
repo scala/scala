@@ -32,12 +32,20 @@
 
       <if><equals arg1="@{signed}" arg2="false"/><then>
         <if><equals arg1="@{local}" arg2="false"/><then>
-          <artifact:deploy file="${path}.jar" settingsFile="${settings.file}">
-            <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
-            <artifact:pom refid="@{name}.pom" />
-            <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
-            <artifact:attach type="jar" file="${path}-docs.jar" classifier="javadoc" />
-          </artifact:deploy>
+          <if><isset property="docs.skip"/><then>
+            <artifact:deploy file="${path}.jar" settingsFile="${settings.file}">
+              <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
+              <artifact:pom refid="@{name}.pom" />
+              <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
+            </artifact:deploy>
+          </then><else>
+            <artifact:deploy file="${path}.jar" settingsFile="${settings.file}">
+              <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
+              <artifact:pom refid="@{name}.pom" />
+              <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
+              <artifact:attach type="jar" file="${path}-docs.jar" classifier="javadoc" />
+            </artifact:deploy>
+          </else></if>
         </then><else>
           <if><isset property="docs.skip"/><then>
              <artifact:install file="${path}.jar">

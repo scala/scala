@@ -182,6 +182,8 @@ TODO:
 
   <property name="scalacfork.jvmargs"      value="${env.ANT_OPTS} ${jvm.opts}"/>
 
+  <property name="settings.file"           value="${user.home}/.m2/settings.xml" />
+
 <!-- ===========================================================================
                                   INITIALIZATION
 ============================================================================ -->
@@ -243,20 +245,20 @@ TODO:
     <if><not><isset property="maven-deps-done"></isset></not><then>
       <mkdir dir="${user.home}/.m2/repository"/>
       <!-- This task has an issue where if the user directory does not exist, so we create it above. UGH. -->
-      <artifact:dependencies pathId="extra.tasks.classpath" filesetId="extra.tasks.fileset">
+      <artifact:dependencies pathId="extra.tasks.classpath" filesetId="extra.tasks.fileset" settingsFile="${settings.file}">
         <dependency groupId="biz.aQute" artifactId="bnd" version="1.50.0"/>
       </artifact:dependencies>
 
       <!-- JUnit -->
       <property name="junit.version" value="4.10"/>
-      <artifact:dependencies pathId="junit.classpath" filesetId="junit.fileset">
+      <artifact:dependencies pathId="junit.classpath" filesetId="junit.fileset" settingsFile="${settings.file}">
         <dependency groupId="junit" artifactId="junit" version="${junit.version}"/>
       </artifact:dependencies>
       <copy-deps project="junit"/>
 
       <!-- Pax runner -->
       <property name="pax.exam.version" value="2.5.0"/>
-      <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset">
+      <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset" settingsFile="${settings.file}">
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-junit4" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-link-assembly" version="${pax.exam.version}"/>
@@ -271,7 +273,7 @@ TODO:
 
       <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
 
-      <artifact:dependencies pathId="partest.classpath" filesetId="partest.fileset" versionsId="partest.versions">
+      <artifact:dependencies pathId="partest.classpath" filesetId="partest.fileset" versionsId="partest.versions" settingsFile="${settings.file}">
         <!-- uncomment the following if you're deploying your own partest locally -->
         <!-- <localRepository path="${user.home}/.m2/repository"/> -->
         <!-- so we don't have to wait for artifacts to synch to maven central
@@ -282,14 +284,14 @@ TODO:
       </artifact:dependencies>
       <copy-deps project="partest"/>
 
-      <artifact:dependencies pathId="repl.deps.classpath" filesetId="repl.fileset" versionsId="repl.deps.versions">
+      <artifact:dependencies pathId="repl.deps.classpath" filesetId="repl.fileset" versionsId="repl.deps.versions" settingsFile="${settings.file}">
         <dependency groupId="jline" artifactId="jline" version="${jline.version}"/>
       </artifact:dependencies>
       <copy-deps project="repl"/>
 
       <!-- used by the test.osgi target to create osgi bundles for the xml, parser-combinator jars
            must specify sourcesFilesetId, javadocFilesetId to download these types of artifacts -->
-      <artifact:dependencies pathId="external-modules.deps.classpath" sourcesFilesetId="external-modules.sources.fileset" javadocFilesetId="external-modules.javadoc.fileset">
+      <artifact:dependencies pathId="external-modules.deps.classpath" sourcesFilesetId="external-modules.sources.fileset" javadocFilesetId="external-modules.javadoc.fileset" settingsFile="${settings.file}">
         <!-- sonatype is not enabled by default for modules to avoid a Scala release relying on a JAR that's not on maven (yet) -->
         <!-- <artifact:remoteRepository refid="sonatype-release"/> -->
         <dependency groupId="org.scala-lang.modules" artifactId="scala-xml_${scala.binary.version}" version="${scala-xml.version.number}"/>
@@ -362,7 +364,7 @@ TODO:
            Want to slow down STARR changes, using only released versions. -->
       <if><isset property="starr.use.released"/><then>
         <echo message="Using Scala ${starr.version} for STARR."/>
-        <artifact:dependencies pathId="starr.core.path">
+        <artifact:dependencies pathId="starr.core.path" settingsFile="${settings.file}">
           <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
           <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
           <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
@@ -532,6 +534,17 @@ TODO:
     <echo message="    maven version: ${maven.version.number}"/>
     <echo message="     OSGi version: ${osgi.version.number}" />
     <echo message="canonical version: ${version.number}" />
+
+    <echoproperties destfile="buildcharacter.properties">
+      <propertyset>
+        <propertyref regex="time.*" />
+        <propertyref regex="git.*" />
+        <propertyref name="java.vm.name" />
+        <propertyref regex=".*version.*" />
+        <propertyref regex="scalac.args.*" />
+        <propertyref name="scalacfork.jvmargs" />
+      </propertyset>
+    </echoproperties>
 
     <!-- validate version suffixes -->
     <if><equals arg1="${maven.version.suffix}" arg2="-SNAPSHOT"/><then>
@@ -1767,10 +1780,10 @@ TODO:
     <!-- Obtain mima -->
     <mkdir dir="${bc-build.dir}"/>
     <!-- Pull down MIMA -->
-    <artifact:dependencies pathId="mima.classpath">
+    <artifact:dependencies pathId="mima.classpath" settingsFile="${settings.file}">
       <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.2" version="0.1.5"/>
     </artifact:dependencies>
-    <artifact:dependencies pathId="old.bc.classpath">
+    <artifact:dependencies pathId="old.bc.classpath" settingsFile="${settings.file}">
       <dependency groupId="org.scala-lang" artifactId="scala-swing" version="${bc-reference-version}"/>
       <dependency groupId="org.scala-lang" artifactId="scala-library" version="${bc-reference-version}"/>
       <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${bc-reference-version}"/>
@@ -2219,7 +2232,6 @@ MAIN DISTRIBUTION PACKAGING
     <property name="local.release.repository"  value="${user.home}/.m2/repository" />
 
     <property name="repository.credentials.id" value="sonatype-nexus" />
-    <property name="settings.file" value="${user.home}/.m2/settings.xml" />
 
     <if><contains string="${maven.version.number}" substring="-SNAPSHOT"/><then>
       <property name="remote.repository" value="${remote.snapshot.repository}"/>
