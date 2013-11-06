@@ -2,7 +2,7 @@ reload: CrashOnLoad.scala
 
 askTypeCompletion at CrashOnLoad.scala(6,12)
 ================================================================================
-[response] aksTypeCompletion at (6,12)
+[response] askTypeCompletion at (6,12)
 retrieved 126 members
 [accessible:  true] `class GroupedIteratorIterator[B]#GroupedIterator`
 [accessible:  true] `method !=(x$1: Any)Boolean`

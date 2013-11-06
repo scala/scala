@@ -2,7 +2,7 @@ reload: CompletionOnEmptyArgMethod.scala
 
 askTypeCompletion at CompletionOnEmptyArgMethod.scala(2,17)
 ================================================================================
-[response] aksTypeCompletion at (2,17)
+[response] askTypeCompletion at (2,17)
 retrieved 37 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`

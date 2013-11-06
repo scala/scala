@@ -20,7 +20,9 @@ abstract case class TestMarker(val marker: String) {
   TestMarker.checkForDuplicate(this)
 }
 
-object CompletionMarker extends TestMarker("/*!*/")
+object TypeCompletionMarker extends TestMarker("/*!*/")
+
+object ScopeCompletionMarker extends TestMarker("/*_*/")
 
 object TypeMarker extends TestMarker("/*?*/")
 

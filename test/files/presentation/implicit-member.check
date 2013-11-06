@@ -2,7 +2,7 @@ reload: ImplicitMember.scala
 
 askTypeCompletion at ImplicitMember.scala(7,7)
 ================================================================================
-[response] aksTypeCompletion at (7,7)
+[response] askTypeCompletion at (7,7)
 retrieved 39 members
 [accessible:  true] `class AppliedImplicitImplicit.AppliedImplicit`
 [accessible:  true] `method !=(x$1: Any)Boolean`
