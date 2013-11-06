@@ -42,7 +42,7 @@ trait AskParse extends AskCommand {
   import compiler.Tree
 
   /** `sources` need to be entirely parsed before running the test
-   *  (else commands such as `AskCompletionAt` may fail simply because
+   *  (else commands such as `AskTypeCompletionAt` may fail simply because
    *  the source's AST is not yet loaded).
    */
   def askParse(sources: Seq[SourceFile]) {
@@ -72,14 +72,27 @@ trait AskReload extends AskCommand {
 }
 
 /** Ask the presentation compiler for completion at a given position. */
-trait AskCompletionAt extends AskCommand {
+trait AskTypeCompletionAt extends AskCommand {
   import compiler.Member
 
-  private[tests] def askCompletionAt(pos: Position)(implicit reporter: Reporter): Response[List[Member]] = {
+  private[tests] def askTypeCompletionAt(pos: Position)(implicit reporter: Reporter): Response[List[Member]] = {
     reporter.println("\naskTypeCompletion at " + pos.source.file.name + ((pos.line, pos.column)))
 
     ask {
       compiler.askTypeCompletion(pos, _)
+    }
+  }
+}
+
+/** Ask the presentation compiler for scope completion at a given position. */
+trait AskScopeCompletionAt extends AskCommand {
+  import compiler.Member
+
+  private[tests] def askScopeCompletionAt(pos: Position)(implicit reporter: Reporter): Response[List[Member]] = {
+    reporter.println("\naskScopeCompletion at " + pos.source.file.name + ((pos.line, pos.column)))
+
+    ask {
+      compiler.askScopeCompletion(pos, _)
     }
   }
 }
