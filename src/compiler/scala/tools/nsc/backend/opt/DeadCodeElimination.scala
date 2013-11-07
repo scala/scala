@@ -40,7 +40,13 @@ abstract class DeadCodeElimination extends SubComponent {
   }
 
   /** closures that are instantiated at least once, after dead code elimination */
-  val liveClosures: mutable.Set[Symbol] = new mutable.HashSet()
+  val liveClosures = perRunCaches.newSet[Symbol]()
+
+  /** closures that are eliminated, populated by GenASM.AsmPhase.run()
+   *  these class symbols won't have a .class physical file, thus shouldn't be included in InnerClasses JVM attribute,
+   *  otherwise some tools get confused or slow (SI-6546)
+   * */
+  val elidedClosures = perRunCaches.newSet[Symbol]()
 
   /** Remove dead code.
    */

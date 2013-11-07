@@ -86,6 +86,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       if (settings.Xdce.value)
         for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym)) {
           log(s"Optimizer eliminated ${sym.fullNameString}")
+          deadCode.elidedClosures += sym
           icodes.classes -= sym
         }
 
@@ -624,7 +625,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           innerClassBuffer += m
       }
 
-      val allInners: List[Symbol] = innerClassBuffer.toList
+      val allInners: List[Symbol] = innerClassBuffer.toList filterNot deadCode.elidedClosures
+
       if (allInners.nonEmpty) {
         debuglog(csym.fullName('.') + " contains " + allInners.size + " inner classes.")
 
