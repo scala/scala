@@ -153,6 +153,10 @@ trait Definitions extends api.StandardDefinitions {
       DoubleClass
     )
     def ScalaPrimitiveValueClasses: List[ClassSymbol] = ScalaValueClasses
+
+    def underlyingOfValueClass(clazz: Symbol): Type =
+      clazz.derivedValueClassUnbox.tpe.resultType
+
   }
 
   abstract class DefinitionsClass extends DefinitionsApi with ValueClassDefinitions {

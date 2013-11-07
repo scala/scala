@@ -19,6 +19,7 @@
 [running phase flatten on Foo_1.scala]
 [running phase mixin on Foo_1.scala]
 [running phase cleanup on Foo_1.scala]
+[running phase delambdafy on Foo_1.scala]
 [running phase icode on Foo_1.scala]
 [running phase inliner on Foo_1.scala]
 [running phase inlinehandlers on Foo_1.scala]

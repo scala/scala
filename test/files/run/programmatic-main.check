@@ -21,6 +21,7 @@ superaccessors   6  add super accessors in traits and nested classes
        flatten  19  eliminate inner classes
          mixin  20  mixin composition
        cleanup  21  platform-specific cleanups, generate reflective calls
-         icode  22  generate portable intermediate code
-           jvm  23  generate JVM bytecode
-      terminal  24  the last phase during a compilation run
+    delambdafy  22  remove lambdas
+         icode  23  generate portable intermediate code
+           jvm  24  generate JVM bytecode
+      terminal  25  the last phase during a compilation run

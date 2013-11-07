@@ -1,0 +1,15 @@
+[[syntax trees at end of                   uncurry]] // newSource1.scala
+package <empty> {
+  class Foo extends Object {
+    def <init>(): Foo = {
+      Foo.super.<init>();
+      ()
+    };
+    def bar(x: () => Int): Int = x.apply();
+    def foo(): Int = Foo.this.bar({
+      final <artifact> def $anonfun(): Int = 1;
+      (() => $anonfun())
+    })
+  }
+}
+
