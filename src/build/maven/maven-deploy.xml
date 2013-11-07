@@ -176,6 +176,7 @@
       </sequential>
     </macrodef>
 
+    <!-- IDE needs swing/actors/continuations -->
     <macrodef name="deploy-remote-core">
       <attribute name="repository" />
       <attribute name="version" />
@@ -183,6 +184,10 @@
         <deploy-remote name="scala-library" version="@{version}" repository="@{repository}"/>
         <deploy-remote name="scala-reflect" version="@{version}" repository="@{repository}"/>
         <deploy-remote name="scala-compiler" version="@{version}" repository="@{repository}" />
+        <deploy-remote name="jline" version="@{version}" repository="@{repository}"/>
+        <deploy-remote name="scala-swing" version="@{version}" repository="@{repository}"/>
+        <deploy-remote name="scala-actors" version="@{version}" repository="@{repository}"/>
+        <deploy-remote-plugin name="continuations" version="@{version}" repository="@{repository}"/>
       </sequential>
     </macrodef>
 
