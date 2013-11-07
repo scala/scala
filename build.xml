@@ -75,6 +75,14 @@ TODO:
   <target name="distpack-opt" description="Builds an optimised distribution."> <optimized name="distpack"/></target>
   <target name="distpack-maven-opt" description="Builds an optimised maven distribution."><optimized name="distpack-maven"/></target>
 
+  <!-- The IDE build requires actors/swing/continuations, so need to publish them during PR validation until they are modules -->
+  <target name="publish-opt-nodocs" description="Publishes Scala (optimized) without generating docs/testing (library/reflect/compiler/actors/swing/continuations).">
+    <antcall target="publish">
+      <param name="docs.skip" value="1"/>
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
+  </target>
+
   <target name="publish-core-opt-nodocs" description="Builds an untested, undocumented optimised core (library/reflect/compiler) and publishes to maven.">
     <antcall target="publish-core">
       <param name="docs.skip" value="1"/>
