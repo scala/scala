@@ -37,7 +37,7 @@ import BitSetLike.{LogWL, MaxSize, updateArray}
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(8483111450368547763L)
-class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
+class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
                                                   with SortedSet[Int]
                                                   with scala.collection.BitSet
                                                   with BitSetLike[BitSet]
@@ -54,16 +54,19 @@ class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
 
   def this() = this(0)
 
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nwords = elems.length
+  
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def word(idx: Int): Long =
     if (idx < nwords) elems(idx) else 0L
 
-  private def updateWord(idx: Int, w: Long) {
+  protected final def updateWord(idx: Int, w: Long) {
     ensureCapacity(idx)
     elems(idx) = w
   }
 
-  private def ensureCapacity(idx: Int) {
+  protected final def ensureCapacity(idx: Int) {
     require(idx < MaxSize)
     if (idx >= nwords) {
       var newlen = nwords
@@ -95,7 +98,10 @@ class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
     } else false
   }
 
+  @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
   def += (elem: Int): this.type = { add(elem); this }
+  
+  @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
   def -= (elem: Int): this.type = { remove(elem); this }
 
   /** Updates this bitset to the union with another bitset by performing a bitwise "or".

@@ -10,8 +10,9 @@ package scala
 package collection
 package mutable
 
-/** A common supertrait of `ArrayOps` and `WrappedArray` that factors out most
- *  operations on arrays and wrapped arrays.
+/** A common supertrait of `ArrayOps` and `WrappedArray` that factors out the 
+ * `deep` method for arrays and wrapped arrays and serves as a marker trait
+ * for array wrappers.
  *
  *  @tparam A     type of the elements contained in the array like object.
  *  @tparam Repr  the type of the actual collection containing the elements.

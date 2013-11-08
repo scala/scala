@@ -21,6 +21,7 @@ package mutable
  *  @version 1.1, 03/05/2004
  *  @since   1
  */
+@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
 trait QueueProxy[A] extends Queue[A] with Proxy {
 
   def self: Queue[A]

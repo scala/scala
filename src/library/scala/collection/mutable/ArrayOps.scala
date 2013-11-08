@@ -33,6 +33,7 @@ import parallel.mutable.ParArray
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@deprecatedInheritance("ArrayOps will be sealed to facilitate greater flexibility with array/collections integration in future releases.", "2.11.0")
 trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParallelizable[T, ParArray[T]] {
 
   private def elementClass: Class[_] =

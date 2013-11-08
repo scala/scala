@@ -55,6 +55,7 @@ import scala.annotation.tailrec
  *
  *  }}}
  */
+@deprecated("Low-level linked lists are deprecated due to idiosyncracies in interface and incomplete features.", "2.11.0")
 trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends SeqLike[A, This] { self =>
 
   var elem: A = _

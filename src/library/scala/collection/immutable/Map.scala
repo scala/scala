@@ -32,6 +32,12 @@ trait Map[A, +B] extends Iterable[(A, B)]
                     with MapLike[A, B, Map[A, B]] { self =>
 
   override def empty: Map[A, B] = Map.empty
+  
+  /** Returns this $coll as an immutable map.
+   *  
+   *  A new map will not be built; lazy collections will stay lazy.
+   */
+  @deprecatedOverriding("Immutable maps should do nothing on toMap except return themselves cast as a map.",  "2.11.0")
   override def toMap[T, U](implicit ev: (A, B) <:< (T, U)): immutable.Map[T, U] =
     self.asInstanceOf[immutable.Map[T, U]]
 

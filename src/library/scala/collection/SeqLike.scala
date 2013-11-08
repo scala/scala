@@ -622,7 +622,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
   /** Converts this $coll to a sequence.
    *  $willNotTerminateInf
    *
-   *  Overridden for efficiency.
+   *  A new collection will not be built; in particular, lazy sequences will stay lazy.
    */
   override def toSeq: Seq[A] = thisCollection
 

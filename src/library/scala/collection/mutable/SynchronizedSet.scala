@@ -24,6 +24,7 @@ import script._
  *  @define Coll `SynchronizedSet`
  *  @define coll synchronized set
  */
+@deprecated("Synchronization via traits is deprecated as it is inherently unreliable.  Consider java.util.concurrent.ConcurrentHashMap[A,Unit] as an alternative.", "2.11.0")
 trait SynchronizedSet[A] extends Set[A] {
   abstract override def size: Int = synchronized {
     super.size
@@ -93,6 +94,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.toString
   }
 
+  @deprecated("Scripting is deprecated.", "2.11.0")
   override def <<(cmd: Message[A]): Unit = synchronized {
     super.<<(cmd)
   }

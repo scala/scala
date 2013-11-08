@@ -12,6 +12,7 @@ import scala.tools.nsc.util.ScalaClassLoader
 import java.io.{ ByteArrayInputStream, CharArrayWriter, FileNotFoundException, PrintWriter, Writer }
 import java.util.{ Locale }
 import java.util.regex.Pattern
+import java.util.concurrent.ConcurrentLinkedQueue
 import javax.tools.{ Diagnostic, DiagnosticCollector, DiagnosticListener,
                      ForwardingJavaFileManager, JavaFileManager, JavaFileObject,
                      SimpleJavaFileObject, StandardLocation }
@@ -303,15 +304,18 @@ class JavapClass(
     class JavaReporter extends DiagnosticListener[JavaFileObject] with Clearable {
       import scala.collection.mutable.{ ArrayBuffer, SynchronizedBuffer }
       type D = Diagnostic[_ <: JavaFileObject]
-      val diagnostics = new ArrayBuffer[D] with SynchronizedBuffer[D]
+      val diagnostics = new ConcurrentLinkedQueue[D]
       override def report(d: Diagnostic[_ <: JavaFileObject]) {
-        diagnostics += d
+        diagnostics add d
       }
       override def clear() = diagnostics.clear()
       /** All diagnostic messages.
        *  @param locale Locale for diagnostic messages, null by default.
        */
-      def messages(implicit locale: Locale = null) = (diagnostics map (_ getMessage locale)).toList
+      def messages(implicit locale: Locale = null) = {
+        import JavaConverters._
+        diagnostics.asScala.map(_ getMessage locale).toList
+      }
 
       def reportable(raw: Boolean): String = {
         // don't filter this message if raw, since the names are likely to differ

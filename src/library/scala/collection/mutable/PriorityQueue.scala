@@ -30,6 +30,7 @@ import generic._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@deprecatedInheritance("PriorityQueue is not intended to be subclassed due to extensive private implementation details.", "2.11.0")
 class PriorityQueue[A](implicit val ord: Ordering[A])
    extends AbstractIterable[A]
       with Iterable[A]

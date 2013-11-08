@@ -85,7 +85,10 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     }
   }
 
+  @deprecatedOverriding("+= should not be overridden so it stays consistent with put.", "2.11.0")
   def += (kv: (A, B)): this.type = { put(kv._1, kv._2); this }
+
+  @deprecatedOverriding("-= should not be overridden so it stays consistent with remove.", "2.11.0")
   def -=(key: A): this.type = { remove(key); this }
 
   def iterator: Iterator[(A, B)] = new AbstractIterator[(A, B)] {
