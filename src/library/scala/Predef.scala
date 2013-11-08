@@ -242,6 +242,120 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
 
+  type Quadruple[+T1,+T2,+T3,+T4] = Tuple4[T1,T2,T3,T4]
+  object Quadruple {
+    def apply[T1,T2,T3,T4](v1: T1,v2: T2,v3: T3,v4: T4) = Tuple4(v1,v2,v3,v4)
+    def unapply[T1,T2,T3,T4](x: Tuple4[T1,T2,T3,T4]): Option[Tuple4[T1,T2,T3,T4]] = Some(x)
+  }
+
+  type Quintuple[+T1,+T2,+T3,+T4,+T5] = Tuple5[T1,T2,T3,T4,T5]
+  object Quintuple {
+    def apply[T1,T2,T3,T4,T5](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5) = Tuple5(v1,v2,v3,v4,v5)
+    def unapply[T1,T2,T3,T4,T5](x: Tuple5[T1,T2,T3,T4,T5]): Option[Tuple5[T1,T2,T3,T4,T5]] = Some(x)
+  }
+
+  type Sextuple[+T1,+T2,+T3,+T4,+T5,+T6] = Tuple6[T1,T2,T3,T4,T5,T6]
+  object Sextuple {
+    def apply[T1,T2,T3,T4,T5,T6](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6) = Tuple6(v1,v2,v3,v4,v5,v6)
+    def unapply[T1,T2,T3,T4,T5,T6](x: Tuple6[T1,T2,T3,T4,T5,T6]): Option[Tuple6[T1,T2,T3,T4,T5,T6]] = Some(x)
+  }
+
+  type Septuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7] = Tuple7[T1,T2,T3,T4,T5,T6,T7]
+  object Septuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7) = Tuple7(v1,v2,v3,v4,v5,v6,v7)
+    def unapply[T1,T2,T3,T4,T5,T6,T7](x: Tuple7[T1,T2,T3,T4,T5,T6,T7]): Option[Tuple7[T1,T2,T3,T4,T5,T6,T7]] = Some(x)
+  }
+
+  type Octuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8] = Tuple8[T1,T2,T3,T4,T5,T6,T7,T8]
+  object Octuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8) = Tuple8(v1,v2,v3,v4,v5,v6,v7,v8)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8](x: Tuple8[T1,T2,T3,T4,T5,T6,T7,T8]): Option[Tuple8[T1,T2,T3,T4,T5,T6,T7,T8]] = Some(x)
+  }
+
+  type Nonuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9] = Tuple9[T1,T2,T3,T4,T5,T6,T7,T8,T9]
+  object Nonuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9) = Tuple9(v1,v2,v3,v4,v5,v6,v7,v8,v9)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9](x: Tuple9[T1,T2,T3,T4,T5,T6,T7,T8,T9]): Option[Tuple9[T1,T2,T3,T4,T5,T6,T7,T8,T9]] = Some(x)
+  }
+
+  type Decuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10] = Tuple10[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10]
+  object Decuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10) = Tuple10(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10](x: Tuple10[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10]): Option[Tuple10[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10]] = Some(x)
+  }
+
+  type Hendecuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11] = Tuple11[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11]
+  object Hendecuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11) = Tuple11(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11](x: Tuple11[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11]): Option[Tuple11[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11]] = Some(x)
+  }
+
+  type Duodecuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12] = Tuple12[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12]
+  object Duodecuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12) = Tuple12(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12](x: Tuple12[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12]): Option[Tuple12[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12]] = Some(x)
+  }
+
+  type Tredecuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12,+T13] = Tuple13[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13]
+  object Tredecuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12,v13: T13) = Tuple13(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13](x: Tuple13[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13]): Option[Tuple13[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13]] = Some(x)
+  }
+
+  type Quattuordecuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12,+T13,+T14] = Tuple14[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14]
+  object Quattuordecuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12,v13: T13,v14: T14) = Tuple14(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14](x: Tuple14[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14]): Option[Tuple14[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14]] = Some(x)
+  }
+
+  type Quindecuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12,+T13,+T14,+T15] = Tuple15[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15]
+  object Quindecuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12,v13: T13,v14: T14,v15: T15) = Tuple15(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15](x: Tuple15[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15]): Option[Tuple15[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15]] = Some(x)
+  }
+
+  type Sexdecuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12,+T13,+T14,+T15,+T16] = Tuple16[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16]
+  object Sexdecuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12,v13: T13,v14: T14,v15: T15,v16: T16) = Tuple16(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16](x: Tuple16[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16]): Option[Tuple16[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16]] = Some(x)
+  }
+
+  type Septendecuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12,+T13,+T14,+T15,+T16,+T17] = Tuple17[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17]
+  object Septendecuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12,v13: T13,v14: T14,v15: T15,v16: T16,v17: T17) = Tuple17(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17](x: Tuple17[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17]): Option[Tuple17[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17]] = Some(x)
+  }
+
+  type Octodecuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12,+T13,+T14,+T15,+T16,+T17,+T18] = Tuple18[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18]
+  object Octodecuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12,v13: T13,v14: T14,v15: T15,v16: T16,v17: T17,v18: T18) = Tuple18(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18](x: Tuple18[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18]): Option[Tuple18[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18]] = Some(x)
+  }
+
+  type Novemdecuple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12,+T13,+T14,+T15,+T16,+T17,+T18,+T19] = Tuple19[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19]
+  object Novemdecuple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12,v13: T13,v14: T14,v15: T15,v16: T16,v17: T17,v18: T18,v19: T19) = Tuple19(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19](x: Tuple19[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19]): Option[Tuple19[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19]] = Some(x)
+  }
+
+  type Viguple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12,+T13,+T14,+T15,+T16,+T17,+T18,+T19,+T20] = Tuple20[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20]
+  object Viguple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12,v13: T13,v14: T14,v15: T15,v16: T16,v17: T17,v18: T18,v19: T19,v20: T20) = Tuple20(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19,v20)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20](x: Tuple20[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20]): Option[Tuple20[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20]] = Some(x)
+  }
+
+  type Unviguple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12,+T13,+T14,+T15,+T16,+T17,+T18,+T19,+T20,+T21] = Tuple21[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21]
+  object Unviguple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12,v13: T13,v14: T14,v15: T15,v16: T16,v17: T17,v18: T18,v19: T19,v20: T20,v21: T21) = Tuple21(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21](x: Tuple21[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21]): Option[Tuple21[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21]] = Some(x)
+  }
+
+  type Duoviguple[+T1,+T2,+T3,+T4,+T5,+T6,+T7,+T8,+T9,+T10,+T11,+T12,+T13,+T14,+T15,+T16,+T17,+T18,+T19,+T20,+T21,+T22] = Tuple22[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21,T22]
+  object Duoviguple {
+    def apply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21,T22](v1: T1,v2: T2,v3: T3,v4: T4,v5: T5,v6: T6,v7: T7,v8: T8,v9: T9,v10: T10,v11: T11,v12: T12,v13: T13,v14: T14,v15: T15,v16: T16,v17: T17,v18: T18,v19: T19,v20: T20,v21: T21,v22: T22) = Tuple22(v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15,v16,v17,v18,v19,v20,v21,v22)
+    def unapply[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21,T22](x: Tuple22[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21,T22]): Option[Tuple22[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21,T22]] = Some(x)
+  }
+
   // implicit classes -----------------------------------------------------
 
   implicit final class ArrowAssoc[A](val __leftOfArrow: A) extends AnyVal {
