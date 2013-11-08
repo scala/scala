@@ -885,7 +885,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol a constant? */
     final def isConstant: Boolean = isStable && isConstantType(tpe.resultType)
 
-    /** Is this class nested in another class or module (not a package)? */
+    /** Is this class nested in another class or module (not a package). Includes locally defined classes. */
     def isNestedClass = false
 
     /** Is this class locally defined?
