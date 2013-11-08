@@ -74,7 +74,7 @@ trait Erasure {
   //
   // This requires that cls.isClass.
   protected def rebindInnerClass(pre: Type, cls: Symbol): Type =
-    if (!cls.isTopLevel && !cls.isLocal) cls.owner.tpe_* else pre
+    if (cls.isTopLevel || cls.isLocal) pre else cls.owner.tpe_*
 
   /** The type of the argument of a value class reference after erasure
    *  This method needs to be called at a phase no later than erasurephase
