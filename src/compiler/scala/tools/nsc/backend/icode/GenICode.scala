@@ -702,7 +702,7 @@ abstract class GenICode extends SubComponent  {
           }
           genLoadApply3
 
-        case Apply(fun @ _, List(expr)) if (definitions.isBox(fun.symbol)) =>
+        case Apply(fun @ _, List(expr)) if currentRun.runDefinitions.isBox(fun.symbol) =>
           def genLoadApply4 = {
             debuglog("BOX : " + fun.symbol.fullName)
             val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
@@ -721,7 +721,7 @@ abstract class GenICode extends SubComponent  {
           }
           genLoadApply4
 
-        case Apply(fun @ _, List(expr)) if (definitions.isUnbox(fun.symbol)) =>
+        case Apply(fun @ _, List(expr)) if (currentRun.runDefinitions.isUnbox(fun.symbol)) =>
           debuglog("UNBOX : " + fun.symbol.fullName)
           val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
           val boxType = toTypeKind(fun.symbol.owner.linkedClassOfClass.tpe)

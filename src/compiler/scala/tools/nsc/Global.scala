@@ -1562,6 +1562,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
+    /** Caching member symbols that are def-s in Defintions because they might change from Run to Run. */
+    val runDefinitions: definitions.RunDefinitions = new definitions.RunDefinitions
+
     /** Compile list of source files,
      *  unless there is a problem already,
      *  such as a plugin was passed a bad option.

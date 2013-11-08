@@ -12,6 +12,8 @@ trait Resolvers {
   import definitions.{EmptyPackageClass => _, _}
   import treeInfo._
   import gen._
+  private val runDefinitions = currentRun.runDefinitions
+  import runDefinitions.{Predef_???, _}
 
   /** Determines the type of context implied by the macro def.
    */

@@ -254,13 +254,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.UnqualifiedOwners
     definitions.PredefModule
     definitions.SpecializableModule
-    definitions.GroupOfSpecializable
     definitions.ScalaRunTimeModule
     definitions.SymbolModule
-    definitions.Symbol_apply
     definitions.StringAddClass
-    definitions.ArrowAssocClass
-    definitions.StringAdd_$plus
     definitions.ScalaNumberClass
     definitions.TraitSetterAnnotationClass
     definitions.DelayedInitClass
@@ -276,7 +272,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ByNameParamClass
     definitions.JavaRepeatedParamClass
     definitions.RepeatedParamClass
-    definitions.ExprClassOf
     definitions.ConsClass
     definitions.IteratorClass
     definitions.IterableClass
@@ -285,7 +280,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.StringBuilderClass
     definitions.TraversableClass
     definitions.ListModule
-    definitions.List_apply
     definitions.NilModule
     definitions.SeqModule
     definitions.ArrayModule
@@ -304,25 +298,16 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ReflectPackage
     definitions.ReflectApiPackage
     definitions.ReflectRuntimePackage
-    definitions.PartialManifestClass
     definitions.PartialManifestModule
     definitions.FullManifestClass
     definitions.FullManifestModule
     definitions.OptManifestClass
     definitions.NoManifest
     definitions.TreesClass
-    definitions.TreesTreeType
-    definitions.TreeType
-    definitions.SubtreeType
     definitions.ExprsClass
-    definitions.ExprClass
     definitions.ClassTagModule
     definitions.ClassTagClass
     definitions.TypeTagsClass
-    definitions.WeakTypeTagClass
-    definitions.WeakTypeTagModule
-    definitions.TypeTagClass
-    definitions.TypeTagModule
     definitions.ApiUniverseClass
     definitions.JavaUniverseClass
     definitions.MirrorClass
@@ -341,7 +326,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ScalaLongSignatureAnnotation
     definitions.OptionClass
     definitions.OptionModule
-    definitions.Option_apply
     definitions.SomeClass
     definitions.NoneModule
     definitions.SomeModule
@@ -385,8 +369,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.BoxedLongClass
     definitions.BoxedFloatClass
     definitions.BoxedDoubleClass
-    definitions.Boxes_isNumberOrBool
-    definitions.Boxes_isNumber
     definitions.BoxedUnitClass
     definitions.BoxedUnitModule
     definitions.AnnotationClass
@@ -433,18 +415,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.MethodTargetClass
     definitions.LanguageFeatureAnnot
     definitions.languageFeatureModule
-    definitions.experimentalModule
-    definitions.MacrosFeature
-    definitions.DynamicsFeature
-    definitions.PostfixOpsFeature
-    definitions.ReflectiveCallsFeature
-    definitions.ImplicitConversionsFeature
-    definitions.HigherKindsFeature
-    definitions.ExistentialsFeature
     definitions.metaAnnotations
     definitions.AnnotationDefaultAttr
-    definitions.isUnbox
-    definitions.isBox
     definitions.isPhantomClass
     definitions.syntheticCoreClasses
     definitions.syntheticCoreMethods
@@ -458,8 +430,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.boxedClass
     definitions.refClass
     definitions.volatileRefClass
-    definitions.boxMethod
-    definitions.unboxMethod
     definitions.UnitClass
     definitions.ByteClass
     definitions.ShortClass
@@ -469,9 +439,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.FloatClass
     definitions.DoubleClass
     definitions.BooleanClass
-    definitions.Boolean_and
-    definitions.Boolean_or
-    definitions.Boolean_not
     definitions.UnitTpe
     definitions.ByteTpe
     definitions.ShortTpe

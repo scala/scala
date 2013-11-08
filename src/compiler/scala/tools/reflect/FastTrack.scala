@@ -37,14 +37,19 @@ trait FastTrack {
   }
 
   /** A map from a set of pre-established macro symbols to their implementations. */
-  lazy val fastTrack = Map[Symbol, FastTrackEntry](
-    make(        materializeClassTag) { case Applied(_, ttag :: Nil, _)                 => _.materializeClassTag(ttag.tpe) },
-    make(     materializeWeakTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = false) },
-    make(         materializeTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = true) },
-    make(           ApiUniverseReify) { case Applied(_, ttag :: Nil, (expr :: _) :: _)  => c => c.materializeExpr(c.prefix.tree, EmptyTree, expr) },
-    make(            StringContext_f) { case Applied(Select(Apply(_, ps), _), _, args)  => c => c.macro_StringInterpolation_f(ps, args.flatten, c.expandee.pos) },
-    make(ReflectRuntimeCurrentMirror) { case _                                          => c => currentMirror(c).tree },
-    make(  QuasiquoteClass_api_apply) { case _                                          => _.expandQuasiquote },
-    make(QuasiquoteClass_api_unapply) { case _                                          => _.expandQuasiquote }
-  )
+  def fastTrack: Map[Symbol, FastTrackEntry] = fastTrackCache()
+  private val fastTrackCache = perRunCaches.newGeneric[Map[Symbol, FastTrackEntry]] {
+    val runDefinitions = currentRun.runDefinitions
+    import runDefinitions._
+    Map[Symbol, FastTrackEntry](
+      make(        materializeClassTag) { case Applied(_, ttag :: Nil, _)                 => _.materializeClassTag(ttag.tpe) },
+      make(     materializeWeakTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = false) },
+      make(         materializeTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = true) },
+      make(           ApiUniverseReify) { case Applied(_, ttag :: Nil, (expr :: _) :: _)  => c => c.materializeExpr(c.prefix.tree, EmptyTree, expr) },
+      make(            StringContext_f) { case Applied(Select(Apply(_, ps), _), _, args)  => c => c.macro_StringInterpolation_f(ps, args.flatten, c.expandee.pos) },
+      make(ReflectRuntimeCurrentMirror) { case _                                          => c => currentMirror(c).tree },
+      make(  QuasiquoteClass_api_apply) { case _                                          => _.expandQuasiquote },
+      make(QuasiquoteClass_api_unapply) { case _                                          => _.expandQuasiquote }
+    )
+  }
 }

@@ -90,11 +90,11 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       )
 
     boxResultType =
-      for(Pair(csym, msym) <- definitions.boxMethod)
+      for(Pair(csym, msym) <- currentRun.runDefinitions.boxMethod)
       yield (msym -> classLiteral(primitiveTypeMap(csym)))
 
     unboxResultType =
-      for(Pair(csym, msym) <- definitions.unboxMethod)
+      for(Pair(csym, msym) <- currentRun.runDefinitions.unboxMethod)
       yield (msym -> primitiveTypeMap(csym))
 
     // boxed classes are looked up in the `exemplars` map by jvmWiseLUB().

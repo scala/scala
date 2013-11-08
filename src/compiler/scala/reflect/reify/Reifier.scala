@@ -20,6 +20,8 @@ abstract class Reifier extends States
   val global: Global
   import global._
   import definitions._
+  private val runDefinitions = currentRun.runDefinitions
+  import runDefinitions._
 
   val typer: global.analyzer.Typer
   val universe: Tree
@@ -110,7 +112,7 @@ abstract class Reifier extends States
       // maybe try `resetLocalAttrs` once the dust settles
       var importantSymbols = Set[Symbol](
         NothingClass, AnyClass, SingletonClass, PredefModule, ScalaRunTimeModule, TypeCreatorClass, TreeCreatorClass, MirrorClass,
-        ApiUniverseClass, JavaUniverseClass, ReflectRuntimePackage, ReflectRuntimeCurrentMirror)
+        ApiUniverseClass, JavaUniverseClass, ReflectRuntimePackage, runDefinitions.ReflectRuntimeCurrentMirror)
       importantSymbols ++= importantSymbols map (_.companionSymbol)
       importantSymbols ++= importantSymbols map (_.moduleClass)
       importantSymbols ++= importantSymbols map (_.linkedClassOfClass)

@@ -11,6 +11,8 @@ trait Validators {
   import global._
   import analyzer._
   import definitions._
+  private val runDefinitions = currentRun.runDefinitions
+  import runDefinitions.{Predef_???, _}
 
   def validateMacroImplRef() = {
     sanityCheck()

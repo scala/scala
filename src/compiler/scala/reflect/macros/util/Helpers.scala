@@ -23,6 +23,9 @@ trait Helpers {
    *  or to streamline creation of the list of macro arguments.
    */
   def transformTypeTagEvidenceParams(macroImplRef: Tree, transform: (Symbol, Symbol) => Symbol): List[List[Symbol]] = {
+    val runDefinitions = currentRun.runDefinitions
+    import runDefinitions._
+
     val MacroContextUniverse = definitions.MacroContextUniverse
     val treeInfo.MacroImplReference(isBundle, _, macroImpl, _) = macroImplRef
     val paramss = macroImpl.paramss
@@ -51,15 +54,25 @@ trait Helpers {
    *
    *  @see Metalevels.scala for more information and examples about metalevels
    */
-  def increaseMetalevel(pre: Type, tp: Type): Type = transparentShallowTransform(RepeatedParamClass, tp) {
-    case tp => typeRef(pre, MacroContextExprClass, List(tp))
+  def increaseMetalevel(pre: Type, tp: Type): Type = {
+    val runDefinitions = currentRun.runDefinitions
+    import runDefinitions._
+
+    transparentShallowTransform(RepeatedParamClass, tp) {
+      case tp => typeRef(pre, MacroContextExprClass, List(tp))
+    }
   }
 
   /** Transforms c.Expr[T] types into c.Tree and leaves the rest unchanged.
    */
-  def untypeMetalevel(tp: Type): Type = transparentShallowTransform(RepeatedParamClass, tp) {
-    case ExprClassOf(_) => typeRef(tp.prefix, TreesTreeType, Nil)
-    case tp => tp
+  def untypeMetalevel(tp: Type): Type = {
+    val runDefinitions = currentRun.runDefinitions
+    import runDefinitions._
+
+    transparentShallowTransform(RepeatedParamClass, tp) {
+      case ExprClassOf(_) => typeRef(tp.prefix, TreesTreeType, Nil)
+      case tp => tp
+    }
   }
 
   /** Decreases metalevel of the type, i.e. transforms:
@@ -68,8 +81,12 @@ trait Helpers {
    *
    *  @see Metalevels.scala for more information and examples about metalevels
    */
-  def decreaseMetalevel(tp: Type): Type = transparentShallowTransform(RepeatedParamClass, tp) {
-    case ExprClassOf(runtimeType) => runtimeType
-    case _ => AnyTpe // so that macro impls with rhs = ??? don't screw up our inference
+  def decreaseMetalevel(tp: Type): Type = {
+    val runDefinitions = currentRun.runDefinitions
+    import runDefinitions._
+    transparentShallowTransform(RepeatedParamClass, tp) {
+      case ExprClassOf(runtimeType) => runtimeType
+      case _ => AnyTpe // so that macro impls with rhs = ??? don't screw up our inference
+    }
   }
 }
