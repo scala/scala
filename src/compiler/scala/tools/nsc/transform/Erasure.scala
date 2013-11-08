@@ -895,6 +895,9 @@ abstract class Erasure extends AddInterfaces
      *    but their erased types are the same.
      */
     private def checkNoDoubleDefs(root: Symbol) {
+      def sameTypeAfterErasure(sym1: Symbol, sym2: Symbol) =
+        afterPostErasure(sym1.info =:= sym2.info) && !sym1.isMacro && !sym2.isMacro
+
       def doubleDefError(sym1: Symbol, sym2: Symbol) {
         // the .toString must also be computed at the earlier phase
         val tpe1 = afterRefchecks(root.thisType.memberType(sym1))
@@ -920,7 +923,7 @@ abstract class Erasure extends AddInterfaces
         if (e.sym.isTerm) {
           var e1 = decls.lookupNextEntry(e)
           while (e1 ne null) {
-            if (afterPostErasure(e1.sym.info =:= e.sym.info)) doubleDefError(e.sym, e1.sym)
+            if (sameTypeAfterErasure(e1.sym, e.sym)) doubleDefError(e.sym, e1.sym)
             e1 = decls.lookupNextEntry(e1)
           }
         }
@@ -939,7 +942,8 @@ abstract class Erasure extends AddInterfaces
       while (opc.hasNext) {
         if (!afterRefchecks(
               root.thisType.memberType(opc.overriding) matches
-              root.thisType.memberType(opc.overridden))) {
+              root.thisType.memberType(opc.overridden)) &&
+            sameTypeAfterErasure(opc.overriding, opc.overridden)) {
           debuglog("" + opc.overriding.locationString + " " +
                      opc.overriding.infosString +
                      opc.overridden.locationString + " " +
