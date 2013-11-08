@@ -6,6 +6,46 @@
     SuperSabbus extension for deploying a distribution to Maven. THIS FILE IS MEANT TO BE RUN STANDALONE IN THE MAVEN "distpack" DIRECTORY
   </description>
 
+  <macrodef name="deploy-remote">
+    <attribute name="jar" default=""/>
+    <attribute name="pom"/>
+    <element name="artifacts" implicit="true" optional="true"/>
+    <sequential>
+      <artifact:deploy file="@{jar}" settingsFile="${settings.file}">
+        <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
+        <artifact:pom refid="@{pom}" />
+        <artifacts/>
+      </artifact:deploy>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="deploy-local">
+    <attribute name="jar" default=""/>
+    <attribute name="pom"/>
+    <element name="artifacts" implicit="true" optional="true"/>
+    <sequential>
+    <artifact:install file="@{jar}">
+      <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
+      <artifact:pom refid="@{pom}" />
+      <artifacts/>
+    </artifact:install>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="deploy-to">
+    <attribute name="jar" default=""/>
+    <attribute name="pom"/>
+    <attribute name="local"/>
+    <element name="artifacts" implicit="true" optional="true"/>
+    <sequential>
+      <if><equals arg1="@{local}" arg2="true"/><then>
+        <deploy-local jar="@{jar}" pom="@{pom}"> <artifacts/> </deploy-local>
+      </then><else>
+        <deploy-remote jar="@{jar}" pom="@{pom}"> <artifacts/> </deploy-remote>
+      </else></if>
+    </sequential>
+  </macrodef>
+
   <macrodef name="deploy-one">
     <attribute name="dir" default=""/>
     <attribute name="name" />
@@ -31,30 +71,15 @@
       <artifact:pom id="@{name}.pom" file="${path}-pom-filtered.xml" />
 
       <if><equals arg1="@{signed}" arg2="false"/><then>
-        <if><equals arg1="@{local}" arg2="false"/><then>
-          <artifact:deploy file="${path}.jar" settingsFile="${settings.file}">
-            <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
-            <artifact:pom refid="@{name}.pom" />
+        <if><isset property="docs.skip"/><then>
+          <deploy-to local="@{local}" jar="${path}.jar" pom="@{name}.pom">
+            <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
+          </deploy-to>
+        </then><else>
+          <deploy-to local="@{local}" jar="${path}.jar" pom="@{name}.pom">
             <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
             <artifact:attach type="jar" file="${path}-docs.jar" classifier="javadoc" />
-          </artifact:deploy>
-        </then><else>
-          <if><isset property="docs.skip"/><then>
-             <artifact:install file="${path}.jar">
-               <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
-               <artifact:pom refid="@{name}.pom" />
-               <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
-             </artifact:install>
-          </then>
-          <else>
-            <artifact:install file="${path}.jar">
-              <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
-              <artifact:pom refid="@{name}.pom" />
-              <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
-              <artifact:attach type="jar" file="${path}-docs.jar" classifier="javadoc" />
-            </artifact:install>
-          </else>
-          </if>
+          </deploy-to>
         </else></if>
       </then><else>
         <local name="repo"/>
