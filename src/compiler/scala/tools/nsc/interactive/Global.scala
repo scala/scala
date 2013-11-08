@@ -999,7 +999,13 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
     val context = doLocateContext(pos)
 
-    if (tree.tpe == null)
+    val shouldTypeQualifier = tree.tpe match {
+      case null           => true
+      case mt: MethodType => mt.isImplicit
+      case _              => false
+    }
+
+    if (shouldTypeQualifier)
       // TODO: guard with try/catch to deal with ill-typed qualifiers.
       tree = analyzer.newTyper(context).typedQualifier(tree)
 
@@ -1192,4 +1198,3 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 }
 
 object CancelException extends Exception
-
