@@ -708,6 +708,9 @@ abstract class Erasure extends AddInterfaces
       low setInfo ErrorType
     }
 
+    private def sameTypeAfterErasure(sym1: Symbol, sym2: Symbol) =
+      exitingPostErasure(sym1.info =:= sym2.info) && !sym1.isMacro && !sym2.isMacro
+
     /** TODO - adapt SymbolPairs so it can be used here. */
     private def checkNoDeclaredDoubleDefs(base: Symbol) {
       val decls = base.info.decls
@@ -716,7 +719,7 @@ abstract class Erasure extends AddInterfaces
         if (e.sym.isTerm) {
           var e1 = decls lookupNextEntry e
           while (e1 ne null) {
-            if (exitingPostErasure(e1.sym.info =:= e.sym.info))
+            if (sameTypeAfterErasure(e.sym, e1.sym))
               doubleDefError(new SymbolPair(base, e.sym, e1.sym))
 
             e1 = decls lookupNextEntry e1
@@ -746,12 +749,12 @@ abstract class Erasure extends AddInterfaces
         )
         override def matches(sym1: Symbol, sym2: Symbol) = true
       }
-      def sameTypeAfterErasure(pair: SymbolPair) = {
+      def isErasureDoubleDef(pair: SymbolPair) = {
         import pair._
         log(s"Considering for erasure clash:\n$pair")
-        !exitingRefchecks(lowType matches highType) && exitingPostErasure(low.tpe =:= high.tpe)
+        !exitingRefchecks(lowType matches highType) && sameTypeAfterErasure(low, high)
       }
-      opc.iterator filter sameTypeAfterErasure foreach doubleDefError
+      opc.iterator filter isErasureDoubleDef foreach doubleDefError
     }
 
     /**  Add bridge definitions to a template. This means:
