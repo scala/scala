@@ -29,11 +29,11 @@ import scala.reflect.ClassTag
 
 /** The trait that represents futures.
  *
- *  Asynchronous computations that yield futures are created with the `future` call:
+ *  Asynchronous computations that yield futures are created with the `Future` call:
  *
  *  {{{
  *  val s = "Hello"
- *  val f: Future[String] = future {
+ *  val f: Future[String] = Future {
  *    s + " future!"
  *  }
  *  f onSuccess {
@@ -67,8 +67,8 @@ import scala.reflect.ClassTag
  *  Example:
  *
  *  {{{
- *  val f = future { 5 }
- *  val g = future { 3 }
+ *  val f = Future { 5 }
+ *  val g = Future { 3 }
  *  val h = for {
  *    x: Int <- f // returns Future(5)
  *    y: Int <- g // returns Future(3)
@@ -266,7 +266,7 @@ trait Future[+T] extends Awaitable[T] {
    *
    *  Example:
    *  {{{
-   *  val f = future { 5 }
+   *  val f = Future { 5 }
    *  val g = f filter { _ % 2 == 1 }
    *  val h = f filter { _ % 2 == 0 }
    *  Await.result(g, Duration.Zero) // evaluates to 5
@@ -291,7 +291,7 @@ trait Future[+T] extends Awaitable[T] {
    *
    *  Example:
    *  {{{
-   *  val f = future { -5 }
+   *  val f = Future { -5 }
    *  val g = f collect {
    *    case x if x < 0 => -x
    *  }
@@ -314,9 +314,9 @@ trait Future[+T] extends Awaitable[T] {
    *  Example:
    *
    *  {{{
-   *  future (6 / 0) recover { case e: ArithmeticException => 0 } // result: 0
-   *  future (6 / 0) recover { case e: NotFoundException   => 0 } // result: exception
-   *  future (6 / 2) recover { case e: ArithmeticException => 0 } // result: 3
+   *  Future (6 / 0) recover { case e: ArithmeticException => 0 } // result: 0
+   *  Future (6 / 0) recover { case e: NotFoundException   => 0 } // result: exception
+   *  Future (6 / 2) recover { case e: ArithmeticException => 0 } // result: 3
    *  }}}
    */
   def recover[U >: T](pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Future[U] = {
@@ -334,8 +334,8 @@ trait Future[+T] extends Awaitable[T] {
    *  Example:
    *
    *  {{{
-   *  val f = future { Int.MaxValue }
-   *  future (6 / 0) recoverWith { case e: ArithmeticException => f } // result: Int.MaxValue
+   *  val f = Future { Int.MaxValue }
+   *  Future (6 / 0) recoverWith { case e: ArithmeticException => f } // result: Int.MaxValue
    *  }}}
    */
   def recoverWith[U >: T](pf: PartialFunction[Throwable, Future[U]])(implicit executor: ExecutionContext): Future[U] = {
@@ -373,8 +373,8 @@ trait Future[+T] extends Awaitable[T] {
    *
    *  Example:
    *  {{{
-   *  val f = future { sys.error("failed") }
-   *  val g = future { 5 }
+   *  val f = Future { sys.error("failed") }
+   *  val g = Future { 5 }
    *  val h = f fallbackTo g
    *  Await.result(h, Duration.Zero) // evaluates to 5
    *  }}}
@@ -416,7 +416,7 @@ trait Future[+T] extends Awaitable[T] {
    *  The following example prints out `5`:
    *
    *  {{{
-   *  val f = future { 5 }
+   *  val f = Future { 5 }
    *  f andThen {
    *    case r => sys.error("runtime exception")
    *  } andThen {
