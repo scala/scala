@@ -176,6 +176,21 @@
       </sequential>
     </macrodef>
 
+    <!-- IDE needs swing/actors/continuations -->
+    <macrodef name="deploy-remote-core">
+      <attribute name="repository" />
+      <attribute name="version" />
+      <sequential>
+        <deploy-remote name="scala-library" version="@{version}" repository="@{repository}"/>
+        <deploy-remote name="scala-reflect" version="@{version}" repository="@{repository}"/>
+        <deploy-remote name="scala-compiler" version="@{version}" repository="@{repository}" />
+        <deploy-remote name="jline" version="@{version}" repository="@{repository}"/>
+        <deploy-remote name="scala-swing" version="@{version}" repository="@{repository}"/>
+        <deploy-remote name="scala-actors" version="@{version}" repository="@{repository}"/>
+        <deploy-remote-plugin name="continuations" version="@{version}" repository="@{repository}"/>
+      </sequential>
+    </macrodef>
+
     <!-- PGP Signed deployment -->
     <macrodef name="deploy-remote-signed-single">
       <attribute name="pom" />
@@ -266,6 +281,11 @@
   <!-- Remote unsigned targets -->
   <target name="deploy.snapshot" depends="deploy.remote.init" if="version.is.snapshot" description="Deploys the bundled files as a snapshot into the desired remote Maven repository">
       <deploy-remote-all version="${maven.version.number}" repository="${remote.snapshot.repository}" />
+  </target>
+
+  <!-- for PR validation -->
+  <target name="deploy-core.snapshot" depends="deploy.remote.init">
+      <deploy-remote-core version="${maven.version.number}" repository="${remote.snapshot.repository}" />
   </target>
 
   <target name="deploy.release" depends="deploy.remote.init" unless="version.is.snapshot" description="Deploys the bundled files as a release into the desired remote Maven repository">

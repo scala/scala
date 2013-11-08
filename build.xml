@@ -240,12 +240,15 @@ TODO:
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
 
+      <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
+
       <!-- Download STARR via maven if `starr.use.released` is set,
            and `starr.version` is specified (see the starr.number properties file).
            Want to slow down STARR changes, using only released versions. -->
       <if><isset property="starr.use.released"/><then>
         <echo message="Using Scala ${starr.version} for STARR."/>
         <artifact:dependencies pathId="starr.core.path">
+          <artifact:remoteRepository refid="extra-repo"/>
           <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
           <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
           <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
@@ -415,6 +418,17 @@ TODO:
     <echo message="    maven version: ${maven.version.number}"/>
     <echo message="     OSGi version: ${osgi.version.number}" />
     <echo message="canonical version: ${version.number}" />
+
+    <echoproperties destfile="buildcharacter.properties">
+      <propertyset>
+        <propertyref regex="time.*" />
+        <propertyref regex="git.*" />
+        <propertyref name="java.vm.name" />
+        <propertyref regex=".*version.*" />
+        <propertyref regex="scalac.args.*" />
+        <propertyref name="scalacfork.jvmargs" />
+      </propertyset>
+    </echoproperties>
 
     <!-- validate version suffixes -->
     <if><equals arg1="${maven.version.suffix}" arg2="-SNAPSHOT"/><then>
