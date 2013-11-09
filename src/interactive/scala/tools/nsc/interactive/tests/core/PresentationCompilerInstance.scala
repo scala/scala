@@ -7,22 +7,16 @@ import reporters.{Reporter => CompilerReporter}
 /** Trait encapsulating the creation of a presentation compiler's instance.*/
 private[tests] trait PresentationCompilerInstance extends TestSettings {
   protected val settings = new Settings
-  protected val withDocComments = false
 
   protected val compilerReporter: CompilerReporter = new InteractiveReporter {
     override def compiler = PresentationCompilerInstance.this.compiler
   }
 
-  private class ScaladocEnabledGlobal extends Global(settings, compilerReporter) {
-    override lazy val analyzer = new {
-      val global: ScaladocEnabledGlobal.this.type = ScaladocEnabledGlobal.this
-    } with InteractiveScaladocAnalyzer
-  }
+  protected def createGlobal: Global = new Global(settings, compilerReporter)
 
   protected lazy val compiler: Global = {
     prepareSettings(settings)
-    if (withDocComments) new ScaladocEnabledGlobal
-    else new Global(settings, compilerReporter)
+    createGlobal
   }
 
   /**

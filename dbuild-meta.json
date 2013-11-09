@@ -45,6 +45,24 @@
                     "extension": "jar",
                     "name": "scala-reflect",
                     "organization": "org.scala-lang"
+                }
+            ],
+            "name": "scala-compiler",
+            "organization": "org.scala-lang"
+        },
+        {
+            "artifacts": [
+                {
+                    "extension": "jar",
+                    "name": "scala-compiler-doc",
+                    "organization": "org.scala-lang.modules"
+                }
+            ],
+            "dependencies": [
+                {
+                    "extension": "jar",
+                    "name": "scala-compiler",
+                    "organization": "org.scala-lang"
                 },
                 {
                     "extension": "jar",
@@ -57,8 +75,26 @@
                     "organization": "org.scala-lang.modules"
                 }
             ],
-            "name": "scala-compiler",
-            "organization": "org.scala-lang"
+            "name": "scala-compiler-doc",
+            "organization": "org.scala-lang.modules"
+        },
+        {
+            "artifacts": [
+                {
+                    "extension": "jar",
+                    "name": "scala-compiler-interactive",
+                    "organization": "org.scala-lang.modules"
+                }
+            ],
+            "dependencies": [
+                {
+                    "extension": "jar",
+                    "name": "scala-compiler-doc",
+                    "organization": "org.scala-lang.modules"
+                }
+            ],
+            "name": "scala-compiler-interactive",
+            "organization": "org.scala-lang.modules"
         },
         {
             "artifacts": [

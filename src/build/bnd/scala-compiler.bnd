@@ -6,3 +6,5 @@ Export-Package: *;version=${ver}
 Import-Package: jline.*;resolution:=optional, \
                 org.apache.tools.ant.*;resolution:=optional, \
                 *
+Require-Bundle: org.scala-lang.modules.scala-compiler-interactive_@SCALA_BINARY_VERSION@;bundle-version=@SCALA_COMPILER_INTERACTIVE_VERSION@, \
+   org.scala-lang.modules.scala-compiler-doc_@SCALA_BINARY_VERSION@;bundle-version=@SCALA_COMPILER_DOC_VERSION@
