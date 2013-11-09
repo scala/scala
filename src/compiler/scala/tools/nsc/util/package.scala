@@ -75,7 +75,7 @@ package object util {
     s"$clazz$msg @ $frame"
   }
 
-  implicit class StackTraceOps(val e: Throwable) extends AnyVal with StackTracing {
+  implicit class StackTraceOps(private val e: Throwable) extends AnyVal with StackTracing {
     /** Format the stack trace, returning the prefix consisting of frames that satisfy
      *  a given predicate.
      *  The format is similar to the typical case described in the JavaDoc

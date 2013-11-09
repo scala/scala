@@ -216,7 +216,7 @@ object Either {
    * r.merge: Seq[Int] // Vector(1)
    * }}}
    */
-  implicit class MergeableEither[A](val x: Either[A, A]) extends AnyVal {
+  implicit class MergeableEither[A](private val x: Either[A, A]) extends AnyVal {
     def merge: A = x match {
       case Left(a)  => a
       case Right(a) => a
