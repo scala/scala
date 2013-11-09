@@ -1,4 +1,4 @@
-t5702-neg-ugly-xbrace.scala:11: error: bad brace or paren after _*
+t5702-neg-ugly-xbrace.scala:11: error: bad simple pattern: bad brace or paren after _*
     val <top>{a, z@_*)</top> = xml
                      ^
 t5702-neg-ugly-xbrace.scala:12: error: Missing closing brace `}' assumed here
