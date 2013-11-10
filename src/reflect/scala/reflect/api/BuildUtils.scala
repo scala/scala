@@ -223,5 +223,21 @@ private[reflect] trait BuildUtils { self: Universe =>
       def apply(lhs: Tree, rhs: Tree): Tree
       def unapply(tree: Tree): Option[(Tree, Tree)]
     }
+
+    class UnliftHelper1[T](unliftable: Unliftable[T]) {
+      def unapply(lst: List[Tree]): Option[List[T]] = {
+        val unlifted = lst.flatMap(unliftable.unapply(_))
+        if (unlifted.length == lst.length) Some(unlifted) else None
+      }
+    }
+    object UnliftHelper1 { def apply[T](unliftable: Unliftable[T]) = new UnliftHelper1[T](unliftable) }
+
+    class UnliftHelper2[T](unliftable: Unliftable[T]) {
+      def unapply(lst: List[List[Tree]]): Option[List[List[T]]] = {
+        val unlifted = lst.map { l => l.flatMap(unliftable.unapply(_)) }
+        if (unlifted.flatten.length == lst.flatten.length) Some(unlifted) else None
+      }
+    }
+    object UnliftHelper2 { def apply[T](unliftable: Unliftable[T]) = new UnliftHelper2[T](unliftable) }
   }
 }

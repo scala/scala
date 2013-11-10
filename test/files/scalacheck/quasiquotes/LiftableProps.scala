@@ -81,4 +81,13 @@ object LiftableProps extends QuasiquoteProperties("liftable") {
     val const = Constant(0)
     assert(q"$const" ≈ q"0")
   }
+
+  property("lift list variants") = test {
+    val lst = List(1, 2)
+    assert(q"$lst" ≈ q"$scalapkg.collection.immutable.List(1, 2)")
+    assert(q"f(..$lst)" ≈ q"f(1, 2)")
+    val llst = List(List(1), List(2))
+    assert(q"f(..$llst)" ≈ q"f($scalapkg.collection.immutable.List(1), $scalapkg.collection.immutable.List(2))")
+    assert(q"f(...$llst)" ≈ q"f(1)(2)")
+  }
 }
