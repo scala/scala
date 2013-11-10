@@ -55,6 +55,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.FixedMirrorTypeCreator
     this.BackquotedIdentifierAttachment
     this.CompoundTypeTreeOriginalAttachment
+    this.SubpatternsAttachment
     this.noPrint
     this.typeDebug
     // inaccessible: this.maxFree
