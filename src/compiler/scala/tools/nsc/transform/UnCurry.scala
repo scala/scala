@@ -217,84 +217,27 @@ abstract class UnCurry extends InfoTransform
         // nullary or parameterless
         case fun1 if fun1 ne fun => fun1
         case _ =>
-          val formals :+ restpe = fun.tpe.typeArgs
-
           def typedFunPos(t: Tree) = localTyper.typedPos(fun.pos)(t)
+          val funParams = fun.vparams map (_.symbol)
+          def mkMethod(owner: Symbol, name: TermName, additionalFlags: FlagSet = NoFlags): DefDef =
+            gen.mkMethodFromFunction(localTyper)(fun, owner, name, additionalFlags)
 
           if (inlineFunctionExpansion) {
             val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
             val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
             anonClass setInfo ClassInfoType(parents, newScope, anonClass)
-            val applyMethodDef = {
-              val methSym = anonClass.newMethod(nme.apply, fun.pos, FINAL)
-              val paramSyms = map2(formals, fun.vparams) {
-                (tp, param) => methSym.newSyntheticValueParam(tp, param.name)
-              }
-              methSym setInfoAndEnter MethodType(paramSyms, restpe)
 
-              fun.body changeOwner (fun.symbol -> methSym)
-              fun.body substituteSymbols (fun.vparams.map(_.symbol), paramSyms)
-
-              val body    = typedFunPos(fun.body)
-              val methDef = DefDef(methSym, body)
-
-              // Have to repack the type to avoid mismatches when existentials
-              // appear in the result - see SI-4869.
-              methDef.tpt setType localTyper.packedType(body, methSym)
-              methDef
-            }
+            val applyMethodDef = mkMethod(anonClass, nme.apply)
+            anonClass.info.decls enter applyMethodDef.symbol
 
             typedFunPos {
               Block(
-                List(ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos)),
+                ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos),
                 Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
             }
           } else {
-            /**
-             * Abstracts away the common functionality required to create both
-             * the lifted function and the apply method on the anonymous class
-             * It creates a method definition with value params cloned from the
-             * original lambda. Then it calls a supplied function to create
-             * the body and types the result. Finally
-             * everything is wrapped up in a MethodDef
-             *
-             * TODO it is intended that this common functionality be used
-             * whether inlineFunctionExpansion is true or not. However, it
-             * seems to introduce subtle ownwership changes that produce
-             * binary incompatible changes and so it is completely
-             * hidden behind the inlineFunctionExpansion for now.
-             *
-             * @param owner The owner for the new method
-             * @param name name for the new method
-             * @param additionalFlags flags to be put on the method in addition to FINAL
-             * @bodyF function that turns the method symbol and list of value params
-             *        into a body for the method
-             */
-            def createMethod(owner: Symbol, name: TermName, additionalFlags: Long)(bodyF: Symbol => Tree) = {
-              val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
-
-              val paramSyms = map2(formals, fun.vparams) {
-                (tp, vparam) => methSym.newSyntheticValueParam(tp, vparam.name)
-              }
-
-              methSym setInfo MethodType(paramSyms, restpe.deconst)
-
-              val body = typedFunPos(bodyF(methSym))
-              val methDef = DefDef(methSym, body)
-
-              // Have to repack the type to avoid mismatches when existentials
-              // appear in the result - see SI-4869.
-              methDef.tpt setType localTyper.packedType(body, methSym).deconst
-              methDef
-            }
-
-            val funParams = fun.vparams map (_.symbol)
             // method definition with the same arguments, return type, and body as the original lambda
-            val liftedMethod = createMethod(fun.symbol.owner, nme.ANON_FUN_NAME, additionalFlags = ARTIFACT) {
-              methSym =>
-                fun.body.substituteSymbols(funParams, methSym.paramss.head)
-                fun.body changeOwner (fun.symbol -> methSym)
-            }
+            val liftedMethod = mkMethod(fun.symbol.owner, nme.ANON_FUN_NAME, additionalFlags = ARTIFACT)
 
             // new function whose body is just a call to the lifted method
             val newFun = deriveFunction(fun)(_ => typedFunPos(
