@@ -24,6 +24,7 @@
 
 # Developer specific Ant properties
 /build.properties
+/buildcharacter.properties
 
 # target directories for ant build
 /build/
