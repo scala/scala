@@ -259,9 +259,24 @@ extends scala.collection.AbstractSeq[Int]
   final def contains(x: Int) = isWithinBoundaries(x) && ((x - start) % step == 0)
 
   final override def sum[B >: Int](implicit num: Numeric[B]): Int = {
-    if (isEmpty) 0
-    else if (numRangeElements == 1) head
-    else (numRangeElements.toLong * (head + last) / 2).toInt
+    if (num eq scala.math.Numeric.IntIsIntegral) {
+      // this is normal integer range with usual addition. arithmetic series formula can be used
+      if (isEmpty) 0
+      else if (numRangeElements == 1) head
+      else (numRangeElements.toLong * (head + last) / 2).toInt
+    } else {
+      // user provided custom Numeric, we cannot rely on arithmetic series formula
+      if (isEmpty) num.toInt(num.zero)
+      else {
+        var acc = num.zero
+        var i = head
+        while(i != terminalElement) {
+          acc = num.plus(acc, i)
+          i = i + step
+        }
+        num.toInt(acc)
+      }
+    }
   }
 
   override def toIterable = this

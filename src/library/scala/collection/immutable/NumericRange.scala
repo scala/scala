@@ -175,9 +175,36 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
     catch { case _: ClassCastException => false }
 
   final override def sum[B >: T](implicit num: Numeric[B]): B = {
-    if (isEmpty) this.num fromInt 0
-    else if (numRangeElements == 1) head
-    else ((this.num fromInt numRangeElements) * (head + last) / (this.num fromInt 2))
+    // arithmetic series formula  can be used for regular addition
+    if ((num eq scala.math.Numeric.IntIsIntegral)||
+        (num eq scala.math.Numeric.BigIntIsIntegral)||
+        (num eq scala.math.Numeric.ShortIsIntegral)||
+        (num eq scala.math.Numeric.ByteIsIntegral)||
+        (num eq scala.math.Numeric.CharIsIntegral)||
+        (num eq scala.math.Numeric.LongIsIntegral)||
+        (num eq scala.math.Numeric.FloatAsIfIntegral)||
+        (num eq scala.math.Numeric.BigDecimalIsFractional)||
+        (num eq scala.math.Numeric.DoubleAsIfIntegral)) {
+      val numAsIntegral = num.asInstanceOf[Integral[B]]
+      import numAsIntegral._
+      if (isEmpty) num fromInt 0
+      else if (numRangeElements == 1) head
+      else ((num fromInt numRangeElements) * (head + last) / (num fromInt 2))
+    } else {
+      // user provided custom Numeric, we cannot rely on arithmetic series formula
+      if (isEmpty) num.zero
+      else {
+        var acc = num.zero
+        var i = head
+        var idx = 0
+        while(idx < length) {
+          acc = num.plus(acc, i)
+          i = i + step
+          idx = idx + 1
+        }
+        acc
+      }
+    }
   }
 
   override lazy val hashCode = super.hashCode()
