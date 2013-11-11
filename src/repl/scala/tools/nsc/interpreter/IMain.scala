@@ -272,6 +272,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       case s                                 => s
     } mkString "."
   )
+  def readRootPath(readPath: String) = getModuleIfDefined(readPath)
 
   abstract class PhaseDependentOps {
     def shift[T](op: => T): T
@@ -700,7 +701,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
    *
    *  Read! Eval! Print! Some of that not yet centralized here.
    */
-  class ReadEvalPrint(lineId: Int) {
+  class ReadEvalPrint(val lineId: Int) {
     def this() = this(freshLineId())
 
     val packageName = sessionNames.line + lineId
@@ -777,7 +778,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       * following accessPath into the outer one.
       */
     def resolvePathToSymbol(accessPath: String): Symbol = {
-      val readRoot  = getModuleIfDefined(readPath)   // the outermost wrapper
+      val readRoot = readRootPath(readPath) // the outermost wrapper
       (accessPath split '.').foldLeft(readRoot: Symbol) {
         case (sym, "")    => sym
         case (sym, name)  => exitingTyper(termMember(sym, name))
@@ -848,29 +849,68 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     /** Code to import bound names from previous lines - accessPath is code to
       * append to objectName to access anything bound by request.
       */
-    val ComputedImports(importsPreamble, importsTrailer, accessPath) =
-      exitingTyper(importsCode(referencedNames.toSet))
+    lazy val ComputedImports(importsPreamble, importsTrailer, accessPath) =
+      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode))
 
     /** the line of code to compute */
     def toCompute = line
 
-    def fullPath(vname: String) = s"${lineRep.readPath}$accessPath.`$vname`"
+    /** The path of the value that contains the user code. */
+    def fullAccessPath = s"${lineRep.readPath}$accessPath"
+
+    /** The path of the given member of the wrapping instance. */
+    def fullPath(vname: String) = s"$fullAccessPath.`$vname`"
 
     /** generate the source code for the object that computes this request */
-    private object ObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
+    abstract class Wrapper extends IMain.CodeAssembler[MemberHandler] {
       def path = originalPath("$intp")
       def envLines = {
         if (!isReplPower) Nil // power mode only for now
         else List("def %s = %s".format("$line", tquoted(originalLine)), "def %s = Nil".format("$trees"))
       }
-
-      val preamble = """
-        |object %s {
+      def preamble = s"""
+        |$preambleHeader
         |%s%s%s
-      """.stripMargin.format(lineRep.readName, envLines.map("  " + _ + ";\n").mkString, importsPreamble, indentCode(toCompute))
-      val postamble = importsTrailer + "\n}"
+      """.stripMargin.format(lineRep.readName, envLines.map("  " + _ + ";\n").mkString,
+        importsPreamble, indentCode(toCompute))
+
       val generate = (m: MemberHandler) => m extraCodeToEvaluate Request.this
+
+      /** A format string with %s for $read, specifying the wrapper definition. */
+      def preambleHeader: String
+
+      /** Like preambleHeader for an import wrapper. */
+      def prewrap: String = preambleHeader + "\n"
+
+      /** Like postamble for an import wrapper. */
+      def postwrap: String
     }
+
+    private class ObjectBasedWrapper extends Wrapper {
+      def preambleHeader = "object %s {"
+
+      def postamble = importsTrailer + "\n}"
+
+      def postwrap = "}\n"
+    }
+
+    private class ClassBasedWrapper extends Wrapper {
+      def preambleHeader = "class %s extends Serializable {"
+
+      /** Adds an object that instantiates the outer wrapping class. */
+      def postamble  = s"""$importsTrailer
+                          |}
+                          |object ${lineRep.readName} extends ${lineRep.readName}
+                          |""".stripMargin
+
+      import nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
+
+      /** Adds a val that instantiates the wrapping class. */
+      def postwrap = s"}\nval $iw = new $iw\n"
+    }
+
+    private lazy val ObjectSourceCode: Wrapper =
+      if (settings.Yreplclassbased) new ClassBasedWrapper else new ObjectBasedWrapper
 
     private object ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
       /** We only want to generate this code when the result
@@ -890,7 +930,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       |    (""
       """.stripMargin.format(
         lineRep.evalName, evalResult, lineRep.printName,
-        executionWrapper, lineRep.readName + accessPath
+        executionWrapper, fullAccessPath
       )
 
       val postamble = """
