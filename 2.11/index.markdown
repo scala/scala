@@ -3,7 +3,7 @@ layout: default
 title: Overview of Scala 2.11
 ---
 
-The current 2.11 milestone is [M4](https://github.com/scala/scala/releases/tag/v2.11.0-M4).
+The current 2.11 milestone is [M5](https://github.com/scala/scala/releases/tag/v2.11.0-M5).
 
 To contribute to this overview, [please submit a pull request](https://github.com/scala/scala/tree/gh-pages/2.11/index.markdown).
 
