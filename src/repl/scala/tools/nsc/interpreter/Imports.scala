@@ -92,7 +92,7 @@ trait Imports {
    * last one imported is actually usable.
    */
   case class ComputedImports(prepend: String, append: String, access: String)
-  protected def importsCode(wanted: Set[Name]): ComputedImports = {
+  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper): ComputedImports = {
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
@@ -130,23 +130,10 @@ trait Imports {
 
     // add code for a new object to hold some imports
     def addWrapper() {
-      if (classBasedWrappers) addClassBasedWrapper()
-      else addObjectBasedWrapper()
-    }
-
-    def addObjectBasedWrapper() {
-      val impname = nme.INTERPRETER_IMPORT_WRAPPER
-      code append "object %s {\n".format(impname)
-      trailingBraces append "}\n"
-      accessPath append ("." + impname)
-      currentImps.clear()
-    }
-
-    def addClassBasedWrapper() {
-      val impname = nme.INTERPRETER_IMPORT_WRAPPER
-      code append "class %sC extends Serializable {\n".format(impname)
-      trailingBraces append "}\nval " + impname + " = new " + impname + "C;\n"
-      accessPath append ("." + impname)
+      import nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
+      code append (wrapper.prewrap format iw)
+      trailingBraces append wrapper.postwrap
+      accessPath append s".$iw"
       currentImps.clear()
     }
 
@@ -178,14 +165,7 @@ trait Imports {
           case x =>
             for (sym <- x.definedSymbols) {
               maybeWrap(sym.name)
-              if (classBasedWrappers) {
-                if (!code.toString.endsWith(".`" + sym.name + "`;\n")) {
-                  val valName = "$VAL" + req.lineRep.lineId
-                  code.append("val " + valName + " = " + req.lineRep.readPath + ".INSTANCE;\n")
-                  code.append("import " + valName + req.accessPath + ".`" + sym.name + "`;\n")
-                }
-              } else
-                code append s"import ${x.path}\n"
+              code append s"import ${x.path}\n"
               currentImps += sym.name
             }
         }
