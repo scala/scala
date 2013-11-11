@@ -57,15 +57,10 @@ defined class Ruminant
 res3: Int = 216
 
 scala> Bovine.x = List(Ruminant(5), Cow, new Moo)
-<console>:8: error: $VAL10 is already defined as value $VAL10
-val $VAL10 = INSTANCE;
-    ^
-<console>:12: error: $VAL11 is already defined as value $VAL11
-val $VAL11 = INSTANCE;
-    ^
+Bovine.x: List[Any] = List(Ruminant(5), Cow, Moooooo)
 
 scala> Bovine.x
-res4: List[Any] = null
+res4: List[Any] = List(Ruminant(5), Cow, Moooooo)
 
 scala> 
 
@@ -117,7 +112,7 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
 res15: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
-<console>:9: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+<console>:8: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
               55 ; (x: Int) => x + 1 ;;
               ^
 res16: () => Int = <function0>
@@ -185,6 +180,7 @@ val z = x * y
   2 +
   3 } ; bippy+88+11
 object Bovine { var x: List[_] = null } ; case class Ruminant(x: Int) ; bippy * bippy * bippy
+Bovine.x = List(Ruminant(5), Cow, new Moo)
 Bovine.x
 (2)
 (2 + 2)
@@ -257,34 +253,33 @@ class $read extends Serializable {
     super.<init>;
     ()
   };
-  class $iwC extends Serializable {
+  class $iw extends Serializable {
     def <init>() = {
       super.<init>;
       ()
     };
-    val $VAL44 = $line44.$read.INSTANCE;
-    import $VAL44.$iw.$iw.BippyBups;
-    val $VAL45 = $line45.$read.INSTANCE;
-    import $VAL45.$iw.$iw.PuppyPups;
-    val $VAL46 = $line46.$read.INSTANCE;
-    import $VAL46.$iw.$iw.Bingo;
-    class $iwC extends Serializable {
+    import $line44.$read.$iw.$iw.BippyBups;
+    import $line44.$read.$iw.$iw.BippyBups;
+    import $line45.$read.$iw.$iw.PuppyPups;
+    import $line45.$read.$iw.$iw.PuppyPups;
+    import $line46.$read.$iw.$iw.Bingo;
+    import $line46.$read.$iw.$iw.Bingo;
+    class $iw extends Serializable {
       def <init>() = {
         super.<init>;
         ()
       };
       val res3 = List(BippyBups, PuppyPups, Bingo)
     };
-    val $iw = new $iwC.<init>
+    val $iw = new $iw.<init>
   };
-  val $iw = new $iwC.<init>
+  val $iw = new $iw.<init>
 }
-object $read extends scala.AnyRef {
+object $read extends $read {
   def <init>() = {
     super.<init>;
     ()
-  };
-  val INSTANCE = new $read.<init>
+  }
 }
 res3: List[Product with Serializable] = List(BippyBups(), PuppyPups(), Bingo())
 
