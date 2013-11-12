@@ -466,6 +466,29 @@ abstract class TreeGen extends macros.TreeBuilder {
     atPos(pkgPos)(PackageDef(pid, module :: Nil))
   }
 
+  // Following objects represent encoding of for loop enumerators
+  // into the regular trees. Such representations are used for:
+  //
+  //   - as intermediate value of enumerators inside of the parser
+  //     right before the mkFor desugaring is being called
+  //
+  //   - as intermediate value of enumerators obtained after
+  //     re-sugaring of for loops through build.SyntacticFor
+  //     and build.SyntacticForYield (which are used by quasiquotes)
+  //
+  // The encoding uses regular trees with ForAttachment that helps
+  // to reliably differentiate them from normal trees that can have
+  // similar shape. fq"$pat <- $rhs" for example is represented in
+  // the same way as "`<-`($pat, $rhs)"" but with added attachment to
+  // the `<-` identifier.
+  //
+  // The primary rationale behind such representation in favor of
+  // simple case classes is a wish to re-use the same representation
+  // between quasiquotes and parser without exposing compiler internals.
+  // Opaque tree encoding can be changed/adapted at any time without
+  // breaking end users code.
+
+  /** Encode/decode fq"$pat <- $rhs" enumerator as q"`<-`($pat, $rhs)" */
   object ValFrom {
     def apply(pat: Tree, rhs: Tree): Tree =
       Apply(Ident(nme.LARROWkw).updateAttachment(ForAttachment),
@@ -479,6 +502,7 @@ abstract class TreeGen extends macros.TreeBuilder {
     }
   }
 
+  /** Encode/decode fq"$pat = $rhs" enumerator as q"$pat = $rhs" */
   object ValEq {
     def apply(pat: Tree, rhs: Tree): Tree =
       Assign(pat, rhs).updateAttachment(ForAttachment)
@@ -491,6 +515,7 @@ abstract class TreeGen extends macros.TreeBuilder {
     }
   }
 
+  /** Encode/decode fq"if $cond" enumerator as q"`if`($cond)" */
   object Filter {
     def apply(tree: Tree) =
       Apply(Ident(nme.IFkw).updateAttachment(ForAttachment), List(tree))
@@ -503,6 +528,7 @@ abstract class TreeGen extends macros.TreeBuilder {
     }
   }
 
+  /** Encode/decode body of for yield loop as q"`yield`($tree)" */
   object Yield {
     def apply(tree: Tree): Tree =
       Apply(Ident(nme.YIELDkw).updateAttachment(ForAttachment), List(tree))
@@ -591,6 +617,8 @@ abstract class TreeGen extends macros.TreeBuilder {
     /* Make an application  qual.meth(pat => body) positioned at `pos`.
      */
     def makeCombination(pos: Position, meth: TermName, qual: Tree, pat: Tree, body: Tree): Tree =
+      // ForAttachment on the method selection is used to differentiate
+      // result of for desugaring from a regular method call
       Apply(Select(qual, meth) setPos qual.pos updateAttachment ForAttachment,
         List(makeClosure(pos, pat, body))) setPos pos
 
