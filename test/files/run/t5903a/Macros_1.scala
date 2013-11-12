@@ -1,4 +1,4 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.WhiteboxContext
 import language.experimental.macros
 
 trait Tree
@@ -13,7 +13,7 @@ object NewQuasiquotes {
 }
 
 object QuasiquoteMacros {
-  def unapplyImpl(c: Context)(t: c.Tree) = {
+  def unapplyImpl(c: WhiteboxContext)(t: c.Tree) = {
     import c.universe._
     q"""
       new {

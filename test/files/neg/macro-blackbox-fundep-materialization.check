@@ -1,0 +1,8 @@
+Test_2.scala:7: error: type mismatch;
+ found   : Iso[Test.Foo,(Int, String, Boolean)]
+ required: Iso[Test.Foo,Nothing]
+Note: (Int, String, Boolean) >: Nothing, but trait Iso is invariant in type U.
+You may wish to define U as -U instead. (SLS 4.5)
+    val equiv = foo(Foo(23, "foo", true))
+                   ^
+one error found

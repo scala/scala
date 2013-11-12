@@ -15,10 +15,6 @@ trait Resolvers {
   private val runDefinitions = currentRun.runDefinitions
   import runDefinitions.{Predef_???, _}
 
-  /** Determines the type of context implied by the macro def.
-   */
-  val ctxTpe = MacroContextClass.tpe
-
   /** Resolves a macro impl reference provided in the right-hand side of the given macro definition.
    *
    *  Acceptable shapes of the right-hand side:
@@ -44,14 +40,14 @@ trait Resolvers {
     }
 
     val untypedImplRef = typer.silent(_.typedTypeConstructor(maybeBundleRef)) match {
-      case SilentResultValue(result) if result.tpe.baseClasses.contains(MacroClass) =>
+      case SilentResultValue(result) if mightBeMacroBundleType(result.tpe) =>
         val bundleProto = result.tpe.typeSymbol
         val bundlePkg = bundleProto.enclosingPackageClass
         if (!isMacroBundleProtoType(bundleProto.tpe)) MacroBundleWrongShapeError()
         if (!bundleProto.owner.isStaticOwner) MacroBundleNonStaticError()
 
         // synthesize the bundle, i.e. given a static `trait Foo extends Macro { def expand = ... } `
-        // create a top-level definition `class Foo$Bundle(val c: Context) extends Foo` in a package next to `Foo`
+        // create a top-level definition `class Foo$Bundle(val c: BlackboxContext/WhiteboxContext) extends Foo` in a package next to `Foo`
         val bundlePid = gen.mkUnattributedRef(bundlePkg)
         val bundlePrefix =
           if (bundlePkg == EmptyPackageClass) bundleProto.fullName('$')
@@ -59,7 +55,8 @@ trait Resolvers {
         val bundleName = TypeName(bundlePrefix + tpnme.MACRO_BUNDLE_SUFFIX)
         val existingBundle = bundleProto.enclosingPackageClass.info.decl(bundleName)
         if (!currentRun.compiles(existingBundle)) {
-          def mkContextValDef(flags: Long) = ValDef(Modifiers(flags), nme.c, TypeTree(ctxTpe), EmptyTree)
+          val contextType = if (isBlackboxMacroBundleType(bundleProto.tpe)) BlackboxContextClass.tpe else WhiteboxContextClass.tpe
+          def mkContextValDef(flags: Long) = ValDef(Modifiers(flags), nme.c, TypeTree(contextType), EmptyTree)
           val contextField = mkContextValDef(PARAMACCESSOR)
           val contextParam = mkContextValDef(PARAM | PARAMACCESSOR)
           val bundleCtor = DefDef(Modifiers(), nme.CONSTRUCTOR, Nil, List(List(contextParam)), TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
@@ -88,12 +85,13 @@ trait Resolvers {
   // lazy val (isImplBundle, macroImplOwner, macroImpl, macroImplTargs) =
   private lazy val dissectedMacroImplRef =
     macroImplRef match {
-      case MacroImplReference(isBundle, owner, meth, targs) => (isBundle, owner, meth, targs)
+      case MacroImplReference(isBundle, isBlackbox, owner, meth, targs) => (isBundle, isBlackbox, owner, meth, targs)
       case _ => MacroImplReferenceWrongShapeError()
     }
   lazy val isImplBundle = dissectedMacroImplRef._1
   lazy val isImplMethod = !isImplBundle
-  lazy val macroImplOwner = dissectedMacroImplRef._2
-  lazy val macroImpl = dissectedMacroImplRef._3
-  lazy val targs = dissectedMacroImplRef._4
+  lazy val isImplBlackbox = dissectedMacroImplRef._2
+  lazy val macroImplOwner = dissectedMacroImplRef._3
+  lazy val macroImpl = dissectedMacroImplRef._4
+  lazy val targs = dissectedMacroImplRef._5
 }

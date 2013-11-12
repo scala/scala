@@ -5,11 +5,11 @@ package macros
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that
  *  partially exposes the type checker to macro writers.
  */
 trait Typers {
-  self: Context =>
+  self: BlackboxContext =>
 
   /** Contexts that represent macros in-flight, including the current one. Very much like a stack trace, but for macros only.
    *  Can be useful for interoperating with other macros and for imposing compiler-friendly limits on macro expansion.
@@ -21,28 +21,7 @@ trait Typers {
    *  Unlike `enclosingMacros`, this is a def, which means that it gets recalculated on every invocation,
    *  so it might change depending on what is going on during macro expansion.
    */
-  def openMacros: List[Context]
-
-  /** Information about one of the currently considered implicit candidates.
-   *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,
-   *  hence implicit searches can recursively trigger other implicit searches.
-   *
-   *  `pre` and `sym` provide information about the candidate itself.
-   *  `pt` and `tree` store the parameters of the implicit search the candidate is participating in.
-   */
-  case class ImplicitCandidate(pre: Type, sym: Symbol, pt: Type, tree: Tree)
-
-  /** Information about one of the currently considered implicit candidates.
-   *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,
-   *  hence implicit searches can recursively trigger other implicit searches.
-   *
-   *  Can be useful to get information about an application with an implicit parameter that is materialized during current macro expansion.
-   *  If we're in an implicit macro being expanded, it's included in this list.
-   *
-   *  Unlike `enclosingImplicits`, this is a def, which means that it gets recalculated on every invocation,
-   *  so it might change depending on what is going on during macro expansion.
-   */
-  def openImplicits: List[ImplicitCandidate]
+  def openMacros: List[BlackboxContext]
 
   /** Typechecks the provided tree against the expected type `pt` in the macro callsite context.
    *

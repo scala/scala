@@ -1,4 +1,4 @@
-import scala.tools.partest.Util.trace
+import PartestUtil.trace
 import scala.util.control.Exception.allCatch
 
 

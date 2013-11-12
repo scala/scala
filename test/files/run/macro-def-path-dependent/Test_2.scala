@@ -1,6 +1,6 @@
 package test2
 
-import scala.reflect.macros.{Context => Ctx}
+import scala.reflect.macros.{BlackboxContext => Ctx}
 
 trait Exprs {
   self: Universe =>

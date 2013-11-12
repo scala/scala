@@ -1,7 +1,7 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Macros {
-  def impl_with_implicits_enabled(c: Context) = {
+  def impl_with_implicits_enabled(c: BlackboxContext) = {
     import c.universe._
 
     val tree1 = Apply(Select(Literal(Constant(1)), TermName("$minus$greater")), List(Literal(Constant(2))))
@@ -11,7 +11,7 @@ object Macros {
 
   def foo_with_implicits_enabled = macro impl_with_implicits_enabled
 
-  def impl_with_implicits_disabled(c: Context) = {
+  def impl_with_implicits_disabled(c: BlackboxContext) = {
     import c.universe._
 
     try {

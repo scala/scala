@@ -1,10 +1,16 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> def bar(c: scala.reflect.macros.Context) = ???
-bar: (c: scala.reflect.macros.Context)Nothing
+scala> def bar1(c: scala.reflect.macros.BlackboxContext) = ???
+bar1: (c: scala.reflect.macros.BlackboxContext)Nothing
 
-scala> def foo = macro bar
-defined term macro foo: Any
+scala> def foo1 = macro bar1
+defined term macro foo1: Any
+
+scala> def bar2(c: scala.reflect.macros.WhiteboxContext) = ???
+bar2: (c: scala.reflect.macros.WhiteboxContext)Nothing
+
+scala> def foo2 = macro bar2
+defined term macro foo2: Any
 
 scala> 

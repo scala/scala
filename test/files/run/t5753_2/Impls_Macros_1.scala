@@ -1,4 +1,4 @@
-import scala.reflect.macros.{Context => Ctx}
+import scala.reflect.macros.{BlackboxContext => Ctx}
 
 trait Macro_T {
  def foo[T](c: Ctx)(s: c.Expr[T]) = s

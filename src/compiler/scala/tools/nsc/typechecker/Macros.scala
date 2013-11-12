@@ -29,7 +29,7 @@ import Fingerprint._
  *  Then fooBar needs to point to a static method of the following form:
  *
  *    def fooBar[T: c.WeakTypeTag] // type tag annotation is optional
- *           (c: scala.reflect.macros.Context)
+ *           (c: scala.reflect.macros.BlackboxContext)
  *           (xs: c.Expr[List[T]])
  *           : c.Expr[T] = {
  *      ...
@@ -67,7 +67,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *
    *  This solution is very simple, but unfortunately it's also lacking. If we use it, then
    *  signatures of macro defs become transitively dependent on scala-reflect.jar
-   *  (because they refer to macro impls, and macro impls refer to scala.reflect.macros.Context defined in scala-reflect.jar).
+   *  (because they refer to macro impls, and macro impls refer to scala.reflect.macros.BlackboxContext/WhiteboxContext defined in scala-reflect.jar).
    *  More details can be found in comments to https://issues.scala-lang.org/browse/SI-5940.
    *
    *  Therefore we have to avoid putting macro impls into binding pickles and come up with our own serialization format.
@@ -81,40 +81,42 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *  and various accounting information necessary when composing an argument list for the reflective invocation.
    */
   case class MacroImplBinding(
-    // Is this macro impl a bundle (a trait extending Macro) or a vanilla def?
-    val isBundle: Boolean,
-    // Java class name of the class that contains the macro implementation
-    // is used to load the corresponding object with Java reflection
-    className: String,
-    // method name of the macro implementation
-    // `className` and `methName` are all we need to reflectively invoke a macro implementation
-    // because macro implementations cannot be overloaded
-    methName: String,
-    // flattens the macro impl's parameter lists having symbols replaced with their fingerprints
-    // currently fingerprints are calculated solely from types of the symbols:
-    //   * c.Expr[T] => LiftedTyped
-    //   * c.Tree => LiftedUntyped
-    //   * c.WeakTypeTag[T] => Tagged(index of the type parameter corresponding to that type tag)
-    //   * everything else (e.g. scala.reflect.macros.Context) => Other
-    // f.ex. for: def impl[T: WeakTypeTag, U, V: WeakTypeTag](c: Context)(x: c.Expr[T], y: c.Tree): (U, V) = ???
-    // `signature` will be equal to List(List(Other), List(LiftedTyped, LiftedUntyped), List(Tagged(0), Tagged(2)))
-    signature: List[List[Fingerprint]],
-    // type arguments part of a macro impl ref (the right-hand side of a macro definition)
-    // these trees don't refer to a macro impl, so we can pickle them as is
-    targs: List[Tree]) {
-
+      // Is this macro impl a bundle (a trait extending BlackboxMacro or WhiteboxMacro) or a vanilla def?
+      val isBundle: Boolean,
+      // Is this macro impl blackbox (i.e. having BlackboxContext in its signature)?
+      val isBlackbox: Boolean,
+      // Java class name of the class that contains the macro implementation
+      // is used to load the corresponding object with Java reflection
+      className: String,
+      // method name of the macro implementation
+      // `className` and `methName` are all we need to reflectively invoke a macro implementation
+      // because macro implementations cannot be overloaded
+      methName: String,
+      // flattens the macro impl's parameter lists having symbols replaced with their fingerprints
+      // currently fingerprints are calculated solely from types of the symbols:
+      //   * c.Expr[T] => LiftedTyped
+      //   * c.Tree => LiftedUntyped
+      //   * c.WeakTypeTag[T] => Tagged(index of the type parameter corresponding to that type tag)
+      //   * everything else (e.g. scala.reflect.macros.BlackboxContext/WhiteboxContext) => Other
+      // f.ex. for: def impl[T: WeakTypeTag, U, V: WeakTypeTag](c: BlackboxContext)(x: c.Expr[T], y: c.Tree): (U, V) = ???
+      // `signature` will be equal to List(List(Other), List(LiftedTyped, LiftedUntyped), List(Tagged(0), Tagged(2)))
+      signature: List[List[Fingerprint]],
+      // type arguments part of a macro impl ref (the right-hand side of a macro definition)
+      // these trees don't refer to a macro impl, so we can pickle them as is
+      targs: List[Tree]) {
     // Was this binding derived from a `def ... = macro ???` definition?
     def is_??? = {
       val Predef_??? = currentRun.runDefinitions.Predef_???
       className == Predef_???.owner.javaClassName && methName == Predef_???.name.encoded
     }
+    def isWhitebox = !isBlackbox
   }
 
   /** Macro def -> macro impl bindings are serialized into a `macroImpl` annotation
    *  with synthetic content that carries the payload described in `MacroImplBinding`.
    *
    *  For example, for a pair of macro definition and macro implementation:
-   *    def impl(c: scala.reflect.macros.Context): c.Expr[Unit] = ???
+   *    def impl(c: scala.reflect.macros.BlackboxContext): c.Expr[Unit] = ???
    *    def foo: Unit = macro impl
    *
    *  We will have the following annotation added on the macro definition `foo`:
@@ -122,13 +124,14 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *    @scala.reflect.macros.internal.macroImpl(
    *      `macro`(
    *        "isBundle" = false,
+   *        "isBlackbox" = true,
    *        "signature" = List(Other),
    *        "methodName" = "impl",
    *        "versionFormat" = <current version format>,
    *        "className" = "Macros$"))
    */
   object MacroImplBinding {
-    val versionFormat = 5.0
+    val versionFormat = 6.0
 
     def pickleAtom(obj: Any): Tree =
       obj match {
@@ -151,7 +154,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     def pickle(macroImplRef: Tree): Tree = {
       val runDefinitions = currentRun.runDefinitions
       import runDefinitions._
-      val MacroImplReference(isBundle, owner, macroImpl, targs) = macroImplRef
+      val MacroImplReference(isBundle, isBlackbox, owner, macroImpl, targs) = macroImplRef
 
       // todo. refactor when fixing SI-5498
       def className: String = {
@@ -182,6 +185,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       val payload = List[(String, Any)](
         "versionFormat" -> versionFormat,
         "isBundle"      -> isBundle,
+        "isBlackbox"    -> isBlackbox,
         "className"     -> className,
         "methodName"    -> macroImpl.name.toString,
         "signature"     -> signature
@@ -237,10 +241,11 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       if (versionFormat != pickleVersionFormat) fail(s"expected version format $versionFormat, actual $pickleVersionFormat")
 
       val isBundle = unpickle("isBundle", classOf[Boolean])
+      val isBlackbox = unpickle("isBlackbox", classOf[Boolean])
       val className = unpickle("className", classOf[String])
       val methodName = unpickle("methodName", classOf[String])
       val signature = unpickle("signature", classOf[List[List[Fingerprint]]])
-      MacroImplBinding(isBundle, className, methodName, signature, targs)
+      MacroImplBinding(isBundle, isBlackbox, className, methodName, signature, targs)
     }
   }
 
@@ -249,14 +254,17 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     macroDef withAnnotation AnnotationInfo(MacroImplAnnotation.tpe, List(pickle), Nil)
   }
 
-  def loadMacroImplBinding(macroDef: Symbol): MacroImplBinding = {
-    val Some(AnnotationInfo(_, List(pickle), _)) = macroDef.getAnnotation(MacroImplAnnotation)
-    MacroImplBinding.unpickle(pickle)
-  }
+  def loadMacroImplBinding(macroDef: Symbol): Option[MacroImplBinding] =
+    macroDef.getAnnotation(MacroImplAnnotation) collect {
+      case AnnotationInfo(_, List(pickle), _) => MacroImplBinding.unpickle(pickle)
+    }
+
+  def isBlackbox(expandee: Tree): Boolean = isBlackbox(dissectApplied(expandee).core.symbol)
+  def isBlackbox(macroDef: Symbol): Boolean = loadMacroImplBinding(macroDef).map(_.isBlackbox).getOrElse(false)
 
   def computeMacroDefTypeFromMacroImplRef(macroDdef: DefDef, macroImplRef: Tree): Type = {
     macroImplRef match {
-      case MacroImplReference(_, _, macroImpl, targs) =>
+      case MacroImplReference(_, _, _, macroImpl, targs) =>
         // Step I. Transform c.Expr[T] to T and everything else to Any
         var runtimeType = decreaseMetalevel(macroImpl.info.finalResultType)
 
@@ -450,7 +458,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           (trees :+ tags).flatten
         }
 
-        val binding = loadMacroImplBinding(macroDef)
+        val binding = loadMacroImplBinding(macroDef).get
         if (binding.is_???) Nil
         else calculateMacroArgs(binding)
       }
@@ -459,7 +467,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   }
 
   /** Keeps track of macros in-flight.
-   *  See more informations in comments to `openMacros` in `scala.reflect.macros.Context`.
+   *  See more informations in comments to `openMacros` in `scala.reflect.macros.WhiteboxContext`.
    */
   private var _openMacros = List[MacroContext]()
   def openMacros = _openMacros
@@ -596,21 +604,27 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    */
   def macroExpandApply(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = {
     object expander extends TermMacroExpander(APPLY_ROLE, typer, expandee, mode, pt) {
-      override def onSuccess(expanded: Tree) = {
+      override def onSuccess(expanded0: Tree) = {
+        def approximate(tp: Type) = {
+          // approximation is necessary for whitebox macros to guide type inference
+          // read more in the comments for onDelayed below
+          if (isBlackbox(expandee)) tp
+          else {
+            val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
+            deriveTypeWithWildcards(undetparams)(tp)
+          }
+        }
+        val macroPt = approximate(if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe)
+        val expanded = if (isBlackbox(expandee)) atPos(enclosingMacroPosition.focus)(Typed(expanded0, TypeTree(macroPt))) else expanded0
+
         // prematurely annotate the tree with a macro expansion attachment
         // so that adapt called indirectly by typer.typed knows that it needs to apply the existential fixup
         linkExpandeeAndExpanded(expandee, expanded)
-        // approximation is necessary for whitebox macros to guide type inference
-        // read more in the comments for onDelayed below
-        def approximate(tp: Type) = {
-          val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
-          deriveTypeWithWildcards(undetparams)(tp)
-        }
-        val macroPtApprox = approximate(if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe)
+
         // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
         // therefore we need to re-enable the conversions back temporarily
-        if (macroDebugVerbose) println(s"typecheck #1 (against macroPtApprox = $macroPtApprox): $expanded")
-        val expanded1 = typer.context.withImplicitsEnabled(typer.typed(expanded, mode, macroPtApprox))
+        if (macroDebugVerbose) println(s"typecheck #1 (against macroPt = $macroPt): $expanded")
+        val expanded1 = typer.context.withImplicitsEnabled(typer.typed(expanded, mode, macroPt))
         if (expanded1.isErrorTyped) {
           if (macroDebugVerbose) println(s"typecheck #1 has failed: ${typer.context.reportBuffer.errors}")
           expanded1
@@ -664,7 +678,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         // e.g. for Foo it will be Int :: String :: Boolean :: HNil), there's no way to convey this information
         // to the typechecker. Therefore the typechecker will infer Nothing for L, which is hardly what we want.
         //
-        // =========== THE SOLUTION ===========
+        // =========== THE SOLUTION (ENABLED ONLY FOR WHITEBOX MACROS) ===========
         //
         // To give materializers a chance to say their word before vanilla inference kicks in,
         // we infer as much as possible (e.g. in the example above even though L is hopeless, C still can be inferred to Foo)
@@ -672,9 +686,12 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         // Thanks to that the materializer can take a look at what's going on and react accordingly.
         val shouldInstantiate = typer.context.undetparams.nonEmpty && !mode.inPolyMode
         if (shouldInstantiate) {
-          forced += delayed
-          typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), pt, keepNothings = false)
-          macroExpandApply(typer, delayed, mode, pt)
+          if (isBlackbox(expandee)) typer.instantiatePossiblyExpectingUnit(delayed, mode, pt)
+          else {
+            forced += delayed
+            typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), pt, keepNothings = false)
+            macroExpandApply(typer, delayed, mode, pt)
+          }
         } else delayed
       }
     }

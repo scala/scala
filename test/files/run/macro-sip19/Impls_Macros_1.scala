@@ -1,7 +1,7 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.WhiteboxContext
 
 object Macros {
-  def impl(c: Context) = {
+  def impl(c: WhiteboxContext) = {
     import c.universe._
     val Apply(fun, args) = c.enclosingImplicits(0).tree
     val fileName = fun.pos.source.file.file.getName

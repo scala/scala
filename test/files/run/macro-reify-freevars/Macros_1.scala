@@ -2,7 +2,7 @@ package scala.collection.slick
 
 object QueryableMacros{
   def map[T:c.WeakTypeTag, S:c.WeakTypeTag]
-         (c: scala.reflect.macros.Context)
+         (c: scala.reflect.macros.BlackboxContext)
          (projection: c.Expr[T => S])
          : c.Expr[scala.collection.slick.Queryable[S]] = {
     import c.universe._
