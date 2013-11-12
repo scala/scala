@@ -39,4 +39,15 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked") {
     assert(enums1 ≈ enums)
     assert(body1 ≈ body)
   }
+
+  property("for .filter instead of .withFilter") = test {
+    val enums = fq"foo <- new Foo" :: fq"if foo != null" :: Nil
+    val body = q"foo"
+    val q"$_; for(..$enums1) yield $body1" = typecheck(q"""
+      class Foo { def map(f: Any => Any) = this; def filter(cond: Any => Boolean) = this }
+      for(..$enums) yield $body
+    """)
+    assert(enums1 ≈ enums)
+    assert(body1 ≈ body)
+  }
 }
