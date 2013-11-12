@@ -260,12 +260,14 @@ TODO:
       <copy-deps project="junit"/>
 
       <!-- Pax runner -->
-      <property name="pax.exam.version" value="2.5.0"/>
+      <property name="pax.exam.version" value="2.6.0"/>
       <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset">
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-junit4" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-link-assembly" version="${pax.exam.version}"/>
-        <dependency groupId="org.ops4j.pax.url" artifactId="pax-url-aether" version="1.4.0"/>
+        <!-- upgraded to 1.6.0 to get fix for https://ops4j1.jira.com/browse/PAXURL-217
+      https://ops4j1.jira.com/browse/PAXURL-138 is still unresolved... -->
+        <dependency groupId="org.ops4j.pax.url" artifactId="pax-url-aether" version="1.6.0"/>
         <dependency groupId="org.ops4j.pax.swissbox" artifactId="pax-swissbox-framework" version="1.5.1"/>
         <dependency groupId="ch.qos.logback" artifactId="logback-core" version="0.9.20"/>
         <dependency groupId="ch.qos.logback" artifactId="logback-classic" version="0.9.20"/>
@@ -282,8 +284,9 @@ TODO:
         <!-- so we don't have to wait for artifacts to synch to maven central
             (we don't distribute partest with Scala, so the risk of sonatype and maven being out of synch is irrelevant):
           -->
-        <artifact:remoteRepository refid="extra-repo"/>
+        <!-- <artifact:remoteRepository refid="extra-repo"/> -->
         <dependency groupId="org.scala-lang.modules" artifactId="scala-partest_${scala.binary.version}" version="${partest.version.number}" />
+        <dependency groupId="org.scalacheck"         artifactId="scalacheck_${scala.binary.version}"    version="${scalacheck.version.number}" />
       </artifact:dependencies>
       <copy-deps project="partest"/>
 
@@ -295,7 +298,7 @@ TODO:
       <!-- used by the test.osgi target to create osgi bundles for the xml, parser-combinator jars
            must specify sourcesFilesetId, javadocFilesetId to download these types of artifacts -->
       <artifact:dependencies pathId="external-modules.deps.classpath" sourcesFilesetId="external-modules.sources.fileset" javadocFilesetId="external-modules.javadoc.fileset">
-        <artifact:remoteRepository refid="extra-repo"/>
+        <!-- <artifact:remoteRepository refid="extra-repo"/> -->
         <dependency groupId="org.scala-lang.modules" artifactId="scala-xml_${scala.binary.version}" version="${scala-xml.version.number}"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators_${scala.binary.version}" version="${scala-parser-combinators.version.number}"/>
       </artifact:dependencies>
@@ -313,25 +316,6 @@ TODO:
       </path>
       <copy-deps refid="external-modules-nocore" project="scaladoc"/>
 
-      <!--
-        include partest and its run-time dependencies,
-        but filter out the compiler we just built, as that's what we want to test!
-        TODO: mark partest's compiler dependencies as provided when publishing to maven,
-        so that we don't have to filter them out here...
-      -->
-      <path id="partest-deps-nocore">
-        <restrict>
-          <path refid="partest.classpath"/>
-          <rsel:not><rsel:or>
-            <rsel:name name="scala-library*.jar"/>
-            <rsel:name name="scala-reflect*.jar"/>
-            <rsel:name name="scala-compiler*.jar"/>
-            <!-- TODO: remove actors & scalap, move to external modules -->
-            <rsel:name name="scala-actors*.jar"/>
-            <rsel:name name="scala-scalap*.jar"/>
-          </rsel:or></rsel:not>
-        </restrict>
-      </path>
 
       <!-- Set property named @{name} to the jar resolved as @{jar}_${scala.binary.version}:jar.
            @{jar}_${scala.binary.version} must be a maven dependency. -->
@@ -760,13 +744,13 @@ TODO:
     <path id="quick.partest-extras.build.path">
       <path refid="asm.classpath"/>
       <path refid="partest.classpath"/>
+      <path refid="quick.compiler.build.path"/>
       <pathelement location="${build-quick.dir}/classes/repl"/>
       <!-- for the java dependency: Profiler.java -->
       <pathelement location="${build-quick.dir}/classes/partest-extras"/>
     </path>
 
     <path id="quick.partest-javaagent.build.path">
-      <path refid="partest.classpath"/>
       <path refid="asm.classpath"/>
     </path>
 
@@ -905,18 +889,16 @@ TODO:
       <pathelement location="${reflect.jar}"/>
       <pathelement location="${compiler.jar}"/>
 
-      <!-- to test a quick build without packing, replace the above pathelements with:        (may need a little tweaking)
-      <path refid="quick.bin.tool.path">
-      <path refid="quick.interactive.build.path">
-      -->
-
       <!-- TODO: move scalap & actors out of repo -->
       <pathelement location="${scalap.jar}"/>
       <pathelement location="${actors.jar}"/>
 
-      <!-- partest dependencies, without the jars we built locally
-           TODO: figure out why scalap tests fail if we move this up-->
-      <path refid="partest-deps-nocore"/>
+      <!-- partest's dependencies, which marks most of its dependencies as provided,
+           so we provide them: scala-[library/reflect/compiler], scalap built here,
+           scala-xml, scala-parser-combinators via external-modules-nocore,
+           scalacheck as part of `partest.classpath` -->
+      <path refid="partest.classpath"/>
+      <path refid="external-modules-nocore"/> <!-- xml, parsers -->
 
       <!-- partest classes specific to the core compiler build -->
       <pathelement location="${partest-extras.jar}"/>
@@ -1807,6 +1789,7 @@ TODO:
   <target name="test.suite.init" depends="partest.task">
     <!-- read by test/partest to determine classpath used to run partest -->
     <propertyfile file = "build/pack/partest.properties">
+      <!-- TODO: change "partest.classpath" to "partest.runtime.classpath" or something -->
       <entry key       = "partest.classpath" value="${toString:partest.compilation.path}"/>
     </propertyfile>
   </target>
