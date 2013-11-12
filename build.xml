@@ -219,12 +219,14 @@ TODO:
       </artifact:dependencies>
 
       <!-- Pax runner -->
-      <property name="pax.exam.version" value="2.5.0"/>
+      <property name="pax.exam.version" value="2.6.0"/>
       <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset">
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-junit4" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-link-assembly" version="${pax.exam.version}"/>
-        <dependency groupId="org.ops4j.pax.url" artifactId="pax-url-aether" version="1.4.0"/>
+        <!-- upgraded to 1.6.0 to get fix for https://ops4j1.jira.com/browse/PAXURL-217
+      https://ops4j1.jira.com/browse/PAXURL-138 is still unresolved... -->
+        <dependency groupId="org.ops4j.pax.url" artifactId="pax-url-aether" version="1.6.0"/>
         <dependency groupId="org.ops4j.pax.swissbox" artifactId="pax-swissbox-framework" version="1.5.1"/>
         <dependency groupId="ch.qos.logback" artifactId="logback-core" version="0.9.20"/>
         <dependency groupId="ch.qos.logback" artifactId="logback-classic" version="0.9.20"/>
