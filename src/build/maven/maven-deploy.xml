@@ -59,13 +59,18 @@
 
       <copy file="${path}-pom.xml" tofile="${path}-pom-filtered.xml" overwrite="true">
         <filterset>
-          <filter token="VERSION" value="${maven.version.number}" />
-          <filter token="SCALA_BINARY_VERSION" value="${scala.binary.version}" />
-          <filter token="XML_VERSION" value="${scala-xml.version.number}" />
+          <filter token="VERSION"                    value="${maven.version.number}" />
+          <filter token="SCALA_BINARY_VERSION"       value="${scala.binary.version}" />
+          <filter token="XML_VERSION"                value="${scala-xml.version.number}" />
           <filter token="PARSER_COMBINATORS_VERSION" value="${scala-parser-combinators.version.number}" />
-          <filter token="RELEASE_REPOSITORY" value="${remote.release.repository}" />
-          <filter token="SNAPSHOT_REPOSITORY" value="${remote.snapshot.repository}" />
-          <filter token="JLINE_VERSION" value="${jline.version}" />
+          <filter token="RELEASE_REPOSITORY"         value="${remote.release.repository}" />
+          <filter token="SNAPSHOT_REPOSITORY"        value="${remote.snapshot.repository}" />
+          <filter token="JLINE_VERSION"              value="${jline.version}" />
+
+          <!-- TODO modularize compiler.
+          <filter token="SCALA_COMPILER_DOC_VERSION" value="${scala-compiler-doc.version.number}" />
+          <filter token="SCALA_COMPILER_INTERACTIVE_VERSION" value="${scala-compiler-interactive.version.number}" />
+          -->
         </filterset>
       </copy>
       <artifact:pom id="@{name}.pom" file="${path}-pom-filtered.xml" />
@@ -112,6 +117,12 @@
       <deploy-one dir="@{dir}"          name="scala-library"     local="@{local}" signed="@{signed}"/>
       <deploy-one dir="@{dir}"          name="scala-reflect"     local="@{local}" signed="@{signed}"/>
       <deploy-one dir="@{dir}"          name="scala-compiler"    local="@{local}" signed="@{signed}"/>
+
+      <!-- TODO modularize compiler.
+      <deploy-one dir="@{dir}"          name="scala-compiler-doc"         local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}"          name="scala-compiler-interactive" local="@{local}" signed="@{signed}"/>
+      -->
+
       <deploy-one dir="@{dir}"          name="scala-actors"      local="@{local}" signed="@{signed}"/>
       <deploy-one dir="@{dir}"          name="scala-swing"       local="@{local}" signed="@{signed}"/>
       <deploy-one dir="@{dir}"          name="scalap"            local="@{local}" signed="@{signed}"/>
