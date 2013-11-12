@@ -1,4 +1,4 @@
-import scala.concurrent.{duration, future, Await, ExecutionContext}
+import scala.concurrent.{duration, Future, Await, ExecutionContext}
 import scala.tools.nsc.Settings
 import ExecutionContext.Implicits.global
 
@@ -8,7 +8,7 @@ import ExecutionContext.Implicits.global
 object Test {
   def main(args: Array[String]) {
     val tries = 1000 // YMMV
-    val compiler = future {
+    val compiler = Future {
       for(_ <- 1 to tries) new Settings(_ => {})
     }
     for(i <- 1 to tries * 10) System.setProperty(s"foo$i", i.toString)

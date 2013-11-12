@@ -27,6 +27,8 @@ package object concurrent {
    *  @param executor the execution context on which the future is run
    *  @return         the `Future` holding the result of the computation
    */
+  @deprecated("Use `Future { ... }` instead.", "2.11.0")
+  // removal planned for 2.13.0
   def future[T](body: =>T)(implicit @deprecatedName('execctx) executor: ExecutionContext): Future[T] = Future[T](body)
 
   /** Creates a promise object which can be completed with a value or an exception.
@@ -34,6 +36,8 @@ package object concurrent {
    *  @tparam T       the type of the value in the promise
    *  @return         the newly created `Promise` object
    */
+  @deprecated("Use `Promise[T]()` instead.", "2.11.0")
+  // removal planned for 2.13.0
   def promise[T](): Promise[T] = Promise[T]()
 
   /** Used to designate a piece of code which potentially blocks, allowing the current [[BlockContext]] to adjust
