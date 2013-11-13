@@ -53,11 +53,11 @@ object typeInfer {
       (emptySubst /: tyvars) ((s, tv) => s.extend(tv, newTyvar())) (tpe)
   }
 
-  type Env = List[Pair[String, TypeScheme]]
+  type Env = List[Tuple2[String, TypeScheme]]
 
   def lookup(env: Env, x: String): TypeScheme = env match {
     case List() => null
-    case Pair(y, t) :: env1 => if (x == y) t else lookup(env1, x)
+    case (y, t) :: env1 => if (x == y) t else lookup(env1, x)
   }
 
   def gen(env: Env, t: Type): TypeScheme =
@@ -69,22 +69,22 @@ object typeInfer {
     case Tycon(k, ts) => (List[Tyvar]() /: ts) ((tvs, t) => tvs union tyvars(t))
   }
 
-  def tyvars(ts: TypeScheme): List[Tyvar] = 
+  def tyvars(ts: TypeScheme): List[Tyvar] =
     tyvars(ts.tpe) diff ts.tyvars;
 
   def tyvars(env: Env): List[Tyvar] =
     (List[Tyvar]() /: env) ((tvs, nt) => tvs union tyvars(nt._2))
 
-  def mgu(t: Type, u: Type, s: Subst): Subst = Pair(s(t), s(u)) match {
-    case Pair(Tyvar(a), Tyvar(b)) if (a == b) => 
+  def mgu(t: Type, u: Type, s: Subst): Subst = (s(t), s(u)) match {
+    case (Tyvar(a), Tyvar(b)) if (a == b) =>
       s
-    case Pair(Tyvar(a), _) if !(tyvars(u) contains a) =>
+    case (Tyvar(a), _) if !(tyvars(u) contains a) =>
       s.extend(Tyvar(a), u)
-    case Pair(_, Tyvar(a)) =>
+    case (_, Tyvar(a)) =>
       mgu(u, t, s)
-    case Pair(Arrow(t1, t2), Arrow(u1, u2)) =>
+    case (Arrow(t1, t2), Arrow(u1, u2)) =>
       mgu(t1, u1, mgu(t2, u2, s))
-    case Pair(Tycon(k1, ts), Tycon(k2, us)) if (k1 == k2) =>
+    case (Tycon(k1, ts), Tycon(k2, us)) if (k1 == k2) =>
       (s /: (ts zip us)) ((s, tu) => mgu(tu._1, tu._2, s))
     case _ =>
       throw new TypeError("cannot unify " + s(t) + " with " + s(u))
@@ -103,7 +103,7 @@ object typeInfer {
       case Lam(x, e1) =>
         val a, b = newTyvar()
         val s1 = mgu(t, Arrow(a, b), s)
-        val env1 = Pair(x, TypeScheme(List(), a)) :: env
+        val env1 = (x, TypeScheme(List(), a)) :: env
         tp(env1, e1, b, s1)
 
       case App(e1, e2) =>
@@ -114,7 +114,7 @@ object typeInfer {
       case Let(x, e1, e2) =>
         val a = newTyvar()
         val s1 = tp(env, e1, a, s)
-        tp(Pair(x, gen(env, s1(a))) :: env, e2, t, s1)
+        tp((x, gen(env, s1(a))) :: env, e2, t, s1)
     }
   }
   var current: Term = null
@@ -134,18 +134,18 @@ object typeInfer {
     private val a = typeInfer.newTyvar()
     val env = List(
 /*
-      Pair("true", gen(booleanType)),
-      Pair("false", gen(booleanType)),
-      Pair("if", gen(Arrow(booleanType, Arrow(a, Arrow(a, a))))),
-      Pair("zero", gen(intType)),
-      Pair("succ", gen(Arrow(intType, intType))),
-      Pair("nil", gen(listType(a))),
-      Pair("cons", gen(Arrow(a, Arrow(listType(a), listType(a))))),
-      Pair("isEmpty", gen(Arrow(listType(a), booleanType))),
-      Pair("head", gen(Arrow(listType(a), a))),
-      Pair("tail", gen(Arrow(listType(a), listType(a)))),
+      ("true", gen(booleanType)),
+      ("false", gen(booleanType)),
+      ("if", gen(Arrow(booleanType, Arrow(a, Arrow(a, a))))),
+      ("zero", gen(intType)),
+      ("succ", gen(Arrow(intType, intType))),
+      ("nil", gen(listType(a))),
+      ("cons", gen(Arrow(a, Arrow(listType(a), listType(a))))),
+      ("isEmpty", gen(Arrow(listType(a), booleanType))),
+      ("head", gen(Arrow(listType(a), a))),
+      ("tail", gen(Arrow(listType(a), listType(a)))),
 */
-      Pair("fix", gen(Arrow(Arrow(a, a), a)))
+      ("fix", gen(Arrow(Arrow(a, a), a)))
     )
   }
 
@@ -181,7 +181,7 @@ object typeInfer {
         yield Lam(x, t): Term )
       |||
       ( for (
-          letid <- id if letid == "let"; 
+          letid <- id if letid == "let";
           x <- ident;
           _ <- wschr('=');
           t <- term;
@@ -220,7 +220,7 @@ object typeInfer {
     val input = 0
     def any = new Parser[char] {
       def apply(in: int): Parser[char]#Result =
-        if (in < s.length()) Some(Pair(s charAt in, in + 1)) else None
+        if (in < s.length()) Some((s charAt in, in + 1)) else None
     }
   }
 
@@ -239,7 +239,7 @@ object typeInfer {
       if (args.length == 1) {
         val ps = new ParseString(args(0)) with MiniMLParsers
         ps.all(ps.input) match {
-          case Some(Pair(term, _)) =>
+          case Some((term, _)) =>
             "" + term + ": " + showType(term)
           case None =>
             "syntax error"

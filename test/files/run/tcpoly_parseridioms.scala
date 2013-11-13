@@ -13,10 +13,10 @@ trait Parsers {
   }
 
   // sequence
-  def sq[T, U](a: => Parser[T], b: => Parser[U]): Parser[Pair[T, U]] =  new Parser[Pair[T, U]] {
-      def apply(in: Input): ParseResult[Pair[T, U]] = a(in) match {
+  def sq[T, U](a: => Parser[T], b: => Parser[U]): Parser[Tuple2[T, U]] =  new Parser[Tuple2[T, U]] {
+      def apply(in: Input): ParseResult[Tuple2[T, U]] = a(in) match {
         case Success(next, x) => b(next) match {
-          case Success(next2, y) => Success(next2, Pair(x,y))
+          case Success(next2, y) => Success(next2, (x,y))
           case Failure(_, msg) => Failure(in, msg)
         }
         case Failure(_, msg) => Failure(in, msg)
@@ -49,7 +49,7 @@ trait Parsers {
     }
   }
 
-  def apply_++[s, tt](fun: Parser[s => tt], arg: Parser[s]): Parser[tt] = lift[Pair[s=>tt, s], tt]({case Pair(f, a) => f(a)})(sq(fun, arg))
+  def apply_++[s, tt](fun: Parser[s => tt], arg: Parser[s]): Parser[tt] = lift[Tuple2[s=>tt, s], tt]({case (f, a) => f(a)})(sq(fun, arg))
 
   def success[u](v: u): Parser[u] = new Parser[u] {
     def apply(in: Input) = Success(in, v)

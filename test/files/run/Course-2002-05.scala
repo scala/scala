@@ -3,15 +3,15 @@
 //############################################################################
 
 object M0 {
-  def partition[a](xs: List[a], pred: a => Boolean): Pair[List[a], List[a]] = {
+  def partition[a](xs: List[a], pred: a => Boolean): Tuple2[List[a], List[a]] = {
     if (xs.isEmpty)
-      Pair(List(),List())
+      (List(),List())
     else {
       val tailPartition = partition(xs.tail, pred);
       if (pred(xs.head))
-        Pair(xs.head :: tailPartition._1, tailPartition._2)
+        (xs.head :: tailPartition._1, tailPartition._2)
       else
-        Pair(tailPartition._1, xs.head :: tailPartition._2)
+        (tailPartition._1, xs.head :: tailPartition._2)
     }
   }
 
@@ -49,9 +49,9 @@ object M0 {
 //############################################################################
 
 object M1 {
-  def partition[a](xs: List[a], pred: a => Boolean): Pair[List[a], List[a]] = {
-    xs.foldRight[Pair[List[a], List[a]]](Pair(List(), List())) {
-      (x, p) => if (pred (x)) Pair(x :: p._1, p._2) else Pair(p._1, x :: p._2)
+  def partition[a](xs: List[a], pred: a => Boolean): Tuple2[List[a], List[a]] = {
+    xs.foldRight[Tuple2[List[a], List[a]]]((List(), List())) {
+      (x, p) => if (pred (x)) (x :: p._1, p._2) else (p._1, x :: p._2)
     }
   }
 
@@ -136,7 +136,7 @@ object M3 {
         def adjoinRow(placement: Placement): List[Placement] =
           range(1, n)
             .filter (column => isSafe(column, placement))
-            .map (column => Pair(row, column) :: placement);
+            .map (column => (row, column) :: placement);
 
         placeQueens(row - 1) flatMap adjoinRow
       }

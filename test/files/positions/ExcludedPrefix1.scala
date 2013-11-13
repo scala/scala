@@ -35,7 +35,7 @@ object ExcludedPrefix1 {
   (i,
    j) = (0, 0)
 
-  val Pair(
+  val (
    k,
    l) = (0, 0)
 }

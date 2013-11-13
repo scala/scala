@@ -69,7 +69,7 @@ abstract class Liveness {
         case STORE_LOCAL(local) if (!genSet(local))  => killSet = killSet + local
         case _ => ()
       }
-      Pair(genSet, killSet)
+      (genSet, killSet)
     }
 
     override def run() {

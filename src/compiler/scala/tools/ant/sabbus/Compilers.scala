@@ -27,7 +27,7 @@ object Compilers extends scala.collection.DefaultMap[String, Compiler] {
     if (debug) println("Making compiler " + id)
     if (debug) println("  memory before: " + freeMemoryString)
     val comp = new Compiler(classpath, settings)
-    container += Pair(id, comp)
+    container(id) = comp
     if (debug) println("  memory after: " + freeMemoryString)
     comp
   }

@@ -5,9 +5,9 @@ class Test {
   class ScopedKey[T]
   class Value[T]
 
-  class Compiled[T](val settings: Seq[Pair[T]])
+  class Compiled[T](val settings: Seq[Tuple2[T]])
 
-  case class Pair[T](k: ScopedKey[T], v: ScopedKey[T])
+  case class Tuple2[T](k: ScopedKey[T], v: ScopedKey[T])
 
   def transform[T](x: T) = x
 

@@ -163,7 +163,7 @@ object M5 {
   }
 
   abstract class Simulation() {
-    private type Agenda = List[Pair[Int, Action]];
+    private type Agenda = List[Tuple2[Int, Action]];
     private var agenda: Agenda = List();
     private var curtime = 0;
     def currentTime: Int = curtime;
@@ -171,17 +171,17 @@ object M5 {
     def afterDelay(delay: Int)(action: Action): Unit = {
       def insert(ag: Agenda, time: Int): Agenda = ag match {
         case List() =>
-          List(Pair(time, action))
-        case Pair(t, act) :: ag1 =>
-          if (time < t) Pair(time, action) :: ag
-          else Pair(t, act) :: insert(ag1, time)
+          List((time, action))
+        case (t, act) :: ag1 =>
+          if (time < t) (time, action) :: ag
+          else (t, act) :: insert(ag1, time)
       }
       agenda = insert(agenda, curtime + delay)
     }
 
     private def next: Unit = agenda match {
       case List() => ()
-      case Pair(time, action) :: ag1 => {
+      case (time, action) :: ag1 => {
         agenda = ag1;
         curtime = time;
         action();
@@ -413,7 +413,7 @@ object M5 {
 class Simulator() {
 
   type Action = () => Unit;
-  type Agenda = List[Pair[Int, Action]];
+  type Agenda = List[Tuple2[Int, Action]];
 
   private var agenda: Agenda = List();
   private var curtime = 0;
@@ -421,17 +421,17 @@ class Simulator() {
   def afterDelay(delay: Int)(action: Action) = {
     def insert(ag: Agenda, time: Int): Agenda = ag match {
       case List() =>
-        List(Pair(time, action))
-      case Pair(t, act) :: ag1 =>
-        if (time < t) Pair(time, action) :: ag
-        else Pair(t, act) :: insert(ag1, time)
+        List((time, action))
+      case (t, act) :: ag1 =>
+        if (time < t) (time, action) :: ag
+        else (t, act) :: insert(ag1, time)
     }
     agenda = insert(agenda, curtime + delay)
   }
 
   def next: Unit = agenda match {
     case List() => ()
-    case Pair(time, action) :: rest => {
+    case (time, action) :: rest => {
       agenda = rest;
       curtime = time;
       action();
@@ -567,8 +567,8 @@ class Main() extends CircuitSimulator() {
     demux(in, ctrl.reverse, out.reverse);
 
     probe("in", in);
-    for (Pair(x,c) <- range(0,n) zip ctrl) { probe("ctrl" + x, c) }
-    for (Pair(x,o) <- range(0,outNum) zip out) { probe("out" + x, o) }
+    for ((x,c) <- range(0,n) zip ctrl) { probe("ctrl" + x, c) }
+    for ((x,o) <- range(0,outNum) zip out) { probe("out" + x, o) }
 
     in.setSignal(true);
     run;

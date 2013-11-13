@@ -13,14 +13,14 @@ object handoverRecursive {
    * Recursive type for channels that carry a channel "unit" and
    * an object of the type we define.
    */
-  class Switch extends Chan[Pair[Chan[unit], Switch]]
+  class Switch extends Chan[Tuple2[Chan[unit], Switch]]
 
   /**
    * Car.
    */
   def Car(talk: Chan[unit], switch: Switch): unit =
     choice (
-      switch * ({ case Pair(t,s) => Car(t, s) }),
+      switch * ({ case (t,s) => Car(t, s) }),
       talk(()) * ( {
         Thread.sleep(1 + random.nextInt(1000));
         System.out.println("Car emitted a message.");
@@ -32,20 +32,20 @@ object handoverRecursive {
    * Control center.
    */
   def Control(talk1: Chan[unit], switch1: Switch,
-              gain1: Switch, lose1: Switch, 
+              gain1: Switch, lose1: Switch,
               talk2: Chan[unit], switch2: Switch,
               gain2: Switch, lose2: Switch): unit
   = {
     def Control1: unit= {
       Thread.sleep(1 + random.nextInt(1000));
-      lose1.write(Pair(talk2, switch2));
-      gain2.write(Pair(talk2, switch2));
+      lose1.write((talk2, switch2));
+      gain2.write((talk2, switch2));
       Control2
     }
     def Control2: unit = {
       Thread.sleep(1 + random.nextInt(1000));
-      lose2.write(Pair(talk1, switch1));
-      gain1.write(Pair(talk1, switch1));
+      lose2.write((talk1, switch1));
+      gain1.write((talk1, switch1));
       Control1
     }
     Control1
@@ -62,8 +62,8 @@ object handoverRecursive {
         System.out.println(id + " received a message.")
         ActiveTransmitter(id, talk, switch, gain, lose)
       }),
-      lose * ({ case Pair(t, s) => {
-        switch.write(Pair(t, s))
+      lose * ({ case (t, s) => {
+        switch.write((t, s))
         IdleTransmitter(id, gain, lose)
       }})
     );
@@ -72,7 +72,7 @@ object handoverRecursive {
    * Idle transmitter.
    */
   def IdleTransmitter(id: String, gain: Switch, lose: Switch): unit = {
-    val Pair(t, s) = gain.read;
+    val (t, s) = gain.read;
     ActiveTransmitter(id, t, s, gain, lose)
   }
 
@@ -108,7 +108,7 @@ object handoverCast {
   def Car(talk: Chan[Any], switch: Chan[Any]): unit =
     choice (
       switch * (o => {
-        val Pair(t,s) = o.asInstanceOf[Pair[Chan[Any],Chan[Any]]]; 
+        val (t,s) = o.asInstanceOf[Tuple2[Chan[Any],Chan[Any]]];
         Car(t, s)
       }),
       talk(()) * ( {
@@ -122,20 +122,20 @@ object handoverCast {
   * Control center.
   */
   def Control(talk1: Chan[Any], switch1: Chan[Any],
-              gain1: Chan[Any], lose1: Chan[Any], 
+              gain1: Chan[Any], lose1: Chan[Any],
               talk2: Chan[Any], switch2: Chan[Any],
               gain2: Chan[Any], lose2: Chan[Any]): unit
   = {
     def Control1: unit = {
       Thread.sleep(1 + random.nextInt(1000));
-      lose1.write(Pair(talk2, switch2));
-      gain2.write(Pair(talk2, switch2));
+      lose1.write((talk2, switch2));
+      gain2.write((talk2, switch2));
       Control2
     }
     def Control2: unit = {
       Thread.sleep(1 + random.nextInt(1000));
-      lose2.write(Pair(talk1, switch1));
-      gain1.write(Pair(talk1, switch1));
+      lose2.write((talk1, switch1));
+      gain1.write((talk1, switch1));
       Control1
     }
     Control1
@@ -153,8 +153,8 @@ object handoverCast {
         ActiveTransmitter(id, talk, switch, gain, lose)
       }),
       lose * (o => {
-        val Pair(t, s) = o.asInstanceOf[Pair[Chan[Any],Chan[Any]]]
-        switch.write(Pair(t, s))
+        val (t, s) = o.asInstanceOf[Tuple2[Chan[Any],Chan[Any]]]
+        switch.write((t, s))
         IdleTransmitter(id, gain, lose)
       })
     )
@@ -163,7 +163,7 @@ object handoverCast {
   * Idle transmitter.
   */
   def IdleTransmitter(id: String, gain: Chan[Any], lose: Chan[Any]): unit = {
-    val Pair(t, s) = gain.read.asInstanceOf[Pair[Chan[Any],Chan[Any]]]
+    val (t, s) = gain.read.asInstanceOf[Tuple2[Chan[Any],Chan[Any]]]
     ActiveTransmitter(id, t, s, gain, lose)
   }
 

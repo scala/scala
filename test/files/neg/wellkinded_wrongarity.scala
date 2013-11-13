@@ -2,4 +2,4 @@
 
 class Monad[m[x]]
 
-object mp extends Monad[Pair]
+object mp extends Monad[Tuple2]

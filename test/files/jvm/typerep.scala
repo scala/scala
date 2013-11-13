@@ -86,7 +86,7 @@ object testArrays {
 
 object testTuples {
   println(getType((3, "abc")))
-  println(getType(Triple('a', 'b', "c")))
+  println(getType(('a', 'b', "c")))
   println(getType(((3, "abc"), (4, "xyz"))))
   println(getType(((Some('b'), 3), (Some('a'), 4))))
   //println(getType(((Some('b'), 3), (None, 4))))

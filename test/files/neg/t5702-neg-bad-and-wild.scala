@@ -21,7 +21,7 @@ object Test {
 //gowild.scala:14: error: star patterns must correspond with varargs parameters
     val K(is @ _*) = k
     val K(ns @ _*, x) = k // bad use of _* (a sequence pattern must be the last pattern)
-    val (b, _ * ) = Pair(5,6) // bad use of _* (sequence pattern not allowed)
+    val (b, _ * ) = (5,6) // bad use of _* (sequence pattern not allowed)
 // no longer complains
 //bad-and-wild.scala:15: error: ')' expected but '}' found.
   }

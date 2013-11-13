@@ -83,7 +83,7 @@ object fors {
          if b1 != b2;
          Elem(_, "author", _, _, Text(a1)) <- b1.toList;
          Elem(_, "author", _, _, Text(a2)) <- b2.toList;
-         if a1 == a2) yield Pair(a1, a2))
+         if a1 == a2) yield (a1, a2))
 
   def removeDuplicates[a](xs: List[a]): List[a] =
     if (xs.isEmpty)

@@ -6,7 +6,7 @@
 import java.io._
 import scala.collection.mutable.Stack
 
-object revcomp { 
+object revcomp {
    def main(args: Array[String]) = {
       val out = new FastaOutputStream(System.out)
       val in = new FastaInputStream(System.in)
@@ -17,12 +17,12 @@ object revcomp {
 
       in.close
       out.close
-   } 
+   }
 }
 
 
 trait FastaByteStream {
-   val nl = '\n'.toByte  
+   val nl = '\n'.toByte
 
    type Line = Array[Byte]
    type LineStack = Stack[Line]
@@ -31,13 +31,13 @@ trait FastaByteStream {
 
 // extend the Java BufferedInputStream class
 
-final class FastaInputStream(in: InputStream) 
+final class FastaInputStream(in: InputStream)
       extends BufferedInputStream(in) with FastaByteStream {
 
    val gt = '>'.toByte
    val sc = ';'.toByte
 
-   def readSequenceStack(): Pair[Line,LineStack] = {
+   def readSequenceStack(): Tuple2[Line,LineStack] = {
       var header: Line = null
       val lines: LineStack = new Stack
 
@@ -49,14 +49,14 @@ final class FastaInputStream(in: InputStream)
                header = line
             } else {
                pos = pos - line.length - 1   // reposition to start of line
-               return Pair(header,lines)
+               return (header,lines)
             }
          } else {
             if (c != sc) lines push line       // ';'
          }
          line = readLine()
       }
-      return Pair(header,lines)
+      return (header,lines)
    }
 
    def readLine() = {
@@ -65,7 +65,7 @@ final class FastaInputStream(in: InputStream)
       else {
          mark(128)                      // mark the start of the line
          if (count == 0) read()         // fill buffer
-        
+
          var i = markpos
          while (i < count && buf(i) != nl) i = i + 1
 
@@ -74,11 +74,11 @@ final class FastaInputStream(in: InputStream)
             while (i < count && buf(i) != nl) i = i + 1
          }
 
-         if (i < count){     
+         if (i < count){
             bytes = new Array(i - markpos)
             System.arraycopy(buf, markpos, bytes, 0, i - markpos);
             pos = i+1
-         }          
+         }
       }
       bytes
    }
@@ -87,7 +87,7 @@ final class FastaInputStream(in: InputStream)
 
 // extend the Java BufferedOutputStream class
 
-final class FastaOutputStream(in: OutputStream) 
+final class FastaOutputStream(in: OutputStream)
       extends BufferedOutputStream(in) with FastaByteStream {
 
    private val IUB = IUBCodeComplements
@@ -98,19 +98,19 @@ final class FastaOutputStream(in: OutputStream)
       val iub: Array[Byte] = new Array( 'z'.toByte )
 
       for (indexValue <- code zip comp)
-         indexValue match { case Pair(i,v) => iub(i) = v }
+         indexValue match { case (i,v) => iub(i) = v }
 
       iub
    }
 
-   def writeReverseComplement(sequence: Pair[Line,LineStack]) = {
+   def writeReverseComplement(sequence: Tuple2[Line,LineStack]) = {
 
       def inplaceComplementReverse(b: Array[Byte]) = {
-         var i = 0 
+         var i = 0
          var j = b.length - 1
          while (i < j){
-            val swap = b(i) 
-            b(i) = IUB( b(j) ) 
+            val swap = b(i)
+            b(i) = IUB( b(j) )
             b(j) = IUB( swap )
             i = i + 1
             j = j - 1
@@ -119,7 +119,7 @@ final class FastaOutputStream(in: OutputStream)
       }
 
       sequence match {
-         case Pair(header,lines) => {
+         case (header,lines) => {
 
             write(header); write(nl)
 
@@ -131,11 +131,11 @@ final class FastaOutputStream(in: OutputStream)
             while (!lines.isEmpty) {
                val line = lines.pop
                inplaceComplementReverse(line)
-        
+
                if (isSplitLine){
-                  if (isFirstLine){ write(line); isFirstLine = false } 
+                  if (isFirstLine){ write(line); isFirstLine = false }
                   else { write(line,0,LineLength-k); write(nl); write(line,LineLength-k,k) }
-               } 
+               }
                else { write(line); write(nl) }
             }
 

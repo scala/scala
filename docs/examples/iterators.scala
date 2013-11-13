@@ -15,8 +15,8 @@ object iterators {
   def findGreater(xs: Array[Double], limit: Double) =
     xs.iterator
       .zip(Iterator.from(0))
-      .filter{case Pair(x, i) => x > limit }
-      .map{case Pair(x, i) => i}
+      .filter{case (x, i) => x > limit }
+      .map{case (x, i) => i}
 
   def main(args: Array[String]) {
     val ar = Array/*[Double]*/(6, 2, 8, 5, 1)

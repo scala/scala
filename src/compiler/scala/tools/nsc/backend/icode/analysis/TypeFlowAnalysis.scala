@@ -418,7 +418,7 @@ abstract class TypeFlowAnalysis {
             !blackballed(concreteMethod)
           }
           if(isCandidate) {
-            remainingCALLs += Pair(cm, CallsiteInfo(b, receiver, result.stack.length, concreteMethod))
+            remainingCALLs(cm) = CallsiteInfo(b, receiver, result.stack.length, concreteMethod)
           } else {
             remainingCALLs.remove(cm)
             isOnWatchlist.remove(cm)

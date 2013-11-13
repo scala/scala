@@ -20,15 +20,15 @@ object directInterpreter {
     case Fun(f) => "<function>"
   }
 
-  type Environment = List[Pair[Name, Value]];
+  type Environment = List[Tuple2[Name, Value]];
 
   def lookup(x: Name, e: Environment): Value = e match {
     case List() => Wrong
-    case Pair(y, b) :: e1 => if (x == y) b else lookup(x, e1)
+    case (y, b) :: e1 => if (x == y) b else lookup(x, e1)
   }
 
-  def add(a: Value, b: Value): Value = Pair(a, b) match {
-    case Pair(Num(m), Num(n)) => Num(m + n)
+  def add(a: Value, b: Value): Value = (a, b) match {
+    case (Num(m), Num(n)) => Num(m + n)
     case _ => Wrong
   }
 
@@ -41,15 +41,15 @@ object directInterpreter {
     case Var(x) => lookup(x, e)
     case Con(n) => Num(n)
     case Add(l, r) => add(interp(l, e), interp(r, e))
-    case Lam(x, t) => Fun(a => interp(t, Pair(x, a) :: e))
+    case Lam(x, t) => Fun(a => interp(t, (x, a) :: e))
     case App(f, t) => apply(interp(f, e), interp(t, e))
   }
 
-  def test(t: Term): String = 
+  def test(t: Term): String =
     showval(interp(t, List()));
 
   val term0 = App(Lam("x", Add(Var("x"), Var("x"))), Add(Con(10), Con(11)));
 
-  def main(args: Array[String]) = 
+  def main(args: Array[String]) =
     System.out.println(test(term0));
 }

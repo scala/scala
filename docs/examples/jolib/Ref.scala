@@ -12,20 +12,20 @@ import concurrent.SyncVar;
 import concurrent.jolib._;
 
 class Ref[a](init: a) extends Join {
-  
+
   object get extends Synchr[a](this) { case class C() extends SyncVar[a]; }
   object set extends Synchr[unit](this) { case class C(x: a) extends SyncVar[unit]; }
   object state extends Asynchr(this) { case class C(x: a); }
 
   rules (
-    Pair(List(get, state), { case List(g @ get.C(), state.C(x) ) =>
+    (List(get, state), { case List(g @ get.C(), state.C(x) ) =>
       { g.set(x); state(state.C(x)) } }),
-    Pair(List(set, state), { case List(s @ set.C(x), state.C(y) ) =>
+    (List(set, state), { case List(s @ set.C(x), state.C(y) ) =>
       { s.set(()); state(state.C(x)) } })
   );
 
   state(state.C(init));
-  
+
   def Get: a = get(get.C());
   def Set(x: a): unit = set(set.C(x));
 }

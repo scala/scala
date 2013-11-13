@@ -574,7 +574,7 @@ class Scaladoc extends ScalaMatchingTask {
 \*============================================================================*/
 
   /** Initializes settings and source files */
-  protected def initialize: Pair[Settings, List[File]] = {
+  protected def initialize: Tuple2[Settings, List[File]] = {
     // Tests if all mandatory attributes are set and valid.
     if (origin.isEmpty) buildError("Attribute 'srcdir' is not set.")
     if (getOrigin.isEmpty) buildError("Attribute 'srcdir' is not set.")
@@ -660,14 +660,14 @@ class Scaladoc extends ScalaMatchingTask {
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
 
     docSettings processArgumentString addParams
-    Pair(docSettings, sourceFiles)
+    (docSettings, sourceFiles)
   }
 
   def safeBuildError(message: String): Unit = if (nofail) log(message) else buildError(message)
 
   /** Performs the compilation. */
   override def execute() = {
-    val Pair(docSettings, sourceFiles) = initialize
+    val (docSettings, sourceFiles) = initialize
     val reporter = new ConsoleReporter(docSettings)
     try {
       val docProcessor = new scala.tools.nsc.doc.DocFactory(reporter, docSettings)

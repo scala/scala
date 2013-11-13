@@ -46,7 +46,7 @@ object Test {
   object SimpleUnapply {
     def run() { // from sortedmap, old version
       List((1, 2)).head match {
-        case kv@Pair(key, _) => kv.toString + " " + key.toString
+        case kv@(key, _) => kv.toString + " " + key.toString
       }
 
     }
@@ -400,9 +400,9 @@ object Test {
   // these are exhaustive matches
   //   should not generate any warnings
   def f[A](z: (Option[A], Option[A])) = z match {
-    case Pair(None, Some(x)) => 1
-    case Pair(Some(x), None) => 2
-    case Pair(Some(x), Some(y)) => 3
+    case (None, Some(x)) => 1
+    case (Some(x), None) => 2
+    case (Some(x), Some(y)) => 3
     case _ => 4
   }
 
@@ -419,9 +419,9 @@ object Test {
   }
 
   def h[A](x: (Option[A], Option[A])) = x match {
-    case Pair(None, _: Some[_]) => 1
-    case Pair(_: Some[_], None) => 2
-    case Pair(_: Some[_], _: Some[_]) => 3
+    case (None, _: Some[_]) => 1
+    case (_: Some[_], None) => 2
+    case (_: Some[_], _: Some[_]) => 3
     case _ => 4
   }
 
@@ -539,17 +539,17 @@ object Test {
     case class Operator(x: Int);
     val EQ = new Operator(2);
 
-    def analyze(x: Pair[Operator, Int]) = x match {
-      case Pair(EQ, 0) => "0"
-      case Pair(EQ, 1) => "1"
-      case Pair(EQ, 2) => "2"
+    def analyze(x: Tuple2[Operator, Int]) = x match {
+      case (EQ, 0) => "0"
+      case (EQ, 1) => "1"
+      case (EQ, 2) => "2"
     }
     def run() {
-      val x = Pair(EQ, 0);
+      val x = (EQ, 0);
       assertEquals("0", analyze(x)); // should print "0"
-      val y = Pair(EQ, 1);
+      val y = (EQ, 1);
       assertEquals("1", analyze(y)); // should print "1"
-      val z = Pair(EQ, 2);
+      val z = (EQ, 2);
       assertEquals("2", analyze(z)); // should print "2"
     }
   }

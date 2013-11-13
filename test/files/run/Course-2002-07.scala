@@ -181,10 +181,10 @@ object M4 {
 
 object M5 {
 
-  def zipFun[a,b](xs:List[a], ys:List[b]):List[Pair[a,b]] = Pair(xs,ys) match {
-    case Pair(List(), _) => List()
-    case Pair(_, List()) => List()
-    case Pair(x :: xs1, y :: ys1) => Pair(x, y) :: zipFun(xs1, ys1)
+  def zipFun[a,b](xs:List[a], ys:List[b]):List[Tuple2[a,b]] = (xs,ys) match {
+    case (List(), _) => List()
+    case (_, List()) => List()
+    case (x :: xs1, y :: ys1) => (x, y) :: zipFun(xs1, ys1)
   }
 
   def test_zipFun[a,b](xs: List[a], ys: List[b]) = {
@@ -216,9 +216,9 @@ object M5 {
 
 object M6 {
 
-  def zipFun[a,b](xs:List[a], ys:List[b]):List[Pair[a,b]] = (Pair(xs,ys): @unchecked) match {
-    // !!! case Pair(List(), _), Pair(_, List()) => List()
-    case Pair(x :: xs1, y :: ys1) => Pair(x, y) :: zipFun(xs1, ys1)
+  def zipFun[a,b](xs:List[a], ys:List[b]):List[Tuple2[a,b]] = ((xs,ys): @unchecked) match {
+    // !!! case (List(), _), (_, List()) => List()
+    case (x :: xs1, y :: ys1) => (x, y) :: zipFun(xs1, ys1)
   }
 
   def test_zipFun[a,b](xs: List[a], ys: List[b]) = {
@@ -374,9 +374,9 @@ object M9 {
 
 object MA {
 
-  def lookup[k,v](xs: List[Pair[k,v]], k: k): v = xs match {
+  def lookup[k,v](xs: List[Tuple2[k,v]], k: k): v = xs match {
     case List() => sys.error("no value for " + k)
-    case Pair(k1,v1) :: xs1 => if (k1 == k) v1 else lookup(xs1, k)
+    case (k1,v1) :: xs1 => if (k1 == k) v1 else lookup(xs1, k)
   }
 
   trait Expr {
@@ -437,8 +437,8 @@ object MA {
     val g1 = g0 derive x;
     Console.println("g (x) = " + g0);
     Console.println("g'(x) = " + g1);
-    Console.println("g (3) = " + evalvars(List(Pair("x",3)))(g0));
-    Console.println("g'(3) = " + evalvars(List(Pair("x",3)))(g1));
+    Console.println("g (3) = " + evalvars(List(("x",3)))(g0));
+    Console.println("g'(3) = " + evalvars(List(("x",3)))(g1));
 
     Console.println;
   }
@@ -453,26 +453,26 @@ object Utils {
     if (y == 1) x else if (y % 2 == 0) power0(x*x,y/2) else x*power0(x, y-1);
 
   def power(x: Int, y: Int): Int = (x,y) match {
-    case Pair(0,0) => sys.error("power(0,0)")
-    case Pair(0,_) => 0
-    case Pair(1,_) => 1
-    case Pair(_,0) => 1
-    case Pair(_,1) => x
-    case Pair(_,2) => x*x
-    case Pair(_,_) => if (y < 0) 1/power0(x,y) else power0(x,y)
+    case (0,0) => sys.error("power(0,0)")
+    case (0,_) => 0
+    case (1,_) => 1
+    case (_,0) => 1
+    case (_,1) => x
+    case (_,2) => x*x
+    case (_,_) => if (y < 0) 1/power0(x,y) else power0(x,y)
   }
 
   def lookup(entries: List[(String,Int)], key: String): Int = entries match {
     case List()                       => sys.error("no value for " + key)
-    case Pair(k,v) :: _ if (k == key) => v
+    case (k,v) :: _ if (k == key) => v
     case _ :: rest                    => lookup(rest, key)
   }
 
   def compare(xs: List[String], ys: List[String]): Int = (xs, ys) match {
-    case Pair(List(), List()) =>  0
-    case Pair(List(), _     ) => -1
-    case Pair(_     , List()) => +1
-    case Pair(x::xs , y::ys ) => {
+    case (List(), List()) =>  0
+    case (List(), _     ) => -1
+    case (_     , List()) => +1
+    case (x::xs , y::ys ) => {
       val diff = x.compareTo(y);
       if (diff != 0) diff else compare(xs,ys)
     }
@@ -508,18 +508,18 @@ object MB {
 
     private def +<  (that: Expr): Boolean = (this +<? that) <  0;
     private def +<= (that: Expr): Boolean = (this +<? that) <= 0;
-    private def +<? (that: Expr): Int = Pair(this,that) match {
-      case Pair(Add(_,_), _       ) =>  0
-      case Pair(_       , Add(_,_)) =>  0
-      case Pair(_       , _       ) => compare(this.vars,that.vars)
+    private def +<? (that: Expr): Int = (this,that) match {
+      case (Add(_,_), _       ) =>  0
+      case (_       , Add(_,_)) =>  0
+      case (_       , _       ) => compare(this.vars,that.vars)
     }
 
-    def + (that: Expr): Expr = if (that +<= this) Pair(this,that) match {
-      case Pair(_         , Lit(0)    )                  => this
-      case Pair(Lit(l)    , Lit(r)    )                  => Lit(l + r)
-      case Pair(_         , Add(rl,rr))                  => (this + rl) + rr
-      case Pair(Add(ll,lr), _         ) if (lr +<= that) => ll + (that + lr)
-      case Pair(_         , _         )                  => {
+    def + (that: Expr): Expr = if (that +<= this) (this,that) match {
+      case (_         , Lit(0)    )                  => this
+      case (Lit(l)    , Lit(r)    )                  => Lit(l + r)
+      case (_         , Add(rl,rr))                  => (this + rl) + rr
+      case (Add(ll,lr), _         ) if (lr +<= that) => ll + (that + lr)
+      case (_         , _         )                  => {
         val l = this.term;
         val r = that.term;
         if (l equ r) Lit(this.count + that.count) * r else Add(this, that)
@@ -528,41 +528,41 @@ object MB {
 
     private def *<  (that: Expr): Boolean = (this *<? that) <  0;
     private def *<= (that: Expr): Boolean = (this *<? that) <= 0;
-    private def *<? (that: Expr): Int = Pair(this,that) match {
-      case Pair(Mul(_,_), _       ) =>  0
-      case Pair(_       , Mul(_,_)) =>  0
-      case Pair(Add(_,_), Add(_,_)) =>  0
-      case Pair(Add(_,_), _       ) => -1
-      case Pair(_       , Add(_,_)) => +1
-      case Pair(Lit(_)  , Lit(_)  ) =>  0
-      case Pair(Lit(_)  , _       ) => -1
-      case Pair(_       , Lit(_)  ) => +1
-      case Pair(Var(l)  , Var(r)  ) => l.compareTo(r)
-      case Pair(Var(_)  , Pow(r,_)) => if (this *<= r) -1 else +1
-      case Pair(Pow(l,_), Var(_)  ) => if (l *<  that) -1 else +1
-      case Pair(Pow(l,_), Pow(r,_)) => l *<? r
+    private def *<? (that: Expr): Int = (this,that) match {
+      case (Mul(_,_), _       ) =>  0
+      case (_       , Mul(_,_)) =>  0
+      case (Add(_,_), Add(_,_)) =>  0
+      case (Add(_,_), _       ) => -1
+      case (_       , Add(_,_)) => +1
+      case (Lit(_)  , Lit(_)  ) =>  0
+      case (Lit(_)  , _       ) => -1
+      case (_       , Lit(_)  ) => +1
+      case (Var(l)  , Var(r)  ) => l.compareTo(r)
+      case (Var(_)  , Pow(r,_)) => if (this *<= r) -1 else +1
+      case (Pow(l,_), Var(_)  ) => if (l *<  that) -1 else +1
+      case (Pow(l,_), Pow(r,_)) => l *<? r
     }
 
-    def * (that: Expr): Expr = if (this *<= that) Pair(this,that) match {
-      case Pair(Lit(0)    , _         )                    => this
-      case Pair(Lit(1)    , _         )                    => that
-      case Pair(Mul(ll,lr), r         )                    => ll * (lr * r)
-      case Pair(Add(ll,lr), r         )                    => ll * r + lr * r
-      case Pair(Lit(l)    , Lit(r)    )                    => Lit(l * r)
-      case Pair(Var(_)    , Var(_)    ) if (this equ that) => Pow(this,2)
-      case Pair(Var(_)    , Pow(r,n)  ) if (this equ r)    => Pow(this,n + 1)
-      case Pair(Pow(ll,lr), Pow(rl,rr)) if (ll equ rl)     => Pow(ll,lr + rr)
-      case Pair(l         , Mul(rl,rr)) if (rl *<= l)      => (rl * l) * rr
-      case Pair(_         , _         )                    => Mul(this,that)
+    def * (that: Expr): Expr = if (this *<= that) (this,that) match {
+      case (Lit(0)    , _         )                    => this
+      case (Lit(1)    , _         )                    => that
+      case (Mul(ll,lr), r         )                    => ll * (lr * r)
+      case (Add(ll,lr), r         )                    => ll * r + lr * r
+      case (Lit(l)    , Lit(r)    )                    => Lit(l * r)
+      case (Var(_)    , Var(_)    ) if (this equ that) => Pow(this,2)
+      case (Var(_)    , Pow(r,n)  ) if (this equ r)    => Pow(this,n + 1)
+      case (Pow(ll,lr), Pow(rl,rr)) if (ll equ rl)     => Pow(ll,lr + rr)
+      case (l         , Mul(rl,rr)) if (rl *<= l)      => (rl * l) * rr
+      case (_         , _         )                    => Mul(this,that)
     } else that * this;
 
     def ^ (that: Int): Expr = (this,that) match {
-      case Pair(_       ,1) => this
-      case Pair(Lit(i)  ,n) => Lit(power(i,n))
-      case Pair(Var(_)  ,n) => Pow(this,n)
-      case Pair(Add(_,_),n) => this * (this ^ (n - 1))
-      case Pair(Mul(l,r),n) => (l ^ n) * (r ^ n)
-      case Pair(Pow(e,m),n) => Pow(e,m + n)
+      case (_       ,1) => this
+      case (Lit(i)  ,n) => Lit(power(i,n))
+      case (Var(_)  ,n) => Pow(this,n)
+      case (Add(_,_),n) => this * (this ^ (n - 1))
+      case (Mul(l,r),n) => (l ^ n) * (r ^ n)
+      case (Pow(e,m),n) => Pow(e,m + n)
     }
 
     def derive(v: Var): Expr = this match {
@@ -581,12 +581,12 @@ object MB {
       case Pow(l, r) => power(l.evaluate(vars), r)
     }
 
-    def equ(that: Expr): Boolean = Pair(this,that) match {
-      case Pair(Lit(l)    ,Lit(r))     => l == r
-      case Pair(Var(l)    ,Var(r))     => l == r
-      case Pair(Add(ll,lr),Add(rl,rr)) => (ll equ rl) && (lr equ rr)
-      case Pair(Mul(ll,lr),Mul(rl,rr)) => (ll equ rl) && (lr equ rr)
-      case Pair(Pow(ll,lr),Pow(rl,rr)) => (ll equ rl) && (lr == rr)
+    def equ(that: Expr): Boolean = (this,that) match {
+      case (Lit(l)    ,Lit(r))     => l == r
+      case (Var(l)    ,Var(r))     => l == r
+      case (Add(ll,lr),Add(rl,rr)) => (ll equ rl) && (lr equ rr)
+      case (Mul(ll,lr),Mul(rl,rr)) => (ll equ rl) && (lr equ rr)
+      case (Pow(ll,lr),Pow(rl,rr)) => (ll equ rl) && (lr == rr)
       case _ => false
     }
 
@@ -667,7 +667,7 @@ object MB {
     Console.println;
 
     def check(n: String, f: Expr, x: Int, e: Int) {
-      val a: Int = f.evaluate(List(Pair("x",x)));
+      val a: Int = f.evaluate(List(("x",x)));
       val s: String = if (a == e) "ok" else "KO(" + e + ")";
       Console.println(n + "(" + x + ") = " + a + " " + s);
     }

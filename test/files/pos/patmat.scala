@@ -3,8 +3,8 @@
 
 object ZipFun {
   //just compilation
-  def zipFun[a, b](xs: List[a], ys: List[b]): List[Pair[a, b]] = (Pair(xs, ys): @unchecked) match {
-    // !!! case Pair(List(), _), Pair(_, List()) => List()
+  def zipFun[a, b](xs: List[a], ys: List[b]): List[Tuple2[a, b]] = ((xs, ys): @unchecked) match {
+    // !!! case (List(), _), (_, List()) => List()
     case (x :: xs1, y :: ys1) => (x, y) :: zipFun(xs1, ys1)
   }
 }

@@ -335,7 +335,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     assert(a.isClass)
     assert(b.isClass)
 
-    val res = Pair(a.isInterface, b.isInterface) match {
+    val res = (a.isInterface, b.isInterface) match {
       case (true, true) =>
         global.lub(List(a.tpe, b.tpe)).typeSymbol // TODO assert == firstCommonSuffix of resp. parents
       case (true, false) =>
@@ -1014,7 +1014,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     def emitParamAnnotations(jmethod: asm.MethodVisitor, pannotss: List[List[AnnotationInfo]]) {
       val annotationss = pannotss map (_ filter shouldEmitAnnotation)
       if (annotationss forall (_.isEmpty)) return
-      for (Pair(annots, idx) <- annotationss.zipWithIndex;
+      for ((annots, idx) <- annotationss.zipWithIndex;
            annot <- annots) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
@@ -2156,7 +2156,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
           def getMerged(): scala.collection.Map[Local, List[Interval]] = {
             // TODO should but isn't: unbalanced start(s) of scope(s)
-            val shouldBeEmpty = pending filter { p => val Pair(_, st) = p; st.nonEmpty }
+            val shouldBeEmpty = pending filter { p => val (_, st) = p; st.nonEmpty }
             val merged = mutable.Map[Local, List[Interval]]()
             def addToMerged(lv: Local, start: Label, end: Label) {
               val intv   = Interval(start, end)
@@ -2169,7 +2169,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
                  (b) take the latest end (onePastLast if none available)
                  (c) merge the thus made-up interval
              */
-            for(Pair(k, st) <- shouldBeEmpty) {
+            for((k, st) <- shouldBeEmpty) {
               var start = st.toList.sortBy(_.getOffset).head
               if(merged.isDefinedAt(k)) {
                 val balancedStart = merged(k).head.lstart
@@ -2206,25 +2206,25 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         }
         // adding non-param locals
         var anonCounter = 0
-        var fltnd: List[Triple[String, Local, Interval]] = Nil
-        for(Pair(local, ranges) <- scoping.getMerged()) {
+        var fltnd: List[Tuple3[String, Local, Interval]] = Nil
+        for((local, ranges) <- scoping.getMerged()) {
           var name = javaName(local.sym)
           if (name == null) {
             anonCounter += 1
             name = "<anon" + anonCounter + ">"
           }
           for(intrvl <- ranges) {
-            fltnd ::= Triple(name, local, intrvl)
+            fltnd ::= (name, local, intrvl)
           }
         }
         // quest for deterministic output that Map.toList doesn't provide (so that ant test.stability doesn't complain).
         val srtd = fltnd.sortBy { kr =>
-          val Triple(name: String, _, intrvl: Interval) = kr
+          val (name: String, _, intrvl: Interval) = kr
 
-          Triple(intrvl.start, intrvl.end - intrvl.start, name)  // ie sort by (start, length, name)
+          (intrvl.start, intrvl.end - intrvl.start, name)  // ie sort by (start, length, name)
         }
 
-        for(Triple(name, local, Interval(start, end)) <- srtd) {
+        for((name, local, Interval(start, end)) <- srtd) {
           jmethod.visitLocalVariable(name, descriptor(local.kind), null, start, end, indexOf(local))
         }
         // "There may be no more than one LocalVariableTable attribute per local variable in the Code attribute"

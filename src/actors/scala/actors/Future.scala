@@ -180,17 +180,17 @@ object Futures {
 
     var cnt = 0
     val mappedFts = fts.map(ft =>
-      Pair({cnt+=1; cnt-1}, ft))
+      ({cnt+=1; cnt-1}, ft))
 
-    val unsetFts = mappedFts.filter((p: Pair[Int, Future[Any]]) => {
+    val unsetFts = mappedFts.filter((p: Tuple2[Int, Future[Any]]) => {
       if (p._2.isSet) { resultsMap(p._1) = Some(p._2()); false }
       else { resultsMap(p._1) = None; true }
     })
 
-    val partFuns = unsetFts.map((p: Pair[Int, Future[Any]]) => {
+    val partFuns = unsetFts.map((p: Tuple2[Int, Future[Any]]) => {
       val FutCh = p._2.inputChannel
-      val singleCase: PartialFunction[Any, Pair[Int, Any]] = {
-        case FutCh ! any => Pair(p._1, any)
+      val singleCase: PartialFunction[Any, Tuple2[Int, Any]] = {
+        case FutCh ! any => (p._1, any)
       }
       singleCase
     })
@@ -201,7 +201,7 @@ object Futures {
     }
     Actor.timer.schedule(timerTask, timeout)
 
-    def awaitWith(partFuns: Seq[PartialFunction[Any, Pair[Int, Any]]]) {
+    def awaitWith(partFuns: Seq[PartialFunction[Any, Tuple2[Int, Any]]]) {
       val reaction: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
         def isDefinedAt(msg: Any) = msg match {
           case TIMEOUT => true
@@ -212,7 +212,7 @@ object Futures {
           case _ => {
             val pfOpt = partFuns find (_ isDefinedAt msg)
             val pf = pfOpt.get // succeeds always
-            val Pair(idx, subres) = pf(msg)
+            val (idx, subres) = pf(msg)
             resultsMap(idx) = Some(subres)
 
             val partFunsRest = partFuns filter (_ != pf)

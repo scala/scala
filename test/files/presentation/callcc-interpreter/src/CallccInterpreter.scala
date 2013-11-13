@@ -40,15 +40,15 @@ object callccInterpreter {
     override def toString() = "<function>"
   }
 
-  type Environment = List[Pair[Name, Value]]
+  type Environment = List[Tuple2[Name, Value]]
 
   def lookup(x: Name, e: Environment): M[Value] = e match {
     case List() => unitM(Wrong)
-    case Pair(y, b) :: e1 => if (x == y) unitM(b) else lookup(x, e1)
+    case (y, b) :: e1 => if (x == y) unitM(b) else lookup(x, e1)
   }
 
-  def add(a: Value, b: Value) /*?*/ = Pair(a, b) match {
-    case Pair(Num(m), Num(n)) => this./*!*/unitM(Num(m + n))
+  def add(a: Value, b: Value) /*?*/ = (a, b) match {
+    case (Num(m), Num(n)) => this./*!*/unitM(Num(m + n))
     case _ => unitM(Wrong)
   }
 
@@ -60,16 +60,20 @@ object callccInterpreter {
   def interp(t: Term, e: Environment): M[Value] = t match {
     case Var(x) => lookup(x, e)
     case Con(n) => unitM(Num(n))
-    case Add(l, r) => for (val a <- interp(l, e);
-			   val b <- interp(r, e);
-			   val c <- add(a, b))
-                      yield c
-    case Lam(x, t) => unitM(Fun(a => interp(t, Pair(x, a) :: e)))
-    case App(f, t) => for (val a <- interp(f, e);
-			   val b <- interp(t, e);
-			   val c <- apply(a, b))
-		      yield c
-    case Ccc(x, t) => callCC(k => interp(t, Pair(x, Fun(k)) :: e))
+    case Add(l, r) =>
+      for {
+        a <- interp(l, e)
+        b <- interp(r, e)
+        c <- add(a, b)
+      } yield c
+    case Lam(x, t) => unitM(Fun(a => interp(t, (x, a) :: e)))
+    case App(f, t) =>
+      for {
+        a <- interp(f, e)
+        b <- interp(t, e)
+        c <- apply(a, b)
+      } yield c
+    case Ccc(x, t) => callCC(k => interp(t, (x, Fun(k)) :: e))
   }
 
   def test(t: Term): String = showM(interp(t, List()))

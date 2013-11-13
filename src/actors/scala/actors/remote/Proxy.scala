@@ -142,7 +142,7 @@ private[remote] class DelegateActor(creator: Proxy, node: Node, name: Symbol, ke
                 // create a new reply channel...
                 val replyCh = new Channel[Any](this)
                 // ...that maps to session
-                sessionMap += Pair(replyCh, session)
+                sessionMap(replyCh) = session
                 // local send
                 out.send(msg, replyCh)
 
@@ -178,7 +178,7 @@ private[remote] class DelegateActor(creator: Proxy, node: Node, name: Symbol, ke
             // create fresh session ID...
             val fresh = FreshNameCreator.newName(node+"@"+name)
             // ...that maps to reply channel
-            channelMap += Pair(fresh, sender)
+            channelMap(fresh) = sender
             kernel.forward(sender, node, name, msg, fresh)
           } else {
             kernel.forward(sender, node, name, msg, 'nosession)

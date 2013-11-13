@@ -180,7 +180,7 @@ class JavapClass(
   /** Base class for javap tool adapters for java 6 and 7. */
   abstract class JavapTool {
     type ByteAry = Array[Byte]
-    type Input = Pair[String, Try[ByteAry]]
+    type Input = Tuple2[String, Try[ByteAry]]
 
     /** Run the tool. */
     def apply(raw: Boolean, options: Seq[String])(inputs: Seq[Input]): List[JpResult]

@@ -741,13 +741,13 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       var flatKeys: List[Int]       = Nil
       var targets:  List[asm.Label] = Nil
       var default:  asm.Label       = null
-      var switchBlocks: List[Pair[asm.Label, Tree]] = Nil
+      var switchBlocks: List[Tuple2[asm.Label, Tree]] = Nil
 
       // collect switch blocks and their keys, but don't emit yet any switch-block.
       for (caze @ CaseDef(pat, guard, body) <- tree.cases) {
         assert(guard == EmptyTree, guard)
         val switchBlockPoint = new asm.Label
-        switchBlocks ::= Pair(switchBlockPoint, body)
+        switchBlocks ::= (switchBlockPoint, body)
         pat match {
           case Literal(value) =>
             flatKeys ::= value.intValue
@@ -772,7 +772,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       // emit switch-blocks.
       val postMatch = new asm.Label
       for (sb <- switchBlocks.reverse) {
-        val Pair(caseLabel, caseBody) = sb
+        val (caseLabel, caseBody) = sb
         markProgramPoint(caseLabel)
         genLoad(caseBody, generatedType)
         bc goTo postMatch
@@ -790,7 +790,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       genLoad(expr, expectedType)
       val end = currProgramPoint()
       if (emitVars) { // add entries to LocalVariableTable JVM attribute
-        for (Pair(sym, start) <- varsInScope.reverse) { emitLocalVarScope(sym, start, end) }
+        for ((sym, start) <- varsInScope.reverse) { emitLocalVarScope(sym, start, end) }
       }
       varsInScope = savedScope
     }
