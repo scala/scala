@@ -1,0 +1,141 @@
+reload: Completions.scala
+
+askScopeCompletion at Completions.scala(15,4)
+================================================================================
+[response] askScopeCompletion at (15,4)
+retrieved 10 members
+class C extends AnyRef
+class Foo extends AnyRef
+class Foo_1 extends AnyRef
+class Foo_2 extends AnyRef
+class Foo_3 extends AnyRef
+def <init>(): test.Foo
+def fCCC: Int
+def fOOO: Int
+object O
+val o: test.O.type
+================================================================================
+
+askScopeCompletion at Completions.scala(19,4)
+================================================================================
+[response] askScopeCompletion at (19,4)
+retrieved 9 members
+class C extends AnyRef
+class Foo extends AnyRef
+class Foo_1 extends AnyRef
+class Foo_2 extends AnyRef
+class Foo_3 extends AnyRef
+def <init>(): test.Foo
+def fCCC: Int
+def fOOO: Int
+object O
+================================================================================
+
+askScopeCompletion at Completions.scala(24,4)
+================================================================================
+[response] askScopeCompletion at (24,4)
+retrieved 9 members
+class C extends AnyRef
+class Foo extends AnyRef
+class Foo_1 extends AnyRef
+class Foo_2 extends AnyRef
+class Foo_3 extends AnyRef
+def <init>(): test.Foo
+def fCCC: Int
+object O
+val c: test.C
+================================================================================
+
+askScopeCompletion at Completions.scala(27,5)
+================================================================================
+[response] askScopeCompletion at (27,5)
+retrieved 8 members
+class C extends AnyRef
+class Foo extends AnyRef
+class Foo_1 extends AnyRef
+class Foo_2 extends AnyRef
+class Foo_3 extends AnyRef
+def <init>(): test.Foo
+object O
+val c: test.C
+================================================================================
+
+askScopeCompletion at Completions.scala(30,5)
+================================================================================
+[response] askScopeCompletion at (30,5)
+retrieved 9 members
+class C extends AnyRef
+class Foo extends AnyRef
+class Foo_1 extends AnyRef
+class Foo_2 extends AnyRef
+class Foo_3 extends AnyRef
+def <init>(): test.Foo
+def fCCC: Int
+object O
+val c: test.C
+================================================================================
+
+askScopeCompletion at Completions.scala(32,5)
+================================================================================
+[response] askScopeCompletion at (32,5)
+retrieved 10 members
+class C extends AnyRef
+class Foo extends AnyRef
+class Foo_1 extends AnyRef
+class Foo_2 extends AnyRef
+class Foo_3 extends AnyRef
+def <init>(): test.Foo
+def fCCC: Int
+def fOOO: Int
+object O
+val c: test.C
+================================================================================
+
+askScopeCompletion at Completions.scala(41,4)
+================================================================================
+[response] askScopeCompletion at (41,4)
+retrieved 10 members
+class C extends AnyRef
+class Foo extends AnyRef
+class Foo_1 extends AnyRef
+class Foo_2 extends AnyRef
+class Foo_3 extends AnyRef
+def <init>(): test.Foo_1
+def bar: Unit
+def fCCC: Int
+def fOOO: Int
+object O
+================================================================================
+
+askScopeCompletion at Completions.scala(51,4)
+================================================================================
+[response] askScopeCompletion at (51,4)
+retrieved 11 members
+class C extends AnyRef
+class Foo extends AnyRef
+class Foo_1 extends AnyRef
+class Foo_2 extends AnyRef
+class Foo_3 extends AnyRef
+def <init>(): test.Foo_2
+def bar: Unit
+def fCCC: Int
+def fOOO: Int
+object O
+private[this] val o: test.O.type
+================================================================================
+
+askScopeCompletion at Completions.scala(61,4)
+================================================================================
+[response] askScopeCompletion at (61,4)
+retrieved 10 members
+class C extends AnyRef
+class Foo extends AnyRef
+class Foo_1 extends AnyRef
+class Foo_2 extends AnyRef
+class Foo_3 extends AnyRef
+def <init>(): test.Foo_3
+def bar: Unit
+def fCCC: Int
+object O
+private[this] val c: test.C
+================================================================================
