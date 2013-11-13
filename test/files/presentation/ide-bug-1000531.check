@@ -3,7 +3,7 @@ reload: CrashOnLoad.scala
 askTypeCompletion at CrashOnLoad.scala(6,12)
 ================================================================================
 [response] askCompletionAt (6,12)
-retrieved 124 members
+retrieved 120 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 [inaccessible] protected[this] def reversed: List[B]
@@ -121,8 +121,4 @@ final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
 final def wait(x$1: Long,x$2: Int): Unit
-private[this] val __leftOfArrow: java.util.Iterator[B]
-private[this] val __resultOfEnsuring: java.util.Iterator[B]
-private[this] val __stringToFormat: java.util.Iterator[B]
-private[this] val __thingToAdd: java.util.Iterator[B]
 ================================================================================
