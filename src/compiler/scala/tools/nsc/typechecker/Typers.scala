@@ -1698,15 +1698,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               psym addChild context.owner
             else
               pending += ParentSealedInheritanceError(parent, psym)
+          val parentTypeOfThis = parent.tpe.dealias.typeOfThis
 
-          if (!(selfType <:< parent.tpe.typeOfThis) &&
+          if (!(selfType <:< parentTypeOfThis) &&
               !phase.erasedTypes &&
               !context.owner.isSynthetic &&   // don't check synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
               !selfType.isErroneous &&
               !parent.tpe.isErroneous)
           {
             pending += ParentSelfTypeConformanceError(parent, selfType)
-            if (settings.explaintypes) explainTypes(selfType, parent.tpe.typeOfThis)
+            if (settings.explaintypes) explainTypes(selfType, parentTypeOfThis)
           }
 
           if (parents exists (p => p != parent && p.tpe.typeSymbol == psym && !psym.isError))
