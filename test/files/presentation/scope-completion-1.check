@@ -1,0 +1,19 @@
+reload: Completions.scala
+
+askScopeCompletion at Completions.scala(6,2)
+================================================================================
+[response] askScopeCompletion at (6,2)
+retrieved 3 members
+class Completion1 extends AnyRef
+def <init>(): test.Completion1
+object Completion2
+================================================================================
+
+askScopeCompletion at Completions.scala(10,2)
+================================================================================
+[response] askScopeCompletion at (10,2)
+retrieved 3 members
+class Completion1 extends AnyRef
+def <init>(): test.Completion2.type
+object Completion2
+================================================================================

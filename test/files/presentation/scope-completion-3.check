@@ -1,0 +1,111 @@
+reload: Completions.scala
+
+askScopeCompletion at Completions.scala(75,2)
+================================================================================
+[response] askScopeCompletion at (75,2)
+retrieved 49 members
+[inaccessible] private class Cb2 extends AnyRef
+[inaccessible] private class Ct2 extends AnyRef
+[inaccessible] private def fb2: Int
+[inaccessible] private def ft2: Int
+[inaccessible] private object Ob2
+[inaccessible] private object Ot2
+[inaccessible] private type tb2 = Completion1.this.tb2
+[inaccessible] private type tt2 = Completion1.this.tt2
+[inaccessible] private[this] val vb1: Int
+[inaccessible] private[this] val vb2: Int
+[inaccessible] private[this] val vt1: Int
+[inaccessible] private[this] val vt2: Int
+[inaccessible] private[this] var rb1: Int
+[inaccessible] private[this] var rb2: Int
+[inaccessible] private[this] var rt1: Int
+[inaccessible] private[this] var rt2: Int
+abstract class Base1 extends AnyRef
+abstract trait Trait1 extends AnyRef
+class Cb1 extends AnyRef
+class Cc1 extends AnyRef
+class Completion1 extends Base1 with Trait1
+class Ct1 extends AnyRef
+def <init>(): test.Completion1
+def fb1: Int
+def fc1: Int
+def ft1: Int
+object Completion2
+object Ob1
+object Oc1
+object Ot1
+override def fb3: Int
+override def ft3: Int
+override type tb3 = Completion1.this.tb3
+override type tt3 = Completion1.this.tt3
+private class Cc2 extends AnyRef
+private def fc2: Int
+private object Oc2
+private type tc2 = Completion1.this.tc2
+private[this] val vb3: Int
+private[this] val vc1: Int
+private[this] val vc2: Int
+private[this] val vt3: Int
+private[this] var rb3: Int
+private[this] var rc1: Int
+private[this] var rc2: Int
+private[this] var rt3: Int
+type tb1 = Completion1.this.tb1
+type tc1 = Completion1.this.tc1
+type tt1 = Completion1.this.tt1
+================================================================================
+
+askScopeCompletion at Completions.scala(104,2)
+================================================================================
+[response] askScopeCompletion at (104,2)
+retrieved 49 members
+[inaccessible] private class Cb2 extends AnyRef
+[inaccessible] private class Ct2 extends AnyRef
+[inaccessible] private def fb2: Int
+[inaccessible] private def ft2: Int
+[inaccessible] private object Ob2
+[inaccessible] private object Ot2
+[inaccessible] private type tb2 = test.Completion2.tb2
+[inaccessible] private type tt2 = test.Completion2.tt2
+[inaccessible] private[this] val vb1: Int
+[inaccessible] private[this] val vb2: Int
+[inaccessible] private[this] val vt1: Int
+[inaccessible] private[this] val vt2: Int
+[inaccessible] private[this] var rb1: Int
+[inaccessible] private[this] var rb2: Int
+[inaccessible] private[this] var rt1: Int
+[inaccessible] private[this] var rt2: Int
+abstract class Base1 extends AnyRef
+abstract trait Trait1 extends AnyRef
+class Cb1 extends AnyRef
+class Co1 extends AnyRef
+class Completion1 extends Base1 with Trait1
+class Ct1 extends AnyRef
+def <init>(): test.Completion2.type
+def fb1: Int
+def fo1: Int
+def ft1: Int
+object Completion2
+object Ob1
+object Oo1
+object Ot1
+override def fb3: Int
+override def ft3: Int
+override type tb3 = test.Completion2.tb3
+override type tt3 = test.Completion2.tt3
+private class Co2 extends AnyRef
+private def fo2: Int
+private object Oo2
+private type to2 = test.Completion2.to2
+private[this] val vb3: Int
+private[this] val vo1: Int
+private[this] val vo2: Int
+private[this] val vt3: Int
+private[this] var rb3: Int
+private[this] var ro1: Int
+private[this] var ro2: Int
+private[this] var rt3: Int
+type tb1 = test.Completion2.tb1
+type to1 = test.Completion2.to1
+type tt1 = test.Completion2.tt1
+================================================================================
