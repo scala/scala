@@ -315,8 +315,10 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.TypeCreatorClass
     definitions.TreeCreatorClass
     definitions.LiftableClass
-    definitions.MacroClass
-    definitions.MacroContextClass
+    definitions.BlackboxMacroClass
+    definitions.WhiteboxMacroClass
+    definitions.BlackboxContextClass
+    definitions.WhiteboxContextClass
     definitions.MacroImplAnnotation
     definitions.StringContextClass
     definitions.QuasiquoteClass
@@ -335,6 +337,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.TupleClass
     definitions.FunctionClass
     definitions.AbstractFunctionClass
+    definitions.MacroContextType
     definitions.ProductRootClass
     definitions.Any_$eq$eq
     definitions.Any_$bang$eq

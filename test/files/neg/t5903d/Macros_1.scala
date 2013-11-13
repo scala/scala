@@ -1,4 +1,4 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 import language.experimental.macros
 
 object Interpolation {
@@ -10,7 +10,7 @@ object Interpolation {
 }
 
 object Macros {
-  def unapplyImpl(c: Context)(x: c.Tree) = {
+  def unapplyImpl(c: BlackboxContext)(x: c.Tree) = {
     import c.universe._
     q"""
       class Match(x: Int) {

@@ -1,8 +1,8 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 import language.experimental.macros
 
 object Macros {
-  def impl(c: Context) = {
+  def impl(c: BlackboxContext) = {
     import c.universe._
     val x = Ident(newTermName("x"))
     def defAndUseX(rhs: Tree) = {

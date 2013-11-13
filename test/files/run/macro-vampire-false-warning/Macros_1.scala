@@ -1,20 +1,20 @@
 // As per http://meta.plasm.us/posts/2013/08/31/feeding-our-vampires/
 
 import scala.annotation.StaticAnnotation
-import scala.reflect.macros.Context
+import scala.reflect.macros.WhiteboxContext
 import scala.language.experimental.macros
 
 class body(tree: Any) extends StaticAnnotation
 
 object Macros {
-  def selFieldImpl(c: Context) = {
+  def selFieldImpl(c: WhiteboxContext) = {
     import c.universe._
     val field = c.macroApplication.symbol
     val bodyAnn = field.annotations.filter(_.tpe <:< typeOf[body]).head
     c.Expr[Any](bodyAnn.scalaArgs.head)
   }
 
-  def mkObjectImpl(c: Context)(xs: c.Expr[Any]*) = {
+  def mkObjectImpl(c: WhiteboxContext)(xs: c.Expr[Any]*) = {
     import c.universe._
     import Flag._
     // val kvps = xs.toList map { case q"${_}(${Literal(Constant(name: String))}).->[${_}]($value)" => name -> value }

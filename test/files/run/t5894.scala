@@ -4,7 +4,7 @@ class Test
 
 object Test {
   def foo = macro fooImpl
-  def fooImpl(c: reflect.macros.Context) = { import c.universe._; c.Expr[Unit](q"()") }
+  def fooImpl(c: reflect.macros.BlackboxContext) = { import c.universe._; c.Expr[Unit](q"()") }
 
   def main(args: Array[String]) {
     try {

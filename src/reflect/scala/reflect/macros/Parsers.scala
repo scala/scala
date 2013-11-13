@@ -5,12 +5,12 @@ package macros
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that
  *  exposes functions to parse strings with Scala code into trees.
  */
 @deprecated("Use quasiquotes instead", "2.11.0")
 trait Parsers {
-  self: Context =>
+  self: BlackboxContext =>
 
   /** Parses a string with a Scala expression into an abstract syntax tree.
    *  Only works for expressions, i.e. parsing a package declaration will fail.

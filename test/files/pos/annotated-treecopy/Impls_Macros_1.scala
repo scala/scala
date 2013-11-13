@@ -1,5 +1,5 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 import collection.mutable.ListBuffer
 import collection.mutable.Stack
 
@@ -12,7 +12,7 @@ object Macros {
 
   def tree[T,U](f:Function1[T,U]): Function1[T,U] = macro tree_impl[T,U]
 
-  def tree_impl[T:c.WeakTypeTag,U:c.WeakTypeTag](c: Context)
+  def tree_impl[T:c.WeakTypeTag,U:c.WeakTypeTag](c: BlackboxContext)
       (f:c.Expr[Function1[T,U]]): c.Expr[Function1[T,U]] = {
     import c.universe._
     val ttag = c.weakTypeTag[U]

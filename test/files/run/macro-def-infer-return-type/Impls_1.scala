@@ -1,14 +1,14 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Impls1 {
-  def foo(c: Context)(x: c.Expr[Int]) = x
+  def foo(c: BlackboxContext)(x: c.Expr[Int]) = x
 }
 
 object Impls2 {
-  def foo[T](c: Context)(x: c.Expr[T]) =
+  def foo[T](c: BlackboxContext)(x: c.Expr[T]) =
     throw new Error("an implementation is missing")
 }
 
 object Impls3 {
-  def foo[T](c: Context)(x: c.Expr[T]): c.Expr[T] = x
+  def foo[T](c: BlackboxContext)(x: c.Expr[T]): c.Expr[T] = x
 }

@@ -596,7 +596,7 @@ trait Implicits {
       // workaround for deficient context provided by ModelFactoryImplicitSupport#makeImplicitConstraints
       val isScalaDoc = context.tree == EmptyTree
 
-      val itree = atPos(pos.focus) {
+      val itree0 = atPos(pos.focus) {
         if (isLocal && !isScalaDoc) {
           // SI-4270 SI-5376 Always use an unattributed Ident for implicits in the local scope,
           // rather than an attributed Select, to detect shadowing.
@@ -608,15 +608,16 @@ trait Implicits {
           Select(gen.mkAttributedQualifier(info.pre), implicitMemberName)
         }
       }
-      typingLog("considering", typeDebug.ptTree(itree))
+      val itree1 = if (isBlackbox(info.sym)) suppressMacroExpansion(itree0) else itree0
+      typingLog("considering", typeDebug.ptTree(itree1))
 
-      def fail(reason: String): SearchResult = failure(itree, reason)
-      def fallback = typed1(itree, EXPRmode, wildPt)
+      def fail(reason: String): SearchResult = failure(itree0, reason)
+      def fallback = typed1(itree1, EXPRmode, wildPt)
       try {
-        val itree1 = if (!isView) fallback else pt match {
+        val itree2 = if (!isView) fallback else pt match {
           case Function1(arg1, arg2) =>
             typed1(
-              atPos(itree.pos)(Apply(itree, List(Ident("<argument>") setType approximate(arg1)))),
+              atPos(itree0.pos)(Apply(itree1, List(Ident("<argument>") setType approximate(arg1)))),
               EXPRmode,
               approximate(arg2)
             ) match {
@@ -647,10 +648,10 @@ trait Implicits {
 
         if (Statistics.canEnable) Statistics.incCounter(typedImplicits)
 
-        val itree2 = if (isView) treeInfo.dissectApplied(itree1).callee
-                     else adapt(itree1, EXPRmode, wildPt)
+        val itree3 = if (isView) treeInfo.dissectApplied(itree2).callee
+                     else adapt(itree2, EXPRmode, wildPt)
 
-        typingStack.showAdapt(itree, itree2, pt, context)
+        typingStack.showAdapt(itree0, itree3, pt, context)
 
         def hasMatchingSymbol(tree: Tree): Boolean = (tree.symbol == info.sym) || {
           tree match {
@@ -663,21 +664,21 @@ trait Implicits {
 
         if (context.hasErrors)
           fail("hasMatchingSymbol reported error: " + context.firstError.get.errMsg)
-        else if (isLocal && !hasMatchingSymbol(itree1))
+        else if (isLocal && !hasMatchingSymbol(itree2))
           fail("candidate implicit %s is shadowed by %s".format(
-            info.sym.fullLocationString, itree1.symbol.fullLocationString))
+            info.sym.fullLocationString, itree2.symbol.fullLocationString))
         else {
           val tvars = undetParams map freshVar
           def ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
 
-          if (matchesPt(itree2.tpe, ptInstantiated, undetParams)) {
+          if (matchesPt(itree3.tpe, ptInstantiated, undetParams)) {
             if (tvars.nonEmpty)
               typingLog("solve", ptLine("tvars" -> tvars, "tvars.constr" -> tvars.map(_.constr)))
 
-            val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt), upper = false, lubDepth(itree2.tpe :: pt :: Nil))
+            val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt), upper = false, lubDepth(itree3.tpe :: pt :: Nil))
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
-            checkBounds(itree2, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
+            checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
             context.firstError match {
               case Some(err) =>
                 return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
@@ -693,7 +694,7 @@ trait Implicits {
               if (okParams.isEmpty) EmptyTreeTypeSubstituter
               else {
                 val subst = new TreeTypeSubstituter(okParams, okArgs)
-                subst traverse itree2
+                subst traverse itree3
                 notifyUndetparamsInferred(okParams, okArgs)
                 subst
               }
@@ -711,9 +712,9 @@ trait Implicits {
             // This is just called for the side effect of error detection,
             // see SI-6966 to see what goes wrong if we use the result of this
             // as the SearchResult.
-            itree2 match {
-              case TypeApply(fun, args)           => typedTypeApply(itree2, EXPRmode, fun, args)
-              case Apply(TypeApply(fun, args), _) => typedTypeApply(itree2, EXPRmode, fun, args) // t2421c
+            itree3 match {
+              case TypeApply(fun, args)           => typedTypeApply(itree3, EXPRmode, fun, args)
+              case Apply(TypeApply(fun, args), _) => typedTypeApply(itree3, EXPRmode, fun, args) // t2421c
               case t                              => t
             }
 
@@ -721,13 +722,13 @@ trait Implicits {
               case Some(err) =>
                 fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
               case None      =>
-                val result = new SearchResult(itree2, subst)
+                val result = new SearchResult(unsuppressMacroExpansion(itree3), subst)
                 if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
                 typingLog("success", s"inferred value of type $ptInstantiated is $result")
                 result
             }
           }
-          else fail("incompatible: %s does not match expected type %s".format(itree2.tpe, ptInstantiated))
+          else fail("incompatible: %s does not match expected type %s".format(itree3.tpe, ptInstantiated))
         }
       }
       catch {
@@ -1147,7 +1148,7 @@ trait Implicits {
             gen.mkAttributedThis(thisSym)
           case _ =>
             // if `pre` is not a PDT, e.g. if someone wrote
-            //   implicitly[scala.reflect.macros.Context#TypeTag[Int]]
+            //   implicitly[scala.reflect.macros.BlackboxContext#TypeTag[Int]]
             // then we need to fail, because we don't know the prefix to use during type reification
             // upd. we also need to fail silently, because this is a very common situation
             // e.g. quite often we're searching for BaseUniverse#TypeTag, e.g. for a type tag in any universe

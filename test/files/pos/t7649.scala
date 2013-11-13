@@ -1,5 +1,5 @@
 object Test {
-  val c: reflect.macros.Context = ???
+  val c: reflect.macros.BlackboxContext = ???
   import c.universe._
   reify {
     // The lookup of the implicit WeakTypeTag[Any]

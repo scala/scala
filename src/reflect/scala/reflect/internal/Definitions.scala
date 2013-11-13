@@ -495,15 +495,18 @@ trait Definitions extends api.StandardDefinitions {
     lazy val TreeCreatorClass      = getClassIfDefined("scala.reflect.api.TreeCreator") // defined in scala-reflect.jar, so we need to be careful
     lazy val LiftableClass         = getClassIfDefined("scala.reflect.api.Liftable")    // defined in scala-reflect.jar, so we need to be careful
 
-    lazy val MacroClass                   = getClassIfDefined("scala.reflect.macros.Macro") // defined in scala-reflect.jar, so we need to be careful
-         def MacroContextValue            = MacroClass.map(sym => getMemberValue(sym, nme.c))
-    lazy val MacroContextClass            = getClassIfDefined("scala.reflect.macros.Context") // defined in scala-reflect.jar, so we need to be careful
-         def MacroContextPrefix           = MacroContextClass.map(sym => getMemberMethod(sym, nme.prefix))
-         def MacroContextPrefixType       = MacroContextClass.map(sym => getTypeMember(sym, tpnme.PrefixType))
-         def MacroContextUniverse         = MacroContextClass.map(sym => getMemberMethod(sym, nme.universe))
-         def MacroContextExprClass        = MacroContextClass.map(sym => getTypeMember(sym, tpnme.Expr))
-         def MacroContextWeakTypeTagClass = MacroContextClass.map(sym => getTypeMember(sym, tpnme.WeakTypeTag))
-         def MacroContextTreeType         = MacroContextClass.map(sym => getTypeMember(sym, tpnme.Tree))
+    lazy val BlackboxMacroClass           = getClassIfDefined("scala.reflect.macros.BlackboxMacro") // defined in scala-reflect.jar, so we need to be careful
+         def BlackboxMacroContextValue    = BlackboxMacroClass.map(sym => getMemberValue(sym, nme.c))
+    lazy val WhiteboxMacroClass           = getClassIfDefined("scala.reflect.macros.WhiteboxMacro") // defined in scala-reflect.jar, so we need to be careful
+         def WhiteboxMacroContextValue    = WhiteboxMacroClass.map(sym => getMemberValue(sym, nme.c))
+    lazy val BlackboxContextClass         = getClassIfDefined("scala.reflect.macros.BlackboxContext") // defined in scala-reflect.jar, so we need to be careful
+    lazy val WhiteboxContextClass         = getClassIfDefined("scala.reflect.macros.WhiteboxContext") // defined in scala-reflect.jar, so we need to be careful
+         def MacroContextPrefix           = BlackboxContextClass.map(sym => getMemberMethod(sym, nme.prefix))
+         def MacroContextPrefixType       = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.PrefixType))
+         def MacroContextUniverse         = BlackboxContextClass.map(sym => getMemberMethod(sym, nme.universe))
+         def MacroContextExprClass        = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.Expr))
+         def MacroContextWeakTypeTagClass = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.WeakTypeTag))
+         def MacroContextTreeType         = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.Tree))
     lazy val MacroImplAnnotation          = requiredClass[scala.reflect.macros.internal.macroImpl]
 
     lazy val StringContextClass           = requiredClass[scala.StringContext]
@@ -593,18 +596,47 @@ trait Definitions extends api.StandardDefinitions {
     def unspecializedTypeArgs(tp: Type): List[Type] =
       (tp baseType unspecializedSymbol(tp.typeSymbolDirect)).typeArgs
 
+    object MacroContextType {
+      def unapply(tp: Type) = {
+        def isOneOfContextTypes(tp: Type) =
+          tp =:= BlackboxContextClass.tpe || tp =:= WhiteboxContextClass.tpe
+        def isPrefix(sym: Symbol) =
+          sym.allOverriddenSymbols.contains(MacroContextPrefixType)
+
+        tp.dealias match {
+          case RefinedType(List(tp), Scope(sym)) if isOneOfContextTypes(tp) && isPrefix(sym) => Some(tp)
+          case tp if isOneOfContextTypes(tp) => Some(tp)
+          case _ => None
+        }
+      }
+    }
+
+    def isMacroContextType(tp: Type) = MacroContextType.unapply(tp).isDefined
+
+    def isWhiteboxContextType(tp: Type) =
+      isMacroContextType(tp) && (tp <:< WhiteboxContextClass.tpe)
+
+    def mightBeMacroBundleType(tp: Type) =
+      tp.baseClasses.contains(WhiteboxMacroClass) ||
+      tp.baseClasses.contains(BlackboxMacroClass)
+
     def isMacroBundleType(tp: Type) = tp.baseClasses match {
       case _ :: proto :: _ if isMacroBundleProtoType(proto.tpe) => true
       case _ => false
     }
 
+    def isBlackboxMacroBundleType(tp: Type) =
+      isMacroBundleType(tp) && (tp <:< BlackboxMacroClass.tpe) && !(tp <:< WhiteboxMacroClass.tpe)
+
     def isMacroBundleProtoType(tp: Type) = {
       val sym = tp.typeSymbol
       val isNonTrivial = tp != ErrorType && tp != NothingTpe && tp != NullTpe
-      val isMacroCompatible = MacroClass != NoSymbol && tp.baseClasses.contains(MacroClass)
-      val isBundlePrototype = sym != MacroClass && sym.isTrait && {
+      def subclasses(sym: Symbol) = sym != NoSymbol && tp.baseClasses.contains(sym)
+      val isMacroCompatible = subclasses(BlackboxMacroClass) ^ subclasses(WhiteboxMacroClass)
+      val isBundlePrototype = sym != BlackboxMacroClass && sym != WhiteboxMacroClass && sym.isTrait && {
         val c = sym.info.member(nme.c)
-        val cIsOk = c.overrideChain.contains(MacroContextValue) && c.isDeferred
+        def overrides(sym: Symbol) = c.overrideChain.contains(sym)
+        val cIsOk = (overrides(BlackboxMacroContextValue) || overrides(WhiteboxMacroContextValue)) && c.isDeferred
         cIsOk && sym.isMonomorphicType
       }
       isNonTrivial && isMacroCompatible && isBundlePrototype

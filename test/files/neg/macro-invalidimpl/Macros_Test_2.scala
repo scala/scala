@@ -1,4 +1,4 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Macros1 {
   val impls = new Impls1
@@ -12,7 +12,7 @@ object Macros2 {
 
 class Macros3 {
   object Impls3 {
-    def foo(c: Context)(x: c.Expr[Any]) = ???
+    def foo(c: BlackboxContext)(x: c.Expr[Any]) = ???
   }
 
   def foo(x: Any) = macro Impls3.foo

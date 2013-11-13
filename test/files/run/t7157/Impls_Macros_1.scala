@@ -1,9 +1,9 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 import language.experimental.macros
 
 object Macros {
   object AImpl {
-    def a(ctx: Context)(args: ctx.Expr[Any]*): ctx.Expr[Unit] = {
+    def a(ctx: BlackboxContext)(args: ctx.Expr[Any]*): ctx.Expr[Unit] = {
       import ctx.universe._
       ctx.Expr[Unit](Apply(Ident(TermName("println")), List(Literal(Constant(1)))))
     }

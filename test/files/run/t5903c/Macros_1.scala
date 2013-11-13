@@ -1,4 +1,4 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.WhiteboxContext
 import language.experimental.macros
 
 object Interpolation {
@@ -10,7 +10,7 @@ object Interpolation {
 }
 
 object Macros {
-  def unapplyImpl[T: c.WeakTypeTag](c: Context)(x: c.Tree) = {
+  def unapplyImpl[T: c.WeakTypeTag](c: WhiteboxContext)(x: c.Tree) = {
     import c.universe._
     q"""
       new {

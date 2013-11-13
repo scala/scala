@@ -33,7 +33,7 @@ trait Errors extends Traces {
 
   def MacroBundleNonStaticError() = implRefError("macro bundles must be static")
 
-  def MacroBundleWrongShapeError() = implRefError("macro bundles must be monomorphic traits extending scala.reflect.macros.Macro and not implementing its `val c: Context` member")
+  def MacroBundleWrongShapeError() = implRefError("macro bundles must be monomorphic traits extending either BlackboxMacro or WhiteboxMacro and not implementing their `val c: BlackboxContext/WhiteboxContext` member")
 
   // compatibility errors
 

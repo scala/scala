@@ -1,9 +1,9 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Macros {
   def printf(format: String, params: Any*): Unit = macro printf_impl
-  def printf_impl(c: Context)(format: c.Expr[String], params: c.Expr[Any]*): c.Expr[Unit] = ???
+  def printf_impl(c: BlackboxContext)(format: c.Expr[String], params: c.Expr[Any]*): c.Expr[Unit] = ???
 }
 
 // something trivial to run

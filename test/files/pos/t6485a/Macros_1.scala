@@ -1,5 +1,5 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Macros {
-  def crash(c: Context): c.Expr[Unit] = c.universe.reify(())
+  def crash(c: BlackboxContext): c.Expr[Unit] = c.universe.reify(())
 }

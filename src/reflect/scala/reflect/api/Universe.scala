@@ -41,10 +41,11 @@ package api
  *   res1: reflect.runtime.universe.Type = scala.Either[String,Int]
  *   }}}
  *
- * To obtain a `Universe` for use within a Scala macro, use [[scala.reflect.macros.Context#universe]]. For example:
+ * To obtain a `Universe` for use within a Scala macro, use [[scala.reflect.macros.BlackboxContext#universe]].
+ * or [[scala.reflect.macros.WhiteboxContext#universe]]. For example:
  * {{{
  *  def printf(format: String, params: Any*): Unit = macro impl
- *  def impl(c: Context)(format: c.Expr[String], params: c.Expr[Any]*): c.Expr[Unit] = {
+ *  def impl(c: BlackboxContext)(format: c.Expr[String], params: c.Expr[Any]*): c.Expr[Unit] = {
  *    import c.universe._
  *    ...
  *  }
