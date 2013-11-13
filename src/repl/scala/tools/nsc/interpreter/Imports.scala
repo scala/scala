@@ -92,7 +92,7 @@ trait Imports {
    * last one imported is actually usable.
    */
   case class ComputedImports(prepend: String, append: String, access: String)
-  protected def importsCode(wanted: Set[Name]): ComputedImports = {
+  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper): ComputedImports = {
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
@@ -130,13 +130,15 @@ trait Imports {
 
     // add code for a new object to hold some imports
     def addWrapper() {
-      val impname = nme.INTERPRETER_IMPORT_WRAPPER
-      code append "object %s {\n".format(impname)
-      trailingBraces append "}\n"
-      accessPath append ("." + impname)
+      import nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
+      code append (wrapper.prewrap format iw)
+      trailingBraces append wrapper.postwrap
+      accessPath append s".$iw"
       currentImps.clear()
     }
+
     def maybeWrap(names: Name*) = if (names exists currentImps) addWrapper()
+
     def wrapBeforeAndAfter[T](op: => T): T = {
       addWrapper()
       try op finally addWrapper()
