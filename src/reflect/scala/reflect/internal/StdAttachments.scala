@@ -30,4 +30,7 @@ trait StdAttachments {
    *  Therefore we need this hack (see `Reshape.toPreTyperTypeTree` for a detailed explanation).
    */
   case class CompoundTypeTreeOriginalAttachment(parents: List[Tree], stats: List[Tree])
+
+  /** Untyped list of subpatterns attached to selector dummy. */
+  case class SubpatternsAttachment(patterns: List[Tree])
 }

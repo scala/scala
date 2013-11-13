@@ -3,6 +3,7 @@ package quasiquotes
 
 import scala.collection.{immutable, mutable}
 import scala.reflect.internal.Flags._
+import scala.reflect.macros.TypecheckException
 
 class Cardinality private[Cardinality](val value: Int) extends AnyVal {
   def pred = { assert(value - 1 >= 0); new Cardinality(value - 1) }
@@ -30,158 +31,158 @@ trait Holes { self: Quasiquotes =>
   import definitions._
   import universeTypes._
 
-  /** Location characterizes a kind of a non-terminal in Scala syntax where something is going to be spliced.
-   *  A location is typically associated with a type of the things that can be spliced there.
-   *  Associated type might be different from an actual tpe of a splicee due to lifting.
-   *  This is the first pillar of modularity in the quasiquote reifier.
-   */
-  sealed abstract class Location(val tpe: Type)
-  case object UnknownLocation extends Location(NoType)
-  case class TreeLocation(override val tpe: Type) extends Location(tpe)
-  case object NameLocation extends Location(nameType)
-  case object ModsLocation extends Location(modsType)
-  case object FlagsLocation extends Location(flagsType)
-  case object SymbolLocation extends Location(symbolType)
-  case class IterableLocation(card: Cardinality, sublocation: TreeLocation) extends Location(NoType) {
-    override val tpe = {
-      def loop(n: Cardinality, tpe: Type): Type =
-        if (n == NoDot) tpe
-        else appliedType(IterableClass.toType, List(loop(n.pred, tpe)))
-      loop(card, sublocation.tpe)
+  protected def inferParamImplicit(tfun: Type, targ: Type) = c.inferImplicitValue(appliedType(tfun, List(targ)), silent = true)
+  protected def inferLiftable(tpe: Type): Tree = inferParamImplicit(liftableType, tpe)
+  protected def inferUnliftable(tpe: Type): Tree = inferParamImplicit(unliftableType, tpe)
+  protected def isLiftableType(tpe: Type) = inferLiftable(tpe) != EmptyTree
+  protected def isNativeType(tpe: Type) =
+    (tpe <:< treeType) || (tpe <:< nameType) || (tpe <:< modsType) ||
+    (tpe <:< flagsType) || (tpe <:< symbolType)
+  protected def stripIterable(tpe: Type, limit: Option[Cardinality] = None): (Cardinality, Type) =
+    if (limit.map { _ == NoDot }.getOrElse { false }) (NoDot, tpe)
+    else if (tpe != null && !isIterableType(tpe)) (NoDot, tpe)
+    else {
+      val (card, innerTpe) = stripIterable(tpe.typeArguments.head, limit.map { _.pred })
+      (card.succ, innerTpe)
     }
+  protected def iterableTypeFromCard(n: Cardinality, tpe: Type): Type = {
+    if (n == NoDot) tpe
+    else appliedType(IterableClass.toType, List(iterableTypeFromCard(n.pred, tpe)))
   }
 
-  /** Hole type describes location, cardinality and a pre-reification routine associated with a hole.
-   *  An interesting thing about HoleType is that it can be completely inferred from the type of the splicee.
-   *  This is the second pillar of modularity in the quasiquote reifier.
-   */
-  case class HoleType(preprocessor: Tree => Tree, location: Location, cardinality: Cardinality) {
-    def makeHole(tree: Tree) = Hole(preprocessor(tree), location, cardinality)
+  abstract class Hole {
+    val tree: Tree
+    val tpe: Type
   }
-  object HoleType {
-    def unapply(tpe: Type): Option[HoleType] = tpe match {
-      case NativeType(holeTpe)           => Some(holeTpe)
-      case LiftableType(holeTpe)         => Some(holeTpe)
-      case IterableTreeType(holeTpe)     => Some(holeTpe)
-      case IterableLiftableType(holeTpe) => Some(holeTpe)
-      case _                             => None
-    }
-
-    trait HoleTypeExtractor {
-      def unapply(tpe: Type): Option[HoleType] = {
-        for {
-          preprocessor <- this.preprocessor(tpe)
-          location <- this.location(tpe)
-          cardinality <- Some(this.cardinality(tpe))
-        } yield HoleType(preprocessor, location, cardinality)
-      }
-      def preprocessor(tpe: Type): Option[Tree => Tree]
-      def location(tpe: Type): Option[Location]
-      def cardinality(tpe: Type): Cardinality = parseCardinality(tpe)._1
-
-      def lifter(tpe: Type): Option[Tree => Tree] = {
-        val lifterTpe = appliedType(LiftableClass.toType, List(tpe))
-        val lifter = c.inferImplicitValue(lifterTpe, silent = true)
-        if (lifter != EmptyTree) Some(tree => {
-          val lifted = Apply(lifter, List(u, tree))
-          val targetType = Select(u, tpnme.Tree)
-          atPos(tree.pos)(TypeApply(Select(lifted, nme.asInstanceOf_), List(targetType)))
-        }) else None
-      }
-
-      def iterator(tpe: Type)(elementTransform: Tree => Tree): Option[Tree => Tree] = {
-        def reifyIterable(tree: Tree, n: Cardinality): Tree = {
-          def loop(tree: Tree, n: Cardinality) =
-            if (n == NoDot) elementTransform(tree)
-            else {
-              val x: TermName = c.freshName()
-              val wrapped = reifyIterable(Ident(x), n.pred)
-              val xToWrapped = Function(List(ValDef(Modifiers(PARAM), x, TypeTree(), EmptyTree)), wrapped)
-              Select(Apply(Select(tree, nme.map), List(xToWrapped)), nme.toList)
-            }
-          if (tree.tpe != null && (tree.tpe <:< listTreeType || tree.tpe <:< listListTreeType)) tree
-          else atPos(tree.pos)(loop(tree, n))
-        }
-        val card = parseCardinality(tpe)._1
-        if (card != NoDot) Some(reifyIterable(_, card)) else None
-      }
-    }
-
-    object NativeType extends HoleTypeExtractor {
-      def preprocessor(tpe: Type) = Some(identity)
-      def location(tpe: Type) = {
-        if (tpe <:< treeType) Some(TreeLocation(tpe))
-        else if (tpe <:< nameType) Some(NameLocation)
-        else if (tpe <:< modsType) Some(ModsLocation)
-        else if (tpe <:< flagsType) Some(FlagsLocation)
-        else if (tpe <:< symbolType) Some(SymbolLocation)
-        else None
-      }
-    }
-
-    object LiftableType extends HoleTypeExtractor {
-      def preprocessor(tpe: Type) = lifter(tpe)
-      def location(tpe: Type) = Some(TreeLocation(treeType))
-    }
-
-    object IterableTreeType extends HoleTypeExtractor {
-      def preprocessor(tpe: Type) = iterator(tpe)(identity)
-      def location(tpe: Type) = {
-        val (card, elementTpe) = parseCardinality(tpe)
-        if (card != NoDot && elementTpe <:< treeType) Some(IterableLocation(card, TreeLocation(elementTpe)))
-        else None
-      }
-    }
-
-    object IterableLiftableType extends HoleTypeExtractor {
-      def preprocessor(tpe: Type) = {
-        val (_, elementTpe) = parseCardinality(tpe)
-        for {
-          lifter <- this.lifter(elementTpe)
-          iterator <- this.iterator(tpe)(lifter)
-        } yield iterator
-      }
-      def location(tpe: Type) = Some(IterableLocation(cardinality(tpe), TreeLocation(treeType)))
-    }
-  }
-
-  /** Hole encapsulates information about splices in quasiquotes.
-   *  It packs together a cardinality of a splice, a splicee (possibly preprocessed)
-   *  and the description of the location in Scala syntax where the splicee can be spliced.
-   *  This is the third pillar of modularity in the quasiquote reifier.
-   */
-  case class Hole(tree: Tree, location: Location, cardinality: Cardinality)
 
   object Hole {
-    def apply(splicee: Tree, holeCard: Cardinality): Hole = {
-      if (method == nme.unapply) return new Hole(splicee, UnknownLocation, holeCard)
-      val (spliceeCard, elementTpe) = parseCardinality(splicee.tpe)
-      def cantSplice() = {
-        val holeCardMsg = if (holeCard != NoDot) s" with $holeCard" else ""
-        val action = "splice " + splicee.tpe + holeCardMsg
-        val suggestCard = holeCard != spliceeCard || holeCard != NoDot
-        val spliceeCardMsg = if (holeCard != spliceeCard && spliceeCard != NoDot) s"using $spliceeCard" else "omitting the dots"
-        val cardSuggestion = if (suggestCard) spliceeCardMsg else ""
-        def canBeLifted(tpe: Type) = HoleType.LiftableType.unapply(tpe).nonEmpty
-        val suggestLifting = (holeCard == NoDot || spliceeCard != NoDot) && !(elementTpe <:< treeType) && !canBeLifted(elementTpe)
-        val liftedTpe = if (holeCard != NoDot) elementTpe else splicee.tpe
-        val liftSuggestion = if (suggestLifting) s"providing an implicit instance of Liftable[$liftedTpe]" else ""
-        val advice = List(cardSuggestion, liftSuggestion).filter(_ != "").mkString(" or ")
-        c.abort(splicee.pos, s"Can't $action, consider $advice")
+    def apply(card: Cardinality, tree: Tree): Hole =
+      if (method != nme.unapply) new ApplyHole(card, tree)
+      else new UnapplyHole(card, tree)
+    def unapply(hole: Hole): Some[(Tree, Type)] = Some((hole.tree, hole.tpe))
+  }
+
+  class ApplyHole(card: Cardinality, splicee: Tree) extends Hole {
+    val (strippedTpe, tpe) = {
+      if (stripIterable(splicee.tpe)._1.value < card.value) cantSplice()
+      val (_, strippedTpe) = stripIterable(splicee.tpe, limit = Some(card))
+      if (NativeType.unapply(strippedTpe)) (strippedTpe, iterableTypeFromCard(card, strippedTpe))
+      else if (isLiftableType(strippedTpe)) (strippedTpe, iterableTypeFromCard(card, treeType))
+      else cantSplice()
+    }
+
+    val tree = {
+      def inner(itpe: Type)(tree: Tree) = itpe match {
+        case NativeType()          => tree
+        case ltpe @ LiftableType() => lifted(ltpe)(tree)
       }
-      val holeTpe = splicee.tpe match {
-        case _ if holeCard != spliceeCard => cantSplice()
-        case HoleType(holeTpe) => holeTpe
-        case _ => cantSplice()
+      if (card == NoDot) inner(strippedTpe)(splicee)
+      else iterated(card, strippedTpe, inner(strippedTpe))(splicee)
+    }
+
+    protected def cantSplice() = {
+      val (iterableCard, iterableType) = stripIterable(splicee.tpe)
+      val holeCardMsg = if (card != NoDot) s" with $card" else ""
+      val action = "splice " + splicee.tpe + holeCardMsg
+      val suggestCard = card != iterableCard || card != NoDot
+      val spliceeCardMsg = if (card != iterableCard && iterableCard != NoDot) s"using $iterableCard" else "omitting the dots"
+      val cardSuggestion = if (suggestCard) spliceeCardMsg else ""
+      val suggestLifting = (card == NoDot || iterableCard != NoDot) && !(iterableType <:< treeType) && !isLiftableType(iterableType)
+      val liftedTpe = if (card != NoDot) iterableType else splicee.tpe
+      val liftSuggestion = if (suggestLifting) s"providing an implicit instance of Liftable[$liftedTpe]" else ""
+      val advice = List(cardSuggestion, liftSuggestion).filter(_ != "").mkString(" or ")
+      c.abort(splicee.pos, s"Can't $action, consider $advice")
+    }
+
+    protected def lifted(tpe: Type)(tree: Tree): Tree = {
+      val lifter = inferLiftable(tpe)
+      assert(lifter != EmptyTree, s"couldnt find a liftable for $tpe")
+      val lifted = Apply(lifter, List(tree))
+      val targetType = Select(u, tpnme.Tree)
+      atPos(tree.pos)(TypeApply(Select(lifted, nme.asInstanceOf_), List(targetType)))
+    }
+
+    protected def iterated(card: Cardinality, tpe: Type, elementTransform: Tree => Tree = identity)(tree: Tree): Tree = {
+      assert(card != NoDot)
+      def reifyIterable(tree: Tree, n: Cardinality): Tree = {
+        def loop(tree: Tree, n: Cardinality): Tree =
+          if (n == NoDot) elementTransform(tree)
+          else {
+            val x: TermName = c.freshName()
+            val wrapped = reifyIterable(Ident(x), n.pred)
+            val xToWrapped = Function(List(ValDef(Modifiers(PARAM), x, TypeTree(), EmptyTree)), wrapped)
+            Select(Apply(Select(tree, nme.map), List(xToWrapped)), nme.toList)
+          }
+        if (tree.tpe != null && (tree.tpe <:< listTreeType || tree.tpe <:< listListTreeType)) tree
+        else atPos(tree.pos)(loop(tree, n))
       }
-      holeTpe.makeHole(splicee)
+      reifyIterable(tree, card)
     }
   }
 
-  def parseCardinality(tpe: Type): (Cardinality, Type) = {
-    if (tpe != null && isIterableType(tpe)) {
-      val (card, innerTpe) = parseCardinality(tpe.typeArguments.head)
-      (card.succ, innerTpe)
-    } else (NoDot, tpe)
+  class UnapplyHole(card: Cardinality, pat: Tree) extends Hole {
+    val tpe  = iterableTypeFromCard(card, treeType)
+    val tree = {
+      val (placeholderName, tptopt) = pat match {
+        case Bind(pname, Bind(_, Typed(Ident(nme.WILDCARD), tpt))) => (pname, Some(tpt))
+        case Bind(pname, Typed(Ident(nme.WILDCARD), tpt))          => (pname, Some(tpt))
+        case Bind(pname, _)                                        => (pname, None)
+      }
+      def fallback = Bind(placeholderName, Ident(nme.WILDCARD))
+      tptopt.map { tpt =>
+        val TypeDef(_, _, _, typedTpt) =
+          try c.typeCheck(TypeDef(NoMods, TypeName("T"), Nil, tpt))
+          catch { case TypecheckException(pos, msg) => c.abort(pos.asInstanceOf[c.Position], msg) }
+        val tpe = typedTpt.tpe
+        val (iterableCard, _) = stripIterable(tpe)
+        if (iterableCard.value < card.value)
+          c.abort(pat.pos, s"Can't extract $tpe with $card, consider using $iterableCard")
+        val (_, strippedTpe) = stripIterable(tpe, limit = Some(card))
+        if (strippedTpe <:< treeType) fallback
+        else
+          unlifters.spawn(strippedTpe, card).map {
+            Apply(_, fallback :: Nil)
+          }.getOrElse {
+            c.abort(pat.pos, s"Can't find $unliftableType[$strippedTpe], consider providing it")
+          }
+      }.getOrElse { fallback }
+    }
+  }
+
+  object unlifters {
+    private var records = List.empty[(Type, Cardinality)]
+    def spawn(tpe: Type, card: Cardinality): Option[Tree] = {
+      val unlifter = inferUnliftable(tpe)
+      if (unlifter == EmptyTree) None
+      else if (card == NoDot) Some(unlifter)
+      else {
+        val idx = records.indexWhere { p => p._1 =:= tpe && p._2 == card }
+        val resIdx = if (idx != -1) idx else { records +:= (tpe, card); records.length - 1}
+        Some(Ident(TermName("helper$" + resIdx)))
+      }
+    }
+    def preamble(): List[Tree] =
+      records.zipWithIndex.map { case ((tpe, card), idx) =>
+        val name = TermName("helper$" + idx)
+        val helperName = card match { case DotDot => nme.UnliftHelper1 case DotDotDot => nme.UnliftHelper2 }
+        val lifter = inferUnliftable(tpe)
+        ValDef(NoMods, name, EmptyTree, Apply(Select(Select(u, nme.build), helperName), lifter :: Nil))
+      }
+  }
+
+  object NativeType { def unapply(tpe: Type): Boolean = isNativeType(tpe) }
+  object LiftableType { def unapply(tpe: Type): Boolean = isLiftableType(tpe) }
+  object TreeType { def unapply(tpe: Type): Boolean = tpe <:< treeType }
+  object IterableType {
+    def unapply(tpe: Type): Option[(Cardinality, Type)] = {
+      val (card, innerTpe) = stripIterable(tpe)
+      if (card != NoDot) Some((card, innerTpe)) else None
+    }
+  }
+  object WithCard {
+    def unapply(tpe: Type): Some[Cardinality] = tpe match {
+      case IterableType(card, _) => Some(card)
+      case _                     => Some(NoDot)
+    }
   }
 }

@@ -271,12 +271,10 @@ trait ArbitraryTreesAndNames {
     for(tit <- genTreeIsType(size)) yield TreeIsType(tit)
 
   implicit object liftTreeIsTerm extends Liftable[TreeIsTerm] {
-    def apply(universe: Universe, value: TreeIsTerm): universe.Tree =
-      value.tree.asInstanceOf[universe.Tree]
+    def apply(value: TreeIsTerm): Tree = value.tree
   }
   implicit object liftTreeIsType extends Liftable[TreeIsType] {
-    def apply(universe: Universe, value: TreeIsType): universe.Tree =
-      value.tree.asInstanceOf[universe.Tree]
+    def apply(value: TreeIsType): Tree = value.tree
   }
   implicit def treeIsTerm2tree(tit: TreeIsTerm) = tit.tree
   implicit def treeIsType2tree(tit: TreeIsType) = tit.tree

@@ -493,7 +493,7 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val TypeCreatorClass      = getClassIfDefined("scala.reflect.api.TypeCreator") // defined in scala-reflect.jar, so we need to be careful
     lazy val TreeCreatorClass      = getClassIfDefined("scala.reflect.api.TreeCreator") // defined in scala-reflect.jar, so we need to be careful
-    lazy val LiftableClass         = getClassIfDefined("scala.reflect.api.Liftable")    // defined in scala-reflect.jar, so we need to be careful
+    lazy val LiftableClass         = NoSymbol
 
     lazy val MacroClass                   = getClassIfDefined("scala.reflect.macros.Macro") // defined in scala-reflect.jar, so we need to be careful
          def MacroContextValue            = MacroClass.map(sym => getMemberValue(sym, nme.c))
@@ -1351,6 +1351,8 @@ trait Definitions extends api.StandardDefinitions {
       lazy val symbolType       = universeMemberType(tpnme.Symbol)
       lazy val treeType         = universeMemberType(tpnme.Tree)
       lazy val caseDefType      = universeMemberType(tpnme.CaseDef)
+      lazy val liftableType     = universeMemberType(tpnme.Liftable)
+      lazy val unliftableType   = universeMemberType(tpnme.Unliftable)
       lazy val iterableTreeType = appliedType(IterableClass, treeType)
       lazy val listTreeType     = appliedType(ListClass, treeType)
       lazy val listListTreeType = appliedType(ListClass, listTreeType)

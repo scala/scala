@@ -2,7 +2,7 @@ import scala.reflect.runtime.universe._
 import scala.reflect.runtime.universe.definitions._
 import scala.reflect.runtime.universe.Flag._
 import scala.reflect.runtime.currentMirror
-import scala.reflect.api.{Liftable, Universe}
+import scala.reflect.api.Universe
 import scala.reflect.macros.TypecheckException
 import scala.tools.reflect.{ToolBox, ToolBoxError}
 
@@ -95,4 +95,6 @@ trait Helpers {
   def annot(name: TypeName): Tree = annot(name, Nil)
   def annot(name: String, args: List[Tree]): Tree = annot(TypeName(name), args)
   def annot(name: TypeName, args: List[Tree]): Tree = q"new $name(..$args)"
+
+  val scalapkg = build.setSymbol(Ident(TermName("scala")), definitions.ScalaPackage)
 }
