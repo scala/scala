@@ -29,7 +29,7 @@ scalacArgs examples:
   "-Dscalac.args=\"-Yrangepos\" -Dpartest.scalac_opts=\"-Yrangepos\""
 
 targets exercised:
-  distpack-maven-opt nightly locker.done build-opt test.suite test.continuations.suite test.scaladoc
+  deploy-core.snapshot publish-opt-nodocs distpack-maven-opt nightly locker.done build build-opt test.suite test.continuations.suite test.scaladoc
 
 NOTE: after distpack-maven-opt, it is expected there's a build file in dists/maven/latest that defines targets deploy and deploy.local
 TODO: get rid of this separate step
@@ -278,6 +278,7 @@ TODO:
 
       <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
 
+      <!-- TODO: delay until absolutely necessary to allow minimal build, also move out partest dependency from scaladoc -->
       <artifact:dependencies pathId="partest.classpath" filesetId="partest.fileset" versionsId="partest.versions">
         <!-- uncomment the following if you're deploying your own partest locally -->
         <!-- <localRepository path="${user.home}/.m2/repository"/> -->
@@ -573,8 +574,22 @@ TODO:
     <property name="reflect.skipPackages"          value="scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"/>
 
     <property name="compiler.description"          value="Scala Compiler"/>
-    <property name="compiler.name"                 value="scala-compiler"/>
     <property name="compiler.docroot"              value="rootdoc.txt"/>
+
+    <!-- these are not used used, preparation for the 'TODO modularize compiler' task -->
+    <property name="interactive.description"       value="Scala Interactive Compiler"   />
+    <property name="interactive.package"           value="modules." />
+    <property name="interactive.name"              value="scala-compiler-interactive"/>
+    <property name="interactive.namesuffix"        value="_${scala.binary.version}"/>
+    <property name="interactive.version"           value="${scala-compiler-interactive.version.number}"/>
+    <property name="interactive.targetjar"         value="scala-compiler-interactive_${scala.binary.version}-${scala-compiler-interactive.version.number}.jar"/>
+
+    <property name="scaladoc.description"          value="Scala Documentation Generator"/>
+    <property name="scaladoc.package"              value="modules." />
+    <property name="scaladoc.name"                 value="scala-compiler-doc"         />
+    <property name="scaladoc.namesuffix"           value="_${scala.binary.version}"/>
+    <property name="scaladoc.version"              value="${scala-compiler-doc.version.number}"/>
+    <property name="scaladoc.targetjar"            value="scala-compiler-doc_${scala.binary.version}-${scala-compiler-doc.version.number}.jar"/>
 
     <property name="actors.description"            value="Scala Actors Library"/>
 
@@ -623,7 +638,7 @@ TODO:
     </macrodef>
 
     <!-- projects without project-specific options: asm, forkjoin, manual, bin, repl -->
-    <for list="actors,compiler,continuations-library,continuations-plugin,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml" param="project">
+    <for list="actors,compiler,interactive,scaladoc,continuations-library,continuations-plugin,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml" param="project">
       <sequential>
         <!-- description is mandatory -->
         <init-project-prop project="@{project}" name="package"     default=""/>
@@ -673,7 +688,9 @@ TODO:
       There must be a variable of the shape @{stage}.@{project}.build.path
       for all @{stage} in locker, quick, strap
       and all @{project} in library, reflect, compiler
-        when stage is quick, @{project} also includes: actors, repl, swing, continuations-plugin, continuations-library, interactive, scaladoc, scalap
+        when stage is quick, @{project} also includes: actors, repl, swing, continuations-plugin, continuations-library, scalap
+
+      NOTE: interactive, scaladoc, are only used upto quick; they are still packed into the compiler jar
     -->
 
     <!-- LOCKER -->
@@ -766,7 +783,6 @@ TODO:
 
     <path id="quick.interactive.build.path">
       <path refid="quick.compiler.build.path"/>
-      <pathelement location="${build-quick.dir}/classes/scaladoc"/>
       <pathelement location="${build-quick.dir}/classes/interactive"/>
     </path>
 
@@ -795,6 +811,7 @@ TODO:
       <pathelement location="${actors.jar}"/>
       <pathelement location="${reflect.jar}"/>
       <pathelement location="${compiler.jar}"/>
+      <!-- TODO modularize compiler: <pathelement location="${scaladoc.jar}"/> -->
       <pathelement location="${scalap.jar}"/>
       <path refid="repl.deps.classpath"/>
       <path refid="aux.libs"/>
@@ -812,11 +829,18 @@ TODO:
 
     <path id="pack.compiler.files">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
-      <fileset dir="${build-quick.dir}/classes/repl"/>
+
+      <!-- TODO modularize compiler. Remove the other class dirs as soon as they become modules -->
       <fileset dir="${build-quick.dir}/classes/scaladoc"/>
       <fileset dir="${build-quick.dir}/classes/interactive"/>
+      <fileset dir="${build-quick.dir}/classes/repl"/>
       <fileset dir="${asm-classes}"/>
     </path>
+
+    <!-- TODO modularize compiler.
+    <path id="pack.scaladoc.files">   <fileset dir="${build-quick.dir}/classes/scaladoc"/> </path>
+    <path id="pack.interactive.files"><fileset dir="${build-quick.dir}/classes/interactive"/> </path>
+    -->
 
     <path id="pack.swing.files">      <fileset dir="${build-quick.dir}/classes/swing"/> </path>
     <path id="pack.reflect.files">    <fileset dir="${build-quick.dir}/classes/reflect"/> </path>
@@ -849,18 +873,26 @@ TODO:
     <path id="docs.library.build.path">               <path refid="quick.library.build.path"/>  </path>
     <path id="docs.reflect.build.path">               <path refid="quick.reflect.build.path"/>  </path>
     <path id="docs.compiler.build.path">              <path refid="quick.compiler.build.path"/> </path>
+    <path id="docs.scaladoc.build.path">              <path refid="quick.scaladoc.build.path"/> </path>
+    <path id="docs.interactive.build.path">           <path refid="quick.interactive.build.path"/> </path>
     <path id="docs.scalap.build.path">                <path refid="quick.scalap.build.path"/>   </path>
     <path id="docs.continuations-plugin.build.path">  <path refid="quick.continuations-plugin.build.path"/>  </path>
     <path id="docs.continuations-library.build.path"> <path refid="quick.continuations-plugin.build.path"/>  </path>
     <path id="docs.actors.build.path">                <path refid="quick.actors.build.path"/>   </path>
     <path id="docs.swing.build.path">                 <path refid="quick.swing.build.path"/>    </path>
 
-    <!-- run-time classpath for scaladoc: should be resolved through maven once it's an actual module -->
+    <!-- run-time classpath for scaladoc TODO: resolve through maven -->
     <path id="scaladoc.classpath">
       <path refid="external-modules-nocore"/>
       <pathelement location="${library.jar}"/>
       <pathelement location="${reflect.jar}"/>
       <pathelement location="${compiler.jar}"/>
+
+      <!-- TODO modularize compiler
+      <pathelement location="${interactive.jar}"/>
+      <pathelement location="${scaladoc.jar}"/>
+      -->
+
       <pathelement location="${ant.jar}"/>
       <path refid="aux.libs"/>
     </path>
@@ -874,10 +906,10 @@ TODO:
 
     <!-- MISC -->
     <path id="sbt.compile.build.path">
-      <path refid="quick.compiler.build.path"/>
-      <pathelement location="${build-quick.dir}/classes/repl"/>
-      <pathelement location="${build-quick.dir}/classes/scaladoc"/>
-      <pathelement location="${build-quick.dir}/classes/interactive"/>
+      <path refid="scaladoc.classpath"/>
+      <!-- TODO modularize compiler: bring back when repl leaves compiler jar
+        <pathelement location="${build-quick.dir}/classes/repl"/>
+      -->
       <pathelement location="${sbt.interface.jar}"/>
     </path>
 
@@ -891,6 +923,11 @@ TODO:
       <pathelement location="${library.jar}"/>
       <pathelement location="${reflect.jar}"/>
       <pathelement location="${compiler.jar}"/>
+
+      <!-- TODO modularize compiler
+      <pathelement location="${scaladoc.jar}"/>
+      <pathelement location="${interactive.jar}"/>
+      -->
 
       <!-- TODO: move scalap & actors out of repo -->
       <pathelement location="${scalap.jar}"/>
@@ -1352,6 +1389,8 @@ TODO:
     </sequential>
   </macrodef>
 
+
+
 <!-- ===========================================================================
                                   LOCAL REFERENCE BUILD (LOCKER)
 ============================================================================ -->
@@ -1458,6 +1497,7 @@ TODO:
 
   <target name="pack.reflect" depends="quick.reflect"> <staged-pack project="reflect"/> </target>
 
+  <!-- TODO modularize compiler. Remove other quick targets when they become modules. -->
   <target name="pack.comp"    depends="quick.comp, quick.scaladoc, quick.interactive, quick.repl, asm.done">
     <staged-pack project="compiler" manifest="${build-pack.dir}/META-INF/MANIFEST.MF">
       <pre> <!-- TODO the files copied here do not influence actuality of this target (nor does the manifest) -->
@@ -1484,6 +1524,11 @@ TODO:
     </staged-pack>
   </target>
 
+  <!-- TODO modularize compiler. These targets are currently not used.
+  <target name="pack.scaladoc" depends="quick.scaladoc">       <staged-pack project="scaladoc"/> </target>
+  <target name="pack.interactive" depends="quick.interactive"> <staged-pack project="interactive"/> </target>
+  -->
+
   <target name="pack.actors" depends="quick.actors"> <staged-pack project="actors"/> </target>
   <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
 
@@ -1493,14 +1538,16 @@ TODO:
 
   <target name="pack.core" depends="pack.reflect, pack.comp, pack.lib"/>
 
-  <target name="pack.modules" depends="pack.core, pack.actors, pack.swing, pack.plugins, pack.scalap">
+  <!-- TODO modularize compiler: pack.scaladoc, pack.interactive, -->
+  <target name="pack.modules" depends="pack.actors, pack.swing, pack.plugins, pack.scalap">
     <copy todir="${build-pack.dir}/lib">
       <path refid="external-modules-nocore" />
       <mapper type="flatten" />
     </copy>
   </target>
 
-  <target name="scaladoc.task" depends="pack.modules" unless="docs.skip">
+  <!-- depends on pack.core for scaladoc -->
+  <target name="scaladoc.task" depends="pack.core, pack.modules" unless="docs.skip">
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="scaladoc.classpath"/>
   </target>
 
@@ -1557,6 +1604,10 @@ TODO:
 <!-- ===========================================================================
                                   OSGi Artifacts
 ============================================================================ -->
+  <!-- This task takes the output of the pack stage and OSGi-fies the jars based on the bnd files in src/build/bnd
+       This means adding manifests and enforcing the Exports clauses (removing non-exported classes!)
+       These jars are then copied to the distribution and published to maven.
+  -->
   <macrodef name="make-bundle">
     <attribute name="project" />
     <element   name="srcs"        description="Sources for this bundle" optional="true" implicit="true"/>
@@ -1619,11 +1670,12 @@ TODO:
         <fileset dir="${src.dir}/reflect"/>
       </make-bundle>
 
+      <!-- TODO modularize compiler. Remove the other class dirs as soon as they become modules -->
       <make-bundle project="compiler">
         <fileset dir="${src.dir}/compiler"/>
-        <fileset dir="${src.dir}/repl"/>
         <fileset dir="${src.dir}/scaladoc"/>
         <fileset dir="${src.dir}/interactive"/>
+        <fileset dir="${src.dir}/repl"/>
       </make-bundle>
 
       <touch file="${build-osgi.dir}/bundles.core.complete" verbose="no"/>
@@ -1632,10 +1684,16 @@ TODO:
   </target>
 
   <target name="osgi.done" depends="pack.done, osgi.core">
-    <uptodate property="osgi.bundles.available" targetfile="${build-osgi.dir}/bundles.all.complete">
+    <uptodate property="osgi.all.bundles.available" targetfile="${build-osgi.dir}/bundles.all.complete">
       <srcfiles dir="${basedir}">
         <include name="build.xml"/>
         <include name="src/build/bnd/*.bnd"/>
+
+        <!-- TODO modularize compiler
+        <include name="${interactive.jar}"/>
+        <include name="${scaladoc.jar}"/>
+        -->
+
         <include name="${actors.jar}"/>
         <include name="${continuations-plugin.jar}"/>
         <include name="${swing.jar}"/>
@@ -1644,9 +1702,22 @@ TODO:
       </srcfiles>
     </uptodate>
 
-    <if><not><isset property="osgi.bundles.available"/></not><then>
+    <if><not><isset property="osgi.all.bundles.available"/></not><then>
       <stopwatch name="osgi.all.timer"/>
 
+      <!-- TODO modularize compiler
+      TODO: refactor so that we can restrict exported packages to scala.tools.nsc.doc.*
+           move ant task, partest stuff to other jars,
+           and move scala.tools.nsc.ScalaDoc main class to scala.tools.nsc.doc
+      <make-bundle project="scaladoc">
+        <fileset dir="${src.dir}/scaladoc"/>
+      </make-bundle>
+
+      TODO: refactor so that we can restrict exported packages to scala.tools.nsc.interactive.*
+      <make-bundle project="interactive">
+        <fileset dir="${src.dir}/interactive"/>
+      </make-bundle>
+      -->
 
       <make-bundle project="actors">
         <fileset dir="${src.dir}/actors"/>
@@ -1969,6 +2040,20 @@ TODO:
     </staged-docs>
   </target>
 
+  <!-- TODO modularize compiler. These targets are currently not used.
+  <target name="docs.scaladoc" depends="docs.start" unless="docs.skip">
+    <staged-docs project="scaladoc">
+      <include name="**/*.scala"/>
+    </staged-docs>
+  </target>
+
+  <target name="docs.interactive" depends="docs.start" unless="docs.skip">
+    <staged-docs project="interactive">
+      <include name="**/*.scala"/>
+    </staged-docs>
+  </target>
+  -->
+
   <target name="docs.actors" depends="docs.start" unless="docs.skip">
     <staged-docs project="actors">
       <include name="**/*.scala"/>
@@ -2037,6 +2122,7 @@ TODO:
   </target>
 
   <target name="docs.core" depends="docs.lib, docs.reflect, docs.comp" unless="docs.skip"/>
+  <!-- TODO modularize compiler:  docs.scaladoc, docs.interactive, -->
   <target name="docs.done" depends="docs.core, docs.actors, docs.swing, docs.scalap, docs.continuations-plugin, docs.continuations-library" unless="docs.skip"/>
 
 <!-- ===========================================================================
@@ -2095,6 +2181,7 @@ TODO:
     <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scalap"/>
   </target>
+
 
   <target name="dist.doc" depends="dist.base, docs.done">
     <mkdir dir="${dist.dir}/doc/scala-devel-docs"/>
@@ -2256,6 +2343,11 @@ MAIN DISTRIBUTION PACKAGING
   </target>
 
   <target name="pack-maven.base" depends="pack-maven.core, osgi.done, docs.done">
+    <!-- TODO modularize compiler
+    <mvn-package project="interactive"/>
+    <mvn-package project="scaladoc"/>
+    -->
+
     <mvn-package project="swing"/>
     <mvn-package project="actors"/>
     <mvn-package project="continuations-plugin"/>
