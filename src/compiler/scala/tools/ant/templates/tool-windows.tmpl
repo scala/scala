@@ -12,15 +12,18 @@ setlocal enableextensions enabledelayedexpansion
 
 set _LINE_TOOLCP=
 
-:another_param
-
 rem Use "%~1" to handle spaces in paths. See http://ss64.com/nt/syntax-args.html
-if "%~1"=="-toolcp" (
-    set _LINE_TOOLCP=%~2
-	shift
-	shift
-	goto another_param
+rem SI-7295 The goto here is needed to avoid problems with `scala Script.cmd "arg(with)paren"`,
+rem         we must not evaluate %~2 eagerly, but delayed expansion doesn't seem to allow
+rem         removal of quotation marks.
+if not [%~1]==[-toolcp] (
+  goto :notoolcp
 )
+shift
+set _LINE_TOOLCP=%~1
+shift
+
+:notoolcp
 
 rem We keep in _JAVA_PARAMS all -J-prefixed and -D-prefixed arguments
 set _JAVA_PARAMS=
