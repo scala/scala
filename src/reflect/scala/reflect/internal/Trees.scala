@@ -1804,6 +1804,12 @@ trait Trees extends api.Trees {
     case t =>
       sys.error("Not a LabelDef: " + t + "/" + t.getClass)
   }
+  def deriveFunction(func: Tree)(applyToRhs: Tree => Tree): Function = func match {
+    case Function(params0, rhs0) =>
+      treeCopy.Function(func, params0, applyToRhs(rhs0))
+    case t =>
+      sys.error("Not a Function: " + t + "/" + t.getClass)
+  }
 
 // -------------- Classtags --------------------------------------------------------
 
