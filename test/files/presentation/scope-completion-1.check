@@ -1,0 +1,19 @@
+reload: Completions.scala
+
+askScopeCompletion at Completions.scala(6,2)
+================================================================================
+[response] askScopeCompletion at (6,2)
+retrieved 3 members
+[accessible:  true] `class Completion1test.Completion1`
+[accessible:  true] `constructor Completion1()test.Completion1`
+[accessible:  true] `object Completion2test.Completion2.type`
+================================================================================
+
+askScopeCompletion at Completions.scala(10,2)
+================================================================================
+[response] askScopeCompletion at (10,2)
+retrieved 3 members
+[accessible:  true] `class Completion1test.Completion1`
+[accessible:  true] `constructor Completion2()test.Completion2.type`
+[accessible:  true] `object Completion2test.Completion2.type`
+================================================================================
