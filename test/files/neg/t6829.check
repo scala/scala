@@ -16,15 +16,35 @@ t6829.scala:49: error: not found: value nextState
         val (s,a,s2) = (state,actions(agent),nextState)
                                              ^
 t6829.scala:50: error: type mismatch;
- found   : s.type (with underlying type Any)
+ found   : s.type (with underlying type T1)
  required: _53.State where val _53: G
         val r = rewards(agent).r(s,a,s2)
                                  ^
+t6829.scala:50: error: type mismatch;
+ found   : a.type (with underlying type T2)
+ required: _53.Action where val _53: G
+        val r = rewards(agent).r(s,a,s2)
+                                   ^
+t6829.scala:50: error: type mismatch;
+ found   : s2.type (with underlying type T3)
+ required: _53.State where val _53: G
+        val r = rewards(agent).r(s,a,s2)
+                                     ^
 t6829.scala:51: error: type mismatch;
- found   : s.type (with underlying type Any)
+ found   : s.type (with underlying type T1)
  required: _50.State
         agent.learn(s,a,s2,r): G#Agent
                     ^
+t6829.scala:51: error: type mismatch;
+ found   : a.type (with underlying type T2)
+ required: _50.Action
+        agent.learn(s,a,s2,r): G#Agent
+                      ^
+t6829.scala:51: error: type mismatch;
+ found   : s2.type (with underlying type T3)
+ required: _50.State
+        agent.learn(s,a,s2,r): G#Agent
+                        ^
 t6829.scala:53: error: not found: value nextState
 Error occurred in an application involving default arguments.
       copy(agents = updatedAgents, state = nextState, pastHistory = currentHistory)
@@ -33,4 +53,4 @@ t6829.scala:53: error: not found: value currentHistory
 Error occurred in an application involving default arguments.
       copy(agents = updatedAgents, state = nextState, pastHistory = currentHistory)
                                                                     ^
-9 errors found
+13 errors found

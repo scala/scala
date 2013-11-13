@@ -18,6 +18,7 @@ import util.Statistics
 import util.ThreeValues._
 import Variance._
 import Depth._
+import TypeConstants._
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -90,10 +91,6 @@ trait Types
   private var explainSwitch = false
   private final val emptySymbolSet = immutable.Set.empty[Symbol]
 
-  protected[internal] final val DefaultLogThreshhold = 50
-  private final val LogPendingBaseTypesThreshold = DefaultLogThreshhold
-  private final val LogVolatileThreshold = DefaultLogThreshhold
-
   private final val traceTypeVars = sys.props contains "scalac.debug.tvar"
   private final val breakCycles = settings.breakCycles.value
   /** In case anyone wants to turn off type parameter bounds being used
@@ -118,14 +115,17 @@ trait Types
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
    */
-  var skolemizationLevel = 0
+  private var _skolemizationLevel = 0
+  def skolemizationLevel = _skolemizationLevel
+  def skolemizationLevel_=(value: Int) = _skolemizationLevel = value
 
   /** A map from lists to compound types that have the given list as parents.
    *  This is used to avoid duplication in the computation of base type sequences and baseClasses.
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  val intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
+  private val _intersectionWitness = perRunCaches.newWeakMap[List[Type], WeakReference[Type]]()
+  def intersectionWitness = _intersectionWitness
 
   /** A proxy for a type (identified by field `underlying`) that forwards most
    *  operations to it (for exceptions, see WrappingProxy, which forwards even more operations).
@@ -142,8 +142,6 @@ trait Types
     override def typeConstructor: Type = underlying.typeConstructor
     override def isError = underlying.isError
     override def isErroneous = underlying.isErroneous
-    override def isStable: Boolean = underlying.isStable
-    override def isVolatile = underlying.isVolatile
     override def paramSectionCount = underlying.paramSectionCount
     override def paramss = underlying.paramss
     override def params = underlying.params
@@ -270,7 +268,7 @@ trait Types
     def takesTypeArgs: Boolean = this.isHigherKinded
 
     /** Does this type denote a stable reference (i.e. singleton type)? */
-    def isStable: Boolean = false
+    final def isStable: Boolean = definitions isStable this
 
     /** Is this type dangerous (i.e. it might contain conflicting
      *  type information when empty, so that it can be constructed
@@ -278,7 +276,7 @@ trait Types
      *  type of the form T_1 with T_n { decls }, where one of the
      *  T_i (i > 1) is an abstract type.
      */
-    def isVolatile: Boolean = false
+    final def isVolatile: Boolean = definitions isVolatile this
 
     /** Is this type a structural refinement type (it ''refines'' members that have not been inherited) */
     def isStructuralRefinement: Boolean = false
@@ -536,8 +534,6 @@ trait Types
       else if (this ne betaReduce) betaReduce.dealiasWidenChain
       else Nil
     )
-
-    def etaExpand: Type = this
 
     /** Performs a single step of beta-reduction on types.
      *  Given:
@@ -981,6 +977,18 @@ trait Types
       else (baseClasses.head.newOverloaded(this, alts))
     }
 
+    /** Find all members meeting the flag requirements.
+     *
+     * If you require a DEFERRED member, you will get it if it exists -- even if there's an overriding concrete member.
+     * If you exclude DEFERRED members, or don't specify any requirements,
+     *    you won't get deferred members (whether they have an overriding concrete member or not)
+     *
+     * Thus, findMember requiring DEFERRED flags yields deferred members,
+     * while `findMember(excludedFlags = 0, requiredFlags = 0).filter(_.isDeferred)` may not (if there's a corresponding concrete member)
+     *
+     * Requirements take precedence over exclusions, so requiring and excluding DEFERRED will yield a DEFERRED member (if there is one).
+     *
+     */
     def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
       def findMembersInternal: Scope = {
         var members: Scope = null
@@ -990,10 +998,10 @@ trait Types
         //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
         var required = requiredFlags
         var excluded = excludedFlags | DEFERRED
-        var continue = true
+        var retryForDeferred = true
         var self: Type = null
-        while (continue) {
-          continue = false
+        while (retryForDeferred) {
+          retryForDeferred = false
           val bcs0 = baseClasses
           var bcs = bcs0
           while (!bcs.isEmpty) {
@@ -1025,7 +1033,7 @@ trait Types
                   }
                   if (others eq null) members enter sym
                 } else if (excl == DEFERRED) {
-                  continue = true
+                  retryForDeferred = (excludedFlags & DEFERRED) == 0
                 }
               }
               entry = entry.next
@@ -1035,7 +1043,7 @@ trait Types
           } // while (!bcs.isEmpty)
           required |= DEFERRED
           excluded &= ~(DEFERRED.toLong)
-        } // while (continue)
+        } // while (retryForDeferred)
         if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
         if (members eq null) EmptyScope else members
       }
@@ -1223,8 +1231,6 @@ trait Types
   abstract class SingletonType extends SubType with SimpleTypeProxy {
     def supertype = underlying
     override def isTrivial = false
-    override def isStable = true
-    override def isVolatile = underlying.isVolatile
     override def widen: Type = underlying.widen
     override def baseTypeSeq: BaseTypeSeq = {
       if (Statistics.canEnable) Statistics.incCounter(singletonBaseTypeSeqCount)
@@ -1302,7 +1308,6 @@ trait Types
   /** An object representing a non-existing prefix */
   case object NoPrefix extends Type {
     override def isTrivial: Boolean = true
-    override def isStable: Boolean = true
     override def prefixString = ""
     override def safeToString: String = "<noprefix>"
     override def kind = "NoPrefixType"
@@ -1320,7 +1325,6 @@ trait Types
     override def isTrivial: Boolean = sym.isPackageClass
     override def typeSymbol = sym
     override def underlying: Type = sym.typeOfThis
-    override def isVolatile = false
     override def isHigherKinded = sym.isRefinementClass && underlying.isHigherKinded
     override def prefixString =
       if (settings.debug) sym.nameString + ".this."
@@ -1369,8 +1373,6 @@ trait Types
 
     // more precise conceptually, but causes cyclic errors:    (paramss exists (_ contains sym))
     override def isImmediatelyDependent = (sym ne NoSymbol) && (sym.owner.isMethod && sym.isValueParameter)
-
-    override def isVolatile : Boolean = underlying.isVolatile && (sym.hasVolatileType || !sym.isStable)
 /*
     override def narrow: Type = {
       if (phase.erasedTypes) this
@@ -1481,6 +1483,14 @@ trait Types
     def lower(lo: Type): TypeBounds = apply(lo, AnyTpe)
     def apply(lo: Type, hi: Type): TypeBounds = {
       unique(new UniqueTypeBounds(lo, hi)).asInstanceOf[TypeBounds]
+    }
+  }
+
+  object CompoundType {
+    def unapply(tp: Type): Option[(List[Type], Scope, Symbol)] = tp match {
+      case ClassInfoType(parents, decls, clazz) => Some((parents, decls, clazz))
+      case RefinedType(parents, decls)          => Some((parents, decls, tp.typeSymbol))
+      case _                                    => None
     }
   }
 
@@ -1766,33 +1776,6 @@ trait Types
             typeSymbol))
       } else super.normalize
     }
-
-    /** A refined type P1 with ... with Pn { decls } is volatile if
-     *  one of the parent types Pi is an abstract type, and
-     *  either i > 1, or decls or a following parent Pj, j > 1, contributes
-     *  an abstract member.
-     *  A type contributes an abstract member if it has an abstract member which
-     *  is also a member of the whole refined type. A scope `decls` contributes
-     *  an abstract member if it has an abstract definition which is also
-     *  a member of the whole type.
-     */
-    override def isVolatile = {
-      def isVisible(m: Symbol) =
-        this.nonPrivateMember(m.name).alternatives contains m
-      def contributesAbstractMembers(p: Type) =
-        p.deferredMembers exists isVisible
-
-      ((parents exists (_.isVolatile))
-       ||
-       (parents dropWhile (! _.typeSymbol.isAbstractType) match {
-         case ps @ (_ :: ps1) =>
-           (ps ne parents) ||
-           (ps1 exists contributesAbstractMembers) ||
-           (decls.iterator exists (m => m.isDeferred && isVisible(m)))
-         case _ =>
-           false
-       }))
-    }
     override def kind = "RefinedType"
   }
 
@@ -1994,12 +1977,12 @@ trait Types
     def apply(value: Constant) = unique(new UniqueConstantType(value))
   }
 
-  /* Syncnote: The `volatile` var and `pendingVolatiles` mutable set need not be protected
-   * with synchronized, because they are accessed only from isVolatile, which is called only from
-   * Typer.
-   */
-  private var volatileRecursions: Int = 0
-  private val pendingVolatiles = new mutable.HashSet[Symbol]
+  private var _volatileRecursions: Int = 0
+  def volatileRecursions = _volatileRecursions
+  def volatileRecursions_=(value: Int) = _volatileRecursions = value
+
+  private val _pendingVolatiles = new mutable.HashSet[Symbol]
+  def pendingVolatiles = _pendingVolatiles
 
   class ArgsTypeRef(pre0: Type, sym0: Symbol, args0: List[Type]) extends TypeRef(pre0, sym0, args0) {
     require(args0.nonEmpty, this)
@@ -2028,7 +2011,6 @@ trait Types
   class ModuleTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
     require(sym.isModuleClass, sym)
     private[this] var narrowedCache: Type = _
-    override def isStable = pre.isStable
     override def narrow = {
       if (narrowedCache eq null)
         narrowedCache = singleType(pre, sym.sourceModule)
@@ -2043,7 +2025,6 @@ trait Types
   }
   class PackageTypeRef(pre0: Type, sym0: Symbol) extends ModuleTypeRef(pre0, sym0) {
     require(sym.isPackageClass, sym)
-    override def isStable = true
     override protected def finishPrefix(rest: String) = packagePrefix + rest
   }
   class RefinementTypeRef(pre0: Type, sym0: Symbol) extends NoArgsTypeRef(pre0, sym0) with ClassTypeRef {
@@ -2150,8 +2131,6 @@ trait Types
     require(sym.isAliasType, sym)
 
     override def dealias    = if (typeParamsMatchArgs) betaReduce.dealias else super.dealias
-    override def isStable   = normalize.isStable
-    override def isVolatile = normalize.isVolatile
     override def narrow     = normalize.narrow
     override def thisInfo   = normalize
     override def prefix     = if (this ne normalize) normalize.prefix else pre
@@ -2206,30 +2185,6 @@ trait Types
     private var symInfoCache: Type = _
     private var thisInfoCache: Type = _
 
-    override def isVolatile = {
-      // need to be careful not to fall into an infinite recursion here
-      // because volatile checking is done before all cycles are detected.
-      // the case to avoid is an abstract type directly or
-      // indirectly upper-bounded by itself. See #2918
-      try {
-        volatileRecursions += 1
-        if (volatileRecursions < LogVolatileThreshold)
-          bounds.hi.isVolatile
-        else if (pendingVolatiles(sym))
-          true // we can return true here, because a cycle will be detected
-               // here afterwards and an error will result anyway.
-        else
-          try {
-            pendingVolatiles += sym
-            bounds.hi.isVolatile
-          } finally {
-            pendingVolatiles -= sym
-          }
-      } finally {
-        volatileRecursions -= 1
-      }
-    }
-
     override def thisInfo   = {
       val symInfo = sym.info
       if (thisInfoCache == null || (symInfo ne symInfoCache)) {
@@ -2244,7 +2199,6 @@ trait Types
       }
       thisInfoCache
     }
-    override def isStable = bounds.hi.typeSymbol isSubClass SingletonClass
     override def bounds   = thisInfo.bounds
     override protected[Types] def baseTypeSeqImpl: BaseTypeSeq = transform(bounds.hi).baseTypeSeq prepend this
     override def kind = "AbstractTypeRef"
@@ -2309,7 +2263,7 @@ trait Types
       || pre.isGround && args.forall(_.isGround)
     )
 
-    override def etaExpand: Type = {
+    def etaExpand: Type = {
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
       if (tpars.isEmpty) this
@@ -2330,7 +2284,6 @@ trait Types
 
     override def baseClasses      = thisInfo.baseClasses
     override def baseTypeSeqDepth = baseTypeSeq.maxDepth
-    override def isStable         = (sym eq NothingClass) || (sym eq SingletonClass)
     override def prefix           = pre
     override def termSymbol       = super.termSymbol
     override def termSymbolDirect = super.termSymbol
@@ -2443,7 +2396,8 @@ trait Types
       else
         super.prefixString
     )
-    def copy(pre: Type = this.pre, sym: Symbol = this.sym, args: List[Type] = this.args) = TypeRef(pre, sym, args)
+    // Suppressing case class copy method which risks subverting our single point of creation.
+    private def copy = null
     override def kind = "TypeRef"
   }
 
@@ -2596,7 +2550,6 @@ trait Types
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def boundSyms = resultType.boundSyms
-    override def isVolatile = resultType.isVolatile
     override def safeToString: String = "=> "+ resultType
     override def kind = "NullaryMethodType"
   }
@@ -2635,7 +2588,6 @@ trait Types
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
     override def narrow: Type = resultType.narrow
-    override def isVolatile = resultType.isVolatile
 
     /** @M: typeDefSig wraps a TypeBounds in a PolyType
      *  to represent a higher-kinded type parameter
@@ -2680,7 +2632,6 @@ trait Types
     override protected def rewrap(newtp: Type) = existentialAbstraction(quantified, newtp)
 
     override def isTrivial = false
-    override def isStable: Boolean = false
     override def bounds = TypeBounds(maybeRewrap(underlying.bounds.lo), maybeRewrap(underlying.bounds.hi))
     override def parents = underlying.parents map maybeRewrap
     override def boundSyms = quantified.toSet
@@ -3240,8 +3191,6 @@ trait Types
       else super.normalize
     )
     override def typeSymbol = origin.typeSymbol
-    override def isStable = origin.isStable
-    override def isVolatile = origin.isVolatile
 
     private def tparamsOfSym(sym: Symbol) = sym.info match {
       case PolyType(tparams, _) if tparams.nonEmpty =>
@@ -3367,6 +3316,13 @@ trait Types
 
   object AnnotatedType extends AnnotatedTypeExtractor
 
+  object StaticallyAnnotatedType {
+    def unapply(tp: Type): Option[(List[AnnotationInfo], Type)] = tp.staticAnnotations match {
+      case Nil    => None
+      case annots => Some((annots, tp.withoutAnnotations))
+    }
+  }
+
   /** A class representing types with a name. When an application uses
    *  named arguments, the named argument types for calling isApplicable
    *  are represented as NamedType.
@@ -3385,18 +3341,25 @@ trait Types
   /** A temporary type representing the erasure of a user-defined value type.
    *  Created during phase erasure, eliminated again in posterasure.
    *
-   *  @param   original  The underlying type before erasure
+   *  SI-6385 Erasure's creation of bridges considers method signatures `exitingErasure`,
+   *          which contain `ErasedValueType`-s. In order to correctly consider the overriding
+   *          and overriden signatures as equivalent in `run/t6385.scala`, it is critical that
+   *          this type contains the erasure of the wrapped type, rather than the unerased type
+   *          of the value class itself, as was originally done.
+   *
+   *  @param   valueClazz        The value class symbol
+   *  @param   erasedUnderlying  The erased type of the unboxed value
    */
-  abstract case class ErasedValueType(original: TypeRef) extends UniqueType {
-    override def safeToString = "ErasedValueType("+original+")"
+  abstract case class ErasedValueType(valueClazz: Symbol, erasedUnderlying: Type) extends UniqueType {
+    override def safeToString = s"ErasedValueType($valueClazz, $erasedUnderlying)"
   }
 
-  final class UniqueErasedValueType(original: TypeRef) extends ErasedValueType(original)
+  final class UniqueErasedValueType(valueClazz: Symbol, erasedUnderlying: Type) extends ErasedValueType(valueClazz, erasedUnderlying)
 
   object ErasedValueType {
-    def apply(original: TypeRef): Type = {
-      assert(original.sym ne NoSymbol, "ErasedValueType over NoSymbol")
-      unique(new UniqueErasedValueType(original))
+    def apply(valueClazz: Symbol, erasedUnderlying: Type): Type = {
+      assert(valueClazz ne NoSymbol, "ErasedValueType over NoSymbol")
+      unique(new UniqueErasedValueType(valueClazz, erasedUnderlying))
     }
   }
 
@@ -3429,7 +3392,11 @@ trait Types
   /** Rebind symbol `sym` to an overriding member in type `pre`. */
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     if (!sym.isOverridableMember || sym.owner == pre.typeSymbol) sym
-    else pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || (sym.isStable && !sym.hasVolatileType)) orElse sym
+    else pre.nonPrivateMember(sym.name).suchThat(sym =>
+      // SI-7928 `isModuleNotMethod` is here to avoid crashing with overloaded module accessor and module symbols
+      //         after refchecks eliminates a ModuleDef that implements and interface.
+      sym.isType || (!sym.isModuleNotMethod && sym.isStable && !sym.hasVolatileType)
+    ) orElse sym
   }
 
   /** Convert a `super` prefix to a this-type if `sym` is abstract or final. */
@@ -3994,9 +3961,12 @@ trait Types
    */
   final def hasLength(xs: List[_], len: Int) = xs.lengthCompare(len) == 0
 
-  private var basetypeRecursions: Int = 0
-  private val pendingBaseTypes = new mutable.HashSet[Type]
+  private var _basetypeRecursions: Int = 0
+  def basetypeRecursions = _basetypeRecursions
+  def basetypeRecursions_=(value: Int) = _basetypeRecursions = value
 
+  private val _pendingBaseTypes = new mutable.HashSet[Type]
+  def pendingBaseTypes = _pendingBaseTypes
 
   /** Does this type have a prefix that begins with a type variable,
    *  or is it a refinement type? For type prefixes that fulfil this condition,
@@ -4496,7 +4466,9 @@ trait Types
   }
 
   /** The current indentation string for traces */
-  protected[internal] var indent: String = ""
+  private var _indent: String = ""
+  protected def indent = _indent
+  protected def indent_=(value: String) = _indent = value
 
   /** Perform operation `p` on arguments `tp1`, `arg2` and print trace of computation. */
   protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {
@@ -4575,7 +4547,7 @@ trait Types
   private[scala] val typeIsNonClassType = (tp: Type) => tp.typeSymbolDirect.isNonClassType
   private[scala] val typeIsExistentiallyBound = (tp: Type) => tp.typeSymbol.isExistentiallyBound
   private[scala] val typeIsErroneous = (tp: Type) => tp.isErroneous
-  private[scala] val typeIsError = (tp: Type) => tp.isError
+  private[scala] val symTypeIsError = (sym: Symbol) => sym.tpe.isError
   private[scala] val typeHasAnnotations = (tp: Type) => tp.annotations.nonEmpty
   private[scala] val boundsContainType = (bounds: TypeBounds, tp: Type) => bounds containsType tp
   private[scala] val typeListIsEmpty = (ts: List[Type]) => ts.isEmpty
@@ -4595,9 +4567,6 @@ trait Types
     case ExistentialType(tparams, result) => typeDepth(result) max symTypeDepth(tparams).incr
     case _                                => Depth(1)
   }
-
-  def withUncheckedVariance(tp: Type): Type =
-    tp withAnnotation (AnnotationInfo marker uncheckedVarianceClass.tpe)
 
   //OPT replaced with tailrecursive function to save on #closures
   // was:
@@ -4653,6 +4622,12 @@ trait Types
 
   Statistics.newView("#unique types") { if (uniques == null) 0 else uniques.size }
 
+}
+
+object TypeConstants {
+  final val DefaultLogThreshhold         = 50
+  final val LogPendingBaseTypesThreshold = DefaultLogThreshhold
+  final val LogVolatileThreshold         = DefaultLogThreshhold
 }
 
 object TypesStats {

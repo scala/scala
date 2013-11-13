@@ -9,10 +9,8 @@ package model
 
 import base.comment._
 
-import reporters.Reporter
 import scala.collection._
-import scala.reflect.internal.util.{NoPosition, Position}
-import scala.language.postfixOps
+import scala.reflect.internal.util.Position
 
 /** The comment parser transforms raw comment strings into `Comment` objects.
   * Call `parse` to run the parser. Note that the parser is stateless and
@@ -24,7 +22,7 @@ trait CommentFactory extends base.CommentFactoryBase {
   thisFactory: ModelFactory with CommentFactory with MemberLookup =>
 
   val global: Global
-  import global.{ reporter, definitions, Symbol, NoSymbol }
+  import global.{ Symbol, NoSymbol }
 
   protected val commentCache = mutable.HashMap.empty[(Symbol, DocTemplateImpl), Option[Comment]]
 
@@ -83,7 +81,7 @@ trait CommentFactory extends base.CommentFactoryBase {
   }
 
   protected def parse(comment: String, src: String, pos: Position, linkTarget: DocTemplateImpl): Comment = {
-    val sym = if (linkTarget eq null) NoSymbol else linkTarget.sym 
+    val sym = if (linkTarget eq null) NoSymbol else linkTarget.sym
     parseAtSymbol(comment, src, pos, sym)
   }
 
@@ -94,7 +92,7 @@ trait CommentFactory extends base.CommentFactoryBase {
     *  - Removed all end-of-line whitespace.
     *  - Only `endOfLine` is used to mark line endings. */
   def parseWiki(string: String, pos: Position, inTpl: DocTemplateImpl): Body = {
-    val sym = if (inTpl eq null) NoSymbol else inTpl.sym 
+    val sym = if (inTpl eq null) NoSymbol else inTpl.sym
     parseWikiAtSymbol(string,pos, sym)
   }
 }

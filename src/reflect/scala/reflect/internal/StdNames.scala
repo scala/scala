@@ -91,7 +91,6 @@ trait StdNames {
 
     val NAME_JOIN_STRING: String              = NameTransformer.NAME_JOIN_STRING
     val MODULE_SUFFIX_STRING: String          = NameTransformer.MODULE_SUFFIX_STRING
-    val SETTER_SUFFIX_STRING: String          = NameTransformer.SETTER_SUFFIX_STRING
     val LOCAL_SUFFIX_STRING: String           = NameTransformer.LOCAL_SUFFIX_STRING
     val TRAIT_SETTER_SEPARATOR_STRING: String = NameTransformer.TRAIT_SETTER_SEPARATOR_STRING
 
@@ -215,6 +214,7 @@ trait StdNames {
     final val WILDCARD_STAR: NameType                  = "_*"
     final val REIFY_TREECREATOR_PREFIX: NameType       = "$treecreator"
     final val REIFY_TYPECREATOR_PREFIX: NameType       = "$typecreator"
+    final val MACRO_BUNDLE_SUFFIX: NameType            = "$Bundle"
 
     final val Any: NameType             = "Any"
     final val AnyVal: NameType          = "AnyVal"
@@ -224,7 +224,6 @@ trait StdNames {
     final val Nothing: NameType         = "Nothing"
     final val Null: NameType            = "Null"
     final val Object: NameType          = "Object"
-    final val Option: NameType          = "Option"
     final val PrefixType: NameType      = "PrefixType"
     final val Product: NameType         = "Product"
     final val Serializable: NameType    = "Serializable"
@@ -245,16 +244,15 @@ trait StdNames {
     final val Type : NameType               = "Type"
     final val TypeName: NameType            = "TypeName"
     final val TypeDef: NameType             = "TypeDef"
-    final val Tuple: NameType               = "Tuple"
-    final val Universe: NameType            = "Universe"
     final val Quasiquote: NameType          = "Quasiquote"
 
     // quasiquote-specific names
-    final val QUASIQUOTE_MODS: NameType        = "$quasiquote$mods$"
-    final val QUASIQUOTE_TUPLE: NameType       = "$quasiquote$tuple$"
-    final val QUASIQUOTE_FUNCTION: NameType    = "$quasiquote$function$"
-    final val QUASIQUOTE_REFINE_STAT: NameType = "$quasiquote$refine$stat$"
-    final val QUASIQUOTE_EARLY_DEF: NameType   = "$quasiquote$early$def$"
+    final val QUASIQUOTE_MODS: NameType         = "$quasiquote$mods$"
+    final val QUASIQUOTE_TUPLE: NameType        = "$quasiquote$tuple$"
+    final val QUASIQUOTE_FUNCTION: NameType     = "$quasiquote$function$"
+    final val QUASIQUOTE_REFINE_STAT: NameType  = "$quasiquote$refine$stat$"
+    final val QUASIQUOTE_EARLY_DEF: NameType    = "$quasiquote$early$def$"
+    final val QUASIQUOTE_PACKAGE_STAT: NameType = "$quasiquote$package$stat$"
 
     // Annotation simple names, used in Namer
     final val BeanPropertyAnnot: NameType = "BeanProperty"
@@ -269,14 +267,14 @@ trait StdNames {
     final val DeprecatedATTR: NameType             = "Deprecated"
     final val ExceptionsATTR: NameType             = "Exceptions"
     final val InnerClassesATTR: NameType           = "InnerClasses"
-    final val LocalVariableTableATTR: NameType     = "LocalVariableTable"
     final val RuntimeAnnotationATTR: NameType      = "RuntimeVisibleAnnotations"   // RetentionPolicy.RUNTIME
-    final val RuntimeParamAnnotationATTR: NameType = "RuntimeVisibleParameterAnnotations" // RetentionPolicy.RUNTIME (annotations on parameters)
     final val ScalaATTR: NameType                  = "Scala"
     final val ScalaSignatureATTR: NameType         = "ScalaSig"
     final val SignatureATTR: NameType              = "Signature"
     final val SourceFileATTR: NameType             = "SourceFile"
     final val SyntheticATTR: NameType              = "Synthetic"
+
+    final val scala_ : NameType = "scala"
 
     def dropSingletonName(name: Name): TypeName = (name dropRight SINGLETON_SUFFIX.length).toTypeName
     def singletonName(name: Name): TypeName     = (name append SINGLETON_SUFFIX).toTypeName
@@ -313,9 +311,6 @@ trait StdNames {
     val FAKE_LOCAL_THIS: NameType          = "this$"
     val LAZY_LOCAL: NameType               = "$lzy"
     val LAZY_SLOW_SUFFIX: NameType         = "$lzycompute"
-    val MACRO_INVOKER_PACKAGE: NameType    = "scala.reflect.macros.synthetic"
-    // TODO: if I use dollars in MACRO_INVOKER_SUFFIX, as in "$Invoker$", then Scala reflection fails to load implementations
-    val MACRO_INVOKER_SUFFIX: NameType     = "Invoker"
     val UNIVERSE_BUILD_PREFIX: NameType    = "$u.build."
     val UNIVERSE_PREFIX: NameType          = "$u."
     val UNIVERSE_SHORT: NameType           = "$u"
@@ -327,6 +322,7 @@ trait StdNames {
     val REIFY_FREE_VALUE_SUFFIX: NameType  = "$value"
     val REIFY_SYMDEF_PREFIX: NameType      = "symdef$"
     val QUASIQUOTE_PREFIX: String          = "qq$"
+    val QUASIQUOTE_NAME_PREFIX: String     = "nn$"
     val QUASIQUOTE_FILE: String            = "<quasiquote>"
     val QUASIQUOTE_TUPLE: NameType         = "$quasiquote$tuple$"
     val QUASIQUOTE_CASE: NameType          = "$quasiquote$case$"
@@ -401,11 +397,6 @@ trait StdNames {
         name drop idx + 2
     }
 
-    @deprecated("Use SPECIALIZED_SUFFIX", "2.10.0")
-    def SPECIALIZED_SUFFIX_STRING = SPECIALIZED_SUFFIX.toString
-    @deprecated("Use SPECIALIZED_SUFFIX", "2.10.0")
-    def SPECIALIZED_SUFFIX_NAME: TermName = SPECIALIZED_SUFFIX.toTermName
-
     @deprecated("Use unexpandedName", "2.11.0") def originalName(name: Name): Name            = unexpandedName(name)
     @deprecated("Use Name#dropModule", "2.11.0") def stripModuleSuffix(name: Name): Name      = name.dropModule
     @deprecated("Use Name#dropLocal", "2.11.0") def localToGetter(name: TermName): TermName   = name.dropLocal
@@ -420,11 +411,8 @@ trait StdNames {
      */
     def unspecializedName(name: Name): Name = (
       // DUPLICATED LOGIC WITH `splitSpecializedName`
-      if (name endsWith SPECIALIZED_SUFFIX) {
-        val idxM = name.lastIndexOf('m')
-        val to = (if (idxM > 0) idxM - 1 else name.length - SPECIALIZED_SUFFIX.length)
-        name.subName(0, to)
-      }
+      if (name endsWith SPECIALIZED_SUFFIX)
+        name.subName(0, name.lastIndexOf('m') - 1)
       else name
     )
 
@@ -439,19 +427,18 @@ trait StdNames {
     *
     *  @return (unspecializedName, class tparam specializations, method tparam specializations)
     */
-    def splitSpecializedName(name: Name): (Name, String, String) = {
+    def splitSpecializedName(name: Name): (Name, String, String) =
       // DUPLICATED LOGIC WITH `unspecializedName`
-      if (name endsWith SPECIALIZED_SUFFIX) {
-        val name1 = name dropRight SPECIALIZED_SUFFIX.length
-        val idxC  = name1 lastIndexOf 'c'
-        val idxM  = name1 lastIndexOf 'm'
-        if (idxC > idxM && idxM > 0)
-          (name1.subName(0, idxM - 1), name1.subName(idxC + 1, name1.length).toString, name1.subName(idxM + 1, idxC).toString)
-        else
-          (name.subName(0, name.length - SPECIALIZED_SUFFIX.length), "", "")
-      }
-      else (name, "", "")
-    }
+    if (name endsWith SPECIALIZED_SUFFIX) {
+      val name1 = name dropRight SPECIALIZED_SUFFIX.length
+      val idxC  = name1 lastIndexOf 'c'
+      val idxM  = name1 lastIndexOf 'm'
+
+      (name1.subName(0, idxM - 1),
+      name1.subName(idxC + 1, name1.length).toString,
+      name1.subName(idxM + 1, idxC).toString)
+    } else
+    (name, "", "")
 
     // Nominally, name$default$N, encoded for <init>
     def defaultGetterName(name: Name, pos: Int): TermName = (
@@ -576,13 +563,10 @@ trait StdNames {
     val Annotation: NameType           = "Annotation"
     val Any: NameType                  = "Any"
     val AnyVal: NameType               = "AnyVal"
-    val Apply: NameType                = "Apply"
     val ArrayAnnotArg: NameType        = "ArrayAnnotArg"
-    val Block: NameType                = "Block"
     val ConstantType: NameType         = "ConstantType"
     val EmptyPackage: NameType         = "EmptyPackage"
     val EmptyPackageClass: NameType    = "EmptyPackageClass"
-    val False : NameType               = "False"
     val Flag : NameType                = "Flag"
     val FlagsRepr: NameType            = "FlagsRepr"
     val Ident: NameType                = "Ident"
@@ -591,7 +575,6 @@ trait StdNames {
     val LiteralAnnotArg: NameType      = "LiteralAnnotArg"
     val Modifiers: NameType            = "Modifiers"
     val NestedAnnotArg: NameType       = "NestedAnnotArg"
-    val New: NameType                  = "New"
     val NoFlags: NameType              = "NoFlags"
     val NoSymbol: NameType             = "NoSymbol"
     val NoMods: NameType               = "NoMods"
@@ -603,13 +586,15 @@ trait StdNames {
     val Select: NameType               = "Select"
     val SelectFromTypeTree: NameType   = "SelectFromTypeTree"
     val SyntacticApplied: NameType     = "SyntacticApplied"
+    val SyntacticApply: NameType       = "SyntacticApply"
     val SyntacticAssign: NameType      = "SyntacticAssign"
     val SyntacticBlock: NameType       = "SyntacticBlock"
     val SyntacticClassDef: NameType    = "SyntacticClassDef"
     val SyntacticDefDef: NameType      = "SyntacticDefDef"
     val SyntacticFunction: NameType    = "SyntacticFunction"
-    val SyntacticFunctionType: NameType= "SyntacticFunctionType"
-    val SyntacticModuleDef: NameType   = "SyntacticModuleDef"
+    val SyntacticFunctionType: NameType = "SyntacticFunctionType"
+    val SyntacticPackageObjectDef: NameType = "SyntacticPackageObjectDef"
+    val SyntacticObjectDef: NameType   = "SyntacticObjectDef"
     val SyntacticNew: NameType         = "SyntacticNew"
     val SyntacticTraitDef: NameType    = "SyntacticTraitDef"
     val SyntacticTuple: NameType       = "SyntacticTuple"
@@ -619,12 +604,12 @@ trait StdNames {
     val SyntacticVarDef: NameType      = "SyntacticVarDef"
     val This: NameType                 = "This"
     val ThisType: NameType             = "ThisType"
-    val True : NameType                = "True"
     val Tuple2: NameType               = "Tuple2"
     val TYPE_ : NameType               = "TYPE"
     val TypeRef: NameType              = "TypeRef"
     val TypeTree: NameType             = "TypeTree"
     val UNIT : NameType                = "UNIT"
+    val accessor: NameType             = "accessor"
     val add_ : NameType                = "add"
     val annotation: NameType           = "annotation"
     val anyValClass: NameType          = "anyValClass"
@@ -648,12 +633,10 @@ trait StdNames {
     val bytes: NameType                = "bytes"
     val c: NameType                    = "c"
     val canEqual_ : NameType           = "canEqual"
-    val checkInitialized: NameType     = "checkInitialized"
     val classOf: NameType              = "classOf"
     val clone_ : NameType              = "clone"
     val collection: NameType           = "collection"
     val conforms: NameType             = "conforms"
-    val compare: NameType              = "compare"
     val copy: NameType                 = "copy"
     val create: NameType               = "create"
     val currentMirror: NameType        = "currentMirror"
@@ -678,8 +661,6 @@ trait StdNames {
     val finalize_ : NameType           = "finalize"
     val find_ : NameType               = "find"
     val flatMap: NameType              = "flatMap"
-    val flatten: NameType              = "flatten"
-    val foldLeft: NameType             = "foldLeft"
     val foreach: NameType              = "foreach"
     val get: NameType                  = "get"
     val hashCode_ : NameType           = "hashCode"
@@ -691,7 +672,6 @@ trait StdNames {
     val inlinedEquals: NameType        = "inlinedEquals"
     val isArray: NameType              = "isArray"
     val isDefinedAt: NameType          = "isDefinedAt"
-    val isEmpty: NameType              = "isEmpty"
     val isInstanceOf_ : NameType       = "isInstanceOf"
     val isInstanceOf_Ob : NameType     = "$isInstanceOf"
     val java: NameType                 = "java"
@@ -710,14 +690,13 @@ trait StdNames {
     val mkAnnotation: NameType         = "mkAnnotation"
     val mkRefineStat: NameType         = "mkRefineStat"
     val mkEarlyDef: NameType           = "mkEarlyDef"
+    val mkPackageStat: NameType        = "mkPackageStat"
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
     val newFreeTerm: NameType          = "newFreeTerm"
     val newFreeType: NameType          = "newFreeType"
     val newNestedSymbol: NameType      = "newNestedSymbol"
     val newScopeWith: NameType         = "newScopeWith"
-    val nmeCONSTRUCTOR: NameType       = "CONSTRUCTOR"
-    val nmeNme: NameType               = "nme"
     val notifyAll_ : NameType          = "notifyAll"
     val notify_ : NameType             = "notify"
     val null_ : NameType               = "null"
@@ -756,7 +735,6 @@ trait StdNames {
     val toArray: NameType              = "toArray"
     val toList: NameType               = "toList"
     val toObjectArray : NameType       = "toObjectArray"
-    val toSeq: NameType                = "toSeq"
     val TopScope: NameType             = "TopScope"
     val toString_ : NameType           = "toString"
     val toTypeConstructor: NameType    = "toTypeConstructor"
@@ -776,7 +754,6 @@ trait StdNames {
     val value: NameType                = "value"
     val valueOf : NameType             = "valueOf"
     val values : NameType              = "values"
-    val view_ : NameType               = "view"
     val wait_ : NameType               = "wait"
     val withFilter: NameType           = "withFilter"
     val zero: NameType                 = "zero"
@@ -1012,15 +989,9 @@ trait StdNames {
     val isBoxedNumber: NameType = "isBoxedNumber"
 
     val reflPolyCacheName: NameType   = "reflPoly$Cache"
-    val reflClassCacheName: NameType  = "reflClass$Cache"
     val reflParamsCacheName: NameType = "reflParams$Cache"
-    val reflMethodCacheName: NameType = "reflMethod$Cache"
     val reflMethodName: NameType      = "reflMethod$Method"
 
-    @deprecated("Use a method in tpnme", "2.10.0") def dropSingletonName(name: Name): TypeName = tpnme.dropSingletonName(name)
-    @deprecated("Use a method in tpnme", "2.10.0") def singletonName(name: Name): TypeName     = tpnme.singletonName(name)
-    @deprecated("Use a method in tpnme", "2.10.0") def implClassName(name: Name): TypeName     = tpnme.implClassName(name)
-    @deprecated("Use a method in tpnme", "2.10.0") def interfaceName(implname: Name): TypeName = tpnme.interfaceName(implname)
   }
 
   class JavaKeywords {
@@ -1106,7 +1077,6 @@ trait StdNames {
     final val GetClassLoader: TermName   = newTermName("getClassLoader")
     final val GetMethod: TermName        = newTermName("getMethod")
     final val Invoke: TermName           = newTermName("invoke")
-    final val JavaLang: TermName         = newTermName("java.lang")
 
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> BoxedBoolean,

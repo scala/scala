@@ -33,7 +33,15 @@ trait Set[A] extends Iterable[A]
                 with Parallelizable[A, ParSet[A]]
 {
   override def companion: GenericCompanion[Set] = Set
+  
+  
+  /** Returns this $coll as an immutable map.
+   *  
+   *  A new map will not be built; lazy collections will stay lazy.
+   */
+  @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
   override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
+  
   override def seq: Set[A] = this
   protected override def parCombiner = ParSet.newCombiner[A] // if `immutable.SetLike` gets introduced, please move this there!
 }

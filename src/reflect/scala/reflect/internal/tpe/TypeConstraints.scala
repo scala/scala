@@ -13,33 +13,13 @@ private[internal] trait TypeConstraints {
   /** A log of type variable with their original constraints. Used in order
     *  to undo constraints in the case of isSubType/isSameType failure.
     */
-  lazy val undoLog = newUndoLog
-
-  protected def newUndoLog = new UndoLog
+  private lazy val _undoLog = new UndoLog
+  def undoLog = _undoLog
 
   class UndoLog extends Clearable {
     private type UndoPairs = List[(TypeVar, TypeConstraint)]
     //OPT this method is public so we can do `manual inlining`
     var log: UndoPairs = List()
-
-    /*
-     * These two methods provide explicit locking mechanism that is overridden in SynchronizedUndoLog.
-     *
-     * The idea behind explicit locking mechanism is that all public methods that access mutable state
-     * will have to obtain the lock for their entire execution so both reads and writes can be kept in
-     * right order. Originally, that was achieved by overriding those public methods in
-     * `SynchronizedUndoLog` which was fine but expensive. The reason is that those public methods take
-     * thunk as argument and if we keep them non-final there's no way to make them inlined so thunks
-     * can go away.
-     *
-     * By using explicit locking we can achieve inlining.
-     *
-     * NOTE: They are made public for now so we can apply 'manual inlining' (copy&pasting into hot
-     * places implementation of `undo` or `undoUnless`). This should be changed back to protected
-     * once inliner is fixed.
-     */
-    def lock(): Unit = ()
-    def unlock(): Unit = ()
 
     // register with the auto-clearing cache manager
     perRunCaches.recordCache(this)
@@ -64,23 +44,16 @@ private[internal] trait TypeConstraints {
     }
 
     def clear() {
-      lock()
-      try {
-        if (settings.debug)
-          self.log("Clearing " + log.size + " entries from the undoLog.")
-        log = Nil
-      } finally unlock()
+      if (settings.debug)
+        self.log("Clearing " + log.size + " entries from the undoLog.")
+      log = Nil
     }
 
     // `block` should not affect constraints on typevars
     def undo[T](block: => T): T = {
-      lock()
-      try {
-        val before = log
-
-        try block
-        finally undoTo(before)
-      } finally unlock()
+      val before = log
+      try block
+      finally undoTo(before)
     }
   }
 

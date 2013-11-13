@@ -118,7 +118,7 @@ private[remote] case class Apply0(rfun: Function2[AbstractActor, Proxy, Unit])
  */
 private[remote] class DelegateActor(creator: Proxy, node: Node, name: Symbol, kernel: NetKernel) extends Actor {
   var channelMap = new mutable.HashMap[Symbol, OutputChannel[Any]]
-  var sessionMap = new mutable.HashMap[OutputChannel[Any], Symbol]
+  var sessionMap = new mutable.HashMap[OutputChannel[_], Symbol]
 
   def act() {
     Actor.loop {

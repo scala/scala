@@ -1,7 +1,4 @@
 Test_2.scala:4: error: String is not supported
     case t"$x" => println(x)
          ^
-Test_2.scala:4: error: not found: value x
-    case t"$x" => println(x)
-                          ^
-two errors found
+one error found

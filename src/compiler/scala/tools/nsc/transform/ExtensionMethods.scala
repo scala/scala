@@ -129,7 +129,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       if (seen contains clazz)
         unit.error(pos, "value class may not unbox to itself")
       else {
-        val unboxed = erasure.underlyingOfValueClass(clazz).typeSymbol
+        val unboxed = definitions.underlyingOfValueClass(clazz).typeSymbol
         if (unboxed.isDerivedValueClass) checkNonCyclic(pos, seen + clazz, unboxed)
       }
 
@@ -191,6 +191,9 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
             checkNonCyclic(currentOwner.pos, Set(), currentOwner) */
             extensionDefs(currentOwner.companionModule) = new mutable.ListBuffer[Tree]
             currentOwner.primaryConstructor.makeNotPrivate(NoSymbol)
+            // SI-7859 make param accessors accessible so the erasure can generate unbox operations.
+            val paramAccessors = currentOwner.info.decls.filter(sym => sym.isParamAccessor && sym.isMethod)
+            paramAccessors.foreach(_.makeNotPrivate(currentOwner))
             super.transform(tree)
           } else if (currentOwner.isStaticOwner) {
             super.transform(tree)
@@ -288,7 +291,6 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       //         object C   { def meth$extension[M, C](this$: C[C], a: A)
       //                        = { meth$extension[M', C']({ <expr>: C[C'] })(a1) } }
       case treeInfo.Applied(sel @ Select(qual, _), targs, argss) if sel.symbol == origMeth =>
-        import gen.CODE._
         localTyper.typedPos(tree.pos) {
           val allArgss = List(qual) :: argss
           val origThis = extensionMeth.owner.companionClass

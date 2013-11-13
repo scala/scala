@@ -38,7 +38,7 @@ trait BaseTypeSeqs {
    *  This is necessary because when run from reflection every base type sequence needs to have a
    *  SynchronizedBaseTypeSeq as mixin.
    */
-  class BaseTypeSeq protected[BaseTypeSeqs] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
+  class BaseTypeSeq protected[reflect] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
   self =>
     if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqCount)
     if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqLenTotal, elems.length)

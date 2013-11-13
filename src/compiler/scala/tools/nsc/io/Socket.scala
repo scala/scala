@@ -9,18 +9,11 @@ package io
 import java.io.{ IOException, InputStreamReader, BufferedReader, PrintWriter, Closeable }
 import java.io.{ BufferedOutputStream, BufferedReader }
 import java.net.{ ServerSocket, SocketException, SocketTimeoutException, InetAddress, Socket => JSocket }
-import scala.sys.SystemProperties._
 import scala.io.Codec
 
 /** A skeletal only-as-much-as-I-need Socket wrapper.
  */
 object Socket {
-  def preferringIPv4[T](body: => T): T = exclusively {
-    val saved = preferIPv4Stack.value
-    try   { preferIPv4Stack.enable() ; body }
-    finally preferIPv4Stack setValue saved
-  }
-
   class Box[+T](f: () => T) {
     private def handlerFn[U](f: Throwable => U): PartialFunction[Throwable, U] = {
       case x @ (_: IOException | _: SecurityException)  => f(x)

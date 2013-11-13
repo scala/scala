@@ -8,9 +8,8 @@ import Flag._
 
 object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction") {
   property("f(..x) = f") = test {
-    assertThrows[MatchError] {
-      val q"f(..$argss)" = q"f"
-    }
+    val q"f(..$args)" = q"f"
+    assert(args ≈ Nil)
   }
 
   property("f(x)") = forAll { (x: Tree) =>
@@ -88,7 +87,7 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     matches("new foo with bar")
     matches("new foo with bar { body }")
     matches("new { anonymous }")
-    matches("new { val early = 1} with Parent[Int] { body }")
+    matches("new { val early = 1 } with Parent[Int] { body }")
     matches("new Foo { selfie => }")
   }
 
@@ -110,5 +109,27 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     val q"$left = $value" = q"foo(bar) = baz"
     assert(left ≈ q"foo(bar)")
     assert(value ≈ q"baz")
+  }
+
+  property("deconstruct while loop") = test {
+    val q"while($cond) $body" = parse("while(cond) body")
+    assert(cond ≈ q"cond")
+    assert(body ≈ q"body")
+  }
+
+  property("deconstruct do while loop") = test {
+    val q"do $body while($cond)" = parse("do body while(cond)")
+    assert(cond ≈ q"cond")
+    assert(body ≈ q"body")
+  }
+
+  property("deconstruct anonymous function with placeholders") = test {
+    val q"{ $f(_) }" = q"{ foo(_) }"
+    assert(f ≈ q"foo")
+    val q"{ _.$member }" = q"{ _.foo }"
+    assert(member ≈ TermName("foo"))
+    val q"{ _ + $x }" = q"{ _ + x }"
+    assert(x ≈ q"x")
+    val q"{ _ * _ }" = q"{ _ * _ }"
   }
 }

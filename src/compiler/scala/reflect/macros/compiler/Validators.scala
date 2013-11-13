@@ -11,6 +11,8 @@ trait Validators {
   import global._
   import analyzer._
   import definitions._
+  private val runDefinitions = currentRun.runDefinitions
+  import runDefinitions.{Predef_???, _}
 
   def validateMacroImplRef() = {
     sanityCheck()
@@ -146,7 +148,7 @@ trait Validators {
       val ctxPrefix =
         if (isImplMethod) singleType(NoPrefix, makeParam(nme.macroContext, macroDdef.pos, ctxTpe, SYNTHETIC))
         else singleType(ThisType(macroImpl.owner), macroImpl.owner.tpe.member(nme.c))
-      var paramss =
+      val paramss =
         if (isImplMethod) List(ctxPrefix.termSymbol) :: mmap(macroDdef.vparamss)(param)
         else mmap(macroDdef.vparamss)(param)
       val macroDefRet =

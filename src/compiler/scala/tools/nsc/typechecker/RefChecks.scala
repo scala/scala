@@ -305,18 +305,23 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       /* Check that all conditions for overriding `other` by `member`
        * of class `clazz` are met.
        */
-      def checkOverride(member: Symbol, other: Symbol) {
+      def checkOverride(pair: SymbolPair) {
+        import pair._
+        val member   = low
+        val other    = high
+        def memberTp = lowType
+        def otherTp  = highType
+
         debuglog("Checking validity of %s overriding %s".format(member.fullLocationString, other.fullLocationString))
 
-        def memberTp = self.memberType(member)
-        def otherTp  = self.memberType(other)
-        def noErrorType = other.tpe != ErrorType && member.tpe != ErrorType
+        def noErrorType = !pair.isErroneous
         def isRootOrNone(sym: Symbol) = sym != null && sym.isRoot || sym == NoSymbol
-        def isNeitherInClass = (member.owner != clazz) && (other.owner != clazz)
+        def isNeitherInClass = member.owner != pair.base && other.owner != pair.base
+
         def objectOverrideErrorMsg = (
-          "overriding " + other.fullLocationString + " with " + member.fullLocationString + ":\n" +
+          "overriding " + high.fullLocationString + " with " + low.fullLocationString + ":\n" +
           "an overriding object must conform to the overridden object's class bound" +
-          analyzer.foundReqMsg(classBoundAsSeen(member.tpe), classBoundAsSeen(other.tpe))
+          analyzer.foundReqMsg(pair.lowClassBound, pair.highClassBound)
         )
 
         def overrideErrorMsg(msg: String): String = {
@@ -460,78 +465,71 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           }
         }
 
-        def checkOverrideTypes() {
-          if (other.isAliasType) {
-            //if (!member.typeParams.isEmpty) (1.5)  @MAT
-            //  overrideError("may not be parameterized");
-            //if (!other.typeParams.isEmpty)  (1.5)   @MAT
-            //  overrideError("may not override parameterized type");
-            // @M: substSym
-
-            if( !(sameLength(member.typeParams, other.typeParams) && (memberTp.substSym(member.typeParams, other.typeParams) =:= otherTp)) ) // (1.6)
-              overrideTypeError()
+        //if (!member.typeParams.isEmpty) (1.5)  @MAT
+        //  overrideError("may not be parameterized");
+        //if (!other.typeParams.isEmpty)  (1.5)   @MAT
+        //  overrideError("may not override parameterized type");
+        // @M: substSym
+        def checkOverrideAlias() {
+          if (pair.sameKind && lowType.substSym(low.typeParams, high.typeParams) =:= highType) ()
+          else overrideTypeError() // (1.6)
+        }
+        //if (!member.typeParams.isEmpty) // (1.7)  @MAT
+        //  overrideError("may not be parameterized");
+        def checkOverrideAbstract() {
+          if (!(highInfo.bounds containsType lowType)) { // (1.7.1)
+            overrideTypeError(); // todo: do an explaintypes with bounds here
+            explainTypes(_.bounds containsType _, highInfo, lowType)
           }
-          else if (other.isAbstractType) {
-            //if (!member.typeParams.isEmpty) // (1.7)  @MAT
-            //  overrideError("may not be parameterized");
-            val otherTp = self.memberInfo(other)
-
-            if (!(otherTp.bounds containsType memberTp)) { // (1.7.1)
-              overrideTypeError(); // todo: do an explaintypes with bounds here
-              explainTypes(_.bounds containsType _, otherTp, memberTp)
-            }
-
-            // check overriding (abstract type --> abstract type or abstract type --> concrete type member (a type alias))
-            // making an abstract type member concrete is like passing a type argument
-            val kindErrors = typer.infer.checkKindBounds(List(other), List(memberTp), self, member.owner) // (1.7.2)
-
-            if(!kindErrors.isEmpty)
+          // check overriding (abstract type --> abstract type or abstract type --> concrete type member (a type alias))
+          // making an abstract type member concrete is like passing a type argument
+          typer.infer.checkKindBounds(high :: Nil, lowType :: Nil, rootType, low.owner) match { // (1.7.2)
+            case Nil        =>
+            case kindErrors =>
               unit.error(member.pos,
                 "The kind of "+member.keyString+" "+member.varianceString + member.nameString+
                 " does not conform to the expected kind of " + other.defString + other.locationString + "." +
                 kindErrors.toList.mkString("\n", ", ", ""))
-
-            // check a type alias's RHS corresponds to its declaration
-            // this overlaps somewhat with validateVariance
-            if(member.isAliasType) {
-              // println("checkKindBounds" + ((List(member), List(memberTp.dealiasWiden), self, member.owner)))
-              val kindErrors = typer.infer.checkKindBounds(List(member), List(memberTp.dealiasWiden), self, member.owner)
-
-              if(!kindErrors.isEmpty)
+          }
+          // check a type alias's RHS corresponds to its declaration
+          // this overlaps somewhat with validateVariance
+          if (low.isAliasType) {
+            typer.infer.checkKindBounds(low :: Nil, lowType.normalize :: Nil, rootType, low.owner) match {
+              case Nil        =>
+              case kindErrors =>
                 unit.error(member.pos,
-                  "The kind of the right-hand side "+memberTp.dealiasWiden+" of "+member.keyString+" "+
-                  member.varianceString + member.nameString+ " does not conform to its expected kind."+
+                  "The kind of the right-hand side "+lowType.normalize+" of "+low.keyString+" "+
+                  low.varianceString + low.nameString+ " does not conform to its expected kind."+
                   kindErrors.toList.mkString("\n", ", ", ""))
-            } else if (member.isAbstractType) {
-              if (memberTp.isVolatile && !otherTp.bounds.hi.isVolatile)
-                overrideError("is a volatile type; cannot override a type with non-volatile upper bound")
-            }
-          } else if (other.isTerm) {
-            other.cookJavaRawInfo() // #2454
-            val memberTp = self.memberType(member)
-            val otherTp = self.memberType(other)
-            if (!overridesTypeInPrefix(memberTp, otherTp, self)) { // 8
-              overrideTypeError()
-              explainTypes(memberTp, otherTp)
-            }
-
-            if (member.isStable && !otherTp.isVolatile) {
-              // (1.4), pt 2 -- member.isStable && memberTp.isVolatile started being possible after SI-6815
-              // (before SI-6815, !symbol.tpe.isVolatile was implied by symbol.isStable)
-              // TODO: allow overriding when @uncheckedStable?
-              if (memberTp.isVolatile)
-                overrideError("has a volatile type; cannot override a member with non-volatile type")
-              else memberTp.dealiasWiden.resultType match {
-                case rt: RefinedType if !(rt =:= otherTp) && !(checkedCombinations contains rt.parents) =>
-                  // might mask some inconsistencies -- check overrides
-                  checkedCombinations += rt.parents
-                  val tsym = rt.typeSymbol
-                  if (tsym.pos == NoPosition) tsym setPos member.pos
-                  checkAllOverrides(tsym, typesOnly = true)
-                case _ =>
-              }
             }
           }
+          else if (low.isAbstractType && lowType.isVolatile && !highInfo.bounds.hi.isVolatile)
+            overrideError("is a volatile type; cannot override a type with non-volatile upper bound")
+        }
+        def checkOverrideTerm() {
+          other.cookJavaRawInfo() // #2454
+          if (!overridesTypeInPrefix(lowType, highType, rootType)) { // 8
+            overrideTypeError()
+            explainTypes(lowType, highType)
+          }
+          if (low.isStable && !highType.isVolatile) {
+            if (lowType.isVolatile)
+              overrideError("has a volatile type; cannot override a member with non-volatile type")
+            else lowType.normalize.resultType match {
+              case rt: RefinedType if !(rt =:= highType) && !(checkedCombinations contains rt.parents) =>
+                // might mask some inconsistencies -- check overrides
+                checkedCombinations += rt.parents
+                val tsym = rt.typeSymbol
+                if (tsym.pos == NoPosition) tsym setPos member.pos
+                checkAllOverrides(tsym, typesOnly = true)
+              case _ =>
+            }
+          }
+        }
+        def checkOverrideTypes() {
+          if (high.isAliasType)         checkOverrideAlias()
+          else if (high.isAbstractType) checkOverrideAbstract()
+          else if (high.isTerm)         checkOverrideTerm()
         }
 
         def checkOverrideDeprecated() {
@@ -545,8 +543,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
       val opc = new overridingPairs.Cursor(clazz)
       while (opc.hasNext) {
-        //Console.println(opc.overriding/* + ":" + opc.overriding.tpe*/ + " in "+opc.overriding.fullName + " overrides " + opc.overridden/* + ":" + opc.overridden.tpe*/ + " in "+opc.overridden.fullName + "/"+ opc.overridden.hasFlag(DEFERRED));//debug
-        if (!opc.overridden.isClass) checkOverride(opc.overriding, opc.overridden)
+        if (!opc.high.isClass)
+          checkOverride(opc.currentPair)
 
         opc.next()
       }
@@ -585,10 +583,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
         def ignoreDeferred(member: Symbol) = (
           (member.isAbstractType && !member.isFBounded) || (
-            member.isJavaDefined &&
             // the test requires exitingErasure so shouldn't be
             // done if the compiler has no erasure phase available
-            (currentRun.erasurePhase == NoPhase || javaErasedOverridingSym(member) != NoSymbol)
+               member.isJavaDefined
+            && (currentRun.erasurePhase == NoPhase || javaErasedOverridingSym(member) != NoSymbol)
           )
         )
 
@@ -947,7 +945,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     }
 
     def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.lint) (fn, args) match {
-      case (tap@TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == Option_apply =>
+      case (tap@TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == currentRun.runDefinitions.Option_apply =>
         unit.warning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.") // SI-6567
       case _ =>
     }
@@ -1416,7 +1414,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
     private def checkTypeRef(tp: Type, tree: Tree, skipBounds: Boolean) = tp match {
       case TypeRef(pre, sym, args) =>
-        checkDeprecated(sym, tree.pos)
+        tree match {
+          case tt: TypeTree if tt.original == null => // SI-7783 don't warn about inferred types
+          case _ =>
+            checkDeprecated(sym, tree.pos)
+        }
         if(sym.isJavaDefined)
           sym.typeParams foreach (_.cookJavaRawInfo())
         if (!tp.isHigherKinded && !skipBounds)

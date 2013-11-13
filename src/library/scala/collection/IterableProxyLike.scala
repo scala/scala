@@ -23,6 +23,7 @@ import mutable.Buffer
  *  @version 2.8
  *  @since   2.8
  */
+@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
 trait IterableProxyLike[+A, +Repr <: IterableLike[A, Repr] with Iterable[A]]
     extends IterableLike[A, Repr]
     with TraversableProxyLike[A, Repr] {

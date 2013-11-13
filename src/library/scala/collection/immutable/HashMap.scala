@@ -33,6 +33,7 @@ import parallel.immutable.ParHashMap
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(2L)
+@deprecatedInheritance("The implementation details of immutable hash maps make inheriting from them unwise.", "2.11.0")
 class HashMap[A, +B] extends AbstractMap[A, B]
                         with Map[A, B]
                         with MapLike[A, B, HashMap[A, B]]

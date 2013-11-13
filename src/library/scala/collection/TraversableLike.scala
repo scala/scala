@@ -481,7 +481,7 @@ trait TraversableLike[+A, +Repr] extends Any
     var follow = false
     val b = newBuilder
     b.sizeHint(this, -1)
-    for (x <- this.seq) {
+    for (x <- this) {
       if (follow) b += lst
       else follow = true
       lst = x
@@ -506,7 +506,7 @@ trait TraversableLike[+A, +Repr] extends Any
   private[this] def sliceInternal(from: Int, until: Int, b: Builder[A, Repr]): Repr = {
     var i = 0
     breakable {
-      for (x <- this.seq) {
+      for (x <- this) {
         if (i >= from) b += x
         i += 1
         if (i >= until) break
@@ -623,7 +623,9 @@ trait TraversableLike[+A, +Repr] extends Any
     }
   }
 
+  @deprecatedOverriding("Enforce contract of toTraversable that if it is Traversable it returns itself.", "2.11.0")
   def toTraversable: Traversable[A] = thisCollection
+  
   def toIterator: Iterator[A] = toStream.iterator
   def toStream: Stream[A] = toBuffer.toStream
   // Override to provide size hint.

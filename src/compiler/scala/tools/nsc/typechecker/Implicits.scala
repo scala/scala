@@ -17,7 +17,7 @@ import scala.collection.{ mutable, immutable }
 import mutable.{ LinkedHashMap, ListBuffer }
 import scala.util.matching.Regex
 import symtab.Flags._
-import scala.reflect.internal.util.Statistics
+import scala.reflect.internal.util.{TriState, Statistics}
 import scala.language.implicitConversions
 
 /** This trait provides methods to find various kinds of implicits.
@@ -78,7 +78,11 @@ trait Implicits {
       })
       debuglog("update buffer: " + implicitSearchContext.reportBuffer.errors)
     }
-    context.undetparams = context.undetparams filterNot result.subst.from.contains
+    // SI-7944 undetermined type parameters that result from inference within typedImplicit land in
+    //         `implicitSearchContext.undetparams`, *not* in `context.undetparams`
+    //         Here, we copy them up to parent context (analogously to the way the errors are copied above),
+    //         and then filter out any which *were* inferred and are part of the substitutor in the implicit search result.
+    context.undetparams = ((context.undetparams ++ implicitSearchContext.undetparams) filterNot result.subst.from.contains).distinct
 
     if (Statistics.canEnable) Statistics.stopTimer(implicitNanos, start)
     if (Statistics.canEnable) Statistics.stopCounter(rawTypeImpl, rawTypeStart)
@@ -194,6 +198,7 @@ trait Implicits {
    */
   class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
     private var tpeCache: Type = null
+    private var isCyclicOrErroneousCache: TriState = TriState.Unknown
 
     /** Computes member type of implicit from prefix `pre` (cached). */
     def tpe: Type = {
@@ -201,7 +206,12 @@ trait Implicits {
       tpeCache
     }
 
-    def isCyclicOrErroneous =
+    def isCyclicOrErroneous: Boolean = {
+      if (!isCyclicOrErroneousCache.isKnown) isCyclicOrErroneousCache = computeIsCyclicOrErroneous
+      isCyclicOrErroneousCache.booleanValue
+    }
+
+    private[this] final def computeIsCyclicOrErroneous =
       try sym.hasFlag(LOCKED) || containsError(tpe)
       catch { case _: CyclicReference => true }
 
@@ -216,7 +226,8 @@ trait Implicits {
       case NullaryMethodType(restpe) =>
         containsError(restpe)
       case mt @ MethodType(_, restpe) =>
-        (mt.paramTypes exists typeIsError) || containsError(restpe)
+        // OPT avoiding calling `mt.paramTypes` which creates a new list.
+        (mt.params exists symTypeIsError) || containsError(restpe)
       case _ =>
         tp.isError
     }
@@ -325,6 +336,9 @@ trait Implicits {
     /** The type parameters to instantiate */
     val undetParams = if (isView) Nil else context.outer.undetparams
     val wildPt = approximate(pt)
+
+    private val runDefintions = currentRun.runDefinitions
+    import runDefintions._
 
     def undet_s = if (undetParams.isEmpty) "" else undetParams.mkString(" inferring ", ", ", "")
     def tree_s = typeDebug ptTree tree
@@ -559,7 +573,7 @@ trait Implicits {
       // side is a class, else we may not know enough.
       case tr1 @ TypeRef(_, sym1, _) if sym1.isClass =>
         tp2.dealiasWiden match {
-          case TypeRef(_, sym2, _)         => sym2.isClass && !(sym1 isWeakSubClass sym2)
+          case TypeRef(_, sym2, _)         => ((sym1 eq ByNameParamClass) != (sym2 eq ByNameParamClass)) || (sym2.isClass && !(sym1 isWeakSubClass sym2))
           case RefinedType(parents, decls) => decls.nonEmpty && tr1.member(decls.head.name) == NoSymbol
           case _                           => false
         }
@@ -579,10 +593,10 @@ trait Implicits {
     private def typedImplicit1(info: ImplicitInfo, isLocal: Boolean): SearchResult = {
       if (Statistics.canEnable) Statistics.incCounter(matchingImplicits)
 
-      val itree = atPos(pos.focus) {
-        // workaround for deficient context provided by ModelFactoryImplicitSupport#makeImplicitConstraints
-        val isScalaDoc = context.tree == EmptyTree
+      // workaround for deficient context provided by ModelFactoryImplicitSupport#makeImplicitConstraints
+      val isScalaDoc = context.tree == EmptyTree
 
+      val itree = atPos(pos.focus) {
         if (isLocal && !isScalaDoc) {
           // SI-4270 SI-5376 Always use an unattributed Ident for implicits in the local scope,
           // rather than an attributed Select, to detect shadowing.
@@ -605,7 +619,23 @@ trait Implicits {
               atPos(itree.pos)(Apply(itree, List(Ident("<argument>") setType approximate(arg1)))),
               EXPRmode,
               approximate(arg2)
-            )
+            ) match {
+              // try to infer implicit parameters immediately in order to:
+              //   1) guide type inference for implicit views
+              //   2) discard ineligible views right away instead of risking spurious ambiguous implicits
+              //
+              // this is an improvement of the state of the art that brings consistency to implicit resolution rules
+              // (and also helps fundep materialization to be applicable to implicit views)
+              //
+              // there's one caveat though. we need to turn this behavior off for scaladoc
+              // because scaladoc usually doesn't know the entire story
+              // and is just interested in views that are potentially applicable
+              // for instance, if we have `class C[T]` and `implicit def conv[T: Numeric](c: C[T]) = ???`
+              // then Scaladoc will give us something of type `C[T]`, and it would like to know
+              // that `conv` is potentially available under such and such conditions
+              case tree if isImplicitMethodType(tree.tpe) && !isScalaDoc => applyImplicitArgs(tree)
+              case tree => tree
+            }
           case _ => fallback
         }
         context.firstError match { // using match rather than foreach to avoid non local return.
@@ -617,7 +647,7 @@ trait Implicits {
 
         if (Statistics.canEnable) Statistics.incCounter(typedImplicits)
 
-        val itree2 = if (isView) (itree1: @unchecked) match { case Apply(fun, _) => fun }
+        val itree2 = if (isView) treeInfo.dissectApplied(itree1).callee
                      else adapt(itree1, EXPRmode, wildPt)
 
         typingStack.showAdapt(itree, itree2, pt, context)
@@ -779,7 +809,7 @@ trait Implicits {
 
       private def isIneligible(info: ImplicitInfo) = (
            info.isCyclicOrErroneous
-        || isView && isPredefMemberNamed(info.sym, nme.conforms)
+        || isView && (info.sym eq Predef_conforms)
         || shadower.isShadowed(info.name)
         || (!context.macrosEnabled && info.sym.isTermMacro)
       )
@@ -1078,13 +1108,6 @@ trait Implicits {
       }
     }
 
-    private def TagSymbols =  TagMaterializers.keySet
-    private val TagMaterializers = Map[Symbol, Symbol](
-      ClassTagClass    -> materializeClassTag,
-      WeakTypeTagClass -> materializeWeakTypeTag,
-      TypeTagClass     -> materializeTypeTag
-    )
-
     /** Creates a tree will produce a tag of the requested flavor.
       * An EmptyTree is returned if materialization fails.
       */
@@ -1145,8 +1168,6 @@ trait Implicits {
       // this is ugly but temporary, since all this code will be removed once I fix implicit macros
       else SearchFailure
     }
-
-    private val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
 
     /** Creates a tree that calls the relevant factory method in object
       * scala.reflect.Manifest for type 'tp'. An EmptyTree is returned if

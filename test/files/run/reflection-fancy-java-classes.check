@@ -1,0 +1,12 @@
+===== JAVA POV =====
+class Foo_1$1
+getEnclosingClass = class Foo_1
+getEnclosingMethod = null
+getEnclosingConstructor = null
+isMemberClass = false
+isLocalClass = false
+isAnonymousClass = true
+
+===== SCALA POV =====
+class 1
+object Foo_1

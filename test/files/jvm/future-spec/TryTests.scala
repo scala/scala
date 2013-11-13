@@ -5,7 +5,7 @@
 
 import scala.util.{Try,Success,Failure}
 
-object TryTests extends MinimalScalaTest {
+class TryTests extends MinimalScalaTest {
   class MyException extends Exception
   val e = new Exception("this is an exception")
 

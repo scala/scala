@@ -282,12 +282,6 @@ trait Members {
   class Local(val sym: Symbol, val kind: TypeKind, val arg: Boolean) {
     var index: Int = -1
 
-    /** Starting PC for this local's visibility range. */
-    var start: Int = _
-
-    /** PC-based ranges for this local variable's visibility */
-    var ranges: List[(Int, Int)] = Nil
-
     override def equals(other: Any): Boolean = other match {
       case x: Local => sym == x.sym
       case _        => false

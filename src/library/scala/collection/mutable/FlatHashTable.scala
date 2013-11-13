@@ -107,6 +107,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
   }
 
   /** Finds an entry in the hash table if such an element exists. */
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def findEntry(elem: A): Option[A] =
     findElemImpl(elem) match {
       case null => None
@@ -115,6 +116,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
 
 
   /** Checks whether an element is contained in the hash table. */
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def containsElem(elem: A): Boolean = {
     null != findElemImpl(elem)
   }
@@ -248,15 +250,18 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
    * where sizeMapBucketSize == 4.
    *
    */
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nnSizeMapAdd(h: Int) = if (sizemap ne null) {
     val p = h >> sizeMapBucketBitSize
     sizemap(p) += 1
   }
 
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nnSizeMapRemove(h: Int) = if (sizemap ne null) {
     sizemap(h >> sizeMapBucketBitSize) -= 1
   }
 
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nnSizeMapReset(tableLength: Int) = if (sizemap ne null) {
     val nsize = calcSizeMapSize(tableLength)
     if (sizemap.length != nsize) sizemap = new Array[Int](nsize)
@@ -265,14 +270,17 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
 
   private[collection] final def totalSizeMapBuckets = (table.length - 1) / sizeMapBucketSize + 1
 
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def calcSizeMapSize(tableLength: Int) = (tableLength >> sizeMapBucketBitSize) + 1
 
   // discards the previous sizemap and only allocates a new one
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def sizeMapInit(tableLength: Int) {
     sizemap = new Array[Int](calcSizeMapSize(tableLength))
   }
 
   // discards the previous sizemap and populates the new one
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def sizeMapInitAndRebuild() {
     // first allocate
     sizeMapInit(table.length)

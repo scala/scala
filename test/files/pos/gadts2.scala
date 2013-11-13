@@ -4,7 +4,7 @@ object Test {
   case class MyInt(n: Int) extends Number
   case class MyDouble(d: Double) extends Number
 
-  trait Term[+a]
+  trait Term[a]
   case class Cell[a](var x: a) extends Term[a]
   final case class NumTerm(val n: Number) extends Term[Number]
 

@@ -26,6 +26,7 @@ import script._
  *  @define Coll `BufferProxy`
  *  @define coll buffer proxy
  */
+@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
 trait BufferProxy[A] extends Buffer[A] with Proxy {
 
   def self: Buffer[A]
@@ -131,6 +132,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param cmd  the message to send.
    */
+  @deprecated("Scripting is deprecated.", "2.11.0")
   override def <<(cmd: Message[A]) { self << cmd }
 
   /** Return a clone of this buffer.

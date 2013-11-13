@@ -73,17 +73,8 @@ trait Erasure {
   // included (use pre.baseType(cls.owner)).
   //
   // This requires that cls.isClass.
-  protected def rebindInnerClass(pre: Type, cls: Symbol): Type = {
-    if (cls.owner.isClass) cls.owner.tpe_* else pre // why not cls.isNestedClass?
-  }
-
-  def unboxDerivedValueClassMethod(clazz: Symbol): Symbol =
-    (clazz.info.decl(nme.unbox)) orElse
-    (clazz.info.decls.find(_ hasAllFlags PARAMACCESSOR | METHOD) getOrElse
-     NoSymbol)
-
-  def underlyingOfValueClass(clazz: Symbol): Type =
-    clazz.derivedValueClassUnbox.tpe.resultType
+  protected def rebindInnerClass(pre: Type, cls: Symbol): Type =
+    if (cls.isTopLevel || cls.isLocal) pre else cls.owner.tpe_*
 
   /** The type of the argument of a value class reference after erasure
    *  This method needs to be called at a phase no later than erasurephase
@@ -112,13 +103,20 @@ trait Erasure {
   abstract class ErasureMap extends TypeMap {
     def mergeParents(parents: List[Type]): Type
 
-    def eraseNormalClassRef(pre: Type, clazz: Symbol): Type =
-      typeRef(apply(rebindInnerClass(pre, clazz)), clazz, List()) // #2585
+    def eraseNormalClassRef(tref: TypeRef): Type = {
+      val TypeRef(pre, clazz, args) = tref
+      val pre1 = apply(rebindInnerClass(pre, clazz))
+      val args1 = Nil
+      if ((pre eq pre1) && (args eq args1)) tref // OPT
+      else typeRef(pre1, clazz, args1) // #2585
+    }
 
     protected def eraseDerivedValueClassRef(tref: TypeRef): Type = erasedValueClassArg(tref)
 
     def apply(tp: Type): Type = tp match {
       case ConstantType(_) =>
+        tp
+      case st: ThisType if st.sym.isPackageClass =>
         tp
       case st: SubType =>
         apply(st.supertype)
@@ -131,7 +129,7 @@ trait Erasure {
         else if (sym == UnitClass) BoxedUnitTpe
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
-        else if (sym.isClass) eraseNormalClassRef(pre, sym)
+        else if (sym.isClass) eraseNormalClassRef(tref)
         else apply(sym.info asSeenFrom (pre, sym.owner)) // alias type or abstract type
       case PolyType(tparams, restpe) =>
         apply(restpe)
@@ -159,7 +157,7 @@ trait Erasure {
     }
 
     def applyInArray(tp: Type): Type = tp match {
-      case TypeRef(pre, sym, args) if (sym.isDerivedValueClass) => eraseNormalClassRef(pre, sym)
+      case tref @ TypeRef(_, sym, _) if sym.isDerivedValueClass => eraseNormalClassRef(tref)
       case _ => apply(tp)
     }
   }
@@ -262,11 +260,11 @@ trait Erasure {
 
   /** This is used as the Scala erasure during the erasure phase itself
    *  It differs from normal erasure in that value classes are erased to ErasedValueTypes which
-   *  are then later converted to the underlying parameter type in phase posterasure.
+   *  are then later unwrapped to the underlying parameter type in phase posterasure.
    */
   object specialScalaErasure extends ScalaErasureMap {
     override def eraseDerivedValueClassRef(tref: TypeRef): Type =
-      ErasedValueType(tref)
+      ErasedValueType(tref.sym, erasedValueClassArg(tref))
   }
 
   object javaErasure extends JavaErasureMap
@@ -282,11 +280,11 @@ trait Erasure {
   }
 
   object boxingErasure extends ScalaErasureMap {
-    override def eraseNormalClassRef(pre: Type, clazz: Symbol) =
-      if (isPrimitiveValueClass(clazz)) boxedClass(clazz).tpe
-      else super.eraseNormalClassRef(pre, clazz)
+    override def eraseNormalClassRef(tref: TypeRef) =
+      if (isPrimitiveValueClass(tref.sym)) boxedClass(tref.sym).tpe
+      else super.eraseNormalClassRef(tref)
     override def eraseDerivedValueClassRef(tref: TypeRef) =
-      super.eraseNormalClassRef(tref.pre, tref.sym)
+      super.eraseNormalClassRef(tref)
   }
 
   /** The intersection dominator (SLS 3.7) of a list of types is computed as follows.

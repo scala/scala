@@ -1,6 +1,0 @@
-#!/bin/sh
-#
-
-CP=$($(dirname $BASH_SOURCE)/lockercp)
-
-java $JAVA_OPTS -classpath "$CP" scala.tools.nsc.MainGenericRunner -usejavacp "$@"

@@ -87,11 +87,13 @@ trait Names extends api.Names {
    *  TODO - have a mode where name validation is performed at creation time
    *  (e.g. if a name has the string "$class" in it, then fail if that
    *  string is not at the very end.)
+   *
+   *  @param len0 the length of the name. Negative lengths result in empty names.
    */
-  final def newTermName(cs: Array[Char], offset: Int, len: Int, cachedString: String): TermName = {
+  final def newTermName(cs: Array[Char], offset: Int, len0: Int, cachedString: String): TermName = {
     def body = {
       require(offset >= 0, "offset must be non-negative, got " + offset)
-      require(len >= 0, "length must be non-negative, got " + len)
+      val len = math.max(len0, 0)
       val h = hashValue(cs, offset, len) & HASH_MASK
       var n = termHashtable(h)
       while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))

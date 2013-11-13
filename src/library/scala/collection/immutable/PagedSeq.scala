@@ -126,6 +126,7 @@ import PagedSeq._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@deprecatedInheritance("The implementation details of paged sequences make inheriting from them unwise.", "2.11.0")
 class PagedSeq[T: ClassTag] protected(
   more: (Array[T], Int, Int) => Int,
   first1: Page[T],

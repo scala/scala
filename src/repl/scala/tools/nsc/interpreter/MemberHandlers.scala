@@ -87,10 +87,11 @@ trait MemberHandlers {
     def definesTerm     = Option.empty[TermName]
     def definesType     = Option.empty[TypeName]
 
-    lazy val referencedNames = ImportVarsTraverser(member)
-    def importedNames        = List[Name]()
-    def definedNames         = definesTerm.toList ++ definesType.toList
-    def definedSymbols       = List[Symbol]()
+    private lazy val _referencedNames = ImportVarsTraverser(member)
+    def referencedNames = _referencedNames
+    def importedNames   = List[Name]()
+    def definedNames    = definesTerm.toList ++ definesType.toList
+    def definedSymbols  = List[Symbol]()
 
     def extraCodeToEvaluate(req: Request): String = ""
     def resultExtractionCode(req: Request): String = ""
@@ -130,6 +131,7 @@ trait MemberHandlers {
   }
 
   abstract class MacroHandler(member: DefDef) extends MemberDefHandler(member) {
+    override def referencedNames = super.referencedNames.flatMap(name => List(name.toTermName, name.toTypeName))
     override def definesValue = false
     override def definesTerm: Option[TermName] = Some(name.toTermName)
     override def definesType: Option[TypeName] = None

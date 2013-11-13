@@ -358,30 +358,35 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
   }
 
   property("++s must be equal") = forAll(collectionTriplets) { case (t, coll, colltoadd) =>
-    val toadd = colltoadd
-    val tr = t ++ toadd.iterator
-    val cr = coll ++ toadd.iterator
-    if (!areEqual(tr, cr)) {
-      println("from: " + t)
-      println("and: " + coll.iterator.toList)
-      println("adding: " + toadd)
-      println(tr.toList)
-      println(cr.iterator.toList)
-    }
-    ("adding " |: areEqual(tr, cr)) &&
-    (for ((trav, ind) <- (addAllTraversables).zipWithIndex) yield {
-      val tadded = t ++ trav
-      val cadded = coll ++ collection.parallel.mutable.ParArray(trav.toSeq: _*)
-      if (!areEqual(tadded, cadded)) {
-        println("----------------------")
+    try {
+      val toadd = colltoadd
+      val tr = t ++ toadd.iterator
+      val cr = coll ++ toadd.iterator
+      if (!areEqual(tr, cr)) {
         println("from: " + t)
-        println("and: " + coll)
-        println("adding: " + trav)
-        println(tadded)
-        println(cadded)
+        println("and: " + coll.iterator.toList)
+        println("adding: " + toadd)
+        println(tr.toList)
+        println(cr.iterator.toList)
       }
-      ("traversable " + ind) |: areEqual(tadded, cadded)
-    }).reduceLeft(_ && _)
+      ("adding " |: areEqual(tr, cr)) &&
+      (for ((trav, ind) <- (addAllTraversables).zipWithIndex) yield {
+        val tadded = t ++ trav
+        val cadded = coll ++ collection.parallel.mutable.ParArray(trav.toSeq: _*)
+        if (!areEqual(tadded, cadded)) {
+          println("----------------------")
+          println("from: " + t)
+          println("and: " + coll)
+          println("adding: " + trav)
+          println(tadded)
+          println(cadded)
+        }
+        ("traversable " + ind) |: areEqual(tadded, cadded)
+      }).reduceLeft(_ && _)
+    } catch {
+      case e: java.lang.Exception =>
+        throw e
+    }
   }
 
   if (hasStrictOrder) property("copies to array must be equal") = forAll(collectionPairs) { case (t, coll) =>

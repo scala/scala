@@ -6,6 +6,8 @@ trait GenTypes {
 
   import global._
   import definitions._
+  private val runDefinitions = currentRun.runDefinitions
+  import runDefinitions.{ReflectRuntimeUniverse, ReflectRuntimeCurrentMirror, _}
 
   /**
    *  Reify a type.

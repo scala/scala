@@ -14,7 +14,7 @@ import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString, stackTraceHeadString }
+import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString }
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import scala.reflect.io.VirtualFile
@@ -110,9 +110,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
 
   /** A spare instance of TreeBuilder left for backwards compatibility. */
-  lazy val treeBuilder: TreeBuilder { val global: Global.this.type } = new UnitTreeBuilder {
+  lazy val treeBuilder: TreeBuilder { val global: Global.this.type } = new TreeBuilder {
     val global: Global.this.type = Global.this;
-    val unit = currentUnit
+    def unit = currentUnit
+    def source = currentUnit.source
   }
 
   /** Fold constants */
@@ -134,6 +135,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   object overridingPairs extends {
     val global: Global.this.type = Global.this
   } with OverridingPairs
+
+  type SymbolPair = overridingPairs.SymbolPair
 
   // Optimizer components
 
@@ -572,6 +575,13 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val runsRightAfter = None
   } with CleanUp
 
+  // phaseName = "delambdafy"
+  object delambdafy extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("cleanup")
+    val runsRightAfter = None
+  } with Delambdafy
+
   // phaseName = "icode"
   object genicode extends {
     val global: Global.this.type = Global.this
@@ -685,13 +695,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       uncurry                 -> "uncurry, translate function values to anonymous classes",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
-      explicitOuter           -> "this refs to outer pointers, translate patterns",
+      explicitOuter           -> "this refs to outer pointers",
       erasure                 -> "erase types, add interfaces for traits",
       postErasure             -> "clean up erased inline classes",
       lazyVals                -> "allocate bitmaps, translate lazy vals into lazified defs",
       lambdaLift              -> "move nested functions to top level",
       constructors            -> "move field definitions into constructors",
       mixer                   -> "mixin composition",
+      delambdafy              -> "remove lambdas",
       cleanup                 -> "platform-specific cleanups, generate reflective calls",
       genicode                -> "generate portable intermediate code",
       inliner                 -> "optimization: do inlining",
@@ -1026,14 +1037,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
      * Then, fsc -Xexperimental clears the nsc project between successive runs of `fsc`.
      */
 
-  /** Remove the current run when not needed anymore. Used by the build
-   *  manager to save on the memory foot print. The current run holds on
-   *  to all compilation units, which in turn hold on to trees.
-   */
-  private [nsc] def dropRun() {
-    curRun = null
-  }
-
   object typeDeconstruct extends {
     val global: Global.this.type = Global.this
   } with typechecker.StructuredTypeStrings
@@ -1055,6 +1058,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def currentRun: Run              = curRun
   def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
+  def currentFreshNameCreator      = currentUnit.fresh
 
   def isGlobalInitialized = (
        definitions.isDefinitionsInitialized
@@ -1072,6 +1076,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   @inline final def exitingExplicitOuter[T](op: => T): T  = exitingPhase(currentRun.explicitouterPhase)(op)
   @inline final def exitingFlatten[T](op: => T): T        = exitingPhase(currentRun.flattenPhase)(op)
   @inline final def exitingMixin[T](op: => T): T          = exitingPhase(currentRun.mixinPhase)(op)
+  @inline final def exitingDelambdafy[T](op: => T): T     = exitingPhase(currentRun.delambdafyPhase)(op)
   @inline final def exitingPickler[T](op: => T): T        = exitingPhase(currentRun.picklerPhase)(op)
   @inline final def exitingRefchecks[T](op: => T): T      = exitingPhase(currentRun.refchecksPhase)(op)
   @inline final def exitingSpecialize[T](op: => T): T     = exitingPhase(currentRun.specializePhase)(op)
@@ -1082,8 +1087,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   @inline final def enteringFlatten[T](op: => T): T       = enteringPhase(currentRun.flattenPhase)(op)
   @inline final def enteringIcode[T](op: => T): T         = enteringPhase(currentRun.icodePhase)(op)
   @inline final def enteringMixin[T](op: => T): T         = enteringPhase(currentRun.mixinPhase)(op)
+  @inline final def enteringDelambdafy[T](op: => T): T    = enteringPhase(currentRun.delambdafyPhase)(op)
   @inline final def enteringPickler[T](op: => T): T       = enteringPhase(currentRun.picklerPhase)(op)
-  @inline final def enteringRefchecks[T](op: => T): T     = enteringPhase(currentRun.refchecksPhase)(op)
   @inline final def enteringSpecialize[T](op: => T): T    = enteringPhase(currentRun.specializePhase)(op)
   @inline final def enteringTyper[T](op: => T): T         = enteringPhase(currentRun.typerPhase)(op)
   @inline final def enteringUncurry[T](op: => T): T       = enteringPhase(currentRun.uncurryPhase)(op)
@@ -1420,6 +1425,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     // val constructorsPhase            = phaseNamed("constructors")
     val flattenPhase                 = phaseNamed("flatten")
     val mixinPhase                   = phaseNamed("mixin")
+    val delambdafyPhase              = phaseNamed("delambdafy")
     val cleanupPhase                 = phaseNamed("cleanup")
     val icodePhase                   = phaseNamed("icode")
     val inlinerPhase                 = phaseNamed("inliner")
@@ -1555,6 +1561,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         // todo: migrationWarnings
       }
     }
+
+    /** Caching member symbols that are def-s in Defintions because they might change from Run to Run. */
+    val runDefinitions: definitions.RunDefinitions = new definitions.RunDefinitions
 
     /** Compile list of source files,
      *  unless there is a problem already,
@@ -1701,19 +1710,19 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    // TODO: provide a way to specify a pretty name for debugging purposes
-    private def randomFileName() = (
-      "compileLateSynthetic-" + randomUUID().toString.replace("-", "") + ".scala"
-    )
-
-    def compileLate(code: PackageDef) {
+    /** Create and compile a synthetic compilation unit from the provided tree.
+     *
+     *  This needs to create a virtual file underlying the compilation unit in order to appease SBT.
+     *  However this file cannot have a randomly generated name, because then SBT 0.13 goes into a vicious loop
+     *  as described on the mailing list: https://groups.google.com/forum/#!msg/scala-user/r1SgSoVfs0U/Wv4av0LOKukJ
+     *  Therefore I have introduced an additional parameter that makes everyone specify meaningful file names.
+     */
+    def compileLate(virtualFileName: String, code: PackageDef) {
       // compatibility with SBT
       // on the one hand, we need to specify some jfile here, otherwise sbt crashes with an NPE (SI-6870)
       // on the other hand, we can't specify the obvious enclosingUnit, because then sbt somehow fails to run tests using type macros
-      // okay, now let's specify a guaranteedly non-existent file in an existing directory (so that we don't run into permission problems)
-      val syntheticFileName = randomFileName()
-      val fakeJfile = new java.io.File(syntheticFileName)
-      val virtualFile = new VirtualFile(syntheticFileName) { override def file = fakeJfile }
+      val fakeJfile = new java.io.File(virtualFileName)
+      val virtualFile = new VirtualFile(virtualFileName) { override def file = fakeJfile }
       val sourceFile = new BatchSourceFile(virtualFile, code.toString)
       val unit = new CompilationUnit(sourceFile)
       unit.body = code

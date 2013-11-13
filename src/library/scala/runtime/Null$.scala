@@ -9,7 +9,6 @@
 package scala
 package runtime
 
-
 /**
  * Dummy class which exist only to satisfy the JVM. It corresponds to
  * `scala.Null`. If such type appears in method signatures, it is erased

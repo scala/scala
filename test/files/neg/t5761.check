@@ -13,4 +13,7 @@ Unspecified value parameter x.
 t5761.scala:13: error: not found: type Tread
   new Tread("sth") { }.run()
       ^
-four errors found
+t5761.scala:13: error: value run is not a member of AnyRef
+  new Tread("sth") { }.run()
+                       ^
+5 errors found

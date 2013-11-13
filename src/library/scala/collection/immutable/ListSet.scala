@@ -64,6 +64,7 @@ object ListSet extends ImmutableSetFactory[ListSet] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@deprecatedInheritance("The semantics of immutable collections makes inheriting from ListSet error-prone.", "2.11.0")
 class ListSet[A] extends AbstractSet[A]
                     with Set[A]
                     with GenericSetTemplate[A, ListSet]

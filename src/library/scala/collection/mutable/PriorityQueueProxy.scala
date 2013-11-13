@@ -19,6 +19,7 @@ package mutable
  *  @version 1.0, 03/05/2004
  *  @since   1
  */
+@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
 abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends PriorityQueue[A]
          with Proxy
 {

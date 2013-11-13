@@ -52,16 +52,4 @@ private[runtime] class TwoWayCache[J, S] {
         result
     }
   }
-
-  def toJavaOption(key: S)(body: => Option[J]): Option[J] = synchronized {
-    toJavaMap get key match {
-      case SomeRef(v) =>
-        Some(v)
-      case _ =>
-        val result = body
-        for (value <- result) enter(value, key)
-        result
-    }
-  }
 }
-

@@ -55,6 +55,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import definitions._
   import Flags._
 
+  private val inlineFunctionExpansion = settings.Ydelambdafy.value == "inline"
+
   /** the name of the phase: */
   val phaseName: String = "specialize"
 
@@ -99,6 +101,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private val concreteSpecMethods = perRunCaches.newWeakSet[Symbol]()
 
   private def specializedOn(sym: Symbol): List[Symbol] = {
+    val GroupOfSpecializable = currentRun.runDefinitions.GroupOfSpecializable
     sym getAnnotation SpecializedClass match {
       case Some(AnnotationInfo(_, Nil, _)) => specializableTypes.map(_.typeSymbol)
       case Some(ann @ AnnotationInfo(_, args, _)) => {
@@ -1318,7 +1321,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
 
     private def isAccessible(sym: Symbol): Boolean =
-      (currentClass == sym.owner.enclClass) && (currentClass != targetClass)
+      if (currentOwner.isAnonymousFunction) {
+        if (inlineFunctionExpansion) devWarning("anonymous function made it to specialization even though inline expansion is set.")
+        false
+      }
+      else (currentClass == sym.owner.enclClass) && (currentClass != targetClass)
 
     private def shouldMakePublic(sym: Symbol): Boolean =
       sym.hasFlag(PRIVATE | PROTECTED) && (addressFields || !nme.isLocalName(sym.name))

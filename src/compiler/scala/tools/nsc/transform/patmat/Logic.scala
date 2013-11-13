@@ -113,7 +113,7 @@ trait Logic extends Debugging  {
 
     // symbols are propositions
     abstract case class Sym(variable: Var, const: Const) extends Prop {
-      private[this] val id = Sym.nextSymId
+      private val id: Int = Sym.nextSymId
 
       override def toString = variable +"="+ const +"#"+ id
     }
@@ -125,6 +125,7 @@ trait Logic extends Debugging  {
         (uniques findEntryOrUpdate newSym)
       }
       private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
+      implicit val SymOrdering: Ordering[Sym] = Ordering.by(_.id)
     }
 
     def /\(props: Iterable[Prop]) = if (props.isEmpty) True else props.reduceLeft(And(_, _))
@@ -161,13 +162,17 @@ trait Logic extends Debugging  {
 
     // to govern how much time we spend analyzing matches for unreachability/exhaustivity
     object AnalysisBudget {
-      import scala.tools.cmd.FromString.IntFromString
-      val max = sys.props.get("scalac.patmat.analysisBudget").collect(IntFromString.orElse{case "off" => Integer.MAX_VALUE}).getOrElse(256)
+      private val budgetProp = scala.sys.Prop[Int]("scalac.patmat.analysisBudget")
+      private val budgetOff = "off"
+      val max: Int = {
+        val DefaultBudget = 256
+        budgetProp.option.getOrElse(if (budgetProp.get.equalsIgnoreCase("off")) Integer.MAX_VALUE else DefaultBudget)
+      }
 
       abstract class Exception(val advice: String) extends RuntimeException("CNF budget exceeded")
 
       object exceeded extends Exception(
-          s"(The analysis required more space than allowed. Please try with scalac -Dscalac.patmat.analysisBudget=${AnalysisBudget.max*2} or -Dscalac.patmat.analysisBudget=off.)")
+          s"(The analysis required more space than allowed. Please try with scalac -D${budgetProp.key}=${AnalysisBudget.max*2} or -D${budgetProp.key}=${budgetOff}.)")
 
     }
 
@@ -279,7 +284,7 @@ trait Logic extends Debugging  {
     def eqFreePropToSolvable(p: Prop): Formula
     def cnfString(f: Formula): String
 
-    type Model = Map[Sym, Boolean]
+    type Model = collection.immutable.SortedMap[Sym, Boolean]
     val EmptyModel: Model
     val NoModel: Model
 

@@ -18,11 +18,11 @@ import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
 import scala.collection.mutable.{ HashMap, ListBuffer }
 import internal.Flags._
-import ReflectionUtils.{staticSingletonInstance, innerSingletonInstance, scalacShouldntLoadClass}
+import ReflectionUtils._
 import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 
-private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse { thisUniverse: SymbolTable =>
+private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
 
   private lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
 
@@ -44,19 +44,11 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
   trait JavaClassCompleter extends FlagAssigningCompleter
 
-  def init() = {
-    definitions.AnyValClass // force it.
-
-    // establish root association to avoid cyclic dependency errors later
-    rootMirror.classToScala(classOf[java.lang.Object]).initialize
-
-    // println("initializing definitions")
-    definitions.init()
-  }
-
-  def runtimeMirror(cl: ClassLoader): Mirror = mirrors get cl match {
-    case Some(WeakReference(m)) => m
-    case _ => createMirror(rootMirror.RootClass, cl)
+  def runtimeMirror(cl: ClassLoader): Mirror = gilSynchronized {
+    mirrors get cl match {
+      case Some(WeakReference(m)) => m
+      case _ => createMirror(rootMirror.RootClass, cl)
+    }
   }
 
   /** The API of a mirror for a reflective universe */
@@ -68,6 +60,13 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     val universe: thisUniverse.type = thisUniverse
 
     import definitions._
+    private[reflect] lazy val runDefinitions = new definitions.RunDefinitions // only one "run" in the reflection universe
+    import runDefinitions._
+
+    override lazy val RootPackage = new RootPackage with SynchronizedTermSymbol
+    override lazy val RootClass = new RootClass with SynchronizedModuleClassSymbol
+    override lazy val EmptyPackage = new EmptyPackage with SynchronizedTermSymbol
+    override lazy val EmptyPackageClass = new EmptyPackageClass with SynchronizedModuleClassSymbol
 
     /** The lazy type for root.
      */
@@ -309,7 +308,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     lazy val bytecodefulObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,
                                         Object_notify, Object_notifyAll) ++ ObjectClass.info.member(nme.wait_).asTerm.alternatives.map(_.asMethod)
     private def isBytecodelessMethod(meth: MethodSymbol): Boolean = {
-      if (isGetClass(meth) || isStringConcat(meth) || meth.owner.isPrimitiveValueClass || meth == Predef_classOf || meth.isMacro) return true
+      if (isGetClass(meth) || isStringConcat(meth) || meth.owner.isPrimitiveValueClass || meth == runDefinitions.Predef_classOf || meth.isMacro) return true
       bytecodelessMethodOwners(meth.owner) && !bytecodefulObjectMethods(meth)
     }
 
@@ -431,8 +430,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           case sym if isGetClass(sym)                 => preciseClass(receiver)
           case Any_asInstanceOf                       => fail("Any.asInstanceOf requires a type argument")
           case Any_isInstanceOf                       => fail("Any.isInstanceOf requires a type argument")
-          case Object_asInstanceOf                    => fail("AnyRef.$asInstanceOf is an internal method")
-          case Object_isInstanceOf                    => fail("AnyRef.$isInstanceOf is an internal method")
+          case Object_asInstanceOf                    => fail("AnyRef.%s is an internal method" format symbol.name)
+          case Object_isInstanceOf                    => fail("AnyRef.%s is an internal method" format symbol.name)
           case Array_length                           => ScalaRunTime.array_length(objReceiver)
           case Array_apply                            => ScalaRunTime.array_apply(objReceiver, args(0).asInstanceOf[Int])
           case Array_update                           => ScalaRunTime.array_update(objReceiver, args(0).asInstanceOf[Int], args(1))
@@ -467,7 +466,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
             extends TemplateMirror {
       def outer: AnyRef
       def erasure: ClassSymbol
-      lazy val signature = typeToScala(classToJava(erasure))
     }
 
     private class JavaClassMirror(val outer: AnyRef, val symbol: ClassSymbol)
@@ -690,7 +688,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         completeRest()
       }
 
-      def completeRest(): Unit = thisUniverse.synchronized {
+      def completeRest(): Unit = gilSynchronized {
         val tparams = clazz.rawInfo.typeParams
 
         val parents = try {
@@ -781,33 +779,19 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     /**
      * The Scala owner of the Scala class corresponding to the Java class `jclazz`
      */
-    private def sOwner(jclazz: jClass[_]): Symbol =
-      if (jclazz.isMemberClass) {
-        val jEnclosingClass = jclazz.getEnclosingClass
-        val sEnclosingClass = classToScala(jEnclosingClass)
-        followStatic(sEnclosingClass, jclazz.javaFlags)
-      } else if (jclazz.isLocalClass0) {
-        val jEnclosingMethod = jclazz.getEnclosingMethod
-        if (jEnclosingMethod != null) {
-          methodToScala(jEnclosingMethod)
-        } else {
-          val jEnclosingConstructor = jclazz.getEnclosingConstructor
-          constructorToScala(jEnclosingConstructor)
-        }
-      } else if (jclazz.isPrimitive || jclazz.isArray) {
-        ScalaPackageClass
-      } else if (jclazz.getPackage != null) {
-        val jPackage = jclazz.getPackage
-        packageToScala(jPackage).moduleClass
-      } else {
-        // @eb: a weird classloader might return a null package for something with a non-empty package name
-        // for example, http://groups.google.com/group/scala-internals/browse_thread/thread/7be09ff8f67a1e5c
-        // in that case we could invoke packageNameToScala(jPackageName) and, probably, be okay
-        // however, I think, it's better to blow up, since weirdness of the class loader might bite us elsewhere
-        // [martin] I think it's better to be forgiving here. Restoring packageNameToScala.
-        val jPackageName = jclazz.getName take jclazz.getName.lastIndexOf('.')
-        packageNameToScala(jPackageName).moduleClass
-      }
+    // @eb: a weird classloader might return a null package for something with a non-empty package name
+    // for example, http://groups.google.com/group/scala-internals/browse_thread/thread/7be09ff8f67a1e5c
+    // in that case we could invoke packageNameToScala(jPackageName) and, probably, be okay
+    // however, I think, it's better to blow up, since weirdness of the class loader might bite us elsewhere
+    // [martin] I think it's better to be forgiving here. Restoring packageNameToScala.
+    private def sOwner(jclazz: jClass[_]): Symbol = jclazz match {
+      case PrimitiveOrArray()            => ScalaPackageClass
+      case EnclosedInMethod(jowner)      => methodToScala(jowner)
+      case EnclosedInConstructor(jowner) => constructorToScala(jowner)
+      case EnclosedInClass(jowner)       => followStatic(classToScala(jowner), jclazz.javaFlags)
+      case EnclosedInPackage(jowner)     => packageToScala(jowner).moduleClass
+      case _                             => packageNameToScala(jclazz.getName take jclazz.getName.lastIndexOf('.')).moduleClass
+    }
 
     /**
      * The Scala owner of the Scala symbol corresponding to the Java member `jmember`
@@ -895,7 +879,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      * The Scala package with given fully qualified name. Unlike `packageNameToScala`,
      *  this one bypasses the cache.
      */
-    private[JavaMirrors] def makeScalaPackage(fullname: String): ModuleSymbol = {
+    private[JavaMirrors] def makeScalaPackage(fullname: String): ModuleSymbol = gilSynchronized {
       val split = fullname lastIndexOf '.'
       val ownerModule: ModuleSymbol =
         if (split > 0) packageNameToScala(fullname take split) else this.RootPackage
@@ -1276,11 +1260,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     case _ => abort(s"${sym}.enclosingRootClass = ${sym.enclosingRootClass}, which is not a RootSymbol")
   }
 
-  private lazy val syntheticCoreClasses: Map[(String, Name), Symbol] = {
-    def mapEntry(sym: Symbol): ((String, Name), Symbol) = (sym.owner.fullName, sym.name) -> sym
-    Map() ++ (definitions.syntheticCoreClasses map mapEntry)
-  }
-
   /** 1. If `owner` is a package class (but not the empty package) and `name` is a term name, make a new package
    *  <owner>.<name>, otherwise return NoSymbol.
    *  Exception: If owner is root and a java class with given name exists, create symbol in empty package instead
@@ -1290,20 +1269,20 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
   override def missingHook(owner: Symbol, name: Name): Symbol = {
     if (owner.hasPackageFlag) {
       val mirror = mirrorThatLoaded(owner)
-      // todo. this makes toolbox tests pass, but it's a mere workaround for SI-5865
-//      assert((owner.info decl name) == NoSymbol, s"already exists: $owner . $name")
       if (owner.isRootSymbol && mirror.tryJavaClass(name.toString).isDefined)
         return mirror.EmptyPackageClass.info decl name
       if (name.isTermName && !owner.isEmptyPackageClass)
         return mirror.makeScalaPackage(
           if (owner.isRootSymbol) name.toString else owner.fullName+"."+name)
-      syntheticCoreClasses get ((owner.fullName, name)) foreach { tsym =>
-        // synthetic core classes are only present in root mirrors
-        // because Definitions.scala, which initializes and enters them, only affects rootMirror
-        // therefore we need to enter them manually for non-root mirrors
-        if (mirror ne thisUniverse.rootMirror) owner.info.decls enter tsym
-        return tsym
-      }
+      if (name == tpnme.AnyRef && owner.owner.isRoot && owner.name == tpnme.scala_)
+        // when we synthesize the scala.AnyRef symbol, we need to add it to the scope of the scala package
+        // the problem is that adding to the scope implies doing something like `owner.info.decls enter anyRef`
+        // which entails running a completer for the scala package
+        // which will try to unpickle the stuff in scala/package.class
+        // which will transitively load scala.AnyRef
+        // which doesn't exist yet, because it hasn't been added to the scope yet
+        // this missing hook ties the knot without introducing synchronization problems like before
+        return definitions.AnyRefClass
     }
     info("*** missing: "+name+"/"+name.isTermName+"/"+owner+"/"+owner.hasPackageFlag+"/"+owner.info.decls.getClass)
     super.missingHook(owner, name)

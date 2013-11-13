@@ -1,6 +1,0 @@
-t6680b.scala:8: error: type mismatch;
- found   : String("not what you\'d expect")
- required: ?Hidden1 where type ?Hidden1 (this is a GADT skolem)
-    case Concrete(f) => f("not what you'd expect")
-                          ^
-one error found

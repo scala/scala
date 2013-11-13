@@ -6,6 +6,8 @@
 
 package scala.tools.docutil
 
+import scala.language.implicitConversions
+
 object ManPage {
   abstract class AbstractText {
     def &(more: AbstractText) = SeqText(this, more)

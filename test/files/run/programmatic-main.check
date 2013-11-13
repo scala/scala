@@ -12,7 +12,7 @@ superaccessors   6  add super accessors in traits and nested classes
        uncurry  10  uncurry, translate function values to anonymous classes
      tailcalls  11  replace tail calls by jumps
     specialize  12  @specialized-driven class and method specialization
- explicitouter  13  this refs to outer pointers, translate patterns
+ explicitouter  13  this refs to outer pointers
        erasure  14  erase types, add interfaces for traits
    posterasure  15  clean up erased inline classes
       lazyvals  16  allocate bitmaps, translate lazy vals into lazified defs
@@ -21,6 +21,7 @@ superaccessors   6  add super accessors in traits and nested classes
        flatten  19  eliminate inner classes
          mixin  20  mixin composition
        cleanup  21  platform-specific cleanups, generate reflective calls
-         icode  22  generate portable intermediate code
-           jvm  23  generate JVM bytecode
-      terminal  24  the last phase during a compilation run
+    delambdafy  22  remove lambdas
+         icode  23  generate portable intermediate code
+           jvm  24  generate JVM bytecode
+      terminal  25  the last phase during a compilation run

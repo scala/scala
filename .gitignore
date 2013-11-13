@@ -24,6 +24,7 @@
 
 # Developer specific Ant properties
 /build.properties
+/buildcharacter.properties
 
 # target directories for ant build
 /build/
@@ -40,7 +41,7 @@
 /src/intellij/*.iml
 /src/intellij/*.ipr
 /src/intellij/*.iws
-/.cache
+**/.cache
 /.idea
 /.settings
 

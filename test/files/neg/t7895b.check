@@ -1,0 +1,7 @@
+t7895b.scala:4: error: not found: value a
+  foo(a, b)
+      ^
+t7895b.scala:4: error: not found: value b
+  foo(a, b)
+         ^
+two errors found

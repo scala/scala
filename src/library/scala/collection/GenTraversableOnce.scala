@@ -518,7 +518,7 @@ trait GenTraversableOnce[+A] extends Any {
    */
   def toIterator: Iterator[A]
 
-  /** Converts this $coll to a mutable buffer.
+  /** Uses the contents of this $coll to create a new mutable buffer.
    *  $willNotTerminateInf
    *  @return a buffer containing all elements of this $coll.
    */

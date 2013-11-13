@@ -1,0 +1,4 @@
+t7895.scala:4: error: not found: value Goop
+    case Goop(a, b, c) => Tuple2(a, b)
+         ^
+one error found

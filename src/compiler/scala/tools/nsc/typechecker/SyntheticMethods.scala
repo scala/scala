@@ -157,7 +157,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         Ident(eqmeth.firstParam),
         List(
           CaseDef(Typed(Ident(nme.WILDCARD), TypeTree(clazz.tpe)), EmptyTree, TRUE),
-          CaseDef(WILD.empty, EmptyTree, FALSE)
+          CaseDef(Ident(nme.WILDCARD), EmptyTree, FALSE)
         )
       )
     }

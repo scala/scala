@@ -25,6 +25,7 @@ package mutable
  *  @define Coll `SynchronizedStack`
  *  @define coll synchronized stack
  */
+@deprecated("Synchronization via selective overriding of methods is inherently unreliable.  Consider java.util.concurrent.LinkedBlockingDequeue instead.", "2.11.0")
 class SynchronizedStack[A] extends Stack[A] {
   import scala.collection.Traversable
 

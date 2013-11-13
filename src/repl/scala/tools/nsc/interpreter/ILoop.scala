@@ -23,7 +23,6 @@ import scala.collection.generic.Clearable
 import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
 import java.io.{ BufferedReader, FileReader }
-import scala.reflect.internal.util.StringOps._
 
 /** The Scala interactive shell.  It provides a read-eval-print loop
  *  around the Interpreter class.
@@ -580,7 +579,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     def apply(line: String): Result = line match {
       case ""   => showUsage()
       case _    =>
-        val toRun = classOf[ProcessResult].getName + "(" + string2codeQuoted(line) + ")"
+        val toRun = s"new ${classOf[ProcessResult].getName}(${string2codeQuoted(line)})"
         intp interpret toRun
         ()
     }

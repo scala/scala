@@ -24,6 +24,8 @@ abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelMapCheck[K
 
   def hasStrictOrder = false
 
+  def tasksupport: TaskSupport
+
   def ofSize(vals: Seq[Gen[(K, V)]], sz: Int) = {
     val hm = new mutable.HashMap[K, V]
     val gen = vals(rnd.nextInt(vals.size))
@@ -33,6 +35,7 @@ abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelMapCheck[K
 
   def fromTraversable(t: Traversable[(K, V)]) = {
     val phm = new ParHashMap[K, V]
+    phm.tasksupport = tasksupport
     var i = 0
     for (kv <- t.toList) {
       phm += kv
@@ -44,7 +47,7 @@ abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelMapCheck[K
 }
 
 
-object IntIntParallelHashMapCheck extends ParallelHashMapCheck[Int, Int]("Int, Int")
+class IntIntParallelHashMapCheck(val tasksupport: TaskSupport) extends ParallelHashMapCheck[Int, Int]("Int, Int")
 with PairOperators[Int, Int]
 with PairValues[Int, Int]
 {

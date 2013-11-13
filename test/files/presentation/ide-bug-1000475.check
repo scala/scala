@@ -3,7 +3,7 @@ reload: Foo.scala
 askTypeCompletion at Foo.scala(3,7)
 ================================================================================
 [response] askCompletionAt (3,7)
-retrieved 35 members
+retrieved 31 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 def +(other: String): String
@@ -32,16 +32,12 @@ final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
 final def wait(x$1: Long,x$2: Int): Unit
-private[this] val __leftOfArrow: Object
-private[this] val __resultOfEnsuring: Object
-private[this] val __stringToFormat: Object
-private[this] val __thingToAdd: Object
 ================================================================================
 
 askTypeCompletion at Foo.scala(6,10)
 ================================================================================
 [response] askCompletionAt (6,10)
-retrieved 35 members
+retrieved 31 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 def +(other: String): String
@@ -70,16 +66,12 @@ final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
 final def wait(x$1: Long,x$2: Int): Unit
-private[this] val __leftOfArrow: Object
-private[this] val __resultOfEnsuring: Object
-private[this] val __stringToFormat: Object
-private[this] val __thingToAdd: Object
 ================================================================================
 
 askTypeCompletion at Foo.scala(7,7)
 ================================================================================
 [response] askCompletionAt (7,7)
-retrieved 35 members
+retrieved 31 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 def +(other: String): String
@@ -108,8 +100,4 @@ final def synchronized[T0](x$1: T0): T0
 final def wait(): Unit
 final def wait(x$1: Long): Unit
 final def wait(x$1: Long,x$2: Int): Unit
-private[this] val __leftOfArrow: Object
-private[this] val __resultOfEnsuring: Object
-private[this] val __stringToFormat: Object
-private[this] val __thingToAdd: Object
 ================================================================================

@@ -12,12 +12,10 @@ import Completion._
  *  reference to the jline classes.
  */
 trait Completion {
-  type ExecResult
   def resetVerbosity(): Unit
   def completer(): ScalaCompleter
 }
 object NoCompletion extends Completion {
-  type ExecResult = Nothing
   def resetVerbosity() = ()
   def completer() = NullCompleter
 }

@@ -5,8 +5,7 @@ object Impls1 {
   def foo[U: c.WeakTypeTag](c: Context)(x: c.Expr[U]) = {
     import c.universe._
     val U = implicitly[c.WeakTypeTag[U]]
-    val body = Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant(U.toString))))
-    c.Expr[Unit](body)
+    c.Expr[Unit](q"println(${U.toString})")
   }
 }
 
@@ -16,18 +15,18 @@ object Impls2 {
     val T = implicitly[c.WeakTypeTag[T]]
     val U = implicitly[c.WeakTypeTag[U]]
     val body = Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant(T.toString + " " + U.toString))))
-    c.Expr[Unit](body)
+    c.Expr[Unit](q"""println(${T.toString} + " " + ${U.toString})""")
   }
 }
 
 object Impls345 {
   def foo[T, U: c.WeakTypeTag, V](c: Context)(implicit T: c.WeakTypeTag[T], V: c.WeakTypeTag[V]): c.Expr[Unit] = {
     import c.universe._
-    c.Expr(Block(List(
-      Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant(T.toString)))),
-      Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant(implicitly[c.WeakTypeTag[U]].toString)))),
-      Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant(V.toString))))),
-      Literal(Constant(()))))
+    c.Expr(q"""
+      println(${T.toString})
+      println(${implicitly[c.WeakTypeTag[U]].toString})
+      println(${V.toString})
+    """)
   }
 }
 

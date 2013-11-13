@@ -26,6 +26,8 @@ import scala.reflect.runtime.ReflectionUtils
  *  @author Stepan Koltsov
  */
 object ClassPath {
+  import scala.language.postfixOps
+
   /** Expand single path entry */
   private def expandS(pattern: String): List[String] = {
     val wildSuffix = File.separator + "*"
@@ -79,9 +81,6 @@ object ClassPath {
       specToURL(elem) getOrElse (baseDir / elem).toURL
     )
   }
-
-  /** A useful name filter. */
-  def isTraitImplementation(name: String) = ReflectionUtils.isTraitImplementation(name)
 
   def specToURL(spec: String): Option[URL] =
     try Some(new URL(spec))
@@ -145,9 +144,7 @@ object ClassPath {
     def newClassPath(dir: AbstractFile) = new DirectoryClassPath(dir, this)
   }
 
-  object DefaultJavaContext extends JavaContext {
-    override def isValidName(name: String) = !ReflectionUtils.scalacShouldntLoadClassfile(name)
-  }
+  object DefaultJavaContext extends JavaContext
 
   private def endsClass(s: String) = s.length > 6 && s.substring(s.length - 6) == ".class"
   private def endsScala(s: String) = s.length > 6 && s.substring(s.length - 6) == ".scala"

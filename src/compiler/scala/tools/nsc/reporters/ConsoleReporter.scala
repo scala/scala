@@ -54,11 +54,6 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
     printMessage(pos, clabel(severity) + msg)
   }
 
-  def printSourceLine(pos: Position) {
-    printMessage(pos.lineContent.stripLineEnd)
-    printColumnMarker(pos)
-  }
-
   /** Prints the column marker of the given position.
    */
   def printColumnMarker(pos: Position) =

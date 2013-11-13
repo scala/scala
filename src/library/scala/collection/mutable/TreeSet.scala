@@ -37,6 +37,7 @@ object TreeSet extends MutableSortedSetFactory[TreeSet] {
  * @author Lucien Pereira
  *
  */
+@deprecatedInheritance("TreeSet is not designed to enable meaningful subclassing.", "2.11.0")
 class TreeSet[A] private (treeRef: ObjectRef[RB.Tree[A, Null]], from: Option[A], until: Option[A])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SetLike[A, TreeSet[A]]
   with SortedSetLike[A, TreeSet[A]] with Set[A] with Serializable {

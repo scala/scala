@@ -126,7 +126,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         verify(expr0)
 
         // need to wrap the expr, because otherwise you won't be able to typecheck macros against something that contains free vars
-        var (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = false)
+        val exprAndFreeTerms = extractFreeTerms(expr0, wrapFreeTermRefs = false)
+        var expr = exprAndFreeTerms._1
+        val freeTerms = exprAndFreeTerms._2
         val dummies = freeTerms.map{ case (freeTerm, name) => ValDef(NoMods, name, TypeTree(freeTerm.info), Select(Ident(PredefModule), newTermName("$qmark$qmark$qmark"))) }.toList
         expr = Block(dummies, wrapIntoTerm(expr))
 
@@ -278,7 +280,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
       def parse(code: String): Tree = {
         reporter.reset()
-        val tree = gen.mkTreeOrBlock(newUnitParser(code, "<toolbox>").parseStats())
+        val tree = gen.mkTreeOrBlock(newUnitParser(code, "<toolbox>").parseStatsOrPackages())
         throwIfErrors()
         tree
       }
@@ -338,7 +340,8 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         lazy val exporter = importer.reverse
       }
 
-      def apply[T](f: CompilerApi => T): T = {
+      private val toolBoxLock = new Object
+      def apply[T](f: CompilerApi => T): T = toolBoxLock.synchronized {
         try f(api)
         catch { case ex: FatalError => throw ToolBoxError(s"fatal compiler error", ex) }
         finally api.compiler.cleanupCaches()

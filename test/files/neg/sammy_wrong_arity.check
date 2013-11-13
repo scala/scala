@@ -1,0 +1,52 @@
+sammy_wrong_arity.scala:6: error: type mismatch;
+ found   : () => Int
+ required: T1
+  (() => 0): T1
+      ^
+sammy_wrong_arity.scala:7: error: type mismatch;
+ found   : Any => Int
+ required: T2
+  ((x: Any) => 0): T2
+            ^
+sammy_wrong_arity.scala:9: error: type mismatch;
+ found   : Any => Int
+ required: T0
+  ((x: Any) => 0): T0
+            ^
+sammy_wrong_arity.scala:10: error: type mismatch;
+ found   : Any => Int
+ required: T2
+  ((x: Any) => 0): T2
+            ^
+sammy_wrong_arity.scala:12: error: type mismatch;
+ found   : (Any, Any) => Int
+ required: T0
+  ((x: Any, y: Any) => 0): T0
+                    ^
+sammy_wrong_arity.scala:13: error: type mismatch;
+ found   : (Any, Any) => Int
+ required: T1
+  ((x: Any, y: Any) => 0): T1
+                    ^
+sammy_wrong_arity.scala:15: error: missing parameter type
+  ((x) => 0): T2
+    ^
+sammy_wrong_arity.scala:17: error: missing parameter type
+  ((x) => 0): T0
+    ^
+sammy_wrong_arity.scala:18: error: missing parameter type
+  ((x) => 0): T2
+    ^
+sammy_wrong_arity.scala:20: error: missing parameter type
+  ((x, y) => 0): T0
+    ^
+sammy_wrong_arity.scala:20: error: missing parameter type
+  ((x, y) => 0): T0
+       ^
+sammy_wrong_arity.scala:21: error: missing parameter type
+  ((x, y) => 0): T1
+    ^
+sammy_wrong_arity.scala:21: error: missing parameter type
+  ((x, y) => 0): T1
+       ^
+13 errors found

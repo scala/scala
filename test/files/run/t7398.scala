@@ -21,6 +21,6 @@ public interface Iterator<E> {
 }
   """
 
-  // We're only checking we can parse it.
+  // We're only checking we can compile it.
   def check(source: String, unit: global.CompilationUnit): Unit = ()
 }

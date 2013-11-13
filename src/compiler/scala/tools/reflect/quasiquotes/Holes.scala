@@ -60,11 +60,11 @@ trait Holes { self: Quasiquotes =>
   }
   object HoleType {
     def unapply(tpe: Type): Option[HoleType] = tpe match {
-      case NativeType(holeTpe) => Some(holeTpe)
-      case LiftableType(holeTpe) => Some(holeTpe)
-      case IterableTreeType(holeTpe) => Some(holeTpe)
+      case NativeType(holeTpe)           => Some(holeTpe)
+      case LiftableType(holeTpe)         => Some(holeTpe)
+      case IterableTreeType(holeTpe)     => Some(holeTpe)
       case IterableLiftableType(holeTpe) => Some(holeTpe)
-      case _ => None
+      case _                             => None
     }
 
     trait HoleTypeExtractor {
@@ -102,7 +102,7 @@ trait Holes { self: Quasiquotes =>
           if (tree.tpe != null && (tree.tpe <:< listTreeType || tree.tpe <:< listListTreeType)) tree
           else atPos(tree.pos)(loop(tree, n))
         }
-        val (card, elementTpe) = parseCardinality(tpe)
+        val card = parseCardinality(tpe)._1
         if (card != NoDot) Some(reifyIterable(_, card)) else None
       }
     }
@@ -154,7 +154,7 @@ trait Holes { self: Quasiquotes =>
 
   object Hole {
     def apply(splicee: Tree, holeCard: Cardinality): Hole = {
-      if (splicee.tpe == null) return new Hole(splicee, UnknownLocation, holeCard)
+      if (method == nme.unapply) return new Hole(splicee, UnknownLocation, holeCard)
       val (spliceeCard, elementTpe) = parseCardinality(splicee.tpe)
       def cantSplice() = {
         val holeCardMsg = if (holeCard != NoDot) s" with $holeCard" else ""

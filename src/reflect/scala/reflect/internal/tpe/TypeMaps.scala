@@ -581,6 +581,7 @@ private[internal] trait TypeMaps {
         else if (!matchesPrefixAndClass(pre, clazz)(tparam.owner))
           loop(nextBase.prefix, clazz.owner)
         else nextBase match {
+          case NoType                         => loop(NoType, clazz.owner) // backstop for SI-2797, must remove `SingletonType#isHigherKinded` and run pos/t2797.scala to get here.
           case applied @ TypeRef(_, _, _)     => correspondingTypeArgument(classParam, applied)
           case ExistentialType(eparams, qtpe) => captureSkolems(eparams) ; loop(qtpe, clazz)
           case t                              => abort(s"$tparam in ${tparam.owner} cannot be instantiated from ${seenFromPrefix.widen}")
@@ -593,10 +594,8 @@ private[internal] trait TypeMaps {
     // Since pre may be something like ThisType(A) where trait A { self: B => },
     // we have to test the typeSymbol of the widened type, not pre.typeSymbol, or
     // B will not be considered.
-    private def matchesPrefixAndClass(pre: Type, clazz: Symbol)(candidate: Symbol) = pre.widen match {
-      case _: TypeVar => false
-      case wide       => (clazz == candidate) && (wide.typeSymbol isSubClass clazz)
-    }
+    private def matchesPrefixAndClass(pre: Type, clazz: Symbol)(candidate: Symbol) =
+      (clazz == candidate) && (pre.widen.typeSymbol isSubClass clazz)
 
     // Whether the annotation tree currently being mapped over has had a This(_) node rewritten.
     private[this] var wroteAnnotation = false
@@ -969,22 +968,6 @@ private[internal] trait TypeMaps {
         if (t.symbol == sym)
           result = true
       }
-      arg
-    }
-  }
-
-  /** A map to implement the `contains` method. */
-  class ContainsTypeCollector(t: Type) extends TypeCollector(false) {
-    def traverse(tp: Type) {
-      if (!result) {
-        if (tp eq t) result = true
-        else mapOver(tp)
-      }
-    }
-    override def mapOver(arg: Tree) = {
-      for (t <- arg)
-        traverse(t.tpe)
-
       arg
     }
   }

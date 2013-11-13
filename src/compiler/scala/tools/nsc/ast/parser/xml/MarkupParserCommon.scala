@@ -18,8 +18,6 @@ private[scala] trait MarkupParserCommon {
 
   protected def unreachable = scala.sys.error("Cannot be reached.")
 
-  // type HandleType       // MarkupHandler, SymbolicXMLBuilder
-  type InputType        // Source, CharArrayReader
   type PositionType     // Int, Position
   type ElementType      // NodeSeq, Tree
   type NamespaceType    // NamespaceBinding, Any
@@ -65,21 +63,6 @@ private[scala] trait MarkupParserCommon {
     buf.toString
   }
 
-  def xAttributeValue(): String = {
-    val str = xAttributeValue(ch_returning_nextch)
-    // well-formedness constraint
-    normalizeAttributeValue(str)
-  }
-
-  private def takeUntilChar(it: Iterator[Char], end: Char): String = {
-    val buf = new StringBuilder
-    while (it.hasNext) it.next() match {
-      case `end`  => return buf.toString
-      case ch     => buf append ch
-    }
-    scala.sys.error("Expected '%s'".format(end))
-  }
-
   /** [42]  '<' xmlEndTag ::=  '<' '/' Name S? '>'
    */
   def xEndTag(startName: String) {
@@ -115,33 +98,6 @@ private[scala] trait MarkupParserCommon {
       buf.toString dropRight 1
     }
     else buf.toString
-  }
-
-  private def attr_unescape(s: String) = s match {
-    case "lt"     => "<"
-    case "gt"     => ">"
-    case "amp"    => "&"
-    case "apos"   => "'"
-    case "quot"   => "\""
-    case "quote"  => "\""
-    case _        => "&" + s + ";"
-  }
-
-  /** Replaces only character references right now.
-   *  see spec 3.3.3
-   */
-  private def normalizeAttributeValue(attval: String): String = {
-    val buf = new StringBuilder
-    val it = attval.iterator.buffered
-
-    while (it.hasNext) buf append (it.next() match {
-      case ' ' | '\t' | '\n' | '\r' => " "
-      case '&' if it.head == '#'    => it.next() ; xCharRef(it)
-      case '&'                      => attr_unescape(takeUntilChar(it, ';'))
-      case c                        => c
-    })
-
-    buf.toString
   }
 
   /** CharRef ::= "&#" '0'..'9' {'0'..'9'} ";"

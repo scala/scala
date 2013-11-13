@@ -4,40 +4,43 @@ trait T extends AnyVal // fail
 valueclasses.scala:6: error: value class may not be a member of another class
   class Bar(x: Int) extends AnyVal // fail
         ^
+valueclasses.scala:6: error: value class parameter must be a val and not be private[this]
+  class Bar(x: Int) extends AnyVal // fail
+            ^
 valueclasses.scala:8: error: value class may not be a local class
     class Baz(x: Int) extends AnyVal // fail
           ^
-valueclasses.scala:12: error: value class needs to have exactly one public val parameter
+valueclasses.scala:8: error: value class parameter must be a val and not be private[this]
+    class Baz(x: Int) extends AnyVal // fail
+              ^
+valueclasses.scala:12: error: value class needs to have exactly one val parameter
 class V1 extends AnyVal // fail
       ^
-valueclasses.scala:14: error: value class needs to have a publicly accessible val parameter
-class V2(private[test] val x: Int) extends AnyVal // fail
-                           ^
-valueclasses.scala:15: error: value class needs to have a publicly accessible val parameter
-class V3(protected[test] val x: Int) extends AnyVal // fail
-                             ^
-valueclasses.scala:16: error: value class needs to have a publicly accessible val parameter
-class V4(protected val x: Int) extends AnyVal // fail
-                       ^
-valueclasses.scala:17: error: value class needs to have a publicly accessible val parameter
-class V5(private val x: Int) extends AnyVal // fail
-                     ^
-valueclasses.scala:19: error: value class needs to have exactly one public val parameter
+valueclasses.scala:19: error: value class needs to have exactly one val parameter
 class V6(val x: Int, val y: String) extends AnyVal // fail
       ^
-valueclasses.scala:20: error: field definition is not allowed in value class
+valueclasses.scala:20: error: value class needs to have exactly one val parameter
 class V7(val x: Int, private[this] val y: String) extends AnyVal // fail
-                                       ^
-valueclasses.scala:21: error: value class needs to have exactly one public val parameter
-class V8(var x: Int) extends AnyVal // fail
       ^
+valueclasses.scala:21: error: value class parameter must not be a var
+class V8(var x: Int) extends AnyVal // fail
+             ^
 valueclasses.scala:24: error: field definition is not allowed in value class
   val y = x    // fail
       ^
 valueclasses.scala:29: error: type parameter of value class may not be specialized
 class V12[@specialized T, U](val x: (T, U)) extends AnyVal // fail
                        ^
-valueclasses.scala:31: error: value class needs to have exactly one public val parameter
+valueclasses.scala:31: error: value class parameter must be a val and not be private[this]
 class V13(x: Int) extends AnyVal // fail
+          ^
+valueclasses.scala:33: error: value class parameter must be a val and not be private[this]
+class V14(private[this] val x: Int) extends AnyVal // fail
+                            ^
+valueclasses.scala:34: error: value class parameter must not be protected[this]
+class V15(protected[this] val x: Int) extends AnyVal // fail
+                              ^
+valueclasses.scala:36: error: value class needs to have exactly one val parameter
+class V16()(val a: Any) extends AnyVal // fail, was allowed 2.10.x
       ^
-14 errors found
+15 errors found

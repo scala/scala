@@ -83,10 +83,26 @@ self =>
     iterator.foldRight(z)(op)
   override /*TraversableLike*/ def reduceRight[B >: A](op: (A, B) => B): B =
     iterator.reduceRight(op)
+    
+  
+  /** Returns this $coll as an iterable collection.
+   *
+   *  A new collection will not be built; lazy collections will stay lazy.
+   *
+   *  $willNotTerminateInf
+   *  @return an `Iterable` containing all elements of this $coll.
+   */
   override /*TraversableLike*/ def toIterable: Iterable[A] =
     thisCollection
-  override /*TraversableLike*/ def toIterator: Iterator[A] =
-    iterator
+  
+  /** Returns an Iterator over the elements in this $coll.  Produces the same
+   *  result as `iterator`.
+   *  $willNotTerminateInf
+   *  @return an Iterator containing all elements of this $coll.
+   */
+  @deprecatedOverriding("toIterator should stay consistent with iterator for all Iterables: override iterator instead.", "2.11.0")
+  override def toIterator: Iterator[A] = iterator
+  
   override /*TraversableLike*/ def head: A =
     iterator.next()
 
@@ -152,7 +168,7 @@ self =>
    *
    *  @param size the number of elements per group
    *  @return An iterator producing ${coll}s of size `size`, except the
-   *          last will be truncated if the elements don't divide evenly.
+   *          last will be less than size `size` if the elements don't divide evenly.
    */
   def grouped(size: Int): Iterator[Repr] =
     for (xs <- iterator grouped size) yield {
@@ -202,7 +218,7 @@ self =>
     b.sizeHintBounded(n, this)
     val lead = this.iterator drop n
     var go = false
-    for (x <- this.seq) {
+    for (x <- this) {
       if (lead.hasNext) lead.next()
       else go = true
       if (go) b += x

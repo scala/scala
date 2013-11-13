@@ -7,7 +7,6 @@ import scala.reflect.runtime.universe._
 import Flag._
 
 object TermConstructionProps extends QuasiquoteProperties("term construction") {
-
   property("splice single tree return tree itself") = forAll { (t: Tree) =>
     q"$t" ≈ t
   }
@@ -190,5 +189,23 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
   property("assign or named arg") = test {
     val assignx = q"x = 1"
     assertEqAst(q"f($assignx)", "f(x = 1)")
+  }
+
+  property("fresh names are regenerated at each evaluation") = test {
+    def plusOne = q"{ _ + 1 }"
+    assert(!(plusOne ≈ plusOne))
+    def whileTrue = q"while(true) false"
+    assert(!(whileTrue ≈ whileTrue))
+    def withEvidence = q"def foo[T: X]"
+    assert(!(withEvidence ≈ withEvidence))
+  }
+
+  property("make sure inference doesn't infer any") = test {
+    val l1 = List(q"foo")
+    val l2 = List(q"bar")
+    val baz = q"baz"
+    assert(q"f(..${l1 ++ l2})" ≈ q"f(foo, bar)")
+    assert(q"f(..${l1 ++ l2}, $baz)" ≈ q"f(foo, bar, baz)")
+    assert(q"f(${if (true) q"a" else q"b"})" ≈ q"f(a)")
   }
 }

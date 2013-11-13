@@ -24,6 +24,8 @@ trait Adaptations {
   trait Adaptation {
     self: Typer =>
 
+    import runDefinitions._
+
     def checkValidAdaptation(t: Tree, args: List[Tree]): Boolean = {
       def applyArg = t match {
         case Apply(_, arg :: Nil) => arg
