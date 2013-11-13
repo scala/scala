@@ -1,10 +1,5 @@
-import org.scalacheck._
-import Prop._
-import Gen._
-import Arbitrary._
-
-import scala.reflect.runtime.universe._
-import Flag._
+import org.scalacheck._, Prop._, Gen._, Arbitrary._
+import scala.reflect.runtime.universe._, Flag._
 
 object TermConstructionProps extends QuasiquoteProperties("term construction") {
   property("splice single tree return tree itself") = forAll { (t: Tree) =>
@@ -148,8 +143,8 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     val a1 = q"a1"
     val a2 = q"a2"
     val as = List(a1, a2)
-    assert(q"(..$as)" ≈ q"Tuple2($a1, $a2)")
-    assert(q"(a0, ..$as)" ≈ q"Tuple3(a0, $a1, $a2)")
+    assert(q"(..$as)" ≈ q"scala.Tuple2($a1, $a2)")
+    assert(q"(a0, ..$as)" ≈ q"scala.Tuple3(a0, $a1, $a2)")
   }
 
   property("splice empty list into tuple") = test {
@@ -193,11 +188,11 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
 
   property("fresh names are regenerated at each evaluation") = test {
     def plusOne = q"{ _ + 1 }"
-    assert(!(plusOne ≈ plusOne))
+    assert(!plusOne.equalsStructure(plusOne))
     def whileTrue = q"while(true) false"
-    assert(!(whileTrue ≈ whileTrue))
+    assert(!whileTrue.equalsStructure(whileTrue))
     def withEvidence = q"def foo[T: X]"
-    assert(!(withEvidence ≈ withEvidence))
+    assert(!withEvidence.equalsStructure(withEvidence))
   }
 
   property("make sure inference doesn't infer any") = test {

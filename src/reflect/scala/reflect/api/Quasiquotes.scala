@@ -14,5 +14,6 @@ trait Quasiquotes { self: Universe =>
     object tq extends api
     object cq extends api
     object pq extends api
+    object fq extends api
   }
 }

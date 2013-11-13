@@ -161,4 +161,12 @@ trait Placeholders { self: Quasiquotes =>
       case _ => None
     }
   }
+
+  object ForEnumPlaceholder {
+    def unapply(tree: Tree): Option[(Tree, Location, Cardinality)] = tree match {
+      case build.SyntacticValFrom(Bind(Placeholder(tree, location, card), Ident(nme.WILDCARD)), Ident(nme.QUASIQUOTE_FOR_ENUM)) =>
+        Some((tree, location, card))
+      case _ => None
+    }
+  }
 }

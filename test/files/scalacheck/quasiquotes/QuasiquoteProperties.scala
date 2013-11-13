@@ -1,15 +1,7 @@
-import scala.reflect.runtime.universe._
-import scala.reflect.runtime.universe.definitions._
-import scala.reflect.runtime.universe.Flag._
-import scala.reflect.runtime.currentMirror
-import scala.reflect.api.{Liftable, Universe}
-import scala.reflect.macros.TypecheckException
+import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.tools.reflect.{ToolBox, ToolBoxError}
-
-import org.scalacheck._
-import Prop._
-import Gen._
-import Arbitrary._
+import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.universe._, Flag._
 
 class QuasiquoteProperties(name: String) extends Properties(name) with ArbitraryTreesAndNames with Helpers
 
@@ -18,14 +10,36 @@ trait Helpers {
    *  if no exception has been thrown while executing code
    *  block. This is useful for simple one-off tests.
    */
-  def test[T](block: => T)=
-    Prop { (params) =>
+  def test[T](block: => T) =
+    Prop { params =>
       block
       Result(Prop.Proof)
     }
 
+  object simplify extends Transformer {
+    object SimplifiedName {
+      def unapply[T <: Name](name: T): Option[T] =
+        name.toString.split("\\$").toSeq match {
+          case first :+ last if scala.util.Try(last.toInt).isSuccess && first.nonEmpty =>
+            val value = first.mkString("", "$", "$")
+            Some((if (name.isTermName) TermName(value) else TypeName(value)).asInstanceOf[T])
+          case _ => None
+        }
+    }
+
+    override def transform(tree: Tree): Tree = tree match {
+      case Ident(SimplifiedName(name))                  => Ident(name)
+      case ValDef(mods, SimplifiedName(name), tpt, rhs) => ValDef(mods, name, tpt, rhs)
+      case Bind(SimplifiedName(name), rhs)              => Bind(name, rhs)
+      case _ =>
+        super.transform(tree)
+    }
+
+    def apply(tree: Tree): Tree = transform(tree)
+  }
+
   implicit class TestSimilarTree(tree1: Tree) {
-    def ≈(tree2: Tree) = tree1.equalsStructure(tree2)
+    def ≈(tree2: Tree) = simplify(tree1).equalsStructure(simplify(tree2))
   }
 
   implicit class TestSimilarListTree(lst: List[Tree]) {
@@ -67,6 +81,18 @@ trait Helpers {
   val parse = toolbox.parse(_)
   val compile = toolbox.compile(_)
   val eval = toolbox.eval(_)
+
+  def typecheck(tree: Tree) = toolbox.typeCheck(tree)
+
+  def typecheckTyp(tree: Tree) = {
+    val q"type $_ = $res" = typecheck(q"type T = $tree")
+    res
+  }
+
+  def typecheckPat(tree: Tree) = {
+    val q"$_ match { case $res => }" = typecheck(q"((): Any) match { case $tree => }")
+    res
+  }
 
   def fails(msg: String, block: String) = {
     def result(ok: Boolean, description: String = "") = {

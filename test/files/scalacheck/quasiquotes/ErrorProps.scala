@@ -1,10 +1,4 @@
-import org.scalacheck._
-import Prop._
-import Gen._
-import Arbitrary._
-
-import scala.reflect.runtime.universe._
-import Flag._
+import org.scalacheck._, Prop._, Gen._, Arbitrary._
 
 object ErrorProps extends QuasiquoteProperties("errors") {
   property("can't extract two .. cardinalities in a row") = fails(
