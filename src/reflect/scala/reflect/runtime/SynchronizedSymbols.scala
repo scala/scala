@@ -32,8 +32,15 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
   trait SynchronizedSymbol extends Symbol {
 
     def gilSynchronizedIfNotInited[T](body: => T): T = {
-      if (isFullyInitialized) body
-      else gilSynchronized { body }
+      // TODO JZ desired, but prone to race conditions. We need the runtime reflection based
+      //      type completers to establish a memory barrier upon initialization. Maybe a volatile
+      //      write? We need to consult with the experts here. Until them, lock pessimistically.
+      //
+      //      `run/reflection-sync-subtypes.scala` fails about 1/50 times otherwise.
+      //
+      //      if (isFullyInitialized) body
+      //      else gilSynchronized { body }
+      gilSynchronized { body }
     }
 
     override def validTo = gilSynchronizedIfNotInited { super.validTo }
