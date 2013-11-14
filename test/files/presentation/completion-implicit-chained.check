@@ -1,0 +1,29 @@
+reload: Completions.scala
+
+askTypeCompletion at Completions.scala(11,16)
+================================================================================
+[response] askCompletionAt (11,16)
+retrieved 24 members
+[inaccessible] protected[package lang] def clone(): Object
+[inaccessible] protected[package lang] def finalize(): Unit
+def equals(x$1: Any): Boolean
+def hashCode(): Int
+def map(x: Int => Int)(implicit a: DummyImplicit): test.O.type
+def toString(): String
+final def !=(x$1: Any): Boolean
+final def !=(x$1: AnyRef): Boolean
+final def ##(): Int
+final def ==(x$1: Any): Boolean
+final def ==(x$1: AnyRef): Boolean
+final def asInstanceOf[T0]: T0
+final def eq(x$1: AnyRef): Boolean
+final def isInstanceOf[T0]: Boolean
+final def ne(x$1: AnyRef): Boolean
+final def notify(): Unit
+final def notifyAll(): Unit
+final def synchronized[T0](x$1: T0): T0
+final def wait(): Unit
+final def wait(x$1: Long): Unit
+final def wait(x$1: Long,x$2: Int): Unit
+private[this] val prefix123: Int
+================================================================================

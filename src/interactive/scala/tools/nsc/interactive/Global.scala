@@ -1056,8 +1056,15 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       case t                                             => t
     }
     val context = doLocateContext(pos)
+
+    val shouldTypeQualifier = tree0.tpe match {
+      case null           => true
+      case mt: MethodType => mt.isImplicit
+      case _              => false
+    }
+
     // TODO: guard with try/catch to deal with ill-typed qualifiers.
-    val tree = if (tree0.tpe eq null) analyzer newTyper context typedQualifier tree0 else tree0
+    val tree = if (shouldTypeQualifier) analyzer newTyper context typedQualifier tree0 else tree0
 
     debugLog("typeMembers at "+tree+" "+tree.tpe)
     val superAccess = tree.isInstanceOf[Super]
@@ -1231,4 +1238,3 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 }
 
 object CancelException extends Exception
-
