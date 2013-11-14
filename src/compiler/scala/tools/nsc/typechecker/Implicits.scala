@@ -664,6 +664,8 @@ trait Implicits {
 
         if (context.hasErrors)
           fail("hasMatchingSymbol reported error: " + context.firstError.get.errMsg)
+        else if (itree3.isErroneous)
+          fail("error typechecking implicit candidate")
         else if (isLocal && !hasMatchingSymbol(itree2))
           fail("candidate implicit %s is shadowed by %s".format(
             info.sym.fullLocationString, itree2.symbol.fullLocationString))
