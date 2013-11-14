@@ -51,6 +51,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     // inaccessible: this.SimpleNameOrdering
     this.traceSymbols
     this.perRunCaches
+    this.FreshNameExtractor
     this.FixedMirrorTreeCreator
     this.FixedMirrorTypeCreator
     this.CompoundTypeTreeOriginalAttachment
