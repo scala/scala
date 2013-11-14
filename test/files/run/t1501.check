@@ -1,0 +1,3 @@
+defined class xyz
+loopWhile: [T](cond: => Boolean)(body: => Unit @xyz[T])Unit @xyz[T]
+test: ()Unit @xyz[Int]
