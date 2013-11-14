@@ -63,4 +63,4 @@ Example:
 
 ## The Scala Improvement Process
 A new language feature requires a SIP (Scala Improvement Process) proposal. Note that significant additions to the standard library are also considered candidates for a SIP proposal.
-For more details on submitting SIPs, see (how to submit a SIP)[http://docs.scala-lang.org/sips/sip-submission.html].
+For more details on submitting SIPs, see [how to submit a SIP](http://docs.scala-lang.org/sips/sip-submission.html).
