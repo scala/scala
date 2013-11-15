@@ -70,7 +70,12 @@ and Eclipse .classpath of the different projects isn’t updated accordingly. Th
 the build path of each project and make sure the version of the declared dependencies is in sync with the version
 declared in the `version.properties` file. If it isn’t, update it manually and, when done, don’t forget to share
 your changes via a pull request.
-(We are aware this is manual process is cumbersome. If you feel like scripting this process, pull requests are of course welcome.)
+(We are aware this is cumbersome. If you feel like scripting the process, pull requests are of course welcome.)
+
+Launching & Debugging scalac
+============================
+
+Read [here](http://scala-ide.org/docs/tutorials/scalac-trunk/index.html#Launching_and_Debugging_scalac).
 
 DETAILS
 =======
