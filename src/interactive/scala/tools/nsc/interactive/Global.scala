@@ -18,6 +18,7 @@ import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
 import scala.annotation.{ elidable, tailrec }
 import scala.language.implicitConversions
 import scala.tools.nsc.typechecker.Typers
+import scala.util.control.Breaks._
 
 /**
  * This trait allows the IDE to have an instance of the PC that
@@ -406,85 +407,91 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *
    */
   private[interactive] def pollForWork(pos: Position) {
-    if (!interruptsEnabled) return
-    if (pos == NoPosition || nodesSeen % yieldPeriod == 0)
-      Thread.`yield`()
+    var loop: Boolean = true
+    while (loop) {
+      breakable{
+        loop = false
+        if (!interruptsEnabled) return
+        if (pos == NoPosition || nodesSeen % yieldPeriod == 0)
+          Thread.`yield`()
 
-    def nodeWithWork(): Option[WorkEvent] =
-      if (scheduler.moreWork || pendingResponse.isCancelled) Some(new WorkEvent(nodesSeen, System.currentTimeMillis))
-      else None
+        def nodeWithWork(): Option[WorkEvent] =
+          if (scheduler.moreWork || pendingResponse.isCancelled) Some(new WorkEvent(nodesSeen, System.currentTimeMillis))
+          else None
 
-    nodesSeen += 1
-    logreplay("atnode", nodeWithWork()) match {
-      case Some(WorkEvent(id, _)) =>
-        debugLog("some work at node "+id+" current = "+nodesSeen)
-//        assert(id >= nodesSeen)
-        moreWorkAtNode = id
-      case None =>
-    }
+        nodesSeen += 1
+        logreplay("atnode", nodeWithWork()) match {
+          case Some(WorkEvent(id, _)) =>
+            debugLog("some work at node "+id+" current = "+nodesSeen)
+          //        assert(id >= nodesSeen)
+          moreWorkAtNode = id
+          case None =>
+        }
 
-    if (nodesSeen >= moreWorkAtNode) {
+        if (nodesSeen >= moreWorkAtNode) {
 
-      logreplay("asked", scheduler.pollInterrupt()) match {
-        case Some(ir) =>
-          try {
-            interruptsEnabled = false
-            debugLog("ask started"+timeStep)
-            ir.execute()
-          } finally {
-            debugLog("ask finished"+timeStep)
-            interruptsEnabled = true
-          }
-          pollForWork(pos)
-        case _ =>
-      }
-
-      if (logreplay("cancelled", pendingResponse.isCancelled)) {
-        throw CancelException
-      }
-
-      logreplay("exception thrown", scheduler.pollThrowable()) match {
-        case Some(ex: FreshRunReq) =>
-          newTyperRun()
-          minRunId = currentRunId
-          demandNewCompilerRun()
-
-        case Some(ShutdownReq) =>
-          scheduler.synchronized { // lock the work queue so no more items are posted while we clean it up
-            val units = scheduler.dequeueAll {
-              case item: WorkItem => Some(item.raiseMissing())
-              case _ => Some(())
-            }
-
-            // don't forget to service interrupt requests
-            scheduler.dequeueAllInterrupts(_.execute())
-
-            debugLog("ShutdownReq: cleaning work queue (%d items)".format(units.size))
-            debugLog("Cleanup up responses (%d loadedType pending, %d parsedEntered pending)"
-                .format(waitLoadedTypeResponses.size, getParsedEnteredResponses.size))
-            checkNoResponsesOutstanding()
-
-            log.flush()
-            scheduler = new NoWorkScheduler
-            throw ShutdownReq
+          logreplay("asked", scheduler.pollInterrupt()) match {
+            case Some(ir) =>
+              try {
+                interruptsEnabled = false
+                debugLog("ask started"+timeStep)
+                ir.execute()
+              } finally {
+                debugLog("ask finished"+timeStep)
+                interruptsEnabled = true
+              }
+            loop = true; break
+            case _ =>
           }
 
-        case Some(ex: Throwable) => log.flush(); throw ex
-        case _ =>
-      }
-
-      lastWasReload = false
-
-      logreplay("workitem", scheduler.nextWorkItem()) match {
-        case Some(action) =>
-          try {
-            debugLog("picked up work item at "+pos+": "+action+timeStep)
-            action()
-            debugLog("done with work item: "+action)
-          } finally {
-            debugLog("quitting work item: "+action+timeStep)
+          if (logreplay("cancelled", pendingResponse.isCancelled)) {
+            throw CancelException
           }
-        case None =>
+
+          logreplay("exception thrown", scheduler.pollThrowable()) match {
+            case Some(ex: FreshRunReq) =>
+              newTyperRun()
+            minRunId = currentRunId
+            demandNewCompilerRun()
+
+            case Some(ShutdownReq) =>
+              scheduler.synchronized { // lock the work queue so no more items are posted while we clean it up
+                val units = scheduler.dequeueAll {
+                  case item: WorkItem => Some(item.raiseMissing())
+                  case _ => Some(())
+                }
+
+                // don't forget to service interrupt requests
+                scheduler.dequeueAllInterrupts(_.execute())
+
+                debugLog("ShutdownReq: cleaning work queue (%d items)".format(units.size))
+                debugLog("Cleanup up responses (%d loadedType pending, %d parsedEntered pending)"
+                         .format(waitLoadedTypeResponses.size, getParsedEnteredResponses.size))
+                checkNoResponsesOutstanding()
+
+                log.flush()
+                scheduler = new NoWorkScheduler
+                throw ShutdownReq
+              }
+
+            case Some(ex: Throwable) => log.flush(); throw ex
+            case _ =>
+          }
+
+          lastWasReload = false
+
+          logreplay("workitem", scheduler.nextWorkItem()) match {
+            case Some(action) =>
+              try {
+                debugLog("picked up work item at "+pos+": "+action+timeStep)
+                action()
+                debugLog("done with work item: "+action)
+              } finally {
+                debugLog("quitting work item: "+action+timeStep)
+              }
+            case None =>
+          }
+        }
       }
     }
   }
