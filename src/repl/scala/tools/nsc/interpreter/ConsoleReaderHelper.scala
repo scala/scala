@@ -63,29 +63,29 @@ trait Tabulator {
   def width: Int
   def marginSize: Int
 
-  private def fits(items: List[String], width: Int): Boolean = (
+  protected def fits(items: Seq[String], width: Int): Boolean = (
     (items map (_.length)).sum + (items.length - 1) * marginSize < width
   )
-  def tabulate(items: List[String]): Seq[Seq[String]] = {
+  def tabulate(items: Seq[String]): Seq[Seq[String]] = (
     if (fits(items, width)) Seq(Seq(items mkString " " * marginSize))
     else printMultiLineColumns(items)
-  }
-  private def printMultiLineColumns(items: List[String]): Seq[Seq[String]] = {
+  )
+  protected def columnize(ss: Seq[String]): Seq[Seq[String]] = ss map (s => Seq(s))
+  protected def printMultiLineColumns(items: Seq[String]): Seq[Seq[String]] = {
     import SimpleMath._
     val longest     = (items map (_.length)).max
-    //val shortest   = (items map (_.length)).min
     val columnWidth = longest + marginSize
-    val maxcols = {
+    val maxcols = (
       if (columnWidth >= width) 1
       else 1 max (width / columnWidth)   // make sure it doesn't divide to 0
-    }
+    )
     val nrows       = items.size /% maxcols
     val ncols       = items.size /% nrows
     val groupSize   = ncols
     val padded      = items map (s"%-${columnWidth}s" format _)
-    val xwise       = isAcross || ncols > items.length
+    val xwise       = isAcross || ncols >= items.length
     val grouped: Seq[Seq[String]]    =
-      if (groupSize == 1) Seq(items)
+      if (groupSize == 1) columnize(items)
       else if (xwise) (padded grouped groupSize).toSeq
       else {
         val h       = 1 max padded.size /% groupSize
@@ -95,6 +95,60 @@ trait Tabulator {
             if (i < cols(j).size) cols(j)(i) else ""
       }
     grouped
+  }
+}
+
+/** Adjust the column width and number of columns to minimize the row count. */
+trait VariColumnTabulator extends Tabulator {
+  override protected def printMultiLineColumns(items: Seq[String]): Seq[Seq[String]] = {
+    import SimpleMath._
+    val longest  = (items map (_.length)).max
+    val shortest = (items map (_.length)).min
+    val fattest  = longest + marginSize
+    val skinny   = shortest + marginSize
+
+    // given ncols, calculate nrows and a list of column widths, or none if not possible
+    // if ncols > items.size, then columnWidths.size == items.size
+    def layout(ncols: Int): Option[(Int, Seq[Int], Seq[Seq[String]])] = {
+      val nrows = items.size /% ncols
+      val xwise = isAcross || ncols >= items.length
+      def maxima(sss: Seq[Seq[String]]) =
+        (0 until (ncols min items.size)) map (i => (sss map (ss => ss(i).length)).max)
+      def resulting(rows: Seq[Seq[String]]) = {
+        val columnWidths = maxima(rows) map (_ + marginSize)
+        val linelen      = columnWidths.sum
+        if (linelen <= width) Some((nrows, columnWidths, rows))
+        else None
+      }
+      if (ncols == 1) resulting(columnize(items))
+      else if (xwise) resulting((items grouped ncols).toSeq)
+      else {
+        val cols = (items grouped nrows).toList
+        val rows = for (i <- 0 until nrows) yield
+          for (j <- 0 until ncols) yield
+            if (j < cols.size && i < cols(j).size) cols(j)(i) else ""
+        resulting(rows)
+      }
+    }
+
+    if (fattest >= width) {
+      columnize(items)
+    } else {
+      // if every col is widest, we have at least this many cols
+      val mincols = 1 max (width / fattest)
+      // if every other col is skinniest, we have at most this many cols
+      val maxcols = 1 + ((width - fattest) / skinny)
+      val possibles = (mincols to maxcols).map(n => layout(n)).flatten
+      val minrows = (possibles map (_._1)).min
+
+      // select the min ncols that results in minrows
+      val (_, columnWidths, sss) = (possibles find (_._1 == minrows)).get
+
+      // format to column width
+      sss map (ss => ss.zipWithIndex map {
+        case (s, i) => s"%-${columnWidths(i)}s" format s
+      })
+    }
   }
 }
 
