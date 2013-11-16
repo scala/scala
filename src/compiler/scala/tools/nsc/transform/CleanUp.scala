@@ -481,18 +481,25 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       * For instance, say we have a Scala class:
       *
       * class Cls {
-      *   // ...
-      *   def someSymbol = `symbolic
-      *   // ...
+      *   def someSymbol1 = 'Symbolic1
+      *   def someSymbol2 = 'Symbolic2
+      *   def sameSymbol1 = 'Symbolic1
       * }
       *
       * After transformation, this class looks like this:
       *
       * class Cls {
-      *   private "static" val <some_name>$symbolic = Symbol("symbolic")
-      *   // ...
-      *   def someSymbol = <some_name>$symbolic
-      *   // ...
+      *   private <static> var symbol$1
+      *   private <static> var symbol$2
+      *
+      *   private <static> def <clinit> = {
+      *     symbol$1 = Symbol.apply("Symbolic1")
+      *     symbol$2 = Symbol.apply("Symbolic2")
+      *   }
+      *
+      *   def someSymbol1 = symbol$1
+      *   def someSymbol2 = symbol$2
+      *   def sameSymbol1 = symbol$1
       * }
       *
       * The reasoning behind this transformation is the following. Symbols get interned - they are stored
@@ -505,14 +512,16 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       * And, finally, be advised - scala symbol literal and the Symbol class of the compiler
       * have little in common.
       */
-      case Apply(fn, (arg @ Literal(Constant(symname: String))) :: Nil) if fn.symbol == Symbol_apply =>
+      case Apply(fn, (arg @ Literal(Constant(symname: String))) :: Nil) if fn.symbol.fullName == Symbol_apply.fullName =>
+        // HACK: We compare the names, because for unknown reasons fn.symbol is a method but Symbol_apply is a value,
+        //       causing the comparison to fail and preventing the pattern from matching.
         def transformApply = {
-        // add the symbol name to a map if it's not there already
-        val rhs = gen.mkMethodCall(Symbol_apply, arg :: Nil)
-        val staticFieldSym = getSymbolStaticField(tree.pos, symname, rhs, tree)
-        // create a reference to a static field
-        val ntree = typedWithPos(tree.pos)(REF(staticFieldSym))
-        super.transform(ntree)
+          // add the symbol name to a map if it's not there already
+          val rhs = gen.mkMethodCall(Symbol_apply, arg :: Nil)
+          val staticFieldSym = getSymbolStaticField(tree.pos, symname, rhs, tree)
+          // create a reference to a static field
+          val ntree = typedWithPos(tree.pos)(REF(staticFieldSym))
+          super.transform(ntree)
         }
         transformApply
 
