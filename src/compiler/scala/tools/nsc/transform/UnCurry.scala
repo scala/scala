@@ -217,112 +217,33 @@ abstract class UnCurry extends InfoTransform
         // nullary or parameterless
         case fun1 if fun1 ne fun => fun1
         case _ =>
-          val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
-          val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
-          anonClass setInfo ClassInfoType(parents, newScope, anonClass)
-
-          val targs     = fun.tpe.typeArgs
-          val (formals, restpe) = (targs.init, targs.last)
+          def typedFunPos(t: Tree) = localTyper.typedPos(fun.pos)(t)
+          val funParams = fun.vparams map (_.symbol)
+          def mkMethod(owner: Symbol, name: TermName, additionalFlags: FlagSet = NoFlags): DefDef =
+            gen.mkMethodFromFunction(localTyper)(fun, owner, name, additionalFlags)
 
           if (inlineFunctionExpansion) {
-            val applyMethodDef = {
-              val methSym = anonClass.newMethod(nme.apply, fun.pos, FINAL)
-              val paramSyms = map2(formals, fun.vparams) {
-                (tp, param) => methSym.newSyntheticValueParam(tp, param.name)
-              }
-              methSym setInfoAndEnter MethodType(paramSyms, restpe)
+            val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
+            val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
+            anonClass setInfo ClassInfoType(parents, newScope, anonClass)
 
-              fun.vparams foreach  (_.symbol.owner =  methSym)
-              fun.body changeOwner (fun.symbol     -> methSym)
+            val applyMethodDef = mkMethod(anonClass, nme.apply)
+            anonClass.info.decls enter applyMethodDef.symbol
 
-              val body    = localTyper.typedPos(fun.pos)(fun.body)
-              val methDef = DefDef(methSym, List(fun.vparams), body)
-
-              // Have to repack the type to avoid mismatches when existentials
-              // appear in the result - see SI-4869.
-              methDef.tpt setType localTyper.packedType(body, methSym)
-              methDef
-            }
-
-            localTyper.typedPos(fun.pos) {
+            typedFunPos {
               Block(
-                List(ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos)),
+                ClassDef(anonClass, NoMods, ListOfNil, List(applyMethodDef), fun.pos),
                 Typed(New(anonClass.tpe), TypeTree(fun.tpe)))
             }
           } else {
-            /**
-             * Abstracts away the common functionality required to create both
-             * the lifted function and the apply method on the anonymous class
-             * It creates a method definition with value params cloned from the
-             * original lambda. Then it calls a supplied function to create
-             * the body and types the result. Finally
-             * everything is wrapped up in a MethodDef
-             *
-             * TODO it is intended that this common functionality be used
-             * whether inlineFunctionExpansion is true or not. However, it
-             * seems to introduce subtle ownwership changes that produce
-             * binary incompatible changes and so it is completely
-             * hidden behind the inlineFunctionExpansion for now.
-             *
-             * @param owner The owner for the new method
-             * @param name name for the new method
-             * @param additionalFlags flags to be put on the method in addition to FINAL
-             * @bodyF function that turns the method symbol and list of value params
-             *        into a body for the method
-             */
-            def createMethod(owner: Symbol, name: TermName, additionalFlags: Long)(bodyF: (Symbol, List[ValDef]) => Tree) = {
-              val methSym = owner.newMethod(name, fun.pos, FINAL | additionalFlags)
-              val vparams = fun.vparams map (_.duplicate)
-
-              val paramSyms = map2(formals, vparams) {
-                (tp, vparam) => methSym.newSyntheticValueParam(tp, vparam.name)
-              }
-              foreach2(vparams, paramSyms){(valdef, sym) => valdef.symbol = sym}
-              vparams foreach (_.symbol.owner = methSym)
-
-              val methodType = MethodType(paramSyms, restpe.deconst)
-              methSym setInfo methodType
-
-              // TODO this is probably cleaner if bodyF only works with symbols rather than parameter ValDefs
-              val tempBody = bodyF(methSym, vparams)
-              val body = localTyper.typedPos(fun.pos)(tempBody)
-              val methDef = DefDef(methSym, List(vparams), body)
-
-              // Have to repack the type to avoid mismatches when existentials
-              // appear in the result - see SI-4869.
-              methDef.tpt setType localTyper.packedType(body, methSym).deconst
-              methDef
-            }
-
-            val methodFlags = ARTIFACT
             // method definition with the same arguments, return type, and body as the original lambda
-            val liftedMethod = createMethod(fun.symbol.owner, tpnme.ANON_FUN_NAME.toTermName, methodFlags){
-              case(methSym, vparams) =>
-                fun.body.substituteSymbols(fun.vparams map (_.symbol), vparams map (_.symbol))
-                fun.body changeOwner (fun.symbol -> methSym)
-            }
-
-            // callsite for the lifted method
-            val args = fun.vparams map { vparam =>
-              val ident = Ident(vparam.symbol)
-              // if -Yeta-expand-keeps-star is turned on then T* types can get through. In order
-              // to forward them we need to forward x: T* ascribed as "x:_*"
-              if (settings.etaExpandKeepsStar && definitions.isRepeatedParamType(vparam.tpt.tpe))
-                gen.wildcardStar(ident)
-              else
-                ident
-            }
-
-            val funTyper = localTyper.typedPos(fun.pos) _
-
-            val liftedMethodCall = funTyper(Apply(liftedMethod.symbol, args:_*))
+            val liftedMethod = mkMethod(fun.symbol.owner, nme.ANON_FUN_NAME, additionalFlags = ARTIFACT)
 
             // new function whose body is just a call to the lifted method
-            val newFun = treeCopy.Function(fun, fun.vparams, liftedMethodCall)
-            funTyper(Block(
-             List(funTyper(liftedMethod)),
-               super.transform(newFun)
-             ))
+            val newFun = deriveFunction(fun)(_ => typedFunPos(
+              gen.mkForwarder(gen.mkAttributedRef(liftedMethod.symbol), funParams :: Nil)
+            ))
+            typedFunPos(Block(liftedMethod, super.transform(newFun)))
           }
         }
     }
