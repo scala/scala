@@ -117,22 +117,6 @@ extends scala.collection.AbstractSeq[Int]
       fail()
   }
 
-  @deprecated("Range.foreach() is now self-contained, making this auxiliary method redundant.", "2.10.1")
-  def validateRangeBoundaries(f: Int => Any): Boolean = {
-    validateMaxLength()
-
-    start != Int.MinValue || end != Int.MinValue || {
-      var count = 0
-      var num = start
-      while (count < numRangeElements) {
-        f(num)
-        count += 1
-        num += step
-      }
-      false
-    }
-  }
-
   final def apply(idx: Int): Int = {
     validateMaxLength()
     if (idx < 0 || idx >= numRangeElements) throw new IndexOutOfBoundsException(idx.toString)

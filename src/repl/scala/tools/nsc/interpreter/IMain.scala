@@ -9,10 +9,11 @@ package interpreter
 
 import PartialFunction.cond
 import scala.language.implicitConversions
+import scala.beans.BeanProperty
 import scala.collection.mutable
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.reflect.runtime.{ universe => ru }
-import scala.reflect.{ BeanProperty, ClassTag, classTag }
+import scala.reflect.{ ClassTag, classTag }
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 import scala.tools.util.PathResolver
 import scala.tools.nsc.io.AbstractFile
