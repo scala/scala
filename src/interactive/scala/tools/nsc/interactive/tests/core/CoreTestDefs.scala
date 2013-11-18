@@ -12,16 +12,16 @@ private[tests] trait CoreTestDefs
 
   /** Ask the presentation compiler for completion at all locations
    * (in all sources) where the defined `marker` is found. */
-  class CompletionAction(override val compiler: Global)
+  class TypeCompletionAction(override val compiler: Global)
     extends PresentationCompilerTestDef
-    with AskCompletionAt {
+    with AskTypeCompletionAt {
 
     override def runTest() {
-      askAllSources(CompletionMarker) { pos =>
-        askCompletionAt(pos)
+      askAllSources(TypeCompletionMarker) { pos =>
+        askTypeCompletionAt(pos)
       } { (pos, members) =>
         withResponseDelimiter {
-          reporter.println("[response] askCompletionAt " + format(pos))
+          reporter.println("[response] askTypeCompletion at " + format(pos))
           // we skip getClass because it changed signature between 1.5 and 1.6, so there is no
           // universal check file that we can provide for this to work
           reporter.println("retrieved %d members".format(members.size))
@@ -29,6 +29,40 @@ private[tests] trait CoreTestDefs
             val filtered = members.filterNot(member => (member.sym.name string_== "getClass") || member.sym.isConstructor)
             reporter println (filtered.map(_.forceInfoString).sorted mkString "\n")
           }
+        }
+      }
+    }
+  }
+
+  /** Ask the presentation compiler for completion at all locations
+   * (in all sources) where the defined `marker` is found. */
+  class ScopeCompletionAction(override val compiler: Global)
+    extends PresentationCompilerTestDef
+    with AskScopeCompletionAt {
+
+    def memberPrinter(member: compiler.Member): String =
+        "[accessible: %5s] ".format(member.accessible) + "`" + (member.sym.toString() + member.tpe.toString()).trim() + "`"
+
+    override def runTest() {
+      askAllSources(ScopeCompletionMarker) { pos =>
+        askScopeCompletionAt(pos)
+      } { (pos, members) =>
+        withResponseDelimiter {
+          reporter.println("[response] askScopeCompletion at " + format(pos))
+          try {
+            // exclude members not from source (don't have position), for more focused and self contained tests.
+            def eligible(sym: compiler.Symbol) = sym.pos != compiler.NoPosition
+            val filtered = members.filter(member => eligible(member.sym))
+            
+            reporter.println("retrieved %d members".format(filtered.size))
+            compiler ask { () =>
+              reporter.println(filtered.map(_.forceInfoString).sorted mkString "\n")
+            }
+          } catch {
+            case t: Throwable =>
+              t.printStackTrace()
+          }
+
         }
       }
     }
@@ -57,7 +91,7 @@ private[tests] trait CoreTestDefs
   class HyperlinkAction(override val compiler: Global)
     extends PresentationCompilerTestDef
     with AskTypeAt
-    with AskCompletionAt {
+    with AskTypeCompletionAt {
 
     override def runTest() {
       askAllSources(HyperlinkMarker) { pos =>

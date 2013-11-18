@@ -2,7 +2,7 @@ reload: Completions.scala
 
 askTypeCompletion at Completions.scala(17,9)
 ================================================================================
-[response] askCompletionAt (17,9)
+[response] askTypeCompletion at (17,9)
 retrieved 39 members
 [inaccessible] private def privateM: String
 [inaccessible] private[this] val privateV: String

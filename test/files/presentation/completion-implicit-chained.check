@@ -2,7 +2,7 @@ reload: Completions.scala
 
 askTypeCompletion at Completions.scala(11,16)
 ================================================================================
-[response] askCompletionAt (11,16)
+[response] askTypeCompletion at (11,16)
 retrieved 24 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit

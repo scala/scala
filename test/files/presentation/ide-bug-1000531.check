@@ -2,7 +2,7 @@ reload: CrashOnLoad.scala
 
 askTypeCompletion at CrashOnLoad.scala(6,12)
 ================================================================================
-[response] askCompletionAt (6,12)
+[response] askTypeCompletion at (6,12)
 retrieved 120 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit

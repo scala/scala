@@ -2,7 +2,7 @@ reload: CompletionOnEmptyArgMethod.scala
 
 askTypeCompletion at CompletionOnEmptyArgMethod.scala(2,17)
 ================================================================================
-[response] askCompletionAt (2,17)
+[response] askTypeCompletion at (2,17)
 retrieved 32 members
 def +(other: String): String
 def ->[B](y: B): (Foo, B)
