@@ -162,7 +162,7 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), qual.pos, newFlags = ARTIFACT) setInfo uncheckedBounds(qual.tpe)
+        val sym = blockTyper.context.owner.newValue(unit.freshTermName("qual$"), newFlags = ARTIFACT) setInfo uncheckedBounds(qual.tpe) setPos (qual.pos.makeTransparent)
         blockTyper.context.scope enter sym
         val vd = atPos(sym.pos)(ValDef(sym, qual) setType NoType)
         // it stays in Vegas: SI-5720, SI-5727
@@ -173,13 +173,16 @@ trait NamesDefaults { self: Analyzer =>
           // setSymbol below is important because the 'selected' function might be overloaded. by
           // assigning the correct method symbol, typedSelect will just assign the type. the reason
           // to still call 'typed' is to correctly infer singleton types, SI-5259.
-          val f = blockTyper.typedOperator(Select(newQual, selected).setSymbol(baseFun1.symbol))
+          val selectPos = 
+            if(qual.pos.isRange && baseFun.pos.isRange) qual.pos.union(baseFun.pos).withStart(Math.min(qual.pos.end, baseFun.pos.end))
+            else baseFun.pos
+          val f = blockTyper.typedOperator(Select(newQual, selected).setSymbol(baseFun1.symbol).setPos(selectPos))
           if (funTargs.isEmpty) f
           else TypeApply(f, funTargs).setType(baseFun.tpe)
         }
 
         val b = Block(List(vd), baseFunTransformed)
-                  .setType(baseFunTransformed.tpe).setPos(baseFun.pos)
+                  .setType(baseFunTransformed.tpe).setPos(baseFun.pos.makeTransparent)
         context.namedApplyBlockInfo =
           Some((b, NamedApplyInfo(Some(newQual), defaultTargs, Nil, blockTyper)))
         b
