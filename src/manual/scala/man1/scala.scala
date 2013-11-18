@@ -55,7 +55,7 @@ object scala extends Command {
         CmdOption("savecompiled"),
         "Save this compiled version of scripts in order to speed up " &
         "later executions of the same script.  When running a script, " &
-        "save the compiled version of in a file with the same name as the " &
+        "save the compiled version in a file with the same name as the " &
         "script but with an extension of " & Mono(".jar") & ".  On subsequent " &
         "runs of the same script, the pre-compiled " & Mono(".jar") & " file " &
         "will be used if it is newer than the script file."),
