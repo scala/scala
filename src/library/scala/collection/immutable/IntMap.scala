@@ -213,7 +213,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   }
 
   /**
-   * Loop over the keys of the map. The same as `keys.foreach(f)`, but may
+   * Loop over the values of the map. The same as `values.foreach(f)`, but may
    * be more efficient.
    *
    * @param f The loop body
