@@ -204,8 +204,15 @@ trait CompilerControl { self: Global =>
    *                   If the unit corresponding to `source` has been removed in the meantime
    *                   the a NoSuchUnitError is raised in the response.
    */
-  def askLoadedTyped(source: SourceFile, response: Response[Tree]) =
-    postWorkItem(new AskLoadedTypedItem(source, response))
+   def askLoadedTyped(sourceFile: SourceFile, response: Response[Tree]):Unit =
+     askLoadedTyped(sourceFile, false, response)
+
+   def askLoadedTyped(sourceFile: SourceFile, keepLoaded: Boolean, response: Response[Tree]):Unit = {
+    // iff the unit was already loaded (e.g. open buffer) we don't force a final reset controlled by keepLoaded
+    val wasLoaded = ask{() => getUnit(sourceFile).isDefined}
+    try postWorkItem(new AskLoadedTypedItem(sourceFile, response))
+    finally { if (!wasLoaded && !keepLoaded) ask{() => removeUnitOf(sourceFile)} }
+  }
 
   /** If source if not yet loaded, get an outline view with askParseEntered.
    *  If source is loaded, wait for it to be typechecked.
