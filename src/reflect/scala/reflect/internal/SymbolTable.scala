@@ -244,6 +244,18 @@ abstract class SymbolTable extends macros.Universe
     finally popPhase(saved)
   }
 
+  final def findPhaseWithName(phaseName: String): Phase = {
+    var ph = phase
+    while (ph != NoPhase && ph.name != phaseName) {
+      ph = ph.prev
+    }
+    if (ph eq NoPhase) phase else ph
+  }
+  final def enteringPhaseWithName[T](phaseName: String)(body: => T): T = {
+    val phase = findPhaseWithName(phaseName)
+    enteringPhase(phase)(body)
+  }
+
   def slowButSafeEnteringPhase[T](ph: Phase)(op: => T): T = {
     if (isCompilerUniverse) enteringPhase(ph)(op)
     else op

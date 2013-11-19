@@ -41,7 +41,8 @@ trait TraceSymbolActivity {
     }
   }
 
-  private def signature(id: Int) = runBeforeErasure(allSymbols(id).defString)
+  private lazy val erasurePhase = findPhaseWithName("erasure")
+  private def signature(id: Int) = enteringPhase(erasurePhase)(allSymbols(id).defString)
 
   private def dashes(s: Any): String = ("" + s) map (_ => '-')
   private def show(s1: Any, ss: Any*) {
@@ -87,14 +88,6 @@ trait TraceSymbolActivity {
   private def showFreq[T, U](xs: Traversable[T])(groupFn: T => U, showFn: U => String) = {
     showMapFreq(xs.toList groupBy groupFn)(showFn)
   }
-  private lazy val findErasurePhase: Phase = {
-    var ph = phase
-    while (ph != NoPhase && ph.name != "erasure") {
-      ph = ph.prev
-    }
-    if (ph eq NoPhase) phase else ph
-  }
-  private def runBeforeErasure[T](body: => T): T = enteringPhase(findErasurePhase)(body)
 
   def showAllSymbols() {
     if (!enabled) return
