@@ -17,7 +17,7 @@ class ExtractAPISpecification extends Specification {
 	def stableExistentialNames: Boolean = {
 		def compileAndGetFooMethodApi(src: String): Def = {
 			val compilerForTesting = new ScalaCompilerForUnitTesting
-			val sourceApi = compilerForTesting.compileSrc(src)
+			val sourceApi = compilerForTesting.extractApiFromSrc(src)
 			val FooApi = sourceApi.definitions().find(_.name() == "Foo").get.asInstanceOf[ClassLike]
 			val fooMethodApi = FooApi.structure().declared().find(_.name == "foo").get
 			fooMethodApi.asInstanceOf[Def]
