@@ -1774,10 +1774,12 @@ self =>
             in.nextToken()
             if (in.token == SUBTYPE || in.token == SUPERTYPE) wildcardType(start)
             else atPos(start) { Bind(tpnme.WILDCARD, EmptyTree) }
-          case IDENTIFIER if nme.isVariableName(in.name) && lookingAhead(in.token != DOT && in.token != HASH) =>
-            atPos(start) { Bind(identForType(), EmptyTree) }
           case _ =>
-            typ()
+            typ() match {
+              case Ident(name: TypeName) if nme.isVariableName(name) =>
+                atPos(start) { Bind(name, EmptyTree) }
+              case t => t
+            }
         }
       }
 
