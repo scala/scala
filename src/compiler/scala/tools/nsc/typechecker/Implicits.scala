@@ -404,6 +404,7 @@ trait Implicits {
       def complexity(tp: Type): Int = tp.dealias match {
         case NoPrefix                => 0
         case SingleType(pre, sym)    => if (sym.isPackage) 0 else complexity(tp.dealiasWiden)
+        case ThisType(sym)           => if (sym.isPackage) 0 else 1
         case TypeRef(pre, sym, args) => complexity(pre) + (args map complexity).sum + 1
         case RefinedType(parents, _) => (parents map complexity).sum + 1
         case _                       => 1
