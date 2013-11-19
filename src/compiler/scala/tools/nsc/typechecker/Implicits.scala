@@ -402,7 +402,7 @@ trait Implicits {
         deriveTypeWithWildcards(syms.distinct)(tp)
       }
       def sum(xs: List[Int]) = (0 /: xs)(_ + _)
-      def complexity(tp: Type): Int = tp.dealiasWiden match {
+      def complexity(tp: Type): Int = tp.dealias match {
         case NoPrefix =>
           0
         case SingleType(pre, sym) =>
