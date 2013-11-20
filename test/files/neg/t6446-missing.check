@@ -1,4 +1,4 @@
-Warning: class not found: t6446.Ploogin
+Error: unable to load class: t6446.Ploogin
     phase name  id  description
     ----------  --  -----------
         parser   1  parse source into ASTs, perform simple desugaring
