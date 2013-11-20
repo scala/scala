@@ -40,9 +40,6 @@ private[tests] trait CoreTestDefs
     extends PresentationCompilerTestDef
     with AskScopeCompletionAt {
 
-    def memberPrinter(member: compiler.Member): String =
-        "[accessible: %5s] ".format(member.accessible) + "`" + (member.sym.toString() + member.tpe.toString()).trim() + "`"
-
     override def runTest() {
       askAllSources(ScopeCompletionMarker) { pos =>
         askScopeCompletionAt(pos)
