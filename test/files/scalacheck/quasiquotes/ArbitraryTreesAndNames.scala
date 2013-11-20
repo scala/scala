@@ -222,7 +222,7 @@ trait ArbitraryTreesAndNames {
       yield ValDef(mods, name, tpt, rhs)
 
   def genTree(size: Int): Gen[Tree] =
-    if (size <= 1) oneOf(EmptyTree, genTreeIsTerm(size), genTreeIsType(size))
+    if (size <= 1) oneOf(EmptyTree: Gen[Tree], genTreeIsTerm(size), genTreeIsType(size))
     else oneOf(genTree(1),
                // these trees are neither terms nor types
                genPackageDef(size - 1), genModuleDef(size - 1),
@@ -273,8 +273,8 @@ trait ArbitraryTreesAndNames {
     def apply(universe: Universe, value: TreeIsType): universe.Tree =
       value.tree.asInstanceOf[universe.Tree]
   }
-  implicit def treeIsTerm2tree(tit: TreeIsTerm) = tit.tree
-  implicit def treeIsType2tree(tit: TreeIsType) = tit.tree
+  implicit def treeIsTerm2tree(tit: TreeIsTerm): Tree = tit.tree
+  implicit def treeIsType2tree(tit: TreeIsType): Tree = tit.tree
 
   implicit val arbConstant: Arbitrary[Constant] = Arbitrary(genConstant)
   implicit val arbModifiers: Arbitrary[Modifiers] = Arbitrary(genModifiers)

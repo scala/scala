@@ -1,4 +1,4 @@
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.ClassTag // new style: use ClassTag
 import org.scalacheck._
 import Prop._
 import Gen._

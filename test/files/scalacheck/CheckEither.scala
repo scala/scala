@@ -1,10 +1,8 @@
-import org.scalacheck.{ Arbitrary, ConsoleReporter, Prop, Properties }
+import org.scalacheck.{ Arbitrary, Prop, Properties }
 import org.scalacheck.Arbitrary.{arbitrary, arbThrowable}
 import org.scalacheck.Gen.oneOf
-import org.scalacheck.util.StdRand
 import org.scalacheck.Prop._
-import org.scalacheck.Test.{Params, check}
-import org.scalacheck.ConsoleReporter.testStatsEx
+import org.scalacheck.Test.check
 import Function.tupled
 
 object Test extends Properties("Either") {
@@ -177,11 +175,5 @@ object Test extends Properties("Either") {
 
   for ((label, prop) <- tests) {
     property(label) = prop
-  }
-
-  import org.scalacheck.{ Test => STest }
-
-  def runTests() = {
-    STest.checkProperties(STest.Params(testCallback = ConsoleReporter(0)), this)
   }
 }

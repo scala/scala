@@ -1,6 +1,5 @@
 import org.scalacheck.Prop.forAll
 import org.scalacheck.Properties
-import org.scalacheck.ConsoleReporter.testStatsEx
 import org.scalacheck.{Test => SCTest}
 import org.scalacheck.Gen
 
@@ -25,8 +24,4 @@ object Test extends Properties("Regex : Ticket 2460") {
     ("numberOfGroup", numberOfGroup),
     ("nameOfGroup", nameOfGroup)
   )
-
-  /*tests foreach {
-    case (name, p) => testStatsEx(name, SCTest.check(p))
-  }*/
 }

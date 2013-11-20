@@ -1,4 +1,4 @@
-import org.scalacheck.{ ConsoleReporter, Properties }
+import org.scalacheck.Properties
 import org.scalacheck.Prop._
 
 import scala.reflect.internal.util.Collections._
@@ -49,11 +49,4 @@ object Test extends Properties("reflect.internal.util.Collections") {
   for {
     (label, prop) <- tests
   } property(label) = prop
-
-  import org.scalacheck.{ Test => STest }
-
-  def runTests() =
-    STest.checkProperties(
-      STest.Params(testCallback = ConsoleReporter(0)), this)
-
 }
