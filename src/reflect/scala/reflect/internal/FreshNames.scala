@@ -8,7 +8,7 @@ package internal
 
 import scala.reflect.internal.util.FreshNameCreator
 
-trait FreshNames { self: SymbolTable =>
+trait FreshNames { self: Names =>
   // default fresh name creator used to abstract over currentUnit.fresh and runtime fresh name creator
   def currentFreshNameCreator: FreshNameCreator
 
