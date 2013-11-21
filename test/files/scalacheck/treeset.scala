@@ -151,5 +151,5 @@ object Test extends Properties("TreeSet") {
   }
 
   property("ordering must not be null") =
-    throws(TreeSet.empty[Int](null), classOf[NullPointerException])
+    throws(classOf[NullPointerException])(TreeSet.empty[Int](null))
 }

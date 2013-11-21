@@ -1,8 +1,6 @@
 import org.scalacheck.Prop.{forAll, throws}
 import org.scalacheck.Properties
-import org.scalacheck.ConsoleReporter.testStatsEx
 import org.scalacheck.Gen
-import org.scalacheck.ConsoleReporter
 
 
 import collection.mutable
@@ -66,5 +64,5 @@ object Test extends Properties("Mutable TreeSet") {
   }
 
   property("ordering must not be null") =
-    throws(mutable.TreeSet.empty[Int](null), classOf[NullPointerException])
+    throws(classOf[NullPointerException])(mutable.TreeSet.empty[Int](null))
 }
