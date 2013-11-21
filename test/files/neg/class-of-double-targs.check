@@ -1,0 +1,4 @@
+class-of-double-targs.scala:2: error: expression of type Class[Int](classOf[scala.Int]) does not take type parameters.
+  classOf[Int][Int]
+              ^
+one error found

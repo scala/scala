@@ -5051,7 +5051,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // @M: fun is typed in TAPPmode because it is being applied to its actual type parameters
         val fun1 = typed(fun, mode.forFunMode | TAPPmode)
-        val tparams = fun1.symbol.typeParams
+        val tparams = if (fun1.symbol == null) Nil else fun1.symbol.typeParams
 
         //@M TODO: val undets_fun = context.undetparams  ?
         // "do args first" (by restoring the context.undetparams) in order to maintain context.undetparams on the function side.
