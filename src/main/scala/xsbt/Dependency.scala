@@ -79,7 +79,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile
 							case None => ()
 						}
 					}
-					else
+					else if (onSource.file != sourceFile)
 						callback.sourceDependency(onSource.file, sourceFile, inherited)
 				}
 			}
