@@ -452,23 +452,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       case _            => new StubTermSymbol(this, name.toTermName, missingMessage)
     }
 
-    @deprecated("Use the other signature", "2.10.0")
-    def newClass(pos: Position, name: TypeName): Symbol        = newClass(name, pos)
-    @deprecated("Use the other signature", "2.10.0")
-    def newModuleClass(pos: Position, name: TypeName): Symbol  = newModuleClass(name, pos)
-    @deprecated("Use the other signature", "2.10.0")
-    def newLabel(pos: Position, name: TermName): MethodSymbol  = newLabel(name, pos)
-    @deprecated("Use the other signature", "2.10.0")
-    def newValue(pos: Position, name: TermName): TermSymbol    = newTermSymbol(name, pos)
-    @deprecated("Use the other signature", "2.10.0")
-    def newAliasType(pos: Position, name: TypeName): Symbol    = newAliasType(name, pos)
-    @deprecated("Use the other signature", "2.10.0")
-    def newAbstractType(pos: Position, name: TypeName): Symbol = newAbstractType(name, pos)
-    @deprecated("Use the other signature", "2.10.0")
-    def newExistential(pos: Position, name: TypeName): Symbol  = newExistential(name, pos)
-    @deprecated("Use the other signature", "2.10.0")
-    def newMethod(pos: Position, name: TermName): MethodSymbol = newMethod(name, pos)
-
 // ----- locking and unlocking ------------------------------------------------------
 
     // True if the symbol is unlocked.
@@ -2047,10 +2030,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isMethod || isClass) this
       else owner.logicallyEnclosingMember
 
-    /** Kept for source compatibility with 2.9. Scala IDE for Eclipse relies on this. */
-    @deprecated("Use enclosingTopLevelClass", "2.10.0")
-    def toplevelClass: Symbol = enclosingTopLevelClass
-
     /** The top-level class containing this symbol. */
     def enclosingTopLevelClass: Symbol =
       if (isTopLevel) {
@@ -2364,9 +2343,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def associatedFile: AbstractFile = enclosingTopLevelClass.associatedFile
     def associatedFile_=(f: AbstractFile) { abort("associatedFile_= inapplicable for " + this) }
-
-    @deprecated("Use associatedFile_= instead", "2.10.0")
-    def sourceFile_=(f: AbstractFile): Unit = associatedFile_=(f)
 
     /** If this is a sealed class, its known direct subclasses.
      *  Otherwise, the empty set.

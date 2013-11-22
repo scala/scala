@@ -16,6 +16,7 @@ import java.lang.{ Class => jClass }
 trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
   self: ClassManifest[T] =>
 
+  // Still in use in target test.junit.comp.
   @deprecated("Use runtimeClass instead", "2.10.0")
   def erasure: jClass[_] = runtimeClass
 
@@ -64,12 +65,12 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
     // when the erasure is the same, even before considering variance.
     !cannotMatch && {
       // this part is wrong for not considering variance
-      if (this.erasure == that.erasure)
+      if (this.runtimeClass == that.runtimeClass)
         subargs(this.typeArguments, that.typeArguments)
       // this part is wrong for punting unless the rhs has no type
       // arguments, but it's better than a blindfolded pinata swing.
       else
-        that.typeArguments.isEmpty && subtype(this.erasure, that.erasure)
+        that.typeArguments.isEmpty && subtype(this.runtimeClass, that.runtimeClass)
     }
   }
 
@@ -91,29 +92,29 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
 
   @deprecated("Use wrap instead", "2.10.0")
   def arrayManifest: ClassManifest[Array[T]] =
-    ClassManifest.classType[Array[T]](arrayClass[T](erasure), this)
+    ClassManifest.classType[Array[T]](arrayClass[T](runtimeClass), this)
 
   override def newArray(len: Int): Array[T] =
-    java.lang.reflect.Array.newInstance(erasure, len).asInstanceOf[Array[T]]
+    java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
 
   @deprecated("Use wrap.newArray instead", "2.10.0")
   def newArray2(len: Int): Array[Array[T]] =
-    java.lang.reflect.Array.newInstance(arrayClass[T](erasure), len)
+    java.lang.reflect.Array.newInstance(arrayClass[T](runtimeClass), len)
       .asInstanceOf[Array[Array[T]]]
 
   @deprecated("Use wrap.wrap.newArray instead", "2.10.0")
   def newArray3(len: Int): Array[Array[Array[T]]] =
-    java.lang.reflect.Array.newInstance(arrayClass[Array[T]](arrayClass[T](erasure)), len)
+    java.lang.reflect.Array.newInstance(arrayClass[Array[T]](arrayClass[T](runtimeClass)), len)
       .asInstanceOf[Array[Array[Array[T]]]]
 
   @deprecated("Use wrap.wrap.wrap.newArray instead", "2.10.0")
   def newArray4(len: Int): Array[Array[Array[Array[T]]]] =
-    java.lang.reflect.Array.newInstance(arrayClass[Array[Array[T]]](arrayClass[Array[T]](arrayClass[T](erasure))), len)
+    java.lang.reflect.Array.newInstance(arrayClass[Array[Array[T]]](arrayClass[Array[T]](arrayClass[T](runtimeClass))), len)
       .asInstanceOf[Array[Array[Array[Array[T]]]]]
 
   @deprecated("Use wrap.wrap.wrap.wrap.newArray instead", "2.10.0")
   def newArray5(len: Int): Array[Array[Array[Array[Array[T]]]]] =
-    java.lang.reflect.Array.newInstance(arrayClass[Array[Array[Array[T]]]](arrayClass[Array[Array[T]]](arrayClass[Array[T]](arrayClass[T](erasure)))), len)
+    java.lang.reflect.Array.newInstance(arrayClass[Array[Array[Array[T]]]](arrayClass[Array[Array[T]]](arrayClass[Array[T]](arrayClass[T](runtimeClass)))), len)
       .asInstanceOf[Array[Array[Array[Array[Array[T]]]]]]
 
   @deprecated("Create WrappedArray directly instead", "2.10.0")
@@ -131,7 +132,7 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
 
   protected def argString =
     if (typeArguments.nonEmpty) typeArguments.mkString("[", ", ", "]")
-    else if (erasure.isArray) "["+ClassManifest.fromClass(erasure.getComponentType)+"]"
+    else if (runtimeClass.isArray) "["+ClassManifest.fromClass(runtimeClass.getComponentType)+"]"
     else ""
 }
 
@@ -221,7 +222,7 @@ object ClassManifestFactory {
     */
   def abstractType[T](prefix: OptManifest[_], name: String, upperbound: ClassManifest[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassManifest[T] {
-      override def runtimeClass = upperbound.erasure
+      override def runtimeClass = upperbound.runtimeClass
       override val typeArguments = args.toList
       override def toString = prefix.toString+"#"+name+argString
     }
@@ -236,6 +237,6 @@ private class ClassTypeManifest[T](
 {
   override def toString =
     (if (prefix.isEmpty) "" else prefix.get.toString+"#") +
-    (if (erasure.isArray) "Array" else erasure.getName) +
+    (if (runtimeClass.isArray) "Array" else runtimeClass.getName) +
     argString
 }

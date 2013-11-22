@@ -96,10 +96,6 @@ trait Mirrors extends api.Mirrors {
       }
     }
 
-    @deprecated("Use getClassByName", "2.10.0")
-    def getClass(fullname: Name): ClassSymbol =
-      getClassByName(fullname)
-
     def getClassByName(fullname: Name): ClassSymbol =
       ensureClassSymbol(fullname.toString, getModuleOrClass(fullname.toTypeName))
 
@@ -131,15 +127,11 @@ trait Mirrors extends api.Mirrors {
         case _                                                => MissingRequirementError.notFound("object " + fullname)
       }
 
-    @deprecated("Use getModuleByName", "2.10.0")
-    def getModule(fullname: Name): ModuleSymbol =
-      getModuleByName(fullname)
-
     def getModuleByName(fullname: Name): ModuleSymbol =
       ensureModuleSymbol(fullname.toString, getModuleOrClass(fullname.toTermName), allowPackages = true)
 
     def getRequiredModule(fullname: String): ModuleSymbol =
-      getModule(newTermNameCached(fullname))
+      getModuleByName(newTermNameCached(fullname))
 
     // TODO: What syntax do we think should work here? Say you have an object
     // like scala.Predef.  You can't say requiredModule[scala.Predef] since there's
@@ -155,7 +147,7 @@ trait Mirrors extends api.Mirrors {
       getModuleIfDefined(newTermNameCached(fullname))
 
     def getModuleIfDefined(fullname: Name): Symbol =
-      wrapMissing(getModule(fullname.toTermName))
+      wrapMissing(getModuleByName(fullname.toTermName))
 
     /** @inheritdoc
      *

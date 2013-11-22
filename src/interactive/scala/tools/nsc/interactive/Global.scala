@@ -100,7 +100,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   with CompilerControl
   with ContextTrees
   with RichCompilationUnits
-  with ScratchPadMaker
   with Picklers {
 
   import definitions._
@@ -1168,18 +1167,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         parseAndEnter(unit)
         unit.body
       }
-    }
-  }
-
-  @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
-  def getInstrumented(source: SourceFile, line: Int, response: Response[(String, Array[Char])]) {
-    try {
-      interruptsEnabled = false
-      respond(response) {
-        instrument(source, line)
-      }
-    } finally {
-      interruptsEnabled = true
     }
   }
 

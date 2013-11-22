@@ -9,7 +9,7 @@ trait Resolvers {
 
   import global._
   import analyzer._
-  import definitions.{EmptyPackageClass => _, _}
+  import definitions._
   import treeInfo._
   import gen._
   private val runDefinitions = currentRun.runDefinitions

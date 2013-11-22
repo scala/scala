@@ -59,7 +59,7 @@ trait Helpers {
   }
 
   def assertThrows[T <: AnyRef](f: => Any)(implicit manifest: Manifest[T]): Unit = {
-    val clazz = manifest.erasure.asInstanceOf[Class[T]]
+    val clazz = manifest.runtimeClass.asInstanceOf[Class[T]]
     val thrown =
       try {
         f

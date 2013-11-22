@@ -80,10 +80,4 @@ abstract class Reporter {
     WARNING.count     = 0
     cancelled         = false
   }
-
-  // sbt compat
-  @deprecated("Moved to scala.reflect.internal.util.StringOps", "2.10.0")
-  def countElementsAsString(n: Int, elements: String): String = StringOps.countElementsAsString(n, elements)
-  @deprecated("Moved to scala.reflect.internal.util.StringOps", "2.10.0")
-  def countAsString(n: Int): String = StringOps.countAsString(n)
 }

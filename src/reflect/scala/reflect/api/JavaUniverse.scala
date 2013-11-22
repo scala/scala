@@ -34,7 +34,7 @@ trait JavaUniverse extends Universe with JavaMirrors { self =>
         mirror.universe match {
           case ju: JavaUniverse =>
             val jm = mirror.asInstanceOf[ju.Mirror]
-            val sym = jm.classSymbol(manifest.erasure)
+            val sym = jm.classSymbol(manifest.runtimeClass)
             val tpe =
               if (manifest.typeArguments.isEmpty) sym.toType
               else ju.appliedType(sym.toTypeConstructor, manifest.typeArguments map (targ => ju.manifestToTypeTag(jm, targ)) map (_.in(jm).tpe))

@@ -158,8 +158,7 @@ object BigDecimal {
  *  @author  Stephane Micheloud
  *  @version 1.0
  */
-@deprecatedInheritance("This class will be made final.", "2.10.0")
-class BigDecimal(
+final class BigDecimal(
   val bigDecimal: BigDec,
   val mc: MathContext)
 extends ScalaNumber with ScalaNumericConversions with Serializable {

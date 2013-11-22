@@ -16,7 +16,7 @@ import scala.reflect.api.{Universe => ApiUniverse}
 trait Definitions extends api.StandardDefinitions {
   self: SymbolTable =>
 
-  import rootMirror.{getModule, getPackage, getClassByName, getRequiredClass, getRequiredModule, getClassIfDefined, getModuleIfDefined, getPackageObject, getPackageIfDefined, getPackageObjectIfDefined, requiredClass, requiredModule}
+  import rootMirror.{getModuleByName, getPackage, getClassByName, getRequiredClass, getRequiredModule, getClassIfDefined, getModuleIfDefined, getPackageObject, getPackageIfDefined, getPackageObjectIfDefined, requiredClass, requiredModule}
 
   object definitions extends DefinitionsClass
 
@@ -87,7 +87,7 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val abbrvTag         = symbolsMap(ScalaValueClasses, nameToTag) withDefaultValue OBJECT_TAG
     lazy val numericWeight    = symbolsMapFilt(ScalaValueClasses, nameToWeight.keySet, nameToWeight)
-    lazy val boxedModule      = classesMap(x => getModule(boxedName(x)))
+    lazy val boxedModule      = classesMap(x => getModuleByName(boxedName(x)))
     lazy val boxedClass       = classesMap(x => getClassByName(boxedName(x)))
     lazy val refClass         = classesMap(x => getRequiredClass("scala.runtime." + x + "Ref"))
     lazy val volatileRefClass = classesMap(x => getRequiredClass("scala.runtime.Volatile" + x + "Ref"))
@@ -152,18 +152,6 @@ trait Definitions extends api.StandardDefinitions {
   abstract class DefinitionsClass extends DefinitionsApi with ValueClassDefinitions {
     private var isInitialized = false
     def isDefinitionsInitialized = isInitialized
-
-    @deprecated("Moved to rootMirror.RootPackage", "2.10.0")
-    val RootPackage: ModuleSymbol = rootMirror.RootPackage
-
-    @deprecated("Moved to rootMirror.RootClass", "2.10.0")
-    val RootClass: ClassSymbol = rootMirror.RootClass
-
-    @deprecated("Moved to rootMirror.EmptyPackage", "2.10.0")
-    val EmptyPackage: ModuleSymbol = rootMirror.EmptyPackage
-
-    @deprecated("Moved to rootMirror.EmptyPackageClass", "2.10.0")
-    val EmptyPackageClass: ClassSymbol = rootMirror.EmptyPackageClass
 
     // It becomes tricky to create dedicated objects for other symbols because
     // of initialization order issues.

@@ -90,51 +90,22 @@ package object util {
 
   lazy val trace = new SimpleTracer(System.out)
 
-  @deprecated("Moved to scala.reflect.internal.util.StringOps", "2.10.0")
-  val StringOps = scala.reflect.internal.util.StringOps
-
-  @deprecated("Moved to scala.reflect.internal.util.StringOps", "2.10.0")
-  type StringOps = scala.reflect.internal.util.StringOps
-
-  @deprecated("scala.reflect.internal.util.WeakHashSet", "2.10.0")
-  type WeakHashSet[T <: AnyRef] = scala.reflect.internal.util.WeakHashSet[T]
-
-  @deprecated("Moved to scala.reflect.internal.util.Position", "2.10.0")
-  val Position = scala.reflect.internal.util.Position
-
+  // These four deprecated since 2.10.0 are still used in (at least)
+  // the sbt 0.12.4 compiler interface.
   @deprecated("Moved to scala.reflect.internal.util.Position", "2.10.0")
   type Position = scala.reflect.internal.util.Position
-
   @deprecated("Moved to scala.reflect.internal.util.NoPosition", "2.10.0")
   val NoPosition = scala.reflect.internal.util.NoPosition
-
   @deprecated("Moved to scala.reflect.internal.util.FakePos", "2.10.0")
   val FakePos = scala.reflect.internal.util.FakePos
-
   @deprecated("Moved to scala.reflect.internal.util.FakePos", "2.10.0")
   type FakePos = scala.reflect.internal.util.FakePos
 
-  @deprecated("Moved to scala.reflect.internal.util.OffsetPosition", "2.10.0")
-  type OffsetPosition = scala.reflect.internal.util.OffsetPosition
-
+  // These three were still used in scala-refactoring.
   @deprecated("Moved to scala.reflect.internal.util.RangePosition", "2.10.0")
   type RangePosition = scala.reflect.internal.util.RangePosition
-
   @deprecated("Moved to scala.reflect.internal.util.SourceFile", "2.10.0")
   type SourceFile = scala.reflect.internal.util.SourceFile
-
-  @deprecated("Moved to scala.reflect.internal.util.NoSourceFile", "2.10.0")
-  val NoSourceFile = scala.reflect.internal.util.NoSourceFile
-
-  @deprecated("Moved to scala.reflect.internal.util.NoFile", "2.10.0")
-  val NoFile = scala.reflect.internal.util.NoFile
-
-  @deprecated("Moved to scala.reflect.internal.util.ScriptSourceFile", "2.10.0")
-  val ScriptSourceFile = scala.reflect.internal.util.ScriptSourceFile
-
-  @deprecated("Moved to scala.reflect.internal.util.ScriptSourceFile", "2.10.0")
-  type ScriptSourceFile = scala.reflect.internal.util.ScriptSourceFile
-
   @deprecated("Moved to scala.reflect.internal.util.BatchSourceFile", "2.10.0")
   type BatchSourceFile = scala.reflect.internal.util.BatchSourceFile
 

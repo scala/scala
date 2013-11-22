@@ -9,7 +9,6 @@ package interactive
 import scala.reflect.internal.util._
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.io._
-import scala.tools.nsc.scratchpad.SourceInserter
 import java.io.FileWriter
 
 /** Interface of interactive compiler to a client such as an IDE
@@ -89,8 +88,6 @@ object REPL {
     val completeResult = new Response[List[comp.Member]]
     val typedResult = new Response[comp.Tree]
     val structureResult = new Response[comp.Tree]
-    @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
-    val instrumentedResult = new Response[(String, Array[Char])]
 
     def makePos(file: String, off1: String, off2: String) = {
       val source = toSourceFile(file)
@@ -112,52 +109,6 @@ object REPL {
       show(structureResult)
     }
 
-    /** Write instrumented source file to disk.
-     *  @param iFullName  The full name of the first top-level object in source
-     *  @param iContents  An Array[Char] containing the instrumented source
-     *  @return The name of the instrumented source file
-     */
-    @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
-    def writeInstrumented(iFullName: String, suffix: String, iContents: Array[Char]): String = {
-      val iSimpleName = iFullName drop ((iFullName lastIndexOf '.') + 1)
-      val iSourceName = iSimpleName + suffix
-      val ifile = new FileWriter(iSourceName)
-      ifile.write(iContents)
-      ifile.close()
-      iSourceName
-    }
-
-    /** The method for implementing worksheet functionality.
-     *  @param arguments  a file name, followed by optional command line arguments that are passed
-     *                    to the compiler that processes the instrumented source.
-     *  @param line       A line number that controls uop to which line results should be produced
-     *                    If line = -1, results are produced for all expressions in the worksheet.
-     *  @return           The generated file content containing original source in the left column
-     *                    and outputs in the right column, or None if the presentation compiler
-     *                    does not respond to askInstrumented.
-     */
-    @deprecated("SI-6458: Instrumentation logic will be moved out of the compiler.","2.10.0")
-    def instrument(arguments: List[String], line: Int): Option[(String, String)] = {
-      val source = toSourceFile(arguments.head)
-      // strip right hand side comment column and any trailing spaces from all lines
-      val strippedContents = SourceInserter.stripRight(source.content)
-      val strippedSource = new BatchSourceFile(source.file, strippedContents)
-      println("stripped source = "+strippedSource+":"+strippedContents.mkString)
-      comp.askReload(List(strippedSource), reloadResult)
-      comp.askInstrumented(strippedSource, line, instrumentedResult)
-      using(instrumentedResult) {
-        case (iFullName, iContents) =>
-          println(s"instrumented source $iFullName = ${iContents.mkString}")
-          val iSourceName = writeInstrumented(iFullName, "$instrumented.scala", iContents)
-          val sSourceName = writeInstrumented(iFullName, "$stripped.scala", strippedContents)
-          (iSourceName, sSourceName)
-/*
- *           val vdirOpt = compileInstrumented(iSourceName, arguments.tail)
-          runInstrumented(vdirOpt, iFullName, strippedSource.content)
- */
-      }
-    }
-
     loop { line =>
       (line split " ").toList match {
         case "reload" :: args =>
@@ -177,10 +128,6 @@ object REPL {
           doComplete(makePos(file, off1, off2))
         case List("complete", file, off1) =>
           doComplete(makePos(file, off1, off1))
-        case "instrument" :: arguments =>
-          println(instrument(arguments, -1))
-        case "instrumentTo" :: line :: arguments =>
-          println(instrument(arguments, line.toInt))
         case List("quit") =>
           comp.askShutdown()
           sys.exit(1)
@@ -195,8 +142,6 @@ object REPL {
                   | typeat <file> <pos>
                   | complete <file> <start-pos> <end-pos>
                   | compile <file> <pos>
-                  | instrument <file> <arg>*
-                  | instrumentTo <line-num> <file> <arg>*
                   | structure <file>
                   | quit
                   |""".stripMargin)
