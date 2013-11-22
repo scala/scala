@@ -18,13 +18,12 @@ trait Helpers {
 
   object simplify extends Transformer {
     object SimplifiedName {
-      def unapply[T <: Name](name: T): Option[T] =
-        name.toString.split("\\$").toSeq match {
-          case first :+ last if scala.util.Try(last.toInt).isSuccess && first.nonEmpty =>
-            val value = first.mkString("", "$", "$")
-            Some((if (name.isTermName) TermName(value) else TypeName(value)).asInstanceOf[T])
-          case _ => None
-        }
+      val st = scala.reflect.runtime.universe.asInstanceOf[scala.reflect.internal.SymbolTable]
+      val FreshName = new st.FreshNameExtractor
+      def unapply[T <: Name](name: T): Option[T] = name.asInstanceOf[st.Name] match {
+        case FreshName(prefix) =>
+          Some((if (name.isTermName) TermName(prefix) else TypeName(prefix)).asInstanceOf[T])
+      }
     }
 
     override def transform(tree: Tree): Tree = tree match {

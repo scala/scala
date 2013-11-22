@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
 import scala.reflect.NameTransformer
 
-class FreshNameCreator {
+class FreshNameCreator(creatorPrefix: String = "") {
   protected val counters = new ConcurrentHashMap[String, AtomicLong]()
 
   /**
@@ -21,7 +21,8 @@ class FreshNameCreator {
    */
   def newName(prefix: String): String = {
     val safePrefix = NameTransformer.encode(prefix)
-    counters.putIfAbsent(safePrefix, new AtomicLong(0));
-    safePrefix + counters.get(safePrefix).incrementAndGet();
+    counters.putIfAbsent(safePrefix, new AtomicLong(0))
+    val idx = counters.get(safePrefix).incrementAndGet()
+    s"$creatorPrefix$safePrefix$idx"
   }
 }
