@@ -170,10 +170,19 @@ trait TypeComparers {
     // corresponds does not check length of two sequences before checking the predicate,
     // but SubstMap assumes it has been checked (SI-2956)
     (     sameLength(tparams1, tparams2)
-      && (tparams1 corresponds tparams2)((p1, p2) => p1.info =:= subst(p2.info))
+      && (tparams1 corresponds tparams2)((p1, p2) => methodHigherOrderTypeParamsSameVariance(p1, p2) && p1.info =:= subst(p2.info))
       && (res1 =:= subst(res2))
     )
   }
+
+  // SI-2066 This prevents overrides with incompatible variance in higher order type parameters.
+  private def methodHigherOrderTypeParamsSameVariance(sym1: Symbol, sym2: Symbol) = {
+    def ignoreVariance(sym: Symbol) = !(sym.isHigherOrderTypeParameter && sym.logicallyEnclosingMember.isMethod)
+    ignoreVariance(sym1) || ignoreVariance(sym2) || sym1.variance == sym2.variance
+  }
+
+  private def methodHigherOrderTypeParamsSubVariance(low: Symbol, high: Symbol) =
+    methodHigherOrderTypeParamsSameVariance(low, high) || low.variance.isInvariant
 
   def isSameType2(tp1: Type, tp2: Type): Boolean = {
     def retry(lhs: Type, rhs: Type) = ((lhs ne tp1) || (rhs ne tp2)) && isSameType(lhs, rhs)
@@ -327,7 +336,10 @@ trait TypeComparers {
       val substitutes = if (isMethod) tparams1 else cloneSymbols(tparams1)
       def sub1(tp: Type) = if (isMethod) tp else tp.substSym(tparams1, substitutes)
       def sub2(tp: Type) = tp.substSym(tparams2, substitutes)
-      def cmp(p1: Symbol, p2: Symbol) = sub2(p2.info) <:< sub1(p1.info)
+      def cmp(p1: Symbol, p2: Symbol) = (
+            methodHigherOrderTypeParamsSubVariance(p2, p1)
+         && sub2(p2.info) <:< sub1(p1.info)
+      )
 
       (tparams1 corresponds tparams2)(cmp) && (sub1(res1) <:< sub2(res2))
     }
