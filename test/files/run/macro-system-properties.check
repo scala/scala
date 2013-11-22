@@ -14,15 +14,9 @@ scala>     object GrabContext {
 defined object GrabContext
 
 scala>     object Test { class C(implicit a: Any) { GrabContext.grab } }
-<console>:12: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
-           object Test { class C(implicit a: Any) { GrabContext.grab } }
-                                                                ^
 defined object Test
 
 scala>     object Test { class C(implicit a: Any) { GrabContext.grab } }
-<console>:12: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
-           object Test { class C(implicit a: Any) { GrabContext.grab } }
-                                                                ^
 defined object Test
 
 scala> 

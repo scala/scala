@@ -199,7 +199,8 @@ abstract class TreeInfo {
    *  don't reuse it for important matters like inlining
    *  decisions.
    */
-  def isPureExprForWarningPurposes(tree: Tree) = tree match {
+  def isPureExprForWarningPurposes(tree: Tree): Boolean = tree match {
+    case Typed(expr, _)                    => isPureExprForWarningPurposes(expr)
     case EmptyTree | Literal(Constant(())) => false
     case _                                 =>
       def isWarnableRefTree = tree match {
