@@ -336,16 +336,21 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
           println("something's wrong: no "+context.unit+" in "+result+result.pos)
           located = result
         }
-        throw new TyperResult(located)
+        located.tpe match {
+          case _: OverloadedType => ()
+          case _ => throw new TyperResult(located) 
+        }
       }
-      try {
-        checkForMoreWork(old.pos)
-      } catch {
-        case ex: ValidateException => // Ignore, this will have been reported elsewhere
-          debugLog("validate exception caught: "+ex)
-        case ex: Throwable =>
-          log.flush()
-          throw ex
+      else {
+        try {
+          checkForMoreWork(old.pos)
+        } catch {
+          case ex: ValidateException => // Ignore, this will have been reported elsewhere
+            debugLog("validate exception caught: "+ex)
+          case ex: Throwable =>
+            log.flush()
+            throw ex
+        }
       }
     }
   }
