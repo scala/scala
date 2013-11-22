@@ -1,0 +1,141 @@
+reload: Completions.scala
+
+askScopeCompletion at Completions.scala(15,4)
+================================================================================
+[response] askScopeCompletion at (15,4)
+retrieved 10 members
+[accessible:  true] `class Ctest.C`
+[accessible:  true] `class Foo_1test.Foo_1`
+[accessible:  true] `class Foo_2test.Foo_2`
+[accessible:  true] `class Foo_3test.Foo_3`
+[accessible:  true] `class Footest.Foo`
+[accessible:  true] `constructor Foo()test.Foo`
+[accessible:  true] `method fCCC=> Int`
+[accessible:  true] `method fOOO=> Int`
+[accessible:  true] `object Otest.O.type`
+[accessible:  true] `value otest.O.type`
+================================================================================
+
+askScopeCompletion at Completions.scala(19,4)
+================================================================================
+[response] askScopeCompletion at (19,4)
+retrieved 9 members
+[accessible:  true] `class Ctest.C`
+[accessible:  true] `class Foo_1test.Foo_1`
+[accessible:  true] `class Foo_2test.Foo_2`
+[accessible:  true] `class Foo_3test.Foo_3`
+[accessible:  true] `class Footest.Foo`
+[accessible:  true] `constructor Foo()test.Foo`
+[accessible:  true] `method fCCC=> Int`
+[accessible:  true] `method fOOO=> Int`
+[accessible:  true] `object Otest.O.type`
+================================================================================
+
+askScopeCompletion at Completions.scala(24,4)
+================================================================================
+[response] askScopeCompletion at (24,4)
+retrieved 9 members
+[accessible:  true] `class Ctest.C`
+[accessible:  true] `class Foo_1test.Foo_1`
+[accessible:  true] `class Foo_2test.Foo_2`
+[accessible:  true] `class Foo_3test.Foo_3`
+[accessible:  true] `class Footest.Foo`
+[accessible:  true] `constructor Foo()test.Foo`
+[accessible:  true] `method fCCC=> Int`
+[accessible:  true] `object Otest.O.type`
+[accessible:  true] `value ctest.C`
+================================================================================
+
+askScopeCompletion at Completions.scala(27,5)
+================================================================================
+[response] askScopeCompletion at (27,5)
+retrieved 8 members
+[accessible:  true] `class Ctest.C`
+[accessible:  true] `class Foo_1test.Foo_1`
+[accessible:  true] `class Foo_2test.Foo_2`
+[accessible:  true] `class Foo_3test.Foo_3`
+[accessible:  true] `class Footest.Foo`
+[accessible:  true] `constructor Foo()test.Foo`
+[accessible:  true] `object Otest.O.type`
+[accessible:  true] `value ctest.C`
+================================================================================
+
+askScopeCompletion at Completions.scala(30,5)
+================================================================================
+[response] askScopeCompletion at (30,5)
+retrieved 9 members
+[accessible:  true] `class Ctest.C`
+[accessible:  true] `class Foo_1test.Foo_1`
+[accessible:  true] `class Foo_2test.Foo_2`
+[accessible:  true] `class Foo_3test.Foo_3`
+[accessible:  true] `class Footest.Foo`
+[accessible:  true] `constructor Foo()test.Foo`
+[accessible:  true] `method fCCC=> Int`
+[accessible:  true] `object Otest.O.type`
+[accessible:  true] `value ctest.C`
+================================================================================
+
+askScopeCompletion at Completions.scala(32,5)
+================================================================================
+[response] askScopeCompletion at (32,5)
+retrieved 10 members
+[accessible:  true] `class Ctest.C`
+[accessible:  true] `class Foo_1test.Foo_1`
+[accessible:  true] `class Foo_2test.Foo_2`
+[accessible:  true] `class Foo_3test.Foo_3`
+[accessible:  true] `class Footest.Foo`
+[accessible:  true] `constructor Foo()test.Foo`
+[accessible:  true] `method fCCC=> Int`
+[accessible:  true] `method fOOO=> Int`
+[accessible:  true] `object Otest.O.type`
+[accessible:  true] `value ctest.C`
+================================================================================
+
+askScopeCompletion at Completions.scala(41,4)
+================================================================================
+[response] askScopeCompletion at (41,4)
+retrieved 10 members
+[accessible:  true] `class Ctest.C`
+[accessible:  true] `class Foo_1test.Foo_1`
+[accessible:  true] `class Foo_2test.Foo_2`
+[accessible:  true] `class Foo_3test.Foo_3`
+[accessible:  true] `class Footest.Foo`
+[accessible:  true] `constructor Foo_1()test.Foo_1`
+[accessible:  true] `method bar=> Unit`
+[accessible:  true] `method fCCC=> Int`
+[accessible:  true] `method fOOO=> Int`
+[accessible:  true] `object Otest.O.type`
+================================================================================
+
+askScopeCompletion at Completions.scala(51,4)
+================================================================================
+[response] askScopeCompletion at (51,4)
+retrieved 11 members
+[accessible:  true] `class Ctest.C`
+[accessible:  true] `class Foo_1test.Foo_1`
+[accessible:  true] `class Foo_2test.Foo_2`
+[accessible:  true] `class Foo_3test.Foo_3`
+[accessible:  true] `class Footest.Foo`
+[accessible:  true] `constructor Foo_2()test.Foo_2`
+[accessible:  true] `method bar=> Unit`
+[accessible:  true] `method fCCC=> Int`
+[accessible:  true] `method fOOO=> Int`
+[accessible:  true] `object Otest.O.type`
+[accessible:  true] `value otest.O.type`
+================================================================================
+
+askScopeCompletion at Completions.scala(61,4)
+================================================================================
+[response] askScopeCompletion at (61,4)
+retrieved 10 members
+[accessible:  true] `class Ctest.C`
+[accessible:  true] `class Foo_1test.Foo_1`
+[accessible:  true] `class Foo_2test.Foo_2`
+[accessible:  true] `class Foo_3test.Foo_3`
+[accessible:  true] `class Footest.Foo`
+[accessible:  true] `constructor Foo_3()test.Foo_3`
+[accessible:  true] `method bar=> Unit`
+[accessible:  true] `method fCCC=> Int`
+[accessible:  true] `object Otest.O.type`
+[accessible:  true] `value ctest.C`
+================================================================================

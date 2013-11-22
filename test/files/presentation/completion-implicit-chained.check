@@ -2,7 +2,7 @@ reload: Completions.scala
 
 askTypeCompletion at Completions.scala(11,16)
 ================================================================================
-[response] aksTypeCompletion at (11,16)
+[response] askTypeCompletion at (11,16)
 retrieved 24 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`

@@ -1,0 +1,111 @@
+reload: Completions.scala
+
+askScopeCompletion at Completions.scala(75,2)
+================================================================================
+[response] askScopeCompletion at (75,2)
+retrieved 49 members
+[accessible:  true] `class Base1test.Base1`
+[accessible:  true] `class Cb1Completion1.this.Cb1`
+[accessible:  true] `class Cc1Completion1.this.Cc1`
+[accessible:  true] `class Cc2Completion1.this.Cc2`
+[accessible:  true] `class Completion1test.Completion1`
+[accessible:  true] `class Ct1Completion1.this.Ct1`
+[accessible:  true] `constructor Completion1()test.Completion1`
+[accessible:  true] `method fb1=> Int`
+[accessible:  true] `method fb3=> Int`
+[accessible:  true] `method fc1=> Int`
+[accessible:  true] `method fc2=> Int`
+[accessible:  true] `method ft1=> Int`
+[accessible:  true] `method ft3=> Int`
+[accessible:  true] `object Completion2test.Completion2.type`
+[accessible:  true] `object Ob1Completion1.this.Ob1.type`
+[accessible:  true] `object Oc1Completion1.this.Oc1.type`
+[accessible:  true] `object Oc2Completion1.this.Oc2.type`
+[accessible:  true] `object Ot1Completion1.this.Ot1.type`
+[accessible:  true] `trait Trait1test.Trait1`
+[accessible:  true] `type tb1Completion1.this.tb1`
+[accessible:  true] `type tb3Completion1.this.tb3`
+[accessible:  true] `type tc1Completion1.this.tc1`
+[accessible:  true] `type tc2Completion1.this.tc2`
+[accessible:  true] `type tt1Completion1.this.tt1`
+[accessible:  true] `type tt3Completion1.this.tt3`
+[accessible:  true] `value vb3Int`
+[accessible:  true] `value vc1Int`
+[accessible:  true] `value vc2Int`
+[accessible:  true] `value vt3Int`
+[accessible:  true] `variable rb3Int`
+[accessible:  true] `variable rc1Int`
+[accessible:  true] `variable rc2Int`
+[accessible:  true] `variable rt3Int`
+[accessible: false] `class Cb2Completion1.this.Cb2`
+[accessible: false] `class Ct2Completion1.this.Ct2`
+[accessible: false] `method fb2=> Int`
+[accessible: false] `method ft2=> Int`
+[accessible: false] `object Ob2Completion1.this.Ob2.type`
+[accessible: false] `object Ot2Completion1.this.Ot2.type`
+[accessible: false] `type tb2Completion1.this.tb2`
+[accessible: false] `type tt2Completion1.this.tt2`
+[accessible: false] `value vb1Int`
+[accessible: false] `value vb2Int`
+[accessible: false] `value vt1Int`
+[accessible: false] `value vt2Int`
+[accessible: false] `variable rb1Int`
+[accessible: false] `variable rb2Int`
+[accessible: false] `variable rt1Int`
+[accessible: false] `variable rt2Int`
+================================================================================
+
+askScopeCompletion at Completions.scala(104,2)
+================================================================================
+[response] askScopeCompletion at (104,2)
+retrieved 49 members
+[accessible:  true] `class Base1test.Base1`
+[accessible:  true] `class Cb1test.Completion2.Cb1`
+[accessible:  true] `class Co1test.Completion2.Co1`
+[accessible:  true] `class Co2test.Completion2.Co2`
+[accessible:  true] `class Completion1test.Completion1`
+[accessible:  true] `class Ct1test.Completion2.Ct1`
+[accessible:  true] `constructor Completion2()test.Completion2.type`
+[accessible:  true] `method fb1=> Int`
+[accessible:  true] `method fb3=> Int`
+[accessible:  true] `method fo1=> Int`
+[accessible:  true] `method fo2=> Int`
+[accessible:  true] `method ft1=> Int`
+[accessible:  true] `method ft3=> Int`
+[accessible:  true] `object Completion2test.Completion2.type`
+[accessible:  true] `object Ob1test.Completion2.Ob1.type`
+[accessible:  true] `object Oo1test.Completion2.Oo1.type`
+[accessible:  true] `object Oo2test.Completion2.Oo2.type`
+[accessible:  true] `object Ot1test.Completion2.Ot1.type`
+[accessible:  true] `trait Trait1test.Trait1`
+[accessible:  true] `type tb1test.Completion2.tb1`
+[accessible:  true] `type tb3test.Completion2.tb3`
+[accessible:  true] `type to1test.Completion2.to1`
+[accessible:  true] `type to2test.Completion2.to2`
+[accessible:  true] `type tt1test.Completion2.tt1`
+[accessible:  true] `type tt3test.Completion2.tt3`
+[accessible:  true] `value vb3Int`
+[accessible:  true] `value vo1Int`
+[accessible:  true] `value vo2Int`
+[accessible:  true] `value vt3Int`
+[accessible:  true] `variable rb3Int`
+[accessible:  true] `variable ro1Int`
+[accessible:  true] `variable ro2Int`
+[accessible:  true] `variable rt3Int`
+[accessible: false] `class Cb2test.Completion2.Cb2`
+[accessible: false] `class Ct2test.Completion2.Ct2`
+[accessible: false] `method fb2=> Int`
+[accessible: false] `method ft2=> Int`
+[accessible: false] `object Ob2test.Completion2.Ob2.type`
+[accessible: false] `object Ot2test.Completion2.Ot2.type`
+[accessible: false] `type tb2test.Completion2.tb2`
+[accessible: false] `type tt2test.Completion2.tt2`
+[accessible: false] `value vb1Int`
+[accessible: false] `value vb2Int`
+[accessible: false] `value vt1Int`
+[accessible: false] `value vt2Int`
+[accessible: false] `variable rb1Int`
+[accessible: false] `variable rb2Int`
+[accessible: false] `variable rt1Int`
+[accessible: false] `variable rt2Int`
+================================================================================

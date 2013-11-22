@@ -2,7 +2,7 @@ reload: Completions.scala
 
 askTypeCompletion at Completions.scala(14,12)
 ================================================================================
-[response] aksTypeCompletion at (14,12)
+[response] askTypeCompletion at (14,12)
 retrieved 42 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
@@ -46,7 +46,7 @@ retrieved 42 members
 
 askTypeCompletion at Completions.scala(16,11)
 ================================================================================
-[response] aksTypeCompletion at (16,11)
+[response] askTypeCompletion at (16,11)
 retrieved 42 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
@@ -90,7 +90,7 @@ retrieved 42 members
 
 askTypeCompletion at Completions.scala(22,11)
 ================================================================================
-[response] aksTypeCompletion at (22,11)
+[response] askTypeCompletion at (22,11)
 retrieved 42 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
@@ -134,7 +134,7 @@ retrieved 42 members
 
 askTypeCompletion at Completions.scala(28,10)
 ================================================================================
-[response] aksTypeCompletion at (28,10)
+[response] askTypeCompletion at (28,10)
 retrieved 42 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
@@ -178,7 +178,7 @@ retrieved 42 members
 
 askTypeCompletion at Completions.scala(37,8)
 ================================================================================
-[response] aksTypeCompletion at (37,8)
+[response] askTypeCompletion at (37,8)
 retrieved 42 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`

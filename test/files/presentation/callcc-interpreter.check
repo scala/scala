@@ -2,7 +2,7 @@ reload: CallccInterpreter.scala
 
 askTypeCompletion at CallccInterpreter.scala(51,38)
 ================================================================================
-[response] aksTypeCompletion at (51,38)
+[response] askTypeCompletion at (51,38)
 retrieved 64 members
 [accessible:  true] `class AddcallccInterpreter.Add`
 [accessible:  true] `class AppcallccInterpreter.App`

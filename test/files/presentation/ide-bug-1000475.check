@@ -2,7 +2,7 @@ reload: Foo.scala
 
 askTypeCompletion at Foo.scala(3,7)
 ================================================================================
-[response] aksTypeCompletion at (3,7)
+[response] askTypeCompletion at (3,7)
 retrieved 36 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
@@ -40,7 +40,7 @@ retrieved 36 members
 
 askTypeCompletion at Foo.scala(6,10)
 ================================================================================
-[response] aksTypeCompletion at (6,10)
+[response] askTypeCompletion at (6,10)
 retrieved 36 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`
@@ -78,7 +78,7 @@ retrieved 36 members
 
 askTypeCompletion at Foo.scala(7,7)
 ================================================================================
-[response] aksTypeCompletion at (7,7)
+[response] askTypeCompletion at (7,7)
 retrieved 36 members
 [accessible:  true] `method !=(x$1: Any)Boolean`
 [accessible:  true] `method !=(x$1: AnyRef)Boolean`

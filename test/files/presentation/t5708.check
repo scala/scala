@@ -2,7 +2,7 @@ reload: Completions.scala
 
 askTypeCompletion at Completions.scala(17,9)
 ================================================================================
-[response] aksTypeCompletion at (17,9)
+[response] askTypeCompletion at (17,9)
 retrieved 44 members
 [accessible:  true] `lazy value fooInt`
 [accessible:  true] `method !=(x$1: Any)Boolean`
