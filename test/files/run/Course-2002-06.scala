@@ -55,7 +55,7 @@ abstract class Graphics(_width: Double, _height: Double) {
   }
 
   /** Draw a list of segments on the picture.*/
-  def drawSegments(frm: Frame)(segments: List[Pair[Vector, Vector]]): Unit =
+  def drawSegments(frm: Frame)(segments: List[Tuple2[Vector, Vector]]): Unit =
     if (segments.isEmpty) ()
     else {
       drawSegment(frm)(segments.head._1, segments.head._2);

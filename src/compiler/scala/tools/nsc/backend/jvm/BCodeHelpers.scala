@@ -112,7 +112,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
     val ta = exemplars.get(a)
     val tb = exemplars.get(b)
 
-    val res = Pair(ta.isInterface, tb.isInterface) match {
+    val res = (ta.isInterface, tb.isInterface) match {
       case (true, true) =>
         // exercised by test/files/run/t4761.scala
         if      (tb.isSubtypeOf(ta.c)) ta.c
@@ -759,7 +759,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
     def emitParamAnnotations(jmethod: asm.MethodVisitor, pannotss: List[List[AnnotationInfo]]) {
       val annotationss = pannotss map (_ filter shouldEmitAnnotation)
       if (annotationss forall (_.isEmpty)) return
-      for (Pair(annots, idx) <- annotationss.zipWithIndex;
+      for ((annots, idx) <- annotationss.zipWithIndex;
            annot <- annots) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)

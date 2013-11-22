@@ -46,8 +46,8 @@ object Arguments {
     }
 
     def parseBinding(str: String, separator: Char): (String, String) = (str indexOf separator) match {
-      case -1   => argumentError("missing '" + separator + "' in binding '" + str + "'") ; Pair("", "")
-      case idx  => Pair((str take idx).trim, (str drop (idx + 1)).trim)
+      case -1   => argumentError("missing '" + separator + "' in binding '" + str + "'") ; ("", "")
+      case idx  => ((str take idx).trim, (str drop (idx + 1)).trim)
     }
 
     def parse(args: Array[String]): Arguments = {
@@ -141,7 +141,7 @@ class Arguments {
     if (key.length > 0)
       bindings.getOrElseUpdate(tag, new mutable.HashMap)(key) = value
 
-  def addBinding(tag: String, binding: Pair[String, String]): Unit =
+  def addBinding(tag: String, binding: Tuple2[String, String]): Unit =
     addBinding(tag, binding._1, binding._2)
 
   def addOther(arg: String): Unit = others += arg

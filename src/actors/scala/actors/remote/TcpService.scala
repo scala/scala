@@ -35,7 +35,7 @@ object TcpService {
         service
       case None =>
         val service = new TcpService(port, cl)
-        ports += Pair(port, service)
+        ports(port) = service
         service.start()
         Debug.info("created service at "+service.node)
         service
@@ -106,9 +106,9 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
       // when remote net kernel comes up
       (pendingSends.get(node): @unchecked) match {
         case None =>
-          pendingSends += Pair(node, List(data))
+          pendingSends(node) = List(data)
         case Some(msgs) if msgs.length < TcpService.BufSize =>
-          pendingSends += Pair(node, data :: msgs)
+          pendingSends(node) = data :: msgs
       }
     }
 
@@ -183,7 +183,7 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
     new mutable.HashMap[Node, TcpServiceWorker]
 
   private[actors] def addConnection(node: Node, worker: TcpServiceWorker) = synchronized {
-    connections += Pair(node, worker)
+    connections(node) = worker
   }
 
   def getConnection(n: Node) = synchronized {

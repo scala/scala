@@ -169,7 +169,7 @@ class TailCall[S](s: S) {
     aux[T](x, y);
   }
   final def g3[T](x: Int, y: Int, zs: List[T]): Int = {
-    def aux[U](n: Int, v: Int, ls: List[Pair[T,U]]): Int =
+    def aux[U](n: Int, v: Int, ls: List[Tuple2[T,U]]): Int =
       if (n == 0) v else aux(n - 1, v - 1, ls);
     aux(x, y, Nil);
   }

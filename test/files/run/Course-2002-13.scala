@@ -74,18 +74,18 @@ object Terms {
 
   val NoTerm = Con("<none>", List());
 
-  def unify1(x: Term, y: Term, s: Subst): Option[Subst] = Pair(x, y) match {
-    case Pair(Var(a), Var(b)) if (a == b) =>
+  def unify1(x: Term, y: Term, s: Subst): Option[Subst] = (x, y) match {
+    case (Var(a), Var(b)) if (a == b) =>
       Some(s)
-    case Pair(Var(a), _) => lookup(s, a) match {
+    case (Var(a), _) => lookup(s, a) match {
       case Some(x1) => unify(x1, y, s)
       case None => if (y.tyvars contains a) None else Some(Binding(a, y) :: s)
     }
-    case Pair(_, Var(b)) => lookup(s, b) match {
+    case (_, Var(b)) => lookup(s, b) match {
       case Some(y1) => unify(x, y1, s)
       case None => if (x.tyvars contains b) None else Some(Binding(b, x) :: s)
     }
-    case Pair(Con(a, xs), Con(b, ys)) if (a == b) =>
+    case (Con(a, xs), Con(b, ys)) if (a == b) =>
       unify(xs, ys, s)
     case _ => None
   }
@@ -96,9 +96,9 @@ object Terms {
     ss
   }
 
-  def unify(xs: List[Term], ys: List[Term], s: Subst): Option[Subst] = Pair(xs, ys) match {
-    case Pair(List(), List()) => Some(s)
-    case Pair(x :: xs1, y :: ys1) =>
+  def unify(xs: List[Term], ys: List[Term], s: Subst): Option[Subst] = (xs, ys) match {
+    case (List(), List()) => Some(s)
+    case (x :: xs1, y :: ys1) =>
       unify(x, y, s) match {
 	case Some(s1) => unify(xs1, ys1, s1)
 	case None => None

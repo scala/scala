@@ -43,8 +43,8 @@ private[remote] class NetKernel(service: Service) {
   private val names = new mutable.HashMap[OutputChannel[Any], Symbol]
 
   def register(name: Symbol, a: OutputChannel[Any]): Unit = synchronized {
-    actors += Pair(name, a)
-    names += Pair(a, name)
+    actors(name) = a
+    names(a) = name
   }
 
   def getOrCreateName(from: OutputChannel[Any]) = names.get(from) match {
@@ -79,7 +79,7 @@ private[remote] class NetKernel(service: Service) {
 
   def createProxy(node: Node, sym: Symbol): Proxy = {
     val p = new Proxy(node, sym, this)
-    proxies += Pair((node, sym), p)
+    proxies((node, sym)) = p
     p
   }
 
@@ -99,7 +99,7 @@ private[remote] class NetKernel(service: Service) {
     proxies.synchronized {
       proxies.get((senderNode, senderName)) match {
         case Some(senderProxy) => // do nothing
-        case None              => proxies += Pair((senderNode, senderName), p)
+        case None              => proxies((senderNode, senderName)) = p
       }
     }
 

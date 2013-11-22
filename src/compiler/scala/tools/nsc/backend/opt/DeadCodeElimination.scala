@@ -119,7 +119,7 @@ abstract class DeadCodeElimination extends SubComponent {
       m foreachBlock { bb =>
         useful(bb) = new mutable.BitSet(bb.size)
         var rd = rdef.in(bb)
-        for (Pair(i, idx) <- bb.toList.zipWithIndex) {
+        for ((i, idx) <- bb.toList.zipWithIndex) {
 
           // utility for adding to worklist
           def moveToWorkList() = moveToWorkListIf(cond = true)
@@ -137,7 +137,7 @@ abstract class DeadCodeElimination extends SubComponent {
           i match {
 
             case LOAD_LOCAL(_) =>
-              defs = defs + Pair(((bb, idx)), rd.vars)
+              defs = defs + (((bb, idx), rd.vars))
               moveToWorkListIf(cond = false)
 
             case STORE_LOCAL(l) =>
@@ -350,7 +350,7 @@ abstract class DeadCodeElimination extends SubComponent {
         val oldInstr = bb.toList
         bb.open()
         bb.clear()
-        for (Pair(i, idx) <- oldInstr.zipWithIndex) {
+        for ((i, idx) <- oldInstr.zipWithIndex) {
           if (useful(bb)(idx)) {
             debuglog(" * " + i + " is useful")
             bb.emit(i, i.pos)

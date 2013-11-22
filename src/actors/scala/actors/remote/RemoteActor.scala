@@ -64,7 +64,7 @@ object RemoteActor {
     val serv = TcpService(port, cl)
     val kern = serv.kernel
     val s = Actor.self(Scheduler)
-    kernels += Pair(s, kern)
+    kernels(s) = kern
 
     s.onTerminate {
       Debug.info("alive actor "+s+" terminated")
@@ -90,7 +90,7 @@ object RemoteActor {
     val kernel = kernels.get(Actor.self(Scheduler)) match {
       case None =>
         val serv = TcpService(TcpService.generatePort, cl)
-        kernels += Pair(Actor.self(Scheduler), serv.kernel)
+        kernels(Actor.self(Scheduler)) = serv.kernel
         serv.kernel
       case Some(k) =>
         k

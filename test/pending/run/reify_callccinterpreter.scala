@@ -43,15 +43,15 @@ object Test extends App {
       override def toString() = "<function>"
     }
 
-    type Environment = List[Pair[Name, Value]];
+    type Environment = List[Tuple2[Name, Value]];
 
     def lookup(x: Name, e: Environment): M[Value] = e match {
       case List() => unitM(Wrong)
-      case Pair(y, b) :: e1 => if (x == y) unitM(b) else lookup(x, e1)
+      case (y, b) :: e1 => if (x == y) unitM(b) else lookup(x, e1)
     }
 
-    def add(a: Value, b: Value): M[Value] = Pair(a, b) match {
-      case Pair(Num(m), Num(n)) => unitM(Num(m + n))
+    def add(a: Value, b: Value): M[Value] = (a, b) match {
+      case (Num(m), Num(n)) => unitM(Num(m + n))
       case _ => unitM(Wrong)
     }
 
@@ -67,12 +67,12 @@ object Test extends App {
            b <- interp(r, e);
            c <- add(a, b))
                         yield c
-      case Lam(x, t) => unitM(Fun(a => interp(t, Pair(x, a) :: e)))
+      case Lam(x, t) => unitM(Fun(a => interp(t, (x, a) :: e)))
       case App(f, t) => for (a <- interp(f, e);
            b <- interp(t, e);
            c <- apply(a, b))
             yield c
-      case Ccc(x, t) => callCC(k => interp(t, Pair(x, Fun(k)) :: e))
+      case Ccc(x, t) => callCC(k => interp(t, (x, Fun(k)) :: e))
     }
 
     def test(t: Term): String = showM(interp(t, List()))

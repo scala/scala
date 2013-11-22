@@ -46,7 +46,7 @@ object Bug135Test {
 
   def test(args: Array[String]) {
     val myMap:TreeMap[Int, String] = new TreeMap
-    val map1 = myMap + Pair(42, "The answer")
+    val map1 = myMap + ((42, "The answer"))
     println(map1.get(42))
   }
 

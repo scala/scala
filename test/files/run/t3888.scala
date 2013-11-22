@@ -24,6 +24,6 @@ object Test {
   }
 }
 
-class P extends Pair(1, 1) {
+class P extends Tuple2(1, 1) {
   override def equals(x: Any) = true
 }

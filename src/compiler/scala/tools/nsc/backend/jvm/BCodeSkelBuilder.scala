@@ -436,7 +436,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     var labelDef: scala.collection.Map[Symbol, LabelDef] = null// (LabelDef-sym -> LabelDef)
 
     // bookkeeping the scopes of non-synthetic local vars, to emit debug info (`emitVars`).
-    var varsInScope: List[Pair[Symbol, asm.Label]] = null // (local-var-sym -> start-of-scope)
+    var varsInScope: List[Tuple2[Symbol, asm.Label]] = null // (local-var-sym -> start-of-scope)
 
     // helpers around program-points.
     def lastInsn: asm.tree.AbstractInsnNode = {

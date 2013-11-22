@@ -139,7 +139,7 @@ class ScalaTool extends ScalaMatchingTask {
       val st = s.trim
       val stArray = st.split("=", 2)
       if (stArray.length == 2) {
-        if (input != "") List(Pair(stArray(0), stArray(1))) else Nil
+        if (input != "") List((stArray(0), stArray(1))) else Nil
       }
       else
         buildError("Property " + st + " is not formatted properly.")
@@ -170,7 +170,7 @@ class ScalaTool extends ScalaMatchingTask {
 
     private def getProperties: String =
       properties.map({
-        case Pair(name,value) => "-D" + name + "=\"" + value + "\""
+        case (name,value) => "-D" + name + "=\"" + value + "\""
       }).mkString("", " ", "")
 
 /*============================================================================*\

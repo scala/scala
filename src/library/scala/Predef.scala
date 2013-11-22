@@ -26,8 +26,6 @@ import scala.io.ReadStdin
  *  [[scala.collection.immutable.Set]], and the [[scala.collection.immutable.List]]
  *  constructors ([[scala.collection.immutable.::]] and
  *  [[scala.collection.immutable.Nil]]).
- *  The types `Pair` (a [[scala.Tuple2]]) and `Triple` (a [[scala.Tuple3]]), with
- *  simple constructors, are also provided.
  *
  *  === Console I/O ===
  *  Predef provides a number of simple functions for console I/O, such as
@@ -230,13 +228,17 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
 
   // tupling ------------------------------------------------------------
 
+  @deprecated("Use built-in tuple syntax or Tuple2 instead", "2.11.0")
   type Pair[+A, +B] = Tuple2[A, B]
+  @deprecated("Use built-in tuple syntax or Tuple2 instead", "2.11.0")
   object Pair {
     def apply[A, B](x: A, y: B) = Tuple2(x, y)
     def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
   }
 
+  @deprecated("Use built-in tuple syntax or Tuple3 instead", "2.11.0")
   type Triple[+A, +B, +C] = Tuple3[A, B, C]
+  @deprecated("Use built-in tuple syntax or Tuple3 instead", "2.11.0")
   object Triple {
     def apply[A, B, C](x: A, y: B, z: C) = Tuple3(x, y, z)
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)

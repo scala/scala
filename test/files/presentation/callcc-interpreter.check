@@ -1,8 +1,8 @@
 reload: CallccInterpreter.scala
 
-askTypeCompletion at CallccInterpreter.scala(51,38)
+askTypeCompletion at CallccInterpreter.scala(51,34)
 ================================================================================
-[response] askTypeCompletion at (51,38)
+[response] askTypeCompletion at (51,34)
 retrieved 59 members
 abstract trait Term extends AnyRef
 abstract trait Value extends AnyRef
@@ -83,8 +83,8 @@ def showM(m: callccInterpreter.M[callccInterpreter.Value]): String = m.in.apply(
 askType at CallccInterpreter.scala(50,30)
 ================================================================================
 [response] askTypeAt (50,30)
-def add(a: callccInterpreter.Value, b: callccInterpreter.Value): callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value] = scala.this.Predef.Pair.apply[callccInterpreter.Value, callccInterpreter.Value](a, b) match {
-  case scala.this.Predef.Pair.unapply[callccInterpreter.Value, callccInterpreter.Value](<unapply-selector>) <unapply> ((n: Int)callccInterpreter.Num((m @ _)), (n: Int)callccInterpreter.Num((n @ _))) => this.unitM[callccInterpreter.Num](callccInterpreter.this.Num.apply(m.+(n)))
+def add(a: callccInterpreter.Value, b: callccInterpreter.Value): callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with Serializable with callccInterpreter.Value] = scala.Tuple2.apply[callccInterpreter.Value, callccInterpreter.Value](a, b) match {
+  case (_1: callccInterpreter.Value, _2: callccInterpreter.Value)(callccInterpreter.Value, callccInterpreter.Value)((n: Int)callccInterpreter.Num((m @ _)), (n: Int)callccInterpreter.Num((n @ _))) => this.unitM[callccInterpreter.Num](callccInterpreter.this.Num.apply(m.+(n)))
   case _ => callccInterpreter.this.unitM[callccInterpreter.Wrong.type](callccInterpreter.this.Wrong)
 }
 ================================================================================

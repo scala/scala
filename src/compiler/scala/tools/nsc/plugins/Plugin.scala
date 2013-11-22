@@ -144,7 +144,7 @@ object Plugin {
     // (j, Try(descriptor))
     def required(j: Path) = j -> loadDescriptionFromJar(j)
 
-    type Paired = Pair[Path, Try[PluginDescription]]
+    type Paired = Tuple2[Path, Try[PluginDescription]]
     val included: List[Paired] = (dirs flatMap (_ ifDirectory scan)).flatten
     val exploded: List[Paired] = jars flatMap (_ ifDirectory explode)
     val explicit: List[Paired] = jars flatMap (_ ifFile required)

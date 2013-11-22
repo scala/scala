@@ -13,17 +13,17 @@ object patterns {
     case Leaf(x) => x
   }
 
-  def find[a,b](it: Iterator[Pair[a, b]], x: a): Option[b] = {
+  def find[a,b](it: Iterator[Tuple2[a, b]], x: a): Option[b] = {
     var result: Option[b] = None
     var found = false
     while (it.hasNext && !found) {
-      val Pair(x1, y) = it.next
+      val (x1, y) = it.next
       if (x == x1) { found = true; result = Some(y) }
     }
     result
   }
 
-  def printFinds[a](xs: List[Pair[a, String]], x: a) =
+  def printFinds[a](xs: List[Tuple2[a, String]], x: a) =
     find(xs.iterator, x) match {
       case Some(y) => System.out.println(y)
       case None => System.out.println("no match")
@@ -31,6 +31,6 @@ object patterns {
 
   def main(args: Array[String]) {
     println("sum of leafs=" + sumLeaves(tree1))
-    printFinds(List(Pair(3, "three"), Pair(4, "four")), 4)
+    printFinds(List((3, "three"), (4, "four")), 4)
   }
 }

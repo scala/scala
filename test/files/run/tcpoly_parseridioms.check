@@ -4,8 +4,8 @@ It would fail on the following input: ParseResult()
                                   ^
 tcpoly_parseridioms.scala:17: warning: match may not be exhaustive.
 It would fail on the following input: ParseResult()
-      def apply(in: Input): ParseResult[Pair[T, U]] = a(in) match {
-                                                       ^
+      def apply(in: Input): ParseResult[Tuple2[T, U]] = a(in) match {
+                                                         ^
 tcpoly_parseridioms.scala:30: warning: match may not be exhaustive.
 It would fail on the following input: ParseResult()
       case Failure(_, _) => b(in) match {

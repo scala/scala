@@ -14,7 +14,7 @@ trait Test[T] {
 object main extends Test[Int] {
   val pair1 = (1,1)
 
-  implicit def topair(x: Int): Pair[Int, Int] = (x,x)
+  implicit def topair(x: Int): Tuple2[Int, Int] = (x,x)
   val pair2: MyPair[Int] = 1
   val x: Short = 1
 }

@@ -22,9 +22,9 @@ class TestSealedExhaustive { // compile only
 
     def ma3(x:Mult) = (x,x) match { // not exhaustive
       case (Kult(_), Qult())    => // Kult missing
-      //case Pair(Kult(_), Kult(_))    =>
+      //case (Kult(_), Kult(_))    =>
       case (Qult(), Kult(_))    => // Qult missing
-      //case Pair(Qult(), Qult())    =>
+      //case (Qult(), Qult())    =>
     }
 
     def ma3u(x:Mult) = ((x,x) : @unchecked) match { // not exhaustive, but not checked!

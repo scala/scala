@@ -8,7 +8,7 @@ object elasticBuffer {
    * Recursive type for channels that carry a "String" channel and
    * an object of the type we define.
    */
-  class MetaChan extends Chan[Pair[Chan[String], MetaChan]]
+  class MetaChan extends Chan[Tuple2[Chan[String], MetaChan]]
 
   def Buffer(put: Chan[String], get: Chan[String]): Unit = {
 
@@ -18,19 +18,19 @@ object elasticBuffer {
     def Bl(i:Chan[String], l: MetaChan,
            o: Chan[String], r: MetaChan): unit =
       choice (
-        l(Pair(o,r)) * (System.out.println("Removed one cell.")),
+        l((o,r)) * (System.out.println("Removed one cell.")),
         i * (inp => Cl(i, l, o, r, inp))
       )
 
     /**
      * A buffer cell containing a value, ready to receive (o,r) from the right.
      */
-    def Cl(i: Chan[String], l: MetaChan, 
+    def Cl(i: Chan[String], l: MetaChan,
            o: Chan[String], r: MetaChan, content: String): Unit =
       choice (
         o(content) * (Bl(i,l,o,r)),
         i * (inp => Dl(i,l,o,r,content, inp)),
-        r * ( { case Pair(newo, newr) => Cl(i,l,newo,newr,content) })
+        r * ( { case (newo, newr) => Cl(i,l,newo,newr,content) })
       )
 
     /**

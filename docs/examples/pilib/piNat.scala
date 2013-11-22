@@ -4,23 +4,23 @@ import scala.concurrent.pilib._
 
 /** Church encoding of naturals in the Pi-calculus */
 object piNat extends Application {
- 
+
   /** Locations of Pi-calculus natural */
-  class NatChan extends Chan[Triple[Chan[Unit], Chan[NatChan], Chan[NatChan]]]
+  class NatChan extends Chan[Tuple3[Chan[Unit], Chan[NatChan], Chan[NatChan]]]
 
   /** Zero */
   def Z(l: NatChan): Unit = choice (
-    l * { case Triple(z, sd, d) => z.write(()) }
+    l * { case (z, sd, d) => z.write(()) }
   )
 
   /** Successor of Double */
   def SD(n: NatChan, l: NatChan): Unit = choice (
-    l * { case Triple(z, sd, d) => sd.write(n) }
+    l * { case (z, sd, d) => sd.write(n) }
   )
 
   /** Double */
   def D(n: NatChan, l: NatChan): Unit = choice (
-    l * { case Triple(z, sd, d) => d.write(n) }
+    l * { case (z, sd, d) => d.write(n) }
   )
 
   /** Make "l" a location representing the natural "n" */
@@ -34,7 +34,7 @@ object piNat extends Application {
     val z = new Chan[Unit]
     val sd = new Chan[NatChan]
     val d = new Chan[NatChan]
-    spawn < m.write(Triple(z, sd, d)) >;
+    spawn < m.write((z, sd, d)) >;
     choice (
       z  * { x => make(1, n) },
       sd * { m1 => { val n1 = new NatChan; spawn < D(n1, n) >; Succ(m1, n1) } },
@@ -47,7 +47,7 @@ object piNat extends Application {
     val z = new Chan[Unit]
     val sd = new Chan[NatChan]
     val d = new Chan[NatChan]
-    spawn < l.write(Triple(z, sd, d)) >;
+    spawn < l.write((z, sd, d)) >;
     choice (
       z  * { x => spawn < Z(m) >; Z(n)  },
       sd * { l1 => { val m1 = new NatChan; val n1 = new NatChan;
@@ -64,7 +64,7 @@ object piNat extends Application {
     val z = new Chan[Unit]
     val sd = new Chan[NatChan]
     val d = new Chan[NatChan]
-    spawn < n.write(Triple(z, sd, d)) >;
+    spawn < n.write((z, sd, d)) >;
     choice (
       z  * { x => 0  },
       sd * { n1 => 2 * value(n1) + 1 },

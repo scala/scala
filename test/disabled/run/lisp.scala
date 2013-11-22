@@ -12,11 +12,11 @@ class LispTokenizer(s: String) extends Iterator[String] {
     while (i < s.length() && s.charAt(i) <= ' ') i += 1
     i < s.length()
   }
-  def next: String = 
+  def next: String =
     if (hasNext) {
       val start = i
       if (isDelimiter(s charAt i)) i += 1
-      else 
+      else
         do i = i + 1
         while (!isDelimiter(s charAt i))
       s.substring(start, i)
@@ -190,10 +190,10 @@ object LispCaseClasses extends Lisp {
 
     def extendEnv(env: Environment,
                   ps: List[String], args: List[Data]): Environment =
-      Pair(ps, args) match {
-        case Pair(List(), List()) =>
+      (ps, args) match {
+        case (List(), List()) =>
           env
-        case Pair(p :: ps1, arg :: args1) =>
+        case (p :: ps1, arg :: args1) =>
           extendEnv(env.extend(p, arg), ps1, args1)
         case _ =>
           lispError("wrong number of arguments")
@@ -381,10 +381,10 @@ object LispAny extends Lisp {
 
     def extendEnv(env: Environment,
                   ps: List[String], args: List[Data]): Environment =
-      Pair(ps, args) match {
-        case Pair(List(), List()) =>
+      (ps, args) match {
+        case (List(), List()) =>
           env
-        case Pair(p :: ps1, arg :: args1) =>
+        case (p :: ps1, arg :: args1) =>
           extendEnv(env.extend(p, arg), ps1, args1)
         case _ =>
           lispError("wrong number of arguments")
