@@ -1,0 +1,7 @@
+t7872b.scala:8: error: contravariant type a occurs in covariant position in type [-a]List[a] of type l
+  def oops1 = down[({type l[-a] = List[a]})#l](List('whatever: Object)).head + "oops"
+                          ^
+t7872b.scala:19: error: covariant type a occurs in contravariant position in type [+a]coinv.Stringer[a] of type l
+  def oops2 = up[({type l[+a] = Stringer[a]})#l]("printed: " + _)
+                        ^
+two errors found
