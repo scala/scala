@@ -4,8 +4,7 @@ trait NonFatalTests {
 
 	//NonFatals
     val nonFatals: Seq[Throwable] =
-      Seq(new StackOverflowError,
-          new RuntimeException,
+      Seq(new RuntimeException,
           new Exception,
           new Throwable,
           new NotImplementedError)
@@ -13,6 +12,7 @@ trait NonFatalTests {
     //Fatals
     val fatals: Seq[Throwable] =
       Seq(new InterruptedException,
+          new StackOverflowError,
           new OutOfMemoryError,
           new LinkageError,
           new VirtualMachineError {},
