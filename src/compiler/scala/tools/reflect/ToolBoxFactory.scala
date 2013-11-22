@@ -16,6 +16,7 @@ import scala.compat.Platform.EOL
 import scala.reflect.NameTransformer
 import scala.reflect.api.JavaUniverse
 import scala.reflect.io.NoAbstractFile
+import scala.tools.nsc.interactive.RangePositions
 
 abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
 
@@ -329,8 +330,12 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       try {
         val errorFn: String => Unit = msg => frontEnd.log(scala.reflect.internal.util.NoPosition, msg, frontEnd.ERROR)
         val command = new CompilerCommand(arguments.toList, errorFn)
-        command.settings.outputDirs setSingleOutput virtualDirectory
-        val instance = new ToolBoxGlobal(command.settings, frontEndToReporter(frontEnd, command.settings))
+        val settings = command.settings
+        settings.outputDirs setSingleOutput virtualDirectory
+        val reporter = frontEndToReporter(frontEnd, command.settings)
+        val instance =
+          if (settings.Yrangepos.value) new ToolBoxGlobal(settings, reporter) with RangePositions
+          else new ToolBoxGlobal(settings, reporter)
         if (frontEnd.hasErrors) {
           var msg = "reflective compilation has failed: cannot initialize the compiler: " + EOL + EOL
           msg += frontEnd.infos map (_.msg) mkString EOL
