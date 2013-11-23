@@ -515,7 +515,7 @@ abstract class ClassfileParser {
       val info    = readType()
       val sym     = ownerForFlags(jflags).newValue(name.toTermName, NoPosition, sflags)
 
-      // Note: the info may be overrwritten later with a generic signature
+      // Note: the info may be overwritten later with a generic signature
       // parsed from SignatureATTR
       sym setInfo {
         if (jflags.isEnum) ConstantType(Constant(sym))

@@ -82,6 +82,7 @@ trait HasFlags {
   def hasAbstractFlag    = hasFlag(ABSTRACT)
   def hasAccessorFlag    = hasFlag(ACCESSOR)
   def hasDefault         = hasFlag(DEFAULTPARAM) && hasFlag(METHOD | PARAM) // Second condition disambiguates with TRAIT
+  def hasEnumFlag        = hasFlag(ENUM)
   def hasLocalFlag       = hasFlag(LOCAL)
   def hasModuleFlag      = hasFlag(MODULE)
   def hasPackageFlag     = hasFlag(PACKAGE)
