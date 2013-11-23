@@ -138,15 +138,9 @@ trait Namers extends MethodSynthesis {
       *  - The field is static
       *  - The field is stable
       */
-    def isEnumConstant(vd: ValDef) =
-      isEnumClass(owner.companionClass) && vd.mods.hasAllFlags(ENUM | STABLE | STATIC)
-
-    /** Determines whether this symbol is the class declaration of an enum type.
-      * To qualify, the following conditions must be met:
-      *  - The class has the ENUM flag set
-      *  - The class extends java.lang.Enum
-      */
-    def isEnumClass(cd: Symbol) = cd.hasEnumFlag && (cd.superClass == JavaEnumClass)
+    def isEnumConstant(vd: ValDef) = {
+      vd.symbol.owner.hasEnumFlag && vd.mods.hasAllFlags(ENUM | STABLE | STATIC)
+    }
 
     def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): T =
       if (sym.isPrivateLocal || !mods.hasAccessBoundary) sym
