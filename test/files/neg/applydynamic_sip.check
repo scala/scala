@@ -13,28 +13,28 @@ applydynamic_sip.scala:18: error: type mismatch;
 error after rewriting to Test.this.bad1.selectDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad1.sel
-  ^
+       ^
 applydynamic_sip.scala:19: error: type mismatch;
  found   : String("sel")
  required: Int
 error after rewriting to Test.this.bad1.applyDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad1.sel(1)
-  ^
+       ^
 applydynamic_sip.scala:20: error: type mismatch;
  found   : String("sel")
  required: Int
 error after rewriting to Test.this.bad1.applyDynamicNamed("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad1.sel(a = 1)
-  ^
+       ^
 applydynamic_sip.scala:21: error: type mismatch;
  found   : String("sel")
  required: Int
 error after rewriting to Test.this.bad1.updateDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad1.sel = 1
-  ^
+       ^
 applydynamic_sip.scala:29: error: Int does not take parameters
 error after rewriting to Test.this.bad2.selectDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
