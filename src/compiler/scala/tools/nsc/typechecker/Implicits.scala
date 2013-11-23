@@ -388,11 +388,11 @@ trait Implicits {
      */
     private def dominates(dtor: Type, dted: Type): Boolean = {
       def core(tp: Type): Type = tp.dealiasWiden match {
-        case RefinedType(parents, defs) => intersectionType(parents map core, tp.typeSymbol.owner)
+        case RefinedType(parents, defs)         => intersectionType(parents map core, tp.typeSymbol.owner)
         case AnnotatedType(annots, tp, selfsym) => core(tp)
-        case ExistentialType(tparams, result) => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
-        case PolyType(tparams, result) => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
-        case _ => tp
+        case ExistentialType(tparams, result)   => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
+        case PolyType(tparams, result)          => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
+        case _                                  => tp
       }
       def stripped(tp: Type): Type = {
         // `t.typeSymbol` returns the symbol of the normalized type. If that normalized type
@@ -401,23 +401,18 @@ trait Implicits {
         val syms = for (t <- tp; if t.typeSymbol.isTypeParameter) yield t.typeSymbol
         deriveTypeWithWildcards(syms.distinct)(tp)
       }
-      def sum(xs: List[Int]) = (0 /: xs)(_ + _)
-      def complexity(tp: Type): Int = tp.dealiasWiden match {
-        case NoPrefix =>
-          0
-        case SingleType(pre, sym) =>
-          if (sym.isPackage) 0 else complexity(tp.dealiasWiden)
-        case TypeRef(pre, sym, args) =>
-          complexity(pre) + sum(args map complexity) + 1
-        case RefinedType(parents, _) =>
-          sum(parents map complexity) + 1
-        case _ =>
-          1
+      def complexity(tp: Type): Int = tp.dealias match {
+        case NoPrefix                => 0
+        case SingleType(pre, sym)    => if (sym.isPackage) 0 else complexity(tp.dealiasWiden)
+        case ThisType(sym)           => if (sym.isPackage) 0 else 1
+        case TypeRef(pre, sym, args) => complexity(pre) + (args map complexity).sum + 1
+        case RefinedType(parents, _) => (parents map complexity).sum + 1
+        case _                       => 1
       }
       def overlaps(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
         case (RefinedType(parents, _), _) => parents exists (overlaps(_, tp2))
         case (_, RefinedType(parents, _)) => parents exists (overlaps(tp1, _))
-        case _ => tp1.typeSymbol == tp2.typeSymbol
+        case _                            => tp1.typeSymbol == tp2.typeSymbol
       }
       val dtor1 = stripped(core(dtor))
       val dted1 = stripped(core(dted))
