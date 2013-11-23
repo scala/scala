@@ -3916,9 +3916,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedNamedApply(orig: Tree, fun: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
         def argToBinding(arg: Tree): Tree = arg match {
-          case AssignOrNamedArg(Ident(name), rhs) => gen.mkTuple(List(CODE.LIT(name.toString), rhs))
-          case _ => gen.mkTuple(List(CODE.LIT(""), arg))
+          case AssignOrNamedArg(i @ Ident(name), rhs) =>
+            atPos(i.pos.withEnd(rhs.pos.end)) {
+              gen.mkTuple(List(atPos(i.pos)(CODE.LIT(name.toString)), rhs))
+            }
+          case _ =>
+            gen.mkTuple(List(CODE.LIT(""), arg))
         }
+
         val t = treeCopy.Apply(orig, fun, args map argToBinding)
         wrapErrors(t, _.typed(t, mode, pt))
       }
