@@ -1695,4 +1695,11 @@ trait Namers extends MethodSynthesis {
       )
     }
   }
+
+  /** A version of `Symbol#linkedClassOfClass` that works with local companions, ala `companionSymbolOf`. */
+  final def linkedClassOfClassOf(original: Symbol, ctx: Context): Symbol =
+    if (original.isModuleClass)
+      companionSymbolOf(original.sourceModule, ctx)
+    else
+      companionSymbolOf(original, ctx).moduleClass
 }
