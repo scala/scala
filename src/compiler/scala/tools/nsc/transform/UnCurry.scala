@@ -232,11 +232,11 @@ abstract class UnCurry extends InfoTransform
               }
               methSym setInfoAndEnter MethodType(paramSyms, restpe)
 
-              fun.vparams foreach  (_.symbol.owner =  methSym)
-              fun.body changeOwner (fun.symbol     -> methSym)
+              fun.body changeOwner (fun.symbol -> methSym)
+              fun.body substituteSymbols (fun.vparams.map(_.symbol), paramSyms)
 
               val body    = typedFunPos(fun.body)
-              val methDef = DefDef(methSym, List(fun.vparams), body)
+              val methDef = DefDef(methSym, body)
 
               // Have to repack the type to avoid mismatches when existentials
               // appear in the result - see SI-4869.
