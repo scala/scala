@@ -1471,6 +1471,7 @@ trait Trees extends api.Trees {
           }
         case _: DefTree | _: Function =>
           change(tree.symbol)
+          change(tree.symbol.moduleClass)
         case _ =>
       }
       super.traverse(tree)
