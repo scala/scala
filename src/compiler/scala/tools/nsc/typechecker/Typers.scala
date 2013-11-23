@@ -4182,7 +4182,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         else if(dyna.isDynamicallyUpdatable(lhs1)) {
           val rhs1 = typedByValueExpr(rhs)
-          val t = Apply(lhs1, List(rhs1))
+          val t = atPos(lhs1.pos.withEnd(rhs1.pos.end)) {
+            Apply(lhs1, List(rhs1))
+          }
           dyna.wrapErrors(t, _.typed1(t, mode, pt))
         }
         else fail()
