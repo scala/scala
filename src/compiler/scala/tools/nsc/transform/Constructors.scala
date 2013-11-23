@@ -199,7 +199,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         detectUsages walk auxConstructorBuf
       }
     }
-    def mustbeKept(sym: Symbol) = !omittables(sym)
+    def mustBeKept(sym: Symbol) = !omittables(sym)
 
   } // OmittablesHelper
 
@@ -607,7 +607,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
     // follow the primary constructor
     val auxConstructorBuf = new ListBuffer[Tree]
 
-    // The list of statements that go into constructor after and including the superclass constructor call
+    // The list of statements that go into the constructor after and including the superclass constructor call
     val constrStatBuf = new ListBuffer[Tree]
 
     // The list of early initializer statements that go into constructor before the superclass constructor call
@@ -615,6 +615,9 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
     // The early initialized field definitions of the class (these are the class members)
     val presupers = treeInfo.preSuperFields(stats)
+
+    // The list of statements that go into the class initializer
+    val classInitStatBuf = new ListBuffer[Tree]
 
     // generate code to copy pre-initialized fields
     for (stat <- constrBody.stats) {
@@ -644,7 +647,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             else if (stat.symbol.isConstructor) auxConstructorBuf += stat
             else defBuf += stat
         }
-      case ValDef(_, _, _, rhs) =>
+      case ValDef(mods, _, _, rhs) if !mods.hasStaticFlag =>
         // val defs with constant right-hand sides are eliminated.
         // for all other val defs, an empty valdef goes into the template and
         // the initializer goes as an assignment into the constructor
@@ -659,6 +662,11 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           }
           defBuf += deriveValDef(stat)(_ => EmptyTree)
         }
+      case ValDef(_, _, _, rhs) =>
+        // Add static initializer statements to classInitStatBuf and remove the rhs from the val def.
+        classInitStatBuf += mkAssign(stat.symbol, rhs)
+        defBuf += deriveValDef(stat)(_ => EmptyTree)
+
       case ClassDef(_, _, _, _) =>
         // classes are treated recursively, and left in the template
         defBuf += new ConstructorTransformer(unit).transform(stat)
@@ -670,7 +678,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
     populateOmittables()
 
     // Initialize all parameters fields that must be kept.
-    val paramInits = paramAccessors filter mustbeKept map { acc =>
+    val paramInits = paramAccessors filter mustBeKept map { acc =>
       // Check for conflicting symbol amongst parents: see bug #1960.
       // It would be better to mangle the constructor parameter name since
       // it can only be used internally, but I think we need more robust name
@@ -709,12 +717,50 @@ abstract class Constructors extends Transform with ast.TreeDSL {
     // Followed by any auxiliary constructors
     defBuf ++= auxConstructorBuf
 
+    /* finds the static ctor DefDef tree within the template if it exists. */
+    private def findStaticCtor(template: Template): Option[Tree] =
+      template.body find {
+        case defdef @ DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => defdef.symbol.hasStaticFlag
+        case _ => false
+      }
+
+    /* changes the template for the class so that it contains a static constructor with symbol fields inits,
+     * augments an existing static ctor if one already existed.
+     */
+    private def addStaticInits(template: Template): Template = {
+      if (classInitStatBuf.isEmpty)
+        template
+      else {
+        val newCtor = findStaticCtor(template) match {
+          // in case there already were static ctors - augment existing ones
+          // currently, however, static ctors aren't being generated anywhere else
+          case Some(ctor @ DefDef(_,_,_,_,_,_)) =>
+            // modify existing static ctor
+            deriveDefDef(ctor) {
+              case block @ Block(stats, expr) =>
+                // need to add inits to existing block
+                treeCopy.Block(block, classInitStatBuf.toList ::: stats, expr)
+              case term: TermTree =>
+                // need to create a new block with inits and the old term
+                treeCopy.Block(term, classInitStatBuf.toList, term)
+            }
+          case _ =>
+            // create new static ctor
+            val staticCtorSym  = currentClass.newStaticConstructor(template.pos)
+            val rhs            = Block(classInitStatBuf.toList, Literal(Constant(())))
+
+            localTyper.typedPos(template.pos)(DefDef(staticCtorSym, rhs))
+        }
+        deriveTemplate(template)(newCtor :: _)
+      }
+    }
+
     // Unlink all fields that can be dropped from class scope
-    for (sym <- clazz.info.decls ; if !mustbeKept(sym))
+    for (sym <- clazz.info.decls ; if !mustBeKept(sym))
       clazz.info.decls unlink sym
 
-    // Eliminate all field definitions that can be dropped from template
-    val transformed: Template = deriveTemplate(impl)(_ => defBuf.toList filter (stat => mustbeKept(stat.symbol)))
+    // Eliminate all field definitions that can be dropped from template and add the static initializers
+    val transformed: Template = addStaticInits(deriveTemplate(impl)(_ => defBuf.toList filter (stat => mustBeKept(stat.symbol))))
 
   } // TemplateTransformer
 
