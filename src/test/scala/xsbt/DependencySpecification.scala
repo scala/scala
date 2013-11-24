@@ -27,10 +27,10 @@ class DependencySpecification extends Specification {
 		memberRef('E) === Set.empty
 		inheritance('E) === Set.empty
 		memberRef('F) === Set('A, 'B, 'C, 'D, 'E)
-		inheritance('F) === Set('A, 'C, 'E)
-		memberRef('H) === Set('G, 'E)
+		inheritance('F) === Set('A, 'E)
+		memberRef('H) === Set('B, 'E, 'G)
 		// aliases and applied type constructors are expanded so we have inheritance dependency on B
-		inheritance('H) === Set('D, 'E, 'B)
+		inheritance('H) === Set('B, 'E)
 	}
 
 	"Extracted source dependencies from private members" in {
@@ -42,9 +42,9 @@ class DependencySpecification extends Specification {
 		memberRef('B) === Set.empty
 		inheritance('B) === Set.empty
 		memberRef('C) === Set('A)
-		inheritance('C) === Set.empty
+		inheritance('C) === Set('A)
 		memberRef('D) === Set('B)
-		inheritance('D) === Set.empty
+		inheritance('D) === Set('B)
 	}
 
 	private def extractSourceDependenciesPublic: ExtractedSourceDependencies = {
@@ -62,7 +62,7 @@ class DependencySpecification extends Specification {
 		// E verifies the core type gets pulled out
 		val srcH = "trait H extends G.T[Int] with (E[Int] @unchecked)"
 
-		val compilerForTesting = new ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps = false)
+		val compilerForTesting = new ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps = true)
 		val sourceDependencies = compilerForTesting.extractDependenciesFromSrcs('A -> srcA, 'B -> srcB, 'C -> srcC,
 			'D -> srcD, 'E -> srcE, 'F -> srcF, 'G -> srcG, 'H -> srcH)
 		sourceDependencies
@@ -74,7 +74,7 @@ class DependencySpecification extends Specification {
 		val srcC = "class C { private class Inner1 extends A }"
 		val srcD = "class D { def foo: Unit = { class Inner2 extends B } }"
 
-		val compilerForTesting = new ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps = false)
+		val compilerForTesting = new ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps = true)
 		val sourceDependencies =
 			compilerForTesting.extractDependenciesFromSrcs('A -> srcA, 'B -> srcB, 'C -> srcC, 'D -> srcD)
 		sourceDependencies
