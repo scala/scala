@@ -9,4 +9,5 @@
 package scala
 package collection
 
+@deprecated("views over parallel collections will be removed", "2.11.0")
 trait GenTraversableView[+A, +Coll] extends GenTraversableViewLike[A, Coll, GenTraversableView[A, Coll]] { }

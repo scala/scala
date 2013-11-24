@@ -26,6 +26,7 @@ import scala.collection.parallel.immutable.ParRange
  *
  *  @since 2.9
  */
+@deprecated("views over parallel collections will be removed", "2.11.0")
 trait ParSeqViewLike[+T,
                      +Coll <: Parallel,
                      +CollSeq,

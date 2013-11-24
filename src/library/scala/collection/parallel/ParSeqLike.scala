@@ -323,6 +323,7 @@ self =>
 
   override def toSeq = this.asInstanceOf[ParSeq[T]]
 
+  @deprecated("views over parallel collections will be removed", "2.11.0")
   override def view = new ParSeqView[T, Repr, Sequential] {
     protected lazy val underlying = self.repr
     protected[this] def viewIdentifier = ""

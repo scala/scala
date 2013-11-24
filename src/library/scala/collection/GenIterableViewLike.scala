@@ -9,6 +9,7 @@
 package scala
 package collection
 
+@deprecated("views over parallel collections will be removed", "2.11.0")
 trait GenIterableViewLike[+A,
                           +Coll,
                           +This <: GenIterableView[A, Coll] with GenIterableViewLike[A, Coll, This]]

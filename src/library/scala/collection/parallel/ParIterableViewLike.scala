@@ -36,6 +36,7 @@ import scala.language.implicitConversions
  *
  *  @since 2.9
  */
+@deprecated("views over parallel collections will be removed", "2.11.0")
 trait ParIterableViewLike[+T,
                           +Coll <: Parallel,
                           +CollSeq,

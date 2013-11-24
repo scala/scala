@@ -11,7 +11,7 @@ package collection
 
 
 
-
+@deprecated("views over parallel collections will be removed", "2.11.0")
 trait GenSeqViewLike[+A,
                      +Coll,
                      +This <: GenSeqView[A, Coll] with GenSeqViewLike[A, Coll, This]]

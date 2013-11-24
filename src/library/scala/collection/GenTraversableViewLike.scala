@@ -13,6 +13,7 @@ package collection
 import generic._
 import mutable.{ Builder, ArrayBuffer }
 
+@deprecated("views over parallel collections will be removed", "2.11.0")
 trait GenTraversableViewLike[+A,
                              +Coll,
                              +This <: GenTraversableView[A, Coll] with GenTraversableViewLike[A, Coll, This]]

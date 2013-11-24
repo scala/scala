@@ -20,10 +20,12 @@ import scala.collection.generic.CanCombineFrom
  *
  *  @since 2.9
  */
+@deprecated("views over parallel collections will be removed", "2.11.0")
 trait ParSeqView[+T, +Coll <: Parallel, +CollSeq]
 extends ParSeqViewLike[T, Coll, CollSeq, ParSeqView[T, Coll, CollSeq], SeqView[T, CollSeq]]
 
 
+@deprecated("views over parallel collections will be removed", "2.11.0")
 object ParSeqView {
   abstract class NoCombiner[T] extends Combiner[T, Nothing] {
 //    self: EnvironmentPassingCombiner[T, Nothing] =>
