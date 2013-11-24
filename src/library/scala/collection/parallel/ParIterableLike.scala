@@ -841,15 +841,8 @@ self: ParIterableLike[T, Repr, Sequential] =>
     tasksupport.executeAndWaitResult(new ToParMap(combinerFactory(cbf), splitter)(ev) mapResult { _.resultWithTaskSupport })
   }
 
-  @deprecated("views over parallel collections will be removed", "2.11.0")
-  def view = new ParIterableView[T, Repr, Sequential] {
-    protected lazy val underlying = self.repr
-    protected[this] def viewIdentifier = ""
-    protected[this] def viewIdString = ""
-    override def seq = self.seq.view
-    def splitter = self.splitter
-    def size = splitter.remaining
-  }
+  @deprecated("Use .seq.view instead", "2.11.0")
+  def view = seq.view
 
   override def toArray[U >: T: ClassTag]: Array[U] = {
     val arr = new Array[U](size)

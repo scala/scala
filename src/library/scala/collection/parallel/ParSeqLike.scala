@@ -323,16 +323,8 @@ self =>
 
   override def toSeq = this.asInstanceOf[ParSeq[T]]
 
-  @deprecated("views over parallel collections will be removed", "2.11.0")
-  override def view = new ParSeqView[T, Repr, Sequential] {
-    protected lazy val underlying = self.repr
-    protected[this] def viewIdentifier = ""
-    protected[this] def viewIdString = ""
-    def length = self.length
-    def apply(idx: Int) = self(idx)
-    override def seq = self.seq.view
-    def splitter = self.splitter
-  }
+  @deprecated("use .seq.view", "2.11.0")
+  override def view = seq.view
 
   /* tasks */
 
