@@ -1762,6 +1762,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
              | TypeDef(_, _, _, _) =>
             if (result.symbol.isLocal || result.symbol.isTopLevel)
               varianceValidator.traverse(result)
+          case tt @ TypeTree() if tt.original != null =>
+            varianceValidator.traverse(tt.original) // See SI-7872
           case _ =>
         }
         result

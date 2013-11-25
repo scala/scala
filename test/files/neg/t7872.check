@@ -1,0 +1,10 @@
+t7872.scala:6: error: contravariant type a occurs in covariant position in type [-a]Cov[a] of type l
+  type x = {type l[-a] = Cov[a]}
+                 ^
+t7872.scala:8: error: covariant type a occurs in contravariant position in type [+a]Inv[a] of type l
+  foo[({type l[+a] = Inv[a]})#l]
+             ^
+t7872.scala:5: error: contravariant type a occurs in covariant position in type [-a]Cov[a] of type l
+  type l[-a] = Cov[a]
+       ^
+three errors found
