@@ -590,7 +590,7 @@ trait Trees extends api.Trees {
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
   private def TypeTreeMemberType(sym: Symbol): TypeTree = {
     // Needed for pos/t4970*.scala. See SI-7853
-    val resType = (sym.owner.thisType memberType sym).finalResultType
+    val resType = (if (sym.isLocal) sym.tpe else (sym.owner.thisType memberType sym)).finalResultType
     atPos(sym.pos.focus)(TypeTree(resType))
   }
 
@@ -1803,6 +1803,12 @@ trait Trees extends api.Trees {
       treeCopy.LabelDef(ldef, name0, params0, applyToRhs(rhs0))
     case t =>
       sys.error("Not a LabelDef: " + t + "/" + t.getClass)
+  }
+  def deriveFunction(func: Tree)(applyToRhs: Tree => Tree): Function = func match {
+    case Function(params0, rhs0) =>
+      treeCopy.Function(func, params0, applyToRhs(rhs0))
+    case t =>
+      sys.error("Not a Function: " + t + "/" + t.getClass)
   }
 
 // -------------- Classtags --------------------------------------------------------
