@@ -209,5 +209,18 @@ trait TraversableViewLike[+A,
   override def unzip3[A1, A2, A3](implicit asTriple: A => (A1, A2, A3)) =
     (newMapped(x => asTriple(x)._1), newMapped(x => asTriple(x)._2), newMapped(x => asTriple(x)._3))  // TODO - Performance improvements.
 
+  override def filterNot(p: (A) => Boolean): This =
+    newFiltered(a => !(p(a)))
+
+  override def inits: Iterator[This] =
+    thisSeq.inits.map(as => newForced(as).asInstanceOf[This])
+
+  override def tails: Iterator[This] =
+    thisSeq.tails.map(as => newForced(as).asInstanceOf[This])
+
+  override def tail: This =
+    // super.tail would also work as it is currently implemented in terms of drop(Int).
+    if (isEmpty) super.tail else newDropped(1)
+
   override def toString = viewToString
 }

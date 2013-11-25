@@ -93,6 +93,7 @@ self =>
   override def span(p: A => Boolean): (This, This) = (newTakenWhile(p), newDroppedWhile(p))
   override def splitAt(n: Int): (This, This) = (take(n), drop(n)) // !!!
   override def reverse: This = newReversed
+  override def tail: IndexedSeqView[A, Coll] = if (isEmpty) super.tail else slice(1, length)
 }
 
 /** An object containing the necessary implicit definitions to make

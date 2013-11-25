@@ -117,5 +117,14 @@ trait IterableViewLike[+A,
   override def sliding(size: Int, step: Int): Iterator[This] =
     self.iterator.sliding(size, step) map (x => newForced(x).asInstanceOf[This])
 
+  override def sliding(size: Int): Iterator[This] =
+    sliding(size, 1) // we could inherit this, but that implies knowledge of the way the super class is implemented.
+
+  override def dropRight(n: Int): This =
+    take(thisSeq.length - n)
+
+  override def takeRight(n: Int): This =
+    drop(thisSeq.length - n)
+
   override def stringPrefix = "IterableView"
 }
