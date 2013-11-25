@@ -18,6 +18,13 @@ class ReplProps {
   val trace = bool("scala.repl.trace")
   val power = bool("scala.repl.power")
 
+  /** CSV of paged,across to enable pagination or `-x` style
+   *  columns, "across" instead of down the column.  Since
+   *  pagination turns off columnar output, these flags are
+   *  currently mutually exclusive.
+   */
+  val format = Prop[String]("scala.repl.format")
+
   val replAutorunCode = Prop[JFile]("scala.repl.autoruncode")
   val powerInitCode   = Prop[JFile]("scala.repl.power.initcode")
   val powerBanner     = Prop[JFile]("scala.repl.power.banner")

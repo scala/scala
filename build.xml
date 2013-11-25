@@ -977,6 +977,7 @@ TODO:
     <path id="test.junit.compiler.build.path">
       <pathelement location="${test.junit.classes}"/>
       <path refid="quick.compiler.build.path"/>
+      <path refid="quick.repl.build.path"/>
       <path refid="junit.classpath"/>
     </path>
 

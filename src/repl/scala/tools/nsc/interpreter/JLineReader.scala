@@ -33,7 +33,11 @@ class JLineReader(_completion: => Completion) extends InteractiveReader {
     }
   }
 
-  class JLineConsoleReader extends ConsoleReader with ConsoleReaderHelper {
+  class JLineConsoleReader extends ConsoleReader with ConsoleReaderHelper with VariColumnTabulator {
+    val isAcross = interpreter.`package`.isAcross
+
+    this setPaginationEnabled interpreter.`package`.isPaged
+
     // ASAP
     this setExpandEvents false
 
