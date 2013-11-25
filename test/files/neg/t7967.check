@@ -1,0 +1,9 @@
+t7967.scala:6: error: illegal inheritance;
+ self-type C does not conform to C's selftype C with B
+  new C {} // fails
+      ^
+t7967.scala:8: error: illegal inheritance;
+ self-type Test.CC does not conform to Test.CC's selftype Test.CC
+  new CC {} // should fail, doesn't
+      ^
+two errors found
