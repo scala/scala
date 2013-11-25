@@ -7,6 +7,7 @@
     <attribute name="srcdir" default="files"/> <!-- TODO: make targets for `pending` and other subdirs -->
     <attribute name="colors" default="${partest.colors}"/>
     <attribute name="scalacOpts" default="${scalac.args.optimise}"/>
+    <attribute name="pcp" default="${toString:partest.compilation.path}"/>
     <attribute name="kinds"/>
     <sequential>
       <property name="partest.dir" value="@{dir}" />
@@ -14,7 +15,7 @@
                    kinds="@{kinds}"
                   colors="@{colors}"
               scalacOpts="@{scalacOpts}"
-      compilationpathref="partest.compilation.path"/>
+         compilationpath="@{pcp}"/>
     </sequential>
   </macrodef>
 </project>

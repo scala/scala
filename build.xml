@@ -921,9 +921,15 @@ TODO:
         Why, the compiler we're testing, of course, and partest with all its dependencies.
     -->
     <path id="partest.compilation.path">
+      <path refid="partest.compilation.path.core"/>
+      <path refid="partest.compilation.path.noncore"/>
+    </path>
+    <path id="partest.compilation.path.core">
       <pathelement location="${library.jar}"/>
       <pathelement location="${reflect.jar}"/>
       <pathelement location="${compiler.jar}"/>
+    </path>
+    <path id="partest.compilation.path.noncore">
 
       <!-- TODO modularize compiler
       <pathelement location="${scaladoc.jar}"/>
@@ -1891,6 +1897,17 @@ TODO:
 
   <target name="test.suite.color" depends="test.suite.init">
     <testSuite colors="8" kinds="pos neg run jvm res scalap scalacheck specialized instrumented"/>
+  </target>
+
+  <target name="test.suite.quick" depends="init, quick.done">
+    <path id="test.suite.path">
+      <path refid="quick.bin.tool.path"/>
+      <path refid="quick.interactive.build.path"/>
+      <path refid="partest.compilation.path.noncore"/>
+    </path>
+    <property name="pcp" value="${toString:test.suite.path}"/>
+    <taskdef classpathref="test.suite.path" resource="scala/tools/partest/antlib.xml"/>
+    <testSuite colors="8" kinds="pos neg run jvm res scalap scalacheck specialized instrumented" pcp="${pcp}"/>
   </target>
 
   <target name="test.run" depends="test.suite.init">
