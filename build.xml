@@ -14,7 +14,6 @@ SuperSabbus for Scala core, builds the scala library and compiler. It can also p
 
  - for faster builds, have a build.properties in the same directory as build.xml that says:
       locker.skip=1
-      starr.use.released=1
 
 -->
 
@@ -137,9 +136,6 @@ TODO:
   <property file="${basedir}/versions.properties"/>
 
   <!-- Sets location of pre-compiled libraries -->
-  <property name="library.starr.jar"       value="${lib.dir}/scala-library.jar"/>
-  <property name="reflect.starr.jar"       value="${lib.dir}/scala-reflect.jar"/>
-  <property name="compiler.starr.jar"      value="${lib.dir}/scala-compiler.jar"/>
   <property name="ant.jar"                 value="${ant.home}/lib/ant.jar"/>
 
   <!-- Sets location of build folders -->
@@ -149,7 +145,6 @@ TODO:
   <property name="build-asm.dir"           value="${build.dir}/asm"/>
   <property name="build-forkjoin.dir"      value="${build-libs.dir}"/>
   <property name="build-locker.dir"        value="${build.dir}/locker"/>
-  <property name="build-palo.dir"          value="${build.dir}/palo"/>
   <property name="build-quick.dir"         value="${build.dir}/quick"/>
   <property name="build-pack.dir"          value="${build.dir}/pack"/>
   <property name="build-osgi.dir"          value="${build.dir}/osgi"/>
@@ -208,8 +203,27 @@ TODO:
     </touch>
   </target>
 
+  <target name="init.git" depends="boot">
+    <!-- replacestarr needs git.commit.sha, but doesn't want to run the init target (it computes maven.version.number) -->
+    <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="cmd.exe" outputproperty="git.commit.sha" failifexecutionfails="false">
+      <arg value="/c"/>
+      <arg value="tools\get-scala-commit-sha.bat"/>
+      <arg value="-p"/>
+    </exec>
+    <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="cmd.exe" outputproperty="git.commit.date" failifexecutionfails="false">
+      <arg value="/c"/>
+      <arg value="tools\get-scala-commit-date.bat"/>
+      <arg value="-p"/>
+    </exec>
 
-  <target name="init" depends="boot">
+    <!-- some default in case something went wrong getting the revision -->
+    <property name="git.commit.sha"          value="unknown"/>
+    <property name="git.commit.date"         value="unknown"/>
+  </target>
+
+  <target name="init" depends="init.git">
     <!-- Set up Ant contrib tasks so we can use <if><then><else> instead of the clunky `unless` attribute -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib-ant.dir}/ant-contrib.jar"/>
 
@@ -304,32 +318,19 @@ TODO:
       </path>
       <copy-deps refid="external-modules-nocore" project="scaladoc"/>
 
-
-
       <propertyForCrossedArtifact name="scala-parser-combinators" jar="org.scala-lang.modules:scala-parser-combinators"/>
       <propertyForCrossedArtifact name="scala-xml"                jar="org.scala-lang.modules:scala-xml"/>
 
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
 
-      <!-- Download STARR via maven if `starr.use.released` is set,
-           and `starr.version` is specified (see the versions.properties properties file).
-           Want to slow down STARR changes, using only released versions. -->
-      <if><isset property="starr.use.released"/><then>
-        <echo message="Using Scala ${starr.version} for STARR."/>
-        <artifact:dependencies pathId="starr.core.path">
-          <artifact:remoteRepository refid="extra-repo"/>
-          <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
-          <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
-          <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
-        </artifact:dependencies></then>
-      <else>
-        <path id="starr.core.path">
-          <pathelement location="${library.starr.jar}"/>
-          <pathelement location="${reflect.starr.jar}"/>
-          <pathelement location="${compiler.starr.jar}"/>
-        </path></else>
-      </if>
+      <echo message="Using Scala ${starr.version} for STARR."/>
+      <artifact:dependencies pathId="starr.compiler.path">
+        <artifact:remoteRepository refid="extra-repo"/>
+        <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
+        <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
+        <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
+      </artifact:dependencies>
 
       <property name="maven-deps-done"     value="yep!"/>
     </then></if>
@@ -377,24 +378,6 @@ TODO:
     <else>
       <property name="osgi.version.suffix"     value="${maven.version.suffix}"/>
       <property name="version.suffix"          value="${maven.version.suffix}"/></else></if>
-
-
-    <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="cmd.exe" outputproperty="git.commit.sha" failifexecutionfails="false">
-      <arg value="/c"/>
-      <arg value="tools\get-scala-commit-sha.bat"/>
-      <arg value="-p"/>
-    </exec>
-    <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="cmd.exe" outputproperty="git.commit.date" failifexecutionfails="false">
-      <arg value="/c"/>
-      <arg value="tools\get-scala-commit-date.bat"/>
-      <arg value="-p"/>
-    </exec>
-
-    <!-- some default in case something went wrong getting the revision -->
-    <property name="git.commit.sha"          value="unknown"/>
-    <property name="git.commit.date"         value="unknown"/>
 
     <!-- We use the git describe to determine the OSGi modifier for our build. -->
     <property name="maven.version.number"
@@ -609,14 +592,13 @@ TODO:
 
 
     <!-- Compilers to use for the various stages.
-
       There must be a variable of the shape @{stage}.compiler.path  for all @{stage} in starr, locker, quick, strap.
     -->
-    <path id="starr.compiler.path">
-      <path refid="starr.core.path"/>
-      <pathelement location="${lib.dir}/forkjoin.jar"/>
-      <path refid="aux.libs"/>
-    </path>
+
+    <!-- starr is resolved (to starr.compiler.path) in the block protected by maven-deps-done
+         the maven task must not be executed twice, or you get a java.lang.ClassCastException:
+         org.apache.maven.artifact.ant.RemoteRepository cannot be cast to org.apache.maven.artifact.ant.Repository
+    -->
 
     <!-- To skip locker, use -Dlocker.skip=1 -->
     <if><isset property="locker.skip"/><then>
@@ -940,13 +922,6 @@ TODO:
       <path refid="forkjoin.classpath"/>
     </path>
 
-    <path id="palo.bin.tool.path">
-      <pathelement location="${build-palo.dir}/lib/scala-library.jar"/>
-      <pathelement location="${build-palo.dir}/lib/scala-reflect.jar"/>
-      <pathelement location="${build-palo.dir}/lib/scala-compiler.jar"/>
-      <path refid="repl.deps.classpath"/>
-    </path>
-
     <path id="test.positions.sub.build.path" path="${build-quick.dir}/classes/library"/>
 
     <!-- TODO: consolidate *.includes -->
@@ -986,8 +961,7 @@ TODO:
 =============================================================================-->
   <target name="libs.clean">                        <clean build="libs"/> <clean build="asm"/>                            </target>
   <target name="quick.clean"  depends="libs.clean">   <clean build="quick"/> <clean build="pack"/> <clean build="strap"/> </target>
-  <target name="palo.clean"   depends="quick.clean">    <clean build="palo"/>                                             </target>
-  <target name="locker.clean" depends="palo.clean">       <clean build="locker"/>                                         </target>
+  <target name="locker.clean" depends="quick.clean">    <clean build="locker"/>                                           </target>
 
   <target name="docs.clean"> <clean build="docs"/> <delete dir="${build.dir}/manmaker" includeemptydirs="yes" quiet="yes" failonerror="no"/> </target>
   <target name="dist.clean"> <delete dir="${dists.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/> </target>
@@ -1007,6 +981,22 @@ TODO:
 
   <target name="asm.done"      depends="init"> <simple-javac project="asm" jar="no"/> </target>
   <target name="forkjoin.done" depends="init"> <simple-javac project="forkjoin" args="-XDignore.symbol.file"/></target>
+
+  <!-- For local development only. We only allow released versions of Scala for STARR.
+    This builds quick (core only) and publishes it with a generated version number,
+    saving it as starr.version in build.properties, so this compiler will be used as STARR in your next build
+    NOTES:
+      - to speed things up, you can also pass -Dlocker.skip=1
+  -->
+  <target name="replacestarr" depends="init.git" description="Produces a new STARR from current sources. Publishes core locally with a generated version number,
+    stored in build.properties as starr.version (overriding the one in versions.properties).">
+    <antcall target="publish-core-local">
+      <param name="maven.version.suffix" value="-STARR-${git.commit.sha}-SNAPSHOT"/>
+      <param name="docs.skip" value="1"/>
+      <param name="scalac.args.optimise" value="-optimise"/>
+      <param name="update.starr.version" value="alright then"/>
+    </antcall>
+  </target>
 
 
 <!-- ===========================================================================
@@ -1191,29 +1181,6 @@ TODO:
 
   <target name="strap-opt" description="Optimized version of strap.done."> <optimized name="strap.done"/></target>
 
-
-<!-- ===========================================================================
-                                  PACKED LOCKER BUILD (PALO)
-============================================================================ -->
-  <target name="palo.done" depends="locker.done">
-    <mkdir dir="${build-palo.dir}/lib"/>
-    <jar whenmanifestonly="fail" destfile="${build-palo.dir}/lib/scala-library.jar">
-      <fileset dir="${build-locker.dir}/classes/library"/>
-      <fileset dir="${forkjoin-classes}"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${build-palo.dir}/lib/scala-reflect.jar" manifest="${basedir}/META-INF/MANIFEST.MF"
-      basedir="${build-locker.dir}/classes/reflect"/>
-    <jar whenmanifestonly="fail" destfile="${build-palo.dir}/lib/scala-compiler.jar" manifest="${basedir}/META-INF/MANIFEST.MF">
-      <fileset dir="${build-locker.dir}/classes/compiler"/>
-      <fileset dir="${asm-classes}"/>
-    </jar>
-    <copy todir="${build-palo.dir}/lib">
-      <resources refid="repl.fileset"/>
-      <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper" from="${repl.deps.versions}" to="flatten"/>
-    </copy>
-  </target>
-
-  <target name="palo.bin" depends="palo.done"> <staged-bin stage="palo"/></target>
 
 
 <!-- ===========================================================================
@@ -1842,6 +1809,14 @@ MAIN DISTRIBUTION PACKAGING
     <mvn-package project="library"/>
     <mvn-package project="reflect"/>
     <mvn-package project="compiler"/>
+
+    <!-- for replacestarr -->
+    <if><isset property="update.starr.version"/><then>
+      <echo message="From now on, ${maven.version.number} will be used as STARR (`build.properties`'s `starr.version` was modified)."/>
+      <propertyfile file = "build.properties">
+        <entry key       = "starr.version" value="${maven.version.number}"/>
+      </propertyfile>
+    </then></if>
   </target>
 
   <target name="pack-maven.base" depends="pack-maven.core, osgi.done, docs.done">
@@ -1928,123 +1903,6 @@ MAIN DISTRIBUTION PACKAGING
   <target name="publish-core-opt" description="Builds an untested optimised core (library/reflect/compiler) and publishes to maven.">
     <optimized name="publish-core"/>
   </target>
-
-<!-- ===========================================================================
-                                  STABLE REFERENCE (STARR)
-============================================================================ -->
-<!-- Does not use any properties other than ${basedir}, so that it can
-     run without 'init' (when using 'replacestarrwin') -->
-
-  <target name="starr.start">
-    <fail message="Library in build/pack not available">
-      <condition><not><and>
-        <available file="${library.jar}"/>
-      </and></not></condition>
-    </fail>
-    <fail message="Compiler in build/quick not available">
-      <condition><not><and>
-        <available file="${build-quick.dir}/classes/compiler"/>
-        <available file="${build-quick.dir}/compiler.complete"/>
-      </and></not></condition>
-    </fail>
-  </target>
-
-  <target name="starr.jars" depends="starr.start">
-    <copy toDir="${lib.dir}" overwrite="true">
-      <fileset dir="${build-pack.dir}/lib">
-        <include name="scala-library.jar"/>
-        <include name="scala-reflect.jar"/>
-        <include name="scala-compiler.jar"/>
-      </fileset>
-    </copy>
-  </target>
-
-  <target name="starr.src" depends="starr.jars">
-    <jar whenmanifestonly="fail" destfile="${lib.dir}/scala-library-src.jar">
-      <fileset dir="${src.dir}/library"/>
-      <fileset dir="${src.dir}/swing"/>
-      <fileset dir="${src.dir}/actors"/>
-      <fileset dir="${src.dir}/forkjoin"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${lib.dir}/scala-reflect-src.jar" basedir="${src.dir}/reflect"/>
-    <jar whenmanifestonly="fail" destfile="${lib.dir}/scala-compiler-src.jar">
-      <fileset dir="${src.dir}/compiler"/>
-      <fileset dir="${src.dir}/asm"/>
-    </jar>
-  </target>
-
-  <target name="starr.removesha1" depends="starr.src">
-    <!-- remove SHA1 files for no starr, so we don't loose artifacts. -->
-    <delete>
-      <fileset dir="${lib.dir}">
-        <include name="scala-compiler.jar.desired.sha1"/>
-        <include name="scala-reflect.jar.desired.sha1"/>
-        <include name="scala-library.jar.desired.sha1"/>
-        <include name="scala-library-src.jar.desired.sha1"/>
-        <include name="scala-reflect-src.jar.desired.sha1"/>
-        <include name="scala-compiler-src.jar.desired.sha1"/>
-      </fileset>
-    </delete>
-  </target>
-
-  <target name="starr.done" depends="starr.jars, starr.removesha1"/>
-
-  <target name="replacestarr" description="Replaces the Starr compiler and library by fresh ones built from current sources and tests them.">
-    <fail message="This target is not available on Windows. Use 'ant replacestarrwin' instead.">
-      <condition>
-        <os family="windows"/>
-      </condition>
-    </fail>
-    <!-- needs antcall to enforce ordering -->
-    <antcall target="locker.clean"/>
-    <antcall target="pack.done"/>
-    <antcall target="starr.done"/>
-    <antcall target="locker.clean"/>
-    <antcall target="test.done"/>
-  </target>
-
-  <target name="replacestarr-opt" description="Replaces the Starr compiler and library by fresh, optimised ones built from current sources and tests them.">
-    <optimized name="replacestarr"/></target>
-
-  <!-- Ant on Windows is not able to delete jar files that are referenced in any <path>.
-       See ticket 1290 on trac. -->
-  <target name="replacestarrwin" description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
-    <fail message="This target is only available on Windows. Use 'ant replacestarr' instead.">
-      <condition>
-        <not><os family="windows"/></not>
-      </condition>
-    </fail>
-    <echo message="CAUTION: Make sure to execute 'ant locker.clean build' prior to calling 'replacestarrwin'."/>
-    <antcall target="starr.done"/>
-    <antcall target="locker.clean"/>
-    <antcall target="test.done"/>
-  </target>
-
-  <target name="replacestarrwin-opt" description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
-    <optimized name="replacestarrwin"/></target>
-
-  <target name="replacelocker" description="Replaces the Locker compiler and library by fresh ones built from current sources."
-    depends="palo.clean, locker.unlock, palo.done"/>
-
-  <target name="replacelocker-opt" description="Replaces the Locker compiler and library by fresh, optimised ones built from current sources.">
-    <optimized name="replacelocker"/></target>
-
-  <target name="buildlocker" description="Does the same for locker as build does for quick." depends="locker.unlock, palo.bin"/>
-  <target name="unlocklocker" description="Same as buildlocker." depends="buildlocker"/> <!-- REMOVE -->
-
-  <target name="fastlocker.lib" description="Buildlocker without extra fuss" depends="locker.unlock, locker.lib">
-    <property name="fastlocker" value="true"/>
-  </target>
-
-  <target name="fastlocker.reflect" description="Buildlocker without extra fuss" depends="locker.unlock, locker.reflect">
-    <property name="fastlocker" value="true"/>
-  </target>
-
-  <target name="fastlocker.comp" description="Buildlocker without extra fuss" depends="locker.unlock, locker.comp">
-    <property name="fastlocker" value="true"/>
-  </target>
-
-  <target name="fastlocker" description="Buildlocker without extra fuss" depends="fastlocker.comp"/>
 
 <!-- ===========================================================================
                                   VISUALIZATION
