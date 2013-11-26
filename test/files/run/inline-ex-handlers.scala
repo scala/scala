@@ -2,6 +2,8 @@ import scala.tools.partest.IcodeComparison
 
 object Test extends IcodeComparison {
   override def printIcodeAfterPhase = "inlinehandlers"
+
+  override def extraSettings = super.extraSettings + " -Yinline-handlers"
 }
 
 import scala.util.Random._

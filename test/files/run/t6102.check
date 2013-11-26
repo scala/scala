@@ -21,12 +21,9 @@
 [running phase cleanup on t6102.scala]
 [running phase delambdafy on t6102.scala]
 [running phase icode on t6102.scala]
-#partest -optimise
 [running phase inliner on t6102.scala]
-[running phase inlinehandlers on t6102.scala]
 [running phase closelim on t6102.scala]
 [running phase constopt on t6102.scala]
-#partest
 [running phase dce on t6102.scala]
 [running phase jvm on icode]
 hello

@@ -22,7 +22,6 @@
 [running phase delambdafy on Foo_1.scala]
 [running phase icode on Foo_1.scala]
 [running phase inliner on Foo_1.scala]
-[running phase inlinehandlers on Foo_1.scala]
 [running phase closelim on Foo_1.scala]
 [running phase constopt on Foo_1.scala]
 [running phase dce on Foo_1.scala]
