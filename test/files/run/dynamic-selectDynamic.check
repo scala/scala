@@ -1,0 +1,13 @@
+[[syntax trees at end of                     typer]] // newSource1.scala
+[0:50]package [0:0]<empty> {
+  [0:50]object X extends [9:50][50]scala.AnyRef {
+    [50]def <init>(): [9]X.type = [50]{
+      [50][50][50]X.super.<init>();
+      [9]()
+    };
+    [17:30]private[this] val d: [21]D = [25:30][25:30][25:30]new [29:30]D();
+    [21]<stable> <accessor> def d: [21]D = [21][21]X.this.d;
+    [37:38][37:38][37]X.this.d.selectDynamic(<39:44>"field")
+  }
+}
+
