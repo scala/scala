@@ -3,7 +3,7 @@
 <project name="sabbus" default="build"
   xmlns:artifact="urn:maven-artifact-ant"
   xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
-  <include file="build-support.xml" as="macros"/>
+  <include file="build-ant-macros.xml" as="macros"/>
   <include file="src/build/maven/maven-deploy.xml" as="maven-deploy"/>
 
   <description>
