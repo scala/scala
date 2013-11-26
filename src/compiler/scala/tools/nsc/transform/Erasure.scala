@@ -714,11 +714,18 @@ abstract class Erasure extends AddInterfaces
     /** TODO - adapt SymbolPairs so it can be used here. */
     private def checkNoDeclaredDoubleDefs(base: Symbol) {
       val decls = base.info.decls
+      // SI-8010 force infos, otherwise makeNotPrivate in ExplicitOuter info transformer can trigger
+      //         a scope rehash while were iterating and we can see the same entry twice!
+      //         Inspection of SymbolPairs (the basis of OverridingPairs), suggests that it is immune
+      //         from this sort of bug as it copies the symbols into a temporary scope *before* any calls to `.info`,
+      //         ie, no variant of it calls `info` or `tpe` in `SymbolPair#exclude`.
+      exitingPostErasure(decls.foreach(_.info))
       var e = decls.elems
       while (e ne null) {
         if (e.sym.isTerm) {
           var e1 = decls lookupNextEntry e
           while (e1 ne null) {
+            assert(e.sym ne e1.sym, s"Internal error: encoutered $e twice during scope traversal")
             if (sameTypeAfterErasure(e.sym, e1.sym))
               doubleDefError(new SymbolPair(base, e.sym, e1.sym))
 
