@@ -47,6 +47,24 @@ class DependencySpecification extends Specification {
 		inheritance('D) === Set('B)
 	}
 
+	"Extracted source dependencies with trait as first parent" in {
+		val sourceDependencies = extractSourceDependenciesTraitAsFirstPatent
+		val memberRef = sourceDependencies.memberRef
+		val inheritance = sourceDependencies.inheritance
+		memberRef('A) === Set.empty
+		inheritance('A) === Set.empty
+		memberRef('B) === Set('A)
+		inheritance('B) === Set('A)
+		// verify that memberRef captures the oddity described in documentation of `Relations.inheritance`
+		// we are mainly interested whether dependency on A is captured in `memberRef` relation so
+		// the invariant that says that memberRef is superset of inheritance relation is preserved
+		memberRef('C) === Set('A, 'B)
+		inheritance('C) === Set('A, 'B)
+		// same as above but indirect (C -> B -> A), note that only A is visible here
+		memberRef('D) === Set('A, 'C)
+		inheritance('D) === Set('A, 'C)
+	}
+
 	private def extractSourceDependenciesPublic: ExtractedSourceDependencies = {
 		val srcA = "class A"
 		val srcB = "class B extends D[A]"
@@ -73,6 +91,18 @@ class DependencySpecification extends Specification {
 		val srcB = "class B"
 		val srcC = "class C { private class Inner1 extends A }"
 		val srcD = "class D { def foo: Unit = { class Inner2 extends B } }"
+
+		val compilerForTesting = new ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps = true)
+		val sourceDependencies =
+			compilerForTesting.extractDependenciesFromSrcs('A -> srcA, 'B -> srcB, 'C -> srcC, 'D -> srcD)
+		sourceDependencies
+	}
+
+	private def extractSourceDependenciesTraitAsFirstPatent: ExtractedSourceDependencies = {
+		val srcA = "class A"
+		val srcB = "trait B extends A"
+		val srcC = "trait C extends B"
+		val srcD = "class D extends C"
 
 		val compilerForTesting = new ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps = true)
 		val sourceDependencies =
