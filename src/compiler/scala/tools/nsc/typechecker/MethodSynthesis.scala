@@ -143,7 +143,7 @@ trait MethodSynthesis {
           val lazyValGetter = LazyValGetter(tree).createAndEnterSymbol()
           enterLazyVal(tree, lazyValGetter)
         } else {
-          if (mods.isPrivateLocal)
+          if (mods.isPrivateLocal && owner.isCaseClass)
             PrivateThisCaseClassParameterError(tree)
           val getter = Getter(tree).createAndEnterSymbol()
           // Create the setter if necessary.
