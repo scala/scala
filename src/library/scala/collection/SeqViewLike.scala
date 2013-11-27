@@ -137,5 +137,20 @@ trait SeqViewLike[+A,
   override def sorted[B >: A](implicit ord: Ordering[B]): This =
     newForced(thisSeq sorted ord).asInstanceOf[This]
 
+  override def sortWith(lt: (A, A) => Boolean): This =
+    newForced(thisSeq sortWith lt).asInstanceOf[This]
+
+  override def sortBy[B](f: (A) => B)(implicit ord: Ordering[B]): This =
+    newForced(thisSeq sortBy f).asInstanceOf[This]
+
+  override def combinations(n: Int): Iterator[This] =
+    (thisSeq combinations n).map(as => newForced(as).asInstanceOf[This])
+
+  override def permutations: Iterator[This] =
+    thisSeq.permutations.map(as => newForced(as).asInstanceOf[This])
+
+  override def distinct: This =
+    newForced(thisSeq.distinct).asInstanceOf[This]
+
   override def stringPrefix = "SeqView"
 }
