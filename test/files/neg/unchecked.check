@@ -1,10 +1,10 @@
-unchecked.scala:18: warning: non-variable type argument String in type pattern Iterable[String] is unchecked since it is eliminated by erasure
+unchecked.scala:18: warning: non-variable type argument String in type pattern Iterable[String] (the underlying of Iterable[String]) is unchecked since it is eliminated by erasure
     case xs: Iterable[String] => xs.head // unchecked
              ^
-unchecked.scala:22: warning: non-variable type argument Any in type pattern Set[Any] is unchecked since it is eliminated by erasure
+unchecked.scala:22: warning: non-variable type argument Any in type pattern scala.collection.immutable.Set[Any] (the underlying of Set[Any]) is unchecked since it is eliminated by erasure
     case xs: Set[Any] => xs.head // unchecked
              ^
-unchecked.scala:26: warning: non-variable type argument Any in type pattern Map[Any,Any] is unchecked since it is eliminated by erasure
+unchecked.scala:26: warning: non-variable type argument Any in type pattern scala.collection.immutable.Map[Any,Any] (the underlying of Map[Any,Any]) is unchecked since it is eliminated by erasure
     case xs: Map[Any, Any] => xs.head // unchecked
              ^
 unchecked.scala:35: warning: non-variable type argument List[Nothing] in type pattern Test.Contra[List[Nothing]] is unchecked since it is eliminated by erasure

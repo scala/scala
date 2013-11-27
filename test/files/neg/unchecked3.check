@@ -31,7 +31,7 @@ unchecked3.scala:62: warning: non-variable type argument Array[String] in type p
 unchecked3.scala:63: warning: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
     /*   warn */ case _: Array[Array[List[String]]] => ()
                          ^
-unchecked3.scala:75: warning: abstract type A in type pattern Set[Q.this.A] is unchecked since it is eliminated by erasure
+unchecked3.scala:75: warning: abstract type A in type pattern scala.collection.immutable.Set[Q.this.A] (the underlying of Set[Q.this.A]) is unchecked since it is eliminated by erasure
       /*   warn */ case xs: Set[A]  => xs.head
                             ^
 unchecked3.scala:62: warning: unreachable code
