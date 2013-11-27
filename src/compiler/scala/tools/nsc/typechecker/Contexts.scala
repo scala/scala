@@ -657,7 +657,10 @@ trait Contexts { self: Analyzer =>
       // Console.println("isAccessible(%s, %s, %s)".format(sym, pre, superAccess))
 
       // don't have access if there is no linked class (so exclude linkedClass=NoSymbol)
-      def accessWithinLinked(ab: Symbol) = ab.linkedClassOfClass.fold(false)(accessWithin)
+      def accessWithinLinked(ab: Symbol) = {
+        val linked = linkedClassOfClassOf(ab, this)
+        linked.fold(false)(accessWithin)
+      }
 
       /* Are we inside definition of `ab`? */
       def accessWithin(ab: Symbol) = {
