@@ -53,6 +53,14 @@ class SyncVar[A] {
     value
   }
 
+  /** Returns the current value of this SyncVar without
+   * waiting.
+   *  @return            `None` if variable is undefined, `Some(value)` otherwise
+   */
+  def getNow(): Option[A] = synchronized {
+    value
+  }
+
   /** Waits for this SyncVar to become defined and returns
    *  the result */
   def take(): A = synchronized {
@@ -74,6 +82,17 @@ class SyncVar[A] {
     finally unsetVal()
   }
 
+  /** Takes this SyncVar's value by first reading and then
+   * removing the value from the SyncVar.
+   *
+   *  @return            the value or a throws an exception if it's not defined
+   *  @throws NoSuchElementException when not defined
+   */
+  def takeNow(): A = synchronized {
+    try getNow.get
+    finally unsetVal()
+  }
+
   // TODO: this method should be private
   // [Heather] the reason why: it doesn't take into consideration
   // whether or not the SyncVar is already defined. So, set has been
@@ -87,6 +106,45 @@ class SyncVar[A] {
   def put(x: A): Unit = synchronized {
     while (isDefined) wait()
     setVal(x)
+  }
+
+  /** Waits for this SyncVar to become undefined at least for
+   *  `timeout` milliseconds (possibly more), and sets its
+   *  value.
+   *
+   *  @param x           the value to store in this SyncVar
+   *  @param timeout     the amount of milliseconds to wait, 0 means forever
+   *  @return            `true` if variable is defined after `timeout`, `false` otherwise
+   */
+  def put(x : A, timeout : Long): Boolean = synchronized {
+    if (timeout <= 0) {
+      put(x)
+      true
+    }
+    else {
+      var rest = timeout
+      while (isDefined && rest > 0) {
+        val elapsed = waitMeasuringElapsed(rest)
+        rest -= elapsed
+      }
+      if (isDefined) false else {
+        setVal(x)
+        true
+      }
+    }
+  }
+
+  /** Sets this SyncVar's value without waiting. If it already is defined,
+  *   does nothing.
+  *
+  *  @param x           the value to store in this SyncVar
+  *  @return            `true` if this SyncVar was set, `false` otherwise.
+  */
+  val putNow(x : A): Boolean = synchronized {
+    if (isDefined) false else {
+      setVal(x)
+      true
+    }
   }
 
   /** Checks whether a value is stored in the synchronized variable */
