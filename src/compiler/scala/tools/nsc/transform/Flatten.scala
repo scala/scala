@@ -134,7 +134,10 @@ abstract class Flatten extends InfoTransform {
     /** Transform statements and add lifted definitions to them. */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val stats1 = super.transformStats(stats, exprOwner)
-      if (currentOwner.isPackageClass) stats1 ::: liftedDefs(currentOwner).toList
+      // SI-5508 Ordering important as mixin needs a chance to create accessors for private[this] trait
+      //         fields before it transforms inner classes that refer to them.
+      def lifted = liftedDefs(currentOwner).toList.sortBy(_.pos.start)
+      if (currentOwner.isPackageClass) stats1 ::: lifted
       else stats1
     }
   }
