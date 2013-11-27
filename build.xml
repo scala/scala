@@ -3,7 +3,7 @@
 <project name="sabbus" default="build"
   xmlns:artifact="urn:maven-artifact-ant"
   xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
-  <include file="test/build-partest.xml" as="partest"/>
+  <include file="build-ant-macros.xml" as="macros"/>
   <include file="src/build/maven/maven-deploy.xml" as="maven-deploy"/>
 
   <description>
@@ -14,7 +14,6 @@ SuperSabbus for Scala core, builds the scala library and compiler. It can also p
 
  - for faster builds, have a build.properties in the same directory as build.xml that says:
       locker.skip=1
-      starr.use.released=1
 
 -->
 
@@ -107,12 +106,6 @@ TODO:
   <target name="docsclean"   depends="docs.clean"   description="Removes generated documentation. Distributions are untouched."/>
   <target name="distclean"   depends="dist.clean"   description="Removes all distributions. Binaries and documentation are untouched."/>
 
-  <macrodef name="optimized" >
-    <attribute name="name"/>
-    <sequential>
-      <antcall target="@{name}"><param name="scalac.args.optimise" value="-optimise"/></antcall>
-    </sequential>
-  </macrodef>
 
 <!-- ===========================================================================
                                   PROPERTIES
@@ -143,9 +136,6 @@ TODO:
   <property file="${basedir}/versions.properties"/>
 
   <!-- Sets location of pre-compiled libraries -->
-  <property name="library.starr.jar"       value="${lib.dir}/scala-library.jar"/>
-  <property name="reflect.starr.jar"       value="${lib.dir}/scala-reflect.jar"/>
-  <property name="compiler.starr.jar"      value="${lib.dir}/scala-compiler.jar"/>
   <property name="ant.jar"                 value="${ant.home}/lib/ant.jar"/>
 
   <!-- Sets location of build folders -->
@@ -155,7 +145,6 @@ TODO:
   <property name="build-asm.dir"           value="${build.dir}/asm"/>
   <property name="build-forkjoin.dir"      value="${build-libs.dir}"/>
   <property name="build-locker.dir"        value="${build.dir}/locker"/>
-  <property name="build-palo.dir"          value="${build.dir}/palo"/>
   <property name="build-quick.dir"         value="${build.dir}/quick"/>
   <property name="build-pack.dir"          value="${build.dir}/pack"/>
   <property name="build-osgi.dir"          value="${build.dir}/osgi"/>
@@ -214,19 +203,27 @@ TODO:
     </touch>
   </target>
 
-  <macrodef name="copy-deps" description="Copy a file set based on maven dependency resolution to a directory. Currently used by the IntelliJ config files.">
-    <attribute name="project" />
-    <attribute name="refid" default="@{project}.fileset"/>
-    <sequential>
-      <delete dir="${build-deps.dir}/@{project}" includes="*.jar"/>
-      <copy todir="${build-deps.dir}/@{project}">
-        <resources refid="@{refid}" />
-        <mapper type="flatten" />
-      </copy>
-    </sequential>
-  </macrodef>
+  <target name="init.git" depends="boot">
+    <!-- replacestarr needs git.commit.sha, but doesn't want to run the init target (it computes maven.version.number) -->
+    <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="cmd.exe" outputproperty="git.commit.sha" failifexecutionfails="false">
+      <arg value="/c"/>
+      <arg value="tools\get-scala-commit-sha.bat"/>
+      <arg value="-p"/>
+    </exec>
+    <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
+    <exec osfamily="windows" executable="cmd.exe" outputproperty="git.commit.date" failifexecutionfails="false">
+      <arg value="/c"/>
+      <arg value="tools\get-scala-commit-date.bat"/>
+      <arg value="-p"/>
+    </exec>
 
-  <target name="init" depends="boot">
+    <!-- some default in case something went wrong getting the revision -->
+    <property name="git.commit.sha"          value="unknown"/>
+    <property name="git.commit.date"         value="unknown"/>
+  </target>
+
+  <target name="init" depends="init.git">
     <!-- Set up Ant contrib tasks so we can use <if><then><else> instead of the clunky `unless` attribute -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib-ant.dir}/ant-contrib.jar"/>
 
@@ -321,53 +318,19 @@ TODO:
       </path>
       <copy-deps refid="external-modules-nocore" project="scaladoc"/>
 
-
-      <!-- Set property named @{name} to the jar resolved as @{jar}_${scala.binary.version}:jar.
-           @{jar}_${scala.binary.version} must be a maven dependency. -->
-      <macrodef name="propertyForCrossedArtifact">
-          <attribute name="name" />
-          <attribute name="jar" />
-          <sequential>
-            <readProperty name="@{name}"         property="@{jar}_${scala.binary.version}:jar" />
-            <readProperty name="@{name}-sources" property="@{jar}_${scala.binary.version}:java-source:sources" />
-            <readProperty name="@{name}-javadoc" property="@{jar}_${scala.binary.version}:java-source:javadoc" />
-          </sequential>
-      </macrodef>
-
-      <!-- Set property named @{name} to the value of the property named @{property}.
-           Helper for performing nested property expansion without using the ant props lib -->
-      <macrodef name="readProperty">
-        <attribute name="name" />
-        <attribute name="property" />
-        <sequential>
-          <property name="@{name}" value="${@{property}}" />
-        </sequential>
-      </macrodef>
-
       <propertyForCrossedArtifact name="scala-parser-combinators" jar="org.scala-lang.modules:scala-parser-combinators"/>
       <propertyForCrossedArtifact name="scala-xml"                jar="org.scala-lang.modules:scala-xml"/>
 
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
 
-      <!-- Download STARR via maven if `starr.use.released` is set,
-           and `starr.version` is specified (see the versions.properties properties file).
-           Want to slow down STARR changes, using only released versions. -->
-      <if><isset property="starr.use.released"/><then>
-        <echo message="Using Scala ${starr.version} for STARR."/>
-        <artifact:dependencies pathId="starr.core.path">
-          <artifact:remoteRepository refid="extra-repo"/>
-          <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
-          <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
-          <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
-        </artifact:dependencies></then>
-      <else>
-        <path id="starr.core.path">
-          <pathelement location="${library.starr.jar}"/>
-          <pathelement location="${reflect.starr.jar}"/>
-          <pathelement location="${compiler.starr.jar}"/>
-        </path></else>
-      </if>
+      <echo message="Using Scala ${starr.version} for STARR."/>
+      <artifact:dependencies pathId="starr.compiler.path">
+        <artifact:remoteRepository refid="extra-repo"/>
+        <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
+        <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
+        <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
+      </artifact:dependencies>
 
       <property name="maven-deps-done"     value="yep!"/>
     </then></if>
@@ -415,24 +378,6 @@ TODO:
     <else>
       <property name="osgi.version.suffix"     value="${maven.version.suffix}"/>
       <property name="version.suffix"          value="${maven.version.suffix}"/></else></if>
-
-
-    <exec osfamily="unix" executable="tools/get-scala-commit-sha" outputproperty="git.commit.sha" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="cmd.exe" outputproperty="git.commit.sha" failifexecutionfails="false">
-      <arg value="/c"/>
-      <arg value="tools\get-scala-commit-sha.bat"/>
-      <arg value="-p"/>
-    </exec>
-    <exec osfamily="unix" executable="tools/get-scala-commit-date" outputproperty="git.commit.date" failifexecutionfails="false" />
-    <exec osfamily="windows" executable="cmd.exe" outputproperty="git.commit.date" failifexecutionfails="false">
-      <arg value="/c"/>
-      <arg value="tools\get-scala-commit-date.bat"/>
-      <arg value="-p"/>
-    </exec>
-
-    <!-- some default in case something went wrong getting the revision -->
-    <property name="git.commit.sha"          value="unknown"/>
-    <property name="git.commit.date"         value="unknown"/>
 
     <!-- We use the git describe to determine the OSGi modifier for our build. -->
     <property name="maven.version.number"
@@ -625,19 +570,6 @@ TODO:
     <property name="partest-extras.description"    value="Scala Compiler Testing Tool (compiler-specific extras)"/>
     <property name="partest-javaagent.description" value="Scala Compiler Testing Tool (compiler-specific java agent)"/>
 
-    <macrodef name="init-project-prop">
-      <attribute name="project" />
-      <attribute name="name" />
-      <attribute name="default" />
-      <sequential>
-        <local name="@{name}"/>
-
-        <if><not><isset property="@{project}.@{name}"/></not><then>
-          <property name="@{project}.@{name}" value="@{default}" />
-        </then></if>
-      </sequential>
-    </macrodef>
-
     <!-- projects without project-specific options: asm, forkjoin, manual, bin, repl -->
     <for list="actors,compiler,interactive,scaladoc,continuations-library,continuations-plugin,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml" param="project">
       <sequential>
@@ -660,14 +592,13 @@ TODO:
 
 
     <!-- Compilers to use for the various stages.
-
       There must be a variable of the shape @{stage}.compiler.path  for all @{stage} in starr, locker, quick, strap.
     -->
-    <path id="starr.compiler.path">
-      <path refid="starr.core.path"/>
-      <pathelement location="${lib.dir}/forkjoin.jar"/>
-      <path refid="aux.libs"/>
-    </path>
+
+    <!-- starr is resolved (to starr.compiler.path) in the block protected by maven-deps-done
+         the maven task must not be executed twice, or you get a java.lang.ClassCastException:
+         org.apache.maven.artifact.ant.RemoteRepository cannot be cast to org.apache.maven.artifact.ant.Repository
+    -->
 
     <!-- To skip locker, use -Dlocker.skip=1 -->
     <if><isset property="locker.skip"/><then>
@@ -991,13 +922,6 @@ TODO:
       <path refid="forkjoin.classpath"/>
     </path>
 
-    <path id="palo.bin.tool.path">
-      <pathelement location="${build-palo.dir}/lib/scala-library.jar"/>
-      <pathelement location="${build-palo.dir}/lib/scala-reflect.jar"/>
-      <pathelement location="${build-palo.dir}/lib/scala-compiler.jar"/>
-      <path refid="repl.deps.classpath"/>
-    </path>
-
     <path id="test.positions.sub.build.path" path="${build-quick.dir}/classes/library"/>
 
     <!-- TODO: consolidate *.includes -->
@@ -1037,8 +961,7 @@ TODO:
 =============================================================================-->
   <target name="libs.clean">                        <clean build="libs"/> <clean build="asm"/>                            </target>
   <target name="quick.clean"  depends="libs.clean">   <clean build="quick"/> <clean build="pack"/> <clean build="strap"/> </target>
-  <target name="palo.clean"   depends="quick.clean">    <clean build="palo"/>                                             </target>
-  <target name="locker.clean" depends="palo.clean">       <clean build="locker"/>                                         </target>
+  <target name="locker.clean" depends="quick.clean">    <clean build="locker"/>                                           </target>
 
   <target name="docs.clean"> <clean build="docs"/> <delete dir="${build.dir}/manmaker" includeemptydirs="yes" quiet="yes" failonerror="no"/> </target>
   <target name="dist.clean"> <delete dir="${dists.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/> </target>
@@ -1052,351 +975,28 @@ TODO:
   <!-- Used by the scala-installer script -->
   <target name="allallclean" depends="all.clean, dist.clean"/>
 
-  <macrodef name="clean">
-    <attribute name="build"/>
-    <sequential>
-      <delete dir="${build-@{build}.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
-    </sequential>
-  </macrodef>
 <!-- ===========================================================================
                                   LOCAL DEPENDENCIES
 ============================================================================ -->
-  <macrodef name="simple-javac" >
-    <attribute name="project"/>  <!-- project: asm/forkjoin -->
-    <attribute name="args" default=""/>
-    <attribute name="jar"  default="yes"/>
-    <sequential>
-      <uptodate property="@{project}.available" targetfile="${build-libs.dir}/@{project}.complete">
-        <srcfiles dir="${src.dir}/@{project}"/></uptodate>
-      <if><not><isset property="@{project}.available"/></not><then>
-        <stopwatch name="@{project}.timer"/>
-        <mkdir dir="${@{project}-classes}"/>
-        <javac
-          debug="true"
-          srcdir="${src.dir}/@{project}"
-          destdir="${@{project}-classes}"
-          classpath="${@{project}-classes}"
-          includes="**/*.java"
-          target="1.6" source="1.5"
-          compiler="javac1.6">
-            <compilerarg line="${javac.args} @{args}"/>
-        </javac>
-        <if><equals arg1="@{jar}" arg2="yes"/><then>
-          <jar whenmanifestonly="fail" destfile="${build-libs.dir}/@{project}.jar" basedir="${@{project}-classes}"/></then></if>
-        <stopwatch name="@{project}.timer" action="total"/>
-        <mkdir dir="${build-libs.dir}"/>
-        <touch file="${build-libs.dir}/@{project}.complete" verbose="no"/>
-      </then></if>
-    </sequential>
-  </macrodef>
 
   <target name="asm.done"      depends="init"> <simple-javac project="asm" jar="no"/> </target>
   <target name="forkjoin.done" depends="init"> <simple-javac project="forkjoin" args="-XDignore.symbol.file"/></target>
 
-<!-- ===========================================================================
-                                  STAGED COMPILATION MACROS
-============================================================================ -->
-  <macrodef name="staged-javac" >
-    <attribute name="stage"/>    <!-- current stage (locker, quick, strap) -->
-    <attribute name="project"/>  <!-- project: library/reflect/compiler/actors -->
-    <attribute name="destproject" default="@{project}"/> <!-- overrides the output directory; used when building multiple projects into the same directory-->
-    <attribute name="args" default=""/>
-    <attribute name="excludes" default=""/>
-
-    <sequential>
-      <javac
-        debug="true"
-        srcdir="${src.dir}/@{project}"
-        destdir="${build-@{stage}.dir}/classes/@{destproject}"
-        includes="**/*.java"
-        excludes="@{excludes}"
-        target="1.6" source="1.5">
-          <compilerarg line="${javac.args} @{args}"/>
-          <classpath refid="@{stage}.@{destproject}.build.path"/>
-      </javac>
-    </sequential>
-  </macrodef>
-
-  <!-- Zinc assumes a one-to-one correspondence of output folder to set of source files.
-   When compiling different sets of source files in multiple compilations to the same output directory,
-   Zinc thinks source files that appeared in an earlier compilation but are absent in the current one,
-   were deleted and thus deletes the corresponding output files.
-
-   Note that zinc also requires each arg to scalac to be prefixed by -S.
+  <!-- For local development only. We only allow released versions of Scala for STARR.
+    This builds quick (core only) and publishes it with a generated version number,
+    saving it as starr.version in build.properties, so this compiler will be used as STARR in your next build
+    NOTES:
+      - to speed things up, you can also pass -Dlocker.skip=1
   -->
-  <macrodef name="zinc">
-    <attribute name="compilerpathref"   />
-    <attribute name="destdir"           />
-    <attribute name="srcdir"            />
-    <attribute name="srcpath" default="NOT SET"/>        <!-- needed to compile the library, "NOT SET" is just a convention to denote an optional attribute -->
-    <attribute name="buildpathref"      />
-    <attribute name="params" default="" />
-    <attribute name="java-excludes" default=""/>
-
-    <sequential>
-      <local name="sources"/>
-      <pathconvert pathsep=" " property="sources">
-        <fileset dir="@{srcdir}">
-          <include name="**/*.java"/>
-          <include name="**/*.scala"/>
-          <exclude name="@{java-excludes}"/>
-        </fileset>
-      </pathconvert>
-      <local name="args"/>
-      <local name="sargs"/>
-      <if><not><equals arg1="@{srcpath}" arg2="NOT SET"/></not><then>
-        <property name="args" value="@{params} -sourcepath @{srcpath}"/>
-      </then></if>
-      <property name="args" value="@{params}"/> <!-- default -->
-
-      <!-- HACK: prefix scalac args by -S -->
-      <script language="javascript">
-        project.setProperty("sargs", project.getProperty("args").trim().replaceAll(" ", " -S"));
-      </script>
-
-      <exec osfamily="unix" executable="tools/zinc" failifexecutionfails="true" failonerror="true">
-        <arg line="-nailed -compile-order JavaThenScala -scala-path ${ant.refid:@{compilerpathref}} -d @{destdir} -classpath ${toString:@{buildpathref}} ${sargs} ${sources}"/>
-      </exec>
-    </sequential>
-  </macrodef>
-
-  <macrodef name="staged-scalac" >
-    <attribute name="with"/>           <!-- will use path `@{with}.compiler.path` to locate scalac -->
-    <attribute name="stage"/>          <!-- current stage (locker, quick, strap) -->
-    <attribute name="project"/>        <!-- project: library/reflect/compiler/actors -->
-    <attribute name="srcpath" default="NOT SET"/>        <!-- needed to compile the library -->
-    <attribute name="args" default=""/>                  <!-- additional args -->
-    <attribute name="destproject" default="@{project}"/> <!-- overrides the output directory; used when building multiple projects into the same directory-->
-    <attribute name="srcdir" default="@{project}"/>
-    <attribute name="java-excludes" default=""/>
-
-    <sequential>
-      <!-- TODO: detect zinc anywhere on PATH
-           use zinc for the quick stage if it's available;
-           would use it for locker but something is iffy in sbt: get a class cast error on global phase -->
-      <if><and> <available file="tools/zinc"/>
-                <equals arg1="@{stage}" arg2="quick"/>
-                <not><equals arg1="@{project}" arg2="continuations-plugins"/></not> <!-- doesn't work in zinc because it requires the quick compiler, which isn't jarred up-->
-          </and><then>
-        <zinc taskname="Z.@{stage}.@{project}"
-          compilerpathref="@{with}.compiler.path"
-          destdir="${build-@{stage}.dir}/classes/@{destproject}"
-          srcdir="${src.dir}/@{srcdir}"
-          srcpath="@{srcpath}"
-          buildpathref="@{stage}.@{project}.build.path"
-          params="${scalac.args.@{stage}} @{args}"
-          java-excludes="@{java-excludes}"/></then>
-      <else>
-      <if><equals arg1="@{srcpath}" arg2="NOT SET"/><then>
-        <scalacfork taskname="@{stage}.@{project}"
-          jvmargs="${scalacfork.jvmargs}"
-          compilerpathref="@{with}.compiler.path"
-          destdir="${build-@{stage}.dir}/classes/@{destproject}"
-          srcdir="${src.dir}/@{srcdir}"
-          params="${scalac.args.@{stage}} @{args}">
-          <include name="**/*.scala"/>
-          <compilationpath refid="@{stage}.@{project}.build.path"/></scalacfork></then>
-      <else>
-        <scalacfork taskname="@{stage}.@{project}"
-          jvmargs="${scalacfork.jvmargs}"
-          compilerpathref="@{with}.compiler.path"
-          destdir="${build-@{stage}.dir}/classes/@{destproject}"
-          srcdir="${src.dir}/@{srcdir}"
-          srcpath="@{srcpath}"
-          params="${scalac.args.@{stage}} @{args}">
-          <include name="**/*.scala"/>
-          <compilationpath refid="@{stage}.@{project}.build.path"/></scalacfork></else>
-      </if>
-      </else></if>
-    </sequential>
-  </macrodef>
-
-  <macrodef name="staged-uptodate" >
-    <attribute name="stage"/>
-    <attribute name="project"/>
-    <element name="check"/>
-    <element name="do"/>
-
-    <sequential>
-      <uptodate property="@{stage}.@{project}.available" targetfile="${build-@{stage}.dir}/@{project}.complete">
-        <check/>
-      </uptodate>
-      <if><not><isset property="@{stage}.@{project}.available"/></not><then>
-        <do/>
-        <touch file="${build-@{stage}.dir}/@{project}.complete" verbose="no"/>
-      </then></if>
-    </sequential>
-  </macrodef>
-
-  <macrodef name="staged-build" >
-    <attribute name="with"/>           <!-- will use path `@{with}.compiler.path` to locate scalac -->
-    <attribute name="stage"/>          <!-- current stage (locker, quick, strap) -->
-    <attribute name="project"/>        <!-- project: library/reflect/compiler/actors -->
-    <attribute name="srcpath"       default="NOT SET"/>        <!-- needed to compile the library -->
-    <attribute name="args"          default=""/>                  <!-- additional args -->
-    <attribute name="includes"      default="comp.includes"/>
-    <attribute name="java-excludes" default=""/>
-    <attribute name="version"       default=""/> <!-- non-empty for scaladoc: use @{version}.version.number in property file-->
-
-    <sequential>
-      <staged-uptodate stage="@{stage}" project="@{project}">
-        <check><srcfiles dir="${src.dir}/@{project}"/></check>
-        <do>
-          <stopwatch name="@{stage}.@{project}.timer"/>
-          <mkdir dir="${build-@{stage}.dir}/classes/@{project}"/>
-          <staged-javac stage="@{stage}" project="@{project}" excludes="@{java-excludes}"/> <!-- always compile with javac for simplicity and regularity; it's cheap -->
-          <staged-scalac with="@{with}" stage="@{stage}" project="@{project}" srcpath="@{srcpath}" args="@{args}" java-excludes="@{java-excludes}"/>
-          <if><equals arg1="@{version}" arg2=""/><then>
-            <propertyfile file = "${build-@{stage}.dir}/classes/@{project}/@{project}.properties">
-              <entry key       = "version.number" value="${version.number}"/>
-              <entry key       = "maven.version.number" value="${maven.version.number}"/>
-              <entry key       = "osgi.version.number" value="${osgi.version.number}"/>
-              <entry key       = "copyright.string" value="${copyright.string}"/>
-            </propertyfile>
-          </then><else>
-            <propertyfile file = "${build-@{stage}.dir}/classes/@{project}/@{project}.properties">
-              <entry key       = "version.number" value="${@{version}.version.number}"/>
-              <entry key       = "copyright.string" value="${copyright.string}"/>
-            </propertyfile>
-          </else></if>
-          <copy todir="${build-@{stage}.dir}/classes/@{project}">
-            <fileset dir="${src.dir}/@{project}">
-              <patternset refid="@{includes}"/>
-            </fileset>
-          </copy>
-          <stopwatch name="@{stage}.@{project}.timer" action="total"/>
-        </do>
-      </staged-uptodate>
-    </sequential>
-  </macrodef>
-
-  <macrodef name="staged-bin">
-    <attribute name="stage"/>
-    <attribute name="classpathref" default="NOT SET"/>
-    <sequential>
-      <staged-uptodate stage="@{stage}" project="bin">
-        <check>
-          <srcfiles dir="${src.dir}">
-            <include name="compiler/scala/tools/ant/templates/**"/>
-          </srcfiles>
-        </check>
-        <do>
-          <taskdef name="mk-bin" classname="scala.tools.ant.ScalaTool" classpathref="@{stage}.bin.tool.path"/>
-          <mkdir dir="${build-@{stage}.dir}/bin"/>
-          <if><equals arg1="@{classpathref}" arg2="NOT SET"/><then>
-            <mk-bin file="${build-@{stage}.dir}/bin/scala"    class="scala.tools.nsc.MainGenericRunner" javaFlags="${java.flags}"/>
-            <mk-bin file="${build-@{stage}.dir}/bin/scalac"   class="scala.tools.nsc.Main"              javaFlags="${java.flags}"/>
-            <mk-bin file="${build-@{stage}.dir}/bin/scaladoc" class="scala.tools.nsc.ScalaDoc"          javaFlags="${java.flags}"/>
-            <mk-bin file="${build-@{stage}.dir}/bin/fsc"      class="scala.tools.nsc.CompileClient"     javaFlags="${java.flags}"/>
-            <mk-bin file="${build-@{stage}.dir}/bin/scalap"   class="scala.tools.scalap.Main"           javaFlags="${java.flags}"/>
-          </then><else>
-            <mk-bin file="${build-@{stage}.dir}/bin/scala"    class="scala.tools.nsc.MainGenericRunner" javaFlags="${java.flags}" classpathref="@{classpathref}"/>
-            <mk-bin file="${build-@{stage}.dir}/bin/scalac"   class="scala.tools.nsc.Main"              javaFlags="${java.flags}" classpathref="@{classpathref}"/>
-            <mk-bin file="${build-@{stage}.dir}/bin/scaladoc" class="scala.tools.nsc.ScalaDoc"          javaFlags="${java.flags}" classpathref="@{classpathref}"/>
-            <mk-bin file="${build-@{stage}.dir}/bin/fsc"      class="scala.tools.nsc.CompileClient"     javaFlags="${java.flags}" classpathref="@{classpathref}"/>
-            <mk-bin file="${build-@{stage}.dir}/bin/scalap"   class="scala.tools.scalap.Main"           javaFlags="${java.flags}" classpathref="@{classpathref}"/>
-          </else></if>
-          <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scala"/>
-          <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scalac"/>
-          <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scaladoc"/>
-          <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/fsc"/>
-          <chmod perm="ugo+rx" file="${build-@{stage}.dir}/bin/scalap"/>
-        </do>
-      </staged-uptodate>
-    </sequential>
-  </macrodef>
-
-  <macrodef name="staged-pack">
-    <attribute name="project"/>
-    <attribute name="manifest"  default=""/>
-    <element name="pre"         optional="true"/>
-    <element name="jar-opts"    optional="true"/>
-
-    <sequential>
-      <local name="destfile"/> <property name="destfile"  value="${build-pack.dir}/${@{project}.targetdir}/${@{project}.targetjar}"/>
-
-      <uptodate property="pack.@{project}.available" targetfile="${destfile}">
-        <srcresources>
-          <resources refid="pack.@{project}.files"/>
-          <!-- <path><pathelement location="${build-quick.dir}/@{project}.complete"/></path> -->
-        </srcresources>
-      </uptodate>
-      <if><not><isset property="pack.@{project}.available"/></not><then>
-        <mkdir dir="${build-pack.dir}/${@{project}.targetdir}"/>
-        <pre/>
-
-        <if><not><equals arg1="@{manifest}" arg2=""/></not><then>
-          <jar whenmanifestonly="fail" destfile="${destfile}" manifest="@{manifest}"> <!-- update="true" makes no difference on my machine, so starting from scratch-->
-            <jar-opts/>
-            <path refid="pack.@{project}.files"/>
-          </jar></then>
-        <else>
-          <jar whenmanifestonly="fail" destfile="${destfile}">
-            <jar-opts/>
-            <path refid="pack.@{project}.files"/>
-          </jar>
-        </else></if>
-      </then></if>
-    </sequential>
-  </macrodef>
-
-  <macrodef name="staged-docs">
-    <attribute name="project"/>
-
-    <element name="includes" implicit="true"/>
-
-    <sequential>
-      <staged-uptodate stage="docs" project="@{project}">
-        <check><srcfiles dir="${src.dir}/${@{project}.srcdir}"/></check>
-        <do>
-          <stopwatch name="docs.@{project}.timer"/>
-          <mkdir dir="${build-docs.dir}/@{project}"/>
-          <if><equals arg1="${@{project}.docroot}" arg2="NOT SET"/><then>
-            <scaladoc
-              destdir="${build-docs.dir}/@{project}"
-              doctitle="${@{project}.description}"
-              docfooter="epfl"
-              docversion="${version.number}"
-              sourcepath="${src.dir}"
-              classpathref="docs.@{project}.build.path"
-              srcdir="${src.dir}/${@{project}.srcdir}"
-              addparams="${scalac.args.all}"
-              implicits="on"
-              diagrams="on"
-              groups="on"
-              rawOutput="${scaladoc.raw.output}"
-              noPrefixes="${scaladoc.no.prefixes}"
-              docUncompilable="${src.dir}/library-aux"
-              skipPackages="${@{project}.skipPackages}">
-              <includes/>
-            </scaladoc>
-          </then><else>
-            <scaladoc
-              destdir="${build-docs.dir}/@{project}"
-              doctitle="${@{project}.description}"
-              docfooter="epfl"
-              docversion="${version.number}"
-              sourcepath="${src.dir}"
-              classpathref="docs.@{project}.build.path"
-              srcdir="${src.dir}/${@{project}.srcdir}"
-              docRootContent="${src.dir}/@{project}/${@{project}.docroot}"
-              addparams="${scalac.args.all}"
-              implicits="on"
-              diagrams="on"
-              groups="on"
-              rawOutput="${scaladoc.raw.output}"
-              noPrefixes="${scaladoc.no.prefixes}"
-              docUncompilable="${src.dir}/library-aux"
-              skipPackages="${@{project}.skipPackages}">
-              <includes/>
-            </scaladoc>
-          </else></if>
-          <stopwatch name="docs.@{project}.timer" action="total"/>
-        </do>
-      </staged-uptodate>
-    </sequential>
-  </macrodef>
-
+  <target name="replacestarr" depends="init.git" description="Produces a new STARR from current sources. Publishes core locally with a generated version number,
+    stored in build.properties as starr.version (overriding the one in versions.properties).">
+    <antcall target="publish-core-local">
+      <param name="maven.version.suffix" value="-STARR-${git.commit.sha}-SNAPSHOT"/>
+      <param name="docs.skip" value="1"/>
+      <param name="scalac.args.optimise" value="-optimise"/>
+      <param name="update.starr.version" value="alright then"/>
+    </antcall>
+  </target>
 
 
 <!-- ===========================================================================
@@ -1582,29 +1182,6 @@ TODO:
   <target name="strap-opt" description="Optimized version of strap.done."> <optimized name="strap.done"/></target>
 
 
-<!-- ===========================================================================
-                                  PACKED LOCKER BUILD (PALO)
-============================================================================ -->
-  <target name="palo.done" depends="locker.done">
-    <mkdir dir="${build-palo.dir}/lib"/>
-    <jar whenmanifestonly="fail" destfile="${build-palo.dir}/lib/scala-library.jar">
-      <fileset dir="${build-locker.dir}/classes/library"/>
-      <fileset dir="${forkjoin-classes}"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${build-palo.dir}/lib/scala-reflect.jar" manifest="${basedir}/META-INF/MANIFEST.MF"
-      basedir="${build-locker.dir}/classes/reflect"/>
-    <jar whenmanifestonly="fail" destfile="${build-palo.dir}/lib/scala-compiler.jar" manifest="${basedir}/META-INF/MANIFEST.MF">
-      <fileset dir="${build-locker.dir}/classes/compiler"/>
-      <fileset dir="${asm-classes}"/>
-    </jar>
-    <copy todir="${build-palo.dir}/lib">
-      <resources refid="repl.fileset"/>
-      <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper" from="${repl.deps.versions}" to="flatten"/>
-    </copy>
-  </target>
-
-  <target name="palo.bin" depends="palo.done"> <staged-bin stage="palo"/></target>
-
 
 <!-- ===========================================================================
                                   OSGi Artifacts
@@ -1613,43 +1190,7 @@ TODO:
        This means adding manifests and enforcing the Exports clauses (removing non-exported classes!)
        These jars are then copied to the distribution and published to maven.
   -->
-  <macrodef name="make-bundle">
-    <attribute name="project" />
-    <element   name="srcs"        description="Sources for this bundle" optional="true" implicit="true"/>
 
-    <sequential>
-      <copy file="${src.dir}/build/bnd/${@{project}.name}.bnd" tofile="${build-osgi.dir}/${@{project}.name}.bnd" overwrite="true">
-        <filterset>
-          <filter token="VERSION" value="${osgi.version.number}" />
-          <filter token="SCALA_BINARY_VERSION" value="${scala.binary.version}" />
-          <filter token="SCALA_COMPILER_DOC_VERSION" value="${scala-compiler-doc.version.number}" />
-          <filter token="SCALA_COMPILER_INTERACTIVE_VERSION" value="${scala-compiler-interactive.version.number}" />
-        </filterset>
-      </copy>
-      <bnd classpath="${@{project}.jar}"
-           eclipse="false"
-           failok="false"
-           exceptions="true"
-           files="${build-osgi.dir}/${@{project}.name}.bnd"
-           output="${build-osgi.dir}"/>
-      <if><equals arg1="${@{project}.src}" arg2="true"/><then>
-        <!--
-             A jar-like task that creates an OSGi source bundle. It adds the required MANIFEST.MF headers that allow
-             Eclipse to match sources with the corresponding binaries.
-        -->
-          <jar whenmanifestonly="fail" destfile="${build-osgi.dir}/${@{project}.name}-src.jar">
-            <srcs/>
-            <manifest>
-              <attribute name="Manifest-Version" value="1.0"/>
-              <attribute name="Bundle-Name" value="${@{project}.description} Sources"/>
-              <attribute name="Bundle-SymbolicName" value="org.scala-lang.${@{project}.package}${@{project}.name}${@{project}.namesuffix}.source"/>
-              <attribute name="Bundle-Version" value="${@{project}.version}"/>
-              <attribute name="Eclipse-SourceBundle" value="org.scala-lang.${@{project}.package}${@{project}.name}${@{project}.namesuffix};version=&quot;${@{project}.version}&quot;;roots:=&quot;.&quot;" />
-            </manifest>
-          </jar>
-      </then></if>
-    </sequential>
-  </macrodef>
 
   <target name="osgi.core" depends="pack.core">
     <mkdir dir="${build-osgi.dir}"/>
@@ -1955,46 +1496,7 @@ TODO:
     <property name="maven-deps-done-mima" value="true"/>
   </target>
 
-  <macrodef name="bc.run-mima">
-    <attribute name="jar-name"/>
-    <attribute name="prev"/>
-    <attribute name="curr"/>
-    <attribute name="direction"/>
-    <sequential>
-      <echo message="Checking @{direction} binary compatibility for @{jar-name} (against ${bc-reference-version})"/>
-      <java taskname="mima"
-         fork="true"
-         failonerror="true"
-         classname="com.typesafe.tools.mima.cli.Main">
-           <arg value="--prev"/>
-           <arg value="@{prev}"/>
-           <arg value="--curr"/>
-           <arg value="@{curr}"/>
-           <arg value="--filters"/>
-           <arg value="${basedir}/bincompat-@{direction}.whitelist.conf"/>
-           <arg value="--generate-filters"/>
-           <classpath>
-             <path refid="mima.classpath"/>
-           </classpath>
-      </java>
-    </sequential>
-  </macrodef>
 
-  <macrodef name="bc.check">
-    <attribute name="project"/>
-    <sequential>
-        <bc.run-mima
-                jar-name="scala-@{project}"
-                prev="${org.scala-lang:scala-@{project}:jar}"
-                curr="${@{name}.jar}"
-                direction="backward"/>
-        <bc.run-mima
-                jar-name="scala-@{project}"
-                prev="${@{name}.jar}"
-                curr="${org.scala-lang:scala-@{project}:jar}"
-                direction="forward"/>
-    </sequential>
-  </macrodef>
 
   <target name="test.bc-opt" description="Optimized version of test.bc."> <optimized name="test.bc"/></target>
 
@@ -2148,14 +1650,6 @@ TODO:
     <property name="dist.name" value="scala-${version.number}"/>
     <property name="dist.dir" value="${dists.dir}/${dist.name}"/>
 
-    <macrodef name="copy-bundle">
-      <attribute name="project" />
-
-      <sequential>
-        <copy tofile="${dist.dir}/${@{project}.targetdir}/${@{project}.name}.jar"   file="${build-osgi.dir}/org.scala-lang.${@{project}.package}${@{project}.name}.jar" overwrite="true"/>
-        <copy tofile="${dist.dir}/src/${@{project}.name}-src.jar" file="${@{project}.srcjar}" overwrite="true"/>
-      </sequential>
-    </macrodef>
 
     <mkdir dir="${dist.dir}/lib"/>
     <mkdir dir="${dist.dir}/${continuations-plugin.targetdir}"/>
@@ -2250,28 +1744,6 @@ MAIN DISTRIBUTION PACKAGING
 ============================================================================ -->
 
   <target name="pack-archives.done" depends="dist.done, docs.done">
-    <macrodef name="tarz">
-      <attribute name="name"     description="The tar file name (without extension)."/>
-      <element   name="file-sets"    description="A sequence of fileset elements to be included in the tar balls." optional="false" implicit="true"/>
-
-      <sequential>
-        <tar destfile="@{name}.tar" compression="none" longfile="gnu">
-          <file-sets/>
-        </tar>
-        <gzip src="@{name}.tar" destfile="@{name}.tgz"/>
-        <if>
-          <not><equals arg1="${archives.skipxz}" arg2="true" /></not>
-          <then>
-            <exec executable="xz" failifexecutionfails="false">
-              <arg line="-k -9e -S .xz @{name}.tar"/>
-            </exec>
-            <move file="@{name}.tar.xz" tofile="@{name}.txz" failonerror="false"/>
-          </then>
-        </if>
-        <delete file="@{name}.tar" />
-      </sequential>
-    </macrodef>
-
     <mkdir dir="${dists.dir}/archives"/>
     <property name="archive-base" value="${dists.dir}/archives/${dist.name}"/>
 
@@ -2330,25 +1802,6 @@ MAIN DISTRIBUTION PACKAGING
     </else></if> -->
   </target>
 
-  <macrodef name="mvn-package">
-    <attribute name="project"/>
-
-    <sequential>
-      <local name="artifact-base"/> <property name="artifact-base" value="${maven-base}/${@{project}.dir}${@{project}.name}/${@{project}.name}"/>
-
-      <mkdir dir="${maven-base}/${@{project}.dir}${@{project}.name}"/>
-      <copy tofile="${artifact-base}.jar" file="${build-osgi.dir}/org.scala-lang.${@{project}.package}${@{project}.name}${@{project}.namesuffix}.jar" overwrite="true"/>
-      <copy tofile="${artifact-base}-src.jar" file="${build-osgi.dir}/${@{project}.name}-src.jar" overwrite="true"/>
-      <copy tofile="${artifact-base}-pom.xml" file="${src.dir}/build/maven/${@{project}.dir}/${@{project}.name}-pom.xml" overwrite="true"/>
-
-      <if><not><isset property="docs.skip"/></not><then>
-        <jar destfile="${artifact-base}-docs.jar" basedir="${build-docs.dir}/@{project}" whenmanifestonly="fail">
-          <include name="**/*"/>
-        </jar>
-      </then></if>
-    </sequential>
-  </macrodef>
-
   <target name="pack-maven.core" depends="osgi.core, docs.core">
     <property name="maven-base" value="${dists.dir}/maven/${version.number}"/>
     <mkdir dir="${maven-base}"/>
@@ -2356,6 +1809,14 @@ MAIN DISTRIBUTION PACKAGING
     <mvn-package project="library"/>
     <mvn-package project="reflect"/>
     <mvn-package project="compiler"/>
+
+    <!-- for replacestarr -->
+    <if><isset property="update.starr.version"/><then>
+      <echo message="From now on, ${maven.version.number} will be used as STARR (`build.properties`'s `starr.version` was modified)."/>
+      <propertyfile file = "build.properties">
+        <entry key       = "starr.version" value="${maven.version.number}"/>
+      </propertyfile>
+    </then></if>
   </target>
 
   <target name="pack-maven.base" depends="pack-maven.core, osgi.done, docs.done">
@@ -2442,123 +1903,6 @@ MAIN DISTRIBUTION PACKAGING
   <target name="publish-core-opt" description="Builds an untested optimised core (library/reflect/compiler) and publishes to maven.">
     <optimized name="publish-core"/>
   </target>
-
-<!-- ===========================================================================
-                                  STABLE REFERENCE (STARR)
-============================================================================ -->
-<!-- Does not use any properties other than ${basedir}, so that it can
-     run without 'init' (when using 'replacestarrwin') -->
-
-  <target name="starr.start">
-    <fail message="Library in build/pack not available">
-      <condition><not><and>
-        <available file="${library.jar}"/>
-      </and></not></condition>
-    </fail>
-    <fail message="Compiler in build/quick not available">
-      <condition><not><and>
-        <available file="${build-quick.dir}/classes/compiler"/>
-        <available file="${build-quick.dir}/compiler.complete"/>
-      </and></not></condition>
-    </fail>
-  </target>
-
-  <target name="starr.jars" depends="starr.start">
-    <copy toDir="${lib.dir}" overwrite="true">
-      <fileset dir="${build-pack.dir}/lib">
-        <include name="scala-library.jar"/>
-        <include name="scala-reflect.jar"/>
-        <include name="scala-compiler.jar"/>
-      </fileset>
-    </copy>
-  </target>
-
-  <target name="starr.src" depends="starr.jars">
-    <jar whenmanifestonly="fail" destfile="${lib.dir}/scala-library-src.jar">
-      <fileset dir="${src.dir}/library"/>
-      <fileset dir="${src.dir}/swing"/>
-      <fileset dir="${src.dir}/actors"/>
-      <fileset dir="${src.dir}/forkjoin"/>
-    </jar>
-    <jar whenmanifestonly="fail" destfile="${lib.dir}/scala-reflect-src.jar" basedir="${src.dir}/reflect"/>
-    <jar whenmanifestonly="fail" destfile="${lib.dir}/scala-compiler-src.jar">
-      <fileset dir="${src.dir}/compiler"/>
-      <fileset dir="${src.dir}/asm"/>
-    </jar>
-  </target>
-
-  <target name="starr.removesha1" depends="starr.src">
-    <!-- remove SHA1 files for no starr, so we don't loose artifacts. -->
-    <delete>
-      <fileset dir="${lib.dir}">
-        <include name="scala-compiler.jar.desired.sha1"/>
-        <include name="scala-reflect.jar.desired.sha1"/>
-        <include name="scala-library.jar.desired.sha1"/>
-        <include name="scala-library-src.jar.desired.sha1"/>
-        <include name="scala-reflect-src.jar.desired.sha1"/>
-        <include name="scala-compiler-src.jar.desired.sha1"/>
-      </fileset>
-    </delete>
-  </target>
-
-  <target name="starr.done" depends="starr.jars, starr.removesha1"/>
-
-  <target name="replacestarr" description="Replaces the Starr compiler and library by fresh ones built from current sources and tests them.">
-    <fail message="This target is not available on Windows. Use 'ant replacestarrwin' instead.">
-      <condition>
-        <os family="windows"/>
-      </condition>
-    </fail>
-    <!-- needs antcall to enforce ordering -->
-    <antcall target="locker.clean"/>
-    <antcall target="pack.done"/>
-    <antcall target="starr.done"/>
-    <antcall target="locker.clean"/>
-    <antcall target="test.done"/>
-  </target>
-
-  <target name="replacestarr-opt" description="Replaces the Starr compiler and library by fresh, optimised ones built from current sources and tests them.">
-    <optimized name="replacestarr"/></target>
-
-  <!-- Ant on Windows is not able to delete jar files that are referenced in any <path>.
-       See ticket 1290 on trac. -->
-  <target name="replacestarrwin" description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
-    <fail message="This target is only available on Windows. Use 'ant replacestarr' instead.">
-      <condition>
-        <not><os family="windows"/></not>
-      </condition>
-    </fail>
-    <echo message="CAUTION: Make sure to execute 'ant locker.clean build' prior to calling 'replacestarrwin'."/>
-    <antcall target="starr.done"/>
-    <antcall target="locker.clean"/>
-    <antcall target="test.done"/>
-  </target>
-
-  <target name="replacestarrwin-opt" description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
-    <optimized name="replacestarrwin"/></target>
-
-  <target name="replacelocker" description="Replaces the Locker compiler and library by fresh ones built from current sources."
-    depends="palo.clean, locker.unlock, palo.done"/>
-
-  <target name="replacelocker-opt" description="Replaces the Locker compiler and library by fresh, optimised ones built from current sources.">
-    <optimized name="replacelocker"/></target>
-
-  <target name="buildlocker" description="Does the same for locker as build does for quick." depends="locker.unlock, palo.bin"/>
-  <target name="unlocklocker" description="Same as buildlocker." depends="buildlocker"/> <!-- REMOVE -->
-
-  <target name="fastlocker.lib" description="Buildlocker without extra fuss" depends="locker.unlock, locker.lib">
-    <property name="fastlocker" value="true"/>
-  </target>
-
-  <target name="fastlocker.reflect" description="Buildlocker without extra fuss" depends="locker.unlock, locker.reflect">
-    <property name="fastlocker" value="true"/>
-  </target>
-
-  <target name="fastlocker.comp" description="Buildlocker without extra fuss" depends="locker.unlock, locker.comp">
-    <property name="fastlocker" value="true"/>
-  </target>
-
-  <target name="fastlocker" description="Buildlocker without extra fuss" depends="fastlocker.comp"/>
 
 <!-- ===========================================================================
                                   VISUALIZATION
