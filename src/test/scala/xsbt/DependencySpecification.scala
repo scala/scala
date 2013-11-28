@@ -80,7 +80,7 @@ class DependencySpecification extends Specification {
 		// E verifies the core type gets pulled out
 		val srcH = "trait H extends G.T[Int] with (E[Int] @unchecked)"
 
-		val compilerForTesting = new ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps = true)
+		val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
 		val sourceDependencies = compilerForTesting.extractDependenciesFromSrcs('A -> srcA, 'B -> srcB, 'C -> srcC,
 			'D -> srcD, 'E -> srcE, 'F -> srcF, 'G -> srcG, 'H -> srcH)
 		sourceDependencies
@@ -92,7 +92,7 @@ class DependencySpecification extends Specification {
 		val srcC = "class C { private class Inner1 extends A }"
 		val srcD = "class D { def foo: Unit = { class Inner2 extends B } }"
 
-		val compilerForTesting = new ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps = true)
+		val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
 		val sourceDependencies =
 			compilerForTesting.extractDependenciesFromSrcs('A -> srcA, 'B -> srcB, 'C -> srcC, 'D -> srcD)
 		sourceDependencies
@@ -104,7 +104,7 @@ class DependencySpecification extends Specification {
 		val srcC = "trait C extends B"
 		val srcD = "class D extends C"
 
-		val compilerForTesting = new ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps = true)
+		val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
 		val sourceDependencies =
 			compilerForTesting.extractDependenciesFromSrcs('A -> srcA, 'B -> srcB, 'C -> srcC, 'D -> srcD)
 		sourceDependencies

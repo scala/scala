@@ -43,7 +43,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile
 			{
 				// build dependencies structure
 				val sourceFile = unit.source.file.file
-				if (global.callback.memberRefAndInheritanceDeps) {
+				if (global.callback.nameHashing) {
 					val dependenciesByMemberRef = extractDependenciesByMemberRef(unit)
 					for(on <- dependenciesByMemberRef)
 						processDependency(on, inherited=false)

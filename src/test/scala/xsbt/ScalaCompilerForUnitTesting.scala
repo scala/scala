@@ -19,7 +19,7 @@ import ScalaCompilerForUnitTesting.ExtractedSourceDependencies
  * Provides common functionality needed for unit tests that require compiling
  * source code using Scala compiler.
  */
-class ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps: Boolean = false) {
+class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
 
 	/**
 	 * Compiles given source code using Scala compiler and returns API representation
@@ -76,7 +76,7 @@ class ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps: Boolean = false) 
 	 */
 	private def compileSrcs(srcs: String*): (Seq[File], TestCallback) = {
 		withTemporaryDirectory { temp =>
-			val analysisCallback = new TestCallback(memberRefAndInheritanceDeps)
+			val analysisCallback = new TestCallback(nameHashing)
 			val classesDir = new File(temp, "classes")
 			classesDir.mkdir()
 			val compiler = prepareCompiler(classesDir, analysisCallback)
