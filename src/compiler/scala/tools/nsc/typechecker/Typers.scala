@@ -2906,6 +2906,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       else if (argpts.lengthCompare(numVparams) != 0)
         WrongNumberOfParametersError(fun, argpts)
       else {
+        var issuedMissingParameterTypeError = false
         foreach2(fun.vparams, argpts) { (vparam, argpt) =>
           if (vparam.tpt.isEmpty) {
             vparam.tpt.tpe =
@@ -2923,7 +2924,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     }
                   case _ =>
                 }
-                MissingParameterTypeError(fun, vparam, pt)
+                MissingParameterTypeError(fun, vparam, pt, withTupleAddendum = !issuedMissingParameterTypeError)
+                issuedMissingParameterTypeError = true
                 ErrorType
               }
             if (!vparam.tpt.pos.isDefined) vparam.tpt setPos vparam.pos.focus

@@ -109,6 +109,22 @@ trait TypeDiagnostics {
     case x                                    => x.toString
   }
 
+  /**
+   * [a, b, c] => "(a, b, c)"
+   * [a, B]    => "(param1, param2)"
+   * [a, B, c] => "(param1, ..., param2)"
+   */
+  final def exampleTuplePattern(names: List[Name]): String = {
+    val arity = names.length
+    val varPatterNames: Option[List[String]] = sequence(names map {
+      case name if nme.isVariableName(name) => Some(name.decode)
+      case _                                => None
+    })
+    def parenthesize(a: String) = s"($a)"
+    def genericParams = (Seq("param1") ++ (if (arity > 2) Seq("...") else Nil) ++ Seq(s"param$arity"))
+    parenthesize(varPatterNames.getOrElse(genericParams).mkString(", "))
+  }
+
   def alternatives(tree: Tree): List[Type] = tree.tpe match {
     case OverloadedType(pre, alternatives)  => alternatives map pre.memberType
     case _                                  => Nil

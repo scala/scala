@@ -233,9 +233,6 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       def defaultBody: Tree
       def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef
 
-      private def sequence[T](xs: List[Option[T]]): Option[List[T]] =
-        if (xs exists (_.isEmpty)) None else Some(xs.flatten)
-
       object GuardAndBodyTreeMakers {
           def unapply(tms: List[TreeMaker]): Option[(Tree, Tree)] = {
             tms match {

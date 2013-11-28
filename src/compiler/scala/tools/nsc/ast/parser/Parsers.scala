@@ -732,6 +732,7 @@ self =>
       def removeAsPlaceholder(name: Name) {
         placeholderParams = placeholderParams filter (_.name != name)
       }
+      def errorParam = makeParam(nme.ERROR, errorTypeTree setPos o2p(tree.pos.end))
       tree match {
         case Ident(name) =>
           removeAsPlaceholder(name)
@@ -739,9 +740,19 @@ self =>
         case Typed(Ident(name), tpe) if tpe.isType => // get the ident!
           removeAsPlaceholder(name)
           makeParam(name.toTermName, tpe)
+        case build.SyntacticTuple(as) =>
+          val arity = as.length
+          val example = analyzer.exampleTuplePattern(as map { case Ident(name) => name; case _ => nme.EMPTY })
+          val msg =
+            sm"""|not a legal formal parameter.
+                 |Note: Tuples cannot be directly destructured in method or function parameters.
+                 |      Either create a single parameter accepting the Tuple${arity},
+                 |      or consider a pattern matching anonymous function: `{ case $example => ... }"""
+          syntaxError(tree.pos, msg, skipIt = false)
+          errorParam
         case _ =>
           syntaxError(tree.pos, "not a legal formal parameter", skipIt = false)
-          makeParam(nme.ERROR, errorTypeTree setPos o2p(tree.pos.end))
+          errorParam
       }
     }
 
