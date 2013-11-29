@@ -353,6 +353,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val StringAddClass             = requiredClass[scala.runtime.StringAdd]
     lazy val ScalaNumberClass           = requiredClass[scala.math.ScalaNumber]
     lazy val TraitSetterAnnotationClass = requiredClass[scala.runtime.TraitSetter]
+    lazy val ValueTypeAnnotationClass   = requiredClass[scala.runtime.ValueType]
     lazy val DelayedInitClass           = requiredClass[scala.DelayedInit]
       def delayedInitMethod = getMemberMethod(DelayedInitClass, nme.delayedInit)
 

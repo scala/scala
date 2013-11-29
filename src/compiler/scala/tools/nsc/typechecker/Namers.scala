@@ -929,6 +929,7 @@ trait Namers extends MethodSynthesis {
       if (clazz.isDerivedValueClass) {
         log("Ensuring companion for derived value class " + cdef.name + " at " + cdef.pos.show)
         clazz setFlag FINAL
+        clazz.addAnnotation(AnnotationInfo(ValueTypeAnnotationClass.tpe, Nil, Nil))
         // Don't force the owner's info lest we create cycles as in SI-6357.
         enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef)
       }
