@@ -39,10 +39,17 @@ abstract class Compat
 		def unapply(t: Type): Option[Type] = None
 	}
 
-	// before 2.10, sym.moduleSuffix doesn't exist, but genJVM.moduleSuffix does
-	private[this] implicit def symbolCompat(sym: Symbol): SymbolCompat = new SymbolCompat(sym)
-	private[this] final class SymbolCompat(sym: Symbol) {
+	protected implicit def symbolCompat(sym: Symbol): SymbolCompat = new SymbolCompat(sym)
+	protected final class SymbolCompat(sym: Symbol) {
+		// before 2.10, sym.moduleSuffix doesn't exist, but genJVM.moduleSuffix does
 		def moduleSuffix = global.genJVM.moduleSuffix(sym)
+		def enclosingTopLevelClass: Symbol = sym.toplevelClass
+		// this for compatibility with Scala 2.11 where Symbol.enclosingTopLevelClass method exist
+		// so we won't be ever calling SymbolCompat.enclosingTopLevelClass but we need to compile
+		// it hence we need dummy forwarder target, the `toplevelClass` method defined
+		// in Scala 2.9 and 2.10 the `Symbol.toplevelClass` exists so the dummy forwarder target
+		// won't be used
+		def toplevelClass: Symbol = throw new UnsupportedOperationException("We should never have gotten here")
 	}
 
 

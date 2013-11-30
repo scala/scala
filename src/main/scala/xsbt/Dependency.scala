@@ -156,9 +156,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile
 		val traverser = new ExtractDependenciesByMemberRefTraverser
 		traverser.traverse(unit.body)
 		val dependencies = traverser.dependencies
-		// we capture enclosing classes only because that's what CompilationUnit.depends does and we don't want
-		// to deviate from old behaviour too much for now
-		dependencies.map(_.toplevelClass)
+		dependencies.map(enclosingTopLevelClass)
 	}
 
 	/** Copied straight from Scala 2.10 as it does not exist in Scala 2.9 compiler */
@@ -184,7 +182,15 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile
 		val traverser = new ExtractDependenciesByInheritanceTraverser
 		traverser.traverse(unit.body)
 		val dependencies = traverser.dependencies
-		dependencies.map(_.toplevelClass)
+		dependencies.map(enclosingTopLevelClass)
 	}
+
+	/**
+	 * We capture enclosing classes only because that's what CompilationUnit.depends does and we don't want
+	 * to deviate from old behaviour too much for now.
+	 */
+	private def enclosingTopLevelClass(sym: Symbol): Symbol =
+		// for Scala 2.8 and 2.9 this method is provided through SymbolCompat
+		sym.enclosingTopLevelClass
 
 }
