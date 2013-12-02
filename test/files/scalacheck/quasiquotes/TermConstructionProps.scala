@@ -204,6 +204,11 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     assert(q"f(${if (true) q"a" else q"b"})" ≈ q"f(a)")
   }
 
+  property("splice iterable of non-parametric type") = test {
+    object O extends Iterable[Tree] { def iterator = List(q"foo").iterator }
+    q"f(..$O)"
+  }
+
   property("SI-8016") = test {
     val xs = q"1" :: q"2" :: Nil
     assertEqAst(q"..$xs", "{1; 2}")
