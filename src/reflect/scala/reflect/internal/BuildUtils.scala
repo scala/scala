@@ -212,11 +212,15 @@ trait BuildUtils { self: SymbolTable =>
             }
             // undo flag modifications by mergeing flag info from constructor args and fieldDefs
             val modsMap = fieldDefs.map { case ValDef(mods, name, _, _) => name -> mods }.toMap
-            val vparamss = mmap(vparamssRestoredImplicits) { vd =>
-              val originalMods = modsMap(vd.name) | (vd.mods.flags & DEFAULTPARAM)
-              atPos(vd.pos)(ValDef(originalMods, vd.name, vd.tpt, vd.rhs))
+            def ctorArgsCorrespondToFields = vparamssRestoredImplicits.flatten.forall { vd => modsMap.contains(vd.name) }
+            if (!ctorArgsCorrespondToFields) None
+            else {
+              val vparamss = mmap(vparamssRestoredImplicits) { vd =>
+                val originalMods = modsMap(vd.name) | (vd.mods.flags & DEFAULTPARAM)
+                atPos(vd.pos)(ValDef(originalMods, vd.name, vd.tpt, vd.rhs))
+              }
+              result(ctorMods, vparamss, edefs, body)
             }
-            result(ctorMods, vparamss, edefs, body)
           }
         }
       }
