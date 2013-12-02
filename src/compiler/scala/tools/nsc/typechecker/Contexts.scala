@@ -1108,7 +1108,7 @@ trait Contexts { self: Analyzer =>
           impSym = NoSymbol
         // Otherwise they are irreconcilably ambiguous
         else
-          return ambiguousDefnAndImport(defSym.owner, imp1)
+          return ambiguousDefnAndImport(defSym.alternatives.head.owner, imp1)
       }
 
       // At this point only one or the other of defSym and impSym might be set.
