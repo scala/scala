@@ -188,9 +188,9 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  @param  s     The string to match
    *  @return       The matches
    */
-  def unapplySeq(s: CharSequence): Option[Seq[String]] = {
+  def unapplySeq(s: CharSequence): Option[List[String]] = {
     val m = pattern matcher s
-    if (runMatcher(m)) Some(1 to m.groupCount map m.group)
+    if (runMatcher(m)) Some((1 to m.groupCount).toList map m.group)
     else None
   }
 
@@ -225,10 +225,10 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  @param  c     The Char to match
    *  @return       The match
    */
-  def unapplySeq(c: Char): Option[Seq[Char]] = {
+  def unapplySeq(c: Char): Option[List[Char]] = {
     val m = pattern matcher c.toString
     if (runMatcher(m)) {
-      if (m.groupCount > 0) Some(m group 1) else Some(Nil)
+      if (m.groupCount > 0) Some((m group 1).toList) else Some(Nil)
     } else None
   }
 
@@ -238,9 +238,9 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  Otherwise, this Regex is applied to the previously matched input,
    *  and the result of that match is used.
    */
-  def unapplySeq(m: Match): Option[Seq[String]] =
+  def unapplySeq(m: Match): Option[List[String]] =
     if (m.matched == null) None
-    else if (m.matcher.pattern == this.pattern) Some(1 to m.groupCount map m.group)
+    else if (m.matcher.pattern == this.pattern) Some((1 to m.groupCount).toList map m.group)
     else unapplySeq(m.matched)
 
   /** Tries to match target.
