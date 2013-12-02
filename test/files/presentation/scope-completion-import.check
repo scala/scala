@@ -1,9 +1,9 @@
 reload: Completions.scala
 
-askScopeCompletion at Completions.scala(15,4)
+askScopeCompletion at Completions.scala(23,4)
 ================================================================================
-[response] askScopeCompletion at (15,4)
-retrieved 10 members
+[response] askScopeCompletion at (23,4)
+retrieved 18 members
 [accessible:  true] `class Ctest.C`
 [accessible:  true] `class Foo_1test.Foo_1`
 [accessible:  true] `class Foo_2test.Foo_2`
@@ -14,12 +14,20 @@ retrieved 10 members
 [accessible:  true] `method fOOO=> Int`
 [accessible:  true] `object Otest.O.type`
 [accessible:  true] `value otest.O.type`
+[accessible:  true] `value vCCCInt`
+[accessible:  true] `value vOOOInt`
+[accessible:  true] `variable rCCCInt`
+[accessible:  true] `variable rOOOInt`
+[accessible: false] `value pVCCCInt`
+[accessible: false] `value pVOOOInt`
+[accessible: false] `variable pRCCCInt`
+[accessible: false] `variable pROOOInt`
 ================================================================================
 
-askScopeCompletion at Completions.scala(19,4)
+askScopeCompletion at Completions.scala(27,4)
 ================================================================================
-[response] askScopeCompletion at (19,4)
-retrieved 9 members
+[response] askScopeCompletion at (27,4)
+retrieved 17 members
 [accessible:  true] `class Ctest.C`
 [accessible:  true] `class Foo_1test.Foo_1`
 [accessible:  true] `class Foo_2test.Foo_2`
@@ -29,12 +37,20 @@ retrieved 9 members
 [accessible:  true] `method fCCC=> Int`
 [accessible:  true] `method fOOO=> Int`
 [accessible:  true] `object Otest.O.type`
+[accessible:  true] `value vCCCInt`
+[accessible:  true] `value vOOOInt`
+[accessible:  true] `variable rCCCInt`
+[accessible:  true] `variable rOOOInt`
+[accessible: false] `value pVCCCInt`
+[accessible: false] `value pVOOOInt`
+[accessible: false] `variable pRCCCInt`
+[accessible: false] `variable pROOOInt`
 ================================================================================
 
-askScopeCompletion at Completions.scala(24,4)
+askScopeCompletion at Completions.scala(32,4)
 ================================================================================
-[response] askScopeCompletion at (24,4)
-retrieved 9 members
+[response] askScopeCompletion at (32,4)
+retrieved 13 members
 [accessible:  true] `class Ctest.C`
 [accessible:  true] `class Foo_1test.Foo_1`
 [accessible:  true] `class Foo_2test.Foo_2`
@@ -44,11 +60,15 @@ retrieved 9 members
 [accessible:  true] `method fCCC=> Int`
 [accessible:  true] `object Otest.O.type`
 [accessible:  true] `value ctest.C`
+[accessible:  true] `value vCCCInt`
+[accessible:  true] `variable rCCCInt`
+[accessible: false] `value pVCCCInt`
+[accessible: false] `variable pRCCCInt`
 ================================================================================
 
-askScopeCompletion at Completions.scala(27,5)
+askScopeCompletion at Completions.scala(35,5)
 ================================================================================
-[response] askScopeCompletion at (27,5)
+[response] askScopeCompletion at (35,5)
 retrieved 8 members
 [accessible:  true] `class Ctest.C`
 [accessible:  true] `class Foo_1test.Foo_1`
@@ -60,10 +80,10 @@ retrieved 8 members
 [accessible:  true] `value ctest.C`
 ================================================================================
 
-askScopeCompletion at Completions.scala(30,5)
+askScopeCompletion at Completions.scala(38,5)
 ================================================================================
-[response] askScopeCompletion at (30,5)
-retrieved 9 members
+[response] askScopeCompletion at (38,5)
+retrieved 13 members
 [accessible:  true] `class Ctest.C`
 [accessible:  true] `class Foo_1test.Foo_1`
 [accessible:  true] `class Foo_2test.Foo_2`
@@ -73,12 +93,16 @@ retrieved 9 members
 [accessible:  true] `method fCCC=> Int`
 [accessible:  true] `object Otest.O.type`
 [accessible:  true] `value ctest.C`
+[accessible:  true] `value vCCCInt`
+[accessible:  true] `variable rCCCInt`
+[accessible: false] `value pVCCCInt`
+[accessible: false] `variable pRCCCInt`
 ================================================================================
 
-askScopeCompletion at Completions.scala(32,5)
+askScopeCompletion at Completions.scala(40,5)
 ================================================================================
-[response] askScopeCompletion at (32,5)
-retrieved 10 members
+[response] askScopeCompletion at (40,5)
+retrieved 18 members
 [accessible:  true] `class Ctest.C`
 [accessible:  true] `class Foo_1test.Foo_1`
 [accessible:  true] `class Foo_2test.Foo_2`
@@ -89,12 +113,20 @@ retrieved 10 members
 [accessible:  true] `method fOOO=> Int`
 [accessible:  true] `object Otest.O.type`
 [accessible:  true] `value ctest.C`
+[accessible:  true] `value vCCCInt`
+[accessible:  true] `value vOOOInt`
+[accessible:  true] `variable rCCCInt`
+[accessible:  true] `variable rOOOInt`
+[accessible: false] `value pVCCCInt`
+[accessible: false] `value pVOOOInt`
+[accessible: false] `variable pRCCCInt`
+[accessible: false] `variable pROOOInt`
 ================================================================================
 
-askScopeCompletion at Completions.scala(41,4)
+askScopeCompletion at Completions.scala(49,4)
 ================================================================================
-[response] askScopeCompletion at (41,4)
-retrieved 10 members
+[response] askScopeCompletion at (49,4)
+retrieved 18 members
 [accessible:  true] `class Ctest.C`
 [accessible:  true] `class Foo_1test.Foo_1`
 [accessible:  true] `class Foo_2test.Foo_2`
@@ -105,12 +137,20 @@ retrieved 10 members
 [accessible:  true] `method fCCC=> Int`
 [accessible:  true] `method fOOO=> Int`
 [accessible:  true] `object Otest.O.type`
+[accessible:  true] `value vCCCInt`
+[accessible:  true] `value vOOOInt`
+[accessible:  true] `variable rCCCInt`
+[accessible:  true] `variable rOOOInt`
+[accessible: false] `value pVCCCInt`
+[accessible: false] `value pVOOOInt`
+[accessible: false] `variable pRCCCInt`
+[accessible: false] `variable pROOOInt`
 ================================================================================
 
-askScopeCompletion at Completions.scala(51,4)
+askScopeCompletion at Completions.scala(59,4)
 ================================================================================
-[response] askScopeCompletion at (51,4)
-retrieved 11 members
+[response] askScopeCompletion at (59,4)
+retrieved 19 members
 [accessible:  true] `class Ctest.C`
 [accessible:  true] `class Foo_1test.Foo_1`
 [accessible:  true] `class Foo_2test.Foo_2`
@@ -122,12 +162,20 @@ retrieved 11 members
 [accessible:  true] `method fOOO=> Int`
 [accessible:  true] `object Otest.O.type`
 [accessible:  true] `value otest.O.type`
+[accessible:  true] `value vCCCInt`
+[accessible:  true] `value vOOOInt`
+[accessible:  true] `variable rCCCInt`
+[accessible:  true] `variable rOOOInt`
+[accessible: false] `value pVCCCInt`
+[accessible: false] `value pVOOOInt`
+[accessible: false] `variable pRCCCInt`
+[accessible: false] `variable pROOOInt`
 ================================================================================
 
-askScopeCompletion at Completions.scala(61,4)
+askScopeCompletion at Completions.scala(69,4)
 ================================================================================
-[response] askScopeCompletion at (61,4)
-retrieved 10 members
+[response] askScopeCompletion at (69,4)
+retrieved 14 members
 [accessible:  true] `class Ctest.C`
 [accessible:  true] `class Foo_1test.Foo_1`
 [accessible:  true] `class Foo_2test.Foo_2`
@@ -138,4 +186,8 @@ retrieved 10 members
 [accessible:  true] `method fCCC=> Int`
 [accessible:  true] `object Otest.O.type`
 [accessible:  true] `value ctest.C`
+[accessible:  true] `value vCCCInt`
+[accessible:  true] `variable rCCCInt`
+[accessible: false] `value pVCCCInt`
+[accessible: false] `variable pRCCCInt`
 ================================================================================
