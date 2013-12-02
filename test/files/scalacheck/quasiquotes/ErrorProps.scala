@@ -105,13 +105,6 @@ object ErrorProps extends QuasiquoteProperties("errors") {
       q"f($sb)"
     """)
 
-  property("casedef expected") = fails(
-    "reflect.runtime.universe.CaseDef expected but reflect.runtime.universe.Tree found",
-    """
-      val t = EmptyTree
-      q"_ { case $t }"
-    """)
-
   property("can't splice with ... card here") = fails(
     "Can't splice with ... here",
     """

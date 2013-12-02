@@ -123,7 +123,7 @@ trait Reifiers { self: Quasiquotes =>
       case TuplePlaceholder(args) => reifyTuple(args)
       case TupleTypePlaceholder(args) => reifyTupleType(args)
       case FunctionTypePlaceholder(argtpes, restpe) => reifyFunctionType(argtpes, restpe)
-      case CasePlaceholder(tree, location, _) => reifyCase(tree, location)
+      case CasePlaceholder(tree, _, _) => tree
       case RefineStatPlaceholder(tree, _, _) => reifyRefineStat(tree)
       case EarlyDefPlaceholder(tree, _, _) => reifyEarlyDef(tree)
       case PackageStatPlaceholder(tree, _, _) => reifyPackageStat(tree)
@@ -175,6 +175,10 @@ trait Reifiers { self: Quasiquotes =>
         reifyTree(other)
       case Block(stats, last) =>
         reifyBuildCall(nme.SyntacticBlock, stats :+ last)
+      case Try(block, catches, finalizer) =>
+        reifyBuildCall(nme.SyntacticTry, block, catches, finalizer)
+      case Match(selector, cases) =>
+        reifyBuildCall(nme.SyntacticMatch, selector, cases)
       // parser emits trees with scala package symbol to ensure
       // that some names hygienically point to various scala package
       // members; we need to preserve this symbol to preserve
@@ -197,11 +201,6 @@ trait Reifiers { self: Quasiquotes =>
         else result(nameMap.get(name).map { _.head }.getOrElse { introduceName() })
       case _ =>
         super.reifyName(name)
-    }
-
-    def reifyCase(tree: Tree, location: Location) = {
-      if (holesHaveTypes && !(location.tpe <:< caseDefType)) c.abort(tree.pos, s"$caseDefType expected but ${location.tpe} found")
-      tree
     }
 
     def reifyTuple(args: List[Tree]) = args match {
