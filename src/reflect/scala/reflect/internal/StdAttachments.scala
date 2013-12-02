@@ -35,4 +35,7 @@ trait StdAttachments {
   /** Identifies trees are either result or intermidiate value of for loop desugaring.
    */
   case object ForAttachment extends PlainAttachment
+
+  /** Untyped list of subpatterns attached to selector dummy. */
+  case class SubpatternsAttachment(patterns: List[Tree])
 }

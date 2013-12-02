@@ -57,6 +57,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.CompoundTypeTreeOriginalAttachment
     this.BackquotedIdentifierAttachment
     this.ForAttachment
+    this.SubpatternsAttachment
     this.noPrint
     this.typeDebug
     // inaccessible: this.maxFree
