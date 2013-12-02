@@ -122,13 +122,6 @@ private[reflect] trait BuildUtils { self: Universe =>
       def unapply(tree: Tree): Some[(Tree, List[List[Tree]])]
     }
 
-    val SyntacticApply: SyntacticApplyExtractor
-
-    trait SyntacticApplyExtractor {
-      def apply(tree: Tree, args: List[Tree]): Tree
-      def unapply(tree: Tree): Some[(Tree, List[Tree])]
-    }
-
     val SyntacticClassDef: SyntacticClassDefExtractor
 
     trait SyntacticClassDefExtractor {
