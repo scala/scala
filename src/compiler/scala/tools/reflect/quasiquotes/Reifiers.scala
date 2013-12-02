@@ -93,12 +93,12 @@ trait Reifiers { self: Quasiquotes =>
             // cq"$tree if $guard => $succ" :: cq"_ => $fail" :: Nil
             CaseDef(tree, guard, succ) :: CaseDef(Ident(nme.WILDCARD), EmptyTree, fail) :: Nil
           }
-        // q"new { def unapply(tree: $AnyClass) = tree match { case ..$cases } }.unapply(..$args)"
+        // q"new { def unapply(tree: $AnyClass) = { ..${unlifters.preamble()}; tree match { case ..$cases } } }.unapply(..$args)"
         Apply(
           Select(
             SyntacticNew(Nil, Nil, noSelfType, List(
               DefDef(NoMods, nme.unapply, Nil, List(List(ValDef(NoMods, nme.tree, TypeTree(AnyClass.toType), EmptyTree))), TypeTree(),
-                Match(Ident(nme.tree), cases)))),
+                SyntacticBlock(unlifters.preamble() :+ Match(Ident(nme.tree), cases))))),
             nme.unapply),
           args)
       }
@@ -198,7 +198,7 @@ trait Reifiers { self: Quasiquotes =>
       case Placeholder(hole: ApplyHole) =>
         if (!(hole.tpe <:< nameType)) c.abort(hole.pos, s"$nameType expected but ${hole.tpe} found")
         hole.tree
-      case Placeholder(hole: UnapplyHole) => hole.tree
+      case Placeholder(hole: UnapplyHole) => hole.treeNoUnlift
       case FreshName(prefix) if prefix != nme.QUASIQUOTE_NAME_PREFIX =>
         def fresh() = c.freshName[TermName](nme.QUASIQUOTE_NAME_PREFIX)
         def introduceName() = { val n = fresh(); nameMap(name) += n; n}
@@ -401,7 +401,7 @@ trait Reifiers { self: Quasiquotes =>
           case hole :: Nil =>
             if (m.annotations.length != 1) c.abort(hole.pos, "Can't extract modifiers together with annotations, consider extracting just modifiers")
             ensureNoExplicitFlags(m, hole.pos)
-            hole.tree
+            hole.treeNoUnlift
           case _ :: hole :: _ =>
             c.abort(hole.pos, "Can't extract multiple modifiers together, consider extracting a single modifiers instance")
           case Nil =>

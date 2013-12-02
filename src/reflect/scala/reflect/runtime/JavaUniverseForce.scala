@@ -206,6 +206,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.TypeName
     this.BooleanFlag
     this.Liftable
+    this.Unliftable
     this.WeakTypeTag
     this.TypeTag
     this.Expr
