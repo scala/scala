@@ -80,10 +80,10 @@ trait Holes { self: Quasiquotes =>
       def cardinality(tpe: Type): Cardinality = parseCardinality(tpe)._1
 
       def lifter(tpe: Type): Option[Tree => Tree] = {
-        val lifterTpe = appliedType(LiftableClass.toType, List(tpe))
+        val lifterTpe = appliedType(liftableType, List(tpe))
         val lifter = c.inferImplicitValue(lifterTpe, silent = true)
         if (lifter != EmptyTree) Some(tree => {
-          val lifted = Apply(lifter, List(u, tree))
+          val lifted = Apply(lifter, List(tree))
           val targetType = Select(u, tpnme.Tree)
           atPos(tree.pos)(TypeApply(Select(lifted, nme.asInstanceOf_), List(targetType)))
         }) else None
