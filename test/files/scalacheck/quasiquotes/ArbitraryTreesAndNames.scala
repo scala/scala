@@ -1,5 +1,4 @@
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
-import scala.reflect.api.{Liftable, Universe}
 import scala.reflect.runtime.universe._, Flag._
 
 trait ArbitraryTreesAndNames {
@@ -265,14 +264,8 @@ trait ArbitraryTreesAndNames {
   def genTreeIsTypeWrapped(size: Int) =
     for(tit <- genTreeIsType(size)) yield TreeIsType(tit)
 
-  implicit object liftTreeIsTerm extends Liftable[TreeIsTerm] {
-    def apply(universe: Universe, value: TreeIsTerm): universe.Tree =
-      value.tree.asInstanceOf[universe.Tree]
-  }
-  implicit object liftTreeIsType extends Liftable[TreeIsType] {
-    def apply(universe: Universe, value: TreeIsType): universe.Tree =
-      value.tree.asInstanceOf[universe.Tree]
-  }
+  implicit val liftTreeIsTerm = Liftable[TreeIsTerm] { _.tree }
+  implicit val liftTreeIsType = Liftable[TreeIsType] { _.tree }
   implicit def treeIsTerm2tree(tit: TreeIsTerm): Tree = tit.tree
   implicit def treeIsType2tree(tit: TreeIsType): Tree = tit.tree
 

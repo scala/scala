@@ -96,6 +96,20 @@ trait StandardNames {
      *  of non-private vals and vars are renamed using `LOCAL_SUFFIX_STRING`.
      */
     val LOCAL_SUFFIX_STRING: String
+
+    protected[reflect] val Array: NameType
+    protected[reflect] val collection: NameType
+    protected[reflect] val immutable: NameType
+    protected[reflect] val Left: NameType
+    protected[reflect] val List: NameType
+    protected[reflect] val Map: NameType
+    protected[reflect] val None: NameType
+    protected[reflect] val Right: NameType
+    protected[reflect] val Set: NameType
+    protected[reflect] val Some: NameType
+    protected[reflect] val Symbol: NameType
+    protected[reflect] val util: NameType
+    protected[reflect] val Vector: NameType
   }
 
   /** Defines standard type names that can be accessed via the [[tpnme]] member.
