@@ -13,6 +13,7 @@ import scala.collection.{immutable, mutable}
 trait Placeholders { self: Quasiquotes =>
   import global._
   import Cardinality._
+  import universeTypes._
 
   // Step 1: Transform Scala source with holes into vanilla Scala source
 
@@ -32,13 +33,17 @@ trait Placeholders { self: Quasiquotes =>
     def appendHole(tree: Tree, cardinality: Cardinality) = {
       val placeholderName = c.freshName(TermName(nme.QUASIQUOTE_PREFIX + sessionSuffix))
       sb.append(placeholderName)
-      val holeTree = if (method == nme.unapply) Bind(placeholderName, Ident(nme.WILDCARD)) else tree
-      holeMap(placeholderName) = Hole(holeTree, cardinality)
+      val holeTree =
+        if (method != nme.unapply) tree
+        else Bind(placeholderName, tree)
+      holeMap(placeholderName) = Hole(cardinality, holeTree)
     }
 
     val iargs = method match {
       case nme.apply   => args
-      case nme.unapply => List.fill(parts.length - 1)(EmptyTree)
+      case nme.unapply =>
+        val (dummy @ Ident(nme.SELECTOR_DUMMY)) :: Nil = args
+        dummy.attachments.get[SubpatternsAttachment].get.patterns
       case _           => global.abort("unreachable")
     }
 
@@ -78,9 +83,9 @@ trait Placeholders { self: Quasiquotes =>
 
   trait HolePlaceholder {
     def matching: PartialFunction[Any, Name]
-    def unapply(scrutinee: Any): Option[(Tree, Location, Cardinality)] = {
+    def unapply(scrutinee: Any): Option[Hole] = {
       val name = matching.lift(scrutinee)
-      name.flatMap { holeMap.get(_).map { case Hole(repr, loc, card) => (repr, loc, card) } }
+      name.flatMap { holeMap.get(_) }
     }
   }
 
@@ -128,44 +133,44 @@ trait Placeholders { self: Quasiquotes =>
   }
 
   object SymbolPlaceholder {
-    def unapply(scrutinee: Any): Option[Tree] = scrutinee match {
-      case Placeholder(tree, SymbolLocation, _) => Some(tree)
+    def unapply(scrutinee: Any): Option[Hole] = scrutinee match {
+      case Placeholder(hole: ApplyHole) if hole.tpe <:< symbolType => Some(hole)
       case _ => None
     }
   }
 
   object CasePlaceholder {
-    def unapply(tree: Tree): Option[(Tree, Location, Cardinality)] = tree match {
-      case CaseDef(Apply(Ident(nme.QUASIQUOTE_CASE), List(Placeholder(tree, location, card))), EmptyTree, EmptyTree) => Some((tree, location, card))
+    def unapply(tree: Tree): Option[Hole] = tree match {
+      case CaseDef(Apply(Ident(nme.QUASIQUOTE_CASE), List(Placeholder(hole))), EmptyTree, EmptyTree) => Some(hole)
       case _ => None
     }
   }
 
   object RefineStatPlaceholder {
-    def unapply(tree: Tree): Option[(Tree, Location, Cardinality)] = tree match {
-      case ValDef(_, Placeholder(tree, location, card), Ident(tpnme.QUASIQUOTE_REFINE_STAT), _) => Some((tree, location, card))
+    def unapply(tree: Tree): Option[Hole] = tree match {
+      case ValDef(_, Placeholder(hole), Ident(tpnme.QUASIQUOTE_REFINE_STAT), _) => Some(hole)
       case _ => None
     }
   }
 
   object EarlyDefPlaceholder {
-    def unapply(tree: Tree): Option[(Tree, Location, Cardinality)] = tree match {
-      case ValDef(_, Placeholder(tree, location, card), Ident(tpnme.QUASIQUOTE_EARLY_DEF), _) => Some((tree, location, card))
+    def unapply(tree: Tree): Option[Hole] = tree match {
+      case ValDef(_, Placeholder(hole), Ident(tpnme.QUASIQUOTE_EARLY_DEF), _) => Some(hole)
       case _ => None
     }
   }
 
   object PackageStatPlaceholder {
-    def unapply(tree: Tree): Option[(Tree, Location, Cardinality)] = tree match {
-      case ValDef(NoMods, Placeholder(tree, location, card), Ident(tpnme.QUASIQUOTE_PACKAGE_STAT), EmptyTree) => Some((tree, location, card))
+    def unapply(tree: Tree): Option[Hole] = tree match {
+      case ValDef(NoMods, Placeholder(hole), Ident(tpnme.QUASIQUOTE_PACKAGE_STAT), EmptyTree) => Some(hole)
       case _ => None
     }
   }
 
   object ForEnumPlaceholder {
-    def unapply(tree: Tree): Option[(Tree, Location, Cardinality)] = tree match {
-      case build.SyntacticValFrom(Bind(Placeholder(tree, location, card), Ident(nme.WILDCARD)), Ident(nme.QUASIQUOTE_FOR_ENUM)) =>
-        Some((tree, location, card))
+    def unapply(tree: Tree): Option[Hole] = tree match {
+      case build.SyntacticValFrom(Bind(Placeholder(hole), Ident(nme.WILDCARD)), Ident(nme.QUASIQUOTE_FOR_ENUM)) =>
+        Some(hole)
       case _ => None
     }
   }
