@@ -209,4 +209,8 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     assertEqAst(q"..$xs", "{1; 2}")
     assertEqAst(q"{..$xs}", "{1; 2}")
   }
+
+  property("SI-8009") = test {
+    q"`foo`".asInstanceOf[reflect.internal.SymbolTable#Ident].isBackquoted
+  }
 }

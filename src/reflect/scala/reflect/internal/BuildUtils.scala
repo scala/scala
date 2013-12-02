@@ -663,6 +663,15 @@ trait BuildUtils { self: SymbolTable =>
         case annottee => Some(annottee)
       }
     }
+
+    object SyntacticIdent extends SyntacticIdentExtractor {
+      def apply(name: Name, isBackquoted: Boolean) = {
+        val id = self.Ident(name)
+        if (isBackquoted) id updateAttachment BackquotedIdentifierAttachment
+        id
+      }
+      def unapply(tree: Ident): Some[(Name, Boolean)] = Some((tree.name, tree.hasAttachment[BackquotedIdentifierAttachment.type]))
+    }
   }
 
   val build: BuildImpl = new BuildImpl

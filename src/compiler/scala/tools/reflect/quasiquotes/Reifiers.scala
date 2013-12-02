@@ -167,6 +167,8 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticTypeApplied, fun, targs)
       case SyntacticFunction(args, body) =>
         reifyBuildCall(nme.SyntacticFunction, args, body)
+      case SyntacticIdent(name, isBackquoted) =>
+        reifyBuildCall(nme.SyntacticIdent, name, isBackquoted)
       case Block(Nil, Placeholder(tree, _, DotDot)) =>
         mirrorBuildCall(nme.SyntacticBlock, tree)
       case Block(Nil, other) =>
