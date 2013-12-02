@@ -88,6 +88,22 @@ trait ClassDeconstruction { self: QuasiquoteProperties =>
     matches("class Foo { self => bar(self) }")
     matches("case class Foo(x: Int)")
   }
+
+  property("SI-7979") = test {
+    val PARAMACCESSOR = (1 << 29).toLong.asInstanceOf[FlagSet]
+    assertThrows[MatchError] {
+      val build.SyntacticClassDef(_, _, _, _, _, _, _, _, _) =
+        ClassDef(
+          Modifiers(), TypeName("Foo"), List(),
+          Template(
+            List(Select(Ident(TermName("scala")), TypeName("AnyRef"))),
+            noSelfType,
+            List(
+              //ValDef(Modifiers(PRIVATE | LOCAL | PARAMACCESSOR), TermName("x"), Ident(TypeName("Int")), EmptyTree),
+              DefDef(Modifiers(), nme.CONSTRUCTOR, List(), List(List(ValDef(Modifiers(PARAM | PARAMACCESSOR), TermName("x"),
+                Ident(TypeName("Int")), EmptyTree))), TypeTree(), Block(List(pendingSuperCall), Literal(Constant(())))))))
+    }
+  }
 }
 
 trait ModsDeconstruction { self: QuasiquoteProperties =>
