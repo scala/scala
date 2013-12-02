@@ -238,7 +238,12 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  @param  result   The transformed node
    */
   override def signalDone(context: Context, old: Tree, result: Tree) {
-    if (interruptsEnabled && analyzer.lockedCount == 0) {
+    val canObserveTree = (
+         interruptsEnabled
+      && analyzer.lockedCount == 0
+      && !context.bufferErrors // SI-7558 look away during exploratory typing in "silent mode"
+    )
+    if (canObserveTree) {
       if (context.unit.exists &&
           result.pos.isOpaqueRange &&
           (result.pos includes context.unit.targetPos)) {
@@ -249,14 +254,16 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         }
         throw new TyperResult(located)
       }
-      try {
-        checkForMoreWork(old.pos)
-      } catch {
-        case ex: ValidateException => // Ignore, this will have been reported elsewhere
-          debugLog("validate exception caught: "+ex)
-        case ex: Throwable =>
-          log.flush()
-          throw ex
+      else {
+        try {
+          checkForMoreWork(old.pos)
+        } catch {
+          case ex: ValidateException => // Ignore, this will have been reported elsewhere
+            debugLog("validate exception caught: "+ex)
+          case ex: Throwable =>
+            log.flush()
+            throw ex
+        }
       }
     }
   }
