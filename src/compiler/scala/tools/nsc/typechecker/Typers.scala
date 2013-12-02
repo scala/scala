@@ -4879,14 +4879,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           if (sameLength(tparams, args)) {
             // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
-            val args1 =
-              if (!isComplete)
-                args mapConserve (typedHigherKindedType(_, mode))
-                // if symbol hasn't been fully loaded, can't check kind-arity
-              else map2Conserve(args, tparams) { (arg, tparam) =>
-                //@M! the polytype denotes the expected kind
-                typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyTpe))
+            val args1 = map2Conserve(args, tparams) { (arg, tparam) =>
+              //@M! the polytype denotes the expected kind
+              def pt = GenPolyType(tparam.typeParams, AnyTpe)
+
+              // if symbol hasn't been fully loaded, can't check kind-arity
+              // ... except, if we're in a pattern, where we can and must (SI-8023)
+              if (mode.typingPatternOrTypePat) {
+                tparam.initialize
+                typedHigherKindedType(arg, mode, pt)
               }
+              else if (isComplete)
+                typedHigherKindedType(arg, mode, pt)
+              else
+                // This overload (without pt) allows type constructors, as we don't don't know the allowed kind.
+                typedHigherKindedType(arg, mode)
+            }
             val argtypes = args1 map (_.tpe)
 
             foreach2(args, tparams) { (arg, tparam) =>
