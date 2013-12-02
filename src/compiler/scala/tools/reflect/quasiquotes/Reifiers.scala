@@ -167,6 +167,10 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticTypeApplied, fun, targs)
       case SyntacticFunction(args, body) =>
         reifyBuildCall(nme.SyntacticFunction, args, body)
+      case Block(Nil, Placeholder(tree, _, DotDot)) =>
+        mirrorBuildCall(nme.SyntacticBlock, tree)
+      case Block(Nil, other) =>
+        reifyTree(other)
       case Block(stats, last) =>
         reifyBuildCall(nme.SyntacticBlock, stats :+ last)
       // parser emits trees with scala package symbol to ensure

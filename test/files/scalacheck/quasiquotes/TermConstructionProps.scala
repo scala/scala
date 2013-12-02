@@ -203,4 +203,10 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     assert(q"f(..${l1 ++ l2}, $baz)" ≈ q"f(foo, bar, baz)")
     assert(q"f(${if (true) q"a" else q"b"})" ≈ q"f(a)")
   }
+
+  property("SI-8016") = test {
+    val xs = q"1" :: q"2" :: Nil
+    assertEqAst(q"..$xs", "{1; 2}")
+    assertEqAst(q"{..$xs}", "{1; 2}")
+  }
 }
