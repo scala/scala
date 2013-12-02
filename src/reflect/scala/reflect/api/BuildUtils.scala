@@ -245,5 +245,11 @@ private[reflect] trait BuildUtils { self: Universe =>
       def apply(enums: List[Tree], body: Tree): Tree
       def unapply(tree: Tree): Option[(List[Tree], Tree)]
     }
+
+    val SyntacticIdent: SyntacticIdentExtractor
+    trait SyntacticIdentExtractor {
+      def apply(name: Name, isBackquoted: Boolean = false): Ident
+      def unapply(tree: Ident): Option[(Name, Boolean)]
+    }
   }
 }
