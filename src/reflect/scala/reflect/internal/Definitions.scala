@@ -1372,6 +1372,7 @@ trait Definitions extends api.StandardDefinitions {
       lazy val treeType         = universeMemberType(tpnme.Tree)
       lazy val caseDefType      = universeMemberType(tpnme.CaseDef)
       lazy val liftableType     = universeMemberType(tpnme.Liftable)
+      lazy val unliftableType   = universeMemberType(tpnme.Unliftable)
       lazy val iterableTreeType = appliedType(IterableClass, treeType)
       lazy val listTreeType     = appliedType(ListClass, treeType)
       lazy val listListTreeType = appliedType(ListClass, listTreeType)

@@ -246,6 +246,16 @@ private[reflect] trait BuildUtils { self: Universe =>
       def unapply(tree: Tree): Option[(List[Tree], Tree)]
     }
 
+    def UnliftHelper1[T](unliftable: Unliftable[T]): UnliftHelper1[T]
+    trait UnliftHelper1[T] {
+      def unapply(lst: List[Tree]): Option[List[T]]
+    }
+
+    def UnliftHelper2[T](unliftable: Unliftable[T]): UnliftHelper2[T]
+    trait UnliftHelper2[T] {
+      def unapply(lst: List[List[Tree]]): Option[List[List[T]]]
+    }
+
     val SyntacticMatch: SyntacticMatchExtractor
     trait SyntacticMatchExtractor {
       def apply(selector: Tree, cases: List[Tree]): Match

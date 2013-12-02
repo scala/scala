@@ -8,6 +8,7 @@ object Test extends Properties("quasiquotes") {
   include(PatternConstructionProps)
   include(PatternDeconstructionProps)
   include(LiftableProps)
+  include(UnliftableProps)
   include(ErrorProps)
   include(DefinitionConstructionProps)
   include(DefinitionDeconstructionProps)

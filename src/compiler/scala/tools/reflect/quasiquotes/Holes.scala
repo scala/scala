@@ -3,6 +3,7 @@ package quasiquotes
 
 import scala.collection.{immutable, mutable}
 import scala.reflect.internal.Flags._
+import scala.reflect.macros.TypecheckException
 
 class Cardinality private[Cardinality](val value: Int) extends AnyVal {
   def pred = { assert(value - 1 >= 0); new Cardinality(value - 1) }
@@ -33,6 +34,7 @@ trait Holes { self: Quasiquotes =>
   protected lazy val IterableTParam = IterableClass.typeParams(0).asType.toType
   protected def inferParamImplicit(tfun: Type, targ: Type) = c.inferImplicitValue(appliedType(tfun, List(targ)), silent = true)
   protected def inferLiftable(tpe: Type): Tree = inferParamImplicit(liftableType, tpe)
+  protected def inferUnliftable(tpe: Type): Tree = inferParamImplicit(unliftableType, tpe)
   protected def isLiftableType(tpe: Type) = inferLiftable(tpe) != EmptyTree
   protected def isNativeType(tpe: Type) =
     (tpe <:< treeType) || (tpe <:< nameType) || (tpe <:< modsType) ||
@@ -136,8 +138,66 @@ trait Holes { self: Quasiquotes =>
   }
 
   class UnapplyHole(val cardinality: Cardinality, pat: Tree) extends Hole {
-    val (tree, pos) = pat match {
-      case Bind(pname, inner) => (Bind(pname, Ident(nme.WILDCARD)), inner.pos)
+    val (placeholderName, pos, tptopt) = pat match {
+      case Bind(pname, inner @ Bind(_, Typed(Ident(nme.WILDCARD), tpt))) => (pname, inner.pos, Some(tpt))
+      case Bind(pname, inner @ Typed(Ident(nme.WILDCARD), tpt))          => (pname, inner.pos, Some(tpt))
+      case Bind(pname, inner)                                            => (pname, inner.pos, None)
     }
+    val treeNoUnlift = Bind(placeholderName, Ident(nme.WILDCARD))
+    lazy val tree =
+      tptopt.map { tpt =>
+        val TypeDef(_, _, _, typedTpt) =
+          try c.typeCheck(TypeDef(NoMods, TypeName("T"), Nil, tpt))
+          catch { case TypecheckException(pos, msg) => c.abort(pos.asInstanceOf[c.Position], msg) }
+        val tpe = typedTpt.tpe
+        val (iterableCard, _) = stripIterable(tpe)
+        if (iterableCard.value < cardinality.value)
+          c.abort(pat.pos, s"Can't extract $tpe with $cardinality, consider using $iterableCard")
+        val (_, strippedTpe) = stripIterable(tpe, limit = Some(cardinality))
+        if (strippedTpe <:< treeType) treeNoUnlift
+        else
+          unlifters.spawn(strippedTpe, cardinality).map {
+            Apply(_, treeNoUnlift :: Nil)
+          }.getOrElse {
+            c.abort(pat.pos, s"Can't find $unliftableType[$strippedTpe], consider providing it")
+          }
+      }.getOrElse { treeNoUnlift }
+  }
+
+  /** Full support for unliftable implies that it's possible to interleave
+   *  deconstruction with higher cardinality and unlifting of the values.
+   *  In particular extraction of List[Tree] as List[T: Unliftable] requires
+   *  helper extractors that would do the job: UnliftHelper1[T]. Similarly
+   *  List[List[Tree]] needs UnliftHelper2[T].
+   *
+   *  See also "unlift list" tests in UnapplyProps.scala
+   */
+  object unlifters {
+    private var records = List.empty[(Type, Cardinality)]
+    // Request an UnliftHelperN[T] where n == card and T == tpe.
+    // If card == 0 then helper is not needed and plain instance
+    // of unliftable is returned.
+    def spawn(tpe: Type, card: Cardinality): Option[Tree] = {
+      val unlifter = inferUnliftable(tpe)
+      if (unlifter == EmptyTree) None
+      else if (card == NoDot) Some(unlifter)
+      else {
+        val idx = records.indexWhere { p => p._1 =:= tpe && p._2 == card }
+        val resIdx = if (idx != -1) idx else { records +:= (tpe, card); records.length - 1}
+        Some(Ident(TermName(nme.QUASIQUOTE_UNLIFT_HELPER + resIdx)))
+      }
+    }
+    // Returns a list of vals that will defined required unlifters
+    def preamble(): List[Tree] =
+      records.zipWithIndex.map { case ((tpe, card), idx) =>
+        val name = TermName(nme.QUASIQUOTE_UNLIFT_HELPER + idx)
+        val helperName = card match { case DotDot => nme.UnliftHelper1 case DotDotDot => nme.UnliftHelper2 }
+        val lifter = inferUnliftable(tpe)
+        assert(helperName.isTermName)
+        // q"val $name: $u.build.${helperName.toTypeName} = $u.build.$helperName($lifter)"
+        ValDef(NoMods, name,
+          AppliedTypeTree(Select(Select(u, nme.build), helperName.toTypeName), List(TypeTree(tpe))),
+          Apply(Select(Select(u, nme.build), helperName), lifter :: Nil))
+      }
   }
 }
