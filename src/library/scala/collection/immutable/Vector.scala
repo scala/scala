@@ -59,7 +59,7 @@ object Vector extends IndexedSeqFactory[Vector] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-final class Vector[+A](private[collection] val startIndex: Int, private[collection] val endIndex: Int, focus: Int)
+final class Vector[+A] private[immutable] (private[collection] val startIndex: Int, private[collection] val endIndex: Int, focus: Int)
 extends AbstractSeq[A]
    with IndexedSeq[A]
    with GenericTraversableTemplate[A, Vector]
