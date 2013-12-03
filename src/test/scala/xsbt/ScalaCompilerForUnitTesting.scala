@@ -30,6 +30,24 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
 		analysisCallback.apis(tempSrcFile)
 	}
 
+	def extractUsedNamesFromSrc(src: String): Set[String] = {
+		val (Seq(tempSrcFile), analysisCallback) = compileSrcs(src)
+		analysisCallback.usedNames(tempSrcFile).toSet
+	}
+
+	/**
+	 * Extract used names from src provided as the second argument.
+	 *
+	 * The purpose of the first argument is to define names that the second
+	 * source is going to refer to. Both files are compiled in the same compiler
+	 * Run but only names used in the second src file are returned.
+	 */
+	def extractUsedNamesFromSrc(definitionSrc: String, actualSrc: String): Set[String] = {
+		// we drop temp src file corresponding to the definition src file
+        val (Seq(_, tempSrcFile), analysisCallback) = compileSrcs(definitionSrc, actualSrc)
+        analysisCallback.usedNames(tempSrcFile).toSet
+	}
+
 	/**
 	 * Compiles given source code snippets (passed as Strings) using Scala compiler and returns extracted
 	 * dependencies between snippets. Source code snippets are identified by symbols. Each symbol should
