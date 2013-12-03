@@ -19,7 +19,7 @@ import ScalaCompilerForUnitTesting.ExtractedSourceDependencies
  * Provides common functionality needed for unit tests that require compiling
  * source code using Scala compiler.
  */
-class ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps: Boolean = false) {
+class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
 
 	/**
 	 * Compiles given source code using Scala compiler and returns API representation
@@ -28,6 +28,24 @@ class ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps: Boolean = false) 
 	def extractApiFromSrc(src: String): SourceAPI = {
 		val (Seq(tempSrcFile), analysisCallback) = compileSrcs(src)
 		analysisCallback.apis(tempSrcFile)
+	}
+
+	def extractUsedNamesFromSrc(src: String): Set[String] = {
+		val (Seq(tempSrcFile), analysisCallback) = compileSrcs(src)
+		analysisCallback.usedNames(tempSrcFile).toSet
+	}
+
+	/**
+	 * Extract used names from src provided as the second argument.
+	 *
+	 * The purpose of the first argument is to define names that the second
+	 * source is going to refer to. Both files are compiled in the same compiler
+	 * Run but only names used in the second src file are returned.
+	 */
+	def extractUsedNamesFromSrc(definitionSrc: String, actualSrc: String): Set[String] = {
+		// we drop temp src file corresponding to the definition src file
+        val (Seq(_, tempSrcFile), analysisCallback) = compileSrcs(definitionSrc, actualSrc)
+        analysisCallback.usedNames(tempSrcFile).toSet
 	}
 
 	/**
@@ -76,7 +94,7 @@ class ScalaCompilerForUnitTesting(memberRefAndInheritanceDeps: Boolean = false) 
 	 */
 	private def compileSrcs(srcs: String*): (Seq[File], TestCallback) = {
 		withTemporaryDirectory { temp =>
-			val analysisCallback = new TestCallback(memberRefAndInheritanceDeps)
+			val analysisCallback = new TestCallback(nameHashing)
 			val classesDir = new File(temp, "classes")
 			classesDir.mkdir()
 			val compiler = prepareCompiler(classesDir, analysisCallback)
