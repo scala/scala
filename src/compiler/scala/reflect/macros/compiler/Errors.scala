@@ -10,6 +10,7 @@ trait Errors extends Traces {
   import global._
   import analyzer._
   import definitions._
+  import treeInfo._
   import typer.TyperErrorGen._
   import typer.infer.InferErrorGen._
   private val runDefinitions = currentRun.runDefinitions
@@ -18,22 +19,39 @@ trait Errors extends Traces {
 
   // sanity check errors
 
-  private def implRefError(message: String) = abort(macroDdef.pos, message)
+  private def implRefError(message: String) = {
+    val Applied(culprit, _, _) = macroDdef.rhs
+    abort(culprit.pos, message)
+  }
+
+  private def bundleRefError(message: String) = {
+    val Applied(core, _, _) = macroDdef.rhs
+    val culprit = core match {
+      case Select(Applied(core, _, _), _) => core
+      case _ => core
+    }
+    abort(culprit.pos, message)
+  }
 
   def MacroImplReferenceWrongShapeError() = implRefError(
       "macro implementation reference has wrong shape. required:\n"+
       "macro [<static object>].<method name>[[<type args>]] or\n" +
       "macro [<macro bundle>].<method name>[[<type args>]]")
 
+  def MacroImplWrongNumberOfTypeArgumentsError() = {
+    val diagnostic = if (macroImpl.typeParams.length > targs.length) "has too few type arguments" else "has too many arguments"
+    implRefError(s"macro implementation reference $diagnostic for " + treeSymTypeMsg(macroImplRef))
+  }
+
   def MacroImplNotPublicError() = implRefError("macro implementation must be public")
 
   def MacroImplOverloadedError() = implRefError("macro implementation cannot be overloaded")
 
-  def MacroImplWrongNumberOfTypeArgumentsError() = implRefError(TypedApplyWrongNumberOfTpeParametersErrorMessage(macroImplRef))
+  def MacroImplNonTagImplicitParameters(params: List[Symbol]) = implRefError("macro implementations cannot have implicit parameters other than WeakTypeTag evidences")
 
-  def MacroBundleNonStaticError() = implRefError("macro bundles must be static")
+  def MacroBundleNonStaticError() = bundleRefError("macro bundles must be static")
 
-  def MacroBundleWrongShapeError() = implRefError("macro bundles must be monomorphic traits extending either BlackboxMacro or WhiteboxMacro and not implementing their `val c: BlackboxContext/WhiteboxContext` member")
+  def MacroBundleWrongShapeError() = bundleRefError("macro bundles must be monomorphic traits extending either BlackboxMacro or WhiteboxMacro and not implementing their `val c: BlackboxContext/WhiteboxContext` member")
 
   // compatibility errors
 
@@ -91,13 +109,11 @@ trait Errors extends Traces {
 
   private def compatibilityError(message: String) =
     implRefError(
-      "macro implementation has wrong shape:"+
+      "macro implementation has incompatible shape:"+
       "\n required: " + showMeth(rparamss, rret, abbreviate = true, untype = false) +
       "\n or      : " + showMeth(rparamss, rret, abbreviate = true, untype = true) +
       "\n found   : " + showMeth(aparamss, aret, abbreviate = false, untype = false) +
       "\n" + message)
-
-  def MacroImplNonTagImplicitParameters(params: List[Symbol]) = compatibilityError("macro implementations cannot have implicit parameters other than WeakTypeTag evidences")
 
   def MacroImplParamssMismatchError() = compatibilityError("number of parameter sections differ")
 
