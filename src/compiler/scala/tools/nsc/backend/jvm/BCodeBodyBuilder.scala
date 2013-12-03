@@ -871,7 +871,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     def genLoadModule(module: Symbol) {
-      if (claszSymbol == module.moduleClass && jMethodName != "readResolve") {
+      def inStaticMethod = methSymbol != null && methSymbol.isStaticMember
+      if (claszSymbol == module.moduleClass && jMethodName != "readResolve" && !inStaticMethod) {
         mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
       } else {
         val mbt  = symInfoTK(module)
