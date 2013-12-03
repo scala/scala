@@ -113,18 +113,6 @@
             ],
             "name": "scalap",
             "organization": "org.scala-lang"
-        },
-        {
-            "artifacts": [
-                {
-                    "extension": "jar",
-                    "name": "continuations",
-                    "organization": "org.scala-lang.plugins"
-                }
-            ],
-            "dependencies": [],
-            "name": "continuations",
-            "organization": "org.scala-lang.plugins"
         }
     ]
 }

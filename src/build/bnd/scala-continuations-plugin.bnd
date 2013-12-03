@@ -1,0 +1,5 @@
+Bundle-Name: Scala Delimited Continuations Compiler Plugin
+Bundle-SymbolicName: org.scala-lang.plugins.continuations-plugin
+ver: @VERSION@
+Bundle-Version: ${ver}
+Export-Package: *;version=${ver}

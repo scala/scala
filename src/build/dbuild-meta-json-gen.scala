@@ -44,9 +44,8 @@ val meta =
 
     Project("scalap", "org.scala-lang",
       Seq(ProjectRef("scalap", "org.scala-lang")),
-      Seq(ProjectRef("scala-compiler", "org.scala-lang"))),
+      Seq(ProjectRef("scala-compiler", "org.scala-lang")))
 
-    Project("continuations", "org.scala-lang.plugins", Seq(ProjectRef("continuations", "org.scala-lang.plugins")), Seq.empty)
   ))
 
 println(Utils.writeValue(meta))

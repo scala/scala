@@ -107,6 +107,10 @@ TODO:
   <target name="distclean"   depends="dist.clean"   description="Removes all distributions. Binaries and documentation are untouched."/>
 
 
+  <target name="test.continuations.suite">
+    <echo message="DEPRECATED: the continuations have moved to https://github.com/scala/scala-continuations"/>
+  </target>
+
 <!-- ===========================================================================
                                   PROPERTIES
 ============================================================================ -->
@@ -303,6 +307,8 @@ TODO:
         <artifact:remoteRepository refid="extra-repo"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-xml_${scala.binary.version}" version="${scala-xml.version.number}"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators_${scala.binary.version}" version="${scala-parser-combinators.version.number}"/>
+        <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-plugin_${scala.binary.version}"  version="${scala-continuations-plugin.version.number}"/>
+        <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-library_${scala.binary.version}" version="${scala-continuations-library.version.number}"/>
       </artifact:dependencies>
 
       <!-- External modules, excluding the core -->
@@ -320,6 +326,8 @@ TODO:
 
       <propertyForCrossedArtifact name="scala-parser-combinators" jar="org.scala-lang.modules:scala-parser-combinators"/>
       <propertyForCrossedArtifact name="scala-xml"                jar="org.scala-lang.modules:scala-xml"/>
+      <propertyForCrossedArtifact name="scala-continuations-plugin"  jar="org.scala-lang.plugins:scala-continuations-plugin"/>
+      <propertyForCrossedArtifact name="scala-continuations-library" jar="org.scala-lang.plugins:scala-continuations-library"/>
 
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
@@ -560,17 +568,19 @@ TODO:
 
     <property name="actors.description"            value="Scala Actors Library"/>
 
-    <property name="continuations-plugin.description"     value="Scala Delimited Continuations Compiler Plugin"/>
-    <property name="continuations-plugin.package"         value="plugins." />
-    <property name="continuations-plugin.dir"             value="plugins/"/>
-    <property name="continuations-plugin.name"            value="continuations"/>
-    <property name="continuations-plugin.targetdir"       value="misc/scala-devel/plugins"/>
-    <property name="continuations-plugin.srcdir"          value="continuations/plugin"/>
+    <property name="swing.description"             value="Scala Swing Library"/>
+
+    <property name="continuations-plugin.description" value="Scala Delimited Continuations Compiler Plugin"/>
+    <property name="continuations-plugin.package"     value="plugins." />
+    <property name="continuations-plugin.jar"         value="${scala-continuations-plugin}"/>
+    <property name="continuations-plugin.src"         value="false"/>
+    <property name="continuations-plugin.srcjar"      value="${scala-continuations-plugin-sources}"/>
 
     <property name="continuations-library.description" value="Scala Delimited Continuations Library"/>
-    <property name="continuations-library.srcdir"       value="continuations/library"/>
-
-    <property name="swing.description"             value="Scala Swing Library"/>
+    <property name="continuations-library.package"     value="plugins." />
+    <property name="continuations-library.jar"         value="${scala-continuations-library}"/>
+    <property name="continuations-library.src"         value="false"/>
+    <property name="continuations-library.srcjar"      value="${scala-continuations-library-sources}"/>
 
     <property name="parser-combinators.description" value="Scala Parser Combinators Library"/>
     <property name="parser-combinators.package"    value="modules."/>
@@ -592,12 +602,12 @@ TODO:
     <property name="partest-javaagent.description" value="Scala Compiler Testing Tool (compiler-specific java agent)"/>
 
     <!-- projects without project-specific options: asm, forkjoin, manual, bin, repl -->
-    <for list="actors,compiler,interactive,scaladoc,continuations-library,continuations-plugin,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml" param="project">
+    <for list="actors,compiler,interactive,scaladoc,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml,continuations-plugin,continuations-library" param="project">
       <sequential>
         <!-- description is mandatory -->
-        <init-project-prop project="@{project}" name="package"     default=""/>
-        <init-project-prop project="@{project}" name="dir"         default=""/>
-        <init-project-prop project="@{project}" name="name"        default="scala-@{project}"/>
+        <init-project-prop project="@{project}" name="package"     default=""/> <!-- used by mvn-package, copy-bundle, make-bundle -->
+        <init-project-prop project="@{project}" name="dir"         default=""/> <!-- used by mvn-package -->
+        <init-project-prop project="@{project}" name="name"        default="scala-@{project}"/> <!-- used for defaults in this block and by mvn-package, copy-bundle, make-bundle -->
         <init-project-prop project="@{project}" name="namesuffix"  default=""/>
         <init-project-prop project="@{project}" name="version"     default="${osgi.version.number}"/>
         <init-project-prop project="@{project}" name="targetdir"   default="lib"/>
@@ -641,7 +651,7 @@ TODO:
       There must be a variable of the shape @{stage}.@{project}.build.path
       for all @{stage} in locker, quick, strap
       and all @{project} in library, reflect, compiler
-        when stage is quick, @{project} also includes: actors, repl, swing, continuations-plugin, continuations-library, scalap
+        when stage is quick, @{project} also includes: actors, repl, swing, scalap
 
       NOTE: interactive, scaladoc, are only used upto quick; they are still packed into the compiler jar
     -->
@@ -701,14 +711,6 @@ TODO:
       <pathelement location="${build-quick.dir}/classes/swing"/>
     </path>
 
-    <path id="quick.continuations-plugin.build.path">
-      <!-- plugins are run by locker compiler during quick stage,
-      so must compile against the same classes the locker was compiled to
-      -->
-      <path refid="locker.compiler.build.path"/>
-      <pathelement location="${build-quick.dir}/classes/continuations-plugin"/>
-    </path>
-
     <path id="quick.scalap.build.path">
       <path refid="quick.compiler.build.path"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
@@ -743,7 +745,6 @@ TODO:
       <path refid="quick.repl.build.path"/>
       <path refid="quick.actors.build.path"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
-      <pathelement location="${build-quick.dir}/classes/continuations-library"/>
       <path refid="external-modules-nocore"/>
     </path>
 
@@ -772,7 +773,6 @@ TODO:
 
     <path id="pack.library.files">
       <fileset dir="${build-quick.dir}/classes/library"/>
-      <fileset dir="${build-quick.dir}/classes/continuations-library"/>
       <fileset dir="${forkjoin-classes}"/>
     </path>
 
@@ -797,7 +797,6 @@ TODO:
 
     <path id="pack.swing.files">      <fileset dir="${build-quick.dir}/classes/swing"/> </path>
     <path id="pack.reflect.files">    <fileset dir="${build-quick.dir}/classes/reflect"/> </path>
-    <path id="pack.continuations-plugin.files">    <fileset dir="${build-quick.dir}/classes/continuations-plugin"/> </path>
     <path id="pack.scalap.files">     <fileset dir="${build-quick.dir}/classes/scalap"/>
                                       <fileset file="${src.dir}/scalap/decoder.properties"/> </path>
 
@@ -829,8 +828,6 @@ TODO:
     <path id="docs.scaladoc.build.path">              <path refid="quick.scaladoc.build.path"/> </path>
     <path id="docs.interactive.build.path">           <path refid="quick.interactive.build.path"/> </path>
     <path id="docs.scalap.build.path">                <path refid="quick.scalap.build.path"/>   </path>
-    <path id="docs.continuations-plugin.build.path">  <path refid="quick.continuations-plugin.build.path"/>  </path>
-    <path id="docs.continuations-library.build.path"> <path refid="quick.continuations-plugin.build.path"/>  </path>
     <path id="docs.actors.build.path">                <path refid="quick.actors.build.path"/>   </path>
     <path id="docs.swing.build.path">                 <path refid="quick.swing.build.path"/>    </path>
 
@@ -1075,34 +1072,8 @@ TODO:
     <staged-build with="locker"   stage="quick" project="swing"/> </target>
 
 
-  <target name="quick.plugins"    depends="quick.comp">
-    <staged-uptodate              stage="quick" project="continuations-plugin">
-      <check><srcfiles dir="${src.dir}/continuations"/></check>
-      <do>
-        <stopwatch name="quick.continuations-plugin.timer"/>
 
-        <mkdir dir="${build-quick.dir}/classes/continuations-plugin"/>
-        <staged-scalac with="locker" stage="quick" project="continuations-plugin" srcdir="${continuations-plugin.srcdir}"/>
-        <copy
-           file="${src.dir}/${continuations-plugin.srcdir}/scalac-plugin.xml"
-           todir="${build-quick.dir}/classes/continuations-plugin"/>
-
-        <!-- not very nice to create jar here but needed to load plugin -->
-        <mkdir dir="${build-quick.dir}/${continuations-plugin.targetdir}"/>
-        <jar whenmanifestonly="fail" destfile="${build-quick.dir}/${continuations-plugin.targetdir}/continuations.jar" basedir="${build-quick.dir}/classes/continuations-plugin"/>
-
-        <!-- might split off library part into its own ant target -->
-        <mkdir dir="${build-quick.dir}/classes/continuations-library"/>
-        <staged-scalac with="locker" stage="quick" project="continuations-plugin"
-                       srcdir="continuations/library" destproject="continuations-library"
-                       args="-Xplugin-require:continuations -P:continuations:enable -Xpluginsdir ${build-quick.dir}/${continuations-plugin.targetdir}"/>
-
-        <stopwatch name="quick.continuations-plugin.timer" action="total"/>
-      </do>
-    </staged-uptodate>
-  </target>
-
-  <target name="quick.modules" depends="quick.repl, quick.scaladoc, quick.interactive, quick.scalap, quick.swing, quick.plugins"/>
+  <target name="quick.modules" depends="quick.repl, quick.scaladoc, quick.interactive, quick.scalap, quick.swing"/>
 
   <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.modules">
     <staged-bin stage="quick" classpathref="quick.bin.tool.path"/>
@@ -1115,7 +1086,7 @@ TODO:
 <!-- ===========================================================================
                                   PACKED QUICK BUILD (PACK)
 ============================================================================ -->
-  <target name="pack.lib"    depends="quick.lib, quick.plugins, forkjoin.done"> <staged-pack project="library"/></target>
+  <target name="pack.lib"    depends="quick.lib, forkjoin.done"> <staged-pack project="library"/></target>
 
   <target name="pack.reflect" depends="quick.reflect"> <staged-pack project="reflect"/> </target>
 
@@ -1154,14 +1125,12 @@ TODO:
   <target name="pack.actors" depends="quick.actors"> <staged-pack project="actors"/> </target>
   <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
 
-  <target name="pack.plugins"    depends="quick.plugins">    <staged-pack project="continuations-plugin"/> </target>
-
   <target name="pack.scalap"     depends="quick.scalap">     <staged-pack project="scalap"/> </target>
 
   <target name="pack.core" depends="pack.reflect, pack.comp, pack.lib"/>
 
   <!-- TODO modularize compiler: pack.scaladoc, pack.interactive, -->
-  <target name="pack.modules" depends="pack.actors, pack.swing, pack.plugins, pack.scalap">
+  <target name="pack.modules" depends="pack.actors, pack.swing, pack.scalap">
     <copy todir="${build-pack.dir}/lib">
       <path refid="external-modules-nocore" />
       <mapper type="flatten" />
@@ -1230,7 +1199,6 @@ TODO:
       <stopwatch name="osgi.core.timer"/>
       <make-bundle project="library">
         <fileset dir="${src.dir}/library"/>
-        <fileset dir="${src.dir}/continuations/library"/>
       </make-bundle>
 
       <make-bundle project="reflect">
@@ -1262,8 +1230,10 @@ TODO:
         -->
 
         <include name="${actors.jar}"/>
-        <include name="${continuations-plugin.jar}"/>
         <include name="${swing.jar}"/>
+
+        <include name="${continuations-plugin.jar}"/>
+        <include name="${continuations-library.jar}"/>
         <include name="${parser-combinators.jar}"/>
         <include name="${xml.jar}"/>
       </srcfiles>
@@ -1290,16 +1260,14 @@ TODO:
         <fileset dir="${src.dir}/actors"/>
       </make-bundle>
 
-      <make-bundle project="continuations-plugin">
-        <fileset dir="${src.dir}/${continuations-plugin.srcdir}"/>
-      </make-bundle>
-
       <if><isset property="has.java6"/><then>
         <make-bundle project="swing">
           <fileset dir="${src.dir}/swing"/>
         </make-bundle>
       </then></if>
 
+      <make-bundle project="continuations-plugin"/>
+      <make-bundle project="continuations-library"/>
       <make-bundle project="parser-combinators"/>
       <make-bundle project="xml"/>
 
@@ -1477,12 +1445,6 @@ TODO:
     <testSuite kinds="run jvm"/>
   </target>
 
-  <target name="test.continuations.suite" depends="test.suite.init">
-    <testSuite kinds="continuations-neg continuations-run"
-          scalacOpts="${scalac.args.optimise} -Xpluginsdir ${build-quick.dir}/${continuations-plugin.targetdir} -Xplugin-require:continuations -P:continuations:enable"
-    />
-  </target>
-
   <target name="test.scaladoc" depends="test.suite.init">
     <testSuite kinds="run scalacheck" srcdir="scaladoc"/>
   </target>
@@ -1493,7 +1455,7 @@ TODO:
 
   <!-- for use in PR validation, where stability is rarely broken, so we're going to use starr for locker,
        and skip test.stability (which requires locker == quick) -->
-  <target name="test.core" depends="test.osgi, test.sbt, test.bc, test.junit, test.interactive, test.continuations.suite, test.scaladoc, test.suite"/>
+  <target name="test.core" depends="test.osgi, test.sbt, test.bc, test.junit, test.interactive, test.scaladoc, test.suite"/>
   <target name="test.done" depends="test.core, test.stability"/>
 
 <!-- ===========================================================================
@@ -1611,18 +1573,6 @@ TODO:
     </staged-docs>
   </target>
 
-  <target name="docs.continuations-plugin" depends="docs.start" unless="docs.skip">
-    <staged-docs project="continuations-plugin">
-      <include name="**/*.scala"/>
-    </staged-docs>
-  </target>
-
-  <target name="docs.continuations-library" depends="docs.start" unless="docs.skip">
-    <staged-docs project="continuations-library">
-      <include name="**/*.scala"/>
-    </staged-docs>
-  </target>
-
   <target name="docs.man" depends="docs.start">
     <staged-uptodate stage="docs" project="manual">
       <check><srcfiles dir="${src.dir}/manual"/></check>
@@ -1662,7 +1612,7 @@ TODO:
 
   <target name="docs.core" depends="docs.lib, docs.reflect, docs.comp" unless="docs.skip"/>
   <!-- TODO modularize compiler:  docs.scaladoc, docs.interactive, -->
-  <target name="docs.done" depends="docs.core, docs.actors, docs.swing, docs.scalap, docs.continuations-plugin, docs.continuations-library" unless="docs.skip"/>
+  <target name="docs.done" depends="docs.core, docs.actors, docs.swing, docs.scalap" unless="docs.skip"/>
 
 <!-- ===========================================================================
                                   DISTRIBUTION
@@ -1673,7 +1623,6 @@ TODO:
 
 
     <mkdir dir="${dist.dir}/lib"/>
-    <mkdir dir="${dist.dir}/${continuations-plugin.targetdir}"/>
     <mkdir dir="${dist.dir}/src"/>
 
     <copy todir="${dist.dir}/lib" overwrite="true">
@@ -1690,9 +1639,10 @@ TODO:
     <copy-bundle project="swing"/>
     <copy-bundle project="actors"/>
 
-    <copy-bundle project="xml"/>
-    <copy-bundle project="parser-combinators"/>
     <copy-bundle project="continuations-plugin"/>
+    <copy-bundle project="continuations-library"/>
+    <copy-bundle project="parser-combinators"/>
+    <copy-bundle project="xml"/>
 
     <!-- scalap -->
     <copy toDir="${dist.dir}/lib" overwrite="true">
@@ -1733,6 +1683,8 @@ TODO:
     <copy toDir="${dist.dir}/doc/api" overwrite="true" flatten="true">
       <file file="${scala-xml-javadoc}"/>
       <file file="${scala-parser-combinators-javadoc}"/>
+      <file file="${scala-continuations-plugin-javadoc}"/>
+      <file file="${scala-continuations-library-javadoc}"/>
     </copy>
       
   </target>
@@ -1848,7 +1800,6 @@ MAIN DISTRIBUTION PACKAGING
 
     <mvn-package project="swing"/>
     <mvn-package project="actors"/>
-    <mvn-package project="continuations-plugin"/>
 
     <!-- don't bother fitting scalap into the mould: it will move out soon -->
     <copy tofile="${maven-base}/scalap/scalap-pom.xml" file="${src.dir}/build/maven/scalap-pom.xml" overwrite="true"/>

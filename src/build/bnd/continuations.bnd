@@ -1,5 +1,0 @@
-Bundle-Name: Scala Continuations Plugin
-Bundle-SymbolicName: org.scala-lang.plugins.continuations
-ver: @VERSION@
-Bundle-Version: ${ver}
-Export-Package: *;version=${ver}

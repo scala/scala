@@ -1,6 +1,0 @@
-t1929.scala:8: error: type mismatch;
- found   : Int @scala.util.continuations.cpsParam[String,String] @scala.util.continuations.cpsSynth
- required: Int @scala.util.continuations.cpsParam[Int,String]
-    reset {
-          ^
-one error found
