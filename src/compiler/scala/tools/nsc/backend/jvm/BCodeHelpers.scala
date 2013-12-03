@@ -561,7 +561,9 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
         memberCTK
       }
-      exemplar(csym) // side effect city
+
+      exemplar(csym).directMemberClasses = result
+
       result
     }
 

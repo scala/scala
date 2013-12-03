@@ -46,6 +46,7 @@ abstract class BCodeIdiomatic extends BCodeGlue {
 
   val ObjectReference   = brefType("java/lang/Object")
   val AnyRefReference   = ObjectReference
+  val objArrayReference = arrayOf(ObjectReference)
 
   val JAVA_LANG_OBJECT  = ObjectReference
   val JAVA_LANG_STRING  = brefType("java/lang/String")
