@@ -326,6 +326,8 @@ trait Kinds {
     private[internal] object StringState {
       def empty: StringState = StringState(Seq())
     }
+    def FromParams(tparams: List[Symbol]): Type = GenPolyType(tparams, AnyTpe)
+    def Wildcard: Type                          = WildcardType
   }
   class ProperTypeKind(val bounds: TypeBounds) extends Kind {
     import Kind.StringState
