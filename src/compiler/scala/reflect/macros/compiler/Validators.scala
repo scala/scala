@@ -21,9 +21,11 @@ trait Validators {
 
   private def sanityCheck() = {
     if (!macroImpl.isMethod) MacroImplReferenceWrongShapeError()
+    if (macroImpl.typeParams.length != targs.length) MacroImplWrongNumberOfTypeArgumentsError()
     if (!macroImpl.isPublic) MacroImplNotPublicError()
     if (macroImpl.isOverloaded) MacroImplOverloadedError()
-    if (macroImpl.typeParams.length != targs.length) MacroImplWrongNumberOfTypeArgumentsError()
+    val implicitParams = aparamss.flatten filter (_.isImplicit)
+    if (implicitParams.nonEmpty) MacroImplNonTagImplicitParameters(implicitParams)
     val declaredInStaticObject = isImplMethod && (macroImplOwner.isStaticOwner || macroImplOwner.moduleClass.isStaticOwner)
     val declaredInTopLevelClass = isImplBundle && macroImplOwner.owner.isPackageClass
     if (!declaredInStaticObject && !declaredInTopLevelClass) MacroImplReferenceWrongShapeError()
@@ -35,8 +37,6 @@ trait Validators {
 
     // we only check strict correspondence between value parameterss
     // type parameters of macro defs and macro impls don't have to coincide with each other
-    val implicitParams = aparamss.flatten filter (_.isImplicit)
-    if (implicitParams.nonEmpty) MacroImplNonTagImplicitParameters(implicitParams)
     if (aparamss.length != rparamss.length) MacroImplParamssMismatchError()
     map2(aparamss, rparamss)((aparams, rparams) => {
       if (aparams.length < rparams.length) MacroImplMissingParamsError(aparams, rparams)
