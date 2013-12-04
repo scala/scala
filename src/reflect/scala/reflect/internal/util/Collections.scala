@@ -244,6 +244,11 @@ trait Collections {
     true
   }
 
+  final def sequence[A](as: List[Option[A]]): Option[List[A]] = {
+    if (as.exists (_.isEmpty)) None
+    else Some(as.flatten)
+  }
+
   final def transposeSafe[A](ass: List[List[A]]): Option[List[List[A]]] = try {
     Some(ass.transpose)
   } catch {

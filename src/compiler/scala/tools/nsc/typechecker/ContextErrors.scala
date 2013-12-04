@@ -408,11 +408,28 @@ trait ContextErrors {
         setError(tree)
       }
 
-      def MissingParameterTypeError(fun: Tree, vparam: ValDef, pt: Type) =
+      def MissingParameterTypeError(fun: Tree, vparam: ValDef, pt: Type, withTupleAddendum: Boolean) = {
+        def issue(what: String) = {
+          val addendum: String = fun match {
+            case Function(params, _) if withTupleAddendum =>
+              val funArity = params.length
+              val example = analyzer.exampleTuplePattern(params map (_.name))
+              (pt baseType FunctionClass(1)) match {
+                case TypeRef(_, _, arg :: _) if arg.typeSymbol == TupleClass(funArity) && funArity > 1 =>
+                  sm"""|
+                       |Note: The expected type requires a one-argument function accepting a $funArity-Tuple.
+                       |      Consider a pattern matching anoynmous function, `{ case $example =>  ... }`"""
+                case _ => ""
+              }
+            case _ => ""
+          }
+          issueNormalTypeError(vparam, what + addendum)
+        }
         if (vparam.mods.isSynthetic) fun match {
           case Function(_, Match(_, _)) => MissingParameterTypeAnonMatchError(vparam, pt)
-          case _                        => issueNormalTypeError(vparam, "missing parameter type for expanded function " + fun)
-        } else issueNormalTypeError(vparam, "missing parameter type")
+          case _                        => issue("missing parameter type for expanded function " + fun)
+        } else issue("missing parameter type")
+      }
 
       def MissingParameterTypeAnonMatchError(vparam: Tree, pt: Type) =
         issueNormalTypeError(vparam, "missing parameter type for expanded function\n"+
