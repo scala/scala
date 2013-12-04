@@ -50,4 +50,29 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked") {
     assert(enums1 ≈ enums)
     assert(body1 ≈ body)
   }
+
+  property("extract UnApply (1)") = test {
+    val q"object $_ { $_; $_; $m }" = typecheck(q"""
+      object Test {
+        class Cell(val x: Int)
+        object Cell { def unapply(c: Cell) = Some(c.x) }
+        new Cell(0) match { case Cell(v) => v }
+      }
+    """)
+    val q"$_ match { case $f(..$args) => $_ }" = m
+    assert(f ≈ pq"Test.this.Cell")
+    assert(args ≈ List(pq"v"))
+  }
+
+  property("extract UnApply (2)") = test {
+    val q"object $_ { $_; $_; $m }" = typecheck(q"""
+      object Test {
+        case class Cell(val x: Int)
+        new Cell(0) match { case Cell(v) => v }
+      }
+    """)
+    val q"$_ match { case ${f: TypeTree}(..$args) => $_ }" = m
+    assert(f.original ≈ pq"Test.this.Cell")
+    assert(args ≈ List(pq"v"))
+  }
 }
