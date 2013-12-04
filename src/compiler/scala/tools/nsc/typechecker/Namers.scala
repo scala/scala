@@ -119,12 +119,12 @@ trait Namers extends MethodSynthesis {
     // Neither gets accessors so the code is as far as I know still correct.
     def noEnterGetterSetter(vd: ValDef) = !vd.mods.isLazy && (
          !owner.isClass
-      || (vd.mods.isPrivateLocal && !vd.mods.isCaseAccessor)
+      || (vd.mods.isPrivateLocal && !vd.mods.isCaseAccessor && !owner.isTrait) // SI-5508 eagerly create accessor for private[this] trait fields
       || (vd.name startsWith nme.OUTER)
       || (context.unit.isJava)
     )
     def noFinishGetterSetter(vd: ValDef) = (
-         (vd.mods.isPrivateLocal && !vd.mods.isLazy) // all lazy vals need accessors, even private[this]
+         (vd.mods.isPrivateLocal && !vd.mods.isLazy && !owner.isTrait) // all lazy vals need accessors, even private[this]
       || vd.symbol.isModuleVar)
 
     def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): T =
