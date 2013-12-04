@@ -227,7 +227,7 @@ override def companion: GenericCompanion[Vector] = Vector
             val ri = this.reverseIterator
             while (ri.hasNext) v = ri.next +: v
             v.asInstanceOf[That]
-          case _ => super.++(that)
+          case _ => super.++(again)
         }
       }
     }
