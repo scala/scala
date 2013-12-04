@@ -3835,7 +3835,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // as we don't know which alternative to choose... here we do
           map2Conserve(args, tparams) {
             //@M! the polytype denotes the expected kind
-            (arg, tparam) => typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyTpe))
+            (arg, tparam) => typedHigherKindedType(arg, mode, Kind.FromParams(tparam.typeParams))
           }
         } else // @M: there's probably something wrong when args.length != tparams.length... (triggered by bug #320)
          // Martin, I'm using fake trees, because, if you use args or arg.map(typedType),
@@ -4879,14 +4879,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           if (sameLength(tparams, args)) {
             // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
-            val args1 =
-              if (!isComplete)
-                args mapConserve (typedHigherKindedType(_, mode))
-                // if symbol hasn't been fully loaded, can't check kind-arity
-              else map2Conserve(args, tparams) { (arg, tparam) =>
-                //@M! the polytype denotes the expected kind
-                typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyTpe))
+            val args1 = map2Conserve(args, tparams) { (arg, tparam) =>
+              def ptParams = Kind.FromParams(tparam.typeParams)
+
+              // if symbol hasn't been fully loaded, can't check kind-arity except when we're in a pattern,
+              // where we can (we can't take part in F-Bounds) and must (SI-8023)
+              val pt = if (mode.typingPatternOrTypePat) {
+                tparam.initialize; ptParams
               }
+              else if (isComplete) ptParams
+              else Kind.Wildcard
+
+              typedHigherKindedType(arg, mode, pt)
+            }
             val argtypes = args1 map (_.tpe)
 
             foreach2(args, tparams) { (arg, tparam) =>
@@ -5072,8 +5077,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // @M maybe the well-kindedness check should be done when checking the type arguments conform to the type parameters' bounds?
         val args1 = if (sameLength(args, tparams)) map2Conserve(args, tparams) {
-          //@M! the polytype denotes the expected kind
-          (arg, tparam) => typedHigherKindedType(arg, mode, GenPolyType(tparam.typeParams, AnyTpe))
+          (arg, tparam) => typedHigherKindedType(arg, mode, Kind.FromParams(tparam.typeParams))
         }
         else {
           //@M  this branch is correctly hit for an overloaded polymorphic type. It also has to handle erroneous cases.
@@ -5443,9 +5447,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     /** Types a (fully parameterized) type tree */
     def typedType(tree: Tree): Tree = typedType(tree, NOmode)
 
-    /** Types a higher-kinded type tree -- pt denotes the expected kind*/
+    /** Types a higher-kinded type tree -- pt denotes the expected kind and must be one of `Kind.WildCard` and `Kind.FromParams` */
     def typedHigherKindedType(tree: Tree, mode: Mode, pt: Type): Tree =
-      if (pt.typeParams.isEmpty) typedType(tree, mode) // kind is known and it's *
+      if (pt != Kind.Wildcard && pt.typeParams.isEmpty) typedType(tree, mode) // kind is known and it's *
       else context withinTypeConstructorAllowed typed(tree, NOmode, pt)
 
     def typedHigherKindedType(tree: Tree, mode: Mode): Tree =
