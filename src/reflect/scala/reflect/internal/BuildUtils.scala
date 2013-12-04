@@ -163,9 +163,11 @@ trait BuildUtils { self: SymbolTable =>
       def apply(tree: Tree, argss: List[List[Tree]]): Tree =
         argss.foldLeft(tree) { (f, args) => Apply(f, args.map(treeInfo.assignmentToMaybeNamedArg)) }
 
-      def unapply(tree: Tree): Some[(Tree, List[List[Tree]])] = {
-        val treeInfo.Applied(fun, targs, argss) = tree
-        Some((SyntacticTypeApplied(fun, targs), argss))
+      def unapply(tree: Tree): Some[(Tree, List[List[Tree]])] = tree match {
+        case UnApply(treeInfo.Unapplied(Select(fun, nme.unapply)), pats) =>
+          Some((fun, pats :: Nil))
+        case treeInfo.Applied(fun, targs, argss) =>
+          Some((SyntacticTypeApplied(fun, targs), argss))
       }
     }
 
