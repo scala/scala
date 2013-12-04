@@ -1,0 +1,12 @@
+[[syntax trees at end of                     typer]] // newSource1.scala
+[0:66]package [8:11]foo {
+  [13:42]import scala.reflect.ClassTag;
+  [44:66]class Foo[[54:55]T[54:55]] extends [55:66][66]scala.AnyRef {
+    [55]implicit <synthetic> <paramaccessor> private[this] val evidence$1: [55]scala.reflect.ClassTag[T] = _;
+    [66]def <init>()(implicit [55]evidence$1: [55]<type: [55][57]scala.reflect.ClassTag[[55]<type: [55]T>]>): [55]foo.Foo[T] = [66]{
+      [66][66][66]Foo.super.<init>();
+      [55]()
+    }
+  }
+}
+
