@@ -309,6 +309,7 @@ TODO:
         <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators_${scala.binary.version}" version="${scala-parser-combinators.version.number}"/>
         <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-plugin_${scala.binary.version}"  version="${scala-continuations-plugin.version.number}"/>
         <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-library_${scala.binary.version}" version="${scala-continuations-library.version.number}"/>
+        <dependency groupId="org.scala-lang.modules" artifactId="scala-swing_${scala.binary.version}" version="${scala-swing.version.number}"/>
       </artifact:dependencies>
 
       <!-- External modules, excluding the core -->
@@ -328,6 +329,7 @@ TODO:
       <propertyForCrossedArtifact name="scala-xml"                jar="org.scala-lang.modules:scala-xml"/>
       <propertyForCrossedArtifact name="scala-continuations-plugin"  jar="org.scala-lang.plugins:scala-continuations-plugin"/>
       <propertyForCrossedArtifact name="scala-continuations-library" jar="org.scala-lang.plugins:scala-continuations-library"/>
+      <propertyForCrossedArtifact name="scala-swing"                 jar="org.scala-lang.modules:scala-swing"/>
 
       <!-- BND support -->
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
@@ -413,13 +415,6 @@ TODO:
     </condition>
 
     <fail if="has.unsupported.jdk" message="JDK ${ant.java.version} is not supported by this build!"/>
-
-    <if><isset property="has.java7"/><then>
-      <echo level="warning"> You are using JDK7 for this build.
-        While this will be able to build most of Scala, it will not build the Swing project.
-        You will be unable to create a distribution.
-      </echo>
-    </then></if>
 
     <!-- Allow this to be overridden simply -->
     <property name="sbt.latest.version"    value="0.12.4"/>
@@ -569,6 +564,10 @@ TODO:
     <property name="actors.description"            value="Scala Actors Library"/>
 
     <property name="swing.description"             value="Scala Swing Library"/>
+    <property name="swing.package"                 value="modules."/>
+    <property name="swing.jar"                     value="${scala-swing}"/>
+    <property name="swing.src"                     value="false"/>
+    <property name="swing.srcjar"                  value="${scala-swing-sources}"/>
 
     <property name="continuations-plugin.description" value="Scala Delimited Continuations Compiler Plugin"/>
     <property name="continuations-plugin.package"     value="plugins." />
@@ -651,7 +650,7 @@ TODO:
       There must be a variable of the shape @{stage}.@{project}.build.path
       for all @{stage} in locker, quick, strap
       and all @{project} in library, reflect, compiler
-        when stage is quick, @{project} also includes: actors, repl, swing, scalap
+        when stage is quick, @{project} also includes: actors, repl, scalap
 
       NOTE: interactive, scaladoc, are only used upto quick; they are still packed into the compiler jar
     -->
@@ -704,11 +703,6 @@ TODO:
       <path refid="quick.compiler.build.path"/>
       <pathelement location="${build-quick.dir}/classes/repl"/>
       <path refid="repl.deps.classpath"/>
-    </path>
-
-    <path id="quick.swing.build.path">
-      <path refid="quick.library.build.path"/>
-      <pathelement location="${build-quick.dir}/classes/swing"/>
     </path>
 
     <path id="quick.scalap.build.path">
@@ -795,7 +789,6 @@ TODO:
     <path id="pack.interactive.files"><fileset dir="${build-quick.dir}/classes/interactive"/> </path>
     -->
 
-    <path id="pack.swing.files">      <fileset dir="${build-quick.dir}/classes/swing"/> </path>
     <path id="pack.reflect.files">    <fileset dir="${build-quick.dir}/classes/reflect"/> </path>
     <path id="pack.scalap.files">     <fileset dir="${build-quick.dir}/classes/scalap"/>
                                       <fileset file="${src.dir}/scalap/decoder.properties"/> </path>
@@ -829,7 +822,6 @@ TODO:
     <path id="docs.interactive.build.path">           <path refid="quick.interactive.build.path"/> </path>
     <path id="docs.scalap.build.path">                <path refid="quick.scalap.build.path"/>   </path>
     <path id="docs.actors.build.path">                <path refid="quick.actors.build.path"/>   </path>
-    <path id="docs.swing.build.path">                 <path refid="quick.swing.build.path"/>    </path>
 
     <!-- run-time classpath for scaladoc TODO: resolve through maven -->
     <path id="scaladoc.classpath">
@@ -902,6 +894,7 @@ TODO:
       </restrict>
       <pathelement location="${scala-xml}"/>
       <pathelement location="${scala-parser-combinators}"/>
+      <!-- <pathelement location="${scala-swing}"/> -->
 
       <restrict>
         <path refid="scalacheck.classpath"/>
@@ -1068,12 +1061,9 @@ TODO:
   <target name="quick.actors"     depends="quick.lib">
     <staged-build with="locker"   stage="quick" project="actors"/> </target>
 
-  <target name="quick.swing"      depends="quick.actors, quick.lib" if="has.java6">
-    <staged-build with="locker"   stage="quick" project="swing"/> </target>
 
 
-
-  <target name="quick.modules" depends="quick.repl, quick.scaladoc, quick.interactive, quick.scalap, quick.swing"/>
+  <target name="quick.modules" depends="quick.repl, quick.scaladoc, quick.interactive, quick.scalap"/>
 
   <target name="quick.bin" depends="quick.lib, quick.reflect, quick.comp, quick.modules">
     <staged-bin stage="quick" classpathref="quick.bin.tool.path"/>
@@ -1123,14 +1113,13 @@ TODO:
   -->
 
   <target name="pack.actors" depends="quick.actors"> <staged-pack project="actors"/> </target>
-  <target name="pack.swing" if="has.java6" depends="quick.swing"> <staged-pack project="swing"/> </target>
 
   <target name="pack.scalap"     depends="quick.scalap">     <staged-pack project="scalap"/> </target>
 
   <target name="pack.core" depends="pack.reflect, pack.comp, pack.lib"/>
 
   <!-- TODO modularize compiler: pack.scaladoc, pack.interactive, -->
-  <target name="pack.modules" depends="pack.actors, pack.swing, pack.scalap">
+  <target name="pack.modules" depends="pack.actors, pack.scalap">
     <copy todir="${build-pack.dir}/lib">
       <path refid="external-modules-nocore" />
       <mapper type="flatten" />
@@ -1230,12 +1219,12 @@ TODO:
         -->
 
         <include name="${actors.jar}"/>
-        <include name="${swing.jar}"/>
 
         <include name="${continuations-plugin.jar}"/>
         <include name="${continuations-library.jar}"/>
         <include name="${parser-combinators.jar}"/>
         <include name="${xml.jar}"/>
+        <include name="${swing.jar}"/>
       </srcfiles>
     </uptodate>
 
@@ -1260,16 +1249,12 @@ TODO:
         <fileset dir="${src.dir}/actors"/>
       </make-bundle>
 
-      <if><isset property="has.java6"/><then>
-        <make-bundle project="swing">
-          <fileset dir="${src.dir}/swing"/>
-        </make-bundle>
-      </then></if>
 
       <make-bundle project="continuations-plugin"/>
       <make-bundle project="continuations-library"/>
       <make-bundle project="parser-combinators"/>
       <make-bundle project="xml"/>
+      <make-bundle project="swing"/>
 
       <touch file="${build-osgi.dir}/bundles.all.complete" verbose="no"/>
       <stopwatch name="osgi.all.timer" action="total"/>
@@ -1472,7 +1457,6 @@ TODO:
       <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.2" version="0.1.5"/>
     </artifact:dependencies>
     <artifact:dependencies pathId="old.bc.classpath">
-      <dependency groupId="org.scala-lang" artifactId="scala-swing" version="${bc-reference-version}"/>
       <dependency groupId="org.scala-lang" artifactId="scala-library" version="${bc-reference-version}"/>
       <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${bc-reference-version}"/>
     </artifact:dependencies>
@@ -1485,10 +1469,9 @@ TODO:
 
   <!-- Enable after the release of the 2.11.0 or a prior RC that estabilishes the new baseline. -->
   <target name="test.bc"></target>
-  <target name="test.bc.disabled" depends="bc.init, pack.lib, pack.reflect, pack.swing">
+  <target name="test.bc.disabled" depends="bc.init, pack.lib, pack.reflect">
     <bc.check project="library"/>
     <bc.check project="reflect"/>
-    <bc.check project="swing"/>
   </target>
 
 <!-- ===========================================================================
@@ -1561,12 +1544,6 @@ TODO:
     </staged-docs>
   </target>
 
-  <target name="docs.swing" depends="docs.start" unless="docs.skip">
-    <staged-docs project="swing">
-      <include name="**/*.scala"/>
-    </staged-docs>
-  </target>
-
   <target name="docs.scalap" depends="docs.start" unless="docs.skip">
     <staged-docs project="scalap">
       <include name="**/*.scala"/>
@@ -1612,7 +1589,7 @@ TODO:
 
   <target name="docs.core" depends="docs.lib, docs.reflect, docs.comp" unless="docs.skip"/>
   <!-- TODO modularize compiler:  docs.scaladoc, docs.interactive, -->
-  <target name="docs.done" depends="docs.core, docs.actors, docs.swing, docs.scalap" unless="docs.skip"/>
+  <target name="docs.done" depends="docs.core, docs.actors, docs.scalap" unless="docs.skip"/>
 
 <!-- ===========================================================================
                                   DISTRIBUTION
@@ -1636,13 +1613,13 @@ TODO:
     <copy-bundle project="reflect"/>
     <copy-bundle project="compiler"/>
 
-    <copy-bundle project="swing"/>
     <copy-bundle project="actors"/>
 
     <copy-bundle project="continuations-plugin"/>
     <copy-bundle project="continuations-library"/>
     <copy-bundle project="parser-combinators"/>
     <copy-bundle project="xml"/>
+    <copy-bundle project="swing"/>
 
     <!-- scalap -->
     <copy toDir="${dist.dir}/lib" overwrite="true">
@@ -1678,15 +1655,14 @@ TODO:
     <copy toDir="${dist.dir}/api" overwrite="true">
       <fileset dir="${build-docs.dir}/library"/>
     </copy>
-    <copy file="${src.dir}/swing/doc/README"
-          toFile="${dist.dir}/api/README.scala-swing" overwrite="true"/>
+
     <copy toDir="${dist.dir}/doc/api" overwrite="true" flatten="true">
       <file file="${scala-xml-javadoc}"/>
       <file file="${scala-parser-combinators-javadoc}"/>
       <file file="${scala-continuations-plugin-javadoc}"/>
       <file file="${scala-continuations-library-javadoc}"/>
+      <file file="${scala-swing-javadoc}"/>
     </copy>
-      
   </target>
 
 
@@ -1798,7 +1774,6 @@ MAIN DISTRIBUTION PACKAGING
     <mvn-package project="scaladoc"/>
     -->
 
-    <mvn-package project="swing"/>
     <mvn-package project="actors"/>
 
     <!-- don't bother fitting scalap into the mould: it will move out soon -->

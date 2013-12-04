@@ -124,7 +124,6 @@
       -->
 
       <deploy-one dir="@{dir}"          name="scala-actors"      local="@{local}" signed="@{signed}"/>
-      <deploy-one dir="@{dir}"          name="scala-swing"       local="@{local}" signed="@{signed}"/>
       <deploy-one dir="@{dir}"          name="scalap"            local="@{local}" signed="@{signed}"/>
     </sequential>
   </macrodef>
