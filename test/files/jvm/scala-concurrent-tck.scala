@@ -344,8 +344,8 @@ def testTransformFailure(): Unit = once {
   def testFallbackToFailure(): Unit = once {
     done =>
     val cause = new Exception
-    val f = future { sys.error("failed") }
-    val g = future { throw cause }
+    val f = future { throw cause }
+    val g = future { sys.error("failed") }
     val h = f fallbackTo g
 
     h onSuccess { case _ => done(false) }
