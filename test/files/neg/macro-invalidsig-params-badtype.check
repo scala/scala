@@ -1,4 +1,4 @@
-Impls_Macros_1.scala:8: error: macro implementation has wrong shape:
+Impls_Macros_1.scala:8: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.Context)(x: c.Expr[Int]): c.Expr[Any]
  found   : (c: scala.reflect.macros.Context)(x: c.universe.Tree): Nothing
 type mismatch for parameter x: c.Expr[Int] does not conform to c.universe.Tree

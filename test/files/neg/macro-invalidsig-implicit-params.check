@@ -1,7 +1,4 @@
-Impls_Macros_1.scala:18: error: macro implementation has wrong shape:
- required: (c: scala.reflect.macros.Context)(x: c.Expr[Int]): c.Expr[Unit]
- found   : (c: scala.reflect.macros.Context)(implicit x: c.Expr[Int]): c.Expr[Unit]
-macro implementations cannot have implicit parameters other than WeakTypeTag evidences
+Impls_Macros_1.scala:18: error: macro implementations cannot have implicit parameters other than WeakTypeTag evidences
   def foo_targs[U](x: Int) = macro Impls.foo_targs[T, U]
                                          ^
 one error found

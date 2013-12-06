@@ -1,4 +1,4 @@
-Macros_Test_2.scala:2: error: macro implementation has wrong shape:
+Macros_Test_2.scala:2: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.Context)(x: c.Expr[Any]): c.Expr[Any]
  found   : (c: scala.reflect.macros.Context): Nothing
 number of parameter sections differ

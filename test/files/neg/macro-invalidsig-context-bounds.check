@@ -1,7 +1,4 @@
-Macros_Test_1.scala:2: error: macro implementation has wrong shape:
- required: (c: scala.reflect.macros.Context): c.Expr[Any]
- found   : (c: scala.reflect.macros.Context)(implicit evidence$2: Numeric[U]): c.universe.Literal
-macro implementations cannot have implicit parameters other than WeakTypeTag evidences
+Macros_Test_1.scala:2: error: macro implementations cannot have implicit parameters other than WeakTypeTag evidences
   def foo[U] = macro Impls.foo[U]
                            ^
 one error found
