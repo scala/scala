@@ -384,7 +384,10 @@ trait Future[+T] extends Awaitable[T] {
     val p = Promise[U]()
     onComplete {
       case s @ Success(_) => p complete s
-      case _ => p completeWith that
+      case f @ Failure(_) => that onComplete {
+        case s2 @ Success(_) => p complete s2
+        case _ => p complete f // Use the first failure as the failure
+      }
     }
     p.future
   }
