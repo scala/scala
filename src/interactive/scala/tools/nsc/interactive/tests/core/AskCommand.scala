@@ -113,9 +113,9 @@ trait AskTypeAt extends AskCommand {
 trait AskLoadedTyped extends AskCommand {
   import compiler.Tree
 
-  protected def askLoadedTyped(source: SourceFile)(implicit reporter: Reporter): Response[Tree] = {
+  protected def askLoadedTyped(source: SourceFile, keepLoaded: Boolean = false)(implicit reporter: Reporter): Response[Tree] = {
     ask {
-      compiler.askLoadedTyped(source, _)
+      compiler.askLoadedTyped(source, keepLoaded, _)
     }
   }
 

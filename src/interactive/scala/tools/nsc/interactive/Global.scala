@@ -1134,7 +1134,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** Implements CompilerControl.askLoadedTyped */
-  private[interactive] def waitLoadedTyped(source: SourceFile, response: Response[Tree], onSameThread: Boolean = true) {
+  private[interactive] def waitLoadedTyped(source: SourceFile, response: Response[Tree], keepLoaded: Boolean = false, onSameThread: Boolean = true) {
     getUnit(source) match {
       case Some(unit) =>
         if (unit.isUpToDate) {
@@ -1152,7 +1152,10 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       case None =>
         debugLog("load unit and type")
         try reloadSources(List(source))
-        finally waitLoadedTyped(source, response, onSameThread)
+        finally {
+          waitLoadedTyped(source, response, onSameThread)
+          if (!keepLoaded) removeUnitOf(source)
+        }
     }
   }
 
