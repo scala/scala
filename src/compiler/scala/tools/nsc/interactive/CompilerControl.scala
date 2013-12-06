@@ -202,15 +202,20 @@ trait CompilerControl { self: Global =>
     postWorkItem(new AskToDoFirstItem(source))
 
   /** If source is not yet loaded, loads it, and starts a new run, otherwise
-   *  continues with current pass.
-   *  Waits until source is fully type checked and returns body in response.
-   *  @param source    The source file that needs to be fully typed.
-   *  @param response  The response, which is set to the fully attributed tree of `source`.
+   * continues with current pass.
+   * Waits until source is fully type checked and returns body in response.
+   * @param source     The source file that needs to be fully typed.
+   * @param keepLoaded Whether to keep that file in the PC if it was not loaded before. If 
+                       the file is already loaded, this flag is ignored.
+   * @param response   The response, which is set to the fully attributed tree of `source`.
    *                   If the unit corresponding to `source` has been removed in the meantime
    *                   the a NoSuchUnitError is raised in the response.
    */
-  def askLoadedTyped(source: SourceFile, response: Response[Tree]) =
-    postWorkItem(new AskLoadedTypedItem(source, response))
+  def askLoadedTyped(source:SourceFile, keepLoaded: Boolean, response: Response[Tree]): Unit =
+    postWorkItem(new AskLoadedTypedItem(source, keepLoaded, response))
+
+  final def askLoadedTyped(source: SourceFile, response: Response[Tree]): Unit =
+    askLoadedTyped(source, false, response)
 
   /** If source if not yet loaded, get an outline view with askParseEntered.
    *  If source is loaded, wait for it to be typechecked.
@@ -219,7 +224,7 @@ trait CompilerControl { self: Global =>
    */
   def askStructure(keepSrcLoaded: Boolean)(source: SourceFile, response: Response[Tree]) = {
     getUnit(source) match {
-      case Some(_) => askLoadedTyped(source, response)
+      case Some(_) => askLoadedTyped(source, keepSrcLoaded, response)
       case None => askParsedEntered(source, keepSrcLoaded, response)
     }
   }
@@ -403,8 +408,8 @@ trait CompilerControl { self: Global =>
       response raise new MissingResponse
   }
 
-  case class AskLoadedTypedItem(val source: SourceFile, response: Response[Tree]) extends WorkItem {
-    def apply() = self.waitLoadedTyped(source, response, this.onCompilerThread)
+  case class AskLoadedTypedItem(val source: SourceFile, keepLoaded: Boolean, response: Response[Tree]) extends WorkItem {
+    def apply() = self.waitLoadedTyped(source, response, keepLoaded, this.onCompilerThread)
     override def toString = "wait loaded & typed "+source
 
     def raiseMissing() =
