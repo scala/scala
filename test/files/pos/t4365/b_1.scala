@@ -1,9 +1,11 @@
 import scala.collection._
 
+trait GenSeqView0[+A, +Coll]
+
 trait GenSeqViewLike[+A,
                      +Coll,
-                     +This <: GenSeqView[A, Coll] with GenSeqViewLike[A, Coll, This]]
-extends GenSeq[A] {
+                     +This <: GenSeqView0[A, Coll] with GenSeqViewLike[A, Coll, Nothing]]
+extends GenSeq[A]  {
 self =>
 
   trait Transformed[+B] {

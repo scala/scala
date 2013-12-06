@@ -34,39 +34,68 @@ trait IterableViewLike[+A,
         with IterableLike[A, This]
         with TraversableView[A, Coll]
         with TraversableViewLike[A, Coll, This]
-        with GenIterableViewLike[A, Coll, This]
 { self =>
-
-  trait Transformed[+B] extends IterableView[B, Coll] with super[TraversableViewLike].Transformed[B] with super[GenIterableViewLike].Transformed[B] {
-    def iterator: Iterator[B]
-    override def foreach[U](f: B => U): Unit = iterator foreach f
-    override def toString = viewToString
-  }
 
   /** Explicit instantiation of the `Transformed` trait to reduce class file size in subclasses. */
   private[collection] abstract class AbstractTransformed[+B] extends Iterable[B] with super[TraversableViewLike].Transformed[B] with Transformed[B]
 
-  trait EmptyView extends Transformed[Nothing] with super[TraversableViewLike].EmptyView with super[GenIterableViewLike].EmptyView
+  trait Transformed[+B] extends IterableView[B, Coll] with super.Transformed[B] {
+    def iterator: Iterator[B]
+    override def foreach[U](f: B => U): Unit = iterator foreach f
+    override def toString = viewToString
+    override def isEmpty = !iterator.hasNext
+  }
 
-  trait Forced[B] extends super[TraversableViewLike].Forced[B] with super[GenIterableViewLike].Forced[B] with Transformed[B]
+  trait EmptyView extends Transformed[Nothing] with super.EmptyView {
+    final def iterator: Iterator[Nothing] = Iterator.empty
+  }
 
-  trait Sliced extends super[TraversableViewLike].Sliced with super[GenIterableViewLike].Sliced with Transformed[A]
+  trait Forced[B] extends super.Forced[B] with Transformed[B] {
+    def iterator = forced.iterator
+  }
 
-  trait Mapped[B] extends super[TraversableViewLike].Mapped[B] with super[GenIterableViewLike].Mapped[B] with Transformed[B]
+  trait Sliced extends super.Sliced with Transformed[A] {
+    def iterator: Iterator[A] = self.iterator.slice(from, until)
+  }
 
-  trait FlatMapped[B] extends super[TraversableViewLike].FlatMapped[B] with super[GenIterableViewLike].FlatMapped[B] with Transformed[B]
+  trait Mapped[B] extends super.Mapped[B] with Transformed[B] {
+    def iterator = self.iterator map mapping
+  }
 
-  trait Appended[B >: A] extends super[TraversableViewLike].Appended[B] with super[GenIterableViewLike].Appended[B] with Transformed[B]
+  trait FlatMapped[B] extends super.FlatMapped[B] with Transformed[B] {
+    def iterator: Iterator[B] = self.iterator flatMap mapping
+  }
 
-  trait Filtered extends super[TraversableViewLike].Filtered with super[GenIterableViewLike].Filtered with Transformed[A]
+  trait Appended[B >: A] extends super.Appended[B] with Transformed[B] {
+    def iterator = self.iterator ++ rest
+  }
 
-  trait TakenWhile extends super[TraversableViewLike].TakenWhile with super[GenIterableViewLike].TakenWhile with Transformed[A]
+  trait Filtered extends super.Filtered with Transformed[A] {
+    def iterator = self.iterator filter pred
+  }
 
-  trait DroppedWhile extends super[TraversableViewLike].DroppedWhile with super[GenIterableViewLike].DroppedWhile with Transformed[A]
+  trait TakenWhile extends super.TakenWhile with Transformed[A] {
+    def iterator = self.iterator takeWhile pred
+  }
 
-  trait Zipped[B] extends Transformed[(A, B)] with super[GenIterableViewLike].Zipped[B]
+  trait DroppedWhile extends super.DroppedWhile with Transformed[A] {
+    def iterator = self.iterator dropWhile pred
+  }
 
-  trait ZippedAll[A1 >: A, B] extends Transformed[(A1, B)] with super[GenIterableViewLike].ZippedAll[A1, B]
+  trait Zipped[B] extends Transformed[(A, B)] {
+    protected[this] val other: GenIterable[B]
+    def iterator: Iterator[(A, B)] = self.iterator zip other.iterator
+    final override protected[this] def viewIdentifier = "Z"
+  }
+
+  trait ZippedAll[A1 >: A, B] extends Transformed[(A1, B)] {
+    protected[this] val other: GenIterable[B]
+    protected[this] val thisElem: A1
+    protected[this] val thatElem: B
+    final override protected[this] def viewIdentifier = "Z"
+    def iterator: Iterator[(A1, B)] =
+      self.iterator.zipAll(other.iterator, thisElem, thatElem)
+  }
 
   private[this] implicit def asThis(xs: Transformed[A]): This = xs.asInstanceOf[This]
 
