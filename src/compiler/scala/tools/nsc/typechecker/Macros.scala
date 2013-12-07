@@ -123,16 +123,15 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *
    *    @scala.reflect.macros.internal.macroImpl(
    *      `macro`(
+   *        "macroEngine" = <current macro engine>,
    *        "isBundle" = false,
    *        "isBlackbox" = true,
    *        "signature" = List(Other),
    *        "methodName" = "impl",
-   *        "versionFormat" = <current version format>,
    *        "className" = "Macros$"))
    */
+  def macroEngine = "v7.0 (implemented in Scala 2.11.0-M8)"
   object MacroImplBinding {
-    val versionFormat = 6.0
-
     def pickleAtom(obj: Any): Tree =
       obj match {
         case list: List[_] => Apply(Ident(ListModule), list map pickleAtom)
@@ -183,12 +182,12 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       }
 
       val payload = List[(String, Any)](
-        "versionFormat" -> versionFormat,
-        "isBundle"      -> isBundle,
-        "isBlackbox"    -> isBlackbox,
-        "className"     -> className,
-        "methodName"    -> macroImpl.name.toString,
-        "signature"     -> signature
+        "macroEngine" -> macroEngine,
+        "isBundle"    -> isBundle,
+        "isBlackbox"  -> isBlackbox,
+        "className"   -> className,
+        "methodName"  -> macroImpl.name.toString,
+        "signature"   -> signature
       )
 
       // the shape of the nucleus is chosen arbitrarily. it doesn't carry any payload.
@@ -237,8 +236,8 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         raw.asInstanceOf[T]
       }
 
-      val pickleVersionFormat = unpickle("versionFormat", classOf[Double])
-      if (versionFormat != pickleVersionFormat) fail(s"expected version format $versionFormat, actual $pickleVersionFormat")
+      val macroEngine = unpickle("macroEngine", classOf[String])
+      if (self.macroEngine != macroEngine) typer.TyperErrorGen.MacroIncompatibleEngineError(macroEngine)
 
       val isBundle = unpickle("isBundle", classOf[Boolean])
       val isBlackbox = unpickle("isBlackbox", classOf[Boolean])

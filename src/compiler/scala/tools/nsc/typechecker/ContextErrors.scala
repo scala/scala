@@ -730,6 +730,11 @@ trait ContextErrors {
         issueNormalTypeError(expandee, s"macro in $role role can only expand into $allowedExpansions")
       }
 
+      def MacroIncompatibleEngineError(macroEngine: String) = {
+        val message = s"macro cannot be expanded, because it was compiled by an incompatible macro engine $macroEngine"
+        issueNormalTypeError(lastTreeToTyper, message)
+      }
+
       case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
 
       protected def macroExpansionError(expandee: Tree, msg: String, pos: Position = NoPosition) = {
