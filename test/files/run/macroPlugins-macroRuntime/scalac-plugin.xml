@@ -1,0 +1,4 @@
+<plugin>
+  <name>macro-runtime</name>
+  <classname>macroRuntime.Plugin</classname>
+</plugin>

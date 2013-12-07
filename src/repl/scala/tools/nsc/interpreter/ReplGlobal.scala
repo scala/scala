@@ -52,7 +52,7 @@ trait ReplGlobal extends Global {
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       def apply(unit: CompilationUnit) {
         repldbg("Running replPhase on " + unit.body)
-        // newNamer(rootContext(unit)).enterSym(unit.body)
+        // pluginsEnterSym(newNamer(rootContext(unit)), unit.body)
       }
     }
   }

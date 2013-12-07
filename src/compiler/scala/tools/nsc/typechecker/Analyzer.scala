@@ -40,7 +40,7 @@ trait Analyzer extends AnyRef
       override def keepsTypeParams = false
 
       def apply(unit: CompilationUnit) {
-        newNamer(rootContext(unit)).enterSym(unit.body)
+        pluginsEnterSym(newNamer(rootContext(unit)), unit.body)
       }
     }
   }

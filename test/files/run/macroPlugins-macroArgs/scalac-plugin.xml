@@ -1,0 +1,4 @@
+<plugin>
+  <name>macro-args</name>
+  <classname>macroArgs.Plugin</classname>
+</plugin>

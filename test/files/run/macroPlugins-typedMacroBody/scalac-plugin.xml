@@ -1,0 +1,4 @@
+<plugin>
+  <name>typed-macro-body</name>
+  <classname>typedMacroBody.Plugin</classname>
+</plugin>

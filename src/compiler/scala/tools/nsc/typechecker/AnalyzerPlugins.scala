@@ -229,6 +229,41 @@ trait AnalyzerPlugins { self: Analyzer =>
      * $nonCumulativeReturnValueDoc.
      */
     def pluginsMacroRuntime(expandee: Tree): Option[MacroRuntime] = None
+
+    /**
+     * Creates a symbol for the given tree in lexical context encapsulated by the given namer.
+     *
+     * Default implementation provided in `namer.enterSym` handles MemberDef's and Imports,
+     * doing nothing for other trees (DocDef's are seen through and rewrapped). Typical implementation
+     * of `enterSym` for a particular tree flavor creates a corresponding symbol, assigns it to the tree,
+     * enters the symbol into scope and then might even perform some code generation.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsEnterSym(namer: Namer, tree: Tree): Boolean = false
+
+    /**
+     * Makes sure that for the given class definition, there exists a companion object definition.
+     *
+     * Default implementation provided in `namer.ensureCompanionObject` looks up a companion symbol for the class definition
+     * and then checks whether the resulting symbol exists or not. If it exists, then nothing else is done.
+     * If not, a synthetic object definition is created using the provided factory, which is then entered into namer's scope.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsEnsureCompanionObject(namer: Namer, cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Option[Symbol] = None
+
+    /**
+     * Prepares a list of statements for being typechecked by performing domain-specific type-agnostic code synthesis.
+     *
+     * Trees passed into this method are going to be named, but not typed.
+     * In particular, you can rely on the compiler having called `enterSym` on every stat prior to passing calling this method.
+     *
+     * Default implementation does nothing. Current approaches to code syntheses (generation of underlying fields
+     * for getters/setters, creation of companion objects for case classes, etc) are too disparate and ad-hoc
+     * to be treated uniformly, so I'm leaving this for future work.
+     */
+    def pluginsEnterStats(typer: Typer, stats: List[Tree]): List[Tree] = stats
   }
 
 
@@ -363,4 +398,35 @@ trait AnalyzerPlugins { self: Analyzer =>
     def default = macroRuntime(expandee)
     def custom(plugin: MacroPlugin) = plugin.pluginsMacroRuntime(expandee)
   })
+
+  /** @see MacroPlugin.pluginsEnterSym */
+  def pluginsEnterSym(namer: Namer, tree: Tree): Context = invoke(new NonCumulativeOp[Context] {
+    def position = tree.pos
+    def description = "enter a symbol for this tree"
+    def default = namer.enterSym(tree)
+    def custom(plugin: MacroPlugin) = {
+      val hasExistingSym = tree.symbol != NoSymbol
+      val result = plugin.pluginsEnterSym(namer, tree)
+      if (result && hasExistingSym) Some(namer.context)
+      else if (result && tree.isInstanceOf[Import]) Some(namer.context.make(tree))
+      else if (result) Some(namer.context)
+      else None
+    }
+  })
+
+  /** @see MacroPlugin.pluginsEnsureCompanionObject */
+  def pluginsEnsureCompanionObject(namer: Namer, cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol = invoke(new NonCumulativeOp[Symbol] {
+    def position = cdef.pos
+    def description = "enter a companion symbol for this tree"
+    def default = namer.ensureCompanionObject(cdef, creator)
+    def custom(plugin: MacroPlugin) = plugin.pluginsEnsureCompanionObject(namer, cdef, creator)
+  })
+
+  /** @see MacroPlugin.pluginsEnterStats */
+  def pluginsEnterStats(typer: Typer, stats: List[Tree]): List[Tree] = {
+    // performance opt
+    if (macroPlugins.isEmpty) stats
+    else macroPlugins.foldLeft(stats)((current, plugin) =>
+      if (!plugin.isActive()) current else plugin.pluginsEnterStats(typer, stats))
+  }
 }

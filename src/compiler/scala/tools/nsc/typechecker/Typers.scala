@@ -1863,12 +1863,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     protected def enterSym(txt: Context, tree: Tree): Context =
-      if (txt eq context) namer.enterSym(tree)
-      else newNamer(txt).enterSym(tree)
+      if (txt eq context) pluginsEnterSym(namer, tree)
+      else pluginsEnterSym(newNamer(txt), tree)
 
     /** <!-- 2 --> Check that inner classes do not inherit from Annotation
      */
-    def typedTemplate(templ: Template, parents1: List[Tree]): Template = {
+    def typedTemplate(templ0: Template, parents1: List[Tree]): Template = {
+      val templ = templ0
+      // please FIXME: uncommenting this line breaks everything
+      // val templ = treeCopy.Template(templ0, templ0.body, templ0.self, templ0.parents)
       val clazz = context.owner
       clazz.annotations.map(_.completeInfo())
       if (templ.symbol == NoSymbol)
@@ -1896,7 +1899,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
       // the following is necessary for templates generated later
       assert(clazz.info.decls != EmptyScope, clazz)
-      enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
+      val body1 = pluginsEnterStats(this, templ.body)
+      enterSyms(context.outer.make(templ, clazz, clazz.info.decls), body1)
       if (!templ.isErrorTyped) // if `parentTypes` has invalidated the template, don't validate it anymore
       validateParentClasses(parents1, selfType)
       if (clazz.isCase)
@@ -1910,11 +1914,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
 
-      val body = {
-      val body =
-        if (isPastTyper || reporter.hasErrors) templ.body
-        else templ.body flatMap rewrappingWrapperTrees(namer.addDerivedTrees(Typer.this, _))
-        val primaryCtor = treeInfo.firstConstructor(body)
+      val body2 = {
+        val body2 =
+          if (isPastTyper || reporter.hasErrors) body1
+          else body1 flatMap rewrappingWrapperTrees(namer.addDerivedTrees(Typer.this, _))
+        val primaryCtor = treeInfo.firstConstructor(body2)
         val primaryCtor1 = primaryCtor match {
           case DefDef(_, _, _, _, _, Block(earlyVals :+ global.pendingSuperCall, unit)) =>
             val argss = superArgs(parents1.head) getOrElse Nil
@@ -1923,13 +1927,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             deriveDefDef(primaryCtor)(block => Block(earlyVals :+ superCall, unit) setPos pos) setPos pos
           case _ => primaryCtor
         }
-        body mapConserve { case `primaryCtor` => primaryCtor1; case stat => stat }
+        body2 mapConserve { case `primaryCtor` => primaryCtor1; case stat => stat }
       }
 
-      val body1 = typedStats(body, templ.symbol)
+      val body3 = typedStats(body2, templ.symbol)
 
       if (clazz.info.firstParent.typeSymbol == AnyValClass)
-        validateDerivedValueClass(clazz, body1)
+        validateDerivedValueClass(clazz, body3)
 
       if (clazz.isTrait) {
         for (decl <- clazz.info.decls if decl.isTerm && decl.isEarlyInitialized) {
@@ -1937,7 +1941,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
 
-      treeCopy.Template(templ, parents1, self1, body1) setType clazz.tpe_*
+      treeCopy.Template(templ, parents1, self1, body3) setType clazz.tpe_*
     }
 
     /** Remove definition annotations from modifiers (they have been saved
@@ -2319,10 +2323,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    def typedBlock(block: Block, mode: Mode, pt: Type): Block = {
+    def typedBlock(block0: Block, mode: Mode, pt: Type): Block = {
       val syntheticPrivates = new ListBuffer[Symbol]
       try {
-        namer.enterSyms(block.stats)
+        namer.enterSyms(block0.stats)
+        val block = treeCopy.Block(block0, pluginsEnterStats(this, block0.stats), block0.expr)
         for (stat <- block.stats) enterLabelDef(stat)
 
         if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
@@ -3807,7 +3812,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree, mode: Mode): Tree = {
       for (wc <- tree.whereClauses)
-        if (wc.symbol == NoSymbol) { namer.enterSym(wc); wc.symbol setFlag EXISTENTIAL }
+        if (wc.symbol == NoSymbol) { pluginsEnterSym(namer, wc); wc.symbol setFlag EXISTENTIAL }
         else context.scope enter wc.symbol
       val whereClauses1 = typedStats(tree.whereClauses, context.owner)
       for (vd @ ValDef(_, _, _, _) <- whereClauses1)
@@ -4954,7 +4959,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val sym: Symbol = tree.symbol
       if ((sym ne null) && (sym ne NoSymbol)) sym.initialize
 
-      def typedPackageDef(pdef: PackageDef) = {
+      def typedPackageDef(pdef0: PackageDef) = {
+        val pdef = treeCopy.PackageDef(pdef0, pdef0.pid, pluginsEnterStats(this, pdef0.stats))
         val pid1 = typedQualifier(pdef.pid).asInstanceOf[RefTree]
         assert(sym.moduleClass ne NoSymbol, sym)
         val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))

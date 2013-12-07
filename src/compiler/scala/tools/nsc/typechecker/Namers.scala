@@ -22,7 +22,7 @@ trait Namers extends MethodSynthesis {
   import global._
   import definitions._
 
-  private var _lockedCount = 0
+  var _lockedCount = 0
   def lockedCount = this._lockedCount
 
   /** Replaces any Idents for which cond is true with fresh TypeTrees().
@@ -107,8 +107,8 @@ trait Namers extends MethodSynthesis {
     }
 
     protected def owner       = context.owner
-    private def contextFile = context.unit.source.file
-    private def typeErrorHandler[T](tree: Tree, alt: T): PartialFunction[Throwable, T] = {
+    def contextFile = context.unit.source.file
+    def typeErrorHandler[T](tree: Tree, alt: T): PartialFunction[Throwable, T] = {
       case ex: TypeError =>
         // H@ need to ensure that we handle only cyclic references
         TypeSigError(tree, ex)
@@ -253,7 +253,7 @@ trait Namers extends MethodSynthesis {
           case tree @ ValDef(_, _, _, _)                     => enterValDef(tree)
           case tree @ DefDef(_, _, _, _, _, _)               => enterDefDef(tree)
           case tree @ TypeDef(_, _, _, _)                    => enterTypeDef(tree)
-          case DocDef(_, defn)                               => enterSym(defn)
+          case DocDef(_, defn)                               => pluginsEnterSym(this, defn)
           case tree @ Import(_, _)                           =>
             assignSymbol(tree)
             returnContext = context.make(tree)
@@ -309,7 +309,7 @@ trait Namers extends MethodSynthesis {
      *  be transferred to the symbol as they are, supply a mask containing
      *  the flags to keep.
      */
-    private def createMemberSymbol(tree: MemberDef, name: Name, mask: Long): Symbol = {
+    def createMemberSymbol(tree: MemberDef, name: Name, mask: Long): Symbol = {
       val pos         = tree.pos
       val isParameter = tree.mods.isParameter
       val flags       = tree.mods.flags & mask
@@ -327,14 +327,14 @@ trait Namers extends MethodSynthesis {
           else owner.newValue(name.toTermName, pos, flags)
       }
     }
-    private def createFieldSymbol(tree: ValDef): TermSymbol =
+    def createFieldSymbol(tree: ValDef): TermSymbol =
       owner.newValue(tree.localName, tree.pos, tree.mods.flags & FieldFlags | PrivateLocal)
 
-    private def createImportSymbol(tree: Tree) =
+    def createImportSymbol(tree: Tree) =
       NoSymbol.newImport(tree.pos) setInfo completerOf(tree)
 
     /** All PackageClassInfoTypes come from here. */
-    private def createPackageSymbol(pos: Position, pid: RefTree): Symbol = {
+    def createPackageSymbol(pos: Position, pid: RefTree): Symbol = {
       val pkgOwner = pid match {
         case Ident(_)                 => if (owner.isEmptyPackageClass) rootMirror.RootClass else owner
         case Select(qual: RefTree, _) => createPackageSymbol(pos, qual).moduleClass
@@ -393,7 +393,7 @@ trait Namers extends MethodSynthesis {
     /** Given a ClassDef or ModuleDef, verifies there isn't a companion which
      *  has been defined in a separate file.
      */
-    private def validateCompanionDefs(tree: ImplDef) {
+    def validateCompanionDefs(tree: ImplDef) {
       val sym    = tree.symbol orElse { return }
       val ctx    = if (context.owner.isPackageObjectClass) context.outer else context
       val module = if (sym.isModule) sym else ctx.scope lookupModule tree.name
@@ -452,7 +452,7 @@ trait Namers extends MethodSynthesis {
 
     def enterSyms(trees: List[Tree]): Namer = {
       trees.foldLeft(this: Namer) { (namer, t) =>
-        val ctx = namer enterSym t
+        val ctx = pluginsEnterSym(namer, t)
         // for Import trees, enterSym returns a changed context, so we need a new namer
         if (ctx eq namer.context) namer
         else newNamer(ctx)
@@ -662,7 +662,7 @@ trait Namers extends MethodSynthesis {
       tree.symbol setInfo completerOf(tree)
 
       if (mods.isCase) {
-        val m = ensureCompanionObject(tree, caseModuleDef)
+        val m = pluginsEnsureCompanionObject(this, tree, caseModuleDef)
         m.moduleClass.updateAttachment(new ClassForCaseCompanionAttachment(tree))
       }
       val hasDefault = impl.body exists {
@@ -670,7 +670,7 @@ trait Namers extends MethodSynthesis {
         case _                                              => false
       }
       if (hasDefault) {
-        val m = ensureCompanionObject(tree)
+        val m = pluginsEnsureCompanionObject(this, tree)
         m.updateAttachment(new ConstructorDefaultsAttachment(tree, null))
       }
       val owner = tree.symbol.owner
@@ -697,7 +697,7 @@ trait Namers extends MethodSynthesis {
     def enterIfNotThere(sym: Symbol) { }
 
     def enterSyntheticSym(tree: Tree): Symbol = {
-      enterSym(tree)
+      pluginsEnterSym(this, tree)
       context.unit.synthetics(tree.symbol) = tree
       tree.symbol
     }
@@ -931,7 +931,7 @@ trait Namers extends MethodSynthesis {
         log("Ensuring companion for derived value class " + cdef.name + " at " + cdef.pos.show)
         clazz setFlag FINAL
         // Don't force the owner's info lest we create cycles as in SI-6357.
-        enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef)
+        pluginsEnsureCompanionObject(enclosingNamerWithScope(clazz.owner.rawInfo.decls), cdef)
       }
       pluginsTp
     }
