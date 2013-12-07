@@ -361,7 +361,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    */
   case class MacroArgs(c: MacroContext, others: List[Any])
 
-  private def macroArgs(typer: Typer, expandee: Tree): MacroArgs = {
+  def macroArgs(typer: Typer, expandee: Tree): MacroArgs = {
     val macroDef = expandee.symbol
     val paramss = macroDef.paramss
     val treeInfo.Applied(core, targs, argss) = expandee
@@ -473,10 +473,10 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   /** Keeps track of macros in-flight.
    *  See more informations in comments to `openMacros` in `scala.reflect.macros.WhiteboxContext`.
    */
-  private var _openMacros = List[MacroContext]()
+  var _openMacros = List[MacroContext]()
   def openMacros = _openMacros
-  private def pushMacroContext(c: MacroContext) = _openMacros ::= c
-  private def popMacroContext() = _openMacros = _openMacros.tail
+  def pushMacroContext(c: MacroContext) = _openMacros ::= c
+  def popMacroContext() = _openMacros = _openMacros.tail
   def enclosingMacroPosition = openMacros map (_.macroApplication.pos) find (_ ne NoPosition) getOrElse NoPosition
 
   /** Describes the role that the macro expandee is performing.
@@ -527,7 +527,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *    the expandee with an error marker set   if the expansion has been cancelled due malformed arguments or implementation
    *    the expandee with an error marker set   if there has been an error
    */
-  private abstract class MacroExpander[Result: ClassTag](val role: MacroRole, val typer: Typer, val expandee: Tree) {
+  abstract class MacroExpander[Result: ClassTag](val role: MacroRole, val typer: Typer, val expandee: Tree) {
     def allowExpandee(expandee: Tree): Boolean = true
     def allowExpanded(expanded: Tree): Boolean = true
     def allowedExpansions: String = "anything"
@@ -592,136 +592,131 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     }
   }
 
-  /** Expands a tree that carries a term, which happens to be a term macro.
-   *  @see MacroExpander
-   */
-   private abstract class TermMacroExpander(role: MacroRole, typer: Typer, expandee: Tree, mode: Mode, pt: Type)
-                  extends MacroExpander[Tree](role, typer, expandee) {
-      override def allowedExpansions: String = "term trees"
-      override def allowExpandee(expandee: Tree) = expandee.isTerm
-      override def onSuccess(expanded: Tree) = typer.typed(expanded, mode, pt)
-      override def onFallback(fallback: Tree) = typer.typed(fallback, mode, pt)
-   }
-
   /** Expands a term macro used in apply role as `M(2)(3)` in `val x = M(2)(3)`.
    *  @param outerPt Expected type that comes from enclosing context (something that's traditionally called `pt`).
    *  @param innerPt Expected type that comes from the signature of a macro def, possibly wildcarded to help type inference.
-   *  @see MacroExpander
    */
-  def macroExpand(typer: Typer, expandee: Tree, mode: Mode, outerPt: Type): Tree = {
-    object expander extends TermMacroExpander(APPLY_ROLE, typer, expandee, mode, outerPt) {
-      lazy val innerPt = {
-        val tp = if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe
-        if (isBlackbox(expandee)) tp
-        else {
-          // approximation is necessary for whitebox macros to guide type inference
-          // read more in the comments for onDelayed below
-          val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
-          deriveTypeWithWildcards(undetparams)(tp)
-        }
-      }
-      override def onSuccess(expanded0: Tree) = {
-        // prematurely annotate the tree with a macro expansion attachment
-        // so that adapt called indirectly by typer.typed knows that it needs to apply the existential fixup
-        linkExpandeeAndExpanded(expandee, expanded0)
-
-        def typecheck(label: String, tree: Tree, pt: Type): Tree = {
-          if (tree.isErrorTyped) tree
-          else {
-            if (macroDebugVerbose) println(s"$label (against pt = $pt): $tree")
-            // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
-            // therefore we need to re-enable the conversions back temporarily
-            val result = typer.context.withImplicitsEnabled(typer.typed(tree, mode, pt))
-            if (result.isErrorTyped && macroDebugVerbose) println(s"$label has failed: ${typer.context.reportBuffer.errors}")
-            result
-          }
-        }
-
-        if (isBlackbox(expandee)) {
-          val expanded1 = atPos(enclosingMacroPosition.makeTransparent)(Typed(expanded0, TypeTree(innerPt)))
-          typecheck("blackbox typecheck", expanded1, outerPt)
-        } else {
-          val expanded1 = expanded0
-          val expanded2 = typecheck("whitebox typecheck #1", expanded1, outerPt)
-          typecheck("whitebox typecheck #2", expanded2, innerPt)
-        }
-      }
-      override def onDelayed(delayed: Tree) = {
-        // =========== THE SITUATION ===========
-        //
-        // If we've been delayed (i.e. bailed out of the expansion because of undetermined type params present in the expandee),
-        // then there are two possible situations we're in:
-        // 1) We're in POLYmode, when the typer tests the waters wrt type inference
-        // (e.g. as in typedArgToPoly in doTypedApply).
-        // 2) We're out of POLYmode, which means that the typer is out of tricks to infer our type
-        // (e.g. if we're an argument to a function call, then this means that no previous argument lists
-        // can determine our type variables for us).
-        //
-        // Situation #1 is okay for us, since there's no pressure. In POLYmode we're just verifying that
-        // there's nothing outrageously wrong with our undetermined type params (from what I understand!).
-        //
-        // Situation #2 requires measures to be taken. If we're in it, then noone's going to help us infer
-        // the undetermined type params. Therefore we need to do something ourselves or otherwise this
-        // expandee will forever remaing not expanded (see SI-5692). A traditional way out of this conundrum
-        // is to call `instantiate` and let the inferencer try to find the way out. It works for simple cases,
-        // but sometimes, if the inferencer lacks information, it will be forced to approximate.
-        //
-        // =========== THE PROBLEM ===========
-        //
-        // Consider the following example (thanks, Miles!):
-        //
-        // Iso represents an isomorphism between two datatypes:
-        // 1) An arbitrary one (e.g. a random case class)
-        // 2) A uniform representation for all datatypes (e.g. an HList)
-        //
-        //   trait Iso[T, U] {
-        //   def to(t : T) : U
-        //   def from(u : U) : T
-        //   }
-        //   implicit def materializeIso[T, U]: Iso[T, U] = macro ???
-        //
-        //   case class Foo(i: Int, s: String, b: Boolean)
-        //   def foo[C, L](c: C)(implicit iso: Iso[C, L]): L = iso.to(c)
-        //   foo(Foo(23, "foo", true))
-        //
-        // In the snippet above, even though we know that there's a fundep going from T to U
-        // (in a sense that a datatype's uniform representation is unambiguously determined by the datatype,
-        // e.g. for Foo it will be Int :: String :: Boolean :: HNil), there's no way to convey this information
-        // to the typechecker. Therefore the typechecker will infer Nothing for L, which is hardly what we want.
-        //
-        // =========== THE SOLUTION (ENABLED ONLY FOR WHITEBOX MACROS) ===========
-        //
-        // To give materializers a chance to say their word before vanilla inference kicks in,
-        // we infer as much as possible (e.g. in the example above even though L is hopeless, C still can be inferred to Foo)
-        // and then trigger macro expansion with the undetermined type parameters still there.
-        // Thanks to that the materializer can take a look at what's going on and react accordingly.
-        val shouldInstantiate = typer.context.undetparams.nonEmpty && !mode.inPolyMode
-        if (shouldInstantiate) {
-          if (isBlackbox(expandee)) typer.instantiatePossiblyExpectingUnit(delayed, mode, outerPt)
-          else {
-            forced += delayed
-            typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), outerPt, keepNothings = false)
-            macroExpand(typer, delayed, mode, outerPt)
-          }
-        } else delayed
+  class DefMacroExpander(typer: Typer, expandee: Tree, mode: Mode, outerPt: Type)
+  extends MacroExpander[Tree](APPLY_ROLE, typer, expandee) {
+    lazy val innerPt = {
+      val tp = if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe
+      if (isBlackbox(expandee)) tp
+      else {
+        // approximation is necessary for whitebox macros to guide type inference
+        // read more in the comments for onDelayed below
+        val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
+        deriveTypeWithWildcards(undetparams)(tp)
       }
     }
+    override def onSuccess(expanded0: Tree) = {
+      // prematurely annotate the tree with a macro expansion attachment
+      // so that adapt called indirectly by typer.typed knows that it needs to apply the existential fixup
+      linkExpandeeAndExpanded(expandee, expanded0)
+
+      def typecheck(label: String, tree: Tree, pt: Type): Tree = {
+        if (tree.isErrorTyped) tree
+        else {
+          if (macroDebugVerbose) println(s"$label (against pt = $pt): $tree")
+          // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
+          // therefore we need to re-enable the conversions back temporarily
+          val result = typer.context.withImplicitsEnabled(typer.typed(tree, mode, pt))
+          if (result.isErrorTyped && macroDebugVerbose) println(s"$label has failed: ${typer.context.reportBuffer.errors}")
+          result
+        }
+      }
+
+      if (isBlackbox(expandee)) {
+        val expanded1 = atPos(enclosingMacroPosition.makeTransparent)(Typed(expanded0, TypeTree(innerPt)))
+        typecheck("blackbox typecheck", expanded1, outerPt)
+      } else {
+        val expanded1 = expanded0
+        val expanded2 = typecheck("whitebox typecheck #1", expanded1, outerPt)
+        typecheck("whitebox typecheck #2", expanded2, innerPt)
+      }
+    }
+    override def onDelayed(delayed: Tree) = {
+      // =========== THE SITUATION ===========
+      //
+      // If we've been delayed (i.e. bailed out of the expansion because of undetermined type params present in the expandee),
+      // then there are two possible situations we're in:
+      // 1) We're in POLYmode, when the typer tests the waters wrt type inference
+      // (e.g. as in typedArgToPoly in doTypedApply).
+      // 2) We're out of POLYmode, which means that the typer is out of tricks to infer our type
+      // (e.g. if we're an argument to a function call, then this means that no previous argument lists
+      // can determine our type variables for us).
+      //
+      // Situation #1 is okay for us, since there's no pressure. In POLYmode we're just verifying that
+      // there's nothing outrageously wrong with our undetermined type params (from what I understand!).
+      //
+      // Situation #2 requires measures to be taken. If we're in it, then noone's going to help us infer
+      // the undetermined type params. Therefore we need to do something ourselves or otherwise this
+      // expandee will forever remaing not expanded (see SI-5692). A traditional way out of this conundrum
+      // is to call `instantiate` and let the inferencer try to find the way out. It works for simple cases,
+      // but sometimes, if the inferencer lacks information, it will be forced to approximate.
+      //
+      // =========== THE PROBLEM ===========
+      //
+      // Consider the following example (thanks, Miles!):
+      //
+      // Iso represents an isomorphism between two datatypes:
+      // 1) An arbitrary one (e.g. a random case class)
+      // 2) A uniform representation for all datatypes (e.g. an HList)
+      //
+      //   trait Iso[T, U] {
+      //   def to(t : T) : U
+      //   def from(u : U) : T
+      //   }
+      //   implicit def materializeIso[T, U]: Iso[T, U] = macro ???
+      //
+      //   case class Foo(i: Int, s: String, b: Boolean)
+      //   def foo[C, L](c: C)(implicit iso: Iso[C, L]): L = iso.to(c)
+      //   foo(Foo(23, "foo", true))
+      //
+      // In the snippet above, even though we know that there's a fundep going from T to U
+      // (in a sense that a datatype's uniform representation is unambiguously determined by the datatype,
+      // e.g. for Foo it will be Int :: String :: Boolean :: HNil), there's no way to convey this information
+      // to the typechecker. Therefore the typechecker will infer Nothing for L, which is hardly what we want.
+      //
+      // =========== THE SOLUTION (ENABLED ONLY FOR WHITEBOX MACROS) ===========
+      //
+      // To give materializers a chance to say their word before vanilla inference kicks in,
+      // we infer as much as possible (e.g. in the example above even though L is hopeless, C still can be inferred to Foo)
+      // and then trigger macro expansion with the undetermined type parameters still there.
+      // Thanks to that the materializer can take a look at what's going on and react accordingly.
+      val shouldInstantiate = typer.context.undetparams.nonEmpty && !mode.inPolyMode
+      if (shouldInstantiate) {
+        if (isBlackbox(expandee)) typer.instantiatePossiblyExpectingUnit(delayed, mode, outerPt)
+        else {
+          forced += delayed
+          typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), outerPt, keepNothings = false)
+          macroExpand(typer, delayed, mode, outerPt)
+        }
+      } else delayed
+    }
+    override def onFallback(fallback: Tree) = typer.typed(fallback, mode, outerPt)
+  }
+
+  /** Expands a term macro used in apply role as `M(2)(3)` in `val x = M(2)(3)`.
+   *  @see DefMacroExpander
+   */
+  def macroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = {
+    val expander = new DefMacroExpander(typer, expandee, mode, pt)
     expander(expandee)
   }
 
-  private sealed abstract class MacroStatus(val result: Tree)
-  private case class Success(expanded: Tree) extends MacroStatus(expanded)
-  private case class Fallback(fallback: Tree) extends MacroStatus(fallback) { currentRun.seenMacroExpansionsFallingBack = true }
-  private case class Delayed(delayed: Tree) extends MacroStatus(delayed)
-  private case class Skipped(skipped: Tree) extends MacroStatus(skipped)
-  private case class Failure(failure: Tree) extends MacroStatus(failure)
-  private def Delay(expanded: Tree) = Delayed(expanded)
-  private def Skip(expanded: Tree) = Skipped(expanded)
+  sealed abstract class MacroStatus(val result: Tree)
+  case class Success(expanded: Tree) extends MacroStatus(expanded)
+  case class Fallback(fallback: Tree) extends MacroStatus(fallback) { currentRun.seenMacroExpansionsFallingBack = true }
+  case class Delayed(delayed: Tree) extends MacroStatus(delayed)
+  case class Skipped(skipped: Tree) extends MacroStatus(skipped)
+  case class Failure(failure: Tree) extends MacroStatus(failure)
+  def Delay(expanded: Tree) = Delayed(expanded)
+  def Skip(expanded: Tree) = Skipped(expanded)
 
   /** Expands a macro when a runtime (i.e. the macro implementation) can be successfully loaded
    *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
    */
-  private def macroExpandWithRuntime(typer: Typer, expandee: Tree, runtime: MacroRuntime): MacroStatus = {
+  def macroExpandWithRuntime(typer: Typer, expandee: Tree, runtime: MacroRuntime): MacroStatus = {
     val wasDelayed  = isDelayed(expandee)
     val undetparams = calculateUndetparams(expandee)
     val nowDelayed  = !typer.context.macrosEnabled || undetparams.nonEmpty
@@ -778,7 +773,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   /** Expands a macro when a runtime (i.e. the macro implementation) cannot be loaded
    *  Meant for internal use within the macro infrastructure, don't use it elsewhere.
    */
-  private def macroExpandWithoutRuntime(typer: Typer, expandee: Tree): MacroStatus = {
+  def macroExpandWithoutRuntime(typer: Typer, expandee: Tree): MacroStatus = {
     import typer.TyperErrorGen._
     val fallbackSym = expandee.symbol.nextOverriddenSymbol orElse MacroImplementationNotFoundError(expandee)
     macroLogLite(s"falling back to: $fallbackSym")
