@@ -1595,7 +1595,7 @@ trait Namers extends MethodSynthesis {
     val tree: Tree
   }
 
-  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new LockingTypeCompleter {
+  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new LockingTypeCompleter with FlagAgnosticCompleter {
     val tree = t
     def completeImpl(sym: Symbol) = c(sym)
   }
