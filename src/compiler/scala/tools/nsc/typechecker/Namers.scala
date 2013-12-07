@@ -828,9 +828,10 @@ trait Namers extends MethodSynthesis {
      *  assigns the type to the tpt's node.  Returns the type.
      */
     private def assignTypeToTree(tree: ValOrDefDef, defnTyper: Typer, pt: Type): Type = {
-      val rhsTpe =
-        if (tree.symbol.isTermMacro) defnTyper.computeMacroDefType(tree, pt)
-        else defnTyper.computeType(tree.rhs, pt)
+      val rhsTpe = tree match {
+        case ddef: DefDef if tree.symbol.isTermMacro => defnTyper.computeMacroDefType(ddef, pt)
+        case _ => defnTyper.computeType(tree.rhs, pt)
+      }
 
       val defnTpe = widenIfNecessary(tree.symbol, rhsTpe, pt)
       tree.tpt defineType defnTpe setPos tree.pos.focus

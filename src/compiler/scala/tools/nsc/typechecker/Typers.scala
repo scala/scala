@@ -5500,25 +5500,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       tpe
     }
 
-    def computeMacroDefType(tree: Tree, pt: Type): Type = {
+    def computeMacroDefType(ddef: DefDef, pt: Type): Type = {
       assert(context.owner.isMacro, context.owner)
-      assert(tree.symbol.isMacro, tree.symbol)
-      assert(tree.isInstanceOf[DefDef], tree.getClass)
-      val ddef = tree.asInstanceOf[DefDef]
+      assert(ddef.symbol.isMacro, ddef.symbol)
 
-      val tree1 =
+      val rhs1 =
         if (transformed contains ddef.rhs) {
           // macro defs are typechecked in `methodSig` (by calling this method) in order to establish their link to macro implementation asap
           // if a macro def doesn't have explicitly specified return type, this method will be called again by `assignTypeToTree`
           // here we guard against this case
           transformed(ddef.rhs)
         } else {
-          val tree1 = typedMacroBody(this, ddef)
-          transformed(ddef.rhs) = tree1
-          tree1
+          val rhs1 = typedMacroBody(this, ddef)
+          transformed(ddef.rhs) = rhs1
+          rhs1
         }
 
-      val isMacroBodyOkay = !tree.symbol.isErroneous && !(tree1 exists (_.isErroneous)) && tree1 != EmptyTree
+      val isMacroBodyOkay = !ddef.symbol.isErroneous && !(rhs1 exists (_.isErroneous)) && rhs1 != EmptyTree
       val shouldInheritMacroImplReturnType = ddef.tpt.isEmpty
       if (isMacroBodyOkay && shouldInheritMacroImplReturnType) {
         val commonMessage = "macro defs must have explicitly specified return types"
@@ -5530,7 +5528,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val explanation = s"inference of $inferredType from macro impl's c.Expr[$inferredType] is deprecated and is going to stop working in 2.12"
           unit.deprecationWarning(ddef.pos, s"$commonMessage ($explanation)")
         }
-        computeMacroDefTypeFromMacroImplRef(ddef, tree1) match {
+        computeMacroDefTypeFromMacroImplRef(ddef, rhs1) match {
           case ErrorType => ErrorType
           case NothingTpe => NothingTpe
           case NoType => reportFailure(); AnyTpe
