@@ -322,6 +322,39 @@ sealed abstract class List[+A] extends AbstractSeq[A]
   override def toStream : Stream[A] =
     if (isEmpty) Stream.Empty
     else new Stream.Cons(head, tail.toStream)
+
+  // Create a proxy for Java serialization that allows us to avoid mutation
+  // during de-serialization.  This is the Serialization Proxy Pattern.
+  protected final def writeReplace(): AnyRef = new SerializationProxy(this)
+}
+
+@SerialVersionUID(1L)
+private class SerializationProxy[B](@transient private var orig: List[B]) extends Serializable {
+
+  private def writeObject(out: ObjectOutputStream) {
+    var xs: List[B] = orig
+    while (!xs.isEmpty) {
+      out.writeObject(xs.head)
+      xs = xs.tail
+    }
+    out.writeObject(ListSerializeEnd)
+  }
+
+  // Java serialization calls this before readResolve during de-serialization.
+  // Read the whole list and store it in `orig`.
+  private def readObject(in: ObjectInputStream) {
+    val builder = List.newBuilder[B]
+    while (true) in.readObject match {
+      case ListSerializeEnd =>
+        orig = builder.result()
+        return
+      case a =>
+        builder += a.asInstanceOf[B]
+    }
+  }
+
+  // Provide the result stored in `orig` for Java serialization
+  private def readResolve(): AnyRef = orig
 }
 
 /** The empty list.
@@ -352,33 +385,10 @@ case object Nil extends List[Nothing] {
  *  @version 1.0, 15/07/2003
  *  @since   2.8
  */
-@SerialVersionUID(0L - 8476791151983527571L)
-final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extends List[B] {
+final case class ::[B](private val hd: B, private[scala] var tl: List[B]) extends List[B] {
   override def head : B = hd
   override def tail : List[B] = tl
   override def isEmpty: Boolean = false
-
-  private def readObject(in: ObjectInputStream) {
-    val firstObject = in.readObject()
-    hd = firstObject.asInstanceOf[B]
-    assert(hd != ListSerializeEnd)
-    var current: ::[B] = this
-    while (true) in.readObject match {
-      case ListSerializeEnd =>
-        current.tl = Nil
-        return
-      case a =>
-        val list : ::[B] = new ::(a.asInstanceOf[B], Nil)
-        current.tl = list
-        current = list
-    }
-  }
-
-  private def writeObject(out: ObjectOutputStream) {
-    var xs: List[B] = this
-    while (!xs.isEmpty) { out.writeObject(xs.head); xs = xs.tail }
-    out.writeObject(ListSerializeEnd)
-  }
 }
 
 /** $factoryInfo
