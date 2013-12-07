@@ -608,7 +608,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *  @param innerPt Expected type that comes from the signature of a macro def, possibly wildcarded to help type inference.
    *  @see MacroExpander
    */
-  def macroExpandApply(typer: Typer, expandee: Tree, mode: Mode, outerPt: Type): Tree = {
+  def macroExpand(typer: Typer, expandee: Tree, mode: Mode, outerPt: Type): Tree = {
     object expander extends TermMacroExpander(APPLY_ROLE, typer, expandee, mode, outerPt) {
       lazy val innerPt = {
         val tp = if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe
@@ -701,27 +701,12 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           else {
             forced += delayed
             typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), outerPt, keepNothings = false)
-            macroExpandApply(typer, delayed, mode, outerPt)
+            macroExpand(typer, delayed, mode, outerPt)
           }
         } else delayed
       }
     }
     expander(expandee)
-  }
-
-  /** Expands a term macro used in unapply role as `u.Quasiquote(StringContext("", "")).q.unapply(x)` in `case q"$x" => ...`.
-   *  @see MacroExpander
-   */
-  def macroExpandUnapply(typer: Typer, original: Tree, fun: Tree, unapply: Symbol, args: List[Tree], mode: Mode, pt: Type) = {
-    val expandee = treeCopy.Apply(original, gen.mkAttributedSelect(fun, unapply), args)
-    object expander extends TermMacroExpander(UNAPPLY_ROLE, typer, expandee, mode, pt) {
-      override def allowedExpansions: String = "unapply trees"
-      override def allowExpandee(expandee: Tree) = expandee.isInstanceOf[Apply]
-      private def unsupported(what: String) = abort("unapply macros currently don't support " + what)
-      override def onFallback(fallback: Tree) = unsupported("fallback")
-      override def onDelayed(delayed: Tree) = unsupported("advanced interaction with type inference")
-   }
-    expander(original)
   }
 
   private sealed abstract class MacroStatus(val result: Tree)
@@ -871,7 +856,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           context.implicitsEnabled = typer.context.implicitsEnabled
           context.enrichmentEnabled = typer.context.enrichmentEnabled
           context.macrosEnabled = typer.context.macrosEnabled
-          macroExpandApply(newTyper(context), tree, EXPRmode, WildcardType)
+          macroExpand(newTyper(context), tree, EXPRmode, WildcardType)
         case _ =>
           tree
       })
