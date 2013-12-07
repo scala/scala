@@ -918,11 +918,24 @@ abstract class Erasure extends AddInterfaces
       }
 
       val decls = root.info.decls
+
+      // SI-8010 force infos, otherwise makeNotPrivate in ExplicitOuter info transformer can trigger
+      //         a scope rehash while were iterating and we can see the same entry twice!
+      //         Inspection of SymbolPairs (the basis of OverridingPairs), suggests that it is immune
+      //         from this sort of bug as it copies the symbols into a temporary scope *before* any calls to `.info`,
+      //         ie, no variant of it calls `info` or `tpe` in `SymbolPair#exclude`.
+      //
+      //         Why not just create a temporary scope here? We need to force the name changes in any case before
+      //         we do these checks, so that we're comparing same-named methods based on the expanded names that actually
+      //         end up in the bytecode.
+      afterPostErasure(decls.foreach(_.info))
+
       var e = decls.elems
       while (e ne null) {
         if (e.sym.isTerm) {
           var e1 = decls.lookupNextEntry(e)
           while (e1 ne null) {
+            assert(e.sym ne e1.sym, s"Internal error: encountered ${e.sym.debugLocationString} twice during scope traversal. This might be related to SI-8010.")
             if (sameTypeAfterErasure(e1.sym, e.sym)) doubleDefError(e.sym, e1.sym)
             e1 = decls.lookupNextEntry(e1)
           }
