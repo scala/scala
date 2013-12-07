@@ -13,7 +13,6 @@ package typechecker
 trait AnalyzerPlugins { self: Analyzer =>
   import global._
 
-
   trait AnalyzerPlugin {
     /**
      * Selectively activate this analyzer plugin, e.g. according to the compiler phase.
@@ -156,6 +155,82 @@ trait AnalyzerPlugins { self: Analyzer =>
     def pluginsTypedReturn(tpe: Type, typer: Typer, tree: Return, pt: Type): Type = tpe
   }
 
+  /**
+   * @define nonCumulativeReturnValueDoc Returns `None` if the plugin doesn't want to customize the default behavior
+   * or something else if the plugin knows better that the implementation provided in scala-compiler.jar.
+   * If multiple plugins return a non-empty result, it's going to be a compilation error.
+   */
+  trait MacroPlugin {
+    /**
+     * Selectively activate this analyzer plugin, e.g. according to the compiler phase.
+     *
+     * Note that the current phase can differ from the global compiler phase (look for `enteringPhase`
+     * invocations in the compiler). For instance, lazy types created by the UnPickler are completed
+     * at the phase in which their symbol is created. Observations show that this can even be the
+     * parser phase. Since symbol completion can trigger subtyping, typing etc, your plugin might
+     * need to be active also in phases other than namer and typer.
+     *
+     * Typically, this method can be implemented as
+     *
+     *   global.phase.id < global.currentRun.picklerPhase.id
+     */
+    def isActive(): Boolean = true
+
+    /**
+     * Typechecks the right-hand side of a macro definition (which typically features
+     * a mere reference to a macro implementation).
+     *
+     * Default implementation provided in `self.typedMacroBody` makes sure that the rhs
+     * resolves to a reference to a method in either a static object or a macro bundle,
+     * verifies that the referred method is compatible with the macro def and upon success
+     * attaches a macro impl binding to the macro def's symbol.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsTypedMacroBody(typer: Typer, ddef: DefDef): Option[Tree] = None
+
+    /**
+     * Expands an application of a def macro (i.e. of a symbol that has the MACRO flag set),
+     * possibly using the current typer mode and the provided prototype.
+     *
+     * Default implementation provided in `self.macroExpand` figures out whether the `expandee`
+     * needs to be expanded right away or its expansion has to be delayed until all undetermined
+     * parameters are inferred, then loads the macro implementation using `self.pluginsMacroRuntime`,
+     * prepares the invocation arguments for the macro implementation using `self.pluginsMacroArgs`,
+     * and finally calls into the macro implementation. After the call returns, it typechecks
+     * the expansion and performs some bookkeeping.
+     *
+     * This method is typically implemented if your plugin requires significant changes to the macro engine.
+     * If you only need to customize the macro context, consider implementing `pluginsMacroArgs`.
+     * If you only need to customize how macro implementation are invoked, consider going for `pluginsMacroRuntime`.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsMacroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Option[Tree] = None
+
+    /**
+     * Computes the arguments that need to be passed to the macro impl corresponding to a particular expandee.
+     *
+     * Default implementation provided in `self.macroArgs` instantiates a `scala.reflect.macros.contexts.Context`,
+     * gathers type and value arguments of the macro application and throws them together into `MacroArgs`.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsMacroArgs(typer: Typer, expandee: Tree): Option[MacroArgs] = None
+
+    /**
+     * Summons a function that encapsulates macro implementation invocations for a particular expandee.
+     *
+     * Default implementation provided in `self.macroRuntime` returns a function that
+     * loads the macro implementation binding from the macro definition symbol,
+     * then uses either Java or Scala reflection to acquire the method that corresponds to the impl,
+     * and then reflectively calls into that method.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsMacroRuntime(expandee: Tree): Option[MacroRuntime] = None
+  }
+
 
 
   /** A list of registered analyzer plugins */
@@ -227,5 +302,65 @@ trait AnalyzerPlugins { self: Analyzer =>
   def pluginsTypedReturn(tpe: Type, typer: Typer, tree: Return, pt: Type): Type = invoke(new CumulativeOp[Type] {
     def default = adaptTypeOfReturn(tree.expr, pt, tpe)
     def accumulate = (tpe, p) => p.pluginsTypedReturn(tpe, typer, tree, pt)
+  })
+
+  /** A list of registered macro plugins */
+  private var macroPlugins: List[MacroPlugin] = Nil
+
+  /** Registers a new macro plugin */
+  def addMacroPlugin(plugin: MacroPlugin) {
+    if (!macroPlugins.contains(plugin))
+      macroPlugins = plugin :: macroPlugins
+  }
+
+  private abstract class NonCumulativeOp[T] {
+    def position: Position
+    def description: String
+    def default: T
+    def custom(plugin: MacroPlugin): Option[T]
+  }
+
+  private def invoke[T](op: NonCumulativeOp[T]): T = {
+    if (macroPlugins.isEmpty) op.default
+    else {
+      val results = macroPlugins.filter(_.isActive()).map(plugin => (plugin, op.custom(plugin)))
+      results.flatMap { case (p, Some(result)) => Some((p, result)); case _ => None } match {
+        case (p1, _) :: (p2, _) :: _ => typer.context.error(op.position, s"both $p1 and $p2 want to ${op.description}"); op.default
+        case (_, custom) :: Nil => custom
+        case Nil => op.default
+      }
+    }
+  }
+
+  /** @see MacroPlugin.pluginsTypedMacroBody */
+  def pluginsTypedMacroBody(typer: Typer, ddef: DefDef): Tree = invoke(new NonCumulativeOp[Tree] {
+    def position = ddef.pos
+    def description = "typecheck this macro definition"
+    def default = typedMacroBody(typer, ddef)
+    def custom(plugin: MacroPlugin) = plugin.pluginsTypedMacroBody(typer, ddef)
+  })
+
+  /** @see MacroPlugin.pluginsMacroExpand */
+  def pluginsMacroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = invoke(new NonCumulativeOp[Tree] {
+    def position = expandee.pos
+    def description = "expand this macro application"
+    def default = macroExpand(typer, expandee, mode, pt)
+    def custom(plugin: MacroPlugin) = plugin.pluginsMacroExpand(typer, expandee, mode, pt)
+  })
+
+  /** @see MacroPlugin.pluginsMacroArgs */
+  def pluginsMacroArgs(typer: Typer, expandee: Tree): MacroArgs = invoke(new NonCumulativeOp[MacroArgs] {
+    def position = expandee.pos
+    def description = "compute macro arguments for this macro application"
+    def default = macroArgs(typer, expandee)
+    def custom(plugin: MacroPlugin) = plugin.pluginsMacroArgs(typer, expandee)
+  })
+
+  /** @see MacroPlugin.pluginsMacroRuntime */
+  def pluginsMacroRuntime(expandee: Tree): MacroRuntime = invoke(new NonCumulativeOp[MacroRuntime] {
+    def position = expandee.pos
+    def description = "compute macro runtime for this macro application"
+    def default = macroRuntime(expandee)
+    def custom(plugin: MacroPlugin) = plugin.pluginsMacroRuntime(expandee)
   })
 }

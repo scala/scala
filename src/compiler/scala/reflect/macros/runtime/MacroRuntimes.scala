@@ -20,7 +20,8 @@ trait MacroRuntimes extends JavaReflectionRuntimes with ScalaReflectionRuntimes 
    *          `null` otherwise.
    */
   private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, MacroRuntime]
-  def macroRuntime(macroDef: Symbol): MacroRuntime = {
+  def macroRuntime(expandee: Tree): MacroRuntime = {
+    val macroDef = expandee.symbol
     macroLogVerbose(s"looking for macro implementation: $macroDef")
     if (fastTrack contains macroDef) {
       macroLogVerbose("macro expansion is serviced by a fast track")

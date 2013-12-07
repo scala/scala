@@ -1112,7 +1112,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (tree.isType)
           adaptType()
         else if (mode.typingExprNotFun && treeInfo.isMacroApplication(tree) && !isMacroExpansionSuppressed(tree))
-          macroExpand(this, tree, mode, pt)
+          pluginsMacroExpand(this, tree, mode, pt)
         else if (mode.typingConstructorPattern)
           typedConstructorPattern(tree, pt)
         else if (shouldInsertApply(tree))
@@ -2209,7 +2209,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         } else if (meth.isMacro) {
           // typechecking macro bodies is sort of unconventional
           // that's why we employ our custom typing scheme orchestrated outside of the typer
-          transformedOr(ddef.rhs, typedMacroBody(this, ddef))
+          transformedOr(ddef.rhs, pluginsTypedMacroBody(this, ddef))
         } else {
           transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
         }
@@ -5511,7 +5511,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // here we guard against this case
           transformed(ddef.rhs)
         } else {
-          val rhs1 = typedMacroBody(this, ddef)
+          val rhs1 = pluginsTypedMacroBody(this, ddef)
           transformed(ddef.rhs) = rhs1
           rhs1
         }

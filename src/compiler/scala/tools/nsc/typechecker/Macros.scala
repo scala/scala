@@ -562,7 +562,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
             onFailure(typer.infer.setError(expandee))
           } else try {
             val expanded = {
-              val runtime = macroRuntime(expandee.symbol)
+              val runtime = pluginsMacroRuntime(expandee)
               if (runtime != null) macroExpandWithRuntime(typer, expandee, runtime)
               else macroExpandWithoutRuntime(typer, expandee)
             }
@@ -689,7 +689,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         else {
           forced += delayed
           typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), outerPt, keepNothings = false)
-          macroExpand(typer, delayed, mode, outerPt)
+          pluginsMacroExpand(typer, delayed, mode, outerPt)
         }
       } else delayed
     }
@@ -731,12 +731,12 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       case (false, true) =>
         macroLogLite("macro expansion is delayed: %s".format(expandee))
         delayed += expandee -> undetparams
-        expandee updateAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(macroArgs(typer, expandee).c))
+        expandee updateAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(pluginsMacroArgs(typer, expandee).c))
         Delay(expandee)
       case (false, false) =>
         import typer.TyperErrorGen._
         macroLogLite("performing macro expansion %s at %s".format(expandee, expandee.pos))
-        val args = macroArgs(typer, expandee)
+        val args = pluginsMacroArgs(typer, expandee)
         try {
           val numErrors    = reporter.ERROR.count
           def hasNewErrors = reporter.ERROR.count > numErrors
@@ -851,7 +851,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           context.implicitsEnabled = typer.context.implicitsEnabled
           context.enrichmentEnabled = typer.context.enrichmentEnabled
           context.macrosEnabled = typer.context.macrosEnabled
-          macroExpand(newTyper(context), tree, EXPRmode, WildcardType)
+          pluginsMacroExpand(newTyper(context), tree, EXPRmode, WildcardType)
         case _ =>
           tree
       })
