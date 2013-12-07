@@ -1294,7 +1294,7 @@ trait ContextErrors {
 
     private def compatibilityError(message: String) =
       implRefError(
-        "macro implementation has wrong shape:"+
+        "macro implementation has incompatible shape:"+
         "\n required: " + showMeth(rparamss, rret, abbreviate = true) +
         "\n found   : " + showMeth(aparamss, aret, abbreviate = false) +
         "\n" + message)
@@ -1328,7 +1328,11 @@ trait ContextErrors {
 
     def MacroImplOverloadedError() = implRefError("macro implementation cannot be overloaded")
 
-    def MacroImplWrongNumberOfTypeArgumentsError(macroImplRef: Tree) = implRefError(typer.TyperErrorGen.TypedApplyWrongNumberOfTpeParametersErrorMessage(macroImplRef))
+    def MacroImplWrongNumberOfTypeArgumentsError(macroImplRef: Tree) = {
+      val MacroImplReference(owner, meth, targs) = macroImplRef
+      val diagnostic = if (meth.typeParams.length > targs.length) "has too few type arguments" else "has too many arguments"
+      implRefError(s"macro implementation reference $diagnostic for " + treeSymTypeMsg(macroImplRef))
+    }
 
     def MacroImplNotStaticError() = implRefError("macro implementation must be in statically accessible object")
 
@@ -1336,7 +1340,7 @@ trait ContextErrors {
     // aXXX (e.g. aparams) => characteristics of the macro impl ("a" stands for "actual")
     // rXXX (e.g. rparams) => characteristics of a reference macro impl signature synthesized from the macro def ("r" stands for "reference")
 
-    def MacroImplNonTagImplicitParameters(params: List[Symbol]) = compatibilityError("macro implementations cannot have implicit parameters other than WeakTypeTag evidences")
+    def MacroImplNonTagImplicitParameters(params: List[Symbol]) = implRefError("macro implementations cannot have implicit parameters other than WeakTypeTag evidences")
 
     def MacroImplParamssMismatchError() = compatibilityError("number of parameter sections differ")
 

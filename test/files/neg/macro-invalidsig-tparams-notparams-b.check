@@ -1,4 +1,4 @@
-Macros_Test_2.scala:3: error: wrong number of type parameters for method foo: [T, U, V](c: scala.reflect.macros.Context)(implicit evidence$1: c.WeakTypeTag[T], implicit evidence$2: c.WeakTypeTag[U], implicit V: c.WeakTypeTag[V])c.Expr[Unit]
+Macros_Test_2.scala:3: error: macro implementation reference has too few type arguments for method foo: [T, U, V](c: scala.reflect.macros.Context)(implicit evidence$1: c.WeakTypeTag[T], implicit evidence$2: c.WeakTypeTag[U], implicit V: c.WeakTypeTag[V])c.Expr[Unit]
     def foo[V] = macro Impls.foo
                              ^
 one error found

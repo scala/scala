@@ -1,4 +1,4 @@
-Macros_Test_2.scala:2: error: macro implementation has wrong shape:
+Macros_Test_2.scala:2: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.Context): c.Expr[Any]
  found   : (c: scala.reflect.api.Universe): Nothing
 type mismatch for parameter c: scala.reflect.macros.Context does not conform to scala.reflect.api.Universe

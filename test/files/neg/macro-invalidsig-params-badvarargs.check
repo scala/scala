@@ -1,4 +1,4 @@
-Impls_Macros_1.scala:8: error: macro implementation has wrong shape:
+Impls_Macros_1.scala:8: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.Context)(x: c.Expr[Int], y: c.Expr[Int]): c.Expr[Any]
  found   : (c: scala.reflect.macros.Context)(xs: c.Expr[Int]*): Nothing
 parameter lists have different length, required extra parameter y: c.Expr[Int]

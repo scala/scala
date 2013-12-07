@@ -1,4 +1,4 @@
-t5689.scala:4: error: macro implementation has wrong shape:
+t5689.scala:4: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.Context)(i: c.Expr[Double]): c.Expr[String]
  found   : (c: scala.reflect.macros.Context)(i: c.Expr[Double]): c.Expr[Int]
 type mismatch for return type: c.Expr[Int] does not conform to c.Expr[String]
