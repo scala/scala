@@ -1,3 +1,7 @@
+#partest !avian
 Method call statistics:
     1  instrumented/Bar.<init>(Z)V
     1  instrumented/Foo.<init>(I)V
+#partest avian
+!!!TEST SKIPPED!!!
+Instrumentation is not supported on Avian.
