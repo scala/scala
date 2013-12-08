@@ -669,6 +669,8 @@ trait StdNames {
     val find_ : NameType               = "find"
     val flatMap: NameType              = "flatMap"
     val foreach: NameType              = "foreach"
+    val freshTermName: NameType        = "freshTermName"
+    val freshTypeName: NameType        = "freshTypeName"
     val get: NameType                  = "get"
     val hashCode_ : NameType           = "hashCode"
     val hash_ : NameType               = "hash"

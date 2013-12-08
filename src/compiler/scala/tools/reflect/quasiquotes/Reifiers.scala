@@ -33,8 +33,16 @@ trait Reifiers { self: Quasiquotes =>
     var nameMap = collection.mutable.HashMap.empty[Name, Set[TermName]].withDefault { _ => Set() }
 
     /** Wraps expressions into:
-     *    a sequence of nested withFreshTermName/withFreshTypeName calls which are required
-     *    to force regeneration of randomly generated names on every evaluation of quasiquote.
+     *    a block which starts with a sequence of vals that correspond
+     *    to fresh names that has to be created at evaluation of the quasiquote
+     *    and ends with reified tree:
+     *
+     *      {
+     *        val name$1: universe.TermName = universe.build.freshTermName(prefix1)
+     *        ...
+     *        val name$N: universe.TermName = universe.build.freshTermName(prefixN)
+     *        tree
+     *      }
      *
      *  Wraps patterns into:
      *    a call into anonymous class' unapply method required by unapply macro expansion:
@@ -51,15 +59,18 @@ trait Reifiers { self: Quasiquotes =>
      */
     def wrap(tree: Tree) =
       if (isReifyingExpressions) {
-        nameMap.foldLeft(tree) {
-          case (t, (origname, names)) =>
+        val freshdefs = nameMap.iterator.map {
+          case (origname, names) =>
             assert(names.size == 1)
             val FreshName(prefix) = origname
-            val ctor = TermName("withFresh" + (if (origname.isTermName) "TermName" else "TypeName"))
-            // q"$u.build.$ctor($prefix) { ${names.head} => $t }"
-            Apply(Apply(Select(Select(u, nme.build), ctor), List(Literal(Constant(prefix)))),
-              List(Function(List(ValDef(Modifiers(PARAM), names.head, TypeTree(), EmptyTree)), t)))
-        }
+            val nameTypeName = if (origname.isTermName) tpnme.TermName else tpnme.TypeName
+            val freshName = if (origname.isTermName) nme.freshTermName else nme.freshTypeName
+            // q"val ${names.head}: $u.$nameTypeName = $u.build.$freshName($prefix)"
+            ValDef(NoMods, names.head, Select(u, nameTypeName),
+              Apply(Select(Select(u, nme.build), freshName), Literal(Constant(prefix)) :: Nil))
+        }.toList
+        // q"..$freshdefs; $tree"
+        SyntacticBlock(freshdefs :+ tree)
       } else {
         val freevars = holeMap.toList.map { case (name, _) => Ident(name) }
         val isVarPattern = tree match { case Bind(name, Ident(nme.WILDCARD)) => true case _ => false }
