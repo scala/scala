@@ -9,5 +9,5 @@ trait Foo {
 }
 
 object Macros extends Foo {
-  def foo(x: Int) = macro Impls.impl
+  def foo(x: Int): Int = macro Impls.impl
 }

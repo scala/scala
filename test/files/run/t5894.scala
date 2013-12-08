@@ -3,7 +3,7 @@ import language.experimental.macros
 class Test
 
 object Test {
-  def foo = macro fooImpl
+  def foo: Unit = macro fooImpl
   def fooImpl(c: reflect.macros.BlackboxContext) = { import c.universe._; c.Expr[Unit](q"()") }
 
   def main(args: Array[String]) {

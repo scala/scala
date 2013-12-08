@@ -8,7 +8,7 @@ object Test extends ReplTest {
       def lastContext = Option(System.getProperties.get("lastContext").asInstanceOf[reflect.macros.runtime.Context])
       // System.properties lets you stash true globals (unlike statics which are classloader scoped)
       def impl(c: BlackboxContext)() = { import c.universe._; System.getProperties.put("lastContext", c); c.Expr[Unit](q"()") }
-      def grab() = macro impl
+      def grab(): Unit = macro impl
     }
     object Test { class C(implicit a: Any) { GrabContext.grab } }
     object Test { class C(implicit a: Any) { GrabContext.grab } }

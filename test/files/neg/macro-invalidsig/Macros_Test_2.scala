@@ -1,5 +1,5 @@
 object Macros1 {
-  def foo[U] = macro Impls1.foo[U]
+  def foo[U]: Int = macro Impls1.foo[U]
 }
 
 object Macros2 {
@@ -56,8 +56,8 @@ object Macros14 {
 
 class D[T] {
   class C[U] {
-    def foo15[V] = macro Impls15.foo
-    def foo16[V] = macro Impls16.foo[V]
+    def foo15[V]: Unit = macro Impls15.foo
+    def foo16[V]: Unit = macro Impls16.foo[V]
   }
 }
 

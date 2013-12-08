@@ -2,7 +2,7 @@ import scala.reflect.macros.WhiteboxContext
 import language.experimental.macros
 
 object Extractor {
-  def unapply(x: Int) = macro Macros.unapplyImpl
+  def unapply(x: Int): Any = macro Macros.unapplyImpl
 }
 
 object Macros {

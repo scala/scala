@@ -1,5 +1,5 @@
 object Macros {
-  def foo = macro Impls.foo
+  def foo: Unit = macro Impls.foo
 }
 
 object Test extends App {

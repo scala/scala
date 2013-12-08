@@ -13,7 +13,7 @@ object Test extends DirectTest {
     object Macros {
       //import Impls._
       def impl(c: BlackboxContext) = { import c.universe._; c.Expr[Unit](q"()") }
-      def foo = macro impl
+      def foo: Unit = macro impl
     }
   """
   def compileMacros() = {

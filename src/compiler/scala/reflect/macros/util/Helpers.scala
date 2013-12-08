@@ -77,7 +77,8 @@ trait Helpers {
 
   /** Decreases metalevel of the type, i.e. transforms:
    *    * c.Expr[T] to T
-   *    * Anything else to Any
+   *    * Nothing to Nothing
+   *    * Anything else to NoType
    *
    *  @see Metalevels.scala for more information and examples about metalevels
    */
@@ -86,7 +87,10 @@ trait Helpers {
     import runDefinitions._
     transparentShallowTransform(RepeatedParamClass, tp) {
       case ExprClassOf(runtimeType) => runtimeType
-      case _ => AnyTpe // so that macro impls with rhs = ??? don't screw up our inference
+      // special-casing Nothing here is a useful convention
+      // that enables no-hassle prototyping with `macro ???` and `macro { ...; ??? }`
+      case nothing if nothing =:= NothingTpe => NothingTpe
+      case _ => NoType
     }
   }
 }

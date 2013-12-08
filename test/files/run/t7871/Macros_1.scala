@@ -7,7 +7,7 @@ case object SomeTree extends Tree
 object NewQuasiquotes {
   implicit class QuasiquoteInterpolation(c: StringContext) {
     object nq {
-      def unapply(t: Tree) = macro QuasiquoteMacros.unapplyImpl
+      def unapply(t: Tree): Any = macro QuasiquoteMacros.unapplyImpl
     }
   }
 }

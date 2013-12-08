@@ -1,3 +1,5 @@
+import scala.language.implicitConversions
+
 trait Q
 trait K
 

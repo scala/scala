@@ -1,19 +1,19 @@
 object Macros1 {
   class C[T] {
-    def foo[U](x: U) = macro Impls1.foo[U]
+    def foo[U](x: U): Unit = macro Impls1.foo[U]
   }
 }
 
 object Macros2 {
   class C[T] {
-    def foo[U](x: U) = macro Impls2.foo[T, U]
+    def foo[U](x: U): Unit = macro Impls2.foo[T, U]
   }
 }
 
 object Macros3 {
   class D[T] {
     class C[U] {
-      def foo[V] = macro Impls345.foo[T, U, V]
+      def foo[V]: Unit = macro Impls345.foo[T, U, V]
     }
   }
 }
@@ -23,7 +23,7 @@ object Macros3 {
 object Macros5 {
   class D[T] {
     class C[U] {
-      def foo[V] = macro Impls345.foo[T, U, V]
+      def foo[V]: Unit = macro Impls345.foo[T, U, V]
       foo[Boolean]
     }
   }

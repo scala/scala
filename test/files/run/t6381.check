@@ -10,7 +10,7 @@ scala> def pos_impl(c: reflect.macros.BlackboxContext): c.Expr[String] = {
 }
 pos_impl: (c: scala.reflect.macros.BlackboxContext)c.Expr[String]
 
-scala> def pos = macro pos_impl
+scala> def pos: String = macro pos_impl
 defined term macro pos: String
 
 scala> pos

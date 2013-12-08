@@ -9,7 +9,7 @@ trait Impls extends BlackboxMacro {
 }
 
 object Macros {
-  def m1(x: Int) = macro Impls.impl1
-  def m2(x: Int) = macro Impls.impl2
-  def m3(x: Int) = macro Impls.impl3
+  def m1(x: Int): Unit = macro Impls.impl1
+  def m2(x: Int): Unit = macro Impls.impl2
+  def m3(x: Int): Unit = macro Impls.impl3
 }

@@ -22,7 +22,7 @@ object Macros {
     // val fields = kvps map { case (k, v) => q"@body($v) def ${TermName(k)} = macro Macros.selFieldImpl" }
     val fields = kvps map { case (k, v) => DefDef(
       Modifiers(MACRO, tpnme.EMPTY, List(Apply(Select(New(Ident(TypeName("body"))), nme.CONSTRUCTOR), List(v)))),
-      TermName(k), Nil, Nil, TypeTree(), Select(Ident(TermName("Macros")), TermName("selFieldImpl"))) }
+      TermName(k), Nil, Nil, Ident(TypeName("Any")), Select(Ident(TermName("Macros")), TermName("selFieldImpl"))) }
     // q"import scala.language.experimental.macros; class Workaround { ..$fields }; new Workaround{}"
     c.Expr[Any](Block(
       List(
@@ -48,5 +48,5 @@ object Macros {
 }
 
 object mkObject {
-  def apply(xs: Any*) = macro Macros.mkObjectImpl
+  def apply(xs: Any*): Any = macro Macros.mkObjectImpl
 }

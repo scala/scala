@@ -1,5 +1,5 @@
 macro-bundle-object.scala:10: error: macro implementation has incompatible shape:
- required: (c: scala.reflect.macros.BlackboxContext): c.Expr[Any]
+ required: (c: scala.reflect.macros.BlackboxContext): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.BlackboxContext): c.Tree
  found   : : Nothing
 number of parameter sections differ
