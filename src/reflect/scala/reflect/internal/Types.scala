@@ -1999,7 +1999,9 @@ trait Types
       if (sym.typeParams.size != args.size)
         devWarning(s"$this.transform($tp), but tparams.isEmpty and args=$args")
 
-      asSeenFromOwner(tp).instantiateTypeParams(sym.typeParams, args)
+      val GenPolyType(tparams, result) = asSeenFromOwner(tp)
+      assert((tparams eq Nil) || tparams == sym.typeParams, (tparams, sym.typeParams))
+      result.instantiateTypeParams(sym.typeParams, args)
     }
 
     // note: does not go through typeRef. There's no need to because
@@ -2309,7 +2311,14 @@ trait Types
       }
       thisInfo.decls
     }
-    protected[Types] def baseTypeSeqImpl: BaseTypeSeq = sym.info.baseTypeSeq map transform
+    protected[Types] def baseTypeSeqImpl: BaseTypeSeq =
+      if (sym.info.baseTypeSeq exists (_.typeSymbolDirect.isAbstractType))
+        // SI-8046 base type sequence might have more elements in a subclass, we can't map it element wise.
+        transform(sym.info).baseTypeSeq
+      else
+        // Optimization: no abstract types, we can compute the BTS of this TypeRef as an element-wise map
+        //               of the BTS of the referenced symbol.
+        sym.info.baseTypeSeq map transform
 
     override def baseTypeSeq: BaseTypeSeq = {
       val cache = baseTypeSeqCache

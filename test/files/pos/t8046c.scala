@@ -5,7 +5,7 @@ trait One {
 
 trait Three extends One {
   trait Op[A] extends (A => A)
- 
+
   def f1(f: Op[Int])            = f(5)
   def f2(f: Alias[Int])         = f(5)
   def f3[T <: Op[Int]](f: T)    = f(5)

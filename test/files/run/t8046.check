@@ -1,0 +1,2 @@
+List(trait Op, trait Function1, class Object, class Any)
+BTS(T,Three.this.Op[Int],Int => Int,Object,Any)
