@@ -44,7 +44,7 @@ trait Publisher extends Reactor {
   /**
    * Notify all registered reactions.
    */
-  def publish(e: Event) { for (l <- listeners) l(e) }
+  def publish(e: Event) { for (l <- listeners) if (l.isDefinedAt(e)) l(e) }
 
   listenTo(this)
 }
