@@ -212,7 +212,7 @@ trait BuildUtils { self: SymbolTable =>
               case Nil :: (tail @ ((head :: _) :: _)) if head.mods.isImplicit => tail
               case other => other
             }
-            // undo flag modifications by mergeing flag info from constructor args and fieldDefs
+            // undo flag modifications by merging flag info from constructor args and fieldDefs
             val modsMap = fieldDefs.map { case ValDef(mods, name, _, _) => name -> mods }.toMap
             def ctorArgsCorrespondToFields = vparamssRestoredImplicits.flatten.forall { vd => modsMap.contains(vd.name) }
             if (!ctorArgsCorrespondToFields) None
@@ -394,7 +394,7 @@ trait BuildUtils { self: SymbolTable =>
     object SyntacticFunction extends SyntacticFunctionExtractor {
       def apply(params: List[Tree], body: Tree): Tree = {
         val params0 :: Nil = mkVparamss(params :: Nil)
-        require(params0.forall { _.rhs.isEmpty }, "anonymous functions don't support default values")
+        require(params0.forall { _.rhs.isEmpty }, "anonymous functions don't support parameters with default values")
         Function(params0, body)
       }
 
