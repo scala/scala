@@ -341,11 +341,13 @@ abstract class TreeGen extends macros.TreeBuilder {
 
     // create parameters for <init> as synthetic trees.
     var vparamss1 = mmap(vparamss) { vd =>
-      atPos(vd.pos.focus) {
+      val param = atPos(vd.pos.makeTransparent) {
         val mods = Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM | BYNAMEPARAM) | PARAM | PARAMACCESSOR)
-        ValDef(mods withAnnotations vd.mods.annotations, vd.name, vd.tpt.duplicate, vd.rhs.duplicate)
+        ValDef(mods, vd.name, vd.tpt.duplicate, duplicateAndKeepPositions(vd.rhs))
       }
+      param
     }
+    
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
     val gvdefs = evdefs map {
@@ -378,15 +380,18 @@ abstract class TreeGen extends macros.TreeBuilder {
                                          // this means that we don't know what will be the arguments of the super call
                                          // therefore here we emit a dummy which gets populated when the template is named and typechecked
         Some(
-          // TODO: previously this was `wrappingPos(superPos, lvdefs ::: argss.flatten)`
-          // is it going to be a problem that we can no longer include the `argss`?
-          atPos(wrappingPos(superPos, lvdefs)) (
+          atPos(wrappingPos(superPos, lvdefs ::: vparamss1.flatten).makeTransparent) (
             DefDef(constrMods, nme.CONSTRUCTOR, List(), vparamss1, TypeTree(), Block(lvdefs ::: List(superCall), Literal(Constant())))))
       }
     }
     constr foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus = false))
     // Field definitions for the class - remove defaults.
-    val fieldDefs = vparamss.flatten map (vd => copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree))
+    
+    val fieldDefs = vparamss.flatten map (vd => {
+      val field = copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree)
+      if(vd.rhs.pos.isOpaqueRange) field.pos = field.pos.withEnd(vd.rhs.pos.start)
+      field
+    })
 
     global.Template(parents, self, gvdefs ::: fieldDefs ::: constr ++: etdefs ::: rest)
   }

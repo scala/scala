@@ -566,7 +566,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
               case Success(expanded) =>
                 if (allowExpanded(expanded)) {
                   // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
-                  val expanded1 = try onSuccess(duplicateAndKeepPositions(expanded)) finally popMacroContext()
+                  val expanded1 = try onSuccess(expanded.duplicate) finally popMacroContext()
                   if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
                   if (allowResult(expanded1)) expanded1 else onFailure(expanded)
                 } else {
