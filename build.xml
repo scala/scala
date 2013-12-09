@@ -1861,21 +1861,26 @@ TODO:
   </target>
 
   <target name="dist.doc" depends="dist.base, docs.done">
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs"/>
+    <mkdir dir="${dist.dir}/doc"/>
+    <mkdir dir="${dist.dir}/doc/licenses"/>
+    <mkdir dir="${dist.dir}/doc/tools"/>
     <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc"/>
-    <copy file="${docs.dir}/README" toDir="${dist.dir}/doc"/>
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs/api"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/api">
-      <fileset dir="${build-docs.dir}/library"/>
+    <copy file="${docs.dir}/README"  toDir="${dist.dir}/doc"/>
+    <copy                            toDir="${dist.dir}/doc/licenses">
+      <fileset dir="${docs.dir}/licenses"/>
     </copy>
-
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs/tools"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/tools">
+    <copy                            toDir="${dist.dir}/doc/tools">
       <fileset dir="${build-docs.dir}/manual/html"/>
     </copy>
+
+    <mkdir dir="${dist.dir}/api"/>
+    <copy toDir="${dist.dir}/api">
+      <fileset dir="${build-docs.dir}/library"/>
+    </copy>
     <copy file="${src.dir}/swing/doc/README"
-          toFile="${dist.dir}/doc/scala-devel-docs/README.scala-swing"/>
+          toFile="${dist.dir}/api/README.scala-swing"/>
   </target>
+
 
   <target name="dist.man" depends="dist.base">
     <mkdir dir="${dist.dir}/man"/>
