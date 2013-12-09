@@ -456,15 +456,6 @@ trait Scanners extends ScannersCommon {
               nextChar()
               base = 16
             } else {
-              /*
-               * What should leading 0 be in the future? It is potentially dangerous
-               *  to let it be base-10 because of history.  Should it be an error? Is
-               *  there a realistic situation where one would need it?
-               */
-              if (isDigit(ch)) {
-                if (settings.future) syntaxError("Non-zero numbers may not have a leading zero.")
-                else deprecationWarning("Treating numbers with a leading zero as octal is deprecated.")
-              }
               base = 8
             }
             getNumber()
@@ -980,10 +971,15 @@ trait Scanners extends ScannersCommon {
     */
     protected def getNumber() {
       val base1 = if (base < 10) 10 else base
-      // read 8,9's even if format is octal, produce a malformed number error afterwards.
+      // Read 8,9's even if format is octal, produce a malformed number error afterwards.
+      // At this point, we have already read the first digit, so to tell an innocent 0 apart
+      // from an octal literal 0123... (which we want to disallow), we check whether there
+      // are any additional digits coming after the first one we have already read.
+      var notSingleZero = false
       while (digit2int(ch, base1) >= 0) {
         putChar(ch)
         nextChar()
+        notSingleZero = true
       }
       token = INTLIT
 
@@ -1000,6 +996,9 @@ trait Scanners extends ScannersCommon {
         if (base <= 10 && isEfd)
           getFraction()
         else {
+          // Checking for base == 8 is not enough, because base = 8 is set
+          // as soon as a 0 is read in `case '0'` of method fetchToken.
+          if (base == 8 && notSingleZero) syntaxError("Non-zero integral values may not have a leading zero.")
           setStrVal()
           if (isL) {
             nextChar()
