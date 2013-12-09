@@ -1,35 +1,33 @@
 reload: Completions.scala
 
-askScopeCompletion at Completions.scala(16,4)
+askScopeCompletion at Completions.scala(15,2)
 ================================================================================
-[response] askScopeCompletion at (16,4)
-retrieved 11 members
+[response] askScopeCompletion at (15,2)
+retrieved 10 members
 [accessible:  true] `class Cc1Completion1.this.Cc1`
 [accessible:  true] `class Co1test.Completion1.Co1`
 [accessible:  true] `class Completion1test.Completion1`
 [accessible:  true] `constructor Completion1()test.Completion1`
 [accessible:  true] `method fc1=> Int`
 [accessible:  true] `method fo1=> Int`
-[accessible:  true] `method test=> Unit`
 [accessible:  true] `object Completion1test.Completion1.type`
 [accessible:  true] `value ctest.Completion1`
 [accessible:  true] `value vc1Int`
 [accessible:  true] `value vo1Int`
 ================================================================================
 
-askScopeCompletion at Completions.scala(32,4)
+askScopeCompletion at Completions.scala(29,2)
 ================================================================================
-[response] askScopeCompletion at (32,4)
-retrieved 11 members
+[response] askScopeCompletion at (29,2)
+retrieved 10 members
 [accessible:  true] `class Cc1test.Completion1.c.Cc1`
 [accessible:  true] `class Co1test.Completion1.Co1`
 [accessible:  true] `class Completion1test.Completion1`
 [accessible:  true] `constructor Completion1()test.Completion1.type`
 [accessible:  true] `method fc1=> Int`
 [accessible:  true] `method fo1=> Int`
-[accessible:  true] `method test=> Unit`
 [accessible:  true] `object Completion1test.Completion1.type`
 [accessible:  true] `value ctest.Completion1`
+[accessible:  true] `value vc1Int`
 [accessible:  true] `value vo1Int`
-[accessible: false] `value vc1Int`
 ================================================================================

@@ -29,13 +29,17 @@ retrieved 49 members
 [accessible:  true] `type tc2Completion1.this.tc2`
 [accessible:  true] `type tt1Completion1.this.tt1`
 [accessible:  true] `type tt3Completion1.this.tt3`
+[accessible:  true] `value vb1Int`
 [accessible:  true] `value vb3Int`
 [accessible:  true] `value vc1Int`
 [accessible:  true] `value vc2Int`
+[accessible:  true] `value vt1Int`
 [accessible:  true] `value vt3Int`
+[accessible:  true] `variable rb1Int`
 [accessible:  true] `variable rb3Int`
 [accessible:  true] `variable rc1Int`
 [accessible:  true] `variable rc2Int`
+[accessible:  true] `variable rt1Int`
 [accessible:  true] `variable rt3Int`
 [accessible: false] `class Cb2Completion1.this.Cb2`
 [accessible: false] `class Ct2Completion1.this.Ct2`
@@ -45,13 +49,9 @@ retrieved 49 members
 [accessible: false] `object Ot2Completion1.this.Ot2.type`
 [accessible: false] `type tb2Completion1.this.tb2`
 [accessible: false] `type tt2Completion1.this.tt2`
-[accessible: false] `value vb1Int`
 [accessible: false] `value vb2Int`
-[accessible: false] `value vt1Int`
 [accessible: false] `value vt2Int`
-[accessible: false] `variable rb1Int`
 [accessible: false] `variable rb2Int`
-[accessible: false] `variable rt1Int`
 [accessible: false] `variable rt2Int`
 ================================================================================
 
@@ -84,13 +84,17 @@ retrieved 49 members
 [accessible:  true] `type to2test.Completion2.to2`
 [accessible:  true] `type tt1test.Completion2.tt1`
 [accessible:  true] `type tt3test.Completion2.tt3`
+[accessible:  true] `value vb1Int`
 [accessible:  true] `value vb3Int`
 [accessible:  true] `value vo1Int`
 [accessible:  true] `value vo2Int`
+[accessible:  true] `value vt1Int`
 [accessible:  true] `value vt3Int`
+[accessible:  true] `variable rb1Int`
 [accessible:  true] `variable rb3Int`
 [accessible:  true] `variable ro1Int`
 [accessible:  true] `variable ro2Int`
+[accessible:  true] `variable rt1Int`
 [accessible:  true] `variable rt3Int`
 [accessible: false] `class Cb2test.Completion2.Cb2`
 [accessible: false] `class Ct2test.Completion2.Ct2`
@@ -100,12 +104,8 @@ retrieved 49 members
 [accessible: false] `object Ot2test.Completion2.Ot2.type`
 [accessible: false] `type tb2test.Completion2.tb2`
 [accessible: false] `type tt2test.Completion2.tt2`
-[accessible: false] `value vb1Int`
 [accessible: false] `value vb2Int`
-[accessible: false] `value vt1Int`
 [accessible: false] `value vt2Int`
-[accessible: false] `variable rb1Int`
 [accessible: false] `variable rb2Int`
-[accessible: false] `variable rt1Int`
 [accessible: false] `variable rt2Int`
 ================================================================================
