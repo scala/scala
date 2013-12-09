@@ -1837,16 +1837,8 @@ TODO:
     <copy toDir="${dist.dir}/lib">
       <fileset dir="${build-pack.dir}/lib">
         <include name="jline.jar"/>
-        <include name="scalacheck.jar"/>
-        <include name="scala-partest.jar"/>
         <include name="scalap.jar"/>
       </fileset>
-    </copy>
-
-    <copy todir="${dist.dir}/lib">
-      <resources refid="partest.extras.fileset"/>
-      <mapper classpathref="maven-ant-tasks.classpath" classname="org.apache.maven.artifact.ant.VersionMapper"
-              from="${partest.extras.versions}" to="flatten"/>
     </copy>
 
     <mkdir dir="${dist.dir}/bin"/>
