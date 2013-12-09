@@ -341,21 +341,19 @@ abstract class TreeGen extends macros.TreeBuilder {
 
     // create parameters for <init> as synthetic trees.
     var vparamss1 = mmap(vparamss) { vd =>
-      val param = atPos(vd.pos) {
+      val param = atPos(vd.pos.makeTransparent) {
         val mods = Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM | BYNAMEPARAM) | PARAM | PARAMACCESSOR)
-        val tpt = {
-          val vtpt = duplicateAndKeepPositions(vd.tpt)
-          for(t <- vd.tpt) t.pos = t.pos.makeTransparent
-          vtpt
-        }
         val rhs = {
-          val vrhs = duplicateAndKeepPositions(vd.rhs)
-          for(t <- vd.rhs) t.pos = t.pos.makeTransparent
-          vrhs
-        } 
-        ValDef(mods, vd.name, tpt, rhs)
+          if(vd.rhs.pos.isOpaqueRange) {
+            val vrhs = duplicateAndKeepPositions(vd.rhs)
+            for(t <- vd.rhs) t.pos = t.pos.makeTransparent
+            vd.pos = vd.pos.withEnd(vd.rhs.pos.start)
+            vrhs
+          }
+          else vd.rhs.duplicate
+        }
+        ValDef(mods, vd.name, vd.tpt.duplicate, rhs)
       }
-      vd.pos = vd.pos.makeTransparent
       // Turning parameters' accessor positions into transparent ones, so that they don't overlap with the <init> parameters positions created just above.
       // However, we do need to skip annotation if present, as they may have an opaque range position
       // With this transformation, the constructor's parameters may have an opaque (range) position, while the parameters' accessors won't.
