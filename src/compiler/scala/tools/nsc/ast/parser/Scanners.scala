@@ -204,8 +204,12 @@ trait Scanners extends ScannersCommon {
         val idx = name.start - kwOffset
         if (idx >= 0 && idx < kwArray.length) {
           token = kwArray(idx)
-          if (token == IDENTIFIER && allowIdent != name && emitIdentifierDeprecationWarnings)
-            deprecationWarning(name+" is now a reserved word; usage as an identifier is deprecated")
+          if (token == IDENTIFIER && allowIdent != name) {
+            if (name == nme.MACROkw)
+              syntaxError(name+" is now a reserved word; usage as an identifier is disallowed")
+            else if (emitIdentifierDeprecationWarnings)
+              deprecationWarning(name+" is now a reserved word; usage as an identifier is deprecated")
+          }
         }
       }
     }
