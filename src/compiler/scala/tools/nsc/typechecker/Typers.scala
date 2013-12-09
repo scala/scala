@@ -5113,12 +5113,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // Warn about likely interpolated strings which are missing their interpolators
       def warnMissingInterpolator(lit: Literal): Unit = if (!isPastTyper) {
+        // attempt to avoid warning about trees munged by macros
+        def isMacroExpansion = {
+          // context.tree is not the expandee; it is plain new SC(ps).m(args)
+          //context.tree exists (t => (t.pos includes lit.pos) && hasMacroExpansionAttachment(t))
+          // testing pos works and may suffice
+          //openMacros exists (_.macroApplication.pos includes lit.pos)
+          // tests whether the lit belongs to the expandee of an open macro
+          openMacros exists (_.macroApplication.attachments.get[MacroExpansionAttachment] match {
+            case Some(MacroExpansionAttachment(_, t: Tree)) => t exists (_ == lit)
+            case _                                          => false
+          })
+        }
         // attempt to avoid warning about the special interpolated message string
         // for implicitNotFound or any standard interpolation (with embedded $$).
         def isRecognizablyNotForInterpolation = context.enclosingApply.tree match {
           case Apply(Select(Apply(RefTree(_, nme.StringContext), _), _), _) => true
           case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _) => true
-          case _                                                            => false
+          case _                                                            => isMacroExpansion
         }
         def requiresNoArgs(tp: Type): Boolean = tp match {
           case PolyType(_, restpe)     => requiresNoArgs(restpe)
@@ -5149,12 +5161,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedLiteral(tree: Literal) = {
-        if (settings.lint)
-          warnMissingInterpolator(tree)
+        if (settings.lint) warnMissingInterpolator(tree)
 
-        tree setType (
-          if (tree.value.tag == UnitTag) UnitTpe
-          else ConstantType(tree.value))
+        tree setType (if (tree.value.tag == UnitTag) UnitTpe else ConstantType(tree.value))
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {
