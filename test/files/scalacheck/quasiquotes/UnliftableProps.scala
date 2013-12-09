@@ -109,4 +109,52 @@ object UnliftableProps extends QuasiquoteProperties("unliftable") {
     val q"${mods: Modifiers} def foo" = q"def foo"
     assert(mods == Modifiers(DEFERRED))
   }
+
+  property("unlift tuple") = test {
+    // fails due to SI-8045
+    // val q"${t1: Tuple1[Int]}" = q"_root_.scala.Tuple1(1)"
+    val q"${t2: (Int, Int)}" = q"(1, 2)"
+    val q"${t3: (Int, Int, Int)}" = q"(1, 2, 3)"
+    val q"${t4: (Int, Int, Int, Int)}" = q"(1, 2, 3, 4)"
+    val q"${t5: (Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5)"
+    val q"${t6: (Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6)"
+    val q"${t7: (Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7)"
+    val q"${t8: (Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8)"
+    val q"${t9: (Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9)"
+    val q"${t10: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)"
+    val q"${t11: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)"
+    val q"${t12: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)"
+    val q"${t13: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)"
+    val q"${t14: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)"
+    val q"${t15: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)"
+    val q"${t16: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)"
+    val q"${t17: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17)"
+    val q"${t18: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18)"
+    val q"${t19: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)"
+    val q"${t20: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)"
+    val q"${t21: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21)"
+    val q"${t22: (Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, Int)}" = q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)"
+    // assert(t1 == Tuple1(1))
+    assert(t2 == (1, 2))
+    assert(t3 == (1, 2, 3))
+    assert(t4 == (1, 2, 3, 4))
+    assert(t5 == (1, 2, 3, 4, 5))
+    assert(t6 == (1, 2, 3, 4, 5, 6))
+    assert(t7 == (1, 2, 3, 4, 5, 6, 7))
+    assert(t8 == (1, 2, 3, 4, 5, 6, 7, 8))
+    assert(t9 == (1, 2, 3, 4, 5, 6, 7, 8, 9))
+    assert(t10 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+    assert(t11 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
+    assert(t12 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12))
+    assert(t13 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13))
+    assert(t14 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14))
+    assert(t15 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15))
+    assert(t16 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16))
+    assert(t17 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17))
+    assert(t18 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18))
+    assert(t19 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19))
+    assert(t20 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20))
+    assert(t21 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21))
+    assert(t22 == (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22))
+  }
 }
