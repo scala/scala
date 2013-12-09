@@ -73,7 +73,7 @@ trait Holes { self: Quasiquotes =>
   }
 
   class ApplyHole(card: Cardinality, splicee: Tree) extends Hole {
-    val (strippedTpe: Type, tpe: Type) = {
+    val (strippedTpe, tpe): (Type, Type) = {
       if (stripIterable(splicee.tpe)._1.value < card.value) cantSplice()
       val (_, strippedTpe) = stripIterable(splicee.tpe, limit = Some(card))
       if (isBottomType(strippedTpe)) cantSplice()

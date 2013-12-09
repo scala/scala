@@ -318,7 +318,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.MirrorClass
     definitions.TypeCreatorClass
     definitions.TreeCreatorClass
-    definitions.LiftableClass
     definitions.BlackboxMacroClass
     definitions.WhiteboxMacroClass
     definitions.BlackboxContextClass

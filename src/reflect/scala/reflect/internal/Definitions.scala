@@ -481,7 +481,6 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val TypeCreatorClass      = getClassIfDefined("scala.reflect.api.TypeCreator") // defined in scala-reflect.jar, so we need to be careful
     lazy val TreeCreatorClass      = getClassIfDefined("scala.reflect.api.TreeCreator") // defined in scala-reflect.jar, so we need to be careful
-    lazy val LiftableClass         = NoSymbol
 
     lazy val BlackboxMacroClass           = getClassIfDefined("scala.reflect.macros.BlackboxMacro") // defined in scala-reflect.jar, so we need to be careful
          def BlackboxMacroContextValue    = BlackboxMacroClass.map(sym => getMemberValue(sym, nme.c))
