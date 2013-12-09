@@ -15,7 +15,7 @@ class Plugin(val global: Global) extends NscPlugin {
   object MacroPlugin extends MacroPlugin {
     override def pluginsTypedMacroBody(typer: Typer, ddef: DefDef): Option[Tree] = {
       val DefDef(_, _, _, _, _, Literal(Constant(num: Int))) = ddef
-      Some(typedMacroBody(typer, copyDefDef(ddef)(rhs = Ident(TermName("impl" + num)))))
+      Some(standardTypedMacroBody(typer, copyDefDef(ddef)(rhs = Ident(TermName("impl" + num)))))
     }
   }
 }

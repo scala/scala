@@ -14,7 +14,7 @@ class Plugin(val global: Global) extends NscPlugin {
 
   object MacroPlugin extends MacroPlugin {
     override def pluginsMacroArgs(typer: Typer, expandee: Tree): Option[MacroArgs] = {
-      val MacroArgs(c, List(Literal(Constant(s: String)))) = macroArgs(typer, expandee)
+      val MacroArgs(c, List(Literal(Constant(s: String)))) = standardMacroArgs(typer, expandee)
       Some(MacroArgs(c, List(Literal(Constant("hijacked " + s)))))
     }
   }

@@ -243,7 +243,12 @@ trait Namers extends MethodSynthesis {
         validate(sym2.companionClass)
     }
 
-    def enterSym(tree: Tree): Context = {
+    def enterSym(tree: Tree): Context = pluginsEnterSym(this, tree)
+
+    /** Default implementation of `enterSym`.
+     *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsEnterSym for more details)
+     */
+    def standardEnterSym(tree: Tree): Context = {
       def dispatch() = {
         var returnContext = this.context
         tree match {
@@ -253,7 +258,7 @@ trait Namers extends MethodSynthesis {
           case tree @ ValDef(_, _, _, _)                     => enterValDef(tree)
           case tree @ DefDef(_, _, _, _, _, _)               => enterDefDef(tree)
           case tree @ TypeDef(_, _, _, _)                    => enterTypeDef(tree)
-          case DocDef(_, defn)                               => pluginsEnterSym(this, defn)
+          case DocDef(_, defn)                               => enterSym(defn)
           case tree @ Import(_, _)                           =>
             assignSymbol(tree)
             returnContext = context.make(tree)
@@ -452,7 +457,7 @@ trait Namers extends MethodSynthesis {
 
     def enterSyms(trees: List[Tree]): Namer = {
       trees.foldLeft(this: Namer) { (namer, t) =>
-        val ctx = pluginsEnterSym(namer, t)
+        val ctx = namer enterSym t
         // for Import trees, enterSym returns a changed context, so we need a new namer
         if (ctx eq namer.context) namer
         else newNamer(ctx)
@@ -466,7 +471,13 @@ trait Namers extends MethodSynthesis {
      *  class definition tree.
      *  @return the companion object symbol.
      */
-    def ensureCompanionObject(cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol = {
+    def ensureCompanionObject(cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol =
+      pluginsEnsureCompanionObject(this, cdef, creator)
+
+    /** Default implementation of `ensureCompanionObject`.
+     *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsEnsureCompanionObject for more details)
+     */
+    def standardEnsureCompanionObject(cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol = {
       val m = companionSymbolOf(cdef.symbol, context)
       // @luc: not sure why "currentRun.compiles(m)" is needed, things breaks
       // otherwise. documentation welcome.
@@ -662,7 +673,7 @@ trait Namers extends MethodSynthesis {
       tree.symbol setInfo completerOf(tree)
 
       if (mods.isCase) {
-        val m = pluginsEnsureCompanionObject(this, tree, caseModuleDef)
+        val m = ensureCompanionObject(tree, caseModuleDef)
         m.moduleClass.updateAttachment(new ClassForCaseCompanionAttachment(tree))
       }
       val hasDefault = impl.body exists {
@@ -670,7 +681,7 @@ trait Namers extends MethodSynthesis {
         case _                                              => false
       }
       if (hasDefault) {
-        val m = pluginsEnsureCompanionObject(this, tree)
+        val m = ensureCompanionObject(tree)
         m.updateAttachment(new ConstructorDefaultsAttachment(tree, null))
       }
       val owner = tree.symbol.owner
@@ -697,7 +708,7 @@ trait Namers extends MethodSynthesis {
     def enterIfNotThere(sym: Symbol) { }
 
     def enterSyntheticSym(tree: Tree): Symbol = {
-      pluginsEnterSym(this, tree)
+      enterSym(tree)
       context.unit.synthetics(tree.symbol) = tree
       tree.symbol
     }
@@ -931,7 +942,7 @@ trait Namers extends MethodSynthesis {
         log("Ensuring companion for derived value class " + cdef.name + " at " + cdef.pos.show)
         clazz setFlag FINAL
         // Don't force the owner's info lest we create cycles as in SI-6357.
-        pluginsEnsureCompanionObject(enclosingNamerWithScope(clazz.owner.rawInfo.decls), cdef)
+        enclosingNamerWithScope(clazz.owner.rawInfo.decls).ensureCompanionObject(cdef)
       }
       pluginsTp
     }

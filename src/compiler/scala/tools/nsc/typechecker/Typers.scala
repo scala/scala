@@ -1112,7 +1112,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (tree.isType)
           adaptType()
         else if (mode.typingExprNotFun && treeInfo.isMacroApplication(tree) && !isMacroExpansionSuppressed(tree))
-          pluginsMacroExpand(this, tree, mode, pt)
+          macroExpand(this, tree, mode, pt)
         else if (mode.typingConstructorPattern)
           typedConstructorPattern(tree, pt)
         else if (shouldInsertApply(tree))
@@ -1863,8 +1863,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     protected def enterSym(txt: Context, tree: Tree): Context =
-      if (txt eq context) pluginsEnterSym(namer, tree)
-      else pluginsEnterSym(newNamer(txt), tree)
+      if (txt eq context) namer enterSym tree
+      else newNamer(txt) enterSym tree
 
     /** <!-- 2 --> Check that inner classes do not inherit from Annotation
      */
@@ -2213,7 +2213,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         } else if (meth.isMacro) {
           // typechecking macro bodies is sort of unconventional
           // that's why we employ our custom typing scheme orchestrated outside of the typer
-          transformedOr(ddef.rhs, pluginsTypedMacroBody(this, ddef))
+          transformedOr(ddef.rhs, typedMacroBody(this, ddef))
         } else {
           transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
         }
@@ -3812,7 +3812,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     protected def typedExistentialTypeTree(tree: ExistentialTypeTree, mode: Mode): Tree = {
       for (wc <- tree.whereClauses)
-        if (wc.symbol == NoSymbol) { pluginsEnterSym(namer, wc); wc.symbol setFlag EXISTENTIAL }
+        if (wc.symbol == NoSymbol) { namer enterSym wc; wc.symbol setFlag EXISTENTIAL }
         else context.scope enter wc.symbol
       val whereClauses1 = typedStats(tree.whereClauses, context.owner)
       for (vd @ ValDef(_, _, _, _) <- whereClauses1)
@@ -5517,7 +5517,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // here we guard against this case
           transformed(ddef.rhs)
         } else {
-          val rhs1 = pluginsTypedMacroBody(this, ddef)
+          val rhs1 = typedMacroBody(this, ddef)
           transformed(ddef.rhs) = rhs1
           rhs1
         }

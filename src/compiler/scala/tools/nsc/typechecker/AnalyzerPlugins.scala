@@ -180,7 +180,7 @@ trait AnalyzerPlugins { self: Analyzer =>
      * Typechecks the right-hand side of a macro definition (which typically features
      * a mere reference to a macro implementation).
      *
-     * Default implementation provided in `self.typedMacroBody` makes sure that the rhs
+     * Default implementation provided in `self.standardTypedMacroBody` makes sure that the rhs
      * resolves to a reference to a method in either a static object or a macro bundle,
      * verifies that the referred method is compatible with the macro def and upon success
      * attaches a macro impl binding to the macro def's symbol.
@@ -193,7 +193,7 @@ trait AnalyzerPlugins { self: Analyzer =>
      * Expands an application of a def macro (i.e. of a symbol that has the MACRO flag set),
      * possibly using the current typer mode and the provided prototype.
      *
-     * Default implementation provided in `self.macroExpand` figures out whether the `expandee`
+     * Default implementation provided in `self.standardMacroExpand` figures out whether the `expandee`
      * needs to be expanded right away or its expansion has to be delayed until all undetermined
      * parameters are inferred, then loads the macro implementation using `self.pluginsMacroRuntime`,
      * prepares the invocation arguments for the macro implementation using `self.pluginsMacroArgs`,
@@ -211,7 +211,7 @@ trait AnalyzerPlugins { self: Analyzer =>
     /**
      * Computes the arguments that need to be passed to the macro impl corresponding to a particular expandee.
      *
-     * Default implementation provided in `self.macroArgs` instantiates a `scala.reflect.macros.contexts.Context`,
+     * Default implementation provided in `self.standardMacroArgs` instantiates a `scala.reflect.macros.contexts.Context`,
      * gathers type and value arguments of the macro application and throws them together into `MacroArgs`.
      *
      * $nonCumulativeReturnValueDoc.
@@ -221,7 +221,7 @@ trait AnalyzerPlugins { self: Analyzer =>
     /**
      * Summons a function that encapsulates macro implementation invocations for a particular expandee.
      *
-     * Default implementation provided in `self.macroRuntime` returns a function that
+     * Default implementation provided in `self.standardMacroRuntime` returns a function that
      * loads the macro implementation binding from the macro definition symbol,
      * then uses either Java or Scala reflection to acquire the method that corresponds to the impl,
      * and then reflectively calls into that method.
@@ -233,7 +233,7 @@ trait AnalyzerPlugins { self: Analyzer =>
     /**
      * Creates a symbol for the given tree in lexical context encapsulated by the given namer.
      *
-     * Default implementation provided in `namer.enterSym` handles MemberDef's and Imports,
+     * Default implementation provided in `namer.standardEnterSym` handles MemberDef's and Imports,
      * doing nothing for other trees (DocDef's are seen through and rewrapped). Typical implementation
      * of `enterSym` for a particular tree flavor creates a corresponding symbol, assigns it to the tree,
      * enters the symbol into scope and then might even perform some code generation.
@@ -245,7 +245,7 @@ trait AnalyzerPlugins { self: Analyzer =>
     /**
      * Makes sure that for the given class definition, there exists a companion object definition.
      *
-     * Default implementation provided in `namer.ensureCompanionObject` looks up a companion symbol for the class definition
+     * Default implementation provided in `namer.standardEnsureCompanionObject` looks up a companion symbol for the class definition
      * and then checks whether the resulting symbol exists or not. If it exists, then nothing else is done.
      * If not, a synthetic object definition is created using the provided factory, which is then entered into namer's scope.
      *
@@ -371,7 +371,7 @@ trait AnalyzerPlugins { self: Analyzer =>
   def pluginsTypedMacroBody(typer: Typer, ddef: DefDef): Tree = invoke(new NonCumulativeOp[Tree] {
     def position = ddef.pos
     def description = "typecheck this macro definition"
-    def default = typedMacroBody(typer, ddef)
+    def default = standardTypedMacroBody(typer, ddef)
     def custom(plugin: MacroPlugin) = plugin.pluginsTypedMacroBody(typer, ddef)
   })
 
@@ -379,7 +379,7 @@ trait AnalyzerPlugins { self: Analyzer =>
   def pluginsMacroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = invoke(new NonCumulativeOp[Tree] {
     def position = expandee.pos
     def description = "expand this macro application"
-    def default = macroExpand(typer, expandee, mode, pt)
+    def default = standardMacroExpand(typer, expandee, mode, pt)
     def custom(plugin: MacroPlugin) = plugin.pluginsMacroExpand(typer, expandee, mode, pt)
   })
 
@@ -387,7 +387,7 @@ trait AnalyzerPlugins { self: Analyzer =>
   def pluginsMacroArgs(typer: Typer, expandee: Tree): MacroArgs = invoke(new NonCumulativeOp[MacroArgs] {
     def position = expandee.pos
     def description = "compute macro arguments for this macro application"
-    def default = macroArgs(typer, expandee)
+    def default = standardMacroArgs(typer, expandee)
     def custom(plugin: MacroPlugin) = plugin.pluginsMacroArgs(typer, expandee)
   })
 
@@ -395,30 +395,32 @@ trait AnalyzerPlugins { self: Analyzer =>
   def pluginsMacroRuntime(expandee: Tree): MacroRuntime = invoke(new NonCumulativeOp[MacroRuntime] {
     def position = expandee.pos
     def description = "compute macro runtime for this macro application"
-    def default = macroRuntime(expandee)
+    def default = standardMacroRuntime(expandee)
     def custom(plugin: MacroPlugin) = plugin.pluginsMacroRuntime(expandee)
   })
 
   /** @see MacroPlugin.pluginsEnterSym */
-  def pluginsEnterSym(namer: Namer, tree: Tree): Context = invoke(new NonCumulativeOp[Context] {
-    def position = tree.pos
-    def description = "enter a symbol for this tree"
-    def default = namer.enterSym(tree)
-    def custom(plugin: MacroPlugin) = {
-      val hasExistingSym = tree.symbol != NoSymbol
-      val result = plugin.pluginsEnterSym(namer, tree)
-      if (result && hasExistingSym) Some(namer.context)
-      else if (result && tree.isInstanceOf[Import]) Some(namer.context.make(tree))
-      else if (result) Some(namer.context)
-      else None
-    }
-  })
+  def pluginsEnterSym(namer: Namer, tree: Tree): Context =
+    if (macroPlugins.isEmpty) namer.standardEnterSym(tree)
+    else invoke(new NonCumulativeOp[Context] {
+      def position = tree.pos
+      def description = "enter a symbol for this tree"
+      def default = namer.standardEnterSym(tree)
+      def custom(plugin: MacroPlugin) = {
+        val hasExistingSym = tree.symbol != NoSymbol
+        val result = plugin.pluginsEnterSym(namer, tree)
+        if (result && hasExistingSym) Some(namer.context)
+        else if (result && tree.isInstanceOf[Import]) Some(namer.context.make(tree))
+        else if (result) Some(namer.context)
+        else None
+      }
+    })
 
   /** @see MacroPlugin.pluginsEnsureCompanionObject */
   def pluginsEnsureCompanionObject(namer: Namer, cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol = invoke(new NonCumulativeOp[Symbol] {
     def position = cdef.pos
     def description = "enter a companion symbol for this tree"
-    def default = namer.ensureCompanionObject(cdef, creator)
+    def default = namer.standardEnsureCompanionObject(cdef, creator)
     def custom(plugin: MacroPlugin) = plugin.pluginsEnsureCompanionObject(namer, cdef, creator)
   })
 

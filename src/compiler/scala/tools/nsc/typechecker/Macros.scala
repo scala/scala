@@ -314,7 +314,12 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *  @return Macro impl reference for the given macro definition if everything is okay.
    *          EmptyTree if an error occurs.
    */
-  def typedMacroBody(typer: Typer, macroDdef: DefDef): Tree = {
+  def typedMacroBody(typer: Typer, macroDdef: DefDef): Tree = pluginsTypedMacroBody(typer, macroDdef)
+
+  /** Default implementation of `typedMacroBody`.
+   *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsTypedMacroBody for more details)
+   */
+  def standardTypedMacroBody(typer: Typer, macroDdef: DefDef): Tree = {
     val macroDef = macroDdef.symbol
     assert(macroDef.isMacro, macroDdef)
 
@@ -359,8 +364,12 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   /** Calculate the arguments to pass to a macro implementation when expanding the provided tree.
    */
   case class MacroArgs(c: MacroContext, others: List[Any])
+  def macroArgs(typer: Typer, expandee: Tree): MacroArgs = pluginsMacroArgs(typer, expandee)
 
-  def macroArgs(typer: Typer, expandee: Tree): MacroArgs = {
+  /** Default implementation of `macroArgs`.
+   *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsMacroArgs for more details)
+   */
+  def standardMacroArgs(typer: Typer, expandee: Tree): MacroArgs = {
     val macroDef = expandee.symbol
     val paramss = macroDef.paramss
     val treeInfo.Applied(core, targs, argss) = expandee
@@ -561,7 +570,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
             onFailure(typer.infer.setError(expandee))
           } else try {
             val expanded = {
-              val runtime = pluginsMacroRuntime(expandee)
+              val runtime = macroRuntime(expandee)
               if (runtime != null) macroExpandWithRuntime(typer, expandee, runtime)
               else macroExpandWithoutRuntime(typer, expandee)
             }
@@ -688,7 +697,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         else {
           forced += delayed
           typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), outerPt, keepNothings = false)
-          pluginsMacroExpand(typer, delayed, mode, outerPt)
+          macroExpand(typer, delayed, mode, outerPt)
         }
       } else delayed
     }
@@ -698,7 +707,12 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   /** Expands a term macro used in apply role as `M(2)(3)` in `val x = M(2)(3)`.
    *  @see DefMacroExpander
    */
-  def macroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = {
+  def macroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = pluginsMacroExpand(typer, expandee, mode, pt)
+
+  /** Default implementation of `macroExpand`.
+   *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsMacroExpand for more details)
+   */
+  def standardMacroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = {
     val expander = new DefMacroExpander(typer, expandee, mode, pt)
     expander(expandee)
   }
@@ -730,12 +744,12 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       case (false, true) =>
         macroLogLite("macro expansion is delayed: %s".format(expandee))
         delayed += expandee -> undetparams
-        expandee updateAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(pluginsMacroArgs(typer, expandee).c))
+        expandee updateAttachment MacroRuntimeAttachment(delayed = true, typerContext = typer.context, macroContext = Some(macroArgs(typer, expandee).c))
         Delay(expandee)
       case (false, false) =>
         import typer.TyperErrorGen._
         macroLogLite("performing macro expansion %s at %s".format(expandee, expandee.pos))
-        val args = pluginsMacroArgs(typer, expandee)
+        val args = macroArgs(typer, expandee)
         try {
           val numErrors    = reporter.ERROR.count
           def hasNewErrors = reporter.ERROR.count > numErrors
@@ -850,7 +864,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           context.implicitsEnabled = typer.context.implicitsEnabled
           context.enrichmentEnabled = typer.context.enrichmentEnabled
           context.macrosEnabled = typer.context.macrosEnabled
-          pluginsMacroExpand(newTyper(context), tree, EXPRmode, WildcardType)
+          macroExpand(newTyper(context), tree, EXPRmode, WildcardType)
         case _ =>
           tree
       })

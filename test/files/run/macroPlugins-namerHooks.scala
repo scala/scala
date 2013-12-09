@@ -18,12 +18,12 @@ object Test extends DirectTest {
     object macroPlugin extends MacroPlugin {
       override def pluginsEnterSym(namer: Namer, tree: Tree): Boolean = {
         output += s"enterSym(${tree.toString.replace('\n', ' ')})"
-        namer.enterSym(tree)
+        namer.standardEnterSym(tree)
         true
       }
       override def pluginsEnsureCompanionObject(namer: Namer, cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Option[Symbol] = {
         output += s"ensureCompanionObject(${cdef.toString.replace('\n', ' ')}, ...)"
-        Some(namer.ensureCompanionObject(cdef, creator))
+        Some(namer.standardEnsureCompanionObject(cdef, creator))
       }
       override def pluginsEnterStats(typer: Typer, stats: List[Tree]): List[Tree] = {
         stats.foreach(stat => output += s"enterStat(${stat.toString.replace('\n', ' ')})")

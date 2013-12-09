@@ -19,8 +19,13 @@ trait MacroRuntimes extends JavaReflectionRuntimes with ScalaReflectionRuntimes 
    *  @return Requested runtime if macro implementation can be loaded successfully from either of the mirrors,
    *          `null` otherwise.
    */
+  def macroRuntime(expandee: Tree): MacroRuntime = pluginsMacroRuntime(expandee)
+
+  /** Default implementation of `macroRuntime`.
+   *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsMacroRuntime for more details)
+   */
   private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, MacroRuntime]
-  def macroRuntime(expandee: Tree): MacroRuntime = {
+  def standardMacroRuntime(expandee: Tree): MacroRuntime = {
     val macroDef = expandee.symbol
     macroLogVerbose(s"looking for macro implementation: $macroDef")
     if (fastTrack contains macroDef) {
