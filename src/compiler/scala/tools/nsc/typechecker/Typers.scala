@@ -56,16 +56,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     resetDocComments()
   }
 
-  object UnTyper extends Traverser {
-    override def traverse(tree: Tree) = {
-      if (tree.canHaveAttrs) {
-        tree.clearType()
-        if (tree.hasSymbolField) tree.symbol = NoSymbol
-      }
-      super.traverse(tree)
-    }
-  }
-
   sealed abstract class SilentResult[+T] {
     @inline final def fold[U](none: => U)(f: T => U): U = this match {
       case SilentResultValue(value) => f(value)

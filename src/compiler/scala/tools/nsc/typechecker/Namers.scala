@@ -1132,7 +1132,7 @@ trait Namers extends MethodSynthesis {
         }
       }
 
-      addDefaultGetters(meth, vparamss, tparams, overriddenSymbol(methResTp))
+      addDefaultGetters(meth, ddef, vparamss, tparams, overriddenSymbol(methResTp))
 
       // fast track macros, i.e. macros defined inside the compiler, are hardcoded
       // hence we make use of that and let them have whatever right-hand side they need
@@ -1174,7 +1174,12 @@ trait Namers extends MethodSynthesis {
      * typechecked, the corresponding param would not yet have the "defaultparam"
      * flag.
      */
-    private def addDefaultGetters(meth: Symbol, vparamss: List[List[ValDef]], tparams: List[TypeDef], overriddenSymbol: => Symbol) {
+    private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef], overriddenSymbol: => Symbol) {
+      val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetLocalAttrs(ddef.duplicate)
+      // having defs here is important to make sure that there's no sneaky tree sharing
+      // in methods with multiple default parameters
+      def rtparams = rtparams0.map(_.duplicate)
+      def rvparamss = rvparamss0.map(_.map(_.duplicate))
       val methOwner  = meth.owner
       val isConstr   = meth.isConstructor
       val overridden = if (isConstr || !methOwner.isClass) NoSymbol else overriddenSymbol
@@ -1206,23 +1211,36 @@ trait Namers extends MethodSynthesis {
       //
       vparamss.foldLeft(Nil: List[List[ValDef]]) { (previous, vparams) =>
         assert(!overrides || vparams.length == baseParamss.head.length, ""+ meth.fullName + ", "+ overridden.fullName)
+        val rvparams = rvparamss(previous.length)
         var baseParams = if (overrides) baseParamss.head else Nil
-        for (vparam <- vparams) {
+        map2(vparams, rvparams)((vparam, rvparam) => {
           val sym = vparam.symbol
           // true if the corresponding parameter of the base class has a default argument
           val baseHasDefault = overrides && baseParams.head.hasDefault
           if (sym.hasDefault) {
-            // generate a default getter for that argument
+            // Create a "default getter", i.e. a DefDef that will calculate vparam.rhs
+            // for those who are going to call meth without providing an argument corresponding to vparam.
+            // After the getter is created, a corresponding synthetic symbol is created and entered into the parent namer.
+            //
+            // In the ideal world, this DefDef would be a simple one-liner that just returns vparam.rhs,
+            // but in scalac things are complicated in two different ways.
+            //
+            // 1) Because the underlying language is quite sophisticated, we must allow for those sophistications in our getter.
+            //    Namely: a) our getter has to copy type parameters from the associated method (or the associated class
+            //    if meth is a constructor), because vparam.rhs might refer to one of them, b) our getter has to copy
+            //    preceding value parameter lists from the associated method, because again vparam.rhs might refer to one of them.
+            //
+            // 2) Because we have already assigned symbols to type and value parameters that we have to copy, we must jump through
+            //    hoops in order to destroy them and allow subsequent naming create new symbols for our getter. Previously this
+            //    was done in an overly brutal way akin to resetAllAttrs, but now we utilize a resetLocalAttrs-based approach.
+            //    Still far from ideal, but at least enables things like run/macro-default-params that were previously impossible.
+
             val oflag = if (baseHasDefault) OVERRIDE else 0
             val name = nme.defaultGetterName(meth.name, posCounter)
 
-            // Create trees for the defaultGetter. Uses tools from Unapplies.scala
-            var deftParams = tparams map copyUntyped[TypeDef]
-            val defvParamss = mmap(previous) { p =>
-              // in the default getter, remove the default parameter
-              val p1 = atPos(p.pos.focus) { ValDef(p.mods &~ DEFAULTPARAM, p.name, p.tpt.duplicate, EmptyTree) }
-              UnTyper.traverse(p1)
-              p1
+            var defTparams = rtparams
+            val defVparamss = mmap(rvparamss.take(previous.length)){ rvp =>
+              copyValDef(rvp)(mods = rvp.mods &~ DEFAULTPARAM, rhs = EmptyTree)
             }
 
             val parentNamer = if (isConstr) {
@@ -1244,7 +1262,8 @@ trait Namers extends MethodSynthesis {
                     return // fix #3649 (prevent crash in erroneous source code)
                 }
               }
-              deftParams = cdef.tparams map copyUntypedInvariant
+              val ClassDef(_, _, rtparams, _) = resetLocalAttrs(cdef.duplicate)
+              defTparams = rtparams.map(rt => copyTypeDef(rt)(mods = rt.mods &~ (COVARIANT | CONTRAVARIANT)))
               nmr
             }
             else ownerNamer getOrElse {
@@ -1255,23 +1274,30 @@ trait Namers extends MethodSynthesis {
               nmr
             }
 
-            // If the parameter type mentions any type parameter of the method, let the compiler infer the
-            // return type of the default getter => allow "def foo[T](x: T = 1)" to compile.
-            // This is better than always using Wildcard for inferring the result type, for example in
-            //    def f(i: Int, m: Int => Int = identity _) = m(i)
-            // if we use Wildcard as expected, we get "Nothing => Nothing", and the default is not usable.
-            val names = deftParams map { case TypeDef(_, name, _, _) => name }
-            val subst = new TypeTreeSubstituter(names contains _)
-
-            val defTpt = subst(copyUntyped(vparam.tpt match {
-              // default getter for by-name params
-              case AppliedTypeTree(_, List(arg)) if sym.hasFlag(BYNAMEPARAM) => arg
-              case t => t
-            }))
-            val defRhs = copyUntyped(vparam.rhs)
+            val defTpt =
+              // don't mess with tpt's of case copy default getters, because assigning something other than TypeTree()
+              // will break the carefully orchestrated naming/typing logic that involves enterCopyMethod and caseClassCopyMeth
+              if (meth.isCaseCopy) TypeTree()
+              else {
+                // If the parameter type mentions any type parameter of the method, let the compiler infer the
+                // return type of the default getter => allow "def foo[T](x: T = 1)" to compile.
+                // This is better than always using Wildcard for inferring the result type, for example in
+                //    def f(i: Int, m: Int => Int = identity _) = m(i)
+                // if we use Wildcard as expected, we get "Nothing => Nothing", and the default is not usable.
+                // TODO: this is a very brittle approach; I sincerely hope that Denys's research into hygiene
+                //       will open the doors to a much better way of doing this kind of stuff
+                val tparamNames = defTparams map { case TypeDef(_, name, _, _) => name }
+                val eraseAllMentionsOfTparams = new TypeTreeSubstituter(tparamNames contains _)
+                eraseAllMentionsOfTparams(rvparam.tpt match {
+                  // default getter for by-name params
+                  case AppliedTypeTree(_, List(arg)) if sym.hasFlag(BYNAMEPARAM) => arg
+                  case t => t
+                })
+              }
+            val defRhs = rvparam.rhs
 
             val defaultTree = atPos(vparam.pos.focus) {
-              DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags)) | oflag, name, deftParams, defvParamss, defTpt, defRhs)
+              DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags)) | oflag, name, defTparams, defVparamss, defTpt, defRhs)
             }
             if (!isConstr)
               methOwner.resetFlag(INTERFACE) // there's a concrete member now
@@ -1286,7 +1312,7 @@ trait Namers extends MethodSynthesis {
           }
           posCounter += 1
           if (overrides) baseParams = baseParams.tail
-        }
+        })
         if (overrides) baseParamss = baseParamss.tail
         previous :+ vparams
       }

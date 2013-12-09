@@ -43,10 +43,35 @@ trait Unapplies extends ast.TreeDSL {
     def unapply(tp: Type): Option[Symbol] = unapplyMember(tp).toOption
   }
 
-  def copyUntyped[T <: Tree](tree: T): T =
+  // NOTE: Do not unprivate this method! Even if you think you need it, you most likely don't need it.
+  //
+  // resetAllAttrs, copyUntyped and likes irreparably break certain important tree shapes (see SI-5464 for details),
+  // including a very common case of TypeTree's without originals, which means that every call to resetAllAttrs
+  // breaks code that emits such trees.
+  //
+  // However there are situations when we want to reuse already attributed trees somewhere else
+  // (e.g. for case class synthesis, for auxiliary codegen that desugars default parameters, etc), and then the only way to go
+  // in the current architecture is to erase attributes. That's a sad lose-lose situation.
+  //
+  // But not all hope is lost! First of all, resetLocalAttrs is oftentimes good enough (e.g. see addDefaultGetters),
+  // and since it's much less destructive that resetAllAttrs, the breakages that it causes are going to manifest themselves
+  // much less frequently. Secondly, research into hygiene promises to give us a better way of doing bindings, so let's cross our fingers.
+  private def copyUntyped[T <: Tree](tree: T): T = {
+    object UnTyper extends Traverser {
+      override def traverse(tree: Tree) = {
+        if (tree.canHaveAttrs) {
+          tree.clearType()
+          if (tree.hasSymbolField) tree.symbol = NoSymbol
+        }
+        super.traverse(tree)
+      }
+    }
     returning[T](tree.duplicate)(UnTyper traverse _)
+  }
 
-  def copyUntypedInvariant(td: TypeDef): TypeDef =
+  // NOTE: do not unprivate this method
+  // see comments for copyUntyped for more information
+  private def copyUntypedInvariant(td: TypeDef): TypeDef =
     copyTypeDef(copyUntyped(td))(mods = td.mods &~ (COVARIANT | CONTRAVARIANT))
 
   private def toIdent(x: DefTree) = Ident(x.name) setPos x.pos.focus
