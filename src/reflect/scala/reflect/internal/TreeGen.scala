@@ -343,20 +343,8 @@ abstract class TreeGen extends macros.TreeBuilder {
     var vparamss1 = mmap(vparamss) { vd =>
       val param = atPos(vd.pos.makeTransparent) {
         val mods = Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM | BYNAMEPARAM) | PARAM | PARAMACCESSOR)
-        val rhs = {
-          if(vd.rhs.pos.isOpaqueRange) {
-            val vrhs = duplicateAndKeepPositions(vd.rhs)
-            for(t <- vd.rhs) t.pos = t.pos.makeTransparent
-            vd.pos = vd.pos.withEnd(vd.rhs.pos.start)
-            vrhs
-          }
-          else vd.rhs.duplicate
-        }
-        ValDef(mods, vd.name, vd.tpt.duplicate, rhs)
+        ValDef(mods, vd.name, vd.tpt.duplicate, duplicateAndKeepPositions(vd.rhs))
       }
-      // Turning parameters' accessor positions into transparent ones, so that they don't overlap with the <init> parameters positions created just above.
-      // However, we do need to skip annotation if present, as they may have an opaque range position
-      // With this transformation, the constructor's parameters may have an opaque (range) position, while the parameters' accessors won't.
       param
     }
     
@@ -398,7 +386,12 @@ abstract class TreeGen extends macros.TreeBuilder {
     }
     constr foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus = false))
     // Field definitions for the class - remove defaults.
-    val fieldDefs = vparamss.flatten map (vd => copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree))
+    
+    val fieldDefs = vparamss.flatten map (vd => {
+      val field = copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree)
+      if(vd.rhs.pos.isOpaqueRange) field.pos = field.pos.withEnd(vd.rhs.pos.start)
+      field
+    })
 
     global.Template(parents, self, gvdefs ::: fieldDefs ::: constr ++: etdefs ::: rest)
   }
