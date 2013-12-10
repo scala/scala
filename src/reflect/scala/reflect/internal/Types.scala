@@ -1066,7 +1066,6 @@ trait Types
       def findMemberInternal: Symbol = {
         var member: Symbol        = NoSymbol
         var members: List[Symbol] = null
-        var lastM: ::[Symbol]     = null
         if (Statistics.canEnable) Statistics.incCounter(findMemberCount)
         val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, findMemberNanos) else null
 
@@ -1115,13 +1114,12 @@ trait Types
                           if (membertpe eq null) membertpe = self.memberType(member)
                           !(membertpe matches self.memberType(sym))
                         })) {
-                      lastM = new ::(sym, null)
-                      members = member :: lastM
+                      members = sym :: member :: Nil
                     }
                   } else {
                     var others: List[Symbol] = members
                     var symtpe: Type = null
-                    while ((others ne null) && {
+                    while ((!others.isEmpty) && {
                       val other = others.head
                       (other ne sym) &&
                         ((other.owner eq sym.owner) ||
@@ -1132,10 +1130,8 @@ trait Types
                                })}) {
                       others = others.tail
                     }
-                    if (others eq null) {
-                      val lastM1 = new ::(sym, null)
-                      lastM.tl = lastM1
-                      lastM = lastM1
+                    if (others.isEmpty) {
+                      members = sym :: members
                     }
                   }
                 } else if (excl == DEFERRED) {
@@ -1156,8 +1152,7 @@ trait Types
           member
         } else {
           if (Statistics.canEnable) Statistics.incCounter(multMemberCount)
-          lastM.tl = Nil
-          baseClasses.head.newOverloaded(this, members)
+          baseClasses.head.newOverloaded(this, members.reverse)
         }
       }
 
