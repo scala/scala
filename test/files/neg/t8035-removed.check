@@ -1,0 +1,16 @@
+t8035-removed.scala:2: error: Adaptation of argument list by inserting () has been removed.
+        signature: GenSetLike.apply(elem: A): Boolean
+  given arguments: <none>
+  List(1,2,3).toSet()
+                   ^
+t8035-removed.scala:5: error: Adaptation of argument list by inserting () has been removed.
+        signature: A(x: T): Foo.A[T]
+  given arguments: <none>
+  new A
+  ^
+t8035-removed.scala:9: error: Adaptation of argument list by inserting () has been removed.
+        signature: Format.format(x$1: Any): String
+  given arguments: <none>
+  sdf.format()
+            ^
+three errors found

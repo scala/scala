@@ -76,7 +76,7 @@ object Test {
     }
 
     val chained = pf0 orElse pf1 orElse pf2
-    chained()
+    chained(())
   }
 
   def main(args: Array[String]): Unit = {

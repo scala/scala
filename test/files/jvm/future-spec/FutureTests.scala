@@ -1,6 +1,3 @@
-
-
-
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.concurrent.duration.Duration.Inf
@@ -518,7 +515,7 @@ class FutureTests extends MinimalScalaTest {
     }
 
     "should not deadlock with nested await (ticket 1313)" in {
-      val simple = Future() map {
+      val simple = Future(()) map {
         _ =>
         val unit = Future(())
         val umap = unit map { _ => () }
@@ -527,7 +524,7 @@ class FutureTests extends MinimalScalaTest {
       Await.ready(simple, Inf).isCompleted mustBe (true)
 
       val l1, l2 = new TestLatch
-      val complex = Future() map {
+      val complex = Future(()) map {
         _ =>
         blocking {
           val nested = Future(())
@@ -549,5 +546,3 @@ class FutureTests extends MinimalScalaTest {
   }
 
 }
-
-

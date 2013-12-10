@@ -1,8 +1,3 @@
-
-
-
-
-
 object Test extends App {
 
   trait MyPF[@specialized(Int) -A] extends (A => Unit) {
@@ -16,7 +11,7 @@ object Test extends App {
   trait MySmartPF[@specialized(Int) -A] extends MyPF[A] {
     def apply(x: A): Unit = {
       println("MySmartPF.apply entered...")
-      applyOrElse(x, { _: Any => throw new MatchError })
+      applyOrElse(x, { default: Any => throw new MatchError(default) })
     }
   }
 
