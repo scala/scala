@@ -56,7 +56,7 @@ MAIN DISTRIBUTION PACKAGING
   <target name="pack-devel-docs.tar" depends="pack-archives.zip">
     <tar destfile="${dists.dir}/archives/${dist.name}-devel-docs.tar"
          compression="none" longfile="gnu">
-      <tarfileset dir="${dist.dir}/doc/scala-devel-docs" prefix="${dist.name}-devel-docs"/>
+      <tarfileset dir="${dist.dir}/api" prefix="${dist.name}-devel-docs"/>
     </tar>
     <gzip src="${dists.dir}/archives/${dist.name}-devel-docs.tar" destfile="${dists.dir}/archives/${dist.name}-devel-docs.tgz"/>
     <if>
