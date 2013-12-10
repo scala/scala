@@ -1,0 +1,3 @@
+reload: NodeScalaSuite.scala
+prefixes differ: <empty>.nodescala,nodescala
+value always is not a member of object scala.concurrent.Future
