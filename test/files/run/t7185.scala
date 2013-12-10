@@ -7,6 +7,6 @@ import scala.reflect.runtime.universe._
 object O { def apply() = 0 }
 val ORef = reify { O }.tree
 val tree = Apply(Block(Nil, Block(Nil, ORef)), Nil)
-{val tb = reflect.runtime.currentMirror.mkToolBox(); tb.typeCheck(tree): Any}
+{val tb = reflect.runtime.currentMirror.mkToolBox(); tb.typecheck(tree): Any}
 """
 }

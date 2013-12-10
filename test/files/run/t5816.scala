@@ -6,7 +6,7 @@ object Test extends App {
   val toolbox = cm.mkToolBox()
 
   def printSource[T](expr: Expr[T]) {
-    val ttree = toolbox typeCheck expr.tree
+    val ttree = toolbox typecheck expr.tree
     println(ttree.toString)
   }
 

@@ -8,7 +8,7 @@ object Test extends App {
     def findUserByName( name:String ) = {
       val tree = reify{ "test" == name }.tree
       val toolbox = cm.mkToolBox()
-      toolbox.typeCheck(tree) match{
+      toolbox.typecheck(tree) match{
         case Apply(Select(lhs,op),rhs::Nil) =>
           println(rhs.tpe)
       }

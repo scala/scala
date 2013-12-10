@@ -81,7 +81,7 @@ trait Helpers {
   val compile = toolbox.compile(_)
   val eval = toolbox.eval(_)
 
-  def typecheck(tree: Tree) = toolbox.typeCheck(tree)
+  def typecheck(tree: Tree) = toolbox.typecheck(tree)
 
   def typecheckTyp(tree: Tree) = {
     val q"type $_ = $res" = typecheck(q"type T = $tree")

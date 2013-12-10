@@ -26,7 +26,7 @@ object QueryableMacros{
     import treeBuild._
     val element_type = implicitly[c.WeakTypeTag[S]].tpe
     val foo = c.Expr[ru.Expr[Queryable[S]]](
-    c.reifyTree( mkRuntimeUniverseRef, EmptyTree, c.typeCheck(
+    c.reifyTree( mkRuntimeUniverseRef, EmptyTree, c.typecheck(
       Utils[c.type](c).removeDoubleReify(
         Apply(Select(c.prefix.tree, TermName( name )), List( projection.tree ))
        ).asInstanceOf[Tree]

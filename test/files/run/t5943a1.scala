@@ -5,5 +5,5 @@ import scala.tools.reflect.ToolBox
 object Test extends App {
   val tb = cm.mkToolBox()
   val expr = tb.parse("1 to 3 map (_+1)")
-  println(tb.typeCheck(expr))
+  println(tb.typecheck(expr))
 }

@@ -23,6 +23,12 @@ trait Typers {
    */
   def openMacros: List[BlackboxContext]
 
+  /** @see `Typers.typecheck`
+   */
+  @deprecated("Use `c.typecheck` instead", "2.11.0")
+  def typeCheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree =
+    typecheck(tree, pt, silent, withImplicitViewsDisabled, withMacrosDisabled)
+
   /** Typechecks the provided tree against the expected type `pt` in the macro callsite context.
    *
    *  If `silent` is false, `TypecheckException` will be thrown in case of a typecheck error.
@@ -36,7 +42,7 @@ trait Typers {
    *
    *  @throws [[scala.reflect.macros.TypecheckException]]
    */
-  def typeCheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree
+  def typecheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree
 
   /** Infers an implicit value of the expected type `pt` in the macro callsite context.
    *  Optional `pos` parameter provides a position that will be associated with the implicit search.
@@ -44,7 +50,7 @@ trait Typers {
    *  If `silent` is false, `TypecheckException` will be thrown in case of an inference error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
    *  Such errors don't vanish and can be inspected by turning on -Xlog-implicits.
-   *  Unlike in `typeCheck`, `silent` is true by default.
+   *  Unlike in `typecheck`, `silent` is true by default.
    *
    *  @throws [[scala.reflect.macros.TypecheckException]]
    */
@@ -56,7 +62,7 @@ trait Typers {
    *  If `silent` is false, `TypecheckException` will be thrown in case of an inference error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
    *  Such errors don't vanish and can be inspected by turning on -Xlog-implicits.
-   *  Unlike in `typeCheck`, `silent` is true by default.
+   *  Unlike in `typecheck`, `silent` is true by default.
    *
    *  @throws [[scala.reflect.macros.TypecheckException]]
    */

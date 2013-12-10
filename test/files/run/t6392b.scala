@@ -5,5 +5,5 @@ import scala.tools.reflect.ToolBox
 object Test extends App {
   val tb = cm.mkToolBox()
   val c = tb.parse("object C")
-  println(showRaw(tb.typeCheck(c), printKinds = true))
+  println(showRaw(tb.typecheck(c), printKinds = true))
 }

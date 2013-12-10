@@ -21,6 +21,6 @@ object Test extends MemoryTest {
       foo(List(new A {}, new B {}))
     """.trim
     snippet = snippet + "\n" + (List.fill(50)(snippet.split("\n").last) mkString "\n")
-    tb.typeCheck(tb.parse(snippet))
+    tb.typecheck(tb.parse(snippet))
   }
 }

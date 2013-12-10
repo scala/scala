@@ -68,7 +68,7 @@ import java.io.{ PrintWriter, StringWriter }
  *  scala> import scala.reflect.runtime.{currentMirror => cm}
  *  import scala.reflect.runtime.{currentMirror=>cm}
  *
- *  scala> showRaw(cm.mkToolBox().typeCheck(tree), printTypes = true)
+ *  scala> showRaw(cm.mkToolBox().typecheck(tree), printTypes = true)
  *  res2: String = Block[1](List(
  *    ClassDef[2](Modifiers(FINAL), newTypeName("C"), List(), Template[3](
  *      List(Ident[4](newTypeName("AnyRef"))),

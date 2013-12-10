@@ -21,6 +21,12 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    */
   def frontEnd: FrontEnd
 
+  /** @see `Typers.typecheck`
+   */
+  @deprecated("Use `tb.typecheck` instead", "2.11.0")
+  def typeCheck(tree: u.Tree, pt: u.Type = u.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree =
+    typecheck(tree, pt, silent, withImplicitViewsDisabled, withMacrosDisabled)
+
   /** Typechecks a tree using this ToolBox.
    *  This populates symbols and types of the tree and possibly transforms it to reflect certain desugarings.
    *
@@ -35,7 +41,7 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    *    `withImplicitViewsDisabled` recursively prohibits implicit views (though, implicit vals will still be looked up and filled in), default value is false
    *    `withMacrosDisabled` recursively prohibits macro expansions and macro-based implicits, default value is false
    */
-  def typeCheck(tree: u.Tree, pt: u.Type = u.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree
+  def typecheck(tree: u.Tree, pt: u.Type = u.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree
 
   /** Infers an implicit value of the expected type `pt` in top-level context.
    *  Optional `pos` parameter provides a position that will be associated with the implicit search.
@@ -47,7 +53,7 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    *  If `silent` is false, `TypeError` will be thrown in case of an inference error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
    *  Such errors don't vanish and can be inspected by turning on -Xlog-implicits.
-   *  Unlike in `typeCheck`, `silent` is true by default.
+   *  Unlike in `typecheck`, `silent` is true by default.
    */
   def inferImplicitValue(pt: u.Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: u.Position = u.NoPosition): u.Tree
 
@@ -61,7 +67,7 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    *  If `silent` is false, `TypeError` will be thrown in case of an inference error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
    *  Such errors don't vanish and can be inspected by turning on -Xlog-implicits.
-   *  Unlike in `typeCheck`, `silent` is true by default.
+   *  Unlike in `typecheck`, `silent` is true by default.
    */
   def inferImplicitView(tree: u.Tree, from: u.Type, to: u.Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: u.Position = u.NoPosition): u.Tree
 

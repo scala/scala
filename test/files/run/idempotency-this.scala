@@ -9,7 +9,7 @@ object Test extends App {
   }
   println(thiss.eval)
   val tb = cm.mkToolBox()
-  val tthiss = tb.typeCheck(thiss.tree)
+  val tthiss = tb.typecheck(thiss.tree)
   println(tthiss)
   println(showRaw(tthiss))
   val rtthiss = tb.resetAllAttrs(tthiss)

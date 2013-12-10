@@ -8,5 +8,5 @@ object Test extends App{
   import scala.reflect.runtime.{currentMirror => cm}
   import scala.tools.reflect.ToolBox
   val toolbox = cm.mkToolBox()
-  val ttree = toolbox.typeCheck(code.tree)
+  val ttree = toolbox.typecheck(code.tree)
 }
