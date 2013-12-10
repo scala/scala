@@ -954,10 +954,7 @@ abstract class GenICode extends SubComponent  {
                 case _ =>
               }
               ctx1.bb.emit(cm, tree.pos)
-
-              if (sym == ctx1.method.symbol) {
-                ctx1.method.recursive = true
-              }
+              ctx1.method.updateRecursive(sym)
               generatedType =
                 if (sym.isClassConstructor) UNIT
                 else toTypeKind(sym.info.resultType);
