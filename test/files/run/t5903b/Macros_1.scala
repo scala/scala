@@ -4,7 +4,7 @@ import language.experimental.macros
 object Interpolation {
   implicit class TestInterpolation(c: StringContext) {
     object t {
-      def unapply[T](x: T) = macro Macros.unapplyImpl[T]
+      def unapply[T](x: T): Any = macro Macros.unapplyImpl[T]
     }
   }
 }

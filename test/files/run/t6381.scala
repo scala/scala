@@ -7,7 +7,7 @@ object Test extends ReplTest {
     |  import c.universe._
     |  c.Expr[String](Literal(Constant(c.enclosingPosition.getClass.toString)))
     |}
-    |def pos = macro pos_impl
+    |def pos: String = macro pos_impl
     |pos
     |""".stripMargin.trim
 

@@ -1,5 +1,5 @@
 trait Base {
-  def foo = macro Impls.foo
+  def foo: Unit = macro Impls.foo
 }
 
 object Macros extends Base

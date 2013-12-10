@@ -5517,7 +5517,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       val isMacroBodyOkay = !tree.symbol.isErroneous && !(tree1 exists (_.isErroneous)) && tree1 != EmptyTree
       val shouldInheritMacroImplReturnType = ddef.tpt.isEmpty
-      if (isMacroBodyOkay && shouldInheritMacroImplReturnType) computeMacroDefTypeFromMacroImplRef(ddef, tree1) else AnyTpe
+      if (isMacroBodyOkay && shouldInheritMacroImplReturnType) {
+        val commonMessage = "macro defs must have explicitly specified return types"
+        def reportFailure() = {
+          ddef.symbol.setFlag(IS_ERROR)
+          unit.error(ddef.pos, commonMessage)
+        }
+        def reportWarning(inferredType: Type) = {
+          val explanation = s"inference of $inferredType from macro impl's c.Expr[$inferredType] is deprecated and is going to stop working in 2.12"
+          unit.deprecationWarning(ddef.pos, s"$commonMessage ($explanation)")
+        }
+        computeMacroDefTypeFromMacroImplRef(ddef, tree1) match {
+          case ErrorType => ErrorType
+          case NothingTpe => NothingTpe
+          case NoType => reportFailure(); AnyTpe
+          case tpe => reportWarning(tpe); tpe
+        }
+      } else AnyTpe
     }
 
     def transformedOr(tree: Tree, op: => Tree): Tree = transformed remove tree match {

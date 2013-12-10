@@ -1,6 +1,6 @@
 object Macros {
   object Macros {
-    def foo = macro Impls.foo
+    def foo: Unit = macro Impls.foo
   }
 }
 

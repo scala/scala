@@ -1,4 +1,4 @@
 object Test extends App {
-  def foo = macro Impls.foo
+  def foo: Int = macro Impls.foo
   println(foo)
 }

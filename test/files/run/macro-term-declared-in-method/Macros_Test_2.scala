@@ -1,6 +1,6 @@
 object Test extends App {
   def bar() = {
-    def foo = macro Impls.foo
+    def foo: Unit = macro Impls.foo
     foo
   }
 

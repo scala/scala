@@ -155,7 +155,7 @@ trait Validators {
         else mmap(macroDdef.vparamss)(param)
       val macroDefRet =
         if (!macroDdef.tpt.isEmpty) typer.typedType(macroDdef.tpt).tpe
-        else computeMacroDefTypeFromMacroImplRef(macroDdef, macroImplRef)
+        else computeMacroDefTypeFromMacroImplRef(macroDdef, macroImplRef) orElse AnyTpe
       val implReturnType = sigma(increaseMetalevel(ctxPrefix, macroDefRet))
 
       object SigmaTypeMap extends TypeMap {

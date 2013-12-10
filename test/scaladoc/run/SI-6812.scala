@@ -5,12 +5,12 @@ import language._
 object Test extends ScaladocModelTest {
 
   override def code = """
-    import scala.reflect.macros.Context
+    import scala.reflect.macros.BlackboxContext
     import language.experimental.macros
 
     object Macros {
-      def impl(c: Context) = c.literalUnit
-      def foo = macro impl
+      def impl(c: BlackboxContext) = c.literalUnit
+      def foo: Unit = macro impl
     }
 
     class C {

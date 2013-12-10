@@ -1,13 +1,13 @@
 object Macros {
-  def foo(x: String) = macro Impls.fooObjectString
-  def foo(x: Int) = macro Impls.fooObjectInt
-  def foo(x: Boolean) = println("fooObjectBoolean")
+  def foo(x: String): Unit = macro Impls.fooObjectString
+  def foo(x: Int): Unit = macro Impls.fooObjectInt
+  def foo(x: Boolean): Unit = println("fooObjectBoolean")
 }
 
 class Macros {
-  def foo(x: String) = macro Impls.fooClassString
-  def foo(x: Int) = macro Impls.fooClassInt
-  def foo(x: Boolean) = println("fooClassBoolean")
+  def foo(x: String): Unit = macro Impls.fooClassString
+  def foo(x: Int): Unit = macro Impls.fooClassInt
+  def foo(x: Boolean): Unit = println("fooClassBoolean")
 }
 
 object Test extends App {

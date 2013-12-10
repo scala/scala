@@ -1,4 +1,4 @@
 object Test extends App {
-  def foo[U] = macro Impls.foo[U]
+  def foo[U]: Unit = macro Impls.foo[U]
   foo[Int]
 }

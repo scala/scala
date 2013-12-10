@@ -9,7 +9,7 @@ package pkg {
       val g = c.universe.asInstanceOf[scala.tools.nsc.Global]
       c.Expr[Boolean](Literal(Constant(g.currentRun.compiles(sym.asInstanceOf[g.Symbol]))))
     }
-    def compiles[T] = macro impl[T]
+    def compiles[T]: Boolean = macro impl[T]
   }
 }
 

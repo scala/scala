@@ -11,5 +11,5 @@ object Macros {
     """
   }
 
-  def foo = macro impl
+  def foo: Any = macro impl
 }

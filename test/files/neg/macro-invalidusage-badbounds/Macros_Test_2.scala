@@ -1,5 +1,5 @@
 object Macros {
-  def foo[U <: String] = macro Impls.foo[U]
+  def foo[U <: String]: Unit = macro Impls.foo[U]
 }
 
 object Test extends App {
