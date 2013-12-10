@@ -635,8 +635,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
 
         if (isBlackbox(expandee)) {
           val expanded1 = atPos(enclosingMacroPosition.focus)(Typed(expanded0, TypeTree(innerPt)))
-          val expanded2 = typecheck("blackbox typecheck #1", expanded1, innerPt)
-          typecheck("blackbox typecheck #2", expanded1, outerPt)
+          typecheck("blackbox typecheck", expanded1, outerPt)
         } else {
           val expanded1 = expanded0
           val expanded2 = typecheck("whitebox typecheck #1", expanded1, outerPt)
