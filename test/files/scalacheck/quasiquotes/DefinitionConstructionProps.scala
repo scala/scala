@@ -2,12 +2,25 @@ import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.reflect.runtime.universe._, Flag._, build.ScalaDot
 
 object DefinitionConstructionProps
-  extends QuasiquoteProperties("definition construction")
-  with ClassConstruction
-  with TraitConstruction
-  with TypeDefConstruction
-  with ValDefConstruction
-  with PackageConstruction
+    extends QuasiquoteProperties("definition construction")
+    with ClassConstruction
+    with TraitConstruction
+    with TypeDefConstruction
+    with ValDefConstruction
+    with PackageConstruction {
+  property("SI-6842") = test {
+    val x: Tree = q"val x: Int"
+    assertEqAst(q"def f($x) = 0", "def f(x: Int) = 0")
+    assertEqAst(q"class C($x)", "class C(val x: Int)")
+    assertEqAst(q"class C { $x => }", "class C { x: Int => }")
+    assertEqAst(q"trait B { $x => }", "trait B { x: Int => }")
+    assertEqAst(q"object A { $x => }", "object A { x: Int => }")
+    val t: Tree = q"type T"
+    assertEqAst(q"def f[$t] = 0", "def f[T] = 0")
+    assertEqAst(q"class C[$t]", "class C[T]")
+    assertEqAst(q"trait B[$t]", "trait B[T]")
+  }
+}
 
 trait ClassConstruction { self: QuasiquoteProperties =>
   val anyRef = ScalaDot(TypeName("AnyRef"))
@@ -283,7 +296,7 @@ trait MethodConstruction { self: QuasiquoteProperties =>
     assertEqAst(q"@$a def foo", "@Foo[A,B] def foo")
   }
 
-  property("splice annotation with multiple argument lists") = test{
+  property("splice annotation with multiple argument lists") = test {
     val a = q"new Foo(a)(b)"
     assertEqAst(q"@$a def foo", "@Foo(a)(b) def foo")
   }

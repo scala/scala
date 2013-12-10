@@ -391,8 +391,10 @@ trait PatternTypers {
           else freshUnapplyArgType()
         )
       )
+      val unapplyArgTree = Ident(unapplyArg) updateAttachment SubpatternsAttachment(args)
+
       // clearing the type is necessary so that ref will be stabilized; see bug 881
-      val fun1 = typedPos(fun.pos)(Apply(Select(fun.clearType(), unapplyMethod), Ident(unapplyArg) :: Nil))
+      val fun1 = typedPos(fun.pos)(Apply(Select(fun.clearType(), unapplyMethod), unapplyArgTree :: Nil))
 
       def makeTypedUnApply() = {
         // the union of the expected type and the inferred type of the argument to unapply

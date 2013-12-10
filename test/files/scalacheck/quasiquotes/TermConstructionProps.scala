@@ -203,4 +203,25 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     assert(q"f(..${l1 ++ l2}, $baz)" ≈ q"f(foo, bar, baz)")
     assert(q"f(${if (true) q"a" else q"b"})" ≈ q"f(a)")
   }
+
+  property("splice iterable of non-parametric type") = test {
+    object O extends Iterable[Tree] { def iterator = List(q"foo").iterator }
+    q"f(..$O)"
+  }
+
+  property("SI-8016") = test {
+    val xs = q"1" :: q"2" :: Nil
+    assertEqAst(q"..$xs", "{1; 2}")
+    assertEqAst(q"{..$xs}", "{1; 2}")
+  }
+
+  property("SI-6842") = test {
+    val cases: List[Tree] = cq"a => b" :: cq"_ => c" :: Nil
+    assertEqAst(q"1 match { case ..$cases }", "1 match { case a => b case _ => c }")
+    assertEqAst(q"try 1 catch { case ..$cases }", "try 1 catch { case a => b case _ => c }")
+  }
+
+  property("SI-8009") = test {
+    q"`foo`".asInstanceOf[reflect.internal.SymbolTable#Ident].isBackquoted
+  }
 }

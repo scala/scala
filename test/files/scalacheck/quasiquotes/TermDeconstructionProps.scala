@@ -3,8 +3,10 @@ import scala.reflect.runtime.universe._, Flag._
 
 object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction") {
   property("f(..x) = f") = test {
-    val q"f(..$args)" = q"f"
-    assert(args ≈ Nil)
+    // see SI-8008
+    assertThrows[MatchError] {
+      val q"f(..$args)" = q"f"
+    }
   }
 
   property("f(x)") = forAll { (x: Tree) =>
