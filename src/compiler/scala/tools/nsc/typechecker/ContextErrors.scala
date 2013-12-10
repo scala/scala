@@ -1261,7 +1261,7 @@ trait ContextErrors {
 
     def DoubleParamNamesDefaultError(arg: Tree, name: Name, pos: Int, otherName: Option[Name])(implicit context: Context) = {
       val annex = otherName match {
-        case Some(oName) => "\nNote that that '"+ oName +"' is not a parameter name of the invoked method."
+        case Some(oName) => "\nNote that '"+ oName +"' is not a parameter name of the invoked method."
         case None => ""
       }
       issueNormalTypeError(arg, "parameter '"+ name +"' is already specified at parameter position "+ pos + annex)
