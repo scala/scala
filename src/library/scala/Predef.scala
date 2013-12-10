@@ -15,7 +15,7 @@ import generic.CanBuildFrom
 import scala.annotation.{ elidable, implicitNotFound }
 import scala.annotation.elidable.ASSERTION
 import scala.language.{implicitConversions, existentials}
-import scala.io.ReadStdin
+import scala.io.StdIn
 
 /** The `Predef` object provides definitions that are accessible in all Scala
  *  compilation units without explicit qualification.
@@ -415,20 +415,20 @@ private[scala] trait DeprecatedPredef {
   @deprecated("Use `SeqCharSequence`", "2.11.0") def seqToCharSequence(xs: scala.collection.IndexedSeq[Char]): CharSequence = new SeqCharSequence(xs)
   @deprecated("Use `ArrayCharSequence`", "2.11.0") def arrayToCharSequence(xs: Array[Char]): CharSequence                   = new ArrayCharSequence(xs)
 
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readLine(): String                 = ReadStdin.readLine()
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readLine(text: String, args: Any*) = ReadStdin.readLine(text, args: _*)
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readBoolean()                      = ReadStdin.readBoolean()
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readByte()                         = ReadStdin.readByte()
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readShort()                        = ReadStdin.readShort()
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readChar()                         = ReadStdin.readChar()
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readInt()                          = ReadStdin.readInt()
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readLong()                         = ReadStdin.readLong()
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readFloat()                        = ReadStdin.readFloat()
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readDouble()                       = ReadStdin.readDouble()
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readf(format: String)              = ReadStdin.readf(format)
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readf1(format: String)             = ReadStdin.readf1(format)
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readf2(format: String)             = ReadStdin.readf2(format)
-  @deprecated("Use the method in `scala.io.ReadStdin`", "2.11.0") def readf3(format: String)             = ReadStdin.readf3(format)
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readLine(): String                 = StdIn.readLine()
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readLine(text: String, args: Any*) = StdIn.readLine(text, args: _*)
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readBoolean()                      = StdIn.readBoolean()
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readByte()                         = StdIn.readByte()
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readShort()                        = StdIn.readShort()
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readChar()                         = StdIn.readChar()
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readInt()                          = StdIn.readInt()
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readLong()                         = StdIn.readLong()
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readFloat()                        = StdIn.readFloat()
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readDouble()                       = StdIn.readDouble()
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf(format: String)              = StdIn.readf(format)
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf1(format: String)             = StdIn.readf1(format)
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf2(format: String)             = StdIn.readf2(format)
+  @deprecated("Use the method in `scala.io.StdIn`", "2.11.0") def readf3(format: String)             = StdIn.readf3(format)
 }
 
 /** The `LowPriorityImplicits` class provides implicit values that

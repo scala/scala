@@ -9,7 +9,7 @@
 package scala
 
 import java.io.{ BufferedReader, InputStream, InputStreamReader, OutputStream, PrintStream, Reader }
-import scala.io.{ AnsiColor, ReadStdin }
+import scala.io.{ AnsiColor, StdIn }
 import scala.util.DynamicVariable
 
 /** Implements functionality for
@@ -169,20 +169,20 @@ private[scala] abstract class DeprecatedConsole {
   protected def setErrDirect(err: PrintStream): Unit
   protected def setInDirect(in: BufferedReader): Unit
 
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readBoolean(): Boolean                     = ReadStdin.readBoolean()
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readByte(): Byte                           = ReadStdin.readByte()
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readChar(): Char                           = ReadStdin.readChar()
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readDouble(): Double                       = ReadStdin.readDouble()
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readFloat(): Float                         = ReadStdin.readFloat()
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readInt(): Int                             = ReadStdin.readInt()
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readLine(): String                         = ReadStdin.readLine()
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readLine(text: String, args: Any*): String = ReadStdin.readLine(text, args: _*)
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readLong(): Long                           = ReadStdin.readLong()
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readShort(): Short                         = ReadStdin.readShort()
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readf(format: String): List[Any]           = ReadStdin.readf(format)
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readf1(format: String): Any                = ReadStdin.readf1(format)
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readf2(format: String): (Any, Any)         = ReadStdin.readf2(format)
-  @deprecated("Use the method in scala.io.ReadStdin", "2.11.0") def readf3(format: String): (Any, Any, Any)    = ReadStdin.readf3(format)
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readBoolean(): Boolean                     = StdIn.readBoolean()
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readByte(): Byte                           = StdIn.readByte()
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readChar(): Char                           = StdIn.readChar()
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readDouble(): Double                       = StdIn.readDouble()
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readFloat(): Float                         = StdIn.readFloat()
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readInt(): Int                             = StdIn.readInt()
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readLine(): String                         = StdIn.readLine()
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readLine(text: String, args: Any*): String = StdIn.readLine(text, args: _*)
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readLong(): Long                           = StdIn.readLong()
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readShort(): Short                         = StdIn.readShort()
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readf(format: String): List[Any]           = StdIn.readf(format)
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readf1(format: String): Any                = StdIn.readf1(format)
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readf2(format: String): (Any, Any)         = StdIn.readf2(format)
+  @deprecated("Use the method in scala.io.StdIn", "2.11.0") def readf3(format: String): (Any, Any, Any)    = StdIn.readf3(format)
 
   /** Sets the default output stream.
    *
