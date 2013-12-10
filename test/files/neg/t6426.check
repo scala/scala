@@ -1,7 +1,0 @@
-t6426.scala:4: error: wildcard invalid as backquoted identifier
-  println(`_`.Buffer(0))
-          ^
-t6426.scala:5: error: ')' expected but '}' found.
-}
-^
-two errors found
