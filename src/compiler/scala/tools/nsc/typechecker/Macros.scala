@@ -600,39 +600,47 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    }
 
   /** Expands a term macro used in apply role as `M(2)(3)` in `val x = M(2)(3)`.
+   *  @param outerPt Expected type that comes from enclosing context (something that's traditionally called `pt`).
+   *  @param innerPt Expected type that comes from the signature of a macro def, possibly wildcarded to help type inference.
    *  @see MacroExpander
    */
-  def macroExpandApply(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = {
-    object expander extends TermMacroExpander(APPLY_ROLE, typer, expandee, mode, pt) {
-      override def onSuccess(expanded0: Tree) = {
-        def approximate(tp: Type) = {
+  def macroExpandApply(typer: Typer, expandee: Tree, mode: Mode, outerPt: Type): Tree = {
+    object expander extends TermMacroExpander(APPLY_ROLE, typer, expandee, mode, outerPt) {
+      lazy val innerPt = {
+        val tp = if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe
+        if (isBlackbox(expandee)) tp
+        else {
           // approximation is necessary for whitebox macros to guide type inference
           // read more in the comments for onDelayed below
-          if (isBlackbox(expandee)) tp
-          else {
-            val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
-            deriveTypeWithWildcards(undetparams)(tp)
-          }
+          val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
+          deriveTypeWithWildcards(undetparams)(tp)
         }
-        val macroPt = approximate(if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe)
-        val expanded = if (isBlackbox(expandee)) atPos(enclosingMacroPosition.focus)(Typed(expanded0, TypeTree(macroPt))) else expanded0
-
+      }
+      override def onSuccess(expanded0: Tree) = {
         // prematurely annotate the tree with a macro expansion attachment
         // so that adapt called indirectly by typer.typed knows that it needs to apply the existential fixup
-        linkExpandeeAndExpanded(expandee, expanded)
+        linkExpandeeAndExpanded(expandee, expanded0)
 
-        // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
-        // therefore we need to re-enable the conversions back temporarily
-        if (macroDebugVerbose) println(s"typecheck #1 (against macroPt = $macroPt): $expanded")
-        val expanded1 = typer.context.withImplicitsEnabled(typer.typed(expanded, mode, macroPt))
-        if (expanded1.isErrorTyped) {
-          if (macroDebugVerbose) println(s"typecheck #1 has failed: ${typer.context.reportBuffer.errors}")
-          expanded1
+        def typecheck(label: String, tree: Tree, pt: Type): Tree = {
+          if (tree.isErrorTyped) tree
+          else {
+            if (macroDebugVerbose) println(s"$label (against pt = $pt): $tree")
+            // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
+            // therefore we need to re-enable the conversions back temporarily
+            val result = typer.context.withImplicitsEnabled(typer.typed(tree, mode, pt))
+            if (result.isErrorTyped && macroDebugVerbose) println(s"$label has failed: ${typer.context.reportBuffer.errors}")
+            result
+          }
+        }
+
+        if (isBlackbox(expandee)) {
+          val expanded1 = atPos(enclosingMacroPosition.focus)(Typed(expanded0, TypeTree(innerPt)))
+          val expanded2 = typecheck("blackbox typecheck #1", expanded1, innerPt)
+          typecheck("blackbox typecheck #2", expanded1, outerPt)
         } else {
-          if (macroDebugVerbose) println(s"typecheck #2 (against pt = $pt): $expanded1")
-          val expanded2 = typer.context.withImplicitsEnabled(super.onSuccess(expanded1))
-          if (macroDebugVerbose && expanded2.isErrorTyped) println(s"typecheck #2 has failed: ${typer.context.reportBuffer.errors}")
-          expanded2
+          val expanded1 = expanded0
+          val expanded2 = typecheck("whitebox typecheck #1", expanded1, innerPt)
+          typecheck("whitebox typecheck #2", expanded2, outerPt)
         }
       }
       override def onDelayed(delayed: Tree) = {
@@ -686,11 +694,11 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         // Thanks to that the materializer can take a look at what's going on and react accordingly.
         val shouldInstantiate = typer.context.undetparams.nonEmpty && !mode.inPolyMode
         if (shouldInstantiate) {
-          if (isBlackbox(expandee)) typer.instantiatePossiblyExpectingUnit(delayed, mode, pt)
+          if (isBlackbox(expandee)) typer.instantiatePossiblyExpectingUnit(delayed, mode, outerPt)
           else {
             forced += delayed
-            typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), pt, keepNothings = false)
-            macroExpandApply(typer, delayed, mode, pt)
+            typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), outerPt, keepNothings = false)
+            macroExpandApply(typer, delayed, mode, outerPt)
           }
         } else delayed
       }
