@@ -1265,22 +1265,22 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         false
     }
 
-    /** If symbol is deprecated, and the point of reference is not enclosed
-     *  in either a deprecated member or a scala bridge method, issue a warning.
-     */
-    private def checkDeprecated(sym: Symbol, pos: Position) {
+    // Note: if a symbol has both @deprecated and @migration annotations and both
+    // warnings are enabled, only the first one checked here will be emitted.
+    // I assume that's a consequence of some code trying to avoid noise by suppressing
+    // warnings after the first, but I think it'd be better if we didn't have to
+    // arbitrarily choose one as more important than the other.
+    private def checkUndesiredProperties(sym: Symbol, pos: Position) {
+      // If symbol is deprecated, and the point of reference is not enclosed
+      // in either a deprecated member or a scala bridge method, issue a warning.
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
         unit.deprecationWarning(pos, "%s%s is deprecated%s".format(
           sym, sym.locationString, sym.deprecationMessage map (": " + _) getOrElse "")
         )
       }
-    }
-
-    /** Similar to deprecation: check if the symbol is marked with @migration
-     *  indicating it has changed semantics between versions.
-     */
-    private def checkMigration(sym: Symbol, pos: Position) = {
-      if (sym.hasMigrationAnnotation) {
+      // Similar to deprecation: check if the symbol is marked with @migration
+      // indicating it has changed semantics between versions.
+      if (sym.hasMigrationAnnotation && settings.Xmigration.value != NoScalaVersion) {
         val changed = try
           settings.Xmigration.value < ScalaVersion(sym.migrationVersion.get)
         catch {
@@ -1292,9 +1292,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         if (changed)
           unit.warning(pos, s"${sym.fullLocationString} has changed semantics in version ${sym.migrationVersion.get}:\n${sym.migrationMessage.get}")
       }
-    }
-
-    private def checkCompileTimeOnly(sym: Symbol, pos: Position) = {
+      // See an explanation of compileTimeOnly in its scaladoc at scala.annotation.compileTimeOnly.
       if (sym.isCompileTimeOnly) {
         def defaultMsg =
           sm"""Reference to ${sym.fullLocationString} should not have survived past type checking,
@@ -1416,8 +1414,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       case TypeRef(pre, sym, args) =>
         tree match {
           case tt: TypeTree if tt.original == null => // SI-7783 don't warn about inferred types
-          case _ =>
-            checkDeprecated(sym, tree.pos)
+                                                      // FIXME: reconcile this check with one in resetAllAttrs
+          case _ => checkUndesiredProperties(sym, tree.pos)
         }
         if(sym.isJavaDefined)
           sym.typeParams foreach (_.cookJavaRawInfo())
@@ -1449,7 +1447,6 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
     private def applyRefchecksToAnnotations(tree: Tree): Unit = {
       def applyChecks(annots: List[AnnotationInfo]) = {
-        annots foreach (annot => checkCompileTimeOnly(annot.atp.typeSymbol, annot.pos))
         checkAnnotations(annots map (_.atp), tree)
         transformTrees(annots flatMap (_.args))
       }
@@ -1541,16 +1538,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       val Select(qual, _) = tree
       val sym = tree.symbol
 
-      /* Note: if a symbol has both @deprecated and @migration annotations and both
-       * warnings are enabled, only the first one checked here will be emitted.
-       * I assume that's a consequence of some code trying to avoid noise by suppressing
-       * warnings after the first, but I think it'd be better if we didn't have to
-       * arbitrarily choose one as more important than the other.
-       */
-      checkDeprecated(sym, tree.pos)
-      if(settings.Xmigration.value != NoScalaVersion)
-        checkMigration(sym, tree.pos)
-      checkCompileTimeOnly(sym, tree.pos)
+      checkUndesiredProperties(sym, tree.pos)
       checkDelayedInitSelect(qual, sym, tree.pos)
 
       if (!sym.exists)
@@ -1705,7 +1693,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             tree
 
           case Ident(name) =>
-            checkCompileTimeOnly(tree.symbol, tree.pos)
+            checkUndesiredProperties(sym, tree.pos)
             transformCaseApply(tree,
               if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
                 assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug

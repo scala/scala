@@ -1,4 +1,5 @@
 import scala.annotation.compileTimeOnly
+import scala.language.existentials
 
 @compileTimeOnly("C1") class C1
 object C1
@@ -24,6 +25,9 @@ class C6(@compileTimeOnly("C6.x") val x: Int) {
   @compileTimeOnly("C6.y") var y = 3
 }
 
+@compileTimeOnly("C7") class C7
+@compileTimeOnly("C8") class C8[T]
+
 object Test extends App {
   new C1()
   C1
@@ -46,6 +50,21 @@ object Test extends App {
   c6.foo
   type Foo = c6.Foo
   c6.y = c6.y
+
+  val c701: (C7, C7) = ???
+  val c702: (C7 => C7) = ???
+  val c703: { val x: C7 } = ???
+  val c704: AnyRef with C7 = ???
+  // https://groups.google.com/forum/#!topic/scala-internals/5n07TiCnBZU
+  // val c705: ({ @compileTimeOnly("C7") type C7[T] = List[T] })#C7[_] = ???
+  val c706: C7 Either C7 = ???
+  val c707a: List[C7] = ???
+  val c707b = List[C7]()
+  val c708a: T forSome { type T <: C7 } = ???
+  // https://groups.google.com/forum/#!topic/scala-internals/5n07TiCnBZU
+  // val c708b: T forSome { @compileTimeOnly("C7") type T } = ???
+  val c709: (C8[Int], C8[C7]) = ???
+  val c710: (C8[_] => C8[_]) = ???
 }
 
 @compileTimeOnly("placebo")
