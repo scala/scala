@@ -1,4 +1,0 @@
-<plugin>
-  <name>plugintemplate</name>
-  <classname>plugintemplate.TemplatePlugin</classname>
-</plugin>
