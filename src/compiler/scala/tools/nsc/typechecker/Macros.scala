@@ -345,7 +345,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     new {
       val universe: self.global.type = self.global
       val callsiteTyper: universe.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
-      val expandee = universe.analyzer.macroExpanderAttachment(expandeeTree).original orElse expandeeTree
+      val expandee = universe.analyzer.macroExpanderAttachment(expandeeTree).original orElse duplicateAndKeepPositions(expandeeTree)
       val macroRole = universe.analyzer.macroExpanderAttachment(expandeeTree).role
     } with UnaffiliatedMacroContext {
       val prefix = Expr[Nothing](prefixTree)(TypeTag.Nothing)
@@ -403,8 +403,8 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
             val wrappedArgs = mapWithIndex(args)((arg, j) => {
               val fingerprint = implParams(min(j, implParams.length - 1))
               fingerprint match {
-                case LiftedTyped => context.Expr[Nothing](arg)(TypeTag.Nothing) // TODO: SI-5752
-                case LiftedUntyped => arg
+                case LiftedTyped => context.Expr[Nothing](arg.duplicate)(TypeTag.Nothing) // TODO: SI-5752
+                case LiftedUntyped => arg.duplicate
                 case _ => abort(s"unexpected fingerprint $fingerprint in $binding with paramss being $paramss " +
                                 s"corresponding to arg $arg in $argss")
               }
