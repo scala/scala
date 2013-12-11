@@ -5,6 +5,8 @@
 package scala.tools.nsc
 package backend.opt
 
+import java.util.concurrent.TimeUnit
+
 /**
   * This optimization phase inlines the exception handlers so that further phases can optimize the code better
   *
@@ -91,12 +93,12 @@ abstract class InlineExceptionHandlers extends SubComponent {
     /** Apply exception handler inlining to a class */
     override def apply(c: IClass): Unit =
       if (settings.inlineHandlers) {
-        val startTime = System.currentTimeMillis
+        val startTime = System.nanoTime()
         currentClass = c
 
         debuglog("Starting InlineExceptionHandlers on " + c)
         c.methods foreach applyMethod
-        debuglog("Finished InlineExceptionHandlers on " + c + "... " + (System.currentTimeMillis - startTime) + "ms")
+        debuglog("Finished InlineExceptionHandlers on " + c + "... " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime) + "ms")
         currentClass = null
       }
 

@@ -8,6 +8,7 @@ package tools.nsc
 package backend.icode.analysis
 
 import scala.collection.{mutable, immutable}
+import java.util.concurrent.TimeUnit
 
 /** A data-flow analysis on types, that works on `ICode`.
  *
@@ -709,14 +710,14 @@ abstract class TypeFlowAnalysis {
     private var lastStart = 0L
 
     def start() {
-      lastStart = System.currentTimeMillis
+      lastStart = System.nanoTime()
     }
 
     /** Stop the timer and return the number of milliseconds since the last
      * call to start. The 'millis' field is increased by the elapsed time.
      */
     def stop: Long = {
-      val elapsed = System.currentTimeMillis - lastStart
+      val elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStart)
       millis += elapsed
       elapsed
     }

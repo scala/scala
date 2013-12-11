@@ -10,6 +10,7 @@ package internal
 import scala.annotation.elidable
 import scala.collection.{ mutable, immutable }
 import util._
+import java.util.concurrent.TimeUnit
 
 abstract class SymbolTable extends macros.Universe
                               with Collections
@@ -55,7 +56,7 @@ abstract class SymbolTable extends macros.Universe
   def abort(msg: String): Nothing    = throw new FatalError(supplementErrorMessage(msg))
 
   protected def elapsedMessage(msg: String, start: Long) =
-    msg + " in " + (System.currentTimeMillis() - start) + "ms"
+    msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start) + "ms"
 
   def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
