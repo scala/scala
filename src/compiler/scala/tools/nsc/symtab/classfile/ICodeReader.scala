@@ -489,23 +489,28 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.invokevirtual =>
           val m = pool.getMemberSymbol(in.nextChar, false); size += 2
           code.emit(CALL_METHOD(m, Dynamic))
+          method.updateRecursive(m)
         case JVM.invokeinterface  =>
           val m = pool.getMemberSymbol(in.nextChar, false); size += 4
           in.skip(2)
           code.emit(CALL_METHOD(m, Dynamic))
+          // invokeinterface can't be recursive
         case JVM.invokespecial   =>
           val m = pool.getMemberSymbol(in.nextChar, false); size += 2
           val style = if (m.name == nme.CONSTRUCTOR || m.isPrivate) Static(true)
                       else SuperCall(m.owner.name);
           code.emit(CALL_METHOD(m, style))
+          method.updateRecursive(m)
         case JVM.invokestatic    =>
           val m = pool.getMemberSymbol(in.nextChar, true); size += 2
           if (isBox(m))
             code.emit(BOX(toTypeKind(m.info.paramTypes.head)))
           else if (isUnbox(m))
             code.emit(UNBOX(toTypeKind(m.info.resultType)))
-          else
+          else {
             code.emit(CALL_METHOD(m, Static(false)))
+            method.updateRecursive(m)
+          }
         case JVM.invokedynamic  =>
           // TODO, this is just a place holder. A real implementation must parse the class constant entry
           debuglog("Found JVM invokedynamic instructionm, inserting place holder ICode INVOKE_DYNAMIC.")

@@ -185,6 +185,10 @@ trait Members {
       this
     }
 
+    final def updateRecursive(called: Symbol): Unit = {
+      recursive ||= (called == symbol)
+    }
+
     def addLocal(l: Local): Local = findOrElse(locals)(_ == l) { locals ::= l ; l }
 
     def addParam(p: Local): Unit =
