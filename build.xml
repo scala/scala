@@ -1837,6 +1837,7 @@ TODO:
     <copy toDir="${dist.dir}/lib">
       <fileset dir="${build-pack.dir}/lib">
         <include name="jline.jar"/>
+        <include name="scala-partest.jar"/> <!-- needed for maven publish -->
         <include name="scalap.jar"/>
       </fileset>
     </copy>
