@@ -1,10 +1,18 @@
 package test
 
 class C {
+  val vCCC : Int = 0
+  var rCCC : Int = 0
+  private val pVCCC : Int = 0
+  private var pRCCC : Int = 0
   def fCCC : Int = 0
 }
 
 object O extends C {
+  val vOOO : Int = 0
+  var rOOO : Int = 0
+  private val pVOOO : Int = 0
+  private var pROOO : Int = 0
   def fOOO : Int = 0
 }
 

@@ -1379,6 +1379,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def hasRawInfo: Boolean = infos ne null
     def hasCompleteInfo = hasRawInfo && rawInfo.isComplete
 
+    // does not run adaptToNewRun, which is prone to trigger cycles (SI-8029)
+    // TODO: give this a better name if you understand the intent of the caller.
+    //       Is it something to do with `reallyExists` or `isStale`?
+    final def rawInfoIsNoType: Boolean = {
+      hasRawInfo && (infos.info eq NoType)
+    }
+
     /** Return info without checking for initialization or completing */
     def rawInfo: Type = {
       var infos = this.infos
@@ -2038,7 +2045,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
     def isCoDefinedWith(that: Symbol) = (
-         (this.rawInfo ne NoType)
+         !rawInfoIsNoType
       && (this.effectiveOwner == that.effectiveOwner)
       && (   !this.effectiveOwner.isPackageClass
           || (this.associatedFile eq NoAbstractFile)
