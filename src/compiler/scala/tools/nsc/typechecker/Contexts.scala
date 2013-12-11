@@ -773,7 +773,7 @@ trait Contexts { self: Analyzer =>
     // Implicit collection
     //
 
-    private var implicitsCache: List[List[ImplicitInfo]] = null
+    private var implicitsCache: List[ImplicitInfo] = null
     private var implicitsRunId = NoRunId
 
     def resetCache() {
@@ -834,14 +834,24 @@ trait Contexts { self: Analyzer =>
     def implicitss: List[List[ImplicitInfo]] = {
       val imports = this.imports
       val nextOuter = this.nextOuter
-      if (implicitsRunId != currentRunId) {
-        implicitsRunId = currentRunId
+      def withOuter(is: List[ImplicitInfo]): List[List[ImplicitInfo]] =
+        is match {
+          case Nil => nextOuter.implicitss
+          case _ => is :: nextOuter.implicitss
+        }
+
+      val CycleMarker = NoRunId - 1
+      if (implicitsRunId == CycleMarker) {
+        debuglog(s"cycle while collecting implicits at owner ${owner}, probably due to an implicit without an explicit return type. Continuing with implicits from enclosing contexts.")
+        withOuter(Nil)
+      } else if (implicitsRunId != currentRunId) {
+        implicitsRunId = CycleMarker
         implicitsCache = List()
+        var canCache = true
         val newImplicits: List[ImplicitInfo] =
           if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
-            if (!owner.isInitialized) return nextOuter.implicitss
-            // debuglog("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers)//DEBUG
-            savingEnclClass(this) {
+            if (!owner.isInitialized) { canCache = false; Nil }
+            else savingEnclClass(this) {
               // !!! In the body of `class C(implicit a: A) { }`, `implicitss` returns `List(List(a), List(a), List(<predef..)))`
               //     it handled correctly by implicit search, which considers the second `a` to be shadowed, but should be
               //     remedied nonetheless.
@@ -857,10 +867,15 @@ trait Contexts { self: Analyzer =>
             // the corresponding package object may contain implicit members.
             collectImplicits(owner.tpe.implicitMembers, owner.tpe)
           } else List()
-        implicitsCache = if (newImplicits.isEmpty) nextOuter.implicitss
-                         else newImplicits :: nextOuter.implicitss
+
+        if (canCache) {
+          implicitsRunId = currentRunId
+          implicitsCache = newImplicits
+        } else implicitsRunId = NoRunId
+
+        withOuter(newImplicits)
       }
-      implicitsCache
+      else withOuter(implicitsCache)
     }
 
     //
