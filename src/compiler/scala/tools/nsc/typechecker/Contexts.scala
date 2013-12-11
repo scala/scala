@@ -832,12 +832,11 @@ trait Contexts { self: Analyzer =>
      * filtered out later by `eligibleInfos` (SI-4270 / 9129cfe9), as they don't type-check.
      */
     def implicitss: List[List[ImplicitInfo]] = {
-      val imports = this.imports
       val nextOuter = this.nextOuter
       def withOuter(is: List[ImplicitInfo]): List[List[ImplicitInfo]] =
         is match {
           case Nil => nextOuter.implicitss
-          case _ => is :: nextOuter.implicitss
+          case _   => is :: nextOuter.implicitss
         }
 
       val CycleMarker = NoRunId - 1
@@ -846,36 +845,40 @@ trait Contexts { self: Analyzer =>
         withOuter(Nil)
       } else if (implicitsRunId != currentRunId) {
         implicitsRunId = CycleMarker
-        implicitsCache = List()
-        var canCache = true
-        val newImplicits: List[ImplicitInfo] =
-          if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
-            if (!owner.isInitialized) { canCache = false; Nil }
-            else savingEnclClass(this) {
-              // !!! In the body of `class C(implicit a: A) { }`, `implicitss` returns `List(List(a), List(a), List(<predef..)))`
-              //     it handled correctly by implicit search, which considers the second `a` to be shadowed, but should be
-              //     remedied nonetheless.
-              collectImplicits(owner.thisType.implicitMembers, owner.thisType)
-            }
-          } else if (scope != nextOuter.scope && !owner.isPackageClass) {
-            debuglog("collect local implicits " + scope.toList)//DEBUG
-            collectImplicits(scope, NoPrefix)
-          } else if (firstImport != nextOuter.firstImport) {
-            assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
-            collectImplicitImports(imports.head)
-          } else if (owner.isPackageClass) {
-            // the corresponding package object may contain implicit members.
-            collectImplicits(owner.tpe.implicitMembers, owner.tpe)
-          } else List()
-
-        if (canCache) {
-          implicitsRunId = currentRunId
-          implicitsCache = newImplicits
-        } else implicitsRunId = NoRunId
-
-        withOuter(newImplicits)
+        implicits(nextOuter) match {
+          case None =>
+            implicitsRunId = NoRunId
+            withOuter(Nil)
+          case Some(is) =>
+            implicitsRunId = currentRunId
+            implicitsCache = is
+            withOuter(is)
+        }
       }
       else withOuter(implicitsCache)
+    }
+
+    /** @return None if a cycle is detected, or Some(infos) containing the in-scope implicits at this context */
+    private def implicits(nextOuter: Context): Option[List[ImplicitInfo]] = {
+      val imports = this.imports
+      if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
+        if (!owner.isInitialized) None
+        else savingEnclClass(this) {
+          // !!! In the body of `class C(implicit a: A) { }`, `implicitss` returns `List(List(a), List(a), List(<predef..)))`
+          //     it handled correctly by implicit search, which considers the second `a` to be shadowed, but should be
+          //     remedied nonetheless.
+          Some(collectImplicits(owner.thisType.implicitMembers, owner.thisType))
+        }
+      } else if (scope != nextOuter.scope && !owner.isPackageClass) {
+        debuglog("collect local implicits " + scope.toList)//DEBUG
+        Some(collectImplicits(scope, NoPrefix))
+      } else if (firstImport != nextOuter.firstImport) {
+        assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
+        Some(collectImplicitImports(imports.head))
+      } else if (owner.isPackageClass) {
+        // the corresponding package object may contain implicit members.
+        Some(collectImplicits(owner.tpe.implicitMembers, owner.tpe))
+      } else Some(Nil)
     }
 
     //
