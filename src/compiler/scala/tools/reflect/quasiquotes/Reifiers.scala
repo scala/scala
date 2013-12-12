@@ -13,7 +13,7 @@ trait Reifiers { self: Quasiquotes =>
   import Cardinality._
   import universeTypes._
 
-  abstract class Reifier extends {
+  abstract class Reifier(val isReifyingExpressions: Boolean) extends {
     val global: self.global.type = self.global
     val universe = self.universe
     val reifee = EmptyTree
@@ -22,7 +22,6 @@ trait Reifiers { self: Quasiquotes =>
   } with ReflectReifier {
     lazy val typer = throw new UnsupportedOperationException
 
-    def isReifyingExpressions: Boolean
     def isReifyingPatterns: Boolean = !isReifyingExpressions
     def action = if (isReifyingExpressions) "splice" else "extract"
     def holesHaveTypes = isReifyingExpressions
@@ -94,12 +93,12 @@ trait Reifiers { self: Quasiquotes =>
             // cq"$tree if $guard => $succ" :: cq"_ => $fail" :: Nil
             CaseDef(tree, guard, succ) :: CaseDef(Ident(nme.WILDCARD), EmptyTree, fail) :: Nil
           }
-        // q"new { def unapply(tree: $AnyClass) = tree match { case ..$cases } }.unapply(..$args)"
+        // q"new { def unapply(tree: $AnyClass) = { ..${unlifters.preamble()}; tree match { case ..$cases } } }.unapply(..$args)"
         Apply(
           Select(
             SyntacticNew(Nil, Nil, noSelfType, List(
               DefDef(NoMods, nme.unapply, Nil, List(List(ValDef(NoMods, nme.tree, TypeTree(AnyClass.toType), EmptyTree))), TypeTree(),
-                Match(Ident(nme.tree), cases)))),
+                SyntacticBlock(unlifters.preamble() :+ Match(Ident(nme.tree), cases))))),
             nme.unapply),
           args)
       }
@@ -107,7 +106,7 @@ trait Reifiers { self: Quasiquotes =>
     def reifyFillingHoles(tree: Tree): Tree = {
       val reified = reifyTree(tree)
       holeMap.unused.foreach { hole =>
-        c.abort(holeMap(hole).tree.pos, s"Don't know how to $action here")
+        c.abort(holeMap(hole).pos, s"Don't know how to $action here")
       }
       wrap(reified)
     }
@@ -117,21 +116,27 @@ trait Reifiers { self: Quasiquotes =>
       reifyTreeSyntactically(tree)
 
     def reifyTreePlaceholder(tree: Tree): Tree = tree match {
-      case Placeholder(tree, TreeLocation(_), _) if isReifyingExpressions => tree
-      case Placeholder(tree, _, NoDot) if isReifyingPatterns => tree
-      case Placeholder(tree, _, card @ Dot()) => c.abort(tree.pos, s"Can't $action with $card here")
+      case Placeholder(hole: ApplyHole) if hole.tpe <:< treeType => hole.tree
+      case Placeholder(Hole(tree, NoDot)) if isReifyingPatterns => tree
+      case Placeholder(hole @ Hole(_, card @ Dot())) => c.abort(hole.pos, s"Can't $action with $card here")
       case TuplePlaceholder(args) => reifyTuple(args)
       case TupleTypePlaceholder(args) => reifyTupleType(args)
       case FunctionTypePlaceholder(argtpes, restpe) => reifyFunctionType(argtpes, restpe)
-      case CasePlaceholder(tree, location, _) => reifyCase(tree, location)
-      case RefineStatPlaceholder(tree, _, _) => reifyRefineStat(tree)
-      case EarlyDefPlaceholder(tree, _, _) => reifyEarlyDef(tree)
-      case PackageStatPlaceholder(tree, _, _) => reifyPackageStat(tree)
-      case ForEnumPlaceholder(tree, _, _) => tree
+      case CasePlaceholder(hole) => hole.tree
+      case RefineStatPlaceholder(hole) => reifyRefineStat(hole)
+      case EarlyDefPlaceholder(hole) => reifyEarlyDef(hole)
+      case PackageStatPlaceholder(hole) => reifyPackageStat(hole)
+      // for enumerators are checked not during splicing but during
+      // desugaring of the for loop in SyntacticFor & SyntacticForYield
+      case ForEnumPlaceholder(hole) => hole.tree
       case _ => EmptyTree
     }
 
     override def reifyTreeSyntactically(tree: Tree) = tree match {
+      case RefTree(qual, SymbolPlaceholder(Hole(tree, _))) if isReifyingExpressions =>
+        mirrorBuildCall(nme.RefTree, reify(qual), tree)
+      case This(SymbolPlaceholder(Hole(tree, _))) if isReifyingExpressions =>
+        mirrorCall(nme.This, tree)
       case SyntacticTraitDef(mods, name, tparams, earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticTraitDef, mods, name, tparams, earlyDefs, parents, selfdef, body)
       case SyntacticClassDef(mods, name, tparams, constrmods, vparamss, earlyDefs, parents, selfdef, body) =>
@@ -161,17 +166,24 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticForYield, enums, body)
       case SyntacticAssign(lhs, rhs) =>
         reifyBuildCall(nme.SyntacticAssign, lhs, rhs)
-      case SyntacticApplied(fun, List(args))
-        if args.forall { case Placeholder(_, _, DotDotDot) => false case _ => true } =>
-        reifyBuildCall(nme.SyntacticApply, fun, args)
       case SyntacticApplied(fun, argss) if argss.nonEmpty =>
         reifyBuildCall(nme.SyntacticApplied, fun, argss)
       case SyntacticTypeApplied(fun, targs) if targs.nonEmpty =>
         reifyBuildCall(nme.SyntacticTypeApplied, fun, targs)
       case SyntacticFunction(args, body) =>
         reifyBuildCall(nme.SyntacticFunction, args, body)
+      case SyntacticIdent(name, isBackquoted) =>
+        reifyBuildCall(nme.SyntacticIdent, name, isBackquoted)
+      case Block(Nil, Placeholder(Hole(tree, DotDot))) =>
+        mirrorBuildCall(nme.SyntacticBlock, tree)
+      case Block(Nil, other) =>
+        reifyTree(other)
       case Block(stats, last) =>
         reifyBuildCall(nme.SyntacticBlock, stats :+ last)
+      case Try(block, catches, finalizer) =>
+        reifyBuildCall(nme.SyntacticTry, block, catches, finalizer)
+      case Match(selector, cases) =>
+        reifyBuildCall(nme.SyntacticMatch, selector, cases)
       // parser emits trees with scala package symbol to ensure
       // that some names hygienically point to various scala package
       // members; we need to preserve this symbol to preserve
@@ -183,9 +195,10 @@ trait Reifiers { self: Quasiquotes =>
     }
 
     override def reifyName(name: Name): Tree = name match {
-      case Placeholder(tree, location, _) =>
-        if (holesHaveTypes && !(location.tpe <:< nameType)) c.abort(tree.pos, s"$nameType expected but ${location.tpe} found")
-        tree
+      case Placeholder(hole: ApplyHole) =>
+        if (!(hole.tpe <:< nameType)) c.abort(hole.pos, s"$nameType expected but ${hole.tpe} found")
+        hole.tree
+      case Placeholder(hole: UnapplyHole) => hole.treeNoUnlift
       case FreshName(prefix) if prefix != nme.QUASIQUOTE_NAME_PREFIX =>
         def fresh() = c.freshName[TermName](nme.QUASIQUOTE_NAME_PREFIX)
         def introduceName() = { val n = fresh(); nameMap(name) += n; n}
@@ -196,15 +209,10 @@ trait Reifiers { self: Quasiquotes =>
         super.reifyName(name)
     }
 
-    def reifyCase(tree: Tree, location: Location) = {
-      if (holesHaveTypes && !(location.tpe <:< caseDefType)) c.abort(tree.pos, s"$caseDefType expected but ${location.tpe} found")
-      tree
-    }
-
     def reifyTuple(args: List[Tree]) = args match {
       case Nil => reify(Literal(Constant(())))
-      case List(hole @ Placeholder(_, _, NoDot)) => reify(hole)
-      case List(Placeholder(_, _, _)) => reifyBuildCall(nme.SyntacticTuple, args)
+      case List(hole @ Placeholder(Hole(_, NoDot))) => reify(hole)
+      case List(Placeholder(_)) => reifyBuildCall(nme.SyntacticTuple, args)
       // in a case we only have one element tuple without
       // any cardinality annotations this means that this is
       // just an expression wrapped in parentheses
@@ -214,8 +222,8 @@ trait Reifiers { self: Quasiquotes =>
 
     def reifyTupleType(args: List[Tree]) = args match {
       case Nil => reify(Select(Ident(nme.scala_), tpnme.Unit))
-      case List(hole @ Placeholder(_, _, NoDot)) => reify(hole)
-      case List(Placeholder(_, _, _)) => reifyBuildCall(nme.SyntacticTupleType, args)
+      case List(hole @ Placeholder(Hole(_, NoDot))) => reify(hole)
+      case List(Placeholder(_)) => reifyBuildCall(nme.SyntacticTupleType, args)
       case List(other) => reify(other)
       case _ => reifyBuildCall(nme.SyntacticTupleType, args)
     }
@@ -223,13 +231,18 @@ trait Reifiers { self: Quasiquotes =>
     def reifyFunctionType(argtpes: List[Tree], restpe: Tree) =
       reifyBuildCall(nme.SyntacticFunctionType, argtpes, restpe)
 
-    def reifyRefineStat(tree: Tree) = tree
+    def reifyConstructionCheck(name: TermName, hole: Hole) = hole match {
+      case _: UnapplyHole => hole.tree
+      case _: ApplyHole => mirrorBuildCall(name, hole.tree)
+    }
 
-    def reifyEarlyDef(tree: Tree) = tree
+    def reifyRefineStat(hole: Hole) = reifyConstructionCheck(nme.mkRefineStat, hole)
 
-    def reifyAnnotation(tree: Tree) = tree
+    def reifyEarlyDef(hole: Hole) = reifyConstructionCheck(nme.mkEarlyDef, hole)
 
-    def reifyPackageStat(tree: Tree) = tree
+    def reifyAnnotation(hole: Hole) = reifyConstructionCheck(nme.mkAnnotation, hole)
+
+    def reifyPackageStat(hole: Hole) = reifyConstructionCheck(nme.mkPackageStat, hole)
 
     /** Splits list into a list of groups where subsequent elements are considered
      *  similar by the corresponding function.
@@ -262,7 +275,7 @@ trait Reifiers { self: Quasiquotes =>
      *
      *    reifyMultiCardinalityList(lst) {
      *      // first we define patterns that extract high-cardinality holeMap (currently ..)
-     *      case Placeholder(CorrespondsTo(tree, tpe)) if tpe <:< iterableTreeType => tree
+     *      case Placeholder(IterableType(_, _)) => tree
      *    } {
      *      // in the end we define how single elements are reified, typically with default reify call
      *      reify(_)
@@ -281,21 +294,22 @@ trait Reifiers { self: Quasiquotes =>
      *  elements.
      */
     override def reifyList(xs: List[Any]): Tree = reifyMultiCardinalityList(xs) {
-      case Placeholder(tree, _, DotDot) => tree
-      case CasePlaceholder(tree, _, DotDot) => tree
-      case RefineStatPlaceholder(tree, _, DotDot) => reifyRefineStat(tree)
-      case EarlyDefPlaceholder(tree, _, DotDot) => reifyEarlyDef(tree)
-      case PackageStatPlaceholder(tree, _, DotDot) => reifyPackageStat(tree)
-      case ForEnumPlaceholder(tree, _, DotDot) => tree
-      case List(Placeholder(tree, _, DotDotDot)) => tree
+      case Placeholder(Hole(tree, DotDot)) => tree
+      case CasePlaceholder(Hole(tree, DotDot)) => tree
+      case RefineStatPlaceholder(h @ Hole(_, DotDot)) => reifyRefineStat(h)
+      case EarlyDefPlaceholder(h @ Hole(_, DotDot)) => reifyEarlyDef(h)
+      case PackageStatPlaceholder(h @ Hole(_, DotDot)) => reifyPackageStat(h)
+      case ForEnumPlaceholder(Hole(tree, DotDot)) => tree
+      case List(Placeholder(Hole(tree, DotDotDot))) => tree
     } {
       reify(_)
     }
 
     def reifyAnnotList(annots: List[Tree]): Tree = reifyMultiCardinalityList(annots) {
-      case AnnotPlaceholder(tree, _, DotDot) => reifyAnnotation(tree)
+      case AnnotPlaceholder(h @ Hole(_, DotDot)) => reifyAnnotation(h)
     } {
-      case AnnotPlaceholder(tree, UnknownLocation | TreeLocation(_), NoDot) => reifyAnnotation(tree)
+      case AnnotPlaceholder(h: ApplyHole) if h.tpe <:< treeType => reifyAnnotation(h)
+      case AnnotPlaceholder(h: UnapplyHole) if h.cardinality == NoDot => reifyAnnotation(h)
       case other => reify(other)
     }
 
@@ -321,78 +335,55 @@ trait Reifiers { self: Quasiquotes =>
 
     override def mirrorBuildCall(name: TermName, args: Tree*): Tree =
       Apply(Select(Select(universe, nme.build), name), args.toList)
+
+    override def scalaFactoryCall(name: String, args: Tree*): Tree =
+      call("scala." + name, args: _*)
   }
 
-  class ApplyReifier extends Reifier {
-    def isReifyingExpressions = true
-
-    override def reifyTreeSyntactically(tree: Tree): Tree = tree match {
-      case RefTree(qual, SymbolPlaceholder(tree)) =>
-        mirrorBuildCall(nme.RefTree, reify(qual), tree)
-      case This(SymbolPlaceholder(tree)) =>
-        mirrorCall(nme.This, tree)
-      case _ =>
-        super.reifyTreeSyntactically(tree)
-    }
-
-    override def reifyMultiCardinalityList[T](xs: List[T])(fill: PartialFunction[T, Tree])(fallback: T => Tree): Tree = xs match {
-      case Nil => mkList(Nil)
-      case _ =>
+  class ApplyReifier extends Reifier(isReifyingExpressions = true) {
+    def reifyMultiCardinalityList[T](xs: List[T])(fill: PartialFunction[T, Tree])(fallback: T => Tree): Tree =
+      if (xs.isEmpty) mkList(Nil)
+      else {
         def reifyGroup(group: List[T]): Tree = group match {
           case List(elem) if fill.isDefinedAt(elem) => fill(elem)
           case elems => mkList(elems.map(fallback))
         }
         val head :: tail = group(xs) { (a, b) => !fill.isDefinedAt(a) && !fill.isDefinedAt(b) }
         tail.foldLeft[Tree](reifyGroup(head)) { (tree, lst) => Apply(Select(tree, nme.PLUSPLUS), List(reifyGroup(lst))) }
-    }
+      }
 
     override def reifyModifiers(m: Modifiers) =
       if (m == NoMods) super.reifyModifiers(m)
       else {
         val (modsPlaceholders, annots) = m.annotations.partition {
-          case ModsPlaceholder(_, _, _) => true
+          case ModsPlaceholder(_) => true
           case _ => false
         }
         val (mods, flags) = modsPlaceholders.map {
-          case ModsPlaceholder(tree, location, card) => (tree, location)
-        }.partition { case (tree, location) =>
-          location match {
-            case ModsLocation => true
-            case FlagsLocation => false
-            case _ => c.abort(tree.pos, s"$flagsType or $modsType expected but ${tree.tpe} found")
-          }
+          case ModsPlaceholder(hole: ApplyHole) => hole
+        }.partition { hole =>
+          if (hole.tpe <:< modsType) true
+          else if (hole.tpe <:< flagsType) false
+          else c.abort(hole.pos, s"$flagsType or $modsType expected but ${hole.tpe} found")
         }
         mods match {
-          case (tree, _) :: Nil =>
-            if (flags.nonEmpty) c.abort(flags(0)._1.pos, "Can't splice flags together with modifiers, consider merging flags into modifiers")
-            if (annots.nonEmpty) c.abort(tree.pos, "Can't splice modifiers together with annotations, consider merging annotations into modifiers")
-            ensureNoExplicitFlags(m, tree.pos)
-            tree
-          case _ :: (second, _) :: Nil =>
-            c.abort(second.pos, "Can't splice multiple modifiers, consider merging them into a single modifiers instance")
+          case hole :: Nil =>
+            if (flags.nonEmpty) c.abort(flags(0).pos, "Can't splice flags together with modifiers, consider merging flags into modifiers")
+            if (annots.nonEmpty) c.abort(hole.pos, "Can't splice modifiers together with annotations, consider merging annotations into modifiers")
+            ensureNoExplicitFlags(m, hole.pos)
+            hole.tree
+          case _ :: hole :: Nil =>
+            c.abort(hole.pos, "Can't splice multiple modifiers, consider merging them into a single modifiers instance")
           case _ =>
             val baseFlags = reifyFlags(m.flags)
-            val reifiedFlags = flags.foldLeft[Tree](baseFlags) { case (flag, (tree, _)) => Apply(Select(flag, nme.OR), List(tree)) }
+            val reifiedFlags = flags.foldLeft[Tree](baseFlags) { case (flag, hole) => Apply(Select(flag, nme.OR), List(hole.tree)) }
             mirrorFactoryCall(nme.Modifiers, reifiedFlags, reify(m.privateWithin), reifyAnnotList(annots))
         }
       }
 
-    override def reifyRefineStat(tree: Tree) = mirrorBuildCall(nme.mkRefineStat, tree)
-
-    override def reifyEarlyDef(tree: Tree) = mirrorBuildCall(nme.mkEarlyDef, tree)
-
-    override def reifyAnnotation(tree: Tree) = mirrorBuildCall(nme.mkAnnotation, tree)
-
-    override def reifyPackageStat(tree: Tree) = mirrorBuildCall(nme.mkPackageStat, tree)
   }
-
-  class UnapplyReifier extends Reifier {
-    def isReifyingExpressions = false
-
-    override def scalaFactoryCall(name: String, args: Tree*): Tree =
-      call("scala." + name, args: _*)
-
-    override def reifyMultiCardinalityList[T](xs: List[T])(fill: PartialFunction[T, Tree])(fallback: T => Tree) = xs match {
+  class UnapplyReifier extends Reifier(isReifyingExpressions = false) {
+    def reifyMultiCardinalityList[T](xs: List[T])(fill: PartialFunction[T, Tree])(fallback: T => Tree): Tree = xs match {
       case init :+ last if fill.isDefinedAt(last) =>
         init.foldRight[Tree](fill(last)) { (el, rest) =>
           val cons = Select(Select(Select(Ident(nme.scala_), nme.collection), nme.immutable), nme.CONS)
@@ -405,14 +396,14 @@ trait Reifiers { self: Quasiquotes =>
     override def reifyModifiers(m: Modifiers) =
       if (m == NoMods) super.reifyModifiers(m)
       else {
-        val mods = m.annotations.collect { case ModsPlaceholder(tree, _, _) => tree }
+        val mods = m.annotations.collect { case ModsPlaceholder(hole: UnapplyHole) => hole }
         mods match {
-          case tree :: Nil =>
-            if (m.annotations.length != 1) c.abort(tree.pos, "Can't extract modifiers together with annotations, consider extracting just modifiers")
-            ensureNoExplicitFlags(m, tree.pos)
-            tree
-          case _ :: second :: rest =>
-            c.abort(second.pos, "Can't extract multiple modifiers together, consider extracting a single modifiers instance")
+          case hole :: Nil =>
+            if (m.annotations.length != 1) c.abort(hole.pos, "Can't extract modifiers together with annotations, consider extracting just modifiers")
+            ensureNoExplicitFlags(m, hole.pos)
+            hole.treeNoUnlift
+          case _ :: hole :: _ =>
+            c.abort(hole.pos, "Can't extract multiple modifiers together, consider extracting a single modifiers instance")
           case Nil =>
             mirrorFactoryCall(nme.Modifiers, reifyFlags(m.flags), reify(m.privateWithin), reifyAnnotList(m.annotations))
         }

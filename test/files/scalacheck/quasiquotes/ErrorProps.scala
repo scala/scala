@@ -105,13 +105,6 @@ object ErrorProps extends QuasiquoteProperties("errors") {
       q"f($sb)"
     """)
 
-  property("casedef expected") = fails(
-    "reflect.runtime.universe.CaseDef expected but reflect.runtime.universe.Tree found",
-    """
-      val t = EmptyTree
-      q"_ { case $t }"
-    """)
-
   property("can't splice with ... card here") = fails(
     "Can't splice with ... here",
     """
@@ -177,6 +170,20 @@ object ErrorProps extends QuasiquoteProperties("errors") {
     "Can't extract multiple modifiers together, consider extracting a single modifiers instance",
     """
       val q"$m1 $m2 def foo" = EmptyTree
+    """)
+
+  property("can't splice values of Null") = fails(
+    "Can't splice Null, bottom type values often indicate programmer mistake",
+    """
+      val n = null
+      q"$n"
+    """)
+
+  property("can't splice values of Nothing") = fails(
+    "Can't splice Nothing, bottom type values often indicate programmer mistake",
+    """
+      def n = ???
+      q"$n"
     """)
 
   // // Make sure a nice error is reported in this case

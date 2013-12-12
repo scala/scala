@@ -124,8 +124,15 @@ trait StdNames {
     final val AnyRef: NameType        = "AnyRef"
     final val Array: NameType         = "Array"
     final val List: NameType          = "List"
+    final val Left: NameType          = "Left"
+    final val Right: NameType         = "Right"
+    final val Vector: NameType        = "Vector"
     final val Seq: NameType           = "Seq"
+    final val Set: NameType           = "Set"
+    final val Some: NameType          = "Some"
     final val Symbol: NameType        = "Symbol"
+    final val Map: NameType           = "Map"
+    final val None: NameType          = "None"
     final val WeakTypeTag: NameType   = "WeakTypeTag"
     final val TypeTag : NameType      = "TypeTag"
     final val Expr: NameType          = "Expr"
@@ -239,6 +246,8 @@ trait StdNames {
     final val Enum: NameType                = "Enum"
     final val Group: NameType               = "Group"
     final val implicitNotFound: NameType    = "implicitNotFound"
+    final val Liftable: NameType            = "Liftable"
+    final val Unliftable: NameType          = "Unliftable"
     final val Name: NameType                = "Name"
     final val Tree: NameType                = "Tree"
     final val TermName: NameType            = "TermName"
@@ -328,6 +337,7 @@ trait StdNames {
     val QUASIQUOTE_TUPLE: NameType         = "$quasiquote$tuple$"
     val QUASIQUOTE_CASE: NameType          = "$quasiquote$case$"
     val QUASIQUOTE_FOR_ENUM: NameType      = "$quasiquote$for$enum$"
+    val QUASIQUOTE_UNLIFT_HELPER: String   = "$quasiquote$unlift$helper$"
     val MIXIN_CONSTRUCTOR: NameType        = "$init$"
     val MODULE_INSTANCE_FIELD: NameType    = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                    = "$outer"
@@ -588,7 +598,6 @@ trait StdNames {
     val Select: NameType               = "Select"
     val SelectFromTypeTree: NameType   = "SelectFromTypeTree"
     val SyntacticApplied: NameType     = "SyntacticApplied"
-    val SyntacticApply: NameType       = "SyntacticApply"
     val SyntacticAssign: NameType      = "SyntacticAssign"
     val SyntacticBlock: NameType       = "SyntacticBlock"
     val SyntacticClassDef: NameType    = "SyntacticClassDef"
@@ -598,10 +607,13 @@ trait StdNames {
     val SyntacticForYield: NameType    = "SyntacticForYield"
     val SyntacticFunction: NameType    = "SyntacticFunction"
     val SyntacticFunctionType: NameType = "SyntacticFunctionType"
-    val SyntacticPackageObjectDef: NameType = "SyntacticPackageObjectDef"
-    val SyntacticObjectDef: NameType   = "SyntacticObjectDef"
+    val SyntacticIdent: NameType       = "SyntacticIdent"
+    val SyntacticMatch: NameType       = "SyntacticMatch"
     val SyntacticNew: NameType         = "SyntacticNew"
+    val SyntacticObjectDef: NameType   = "SyntacticObjectDef"
+    val SyntacticPackageObjectDef: NameType = "SyntacticPackageObjectDef"
     val SyntacticTraitDef: NameType    = "SyntacticTraitDef"
+    val SyntacticTry: NameType         = "SyntacticTry"
     val SyntacticTuple: NameType       = "SyntacticTuple"
     val SyntacticTupleType: NameType   = "SyntacticTupleType"
     val SyntacticTypeApplied: NameType = "SyntacticTypeApplied"
@@ -751,10 +763,13 @@ trait StdNames {
     val typedProductIterator: NameType = "typedProductIterator"
     val TypeName: NameType             = "TypeName"
     val typeTagToManifest: NameType    = "typeTagToManifest"
+    val util: NameType                 = "util"
     val unapply: NameType              = "unapply"
     val unapplySeq: NameType           = "unapplySeq"
     val unbox: NameType                = "unbox"
     val universe: NameType             = "universe"
+    val UnliftHelper1: NameType        = "UnliftHelper1"
+    val UnliftHelper2: NameType        = "UnliftHelper2"
     val update: NameType               = "update"
     val updateDynamic: NameType        = "updateDynamic"
     val value: NameType                = "value"
@@ -784,7 +799,7 @@ trait StdNames {
       final val STAR : NameType  = "*"
       final val TILDE: NameType  = "~"
 
-      final val isUnary: Set[Name] = Set(MINUS, PLUS, TILDE, BANG)
+      final val isUnary: Set[Name] = scala.collection.immutable.Set(MINUS, PLUS, TILDE, BANG)
     }
 
     // value-conversion methods
@@ -837,8 +852,8 @@ trait StdNames {
     val UNARY_! = encode("unary_!")
 
     // Grouped here so Cleanup knows what tests to perform.
-    val CommonOpNames   = Set[Name](OR, XOR, AND, EQ, NE)
-    val BooleanOpNames  = Set[Name](ZOR, ZAND, UNARY_!) ++ CommonOpNames
+    val CommonOpNames   = scala.collection.immutable.Set[Name](OR, XOR, AND, EQ, NE)
+    val BooleanOpNames  = scala.collection.immutable.Set[Name](ZOR, ZAND, UNARY_!) ++ CommonOpNames
 
     val add: NameType                    = "add"
     val complement: NameType             = "complement"
