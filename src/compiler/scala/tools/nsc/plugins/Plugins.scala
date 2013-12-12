@@ -8,6 +8,7 @@ package scala.tools.nsc
 package plugins
 
 import scala.reflect.io.{ File, Path }
+import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver.Defaults
 
 /** Support for run-time loading of compiler plugins.
@@ -16,8 +17,7 @@ import scala.tools.util.PathResolver.Defaults
  *  @version 1.1, 2009/1/2
  *  Updated 2009/1/2 by Anders Bach Nielsen: Added features to implement SIP 00002
  */
-trait Plugins {
-  self: Global =>
+trait Plugins { global: Global =>
 
   /** Load a rough list of the plugins.  For speed, it
    *  does not instantiate a compiler run.  Therefore it cannot
@@ -25,13 +25,20 @@ trait Plugins {
    *  filtered from the final list of plugins.
    */
   protected def loadRoughPluginsList(): List[Plugin] = {
-    val jars = settings.plugin.value map Path.apply
-    def injectDefault(s: String) = if (s.isEmpty) Defaults.scalaPluginPath else s
-    val dirs = (settings.pluginsDir.value split File.pathSeparator).toList map injectDefault map Path.apply
-    val maybes = Plugin.loadAllFrom(jars, dirs, settings.disable.value)
+    def asPath(p: String) = ClassPath split p
+    val paths  = settings.plugin.value filter (_ != "") map (s => asPath(s) map Path.apply)
+    val dirs   = {
+      def injectDefault(s: String) = if (s.isEmpty) Defaults.scalaPluginPath else s
+      asPath(settings.pluginsDir.value) map injectDefault map Path.apply
+    }
+    val maybes = Plugin.loadAllFrom(paths, dirs, settings.disable.value)
     val (goods, errors) = maybes partition (_.isSuccess)
     // Explicit parameterization of recover to suppress -Xlint warning about inferred Any
-    errors foreach (_.recover[Any] { case e: Exception => inform(e.getMessage) })
+    errors foreach (_.recover[Any] {
+      // legacy behavior ignores altogether, so at least warn devs
+      case e: MissingPluginException => if (global.isDeveloper) warning(e.getMessage)
+      case e: Exception              => inform(e.getMessage)
+    })
     val classes = goods map (_.get)  // flatten
 
     // Each plugin must only be instantiated once. A common pattern
