@@ -450,7 +450,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     }
 
     // -----------------------------------------------------------------------------------------
-    // utitilies useful when emitting plain, mirror, and beaninfo classes.
+    // utilities useful when emitting plain, mirror, and beaninfo classes.
     // -----------------------------------------------------------------------------------------
 
     def writeIfNotTooBig(label: String, jclassName: String, jclass: asm.ClassWriter, sym: Symbol) {
@@ -458,9 +458,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         val arr = jclass.toByteArray()
         bytecodeWriter.writeClass(label, jclassName, arr, sym)
       } catch {
-        case e: java.lang.RuntimeException if(e.getMessage() == "Class file too large!") =>
-          // TODO check where ASM throws the equivalent of CodeSizeTooBigException
-          log("Skipped class "+jclassName+" because it exceeds JVM limits (it's too big or has methods that are too long).")
+        case e: java.lang.RuntimeException if e != null && (e.getMessage contains "too large!") =>
+          reporter.error(sym.pos,
+            s"Could not write class $jclassName because it exceeds JVM code size limits. ${e.getMessage}")
       }
     }
 
@@ -1402,7 +1402,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       addInnerClasses(clasz.symbol, jclass)
       jclass.visitEnd()
       writeIfNotTooBig("" + c.symbol.name, thisName, jclass, c.symbol)
-
     }
 
     /**
