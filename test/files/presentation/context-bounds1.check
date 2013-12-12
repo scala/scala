@@ -1,0 +1,51 @@
+reload: ContextBounds.scala
+
+askHyperlinkPos for `Blubb` at (2,23) ContextBounds.scala
+================================================================================
+[response] found askHyperlinkPos for `Blubb` at (13,7) ContextBounds.scala
+================================================================================
+
+askHyperlinkPos for `Foo` at (4,17) ContextBounds.scala
+================================================================================
+[response] found askHyperlinkPos for `Foo` at (9,7) ContextBounds.scala
+================================================================================
+
+askHyperlinkPos for `Blubb` at (4,32) ContextBounds.scala
+================================================================================
+[response] found askHyperlinkPos for `Blubb` at (13,7) ContextBounds.scala
+================================================================================
+
+askHyperlinkPos for `A` at (4,42) ContextBounds.scala
+================================================================================
+[response] found askHyperlinkPos for `A` at (4,12) ContextBounds.scala
+================================================================================
+
+askHyperlinkPos for `A` at (4,51) ContextBounds.scala
+================================================================================
+[response] found askHyperlinkPos for `A` at (4,12) ContextBounds.scala
+================================================================================
+
+askHyperlinkPos for `blubb` at (4,66) ContextBounds.scala
+================================================================================
+[response] found askHyperlinkPos for `blubb` at (2,7) ContextBounds.scala
+================================================================================
+
+askHyperlinkPos for `Foo` at (5,18) ContextBounds.scala
+================================================================================
+[response] found askHyperlinkPos for `Foo` at (9,7) ContextBounds.scala
+================================================================================
+
+askHyperlinkPos for `A` at (5,25) ContextBounds.scala
+================================================================================
+[response] found askHyperlinkPos for `A` at (4,12) ContextBounds.scala
+================================================================================
+
+askHyperlinkPos for `foo` at (5,36) ContextBounds.scala
+================================================================================
+[response] found askHyperlinkPos for `foo` at (10,7) ContextBounds.scala
+================================================================================
+
+askHyperlinkPos for `A` at (10,14) ContextBounds.scala
+================================================================================
+[response] found askHyperlinkPos for `A` at (9,11) ContextBounds.scala
+================================================================================
