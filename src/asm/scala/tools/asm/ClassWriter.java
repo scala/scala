@@ -1747,6 +1747,15 @@ public class ClassWriter extends ClassVisitor {
     }
 
     /**
+     * Find item that whose index is `index`.
+     */
+    public Item findItemByIndex(int index) {
+        int i = 0;
+        while (i < items.length && (items[i] == null || items[i].index != index)) i++;
+        return items[i];
+    }
+
+    /**
      * Puts one byte and two shorts into the constant pool.
      *
      * @param b
