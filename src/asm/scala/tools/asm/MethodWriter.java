@@ -2033,7 +2033,10 @@ class MethodWriter extends MethodVisitor {
         int size = 8;
         if (code.length > 0) {
             if (code.length > 65536) {
-                throw new RuntimeException("Method code too large!");
+                String nameString = "";
+                Item nameItem = cw.findItemByIndex(name);
+                if (nameItem != null) nameString = nameItem.strVal1 +"'s ";
+                throw new RuntimeException("Method "+ nameString +"code too large!");
             }
             cw.newUTF8("Code");
             size += 18 + code.length + 8 * handlerCount;
