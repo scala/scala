@@ -1715,28 +1715,31 @@ TODO:
 
 
   <target name="dist.doc" depends="dist.base, docs.done">
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs" overwrite="true" flatten="true">
+    <mkdir dir="${dist.dir}/doc"/>
+    <mkdir dir="${dist.dir}/doc/licenses"/>
+    <mkdir dir="${dist.dir}/doc/tools"/>
+    <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc" overwrite="true"/>
+    <copy file="${docs.dir}/README"  toDir="${dist.dir}/doc" overwrite="true"/>
+    <copy                            toDir="${dist.dir}/doc/licenses" overwrite="true">
+      <fileset dir="${docs.dir}/licenses"/>
+    </copy>
+    <copy                            toDir="${dist.dir}/doc/tools" overwrite="true">
+      <fileset dir="${build-docs.dir}/manual/html"/>
+    </copy>
+
+    <mkdir dir="${dist.dir}/api"/>
+    <copy toDir="${dist.dir}/api" overwrite="true">
+      <fileset dir="${build-docs.dir}/library"/>
+    </copy>
+    <copy file="${src.dir}/swing/doc/README"
+          toFile="${dist.dir}/api/README.scala-swing" overwrite="true"/>
+    <copy toDir="${dist.dir}/doc/api" overwrite="true" flatten="true">
       <file file="${scala-xml-javadoc}"/>
       <file file="${scala-parser-combinators-javadoc}"/>
     </copy>
-
-    <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc" overwrite="true"/>
-    <copy file="${docs.dir}/README" toDir="${dist.dir}/doc" overwrite="true"/>
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs/api"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/api" overwrite="true">
-      <fileset dir="${build-docs.dir}/library"/>
-    </copy>
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs/examples"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/examples" overwrite="true">
-      <fileset dir="${docs.dir}/examples">
-        <exclude name="**/*.desired.sha1"/>
-      </fileset>
-    </copy>
-    <copy file="${src.dir}/swing/doc/README"
-          toFile="${dist.dir}/doc/scala-devel-docs/README.scala-swing"
-          overwrite="true"/>
+      
   </target>
+
 
   <target name="dist.man" depends="dist.base, docs.man">
     <mkdir dir="${dist.dir}/man"/>

@@ -1,58 +1,36 @@
+Scala Distribution
+------------------
 
-Scala Software Distributions
-----------------------------
+The Scala distribution requires Java 1.6 or above.
 
-- scala-<major>.<minor>.<patch>.tgz         Unix distribution
-- scala-<major>.<minor>.<patch>.zip         Windows distribution
-
-The standard distributions require Java 1.5 or above. If you don't
-know which version of Java you have, run the command "java -version".
-
+Please report bugs at https://issues.scala-lang.org/.
+We welcome contributions at https://github.com/scala/scala!
 
 Scala Tools
 -----------
 
-- fsc         Scala offline compiler
-- scalac      Scala compiler
-- scaladoc    Scala API documentation generator
 - scala       Scala interactive interpreter
+- scalac      Scala compiler
+- fsc         Scala resident compiler
+- scaladoc    Scala API documentation generator
 - scalap      Scala classfile decoder 
 
 Run the command "scalac -help" to display the list of available
 compiler options.
 
 
-Unix Installation
------------------
+Installation
+------------
 
-Untar the archive. All Scala tools are located in the "bin" directory.
-Adding that directory to the PATH variable will make the Scala commands
-directly accessible.
-
-You may test the distribution by running the following commands:
-
-$ ./bin/scala
-scala> Array(4,3,2,1).sorted
-res0: Array[Int] = Array(1, 2, 3, 4)
-
-scala>:quit
-$
+Decompress the archive and run the above commands directly from `bin` directory.
+We recommend adding the full path of the `bin` directory to the `PATH`
+environment variable.
 
 
-Windows Installation
---------------------
+Licenses
+--------
 
-Unzip the archive. All Scala tools are located in the "bin" directory.
-Adding that directory to the PATH variable will make the Scala commands
-directly accessible.
-
-On Windows 95/98/Me, you must define the environment variable SCALA_HOME
-to point to the home directory of the Scala distribution to run any of
-these tools. This can be done by adding the following command to your
-AUTOEXEC.BAT file and then rebooting your machine.
-
-set SCALA_HOME=<install-directory>\scala-<major>.<minor>.<patch>
-
-On Windows NT/2000/XP, you do not need to define any variable in order
-for the Scala commands to run correctly.
-
+Scala is licensed under the standard 3-clause BSD license,
+included in the distribution as the file `doc/LICENSE`.
+The licenses of the software included in the Scala distribution can
+be found in the `doc/licenses` directory.

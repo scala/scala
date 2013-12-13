@@ -23,9 +23,15 @@ final class MatchError(obj: Any) extends RuntimeException {
   /** There's no reason we need to call toString eagerly,
    *  so defer it until getMessage is called.
    */
-  private lazy val objString =
+  private lazy val objString = {
+    def ofClass = "of class " + obj.getClass.getName
     if (obj == null) "null"
-    else obj.toString() + " (of class " + obj.getClass.getName + ")"
+    else try {
+      obj.toString() + " (" + ofClass + ")"
+    } catch {
+      case _: Throwable => "an instance " + ofClass
+    }
+  }
 
   override def getMessage() = objString
 }

@@ -1018,7 +1018,11 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val enclosing = new Members[ScopeMember]
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
       locals.add(sym, pre, implicitlyAdded = false) { (s, st) =>
-        new ScopeMember(s, st, context.isAccessible(s, pre, superAccess = false), viaImport)
+        // imported val and var are always marked as inaccessible, but they could be accessed through their getters. SI-7995
+        if (s.hasGetter) 
+          new ScopeMember(s, st, context.isAccessible(s.getter, pre, superAccess = false), viaImport)
+        else
+          new ScopeMember(s, st, context.isAccessible(s, pre, superAccess = false), viaImport)
       }
     def localsToEnclosing() = {
       enclosing.addNonShadowed(locals)
