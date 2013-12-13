@@ -2482,10 +2482,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** String representation, including symbol's kind e.g., "class Foo", "method Bar".
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
      */
-    override def toString: String = compose(
-      kindString,
-      if (hasMeaninglessName) owner.decodedName + idString else nameString
-    )
+    override def toString: String = {
+      if (isPackageObjectOrClass && !settings.debug)
+        s"package object ${owner.decodedName}"
+      else compose(
+        kindString,
+        if (hasMeaninglessName) owner.decodedName + idString else nameString
+      )
+    }
 
     /** String representation of location.
      */

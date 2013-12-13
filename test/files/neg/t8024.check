@@ -1,0 +1,6 @@
+t8024.scala:13: error: reference to sqrt is ambiguous;
+it is both defined in package object p and imported subsequently by
+import java.lang.Math.sqrt
+  sqrt(0d)
+  ^
+one error found
