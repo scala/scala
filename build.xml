@@ -1723,9 +1723,6 @@ TODO:
     <copy                            toDir="${dist.dir}/doc/licenses" overwrite="true">
       <fileset dir="${docs.dir}/licenses"/>
     </copy>
-    <copy                            toDir="${dist.dir}/doc/tools" overwrite="true">
-      <fileset dir="${build-docs.dir}/manual/html"/>
-    </copy>
 
     <mkdir dir="${dist.dir}/api"/>
     <copy toDir="${dist.dir}/api" overwrite="true">
