@@ -16,10 +16,21 @@ object iq {
       Console.println("Empty")
     }
 
-    /* Test infix enqueing. */
-    //val q2 = q + 42 + 0  // deprecated
+    /* Test enqueing. */
     val q2 = q.enqueue(42).enqueue(0)
+    val qa = q :+ 42 :+ 0
+    assert(q2 == qa)
+    
+    val qb = 42 +: 0 +: q
+    assert(q2 == qb)
+    val qc = 42 +: q :+ 0
+    assert(q2 == qc)
 
+    Console.println("q2: " + q2)
+    Console.println("qa: " + qa)
+    Console.println("qb: " + qb)
+    Console.println("qc: " + qc)
+    
     /* Test is empty and dequeue.
      * Expected: Head: 42
      */
@@ -37,7 +48,7 @@ object iq {
     /* Test sequence enqueing. */
     val q5: Queue[Any] = q4.enqueue(List(1,2,3,4,5,6,7,8,9))
     /* Test toString.
-     * Expected: Head: q5: Queue(0,1,2,3,4,5,6,7,8,9)
+     * Expected: q5: Queue(0,1,2,3,4,5,6,7,8,9)
      */
     Console.println("q5: " + q5)
     /* Test apply
