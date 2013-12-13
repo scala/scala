@@ -1211,7 +1211,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             // See SI-6231 comments in LamdaLift for ideas on how to lift the restriction.
             val msg = sm"""Implementation restriction: local ${iface.fullLocationString} is unable to automatically capture the
                 |free variable ${sym} on behalf of ${currentClass}. You can manually assign it to a val inside the trait,
-                |and refer that that val in ${currentClass}. For more details, see SI-6231."""
+                |and refer to that val in ${currentClass}. For more details, see SI-6231."""
             reporter.error(tree.pos, msg)
           }
 
