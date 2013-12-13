@@ -16,8 +16,7 @@ abstract class TreeGen extends macros.TreeBuilder {
   def rootScalaDot(name: Name)       = Select(rootId(nme.scala_) setSymbol ScalaPackage, name)
   def scalaDot(name: Name)           = Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
   def scalaAnnotationDot(name: Name) = Select(scalaDot(nme.annotation), name)
-  def scalaAnyRefConstrRaw           = scalaDot(tpnme.AnyRef)
-  def scalaAnyRefConstr              = scalaAnyRefConstrRaw setSymbol AnyRefClass // used in ide
+  def scalaAnyRefConstr              = scalaDot(tpnme.AnyRef) // used in ide
 
   def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree, abstractFun: Boolean = false): Tree = {
     val cls = if (abstractFun)
@@ -393,7 +392,7 @@ abstract class TreeGen extends macros.TreeBuilder {
 
   def mkParents(ownerMods: Modifiers, parents: List[Tree], parentPos: Position = NoPosition) =
     if (ownerMods.isCase) parents ::: List(scalaDot(tpnme.Product), scalaDot(tpnme.Serializable))
-    else if (parents.isEmpty) atPos(parentPos)(scalaAnyRefConstrRaw) :: Nil
+    else if (parents.isEmpty) atPos(parentPos)(scalaAnyRefConstr) :: Nil
     else parents
 
   def mkClassDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], templ: Template): ClassDef = {
