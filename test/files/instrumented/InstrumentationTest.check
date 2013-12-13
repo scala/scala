@@ -1,3 +1,4 @@
+#partest !avian
 true
 Method call statistics:
     1  Foo1.<init>()V
@@ -8,3 +9,6 @@ Method call statistics:
     1  scala/Predef$.println(Ljava/lang/Object;)V
     1  scala/io/AnsiColor$class.$init$(Lscala/io/AnsiColor;)V
     1  scala/runtime/BoxesRunTime.boxToBoolean(Z)Ljava/lang/Boolean;
+#partest avian
+!!!TEST SKIPPED!!!
+Instrumentation is not supported on Avian.
