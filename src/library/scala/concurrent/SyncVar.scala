@@ -8,6 +8,8 @@
 
 package scala.concurrent
 
+import java.util.concurrent.TimeUnit
+
 /** A class to provide safe concurrent access to a mutable cell.
  *  All methods are synchronized.
  *
@@ -23,14 +25,16 @@ class SyncVar[A] {
     value.get
   }
 
-  /** Waits `timeout` millis. If `timeout <= 0` just returns 0. If the system clock
-   *  went backward, it will return 0, so it never returns negative results.
-   */
+  /** Waits `timeout` millis. If `timeout <= 0` just returns 0.
+    * It never returns negative results.
+    */
   private def waitMeasuringElapsed(timeout: Long): Long = if (timeout <= 0) 0 else {
-    val start = System.currentTimeMillis
+    val start = System.nanoTime()
     wait(timeout)
-    val elapsed = System.currentTimeMillis - start
-    if (elapsed < 0) 0 else elapsed
+    val elapsed = System.nanoTime() - start
+    // nanoTime should be monotonic, but it's not possible to rely on that.
+    // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6458294.
+    if (elapsed < 0) 0 else TimeUnit.NANOSECONDS.toMillis(elapsed)
   }
 
   /** Waits for this SyncVar to become defined at least for
