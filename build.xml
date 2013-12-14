@@ -107,10 +107,6 @@ TODO:
   <target name="distclean"   depends="dist.clean"   description="Removes all distributions. Binaries and documentation are untouched."/>
 
 
-  <target name="test.continuations.suite">
-    <echo message="DEPRECATED: the continuations have moved to https://github.com/scala/scala-continuations"/>
-  </target>
-
 <!-- ===========================================================================
                                   PROPERTIES
 ============================================================================ -->
