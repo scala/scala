@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<!--
+THIS FILE WILL SOON SELF DESTRUCT; DO NOT USE
+see publish.* targets in /build.xml
+-->
 <project name="sabbus-maven-deploy" xmlns:artifact="urn:maven-artifact-ant">
 
   <description>
@@ -46,17 +50,11 @@
     </sequential>
   </macrodef>
 
-  <macrodef name="deploy-one">
-    <attribute name="dir" default=""/>
+  <macrodef name="filter-pom">
+    <attribute name="path" />
     <attribute name="name" />
-    <attribute name="local"  default="false"/>
-    <attribute name="signed" default="false"/>
 
     <sequential>
-      <local name="path"/> <property name="path" value="@{dir}@{name}/@{name}"/>
-
-      <echo>Deploying ${path}-[pom.xml|src.jar|docs.jar].</echo>
-
       <copy file="${path}-pom.xml" tofile="${path}-pom-filtered.xml" overwrite="true">
         <filterset>
           <filter token="VERSION"                    value="${maven.version.number}" />
@@ -74,6 +72,21 @@
         </filterset>
       </copy>
       <artifact:pom id="@{name}.pom" file="${path}-pom-filtered.xml" />
+    </sequential>
+  </macrodef>
+
+  <macrodef name="deploy-one">
+    <attribute name="dir" default=""/>
+    <attribute name="name" />
+    <attribute name="local"  default="false"/>
+    <attribute name="signed" default="false"/>
+
+    <sequential>
+      <local name="path"/> <property name="path" value="@{dir}@{name}/@{name}"/>
+
+      <echo>Deploying ${path}-[pom.xml|src.jar|docs.jar].</echo>
+
+      <filter-pom name="@{name}" path="@{path}"/>
 
       <if><equals arg1="@{signed}" arg2="false"/><then>
         <if><isset property="docs.skip"/><then>
@@ -128,6 +141,7 @@
     </sequential>
   </macrodef>
 
+
   <target name="boot.maven">
     <!-- Pull in properties from build -->
     <property file="build.properties" />
@@ -162,7 +176,18 @@
     </echo>
   </target>
 
-  <target name="deploy"        depends="init.maven" description="Deploys unsigned artifacts to the maven repo.">       <deploy/> </target>
-  <target name="deploy.local"  depends="init.maven" description="Deploys unsigned artifacts to the local maven repo."> <deploy local="true"/> </target>
-  <target name="deploy.signed" depends="init.maven" description="Deploys signed artifacts to the remote maven repo.">  <deploy signed="true"/> </target>
+  <target name="deploy"        depends="init.maven" description="Deploys unsigned artifacts to the maven repo.">
+    <echo message="WARNING!1! THIS TARGET HAS BEEN DEPRECATED -- CALL `ant publish` FROM /build.xml"/>
+    <deploy/>
+  </target>
+
+  <target name="deploy.local"  depends="init.maven" description="Deploys unsigned artifacts to the local maven repo.">
+    <echo message="WARNING!1! THIS TARGET HAS BEEN DEPRECATED -- CALL `ant publish.local` FROM /build.xml"/>
+    <deploy local="true"/>
+  </target>
+
+  <target name="deploy.signed" depends="init.maven" description="Deploys signed artifacts to the remote maven repo.">
+    <echo message="WARNING!1! THIS TARGET HAS BEEN DEPRECATED -- CALL `ant publish.signed` FROM /build.xml"/>
+    <deploy signed="true"/>
+  </target>
 </project>

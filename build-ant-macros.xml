@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="build-support">
+<project name="build-support" xmlns:artifact="urn:maven-artifact-ant">
   <description> Macros for Scala's ant build </description>
 
   <macrodef name="optimized">
@@ -451,8 +451,8 @@
     <attribute name="project"/>
     <sequential>
       <local name="artifact-base"/>
-      <property name="artifact-base" value="${maven-base}/${@{project}.dir}${@{project}.name}/${@{project}.name}"/>
-      <mkdir dir="${maven-base}/${@{project}.dir}${@{project}.name}"/>
+      <property name="artifact-base" value="${dist.maven}/${@{project}.dir}${@{project}.name}/${@{project}.name}"/>
+      <mkdir dir="${dist.maven}/${@{project}.dir}${@{project}.name}"/>
       <copy tofile="${artifact-base}.jar" file="${build-osgi.dir}/org.scala-lang.${@{project}.package}${@{project}.name}${@{project}.namesuffix}.jar" overwrite="true"/>
       <copy tofile="${artifact-base}-src.jar" file="${build-osgi.dir}/${@{project}.name}-src.jar" overwrite="true"/>
       <copy tofile="${artifact-base}-pom.xml" file="${src.dir}/build/maven/${@{project}.dir}/${@{project}.name}-pom.xml" overwrite="true"/>
@@ -469,7 +469,8 @@
     </sequential>
   </macrodef>
 
-
+  <!-- TODO inline maven-deploy.xml's macrodefs, remove maven-deploy.xml -->
+  <include file="src/build/maven/maven-deploy.xml" as="deploy-macros"/>
 
   <macrodef name="testSuite">
     <attribute name="dir" default="${partest.dir}"/>

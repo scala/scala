@@ -4,17 +4,14 @@
   xmlns:artifact="urn:maven-artifact-ant"
   xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
   <include file="build-ant-macros.xml" as="macros"/>
-  <include file="src/build/maven/maven-deploy.xml" as="maven-deploy"/>
 
   <description>
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
   </description>
 
 <!-- HINTS
-
  - for faster builds, have a build.properties in the same directory as build.xml that says:
       locker.skip=1
-
 -->
 
 <!-- USAGE FROM JENKINS SCRIPTS IS (CURRENTLY) AS FOLLOWS:
@@ -27,11 +24,14 @@ antArgs tend to be:
 scalacArgs examples:
   "-Dscalac.args=\"-Yrangepos\" -Dpartest.scalac_opts=\"-Yrangepos\""
 
-targets exercised:
-  deploy-core.snapshot publish-opt-nodocs distpack-maven-opt nightly locker.done build build-opt test.suite test.continuations.suite test.scaladoc
+supported/exercised targets
+  to publish: nightly publish-opt-nodocs
+  to build: build build-opt locker.done
+  to run tests: test.suite test.scaladoc
 
-NOTE: after distpack-maven-opt, it is expected there's a build file in dists/maven/latest that defines targets deploy and deploy.local
-TODO: get rid of this separate step
+DO NOT RELY ON ANY OTHER TARGETS (ok, you're probably ok assuming the ones defined in the first 100 lines of this file remain)
+
+NOTE: dists/maven/latest/build.xml will soon disappear; call `publish` in this build instead
 -->
 
 <!-- To use Zinc with the ant build:
@@ -70,7 +70,6 @@ TODO:
   <!-- packaging -->
   <target name="distpack" depends="pack-archives.done, pack-maven.done"/>
   <target name="distpack-maven" depends="pack-maven.done"/>
-
   <target name="distpack-opt" description="Builds an optimised distribution."> <optimized name="distpack"/></target>
   <target name="distpack-maven-opt" description="Builds an optimised maven distribution."><optimized name="distpack-maven"/></target>
 
@@ -81,7 +80,6 @@ TODO:
       <param name="scalac.args.optimise" value="-optimise"/>
     </antcall>
   </target>
-
   <target name="publish-core-opt-nodocs" description="Builds an untested, undocumented optimised core (library/reflect/compiler) and publishes to maven.">
     <antcall target="publish-core">
       <param name="docs.skip" value="1"/>
@@ -93,14 +91,16 @@ TODO:
       <param name="docs.skip" value="1"/>
     </antcall>
   </target>
-
   <target name="all.done" depends="test.done, distpack"/>
-
   <target name="nightly-nopt" depends="all.done"/>
   <target name="nightly"><optimized name="nightly-nopt"/></target>
-
   <target name="nightly.checkall">
     <antcall target="nightly-nopt"> <param name="partest.scalac_opts" value="-Ycheck:all"/></antcall></target>
+
+  <!-- prefer the sbt names, but the dotted names are used in jenkins;
+       rename there first before dropping the dotted ones -->
+  <target name="publish-local"  depends="publish.local"/>
+  <target name="publish-signed" depends="publish.signed"/>
 
   <target name="clean"       depends="quick.clean"  description="Removes binaries of compiler and library. Locker and distributions are untouched."/>
   <target name="docsclean"   depends="docs.clean"   description="Removes generated documentation. Distributions are untouched."/>
@@ -116,7 +116,7 @@ TODO:
   <property name="build.sysclasspath"     value="ignore"/>
 
   <!-- Defines the repository layout -->
-  <property name="docs.dir"               value="${basedir}/docs"/>
+  <property name="doc.dir"                value="${basedir}/doc"/>
   <property name="lib.dir"                value="${basedir}/lib"/>
   <property name="src.dir"                value="${basedir}/src"/>
   <property name="partest.dir"            value="${basedir}/test"/>
@@ -397,6 +397,13 @@ TODO:
       <property name="version.number"        value="${version.major}.${version.minor}.${version.patch}${version.suffix}-${git.commit.date}-${git.commit.sha}"/>
     </else></if>
 
+    <!-- some default in case something went wrong getting the revision -->
+    <property name="version.number"       value="-unknown-"/>
+
+    <property name="dist.name" value="scala-${version.number}"/>
+    <property name="dist.dir" value="${dists.dir}/${dist.name}"/>
+    <property name="dist.maven" value="${dists.dir}/maven/${version.number}"/>
+
     <condition property="has.java6">
         <equals arg1="${ant.java.version}" arg2="1.6"/>
     </condition>
@@ -440,10 +447,6 @@ TODO:
       <format property="human" pattern="d MMMM yyyy, HH:mm:ss" locale="en,US"/>
       <format property="short" pattern="yyyyMMddHHmmss"/>
     </tstamp>
-
-    <!-- some default in case something went wrong getting the revision -->
-    <property name="version.number"       value="-unknown-"/>
-    <property name="init.avail"           value="yes"/>
 
     <!-- Local libs (developer use.) -->
     <mkdir dir="${lib-extra.dir}"/>
@@ -1546,8 +1549,36 @@ TODO:
     </staged-docs>
   </target>
 
-  <target name="docs.man" depends="docs.start">
-    <staged-uptodate stage="docs" project="manual">
+  <target name="docs.core" depends="docs.lib, docs.reflect, docs.comp" unless="docs.skip"/>
+  <!-- TODO modularize compiler:  docs.scaladoc, docs.interactive, -->
+  <target name="docs.done" depends="docs.core, docs.actors, docs.scalap" unless="docs.skip"/>
+
+<!-- ===========================================================================
+                                  DISTRIBUTION
+============================================================================ -->
+  <!-- bin/ -->
+  <target name="dist.bin" depends="pack.bin">
+    <mkdir dir="${dist.dir}/bin"/>
+    <copy toDir="${dist.dir}/bin" overwrite="true">
+      <fileset dir="${build-pack.dir}/bin"/>
+    </copy>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/scala"/>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/scalac"/>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/scaladoc"/>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
+    <chmod perm="ugo+rx" file="${dist.dir}/bin/scalap"/>
+  </target>
+
+  <!-- doc/ and man/ -->
+  <target name="dist.doc" depends="scaladoc.task"> <!-- depends on scaladoc.task for scalac taskdef -->
+    <mkdir dir="${dist.dir}/doc"/>
+    <copy toDir="${dist.dir}/doc" overwrite="true">
+      <fileset dir="${doc.dir}"/>
+    </copy>
+
+    <mkdir dir="${dist.dir}/doc/tools"/>
+    <mkdir dir="${dist.dir}/man/man1"/>
+    <staged-uptodate stage="pack" project="manual">
       <check><srcfiles dir="${src.dir}/manual"/></check>
       <do>
         <mkdir dir="${build.dir}/manmaker/classes"/>
@@ -1557,21 +1588,19 @@ TODO:
           srcdir="${src.dir}/manual"
           includes="**/*.scala"
           addparams="${scalac.args.all} -language:implicitConversions"/>
-        <mkdir dir="${build-docs.dir}/manual/man/man1"/>
-        <mkdir dir="${build-docs.dir}/manual/html"/>
-        <mkdir dir="${build-docs.dir}/manual/genman/man1"/>
+        <mkdir dir="${build-manual.dir}/genman/man1"/>
         <taskdef name="genman"
                  classname="scala.tools.docutil.ManMaker"
                  classpathref="manual.build.path"/>
         <genman command="fsc, scala, scalac, scaladoc, scalap"
-                htmlout="${build-docs.dir}/manual/html"
-                manout="${build-docs.dir}/manual/genman"/>
+                htmlout="${dist.dir}/doc/tools"
+                manout="${build-manual.dir}/genman"/>
         <!-- On Windows source and target files can't be the same ! -->
         <fixcrlf
-          srcdir="${build-docs.dir}/manual/genman"
-          destdir="${build-docs.dir}/manual/man"
+          srcdir="${build-manual.dir}/genman"
+          destdir="${dist.dir}/man"
           eol="unix" includes="**/*.1"/>
-        <copy todir="${build-docs.dir}/manual/html" overwrite="true">
+        <copy todir="${dist.dir}/doc/tools" overwrite="true">
           <fileset dir="${src.dir}/manual/scala/tools/docutil/resources">
             <include name="**/*.html"/>
             <include name="**/*.css"/>
@@ -1583,18 +1612,8 @@ TODO:
     </staged-uptodate>
   </target>
 
-  <target name="docs.core" depends="docs.lib, docs.reflect, docs.comp" unless="docs.skip"/>
-  <!-- TODO modularize compiler:  docs.scaladoc, docs.interactive, -->
-  <target name="docs.done" depends="docs.core, docs.actors, docs.scalap" unless="docs.skip"/>
-
-<!-- ===========================================================================
-                                  DISTRIBUTION
-============================================================================ -->
-  <target name="dist.base" depends="osgi.done">
-    <property name="dist.name" value="scala-${version.number}"/>
-    <property name="dist.dir" value="${dists.dir}/${dist.name}"/>
-
-
+  <!-- lib/ and src/ (jars: classes and sources) -->
+  <target name="dist.lib" depends="osgi.done">
     <mkdir dir="${dist.dir}/lib"/>
     <mkdir dir="${dist.dir}/src"/>
 
@@ -1624,29 +1643,10 @@ TODO:
       </fileset>
     </copy>
     <jar whenmanifestonly="fail" destfile="${dist.dir}/src/scalap-src.jar" basedir="${src.dir}/scalap"/>
-
-    <mkdir dir="${dist.dir}/bin"/>
-    <copy toDir="${dist.dir}/bin" overwrite="true">
-      <fileset dir="${build-pack.dir}/bin"/>
-    </copy>
-    <chmod perm="ugo+rx" file="${dist.dir}/bin/scala"/>
-    <chmod perm="ugo+rx" file="${dist.dir}/bin/scalac"/>
-    <chmod perm="ugo+rx" file="${dist.dir}/bin/scaladoc"/>
-    <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
-    <chmod perm="ugo+rx" file="${dist.dir}/bin/scalap"/>
   </target>
 
-
-  <target name="dist.doc" depends="dist.base, docs.done">
-    <mkdir dir="${dist.dir}/doc"/>
-    <mkdir dir="${dist.dir}/doc/licenses"/>
-    <mkdir dir="${dist.dir}/doc/tools"/>
-    <copy file="${docs.dir}/LICENSE" toDir="${dist.dir}/doc" overwrite="true"/>
-    <copy file="${docs.dir}/README"  toDir="${dist.dir}/doc" overwrite="true"/>
-    <copy                            toDir="${dist.dir}/doc/licenses" overwrite="true">
-      <fileset dir="${docs.dir}/licenses"/>
-    </copy>
-
+  <!-- api/ (scaladoc) -->
+  <target name="dist.api" depends="docs.done">
     <mkdir dir="${dist.dir}/api"/>
     <copy toDir="${dist.dir}/api" overwrite="true">
       <fileset dir="${build-docs.dir}/library"/>
@@ -1661,20 +1661,7 @@ TODO:
     </copy>
   </target>
 
-
-  <target name="dist.man" depends="dist.base, docs.man">
-    <mkdir dir="${dist.dir}/man"/>
-    <copy toDir="${dist.dir}/man" overwrite="true">
-      <fileset dir="${build-docs.dir}/manual/man"/>
-    </copy>
-    <mkdir dir="${dist.dir}/doc/scala-devel-docs/tools"/>
-    <copy toDir="${dist.dir}/doc/scala-devel-docs/tools" overwrite="true">
-      <fileset dir="${build-docs.dir}/manual/html"/>
-    </copy>
-  </target>
-
-
-  <target name="dist.partial" depends="dist.base">
+  <target name="dist.partial" depends="dist.lib, dist.bin, dist.doc">
     <if><not><os family="windows"/></not><then>
       <symlink link="${dists.dir}/latest" resource="${dist.name}" overwrite="true"/>
     </then><else> <!-- XXX THIS PROBABLY DOES NOT WORK: copying must happen last during dist.done! is this guaranteed? -->
@@ -1682,12 +1669,13 @@ TODO:
     </else></if>
   </target>
 
-  <target name="dist.done" depends="dist.doc, dist.man, dist.partial"/>
+  <target name="dist.done" depends="dist.partial, dist.api"/>
 
 <!-- ===========================================================================
 MAIN DISTRIBUTION PACKAGING
 ============================================================================ -->
 
+  <!-- TODO: get rid of this, it's redundant between maven and github -->
   <target name="pack-archives.done" depends="dist.done, docs.done">
     <mkdir dir="${dists.dir}/archives"/>
     <property name="archive-base" value="${dists.dir}/archives/${dist.name}"/>
@@ -1703,7 +1691,7 @@ MAIN DISTRIBUTION PACKAGING
 
     <if><not><isset property="docs.skip"/></not><then>
       <tarz name="${archive-base}-devel-docs">
-        <tarfileset dir="${dist.dir}/doc/scala-devel-docs" prefix="${dist.name}-devel-docs"/>
+        <tarfileset dir="${dist.dir}/api" prefix="${dist.name}-devel-docs"/>
       </tarz>
     </then></if>
 
@@ -1748,9 +1736,6 @@ MAIN DISTRIBUTION PACKAGING
   </target>
 
   <target name="pack-maven.core" depends="osgi.core, docs.core">
-    <property name="maven-base" value="${dists.dir}/maven/${version.number}"/>
-    <mkdir dir="${maven-base}"/>
-
     <mvn-package project="library"/>
     <mvn-package project="reflect"/>
     <mvn-package project="compiler"/>
@@ -1773,11 +1758,12 @@ MAIN DISTRIBUTION PACKAGING
     <mvn-package project="actors"/>
 
     <!-- don't bother fitting scalap into the mould: it will move out soon -->
-    <copy tofile="${maven-base}/scalap/scalap-pom.xml" file="${src.dir}/build/maven/scalap-pom.xml" overwrite="true"/>
-    <copy tofile="${maven-base}/scalap/scalap.jar" file="${scalap.jar}" overwrite="true"/>
-    <jar destfile="${maven-base}/scalap/scalap-src.jar" basedir="${src.dir}/scalap" whenmanifestonly="fail"/>
+    <mkdir dir="${dist.maven}"/>
+    <copy tofile="${dist.maven}/scalap/scalap-pom.xml" file="${src.dir}/build/maven/scalap-pom.xml" overwrite="true"/>
+    <copy tofile="${dist.maven}/scalap/scalap.jar" file="${scalap.jar}" overwrite="true"/>
+    <jar destfile="${dist.maven}/scalap/scalap-src.jar" basedir="${src.dir}/scalap" whenmanifestonly="fail"/>
     <if><not><isset property="docs.skip"/></not><then>
-      <jar destfile="${maven-base}/scalap/scalap-docs.jar" basedir="${build-docs.dir}/scalap"/>
+      <jar destfile="${dist.maven}/scalap/scalap-docs.jar" basedir="${build-docs.dir}/scalap"/>
     </then></if>
   </target>
 
@@ -1785,25 +1771,26 @@ MAIN DISTRIBUTION PACKAGING
     <!-- Create dists/maven/latest alias and copy maven-deploy ant build there. -->
     <if><isset property="os.win"/><then>
       <copy todir="${dists.dir}/maven/latest" overwrite="true">
-        <fileset dir="${maven-base}"/>
+        <fileset dir="${dist.maven}"/>
       </copy>
     </then><else>
       <symlink link="${dists.dir}/maven/latest"
                resource="${version.number}"
                overwrite="true"/>
     </else></if>
+    <!-- TODO: remove the remainder of this target and delete src/build/maven-deploy.xml -->
     <!-- copy build file and its dependencies -->
-    <copy todir="${maven-base}"
+    <copy todir="${dist.maven}"
           file="${lib-ant.dir}/ant-contrib.jar" overwrite="true"/>
-    <copy todir="${maven-base}"
+    <copy todir="${dist.maven}"
           file="${lib-ant.dir}/maven-ant-tasks-2.1.1.jar" overwrite="true"/>
-    <copy tofile="${maven-base}/build.xml"
+    <copy tofile="${dist.maven}/build.xml"
           file="${src.dir}/build/maven/maven-deploy.xml"/>
     <!-- export properties for use when deploying -->
-    <echoproperties destfile="${maven-base}/build.properties"/>
+    <echoproperties destfile="${dist.maven}/build.properties"/>
   </target>
 
-  <!-- keep these properties out of ${maven-base}/build.properties, dumped in pack-maven.done -->
+  <!-- keep these properties out of ${dist.maven}/build.properties, dumped in pack-maven.done -->
   <target name="init.maven" depends="init">
     <property name="remote.snapshot.repository" value="https://oss.sonatype.org/content/repositories/snapshots" />
     <property name="remote.release.repository"  value="https://oss.sonatype.org/service/local/staging/deploy/maven2" />
@@ -1827,20 +1814,19 @@ MAIN DISTRIBUTION PACKAGING
 <!-- ===========================================================================
                                   MAVEN PUBLISHING
 ============================================================================ -->
-  <!-- TODO: inline maven-deploy.xml here and remove it, once jenkins jobs no longer rely on it -->
-  <target name="publish"        depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the maven repo.">       <deploy dir="${maven-base}/"/> </target>
-  <target name="publish.local"  depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the local maven repo."> <deploy dir="${maven-base}/" local="true"/> </target>
-  <target name="publish.signed" depends="pack-maven.base, init.maven" description="Publishes signed artifacts to the remote maven repo.">  <deploy dir="${maven-base}/" signed="true"/> </target>
+  <target name="publish"        depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the maven repo.">       <deploy dir="${dist.maven}/"/> </target>
+  <target name="publish.local"  depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the local maven repo."> <deploy dir="${dist.maven}/" local="true"/> </target>
+  <target name="publish.signed" depends="pack-maven.base, init.maven" description="Publishes signed artifacts to the remote maven repo.">  <deploy dir="${dist.maven}/" signed="true"/> </target>
 
   <target name="publish-core"   depends="pack-maven.core, init.maven">
-    <deploy-one dir="${maven-base}/" name="scala-compiler" />
-    <deploy-one dir="${maven-base}/" name="scala-library"  />
-    <deploy-one dir="${maven-base}/" name="scala-reflect"  />
+    <deploy-one dir="${dist.maven}/" name="scala-compiler" />
+    <deploy-one dir="${dist.maven}/" name="scala-library"  />
+    <deploy-one dir="${dist.maven}/" name="scala-reflect"  />
   </target>
   <target name="publish-core-local" depends="pack-maven.core, init.maven">
-    <deploy-one dir="${maven-base}/" name="scala-compiler" local="true"/>
-    <deploy-one dir="${maven-base}/" name="scala-library"  local="true"/>
-    <deploy-one dir="${maven-base}/" name="scala-reflect"  local="true"/>
+    <deploy-one dir="${dist.maven}/" name="scala-compiler" local="true"/>
+    <deploy-one dir="${dist.maven}/" name="scala-library"  local="true"/>
+    <deploy-one dir="${dist.maven}/" name="scala-reflect"  local="true"/>
   </target>
 
   <target name="publish-core-opt" description="Builds an untested optimised core (library/reflect/compiler) and publishes to maven.">
