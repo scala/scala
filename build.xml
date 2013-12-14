@@ -4,17 +4,14 @@
   xmlns:artifact="urn:maven-artifact-ant"
   xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
   <include file="build-ant-macros.xml" as="macros"/>
-  <include file="src/build/maven/maven-deploy.xml" as="maven-deploy"/>
 
   <description>
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
   </description>
 
 <!-- HINTS
-
  - for faster builds, have a build.properties in the same directory as build.xml that says:
       locker.skip=1
-
 -->
 
 <!-- USAGE FROM JENKINS SCRIPTS IS (CURRENTLY) AS FOLLOWS:
@@ -27,11 +24,14 @@ antArgs tend to be:
 scalacArgs examples:
   "-Dscalac.args=\"-Yrangepos\" -Dpartest.scalac_opts=\"-Yrangepos\""
 
-targets exercised:
-  deploy-core.snapshot publish-opt-nodocs distpack-maven-opt nightly locker.done build build-opt test.suite test.continuations.suite test.scaladoc
+supported/exercised targets
+  to publish: nightly publish-opt-nodocs
+  to build: build build-opt locker.done
+  to run tests: test.suite test.scaladoc
 
-NOTE: after distpack-maven-opt, it is expected there's a build file in dists/maven/latest that defines targets deploy and deploy.local
-TODO: get rid of this separate step
+DO NOT RELY ON ANY OTHER TARGETS (ok, you're probably ok assuming the ones defined in the first 100 lines of this file remain)
+
+NOTE: dists/maven/latest/build.xml will soon disappear; call `publish` in this build instead
 -->
 
 <!-- To use Zinc with the ant build:
@@ -70,7 +70,6 @@ TODO:
   <!-- packaging -->
   <target name="distpack" depends="pack-archives.done, pack-maven.done"/>
   <target name="distpack-maven" depends="pack-maven.done"/>
-
   <target name="distpack-opt" description="Builds an optimised distribution."> <optimized name="distpack"/></target>
   <target name="distpack-maven-opt" description="Builds an optimised maven distribution."><optimized name="distpack-maven"/></target>
 
@@ -81,7 +80,6 @@ TODO:
       <param name="scalac.args.optimise" value="-optimise"/>
     </antcall>
   </target>
-
   <target name="publish-core-opt-nodocs" description="Builds an untested, undocumented optimised core (library/reflect/compiler) and publishes to maven.">
     <antcall target="publish-core">
       <param name="docs.skip" value="1"/>
@@ -93,12 +91,9 @@ TODO:
       <param name="docs.skip" value="1"/>
     </antcall>
   </target>
-
   <target name="all.done" depends="test.done, distpack"/>
-
-  <target name="nightly-nopt" depends="all.done"/>
+  <target name="nightly-nopt" depends="all.done, publish"/>
   <target name="nightly"><optimized name="nightly-nopt"/></target>
-
   <target name="nightly.checkall">
     <antcall target="nightly-nopt"> <param name="partest.scalac_opts" value="-Ycheck:all"/></antcall></target>
 
@@ -1792,6 +1787,7 @@ MAIN DISTRIBUTION PACKAGING
                resource="${version.number}"
                overwrite="true"/>
     </else></if>
+    <!-- TODO: remove the remainder of this target and delete src/build/maven-deploy.xml -->
     <!-- copy build file and its dependencies -->
     <copy todir="${maven-base}"
           file="${lib-ant.dir}/ant-contrib.jar" overwrite="true"/>
@@ -1827,7 +1823,6 @@ MAIN DISTRIBUTION PACKAGING
 <!-- ===========================================================================
                                   MAVEN PUBLISHING
 ============================================================================ -->
-  <!-- TODO: inline maven-deploy.xml here and remove it, once jenkins jobs no longer rely on it -->
   <target name="publish"        depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the maven repo.">       <deploy dir="${maven-base}/"/> </target>
   <target name="publish.local"  depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the local maven repo."> <deploy dir="${maven-base}/" local="true"/> </target>
   <target name="publish.signed" depends="pack-maven.base, init.maven" description="Publishes signed artifacts to the remote maven repo.">  <deploy dir="${maven-base}/" signed="true"/> </target>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="build-support">
+<project name="build-support" xmlns:artifact="urn:maven-artifact-ant">
   <description> Macros for Scala's ant build </description>
 
   <macrodef name="optimized">
@@ -469,6 +469,128 @@
     </sequential>
   </macrodef>
 
+
+  <macrodef name="deploy-remote">
+    <attribute name="jar" default=""/>
+    <attribute name="pom"/>
+    <element name="artifacts" implicit="true" optional="true"/>
+    <sequential>
+      <artifact:deploy file="@{jar}" settingsFile="${settings.file}">
+        <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
+        <artifact:pom refid="@{pom}" />
+        <artifacts/>
+      </artifact:deploy>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="deploy-local">
+    <attribute name="jar" default=""/>
+    <attribute name="pom"/>
+    <element name="artifacts" implicit="true" optional="true"/>
+    <sequential>
+    <artifact:install file="@{jar}">
+      <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
+      <artifact:pom refid="@{pom}" />
+      <artifacts/>
+    </artifact:install>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="deploy-to">
+    <attribute name="jar" default=""/>
+    <attribute name="pom"/>
+    <attribute name="local"/>
+    <element name="artifacts" implicit="true" optional="true"/>
+    <sequential>
+      <if><equals arg1="@{local}" arg2="true"/><then>
+        <deploy-local jar="@{jar}" pom="@{pom}"> <artifacts/> </deploy-local>
+      </then><else>
+        <deploy-remote jar="@{jar}" pom="@{pom}"> <artifacts/> </deploy-remote>
+      </else></if>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="deploy-one">
+    <attribute name="dir" default=""/>
+    <attribute name="name" />
+    <attribute name="local"  default="false"/>
+    <attribute name="signed" default="false"/>
+
+    <sequential>
+      <local name="path"/> <property name="path" value="@{dir}@{name}/@{name}"/>
+
+      <echo>Deploying ${path}-[pom.xml|src.jar|docs.jar].</echo>
+
+      <copy file="${path}-pom.xml" tofile="${path}-pom-filtered.xml" overwrite="true">
+        <filterset>
+          <filter token="VERSION"                    value="${maven.version.number}" />
+          <filter token="SCALA_BINARY_VERSION"       value="${scala.binary.version}" />
+          <filter token="XML_VERSION"                value="${scala-xml.version.number}" />
+          <filter token="PARSER_COMBINATORS_VERSION" value="${scala-parser-combinators.version.number}" />
+          <filter token="RELEASE_REPOSITORY"         value="${remote.release.repository}" />
+          <filter token="SNAPSHOT_REPOSITORY"        value="${remote.snapshot.repository}" />
+          <filter token="JLINE_VERSION"              value="${jline.version}" />
+
+          <!-- TODO modularize compiler.
+          <filter token="SCALA_COMPILER_DOC_VERSION" value="${scala-compiler-doc.version.number}" />
+          <filter token="SCALA_COMPILER_INTERACTIVE_VERSION" value="${scala-compiler-interactive.version.number}" />
+          -->
+        </filterset>
+      </copy>
+      <artifact:pom id="@{name}.pom" file="${path}-pom-filtered.xml" />
+
+      <if><equals arg1="@{signed}" arg2="false"/><then>
+        <if><isset property="docs.skip"/><then>
+          <deploy-to local="@{local}" jar="${path}.jar" pom="@{name}.pom">
+            <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
+          </deploy-to>
+        </then><else>
+          <deploy-to local="@{local}" jar="${path}.jar" pom="@{name}.pom">
+            <artifact:attach type="jar" file="${path}-src.jar"  classifier="sources" />
+            <artifact:attach type="jar" file="${path}-docs.jar" classifier="javadoc" />
+          </deploy-to>
+        </else></if>
+      </then><else>
+        <local name="repo"/>
+        <if><equals arg1="@{local}" arg2="false"/><then>
+          <property name="repo" value="${remote.repository}"/>
+        </then><else>
+          <property name="repo" value="${local.repository}"/>
+        </else></if>
+        <artifact:mvn failonerror="true">
+          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
+          <arg value="-Durl=${repo}" />
+          <arg value="-DrepositoryId=${repository.credentials.id}" />
+          <arg value="-DpomFile=${path}-pom-filtered.xml" />
+          <arg value=   "-Dfile=${path}.jar" />
+          <arg value="-Dsources=${path}-src.jar" />
+          <arg value="-Djavadoc=${path}-docs.jar" />
+          <arg value="-Pgpg" />
+          <arg value="-Dgpg.useagent=true" />
+        </artifact:mvn>
+      </else></if>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="deploy">
+    <attribute name="dir"    default=""/>
+    <attribute name="local"  default="false"/>
+    <attribute name="signed" default="false"/>
+
+    <sequential>
+      <deploy-one dir="@{dir}"          name="scala-library"     local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}"          name="scala-reflect"     local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}"          name="scala-compiler"    local="@{local}" signed="@{signed}"/>
+
+      <!-- TODO modularize compiler.
+      <deploy-one dir="@{dir}"          name="scala-compiler-doc"         local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}"          name="scala-compiler-interactive" local="@{local}" signed="@{signed}"/>
+      -->
+
+      <deploy-one dir="@{dir}"          name="scala-actors"      local="@{local}" signed="@{signed}"/>
+      <deploy-one dir="@{dir}"          name="scalap"            local="@{local}" signed="@{signed}"/>
+    </sequential>
+  </macrodef>
 
 
   <macrodef name="testSuite">

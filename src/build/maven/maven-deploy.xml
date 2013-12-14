@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<!--
+THIS FILE WILL SOON SELF DESTRUCT; DO NOT USE
+see publish.* targets in /build.xml
+-->
 <project name="sabbus-maven-deploy" xmlns:artifact="urn:maven-artifact-ant">
 
   <description>
@@ -162,7 +166,18 @@
     </echo>
   </target>
 
-  <target name="deploy"        depends="init.maven" description="Deploys unsigned artifacts to the maven repo.">       <deploy/> </target>
-  <target name="deploy.local"  depends="init.maven" description="Deploys unsigned artifacts to the local maven repo."> <deploy local="true"/> </target>
-  <target name="deploy.signed" depends="init.maven" description="Deploys signed artifacts to the remote maven repo.">  <deploy signed="true"/> </target>
+  <target name="deploy"        depends="init.maven" description="Deploys unsigned artifacts to the maven repo.">
+    <echo message="WARNING!1! THIS TARGET HAS BEEN DEPRECATED -- CALL `ant publish` FROM /build.xml"
+    <deploy/>
+  </target>
+
+  <target name="deploy.local"  depends="init.maven" description="Deploys unsigned artifacts to the local maven repo.">
+    <echo message="WARNING!1! THIS TARGET HAS BEEN DEPRECATED -- CALL `ant publish.local` FROM /build.xml"
+    <deploy local="true"/>
+  </target>
+
+  <target name="deploy.signed" depends="init.maven" description="Deploys signed artifacts to the remote maven repo.">
+    <echo message="WARNING!1! THIS TARGET HAS BEEN DEPRECATED -- CALL `ant publish.signed` FROM /build.xml"
+    <deploy signed="true"/>
+  </target>
 </project>
