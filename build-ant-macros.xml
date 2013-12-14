@@ -190,10 +190,6 @@
         <and>
           <available file="tools/zinc"/>
           <equals arg1="@{stage}" arg2="quick"/>
-          <not>
-            <equals arg1="@{project}" arg2="continuations-plugins"/>
-          </not>
-          <!-- doesn't work in zinc because it requires the quick compiler, which isn't jarred up-->
         </and>
         <then>
           <zinc taskname="Z.@{stage}.@{project}" compilerpathref="@{with}.compiler.path" destdir="${build-@{stage}.dir}/classes/@{destproject}" srcdir="${src.dir}/@{srcdir}" srcpath="@{srcpath}" buildpathref="@{stage}.@{project}.build.path" params="${scalac.args.@{stage}} @{args}" java-excludes="@{java-excludes}"/>

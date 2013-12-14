@@ -30,10 +30,6 @@ val meta =
     //   Seq(ProjectRef("scala-interactive", "org.scala-lang")),
     //   Seq(ProjectRef("scala-compiler", "org.scala-lang"), ProjectRef("scaladoc", "org.scala-lang"))),
 
-    Project("scala-swing", "org.scala-lang",
-      Seq(ProjectRef("scala-swing", "org.scala-lang")),
-      Seq(ProjectRef("scala-library", "org.scala-lang"))),
-
     Project("scala-actors", "org.scala-lang",
       Seq(ProjectRef("scala-actors", "org.scala-lang")),
       Seq(ProjectRef("scala-library", "org.scala-lang"))),
@@ -44,9 +40,8 @@ val meta =
 
     Project("scalap", "org.scala-lang",
       Seq(ProjectRef("scalap", "org.scala-lang")),
-      Seq(ProjectRef("scala-compiler", "org.scala-lang"))),
+      Seq(ProjectRef("scala-compiler", "org.scala-lang")))
 
-    Project("continuations", "org.scala-lang.plugins", Seq(ProjectRef("continuations", "org.scala-lang.plugins")), Seq.empty)
   ))
 
 println(Utils.writeValue(meta))
