@@ -5,16 +5,17 @@
 declare quiet failed update partest_debug
 declare cotouched since sortCommand
 declare -a ack_args partest_args scalac_args
+declare -r standard_ack_args="--noenv -s --java --scala --type-add=scala:ext:flags,check --files-with-matches"
 
 partest_args=( --show-diff )
-base="$(cd "$(dirname "$0")"/.. && pwd)"
+bindir="$(cd "$(dirname "$0")" && pwd)"
+base="$bindir/.."
 cd "$base" || { echo "Could not change to base directory $base" && exit 1; }
 filesdir="test/files"
 sortCommand="sort -u"
+partestPaths="$bindir/partest-paths"
 
-# have to enumerate good test dirs since partest chokes and fails
-# on continuations, bench, etc. tests
-pathRegex="$filesdir/(pos|neg|jvm|run|scalap|presentation)/[^/.]+([.]scala)?\$"
+[[ -x "$partestPaths" ]] || { echo "Cannot find partest-paths in $partestPaths" && exit 1; }
 
 [[ $# -gt 0 ]] || {
   cat <<EOM
@@ -32,7 +33,7 @@ runs all the tests for which any associated file matches the regex.  Associated
 files include .check and .flags files.  Tests in directories will match if any
 file matches.  A file can match the regex by its contents or by its name.
 
-You must have ack installed: http://betterthangrep.com/ack-standalone
+You must have ack version 2.12+ installed: http://beyondgrep.com/ack-2.12-single-file
 
 Examples:
 
@@ -79,24 +80,12 @@ done
 shift $((OPTIND-1))
 ack_args=( "${ack_args[@]}" "$@" )
 
-# Echo the argument only if it matches our idea of a test and exists.
-isPath () { [[ "$1" =~ $pathRegex ]] && [[ -e "$1" ]]; }
-
-# Filter stdin down to actual test paths.
-asTestPaths () {
-  while read p; do
-    p1="${p%.*}"
-    isPath "$p1" && echo "$p1"
-    isPath "$p1.scala" && echo "$p1.scala"
-  done
-}
-
 # These methods all just create paths which may or may not be tests
-# all are filtered through "asTestPaths" which limits the output to actual tests
+# all are filtered through partest-paths which limits the output to actual tests
 regexPathTests () { find "$filesdir" | ack --noenv "$@"; }
 failedTests ()    { for p in $(find "$filesdir" -name '*.log'); do p1=${p%.log} && p2=${p1%-*} && echo "$p2"; done; }
 sinceTests()      { git log --since="$@" --name-only --pretty="format:" -- "$filesdir"; }
-regexCodeTests () { ack --noenv --text --files-with-matches "$@" -- "$filesdir"; }
+regexCodeTests () { ack $standard_ack_args "$@" -- "$filesdir"; }
 sameCommitTests() { for rev in $(git rev-list HEAD -- "$@"); do git --no-pager show --pretty="format:" --name-only "$rev" -- "$filesdir"; done; }
 
 countStdout () {
@@ -115,7 +104,7 @@ randomSort () {
 testRun () {
   local description="$1" && shift
   printf >&2 "%% tests %-25s ... " "$description"
-  "$@" | asTestPaths | sort -u | countStdout | egrep -v '^[ ]*$'
+  "$@" | "$partestPaths" | countStdout | egrep -v '^[ ]*$'
 }
 
 allMatches() {
