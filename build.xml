@@ -147,6 +147,7 @@ TODO:
   <property name="build-locker.dir"        value="${build.dir}/locker"/>
   <property name="build-quick.dir"         value="${build.dir}/quick"/>
   <property name="build-pack.dir"          value="${build.dir}/pack"/>
+  <property name="build-manual.dir"        value="${build.dir}/manual"/>
   <property name="build-osgi.dir"          value="${build.dir}/osgi"/>
   <property name="build-junit.dir"         value="${build.dir}/junit"/>
   <property name="build-strap.dir"         value="${build.dir}/strap"/>
@@ -1570,7 +1571,7 @@ TODO:
   </target>
 
   <!-- doc/ and man/ -->
-  <target name="dist.doc" depends="scaladoc.task"> <!-- depends on scaladoc.task for scalac taskdef -->
+  <target name="dist.doc" depends="scaladoc.task" unless="docs.skip"> <!-- depends on scaladoc.task for scalac taskdef -->
     <mkdir dir="${dist.dir}/doc"/>
     <copy toDir="${dist.dir}/doc" overwrite="true">
       <fileset dir="${doc.dir}"/>
@@ -1578,7 +1579,7 @@ TODO:
 
     <mkdir dir="${dist.dir}/doc/tools"/>
     <mkdir dir="${dist.dir}/man/man1"/>
-    <staged-uptodate stage="pack" project="manual">
+    <staged-uptodate stage="manual" project="manual">
       <check><srcfiles dir="${src.dir}/manual"/></check>
       <do>
         <mkdir dir="${build.dir}/manmaker/classes"/>
@@ -1646,7 +1647,7 @@ TODO:
   </target>
 
   <!-- api/ (scaladoc) -->
-  <target name="dist.api" depends="docs.done">
+  <target name="dist.api" depends="docs.done" unless="docs.skip">
     <mkdir dir="${dist.dir}/api"/>
     <copy toDir="${dist.dir}/api" overwrite="true">
       <fileset dir="${build-docs.dir}/library"/>
@@ -1749,7 +1750,16 @@ MAIN DISTRIBUTION PACKAGING
     </then></if>
   </target>
 
-  <target name="pack-maven.base" depends="pack-maven.core, osgi.done, docs.done">
+  <target name="pack-maven.dist" depends="dist.bin, dist.doc">
+    <copy tofile="${dist.maven}/scala-dist/scala-dist-pom.xml" file="${src.dir}/build/maven/scala-dist-pom.xml" overwrite="true"/>
+    <jar whenmanifestonly="fail" destfile="${dist.maven}/scala-dist/scala-dist.jar" basedir="${dist.dir}">
+      <include name="bin/" />
+      <include name="doc/" />
+      <include name="man/" />
+    </jar>
+  </target>
+
+  <target name="pack-maven.base" depends="pack-maven.core, osgi.done, docs.done, pack-maven.dist">
     <!-- TODO modularize compiler
     <mvn-package project="interactive"/>
     <mvn-package project="scaladoc"/>
@@ -1767,6 +1777,7 @@ MAIN DISTRIBUTION PACKAGING
     </then></if>
   </target>
 
+  <!-- TODO: remove this target and delete src/build/maven-deploy.xml -->
   <target name="pack-maven.done" depends="pack-maven.base">
     <!-- Create dists/maven/latest alias and copy maven-deploy ant build there. -->
     <if><isset property="os.win"/><then>
@@ -1778,7 +1789,6 @@ MAIN DISTRIBUTION PACKAGING
                resource="${version.number}"
                overwrite="true"/>
     </else></if>
-    <!-- TODO: remove the remainder of this target and delete src/build/maven-deploy.xml -->
     <!-- copy build file and its dependencies -->
     <copy todir="${dist.maven}"
           file="${lib-ant.dir}/ant-contrib.jar" overwrite="true"/>
@@ -1814,19 +1824,31 @@ MAIN DISTRIBUTION PACKAGING
 <!-- ===========================================================================
                                   MAVEN PUBLISHING
 ============================================================================ -->
-  <target name="publish"        depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the maven repo.">       <deploy dir="${dist.maven}/"/> </target>
-  <target name="publish.local"  depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the local maven repo."> <deploy dir="${dist.maven}/" local="true"/> </target>
-  <target name="publish.signed" depends="pack-maven.base, init.maven" description="Publishes signed artifacts to the remote maven repo.">  <deploy dir="${dist.maven}/" signed="true"/> </target>
+  <target name="publish"        depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the maven repo.">
+    <deploy />
+    <deploy-jar name="scala-dist"/>
+  </target>
+
+  <target name="publish.local"  depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the local maven repo.">
+    <deploy local="true"/>
+    <deploy-jar name="scala-dist" local="true"/>
+  </target>
+
+  <target name="publish.signed" depends="pack-maven.base, init.maven" description="Publishes signed artifacts to the remote maven repo.">
+    <deploy signed="true"/>
+    <deploy-jar name="scala-dist" signed="true"/>
+  </target>
 
   <target name="publish-core"   depends="pack-maven.core, init.maven">
-    <deploy-one dir="${dist.maven}/" name="scala-compiler" />
-    <deploy-one dir="${dist.maven}/" name="scala-library"  />
-    <deploy-one dir="${dist.maven}/" name="scala-reflect"  />
+    <deploy-one name="scala-compiler" />
+    <deploy-one name="scala-library"  />
+    <deploy-one name="scala-reflect"  />
   </target>
+
   <target name="publish-core-local" depends="pack-maven.core, init.maven">
-    <deploy-one dir="${dist.maven}/" name="scala-compiler" local="true"/>
-    <deploy-one dir="${dist.maven}/" name="scala-library"  local="true"/>
-    <deploy-one dir="${dist.maven}/" name="scala-reflect"  local="true"/>
+    <deploy-one name="scala-compiler" local="true"/>
+    <deploy-one name="scala-library"  local="true"/>
+    <deploy-one name="scala-reflect"  local="true"/>
   </target>
 
   <target name="publish-core-opt" description="Builds an untested optimised core (library/reflect/compiler) and publishes to maven.">

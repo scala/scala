@@ -10,6 +10,7 @@ see publish.* targets in /build.xml
     SuperSabbus extension for deploying a distribution to Maven. THIS FILE IS MEANT TO BE RUN STANDALONE IN THE MAVEN "distpack" DIRECTORY
   </description>
 
+
   <macrodef name="deploy-remote">
     <attribute name="jar" default=""/>
     <attribute name="pom"/>
@@ -61,6 +62,9 @@ see publish.* targets in /build.xml
           <filter token="SCALA_BINARY_VERSION"       value="${scala.binary.version}" />
           <filter token="XML_VERSION"                value="${scala-xml.version.number}" />
           <filter token="PARSER_COMBINATORS_VERSION" value="${scala-parser-combinators.version.number}" />
+          <filter token="CONTINUATIONS_PLUGIN_VERSION"  value="${scala-continuations-plugin.version.number}" />
+          <filter token="CONTINUATIONS_LIBRARY_VERSION" value="${scala-continuations-library.version.number}" />
+          <filter token="SCALA_SWING_VERSION"           value="${scala-swing.version.number}" />
           <filter token="RELEASE_REPOSITORY"         value="${remote.release.repository}" />
           <filter token="SNAPSHOT_REPOSITORY"        value="${remote.snapshot.repository}" />
           <filter token="JLINE_VERSION"              value="${jline.version}" />
@@ -76,13 +80,12 @@ see publish.* targets in /build.xml
   </macrodef>
 
   <macrodef name="deploy-one">
-    <attribute name="dir" default=""/>
     <attribute name="name" />
     <attribute name="local"  default="false"/>
     <attribute name="signed" default="false"/>
 
     <sequential>
-      <local name="path"/> <property name="path" value="@{dir}@{name}/@{name}"/>
+      <local name="path"/> <property name="path" value="${dist.maven}/@{name}/@{name}"/>
 
       <echo>Deploying ${path}-[pom.xml|src.jar|docs.jar].</echo>
 
@@ -121,23 +124,56 @@ see publish.* targets in /build.xml
     </sequential>
   </macrodef>
 
-  <macrodef name="deploy">
-    <attribute name="dir"    default=""/>
+  <macrodef name="deploy-jar">
+    <attribute name="name" />
     <attribute name="local"  default="false"/>
     <attribute name="signed" default="false"/>
 
     <sequential>
-      <deploy-one dir="@{dir}"          name="scala-library"     local="@{local}" signed="@{signed}"/>
-      <deploy-one dir="@{dir}"          name="scala-reflect"     local="@{local}" signed="@{signed}"/>
-      <deploy-one dir="@{dir}"          name="scala-compiler"    local="@{local}" signed="@{signed}"/>
+      <local name="path"/> <property name="path" value="${dist.maven}/@{name}/@{name}"/>
+
+      <echo>Deploying ${path}.jar with ${path}-pom.xml.</echo>
+
+      <filter-pom name="@{name}" path="@{path}"/>
+
+      <if><equals arg1="@{signed}" arg2="false"/><then>
+        <deploy-to local="@{local}" jar="${path}.jar" pom="@{name}.pom"/>
+      </then><else>
+        <local name="repo"/>
+        <if><equals arg1="@{local}" arg2="false"/><then>
+          <property name="repo" value="${remote.repository}"/>
+        </then><else>
+          <property name="repo" value="${local.repository}"/>
+        </else></if>
+        <artifact:mvn failonerror="true">
+          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
+          <arg value="-Durl=${repo}" />
+          <arg value="-DrepositoryId=${repository.credentials.id}" />
+          <arg value="-DpomFile=${path}-pom-filtered.xml" />
+          <arg value=   "-Dfile=${path}.jar" />
+          <arg value="-Pgpg" />
+          <arg value="-Dgpg.useagent=true" />
+        </artifact:mvn>
+      </else></if>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="deploy">
+    <attribute name="local"  default="false"/>
+    <attribute name="signed" default="false"/>
+
+    <sequential>
+      <deploy-one name="scala-library"     local="@{local}" signed="@{signed}"/>
+      <deploy-one name="scala-reflect"     local="@{local}" signed="@{signed}"/>
+      <deploy-one name="scala-compiler"    local="@{local}" signed="@{signed}"/>
 
       <!-- TODO modularize compiler.
-      <deploy-one dir="@{dir}"          name="scala-compiler-doc"         local="@{local}" signed="@{signed}"/>
-      <deploy-one dir="@{dir}"          name="scala-compiler-interactive" local="@{local}" signed="@{signed}"/>
+      <deploy-one name="scala-compiler-doc"         local="@{local}" signed="@{signed}"/>
+      <deploy-one name="scala-compiler-interactive" local="@{local}" signed="@{signed}"/>
       -->
 
-      <deploy-one dir="@{dir}"          name="scala-actors"      local="@{local}" signed="@{signed}"/>
-      <deploy-one dir="@{dir}"          name="scalap"            local="@{local}" signed="@{signed}"/>
+      <deploy-one name="scala-actors"      local="@{local}" signed="@{signed}"/>
+      <deploy-one name="scalap"            local="@{local}" signed="@{signed}"/>
     </sequential>
   </macrodef>
 
