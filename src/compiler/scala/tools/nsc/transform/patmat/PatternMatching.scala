@@ -34,7 +34,8 @@ import scala.reflect.internal.util.Position
   *  - recover GADT typing by locally inserting implicit witnesses to type equalities derived from the current case, and considering these witnesses during subtyping (?)
   *  - recover exhaustivity/unreachability of user-defined extractors by partitioning the types they match on using an HList or similar type-level structure
   */
-trait PatternMatching extends Transform with TypingTransformers
+trait PatternMatching extends Transform
+                      with TypingTransformers
                       with Debugging
                       with Interface
                       with MatchTranslation
@@ -45,7 +46,8 @@ trait PatternMatching extends Transform with TypingTransformers
                       with Solving
                       with MatchAnalysis
                       with MatchOptimization
-                      with MatchWarnings {
+                      with MatchWarnings
+                      with ScalacPatternExpanders {
   import global._
 
   val phaseName: String = "patmat"

@@ -812,6 +812,7 @@ trait Definitions extends api.StandardDefinitions {
     def byNameType(arg: Type)        = appliedType(ByNameParamClass, arg)
     def iteratorOfType(tp: Type)     = appliedType(IteratorClass, tp)
     def javaRepeatedType(arg: Type)  = appliedType(JavaRepeatedParamClass, arg)
+    def optionType(tp: Type)         = appliedType(OptionClass, tp)
     def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg)
     def seqType(arg: Type)           = appliedType(SeqClass, arg)
 
@@ -825,6 +826,12 @@ trait Definitions extends api.StandardDefinitions {
     def typeOfMemberNamedGetOrSelf(tp: Type) = typeOfMemberNamedGet(tp) orElse tp
     def typesOfSelectors(tp: Type)           = getterMemberTypes(tp, productSelectors(tp))
     def typesOfCaseAccessors(tp: Type)       = getterMemberTypes(tp, tp.typeSymbol.caseFieldAccessors)
+
+    // Can't only check for _1 thanks to pos/t796.
+    def hasSelectors(tp: Type) = (
+         (tp.members containsName nme._1)
+      && (tp.members containsName nme._2)
+    )
 
     /** If this is a case class, the case field accessors (which may be an empty list.)
      *  Otherwise, if there are any product selectors, that list.

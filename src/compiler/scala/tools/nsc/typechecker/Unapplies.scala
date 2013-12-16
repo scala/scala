@@ -39,6 +39,8 @@ trait Unapplies extends ast.TreeDSL {
    */
   def unapplyMember(tp: Type): Symbol = directUnapplyMember(tp) filter (sym => !hasMultipleNonImplicitParamLists(sym))
 
+  def unapplyMemberType(tree: Tree): Type = tree.tpe memberType unapplyMember(tree.tpe)
+
   object HasUnapply {
     def unapply(tp: Type): Option[Symbol] = unapplyMember(tp).toOption
   }

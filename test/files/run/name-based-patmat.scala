@@ -1,5 +1,33 @@
 final class MiniSome[T](val get: T) extends AnyVal { def isEmpty = false }
 
+package p0 {
+  class Single(val x: Any) extends AnyRef with Product1[String] {
+    private def s = "" + x
+    override def canEqual(x: Any) = this eq x.asInstanceOf[AnyRef]
+    def isEmpty = false
+    def get = this
+    def _1 = s + " only"
+
+    override def toString = s"Single(${_1})"
+  }
+
+  object Single {
+    def unapply(x: Any): Single = new Single(x)
+  }
+
+  class SingleNoProduct(val x: Any) extends AnyRef {
+    private def s = "" + x
+    def isEmpty = false
+    def get = s + " only, no product"
+
+    override def toString = s"SingleNoProduct($get)"
+  }
+
+  object SingleNoProduct {
+    def unapply(x: Any): SingleNoProduct = new SingleNoProduct(x)
+  }
+}
+
 package p1 {
   class Triple(val x: Any) extends AnyRef with Product3[String, String, String] {
     private def s = "" + x
@@ -49,13 +77,15 @@ package p3 {
 }
 
 object Test {
-
-  // def f(x: Any) = x match {
-  //   case p1.Foo(x, y, z) => println((x, y, z))
-  //   case x               => println(x)
-  // }
-
   def main(args: Array[String]): Unit = {
+    "catdog" match {
+      case p0.Single(x) => println(s"`${x._1}` has ${x._1.length} chars")
+      case x            => println("fail: " + x)
+    }
+    "catdog" match {
+      case p0.SingleNoProduct(x) => println(s"`$x` has ${x.length} chars")
+      case x                     => println("fail: " + x)
+    }
     "catdog" match {
       case p1.Triple(x, y, z) => List(x, y, z) foreach println
       case x                  => println("fail: " + x)
