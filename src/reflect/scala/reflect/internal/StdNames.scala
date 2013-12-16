@@ -691,6 +691,7 @@ trait StdNames {
     val inlinedEquals: NameType        = "inlinedEquals"
     val isArray: NameType              = "isArray"
     val isDefinedAt: NameType          = "isDefinedAt"
+    val isEmpty: NameType              = "isEmpty"
     val isInstanceOf_ : NameType       = "isInstanceOf"
     val isInstanceOf_Ob : NameType     = "$isInstanceOf"
     val java: NameType                 = "java"

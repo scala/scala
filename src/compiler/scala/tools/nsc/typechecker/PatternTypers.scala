@@ -78,18 +78,32 @@ trait PatternTypers {
       // Do some ad-hoc overloading resolution and update the tree's symbol and type
       // do not update the symbol if the tree's symbol's type does not define an unapply member
       // (e.g. since it's some method that returns an object with an unapply member)
-      val fun       = inPlaceAdHocOverloadingResolution(fun0)(hasUnapplyMember)
-      def caseClass = fun.tpe.typeSymbol.linkedClassOfClass
+      val fun         = inPlaceAdHocOverloadingResolution(fun0)(hasUnapplyMember)
+      val caseClass   = fun.tpe.typeSymbol.linkedClassOfClass
+      val member      = unapplyMember(fun.tpe)
+      def resultType  = (fun.tpe memberType member).finalResultType
+      def isEmptyType = resultOfMatchingMethod(resultType, nme.isEmpty)()
+      def isOkay      = (
+           resultType.isErroneous
+        || (resultType <:< BooleanTpe)
+        || (isEmptyType <:< BooleanTpe)
+        || member.isMacro
+        || member.isOverloaded // the whole overloading situation is over the rails
+      )
 
       // Dueling test cases: pos/overloaded-unapply.scala, run/case-class-23.scala, pos/t5022.scala
       // A case class with 23+ params has no unapply method.
       // A case class constructor may be overloaded with unapply methods in the companion.
-      if (caseClass.isCase && !unapplyMember(fun.tpe).isOverloaded)
+      if (caseClass.isCase && !member.isOverloaded)
         logResult(s"convertToCaseConstructor($fun, $caseClass, pt=$pt)")(convertToCaseConstructor(fun, caseClass, pt))
-      else if (hasUnapplyMember(fun))
+      else if (!reallyExists(member))
+        CaseClassConstructorError(fun, s"${fun.symbol} is not a case class, nor does it have an unapply/unapplySeq member")
+      else if (isOkay)
         fun
+      else if (isEmptyType == NoType)
+        CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean")
       else
-        CaseClassConstructorError(fun)
+        CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean (found: def isEmpty: $isEmptyType)")
     }
 
     def typedArgsForFormals(args: List[Tree], formals: List[Type], mode: Mode): List[Tree] = {
