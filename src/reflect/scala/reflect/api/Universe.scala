@@ -78,6 +78,7 @@ abstract class Universe extends Symbols
                            with Mirrors
                            with Printers
                            with Importers
+                           with Liftables
                            with Quasiquotes
 {
   /** Use `refiy` to produce the abstract syntax tree representing a given Scala expression.

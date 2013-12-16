@@ -4,14 +4,7 @@ package api
 trait StandardLiftables { self: Universe =>
   import build.{SyntacticTuple, ScalaDot}
 
-  trait Liftable[T] {
-    def apply(value: T): Tree
-  }
-
-  object Liftable {
-    def apply[T](f: T => Tree): Liftable[T] =
-      new Liftable[T] { def apply(value: T): Tree = f(value) }
-
+  trait StandardLiftableInstances {
     private def lift[T: Liftable](value: T): Tree            = implicitly[Liftable[T]].apply(value)
     private def selectScala(names: Name*)                    = names.tail.foldLeft(ScalaDot(names.head)) { Select(_, _) }
     private def callScala(names: Name*)(args: List[Tree])    = Apply(selectScala(names: _*), args)
@@ -122,15 +115,7 @@ trait StandardLiftables { self: Universe =>
     }
   }
 
-  trait Unliftable[T] {
-    def unapply(tree: Tree): Option[T]
-  }
-
-  object Unliftable {
-    def apply[T](pf: PartialFunction[Tree, T]): Unliftable[T] = new Unliftable[T] {
-      def unapply(value: Tree): Option[T] = pf.lift(value)
-    }
-
+  trait StandardUnliftableInstances {
     private def unliftPrimitive[Unboxed: ClassTag, Boxed: ClassTag] = Unliftable[Unboxed] {
       case Literal(Constant(value))
            if value.getClass == implicitly[ClassTag[Boxed]].runtimeClass
@@ -149,7 +134,7 @@ trait StandardLiftables { self: Universe =>
     implicit def unliftString: Unliftable[String]   = Unliftable { case Literal(Constant(s: String)) => s }
 
     implicit def unliftScalaSymbol: Unliftable[scala.Symbol] = Unliftable {
-      case Apply(ScalaDot(nme.Symbol), List(Literal(Constant(name: String)))) => scala.Symbol(name)
+      case Apply(ScalaDot(symbol), List(Literal(Constant(name: String)))) if symbol == nme.Symbol => scala.Symbol(name)
     }
 
     implicit def unliftName[T <: Name : ClassTag]: Unliftable[T] = Unliftable[T] { case Ident(name: T) => name; case Bind(name: T, Ident(nme.WILDCARD)) => name}
@@ -222,5 +207,24 @@ trait StandardLiftables { self: Universe =>
     implicit def unliftTuple22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22](implicit UnliftT1: Unliftable[T1], UnliftT2: Unliftable[T2], UnliftT3: Unliftable[T3], UnliftT4: Unliftable[T4], UnliftT5: Unliftable[T5], UnliftT6: Unliftable[T6], UnliftT7: Unliftable[T7], UnliftT8: Unliftable[T8], UnliftT9: Unliftable[T9], UnliftT10: Unliftable[T10], UnliftT11: Unliftable[T11], UnliftT12: Unliftable[T12], UnliftT13: Unliftable[T13], UnliftT14: Unliftable[T14], UnliftT15: Unliftable[T15], UnliftT16: Unliftable[T16], UnliftT17: Unliftable[T17], UnliftT18: Unliftable[T18], UnliftT19: Unliftable[T19], UnliftT20: Unliftable[T20], UnliftT21: Unliftable[T21], UnliftT22: Unliftable[T22]): Unliftable[Tuple22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22]] = Unliftable {
       case SyntacticTuple(UnliftT1(v1) :: UnliftT2(v2) :: UnliftT3(v3) :: UnliftT4(v4) :: UnliftT5(v5) :: UnliftT6(v6) :: UnliftT7(v7) :: UnliftT8(v8) :: UnliftT9(v9) :: UnliftT10(v10) :: UnliftT11(v11) :: UnliftT12(v12) :: UnliftT13(v13) :: UnliftT14(v14) :: UnliftT15(v15) :: UnliftT16(v16) :: UnliftT17(v17) :: UnliftT18(v18) :: UnliftT19(v19) :: UnliftT20(v20) :: UnliftT21(v21) :: UnliftT22(v22) :: Nil) => Tuple22(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22)
     }
+  }
+
+  // names used internally by implementations of standard liftables and unliftables
+  import scala.language.implicitConversions
+  private implicit def cachedNames(nme: self.nme.type): CachedNames.type = CachedNames
+  private object CachedNames {
+    val Array      = TermName("Array")
+    val collection = TermName("collection")
+    val immutable  = TermName("immutable")
+    val Left       = TermName("Left")
+    val List       = TermName("List")
+    val Map        = TermName("Map")
+    val None       = TermName("None")
+    val Right      = TermName("Right")
+    val Set        = TermName("Set")
+    val Some       = TermName("Some")
+    val Symbol     = TermName("Symbol")
+    val Vector     = TermName("Vector")
+    val util       = TermName("util")
   }
 }
