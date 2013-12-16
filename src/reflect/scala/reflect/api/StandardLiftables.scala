@@ -11,16 +11,16 @@ trait StandardLiftables { self: Universe =>
     private def callCollection(name: Name)(args: List[Tree]) = callScala(nme.collection, nme.immutable, name)(args)
     private def liftAsLiteral[T]: Liftable[T]                = Liftable { v => Literal(Constant(v)) }
 
-    implicit def liftByte[T <: Byte]: Liftable[T]     = liftAsLiteral[T]
-    implicit def liftShort[T <: Short]: Liftable[T]   = liftAsLiteral[T]
-    implicit def liftChar[T <: Char]: Liftable[T]     = liftAsLiteral[T]
-    implicit def liftInt[T <: Int]: Liftable[T]       = liftAsLiteral[T]
-    implicit def liftLong[T <: Long]: Liftable[T]     = liftAsLiteral[T]
-    implicit def liftFloat[T <: Float]: Liftable[T]   = liftAsLiteral[T]
-    implicit def liftDouble[T <: Double]: Liftable[T] = liftAsLiteral[T]
-    implicit def liftBoolean: Liftable[Boolean]       = liftAsLiteral[Boolean]
-    implicit def liftUnit: Liftable[Unit]             = liftAsLiteral[Unit]
-    implicit def liftString: Liftable[String]         = liftAsLiteral[String]
+    implicit def liftByte[T <: Byte]: Liftable[T]       = liftAsLiteral[T]
+    implicit def liftShort[T <: Short]: Liftable[T]     = liftAsLiteral[T]
+    implicit def liftChar[T <: Char]: Liftable[T]       = liftAsLiteral[T]
+    implicit def liftInt[T <: Int]: Liftable[T]         = liftAsLiteral[T]
+    implicit def liftLong[T <: Long]: Liftable[T]       = liftAsLiteral[T]
+    implicit def liftFloat[T <: Float]: Liftable[T]     = liftAsLiteral[T]
+    implicit def liftDouble[T <: Double]: Liftable[T]   = liftAsLiteral[T]
+    implicit def liftBoolean[T <: Boolean]: Liftable[T] = liftAsLiteral[T]
+    implicit def liftUnit: Liftable[Unit]               = liftAsLiteral[Unit]
+    implicit def liftString[T <: String]: Liftable[T]   = liftAsLiteral[T]
 
     implicit def liftScalaSymbol: Liftable[scala.Symbol] = Liftable { v =>
       callScala(nme.Symbol)(Literal(Constant(v.name)) :: Nil)
