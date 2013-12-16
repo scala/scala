@@ -29,7 +29,7 @@ supported/exercised targets
   to build: build build-opt locker.done
   to run tests: test.suite test.scaladoc
 
-DO NOT RELY ON ANY OTHER TARGETS (ok, you're probably ok assuming the ones defined in the first 100 lines of this file remain)
+DO NOT RELY ON ANY OTHER TARGETS (ok, you're probably ok assuming the ones defined in the first 100 lines of this file)
 
 NOTE: dists/maven/latest/build.xml will soon disappear; call `publish` in this build instead
 -->
@@ -1741,6 +1741,9 @@ MAIN DISTRIBUTION PACKAGING
     <mvn-package project="reflect"/>
     <mvn-package project="compiler"/>
 
+    <copy tofile="${dist.maven}/scala-library-all/scala-library-all-pom.xml"
+            file="${src.dir}/build/maven/scala-library-all-pom.xml" overwrite="true"/>
+
     <!-- for replacestarr -->
     <if><isset property="update.starr.version"/><then>
       <echo message="From now on, ${maven.version.number} will be used as STARR (`build.properties`'s `starr.version` was modified)."/>
@@ -1826,16 +1829,19 @@ MAIN DISTRIBUTION PACKAGING
 ============================================================================ -->
   <target name="publish"        depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the maven repo.">
     <deploy />
+    <deploy-pom name="scala-library-all"/>
     <deploy-jar name="scala-dist"/>
   </target>
 
   <target name="publish.local"  depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the local maven repo.">
     <deploy local="true"/>
+    <deploy-pom name="scala-library-all" local="true"/>
     <deploy-jar name="scala-dist" local="true"/>
   </target>
 
   <target name="publish.signed" depends="pack-maven.base, init.maven" description="Publishes signed artifacts to the remote maven repo.">
     <deploy signed="true"/>
+    <deploy-pom name="scala-library-all" signed="true"/>
     <deploy-jar name="scala-dist" signed="true"/>
   </target>
 

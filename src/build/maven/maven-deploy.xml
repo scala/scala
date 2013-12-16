@@ -16,11 +16,19 @@ see publish.* targets in /build.xml
     <attribute name="pom"/>
     <element name="artifacts" implicit="true" optional="true"/>
     <sequential>
-      <artifact:deploy file="@{jar}" settingsFile="${settings.file}">
-        <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
-        <artifact:pom refid="@{pom}" />
-        <artifacts/>
-      </artifact:deploy>
+      <if><equals arg1="@{jar}" arg2="true"/><then>
+        <artifact:deploy settingsFile="${settings.file}">
+          <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
+          <artifact:pom refid="@{pom}" />
+          <artifacts/>
+        </artifact:deploy>
+      </then><else>
+        <artifact:deploy file="@{jar}" settingsFile="${settings.file}">
+          <artifact:remoteRepository url="${remote.repository}" id="${repository.credentials.id}" />
+          <artifact:pom refid="@{pom}" />
+          <artifacts/>
+        </artifact:deploy>
+      </else></if>
     </sequential>
   </macrodef>
 
@@ -29,11 +37,19 @@ see publish.* targets in /build.xml
     <attribute name="pom"/>
     <element name="artifacts" implicit="true" optional="true"/>
     <sequential>
-    <artifact:install file="@{jar}">
-      <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
-      <artifact:pom refid="@{pom}" />
-      <artifacts/>
-    </artifact:install>
+      <if><equals arg1="@{jar}" arg2="true"/><then>
+        <artifact:install>
+          <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
+          <artifact:pom refid="@{pom}" />
+          <artifacts/>
+        </artifact:install>
+      </then><else>
+        <artifact:install file="@{jar}">
+          <artifact:localRepository path="${local.repository}"  id="${repository.credentials.id}" />
+          <artifact:pom refid="@{pom}" />
+          <artifacts/>
+        </artifact:install>
+      </else></if>
     </sequential>
   </macrodef>
 
@@ -68,6 +84,8 @@ see publish.* targets in /build.xml
           <filter token="RELEASE_REPOSITORY"         value="${remote.release.repository}" />
           <filter token="SNAPSHOT_REPOSITORY"        value="${remote.snapshot.repository}" />
           <filter token="JLINE_VERSION"              value="${jline.version}" />
+          <filter token="AKKA_ACTOR_VERSION"         value="${akka-actor.version.number}" />
+          <filter token="ACTORS_MIGRATION_VERSION"   value="${actors-migration.version.number}" />
 
           <!-- TODO modularize compiler.
           <filter token="SCALA_COMPILER_DOC_VERSION" value="${scala-compiler-doc.version.number}" />
@@ -151,6 +169,40 @@ see publish.* targets in /build.xml
           <arg value="-DrepositoryId=${repository.credentials.id}" />
           <arg value="-DpomFile=${path}-pom-filtered.xml" />
           <arg value=   "-Dfile=${path}.jar" />
+          <arg value="-Pgpg" />
+          <arg value="-Dgpg.useagent=true" />
+        </artifact:mvn>
+      </else></if>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="deploy-pom">
+    <attribute name="name" />
+    <attribute name="local"  default="false"/>
+    <attribute name="signed" default="false"/>
+
+    <sequential>
+      <local name="path"/> <property name="path" value="${dist.maven}/@{name}/@{name}"/>
+
+      <echo>Deploying ${path}-pom.xml.</echo>
+
+      <filter-pom name="@{name}" path="@{path}"/>
+
+      <if><equals arg1="@{signed}" arg2="false"/><then>
+        <deploy-to local="@{local}" pom="@{name}.pom"/>
+      </then><else>
+        <local name="repo"/>
+        <if><equals arg1="@{local}" arg2="false"/><then>
+          <property name="repo" value="${remote.repository}"/>
+        </then><else>
+          <property name="repo" value="${local.repository}"/>
+        </else></if>
+        <artifact:mvn failonerror="true">
+          <arg value="org.apache.maven.plugins:maven-gpg-plugin:1.3:sign-and-deploy-file" />
+          <arg value="-Durl=${repo}" />
+          <arg value="-DrepositoryId=${repository.credentials.id}" />
+          <arg value="-DpomFile=${path}-pom-filtered.xml" />
+          <arg value=   "-Dfile=${path}-pom-filtered.xml" />
           <arg value="-Pgpg" />
           <arg value="-Dgpg.useagent=true" />
         </artifact:mvn>

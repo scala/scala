@@ -31,33 +31,13 @@
   <dependencies>
     <dependency>
       <groupId>org.scala-lang</groupId>
-      <artifactId>scala-compiler</artifactId>
+      <artifactId>scala-library-all</artifactId>
       <version>@VERSION@</version>
     </dependency>
     <dependency>
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-xml_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@XML_VERSION@</version>
-    </dependency>
-    <dependency>
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-parser-combinators_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@PARSER_COMBINATORS_VERSION@</version>
-    </dependency>
-    <dependency>
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-continuations-plugin_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@CONTINUATIONS_PLUGIN_VERSION@</version>
-    </dependency>
-    <dependency>
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-continuations-library_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@CONTINUATIONS_LIBRARY_VERSION@</version>
-    </dependency>
-    <dependency>
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-swing_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@SCALA_SWING_VERSION@</version>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-compiler</artifactId>
+      <version>@VERSION@</version>
     </dependency>
   </dependencies>
   <distributionManagement>
