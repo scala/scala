@@ -954,162 +954,166 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       case Object_eq | Object_ne | Object_== | Object_!= | Any_== | Any_!= => true
       case _                                                               => false
     }
+    /** Check the sensibility of using the given `equals` to compare `qual` and `other`. */
+    private def checkSensibleEquals(pos: Position, qual: Tree, name: Name, sym: Symbol, other: Tree) = {
+      def isReferenceOp = sym == Object_eq || sym == Object_ne
+      def isNew(tree: Tree) = tree match {
+        case Function(_, _) | Apply(Select(New(_), nme.CONSTRUCTOR), _) => true
+        case _ => false
+      }
+      def underlyingClass(tp: Type): Symbol = {
+        val sym = tp.widen.typeSymbol
+        if (sym.isAbstractType) underlyingClass(sym.info.bounds.hi)
+        else sym
+      }
+      val actual   = underlyingClass(other.tpe)
+      val receiver = underlyingClass(qual.tpe)
+      def onTrees[T](f: List[Tree] => T) = f(List(qual, other))
+      def onSyms[T](f: List[Symbol] => T) = f(List(receiver, actual))
+
+      // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol`
+      def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(other.tpe.widen)
+
+      /* Symbols which limit the warnings we can issue since they may be value types */
+      val isMaybeValue = Set[Symbol](AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
+
+      // Whether def equals(other: Any) has known behavior: it is the default
+      // inherited from java.lang.Object, or it is a synthetically generated
+      // case equals.  TODO - more cases are warnable if the target is a synthetic
+      // equals.
+      def isUsingWarnableEquals = {
+        val m = receiver.info.member(nme.equals_)
+        ((m == Object_equals) || (m == Any_equals) || isMethodCaseEquals(m))
+      }
+      def isMethodCaseEquals(m: Symbol) = m.isSynthetic && m.owner.isCase
+      def isCaseEquals = isMethodCaseEquals(receiver.info.member(nme.equals_))
+      // Whether this == or != is one of those defined in Any/AnyRef or an overload from elsewhere.
+      def isUsingDefaultScalaOp = sym == Object_== || sym == Object_!= || sym == Any_== || sym == Any_!=
+      def haveSubclassRelationship = (actual isSubClass receiver) || (receiver isSubClass actual)
+
+      // Whether the operands+operator represent a warnable combo (assuming anyrefs)
+      // Looking for comparisons performed with ==/!= in combination with either an
+      // equals method inherited from Object or a case class synthetic equals (for
+      // which we know the logic.)
+      def isWarnable           = isReferenceOp || (isUsingDefaultScalaOp && isUsingWarnableEquals)
+      def isEitherNullable     = (NullTpe <:< receiver.info) || (NullTpe <:< actual.info)
+      def isEitherValueClass   = actual.isDerivedValueClass || receiver.isDerivedValueClass
+      def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
+      def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
+      def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || isAnyNumber(s)
+      def isScalaNumber(s: Symbol) = s isSubClass ScalaNumberClass
+      def isJavaNumber(s: Symbol)  = s isSubClass JavaNumberClass
+      // includes java.lang.Number if appropriate [SI-5779]
+      def isAnyNumber(s: Symbol)     = isScalaNumber(s) || isJavaNumber(s)
+      def isMaybeAnyValue(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || isMaybeValue(s)
+      // used to short-circuit unrelatedTypes check if both sides are special
+      def isSpecial(s: Symbol) = isMaybeAnyValue(s) || isAnyNumber(s)
+      val nullCount            = onSyms(_ filter (_ == NullClass) size)
+      def isNonsenseValueClassCompare = (
+           !haveSubclassRelationship
+        && isUsingDefaultScalaOp
+        && isEitherValueClass
+        && !isCaseEquals
+      )
+
+      // Have we already determined that the comparison is non-sensible? I mean, non-sensical?
+      var isNonSensible = false
+
+      def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
+        val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
+        unit.warning(pos, s"comparing $what using `${name.decode}' will always yield $msg")
+        isNonSensible = true
+      }
+      def nonSensible(pre: String, alwaysEqual: Boolean) =
+        nonSensibleWarning(s"${pre}values of types $typesString", alwaysEqual)
+      def nonSensiblyEq() = nonSensible("", alwaysEqual = true)
+      def nonSensiblyNeq() = nonSensible("", alwaysEqual = false)
+      def nonSensiblyNew() = nonSensibleWarning("a fresh object", alwaysEqual = false)
+
+      def unrelatedMsg = name match {
+        case nme.EQ | nme.eq => "never compare equal"
+        case _               => "always compare unequal"
+      }
+      def unrelatedTypes() = if (!isNonSensible) {
+        val weaselWord = if (isEitherValueClass) "" else " most likely"
+        unit.warning(pos, s"$typesString are unrelated: they will$weaselWord $unrelatedMsg")
+      }
+
+      if (nullCount == 2) // null == null
+        nonSensiblyEq()
+      else if (nullCount == 1) {
+        if (onSyms(_ exists isPrimitiveValueClass)) // null == 5
+          nonSensiblyNeq()
+        else if (onTrees( _ exists isNew)) // null == new AnyRef
+          nonSensiblyNew()
+      }
+      else if (isBoolean(receiver)) {
+        if (!isBoolean(actual) && !isMaybeValue(actual))    // true == 5
+          nonSensiblyNeq()
+      }
+      else if (isUnit(receiver)) {
+        if (isUnit(actual)) // () == ()
+          nonSensiblyEq()
+        else if (!isUnit(actual) && !isMaybeValue(actual))  // () == "abc"
+          nonSensiblyNeq()
+      }
+      else if (isNumeric(receiver)) {
+        if (!isNumeric(actual))
+          if (isUnit(actual) || isBoolean(actual) || !isMaybeValue(actual))   // 5 == "abc"
+            nonSensiblyNeq()
+      }
+      else if (isWarnable && !isCaseEquals) {
+        if (isNew(qual)) // new X == y
+          nonSensiblyNew()
+        else if (isNew(other) && (receiver.isEffectivelyFinal || isReferenceOp))   // object X ; X == new Y
+          nonSensiblyNew()
+        else if (receiver.isEffectivelyFinal && !(receiver isSubClass actual) && !actual.isRefinementClass) {  // object X, Y; X == Y
+          if (isEitherNullable)
+            nonSensible("non-null ", false)
+          else
+            nonSensiblyNeq()
+        }
+      }
+
+      // warn if one but not the other is a derived value class
+      // this is especially important to enable transitioning from
+      // regular to value classes without silent failures.
+      if (isNonsenseValueClassCompare)
+        unrelatedTypes()
+      // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
+      else if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
+        // better to have lubbed and lost
+        def warnIfLubless(): Unit = {
+          val common = global.lub(List(actual.tpe, receiver.tpe))
+          if (ObjectTpe <:< common)
+            unrelatedTypes()
+        }
+        // warn if actual has a case parent that is not same as receiver's;
+        // if actual is not a case, then warn if no common supertype, as below
+        if (isCaseEquals) {
+          def thisCase = receiver.info.member(nme.equals_).owner
+          actual.info.baseClasses.find(_.isCase) match {
+            case Some(p) if p != thisCase => nonSensible("case class ", false)
+            case None =>
+              // stronger message on (Some(1) == None)
+              //if (receiver.isCase && receiver.isEffectivelyFinal && !(receiver isSubClass actual)) nonSensiblyNeq()
+              //else
+              // if a class, it must be super to thisCase (and receiver) since not <: thisCase
+              if (!actual.isTrait && !(receiver isSubClass actual)) nonSensiblyNeq()
+              else if (!haveSubclassRelationship) warnIfLubless()
+            case _ =>
+          }
+        }
+        // warn only if they have no common supertype below Object
+        else if (!haveSubclassRelationship) {
+          warnIfLubless()
+        }
+      }
+    }
+    /** Sensibility check examines flavors of equals. */
     def checkSensible(pos: Position, fn: Tree, args: List[Tree]) = fn match {
       case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 && isObjectOrAnyComparisonMethod(fn.symbol) =>
-        // Make sure the 'eq' or 'ne' method is the one in AnyRef.
-        def isReferenceOp = fn.symbol == Object_eq || fn.symbol == Object_ne
-        def isNew(tree: Tree) = tree match {
-          case Function(_, _)
-             | Apply(Select(New(_), nme.CONSTRUCTOR), _) => true
-          case _ => false
-        }
-        def underlyingClass(tp: Type): Symbol = {
-          val sym = tp.widen.typeSymbol
-          if (sym.isAbstractType) underlyingClass(sym.info.bounds.hi)
-          else sym
-        }
-        val actual   = underlyingClass(args.head.tpe)
-        val receiver = underlyingClass(qual.tpe)
-        def onTrees[T](f: List[Tree] => T) = f(List(qual, args.head))
-        def onSyms[T](f: List[Symbol] => T) = f(List(receiver, actual))
-
-        // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol`
-        def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen)
-
-        /* Symbols which limit the warnings we can issue since they may be value types */
-        val isMaybeValue = Set[Symbol](AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, JavaSerializableClass)
-
-        // Whether def equals(other: Any) has known behavior: it is the default
-        // inherited from java.lang.Object, or it is a synthetically generated
-        // case equals.  TODO - more cases are warnable if the target is a synthetic
-        // equals.
-        def isUsingWarnableEquals = {
-          val m = receiver.info.member(nme.equals_)
-          ((m == Object_equals) || (m == Any_equals) || isMethodCaseEquals(m))
-        }
-        def isMethodCaseEquals(m: Symbol) = m.isSynthetic && m.owner.isCase
-        def isCaseEquals = isMethodCaseEquals(receiver.info.member(nme.equals_))
-        // Whether this == or != is one of those defined in Any/AnyRef or an overload from elsewhere.
-        def isUsingDefaultScalaOp = {
-          val s = fn.symbol
-          (s == Object_==) || (s == Object_!=) || (s == Any_==) || (s == Any_!=)
-        }
-        def haveSubclassRelationship = (actual isSubClass receiver) || (receiver isSubClass actual)
-
-        // Whether the operands+operator represent a warnable combo (assuming anyrefs)
-        // Looking for comparisons performed with ==/!= in combination with either an
-        // equals method inherited from Object or a case class synthetic equals (for
-        // which we know the logic.)
-        def isWarnable           = isReferenceOp || (isUsingDefaultScalaOp && isUsingWarnableEquals)
-        def isEitherNullable     = (NullTpe <:< receiver.info) || (NullTpe <:< actual.info)
-        def isEitherValueClass   = actual.isDerivedValueClass || receiver.isDerivedValueClass
-        def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
-        def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
-        def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || isAnyNumber(s)
-        def isScalaNumber(s: Symbol) = s isSubClass ScalaNumberClass
-        def isJavaNumber(s: Symbol) = s isSubClass JavaNumberClass
-        // includes java.lang.Number if appropriate [SI-5779]
-        def isAnyNumber(s: Symbol) = isScalaNumber(s) || isJavaNumber(s)
-        def isMaybeAnyValue(s: Symbol) = isPrimitiveValueClass(unboxedValueClass(s)) || isMaybeValue(s)
-        // used to short-circuit unrelatedTypes check if both sides are special
-        def isSpecial(s: Symbol) = isMaybeAnyValue(s) || isAnyNumber(s)
-        val nullCount            = onSyms(_ filter (_ == NullClass) size)
-        def isNonsenseValueClassCompare = (
-             !haveSubclassRelationship
-          && isUsingDefaultScalaOp
-          && isEitherValueClass
-          && !isCaseEquals
-        )
-
-        def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
-          val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
-          unit.warning(pos, "comparing "+what+" using `"+name.decode+"' will always yield " + msg)
-        }
-        def nonSensible(pre: String, alwaysEqual: Boolean) =
-          nonSensibleWarning(pre+"values of types "+typesString, alwaysEqual)
-        def nonSensiblyEq() = nonSensible("", true)
-        def nonSensiblyNeq() = nonSensible("", false)
-        def nonSensiblyNew() = nonSensibleWarning("a fresh object", false)
-
-        def unrelatedMsg = name match {
-          case nme.EQ | nme.eq => "never compare equal"
-          case _               => "always compare unequal"
-        }
-        def unrelatedTypes() = {
-          val weaselWord = if (isEitherValueClass) "" else " most likely"
-          unit.warning(pos, s"$typesString are unrelated: they will$weaselWord $unrelatedMsg")
-        }
-
-        if (nullCount == 2) // null == null
-          nonSensiblyEq()
-        else if (nullCount == 1) {
-          if (onSyms(_ exists isPrimitiveValueClass)) // null == 5
-            nonSensiblyNeq()
-          else if (onTrees( _ exists isNew)) // null == new AnyRef
-            nonSensiblyNew()
-        }
-        else if (isBoolean(receiver)) {
-          if (!isBoolean(actual) && !isMaybeValue(actual))    // true == 5
-            nonSensiblyNeq()
-        }
-        else if (isUnit(receiver)) {
-          if (isUnit(actual)) // () == ()
-            nonSensiblyEq()
-          else if (!isUnit(actual) && !isMaybeValue(actual))  // () == "abc"
-            nonSensiblyNeq()
-        }
-        else if (isNumeric(receiver)) {
-          if (!isNumeric(actual))
-            if (isUnit(actual) || isBoolean(actual) || !isMaybeValue(actual))   // 5 == "abc"
-              nonSensiblyNeq()
-        }
-        else if (isWarnable && !isCaseEquals) {
-          if (isNew(qual)) // new X == y
-            nonSensiblyNew()
-          else if (isNew(args.head) && (receiver.isEffectivelyFinal || isReferenceOp))   // object X ; X == new Y
-            nonSensiblyNew()
-          else if (receiver.isEffectivelyFinal && !(receiver isSubClass actual) && !actual.isRefinementClass) {  // object X, Y; X == Y
-            if (isEitherNullable)
-              nonSensible("non-null ", false)
-            else
-              nonSensiblyNeq()
-          }
-        }
-
-        // warn if one but not the other is a derived value class
-        // this is especially important to enable transitioning from
-        // regular to value classes without silent failures.
-        if (isNonsenseValueClassCompare)
-          unrelatedTypes()
-        // possibleNumericCount is insufficient or this will warn on e.g. Boolean == j.l.Boolean
-        else if (isWarnable && nullCount == 0 && !(isSpecial(receiver) && isSpecial(actual))) {
-          // better to have lubbed and lost
-          def warnIfLubless(): Unit = {
-            val common = global.lub(List(actual.tpe, receiver.tpe))
-            if (ObjectTpe <:< common)
-              unrelatedTypes()
-          }
-          // warn if actual has a case parent that is not same as receiver's;
-          // if actual is not a case, then warn if no common supertype, as below
-          if (isCaseEquals) {
-            def thisCase = receiver.info.member(nme.equals_).owner
-            actual.info.baseClasses.find(_.isCase) match {
-              case Some(p) if p != thisCase => nonSensible("case class ", false)
-              case None =>
-                // stronger message on (Some(1) == None)
-                //if (receiver.isCase && receiver.isEffectivelyFinal && !(receiver isSubClass actual)) nonSensiblyNeq()
-                //else
-                // if a class, it must be super to thisCase (and receiver) since not <: thisCase
-                if (!actual.isTrait && !(receiver isSubClass actual)) nonSensiblyNeq()
-                else if (!haveSubclassRelationship) warnIfLubless()
-              case _ =>
-            }
-          }
-          // warn only if they have no common supertype below Object
-          else if (!haveSubclassRelationship) {
-            warnIfLubless()
-          }
-        }
+        checkSensibleEquals(pos, qual, name, fn.symbol, args.head)
       case _ =>
     }
 
@@ -1526,7 +1530,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           transform(qual)
 
       case Apply(fn, args) =>
-        // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability analyses in the pattern matcher
+        // sensicality should be subsumed by the unreachability/exhaustivity/irrefutability
+        // analyses in the pattern matcher
         if (!inPattern) {
           checkImplicitViewOptionApply(tree.pos, fn, args)
           checkSensible(tree.pos, fn, args)
