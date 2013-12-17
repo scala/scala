@@ -115,8 +115,7 @@ trait Holes { self: Quasiquotes =>
       val lifter = inferLiftable(tpe)
       assert(lifter != EmptyTree, s"couldnt find a liftable for $tpe")
       val lifted = Apply(lifter, List(tree))
-      val targetType = Select(u, tpnme.Tree)
-      atPos(tree.pos)(TypeApply(Select(lifted, nme.asInstanceOf_), List(targetType)))
+      atPos(tree.pos)(lifted)
     }
 
     protected def iterated(card: Cardinality, tpe: Type, elementTransform: Tree => Tree = identity)(tree: Tree): Tree = {
