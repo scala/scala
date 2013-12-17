@@ -595,8 +595,16 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
                   extends MacroExpander[Tree](role, typer, expandee) {
       override def allowedExpansions: String = "term trees"
       override def allowExpandee(expandee: Tree) = expandee.isTerm
-      override def onSuccess(expanded: Tree) = typer.typed(expanded, mode, pt)
+      override def onSuccess(expanded: Tree) = {
+        val typedExpanded = typer.typed(expanded, mode, pt)
+        finishExpansion(expandee, typedExpanded)
+      }
       override def onFallback(fallback: Tree) = typer.typed(fallback, mode, pt)
+      protected def finishExpansion(expandee: Tree, typedExpanded: Tree): Tree = {
+        if (settings.Ymacroexpand.value == settings.MacroExpand.Discard)
+          expandee.setType(typedExpanded.tpe)
+        else typedExpanded
+      }
    }
 
   /** Expands a term macro used in apply role as `M(2)(3)` in `val x = M(2)(3)`.
@@ -633,7 +641,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           }
         }
 
-        if (isBlackbox(expandee)) {
+        val typedExpanded = if (isBlackbox(expandee)) {
           val expanded1 = atPos(enclosingMacroPosition.focus)(Typed(expanded0, TypeTree(innerPt)))
           typecheck("blackbox typecheck", expanded1, outerPt)
         } else {
@@ -641,6 +649,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           val expanded2 = typecheck("whitebox typecheck #1", expanded1, outerPt)
           typecheck("whitebox typecheck #2", expanded2, innerPt)
         }
+        finishExpansion(expandee, typedExpanded)
       }
       override def onDelayed(delayed: Tree) = {
         // =========== THE SITUATION ===========
