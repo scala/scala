@@ -89,16 +89,20 @@ trait ResizableArray[A] extends IndexedSeq[A]
     }
   }
 
-  /** Ensure that the internal array has at `n` cells. */
+  /** Ensure that the internal array has at least `n` cells. */
   protected def ensureSize(n: Int) {
-    if (n > array.length) {
-      var newsize = array.length * 2
-      while (n > newsize)
-        newsize = newsize * 2
+    // Use a Long to prevent overflows
+    val arrayLength: Long = array.length
+    if (n > arrayLength) {
+      var newSize: Long = arrayLength * 2
+      while (n > newSize)
+        newSize = newSize * 2
+      // Clamp newSize to Int.MaxValue
+      if (newSize > Int.MaxValue) newSize = Int.MaxValue
 
-      val newar: Array[AnyRef] = new Array(newsize)
-      scala.compat.Platform.arraycopy(array, 0, newar, 0, size0)
-      array = newar
+      val newArray: Array[AnyRef] = new Array(newSize.toInt)
+      scala.compat.Platform.arraycopy(array, 0, newArray, 0, size0)
+      array = newArray
     }
   }
 
