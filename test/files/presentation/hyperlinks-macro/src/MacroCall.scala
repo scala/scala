@@ -9,4 +9,3 @@ object Test {
     foo/*#*/
   }
 }
-// Currently, the hyperlink within the argument to the macro `reify` does not resolve correctly.

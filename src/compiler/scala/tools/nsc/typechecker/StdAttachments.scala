@@ -95,7 +95,7 @@ trait StdAttachments {
   /** Determines whether a tree should not be expanded, because someone has put SuppressMacroExpansionAttachment on it or one of its children.
    */
   def isMacroExpansionSuppressed(tree: Tree): Boolean =
-    (  settings.Ymacronoexpand.value // SI-6812
+    (  settings.Ymacroexpand.value == settings.MacroExpand.None // SI-6812
     || tree.attachments.get[SuppressMacroExpansionAttachment.type].isDefined
     || (tree match {
         // we have to account for the fact that during typechecking an expandee might become wrapped,

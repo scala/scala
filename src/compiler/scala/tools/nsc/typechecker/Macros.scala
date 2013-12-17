@@ -535,25 +535,25 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *    the expandee with an error marker set   if the expansion has been cancelled due malformed arguments or implementation
    *    the expandee with an error marker set   if there has been an error
    */
-  abstract class MacroExpander[Result: ClassTag](val role: MacroRole, val typer: Typer, val expandee: Tree) {
+  abstract class MacroExpander(val role: MacroRole, val typer: Typer, val expandee: Tree) {
     def allowExpandee(expandee: Tree): Boolean = true
     def allowExpanded(expanded: Tree): Boolean = true
     def allowedExpansions: String = "anything"
-    def allowResult(result: Result): Boolean = true
+    def allowResult(result: Tree): Boolean = true
 
-    def onSuccess(expanded: Tree): Result
-    def onFallback(expanded: Tree): Result
-    def onSuppressed(expandee: Tree): Result = expandee match { case expandee: Result => expandee }
-    def onDelayed(expanded: Tree): Result = expanded match { case expanded: Result => expanded }
-    def onSkipped(expanded: Tree): Result = expanded match { case expanded: Result => expanded }
-    def onFailure(expanded: Tree): Result = { typer.infer.setError(expandee); expandee match { case expandee: Result => expandee } }
+    def onSuccess(expanded: Tree): Tree
+    def onFallback(expanded: Tree): Tree
+    def onSuppressed(expandee: Tree): Tree = expandee
+    def onDelayed(expanded: Tree): Tree = expanded
+    def onSkipped(expanded: Tree): Tree = expanded
+    def onFailure(expanded: Tree): Tree = { typer.infer.setError(expandee); expandee }
 
-    def apply(desugared: Tree): Result = {
+    def apply(desugared: Tree): Tree = {
       if (isMacroExpansionSuppressed(desugared)) onSuppressed(expandee)
       else expand(desugared)
     }
 
-    protected def expand(desugared: Tree): Result = {
+    protected def expand(desugared: Tree): Tree = {
       def showDetailed(tree: Tree) = showRaw(tree, printIds = true, printTypes = true)
       def summary() = s"expander = $this, expandee = ${showDetailed(expandee)}, desugared = ${if (expandee == desugared) () else showDetailed(desugared)}"
       if (macroDebugVerbose) println(s"macroExpand: ${summary()}")
@@ -580,7 +580,10 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
                   // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
                   val expanded1 = try onSuccess(duplicateAndKeepPositions(expanded)) finally popMacroContext()
                   if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
-                  if (allowResult(expanded1)) expanded1 else onFailure(expanded)
+                  if (allowResult(expanded1)) {
+                    if (settings.Ymacroexpand.value == settings.MacroExpand.Discard) expandee.setType(expanded1.tpe)
+                    else expanded1
+                  } else onFailure(expanded)
                 } else {
                   typer.TyperErrorGen.MacroInvalidExpansionError(expandee, role.name, allowedExpansions)
                   onFailure(expanded)
@@ -605,7 +608,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *  @param innerPt Expected type that comes from the signature of a macro def, possibly wildcarded to help type inference.
    */
   class DefMacroExpander(typer: Typer, expandee: Tree, mode: Mode, outerPt: Type)
-  extends MacroExpander[Tree](APPLY_ROLE, typer, expandee) {
+  extends MacroExpander(APPLY_ROLE, typer, expandee) {
     lazy val innerPt = {
       val tp = if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe
       if (isBlackbox(expandee)) tp
