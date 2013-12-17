@@ -133,7 +133,7 @@ self =>
   val global: Global
   import global._
 
-  case class OpInfo(lhs: Tree, operator: TermName, offset: Offset) {
+  case class OpInfo(lhs: Tree, operator: TermName, targs: List[Tree], offset: Offset) {
     def precedence = Precedence(operator.toString)
   }
 
@@ -795,10 +795,13 @@ self =>
     private def opHead = opstack.head
     private def headPrecedence = opHead.precedence
     private def popOpInfo(): OpInfo = try opHead finally opstack = opstack.tail
-    private def pushOpInfo(top: Tree) {
-      val opinfo = OpInfo(top, in.name, in.offset)
-      opstack ::= opinfo
+    private def pushOpInfo(top: Tree): Unit = {
+      val name   = in.name
+      val offset = in.offset
       ident()
+      val targs = if (in.token == LBRACKET) exprTypeArgs() else Nil
+      val opinfo = OpInfo(top, name, targs, offset)
+      opstack ::= opinfo
     }
 
     def checkHeadAssoc(leftAssoc: Boolean) = checkAssoc(opHead.offset, opHead.operator, leftAssoc)
@@ -808,6 +811,9 @@ self =>
     )
 
     def finishPostfixOp(start: Int, base: List[OpInfo], opinfo: OpInfo): Tree = {
+      if (opinfo.targs.nonEmpty)
+        syntaxError(opinfo.offset, "type application is not allowed for postfix operators")
+
       val od = stripParens(reduceExprStack(base, opinfo.lhs))
       makePostfixSelect(start, opinfo.offset, od, opinfo.operator)
     }
@@ -817,7 +823,7 @@ self =>
       val operatorPos: Position = Position.range(rhs.pos.source, offset, offset, offset + operator.length)
       val pos                   = lhs.pos union rhs.pos union operatorPos withPoint offset
 
-      atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos))
+      atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos, opinfo.targs))
     }
 
     def reduceExprStack(base: List[OpInfo], top: Tree): Tree    = reduceStack(isExpr = true, base, top)
@@ -1893,9 +1899,9 @@ self =>
         def isDelimiter            = in.token == RPAREN || in.token == RBRACE
         def isCommaOrDelimiter     = isComma || isDelimiter
         val (isUnderscore, isStar) = opstack match {
-          case OpInfo(Ident(nme.WILDCARD), nme.STAR, _) :: _ => (true,   true)
-          case OpInfo(_, nme.STAR, _) :: _                   => (false,  true)
-          case _                                             => (false, false)
+          case OpInfo(Ident(nme.WILDCARD), nme.STAR, _, _) :: _ => (true,   true)
+          case OpInfo(_, nme.STAR, _, _) :: _                   => (false,  true)
+          case _                                                => (false, false)
         }
         def isSeqPatternClose = isUnderscore && isStar && isSequenceOK && isDelimiter
         val preamble = "bad simple pattern:"
