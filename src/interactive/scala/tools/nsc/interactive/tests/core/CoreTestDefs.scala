@@ -94,7 +94,7 @@ private[tests] trait CoreTestDefs
       askAllSources(HyperlinkMarker) { pos =>
         askTypeAt(pos)(NullReporter)
       } { (pos, tree) =>
-        if(tree.symbol == compiler.NoSymbol) {
+        if(tree.symbol == compiler.NoSymbol || tree.symbol == null) {
           reporter.println("\nNo symbol is associated with tree: "+tree)
         }
         else {
