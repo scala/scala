@@ -39,16 +39,16 @@ object scala extends Command {
         CmdOptionBound("howtorun:", Argument("how")),
         "How to execute " & Argument("torun") & ", if it is present. " &
         "Options for " & Argument("how") & " are " & Mono("guess") &
-        " (the default), " & Mono("script") & ", and " & Mono("object") &
+        " (the default), " & Mono("script") & ", " & Mono("jar") & ", and " & Mono("object") &
         "."),
 
       Definition(
-        CmdOption("i"),
+        CmdOption("i", Argument("file")),
         "Requests that a file be pre-loaded.  It is only " &
         "meaningful for interactive shells."),
 
       Definition(
-        CmdOption("e"),
+        CmdOption("e", Argument("string")),
         "Requests that its argument be executed as Scala code."),
 
       Definition(
