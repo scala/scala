@@ -772,7 +772,22 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
             macroLogLite("" + expanded + "\n" + showRaw(expanded))
             val freeSyms = expanded.freeTerms ++ expanded.freeTypes
             freeSyms foreach (sym => MacroFreeSymbolError(expandee, sym))
-            Success(atPos(enclosingMacroPosition.focus)(expanded))
+            // Macros might have spliced arguments with range positions into non-compliant
+            // locations, notably, under a tree without a range position. Or, they might
+            // spice a tree that `resetAttrs` has assigned NoPosition.
+            //
+            // Here, we just convert all positions in the tree to offset positions, and
+            // convert NoPositions to something sensible.
+            //
+            // Given that the IDE now sees the expandee (by using -Ymacro-expand:discard),
+            // this loss of position fidelity shouldn't cause any real problems.
+            val expandedPos = enclosingMacroPosition.focus
+            def fixPosition(pos: Position) =
+              if (pos == NoPosition) expandedPos else pos.focus
+            expanded.foreach(t => t.pos = fixPosition(t.pos))
+
+            val result = atPos(enclosingMacroPosition.focus)(expanded)
+            Success(result)
           }
           expanded match {
             case expanded: Expr[_] if expandee.symbol.isTermMacro => validateResultingTree(expanded.tree)
