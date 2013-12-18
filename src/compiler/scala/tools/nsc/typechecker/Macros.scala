@@ -260,7 +260,11 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     }
 
   def isBlackbox(expandee: Tree): Boolean = isBlackbox(dissectApplied(expandee).core.symbol)
-  def isBlackbox(macroDef: Symbol): Boolean = loadMacroImplBinding(macroDef).map(_.isBlackbox).getOrElse(false)
+  def isBlackbox(macroDef: Symbol): Boolean = {
+    val fastTrackBoxity = fastTrack.get(macroDef).map(_.isBlackbox)
+    val bindingBoxity = loadMacroImplBinding(macroDef).map(_.isBlackbox)
+    fastTrackBoxity orElse bindingBoxity getOrElse false
+  }
 
   def computeMacroDefTypeFromMacroImplRef(macroDdef: DefDef, macroImplRef: Tree): Type = {
     macroImplRef match {
@@ -634,7 +638,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         }
 
         if (isBlackbox(expandee)) {
-          val expanded1 = atPos(enclosingMacroPosition.focus)(Typed(expanded0, TypeTree(innerPt)))
+          val expanded1 = atPos(enclosingMacroPosition.makeTransparent)(Typed(expanded0, TypeTree(innerPt)))
           typecheck("blackbox typecheck", expanded1, outerPt)
         } else {
           val expanded1 = expanded0

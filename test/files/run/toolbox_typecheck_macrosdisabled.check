@@ -1,4 +1,4 @@
-{
+({
   val $u: ru.type = ru;
   val $m: $u.Mirror = ru.runtimeMirror({
   final class $anon extends scala.AnyRef {
@@ -37,5 +37,5 @@
     };
     new $typecreator2()
   }))
-}
+}: ru.Expr[Int])
 ru.reify[Int](2)
