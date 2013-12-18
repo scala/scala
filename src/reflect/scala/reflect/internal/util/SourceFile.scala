@@ -16,12 +16,13 @@ import scala.reflect.internal.Chars._
 
 /** abstract base class of a source file used in the compiler */
 abstract class SourceFile {
-  def content : Array[Char]         // normalized, must end in SU
-  def file    : AbstractFile
-  def isLineBreak(idx : Int) : Boolean
+  def content: Array[Char]         // normalized, must end in SU
+  def file   : AbstractFile
+  def isLineBreak(idx: Int): Boolean
+  def isEndOfLine(idx: Int): Boolean
   def isSelfContained: Boolean
   def length : Int
-  def position(offset: Int) : Position = {
+  def position(offset: Int): Position = {
     assert(offset < length, file + ": " + offset + " >= " + length)
     Position.offset(this, offset)
   }
@@ -52,6 +53,7 @@ object NoSourceFile extends SourceFile {
   def content                   = Array()
   def file                      = NoFile
   def isLineBreak(idx: Int)     = false
+  def isEndOfLine(idx: Int)     = false
   def isSelfContained           = true
   def length                    = -1
   def offsetToLine(offset: Int) = -1
@@ -129,17 +131,24 @@ class BatchSourceFile(val file : AbstractFile, val content0: Array[Char]) extend
     }
 
   def isLineBreak(idx: Int) =
-    if (idx >= length) false else {
-      val ch = content(idx)
+    (idx < length) && (content(idx) match {
       // don't identify the CR in CR LF as a line break, since LF will do.
-      if (ch == CR) (idx + 1 == length) || (content(idx + 1) != LF)
-      else isLineBreakChar(ch)
-    }
+      case CR => (idx + 1 == length) || (content(idx + 1) != LF)
+      case ch => isLineBreakChar(ch)
+    })
+
+  def isEndOfLine(idx: Int) =
+    (idx < length) && (content(idx) match {
+      // don't identify the CR in CR LF as a line break, since LF will do.
+      case CR => (idx + 1 == length) || (content(idx + 1) != LF)
+      case LF => true
+      case _  => false
+    })
 
   def calculateLineIndices(cs: Array[Char]) = {
     val buf = new ArrayBuffer[Int]
     buf += 0
-    for (i <- 0 until cs.length) if (isLineBreak(i)) buf += i + 1
+    for (i <- 0 until cs.length) if (isEndOfLine(i)) buf += i + 1
     buf += cs.length // sentinel, so that findLine below works smoother
     buf.toArray
   }
@@ -149,8 +158,8 @@ class BatchSourceFile(val file : AbstractFile, val content0: Array[Char]) extend
 
   private var lastLine = 0
 
-  /** Convert offset to line in this source file
-   *  Lines are numbered from 0
+  /** Convert offset to line in this source file.
+   *  Lines are numbered from 0.
    */
   def offsetToLine(offset: Int): Int = {
     val lines = lineIndices

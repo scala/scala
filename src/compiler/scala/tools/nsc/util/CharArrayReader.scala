@@ -46,7 +46,7 @@ abstract class CharArrayReader extends CharArrayReaderData { self =>
   def isUnicodeEscape = charOffset == lastUnicodeOffset
 
   /** Advance one character; reducing CR;LF pairs to just LF */
-  final def nextChar() {
+  final def nextChar(): Unit = {
     if (charOffset >= buf.length) {
       ch = SU
     } else {
@@ -54,7 +54,10 @@ abstract class CharArrayReader extends CharArrayReaderData { self =>
       ch = c
       charOffset += 1
       if (c == '\\') potentialUnicode()
-      else if (c < ' ') { skipCR(); potentialLineEnd() }
+      if (ch < ' ') {
+        skipCR()
+        potentialLineEnd()
+      }
     }
   }
 
@@ -74,7 +77,7 @@ abstract class CharArrayReader extends CharArrayReaderData { self =>
   }
 
   /** Interpret \\uxxxx escapes */
-  private def potentialUnicode() {
+  private def potentialUnicode() = {
     def evenSlashPrefix: Boolean = {
       var p = charOffset - 2
       while (p >= 0 && buf(p) == '\\') p -= 1
@@ -105,13 +108,17 @@ abstract class CharArrayReader extends CharArrayReaderData { self =>
   }
 
   /** replace CR;LF by LF */
-  private def skipCR() {
-    if (ch == CR)
-      if (charOffset < buf.length && buf(charOffset) == LF) {
-        charOffset += 1
-        ch = LF
+  private def skipCR() =
+    if (ch == CR && charOffset < buf.length)
+      buf(charOffset) match {
+        case LF =>
+          charOffset += 1
+          ch = LF
+        case '\\' =>
+          if (lookaheadReader.getu == LF)
+            potentialUnicode()
+        case _ =>
       }
-  }
 
   /** Handle line ends */
   private def potentialLineEnd() {
@@ -132,5 +139,6 @@ abstract class CharArrayReader extends CharArrayReaderData { self =>
     def error(offset: Int, msg: String) = self.error(offset, msg)
     /** A mystery why CharArrayReader.nextChar() returns Unit */
     def getc() = { nextChar() ; ch }
+    def getu() = { require(buf(charOffset) == '\\') ; ch = '\\' ; charOffset += 1 ; potentialUnicode() ; ch }
   }
 }
