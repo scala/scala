@@ -207,7 +207,16 @@ private[util] trait InternalPositionImpl {
   def showError(msg: String): String = finalPosition match {
     case FakePos(fmsg) => s"$fmsg $msg"
     case NoPosition    => msg
-    case pos           => s"${pos.line}: $msg\n${pos.lineContent}\n${pos.lineCarat}"
+    case pos           => f"${pos.line}: $msg%n${u(pos.lineContent)}%n${pos.lineCarat}"
+  }
+  private def u(s: String) = {
+    def uu(c: Int) = f"\\u$c%04x"
+    def uable(c: Int) = (c < 0x20 && c != '\t') || c == 0x7F
+    if (s exists (c => uable(c))) {
+      val sb = new StringBuilder
+      s foreach (c => sb append (if (uable(c)) uu(c) else c))
+      sb.toString
+    } else s
   }
   def showDebug: String = toString
   def show = (

@@ -37,8 +37,12 @@ abstract class SourceFile {
   override def toString() = file.name
   def path = file.path
 
-  def lineToString(index: Int): String =
-    content drop lineToOffset(index) takeWhile (c => !isLineBreakChar(c.toChar)) mkString ""
+  def lineToString(index: Int): String = {
+    val start = lineToOffset(index)
+    var end = start
+    while (!isEndOfLine(end)) end += 1
+    content.slice(start, end) mkString ""
+  }
 
   @tailrec
   final def skipWhitespace(offset: Int): Int =
