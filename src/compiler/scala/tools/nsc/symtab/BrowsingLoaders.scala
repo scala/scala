@@ -64,8 +64,10 @@ abstract class BrowsingLoaders extends SymbolLoaders {
           addPackagePrefix(pre)
           packagePrefix += ("." + name)
         case Ident(name) =>
-          if (packagePrefix.length != 0) packagePrefix += "."
-          packagePrefix += name
+          if (name != nme.EMPTY_PACKAGE_NAME) { // mirrors logic in Namers, see createPackageSymbol
+            if (packagePrefix.length != 0) packagePrefix += "."
+            packagePrefix += name
+          }
         case _ =>
           throw new MalformedInput(pkg.pos.point, "illegal tree node in package prefix: "+pkg)
       }
