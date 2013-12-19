@@ -1207,21 +1207,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           val iface  = toInterface(sym.owner.tpe).typeSymbol
           val ifaceGetter = sym getter iface
 
-          def si6231Restriction() {
-            // See SI-6231 comments in LamdaLift for ideas on how to lift the restriction.
-            val msg = sm"""Implementation restriction: local ${iface.fullLocationString} is unable to automatically capture the
-                |free variable ${sym} on behalf of ${currentClass}. You can manually assign it to a val inside the trait,
-                |and refer to that val in ${currentClass}. For more details, see SI-6231."""
-            reporter.error(tree.pos, msg)
-          }
-
-          if (ifaceGetter == NoSymbol) {
-            if (sym.isParamAccessor) {
-              si6231Restriction()
-              EmptyTree
-            }
-            else abort("No getter for " + sym + " in " + iface)
-          }
+          if (ifaceGetter == NoSymbol) abort("No getter for " + sym + " in " + iface)
           else typedPos(tree.pos)((qual DOT ifaceGetter)())
 
         case Assign(Apply(lhs @ Select(qual, _), List()), rhs) =>
