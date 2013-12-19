@@ -340,7 +340,19 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         else (true, adaptToType(tree, expectedTpe))
       }
 
+      def adaptAndPostErase(tree: Tree, pt: Type): (Boolean, Tree) = {
+        val (needsAdapt, adaptedTree) = adapt(tree, pt)
+        val trans = postErasure.newTransformer(unit)
+        val postErasedTree = trans.atOwner(currentOwner)(trans.transform(adaptedTree)) // SI-8017 elimnates ErasedValueTypes
+        (needsAdapt, postErasedTree)
+      }
+
       enteringPhase(currentRun.posterasurePhase) {
+        // e.g, in:
+        //   class C(val a: Int) extends AnyVal; (x: Int) => new C(x)
+        //
+        // This type is:
+        //    (x: Int)ErasedValueType(class C, Int)
         val liftedBodyDefTpe: MethodType = {
           val liftedBodySymbol = {
             val Apply(method, _) = originalFunction.body
@@ -349,8 +361,14 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           liftedBodySymbol.info.asInstanceOf[MethodType]
         }
         val (paramNeedsAdaptation, adaptedParams) = (bridgeSyms zip liftedBodyDefTpe.params map {case (bridgeSym, param) => adapt(Ident(bridgeSym) setType bridgeSym.tpe, param.tpe)}).unzip
-        val body = Apply(gen.mkAttributedSelect(gen.mkAttributedThis(newClass), applyMethod.symbol), adaptedParams) setType applyMethod.symbol.tpe.resultType
-        val (needsReturnAdaptation, adaptedBody) = adapt(typer.typed(body), ObjectTpe)
+        // SI-8017 Before, this code used `applyMethod.symbol.info.resultType`.
+        //         But that symbol doesn't have a type history that goes back before `delambdafy`,
+        //         so we just see a plain `Int`, rather than `ErasedValueType(C, Int)`.
+        //         This triggered primitive boxing, rather than value class boxing.
+        val resTp = liftedBodyDefTpe.finalResultType
+        val body = Apply(gen.mkAttributedSelect(gen.mkAttributedThis(newClass), applyMethod.symbol), adaptedParams) setType resTp
+        val (needsReturnAdaptation, adaptedBody) = adaptAndPostErase(body, ObjectTpe)
+
         val needsBridge = (paramNeedsAdaptation contains true) || needsReturnAdaptation
         if (needsBridge) {
           val methDef = DefDef(bridgeMethSym, List(bridgeParams), adaptedBody)
