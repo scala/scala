@@ -1793,7 +1793,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       val impl2  = finishMethodSynthesis(impl1, clazz, context)
 
-      if (mdef.symbol == PredefModule)
+      if (settings.isScala211  && mdef.symbol == PredefModule)
         ensurePredefParentsAreInSameSourceFile(impl2)
 
       // SI-5954. On second compile of a companion class contained in a package object we end up
