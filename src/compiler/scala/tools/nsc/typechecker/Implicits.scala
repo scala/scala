@@ -1365,7 +1365,7 @@ trait Implicits {
           maybeInvalidConversionError("the result type of an implicit conversion must be more specific than AnyRef")
           result = SearchFailure
         }
-        else if (isInvalidConversionSource(pt)) {
+        else if (settings.isScala211 && isInvalidConversionSource(pt)) {
           maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
           result = SearchFailure
         }
