@@ -725,7 +725,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
           val init = bitmapKind match {
             case BooleanClass => ValDef(sym, FALSE)
-            case _            => ValDef(sym, ZERO)
+            case ByteClass    => ValDef(sym, LIT(0.toByte))
+            case IntClass     => ValDef(sym, ZERO)
+            case LongClass    => ValDef(sym, LIT(0L))
           }
 
           sym setFlag PrivateLocal
