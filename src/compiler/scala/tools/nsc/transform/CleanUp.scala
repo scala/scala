@@ -11,7 +11,7 @@ import Flags._
 import scala.collection._
 import scala.language.postfixOps
 
-abstract class CleanUp extends Transform with ast.TreeDSL {
+abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
   import global._
   import definitions._
   import CODE._
@@ -35,7 +35,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new CleanUpTransformer(unit)
 
-  class CleanUpTransformer(unit: CompilationUnit) extends Transformer {
+  class CleanUpTransformer(unit: CompilationUnit) extends StaticsTransformer {
     private val newStaticMembers      = mutable.Buffer.empty[Tree]
     private val newStaticInits        = mutable.Buffer.empty[Tree]
     private val symbolsStoredAsStatic = mutable.Map.empty[String, Symbol]
@@ -49,7 +49,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       clearStatics()
       val newBody = transformTrees(body)
       val templ   = deriveTemplate(tree)(_ => transformTrees(newStaticMembers.toList) ::: newBody)
-      try addStaticInits(templ) // postprocess to include static ctors
+      try addStaticInits(templ, newStaticInits, localTyper) // postprocess to include static ctors
       finally clearStatics()
     }
     private def mkTerm(prefix: String): TermName = unit.freshTermName(prefix)
@@ -555,44 +555,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         stfieldSym
       })
-    }
-
-    /* finds the static ctor DefDef tree within the template if it exists. */
-    private def findStaticCtor(template: Template): Option[Tree] =
-      template.body find {
-        case defdef @ DefDef(_, nme.CONSTRUCTOR, _, _, _, _) => defdef.symbol.hasStaticFlag
-        case _ => false
-      }
-
-    /* changes the template for the class so that it contains a static constructor with symbol fields inits,
-     * augments an existing static ctor if one already existed.
-     */
-    private def addStaticInits(template: Template): Template = {
-      if (newStaticInits.isEmpty)
-        template
-      else {
-        val newCtor = findStaticCtor(template) match {
-          // in case there already were static ctors - augment existing ones
-          // currently, however, static ctors aren't being generated anywhere else
-          case Some(ctor @ DefDef(_,_,_,_,_,_)) =>
-            // modify existing static ctor
-            deriveDefDef(ctor) {
-              case block @ Block(stats, expr) =>
-                // need to add inits to existing block
-                treeCopy.Block(block, newStaticInits.toList ::: stats, expr)
-              case term: TermTree =>
-                // need to create a new block with inits and the old term
-                treeCopy.Block(term, newStaticInits.toList, term)
-            }
-          case _ =>
-            // create new static ctor
-            val staticCtorSym  = currentClass.newStaticConstructor(template.pos)
-            val rhs            = Block(newStaticInits.toList, Literal(Constant(())))
-
-            localTyper.typedPos(template.pos)(DefDef(staticCtorSym, rhs))
-        }
-        deriveTemplate(template)(newCtor :: _)
-      }
     }
 
   } // CleanUpTransformer
