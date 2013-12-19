@@ -24,7 +24,7 @@ trait Typers {
     // typechecking uses silent anyways (e.g. in typedSelect), so you'll only waste your time
     // I'd advise fixing the root cause: finding why the context is not set to report errors
     // (also see reflect.runtime.ToolBoxes.typeCheckExpr for a workaround that might work for you)
-    wrapper(callsiteTyper.silent(_.typed(tree, pt), reportAmbiguousErrors = false) match {
+    wrapper(callsiteTyper.silent(_.typed(universe.duplicateAndKeepPositions(tree), pt), reportAmbiguousErrors = false) match {
       case universe.analyzer.SilentResultValue(result) =>
         macroLogVerbose(result)
         result
@@ -46,7 +46,7 @@ trait Typers {
     universe.analyzer.inferImplicit(tree, viewTpe, true, callsiteTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw TypecheckException(pos, msg))
   }
 
-  def resetAllAttrs(tree: Tree): Tree = universe.resetAllAttrs(tree)
+  def resetAllAttrs(tree: Tree): Tree = universe.resetAllAttrs(universe.duplicateAndKeepPositions(tree))
 
-  def resetLocalAttrs(tree: Tree): Tree = universe.resetLocalAttrs(tree)
+  def resetLocalAttrs(tree: Tree): Tree = universe.resetLocalAttrs(universe.duplicateAndKeepPositions(tree))
 }
