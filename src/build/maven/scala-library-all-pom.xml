@@ -50,12 +50,12 @@
       <version>@PARSER_COMBINATORS_VERSION@</version>
     </dependency>
     <dependency>
-      <groupId>org.scala-lang.modules</groupId>
+      <groupId>org.scala-lang.plugins</groupId>
       <artifactId>scala-continuations-plugin_@SCALA_BINARY_VERSION@</artifactId>
       <version>@CONTINUATIONS_PLUGIN_VERSION@</version>
     </dependency>
     <dependency>
-      <groupId>org.scala-lang.modules</groupId>
+      <groupId>org.scala-lang.plugins</groupId>
       <artifactId>scala-continuations-library_@SCALA_BINARY_VERSION@</artifactId>
       <version>@CONTINUATIONS_LIBRARY_VERSION@</version>
     </dependency>
