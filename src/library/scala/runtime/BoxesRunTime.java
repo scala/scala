@@ -114,7 +114,6 @@ public final class BoxesRunTime
     }
 
     public static double unboxToDouble(Object d) {
-        //        System.out.println("unbox " + d);
         return d == null ? 0.0d : ((java.lang.Double)d).doubleValue();
     }
 
