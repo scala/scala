@@ -535,6 +535,8 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     def onDelayed(expanded: Tree): Result = expanded match { case expanded: Result => expanded }
     def onSkipped(expanded: Tree): Result = expanded match { case expanded: Result => expanded }
     def onFailure(expanded: Tree): Result = { typer.infer.setError(expandee); expandee match { case expandee: Result => expandee } }
+    // hook to implement -Ymacro-expand:discard
+    protected def finishExpansion(expanded: Result): Result
 
     def apply(desugared: Tree): Result = {
       if (isMacroExpansionSuppressed(desugared)) onSuppressed(expandee)
@@ -568,7 +570,10 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
                   // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
                   val expanded1 = try onSuccess(duplicateAndKeepPositions(expanded)) finally popMacroContext()
                   if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
-                  if (allowResult(expanded1)) expanded1 else onFailure(expanded)
+                  if (allowResult(expanded1))
+                    finishExpansion(expanded1) // -Ymacro-expand:discard will discard the expansion here
+                  else
+                    onFailure(expanded)
                 } else {
                   typer.TyperErrorGen.MacroInvalidExpansionError(expandee, role.name, allowedExpansions)
                   onFailure(expanded)
@@ -595,12 +600,9 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
                   extends MacroExpander[Tree](role, typer, expandee) {
       override def allowedExpansions: String = "term trees"
       override def allowExpandee(expandee: Tree) = expandee.isTerm
-      override def onSuccess(expanded: Tree) = {
-        val typedExpanded = typer.typed(expanded, mode, pt)
-        finishExpansion(expandee, typedExpanded)
-      }
+      override def onSuccess(expanded: Tree) = typer.typed(expanded, mode, pt)
       override def onFallback(fallback: Tree) = typer.typed(fallback, mode, pt)
-      protected def finishExpansion(expandee: Tree, typedExpanded: Tree): Tree = {
+      protected def finishExpansion(typedExpanded: Tree): Tree = {
         if (settings.Ymacroexpand.value == settings.MacroExpand.Discard)
           expandee.setType(typedExpanded.tpe)
         else typedExpanded
@@ -641,7 +643,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           }
         }
 
-        val typedExpanded = if (isBlackbox(expandee)) {
+        if (isBlackbox(expandee)) {
           val expanded1 = atPos(enclosingMacroPosition.focus)(Typed(expanded0, TypeTree(innerPt)))
           typecheck("blackbox typecheck", expanded1, outerPt)
         } else {
@@ -649,7 +651,6 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           val expanded2 = typecheck("whitebox typecheck #1", expanded1, outerPt)
           typecheck("whitebox typecheck #2", expanded2, innerPt)
         }
-        finishExpansion(expandee, typedExpanded)
       }
       override def onDelayed(delayed: Tree) = {
         // =========== THE SITUATION ===========
@@ -774,13 +775,22 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
             freeSyms foreach (sym => MacroFreeSymbolError(expandee, sym))
             // Macros might have spliced arguments with range positions into non-compliant
             // locations, notably, under a tree without a range position. Or, they might
-            // spice a tree that `resetAttrs` has assigned NoPosition.
+            // splice a tree that `resetAttrs` has assigned NoPosition.
             //
             // Here, we just convert all positions in the tree to offset positions, and
             // convert NoPositions to something sensible.
             //
             // Given that the IDE now sees the expandee (by using -Ymacro-expand:discard),
             // this loss of position fidelity shouldn't cause any real problems.
+            //
+            // Alternatively, we could pursue a way to exclude macro expansions from position
+            // invariant checking, or find a way not to touch expansions that happen to validate.
+            //
+            // This would be useful for cases like:
+            //
+            //    macro1 { macro2 { "foo" } }
+            //
+            // to allow `macro1` to see the range position of the "foo".
             val expandedPos = enclosingMacroPosition.focus
             def fixPosition(pos: Position) =
               if (pos == NoPosition) expandedPos else pos.focus
