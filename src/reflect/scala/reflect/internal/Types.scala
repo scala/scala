@@ -895,7 +895,7 @@ trait Types
         if (sym == btssym) return mid
         else if (sym isLess btssym) hi = mid - 1
         else if (btssym isLess sym) lo = mid + 1
-        else abort()
+        else abort("sym is neither `sym == btssym`, `sym isLess btssym` nor `btssym isLess sym`")
       }
       -1
     }
@@ -3601,7 +3601,7 @@ trait Types
   }
   def genPolyType(params: List[Symbol], tpe: Type): Type = GenPolyType(params, tpe)
 
-  @deprecated("use genPolyType(...) instead", "2.10.0")
+  @deprecated("use genPolyType(...) instead", "2.10.0") // Used in reflection API
   def polyType(params: List[Symbol], tpe: Type): Type = GenPolyType(params, tpe)
 
   /** A creator for anonymous type functions, where the symbol for the type function still needs to be created.

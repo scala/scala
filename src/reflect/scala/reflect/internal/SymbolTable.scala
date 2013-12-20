@@ -65,9 +65,6 @@ abstract class SymbolTable extends macros.Universe
   def isPastTyper = false
   protected def isDeveloper: Boolean = settings.debug
 
-  @deprecated("Give us a reason", "2.10.0")
-  def abort(): Nothing = abort("unknown error")
-
   @deprecated("Use devWarning if this is really a warning; otherwise use log", "2.11.0")
   def debugwarn(msg: => String): Unit = devWarning(msg)
 
@@ -391,10 +388,9 @@ abstract class SymbolTable extends macros.Universe
    */
   def isCompilerUniverse = false
 
-  @deprecated("Use enteringPhase", "2.10.0")
+  @deprecated("Use enteringPhase", "2.10.0") // Used in SBT 0.12.4
   @inline final def atPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph)(op)
-  @deprecated("Use enteringPhaseNotLaterThan", "2.10.0")
-  @inline final def atPhaseNotLaterThan[T](target: Phase)(op: => T): T = enteringPhaseNotLaterThan(target)(op)
+
 
   /**
    * Adds the `sm` String interpolator to a [[scala.StringContext]].

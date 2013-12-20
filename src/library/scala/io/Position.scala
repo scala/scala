@@ -34,7 +34,7 @@ package io
  *  @author Burak Emir (translated from work by Matthias Zenger and others)
  */
 @deprecated("This class will be removed.", "2.10.0")
-abstract class Position {
+private[scala] abstract class Position {
   /** Definable behavior for overflow conditions.
    */
   def checkInput(line: Int, column: Int): Unit
@@ -68,7 +68,7 @@ abstract class Position {
   def toString(pos: Int): String = line(pos) + ":" + column(pos)
 }
 
-object Position extends Position {
+private[scala] object Position extends Position {
   def checkInput(line: Int, column: Int) {
     if (line < 0)
       throw new IllegalArgumentException(line + " < 0")
