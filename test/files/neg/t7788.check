@@ -1,0 +1,8 @@
+t7788.scala:10: O.conf is not a valid implicit value for T[String] because:
+candidate implicit method conf in object O is shadowed by method conf in class C
+  implicitly[T[String]] // should report shadowing under -Xlog-implicits
+            ^
+t7788.scala:10: error: could not find implicit value for parameter e: T[String]
+  implicitly[T[String]] // should report shadowing under -Xlog-implicits
+            ^
+one error found

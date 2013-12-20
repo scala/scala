@@ -378,6 +378,8 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   private[this] final val singleton_<:< = new <:<[Any,Any] { def apply(x: Any): Any = x }
   // not in the <:< companion object because it is also
   // intended to subsume identity (which is no longer implicit)
+  // This implicit is subject to special treatment in implicit search:
+  //   - it is not deemed eligible for implicit views
   implicit def conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
 
   /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal.

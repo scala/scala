@@ -118,19 +118,25 @@ abstract class TreeGen extends macros.TreeBuilder {
   }
 
   /** Builds a reference to given symbol with given stable prefix. */
-  def mkAttributedRef(pre: Type, sym: Symbol): RefTree = {
-    val qual = mkAttributedQualifier(pre)
-    qual match {
-      case EmptyTree                                  => mkAttributedIdent(sym)
-      case This(clazz) if qual.symbol.isEffectiveRoot => mkAttributedIdent(sym)
-      case _                                          => mkAttributedSelect(qual, sym)
+  def mkAttributedRef(pre: Type, sym: Symbol): RefTree = mkAttributedRef(pre, sym, sym.name)
+  def mkAttributedRef(pre: Type, sym: Symbol, name: Name): RefTree = {
+    if (pre == NoPrefix) mkAttributedRef(sym, name)
+    else {
+      val qual = mkAttributedQualifier(pre)
+      qual match {
+        case EmptyTree                                  => mkAttributedIdent(sym, name)
+        case This(clazz) if qual.symbol.isEffectiveRoot => mkAttributedIdent(sym, name)
+        case _                                          => mkAttributedSelect(qual, sym, name)
+      }
     }
   }
 
   /** Builds a reference to given symbol. */
   def mkAttributedRef(sym: Symbol): RefTree =
-    if (sym.owner.isClass) mkAttributedRef(sym.owner.thisType, sym)
-    else mkAttributedIdent(sym)
+    mkAttributedRef(sym, sym.name)
+  def mkAttributedRef(sym: Symbol, name: Name): RefTree =
+    if (sym.owner.isClass) mkAttributedRef(sym.owner.thisType, sym, name)
+    else mkAttributedIdent(sym, name)
 
   def mkUnattributedRef(sym: Symbol): RefTree = mkUnattributedRef(sym.fullNameAsName('.'))
 
@@ -167,12 +173,17 @@ abstract class TreeGen extends macros.TreeBuilder {
     This(sym.name.toTypeName) setSymbol sym setType sym.thisType
 
   def mkAttributedIdent(sym: Symbol): RefTree =
-    Ident(sym.name) setSymbol sym setType sym.tpeHK
+    mkAttributedIdent(sym, sym.name)
+  def mkAttributedIdent(sym: Symbol, name: Name): RefTree =
+    Ident(name) setSymbol sym setType sym.tpeHK
 
-  def mkAttributedSelect(qual: Tree, sym: Symbol): RefTree = {
+  def mkAttributedSelect(qual: Tree, sym: Symbol): RefTree =
+    mkAttributedSelect(qual, sym, sym.name)
+
+  def mkAttributedSelect(qual: Tree, sym: Symbol, name: Name): RefTree = {
     // Tests involving the repl fail without the .isEmptyPackage condition.
-    if (qual.symbol != null && (qual.symbol.isEffectiveRoot || qual.symbol.isEmptyPackage))
-      mkAttributedIdent(sym)
+    if ((qual.symbol != null && (qual.symbol.isEffectiveRoot || qual.symbol.isEmptyPackage)) || qual == EmptyTree)
+      mkAttributedIdent(sym, name)
     else {
       // Have to recognize anytime a selection is made on a package
       // so it can be rewritten to foo.bar.`package`.name rather than
