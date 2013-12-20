@@ -90,31 +90,66 @@ public final class BoxesRunTime
     }
 
     public static char unboxToChar(Object c) {
-        return c == null ? 0 : ((java.lang.Character)c).charValue();
+        if (c == null)
+            return 0;
+        else if (c instanceof java.lang.Number)
+            return (char)((java.lang.Number)c).shortValue();
+        else
+            return ((java.lang.Character)c).charValue();
     }
 
     public static byte unboxToByte(Object b) {
-        return b == null ? 0 : ((java.lang.Byte)b).byteValue();
+        if (b == null)
+            return 0;
+        else if (b instanceof java.lang.Character)
+            return (byte)((java.lang.Character)b).charValue();
+        else
+            return ((java.lang.Number)b).byteValue();
     }
 
     public static short unboxToShort(Object s) {
-        return s == null ? 0 : ((java.lang.Short)s).shortValue();
+        if (s == null)
+            return 0;
+        else if (s instanceof java.lang.Character)
+            return (short)((java.lang.Character)s).charValue();
+        else
+            return ((java.lang.Number)s).shortValue();
     }
 
     public static int unboxToInt(Object i) {
-        return i == null ? 0 : ((java.lang.Integer)i).intValue();
+        if (i == null)
+            return 0;
+        else if (i instanceof java.lang.Character)
+            return (int)((java.lang.Character)i).charValue();
+        else
+            return ((java.lang.Number)i).intValue();
     }
 
     public static long unboxToLong(Object l) {
-        return l == null ? 0 : ((java.lang.Long)l).longValue();
+        if (l == null)
+            return 0L;
+        else if (l instanceof java.lang.Character)
+            return (long)((java.lang.Character)l).charValue();
+        else
+            return ((java.lang.Number)l).longValue();
     }
 
     public static float unboxToFloat(Object f) {
-        return f == null ? 0.0f : ((java.lang.Float)f).floatValue();
+        if (f == null)
+            return 0.0f;
+        else if (f instanceof java.lang.Character)
+            return (float)((java.lang.Character)f).charValue();
+        else
+            return ((java.lang.Number)f).floatValue();
     }
 
     public static double unboxToDouble(Object d) {
-        return d == null ? 0.0d : ((java.lang.Double)d).doubleValue();
+        if (d == null)
+            return 0.0d;
+        else if (d instanceof java.lang.Character)
+            return (double)((java.lang.Character)d).charValue();
+        else
+            return ((java.lang.Number)d).doubleValue();
     }
 
     /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
