@@ -611,7 +611,8 @@ trait Implicits {
             case lookup if !lookup.isSuccess => return fail(lookup.msg)
             case LookupSucceeded(qual, sym) =>
               if (!sym.alternatives.contains(info.sym))
-                return fail(s"candidate implicit ${info.sym.fullLocationString} is shadowed by ${sym.alternatives.head.fullLocationString}")
+                if (info.isPredefConforms) itree0
+                else return fail(s"candidate implicit ${info.sym.fullLocationString} is shadowed by ${sym.alternatives.head.fullLocationString}")
               else
                 // This tree is of the precise shape expected by the scala-refactoring test `importMethodFromSamePackage`.
                 // Semantically, `itree0` would suffice. Our test, `run/t7788-scala-refactoring-tree-shape`, pins down this behaviour.
