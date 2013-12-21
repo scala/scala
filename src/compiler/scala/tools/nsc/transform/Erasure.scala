@@ -827,9 +827,12 @@ abstract class Erasure extends AddInterfaces
             case TypeApply(Select(qual, _), List(targ)) =>
               if (qual.tpe <:< targ.tpe)
                 atPos(tree.pos) { Typed(qual, TypeTree(targ.tpe)) }
-              else if (isNumericValueClass(qual.tpe.typeSymbol) && isNumericValueClass(targ.tpe.typeSymbol))
+              else if (isNumericValueClass(qual.tpe.typeSymbol) && isNumericValueClass(targ.tpe.typeSymbol)) {
+                // todo: make this fail 2.12
+                unit.deprecationWarning(qual.pos, "using asInstanceOf to convert numeric value types is deprecated. " +
+                                        s"Use to${targ.tpe.typeSymbol.name} instead")
                 atPos(tree.pos)(numericConversion(qual, targ.tpe.typeSymbol))
-              else
+              } else
                 tree
           }
           // todo: also handle the case where the singleton type is buried in a compound
