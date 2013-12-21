@@ -923,7 +923,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   /** Return the specialized overload of `m`, in the given environment. */
   private def specializedOverload(owner: Symbol, sym: Symbol, env: TypeEnv, nameSymbol: Symbol = NoSymbol): Symbol = {
-    val newFlags = (sym.flags | SPECIALIZED) & ~(DEFERRED | CASEACCESSOR)
+    val newFlags = (sym.flags | SPECIALIZED) & ~(DEFERRED | CASEACCESSOR | LAZY)
     // this method properly duplicates the symbol's info
     val specname = specializedName(nameSymbol orElse sym, env)
     ( sym.cloneSymbol(owner, newFlags, newName = specname)
