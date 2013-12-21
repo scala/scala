@@ -204,9 +204,10 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     // inaccessible: this.TypeHistory
     this.TermName
     this.TypeName
-    this.BooleanFlag
     this.Liftable
     this.Unliftable
+    this.BooleanFlag
+    // inaccessible: this.CachedNames
     this.WeakTypeTag
     this.TypeTag
     this.Expr
