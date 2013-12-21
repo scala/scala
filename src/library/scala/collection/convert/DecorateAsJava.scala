@@ -287,7 +287,7 @@ trait DecorateAsJava {
    * will be visible via the Scala interface and vice versa.
    *
    * If the Scala `concurrent.Map` was previously obtained from an implicit or
-   * explicit call of `asConcurrentMap(java.util.concurrect.ConcurrentMap)`
+   * explicit call of `asConcurrentMap(java.util.concurrent.ConcurrentMap)`
    * then the original Java `ConcurrentMap` will be returned.
    *
    * @param m The Scala `concurrent.Map` to be converted.

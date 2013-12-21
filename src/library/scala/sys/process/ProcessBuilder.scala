@@ -62,7 +62,7 @@ import ProcessBuilder._
   * there's a few methods that create a new `ProcessBuilder` with a
   * pre-configured input or output. They are `#<`, `#>` and `#>>`, and may take
   * as input either another `ProcessBuilder` (like the pipe described above), or
-  * something else such as a `java.io.File` or a `java.lang.InputStream`.
+  * something else such as a `java.io.File` or a `java.io.InputStream`.
   * For example:
   * {{{
   * new URL("http://databinder.net/dispatch/About") #> "grep JSON" #>> new File("About_JSON") !
