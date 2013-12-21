@@ -1596,21 +1596,22 @@ TODO:
         <genman command="fsc, scala, scalac, scaladoc, scalap"
                 htmlout="${dist.dir}/doc/tools"
                 manout="${build-manual.dir}/genman"/>
-        <!-- On Windows source and target files can't be the same ! -->
-        <fixcrlf
-          srcdir="${build-manual.dir}/genman"
-          destdir="${dist.dir}/man"
-          eol="unix" includes="**/*.1"/>
-        <copy todir="${dist.dir}/doc/tools" overwrite="true">
-          <fileset dir="${src.dir}/manual/scala/tools/docutil/resources">
-            <include name="**/*.html"/>
-            <include name="**/*.css"/>
-            <include name="**/*.gif"/>
-            <include name="**/*.png"/>
-          </fileset>
-        </copy>
       </do>
     </staged-uptodate>
+
+    <!-- On Windows source and target files can't be the same ! -->
+    <fixcrlf
+      srcdir="${build-manual.dir}/genman"
+      destdir="${dist.dir}/man"
+      eol="unix" includes="**/*.1"/>
+    <copy todir="${dist.dir}/doc/tools" overwrite="true">
+      <fileset dir="${src.dir}/manual/scala/tools/docutil/resources">
+        <include name="**/*.html"/>
+        <include name="**/*.css"/>
+        <include name="**/*.gif"/>
+        <include name="**/*.png"/>
+      </fileset>
+    </copy>
   </target>
 
   <!-- lib/ and src/ (jars: classes and sources) -->
