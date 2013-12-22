@@ -1175,13 +1175,17 @@ TODO:
     <mkdir dir="${build-osgi.dir}"/>
 
     <uptodate property="osgi.bundles.available" targetfile="${build-osgi.dir}/bundles.core.complete">
-      <srcfiles dir="${basedir}">
-        <include name="build.xml"/>
-        <include name="src/build/bnd/*.bnd"/>
-        <include name="${library.jar}"/>
-        <include name="${reflect.jar}"/>
-        <include name="${compiler.jar}"/>
-      </srcfiles>
+      <srcresources>
+        <fileset dir="${basedir}">
+          <include name="build.xml"/>
+          <include name="src/build/bnd/*.bnd"/>
+        </fileset>
+        <filelist>
+          <file name="${library.jar}"/>
+          <file name="${reflect.jar}"/>
+          <file name="${compiler.jar}"/>
+        </filelist>
+      </srcresources>
     </uptodate>
 
     <if><not><isset property="osgi.bundles.available"/></not><then>
@@ -1209,23 +1213,26 @@ TODO:
 
   <target name="osgi.done" depends="pack.done, osgi.core">
     <uptodate property="osgi.all.bundles.available" targetfile="${build-osgi.dir}/bundles.all.complete">
-      <srcfiles dir="${basedir}">
-        <include name="build.xml"/>
-        <include name="src/build/bnd/*.bnd"/>
+      <srcresources>
+        <fileset dir="${basedir}">
+          <include name="build.xml"/>
+          <include name="src/build/bnd/*.bnd"/>
+        </fileset>
+        <filelist>
+            <!-- TODO modularize compiler
+            <include name="${interactive.jar}"/>
+            <include name="${scaladoc.jar}"/>
+            -->
 
-        <!-- TODO modularize compiler
-        <include name="${interactive.jar}"/>
-        <include name="${scaladoc.jar}"/>
-        -->
+          <file name="${actors.jar}"/>
 
-        <include name="${actors.jar}"/>
-
-        <include name="${continuations-plugin.jar}"/>
-        <include name="${continuations-library.jar}"/>
-        <include name="${parser-combinators.jar}"/>
-        <include name="${xml.jar}"/>
-        <include name="${swing.jar}"/>
-      </srcfiles>
+          <file name="${continuations-plugin.jar}"/>
+          <file name="${continuations-library.jar}"/>
+          <file name="${parser-combinators.jar}"/>
+          <file name="${xml.jar}"/>
+          <file name="${swing.jar}"/>
+        </filelist>
+      </srcresources>
     </uptodate>
 
     <if><not><isset property="osgi.all.bundles.available"/></not><then>
