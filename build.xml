@@ -1178,6 +1178,7 @@ TODO:
       <srcresources>
         <fileset dir="${basedir}">
           <include name="build.xml"/>
+          <include name="build-ant-macros.xml"/>
           <include name="src/build/bnd/*.bnd"/>
         </fileset>
         <filelist>
@@ -1216,6 +1217,7 @@ TODO:
       <srcresources>
         <fileset dir="${basedir}">
           <include name="build.xml"/>
+          <include name="build-ant-macros.xml"/>
           <include name="src/build/bnd/*.bnd"/>
         </fileset>
         <filelist>
