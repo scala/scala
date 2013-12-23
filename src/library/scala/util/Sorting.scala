@@ -141,14 +141,14 @@ object Sorting {
         var done = false
         while (!done) {
           while (b <= c && x(b) <= v) {
-            if (x(b) == v) {
+            if (x(b) equiv v) {
               swap(a, b)
               a += 1
             }
             b += 1
           }
           while (c >= b && x(c) >= v) {
-            if (x(c) == v) {
+            if (x(c) equiv v) {
               swap(c, d)
               d -= 1
             }
