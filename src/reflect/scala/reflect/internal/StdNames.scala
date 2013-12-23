@@ -308,6 +308,7 @@ trait StdNames {
 
     // Compiler internal names
     val ANYname: NameType                  = "<anyname>"
+    val ARGUMENT: NameType                 = "<argument>"
     val CONSTRUCTOR: NameType              = "<init>"
     val DEFAULT_CASE: NameType             = "defaultCase$"
     val EQEQ_LOCAL_VAR: NameType           = "eqEqTemp$"
