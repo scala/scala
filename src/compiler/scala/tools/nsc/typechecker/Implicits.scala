@@ -175,6 +175,8 @@ trait Implicits {
     def isAmbiguousFailure = false
     def isDivergent        = false
     final def isSuccess    = !isFailure
+    final def flatMap(f: Tree => SearchResult): SearchResult = if (isFailure) this else f(tree)
+    final def map(f: Tree => Tree): SearchResult = if (isFailure) this else new SearchResult(f(tree), subst)
   }
 
   lazy val SearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter) {
@@ -597,132 +599,145 @@ trait Implicits {
       //       renamed import. Passing that name explicitly here results in `Ident(info.name).setSymbol(info.sym)`.
       //       We could just ignore that name and bind with just the symbol, but the resulting code would be prone
       //       to different results after `resetLocalAttrs` and a retypecheck.
-      val itree0 = atPos(pos.focus)(
-        gen.mkAttributedRef(info.pre, info.sym, info.name)
-      )
+      val itree0 = gen.mkAttributedRef(info.pre, info.sym, info.name)
 
+      val ipos = pos.focus
       def fail(reason: String): SearchResult = failure(itree0, reason)
+      def success(tree: Tree): SearchResult = new SearchResult(atPos(pos.focus)(tree), EmptyTreeTypeSubstituter)
 
-      try {
-        val itreeReshaped = if (isLocal && !isScalaDoc) {
-          // SI-4270 SI-5376
-          val lookup = context.lookupSymbol(info.name, symbolQualifiesAsIdent(EXPRmode) _)
-          (lookup : @unchecked) match {
-            case lookup if !lookup.isSuccess => return fail(lookup.msg)
-            case LookupSucceeded(qual, sym) =>
-              if (!sym.alternatives.contains(info.sym))
-                if (info.isPredefConforms) itree0
-                else return fail(s"candidate implicit ${info.sym.fullLocationString} is shadowed by ${sym.alternatives.head.fullLocationString}")
-              else
-                // This tree is of the precise shape expected by the scala-refactoring test `importMethodFromSamePackage`.
-                // Semantically, `itree0` would suffice. Our test, `run/t7788-scala-refactoring-tree-shape`, pins down this behaviour.
-                atPos(pos.focus)(gen.mkAttributedSelect(qual, sym))
-          }
-        } else itree0
-
-        val itreeSuppressed = if (isBlackbox(info.sym)) suppressMacroExpansion(itreeReshaped) else itreeReshaped
-        typingLog("considering", typeDebug.ptTree(itreeSuppressed))
-
-        val itreeAdapted = if (isView) {
-          val Function1(arg1, arg2) = pt
-          val typedView = typed1(
-            atPos(itree0.pos)(Apply(itreeSuppressed, List(Ident(nme.ARGUMENT) setType approximate(arg1)))),
-            EXPRmode,
-            approximate(arg2)
-          ) match {
-            // try to infer implicit parameters immediately in order to:
-            //   1) guide type inference for implicit views
-            //   2) discard ineligible views right away instead of risking spurious ambiguous implicits
-            //
-            // this is an improvement of the state of the art that brings consistency to implicit resolution rules
-            // (and also helps fundep materialization to be applicable to implicit views)
-            //
-            // there's one caveat though. we need to turn this behavior off for scaladoc
-            // because scaladoc usually doesn't know the entire story
-            // and is just interested in views that are potentially applicable
-            // for instance, if we have `class C[T]` and `implicit def conv[T: Numeric](c: C[T]) = ???`
-            // then Scaladoc will give us something of type `C[T]`, and it would like to know
-            // that `conv` is potentially available under such and such conditions
-            case tree if isImplicitMethodType(tree.tpe) && !isScalaDoc => applyImplicitArgs(tree)
-            case tree => tree
-          }
-          treeInfo.dissectApplied(typedView).callee
+      def inScopeImplicit: SearchResult = {
+        // SI-4270 SI-5376
+        val lookup = context.lookupSymbol(info.name, symbolQualifiesAsIdent(EXPRmode) _)
+        (lookup : @unchecked) match {
+          case lookup if !lookup.isSuccess => fail(lookup.msg)
+          case LookupSucceeded(qual, sym) =>
+            if (!sym.alternatives.contains(info.sym))
+              if (info.isPredefConforms) success(itree0)
+              else fail(s"candidate implicit ${info.sym.fullLocationString} is shadowed by ${sym.alternatives.head.fullLocationString}")
+            else
+              // This tree is of the precise shape expected by the scala-refactoring test `importMethodFromSamePackage`.
+              // Semantically, `itree0` would suffice. Our test, `run/t7788-scala-refactoring-tree-shape`, pins down this behaviour.
+              success(atPos(pos.focus)(gen.mkAttributedSelect(qual, sym)))
         }
-        else {
-          val adapted = adapt(typed1(itreeSuppressed, EXPRmode, wildPt), EXPRmode, wildPt)
-          typingStack.showAdapt(itree0, adapted, pt, context)
-          adapted
+      }
+      def applyView(t: Tree): Tree = {
+        require(isView)
+        val Function1(arg1, arg2) = pt
+        val typedView = typed1(
+          atPos(ipos)(Apply(t, List(Ident(nme.ARGUMENT) setType approximate(arg1)))),
+          EXPRmode,
+          approximate(arg2)
+        ) match {
+          // try to infer implicit parameters immediately in order to:
+          //   1) guide type inference for implicit views
+          //   2) discard ineligible views right away instead of risking spurious ambiguous implicits
+          //
+          // this is an improvement of the state of the art that brings consistency to implicit resolution rules
+          // (and also helps fundep materialization to be applicable to implicit views)
+          //
+          // there's one caveat though. we need to turn this behavior off for scaladoc
+          // because scaladoc usually doesn't know the entire story
+          // and is just interested in views that are potentially applicable
+          // for instance, if we have `class C[T]` and `implicit def conv[T: Numeric](c: C[T]) = ???`
+          // then Scaladoc will give us something of type `C[T]`, and it would like to know
+          // that `conv` is potentially available under such and such conditions
+          case tree if isImplicitMethodType(tree.tpe) && !isScalaDoc => applyImplicitArgs(tree)
+          case tree => tree
         }
-
-        if (Statistics.canEnable) Statistics.incCounter(typedImplicits)
-
+        treeInfo.dissectApplied(typedView).callee
+      }
+      
+      def adaptToWildPt(t: Tree): Tree = {
+        val adapted = adapt(typed1(t, EXPRmode, wildPt), EXPRmode, wildPt)
+        typingStack.showAdapt(t, adapted, pt, context)
+        adapted
+      }
+      def adaptImplicit(t: Tree): SearchResult = {
+        val result = if (isView) applyView(t) else adaptToWildPt(t)
         if (context.hasErrors)
           fail(context.firstError.get.errMsg)
-        else if (itreeAdapted.isErroneous)
+        else if (result.isErroneous)
           fail("error typechecking implicit candidate")
-        else {
-          val tvars = undetParams map freshVar
-          def ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
+        else
+          new SearchResult(result, EmptyTreeTypeSubstituter)
+      }
+      
+      def inferTypeArguments(itreeAdapted: Tree): SearchResult = {
+        val tvars = undetParams map freshVar
+        def ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
 
-          if (matchesPt(itreeAdapted.tpe, ptInstantiated, undetParams)) {
-            if (tvars.nonEmpty)
-              typingLog("solve", ptLine("tvars" -> tvars, "tvars.constr" -> tvars.map(_.constr)))
+        if (matchesPt(itreeAdapted.tpe, ptInstantiated, undetParams)) {
+          if (tvars.nonEmpty)
+            typingLog("solve", ptLine("tvars" -> tvars, "tvars.constr" -> tvars.map(_.constr)))
 
-            val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt), upper = false, lubDepth(itreeAdapted.tpe :: pt :: Nil))
+          val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt), upper = false, lubDepth(itreeAdapted.tpe :: pt :: Nil))
 
-            // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
-            checkBounds(itreeAdapted, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
-            context.firstError match {
-              case Some(err) =>
-                return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
-              case None      =>
-            }
-
-            // filter out failures from type inference, don't want to remove them from undetParams!
-            // we must be conservative in leaving type params in undetparams
-            // prototype == WildcardType: want to remove all inferred Nothings
-            val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(undetParams, tvars, targs)
-
-            val subst: TreeTypeSubstituter =
-              if (okParams.isEmpty) EmptyTreeTypeSubstituter
-              else {
-                val subst = new TreeTypeSubstituter(okParams, okArgs)
-                subst traverse itreeAdapted
-                notifyUndetparamsInferred(okParams, okArgs)
-                subst
-              }
-
-            // #2421b: since type inference (which may have been
-            // performed during implicit search) does not check whether
-            // inferred arguments meet the bounds of the corresponding
-            // parameter (see note in solvedTypes), must check again
-            // here:
-            // TODO: I would prefer to just call typed instead of
-            // duplicating the code here, but this is probably a
-            // hotspot (and you can't just call typed, need to force
-            // re-typecheck)
-            //
-            // This is just called for the side effect of error detection,
-            // see SI-6966 to see what goes wrong if we use the result of this
-            // as the SearchResult.
-            itreeAdapted match {
-              case TypeApply(fun, args)           => typedTypeApply(itreeAdapted, EXPRmode, fun, args)
-              case Apply(TypeApply(fun, args), _) => typedTypeApply(itreeAdapted, EXPRmode, fun, args) // t2421c
-              case t                              => t
-            }
-
-            context.firstError match {
-              case Some(err) =>
-                fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
-              case None      =>
-                val result = new SearchResult(unsuppressMacroExpansion(itreeAdapted), subst)
-                if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
-                typingLog("success", s"inferred value of type $ptInstantiated is $result")
-                result
-            }
+          // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
+          checkBounds(itreeAdapted, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
+          context.firstError match {
+            case Some(err) =>
+              return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
+            case None      =>
           }
-          else fail("incompatible: %s does not match expected type %s".format(itreeAdapted.tpe, ptInstantiated))
+
+          // filter out failures from type inference, don't want to remove them from undetParams!
+          // we must be conservative in leaving type params in undetparams
+          // prototype == WildcardType: want to remove all inferred Nothings
+          val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(undetParams, tvars, targs)
+
+          val subst: TreeTypeSubstituter =
+            if (okParams.isEmpty) EmptyTreeTypeSubstituter
+            else {
+              val subst = new TreeTypeSubstituter(okParams, okArgs)
+              subst traverse itreeAdapted
+              notifyUndetparamsInferred(okParams, okArgs)
+              subst
+            }
+
+          // #2421b: since type inference (which may have been
+          // performed during implicit search) does not check whether
+          // inferred arguments meet the bounds of the corresponding
+          // parameter (see note in solvedTypes), must check again
+          // here:
+          // TODO: I would prefer to just call typed instead of
+          // duplicating the code here, but this is probably a
+          // hotspot (and you can't just call typed, need to force
+          // re-typecheck)
+          //
+          // This is just called for the side effect of error detection,
+          // see SI-6966 to see what goes wrong if we use the result of this
+          // as the SearchResult.
+          itreeAdapted match {
+            case TypeApply(fun, args)           => typedTypeApply(itreeAdapted, EXPRmode, fun, args)
+            case Apply(TypeApply(fun, args), _) => typedTypeApply(itreeAdapted, EXPRmode, fun, args) // t2421c
+            case t                              => t
+          }
+
+          context.firstError match {
+            case Some(err) =>
+              fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
+            case None      =>
+              val result = new SearchResult(unsuppressMacroExpansion(itreeAdapted), subst)
+              if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
+              typingLog("success", s"inferred value of type $ptInstantiated is $result")
+              result
+          }
         }
+        else fail("incompatible: %s does not match expected type %s".format(itreeAdapted.tpe, ptInstantiated))
+      }
+
+      def suppressBlackboxExpansion(t: Tree) =
+        if (isBlackbox(info.sym)) suppressMacroExpansion(t) else t
+
+      if (Statistics.canEnable) Statistics.incCounter(typedImplicits)
+
+      try {
+        for {
+          itreeReshaped   <- if (isLocal && !isScalaDoc) inScopeImplicit else success(itree0)
+          itreeAdapted    <- adaptImplicit(suppressBlackboxExpansion(itreeReshaped))
+          itree           <- inferTypeArguments(itreeAdapted)
+        } yield itree
+        // typingLog("considering", typeDebug.ptTree(itreeSuppressed))
       }
       catch {
         case ex: TypeError =>
