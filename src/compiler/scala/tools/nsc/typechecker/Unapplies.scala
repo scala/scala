@@ -43,37 +43,6 @@ trait Unapplies extends ast.TreeDSL {
     def unapply(tp: Type): Option[Symbol] = unapplyMember(tp).toOption
   }
 
-  // NOTE: Do not unprivate this method! Even if you think you need it, you most likely don't need it.
-  //
-  // resetAllAttrs, copyUntyped and likes irreparably break certain important tree shapes (see SI-5464 for details),
-  // including a very common case of TypeTree's without originals, which means that every call to resetAllAttrs
-  // breaks code that emits such trees.
-  //
-  // However there are situations when we want to reuse already attributed trees somewhere else
-  // (e.g. for case class synthesis, for auxiliary codegen that desugars default parameters, etc), and then the only way to go
-  // in the current architecture is to erase attributes. That's a sad lose-lose situation.
-  //
-  // But not all hope is lost! First of all, resetLocalAttrs is oftentimes good enough (e.g. see addDefaultGetters),
-  // and since it's much less destructive that resetAllAttrs, the breakages that it causes are going to manifest themselves
-  // much less frequently. Secondly, research into hygiene promises to give us a better way of doing bindings, so let's cross our fingers.
-  private def copyUntyped[T <: Tree](tree: T): T = {
-    object UnTyper extends Traverser {
-      override def traverse(tree: Tree) = {
-        if (tree.canHaveAttrs) {
-          tree.clearType()
-          if (tree.hasSymbolField) tree.symbol = NoSymbol
-        }
-        super.traverse(tree)
-      }
-    }
-    returning[T](tree.duplicate)(UnTyper traverse _)
-  }
-
-  // NOTE: do not unprivate this method
-  // see comments for copyUntyped for more information
-  private def copyUntypedInvariant(td: TypeDef): TypeDef =
-    copyTypeDef(copyUntyped(td))(mods = td.mods &~ (COVARIANT | CONTRAVARIANT))
-
   private def toIdent(x: DefTree) = Ident(x.name) setPos x.pos.focus
 
   private def classType(cdef: ClassDef, tparams: List[TypeDef]): Tree = {
@@ -83,8 +52,15 @@ trait Unapplies extends ast.TreeDSL {
   }
 
   private def constrParamss(cdef: ClassDef): List[List[ValDef]] = {
-    val DefDef(_, _, _, vparamss, _, _) = treeInfo firstConstructor cdef.impl.body
-    mmap(vparamss)(copyUntyped[ValDef])
+    val ClassDef(_, _, _, Template(_, _, body)) = resetLocalAttrs(cdef.duplicate)
+    val DefDef(_, _, _, vparamss, _, _) = treeInfo firstConstructor body
+    vparamss
+  }
+
+  private def constrTparamsInvariant(cdef: ClassDef): List[TypeDef] = {
+    val ClassDef(_, _, tparams, _) = resetLocalAttrs(cdef.duplicate)
+    val tparamsInvariant = tparams.map(tparam => copyTypeDef(tparam)(mods = tparam.mods &~ (COVARIANT | CONTRAVARIANT)))
+    tparamsInvariant
   }
 
   /** The return value of an unapply method of a case class C[Ts]
@@ -150,7 +126,7 @@ trait Unapplies extends ast.TreeDSL {
   /** The apply method corresponding to a case class
    */
   def factoryMeth(mods: Modifiers, name: TermName, cdef: ClassDef): DefDef = {
-    val tparams   = cdef.tparams map copyUntypedInvariant
+    val tparams   = constrTparamsInvariant(cdef)
     val cparamss  = constrParamss(cdef)
     def classtpe = classType(cdef, tparams)
     atPos(cdef.pos.focus)(
@@ -166,7 +142,7 @@ trait Unapplies extends ast.TreeDSL {
   /** The unapply method corresponding to a case class
    */
   def caseModuleUnapplyMeth(cdef: ClassDef): DefDef = {
-    val tparams   = cdef.tparams map copyUntypedInvariant
+    val tparams   = constrTparamsInvariant(cdef)
     val method    = constrParamss(cdef) match {
       case xs :: _ if xs.nonEmpty && isRepeatedParamType(xs.last.tpt) => nme.unapplySeq
       case _                                                          => nme.unapply
@@ -221,7 +197,7 @@ trait Unapplies extends ast.TreeDSL {
         treeCopy.ValDef(vd, Modifiers(flags), vd.name, tpt, rhs)
       }
 
-      val tparams = cdef.tparams map copyUntypedInvariant
+      val tparams = constrTparamsInvariant(cdef)
       val paramss = classParamss match {
         case Nil => Nil
         case ps :: pss =>
