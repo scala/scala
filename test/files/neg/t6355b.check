@@ -1,0 +1,11 @@
+t6355b.scala:14: error: value applyDynamic is not a member of A
+error after rewriting to x.<applyDynamic: error>("bippy")
+possible cause: maybe a wrong Dynamic method signature?
+    println(x.bippy(42))
+            ^
+t6355b.scala:15: error: value applyDynamic is not a member of A
+error after rewriting to x.<applyDynamic: error>("bippy")
+possible cause: maybe a wrong Dynamic method signature?
+    println(x.bippy("42"))
+            ^
+two errors found
