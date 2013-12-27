@@ -1,0 +1,4 @@
+Test_2.scala:16: error: could not find implicit value for parameter generic: Generic.Aux[Test.C,Repr]
+  reprify(C(40, 2))
+         ^
+one error found
