@@ -3369,7 +3369,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               (args exists isNamedArg) ||     // uses a named argument
               isNamedApplyBlock(fun)) {       // fun was transformed to a named apply block =>
                                               // integrate this application into the block
-            if (dyna.isApplyDynamicNamed(fun)) dyna.typedNamedApply(tree, fun, args, mode, pt)
+            if (dyna.isApplyDynamicNamed(fun) && isDynamicRewrite(fun)) dyna.typedNamedApply(tree, fun, args, mode, pt)
             else tryNamesDefaults
           } else {
             val tparams = context.extractUndetparams()
@@ -3927,7 +3927,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             gen.mkTuple(List(CODE.LIT(""), arg))
         }
 
-        val t = treeCopy.Apply(orig, fun, args map argToBinding)
+        val t = treeCopy.Apply(orig, unmarkDynamicRewrite(fun), args map argToBinding)
         wrapErrors(t, _.typed(t, mode, pt))
       }
 
@@ -3992,7 +3992,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val nameStringLit = atPos(treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent) {
                 Literal(Constant(name.decode))
               }
-              atPos(qual.pos)(Apply(fun, List(nameStringLit)))
+              markDynamicRewrite(atPos(qual.pos)(Apply(fun, List(nameStringLit))))
             case _ =>
               setError(tree)
           }

@@ -151,4 +151,18 @@ trait StdAttachments {
    *  because someone has put MacroImplRefAttachment on it.
    */
   def isMacroImplRef(tree: Tree): Boolean = tree.attachments.get[MacroImplRefAttachment.type].isDefined
+
+  /** Since mkInvoke, the applyDynamic/selectDynamic/etc desugarer, is disconnected
+   *  from typedNamedApply, the applyDynamicNamed argument rewriter, the latter
+   *  doesn’t know whether it needs to apply the rewriting because the application
+   *  has just been desugared or it needs to hold on because it’s already performed
+   *  a desugaring on this tree. This has led to SI-8006.
+   *
+   *  This attachment solves the problem by providing a means of communication
+   *  between the two Dynamic desugarers, which solves the aforementioned issue.
+   */
+  case object DynamicRewriteAttachment
+  def markDynamicRewrite(tree: Tree): Tree = tree.updateAttachment(DynamicRewriteAttachment)
+  def unmarkDynamicRewrite(tree: Tree): Tree = tree.removeAttachment[DynamicRewriteAttachment.type]
+  def isDynamicRewrite(tree: Tree): Boolean = tree.attachments.get[DynamicRewriteAttachment.type].isDefined
 }
