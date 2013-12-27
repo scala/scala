@@ -3953,9 +3953,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def mkInvoke(cxTree: Tree, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
         debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
         val treeInfo.Applied(treeSelection, _, _) = tree
-        def isDesugaredApply = treeSelection match {
-          case Select(`qual`, nme.apply) => true
-          case _                         => false
+        def isDesugaredApply = {
+          val protoQual = macroExpandee(qual) orElse qual
+          treeSelection match {
+            case Select(`protoQual`, nme.apply) => true
+            case _                              => false
+          }
         }
         acceptsApplyDynamicWithType(qual, name) map { tp =>
           // If tp == NoType, pass only explicit type arguments to applyXXX.  Not used at all
