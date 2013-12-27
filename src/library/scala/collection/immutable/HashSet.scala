@@ -282,28 +282,10 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def iterator = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
       final override def getElem(cc: AnyRef): A = cc.asInstanceOf[HashSet1[A]].key
     }
-/*
 
-def time(block: =>Unit) = { val t0 = System.nanoTime; block; println("elapsed: " + (System.nanoTime - t0)/1000000.0) }
-var mOld = OldHashSet.empty[Int]
-var mNew = HashSet.empty[Int]
-time { for (i <- 0 until 100000) mOld = mOld + i }
-time { for (i <- 0 until 100000) mOld = mOld + i }
-time { for (i <- 0 until 100000) mOld = mOld + i }
-time { for (i <- 0 until 100000) mNew = mNew + i }
-time { for (i <- 0 until 100000) mNew = mNew + i }
-time { for (i <- 0 until 100000) mNew = mNew + i }
-time { mOld.iterator.foreach( p => ()) }
-time { mOld.iterator.foreach( p => ()) }
-time { mOld.iterator.foreach( p => ()) }
-time { mNew.iterator.foreach( p => ()) }
-time { mNew.iterator.foreach( p => ()) }
-time { mNew.iterator.foreach( p => ()) }
-
-*/
     override def foreach[U](f: A =>  U): Unit = {
       var i = 0
-  while (i < elems.length) {
+      while (i < elems.length) {
         elems(i).foreach(f)
         i += 1
       }
