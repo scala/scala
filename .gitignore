@@ -34,6 +34,7 @@
 /out/
 /bin/
 /sandbox/
+/.ant-targets-build.xml
 
 # eclipse, intellij
 /.classpath
