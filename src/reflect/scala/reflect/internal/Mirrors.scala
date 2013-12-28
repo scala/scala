@@ -281,7 +281,6 @@ trait Mirrors extends api.Mirrors {
 
     class RootPackage extends ModuleSymbol(rootOwner, NoPosition, nme.ROOTPKG) with RootSymbol {
       this setInfo NullaryMethodType(RootClass.tpe)
-      RootClass.sourceModule = this
 
       override def isRootPackage = true
     }
@@ -296,6 +295,7 @@ trait Mirrors extends api.Mirrors {
       override def isRoot            = true
       override def isEffectiveRoot   = true
       override def isNestedClass     = false
+      override def sourceModule      = RootPackage
     }
 
     // This is <root>, the actual root of everything except the package _root_.
@@ -316,6 +316,7 @@ trait Mirrors extends api.Mirrors {
     class EmptyPackageClass extends PackageClassSymbol(RootClass, NoPosition, tpnme.EMPTY_PACKAGE_NAME) with WellKnownSymbol {
       override def isEffectiveRoot     = true
       override def isEmptyPackageClass = true
+      override def sourceModule        = EmptyPackage
     }
 
     lazy val EmptyPackageClass = new EmptyPackageClass
