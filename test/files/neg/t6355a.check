@@ -1,0 +1,7 @@
+t6355a.scala:12: error: implementation restriction: applyDynamic cannot be overloaded except by methods with different numbers of type parameters, e.g. applyDynamic[T1](method: String)(arg: T1) and applyDynamic[T1, T2](method: String)(arg1: T1, arg2: T2)
+  def applyDynamic(name: String)(x: Int): Int = 2
+      ^
+t6355a.scala:18: error: implementation restriction: applyDynamic cannot be overloaded except by methods with different numbers of type parameters, e.g. applyDynamic[T1](method: String)(arg: T1) and applyDynamic[T1, T2](method: String)(arg1: T1, arg2: T2)
+  def applyDynamic[T1, T2](name: String)(x: String, y: T1, z: T2): Int = 3
+      ^
+two errors found
