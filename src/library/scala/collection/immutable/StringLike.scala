@@ -164,8 +164,8 @@ self =>
    *  @return               the resulting string
    */
   def replaceAllLiterally(literal: String, replacement: String): String = {
-    val arg1 = java.util.regex.Pattern.quote(literal)
-    val arg2 = java.util.regex.Matcher.quoteReplacement(replacement)
+    val arg1 = Regex.quote(literal)
+    val arg2 = Regex.quoteReplacement(replacement)
 
     toString.replaceAll(arg1, arg2)
   }

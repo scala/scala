@@ -11,7 +11,6 @@ import java.lang.{ ClassLoader => JavaClassLoader, Iterable => JIterable }
 import scala.tools.nsc.util.ScalaClassLoader
 import java.io.{ ByteArrayInputStream, CharArrayWriter, FileNotFoundException, PrintWriter, Writer }
 import java.util.{ Locale }
-import java.util.regex.Pattern
 import java.util.concurrent.ConcurrentLinkedQueue
 import javax.tools.{ Diagnostic, DiagnosticCollector, DiagnosticListener,
                      ForwardingJavaFileManager, JavaFileManager, JavaFileObject,
@@ -20,6 +19,7 @@ import scala.reflect.io.{ AbstractFile, Directory, File, Path }
 import scala.io.Source
 import scala.util.{ Try, Success, Failure }
 import scala.util.Properties.lineSeparator
+import scala.util.matching.Regex
 import scala.collection.JavaConverters
 import scala.collection.generic.Clearable
 import java.net.URL
@@ -608,12 +608,12 @@ object JavapClass {
 
     // class k, candidate f without prefix
     def isFunOfClass(k: String, f: String) = {
-      val p = (s"${Pattern quote k}\\$$+anonfun").r
+      val p = (s"${Regex quote k}\\$$+anonfun").r
       (p findPrefixOf f).nonEmpty
     }
     // class k, candidate f without prefix, method m
     def isFunOfMethod(k: String, m: String, f: String) = {
-      val p = (s"${Pattern quote k}\\$$+anonfun\\$$${Pattern quote m}\\$$").r
+      val p = (s"${Regex quote k}\\$$+anonfun\\$$${Regex quote m}\\$$").r
       (p findPrefixOf f).nonEmpty
     }
     def isFunOfTarget(k: String, m: Option[String], f: String) =

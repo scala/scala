@@ -11,7 +11,7 @@ package scala
 import scala.collection.{ mutable, immutable, generic, SortedSetLike, AbstractSet }
 import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
 import scala.reflect.NameTransformer._
-import java.util.regex.Pattern
+import scala.util.matching.Regex
 
 /** Defines a finite set of values specific to the enumeration. Typically
  *  these values enumerate all possible forms something can take and provide
@@ -64,7 +64,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
    */
   override def toString =
     ((getClass.getName stripSuffix MODULE_SUFFIX_STRING split '.').last split
-       Pattern.quote(NAME_JOIN_STRING)).last
+       Regex.quote(NAME_JOIN_STRING)).last
 
   /** The mapping from the integer used to identify values to the actual
     * values. */
