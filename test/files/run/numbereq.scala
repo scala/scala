@@ -31,6 +31,24 @@ object Test {
     ).flatten
   }
 
+  // Don't necessarily expect BigDecimal created from BigInt to agree with Double here.
+  def isIffy(x: Any, y: Any, canSwap: Boolean = true): Boolean = x match {
+    case bd: BigDecimal => y match {
+      case _: Float | _: Double => bd.toString.length > 15
+      case _ => false
+    }
+    case _ => canSwap && isIffy(y, x, false)
+  }
+
+  // Don't necessarily expect BigInt to agree with Float/Double beyond a Long
+  def isIffyB(x: Any, y: Any, canSwap: Boolean = true): Boolean = x match {
+    case bi: BigInt => y match {
+      case _: Float | _: Double => bi < Long.MinValue || bi > Long.MaxValue
+      case _ => false
+    }
+    case _ => canSwap && isIffyB(y, x, false)
+  }
+
   def main(args: Array[String]): Unit = {
     val ints    = (0 to 15).toList map (Short.MinValue >> _)
     val ints2   = ints map (x => -x)
@@ -46,7 +64,6 @@ object Test {
     val sets = setneg1 ++ setneg2 ++ List(zero) ++ setpos1 ++ setpos2
 
     for (set <- sets ; x <- set ; y <- set) {
-      // println("'%s' == '%s' (%s == %s) (%s == %s)".format(x, y, x.hashCode, y.hashCode, x.##, y.##))
       assert(x == y, "%s/%s != %s/%s".format(x, x.getClass, y, y.getClass))
       assert(x.## == y.##, "%s != %s".format(x.getClass, y.getClass))
     }
@@ -64,9 +81,11 @@ object Test {
     val sets2 = setneg1 ++ setneg1b ++ setneg2 ++ setneg2b ++ List(zero) ++ setpos1 ++ setpos1b ++ setpos2 ++ setpos2b
 
     for (set <- sets2 ; x <- set ; y <- set) {
-//      println("'%s' == '%s' (%s == %s) (%s == %s)".format(x, y, x.hashCode, y.hashCode, x.##, y.##))
-      assert(x == y, "%s/%s != %s/%s".format(x, x.getClass, y, y.getClass))
-//      assert(x.## == y.##, "%s != %s".format(x.getClass, y.getClass))    Disable until Double.## is fixed (SI-5640)
+      if (!isIffy(x,y)) {
+        assert(x == y, "%s/%s != %s/%s".format(x, x.getClass, y, y.getClass))
+        // The following is blocked by SI-8150
+        // if (!isIffyB(x,y)) assert(x.## == y.##, "%x/%s != %x/%s from %s.## and %s.##".format(x.##, x.getClass, y.##, y.getClass, x, y))
+      }
     }
   }
 }

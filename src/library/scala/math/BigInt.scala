@@ -119,7 +119,7 @@ final class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNum
    */
   override def equals(that: Any): Boolean = that match {
     case that: BigInt     => this equals that
-    case that: BigDecimal => that.toBigIntExact exists (this equals _)
+    case that: BigDecimal => that equals this
     case that: Double     => isValidDouble && toDouble == that
     case that: Float      => isValidFloat && toFloat == that
     case x                => isValidLong && unifiedPrimitiveEquals(x)
