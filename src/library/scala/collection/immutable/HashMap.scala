@@ -180,21 +180,6 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def get0(key: A, hash: Int, level: Int): Option[B] =
       if (hash == this.hash && key == this.key) Some(value) else None
 
-    // override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1)): HashMap[A, B1] =
-    //   if (hash == this.hash && key == this.key) new HashMap1(key, hash, value, kv)
-    //   else {
-    //     var thatindex = (hash >>> level) & 0x1f
-    //     var thisindex = (this.hash >>> level) & 0x1f
-    //     if (hash != this.hash) {
-    //       --new HashTrieMap[A,B1](level+5, this, new HashMap1(key, hash, value, kv))
-    //       val m = new HashTrieMap[A,B1](0,new Array[HashMap[A,B1]](0),0) // TODO: could save array alloc
-    //       m.updated0(this.key, this.hash, level, this.value, this.kv).updated0(key, hash, level, value, kv)  TODO and it will
-    //     } else {
-    //        32-bit hash collision (rare, but not impossible)
-    //       new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
-    //     }
-    //   }
-
     private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
       if (hash == this.hash && key == this.key ) {
         if (merger eq null) {
@@ -283,24 +268,6 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     // assert(Integer.bitCount(bitmap) == elems.length)
     // assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieMap[_,_]]))
 
-/*
-    def this (level: Int, m1: HashMap1[A,B], m2: HashMap1[A,B]) = {
-      this(((m1.hash >>> level) & 0x1f) | ((m2.hash >>> level) & 0x1f), {
-        val idx1 = (m1.hash >>> level) & 0x1f
-        val idx2 = (m2.hash >>> level) & 0x1f
-        assert(idx1 != idx2, m1.hash + "==" + m2.hash + " at level " + level) // TODO
-        val elems = new Array[HashMap[A,B]](2)
-        if (idx1 < idx2) {
-          elems(0) = m1
-          elems(1) = m2
-        } else {
-          elems(0) = m2
-          elems(1) = m1
-        }
-        elems
-      }, 2)
-    }
-*/
     override def size = size0
 
     override def get0(key: A, hash: Int, level: Int): Option[B] = {
@@ -378,24 +345,6 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def iterator: Iterator[(A, B)] = new TrieIterator[(A, B)](elems.asInstanceOf[Array[Iterable[(A, B)]]]) {
       final override def getElem(cc: AnyRef): (A, B) = cc.asInstanceOf[HashMap1[A, B]].ensurePair
     }
-
-/*
-def time(block: =>Unit) = { val t0 = System.nanoTime; block; println("elapsed: " + (System.nanoTime - t0)/1000000.0) }
-var mOld = OldHashMap.empty[Int,Int]
-var mNew = HashMap.empty[Int,Int]
-time { for (i <- 0 until 100000) mOld = mOld.updated(i,i) }
-time { for (i <- 0 until 100000) mOld = mOld.updated(i,i) }
-time { for (i <- 0 until 100000) mOld = mOld.updated(i,i) }
-time { for (i <- 0 until 100000) mNew = mNew.updated(i,i) }
-time { for (i <- 0 until 100000) mNew = mNew.updated(i,i) }
-time { for (i <- 0 until 100000) mNew = mNew.updated(i,i) }
-time { mOld.iterator.foreach( p => ()) }
-time { mOld.iterator.foreach( p => ()) }
-time { mOld.iterator.foreach( p => ()) }
-time { mNew.iterator.foreach( p => ()) }
-time { mNew.iterator.foreach( p => ()) }
-time { mNew.iterator.foreach( p => ()) }
-*/
 
     override def foreach[U](f: ((A, B)) =>  U): Unit = {
       var i = 0
