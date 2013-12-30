@@ -1,0 +1,7 @@
+foo(1, 2)
+bar(4, 5)
+foo(3)
+bar(7)
+apply(6)
+apply(9)
+foo(8)
