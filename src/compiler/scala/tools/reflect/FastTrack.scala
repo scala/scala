@@ -24,10 +24,12 @@ trait FastTrack {
     new { val c: c0.type = c0 } with MacroImplementations
   private implicit def context2quasiquote(c0: MacroContext): QuasiquoteImpls { val c: c0.type } =
     new { val c: c0.type = c0 } with QuasiquoteImpls
-  private def make(sym: Symbol)(pf: PartialFunction[Applied, MacroContext => Tree]) =
-    sym -> new FastTrackEntry(pf)
+  private def makeBlackbox(sym: Symbol)(pf: PartialFunction[Applied, MacroContext => Tree]) =
+    sym -> new FastTrackEntry(pf, isBlackbox = true)
+  private def makeWhitebox(sym: Symbol)(pf: PartialFunction[Applied, MacroContext => Tree]) =
+    sym -> new FastTrackEntry(pf, isBlackbox = false)
 
-  final class FastTrackEntry(pf: PartialFunction[Applied, MacroContext => Tree]) extends (MacroArgs => Any) {
+  final class FastTrackEntry(pf: PartialFunction[Applied, MacroContext => Tree], val isBlackbox: Boolean) extends (MacroArgs => Any) {
     def validate(tree: Tree) = pf isDefinedAt Applied(tree)
     def apply(margs: MacroArgs): margs.c.Expr[Nothing] = {
       val MacroArgs(c, _) = margs
@@ -42,14 +44,14 @@ trait FastTrack {
     val runDefinitions = currentRun.runDefinitions
     import runDefinitions._
     Map[Symbol, FastTrackEntry](
-      make(        materializeClassTag) { case Applied(_, ttag :: Nil, _)                 => _.materializeClassTag(ttag.tpe) },
-      make(     materializeWeakTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = false) },
-      make(         materializeTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = true) },
-      make(           ApiUniverseReify) { case Applied(_, ttag :: Nil, (expr :: _) :: _)  => c => c.materializeExpr(c.prefix.tree, EmptyTree, expr) },
-      make(            StringContext_f) { case Applied(Select(Apply(_, ps), _), _, args)  => c => c.macro_StringInterpolation_f(ps, args.flatten, c.expandee.pos) },
-      make(ReflectRuntimeCurrentMirror) { case _                                          => c => currentMirror(c).tree },
-      make(  QuasiquoteClass_api_apply) { case _                                          => _.expandQuasiquote },
-      make(QuasiquoteClass_api_unapply) { case _                                          => _.expandQuasiquote }
+      makeBlackbox(        materializeClassTag) { case Applied(_, ttag :: Nil, _)                 => _.materializeClassTag(ttag.tpe) },
+      makeBlackbox(     materializeWeakTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = false) },
+      makeBlackbox(         materializeTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = true) },
+      makeBlackbox(           ApiUniverseReify) { case Applied(_, ttag :: Nil, (expr :: _) :: _)  => c => c.materializeExpr(c.prefix.tree, EmptyTree, expr) },
+      makeBlackbox(            StringContext_f) { case Applied(Select(Apply(_, ps), _), _, args)  => c => c.macro_StringInterpolation_f(ps, args.flatten, c.expandee.pos) },
+      makeBlackbox(ReflectRuntimeCurrentMirror) { case _                                          => c => currentMirror(c).tree },
+      makeWhitebox(  QuasiquoteClass_api_apply) { case _                                          => _.expandQuasiquote },
+      makeWhitebox(QuasiquoteClass_api_unapply) { case _                                          => _.expandQuasiquote }
     )
   }
 }

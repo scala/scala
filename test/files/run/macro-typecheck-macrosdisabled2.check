@@ -1,4 +1,4 @@
-{
+({
   val $u: reflect.runtime.universe.type = scala.reflect.runtime.`package`.universe;
   val $m: $u.Mirror = scala.reflect.runtime.`package`.universe.runtimeMirror(this.getClass().getClassLoader());
   $u.Expr.apply[Array[Int]]($m, {
@@ -28,5 +28,5 @@
     };
     new $typecreator2()
   }))
-}
+}: reflect.runtime.universe.Expr[Array[Int]])
 ru.reify[Array[Int]](scala.Array.apply(2))
