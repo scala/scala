@@ -819,45 +819,17 @@ trait Definitions extends api.StandardDefinitions {
     // FYI the long clunky name is because it's really hard to put "get" into the
     // name of a method without it sounding like the method "get"s something, whereas
     // this method is about a type member which just happens to be named get.
-    def typeOfMemberNamedGet(tp: Type)       = resultOfMatchingMethod(tp, nme.get)()
-    def typeOfMemberNamedHead(tp: Type)      = resultOfMatchingMethod(tp, nme.head)()
-    def typeOfMemberNamedApply(tp: Type)     = resultOfMatchingMethod(tp, nme.apply)(IntTpe)
-    def typeOfMemberNamedDrop(tp: Type)      = resultOfMatchingMethod(tp, nme.drop)(IntTpe)
-    def typeOfMemberNamedGetOrSelf(tp: Type) = typeOfMemberNamedGet(tp) orElse tp
-    def typesOfSelectors(tp: Type)           = getterMemberTypes(tp, productSelectors(tp))
-    def typesOfCaseAccessors(tp: Type)       = getterMemberTypes(tp, tp.typeSymbol.caseFieldAccessors)
+    def typeOfMemberNamedGet(tp: Type)   = resultOfMatchingMethod(tp, nme.get)()
+    def typeOfMemberNamedHead(tp: Type)  = resultOfMatchingMethod(tp, nme.head)()
+    def typeOfMemberNamedApply(tp: Type) = resultOfMatchingMethod(tp, nme.apply)(IntTpe)
+    def typeOfMemberNamedDrop(tp: Type)  = resultOfMatchingMethod(tp, nme.drop)(IntTpe)
+    def typesOfSelectors(tp: Type)       = getterMemberTypes(tp, productSelectors(tp))
 
     // Can't only check for _1 thanks to pos/t796.
     def hasSelectors(tp: Type) = (
          (tp.members containsName nme._1)
       && (tp.members containsName nme._2)
     )
-
-    /** If this is a case class, the case field accessors (which may be an empty list.)
-     *  Otherwise, if there are any product selectors, that list.
-     *  Otherwise, a list containing only the type itself.
-     */
-    def typesOfSelectorsOrSelf(tp: Type): List[Type] = (
-      if (tp.typeSymbol.isCase)
-        typesOfCaseAccessors(tp)
-      else typesOfSelectors(tp) match {
-        case Nil => tp :: Nil
-        case tps => tps
-      }
-    )
-
-    /** If the given type has one or more product selectors, the type of the last one.
-     *  Otherwise, the type itself.
-     */
-    def typeOfLastSelectorOrSelf(tp: Type) = typesOfSelectorsOrSelf(tp).last
-
-    def elementTypeOfLastSelectorOrSelf(tp: Type) = {
-      val last = typeOfLastSelectorOrSelf(tp)
-      ( typeOfMemberNamedHead(last)
-          orElse typeOfMemberNamedApply(last)
-          orElse elementType(ArrayClass, last)
-      )
-    }
 
     /** Returns the method symbols for members _1, _2, ..., _N
      *  which exist in the given type.

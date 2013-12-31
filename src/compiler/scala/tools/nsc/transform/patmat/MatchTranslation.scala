@@ -112,9 +112,6 @@ trait MatchTranslation {
       private def extractorStep(): TranslationStep = {
         def paramType = extractor.aligner.wholeType
         import extractor.treeMaker
-        // if (!extractor.isTyped)
-        //   ErrorUtils.issueNormalTypeError(tree, "Could not typecheck extractor call: "+ extractor)(context)
-
         // chain a type-testing extractor before the actual extractor call
         // it tests the type, checks the outer pointer and casts to the expected type
         // TODO: the outer check is mandated by the spec for case classes, but we do it for user-defined unapplies as well [SPEC]
