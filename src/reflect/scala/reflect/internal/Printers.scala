@@ -107,6 +107,11 @@ trait Printers extends api.Printers { self: SymbolTable =>
       if (!ts.isEmpty) {
         print("["); printSeq(ts){ t =>
           printAnnotations(t)
+          if (t.mods.hasFlag(CONTRAVARIANT)) {
+            print("-")
+          } else if (t.mods.hasFlag(COVARIANT)) {
+            print("+")
+          }
           printParam(t)
         }{print(", ")}; print("]")
       }
