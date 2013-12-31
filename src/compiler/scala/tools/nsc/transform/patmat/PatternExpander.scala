@@ -39,7 +39,7 @@ trait PatternExpander[Pattern, Type] {
    *
    *  sequenceType is Seq[T], elementType is T, repeatedType is T*.
    */
-  case class Repeated(sequenceType: Type, elementType: Type, repeatedType: Type) {
+  sealed case class Repeated(sequenceType: Type, elementType: Type, repeatedType: Type) {
     def exists = elementType != NoType
 
     def elementList  = if (exists) elementType :: Nil else Nil
@@ -52,7 +52,7 @@ trait PatternExpander[Pattern, Type] {
     override def toString = "<none>"
   }
 
-  case class Patterns(fixed: List[Pattern], star: Pattern) {
+  final case class Patterns(fixed: List[Pattern], star: Pattern) {
     def hasStar      = star != NoPattern
     def starArity    = if (hasStar) 1 else 0
     def nonStarArity = fixed.length
@@ -86,7 +86,7 @@ trait PatternExpander[Pattern, Type] {
    *  @param  fixed     The non-sequence types which are extracted
    *  @param  repeated  The sequence type which is extracted
    */
-  case class Extractor(whole: Type, fixed: List[Type], repeated: Repeated) {
+  final case class Extractor(whole: Type, fixed: List[Type], repeated: Repeated) {
     require(whole != NoType, s"expandTypes($whole, $fixed, $repeated)")
 
     def productArity = fixed.length
@@ -107,7 +107,7 @@ trait PatternExpander[Pattern, Type] {
     override def toString = "%s => %s".format(whole, offeringString)
   }
 
-  case class TypedPat(pat: Pattern, tpe: Type) {
+  final case class TypedPat(pat: Pattern, tpe: Type) {
     override def toString = s"$pat: $tpe"
   }
 
@@ -118,7 +118,7 @@ trait PatternExpander[Pattern, Type] {
    *       sequence which can populate at least <elementArity> patterns.
    *  < 0: There are more products than patterns: compile time error.
    */
-  case class Aligned(patterns: Patterns, extractor: Extractor) {
+  final case class Aligned(patterns: Patterns, extractor: Extractor) {
     def elementArity = patterns.nonStarArity - productArity
     def productArity = extractor.productArity
     def starArity    = patterns.starArity
