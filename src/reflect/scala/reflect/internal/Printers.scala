@@ -17,8 +17,6 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
   //nsc import treeInfo.{ IsTrue, IsFalse }
 
-  final val showOuterTests = false
-
   /** Adds backticks if the name is a scala keyword. */
   def quotedName(name: Name, decode: Boolean): String = {
     val s = if (decode) name.decode else name.toString
@@ -301,10 +299,6 @@ trait Printers extends api.Printers { self: SymbolTable =>
             case Apply(fn, args) => patConstr(fn)
             case _ => pat
           }
-          if (showOuterTests &&
-              needsOuterTest(
-                patConstr(pat).tpe.finalResultType, selectorType, currentOwner))
-            print("???")
           print(pat); printOpt(" if ", guard)
           print(" => ", body)
 
