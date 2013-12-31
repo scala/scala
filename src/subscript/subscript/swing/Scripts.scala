@@ -296,9 +296,9 @@ object Scripts {
    mouseDraggings(comp: Component, task: MouseEvent=>Unit) = event_loop( MouseDraggedReactor[N_code_eh_loop](comp), task)
    mouseMoves    (comp: Component, task: MouseEvent=>Unit) = event_loop(   MouseMovedReactor[N_code_eh_loop](comp), task)
 
-   mouseSingleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(1, comp, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"
-   mouseDoubleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(2, comp, ActualOutputParameter(p, (v:java.awt.Point)=>p=v))
-   mouseTripleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(3, comp, ActualOutputParameter(p, (v:java.awt.Point)=>p=v))
+   mouseSingleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(1, comp, ?p) // TBD: "p?"
+   mouseDoubleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(2, comp, ?p)
+   mouseTripleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(3, comp, ?p)
    mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked=null 
                                                              event(MouseClickedReactor[N_code_eh](comp, n), ActualOutputParameter(mce, (v:MouseClicked)=>mce=v) ) // TBD ...
                                                              {! p=mce.point !}
@@ -311,6 +311,18 @@ object Scripts {
    mouseReleased    (comp: Component, ?p : java.awt.Point) = var mre: MouseReleased=null 
                                                              event(   MouseReleasedReactor[N_code_eh](comp), ActualOutputParameter(mre, (v:MouseReleased)=>mre=v) ) // TBD: ...
                                                              {! p=mre.point !}
+/* these 4 scripts should become:
+   mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked =null; event( MouseClickedReactor[N_code_eh](comp, n), ?mce); {! p=mce.point !}
+   mouseMove        (comp: Component, ?p : java.awt.Point) = var mme: MouseMoved   =null; event(   MouseMovedReactor[N_code_eh](comp   ), ?mme); {! p=mme.point !}
+   mousePressed     (comp: Component, ?p : java.awt.Point) = var mpe: MousePressed =null; event( MousePressedReactor[N_code_eh](comp   ), ?mpe); {! p=mpe.point !}
+   mouseReleased    (comp: Component, ?p : java.awt.Point) = var mre: MouseReleased=null; event(MouseReleasedReactor[N_code_eh](comp   ), ?mre); {! p=mre.point !}
+
+for now:
+
+error: missing parameter type for expanded function ((x$4) => _mce.at(here).value = x$4)
+mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked =null; event( MouseClickedReactor[N_code_eh](comp, n), ?mce); {! p=mce.point !}
+                                                                                                                                        ^
+*/
 
      guard(comp: Component, test: () => Boolean)           = if (test()) .. else ... anyEvent(comp)
 
