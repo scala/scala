@@ -66,8 +66,8 @@ trait FormalConstrainedParameter[T<:Any] extends FormalParameter_readWrite[T] {
   def bindToFormalConstrainedParameter; 
   def ~??(n:Symbol) = {name=n; bindToFormalConstrainedParameter; this}
   var value: T
-  def ~?? = ActualAdaptingParameter(this)
-  def ~??(constraint: T=>Boolean) = ActualAdaptingParameter(this, constraint)
+//  def ~?? = ActualAdaptingParameter(this)
+//  def ~??(constraint: T=>Boolean) = ActualAdaptingParameter(this, constraint)
 }
 case class CommunicationParameter[T<:Any](n: Symbol) extends FormalParameter[T] {
   name = n // TBD: improve, now we have both n and name as fields
@@ -129,6 +129,7 @@ case class   ActualValueParameter[T<:Any](originalValue:T) extends ActualParamet
   
   if (originalValue.isInstanceOf[ActualValueParameter[_]]) Thread.dumpStack
 }
+
 case class  ActualOutputParameter[T<:Any](originalValue:T, transferFunction: T=>Unit) extends ActualParameter[T] 
   with ParameterTransferrerTrait [T]
   with FormalOutputParameter     [T] 
@@ -152,6 +153,7 @@ case class ActualConstrainedParameter[T<:Any](originalValue:T, transferFunction:
   def isForcing     = false
   def isConstrained = true
 }
+//object ActualAdaptingParameter {def apply[T<:Any](adaptee: FormalConstrainedParameter[T], constraint: T=>Boolean=null) = ActualAdaptingParameter(adaptee, constraint)}
 // adapting parameters, as in script a(i:Int??) = b(i??)
 case class ActualAdaptingParameter[T<:Any](adaptee: FormalConstrainedParameter[T], constraint: T=>Boolean=null) 
   extends ActualParameter        [T] 

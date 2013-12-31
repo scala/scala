@@ -4,10 +4,10 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/reflect"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/scala-library"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/asm"/>
+	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/lib/ant/ant.jar"/>
 	<classpathentry kind="lib" path="/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/lib/jline.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/continuations-library"/>
-	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="output" path="build-quick-compiler"/>
 </classpath>

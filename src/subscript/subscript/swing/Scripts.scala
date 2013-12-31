@@ -280,7 +280,7 @@ object Scripts {
    clicked(button:Button)                        = event(           ClickedReactor[N_code_eh](button))
 
  def script ..   // TBD: uncomment /*@gui:*/ and make it compile
-  event[E <: Event] (reactor:ScriptReactor[N_code_eh], e?: E) =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {. e = reactor.currentEvent.asInstanceOf[E] .}
+  event[E <: Event] (reactor:ScriptReactor[N_code_eh], ?e: E) =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {. e = reactor.currentEvent.asInstanceOf[E] .}
   event (reactor:ScriptReactor[N_code_eh]) =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {.     .}
   event_loop(reactor:ScriptReactor[N_code_eh_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
                                                                                             {... task.apply(reactor.currentEvent.asInstanceOf[MouseEvent]) ...}
@@ -291,34 +291,34 @@ object Scripts {
   //                                                                                                {... task.apply(reactor.currentEvent.asInstanceOf[E]) ...}
        anyEvent(comp: Component)                           = event(          AnyEventReactor[N_code_eh](comp))                                                    
     windowClosing(window: Window)                          = event(     WindowClosingReactor[N_code_eh](window))
-// mouseClicks   (comp: Component, task: MouseEvent=>Unit) = event_loop( MouseClickedReactor[N_code_eh_loop](comp), _task) // _task because implicit conversion is otherwise not applied
-   mousePresses  (comp: Component, task: MouseEvent=>Unit) = event_loop( MousePressedReactor[N_code_eh_loop](comp), _task) // _task because implicit conversion is otherwise not applied
-   mouseDraggings(comp: Component, task: MouseEvent=>Unit) = event_loop( MouseDraggedReactor[N_code_eh_loop](comp), _task)
-   mouseMoves    (comp: Component, task: MouseEvent=>Unit) = event_loop(   MouseMovedReactor[N_code_eh_loop](comp), _task)
+// mouseClicks   (comp: Component, task: MouseEvent=>Unit) = event_loop( MouseClickedReactor[N_code_eh_loop](comp), task)
+   mousePresses  (comp: Component, task: MouseEvent=>Unit) = event_loop( MousePressedReactor[N_code_eh_loop](comp), task)
+   mouseDraggings(comp: Component, task: MouseEvent=>Unit) = event_loop( MouseDraggedReactor[N_code_eh_loop](comp), task)
+   mouseMoves    (comp: Component, task: MouseEvent=>Unit) = event_loop(   MouseMovedReactor[N_code_eh_loop](comp), task)
 
-   mouseSingleClick (comp: Component, p? : java.awt.Point) = mouseClicks(1, comp, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"
-   mouseDoubleClick (comp: Component, p? : java.awt.Point) = mouseClicks(2, comp, ActualOutputParameter(p, (v:java.awt.Point)=>p=v))
-   mouseTripleClick (comp: Component, p? : java.awt.Point) = mouseClicks(3, comp, ActualOutputParameter(p, (v:java.awt.Point)=>p=v))
-   mouseClicks(n:Int,comp: Component, p? : java.awt.Point) = var mce: MouseClicked=null 
+   mouseSingleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(1, comp, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"
+   mouseDoubleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(2, comp, ActualOutputParameter(p, (v:java.awt.Point)=>p=v))
+   mouseTripleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(3, comp, ActualOutputParameter(p, (v:java.awt.Point)=>p=v))
+   mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked=null 
                                                              event(MouseClickedReactor[N_code_eh](comp, n), ActualOutputParameter(mce, (v:MouseClicked)=>mce=v) ) // TBD ...
                                                              {! p=mce.point !}
-   mouseMove        (comp: Component, p? : java.awt.Point) = var mme: MouseMoved=null 
+   mouseMove        (comp: Component, ?p : java.awt.Point) = var mme: MouseMoved=null 
                                                              event(   MouseMovedReactor[N_code_eh](comp), ActualOutputParameter(mme, (v:MouseMoved)=>mme=v) ) // TBD: "mme?" instead of "ActualOutputParameter(...)"
                                                              {! p=mme.point !}
-   mousePressed     (comp: Component, p? : java.awt.Point) = var mpe: MousePressed=null 
+   mousePressed     (comp: Component, ?p : java.awt.Point) = var mpe: MousePressed=null 
                                                              event(   MousePressedReactor[N_code_eh](comp), ActualOutputParameter(mpe, (v:MousePressed)=>mpe=v) ) // TBD: ...
                                                              {! p=mpe.point !}
-   mouseReleased    (comp: Component, p? : java.awt.Point) = var mre: MouseReleased=null 
+   mouseReleased    (comp: Component, ?p : java.awt.Point) = var mre: MouseReleased=null 
                                                              event(   MouseReleasedReactor[N_code_eh](comp), ActualOutputParameter(mre, (v:MouseReleased)=>mre=v) ) // TBD: ...
                                                              {! p=mre.point !}
 
      guard(comp: Component, test: () => Boolean)           = if (test()) .. else ... anyEvent(comp)
 
-     key2(publisher: Publisher, keyCode ?? : Char     )    = event(         KeyTypedReactor[N_code_eh](publisher, _keyCode ))
-    vkey2(publisher: Publisher, keyValue?? : Key.Value)    = event(        VKeyTypedReactor[N_code_eh](publisher, _keyValue))
+     key2(publisher: Publisher, ??keyCode : Char     )     = event(         KeyTypedReactor[N_code_eh](publisher, _keyCode ))
+    vkey2(publisher: Publisher, ??keyValue: Key.Value)     = event(        VKeyTypedReactor[N_code_eh](publisher, _keyValue))
     
-     keyEvent2 (publisher: Publisher, keyTypedEvent?? : KeyTyped)  = event(         KeyTypedEventReactor [N_code_eh](publisher, _keyTypedEvent))
-     keyEvents2(publisher: Publisher, task: KeyTyped=>Unit)        = event_loop_KTE(KeyTypedEventsReactor[N_code_eh_loop](publisher), _task)
+     keyEvent2 (publisher: Publisher, ??keyTypedEvent : KeyTyped)  = event(         KeyTypedEventReactor [N_code_eh](publisher, _keyTypedEvent))
+     keyEvents2(publisher: Publisher, task: KeyTyped=>Unit)        = event_loop_KTE(KeyTypedEventsReactor[N_code_eh_loop](publisher), task)
 /*
 
  Note: the manual compilation yielded for the first annotation the type

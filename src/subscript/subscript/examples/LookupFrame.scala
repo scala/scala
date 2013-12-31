@@ -43,7 +43,7 @@ def script..
   showSearchResults = @{gui(there)}: {outputTA.text = "Found: "+here.index+" items"}
   searchInDatabase  = {* Thread.sleep(2000) *} // simulate a time consuming action
 
-implicit def script vkey(k??: Key.Value) = vkey2(top, ActualAdaptingParameter(_k))  //vkey2(top, k??) is not parsed well, yet
+implicit def script vkey(??k: Key.Value) = vkey2(top, ??k)
 
 /* translated into:
 

@@ -46,4 +46,8 @@ object Predef {
     break_up2 = break_up,2
 
 //  def _times(_n: FormalInputParameter[Int]) = _script(this, 'times, _n~'n) {_while{implicit here=>pass<_n.value}}
+    
+    test = times1(100)
+    
+  def _times1(n:Int) = {_script(this, 'times) {_while{implicit here=>pass<n}}}
 }

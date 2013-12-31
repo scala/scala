@@ -4,6 +4,5 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/lib/ant/ant.jar"/>
 	<classpathentry kind="lib" path="/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/lib/jline.jar"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/continuations-library"/>
 	<classpathentry kind="output" path="build-quick-compiler"/>
 </classpath>

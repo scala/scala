@@ -37,7 +37,7 @@ abstract class ABApplication extends SimpleSubscriptApplication {
  def script..
                    doExit = X + Key.Escape
            
- implicit def script vkey(k??: Key.Value) = vkey2(top, ActualAdaptingParameter(_k))  //vkey2(top, k??) is not parsed well, yet
+ implicit def script vkey(??k: Key.Value) = vkey2(top, ActualAdaptingParameter(_k))  //vkey2(top, k??) is not parsed well, yet
 }
 object AsBX extends ABApplication {
  def getTitle = "A..; B; exit"

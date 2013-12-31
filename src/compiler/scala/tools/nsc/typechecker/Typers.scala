@@ -4454,13 +4454,15 @@ trait Typers extends Modes with Adaptations with Tags {
             if (Statistics.canEnable) Statistics.stopTimer(failedApplyNanos, appStart)
                   reportError
           }
-          var             err_scriptResolution: AbsTypeError = null
-          var  err_conversion_scriptResolution: AbsTypeError = null
-          var    err_notFound_methodResolution: AbsTypeError = null
-          var             err_methodResolution: AbsTypeError = null
-          var            tree_scriptResolution: Tree = null
-          var tree_conversion_scriptResolution: Tree = null
-          var            tree_methodResolution: Tree = null
+          var             err_scriptResolution : AbsTypeError = null
+          var  err_conversion_scriptResolution1: AbsTypeError = null
+          var  err_conversion_scriptResolution2: AbsTypeError = null
+          var    err_notFound_methodResolution : AbsTypeError = null
+          var             err_methodResolution : AbsTypeError = null
+          var            tree_scriptResolution : Tree = null
+          var tree_conversion_scriptResolution1: Tree = null
+          var tree_conversion_scriptResolution2: Tree = null
+          var            tree_methodResolution : Tree = null
           
           // resolve script and method calls
           // Note: : a script named "a" becomes method "_a"
@@ -4468,20 +4470,23 @@ trait Typers extends Modes with Adaptations with Tags {
           // - script call: a(here.toString) ===> _call  {here=>(_a(here.toString))(here)}
           // - method call: a(here.toString) ===> _normal{here=>  a(here.toString)}
           //
-          // If these don't work, try implicit conversions to a script:
-          // - implicit 1:   a   ===>    ActualValueParameter(a) ===> _call{here=>(_b(   ActualValueParameter(a)))(here)}
-          // - implicit 2:   a?  ===>   ActualOutputParameter(a) ===> _call{here=>(_b(  ActualOutputParameter(a)))(here)}
-          // - implicit 3:   a?? ===> ActualAdaptingParameter(a) ===> _call{here=>(_b(ActualAdaptingParameter(a)))(here)}
-          //
+          // If these don't work, try implicit conversions to a script.
+          // Note that Scalac can do at most 1 implict conversion, and an actual value parameter that should match an 
+          // actual constrained parameter, for which a conversion to ActualValueParameter(a) would match.
+          // So we need to try that one as well.
+          // - implicit 1a:   a   ===>                            ===> _call{here=>(_b(                        a ))(here)}
+          // - implicit 1b:   a   ===>    ActualValueParameter(a) ===> _call{here=>(_b(   ActualValueParameter(a)))(here)}
+          // - implicit 2 :   a?  ===>   ActualOutputParameter(a) ===> _call{here=>(_b(  ActualOutputParameter(a)))(here)}
+          // - implicit 3 :   a?? ===> ActualAdaptingParameter(a) ===> _call{here=>(_b(ActualAdaptingParameter(a)))(here)}
           //
           // Note: the question marks have been transformed already in the Parser phase to ActualOutputParameter and ActualAdaptingParameter (TBD?)
-          // a transformation to ActualValueParameter still needs to be done.
           // 
           
           val copied_fun1 = fun.duplicate // make sure typing in 2nd and 3rd tries do not conflict
           val copied_fun2 = fun.duplicate 
+          val copied_fun3 = fun.duplicate 
           
-          // 1st try: a script call
+          // 1st try: an explicit script call
           
           val underscored_fun = fun match {
             case Ident(name) => {Ident(underscore_name(name))}
@@ -4530,30 +4535,56 @@ trait Typers extends Modes with Adaptations with Tags {
               tree_scriptResolution = typed(apply_template)
           }
           
-          // 2nd try: a parameter conversion to ActualValueParameter and script call
+          // 2nd try: an implicit call a or b.a with a some data for which an implicit script exists.
+          // FTTB We only do a single item "a", so no other implicit parameters (args.isEmpty)
+          // (multiple parameters would need to be wrapped in a tuple first)
+          //
           if (args.isEmpty) {
               silent(op => {
-                      val tree1        = op.typed(Apply(sSubScriptVM_ActualValueParameter, List(copied_fun1))) // _b(ActualValueParameter(a))
-	                  val nodeType     = op.sSubScriptVM_N_call
-	                  val fun_template = op.sSubScriptDSL_call
-	                  val tree2        = Apply(tree1, List(here_Ident)) // (_b(ActualValueParameter(a)))(here)
-	             
-	                  // blockToFunction adds "here" to the context
-	                  val function_here_to_code = op.blockToFunction(tree2, nodeType, tree.pos) // here=>(_b(ActualValueParameter(a))))(here)
-	                  val apply_template        = Apply(fun_template, List(function_here_to_code)) // _call  {here=>(_b(ActualValueParameter(a)))(here)}
-	
-	                  // by now the ScriptApply has been rewritten into 4 nested normal Apply's, so this can be typed:
-	                  op.typed(apply_template)
-                   },
-                   if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
-                   if ((mode & EXPRmode) != 0) tree  else context.tree) match {
-                case SilentTypeError  (err)  => err_conversion_scriptResolution = err
-                case SilentResultValue(tree2) => tree_conversion_scriptResolution = tree2
+                  // Case 1: try just: a
+                  val nodeType     = op.sSubScriptVM_N_call
+                  val fun_template = op.sSubScriptDSL_call
+                  val tree2        = Apply(copied_fun1, List(here_Ident)) // a(here)
+             
+                  // blockToFunction adds "here" to the context
+                  val function_here_to_code = op.blockToFunction(tree2, nodeType, tree.pos) // here=>(a)(here)
+                  val apply_template        = Apply(fun_template, List(function_here_to_code)) // _call  {here=>a(here)}
+
+                  // by now the ScriptApply has been rewritten into 4 nested normal Apply's, so this can be typed:
+                  op.typed(apply_template)
+              },
+              if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
+              if ((mode & EXPRmode) != 0) tree  else context.tree) match {
+                case SilentTypeError  (err)  => err_conversion_scriptResolution1 = err
+                case SilentResultValue(tree3) => tree_conversion_scriptResolution1 = tree3
+              }
+              // Case 2: try ActualValueParameter(a) in case a was not already an Actual*Parameter
+              copied_fun2 match {
+                case Apply(_,_) => // apparently a sSubScriptVM_Actual*Parameter (* = output or adapting)
+                case _ =>
+		               silent(op => {
+		                  val tree1        = op.typed(Apply(sSubScriptVM_ActualValueParameter, List(copied_fun2))) // _b(ActualValueParameter(a))
+		                  val nodeType     = op.sSubScriptVM_N_call
+		                  val fun_template = op.sSubScriptDSL_call
+		                  val tree2        = Apply(tree1, List(here_Ident)) // (_b(ActualValueParameter(a)))(here)
+		             
+		                  // blockToFunction adds "here" to the context
+		                  val function_here_to_code = op.blockToFunction(tree2, nodeType, tree.pos) // here=>(_b(ActualValueParameter(a))))(here)
+		                  val apply_template        = Apply(fun_template, List(function_here_to_code)) // _call  {here=>(_b(ActualValueParameter(a)))(here)}
+		
+		                  // by now the ScriptApply has been rewritten into 4 nested normal Apply's, so this can be typed:
+		                  op.typed(apply_template)
+		              },
+		              if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
+		              if ((mode & EXPRmode) != 0) tree  else context.tree) match {
+		                case SilentTypeError  (err )  =>  err_conversion_scriptResolution2 = err
+		                case SilentResultValue(tree3) => tree_conversion_scriptResolution2 = tree3
+		              }
               }
           }
           
           // 3rd try: a method call
-          silent(op => op.typed(copied_fun2, forFunMode(mode), funpt),
+          silent(op => op.typed(copied_fun3, forFunMode(mode), funpt),
                  if ((mode & EXPRmode) != 0) false else context.ambiguousErrors,
                  if ((mode & EXPRmode) != 0) tree else context.tree) match {
             case SilentTypeError  (err)  => err_notFound_methodResolution = err
@@ -4587,8 +4618,9 @@ trait Typers extends Modes with Adaptations with Tags {
           // Note: a variable like "button" of type Button will result in a "def button = ..." method
           // so let tree_conversion_scriptResolution prevail over tree_methodResolution
           // or would more ambiguitiy checking be needed?
-          else if (tree_conversion_scriptResolution != null) tree_conversion_scriptResolution
-          else if (           tree_methodResolution != null) tree_methodResolution
+          else if (tree_conversion_scriptResolution1 != null) tree_conversion_scriptResolution1
+          else if (tree_conversion_scriptResolution2 != null) tree_conversion_scriptResolution2
+          else if (           tree_methodResolution  != null) tree_methodResolution
           else onError({issue(err_scriptResolution); setError(tree)})
           // allways: ignore err_conversion_scriptResolution and err_methodResolution
       }

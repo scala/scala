@@ -1072,29 +1072,27 @@ class CommonScriptExecutor extends ScriptExecutor {
    */
   def run: ScriptExecutor = {
     activateFrom(anchorNode, anchorNode.t_callee)
-    var isActive = true
-    while (isActive) { // main execution loop
-      
-      if (callGraphMessageCount > 0) {
-        val m = dequeueCallGraphMessage
-        messageHandled(m)
-        handle(m)
-      }
-      else if (!rootNode.children.isEmpty) {
-        messageAwaiting
-        synchronized { // TBD: there should also be a synchronized call in the CodeExecutors
-          if (callGraphMessageCount==0) // looks stupid, but event may have happened&notify() may have been called during tracing
-            synchronized {
-              wait() // for an event to happen 
-            }
-        }
-        // note: there may also be deadlock because of unmatching communications
-        // so there should preferably be a check for the existence of waiting event handling actions
-      }
-      else {
-        isActive = false
-      }
-    }
+    while (workToDo()) {} // main execution loop
     this
+  }
+  def workToDo(): Boolean = {
+    if (callGraphMessageCount > 0) {
+      val m = dequeueCallGraphMessage
+      messageHandled(m)
+      handle(m)
+    }
+    else if (!rootNode.children.isEmpty) {
+      messageAwaiting
+      synchronized { // TBD: there should also be a synchronized call in the CodeExecutors
+        if (callGraphMessageCount==0) // looks stupid, but event may have happened&notify() may have been called during tracing
+          synchronized {
+            wait() // for an event to happen 
+          }
+      }
+      // note: there may also be deadlock because of unmatching communications
+      // so there should preferably be a check for the existence of waiting event handling actions
+    }
+    else return false
+    return true
   }
 }

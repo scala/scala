@@ -63,7 +63,7 @@ class LookupFrame2Application extends SimpleSubscriptApplication {
     
     progressMonitor   = ... @{gui(there)}:{outputTA.text+=here.pass} {*sleep(200)*}
     
-  implicit def script vkey(k??: Key.Value) = vkey2(top, ActualAdaptingParameter(_k))  //vkey2(top, k??) is not parsed well, yet
+  implicit def script vkey(??k: Key.Value) = vkey2(top, ??k)
 /*
  override def _live     = _script(this, 'live             ) {_par_or2(_seq(_loop, _searchSequence), _exit)}
   def _searchCommand     = _script(this, 'searchCommand    ) {_alt(_clicked(searchButton), _vkey(Key.Enter))} 

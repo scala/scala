@@ -1202,12 +1202,12 @@ self =>
     val           bind_outParam_Name  = newTermName(scala.reflect.NameTransformer.encode("~?"))
     val   bind_constrainedParam_Name  = newTermName(scala.reflect.NameTransformer.encode("~??"))
     
-    val       formalInputParameter_Name = newTypeName("FormalInputParameter")
     val      formalOutputParameter_Name = newTypeName("FormalOutputParameter")
     val formalConstrainedParameter_Name = newTypeName("FormalConstrainedParameter")
-    val      actualOutputParameter_Name = newTypeName("ActualOutputParameter")
-    val actualConstrainedParameter_Name = newTypeName("ActualConstrainedParameter")
-    val    actualAdaptingParameter_Name = newTypeName("ActualAdaptingParameter")
+    val       actualValueParameter_Name = newTermName("ActualValueParameter")
+    val      actualOutputParameter_Name = newTermName("ActualOutputParameter")
+    val actualConstrainedParameter_Name = newTermName("ActualConstrainedParameter")
+    val    actualAdaptingParameter_Name = newTermName("ActualAdaptingParameter")
 
     def    here_Ident = Ident( here_Name) // Note: such items should be def's rather than val's; else the Typer will get confused
     def   there_Ident = Ident(there_Name)
@@ -1220,7 +1220,7 @@ self =>
     def sSubScriptDSL: Tree = Select(Ident(nameSubScript), nameDSL)
     def sSubScriptVM : Tree = Select(Ident(nameSubScript), nameVM )
 
-    def sFormalInputParameter      : Tree = Select(sSubScriptVM,       formalInputParameter_Name)
+    def sActualValueParameter      : Tree = Select(sSubScriptVM,       actualValueParameter_Name)
     def sFormalOutputParameter     : Tree = Select(sSubScriptVM,      formalOutputParameter_Name)
     def sFormalConstrainedParameter: Tree = Select(sSubScriptVM, formalConstrainedParameter_Name)
 
@@ -1279,26 +1279,33 @@ self =>
       accept(RPAREN); 
       ret
     }
-    def  makeParameterTransferFunction(exp   : Tree): Tree = {
-      val vparams = List(
-          atPos(exp.pos) {
-            makeParam(tmp1_Name, EmptyTree)
-          }
-      )
-      Function(vparams , Assign(exp, Ident(tmp1_Name)))
+    def  makeParameterTransferFunction(exp: Tree): Tree = {
+      val pname   = freshName("x$")
+      val id      = atPos(exp.pos) (Ident(pname))
+      val param   = atPos(id.pos.focus){ makeSyntheticParam(pname.toTermName) }
+      val vparams = List(param)
+      Function(vparams , Assign(exp, id))
     }
 
-    def       makeFormalInputParameter(typer: Tree): Tree = AppliedTypeTree(convertToTypeId(      sFormalInputParameter), List(typer))
+//  def       makeFormalInputParameter(typer: Tree): Tree = AppliedTypeTree(convertToTypeId(      sFormalInputParameter), List(typer))
     def      makeFormalOutputParameter(typer: Tree): Tree = AppliedTypeTree(convertToTypeId(     sFormalOutputParameter), List(typer))
     def makeFormalConstrainedParameter(typer: Tree): Tree = AppliedTypeTree(convertToTypeId(sFormalConstrainedParameter), List(typer))
     
     def      makeActualOutputParameter(exp   : Tree, constraint: Tree = null): Tree = {
       if (constraint==null) Apply(sActualOutputParameter, List(exp, makeParameterTransferFunction(exp)))
-      else             Apply(sActualConstrainedParameter, List(exp, makeParameterTransferFunction(exp), constraint))
+      else             Apply(sActualConstrainedParameter, List(exp, makeParameterTransferFunction(exp), constraint)) 
     }
-      
+    
+    def makeActualAdaptingParameter(param: Tree, constraint: Tree): Tree = {
+      param match {
+         case Ident(formalParamName) => makeActualAdaptingParameter(formalParamName, constraint)
+         case _ => syntaxError(in.offset, "An adapting parameter should be a name of a formal constrained parameter");
+                   param
+      }
+    }
     def    makeActualAdaptingParameter(paramName: Name, constraint: Tree = null): Tree = {
-            Apply(sActualAdaptingParameter, List(Ident(newTermName(underscore_prefix(paramName.toString))), constraint))
+       if (constraint==null) Apply(sActualAdaptingParameter, List(Ident(newTermName(underscore_prefix(paramName.toString)))))
+       else  Apply(sActualAdaptingParameter, List(Ident(newTermName(underscore_prefix(paramName.toString))), constraint))
     }
     def underscore_prefix(s: String) = "_"+s
 	def underscore_TermName(n: TermName) = newTermName(underscore_prefix(n.toString))
@@ -1414,8 +1421,6 @@ self =>
     
     def isScriptIdent = in.token == IDENTIFIER && in.name == nme.SCRIPTkw
     def isBreakIdent  = in.token == IDENTIFIER && in.name == nme.BREAKkw
-    def isQMark       = in.token == IDENTIFIER && in.name == nme.QMARKkw
-    def isQMark2      = in.token == IDENTIFIER && in.name == nme.QMARK2kw
     
     // TBD cleanup
     // lineOffset needs to be computed here since CharArrayReader sometimes increments its lineStartOffset earlier than expected
@@ -1536,18 +1541,14 @@ self =>
  
  */
 
-    def      isOutputParameter (p: ValDef): Boolean =      isOutputAnnotation(p)
-    def isConstrainedParameter (p: ValDef): Boolean = isConstrainedAnnotation(p)
-    def      isOutputAnnotation(p: ValDef): Boolean = annotationsContainIdent(p, nme.QMARKkw )
-    def isConstrainedAnnotation(p: ValDef): Boolean = annotationsContainIdent(p, nme.QMARK2kw)
-    def annotationsContainIdent(p: ValDef, kw: TermName): Boolean = {
-                for (m<-p.mods.annotations) m match {
-                  case Ident(k) if k.toString==kw.toString  => return true
-                  case _ =>
-                }
-                return false
-    }
+    def      isFormalOutputParameter (p: ValDef): Boolean =      isFormalOutputParameter(p.name)
+    def isFormalConstrainedParameter (p: ValDef): Boolean = isFormalConstrainedParameter(p.name)
+    def      isFormalOutputParameter (p: Name  ): Boolean = scriptFormalOutputParameters     .contains(p.toString)
+    def isFormalConstrainedParameter (p: Name  ): Boolean = scriptFormalConstrainedParameters.contains(p.toString)
 
+    def storeScriptFormalOutputParameter      (name: Name, tpt: Tree) {scriptFormalOutputParameters      += name.toString->tpt}
+    def storeScriptFormalConstrainedParameter (name: Name, tpt: Tree) {scriptFormalConstrainedParameters += name.toString->tpt}
+    
     var scriptExpressionParenthesesNestingLevel = 0
     
     @inline final def inScriptParens[T](body: => T): T = {
@@ -1558,9 +1559,10 @@ self =>
     // the following aims to provide a context for Script data.
     // it is a quick hack; 
     // context sensitive transformations should be moved to a later compiler phase
-    var scriptFormalParameters = new scala.collection.mutable.HashMap[Name,Tree]
-    var scriptLocalVariables   = new scala.collection.mutable.HashMap[Name,Tree] // should be in a context stack; now the scope becomes too big 
-    var scriptLocalValues      = new scala.collection.mutable.HashMap[Name,Tree]
+    var scriptFormalOutputParameters      = new scala.collection.mutable.HashMap[String,Tree]
+    var scriptFormalConstrainedParameters = new scala.collection.mutable.HashMap[String,Tree]
+    var scriptLocalVariables              = new scala.collection.mutable.HashMap[Name,Tree] // should be in a context stack; now the scope becomes too big 
+    var scriptLocalValues                 = new scala.collection.mutable.HashMap[Name,Tree]
     
     def scriptDefsOrDcls(start : Int, mods: Modifiers): List[Tree] = {
       in.isInSubScript_script = true
@@ -1584,12 +1586,18 @@ self =>
 	        if (linePos <= linePosOfScriptsSection) mustExit = true
 	      }
 	      
+	      var name: Name = null
+		  var nameOffset = -1
+		  
 	      if (!mustExit) {
               in.isInSubScript_header = true
-		      val nameOffset = in.offset
-		      val name = ident()
+		      nameOffset = in.offset
+		      name = ident()
+		      if (name.toTermName == nme.ERROR) mustExit = true
+	      }
 		      
-		      val scriptDef = atPos(start, if (name.toTermName == nme.ERROR) start else nameOffset) {
+	      if (!mustExit) {
+		        val scriptDef = atPos(start, if (name.toTermName == nme.ERROR) start else nameOffset) {
 		        
 		        val Flags_SCRIPT = Flags.CASEACCESSOR // TBD
 		        var newmods = mods | Flags_SCRIPT
@@ -1625,39 +1633,59 @@ self =>
 		        
                 // insert the _script(this, 'vkey, _k~??'k) part
 		        // the parameter bindings such as _k~??'k are a little complicated
-		        val underscored_param_defs_and_bindings: List[(ValDef, Tree)] = if (vparamss.isEmpty) Nil
+		        
+		        val underscored_param_defs  = if (vparamss.isEmpty) Nil
 		            else {
 		              if (!vparamss.tail.isEmpty) syntaxError(nameOffset, "script should have only 1 parameter list")
 		              vparamss.head map {p => 
-		                val pSym = Apply(scalaDot(nme.Symbol), List(Literal(Constant(p.name.toString)))) // TBD: ensure there is only 1 parameter list
-		                val underscored_p_name = newTermName(underscore_prefix(p.name.toString))
+		                
+		                val possibly_underscored_p_name = 
+		                  if (isFormalConstrainedParameter(p) 
+		                  ||       isFormalOutputParameter(p)) newTermName(underscore_prefix(p.name.toString))
+		                  else p.name // no underscore for formal input parameters
 
-		                var (bindParam_Name, tpt) = 
-		                  if (isConstrainedParameter(p)) (bind_constrainedParam_Name, makeFormalConstrainedParameter(p.tpt))
-		                  else if (isOutputParameter(p)) (        bind_outParam_Name, makeFormalOutputParameter     (p.tpt))
-		                  else                           (         bind_inParam_Name, makeFormalInputParameter      (p.tpt))
+		                var tpt = 
+		                  if (isFormalConstrainedParameter(p)) makeFormalConstrainedParameter(p.tpt)
+		                  else if (isFormalOutputParameter(p)) makeFormalOutputParameter     (p.tpt)
+		                  else                           p.tpt
 		                
-		                val select = Select(Ident(underscored_p_name), bindParam_Name)
-		                
-		                (makeParam(underscored_p_name, tpt), Apply(select, List(pSym)))
+		                makeParam(possibly_underscored_p_name, tpt)
 		              }
 		            }
 		        
+		        val paramBindings           = if (vparamss.isEmpty) Nil
+		            else {
+		              if (!vparamss.tail.isEmpty) syntaxError(nameOffset, "script should have only 1 parameter list")
+		              vparamss.head filter{p => isFormalConstrainedParameter(p) || isFormalOutputParameter(p)} map {p => 
+		                
+		                val pSym = Apply(scalaDot(nme.Symbol), List(Literal(Constant(p.name.toString)))) // TBD: ensure there is only 1 parameter list
+		                val underscored_p_name = newTermName(underscore_prefix(p.name.toString))
+
+		                var bindParam_Name = 
+		                  if (isFormalConstrainedParameter(p)) bind_constrainedParam_Name
+		                  else  /*isOutputParameter(p)*/         bind_outParam_Name
+		                
+		                val select = Select(Ident(underscored_p_name), bindParam_Name)
+		                
+		                Apply(select, List(pSym))
+		              }
+		            }
     
 		        
 		        
 		        // now all parameters and local values should be available in the list buffers.
 		        // transform the tree so that the identifiers are replaced appropriately
 		        // Note: actual adapting parameters have already got an underscore in their name prefix (...)
-		        // so these will not be found in the scriptFormalParameters list etc.
+		        // so these will not be found in the scriptFormalOutputParameters list etc.
 		        val scriptLocalDataTransformer = new Transformer {
 		          override def transform(tree: Tree): Tree = tree match {
 		            case ident @ Ident(name) => 
-		              if      (scriptFormalParameters.contains(name)) atPos(ident.pos) {Select(Ident(newTermName(underscore_prefix(name.toString))), value_Name)} // _p.value
-		              else if (scriptLocalVariables  .contains(name) 
-		                   ||  scriptLocalValues     .contains(name)) {  // _c.at(here).value
+		              if      (isFormalOutputParameter     (name)
+		                    || isFormalConstrainedParameter(name)) atPos(ident.pos) {Select(Ident(newTermName(underscore_prefix(name.toString))), value_Name)} // _p.value
+		              else if (scriptLocalVariables             .contains(name) 
+		                   ||  scriptLocalValues                .contains(name)) {  // _c.at(here).value
 		                      val select_at     = atPos(ident.pos) {Select(Ident(newTermName(underscore_prefix(name.toString))), at_Name)}
-		                      val apply_at_here = Apply(select_at, List(here_Ident))
+		                      val apply_at_here = atPos(ident.pos) {Apply(select_at, List(here_Ident))}
 		                      atPos(ident.pos) {Select(apply_at_here, value_Name)}
 		              } else ident
 		            case _ => super.transform(tree)
@@ -1678,8 +1706,6 @@ self =>
 		        }
 		        
 		        val underscored_script_name = newTermName(underscore_prefix(name.toString))
-		        val underscored_param_defs  = underscored_param_defs_and_bindings map (_._1)
-		        val paramBindings           = underscored_param_defs_and_bindings map (_._2)
 		        val scriptNameAsSym         = Apply(scalaDot(nme.Symbol), List(Literal(Constant(name.toString))))
 	            val scriptHeader            = Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings) 
 	            val scriptHeaderAndBody     = Apply(scriptHeader, List(rhs_withAdjustedScriptLocalDataTransformed))
@@ -1687,15 +1713,16 @@ self =>
 	            val scriptHeaderAndLocalsAndBody = rhs_withVariablesAndValuesDeclarations
 	            scriptHeaderAndLocalsAndBody += scriptHeaderAndBody
 	            // to enable moving this all to a later phase, we should create a ScriptDef rather than a DefDef
-		        DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), s_scriptType, makeBlock(scriptHeaderAndLocalsAndBody toList))
+	            DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), s_scriptType, makeBlock(scriptHeaderAndLocalsAndBody toList))
 		      }
 	          signalParseProgress(scriptDef.pos)
-	          
+
 	          result+=scriptDef
 	      }
-	      scriptFormalParameters.clear
-	      scriptLocalVariables  .clear
-	      scriptLocalValues     .clear
+	      scriptFormalOutputParameters     .clear
+	      scriptFormalConstrainedParameters.clear
+	      scriptLocalVariables             .clear
+	      scriptLocalValues                .clear
 	                                                             
 	      if (!doMultipleScripts) mustExit = true
       }
@@ -2002,15 +2029,22 @@ self =>
   actualParameterList     = "(" (.actualParameters) ")"
  
   identifiers             =       identifier      .. ","
+  formalParameters        =       formalParameter .. ","
   actualParameters        =       actualParameter .. parameterSeparator
   simpleActualParameters  = simpleActualParameter .. parameterSeparator
  
-  actualParameter         =       valueExpression . actualOutputMarker
-  simpleActualParameter   = simpleValueExpression . actualOutputMarker
+  formalParameter         = . formalOutputMarker; identifier ":" typer
+  actualParameter         = valueExpression
+                          + actualOutputMarker valueExpression
+                            (.postCondition) (. ":" type)
+  simpleActualParameter   = simpleValueExpression
+                          + actualOutputMarker simpleValueExpression
+                            (.postCondition) (. ":" type)
  
-  actualOutputMarker      = "?" + "??"; . postCondition; . ":" typer
+  formalOutputMarker      = "?" + "??"
+  actualOutputMarker      = "?" + "??"
  
-  postCondition           = "if?" valueExpression
+  postCondition           = "?if" valueExpression
  
   simpleTerm              =; |+|
                             scriptCall
@@ -2027,12 +2061,12 @@ self =>
   scriptCall              = implicitScriptCall
                         |+| methodOrScriptCall
                         |+|  channelScriptCall; . resultHandler
- 
+
   implicitScriptCall      =  simpleActualParameters
   methodOrScriptCall      =  simpleValueExpression  .  actualParameterList .postCondition
                         |+|  simpleValueExpression "," simpleActualParameters
-  channelScriptCall       = .simpleValueExpression; 
-                             identifier_arrow;  (+) +  actualParameterList .postCondition 
+  channelScriptCall       = .simpleValueExpression;
+                             identifier_arrow;  (+) +  actualParameterList .postCondition
                                                     +  simpleActualParameters
  
   resultHandler           = "^" + "^^" "{" scalaCode "}"
@@ -2112,24 +2146,30 @@ self =>
          | LBRACE_ASTERISK                             
          | LBRACE_CARET                 => scriptBlockExpr()
         
+      case IDENTIFIER if (in.name==nme.QMARKkw || in.name==nme.QMARK2kw) => 
+        val isOutputParam   = in.name==nme.QMARKkw; 
+        in.nextToken
+        val p = path(thisOK = true, typeOK = false); // scriptSimpleExprRest(t, canApply = canApply)
+	    var paramConstraint: Tree = null
+        if (in.token==IF_QMARK) {
+            in.nextToken
+            paramConstraint = simpleNativeValueExpr()
+        }
+        if (isOutputParam) makeActualOutputParameter(p, paramConstraint)
+        else             makeActualAdaptingParameter(p, paramConstraint)
+
       case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER => 
         val p = path(thisOK = true, typeOK = false); // scriptSimpleExprRest(t, canApply = canApply)
-	      in.token match {
-	        case LPAREN if in.offset==in.lastOffset => return atPos(p.pos.startOrPoint, in.offset) {ScriptApply(p, scriptArgumentExprs())} // no space acceptable before "("
-	        case IDENTIFIER if (isQMark || isQMark2)  => val isOutputParam = isQMark
-	             var paramConstraint: Tree = null
-                 in.nextToken
-                 if (in.token==IF_QMARK) {
-                   in.nextToken
-                   paramConstraint = simpleNativeValueExpr()
-                 }
-                 if (isOutputParam) makeActualOutputParameter  (p, paramConstraint)
-                 else p match {
-                        case Ident(formalParamName) => makeActualAdaptingParameter(formalParamName, paramConstraint)
-                        case _ => syntaxError(in.offset, "An adapting parameter should be a name of a formal constrained parameter"); p
-                      }
-	        case _      => p
-	      }
+	    if (in.token==LPAREN && in.offset==in.lastOffset) { // !!!! no space acceptable before "("
+	      val arguments = scriptArgumentExprs()
+          var callConstraint: Tree = null
+          if (in.token==IF_QMARK) {
+            in.nextToken
+            callConstraint = simpleNativeValueExpr()
+          }
+	      return atPos(p.pos.startOrPoint, in.offset) {ScriptApply(p, arguments)} // TBD: use callConstraint
+        }
+	    p
       case _ if (isLiteral) => atPos(in.offset)(literal(isNegated))
       case NEW    => syntaxError(in.offset, "'new' expressions not yet supported in script bodies"); EmptyTree
       case _      => syntaxErrorOrIncomplete("illegal start of simple expression", true); errorTermTree
@@ -2155,13 +2195,16 @@ self =>
         var isOutputParam   = false
         var isAdaptingParam = false
         var paramConstraint: Tree = null
-        var formalParamName: Name = null
+        
+        if (in.token == IDENTIFIER) in.name match {
+          case nme.QMARKkw  => isOutputParam   = true; in.nextToken
+          case nme.QMARK2kw => isAdaptingParam = true; in.nextToken
+          case _ =>
+        }
+        
         var exp = expr() match {
           case a @ Assign(id, rhs) if maybeNamed => atPos(a.pos) { AssignOrNamedArg(id, rhs) }
-          case Apply(Select(lhs                   , n), Nil) if (n.toString=="$qmark") =>   isOutputParam = true; lhs
-          case Apply(Select(Ident(formalParamName), n), Nil) if (n.toString=="$qmark$qmark") => isAdaptingParam = true; Ident(formalParamName)
-          case Apply(Select(lhs                   , n), Nil) if (n.toString=="$qmark$qmark") => syntaxError(in.offset, "An adapting parameter should be a name of a formal constrained parameter"); lhs
-          case e                                                                                    => e
+          case e                                 => e
         }
         if (isOutputParam || isAdaptingParam) {
           if (in.token==IF_QMARK) {
@@ -2170,33 +2213,12 @@ self =>
           }
         }
         if      (  isOutputParam) makeActualOutputParameter  (exp, paramConstraint)
-        else if (isAdaptingParam) makeActualAdaptingParameter(formalParamName, paramConstraint)
+        else if (isAdaptingParam) makeActualAdaptingParameter(exp, paramConstraint)
         else exp
       }
       inSubscriptArgumentParens(if (in.token == RPAREN) Nil else args())
     }
    
-/*                 
-        var paramConstraint: Tree = null
-                     isOutputParam   = in.name==nme.QMARKkw
-                     isAdaptingParam = in.name==nme.QMARK2kw
-                     in.nextToken()
-                     if (in.token==IF_QMARK) {
-                       in.nextToken
-                       paramConstraint = simpleNativeValueExpr()
-                     }
-                 
-       def      makeActualOutputParameter(exp   : Tree, constraint: Tree = null): Tree = {
-      if (constraint==null) Apply(selectActualOutputParameter, List(exp, makeParameterTransferFunction(exp)))
-      else             Apply(selectActualConstrainedParameter, List(exp, makeParameterTransferFunction(exp), constraint))
-    }
-      
-    def    makeActualAdaptingParameter(formalParam: Name, constraint: Tree = null): Tree = {
-*/
-
-    
-
-    
 /* ----------- EXPRESSIONS ------------------------------------------------ */
 
     def condExpr(): Tree = {
@@ -3042,17 +3064,19 @@ self =>
           }
           if (caseParam) mods |= Flags.CASEACCESSOR
         }
-        val nameOffset = in.offset
-        val name       = ident()
-        var bynamemod = 0
+        var isSubScriptFormalOutputParameter      = false
+        var isSubScriptFormalConstrainedParameter = false
         if (in.isInSubScript_header) { // TBD: clean up
           if (in.token==IDENTIFIER)
             in.name match {
-              case nme.QMARKkw
-                 | nme.QMARK2kw => annots = Ident(in.name)::annots; in.nextToken()
+              case nme.QMARKkw  => isSubScriptFormalOutputParameter      = true; in.nextToken()
+              case nme.QMARK2kw => isSubScriptFormalConstrainedParameter = true; in.nextToken()
               case _            =>
             }
         }
+        val nameOffset = in.offset
+        val name       = ident()
+        var bynamemod = 0
         val tpt =
           if (settings.YmethodInfer.value && !owner.isTypeName && in.token != COLON) {
             TypeTree()
@@ -3073,9 +3097,10 @@ self =>
             expr()
           } else EmptyTree
         val termName = name.toTermName
-        if (in.isInSubScript_header) {
-          scriptFormalParameters += termName->tpt
-        }
+        
+        if (isSubScriptFormalOutputParameter     ) storeScriptFormalOutputParameter     (termName,tpt)
+        if (isSubScriptFormalConstrainedParameter) storeScriptFormalConstrainedParameter(termName,tpt)
+        
         atPos(start, if (name == nme.ERROR) start else nameOffset) {
           ValDef((mods | implicitmod | bynamemod) withAnnotations annots, termName, tpt, default)
         }

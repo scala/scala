@@ -67,8 +67,8 @@ class LifeFrameApplication extends BasicLifeFrameApplication {
      
   implicit def script..
   
-    key(c??: Char     ) =  key2(top, ActualAdaptingParameter(_c))  //key(top, c??) // TBD in subscript-scalac parser: recognize "??" and "?"
-   vkey(k??: Key.Value) = vkey2(top, ActualAdaptingParameter(_k)) //vkey(top, k??)
+    key(??c: Char     ) =  key2(top, ??c)
+   vkey(??k: Key.Value) = vkey2(top, ??k)
 
 def script..
 	 randomizeCommand  = randomizeButton + 'r'
@@ -113,15 +113,15 @@ def script..
 //                     !@#%^&$ mouseSingleClick also reacts on double clicks!!! 
 //                     So wait 220 ms; if by then no mouseDoubleClick as arrived, do the singleClick action:
    mouseClickInput  = var p:java.awt.Point=null
-                    ; mouseSingleClick( board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) 
+                    ; mouseSingleClick( board, ?p) 
                       {! resetLastMousePos !}
-                      ( {*sleep_ms(220)*} break_up2 
-                      / mouseDoubleClick( board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)))
+                      ( {*sleep_ms(220)*} break_up2 / mouseDoubleClick(board, ?p) )
                       ...
                     ; {! handleMouseSingleClick(p) !}
                     ; ...
                     
-   doubleClick      = var p:java.awt.Point=null mouseDoubleClick(board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"
+//doubleClick      = var p:java.awt.Point=null mouseDoubleClick(board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"
+   doubleClick      = var p:java.awt.Point=null mouseDoubleClick(board, ?p)
    mouse_Released   = var p:java.awt.Point=null mouseReleased(   board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"; mouseReleased instead of mouse_Released yields "too many arguments for method" error
     mouseDragInput  = mouseDraggings(board, (e: MouseEvent) => handleMouseDrag(e.point)) / (mouse_Released  {!resetLastMousePos!}); ...
     mouseMoveInput  = mouseMoves(    board, (e: MouseEvent) => handleMouseMove(e.point)) 
