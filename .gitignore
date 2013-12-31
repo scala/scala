@@ -26,6 +26,20 @@
 *.sql
 *.sqlite
 
+# Various files #
+######################
+*.bnd
+*.complete
+*.out
+*.out1
+*.out12
+sandbox/**
+.cache
+qbin
+*.prefs
+out
+
+
 # OS generated files #
 ######################
 .DS_Store
