@@ -202,12 +202,14 @@ private[util] trait InternalPositionImpl {
   def line: Int           = if (hasSource) source.offsetToLine(point) + 1 else 0
   def column: Int         = if (hasSource) calculateColumn() else 0
   def lineContent: String = if (hasSource) source.lineToString(line - 1) else ""
-  def lineCarat: String   = if (hasSource) " " * (column - 1) + "^" else ""
+  def lineCaret: String   = if (hasSource) " " * (column - 1) + "^" else ""
+  @deprecated("use `lineCaret`", since="2.11.0")
+  def lineCarat: String   = lineCaret
 
   def showError(msg: String): String = finalPosition match {
     case FakePos(fmsg) => s"$fmsg $msg"
     case NoPosition    => msg
-    case pos           => f"${pos.line}: $msg%n${u(pos.lineContent)}%n${pos.lineCarat}"
+    case pos           => f"${pos.line}: $msg%n${u(pos.lineContent)}%n${pos.lineCaret}"
   }
   private def u(s: String) = {
     def uu(c: Int) = f"\\u$c%04x"
@@ -263,7 +265,7 @@ private[util] trait DeprecatedPosition {
   @deprecated("use `finalPosition`", "2.11.0")
   def inUltimateSource(source: SourceFile): Position = source positionInUltimateSource this
 
-  @deprecated("use `lineCarat`", "2.11.0")
+  @deprecated("use `lineCaret`", since="2.11.0")
   def lineWithCarat(maxWidth: Int): (String, String) = ("", "")
 
   @deprecated("Use `withSource(source)` and `withShift`", "2.11.0")
