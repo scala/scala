@@ -955,7 +955,7 @@ self =>
    * `Stream`.
    * @example {{{
    * val sov: Stream[Vector[Int]] = Vector(0) #:: Vector(0, 0) #:: sov.zip(sov.tail).map { n => n._1 ++ n._2 }
-   * sov flatten take 10 mkString ", "
+   * sov.flatten take 10 mkString ", "
    * // produces: "0, 0, 0, 0, 0, 0, 0, 0, 0, 0"
    * }}}
    */
