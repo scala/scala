@@ -21,7 +21,7 @@ tree: reflect.runtime.universe.Apply =
   }
 }()
 
-scala> {val tb = reflect.runtime.currentMirror.mkToolBox(); tb.typeCheck(tree): Any}
+scala> {val tb = reflect.runtime.currentMirror.mkToolBox(); tb.typecheck(tree): Any}
 res0: Any =
 {
   {

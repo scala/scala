@@ -5,7 +5,7 @@ object Macros {
     import c.universe._
 
     val tree1 = Apply(Select(Literal(Constant(1)), TermName("$minus$greater")), List(Literal(Constant(2))))
-    val ttree1 = c.typeCheck(tree1, withImplicitViewsDisabled = false)
+    val ttree1 = c.typecheck(tree1, withImplicitViewsDisabled = false)
     c.Expr[String](Literal(Constant(ttree1.toString)))
   }
 
@@ -16,7 +16,7 @@ object Macros {
 
     try {
       val tree2 = Apply(Select(Literal(Constant(1)), TermName("$minus$greater")), List(Literal(Constant(2))))
-      val ttree2 = c.typeCheck(tree2, withImplicitViewsDisabled = true)
+      val ttree2 = c.typecheck(tree2, withImplicitViewsDisabled = true)
       c.Expr[String](Literal(Constant(ttree2.toString)))
     } catch {
       case ex: Throwable =>

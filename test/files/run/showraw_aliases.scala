@@ -7,7 +7,7 @@ object Test extends App {
     import scala.reflect.runtime.{universe => ru}
     ru
   """)
-  val ttree = tb.typeCheck(tree)
+  val ttree = tb.typecheck(tree)
 
   def stabilizeIds(s: String) = """#\d+""".r.replaceAllIn(s, "#<id>")
   def stabilizePositions(s: String) = """\d+""".r.replaceAllIn(s, "<offset>")

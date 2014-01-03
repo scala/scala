@@ -6,5 +6,5 @@ import scala.tools.reflect.ToolBox
 object Test extends App {
   val tb = cm.mkToolBox()
   val expr = tb.parse("math.sqrt(4.0)")
-  println(tb.typeCheck(expr))
+  println(tb.typecheck(expr))
 }

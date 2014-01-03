@@ -14,7 +14,7 @@ object Test extends App {
 
   // test 2: import and typecheck
   val toolbox = cm.mkToolBox()
-  val ttree = toolbox.typeCheck(tree)
+  val ttree = toolbox.typecheck(tree)
   println(ttree.toString)
 
   // test 3: import and compile

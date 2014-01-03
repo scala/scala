@@ -20,7 +20,7 @@ object Test extends App {
     case e: ToolBoxError => println(e)
   }
   val tb = cm.mkToolBox()
-  val tpartials = tb.typeCheck(partials.tree)
+  val tpartials = tb.typecheck(partials.tree)
   println(tpartials)
   val rtpartials = tb.resetAllAttrs(tpartials)
   println(tb.eval(rtpartials))
