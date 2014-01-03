@@ -671,6 +671,7 @@ self =>
     def isRawBar  = isIdent && in.name == raw.BAR
 
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
+    def isMacro = in.token == IDENTIFIER && in.name == nme.MACROkw
 
     def isLiteralToken(token: Token) = token match {
       case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
@@ -1037,6 +1038,8 @@ self =>
     /** For when it's known already to be a type name. */
     def identForType(): TypeName = ident().toTypeName
     def identForType(skipIt: Boolean): TypeName = ident(skipIt).toTypeName
+
+    def identOrMacro(): Name = if (isMacro) rawIdent() else ident()
 
     def selector(t: Tree): Tree = {
       val point = in.offset
@@ -2551,7 +2554,7 @@ self =>
       }
       else {
         val nameOffset = in.offset
-        val name = ident()
+        val name = identOrMacro()
         funDefRest(start, nameOffset, mods, name)
       }
     }
@@ -2584,7 +2587,7 @@ self =>
           } else {
             if (in.token == EQUALS) {
               in.nextTokenAllow(nme.MACROkw)
-              if (in.token == IDENTIFIER && in.name == nme.MACROkw) {
+              if (isMacro) {
                 in.nextToken()
                 newmods |= Flags.MACRO
               }
