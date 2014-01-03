@@ -10,7 +10,7 @@
 package scala.ref
 
 /**
- *  A wrapper class for java.lag.ref.WeakReference
+ *  A wrapper class for java.lang.ref.WeakReference
  *  The new functionality is (1) results are Option values, instead of using null.
  *  (2) There is an extractor that maps the weak reference itself into an option.
  *  @author Sean McDirmid
