@@ -134,9 +134,9 @@ trait BuildUtils { self: SymbolTable =>
 
     def RefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
 
-    def withFreshTermName[T](prefix: String)(f: TermName => T): T = f(freshTermName(prefix))
+    def freshTermName(prefix: String): TermName = self.freshTermName(prefix)
 
-    def withFreshTypeName[T](prefix: String)(f: TypeName => T): T = f(freshTypeName(prefix))
+    def freshTypeName(prefix: String): TypeName = self.freshTypeName(prefix)
 
     protected implicit def fresh: FreshNameCreator = self.currentFreshNameCreator
 
