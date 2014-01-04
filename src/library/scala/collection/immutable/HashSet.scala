@@ -58,7 +58,6 @@ class HashSet[A] extends AbstractSet[A]
 
   override def + (elem1: A, elem2: A, elems: A*): HashSet[A] =
     this + elem1 + elem2 ++ elems
-    // TODO: optimize (might be able to use mutable updates)
 
   def - (e: A): HashSet[A] =
     removed0(e, computeHash(e), 0)
@@ -127,8 +126,6 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       new HashTrieSet[A](bitmap, elems, child.size)
     }
   }
-
-  // TODO: add HashSet2, HashSet3, ...
 
   class HashSet1[A](private[HashSet] val key: A, private[HashSet] val hash: Int) extends HashSet[A] {
     override def size = 1
@@ -212,7 +209,6 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         elems(index & 0x1f).get0(key, hash, level + 5)
       } else if ((bitmap & mask) != 0) {
         val offset = Integer.bitCount(bitmap & (mask-1))
-        // TODO: might be worth checking if sub is HashTrieSet (-> monomorphic call site)
         elems(offset).get0(key, hash, level + 5)
       } else
         false
@@ -223,7 +219,6 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
       if ((bitmap & mask) != 0) {
-        // TODO: might be worth checking if sub is HashTrieSet (-> monomorphic call site)
         val sub = elems(offset)
         val subNew = sub.updated0(key, hash, level + 5)
         if (sub eq subNew) this
@@ -249,7 +244,6 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       val offset = Integer.bitCount(bitmap & (mask-1))
       if ((bitmap & mask) != 0) {
         val sub = elems(offset)
-        // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         val subNew = sub.removed0(key, hash, level + 5)
         if (sub eq subNew) this
         else if (subNew.isEmpty) {
