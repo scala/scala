@@ -348,22 +348,9 @@ class CommonScriptExecutor extends ScriptExecutor {
   /*
    * Methods for executing code
    */
-  def executeCode_localvar[V]   (n: N_localvar[V]) = /*if (n.template.code!=null)*/ executeCode(n, ()=>n.template.code.apply.apply(n)) /*else 0 what to use as default?*/
-  def executeCode_call          (n: N_call      ) = {
-    var v = executeCode(n, ()=>n.template.code.apply.apply(n)) // executeTemplateCode[N_call,T_call, N_call=>Unit](n)
-    v(n)
-  }
-  def executeCode_annotation[CN<:CallGraphNodeTrait,
-                             CT<:TemplateChildNode]
-                     (n: N_annotation[CN,CT]): Unit    = executeCode(n, ()=>n.template.code.apply.apply(n))
-  def executeCode_tiny   (n: N_code_tiny   ) : Unit    = executeCode(n, ()=>n.template.code.apply.apply(n))
-  def executeCode_if     (n: N_if          ) : Boolean = executeCode(n, ()=>n.template.code.apply.apply(n))
-  def executeCode_if_else(n: N_if_else     ) : Boolean = executeCode(n, ()=>n.template.code.apply.apply(n))
-  def executeCode_while  (n: N_while       ) : Boolean = executeCode(n, ()=>n.template.code.apply.apply(n))
-  
-//def executeTemplateCode[N<:CallGraphNodeTrait,T<:TemplateCodeHolder[N,R],R]    (n: N): R    = {executeCode(n, ()=>n.template.code.apply.apply(n))} //n.doCode
-  def executeCode[R]            (n: DoCodeHolder, code: =>()=>R   ): R    = {n.codeExecutor.doCodeExecution(code)}
-  def executeCodeIfDefined(n: CallGraphNodeTrait, code: =>()=>Unit): Unit = {if (code!=null) executeCode(n.asInstanceOf[DoCodeHolder], code)} // TBD: get rid of cast
+  def executeCode[R](n: DoCodeHolder[R]) : R                  = executeCode(n, ()=>n.doCode)
+  def executeCode[R](n: DoCodeHolder[R], code: =>()=>R   ): R = {n.codeExecutor.doCodeExecution(code)}
+  def executeCodeIfDefined(n: CallGraphNodeTrait, code: =>()=>Unit): Unit = {if (code!=null) executeCode(n.asInstanceOf[DoCodeHolder[Unit]], code)} // TBD: get rid of cast
   
   /*
    * Handle a deactivation message. 
@@ -407,9 +394,9 @@ class CommonScriptExecutor extends ScriptExecutor {
       executeCodeIfDefined(message.node, message.node.onActivateOrResume)
       message.node match {
            //case n@N_root            (t: T_1_ary     ) => activateFrom(n, t.child0)
-           case n@N_code_tiny                  (t)  => n.hasSuccess = true; executeCode_tiny(n); if (n.hasSuccess) doNeutral(n); insertDeactivation(n,null)
+           case n@N_code_tiny                  (t)  => n.hasSuccess = true; executeCode(n); if (n.hasSuccess) doNeutral(n); insertDeactivation(n,null)
            case n@N_localvar                   (t)  => if (t.isLoop) setIteration_n_ary_op_ancestor(n); 
-            val v = executeCode_localvar(n);n.n_ary_op_ancestor.initLocalVariable(t.localVariable.name, n.pass, v); doNeutral(n); insertDeactivation(n,null)
+            val v = executeCode(n);n.n_ary_op_ancestor.initLocalVariable(t.localVariable.name, n.pass, v); doNeutral(n); insertDeactivation(n,null)
            case n@N_privatevar                 (t) => n.n_ary_op_ancestor.initLocalVariable(t.name, n.pass, n.getLocalVariableHolder(t.name).value)
            case n@N_code_normal                (_) => insert(AAActivated(n,null)); insert(AAToBeExecuted(n))
            case n@N_code_unsure                (_) => insert(AAActivated(n,null)); insert(AAToBeExecuted(n))
@@ -427,7 +414,7 @@ class CommonScriptExecutor extends ScriptExecutor {
            case n@N_epsilon                    (t) => insert(Success(n)); insertDeactivation(n,null)
            case n@N_nu                         (t) => doNeutral(n);       insertDeactivation(n,null)
            case n@N_while                      (t) => setIteration_n_ary_op_ancestor(n); 
-                                                      n.hasSuccess = executeCode_while(n)
+                                                      n.hasSuccess = executeCode(n)
                                                       doNeutral(n)
                                                       if (!n.hasSuccess) {
                                                          insert(Break(n, null, ActivationMode.Inactive))
@@ -437,19 +424,19 @@ class CommonScriptExecutor extends ScriptExecutor {
            case n@N_launch                     (t) => activateFrom(CallGraphNode.getLowestLaunchAnchorAncestor(n), t.child0, Some(0)); insertDeactivation(n,null)
            case n@N_launch_anchor              (t) => activateFrom(n, t.child0, Some(0))
            case n@N_1_ary_op                   (t) => activateFrom(n, t.child0); insertContinuation1(message)
-           case n@N_annotation                 (t) => activateFrom(n, t.child0); executeCode_annotation(n)
-           case n@N_if                         (t) => if (executeCode_if     (n)) activateFrom(n, t.child0) else {doNeutral(n); insertDeactivation(n,null)}
-           case n@N_if_else                    (t) => if (executeCode_if_else(n)) activateFrom(n, t.child0) 
+           case n@N_annotation                 (t) => activateFrom(n, t.child0); executeCode(n)
+           case n@N_if                         (t) => if (executeCode(n)) activateFrom(n, t.child0) else {doNeutral(n); insertDeactivation(n,null)}
+           case n@N_if_else                    (t) => if (executeCode(n)) activateFrom(n, t.child0) 
                                                                else  activateFrom(n, t.child1)
            case n@N_inline_if                  (t) => activateFrom(n, t.child0)
            case n@N_inline_if_else             (t) => activateFrom(n, t.child0)
            case n@N_n_ary_op                   (t, isLeftMerge) => val cn = activateFrom(n, t.children.head); if (!isLeftMerge) insertContinuation(message, cn)
-           case n@N_call                       (t) => executeCode_call(n);
-                                                                       if (n.t_callee!=null) {activateFrom(n, n.t_callee)}
-                                                                       else {
-                                                                         insert(CAActivated   (n,null))
-                                                                         insert(CAActivatedTBD(n))
-                                                                       }
+           case n@N_call                       (t) => executeCode(n);
+                                                      if (n.t_callee!=null) {activateFrom(n, n.t_callee)}
+                                                      else {
+                                                        insert(CAActivated   (n,null))
+                                                        insert(CAActivatedTBD(n))
+                                                      }
            case n@N_script                     (t) => activateFrom(n, t.child0)
       }      
   }
@@ -748,8 +735,8 @@ class CommonScriptExecutor extends ScriptExecutor {
     val n = message.node
     n.isExcluded = true
     
-    if (       n.isInstanceOf[DoCodeHolder]) {
-      val nc = n.asInstanceOf[DoCodeHolder]
+    if (       n.isInstanceOf[DoCodeHolder[_]]) {
+      val nc = n.asInstanceOf[DoCodeHolder[_]]
       if (nc.codeExecutor != null) {
         nc.codeExecutor.interruptAA
       }

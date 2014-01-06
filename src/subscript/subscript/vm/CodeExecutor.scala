@@ -75,12 +75,7 @@ abstract class AACodeFragmentExecutor[N<:N_atomic_action](_n: N, _scriptExecutor
       n.isExecuting = true
       try {
         // naa.template.code.apply.apply(naa) don't get this to work, so use a match statement:
-        n match {
-          case n1@N_code_normal  (t) => t.code.apply.apply(n1)
-          case n1@N_code_unsure  (t) => t.code.apply.apply(n1)
-          case n1@N_code_threaded(t) => t.code.apply.apply(n1)
-        }
-        // may affect n.hasSuccess
+        n.doCode // may affect n.hasSuccess
       } 
       finally {n.isExecuting = false}
       executionFinished
@@ -204,12 +199,7 @@ case class EventHandlingCodeFragmentExecutor[N<:N_atomic_action](_n: N, _scriptE
     n.hasSuccess = isMatching
     if (n.hasSuccess) 
     {
-      // n.template.code.apply.apply(n) // don't get this to compile, so use a match statement:
-      n match {
-        case n@N_code_eventhandling     (t) => t.code.apply.apply(n)
-        case n@N_code_eventhandling_loop(t) => t.code.apply.apply(n)
-      }
-      // may affect n.hasSuccess
+      n.doCode // may affect n.hasSuccess
     }
     if (n.hasSuccess)  // probably this test can be ditched
     {

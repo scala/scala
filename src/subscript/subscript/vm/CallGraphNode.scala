@@ -124,17 +124,13 @@ trait CallGraphParentNodeTrait extends CallGraphNodeTrait {
   }
 }
 
-trait DoCodeHolder extends CallGraphNodeTrait {
-//type T = TemplateCodeHolder[this.type, R]
-//def doCode: R = throw new Exception("doCode TBD")
-//def doCode: R = template.code.apply.apply(this)
-// Rest obsolete?
+trait DoCodeHolder[R] {
+  def doCode: R
   private var _isExecuting = false
   override def isExecuting = _isExecuting
            def isExecuting_=(value: Boolean) = _isExecuting=value
 }
 
-// should this not be an abstract class?
 trait CallGraphNode extends CallGraphNodeTrait {
   
   def n_ary_op_else_ancestor: N_n_ary_op = {
@@ -218,8 +214,8 @@ trait CallGraphLeafNode          extends CallGraphTreeNode    {var queue: Buffer
 trait CallGraphTreeParentNode    extends CallGraphTreeNode    with CallGraphParentNodeTrait {}
 trait CallGraphNonTreeParentNode extends CallGraphNonTreeNode with CallGraphParentNodeTrait {}
 
-
-abstract class N_atomic_action  extends CallGraphLeafNode with DoCodeHolder {
+// name not 100% appropriate: many "AA"'s are not really atomic, and N_code_tiny is not a real action
+abstract class N_atomic_action  extends CallGraphLeafNode with DoCodeHolder[Unit] {
   type T <: T_atomic_action
   override def asynchronousAllowed: Boolean = true
   var msgAAToBeExecuted: CallGraphMessage[_] = null
@@ -239,10 +235,10 @@ abstract class CallGraphTreeNode_n_ary extends CallGraphTreeParentNode {
 
 // The case classes for the bottom node types
 
-case class N_code_normal     (template: T_code_normal  ) extends N_atomic_action {type T = T_code_normal  }
-case class N_code_tiny       (template: T_code_tiny    ) extends N_atomic_action {type T = T_code_tiny    }// not 100% appropriate
-case class N_code_threaded   (template: T_code_threaded) extends N_atomic_action {type T = T_code_threaded}
-case class N_code_unsure     (template: T_code_unsure  ) extends N_atomic_action {type T = T_code_unsure
+case class N_code_normal     (template: T_code_normal  ) extends N_atomic_action {type T = T_code_normal  ; def doCode = template.code.apply.apply(this)}
+case class N_code_tiny       (template: T_code_tiny    ) extends N_atomic_action {type T = T_code_tiny    ; def doCode = template.code.apply.apply(this)}
+case class N_code_threaded   (template: T_code_threaded) extends N_atomic_action {type T = T_code_threaded; def doCode = template.code.apply.apply(this)}
+case class N_code_unsure     (template: T_code_unsure  ) extends N_atomic_action {type T = T_code_unsure  ; def doCode = template.code.apply.apply(this)
   private var _result = UnsureExecutionResult.Success; // TBD: clean this all up; hasSuccess+result is too much
   def result = _result
   def result_=(value: UnsureExecutionResult.UnsureExecutionResultType): Unit = {
@@ -250,8 +246,8 @@ case class N_code_unsure     (template: T_code_unsure  ) extends N_atomic_action
     hasSuccess = value==UnsureExecutionResult.Success
   }
 }
-case class N_code_eventhandling         (template: T_code_eventhandling     ) extends N_atomic_action {type T = T_code_eventhandling  }
-case class N_code_eventhandling_loop    (template: T_code_eventhandling_loop) extends N_atomic_action {type T = T_code_eventhandling_loop
+case class N_code_eventhandling         (template: T_code_eventhandling     ) extends N_atomic_action {type T = T_code_eventhandling     ; def doCode = template.code.apply.apply(this)}
+case class N_code_eventhandling_loop    (template: T_code_eventhandling_loop) extends N_atomic_action {type T = T_code_eventhandling_loop; def doCode = template.code.apply.apply(this)
   private var _result = LoopingExecutionResult.Success; 
   def result = _result
   def result_=(value: LoopingExecutionResult.LoopingExecutionResultType): Unit = {
@@ -259,12 +255,13 @@ case class N_code_eventhandling_loop    (template: T_code_eventhandling_loop) ex
     hasSuccess = value==LoopingExecutionResult.Success || value==LoopingExecutionResult.Break || value==LoopingExecutionResult.OptionalBreak
   }
 }
-case class N_localvar[V](template: T_localvar[V]) extends CallGraphLeafNode with DoCodeHolder {
+case class N_localvar[V](template: T_localvar[V]) extends CallGraphLeafNode with DoCodeHolder[V] {
   type T = T_localvar[V]
+  def doCode = template.code.apply.apply(this)
   override def passToBeUsedToGetVariableNamed(thatName: Symbol): Int = if (template.isLoop&&template.localVariable.name==thatName) pass-1 else pass // used in: var i=0...(i+1)
 }
 case class N_privatevar         (template: T_privatevar         ) extends CallGraphLeafNode                                  {type T = T_privatevar         }
-case class N_while              (template: T_while              ) extends CallGraphLeafNode with DoCodeHolder                {type T = T_while              }
+case class N_while              (template: T_while              ) extends CallGraphLeafNode with DoCodeHolder[Boolean]       {type T = T_while              ; def doCode = template.code.apply.apply(this)}
 case class N_break              (template: T_break              ) extends CallGraphLeafNode                                  {type T = T_break              }
 case class N_optional_break     (template: T_optional_break     ) extends CallGraphLeafNode                                  {type T = T_optional_break     }
 case class N_optional_break_loop(template: T_optional_break_loop) extends CallGraphLeafNode                                  {type T = T_optional_break_loop}
@@ -273,13 +270,14 @@ case class N_epsilon            (template: T_epsilon            ) extends CallGr
 case class N_nu                 (template: T_nu                 ) extends CallGraphLeafNode                                  {type T = T_nu                 }
 case class N_loop               (template: T_loop               ) extends CallGraphLeafNode                                  {type T = T_loop               }
 case class N_1_ary_op           (template: T_1_ary_op           ) extends CallGraphTreeParentNode                            {type T = T_1_ary_op           ; var continuation: Continuation1 = null}
-case class N_if                 (template: T_if                 ) extends CallGraphTreeParentNode with DoCodeHolder          {type T = T_if                 }
-case class N_if_else            (template: T_if_else            ) extends CallGraphTreeParentNode with DoCodeHolder          {type T = T_if_else            }
+case class N_if                 (template: T_if                 ) extends CallGraphTreeParentNode with DoCodeHolder[Boolean] {type T = T_if                 ; def doCode = template.code.apply.apply(this)}
+case class N_if_else            (template: T_if_else            ) extends CallGraphTreeParentNode with DoCodeHolder[Boolean] {type T = T_if_else            ; def doCode = template.code.apply.apply(this)}
 case class N_launch             (template: T_launch             ) extends CallGraphLeafNode                                  {type T = T_launch             }
 
-case class N_annotation[CN<:CallGraphNodeTrait,CT<:TemplateChildNode] (template: T_annotation[CN,CT]) extends CallGraphTreeParentNode with DoCodeHolder {
+case class N_annotation[CN<:CallGraphNodeTrait,CT<:TemplateChildNode] (template: T_annotation[CN,CT]) extends CallGraphTreeParentNode with DoCodeHolder[Unit] {
   type T = T_annotation[CN,CT]
   def there:CN=children.head.asInstanceOf[CN]
+  def doCode = template.code.apply.apply(this)
 }
 
 // the following 4 types may have multiple children active synchronously
@@ -299,10 +297,14 @@ case class N_n_ary_op           (template: T_n_ary_op      , isLeftMerge: Boolea
 // only one class for normal script calls and communicator-script calls
 // this will make parsing etc much easier,
 // but there are some fields that are either for normal script calls or for communicator-script calls
-case class N_call(template: T_call) extends CallGraphTreeParentNode with DoCodeHolder {
+case class N_call(template: T_call) extends CallGraphTreeParentNode with DoCodeHolder[Unit] {
   type T = T_call
   var t_callee    : T_script     = null
   var t_commcallee: T_commscript = null
+  def doCode = {
+    var v = template.code.apply.apply(this)
+    v(this)
+  }
   def communicator: Communicator = if (t_commcallee==null) null else t_commcallee.communicator
   def stopPending {if (communicator!=null) {communicator.removePendingCall(this)}}
   var actualParameters: scala.collection.immutable.Seq[ActualParameter[_<:Any]] = Nil
