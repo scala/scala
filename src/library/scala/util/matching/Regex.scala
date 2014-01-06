@@ -132,7 +132,7 @@ import java.util.regex.{ Pattern, Matcher }
  *  @author  Martin Odersky
  *  @version 1.1, 29/01/2008
  *
- *  @param pattern    The compiled pattern
+ *  @param regex      A string representing a regular expression
  *  @param groupNames A mapping from names to indices in capture groups
  *
  *  @define replacementString
@@ -145,16 +145,13 @@ import java.util.regex.{ Pattern, Matcher }
  *  to automatically escape these characters.
  */
 @SerialVersionUID(-2094783597747625537L)
-class Regex private[matching](val pattern: Pattern, groupNames: String*) extends Serializable {
+class Regex(val regex: String, groupNames: String*) extends Serializable {
   outer =>
 
   import Regex._
 
-  /**
-    *  @param regex      A string representing a regular expression
-    *  @param groupNames A mapping from names to indices in capture groups
-    */
-  def this(regex: String, groupNames: String*) = this(Pattern.compile(regex), groupNames: _*)
+  /** The compiled pattern. */
+  lazy val pattern: Pattern = Pattern compile regex
 
   /** Tries to match a [[java.lang.CharSequence]].
    *  If the match succeeds, the result is a list of the matching
@@ -257,7 +254,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     case _ => None
   }
 
-  //  @see UnanchoredRegex
+  // @see UnanchoredRegex
   protected def runMatcher(m: Matcher) = m.matches()
 
   /** Return all matches of this regexp in given character sequence as a [[scala.util.matching.Regex.MatchIterator]],
@@ -461,10 +458,31 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *
    *  @return        The new unanchored regex
    */
-  def unanchored: UnanchoredRegex = new Regex(pattern, groupNames: _*) with UnanchoredRegex { override def anchored = outer }
+  def unanchored: UnanchoredRegex = new Regex(regex, groupNames: _*) with UnanchoredRegex {
+    override lazy val pattern = outer.pattern  // don't recompile
+    override def anchored     = outer
+    override def quoted       =
+      if (outer.quoted == outer) this          // already quoted
+      else super.quoted
+  }
   def anchored: Regex             = this
 
-  def regex: String = pattern.pattern
+  /** Create a new Regex with the pattern quoted so that special
+   *  characters match themselves as ordinary literals.
+   *
+   *  {{{
+   *  val r = "a*b".r.quoted
+   *  "a*b" match { case r() => true }      // yes, indeed
+   *  val u = r.unanchored
+   *  "aaa*bbb" match { case u() => true }  // works
+   *  val q = "a*b".unanchored.quoted
+   *  "aaa*bbb" match { case q() => true }  // ok too
+   *  }}}
+   */
+  def quoted: Regex = {
+    val q: Regex = new Regex(Pattern quote regex, groupNames: _*) { override def quoted = this }
+    if (anchored == this) q else q.unanchored
+  }
 
   /** The string defining the regular expression */
   override def toString = regex
