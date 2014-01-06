@@ -692,6 +692,35 @@ trait ValAndDefPrintTests {
   @Test def testDefWithAnn4 = assertPrintedCode("@Foo(a)(b)(x, y) def foo = null")
   
   @Test def testDefWithAnn5 = assertPrintedCode("@Foo[A, B](a)(b) @Bar def foo(x: Int) = null")
+  
+  @Test def testDefWithAnn6 = assertPrintedCode("@test1(new test2()) def foo = 42")
+  
+  @Test def testDefWithAnn7 = assertPrintedCode("@`t*` def foo = 42")
+  
+  @Test def testDefWithAnn8 = assertPrintedCode("@throws(classOf[Exception]) def foo = throw new Exception()")
+  
+  @Test def testAnnotated1 = assertPrintedCode("def foo = 42: @test1")
+  
+  @Test def testAnnotated2 = assertPrintedCode("""def foo = 42: @test1(42, z = "5")""")
+  
+  @Test def testAnnotated3 = assertPrintedCode("def foo = (42: @test1): @test2(new test1())")
+  
+  @Test def testAnnotated4 = assertPrintedCode("""def foo = 42: @test1(4, "testing")(4.2)""")
+    
+  @Test def testAnnotated5 = assertPrintedCode("""def foo = (42: @test1(4, "testing")(4.2)): @test2(1, "bar")(3.14)""")
+  
+  @Test def testAnnotated6 = assertPrintedCode("def foo = ((42: @test1): @test2(new test1())): @test3(1)(2, 3)(4)")
+  
+  @Test def testAnnotated7 = assertPrintedCode(sm"""
+    |(x: @unchecked) match {
+    |  case ((_): Int) => true
+    |  case _ => false
+    |}""")
+  
+  @Test def testAnnotated8 = assertPrintedCode(sm"""
+    |((x: @unchecked): @test1(1, "testing")(3.14)) match {
+    |  case _ => true
+    |}""")
 }
 
 trait PackagePrintTests {

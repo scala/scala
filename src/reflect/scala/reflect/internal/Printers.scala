@@ -297,19 +297,6 @@ trait Printers extends api.Printers { self: SymbolTable =>
       print("this")
     }
 
-    protected def printAnnotated(tree: Annotated)(printArg: => Unit) {
-      val Annotated(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), atree) = tree
-
-      def printAnnot() {
-        print("@", tpt)
-        if (args.nonEmpty)
-          printRow(args, "(", ",", ")")
-      }
-      printArg
-      printAnnot()
-    }
-
-
     def printTree(tree: Tree) {
       tree match {
         case EmptyTree =>
@@ -473,7 +460,13 @@ trait Printers extends api.Printers { self: SymbolTable =>
           }
 
         case an @ Annotated(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), tree) =>
-          printAnnotated(an)(print(tree, if (tree.isType) " " else ": "))
+          def printAnnot() {
+            print("@", tpt)
+            if (args.nonEmpty)
+              printRow(args, "(", ",", ")")
+          }
+          print(tree, if (tree.isType) " " else ": ")
+          printAnnot()
 
         case SingletonTypeTree(ref) =>
           print(ref, ".type")
@@ -677,7 +670,11 @@ trait Printers extends api.Printers { self: SymbolTable =>
     
     override def printAnnotations(tree: MemberDef) {
       val annots = tree.mods.annotations
-      annots foreach {
+      annots foreach {annot => printAnnot(annot); print(" ")}
+    }
+    
+    protected def printAnnot(tree: Tree) {
+      tree match {
         case treeInfo.Applied(core, _, argss) =>
           print("@")
           core match {
@@ -685,9 +682,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
             case _ =>
           }
           printArgss(argss)
-          print(" ")
         case _ => super.printTree(tree)
-      }
+      }  
     }
 
     override def printTree(tree: Tree) { 
@@ -972,11 +968,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
               print(printValue)
           }
 
-        case an @ Annotated(Apply(Select(New(tpt), nme.CONSTRUCTOR), args), tree) =>
-          printAnnotated(an) {
-            val printParentheses = needsParentheses(tree)()
-            parenthesize(printParentheses) { print(tree) }; print(if (tree.isType) " " else ": ")
-          }
+        case an @ Annotated(ap, tree) =>
+          val printParentheses = needsParentheses(tree)()
+          parenthesize(printParentheses) { print(tree) }; print(if (tree.isType) " " else ": ")
+          printAnnot(ap)
 
         case SelectFromTypeTree(qualifier, selector) =>
           print("(", qualifier, ")#", blankForOperatorName(selector), printedName(selector))
