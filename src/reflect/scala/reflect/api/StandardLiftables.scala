@@ -1,6 +1,8 @@
 package scala.reflect
 package api
 
+import scala.language.experimental.macros
+
 trait StandardLiftables { self: Universe =>
   import build.{SyntacticTuple, ScalaDot}
 
@@ -46,6 +48,8 @@ trait StandardLiftables { self: Universe =>
       case Left(l)  => callScala(nme.util, nme.Left)(lift(l) :: Nil)
       case Right(r) => callScala(nme.util, nme.Right)(lift(r) :: Nil)
     }
+
+    implicit def liftCaseClass[T]: Liftable[T] = macro LiftableCaseClass.impl[T]
 
     implicit def liftTuple1[T1](implicit liftT1: Liftable[T1]): Liftable[Tuple1[T1]] = Liftable { t =>
       SyntacticTuple(liftT1(t._1) :: Nil)
@@ -226,5 +230,79 @@ trait StandardLiftables { self: Universe =>
     val Symbol     = TermName("Symbol")
     val Vector     = TermName("Vector")
     val util       = TermName("util")
+  }
+}
+
+object LiftableCaseClass {
+  import scala.reflect.macros.WhiteboxContext
+
+  def impl[T: c.WeakTypeTag](c: WhiteboxContext): c.Tree = {
+    import c.universe._
+    val Select(prefix, _) = c.prefix.tree
+    val T = weakTypeOf[T]
+    val symbol = T.typeSymbol
+    if (!symbol.asClass.isCaseClass)
+      c.abort(c.enclosingPosition, s"$symbol is not a case class")
+    if (!symbol.isStatic)
+      c.abort(c.enclosingPosition, s"$symbol is not static")
+    def fields(tpe: Type) = tpe.declarations.collectFirst {
+      case m: MethodSymbol if m.isPrimaryConstructor ⇒ m
+    }.get.paramss.head.map { field ⇒
+      val name = field.name
+      val typeSign = tpe.declaration(name).typeSignature
+      name → typeSign
+    }
+    val constructor = Select(Apply(
+                               Select(prefix, TermName("reify")),
+                               List(Ident(c.mirror.staticModule(symbol.fullName)))),
+                        TermName("tree"))
+    val arguments = fields(T).map { case (name, typeSign) ⇒
+      // Tree produced by the following quasiquote:
+      // q"implicitly[Liftable[$typeSign]].apply(value.$name)"
+      Apply(Select(
+              TypeApply(Select(Ident(definitions.PredefModule), TermName("implicitly")),
+                        List(AppliedTypeTree(Select(prefix, TypeName("Liftable")),
+                             List(TypeTree(typeSign))))),
+              TermName("apply")),
+           List(Select(Ident(TermName("value")), name)))
+      // Another way to do this would be:
+      /*q"""
+        val v : $typeSign = value.$name
+        q"$$v"
+       """*/
+    }
+    val reflect = Apply(Select(prefix, TermName("Apply")),
+                        List(constructor,
+                          Apply(Ident(definitions.ListModule),
+                        arguments))) // q"Apply($constructor, List(..$arguments))"
+    val implicitName = TermName(symbol.name.encoded ++ "Liftable")
+    // Tree produced by the following quasiquote:
+    /*q"""
+      implicit object $implicitName extends Liftable[$T] {
+        def apply(value: $T): Tree = $reflect
+      }
+      $implicitName
+    """*/
+    import Flag._
+    Block(List(ModuleDef(Modifiers(IMPLICIT),
+                implicitName,
+                Template(
+                  List(AppliedTypeTree(Select(prefix, TypeName("Liftable")),
+                       List(TypeTree(T)))),
+                  noSelfType,
+                  List(DefDef(Modifiers(),
+                        nme.CONSTRUCTOR,
+                        List(), List(List()),
+                        TypeTree(),
+                        Block(
+                          List(pendingSuperCall),
+                          Literal(Constant(())))),
+                        DefDef(Modifiers(),
+                               TermName("apply"),
+                               List(),
+                               List(List(ValDef(Modifiers(PARAM),
+                                         TermName("value"), TypeTree(T), EmptyTree))),
+                               Select(prefix, TypeName("Tree")), reflect))))),
+          Ident(implicitName))
   }
 }
