@@ -1,7 +1,7 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Macros {
-  def impl(c: Context): c.Expr[Unit] = {
+  def impl(c: BlackboxContext): c.Expr[Unit] = {
     // we're macros, so we can reflect against our source path
     // so we don't need any partests to clean up after us!
     val dir = c.enclosingUnit.source.file.file.getCanonicalFile.getParentFile
@@ -14,9 +14,9 @@ object Macros {
     }
 
     import c.universe._
-    val next = if (c.enclosingMacros.length < 3) c.Expr[Unit](Select(Ident(c.mirror.staticModule("Macros")), newTermName("foo"))) else c.literalUnit
+    val next = if (c.enclosingMacros.length < 3) c.Expr[Unit](Select(Ident(c.mirror.staticModule("Macros")), TermName("foo"))) else c.Expr[Unit](Literal(Constant(())))
     c.universe.reify {
-      println(c.literal(normalizePaths(c.enclosingMacros.toString)).splice)
+      println(c.Expr[String](Literal(Constant(normalizePaths(c.enclosingMacros.toString)))).splice)
       next.splice
     }
   }

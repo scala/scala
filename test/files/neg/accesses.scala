@@ -6,7 +6,7 @@ abstract class A {
   private[p1] def f4(): Unit
   protected[p1] def f5(): Unit
 }
-  
+
 abstract class OK1 extends A {
   private[p1] def f2(): Unit
   protected[p2] def f3(): Unit

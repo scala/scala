@@ -1,0 +1,4 @@
+Test_2.scala:4: error: value x is not a member of Any
+  println(Macros.foo.x)
+                     ^
+one error found

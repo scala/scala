@@ -4,11 +4,11 @@ object Test extends App {
     case 1 => "one"
     case _ => "many"
   }
-  
+
   println(intSwitch(0))
   println(intSwitch(1))
   println(intSwitch(10))
-  
+
   def charSwitch(x: Char) = x match {
     case 'a' => "got a"
     case 'b' => "got b"
@@ -20,15 +20,15 @@ object Test extends App {
     case 'b' => "got b"
     case _ => "got some letter"
   }
-  
+
   println(charSwitch('a'))
   println(byteSwitch('b'))
   println(charSwitch('z'))
-  
+
   def implicitDefault(x: Int) = x match {
     case 0 => 0
   }
-  
+
   try {
     implicitDefault(5)
   } catch {

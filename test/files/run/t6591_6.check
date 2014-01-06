@@ -1,0 +1,1 @@
+Expr(Block(List(ValDef(Modifiers(), TermName("v"), Select(Select(Ident(TermName("A")), TermName("x")), TypeName("I")), Select(Ident(scala.Predef), TermName("$qmark$qmark$qmark")))), Ident(TermName("v"))))

@@ -8,7 +8,7 @@ public abstract class Action {
   public Action(Global glob0) {
     m_glob = glob0;
   }
-  
+
   public Action() {
     this(null);
   }

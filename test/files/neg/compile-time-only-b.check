@@ -1,0 +1,13 @@
+compile-time-only-b.scala:9: error: splice must be enclosed within a reify {} block
+  val ignored1 = expr.splice
+                      ^
+compile-time-only-b.scala:10: error: cannot use value except for signatures of macro implementations
+  val ignored2 = expr.value
+                      ^
+compile-time-only-b.scala:13: error: splice must be enclosed within a reify {} block
+  val ignored3 = reify(fortyTwo).splice
+                                 ^
+compile-time-only-b.scala:14: error: cannot use value except for signatures of macro implementations
+  val ignored4 = reify(fortyTwo).value
+                                 ^
+four errors found

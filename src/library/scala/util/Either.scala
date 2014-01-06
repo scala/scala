@@ -8,7 +8,8 @@
 
 
 
-package scala.util
+package scala
+package util
 
 import scala.language.implicitConversions
 
@@ -21,7 +22,7 @@ import scala.language.implicitConversions
  *  [[scala.util.Right]] takes the place of [[scala.Some]].  Convention dictates
  *  that Left is used for failure and Right is used for success.
  *
- *  For example, you could use ``Either[String, Int]`` to detect whether a
+ *  For example, you could use `Either[String, Int]` to detect whether a
  *  received input is a String or an Int.
  *
  *  {{{
@@ -205,7 +206,7 @@ final case class Right[+A, +B](b: B) extends Either[A, B] {
 object Either {
 
   /**
-   * Allows use of a ``merge`` method to extract values from Either instances
+   * Allows use of a `merge` method to extract values from Either instances
    * regardless of whether they are Left or Right.
    *
    * {{{
@@ -215,14 +216,12 @@ object Either {
    * r.merge: Seq[Int] // Vector(1)
    * }}}
    */
-  implicit class MergeableEither[A](x: Either[A, A]) {
+  implicit class MergeableEither[A](private val x: Either[A, A]) extends AnyVal {
     def merge: A = x match {
       case Left(a)  => a
       case Right(a) => a
     }
   }
-  @deprecated("use MergeableEither instead", "2.10.0")
-  def either2mergeable[A](x: Either[A, A]): MergeableEither[A] = new MergeableEither(x)
 
   /**
    * Projects an `Either` into a `Left`.

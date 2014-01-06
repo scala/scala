@@ -6,7 +6,7 @@
 import java.io._
 import scala.collection.mutable.Stack
 
-object revcomp { 
+object revcomp {
 
    val IUB = IUBCodeComplements
 
@@ -16,7 +16,7 @@ object revcomp {
       val a: Array[Byte] = new Array( 'z'.toByte )
 
       for (indexValue <- code zip comp)
-         indexValue match { case Pair(i,v) => a(i) = v }
+         indexValue match { case (i,v) => a(i) = v }
 
       a
    }
@@ -49,18 +49,18 @@ object revcomp {
 
       if (desc.length > 0) complementReverseWrite(desc, lines, w)
       w.close
-   } 
+   }
 
 
-   def complementReverseWrite(desc: String, lines: LineStack, 
+   def complementReverseWrite(desc: String, lines: LineStack,
          w: BufferedOutputStream) = {
 
       def inplaceComplementReverse(b: Array[Byte]) = {
-         var i = 0 
+         var i = 0
          var j = b.length - 1
          while (i < j){
-            val swap = b(i) 
-            b(i) = IUB( b(j) ) 
+            val swap = b(i)
+            b(i) = IUB( b(j) )
             b(j) = IUB( swap )
             i = i + 1
             j = j - 1
@@ -79,11 +79,11 @@ object revcomp {
       while (!lines.isEmpty) {
         val line = lines.pop
         inplaceComplementReverse(line)
-        
+
         if (isSplitLine){
            if (isFirstLine){ w.write(line); isFirstLine = false }
            else { w.write(line,0,n-k); w.write(nl); w.write(line,n-k,k) }
-        } 
+        }
         else { w.write(line); w.write(nl) }
       }
       if (isSplitLine && !isFirstLine) w.write(nl)

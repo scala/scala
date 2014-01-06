@@ -1,4 +1,0 @@
-class SimpleClass extends java.lang.Object {
-  def this() = { /* compiled code */ }
-  def foo : scala.Int = { /* compiled code */ }
-}

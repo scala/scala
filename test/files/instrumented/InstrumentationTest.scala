@@ -15,16 +15,21 @@ package instrumented {
 /** Tests if instrumentation itself works correctly */
 object Test {
   def main(args: Array[String]) {
-    // force predef initialization before profiling
-    Predef
-    startProfiling()
-    val foo1 = new Foo1
-    foo1.someMethod
-    val foo2 = new instrumented.Foo2
-    foo2.someMethod
-    // should box the boolean
-    println(true)
-    stopProfiling()
-    printStatistics()
+    if (scala.tools.partest.utils.Properties.isAvian) {
+      println("!!!TEST SKIPPED!!!")
+      println("Instrumentation is not supported on Avian.")
+    } else {
+      // force predef initialization before profiling
+      Predef
+      startProfiling()
+      val foo1 = new Foo1
+      foo1.someMethod
+      val foo2 = new instrumented.Foo2
+      foo2.someMethod
+      // should box the boolean
+      println(true)
+      stopProfiling()
+      printStatistics()
+    }
   }
 }

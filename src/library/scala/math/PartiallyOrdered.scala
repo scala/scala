@@ -8,7 +8,8 @@
 
 
 
-package scala.math
+package scala
+package math
 
 /** A class for partially ordered data.
  *

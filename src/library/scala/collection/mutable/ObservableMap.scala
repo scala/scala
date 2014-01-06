@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import script._
@@ -24,6 +25,7 @@ import script._
  *  @version 2.0, 31/12/2006
  *  @since   1
  */
+@deprecated("Observables are deprecated because scripting is deprecated.", "2.11.0")
 trait ObservableMap[A, B] extends Map[A, B] with Publisher[Message[(A, B)] with Undoable]
 {
 
@@ -60,7 +62,7 @@ trait ObservableMap[A, B] extends Map[A, B] with Publisher[Message[(A, B)] with 
   }
 
   abstract override def clear(): Unit = {
-    super.clear
+    super.clear()
     publish(new Reset with Undoable {
       def undo(): Unit = throw new UnsupportedOperationException("cannot undo")
     })

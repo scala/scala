@@ -1,0 +1,38 @@
+[0m[[0mdebug[0m] [0m[0m
+[0m[[0mdebug[0m] [0mInitial source changes: [0m
+[0m[[0mdebug[0m] [0m	removed:Set()[0m
+[0m[[0mdebug[0m] [0m	added: Set()[0m
+[0m[[0mdebug[0m] [0m	modified: Set()[0m
+[0m[[0mdebug[0m] [0mRemoved products: Set()[0m
+[0m[[0mdebug[0m] [0mModified external sources: Set()[0m
+[0m[[0mdebug[0m] [0mModified binary dependencies: Set(/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/lib_managed/jars/org.fusesource.jansi/jansi/jansi-1.4.jar)[0m
+[0m[[0mdebug[0m] [0mInitial directly invalidated sources: Set()[0m
+[0m[[0mdebug[0m] [0m[0m
+[0m[[0mdebug[0m] [0mSources indirectly invalidated by:[0m
+[0m[[0mdebug[0m] [0m	product: Set()[0m
+[0m[[0mdebug[0m] [0m	binary dep: Set(/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/src/main/java/scala/tools/jline/WindowsTerminal.java, /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/src/main/java/scala/tools/jline/AnsiWindowsTerminal.java, /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/src/main/java/scala/tools/jline/console/ConsoleReader.java)[0m
+[0m[[0mdebug[0m] [0m	external source: Set()[0m
+[0m[[0mdebug[0m] [0mInitially invalidated: Set(/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/src/main/java/scala/tools/jline/WindowsTerminal.java, /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/src/main/java/scala/tools/jline/AnsiWindowsTerminal.java, /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/src/main/java/scala/tools/jline/console/ConsoleReader.java)[0m
+[0m[[0minfo[0m] [0mCompiling 3 Java sources to /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/scala-2.9.2/classes...[0m
+[0m[[0mdebug[0m] [0mCalling Javac with arguments:[0m
+[0m[[0mdebug[0m] [0m	-target[0m
+[0m[[0mdebug[0m] [0m	1.5[0m
+[0m[[0mdebug[0m] [0m	-d[0m
+[0m[[0mdebug[0m] [0m	/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/scala-2.9.2/classes[0m
+[0m[[0mdebug[0m] [0m	-classpath[0m
+[0m[[0mdebug[0m] [0m	/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/scala-2.9.2/classes:/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/lib_managed/jars/org.fusesource.jansi/jansi/jansi-1.4.jar:/Users/andrevandelft/.sbt/0.12.2-RC1/boot/scala-2.9.0-1/lib/scala-library.jar[0m
+[0m[[0mdebug[0m] [0m	/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/src/main/java/scala/tools/jline/AnsiWindowsTerminal.java[0m
+[0m[[0mdebug[0m] [0m	/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/src/main/java/scala/tools/jline/WindowsTerminal.java[0m
+[0m[[0mdebug[0m] [0m	/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/src/main/java/scala/tools/jline/console/ConsoleReader.java[0m
+[0m[[0mdebug[0m] [0mAttempting to call javac directly...[0m
+[0m[[33mwarn[0m] [0mNote: /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/src/main/java/scala/tools/jline/console/ConsoleReader.java uses or overrides a deprecated API.[0m
+[0m[[33mwarn[0m] [0mNote: Recompile with -Xlint:deprecation for details.[0m
+[0m[[0mdebug[0m] [0mjavac returned exit code: 0[0m
+[0m[[0mdebug[0m] [0mJava compilation took 0.11226 s[0m
+[0m[[0mdebug[0m] [0mJava compilation and analysis took 0.255384 s[0m
+[0m[[0mdebug[0m] [0mStep 2 changed sources and immdediate dependencies:[0m
+[0m[[0mdebug[0m] [0m	Set()[0m
+[0m[[0mdebug[0m] [0mNon-trivial strongly connected components: [0m
+[0m[[0mdebug[0m] [0m	[0m
+[0m[[0mdebug[0m] [0mStep 2 invalidated sources:[0m
+[0m[[0mdebug[0m] [0m	Set()[0m

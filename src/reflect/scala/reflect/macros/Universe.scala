@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 /**
@@ -19,6 +20,7 @@ abstract class Universe extends scala.reflect.api.Universe {
   /** A factory that encapsulates common tree-building functions.
    *  @group Macros
    */
+  @deprecated("Use quasiquotes instead", "2.11.0")
   val treeBuild: TreeBuilder { val global: Universe.this.type }
 
   /** The API of reflection artifacts that support [[scala.reflect.macros.Attachments]].

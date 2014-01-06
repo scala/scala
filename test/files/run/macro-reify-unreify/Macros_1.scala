@@ -1,4 +1,4 @@
-import scala.reflect.macros.{Context => Ctx}
+import scala.reflect.macros.{BlackboxContext => Ctx}
 
 object Macros {
   def foo(s: String) = macro Impls.foo
@@ -9,7 +9,7 @@ object Macros {
       import treeBuild._
 
       val world = c.reifyTree(mkRuntimeUniverseRef, EmptyTree, s.tree)
-      val greeting = c.reifyTree(mkRuntimeUniverseRef, EmptyTree, c.typeCheck(Apply(Select(Literal(Constant("hello ")), newTermName("$plus")), List(c.unreifyTree(world)))))
+      val greeting = c.reifyTree(mkRuntimeUniverseRef, EmptyTree, c.typeCheck(Apply(Select(Literal(Constant("hello ")), TermName("$plus")), List(c.unreifyTree(world)))))
       val typedGreeting = c.Expr[String](greeting)
 
       c.universe.reify {

@@ -1,1 +1,1 @@
-scala.reflect.runtime.`package`.universe.reify(Test.this.x)
+`package`.universe.reify(Test.this.x)

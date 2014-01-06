@@ -1,4 +1,6 @@
 object forceDelay {
+  import scala.language.implicitConversions
+
   class Susp[+A](lazyValue: => A) extends Function0[A] {
     private var func: () => Any = () => lazyValue
     private var value: Any = null
@@ -22,7 +24,7 @@ object forceDelay {
 
 object Test {
   import forceDelay._
-  
+
   def main(args: Array[String]) = {
     val s: Susp[Int] = delay { Console.println("evaluating..."); 3 }
     Console.println("s = " + s)

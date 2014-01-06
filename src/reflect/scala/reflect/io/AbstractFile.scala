@@ -4,13 +4,15 @@
  */
 
 
-package scala.reflect
+package scala
+package reflect
 package io
 
-import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
+import java.io.{ FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream, ByteArrayOutputStream }
 import java.io.{ File => JFile }
 import java.net.URL
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.internal.util.Statistics
 
 /**
  * An abstraction over files for use in the reflection/compiler libraries.
@@ -54,6 +56,8 @@ object AbstractFile {
     if (url == null || !Path.isExtensionJarOrZip(url.getPath)) null
     else ZipArchive fromURL url
   }
+
+  def getResources(url: URL): AbstractFile = ZipArchive fromManifestURL url
 }
 
 /**
@@ -110,7 +114,10 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
   def underlyingSource: Option[AbstractFile] = None
 
   /** Does this abstract file denote an existing file? */
-  def exists: Boolean = (file eq null) || file.exists
+  def exists: Boolean = {
+    if (Statistics.canEnable) Statistics.incCounter(IOStats.fileExistsCount)
+    (file eq null) || file.exists
+  }
 
   /** Does this abstract file represent something which can contain classfiles? */
   def isClassContainer = isDirectory || (file != null && (extension == "jar" || extension == "zip"))
@@ -123,6 +130,9 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean
+
+  /** Does this abstract file correspond to something on-disk? */
+  def isVirtual: Boolean = false
 
   /** Returns the time that this abstract file was last modified. */
   def lastModified: Long
@@ -153,16 +163,28 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
   @throws(classOf[IOException])
   def toByteArray: Array[Byte] = {
     val in = input
-    var rest = sizeOption.getOrElse(0)
-    val arr = new Array[Byte](rest)
-    while (rest > 0) {
-      val res = in.read(arr, arr.length - rest, rest)
-      if (res == -1)
-        throw new IOException("read error")
-      rest -= res
+    sizeOption match {
+      case Some(size) =>
+        var rest = size
+        val arr = new Array[Byte](rest)
+        while (rest > 0) {
+          val res = in.read(arr, arr.length - rest, rest)
+          if (res == -1)
+            throw new IOException("read error")
+          rest -= res
+        }
+        in.close()
+        arr
+      case None =>
+        val out = new ByteArrayOutputStream()
+        var c = in.read()
+        while(c != -1) {
+          out.write(c)
+          c = in.read()
+        }
+        in.close()
+        out.toByteArray()
     }
-    in.close()
-    arr
   }
 
   /** Returns all abstract subfiles of this abstract directory. */
@@ -224,7 +246,7 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
    */
   def fileNamed(name: String): AbstractFile = {
     assert(isDirectory, "Tried to find '%s' in '%s' but it is not a directory".format(name, path))
-    fileOrSubdirectoryNamed(name, false)
+    fileOrSubdirectoryNamed(name, isDir = false)
   }
 
   /**
@@ -233,7 +255,7 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
    */
   def subdirectoryNamed(name: String): AbstractFile = {
     assert (isDirectory, "Tried to find '%s' in '%s' but it is not a directory".format(name, path))
-    fileOrSubdirectoryNamed(name, true)
+    fileOrSubdirectoryNamed(name, isDir = true)
   }
 
   protected def unsupported(): Nothing = unsupported(null)

@@ -8,6 +8,9 @@ trait Reshape {
 
   import global._
   import definitions._
+  import treeInfo.Unapplied
+  private val runDefinitions = currentRun.runDefinitions
+  import runDefinitions._
 
   /**
    *  Rolls back certain changes that were introduced during typechecking of the reifee.
@@ -65,22 +68,9 @@ trait Reshape {
         case block @ Block(stats, expr) =>
           val stats1 = reshapeLazyVals(trimSyntheticCaseClassCompanions(stats))
           Block(stats1, expr).copyAttrs(block)
-        case unapply @ UnApply(fun, args) =>
-          def extractExtractor(tree: Tree): Tree = {
-            val Apply(fun, args) = tree
-            args match {
-              case List(Ident(special)) if special == nme.SELECTOR_DUMMY =>
-                val Select(extractor, flavor) = fun
-                assert(flavor == nme.unapply || flavor == nme.unapplySeq)
-                extractor
-              case _ =>
-                extractExtractor(fun)
-            }
-          }
-
+        case unapply @ UnApply(Unapplied(Select(fun, nme.unapply | nme.unapplySeq)), args) =>
           if (reifyDebug) println("unapplying unapply: " + tree)
-          val fun1 = extractExtractor(fun)
-          Apply(fun1, args).copyAttrs(unapply)
+          Apply(fun, args).copyAttrs(unapply)
         case _ =>
           tree
       }
@@ -89,22 +79,22 @@ trait Reshape {
     }
 
     private def undoMacroExpansion(tree: Tree): Tree =
-      tree.attachments.get[MacroExpansionAttachment] match {
-        case Some(MacroExpansionAttachment(original)) =>
+      tree.attachments.get[analyzer.MacroExpansionAttachment] match {
+        case Some(analyzer.MacroExpansionAttachment(original, _)) =>
+          def mkImplicitly(tp: Type) = atPos(tree.pos)(
+            gen.mkNullaryCall(Predef_implicitly, List(tp))
+          )
+          val sym = original.symbol
           original match {
             // this hack is necessary until I fix implicit macros
             // so far tag materialization is implemented by sneaky macros hidden in scala-compiler.jar
             // hence we cannot reify references to them, because noone will be able to see them later
             // when implicit macros are fixed, these sneaky macros will move to corresponding companion objects
             // of, say, ClassTag or TypeTag
-            case Apply(TypeApply(_, List(tt)), _) if original.symbol == materializeClassTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(appliedType(ClassTagClass, tt.tpe)))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == materializeWeakTypeTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, WeakTypeTagClass, List(tt.tpe))))
-            case Apply(TypeApply(_, List(tt)), List(pre)) if original.symbol == materializeTypeTag =>
-              gen.mkNullaryCall(Predef_implicitly, List(typeRef(pre.tpe, TypeTagClass, List(tt.tpe))))
-            case _ =>
-              original
+            case Apply(TypeApply(_, List(tt)), _) if sym == materializeClassTag            => mkImplicitly(appliedType(ClassTagClass, tt.tpe))
+            case Apply(TypeApply(_, List(tt)), List(pre)) if sym == materializeWeakTypeTag => mkImplicitly(typeRef(pre.tpe, WeakTypeTagClass, List(tt.tpe)))
+            case Apply(TypeApply(_, List(tt)), List(pre)) if sym == materializeTypeTag     => mkImplicitly(typeRef(pre.tpe, TypeTagClass, List(tt.tpe)))
+            case _                                                                         => original
           }
         case _ => tree
       }
@@ -130,8 +120,8 @@ trait Reshape {
      *
      *  NB: This is the trickiest part of reification!
      *
-     *  In most cases, we're perfectly fine to reify a Type itself (see ``reifyType'').
-     *  However if the type involves a symbol declared inside the quasiquote (i.e. registered in ``boundSyms''),
+     *  In most cases, we're perfectly fine to reify a Type itself (see `reifyType`).
+     *  However if the type involves a symbol declared inside the quasiquote (i.e. registered in `boundSyms`),
      *  then we cannot reify it, or otherwise subsequent reflective compilation will fail.
      *
      *  Why will it fail? Because reified deftrees (e.g. ClassDef(...)) will generate fresh symbols during that compilation,
@@ -139,7 +129,7 @@ trait Reshape {
      *  https://issues.scala-lang.org/browse/SI-5230
      *
      *  To deal with this unpleasant fact, we need to fall back from types to equivalent trees (after all, parser trees don't contain any types, just trees, so it should be possible).
-     *  Luckily, these original trees get preserved for us in the ``original'' field when Trees get transformed into TypeTrees.
+     *  Luckily, these original trees get preserved for us in the `original` field when Trees get transformed into TypeTrees.
      *  And if an original of a type tree is empty, we can safely assume that this type is non-essential (e.g. was inferred/generated by the compiler).
      *  In that case the type can be omitted (e.g. reified as an empty TypeTree), since it will be inferred again later on.
      *
@@ -156,8 +146,8 @@ trait Reshape {
      *  upd. There are also problems with CompoundTypeTrees. I had to use attachments to retain necessary information.
      *
      *  upd. Recently I went ahead and started using original for all TypeTrees, regardless of whether they refer to local symbols or not.
-     *  As a result, ``reifyType'' is never called directly by tree reification (and, wow, it seems to work great!).
-     *  The only usage of ``reifyType'' now is for servicing typetags, however, I have some ideas how to get rid of that as well.
+     *  As a result, `reifyType` is never called directly by tree reification (and, wow, it seems to work great!).
+     *  The only usage of `reifyType` now is for servicing typetags, however, I have some ideas how to get rid of that as well.
      */
     private def isDiscarded(tt: TypeTree) = tt.original == null
     private def toPreTyperTypeTree(tt: TypeTree): Tree = {
@@ -167,7 +157,7 @@ trait Reshape {
         // if this assumption fails, please, don't be quick to add postprocessing here (like I did before)
         // but rather try to fix this in Typer, so that it produces quality originals (like it's done for typedAnnotated)
         if (reifyDebug) println("TypeTree, essential: %s (%s)".format(tt.tpe, tt.tpe.kind))
-        if (reifyDebug) println("verdict: rolled back to original %s".format(tt.original))
+        if (reifyDebug) println("verdict: rolled back to original %s".format(tt.original.toString.replaceAll("\\s+", " ")))
         transform(tt.original)
       } else {
         // type is deemed to be non-essential
@@ -180,15 +170,20 @@ trait Reshape {
 
     private def toPreTyperCompoundTypeTree(ctt: CompoundTypeTree): Tree = {
       val CompoundTypeTree(tmpl @ Template(parents, self, stats)) = ctt
-      assert(self eq emptyValDef, self)
+      if (stats.nonEmpty) CannotReifyCompoundTypeTreeWithNonEmptyBody(ctt)
+      assert(self eq noSelfType, self)
       val att = tmpl.attachments.get[CompoundTypeTreeOriginalAttachment]
       val CompoundTypeTreeOriginalAttachment(parents1, stats1) = att.getOrElse(CompoundTypeTreeOriginalAttachment(parents, stats))
       CompoundTypeTree(Template(parents1, self, stats1))
     }
 
     private def toPreTyperTypedOrAnnotated(tree: Tree): Tree = tree match {
-      case ty @ Typed(expr1, tt @ TypeTree()) =>
+      case ty @ Typed(expr1, tpt) =>
         if (reifyDebug) println("reify typed: " + tree)
+        val original = tpt match {
+          case tt @ TypeTree() => tt.original
+          case tpt => tpt
+        }
         val annotatedArg = {
           def loop(tree: Tree): Tree = tree match {
             case annotated1 @ Annotated(ann, annotated2 @ Annotated(_, _)) => loop(annotated2)
@@ -196,15 +191,15 @@ trait Reshape {
             case _ => EmptyTree
           }
 
-          loop(tt.original)
+          loop(original)
         }
         if (annotatedArg != EmptyTree) {
           if (annotatedArg.isType) {
             if (reifyDebug) println("verdict: was an annotated type, reify as usual")
             ty
           } else {
-            if (reifyDebug) println("verdict: was an annotated value, equivalent is " + tt.original)
-            toPreTyperTypedOrAnnotated(tt.original)
+            if (reifyDebug) println("verdict: was an annotated value, equivalent is " + original)
+            toPreTyperTypedOrAnnotated(original)
           }
         } else {
           if (reifyDebug) println("verdict: wasn't annotated, reify as usual")
@@ -226,13 +221,10 @@ trait Reshape {
       val args = if (ann.assocs.isEmpty) {
         ann.args
       } else {
-        def toScalaAnnotation(jann: ClassfileAnnotArg): Tree = jann match {
-          case LiteralAnnotArg(const) =>
-            Literal(const)
-          case ArrayAnnotArg(arr) =>
-            Apply(Ident(definitions.ArrayModule), arr.toList map toScalaAnnotation)
-          case NestedAnnotArg(ann) =>
-            toPreTyperAnnotation(ann)
+        def toScalaAnnotation(jann: ClassfileAnnotArg): Tree = (jann: @unchecked) match {
+          case LiteralAnnotArg(const) => Literal(const)
+          case ArrayAnnotArg(arr)     => Apply(Ident(definitions.ArrayModule), arr.toList map toScalaAnnotation)
+          case NestedAnnotArg(ann)    => toPreTyperAnnotation(ann)
         }
 
         ann.assocs map { case (nme, arg) => AssignOrNamedArg(Ident(nme), toScalaAnnotation(arg)) }
@@ -249,12 +241,12 @@ trait Reshape {
         case _ => rhs // unit or trait case
       }
       val DefDef(mods0, name0, _, _, tpt0, rhs0) = ddef
-      val name1 = nme.dropLocalSuffix(name0)
+      val name1 = name0.dropLocal
       val Modifiers(flags0, privateWithin0, annotations0) = mods0
       val flags1 = (flags0 & GetterFlags) & ~(STABLE | ACCESSOR | METHOD)
       val mods1 = Modifiers(flags1, privateWithin0, annotations0) setPositions mods0.positions
       val mods2 = toPreTyperModifiers(mods1, ddef.symbol)
-      ValDef(mods2, name1.toTermName, tpt0, extractRhs(rhs0))
+      ValDef(mods2, name1, tpt0, extractRhs(rhs0))
     }
 
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {
@@ -268,7 +260,9 @@ trait Reshape {
           if (defdef.name.startsWith(prefix)) {
             val name = defdef.name.toString.substring(prefix.length)
             def uncapitalize(s: String) = if (s.length == 0) "" else { val chars = s.toCharArray; chars(0) = chars(0).toLower; new String(chars) }
-            def findValDef(name: String) = (symdefs.values collect { case vdef: ValDef if nme.dropLocalSuffix(vdef.name).toString == name => vdef }).headOption
+            def findValDef(name: String) = symdefs.values collectFirst {
+              case vdef: ValDef if vdef.name.dropLocal string_== name => vdef
+            }
             val valdef = findValDef(name).orElse(findValDef(uncapitalize(name))).orNull
             if (valdef != null) accessors(valdef) = accessors.getOrElse(valdef, Nil) :+ defdef
           }
@@ -276,7 +270,7 @@ trait Reshape {
         detectBeanAccessors("get")
         detectBeanAccessors("set")
         detectBeanAccessors("is")
-      });
+      })
 
       val stats1 = stats flatMap {
         case vdef @ ValDef(mods, name, tpt, rhs) if !mods.isLazy =>
@@ -292,7 +286,7 @@ trait Reshape {
             mods
           }
           val mods2 = toPreTyperModifiers(mods1, vdef.symbol)
-          val name1 = nme.dropLocalSuffix(name)
+          val name1 = name.dropLocal
           val vdef1 = ValDef(mods2, name1.toTermName, tpt, rhs)
           if (reifyDebug) println("resetting visibility of field: %s => %s".format(vdef, vdef1))
           Some(vdef1) // no copyAttrs here, because new ValDef and old symbols are now out of sync

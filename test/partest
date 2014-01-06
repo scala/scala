@@ -1,14 +1,35 @@
-#!/bin/sh
-
+#!/usr/bin/env bash
+#
 ##############################################################################
-# Scala test runner 2.8.0
+# Scala test runner 2.10.0
 ##############################################################################
-# (c) 2002-2011 LAMP/EPFL
+# (c) 2002-2013 LAMP/EPFL
 #
 # This is free software; see the distribution for copying conditions.
 # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 ##############################################################################
+
+findScalaHome () {
+  # see SI-2092 and SI-5792
+  local source="${BASH_SOURCE[0]}"
+  while [ -h "$source" ] ; do
+    local linked="$(readlink "$source")"
+    local dir="$( cd -P $(dirname "$source") && cd -P $(dirname "$linked") && pwd )"
+    source="$dir/$(basename "$linked")"
+  done
+  ( ( cd -P "$(dirname "$source")/.." > /dev/null ) && pwd )
+}
+
+# Use tput to detect color-capable terminal.
+term_colors=$(tput colors 2>/dev/null)
+if [[ $? == 0 ]] && [[ $term_colors -gt 2 ]]; then
+  git_diff_options="--color=always --word-diff"
+  color_opts="-Dpartest.colors=$term_colors"
+else
+  unset color_opts
+  git_diff_options="--nocolor"
+fi
 
 cygwin=false;
 darwin=false;
@@ -18,49 +39,60 @@ case "`uname`" in
 esac
 
 # Finding the root folder for this Scala distribution
-SOURCE=$0;
-SCRIPT=`basename "$SOURCE"`;
-while [ -h "$SOURCE" ]; do
-    SCRIPT=`basename "$SOURCE"`;
-    LOOKUP=`ls -ld "$SOURCE"`;
-    TARGET=`expr "$LOOKUP" : '.*-> \(.*\)$'`;
-    if expr "${TARGET:-.}/" : '/.*/$' > /dev/null; then
-        SOURCE=${TARGET:-.};
-    else
-        SOURCE=`dirname "$SOURCE"`/${TARGET:-.};
-    fi;
-done;
-
-# see #2092
-SCALA_HOME=`dirname "$SOURCE"`
-SCALA_HOME=`cd "$SCALA_HOME"; pwd -P`
-SCALA_HOME=`cd "$SCALA_HOME"/..; pwd`
+SCALA_HOME="$(findScalaHome)"
 
 if $cygwin; then
     SCALA_HOME=`cygpath --windows --short-name "$SCALA_HOME"`
     SCALA_HOME=`cygpath --unix "$SCALA_HOME"`
 fi
 
-# Constructing the extension classpath
-EXT_CLASSPATH=""
-if [ -z "$EXT_CLASSPATH" ] ; then
-    if [ -f "$SCALA_HOME/lib/scala-partest.jar" ] ; then
-        for ext in "$SCALA_HOME"/lib/* ; do
-            if [ -z "$EXT_CLASSPATH" ] ; then
-                EXT_CLASSPATH="$ext"
-            else
-                EXT_CLASSPATH="$EXT_CLASSPATH:$ext"
-            fi
-        done
-    elif [ -f "$SCALA_HOME/build/pack/lib/scala-partest.jar" ] ; then
-        for lib in `echo "partest library reflect compiler"`; do
-            ext="$SCALA_HOME/build/pack/lib/scala-$lib.jar"
-            if [ -z "$EXT_CLASSPATH" ] ; then
-                EXT_CLASSPATH="$ext"
-            else
-                EXT_CLASSPATH="$EXT_CLASSPATH:$ext"
-            fi
-        done
+# Let ant construct the classpath used to run partest (downloading partest from maven if necessary)
+# PARTEST_CLASSPATH=""
+if [ -z "$PARTEST_CLASSPATH" ] ; then
+    if [ ! -f "$SCALA_HOME/build/pack/partest.properties" ] ; then
+        (cd "$SCALA_HOME" && ant -q test.suite.init) # builds pack, downloads partest and writes classpath to build/pack/partest.properties
+    fi
+
+    PARTEST_CLASSPATH=$( cat "$SCALA_HOME/build/pack/partest.properties" | grep partest.classpath | sed -e 's/\\:/:/g' | cut -f2- -d= )
+
+    # sanity check, disabled to save time
+    # $( javap -classpath $PARTEST_CLASSPATH scala.tools.partest.nest.NestRunner &> /dev/null ) || unset PARTEST_CLASSPATH
+fi
+
+# if [ -z "$PARTEST_CLASSPATH" ] ; then
+#     if [ -f "$SCALA_HOME/lib/scala-partest.jar" ] ; then
+#         for ext in "$SCALA_HOME"/lib/* ; do
+#             if [ -z "$PARTEST_CLASSPATH" ] ; then
+#                 PARTEST_CLASSPATH="$ext"
+#             else
+#                 PARTEST_CLASSPATH="$PARTEST_CLASSPATH:$ext"
+#             fi
+#         done
+#     elif [ -f "$SCALA_HOME/build/pack/lib/scala-partest.jar" ] ; then
+#         for lib in `echo "scala-partest scala-library scala-parser-combinators scala-xml scala-reflect scala-compiler diffutils"`; do
+#             ext="$SCALA_HOME/build/pack/lib/$lib.jar"
+#             if [ -z "$PARTEST_CLASSPATH" ] ; then
+#                 PARTEST_CLASSPATH="$ext"
+#             else
+#                 PARTEST_CLASSPATH="$PARTEST_CLASSPATH:$ext"
+#             fi
+#         done
+#     fi
+# fi
+
+# Locate a javac command
+# Try: JAVA_HOME, sibling to specific JAVACMD, or PATH
+# Don't fail if there is no javac, since not all tests require it.
+if [ -z "$JAVAC_CMD" ] ; then
+    if [ -n "${JAVA_HOME}" ] && [ -f "${JAVA_HOME}/bin/javac" ] ; then
+        JAVAC_CMD="${JAVA_HOME}/bin/javac"
+    fi
+    if [ -z "$JAVAC_CMD" ] && [ -n "$JAVACMD" ] ; then
+        JDIR=`dirname "${JAVACMD}"`
+        JAVAC_CMD="${JDIR}/javac"
+    fi
+    if [ -z "$JAVAC_CMD" ] ; then
+        JAVAC_CMD=`type -p javac`
     fi
 fi
 
@@ -76,26 +108,39 @@ if $cygwin; then
     if [ -n "${JAVACMD}" ] ; then
         JAVACMD=`cygpath --$format "$JAVACMD"`
     fi
+    if [ -n "${JAVAC_CMD}" ] ; then
+        JAVAC_CMD=`cygpath --$format "$JAVAC_CMD"`
+    fi
     SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
-    EXT_CLASSPATH=`cygpath --path --$format "$EXT_CLASSPATH"`
+    PARTEST_CLASSPATH=`cygpath --path --$format "$PARTEST_CLASSPATH"`
 fi
 
 # last arg wins, so if JAVA_OPTS already contains -Xmx or -Xms the
 # supplied argument will be used.
-JAVA_OPTS="-Xmx1024M -Xms64M $JAVA_OPTS"
-[ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
+# At this writing it is reported test/partest --all requires 108m permgen.
+JAVA_OPTS="-Xmx1024M -Xms64M -XX:MaxPermSize=128M $JAVA_OPTS"
+
+# the ant task doesn't supply any options by default,
+# so don't do that here either -- note that you may want to pass -optimise
+# to mimic what happens during nightlies.
+# [ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
 
 partestDebugStr=""
 if [ ! -z "${PARTEST_DEBUG}" ] ; then
   partestDebugStr="-Dpartest.debug=${PARTEST_DEBUG}"
 fi
 
+# note that variables which may intentionally be empty must not
+# be quoted: otherwise an empty string will appear as a command line
+# argument, and java will think that is the program to run.
 "${JAVACMD:=java}" \
-  $JAVA_OPTS -cp "$EXT_CLASSPATH" \
+  $JAVA_OPTS -cp "$PARTEST_CLASSPATH" \
   ${partestDebugStr} \
+  ${color_opts} \
+  -Dfile.encoding=UTF-8 \
   -Dscala.home="${SCALA_HOME}" \
   -Dpartest.javacmd="${JAVACMD}" \
   -Dpartest.java_opts="${JAVA_OPTS}" \
   -Dpartest.scalac_opts="${SCALAC_OPTS}" \
-  -Dpartest.javac_cmd="${JAVA_HOME}/bin/javac" \
-  scala.tools.partest.nest.NestRunner "$@"
+  -Dpartest.javac_cmd="${JAVAC_CMD}" \
+  scala.tools.partest.nest.ConsoleRunner "$@"

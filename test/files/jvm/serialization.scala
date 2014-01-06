@@ -281,6 +281,7 @@ object Test2_immutable {
 //############################################################################
 // Test classes in package "scala.collection.mutable"
 
+@deprecated("Suppress warnings", since="2.11")
 object Test3_mutable {
   import scala.reflect.ClassManifest
   import scala.collection.mutable.{
@@ -296,7 +297,7 @@ object Test3_mutable {
     ab1 ++= List("one", "two")
     val _ab1: ArrayBuffer[String] = read(write(ab1))
     check(ab1, _ab1)
-    
+
     // ArrayBuilder
     val abu1 = ArrayBuilder.make[Long]
     val _abu1: ArrayBuilder[ClassManifest[Long]] = read(write(abu1))
@@ -305,12 +306,12 @@ object Test3_mutable {
     val abu2 = ArrayBuilder.make[Float]
     val _abu2: ArrayBuilder[ClassManifest[Float]] = read(write(abu2))
     check(abu2, _abu2)
-    
+
     // ArraySeq
     val aq1 = ArraySeq(1, 2, 3)
     val _aq1: ArraySeq[Int] = read(write(aq1))
     check(aq1, _aq1)
-    
+
     // ArrayStack
     val as1 = new ArrayStack[Int]
     as1 ++= List(20, 2, 3).iterator
@@ -401,12 +402,12 @@ object Test3_mutable {
     val wa1 = WrappedArray.make(Array(1, 2, 3))
     val _wa1: WrappedArray[Int] = read(write(wa1))
     check(wa1, _wa1)
-    
+
     // TreeSet
     val ts1 = TreeSet[Int]() ++= Array(1, 2, 3)
     val _ts1: TreeSet[Int] = read(write(ts1))
     check(ts1, _ts1)
-    
+
     // concurrent.TrieMap
     val ct1 = TrieMap[Int, String]() ++= Array(1 -> "one", 2 -> "two", 3 -> "three")
     val _ct1: TrieMap[Int, String] = read(write(ct1))
@@ -415,70 +416,6 @@ object Test3_mutable {
   catch {
     case e: Exception =>
       println("Error in Test3_mutable: " + e)
-      throw e
-  }
-}
-
-
-//############################################################################
-// Test classes in package "scala.xml"
-
-object Test4_xml {
-  import scala.xml.{Attribute, Document, Elem, Null, PrefixedAttribute, Text}
-
-  case class Person(name: String, age: Int)
-
-  try {
-    // Attribute
-    val a1 = new PrefixedAttribute("xml", "src", Text("hello"), Null)
-    val _a1: Attribute = read(write(a1))
-    check(a1, _a1)
-
-    // Document
-    val d1 = new Document
-    d1.docElem = <title></title>
-    d1.encoding = Some("UTF-8")
-    val _d1: Document = read(write(d1))
-    check(d1, _d1)
-
-    // Elem
-    val e1 = <html><title>title</title><body></body></html>;
-    val _e1: Elem = read(write(e1))
-    check(e1, _e1)
-
-    class AddressBook(a: Person*) {
-      private val people: List[Person] = a.toList
-      def toXHTML =
-      <table cellpadding="2" cellspacing="0">
-        <tr>
-          <th>Last Name</th>
-          <th>First Name</th>
-        </tr>
-        { for (p <- people) yield
-        <tr>
-          <td> { p.name } </td>
-          <td> { p.age.toString() } </td>
-        </tr> }
-      </table>;
-    }
-
-    val people = new AddressBook(
-      Person("Tom", 20),
-      Person("Bob", 22),
-      Person("James", 19))
-
-    val e2 =
-      <html>
-      <body>
-        { people.toXHTML }
-      </body>
-      </html>;
-    val _e2: Elem = read(write(e2))
-    check(e2, _e2)
-  }
-  catch {
-    case e: Exception =>
-      println("Error in Test4_xml: " + e)
       throw e
   }
 }
@@ -568,7 +505,7 @@ class WithTransient extends Serializable {
   @transient private lazy val a2 = 2
   @transient object B extends Serializable
   @transient private object C extends Serializable
-    
+
   def test = {
     println(a1)
     println(a2)
@@ -593,12 +530,12 @@ object Test8 {
 //############################################################################
 // Test code
 
+@deprecated("Suppress warnings", since="2.11")
 object Test {
   def main(args: Array[String]) {
     Test1_scala
     Test2_immutable
     Test3_mutable
-    Test4_xml
     Test5
     Test6
     Test7
@@ -615,55 +552,55 @@ object Test {
 // Test classes in package "scala.collection.parallel" and subpackages
 object Test9_parallel {
   import scala.collection.parallel._
-  
+
   try {
     println()
-    
+
     // UnrolledBuffer
     val ub = new collection.mutable.UnrolledBuffer[String]
     ub ++= List("one", "two")
     val _ub: collection.mutable.UnrolledBuffer[String] = read(write(ub))
     check(ub, _ub)
-    
+
     // mutable.ParArray
     val pa = mutable.ParArray("abc", "def", "etc")
     val _pa: mutable.ParArray[String] = read(write(pa))
     check(pa, _pa)
-    
+
     // mutable.ParHashMap
     val mpm = mutable.ParHashMap(1 -> 2, 2 -> 4)
     val _mpm: mutable.ParHashMap[Int, Int] = read(write(mpm))
     check(mpm, _mpm)
-    
+
     // mutable.ParTrieMap
     val mpc = mutable.ParTrieMap(1 -> 2, 2 -> 4)
     val _mpc: mutable.ParTrieMap[Int, Int] = read(write(mpc))
     check(mpc, _mpc)
-    
+
     // mutable.ParHashSet
     val mps = mutable.ParHashSet(1, 2, 3)
     val _mps: mutable.ParHashSet[Int] = read(write(mps))
     check(mps, _mps)
-    
+
     // immutable.ParRange
     val pr1 = immutable.ParRange(0, 4, 1, true)
     val _pr1: immutable.ParRange = read(write(pr1))
     check(pr1, _pr1)
-    
+
     val pr2 = immutable.ParRange(0, 4, 1, false)
     val _pr2: immutable.ParRange = read(write(pr2))
     check(pr2, _pr2)
-    
+
     // immutable.ParHashMap
     val ipm = immutable.ParHashMap(5 -> 1, 10 -> 2)
     val _ipm: immutable.ParHashMap[Int, Int] = read(write(ipm))
     check(ipm, _ipm)
-    
+
     // immutable.ParHashSet
     val ips = immutable.ParHashSet("one", "two")
     val _ips: immutable.ParHashSet[String] = read(write(ips))
     check(ips, _ips)
-    
+
   } catch {
     case e: Exception =>
       println("Error in Test5_parallel: " + e)
@@ -678,7 +615,7 @@ object Test10_util {
   import scala.util.Random
   def rep[A](n: Int)(f: => A) { if (n > 0) { f; rep(n-1)(f) } }
 
-  try {
+  {
     val random = new Random(345)
     val random2: Random = read(write(random))
     rep(5) { assert(random.nextInt == random2.nextInt) }

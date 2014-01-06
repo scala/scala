@@ -1,3 +1,4 @@
+import scala.language.existentials
 import scala.reflect.ClassTag
 
 object Test extends App {

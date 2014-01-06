@@ -1,3 +1,0 @@
-trait DefaultParameter extends java.lang.Object {
-  def foo(s : scala.Predef.String) : scala.Unit
-}

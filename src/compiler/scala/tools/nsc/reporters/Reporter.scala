@@ -58,15 +58,15 @@ abstract class Reporter {
   /** For sending a message which should not be labeled as a warning/error,
    *  but also shouldn't require -verbose to be visible.
    */
-  def echo(msg: String): Unit                                = info(NoPosition, msg, true)
-  def echo(pos: Position, msg: String): Unit                 = info(pos, msg, true)
+  def echo(msg: String): Unit                                = info(NoPosition, msg, force = true)
+  def echo(pos: Position, msg: String): Unit                 = info(pos, msg, force = true)
 
   /** Informational messages, suppressed unless -verbose or force=true. */
   def info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg, INFO, force)
 
   /** Warnings and errors. */
-  def warning(pos: Position, msg: String): Unit              = withoutTruncating(info0(pos, msg, WARNING, false))
-  def error(pos: Position, msg: String): Unit                = withoutTruncating(info0(pos, msg, ERROR, false))
+  def warning(pos: Position, msg: String): Unit              = withoutTruncating(info0(pos, msg, WARNING, force = false))
+  def error(pos: Position, msg: String): Unit                = withoutTruncating(info0(pos, msg, ERROR, force = false))
   def incompleteInputError(pos: Position, msg: String): Unit = {
     if (incompleteHandled) incompleteHandler(pos, msg)
     else error(pos, msg)
@@ -80,10 +80,4 @@ abstract class Reporter {
     WARNING.count     = 0
     cancelled         = false
   }
-
-  // sbt compat
-  @deprecated("Moved to scala.reflect.internal.util.StringOps", "2.10.0")
-  def countElementsAsString(n: Int, elements: String): String = StringOps.countElementsAsString(n, elements)
-  @deprecated("Moved to scala.reflect.internal.util.StringOps", "2.10.0")
-  def countAsString(n: Int): String = StringOps.countAsString(n)
 }

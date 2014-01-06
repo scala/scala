@@ -18,6 +18,7 @@ import scala.language.implicitConversions
  *
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 object Actor extends Combinators {
 
   /** State of an actor.
@@ -398,6 +399,7 @@ object Actor extends Combinators {
  *  @define channel actor's mailbox
  */
 @SerialVersionUID(-781154067877019505L)
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 trait Actor extends InternalActor with ReplyReactor {
 
   override def start(): Actor = synchronized {

@@ -6,7 +6,7 @@ package s {
   class Baz(x: j.Bar_1) {
     x.foo
     override def toString = "Baz"
-  }                                                                                                
+  }
 }
 
 object Test {

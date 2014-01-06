@@ -1,5 +1,5 @@
-/*
-    This file is part of Subscript - an extension of the Scala language 
+/*")private,) 
+    This file is part of Subscript - anv extension of the Scala lanvaguage 
                                      with constructs from Process Algebra.
 
     Subscript is free software: you can redistribute it and/or modify
@@ -30,15 +30,50 @@ package subscript.vm
  *  Template Nodes are used to describe abstract syntax trees of the compiled scripts
  */
 
-trait TemplateNode { 
-  def kind: String
+trait TemplateNode {
+  type N <: CallGraphNodeTrait
+  def kindAsString: String = 
+    this match {
+      case T_1_ary_op(kind: String, _) => kind
+      case T_n_ary_op(kind: String, _) => kind
+      
+      case T_code_normal            (_) => "{}"
+      case T_code_tiny              (_) => "{!!}"
+      case T_code_threaded          (_) => "{**}"
+      case T_code_unsure            (_) => "{??}"
+      case T_code_eventhandling     (_) => "{.}"
+      case T_code_eventhandling_loop(_) => "{...}"
+      case T_localvar(isVal: Boolean, isLoop: Boolean, localVariable, _) => "var"
+      case T_privatevar  (name: Symbol) => "private "+name
+      case T_while                  (_) => "while"
+      case T_break                   () => "break"
+      case T_optional_break          () => "."
+      case T_optional_break_loop     () => ".."
+      case T_delta                   () => "(-)"
+      case T_epsilon                 () => "(+)"
+      case T_nu                      () => "(+-)"
+      case T_loop                    () => "..."
+      case T_if                   (_,_) => "if"
+      case T_if_else            (_,_,_) => "if-else"
+      case T_launch                 (_) => "*"
+      case T_launch_anchor          (_) => "**"
+      case T_inline_if            (_,_) => "?if"
+      case T_inline_if_else     (_,_,_) => "?if-else"
+      case T_annotation           (_,_) => "@:"
+      case T_call                   (_) => "call"
+      case T_script (_, kind: String, name: Symbol, _)          => name.toString
+      case T_commscript(_, kind: String, _)                     => "cscript"
+      case T_communication(_, kind: String, names: Seq[Symbol]) => "comm"
+      case T_local_valueCode  (_, _, _)                         => "T_local_valueCode???"
+      case _ => getClass.getName.substring(2)
+    }
   def owner: AnyRef
   def root:TemplateNode
   def parent:TemplateNode
   var indexAsChild: Int = 0
   var indexInScript: Int = 0
-  override def toString = kind
-  def children: Iterable[TemplateChildNode]
+  override def toString = kindAsString
+  def children: Seq[TemplateChildNode]
   
   def setIndexes(startIndexInScript: Int, indexForChild: Int): Int = {
     indexAsChild  = indexForChild
@@ -52,8 +87,12 @@ trait TemplateNode {
     }
     result
   }
-
 }
+trait TemplateCodeHolder[N <: DoCodeHolder, R] extends TemplateNode {
+  val code: () => N => R
+  def execute(here: N): R = code().apply(here)
+}
+
 trait TemplateRootNode extends TemplateNode {
   def parent: TemplateNode = null
   def root = this
@@ -69,57 +108,81 @@ trait TemplateChildNode extends TemplateNode {
   def owner = parent.owner
   var parent: TemplateNode = null
 }
-trait TemplateNode_0_Trait extends TemplateNode         {                               override val children: Iterable[TemplateChildNode] = Nil}
-trait TemplateNode_1_Trait extends TemplateNode_0_Trait {def child0: TemplateChildNode; override val children: Iterable[TemplateChildNode] = child0::Nil}
-trait TemplateNode_2_Trait extends TemplateNode_1_Trait {def child1: TemplateChildNode; override val children: Iterable[TemplateChildNode] = child0::child1::Nil}
-trait TemplateNode_3_Trait extends TemplateNode_2_Trait {def child2: TemplateChildNode; override val children: Iterable[TemplateChildNode] = child0::child1::child2::Nil}
-trait TemplateNode_n_Trait extends TemplateNode   {}
+trait TemplateNode_0_Trait extends TemplateNode         {                               override val children: Seq[TemplateChildNode] = Nil}
+trait TemplateNode_1_Trait extends TemplateNode_0_Trait {def child0: TemplateChildNode; override val children: Seq[TemplateChildNode] = child0::Nil}
+trait TemplateNode_2_Trait extends TemplateNode_1_Trait {def child1: TemplateChildNode; override val children: Seq[TemplateChildNode] = child0::child1::Nil}
+trait TemplateNode_3_Trait extends TemplateNode_2_Trait {def child2: TemplateChildNode; override val children: Seq[TemplateChildNode] = child0::child1::child2::Nil}
+trait TemplateNode_n_Trait extends TemplateNode
 
-trait TemplateChildNode_0_Trait extends TemplateNode_0_Trait with TemplateChildNode
-trait TemplateChildNode_1_Trait extends TemplateNode_1_Trait with TemplateChildNode 
-trait TemplateChildNode_2_Trait extends TemplateNode_2_Trait with TemplateChildNode 
-trait TemplateChildNode_3_Trait extends TemplateNode_3_Trait with TemplateChildNode 
-trait TemplateChildNode_n_Trait extends TemplateNode_n_Trait with TemplateChildNode 
+trait T_0_ary extends TemplateNode_0_Trait with TemplateChildNode
+trait T_1_ary extends TemplateNode_1_Trait with TemplateChildNode
+trait T_2_ary extends TemplateNode_2_Trait with TemplateChildNode
+trait T_3_ary extends TemplateNode_3_Trait with TemplateChildNode
+trait T_n_ary extends TemplateNode_n_Trait with TemplateChildNode
 
-// something having code that accepts a specific kind of Call Graph Node
-trait CallGraphNodeCode[N<:CallGraphNodeTrait[TemplateNode], +R] {
-  val code: () => N => R;
-  def execute(here: N): R = code().apply(here)
-}
-trait TemplateChildNodeWithCode   [N<:CallGraphNodeTrait[TemplateNode], R] extends TemplateChildNode with CallGraphNodeCode[N, R]
-trait TemplateChildNode_0_WithCode[N<:CallGraphNodeTrait[TemplateNode], R] extends TemplateChildNodeWithCode[N, R] with TemplateNode_0_Trait
-trait TemplateChildNode_1_WithCode[N<:CallGraphNodeTrait[TemplateNode], R] extends TemplateChildNodeWithCode[N, R] with TemplateNode_1_Trait
-trait TemplateChildNode_2_WithCode[N<:CallGraphNodeTrait[TemplateNode], R] extends TemplateChildNodeWithCode[N, R] with TemplateNode_2_Trait
-
+trait T_atomic_action extends T_0_ary // with TemplateCodeHolder[Unit]
 // all concrete template node case classes 
 
+case class T_code_normal            (code: () => N_code_normal             => Unit) extends T_atomic_action with TemplateCodeHolder[N_code_normal            , Unit] {type N = N_code_normal         }
+case class T_code_tiny              (code: () => N_code_tiny               => Unit) extends T_atomic_action with TemplateCodeHolder[N_code_tiny              , Unit] {type N = N_code_tiny           }
+case class T_code_threaded          (code: () => N_code_threaded           => Unit) extends T_atomic_action with TemplateCodeHolder[N_code_threaded          , Unit] {type N = N_code_threaded       }
+case class T_code_unsure            (code: () => N_code_unsure             => Unit) extends T_atomic_action with TemplateCodeHolder[N_code_unsure            , Unit] {type N = N_code_unsure         }
+case class T_code_eventhandling     (code: () => N_code_eventhandling      => Unit) extends T_atomic_action with TemplateCodeHolder[N_code_eventhandling     , Unit] {type N = N_code_eventhandling  }
+case class T_code_eventhandling_loop(code: () => N_code_eventhandling_loop => Unit) extends T_atomic_action with TemplateCodeHolder[N_code_eventhandling_loop, Unit] {type N = N_code_eventhandling_loop}
+
+case class T_localvar[V](isVal: Boolean, isLoop: Boolean, localVariable: LocalVariable[V], code: () => N_localvar[V] => V) extends T_0_ary with TemplateCodeHolder[N_localvar[V],V] { type N = N_localvar[V]}
+case class T_privatevar(name: Symbol) extends T_0_ary                    {type N = N_privatevar         }
+case class T_while(code: () => N_while => Boolean) extends T_0_ary with TemplateCodeHolder[N_while, Boolean] {type N = N_while              }
+case class T_break     ()           extends T_0_ary                                  {type N = N_break              }
+case class T_optional_break()       extends T_0_ary                                  {type N = N_optional_break     }
+case class T_optional_break_loop()  extends T_0_ary                                  {type N = N_optional_break_loop}
+case class T_delta()                extends T_0_ary                                  {type N = N_delta              }
+case class T_epsilon()              extends T_0_ary                                  {type N = N_epsilon            }
+case class T_nu()                   extends T_0_ary                                  {type N = N_nu                 }
+case class T_loop()                 extends T_0_ary                                  {type N = N_loop               }
+case class T_if            (code: () => N_if      => Boolean, child0: TemplateChildNode)                            extends T_1_ary with TemplateCodeHolder[N_if     , Boolean] {type N = N_if                 }
+case class T_if_else       (code: () => N_if_else => Boolean, child0: TemplateChildNode, child1: TemplateChildNode) extends T_1_ary with TemplateCodeHolder[N_if_else, Boolean] {type N = N_if_else            }
+case class T_launch        (child0: TemplateChildNode)                            extends T_1_ary                            {type N = N_launch             }
+case class T_launch_anchor (child0: TemplateChildNode)                            extends T_1_ary                            {type N = N_launch_anchor; override def root=this;}
+case class T_inline_if     (child0: TemplateChildNode, child1: TemplateChildNode) extends T_1_ary                            {type N = N_inline_if     }
+case class T_inline_if_else(child0: TemplateChildNode, child1: TemplateChildNode,
+                                                       child2: TemplateChildNode) extends T_1_ary                    {type N = N_inline_if_else}
+
+//case class T_0_ary_op(kind: String                                           ) extends T_0_ary  {type N = N_0_ary_op}
+case class T_1_ary_op(kind: String,                child0: TemplateChildNode ) extends T_1_ary {type N = N_1_ary_op; override def kindAsString=kind}
+case class T_n_ary_op(kind: String, override val children: TemplateChildNode*) extends T_n_ary {type N = N_n_ary_op; override def kindAsString=kind}
+
+//case class T_0_ary_name(kind: String, name: Symbol) extends TemplateChildNode_0_Trait
+
+case class T_annotation[CN<:CallGraphNodeTrait,CT<:TemplateChildNode](code: () => N_annotation[CN,CT] => Unit, child0: TemplateChildNode) extends T_1_ary with TemplateCodeHolder[N_annotation[CN,CT], Unit] {
+  type N=N_annotation[CN,CT] 
+}
+
+case class T_call(code: () => N_call => N_call => Unit) extends T_0_ary with TemplateCodeHolder[N_call, N_call => Unit] {type N = N_call}
+
 case class T_script (owner: AnyRef, kind: String, name: Symbol, child0: TemplateChildNode) extends TemplateNode_1_Trait with TemplateRootNode {
+  type N = N_script
   override def toString = name.name
 }
 case class T_commscript(owner: AnyRef, kind: String, communicator: Communicator) extends TemplateNode_0_Trait with TemplateRootNode {
+  type N = N_communication
   override def toString = super.toString+" "+communicator.name.name
 }
 case class T_communication(owner: AnyRef, kind: String, names: Seq[Symbol]) extends TemplateNode_0_Trait with TemplateRootNode {
+  type N = N_communication
   override def toString = super.toString+" "+names.mkString(",")
 }
 
-case class T_0_ary (kind: String)                                                                                          extends TemplateChildNode_0_Trait
-case class T_1_ary (kind: String, child0: TemplateChildNode)                                                               extends TemplateChildNode_1_Trait
-case class T_2_ary (kind: String, child0: TemplateChildNode, var child1: TemplateChildNode)                                extends TemplateChildNode_2_Trait
-case class T_3_ary (kind: String, child0: TemplateChildNode, var child1: TemplateChildNode, var child2: TemplateChildNode) extends TemplateChildNode_3_Trait
-case class T_n_ary (kind: String, override val children: TemplateChildNode*)                                               extends TemplateChildNode_n_Trait
-case class T_annotation[CN<:CallGraphNodeTrait[CT],CT<:TemplateChildNode](code: () => N_annotation[CN,CT] => Unit, child0: TemplateChildNode) extends TemplateChildNode_1_WithCode[N_annotation[CN,CT], Unit] {def kind = "@:"}
-case class T_call                                                        (code: () => N_call    => N_call => Unit                      ) extends TemplateChildNode_0_WithCode[N_call   , N_call => Unit] {def kind = "call"}
 
-case class T_0_ary_name           [N<:CallGraphNodeTrait[TemplateNode]] (kind: String, name: Symbol)                                              extends TemplateChildNode_0_Trait
-case class T_0_ary_local_valueCode[V<:Any] (kind: String, localVariable: LocalVariable[V], code: () => N_localvar[_]=>V)                          extends TemplateChildNode_0_WithCode[N_localvar[_], V]
-case class T_0_ary_code[N<:CallGraphNodeTrait[TemplateNode]] (kind: String, code: () => N => Unit)                                                extends TemplateChildNode_0_WithCode[N, Unit]
-case class T_1_ary_code[N<:CallGraphNodeTrait[TemplateNode]] (kind: String, code: () => N => Unit, child0: TemplateChildNode)                          extends TemplateChildNode_1_WithCode[N, Unit]
-case class T_2_ary_code[N<:CallGraphNodeTrait[TemplateNode]] (kind: String, code: () => N => Unit, child0: TemplateChildNode, child1: TemplateChildNode)    extends TemplateChildNode_2_WithCode[N, Unit]  {child1.indexAsChild = 1}
+case class T_local_valueCode[V<:Any] (kind: String, localVariable: LocalVariable[V], code: () => N_localvar[V]=>V) extends T_0_ary with TemplateCodeHolder[N_localvar[V], V] {type N = N_localvar[V]}
 
-case class T_0_ary_test[N<:CallGraphNodeTrait[TemplateNode]] (kind: String, code: () => N => Boolean)                                             extends TemplateChildNode_0_WithCode[N, Boolean]
-case class T_1_ary_test[N<:CallGraphNodeTrait[TemplateNode]] (kind: String, code: () => N => Boolean, child0: TemplateChildNode)                       extends TemplateChildNode_1_WithCode[N, Boolean]
-case class T_2_ary_test[N<:CallGraphNodeTrait[TemplateNode]] (kind: String, code: () => N => Boolean, child0: TemplateChildNode, child1: TemplateChildNode) extends TemplateChildNode_2_WithCode[N, Boolean]  {child1.indexAsChild = 1}
+//case class T_0_ary_code (kind: String, code: () => N => Unit)                                                extends TemplateChildNode_0_WithCode[N, Unit]
+//case class T_1_ary_code (kind: String, code: () => N => Unit, child0: TemplateChildNode)                          extends TemplateChildNode_1_WithCode[N, Unit]
+//case class T_2_ary_code (kind: String, code: () => N => Unit, child0: TemplateChildNode, child1: TemplateChildNode)    extends TemplateChildNode_2_WithCode[N, Unit]  {child1.indexAsChild = 1}
+
+//case class T_0_ary_test[N<:CallGraphNodeTrait[TemplateNode]] (kind: String, code: () => N => Boolean)                                             extends TemplateChildNode_0_WithCode[N, Boolean]
+//case class T_1_ary_test[N<:CallGraphNodeTrait[TemplateNode]] (kind: String, code: () => N => Boolean, child0: TemplateChildNode)                       extends TemplateChildNode_1_WithCode[N, Boolean]
+//case class T_2_ary_test[N<:CallGraphNodeTrait[TemplateNode]] (kind: String, code: () => N => Boolean, child0: TemplateChildNode, child1: TemplateChildNode) extends TemplateChildNode_2_WithCode[N, Boolean]  {child1.indexAsChild = 1}
 
 // TBD: case class T_match    (code: ScriptNode => Unit, caseParts)    extends TemplateNode;
 // TBD: case class T_exception(?)    extends TemplateNode;
@@ -137,19 +200,19 @@ object ExclusiveKind extends Enumeration {
   val All, LeftOnly, None, Disambiguating_all, Disambiguating_leftOnly = Value
 }
 
-object T_n_ary {
+object T_n_ary_op {
   
-  def getLogicalKind(t: T_n_ary): LogicalKind.LogicalKindType = getLogicalKind(t.kind)
+  def getLogicalKind(t: T_n_ary_op): LogicalKind.LogicalKindType = getLogicalKind(t.kind)
   def getLogicalKind(kind: String): LogicalKind.LogicalKindType = {
     kind match {
       case ";" | "|;" | "||;" | "|;|" 
          | "&&" | "&" | "&&:" | "&:"
-         | "=="  | "<<=="  | "<=="  | "==>>"  | "==>"  | "<==>"  | "<<==>"  | "<==>>"  | "<<==>>"
-         | "==:" | "<<==:" | "<==:" | "==>>:" | "==>:" | "<==>:" | "<<==>:" | "<==>>:" | "<<==>>:"
+         | "=="  | "==>"  | "&==>"  | "&&==>"
+         | "==:" | "==>:" | "&==>:" | "&&==>:"
          | "#" | "#/"          => LogicalKind.And
                              
-      case "||"  | "|"  
-         | "||:" | "|:" 
+      case "||"  | "|"    | "|==>"  | "||==>"
+         | "||:" | "|:"   | "|==>:" | "||==>:"
          | "|+"  | "|/" 
          | "||+" | "||/" 
          | "|+|" | "|/|" 
@@ -161,7 +224,7 @@ object T_n_ary {
       case _ => null
     }
   }
-  def getExclusiveKind(t: T_n_ary): ExclusiveKind.ExclusiveKindType = getExclusiveKind(t.kind)
+  def getExclusiveKind(t: T_n_ary_op): ExclusiveKind.ExclusiveKindType = getExclusiveKind(t.kind)
   def getExclusiveKind(kind: String): ExclusiveKind.ExclusiveKindType = {
     kind match {
       case ";" | "." | "+"  => ExclusiveKind.All                             
@@ -171,28 +234,28 @@ object T_n_ary {
       case _                => ExclusiveKind.None
     }
   }
-  def isMerge(t: T_n_ary): Boolean = isMerge(t.kind)
+  def isMerge(t: T_n_ary_op): Boolean = isMerge(t.kind)
   def isMerge(kind: String): Boolean = {
     kind match {
       case "&&" | "&" | "&&:" | "&:"
-         | "=="  | "<<=="  | "<=="  | "==>>"  | "==>"  | "<==>"  | "<<==>"  | "<==>>"  | "<<==>>"
-         | "==:" | "<<==:" | "<==:" | "==>>:" | "==>:" | "<==>:" | "<<==>:" | "<==>>:" | "<<==>>:"
+         | "=="  | "==>" | "&==>"  | "&&==>"  | "|==>"  | "||==>"
+
          | "||"  | "|"  
          | "||:" | "|:"   => true                         
       
       case _ => false
     }
   }
-  def isLeftMerge(t: T_n_ary): Boolean = isLeftMerge(t.kind)
+  def isLeftMerge(t: T_n_ary_op): Boolean = isLeftMerge(t.kind)
   def isLeftMerge(kind: String): Boolean = {
     kind match {
       case "&&:" | "&:"
-         | "==:" | "<<==:" | "<==:" | "==>>:" | "==>:" | "<==>:" | "<<==>:" | "<==>>:" | "<<==>>:"
+         | "==:"  | "==>:"  | "&==>:"  | "&&==>:"  | "|==>:"  | "||==>:"   
          | "||:" | "|:" => true
       case _            => false
     }
   }
-  def isSuspending(t: T_n_ary): Boolean = isSuspending(t.kind)
+  def isSuspending(t: T_n_ary_op): Boolean = isSuspending(t.kind)
   def isSuspending(kind: String): Boolean = {
     kind match {
       case "#" 

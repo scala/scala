@@ -1,26 +1,26 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Macros {
-  def impl_with_implicits_enabled(c: Context) = {
+  def impl_with_implicits_enabled(c: BlackboxContext) = {
     import c.universe._
 
-    val tree1 = Apply(Select(Literal(Constant(1)), newTermName("$minus$greater")), List(Literal(Constant(2))))
+    val tree1 = Apply(Select(Literal(Constant(1)), TermName("$minus$greater")), List(Literal(Constant(2))))
     val ttree1 = c.typeCheck(tree1, withImplicitViewsDisabled = false)
-    c.literal(ttree1.toString)
+    c.Expr[String](Literal(Constant(ttree1.toString)))
   }
 
   def foo_with_implicits_enabled = macro impl_with_implicits_enabled
 
-  def impl_with_implicits_disabled(c: Context) = {
+  def impl_with_implicits_disabled(c: BlackboxContext) = {
     import c.universe._
 
     try {
-      val tree2 = Apply(Select(Literal(Constant(1)), newTermName("$minus$greater")), List(Literal(Constant(2))))
+      val tree2 = Apply(Select(Literal(Constant(1)), TermName("$minus$greater")), List(Literal(Constant(2))))
       val ttree2 = c.typeCheck(tree2, withImplicitViewsDisabled = true)
-      c.literal(ttree2.toString)
+      c.Expr[String](Literal(Constant(ttree2.toString)))
     } catch {
       case ex: Throwable =>
-        c.literal(ex.toString)
+        c.Expr[String](Literal(Constant(ex.toString)))
     }
   }
 

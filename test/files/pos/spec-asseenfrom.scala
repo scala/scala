@@ -1,8 +1,8 @@
-class Automaton[@specialized(Double) W,State] { 
+class Automaton[@specialized(Double) W,State] {
 
-  def finalWeight(s: State): W = error("todo");
+  def finalWeight(s: State): W = sys.error("todo");
 
-  def allStates: Set[State] = error("toodo");
+  def allStates: Set[State] = sys.error("toodo");
 
   /**
    * Returns a map from states to its final weight. may expand all nodes.

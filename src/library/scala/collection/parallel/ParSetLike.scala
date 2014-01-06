@@ -6,10 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection.parallel
-
-
+package scala
+package collection.parallel
 
 import scala.collection.SetLike
 import scala.collection.GenSetLike
@@ -44,26 +42,4 @@ extends GenSetLike[T, Repr]
   def diff(that: GenSet[T]): Repr = sequentially {
     _ diff that
   }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

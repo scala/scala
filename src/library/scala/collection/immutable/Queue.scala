@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -37,6 +38,7 @@ import scala.annotation.tailrec
  */
 
 @SerialVersionUID(-7622936493364270175L)
+@deprecatedInheritance("The implementation details of immutable queues make inheriting from them unwise.", "2.11.0")
 class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
          extends AbstractSeq[A]
             with LinearSeq[A]
@@ -87,6 +89,16 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    */
   override def length = in.length + out.length
 
+  override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Queue[A], B, That]): That = bf match {
+    case _: Queue.GenericCanBuildFrom[_] => new Queue(in, elem :: out).asInstanceOf[That]
+    case _                               => super.+:(elem)(bf)
+  }
+
+  override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Queue[A], B, That]): That = bf match {
+    case _: Queue.GenericCanBuildFrom[_] => enqueue(elem).asInstanceOf[That]
+    case _                               => super.:+(elem)(bf)
+  }
+
   /** Creates a new queue with element added at the end
    *  of the old queue.
    *
@@ -116,6 +128,13 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
     case x :: xs            => (x, new Queue(in, xs))
     case _                  => throw new NoSuchElementException("dequeue on empty queue")
   }
+
+  /** Optionally retrieves the first element and a queue of the remaining elements.
+   *
+   * @return A tuple of the first element of the queue, and a new queue with this element removed.
+   *         If the queue is empty, `None` is returned.
+   */
+  def dequeueOption: Option[(A, Queue[A])] = if(isEmpty) None else Some(dequeue)
 
   /** Returns the first element in the queue, or throws an error if there
    *  is no element contained in the queue.

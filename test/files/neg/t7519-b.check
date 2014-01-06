@@ -1,0 +1,6 @@
+Use_2.scala:8: error: type mismatch;
+ found   : String
+ required: Q
+  val x: Q = ex.Mac.mac("asdf")
+                       ^
+one error found

@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> class X {
    def methodIntIntInt(x: Int, y: Int) = x+y
 }
@@ -23,13 +21,13 @@ scala> val cs: ClassSymbol = im.symbol
 cs: reflect.runtime.universe.ClassSymbol = class X
 
 scala> val ts: Type = cs.typeSignature
-ts: reflect.runtime.universe.Type = 
-java.lang.Object {
+ts: reflect.runtime.universe.Type =
+scala.AnyRef {
   def <init>(): X
   def methodIntIntInt(x: scala.Int,y: scala.Int): scala.Int
 }
 
-scala> val ms: MethodSymbol = ts.declaration(newTermName("methodIntIntInt")).asMethod
+scala> val ms: MethodSymbol = ts.declaration(TermName("methodIntIntInt")).asMethod
 ms: reflect.runtime.universe.MethodSymbol = method methodIntIntInt
 
 scala> val MethodType( _, t1 ) = ms.typeSignature

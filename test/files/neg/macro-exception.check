@@ -1,0 +1,7 @@
+Test_2.scala:2: error: exception during macro expansion:
+java.lang.Exception
+	at Macros$.impl(Macros_1.scala:6)
+
+  Macros.exception
+         ^
+one error found

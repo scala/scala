@@ -1,13 +1,13 @@
-// An example extracted from SBT by Iulian 
-// that showed that the previous fix to t5120 
+// An example extracted from SBT by Iulian
+// that showed that the previous fix to t5120
 // was too strict.
 class Test {
   class ScopedKey[T]
   class Value[T]
 
-  class Compiled[T](val settings: Seq[Pair[T]])
-  
-  case class Pair[T](k: ScopedKey[T], v: ScopedKey[T])
+  class Compiled[T](val settings: Seq[Tuple2[T]])
+
+  case class Tuple2[T](k: ScopedKey[T], v: ScopedKey[T])
 
   def transform[T](x: T) = x
 

@@ -1,8 +1,8 @@
-{
+({
   val $u: ru.type = ru;
   val $m: $u.Mirror = ru.runtimeMirror({
   final class $anon extends scala.AnyRef {
-    def <init>(): anonymous class $anon = {
+    def <init>(): <$anon: AnyRef> = {
       $anon.super.<init>();
       ()
     };
@@ -37,5 +37,5 @@
     };
     new $typecreator2()
   }))
-}
+}: ru.Expr[Int])
 ru.reify[Int](2)

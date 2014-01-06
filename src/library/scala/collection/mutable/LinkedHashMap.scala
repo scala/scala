@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -84,7 +85,10 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     }
   }
 
+  @deprecatedOverriding("+= should not be overridden so it stays consistent with put.", "2.11.0")
   def += (kv: (A, B)): this.type = { put(kv._1, kv._2); this }
+
+  @deprecatedOverriding("-= should not be overridden so it stays consistent with remove.", "2.11.0")
   def -=(key: A): this.type = { remove(key); this }
 
   def iterator: Iterator[(A, B)] = new AbstractIterator[(A, B)] {
@@ -92,33 +96,33 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = (cur.key, cur.value); cur = cur.later; res }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
-  
+
   protected class FilteredKeys(p: A => Boolean) extends super.FilteredKeys(p) {
     override def empty = LinkedHashMap.empty
   }
-  
+
   override def filterKeys(p: A => Boolean): scala.collection.Map[A, B] = new FilteredKeys(p)
 
   protected class MappedValues[C](f: B => C) extends super.MappedValues[C](f) {
     override def empty = LinkedHashMap.empty
   }
-  
+
   override def mapValues[C](f: B => C): scala.collection.Map[A, C] = new MappedValues(f)
-  
+
   protected class DefaultKeySet extends super.DefaultKeySet {
     override def empty = LinkedHashSet.empty
   }
-  
+
   override def keySet: scala.collection.Set[A] = new DefaultKeySet
-  
+
   override def keysIterator: Iterator[A] = new AbstractIterator[A] {
     private var cur = firstEntry
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = cur.key; cur = cur.later; res }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
 
   override def valuesIterator: Iterator[B] = new AbstractIterator[B] {
@@ -126,7 +130,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = cur.value; cur = cur.later; res }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
 
   override def foreach[U](f: ((A, B)) => U) {

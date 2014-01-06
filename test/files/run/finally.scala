@@ -7,17 +7,17 @@ object Test extends App {
     try {
       bar
     } catch {
-      case e => println(e)
+      case e: Throwable => println(e)
     }
   }
-  
+
   // test that finally is not covered by any exception handlers.
   def bar {
     try {
       println("hi")
     }
     catch {
-      case e => println("SHOULD NOT GET HERE")
+      case e: Throwable => println("SHOULD NOT GET HERE")
     }
     finally {
       println("In Finally")
@@ -26,33 +26,33 @@ object Test extends App {
   }
 
   // return in catch (finally is executed)
-  def retCatch {      
+  def retCatch {
     try {
       throw new Exception
     } catch {
-      case e =>
+      case e: Throwable =>
         println(e);
         return
     } finally println("in finally")
   }
 
   // throw in catch (finally is executed, exception propagated)
-  def throwCatch {      
+  def throwCatch {
     try {
       throw new Exception
     } catch {
-      case e =>
+      case e: Throwable =>
         println(e);
         throw e
     } finally println("in finally")
   }
 
   // return inside body (finally is executed)
-  def retBody {      
+  def retBody {
     try {
       return
     } catch {
-      case e =>
+      case e: Throwable =>
         println(e);
         throw e
     } finally println("in finally")
@@ -63,7 +63,7 @@ object Test extends App {
     try {
       throw new Exception
     } catch {
-      case e =>
+      case e: Throwable =>
         println(e);
     } finally println("in finally")
   }
@@ -75,7 +75,7 @@ object Test extends App {
       finally {
         println("in finally 1")
         return
-      } 
+      }
     } finally println("in finally 2")
   }
 
@@ -89,17 +89,17 @@ object Test extends App {
         throw new Exception
       }
     } catch {
-      case e => println(e)
+      case e: Throwable => println(e)
     }
   }
 
   // nested finallies with return value
-  def nestedFinalies: Int = 
+  def nestedFinalies: Int =
     try {
       try {
         return 10
       } finally {
-        try { () } catch { case _ => () }
+        try { () } catch { case _: Throwable => () }
         println("in finally 1")
       }
     } finally {
@@ -111,7 +111,7 @@ object Test extends App {
     try {
       m
     } catch {
-      case e => println("COUGHT: " + e)
+      case e: Throwable => println("COUGHT: " + e)
     }
     println("-" * 40)
   }

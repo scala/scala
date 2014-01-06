@@ -1,3 +1,5 @@
+
+import scala.language.{ existentials }
 import scala.reflect.runtime.universe._
 
 object Test {

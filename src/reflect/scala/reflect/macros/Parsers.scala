@@ -1,14 +1,15 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that
  *  exposes functions to parse strings with Scala code into trees.
  */
 trait Parsers {
-  self: Context =>
+  self: BlackboxContext =>
 
   /** Parses a string with a Scala expression into an abstract syntax tree.
    *  Only works for expressions, i.e. parsing a package declaration will fail.
@@ -19,4 +20,4 @@ trait Parsers {
 
 /** Indicates an error during [[scala.reflect.macros.Parsers#parse]].
  */
-case class ParseException(val pos: scala.reflect.api.Position, val msg: String) extends Exception(msg)
+case class ParseException(pos: scala.reflect.api.Position, msg: String) extends Exception(msg)

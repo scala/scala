@@ -6,8 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.generic
-
+package scala
+package collection
+package generic
 
 /** A template trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
  *  of trait `TraversableLike`.

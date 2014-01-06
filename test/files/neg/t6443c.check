@@ -1,0 +1,7 @@
+t6443c.scala:16: error: double definition:
+def foo(d: B.D)(a: Any,d2: d.type): Unit at line 11 and
+def foo(d: B.D)(a: Any)(d2: d.type): Unit at line 16
+have same type after erasure: (d: B.D, a: Object, d2: B.D)Unit
+  def foo(d: D)(a: Any)(d2: d.type): Unit = ()
+      ^
+one error found

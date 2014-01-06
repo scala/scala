@@ -1,0 +1,15 @@
+abstract-explaintypes.scala:6: error: type mismatch;
+ found   : A
+ required: A.this.T
+  def foo2: T = bar().baz();
+                         ^
+A <: A.this.T?
+false
+abstract-explaintypes.scala:9: error: type mismatch;
+ found   : A
+ required: A.this.T
+  def foo5: T = baz().baz();
+                         ^
+A <: A.this.T?
+false
+two errors found

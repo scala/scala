@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package internal
 package transform
 
@@ -10,6 +11,14 @@ trait UnCurry {
   import global._
   import definitions._
 
+  /** Note: changing tp.normalize to tp.dealias in this method leads to a single
+   *  test failure: run/t5688.scala, where instead of the expected output
+   *    Vector(ta, tb, tab)
+   *  we instead get
+   *    Vector(tab, tb, tab)
+   *  I think that difference is not the product of sentience but of randomness.
+   *  Let us figure out why it is and then change this method.
+   */
   private def expandAlias(tp: Type): Type = if (!tp.isHigherKinded) tp.normalize else tp
 
   val uncurry: TypeMap = new TypeMap {
@@ -17,7 +26,14 @@ trait UnCurry {
       val tp = expandAlias(tp0)
       tp match {
         case MethodType(params, MethodType(params1, restpe)) =>
-          apply(MethodType(params ::: params1, restpe))
+          // This transformation is described in UnCurryTransformer.dependentParamTypeErasure
+          val packSymbolsMap = new TypeMap {
+            // Wrapping in a TypeMap to reuse the code that opts for a fast path if the function is an identity.
+            def apply(tp: Type): Type = packSymbols(params, tp)
+          }
+          val existentiallyAbstractedParam1s = packSymbolsMap.mapOver(params1)
+          val substitutedResult = restpe.substSym(params1, existentiallyAbstractedParam1s)
+          apply(MethodType(params ::: existentiallyAbstractedParam1s, substitutedResult))
         case MethodType(params, ExistentialType(tparams, restpe @ MethodType(_, _))) =>
           abort("unexpected curried method types with intervening existential")
         case MethodType(h :: t, restpe) if h.isImplicit =>
@@ -30,7 +46,7 @@ trait UnCurry {
           apply(seqType(arg))
         case TypeRef(pre, JavaRepeatedParamClass, arg :: Nil) =>
           apply(arrayType(
-            if (isUnboundedGeneric(arg)) ObjectClass.tpe else arg))
+            if (isUnboundedGeneric(arg)) ObjectTpe else arg))
         case _ =>
           expandAlias(mapOver(tp))
       }

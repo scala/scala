@@ -110,8 +110,8 @@ object EmitManPage {
         case lst:NumberedList =>
           for {
             idx <- List.range(0, lst.items.length)
-            val item = lst.items(idx)
           } {
+            val item = lst.items(idx)
             out.println(".IP \"   " + (idx+1) + ".\"")
             emitText(item)
             out.println

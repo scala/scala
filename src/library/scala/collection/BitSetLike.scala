@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 
 import BitSetLike._
 import mutable.StringBuilder
@@ -69,6 +70,8 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     s
   }
 
+  override def isEmpty: Boolean = 0 until nwords forall (i => word(i) == 0)
+
   implicit def ordering: Ordering[Int] = Ordering.Int
 
   def rangeImpl(from: Option[Int], until: Option[Int]): This = {
@@ -98,24 +101,35 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     fromBitMaskNoCopy(a)
   }
 
-  def iterator: Iterator[Int] = new AbstractIterator[Int] {
-    private var current = 0
+  def iterator: Iterator[Int] = iteratorFrom(0)
+
+  override def keysIteratorFrom(start: Int) = new AbstractIterator[Int] {
+    private var current = start
     private val end = nwords * WordLength
     def hasNext: Boolean = {
-      while (current < end && !self.contains(current)) current += 1
-      current < end
+      while (current != end && !self.contains(current)) current += 1
+      current != end
     }
     def next(): Int =
       if (hasNext) { val r = current; current += 1; r }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
 
   override def foreach[B](f: Int => B) {
-    for (i <- 0 until nwords) {
-      val w = word(i)
-      for (j <- i * WordLength until (i + 1) * WordLength) {
-        if ((w & (1L << j)) != 0L) f(j)
+    /* NOTE: while loops are significantly faster as of 2.11 and
+       one major use case of bitsets is performance. Also, there
+       is nothing to do when all bits are clear, so use that as
+       the inner loop condition. */
+    var i = 0
+    while (i < nwords) {
+      var w = word(i)
+      var j = i * WordLength
+      while (w != 0L) {
+        if ((w&1L) == 1L) f(j)
+        w = w >>> 1
+        j += 1
       }
+      i += 1
     }
   }
 
@@ -193,11 +207,15 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   override def addString(sb: StringBuilder, start: String, sep: String, end: String) = {
     sb append start
     var pre = ""
-    for (i <- 0 until nwords * WordLength)
+    val max = nwords * WordLength
+    var i = 0
+    while(i != max) {
       if (contains(i)) {
         sb append pre append i
         pre = sep
       }
+      i += 1
+    }
     sb append end
   }
 
@@ -206,8 +224,10 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
 
 /** Companion object for BitSets. Contains private data only */
 object BitSetLike {
-  private[collection] val LogWL = 6
-  private val WordLength = 64
+  /* Final vals can sometimes be inlined as constants (faster) */
+  private[collection] final val LogWL = 6
+  private final val WordLength = 64
+  private[collection] final val MaxSize = (Int.MaxValue >> LogWL) + 1
 
   private[collection] def updateArray(elems: Array[Long], idx: Int, w: Long): Array[Long] = {
     var len = elems.length

@@ -1,7 +1,7 @@
 package test
 
-trait A 
-trait B 
+trait A
+trait B
 
 class BImpl extends B {
   this: A =>

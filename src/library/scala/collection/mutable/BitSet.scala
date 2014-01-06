@@ -8,11 +8,12 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
-import BitSetLike.{LogWL, updateArray}
+import BitSetLike.{LogWL, MaxSize, updateArray}
 
 /** A class for mutable bitsets.
  *
@@ -36,7 +37,7 @@ import BitSetLike.{LogWL, updateArray}
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(8483111450368547763L)
-class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
+class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
                                                   with SortedSet[Int]
                                                   with scala.collection.BitSet
                                                   with BitSetLike[BitSet]
@@ -53,19 +54,27 @@ class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
 
   def this() = this(0)
 
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nwords = elems.length
+  
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def word(idx: Int): Long =
     if (idx < nwords) elems(idx) else 0L
 
-  private def updateWord(idx: Int, w: Long) {
+  protected final def updateWord(idx: Int, w: Long) {
+    ensureCapacity(idx)
+    elems(idx) = w
+  }
+
+  protected final def ensureCapacity(idx: Int) {
+    require(idx < MaxSize)
     if (idx >= nwords) {
       var newlen = nwords
-      while (idx >= newlen) newlen = newlen * 2
+      while (idx >= newlen) newlen = (newlen * 2) min MaxSize
       val elems1 = new Array[Long](newlen)
       Array.copy(elems, 0, elems1, 0, nwords)
       elems = elems1
     }
-    elems(idx) = w
   }
 
   protected def fromBitMaskNoCopy(words: Array[Long]): BitSet = new BitSet(words)
@@ -89,8 +98,56 @@ class BitSet(protected var elems: Array[Long]) extends AbstractSet[Int]
     } else false
   }
 
+  @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
   def += (elem: Int): this.type = { add(elem); this }
+  
+  @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
   def -= (elem: Int): this.type = { remove(elem); this }
+
+  /** Updates this bitset to the union with another bitset by performing a bitwise "or".
+   *
+   *  @param   other  the bitset to form the union with.
+   *  @return  the bitset itself.
+   */
+  def |= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords)
+    for (i <- 0 until other.nwords)
+      elems(i) = elems(i) | other.word(i)
+    this
+  }
+  /** Updates this bitset to the intersection with another bitset by performing a bitwise "and".
+   *
+   *  @param   other  the bitset to form the intersection with.
+   *  @return  the bitset itself.
+   */
+  def &= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords)
+    for (i <- 0 until other.nwords)
+      elems(i) = elems(i) & other.word(i)
+    this
+  }
+  /** Updates this bitset to the symmetric difference with another bitset by performing a bitwise "xor".
+   *
+   *  @param   other  the bitset to form the symmetric difference with.
+   *  @return  the bitset itself.
+   */
+  def ^= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords)
+    for (i <- 0 until other.nwords)
+      elems(i) = elems(i) ^ other.word(i)
+    this
+  }
+  /** Updates this bitset to the difference with another bitset by performing a bitwise "and-not".
+   *
+   *  @param   other  the bitset to form the difference with.
+   *  @return  the bitset itself.
+   */
+  def &~= (other: BitSet): this.type = {
+    ensureCapacity(other.nwords)
+    for (i <- 0 until other.nwords)
+      elems(i) = elems(i) & ~other.word(i)
+    this
+  }
 
   override def clear() {
     elems = new Array[Long](elems.length)

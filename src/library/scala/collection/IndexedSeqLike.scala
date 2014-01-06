@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import mutable.ArrayBuffer
 import scala.annotation.tailrec
@@ -59,7 +60,7 @@ trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
 
     def next(): A = {
       if (index >= end)
-        Iterator.empty.next
+        Iterator.empty.next()
 
       val x = self(index)
       index += 1
@@ -68,7 +69,7 @@ trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
 
     def head = {
       if (index >= end)
-        Iterator.empty.next
+        Iterator.empty.next()
 
       self(index)
     }

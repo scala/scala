@@ -1,6 +1,8 @@
 package life
 
- /*
+import scala.language.implicitConversions
+
+/*
  * Copied from http://rosettacode.org/wiki/Conway's_Game_of_Life/Scala
  */
 class Coord private (val x: Int, val y: Int) {

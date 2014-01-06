@@ -14,7 +14,7 @@ package remote
 
 import java.io.{DataInputStream, DataOutputStream, IOException}
 import java.lang.{Thread, SecurityException}
-import java.net.{InetAddress, ServerSocket, Socket, UnknownHostException}
+import java.net.{InetAddress, InetSocketAddress, ServerSocket, Socket, SocketTimeoutException, UnknownHostException}
 
 import scala.collection.mutable
 import scala.util.Random
@@ -24,6 +24,7 @@ import scala.util.Random
  * @version 0.9.9
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 object TcpService {
   private val random = new Random
   private val ports = new mutable.HashMap[Int, TcpService]
@@ -34,7 +35,7 @@ object TcpService {
         service
       case None =>
         val service = new TcpService(port, cl)
-        ports += Pair(port, service)
+        ports(port) = service
         service.start()
         Debug.info("created service at "+service.node)
         service
@@ -59,6 +60,23 @@ object TcpService {
     portnum
   }
 
+  private val connectTimeoutMillis = {
+    val propName = "scala.actors.tcpSocket.connectTimeoutMillis"
+    val defaultTimeoutMillis = 0
+    sys.props get propName flatMap {
+      timeout =>
+        try {
+          val to = timeout.toInt
+          Debug.info(s"Using socket timeout $to")
+          Some(to)
+        } catch {
+          case e: NumberFormatException =>
+            Debug.warning(s"""Could not parse $propName = "$timeout" as an Int""")
+            None
+        }
+    } getOrElse defaultTimeoutMillis
+  }
+
   var BufSize: Int = 65536
 }
 
@@ -67,6 +85,7 @@ object TcpService {
  * @version 0.9.10
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
   val serializer: JavaSerializer = new JavaSerializer(this, cl)
 
@@ -87,9 +106,9 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
       // when remote net kernel comes up
       (pendingSends.get(node): @unchecked) match {
         case None =>
-          pendingSends += Pair(node, List(data))
+          pendingSends(node) = List(data)
         case Some(msgs) if msgs.length < TcpService.BufSize =>
-          pendingSends += Pair(node, data :: msgs)
+          pendingSends(node) = data :: msgs
       }
     }
 
@@ -164,7 +183,7 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
     new mutable.HashMap[Node, TcpServiceWorker]
 
   private[actors] def addConnection(node: Node, worker: TcpServiceWorker) = synchronized {
-    connections += Pair(node, worker)
+    connections(node) = worker
   }
 
   def getConnection(n: Node) = synchronized {
@@ -176,7 +195,15 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
   }
 
   def connect(n: Node): TcpServiceWorker = synchronized {
-    val socket = new Socket(n.address, n.port)
+    val socket = new Socket()
+    val start = System.nanoTime
+    try {
+      socket.connect(new InetSocketAddress(n.address, n.port), TcpService.connectTimeoutMillis)
+    } catch {
+      case e: SocketTimeoutException =>
+        Debug.warning(f"Timed out connecting to $n after ${(System.nanoTime - start) / math.pow(10, 9)}%.3f seconds")
+        throw e
+    }
     val worker = new TcpServiceWorker(this, socket)
     worker.sendNode(n)
     worker.start()

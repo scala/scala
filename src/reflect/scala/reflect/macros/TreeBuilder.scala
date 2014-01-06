@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 /**
@@ -7,6 +8,7 @@ package macros
  *  A helper available in [[scala.reflect.macros.Universe]] that defines shorthands for the
  *  most common tree-creating functions.
  */
+@deprecated("Use quasiquotes instead", "2.11.0")
 abstract class TreeBuilder {
   val global: Universe
 
@@ -16,6 +18,7 @@ abstract class TreeBuilder {
    *  The type must be suitable for this.  For example, it
    *  must not be a TypeRef pointing to an abstract type variable.
    */
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkAttributedQualifier(tpe: Type): Tree
 
   /** Builds a reference to value whose type is given stable prefix.
@@ -24,22 +27,36 @@ abstract class TreeBuilder {
    *  termSym as the Ident's symbol.  In that case, termSym must
    *  not be NoSymbol.
    */
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree
 
   /** Builds a typed reference to given symbol with given stable prefix. */
-  def mkAttributedRef(pre: Type, sym: Symbol): Tree
+  @deprecated("Use quasiquotes instead", "2.11.0")
+  def mkAttributedRef(pre: Type, sym: Symbol): RefTree
 
   /** Builds a typed reference to given symbol. */
-  def mkAttributedRef(sym: Symbol): Tree
+  @deprecated("Use quasiquotes instead", "2.11.0")
+  def mkAttributedRef(sym: Symbol): RefTree
+
+  /** Builds an untyped reference to given symbol. Requires the symbol to be static. */
+  @deprecated("Use quasiquotes instead", "2.11.0")
+  def mkUnattributedRef(sym: Symbol): RefTree
+
+  /** Builds an untyped reference to symbol with given name. Requires the symbol to be static. */
+  @deprecated("Use quasiquotes instead", "2.11.0")
+  def mkUnattributedRef(fullName: Name): RefTree
 
   /** Builds a typed This reference to given symbol. */
-  def mkAttributedThis(sym: Symbol): Tree
+  @deprecated("Use quasiquotes instead", "2.11.0")
+  def mkAttributedThis(sym: Symbol): This
 
   /** Builds a typed Ident with an underlying symbol. */
-  def mkAttributedIdent(sym: Symbol): Tree
+  @deprecated("Use quasiquotes instead", "2.11.0")
+  def mkAttributedIdent(sym: Symbol): RefTree
 
   /** Builds a typed Select with an underlying symbol. */
-  def mkAttributedSelect(qual: Tree, sym: Symbol): Tree
+  @deprecated("Use quasiquotes instead", "2.11.0")
+  def mkAttributedSelect(qual: Tree, sym: Symbol): RefTree
 
   /** A creator for method calls, e.g. fn[T1, T2, ...](v1, v2, ...)
    *  There are a number of variations.
@@ -50,22 +67,31 @@ abstract class TreeBuilder {
    *  @param    args        value arguments
    *  @return               the newly created trees.
    */
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkMethodCall(receiver: Symbol, methodName: Name, targs: List[Type], args: List[Tree]): Tree
 
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkMethodCall(method: Symbol, targs: List[Type], args: List[Tree]): Tree
 
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkMethodCall(method: Symbol, args: List[Tree]): Tree
 
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkMethodCall(target: Tree, args: List[Tree]): Tree
 
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkMethodCall(receiver: Symbol, methodName: Name, args: List[Tree]): Tree
 
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkMethodCall(receiver: Tree, method: Symbol, targs: List[Type], args: List[Tree]): Tree
 
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree
 
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkNullaryCall(method: Symbol, targs: List[Type]): Tree
 
-  /** A tree that refers to the runtime reflexive universe, ``scala.reflect.runtime.universe''. */
+  /** A tree that refers to the runtime reflexive universe, `scala.reflect.runtime.universe`. */
+  @deprecated("Use quasiquotes instead", "2.11.0")
   def mkRuntimeUniverseRef: Tree
 }

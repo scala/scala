@@ -1,0 +1,4 @@
+t6912.scala:8: error: not found: type Xxxx
+  def test[T]: Xxxx = Foo1[T]
+               ^
+one error found

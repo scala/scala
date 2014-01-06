@@ -10,7 +10,7 @@ abstract class A {
 }
 
 class B extends A {
-  type MyObj = ObjImpl 
+  type MyObj = ObjImpl
   val myString:   S = "hello"
   val realString: String = myString   // error: type missmatch
 }

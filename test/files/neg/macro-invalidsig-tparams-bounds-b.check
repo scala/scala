@@ -1,4 +1,0 @@
-Macros_Test_2.scala:2: error: type arguments [U] do not conform to method foo's type parameter bounds [U <: String]
-  def foo[U <: Int] = macro Impls.foo[U]
-                                     ^
-one error found

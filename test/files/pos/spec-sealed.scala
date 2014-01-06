@@ -2,13 +2,13 @@ sealed abstract class MyList[@specialized +A] {
   def head: A
   def tail: MyList[A]
 
-  def ::[@specialized B >: A](x: B): MyList[B] = 
+  def ::[@specialized B >: A](x: B): MyList[B] =
     new Cons[B](x, this)
 }
 
 case object MyNil extends MyList[Nothing] {
-  def head = error("nil")
-  def tail = error("nil")
+  def head = sys.error("nil")
+  def tail = sys.error("nil")
 }
 
 case class Cons[@specialized a](private val hd: a, tl: MyList[a]) extends MyList[a] {
@@ -19,7 +19,7 @@ case class Cons[@specialized a](private val hd: a, tl: MyList[a]) extends MyList
 abstract class IntList extends MyList[Int]
 
 object Main extends App {
-  val xs = 1 :: 2 :: 3 :: MyNil 
+  val xs = 1 :: 2 :: 3 :: MyNil
   println(xs)
 }
 

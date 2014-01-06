@@ -12,6 +12,7 @@ import scala.collection.mutable.ListBuffer
 
 abstract class Flatten extends InfoTransform {
   import global._
+  import treeInfo.isQualifierSafeToElide
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "flatten"
@@ -23,8 +24,8 @@ abstract class Flatten extends InfoTransform {
     val old   = (scope lookupUnshadowedEntries sym.name).toList
     old foreach (scope unlink _)
     scope enter sym
-    log(s"lifted ${sym.fullLocationString}" + ( if (old.isEmpty) "" else s" after unlinking $old from scope." ))
-    old
+    def old_s = old map (_.sym) mkString ", "
+    debuglog(s"In scope of ${sym.owner}, unlinked $old_s and entered $sym")
   }
 
   private def liftClass(sym: Symbol) {
@@ -84,7 +85,7 @@ abstract class Flatten extends InfoTransform {
         val restp1 = apply(restp)
         if (restp1 eq restp) tp else copyMethodType(tp, params, restp1)
       case PolyType(tparams, restp) =>
-        val restp1 = apply(restp);
+        val restp1 = apply(restp)
         if (restp1 eq restp) tp else PolyType(tparams, restp1)
       case _ =>
         mapOver(tp)
@@ -99,25 +100,44 @@ abstract class Flatten extends InfoTransform {
     /** Buffers for lifted out classes */
     private val liftedDefs = perRunCaches.newMap[Symbol, ListBuffer[Tree]]()
 
-    override def transform(tree: Tree): Tree = {
+    override def transform(tree: Tree): Tree = postTransform {
       tree match {
         case PackageDef(_, _) =>
           liftedDefs(tree.symbol.moduleClass) = new ListBuffer
+          super.transform(tree)
         case Template(_, _, _) if tree.symbol.isDefinedInPackage =>
           liftedDefs(tree.symbol.owner) = new ListBuffer
+          super.transform(tree)
+        case ClassDef(_, _, _, _) if tree.symbol.isNestedClass =>
+          // SI-5508 Ordering important. In `object O { trait A { trait B } }`, we want `B` to appear after `A` in
+          //         the sequence of lifted trees in the enclosing package. Why does this matter? Currently, mixin
+          //         needs to transform `A` first to a chance to create accessors for private[this] trait fields
+          //         *before* it transforms inner classes that refer to them. This also fixes SI-6231.
+          //
+          //         Alternative solutions
+          //            - create the private[this] accessors eagerly in Namer (but would this cover private[this] fields
+          //              added later phases in compilation?)
+          //            - move the accessor creation to the Mixin info transformer
+          val liftedBuffer = liftedDefs(tree.symbol.enclosingTopLevelClass.owner)
+          val index = liftedBuffer.length
+          liftedBuffer.insert(index, super.transform(tree))
+          EmptyTree
         case _ =>
+          super.transform(tree)
       }
-      postTransform(super.transform(tree))
     }
 
     private def postTransform(tree: Tree): Tree = {
       val sym = tree.symbol
       val tree1 = tree match {
-        case ClassDef(_, _, _, _) if sym.isNestedClass =>
-          liftedDefs(sym.enclosingTopLevelClass.owner) += tree
-          EmptyTree
-        case Select(qual, name) if (sym.isStaticModule && !sym.owner.isPackageClass) =>
-          exitingFlatten(atPos(tree.pos)(gen.mkAttributedRef(sym)))
+        case Select(qual, name) if sym.isStaticModule && !sym.isTopLevel =>
+          exitingFlatten {
+            atPos(tree.pos) {
+              val ref = gen.mkAttributedRef(sym)
+              if (isQualifierSafeToElide(qual)) ref
+              else Block(List(qual), ref).setType(tree.tpe) // need to execute the qualifier but refer directly to the lifted module.
+            }
+          }
         case _ =>
           tree
       }
@@ -127,7 +147,10 @@ abstract class Flatten extends InfoTransform {
     /** Transform statements and add lifted definitions to them. */
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val stats1 = super.transformStats(stats, exprOwner)
-      if (currentOwner.isPackageClass) stats1 ::: liftedDefs(currentOwner).toList
+      if (currentOwner.isPackageClass) {
+        val lifted = liftedDefs(currentOwner).toList
+        stats1 ::: lifted
+      }
       else stats1
     }
   }

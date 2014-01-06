@@ -1,5 +1,5 @@
 t5189.scala:3: error: type mismatch;
- found   : Nothing => Any
+ found   : T => U
  required: Any => Any
   def f(x: Any): Any => Any = x match { case Foo(bar) => bar }
                                                          ^

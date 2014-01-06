@@ -6,7 +6,7 @@ object Test {
    *  ...
    */
   
-  val testCode = <code>
+  val testCode = """
   
     class xyz[A] extends annotation.TypeConstraint
     
@@ -25,9 +25,9 @@ object Test {
       }}
     }}
     
-  </code>.text
+  """
   
-  def main(args: Array[String]) = {
+  def main(args: Array[String]) {
     val settings = new Settings()
     settings.classpath.value = System.getProperty("java.class.path")
     val tool = new interpreter.IMain(settings)

@@ -16,7 +16,7 @@ object BooleanArrayClone{
   val cloned = it.clone();
   assert(cloned.sameElements(it));
   cloned(0) = false;
-  assert(it(0) == true) 
+  assert(it(0) == true)
 }
 
 object ByteArrayClone{
@@ -24,7 +24,7 @@ object ByteArrayClone{
   val cloned = it.clone();
   assert(cloned.sameElements(it));
   cloned(0) = 0;
-  assert(it(0) == 1) 
+  assert(it(0) == 1)
 }
 
 object ShortArrayClone{
@@ -32,7 +32,7 @@ object ShortArrayClone{
   val cloned = it.clone();
   assert(cloned.sameElements(it));
   cloned(0) = 0;
-  assert(it(0) == 1) 
+  assert(it(0) == 1)
 }
 
 object CharArrayClone{
@@ -40,7 +40,7 @@ object CharArrayClone{
   val cloned = it.clone();
   assert(cloned.sameElements(it));
   cloned(0) = 0;
-  assert(it(0) == 1) 
+  assert(it(0) == 1)
 }
 
 object IntArrayClone{
@@ -48,7 +48,7 @@ object IntArrayClone{
   val cloned = it.clone();
   assert(cloned.sameElements(it));
   cloned(0) = 0;
-  assert(it(0) == 1) 
+  assert(it(0) == 1)
 }
 
 object LongArrayClone{
@@ -56,7 +56,7 @@ object LongArrayClone{
   val cloned = it.clone();
   assert(cloned.sameElements(it));
   cloned(0) = 0;
-  assert(it(0) == 1) 
+  assert(it(0) == 1)
 }
 
 object FloatArrayClone{
@@ -64,7 +64,7 @@ object FloatArrayClone{
   val cloned = it.clone();
   assert(cloned.sameElements(it));
   cloned(0) = 0;
-  assert(it(0) == 1) 
+  assert(it(0) == 1)
 }
 
 object DoubleArrayClone{
@@ -72,7 +72,7 @@ object DoubleArrayClone{
   val cloned = it.clone();
   assert(cloned.sameElements(it));
   cloned(0) = 0;
-  assert(it(0) == 1) 
+  assert(it(0) == 1)
 }
 
 object ObjectArrayClone{
@@ -80,7 +80,7 @@ object ObjectArrayClone{
   val cloned = it.clone();
   assert(cloned.sameElements(it));
   cloned(0) = "0";
-  assert(it(0) == "1") 
+  assert(it(0) == "1")
 }
 
 object PolymorphicArrayClone{
@@ -88,14 +88,14 @@ object PolymorphicArrayClone{
     val cloned = it.clone();
     assert(cloned.sameElements(it));
     cloned(0) = zero;
-    assert(it(0) == one) 
-  }  
+    assert(it(0) == one)
+  }
 
   testIt(Array("one", "two"), "one", "two");
 
   class Mangler[T: Manifest](ts : T*){
     // this will always be a BoxedAnyArray even after we've unboxed its contents.
-    val it = ts.toArray[T]; 
+    val it = ts.toArray[T];
   }
 
   val mangled = new Mangler[Int](0, 1);

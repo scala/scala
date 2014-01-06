@@ -1,0 +1,3 @@
+t6011c.scala:11: warning: unreachable code
+    case 1 => 3 // crash
+              ^

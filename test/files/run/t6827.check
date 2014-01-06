@@ -1,0 +1,15 @@
+start at -5: java.lang.IllegalArgumentException: requirement failed: start -5 out of range 10
+start at -1: java.lang.IllegalArgumentException: requirement failed: start -1 out of range 10
+start at limit: java.lang.IllegalArgumentException: requirement failed: start 10 out of range 10
+start at limit-1: ok
+first 10: ok
+read all: ok
+test huge len: ok
+5 from 5: ok
+20 from 5: ok
+test len overflow: ok
+start beyond limit: java.lang.IllegalArgumentException: requirement failed: start 30 out of range 10
+read 0: ok
+read -1: ok
+invalid read 0: java.lang.IllegalArgumentException: requirement failed: start 30 out of range 10
+invalid read -1: java.lang.IllegalArgumentException: requirement failed: start 30 out of range 10

@@ -1,0 +1,33 @@
+reload: Completions.scala
+
+askScopeCompletion at Completions.scala(15,2)
+================================================================================
+[response] askScopeCompletion at (15,2)
+retrieved 10 members
+class Completion1 extends AnyRef
+def <init>(): test.Completion1
+object Completion1
+private class Cc1 extends AnyRef
+private class Co1 extends AnyRef
+private def fc1: Int
+private def fo1: Int
+private[this] val c: test.Completion1
+private[this] val vc1: Int
+private[this] val vo1: Int
+================================================================================
+
+askScopeCompletion at Completions.scala(29,2)
+================================================================================
+[response] askScopeCompletion at (29,2)
+retrieved 10 members
+class Completion1 extends AnyRef
+def <init>(): test.Completion1.type
+object Completion1
+private class Cc1 extends AnyRef
+private class Co1 extends AnyRef
+private def fc1: Int
+private def fo1: Int
+private[this] val c: test.Completion1
+private[this] val vc1: Int
+private[this] val vo1: Int
+================================================================================

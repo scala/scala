@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import scala.collection.{ mutable, immutable }
@@ -59,9 +60,9 @@ import scala.collection.{ mutable, immutable }
 // 42:         VBRIDGE
 // 43:         VARARGS
 // 44:    TRIEDCOOKING
-// 45:
-// 46:
-// 47:
+// 45:  SYNCHRONIZED/M
+// 46:        ARTIFACT
+// 47: DEFAULTMETHOD/M
 // 48:
 // 49:
 // 50:
@@ -117,6 +118,7 @@ class ModifierFlags {
   final val PRESUPER      = 1L << 37      // value is evaluated before super call
   final val DEFAULTINIT   = 1L << 41      // symbol is initialized to the default value: used by -Xcheckinit
   final val ARTIFACT      = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
+  final val DEFAULTMETHOD = 1L << 47      // symbol is a java default method
 
   /** Symbols which are marked ARTIFACT. (Expand this list?)
    *
@@ -175,8 +177,8 @@ class Flags extends ModifierFlags {
   final val VBRIDGE       = 1L << 42      // symbol is a varargs bridge
 
   final val VARARGS       = 1L << 43      // symbol is a Java-style varargs method
-  final val TRIEDCOOKING  = 1L << 44      // ``Cooking'' has been tried on this symbol
-                                          // A Java method's type is ``cooked'' by transforming raw types to existentials
+  final val TRIEDCOOKING  = 1L << 44      // `Cooking` has been tried on this symbol
+                                          // A Java method's type is `cooked` by transforming raw types to existentials
 
   final val SYNCHRONIZED  = 1L << 45      // symbol is a method which should be marked ACC_SYNCHRONIZED
 
@@ -252,7 +254,7 @@ class Flags extends ModifierFlags {
    */
   final val ExplicitFlags =
     PRIVATE | PROTECTED | ABSTRACT | FINAL | SEALED |
-    OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE | LAZY
+    OVERRIDE | CASE | IMPLICIT | ABSOVERRIDE | LAZY | DEFAULTMETHOD
 
   /** The two bridge flags */
   final val BridgeFlags = BRIDGE | VBRIDGE
@@ -277,17 +279,19 @@ class Flags extends ModifierFlags {
   final val GetterFlags = ~(PRESUPER | MUTABLE)
   final val SetterFlags = ~(PRESUPER | MUTABLE | STABLE | CASEACCESSOR | IMPLICIT)
 
-  /** When a symbol for a default getter is created, it inherits these
-   *  flags from the method with the default.  Other flags applied at creation
-   *  time are SYNTHETIC, DEFAULTPARAM, and possibly OVERRIDE, and maybe PRESUPER.
+  /** Since DEFAULTPARAM is overloaded with TRAIT, we need some additional
+   *  means of determining what that bit means. Usually DEFAULTPARAM is coupled
+   *  with PARAM, which suffices. Default getters get METHOD instead.
+   *  This constant is the mask of flags which can survive from the parameter modifiers.
+   *  See paramFlagsToDefaultGetter for the full logic.
    */
-  final val DefaultGetterFlags = PRIVATE | PROTECTED | FINAL
+  final val DefaultGetterFlags = PRIVATE | PROTECTED | FINAL | PARAMACCESSOR
 
   /** When a symbol for a method parameter is created, only these flags survive
    *  from Modifiers.  Others which may be applied at creation time are:
    *  SYNTHETIC.
    */
-  final val ValueParameterFlags = BYNAMEPARAM | IMPLICIT | DEFAULTPARAM
+  final val ValueParameterFlags = BYNAMEPARAM | IMPLICIT | DEFAULTPARAM | STABLE | SYNTHETIC
   final val BeanPropertyFlags   = DEFERRED | OVERRIDE | STATIC
   final val VarianceFlags       = COVARIANT | CONTRAVARIANT
 
@@ -307,13 +311,20 @@ class Flags extends ModifierFlags {
   assert((OverloadedFlagsMask & FlagsNotPickled) == 0, flagsToString(OverloadedFlagsMask & FlagsNotPickled))
 
   /** These flags are pickled */
-  final val PickledFlags  = InitialFlags & ~FlagsNotPickled
+  final val PickledFlags  = (
+      (InitialFlags & ~FlagsNotPickled)
+    | notPRIVATE // for value class constructors (SI-6601), and private members referenced
+                 // in @inline-marked methods publicized in SuperAccessors (see SI-6608, e6b4204604)
+  )
 
   /** If we have a top-level class or module
    *  and someone asks us for a flag not in TopLevelPickledFlags,
    *  then we don't need unpickling to give a definite answer.
    */
   final val TopLevelPickledFlags = PickledFlags & ~(MODULE | METHOD | PACKAGE | PARAM | EXISTENTIAL)
+
+  def paramFlagsToDefaultGetter(paramFlags: Long): Long =
+    (paramFlags & DefaultGetterFlags) | SYNTHETIC | METHOD | DEFAULTPARAM
 
   def getterFlags(fieldFlags: Long): Long = ACCESSOR + (
     if ((fieldFlags & MUTABLE) != 0) fieldFlags & ~MUTABLE & ~PRESUPER
@@ -434,7 +445,7 @@ class Flags extends ModifierFlags {
     case        TRIEDCOOKING => "<triedcooking>"                      // (1L << 44)
     case        SYNCHRONIZED => "<synchronized>"                      // (1L << 45)
     case            ARTIFACT => "<artifact>"                          // (1L << 46)
-    case     0x800000000000L => ""                                    // (1L << 47)
+    case       DEFAULTMETHOD => "<defaultmethod>"                     // (1L << 47)
     case    0x1000000000000L => ""                                    // (1L << 48)
     case    0x2000000000000L => ""                                    // (1L << 49)
     case    0x4000000000000L => ""                                    // (1L << 50)
@@ -508,4 +519,4 @@ class Flags extends ModifierFlags {
   final val rawFlagPickledOrder: Array[Long] = pickledListOrder.toArray
 }
 
-object Flags extends Flags { }
+object Flags extends Flags

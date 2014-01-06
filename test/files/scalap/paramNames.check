@@ -1,0 +1,4 @@
+class ParamNames extends scala.AnyRef {
+  def this() = { /* compiled code */ }
+  def foo(s: => scala.Seq[scala.Int], s2: => scala.Seq[scala.Any]): scala.Unit = { /* compiled code */ }
+}

@@ -1,7 +1,7 @@
-import scala.reflect.macros.{Context => Ctx}
+import scala.reflect.macros.{BlackboxContext => Ctx}
 
 object Macros extends Impls {
- def foo(x: Any) = macro impl
+ def foo(x: Any): Any = macro impl
 }
 
 object Test extends App {

@@ -18,6 +18,7 @@ package scala
  *  @see class Responder
  *  @since 2.1
  */
+@deprecated("This object will be removed", "2.11.0")
 object Responder {
 
   /** Creates a responder that answer continuations with the constant `a`.
@@ -58,6 +59,7 @@ object Responder {
  *  @version 1.0
  *  @since 2.1
  */
+@deprecated("This class will be removed", "2.11.0")
 abstract class Responder[+A] extends Serializable {
 
   def respond(k: A => Unit): Unit

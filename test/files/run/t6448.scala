@@ -50,7 +50,7 @@ object Test {
         import concurrent.ExecutionContext.Implicits.global
         import concurrent.Await
         import concurrent.duration.Duration
-        val result = concurrent.future(1) collect { case x if f(x) => x}
+        val result = concurrent.Future(1) collect { case x if f(x) => x}
         Await.result(result, Duration.Inf)
       }
 

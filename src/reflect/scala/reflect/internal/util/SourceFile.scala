@@ -4,7 +4,8 @@
  */
 
 
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import scala.reflect.io.{ AbstractFile, VirtualFile }
 import scala.collection.mutable.ArrayBuffer
@@ -22,7 +23,7 @@ abstract class SourceFile {
   def length : Int
   def position(offset: Int) : Position = {
     assert(offset < length, file + ": " + offset + " >= " + length)
-    new OffsetPosition(this, offset)
+    Position.offset(this, offset)
   }
 
   def offsetToLine(offset: Int): Int
@@ -33,7 +34,6 @@ abstract class SourceFile {
    */
   def positionInUltimateSource(position: Position) = position
   override def toString() = file.name
-  def dbg(offset: Int) = (new OffsetPosition(this, offset)).dbgString
   def path = file.path
 
   def lineToString(index: Int): String =
@@ -85,6 +85,11 @@ object ScriptSourceFile {
 
     stripped
   }
+
+  def apply(underlying: BatchSourceFile) = {
+    val headerLen = headerLength(underlying.content)
+    new ScriptSourceFile(underlying, underlying.content drop headerLen, headerLen)
+  }
 }
 
 class ScriptSourceFile(underlying: BatchSourceFile, content: Array[Char], override val start: Int) extends BatchSourceFile(underlying.file, content) {
@@ -92,7 +97,7 @@ class ScriptSourceFile(underlying: BatchSourceFile, content: Array[Char], overri
 
   override def positionInUltimateSource(pos: Position) =
     if (!pos.isDefined) super.positionInUltimateSource(pos)
-    else pos.withSource(underlying, start)
+    else pos withSource underlying withShift start
 }
 
 /** a file whose contents do not change over time */
@@ -149,10 +154,12 @@ class BatchSourceFile(val file : AbstractFile, val content0: Array[Char]) extend
    */
   def offsetToLine(offset: Int): Int = {
     val lines = lineIndices
-    def findLine(lo: Int, hi: Int, mid: Int): Int =
-      if (offset < lines(mid)) findLine(lo, mid - 1, (lo + mid - 1) / 2)
+    def findLine(lo: Int, hi: Int, mid: Int): Int = (
+      if (mid < lo || hi < mid) mid // minimal sanity check - as written this easily went into infinite loopyland
+      else if (offset < lines(mid)) findLine(lo, mid - 1, (lo + mid - 1) / 2)
       else if (offset >= lines(mid + 1)) findLine(mid + 1, hi, (mid + 1 + hi) / 2)
       else mid
+    )
     lastLine = findLine(0, lines.length, lastLine)
     lastLine
   }

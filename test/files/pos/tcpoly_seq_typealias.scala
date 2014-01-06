@@ -6,42 +6,42 @@ trait HOSeq {
   // values implementing this interface, in order to provide more performant ways of building that structure
   trait Accumulator[+coll[x], elT] {
     def += (el: elT): Unit
-    def result: coll[elT]                     
+    def result: coll[elT]
   }
-  
-  
+
+
   // Iterable abstracts over the type of its structure as well as its elements (see PolyP's Bifunctor)
-  // m[x] is intentionally unbounded: fold can then be defined nicely 
-  // variance: if we write m[+x] instead of +m[+x], x is an invariant position because its enclosing type 
+  // m[x] is intentionally unbounded: fold can then be defined nicely
+  // variance: if we write m[+x] instead of +m[+x], x is an invariant position because its enclosing type
   //           is an invariant position -- should probably rule that out?
   trait Iterable[+t] {
-    type m[+x] 
-    
+    type m[+x]
+
     //def unit[a](orig: a): m[a]
     def iterator: Iterator[t]
-    
+
     // construct an empty accumulator that will produce the same structure as this iterable, with elements of type t
     def accumulator[t]: Accumulator[m, t]
-                                    
+
     def filter(p: t => Boolean): m[t] = {
       val buf = accumulator[t]
       val elems = iterator
       while (elems.hasNext) { val x = elems.next; if (p(x)) buf += x }
       buf.result
     }
-    
+
     def map[s](f: t => s): m[s] = {
       val buf = accumulator[s]
       val elems = iterator
       while (elems.hasNext) buf += f(elems.next)
       buf.result
     }
-    
+
     // flatMap is a more specialized map, it only works if the mapped function produces Iterable values,
     // which are then added to the result one by one
     // the compiler should be able to find the right accumulator (implicit buf) to build the result
     // to get concat, resColl = SingletonIterable, f = unit for SingletonIterable
-    def flatMap[resColl[+x] <: Iterable[x], s](f: t => resColl[s])(implicit buf: Accumulator[resColl, s]): resColl[s] = { 
+    def flatMap[resColl[+x] <: Iterable[x], s](f: t => resColl[s])(implicit buf: Accumulator[resColl, s]): resColl[s] = {
         // TODO:  would a viewbound for resColl[x] be better?
         // -- 2nd-order type params are not yet in scope in view bound
       val elems = iterator
@@ -50,9 +50,9 @@ trait HOSeq {
         while (elemss.hasNext) buf += elemss.next
       }
       buf.result
-    } 
+    }
   }
-  
+
   final class ListBuffer[A] {
     private var start: List[A] = Nil
     private var last: ::[A] = _
@@ -80,7 +80,7 @@ trait HOSeq {
       exported = !start.isEmpty
       start
     }
-    
+
     /** Clears the buffer contents.
      */
     def clear {
@@ -99,16 +99,16 @@ trait HOSeq {
       }
     }
   }
-  
+
   implicit def listAccumulator[elT]: Accumulator[List, elT] = new Accumulator[List, elT] {
     private[this] val buff = new ListBuffer[elT]
     def += (el: elT): Unit = buff += el
     def result: List[elT] = buff.toList
   }
-  
+
   trait List[+t] extends Iterable[t] {
     type m[+x] = List[x]
-  
+
     def head: t
     def tail: List[t]
     def isEmpty: Boolean
@@ -125,14 +125,14 @@ trait HOSeq {
     // construct an empty accumulator that will produce the same structure as this iterable, with elements of type t
     def accumulator[t]: Accumulator[List, t] = listAccumulator[t]
   }
-  
+
   // TODO: the var tl approach does not seem to work because subtyping isn't fully working yet
   final case class ::[+b](hd: b, private val tl: List[b]) extends List[b] {
     def head = hd
     def tail = if(tl==null) this else tl // hack
     override def isEmpty: Boolean = false
   }
-  
+
   case object Nil extends List[Nothing] {
     def isEmpty = true
     def head: Nothing =

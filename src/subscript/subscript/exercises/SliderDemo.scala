@@ -1,5 +1,6 @@
 package subscript.exercises
 
+import scala.language.implicitConversions
 import java.awt.{Graphics, Image, Color, Point}
 import java.awt.image.{BufferedImage}
 import javax.swing.{JPanel}
@@ -79,8 +80,8 @@ class SliderDemoApp  extends SimpleSubscriptApplication {
   
     TBD = {*Thread.sleep(34567)*}
 
-    key(   c??: Char) =  key2(top, ActualAdaptingParameter(_c))  //key(top, c??) // TBD in subscript-scalac parser: recognize "??" and "?"
-    numKey(i??: Int)  = var c:Char='0' key(ActualConstrainedParameter(c, (v:Char)=>c=v, (v:Char)=>v.isDigit)) {!i=c-'0'!}    //key(c? if?(c.isDigit)) 
+    key(   ??c: Char) =  key2(top, ??c)
+    numKey(??i: Int)  = var c:Char='0' key(ActualConstrainedParameter(c, (v:Char)=>c=v, (v:Char)=>v.isDigit)) {!i=c-'0'!}    //key(c? if?(c.isDigit)) 
     setValue(s: Int)  = @{gui(there)}: {!setSliderValue(s)!}
 
   override def script..

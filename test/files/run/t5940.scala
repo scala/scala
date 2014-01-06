@@ -4,16 +4,16 @@ object Test extends DirectTest {
   def code = ???
 
   def macros_1 = """
-    import scala.reflect.macros.Context
+    import scala.reflect.macros.BlackboxContext
 
     object Impls {
-      def impl(c: Context) = c.literalUnit
+      def impl(c: BlackboxContext) = { import c.universe._; c.Expr[Unit](q"()") }
     }
 
     object Macros {
       //import Impls._
-      def impl(c: Context) = c.literalUnit
-      def foo = macro impl
+      def impl(c: BlackboxContext) = { import c.universe._; c.Expr[Unit](q"()") }
+      def foo: Unit = macro impl
     }
   """
   def compileMacros() = {

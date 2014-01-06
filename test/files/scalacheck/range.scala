@@ -30,7 +30,7 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
   def myGen: Gen[Range]
 
   def genReasonableSizeRange = oneOf(genArbitraryRange, genBoundaryRange)
-    
+
   def genArbitraryRange = for {
     start <- choose(Int.MinValue, Int.MaxValue)
     end <- choose(Int.MinValue, Int.MaxValue)
@@ -56,7 +56,7 @@ abstract class RangeTest(kind: String) extends Properties("Range "+kind) {
   } yield if (start < end) Range(start, end, step) else Range(start, end, -step)
 
   def genRangeByOne = oneOf(genRangeOpenByOne, genRangeClosedByOne)
-    
+
   def genRangeOpenByOne = for {
     r <- oneOf(genSmallRange, genBoundaryRange)
     if (r.end.toLong - r.start.toLong).abs <= 10000000L

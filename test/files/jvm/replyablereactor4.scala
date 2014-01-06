@@ -1,3 +1,7 @@
+
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors._
 import scala.actors.Actor._
 
@@ -19,7 +23,6 @@ class MyActor extends ReplyReactor {
   }
 }
 
-object Test {
   def main(args: Array[String]) {
     val a = new MyActor
     a.start()

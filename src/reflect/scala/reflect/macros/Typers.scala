@@ -1,16 +1,15 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that
  *  partially exposes the type checker to macro writers.
  */
 trait Typers {
-  self: Context =>
-
-  import universe._
+  self: BlackboxContext =>
 
   /** Contexts that represent macros in-flight, including the current one. Very much like a stack trace, but for macros only.
    *  Can be useful for interoperating with other macros and for imposing compiler-friendly limits on macro expansion.
@@ -22,15 +21,7 @@ trait Typers {
    *  Unlike `enclosingMacros`, this is a def, which means that it gets recalculated on every invocation,
    *  so it might change depending on what is going on during macro expansion.
    */
-  def openMacros: List[Context]
-
-  /** Types along with corresponding trees for which implicit arguments are currently searched.
-   *  Can be useful to get information about an application with an implicit parameter that is materialized during current macro expansion.
-   *
-   *  Unlike `enclosingImplicits`, this is a def, which means that it gets recalculated on every invocation,
-   *  so it might change depending on what is going on during macro expansion.
-   */
-  def openImplicits: List[(Type, Tree)]
+  def openMacros: List[BlackboxContext]
 
   /** Typechecks the provided tree against the expected type `pt` in the macro callsite context.
    *
@@ -45,7 +36,7 @@ trait Typers {
    *
    *  @throws [[scala.reflect.macros.TypecheckException]]
    */
-  def typeCheck(tree: Tree, pt: Type = WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree
+  def typeCheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree
 
   /** Infers an implicit value of the expected type `pt` in the macro callsite context.
    *  Optional `pos` parameter provides a position that will be associated with the implicit search.
@@ -88,4 +79,4 @@ trait Typers {
 
 /** Indicates an error during one of the methods in [[scala.reflect.macros.Typers]].
  */
-case class TypecheckException(val pos: scala.reflect.api.Position, val msg: String) extends Exception(msg)
+case class TypecheckException(pos: scala.reflect.api.Position, msg: String) extends Exception(msg)

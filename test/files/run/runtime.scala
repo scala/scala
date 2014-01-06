@@ -125,7 +125,7 @@ object Test2Test {
 
 object Test3Test {
 
-  class Foo { override def equals(that: Any) = error("abort"); }
+  class Foo { override def equals(that: Any) = sys.error("abort"); }
 
   def check(expected: Boolean, actual1: Boolean, actual2: Boolean): Unit =
     Console.println(
@@ -171,7 +171,7 @@ object Test  {
     try {
       test;
     } catch {
-      case exception => {
+      case exception: Throwable => {
         //val name: String = Thread.currentThread().getName();
         Console.print("Exception in thread \"" + name + "\" " + exception);
         Console.println;

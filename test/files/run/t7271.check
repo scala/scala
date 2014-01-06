@@ -1,0 +1,12 @@
+[[syntax trees at end of                    parser]] // newSource1.scala
+[6]package [6]<empty> {
+  [6]class C extends [8][91]scala.AnyRef {
+    [8]def <init>() = [8]{
+      [NoPosition][NoPosition][NoPosition]super.<init>();
+      [8]()
+    };
+    [20]def quote = [28][28][28][28]StringContext([30]"foo", [40]"baz").s([35]this);
+    [55]def tripleQuote = [69][69][69][69]StringContext([71]"foo", [81]"baz").s([76]this)
+  }
+}
+

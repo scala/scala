@@ -1,4 +1,0 @@
-abstract class AbstractClass extends java.lang.Object {
-  def this() = { /* compiled code */ }
-  def foo : scala.Predef.String
-}

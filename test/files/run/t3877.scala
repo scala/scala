@@ -11,7 +11,7 @@ object Test {
       println("test1: " + d)
     }
   }
-    
+
   def test2 {
     var d = 2
     var i = 0
@@ -25,7 +25,7 @@ object Test {
         return
     }
   }
-    
+
   def test3 {
     var d = 2
     var i = 0
@@ -34,9 +34,9 @@ object Test {
       d = b
       i += 1
       println("test3: " + d)
-    } while (d < LIMIT && i < LIMIT) 
+    } while (d < LIMIT && i < LIMIT)
   }
-    
+
   def test4 {
     var d = 2
     var i = 0
@@ -47,9 +47,9 @@ object Test {
       println("test4: " + d)
       if (d >= LIMIT || i >= LIMIT)
         return
-    } while (true) 
+    } while (true)
   }
-    
+
   def test5 {
     var d = 2
     var i = 0
@@ -58,7 +58,7 @@ object Test {
       d = b
       i += 1
       println("test5.1: " + d)
-        
+
       var e = 2
       var j = 0
       while (e < LIMIT && j < LIMIT) {
@@ -69,7 +69,7 @@ object Test {
       }
     }
   }
-    
+
 
   def main(args: Array[String]) {
     test1

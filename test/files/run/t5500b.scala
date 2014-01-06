@@ -26,7 +26,7 @@ object Test {
     println(new C1A[Double, Int].getClass.getName)
     println(new C1A[Double, Double].getClass.getName)
     println(new C1A[Double, String].getClass.getName)
-    
+
     println(new C1B[String, Int]("abc").getClass.getName)
     println(new C1B[String, Double]("abc").getClass.getName)
     println(new C1B[String, String]("abc").getClass.getName)
@@ -36,7 +36,7 @@ object Test {
     println(new C1B[Double, Int](1d).getClass.getName)
     println(new C1B[Double, Double](1d).getClass.getName)
     println(new C1B[Double, String](1d).getClass.getName)
-    
+
     println(new C1C("abc", 123).getClass.getName)
     println(new C1C("abc", 123).getClass.getName)
     println(new C1C("a", 1d).getClass.getName)

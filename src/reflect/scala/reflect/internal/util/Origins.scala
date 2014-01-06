@@ -3,7 +3,8 @@
  * @author Paul Phillips
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal.util
 
 import scala.collection.{ mutable, immutable }

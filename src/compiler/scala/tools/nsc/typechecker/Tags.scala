@@ -10,16 +10,19 @@ trait Tags {
   trait Tag {
     self: Typer =>
 
+    private val runDefinitions = currentRun.runDefinitions
+    import runDefinitions._
+
     private def resolveTag(pos: Position, taggedTp: Type, allowMaterialization: Boolean) = enteringTyper {
       def wrapper (tree: => Tree): Tree = if (allowMaterialization) (context.withMacrosEnabled[Tree](tree)) else (context.withMacrosDisabled[Tree](tree))
       wrapper(inferImplicit(
         EmptyTree,
         taggedTp,
-        /*reportAmbiguous =*/ true,
-        /*isView =*/ false,
-        /*context =*/ context,
-        /*saveAmbiguousDivergent =*/ true,
-        /*pos =*/ pos
+        reportAmbiguous = true,
+        isView = false,
+        context,
+        saveAmbiguousDivergent = true,
+        pos
       ).tree)
     }
 
@@ -30,7 +33,7 @@ trait Tags {
      *  However we found out that we don't really need this concept, so it got removed.
      *
      *  @param   pos                    Position for error reporting. Please, provide meaningful value.
-     *  @param   tp                     Type we're looking a ClassTag for, e.g. resolveClassTag(pos, IntClass.tpe) will look for ClassTag[Int].
+     *  @param   tp                     Type we're looking a ClassTag for, e.g. resolveClassTag(pos, IntTpe) will look for ClassTag[Int].
      *  @param   allowMaterialization   If true (default) then the resolver is allowed to launch materialization macros when there's no class tag in scope.
      *                                  If false then materialization macros are prohibited from running.
      *
@@ -49,7 +52,7 @@ trait Tags {
      *  @param   pre                    Prefix that represents a universe this type tag will be bound to.
      *                                  If `pre` is set to `NoType`, then any type tag in scope will do, regardless of its affiliation.
      *                                  If `pre` is set to `NoType`, and tag resolution involves materialization, then `mkRuntimeUniverseRef` will be used.
-     *  @param   tp                     Type we're looking a TypeTag for, e.g. resolveTypeTag(pos, mkRuntimeUniverseRef, IntClass.tpe, false) will look for scala.reflect.runtime.universe.TypeTag[Int].
+     *  @param   tp                     Type we're looking a TypeTag for, e.g. resolveTypeTag(pos, mkRuntimeUniverseRef, IntTpe, false) will look for scala.reflect.runtime.universe.TypeTag[Int].
      *  @param   concrete               If true then the result must not contain unresolved (i.e. not spliced) type parameters and abstract type members.
      *                                  If false then the function will always succeed (abstract types will be reified as free types).
      *  @param   allowMaterialization   If true (default) then the resolver is allowed to launch materialization macros when there's no type tag in scope.

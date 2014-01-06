@@ -4,12 +4,14 @@ Type :help for more information.
 scala> import language.experimental.macros
 import language.experimental.macros
 
-scala> def pos_impl(c: reflect.macros.Context): c.Expr[String] =
-  c.literal(c.enclosingPosition.getClass.toString)
-pos_impl: (c: scala.reflect.macros.Context)c.Expr[String]
+scala> def pos_impl(c: reflect.macros.BlackboxContext): c.Expr[String] = {
+  import c.universe._
+  c.Expr[String](Literal(Constant(c.enclosingPosition.getClass.toString)))
+}
+pos_impl: (c: scala.reflect.macros.BlackboxContext)c.Expr[String]
 
-scala> def pos = macro pos_impl
-pos: String
+scala> def pos: String = macro pos_impl
+defined term macro pos: String
 
 scala> pos
 res0: String = class scala.reflect.internal.util.RangePosition

@@ -5,4 +5,4 @@ object Test extends App{
     case 1L => println(1);
     case _ => println("????");
   }
-} 
+}

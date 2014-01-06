@@ -17,7 +17,7 @@ object Test extends App {
       }
     }
   */
-  
+
   new Meh
 }
 

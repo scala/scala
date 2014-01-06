@@ -1,1 +1,1 @@
--Xfatal-warnings
+-Ybackend:GenASM -Xfatal-warnings

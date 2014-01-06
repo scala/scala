@@ -1,0 +1,11 @@
+t7519.scala:5: error: type mismatch;
+ found   : Int(0)
+ required: String
+    locally(0 : String) // was: "value conversion is not a member of C.this.C"
+            ^
+t7519.scala:15: error: type mismatch;
+ found   : Int(0)
+ required: String
+      locally(0 : String) // was: "value conversion is not a member of U"
+              ^
+two errors found

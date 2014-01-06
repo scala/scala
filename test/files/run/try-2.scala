@@ -7,47 +7,47 @@
 object Test {
 
 
-  def tryAllUnit: Unit = 
+  def tryAllUnit: Unit =
     try {
       throw new Error();
     }
     catch {
-      case _ => Console.println("exception happened\n");
+      case _: Throwable => Console.println("exception happened\n");
     }
 
-  def tryUnitAll: Unit = 
+  def tryUnitAll: Unit =
     try {
       Console.println("Nothin");
     } catch {
-      case _ => error("Bad, bad, lama!");
+      case _: Throwable => sys.error("Bad, bad, lama!");
     }
 
-  def tryAllAll: Unit = 
+  def tryAllAll: Unit =
     try {
       throw new Error();
     } catch {
-      case _ => error("Bad, bad, lama!");
+      case _: Throwable => sys.error("Bad, bad, lama!");
     }
 
-  def tryUnitUnit: Unit = 
+  def tryUnitUnit: Unit =
     try {
       Console.println("Nothin");
     } catch {
-      case _ => Console.println("Nothin");
+      case _: Throwable => Console.println("Nothin");
     }
 
-  def tryIntUnit: Unit = 
+  def tryIntUnit: Unit =
     try {
       10;
     } catch {
-      case _ => Console.println("Huh?");
+      case _: Throwable => Console.println("Huh?");
     }
 
 
   def execute(f: => Unit) = try {
     f;
   } catch {
-    case _ => ();
+    case _: Throwable => ();
   }
 
 
@@ -55,7 +55,7 @@ object Test {
     execute(tryAllUnit);
     execute(tryUnitAll);
     execute(tryAllAll);
-    execute(tryUnitUnit); 
+    execute(tryUnitUnit);
     execute(tryIntUnit);
  }
 }

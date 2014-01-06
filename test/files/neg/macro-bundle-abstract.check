@@ -1,0 +1,4 @@
+macro-bundle-abstract.scala:4: error: class Bundle$Bundle needs to be abstract, since method deferred in trait Bundle of type => Int is not defined
+trait Bundle extends BlackboxMacro {
+      ^
+one error found

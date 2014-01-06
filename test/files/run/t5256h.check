@@ -1,4 +1,4 @@
-anonymous class $anon$1
+$anon
 Test.$anon$1
 java.lang.Object {
   final private val x: Int

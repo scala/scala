@@ -1,4 +1,4 @@
-import reflect.macros.Context
+import reflect.macros.BlackboxContext
 
 abstract class RangeDefault {
   val from, to: Int
@@ -10,7 +10,7 @@ abstract class RangeDefault {
 
 /** This class should go into reflect.macro once it is a bit more stable. */
 abstract class Utils {
-  val context: Context
+  val context: BlackboxContext
   import context.universe._
 
   class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {
@@ -43,5 +43,5 @@ abstract class Utils {
     LabelDef(lname, Nil, rhs)
   }
   def makeBinop(left: Tree, op: String, right: Tree): Tree =
-    Apply(Select(left, newTermName(op)), List(right))
+    Apply(Select(left, TermName(op)), List(right))
 }

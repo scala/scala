@@ -1,0 +1,6 @@
+t8024b.scala:15: error: reference to sqrt is ambiguous;
+it is both defined in object FastComplex and imported subsequently by
+import java.lang.Math.sqrt
+    sqrt(0d)
+    ^
+one error found

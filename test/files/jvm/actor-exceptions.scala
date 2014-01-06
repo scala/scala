@@ -1,4 +1,7 @@
 
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors.{Actor, Exit}
 import Actor._
 
@@ -58,7 +61,6 @@ object Slave extends Actor {
 
 case object A
 
-object Test {
   def main(args: Array[String]) {
     Master.start()
   }

@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection.immutable
+package scala
+package collection.immutable
 
 import scala.collection.parallel.immutable.ParRange
 
@@ -41,6 +42,7 @@ import scala.collection.parallel.immutable.ParRange
  *         and its complexity is O(1).
  */
 @SerialVersionUID(7618862778670199309L)
+@deprecatedInheritance("The implementation details of Range makes inheriting from it unwise.", "2.11.0")
 class Range(val start: Int, val end: Int, val step: Int)
 extends scala.collection.AbstractSeq[Int]
    with IndexedSeq[Int]
@@ -64,6 +66,7 @@ extends scala.collection.AbstractSeq[Int]
     || (start < end && step < 0)
     || (start == end && !isInclusive)
   )
+  @deprecated("This method will be made private, use `length` instead.", "2.11")
   final val numRangeElements: Int = {
     if (step == 0) throw new IllegalArgumentException("step cannot be 0.")
     else if (isEmpty) 0
@@ -73,7 +76,9 @@ extends scala.collection.AbstractSeq[Int]
       else len.toInt
     }
   }
+  @deprecated("This method will be made private, use `last` instead.", "2.11")
   final val lastElement     = start + (numRangeElements - 1) * step
+  @deprecated("This method will be made private.", "2.11")
   final val terminalElement = start + numRangeElements * step
 
   override def last = if (isEmpty) Nil.last else lastElement
@@ -81,14 +86,14 @@ extends scala.collection.AbstractSeq[Int]
 
   override def min[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
-      if (step > 0) start
+      if (step > 0) head
       else last
     } else super.min(ord)
 
   override def max[A1 >: Int](implicit ord: Ordering[A1]): Int =
     if (ord eq Ordering.Int) {
       if (step > 0) last
-      else start
+      else head
     } else super.max(ord)
 
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
@@ -112,21 +117,6 @@ extends scala.collection.AbstractSeq[Int]
       fail()
   }
 
-  def validateRangeBoundaries(f: Int => Any): Boolean = {
-    validateMaxLength()
-
-    start != Int.MinValue || end != Int.MinValue || {
-      var count = 0
-      var num = start
-      while (count < numRangeElements) {
-        f(num)
-        count += 1
-        num += step
-      }
-      false
-    }
-  }
-
   final def apply(idx: Int): Int = {
     validateMaxLength()
     if (idx < 0 || idx >= numRangeElements) throw new IndexOutOfBoundsException(idx.toString)
@@ -134,14 +124,19 @@ extends scala.collection.AbstractSeq[Int]
   }
 
   @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
-    if (validateRangeBoundaries(f)) {
-      var i = start
-      val terminal = terminalElement
-      val step = this.step
-      while (i != terminal) {
-        f(i)
-        i += step
-      }
+    validateMaxLength()
+    val isCommonCase = (start != Int.MinValue || end != Int.MinValue)
+    var i = start
+    var count = 0
+    val terminal = terminalElement
+    val step = this.step
+    while(
+      if(isCommonCase) { i != terminal }
+      else             { count < numRangeElements }
+    ) {
+      f(i)
+      count += 1
+      i += step
     }
   }
 
@@ -326,7 +321,7 @@ object Range {
     }
   }
   def count(start: Int, end: Int, step: Int): Int =
-    count(start, end, step, false)
+    count(start, end, step, isInclusive = false)
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
 //    override def par = new ParRange(this)

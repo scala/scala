@@ -6,9 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -148,11 +147,9 @@ extends AbstractSeq[A]
   override def clone(): MutableList[A]  = {
     val bf = newBuilder
     bf ++= seq
-    bf.result
+    bf.result()
   }
-
 }
-
 
 object MutableList extends SeqFactory[MutableList] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, MutableList[A]] =

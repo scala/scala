@@ -1,0 +1,7 @@
+t6928.scala:2: error: super constructor cannot be passed a self reference unless parameter is declared by-name
+object B extends A(B)
+                   ^
+t6928.scala:3: error: super constructor cannot be passed a self reference unless parameter is declared by-name
+object C extends A(null, null, C)
+                               ^
+two errors found

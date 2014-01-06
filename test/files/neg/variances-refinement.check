@@ -1,0 +1,22 @@
+variances-refinement.scala:17: error: contravariant type A occurs in covariant position in type ()AnyRef{def f0(x: A): A} of method fail1
+  def fail1() = { object O { def f0(x: A): A = ??? } ; O } // fail
+      ^
+variances-refinement.scala:18: error: covariant type B occurs in contravariant position in type ()AnyRef{def f0(x: B): A} of method fail2
+  def fail2() = { object O { def f0(x: B): A = ??? } ; O } // fail
+      ^
+variances-refinement.scala:19: error: covariant type B occurs in contravariant position in type ()AnyRef{def f0(x: B): B} of method fail3
+  def fail3() = { object O { def f0(x: B): B = ??? } ; O } // fail
+      ^
+variances-refinement.scala:20: error: covariant type B occurs in contravariant position in type ()AnyRef{def f0(x: B): C} of method fail4
+  def fail4() = { object O { def f0(x: B): C = ??? } ; O } // fail
+      ^
+variances-refinement.scala:21: error: contravariant type A occurs in covariant position in type ()AnyRef{def f0(x: C): A} of method fail5
+  def fail5() = { object O { def f0(x: C): A = ??? } ; O } // fail
+      ^
+variances-refinement.scala:23: error: contravariant type A occurs in covariant position in type ()O1.type forSome { val O1: AnyRef with O0; type O0 <: AnyRef{def f0(x: A): A; def f1(x: A): B; def f2(x: A): C} } of method fail6
+  def fail6() = { // fail
+      ^
+variances-refinement.scala:32: error: contravariant type A occurs in covariant position in type ()AnyRef{def f0(x: A): A; def f1(x: A): B; def f2(x: A): C} of method fail7
+  def fail7() = { // fail
+      ^
+7 errors found

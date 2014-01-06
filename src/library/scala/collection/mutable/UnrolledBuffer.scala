@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.mutable
+package scala
+package collection.mutable
 
 import scala.collection.AbstractIterator
 import scala.collection.Iterator
@@ -42,6 +43,7 @@ import scala.reflect.ClassTag
  *
  */
 @SerialVersionUID(1L)
+@deprecatedInheritance("UnrolledBuffer is not designed to enable meaningful subclassing.", "2.11.0")
 class UnrolledBuffer[T](implicit val tag: ClassTag[T])
 extends scala.collection.mutable.AbstractBuffer[T]
    with scala.collection.mutable.Buffer[T]
@@ -66,7 +68,20 @@ extends scala.collection.mutable.AbstractBuffer[T]
 
   protected def newUnrolled = new Unrolled[T](this)
 
-  private[collection] def calcNextLength(sz: Int) = sz
+  // The below would allow more flexible behavior without requiring inheritance
+  // that is risky because all the important internals are private.
+  // private var myLengthPolicy: Int => Int = x => x
+  // 
+  // /** Specifies how the array lengths should vary.
+  //   * 
+  //   *  By default,  `UnrolledBuffer` uses arrays of a fixed size.  A length
+  //   *  policy can be given that changes this scheme to, for instance, an
+  //   *  exponential growth.
+  //   * 
+  //   *  @param nextLength   computes the length of the next array from the length of the latest one
+  //   */
+  // def setLengthPolicy(nextLength: Int => Int): Unit = { myLengthPolicy = nextLength }
+  private[collection] def calcNextLength(sz: Int) = sz // myLengthPolicy(sz)
 
   def classTagCompanion = UnrolledBuffer
 
@@ -87,7 +102,7 @@ extends scala.collection.mutable.AbstractBuffer[T]
     // `that` is no longer usable, so clear it
     // here we rely on the fact that `clear` allocates
     // new nodes instead of modifying the previous ones
-    that.clear
+    that.clear()
 
     // return a reference to this
     this
@@ -123,7 +138,7 @@ extends scala.collection.mutable.AbstractBuffer[T]
       val r = node.array(pos)
       scan()
       r
-    } else Iterator.empty.next
+    } else Iterator.empty.next()
   }
 
   // this should be faster than the iterator

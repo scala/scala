@@ -1,0 +1,3 @@
+trait DefaultParameter extends scala.AnyRef {
+  def foo(s: scala.Predef.String): scala.Unit
+}

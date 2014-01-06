@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel.mutable
+package scala
+package collection.parallel.mutable
 
 import scala.collection.generic.Sizing
 import scala.collection.mutable.ArraySeq
@@ -19,6 +20,7 @@ import scala.collection.parallel.Combiner
 import scala.collection.parallel.Task
 import scala.reflect.ClassTag
 
+// Todo -- revisit whether inheritance is the best way to achieve this functionality
 private[mutable] class DoublingUnrolledBuffer[T](implicit t: ClassTag[T]) extends UnrolledBuffer[T]()(t) {
   override def calcNextLength(sz: Int) = if (sz < 10000) sz * 2 else sz
   protected override def newUnrolled = new Unrolled[T](0, new Array[T](4), null, this)
@@ -47,7 +49,7 @@ extends Combiner[T, ParArray[T]] {
   }
 
   def clear() {
-    buff.clear
+    buff.clear()
   }
 
   override def sizeHint(sz: Int) = {
@@ -69,7 +71,8 @@ extends Combiner[T, ParArray[T]] {
 
   class CopyUnrolledToArray(array: Array[Any], offset: Int, howmany: Int)
   extends Task[Unit, CopyUnrolledToArray] {
-    var result = ();
+    var result = ()
+
     def leaf(prev: Option[Unit]) = if (howmany > 0) {
       var totalleft = howmany
       val (startnode, startpos) = findStart(offset)

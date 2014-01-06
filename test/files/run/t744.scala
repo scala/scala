@@ -5,7 +5,7 @@ trait Linked {
   }
 }
 object Test {
-  class Test extends Linked { 
+  class Test extends Linked {
     trait FileImpl extends super.FileImpl {
 //      val x: int = 1
     }

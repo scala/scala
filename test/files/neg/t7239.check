@@ -1,0 +1,4 @@
+t7239.scala:10: error: not found: value foBar
+    fooBar = foBar.toInt
+             ^
+one error found

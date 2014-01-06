@@ -1,7 +1,0 @@
-Macros_Test_2.scala:2: error: macro implementation has wrong shape:
- required: (c: scala.reflect.macros.Context): c.Expr[Any]
- found   : (cs: scala.reflect.macros.Context*): Nothing
-types incompatible for parameter cs: corresponding is not a vararg parameter
-  def foo = macro Impls.foo
-                        ^
-one error found

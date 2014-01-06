@@ -1,0 +1,4 @@
+quasiquotes-unliftable-not-found.scala:4: error: Can't find reflect.runtime.universe.Unliftable[Test.C], consider providing it
+  val q"${c: C}" = q"()"
+      ^
+one error found

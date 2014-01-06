@@ -1,5 +1,5 @@
 /*
-    This file is part of Subscript - an extension of the Scala language 
+    This file is part of Subscript - an extension of the Scala langutage 
                                      with constructs from Process Algebra.
 
     Subscript is free software: you can redistribute it and/or modify
@@ -55,14 +55,15 @@ object OnDeactivate
 object OnDeactivateOrSuspend
 object OnSuccess
  
-trait CallGraphNodeTrait[+T<:TemplateNode] {
+trait CallGraphNodeTrait {
+  type T <: TemplateNode
   var hasSuccess = false
   var isExcluded = false
   var pass = 0
   def template: T
   def n_ary_op_else_ancestor: N_n_ary_op
-  def lowestSingleCommonAncestor: CallGraphParentNodeTrait[_<:TemplateNode]
-  def forEachParent(n: CallGraphParentNodeTrait[_<:TemplateNode] => Unit): Unit
+  def lowestSingleCommonAncestor: CallGraphParentNodeTrait
+  def forEachParent(n: CallGraphParentNodeTrait => Unit): Unit
   def isExecuting  = false
   var numberOfBusyActions = 0
   def isActionBusy = numberOfBusyActions>0
@@ -116,22 +117,25 @@ trait CallGraphNodeTrait[+T<:TemplateNode] {
 }
 
 // a non-leaf node:
-trait CallGraphParentNodeTrait[+T<:TemplateNode] extends CallGraphNodeTrait[T] {
-  val children = new ListBuffer[CallGraphNodeTrait[_<:TemplateNode]]
-  def forEachChild(task: (CallGraphNodeTrait[_<:TemplateNode]) => Unit): Unit = {
+trait CallGraphParentNodeTrait extends CallGraphNodeTrait {
+  val children = new ListBuffer[CallGraphNodeTrait]
+  def forEachChild(task: (CallGraphNodeTrait) => Unit): Unit = {
     children.foreach(task(_))
   }
 }
-// a node having code; probably to be dropped since @annotations: may attach code to any kind of node
-trait CallGraphNodeWithCodeTrait[T<:TemplateNode with CallGraphNodeCode[_,R],R] extends CallGraphNodeTrait[T] {
+
+trait DoCodeHolder extends CallGraphNodeTrait {
+//type T = TemplateCodeHolder[this.type, R]
+//def doCode: R = throw new Exception("doCode TBD")
+//def doCode: R = template.code.apply.apply(this)
+// Rest obsolete?
   private var _isExecuting = false
   override def isExecuting = _isExecuting
            def isExecuting_=(value: Boolean) = _isExecuting=value
-  // var codeExecutor: AACodeFragmentExecutor    overriding not possible?
 }
 
 // should this not be an abstract class?
-trait CallGraphNode[+T<:TemplateNode] extends CallGraphNodeTrait[T] {
+trait CallGraphNode extends CallGraphNodeTrait {
   
   def n_ary_op_else_ancestor: N_n_ary_op = {
     this match {
@@ -164,12 +168,12 @@ trait CallGraphNode[+T<:TemplateNode] extends CallGraphNodeTrait[T] {
 
 // a node that may have at most 1 parent; always used, except for rendez-vous style communication
 // should this not be an abstract class?
-trait CallGraphTreeNode[+T<:TemplateNode] extends CallGraphNode[T] {
-  var parent: CallGraphParentNodeTrait[_<:TemplateNode] = null
+trait CallGraphTreeNode extends CallGraphNode {
+  var parent: CallGraphParentNodeTrait = null
   // answer the n_ary_op ancestor in case there is one and the path leading thereto does not branch
   def n_ary_op_ancestor = if (parent==null) null else parent.n_ary_op_else_ancestor
   def lowestSingleCommonAncestor = parent
-  def forEachParent(task: CallGraphParentNodeTrait[_<:TemplateNode] => Unit): Unit = {
+  def forEachParent(task: CallGraphParentNodeTrait => Unit): Unit = {
     if (parent!=null) {
       task(parent)
     }
@@ -199,46 +203,46 @@ trait CallGraphTreeNode[+T<:TemplateNode] extends CallGraphNode[T] {
 }
 // a node that may have multiple parents; used for rendez-vous style communication
 // should this not be an abstract class?
-trait CallGraphNonTreeNode[+T<:TemplateNode] extends CallGraphNode[T] {
-  val parents = new LinkedList[CallGraphParentNodeTrait[_<:TemplateNode]]
-  var lowestSingleCommonAncestor: CallGraphParentNodeTrait[_<:TemplateNode] = null
+trait CallGraphNonTreeNode extends CallGraphNode {
+  val parents = new LinkedList[CallGraphParentNodeTrait]
+  var lowestSingleCommonAncestor: CallGraphParentNodeTrait = null
 
   // answer the n_ary_op ancestor in case there is one and the path leading thereto does not branch
   def n_ary_op_ancestor: N_n_ary_op = null
-  def forEachParent(task: CallGraphParentNodeTrait[_<:TemplateNode] => Unit): Unit = {
+  def forEachParent(task: CallGraphParentNodeTrait => Unit): Unit = {
     parents.foreach(task(_))
   }
 }
 
-trait CallGraphLeafNode         [+T<:TemplateNode] extends CallGraphTreeNode   [T] {var queue: Buffer[CallGraphNodeTrait[_<:TemplateNode]] = null}
-trait CallGraphTreeParentNode   [+T<:TemplateNode] extends CallGraphTreeNode   [T] with CallGraphParentNodeTrait[T] {}
-trait CallGraphNonTreeParentNode[+T<:TemplateNode] extends CallGraphNonTreeNode[T] with CallGraphParentNodeTrait[T] {}
+trait CallGraphLeafNode          extends CallGraphTreeNode    {var queue: Buffer[CallGraphNodeTrait] = null}
+trait CallGraphTreeParentNode    extends CallGraphTreeNode    with CallGraphParentNodeTrait {}
+trait CallGraphNonTreeParentNode extends CallGraphNonTreeNode with CallGraphParentNodeTrait {}
 
 
-abstract class N_atomic_action[N<:N_atomic_action[N]](template: T_0_ary_code[N]) 
-       extends CallGraphLeafNode [T_0_ary_code[N]] 
-          with CallGraphNodeWithCodeTrait[T_0_ary_code[N], Unit] {
+abstract class N_atomic_action  extends CallGraphLeafNode with DoCodeHolder {
+  type T <: T_atomic_action
   override def asynchronousAllowed: Boolean = true
   var msgAAToBeExecuted: CallGraphMessage[_] = null
 }
 
-abstract class N_atomic_action_eh[N<:N_atomic_action[N]](template: T_0_ary_code[N]) extends N_atomic_action(template)
-
-abstract class CallGraphTreeNode_n_ary extends CallGraphTreeParentNode[T_n_ary] {
+abstract class CallGraphTreeNode_n_ary extends CallGraphTreeParentNode {
+  type T <: T_n_ary_op
   var isIteration      = false
   var hadBreak         = false
   var activationMode = ActivationMode.Active
-  def getLogicalKind = T_n_ary.getLogicalKind(template)
+  def getLogicalKind = T_n_ary_op.getLogicalKind(template)
   var continuation: Continuation = null
-  var lastActivatedChild: CallGraphNodeTrait[_<:TemplateNode] = null
+  var lastActivatedChild: CallGraphNodeTrait = null
   var aaStartedSinceLastOptionalBreak = false
   def mustBreak = hadBreak = true
 }
 
-case class N_code_normal     (template: T_0_ary_code[N_code_normal  ]) extends N_atomic_action   [N_code_normal  ](template)
-case class N_code_tiny       (template: T_0_ary_code[N_code_tiny    ]) extends N_atomic_action   [N_code_tiny    ](template) // not 100% appropriate
-case class N_code_threaded   (template: T_0_ary_code[N_code_threaded]) extends N_atomic_action   [N_code_threaded](template)
-case class N_code_unsure     (template: T_0_ary_code[N_code_unsure  ]) extends N_atomic_action   [N_code_unsure  ](template) {
+// The case classes for the bottom node types
+
+case class N_code_normal     (template: T_code_normal  ) extends N_atomic_action {type T = T_code_normal  }
+case class N_code_tiny       (template: T_code_tiny    ) extends N_atomic_action {type T = T_code_tiny    }// not 100% appropriate
+case class N_code_threaded   (template: T_code_threaded) extends N_atomic_action {type T = T_code_threaded}
+case class N_code_unsure     (template: T_code_unsure  ) extends N_atomic_action {type T = T_code_unsure
   private var _result = UnsureExecutionResult.Success; // TBD: clean this all up; hasSuccess+result is too much
   def result = _result
   def result_=(value: UnsureExecutionResult.UnsureExecutionResultType): Unit = {
@@ -246,8 +250,8 @@ case class N_code_unsure     (template: T_0_ary_code[N_code_unsure  ]) extends N
     hasSuccess = value==UnsureExecutionResult.Success
   }
 }
-case class N_code_eh         (template: T_0_ary_code[N_code_eh      ]) extends N_atomic_action_eh[N_code_eh      ](template)
-case class N_code_eh_loop    (template: T_0_ary_code[N_code_eh_loop ]) extends N_atomic_action_eh[N_code_eh_loop ](template) {
+case class N_code_eventhandling         (template: T_code_eventhandling     ) extends N_atomic_action {type T = T_code_eventhandling  }
+case class N_code_eventhandling_loop    (template: T_code_eventhandling_loop) extends N_atomic_action {type T = T_code_eventhandling_loop
   private var _result = LoopingExecutionResult.Success; 
   def result = _result
   def result_=(value: LoopingExecutionResult.LoopingExecutionResultType): Unit = {
@@ -255,46 +259,48 @@ case class N_code_eh_loop    (template: T_0_ary_code[N_code_eh_loop ]) extends N
     hasSuccess = value==LoopingExecutionResult.Success || value==LoopingExecutionResult.Break || value==LoopingExecutionResult.OptionalBreak
   }
 }
-case class N_localvar     [V](template: T_0_ary_local_valueCode[V], isLoop: Boolean) 
-                                                    extends CallGraphLeafNode         [T_0_ary_local_valueCode[V]]
-                                                       with CallGraphNodeWithCodeTrait[T_0_ary_local_valueCode[V],V] {
-  override def passToBeUsedToGetVariableNamed(thatName: Symbol): Int = if (isLoop&&this.template.localVariable.name==thatName) pass-1 else pass // used in: var i=0...(i+1)
+case class N_localvar[V](template: T_localvar[V]) extends CallGraphLeafNode with DoCodeHolder {
+  type T = T_localvar[V]
+  override def passToBeUsedToGetVariableNamed(thatName: Symbol): Int = if (template.isLoop&&template.localVariable.name==thatName) pass-1 else pass // used in: var i=0...(i+1)
 }
-case class N_privatevar    (template: T_0_ary_name[N_privatevar   ]) extends CallGraphLeafNode  [T_0_ary_name[N_privatevar]]
-case class N_while         (template: T_0_ary_test[N_while        ]) extends CallGraphLeafNode  [T_0_ary_test[N_while]] with CallGraphNodeWithCodeTrait[T_0_ary_test[N_while], Boolean]
-case class N_break         (template: T_0_ary     ) extends CallGraphLeafNode  [T_0_ary]
-case class N_optional_break(template: T_0_ary     ) extends CallGraphLeafNode  [T_0_ary]
-case class N_optional_break_loop
-                           (template: T_0_ary     ) extends CallGraphLeafNode  [T_0_ary]
-case class N_delta         (template: T_0_ary     ) extends CallGraphLeafNode  [T_0_ary]
-case class N_epsilon       (template: T_0_ary     ) extends CallGraphLeafNode  [T_0_ary]
-case class N_nu            (template: T_0_ary     ) extends CallGraphLeafNode  [T_0_ary]
-case class N_loop          (template: T_0_ary     ) extends CallGraphLeafNode  [T_0_ary]
-case class N_1_ary_op      (template: T_1_ary     ) extends CallGraphTreeParentNode[T_1_ary] {
-  var continuation: Continuation1 = null
-}
-case class N_if            (template: T_1_ary_test[N_if        ]) extends CallGraphTreeParentNode[T_1_ary_test[N_if        ]] with CallGraphNodeWithCodeTrait[T_1_ary_test[N_if        ], Boolean]
-case class N_if_else       (template: T_2_ary_test[N_if_else   ]) extends CallGraphTreeParentNode[T_2_ary_test[N_if_else   ]] with CallGraphNodeWithCodeTrait[T_2_ary_test[N_if_else   ], Boolean]
-case class N_launch        (template: T_1_ary     ) extends CallGraphLeafNode      [T_1_ary]
+case class N_privatevar         (template: T_privatevar         ) extends CallGraphLeafNode                                  {type T = T_privatevar         }
+case class N_while              (template: T_while              ) extends CallGraphLeafNode with DoCodeHolder                {type T = T_while              }
+case class N_break              (template: T_break              ) extends CallGraphLeafNode                                  {type T = T_break              }
+case class N_optional_break     (template: T_optional_break     ) extends CallGraphLeafNode                                  {type T = T_optional_break     }
+case class N_optional_break_loop(template: T_optional_break_loop) extends CallGraphLeafNode                                  {type T = T_optional_break_loop}
+case class N_delta              (template: T_delta              ) extends CallGraphLeafNode                                  {type T = T_delta              }
+case class N_epsilon            (template: T_epsilon            ) extends CallGraphLeafNode                                  {type T = T_epsilon            }
+case class N_nu                 (template: T_nu                 ) extends CallGraphLeafNode                                  {type T = T_nu                 }
+case class N_loop               (template: T_loop               ) extends CallGraphLeafNode                                  {type T = T_loop               }
+case class N_1_ary_op           (template: T_1_ary_op           ) extends CallGraphTreeParentNode                            {type T = T_1_ary_op           ; var continuation: Continuation1 = null}
+case class N_if                 (template: T_if                 ) extends CallGraphTreeParentNode with DoCodeHolder          {type T = T_if                 }
+case class N_if_else            (template: T_if_else            ) extends CallGraphTreeParentNode with DoCodeHolder          {type T = T_if_else            }
+case class N_launch             (template: T_launch             ) extends CallGraphLeafNode                                  {type T = T_launch             }
 
-case class N_annotation[CN<:CallGraphNodeTrait[CT],CT<:TemplateChildNode] (template: T_annotation[CN,CT]) extends 
-   CallGraphTreeParentNode[T_annotation[CN,CT]] with CallGraphNodeWithCodeTrait[T_annotation[CN,CT], Unit] {def there:CN=children.head.asInstanceOf[CN]}
+case class N_annotation[CN<:CallGraphNodeTrait,CT<:TemplateChildNode] (template: T_annotation[CN,CT]) extends CallGraphTreeParentNode with DoCodeHolder {
+  type T = T_annotation[CN,CT]
+  def there:CN=children.head.asInstanceOf[CN]
+}
 
 // the following 4 types may have multiple children active synchronously
-case class N_launch_anchor (template: T_1_ary     ) extends CallGraphTreeParentNode[T_1_ary]
-case class N_inline_if     (template: T_2_ary     ) extends CallGraphTreeParentNode[T_2_ary]
-case class N_inline_if_else(template: T_3_ary     ) extends CallGraphTreeParentNode[T_3_ary]
-case class N_n_ary_op      (template: T_n_ary, isLeftMerge: Boolean) extends CallGraphTreeNode_n_ary {
+case class N_launch_anchor      (template: T_launch_anchor                       ) extends CallGraphTreeParentNode {type T = T_launch_anchor }
+case class N_inline_if          (template: T_inline_if                           ) extends CallGraphTreeParentNode {type T = T_inline_if     }
+case class N_inline_if_else     (template: T_inline_if_else                      ) extends CallGraphTreeParentNode {type T = T_inline_if_else}
+case class N_n_ary_op           (template: T_n_ary_op      , isLeftMerge: Boolean) extends CallGraphTreeNode_n_ary {type T = T_n_ary_op      
   val mapNamePassToVariableHolder = new HashMap[(Symbol,Int), VariableHolder[_]]
   def    initLocalVariable[V<:Any](name: Symbol, fromPass: Int, value: V)         = mapNamePassToVariableHolder += ((name,fromPass)->new VariableHolder(value))
-  def    getVariableHolder[V<:Any](name: Symbol, fromPass: Int):VariableHolder[V] = mapNamePassToVariableHolder.get((name,fromPass)) match {case None=>null case Some(v:VariableHolder[V]) => v}
+  def    getVariableHolder[V<:Any](name: Symbol, fromPass: Int):VariableHolder[V] = mapNamePassToVariableHolder.get((name,fromPass)) match {
+                                                                                      case None=>null 
+                                                                                      case Some(v:VariableHolder[V]) => v 
+                                                                                      case _ => throw new Exception("not matched")}
   override def toString = super.toString+/*" "+children.length+*/(if(isIteration)" ..."else"")
 }
 
 // only one class for normal script calls and communicator-script calls
 // this will make parsing etc much easier,
 // but there are some fields that are either for normal script calls or for communicator-script calls
-case class N_call(template: T_call) extends CallGraphTreeParentNode[T_call] with CallGraphNodeWithCodeTrait[T_call, N_call=>Unit]{
+case class N_call(template: T_call) extends CallGraphTreeParentNode with DoCodeHolder {
+  type T = T_call
   var t_callee    : T_script     = null
   var t_commcallee: T_commscript = null
   def communicator: Communicator = if (t_commcallee==null) null else t_commcallee.communicator
@@ -311,13 +317,15 @@ case class N_call(template: T_call) extends CallGraphTreeParentNode[T_call] with
   def allActualParametersMatch: Boolean = actualParameters.forall {_.matches}
   def transferParameters      : Unit    = actualParameters.foreach{_.transfer}
 }
-case class N_script       (var template: T_script       ) extends CallGraphTreeParentNode   [T_script]
-case class N_communication(var template: T_communication) extends CallGraphNonTreeParentNode[T_communication] {
+case class N_script       (var template: T_script       ) extends CallGraphTreeParentNode    {type T = T_script}
+case class N_communication(var template: T_communication) extends CallGraphNonTreeParentNode {type T = T_communication
   def inits(t: T_communication, owner: Any): TemplateNode = {return null // TBD
   }
   def _getParameter[T](p: Symbol): CommunicationParameter[T] = {return CommunicationParameter[T](p)}
   var communication: Communication = null
 }
+
+// several utility stuffs
 
 object Multiplicity extends Enumeration {
   type MultiplicityType = Value
@@ -360,34 +368,34 @@ object CallGraphNode {
   def nextStamp() = {currentStamp = currentStamp+1; currentStamp}
   
   // answer the stepsUp'th N_n_ary_op ancestor node
-  def upInGraphToNAry(n: CallGraphTreeNode[_<:TemplateNode]) : N_n_ary_op = {
+  def upInGraphToNAry(n: CallGraphTreeNode) : N_n_ary_op = {
     var a = n
     while (true) {
       a match {
         case nary: N_n_ary_op => return nary
         case _ =>
       }
-      a = a.parent.asInstanceOf[CallGraphTreeNode[_<:TemplateNode]]
+      a = a.parent.asInstanceOf[CallGraphTreeNode]
     }
     return null // dummy exit
   }
   
   // find the lowest launch_anchor common ancestor of a node
   //
-  def getLowestLaunchAnchorAncestor(n: CallGraphNodeTrait[_]) = 
+  def getLowestLaunchAnchorAncestor(n: CallGraphNodeTrait) = 
       getLowestSingleCommonAncestor(n, _.isInstanceOf[N_launch_anchor] )
       
   // find the lowest single common ancestor of a node, that fulfills a given condition:
   // easy when there is 0 or 1 parents
   //
-  def getLowestSingleCommonAncestor(n: CallGraphNodeTrait[_], condition: (CallGraphNodeTrait[_])=>Boolean): CallGraphParentNodeTrait[_<:TemplateNode] = {
+  def getLowestSingleCommonAncestor(n: CallGraphNodeTrait, condition: (CallGraphNodeTrait)=>Boolean): CallGraphParentNodeTrait = {
     val lsca = n.lowestSingleCommonAncestor
     if (lsca==null) return null
     if (condition(lsca)) return lsca
     return getLowestSingleCommonAncestor(lsca,condition)
   }
   
-  private def stampNodeWithAncestors(n: CallGraphNodeTrait[_<:TemplateNode]): Unit = {
+  private def stampNodeWithAncestors(n: CallGraphNodeTrait): Unit = {
     if (n.stamp==currentStamp) {
       // this one has already been stamped this round, so here branches come together
       // maybe it is the oldest of such nodes thus far; then record it
@@ -404,7 +412,7 @@ object CallGraphNode {
     }
   }
   
-  private var lowestSingleCommonAncestor: CallGraphNodeTrait[_<:TemplateNode] = null
+  private var lowestSingleCommonAncestor: CallGraphNodeTrait = null
   
   // find the lowest common ancestor of a collection of nodes:
   // for each node, stamp upwards in the graph; 
@@ -412,7 +420,7 @@ object CallGraphNode {
   // the oldest of such candidates is considered the one.
   //
   // NOTE: this will return a false LCA when the true LCA has multiple paths to the graph source!!!
-  private def getLowestSingleCommonAncestor(nodes: List[CallGraphNode[_<:TemplateNode]]): CallGraphNodeTrait[_] = {
+  private def getLowestSingleCommonAncestor(nodes: List[CallGraphNode]): CallGraphNodeTrait = {
     nextStamp() 
     lowestSingleCommonAncestor = null
     nodes.foreach(stampNodeWithAncestors(_))

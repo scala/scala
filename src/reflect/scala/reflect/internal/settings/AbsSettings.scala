@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.reflect.internal
+package scala
+package reflect.internal
 package settings
 
 /** A Settings abstraction boiled out of the original highly mutable Settings

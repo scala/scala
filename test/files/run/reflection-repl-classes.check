@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> class A
 defined class A
 
@@ -19,10 +17,10 @@ scala> object defs {
   val cm = reflect.runtime.currentMirror
   val u = cm.universe
   val im = cm.reflect(new B)
-  val method = im.symbol.typeSignature.member(u.newTermName("foo")).asMethod
+  val method = im.symbol.typeSignature.member(u.TermName("foo")).asMethod
   val mm = im.reflectMethod(method)
 }
-defined module defs
+defined object defs
 
 scala> import defs._
 import defs._

@@ -32,12 +32,12 @@ trait NodePrinters {
         s = "List\\[List\\[.*?\\].*?\\]".r.replaceAllIn(s, "List")
         s = "List\\[.*?\\]".r.replaceAllIn(s, "List")
         s = s.replace("immutable.this.Nil", "List()")
-        s = """build\.flagsFromBits\((\d+)[lL]\)""".r.replaceAllIn(s, m => {
+        s = """build\.FlagsRepr\((\d+)[lL]\)""".r.replaceAllIn(s, m => {
           flagsAreUsed = true
           show(m.group(1).toLong)
         })
-        s = s.replace("Modifiers(0L, newTypeName(\"\"), List())", "Modifiers()")
-        s = """Modifiers\((\d+)[lL], newTypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
+        s = s.replace("Modifiers(0L, TypeName(\"\"), List())", "Modifiers()")
+        s = """Modifiers\((\d+)[lL], TypeName\("(.*?)"\), List\((.*?)\)\)""".r.replaceAllIn(s, m => {
           val buf = new scala.collection.mutable.ListBuffer[String]
 
           val annotations = m.group(3)
@@ -46,7 +46,7 @@ trait NodePrinters {
 
           val privateWithin = "" + m.group(2)
           if (buf.nonEmpty || privateWithin != "")
-            buf.append("newTypeName(\"" + privateWithin + "\")")
+            buf.append("TypeName(\"" + privateWithin + "\")")
 
           val bits = m.group(1)
           if (buf.nonEmpty || bits != "0L") {
@@ -71,10 +71,10 @@ trait NodePrinters {
         s.trim
       })
 
-      val printout = scala.collection.mutable.ListBuffer[String]();
+      val printout = scala.collection.mutable.ListBuffer[String]()
       printout += universe.trim
       if (mirrorIsUsed) printout += mirror.replace("Mirror[", "scala.reflect.api.Mirror[").trim
-      val imports = scala.collection.mutable.ListBuffer[String]();
+      val imports = scala.collection.mutable.ListBuffer[String]()
       imports += nme.UNIVERSE_SHORT.toString
       // if (buildIsUsed) imports += nme.build
       if (mirrorIsUsed) imports += nme.MIRROR_SHORT.toString

@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> var s = 0
 s: Int = 0
 
@@ -14,7 +12,5 @@ scala> for (i <- 1 to 10) {s += i}
 
 scala> println(s)
 165
-
-scala> 
 
 scala> 

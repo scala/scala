@@ -1,0 +1,6 @@
+gadts2-strict.scala:14: error: type mismatch;
+ found   : Test.MyDouble
+ required: a
+      case NumTerm(n) => c.x = MyDouble(1.0)
+                                       ^
+one error found

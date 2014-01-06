@@ -13,9 +13,9 @@ import java.io.Writer
  *  @version 1.0
  */
 class ConsoleWriter extends Writer {
-  def close = flush
+  def close() = flush()
 
-  def flush = Console.flush
+  def flush() = Console.flush()
 
   def write(cbuf: Array[Char], off: Int, len: Int) {
     if (len > 0)

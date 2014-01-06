@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 
@@ -24,6 +25,7 @@ package mutable
  *  @define Coll `SynchronizedQueue`
  *  @define coll synchronized queue
  */
+@deprecated("Synchronization via selective overriding of methods is inherently unreliable.  Consider java.util.concurrent.ConcurrentLinkedQueue as an alternative.", "2.11.0")
 class SynchronizedQueue[A] extends Queue[A] {
   /** Checks if the queue is empty.
    *
@@ -56,7 +58,7 @@ class SynchronizedQueue[A] extends Queue[A] {
    *
    *  @return the first element of the queue.
    */
-  override def dequeue(): A = synchronized { super.dequeue }
+  override def dequeue(): A = synchronized { super.dequeue() }
 
   /** Returns the first element in the queue which satisfies the
    *  given predicate, and removes this element from the queue.
@@ -85,7 +87,7 @@ class SynchronizedQueue[A] extends Queue[A] {
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  override def clear(): Unit = synchronized { super.clear }
+  override def clear(): Unit = synchronized { super.clear() }
 
   /** Checks if two queues are structurally identical.
    *

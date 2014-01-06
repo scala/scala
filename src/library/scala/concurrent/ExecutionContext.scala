@@ -16,17 +16,17 @@ import scala.util.Try
 /**
  * An `ExecutionContext` is an abstraction over an entity that can execute program logic.
  */
-@implicitNotFound("Cannot find an implicit ExecutionContext, either require one yourself or import ExecutionContext.Implicits.global")
+@implicitNotFound("Cannot find an implicit ExecutionContext, either import scala.concurrent.ExecutionContext.Implicits.global or use a custom one")
 trait ExecutionContext {
-  
+
   /** Runs a block of code on this execution context.
    */
   def execute(runnable: Runnable): Unit
-  
+
   /** Reports that an asynchronous computation failed.
    */
-  def reportFailure(t: Throwable): Unit
-  
+  def reportFailure(@deprecatedName('t) cause: Throwable): Unit
+
   /** Prepares for the execution of a task. Returns the prepared
    *  execution context. A valid implementation of `prepare` is one
    *  that simply returns `this`.
@@ -62,7 +62,7 @@ object ExecutionContext {
      */
     implicit lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
   }
-    
+
   /** Creates an `ExecutionContext` from the given `ExecutorService`.
    */
   def fromExecutorService(e: ExecutorService, reporter: Throwable => Unit): ExecutionContextExecutorService =
@@ -71,7 +71,7 @@ object ExecutionContext {
   /** Creates an `ExecutionContext` from the given `ExecutorService` with the default Reporter.
    */
   def fromExecutorService(e: ExecutorService): ExecutionContextExecutorService = fromExecutorService(e, defaultReporter)
-  
+
   /** Creates an `ExecutionContext` from the given `Executor`.
    */
   def fromExecutor(e: Executor, reporter: Throwable => Unit): ExecutionContextExecutor =
@@ -80,10 +80,10 @@ object ExecutionContext {
   /** Creates an `ExecutionContext` from the given `Executor` with the default Reporter.
    */
   def fromExecutor(e: Executor): ExecutionContextExecutor = fromExecutor(e, defaultReporter)
-  
+
   /** The default reporter simply prints the stack trace of the `Throwable` to System.err.
    */
-  def defaultReporter: Throwable => Unit = (t: Throwable) => t.printStackTrace()
+  def defaultReporter: Throwable => Unit = _.printStackTrace()
 }
 
 

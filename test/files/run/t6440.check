@@ -1,4 +1,4 @@
-pos: source-newSource1,line-9,offset=109 bad symbolic reference. A signature in U.class refers to term pack1
+pos: source-newSource1.scala,line-9,offset=109 bad symbolic reference. A signature in U.class refers to term pack1
 in package <root> which is not available.
 It may be completely missing from the current classpath, or the version on
 the classpath might be incompatible with the version used when compiling U.class. ERROR

@@ -24,7 +24,7 @@ class MailBox {
   private val sent = new LinkedList[Any];
   private var lastSent = sent;
   private val receivers = new LinkedList[Receiver];
-  private var lastReceiver = receivers; 
+  private var lastReceiver = receivers;
 
   def send(msg: Any): Unit = synchronized {
     var r = receivers;
@@ -59,7 +59,7 @@ class MailBox {
     }
     f(msg)
   }
-  
+
   def receiveWithin[a](msec: Long)(f: PartialFunction[Any, a]): a = {
     val msg: Any = synchronized {
       var s = sent;

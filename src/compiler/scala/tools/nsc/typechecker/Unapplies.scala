@@ -12,8 +12,7 @@ import symtab.Flags._
  *  @author  Martin Odersky
  *  @version 1.0
  */
-trait Unapplies extends ast.TreeDSL
-{
+trait Unapplies extends ast.TreeDSL {
   self: Analyzer =>
 
   import global._
@@ -21,7 +20,8 @@ trait Unapplies extends ast.TreeDSL
   import CODE.{ CASE => _, _ }
   import treeInfo.{ isRepeatedParamType, isByNameParamType }
 
-  private val unapplyParamName = nme.x_0
+  private def unapplyParamName = nme.x_0
+  private def caseMods         = Modifiers(SYNTHETIC | CASE)
 
   // In the typeCompleter (templateSig) of a case class (resp it's module),
   // synthetic `copy` (reps `apply`, `unapply`) methods are added. To compute
@@ -30,45 +30,30 @@ trait Unapplies extends ast.TreeDSL
   // moduleClass symbol of the companion module.
   class ClassForCaseCompanionAttachment(val caseClass: ClassDef)
 
-  /** returns type list for return type of the extraction
-   * @see extractorFormalTypes
+  /** Returns unapply or unapplySeq if available, without further checks.
    */
-  def unapplyTypeList(ufn: Symbol, ufntpe: Type, nbSubPats: Int) = {
-    assert(ufn.isMethod, ufn)
-    //Console.println("utl "+ufntpe+" "+ufntpe.typeSymbol)
-    ufn.name match {
-      case nme.unapply | nme.unapplySeq =>
-        val (formals, _) = extractorFormalTypes(unapplyUnwrap(ufntpe), nbSubPats, ufn)
-        if (formals == null) throw new TypeError(s"$ufn of type $ufntpe cannot extract $nbSubPats sub-patterns")
-        else formals
-      case _ => throw new TypeError(ufn+" is not an unapply or unapplySeq")
-    }
-  }
+  def directUnapplyMember(tp: Type): Symbol = (tp member nme.unapply) orElse (tp member nme.unapplySeq)
 
-  /** returns unapply or unapplySeq if available */
-  def unapplyMember(tp: Type): Symbol = (tp member nme.unapply) match {
-    case NoSymbol => tp member nme.unapplySeq
-    case unapp    => unapp
-  }
-  /** returns unapply member's parameter type. */
-  def unapplyParameterType(extractor: Symbol) = extractor.tpe.params match {
-    case p :: Nil => p.tpe.typeSymbol
-    case _        => NoSymbol
+  /** Filters out unapplies with multiple (non-implicit) parameter lists,
+   *  as they cannot be used as extractors
+   */
+  def unapplyMember(tp: Type): Symbol = directUnapplyMember(tp) filter (sym => !hasMultipleNonImplicitParamLists(sym))
+
+  object HasUnapply {
+    def unapply(tp: Type): Option[Symbol] = unapplyMember(tp).toOption
   }
 
   def copyUntyped[T <: Tree](tree: T): T =
     returning[T](tree.duplicate)(UnTyper traverse _)
 
-  def copyUntypedInvariant(td: TypeDef): TypeDef = {
-    val copy = treeCopy.TypeDef(td, td.mods &~ (COVARIANT | CONTRAVARIANT), td.name, td.tparams, td.rhs)
-
-    returning[TypeDef](copy.duplicate)(UnTyper traverse _)
-  }
+  def copyUntypedInvariant(td: TypeDef): TypeDef =
+    copyTypeDef(copyUntyped(td))(mods = td.mods &~ (COVARIANT | CONTRAVARIANT))
 
   private def toIdent(x: DefTree) = Ident(x.name) setPos x.pos.focus
 
-  private def classType(cdef: ClassDef, tparams: List[TypeDef], symbolic: Boolean = true): Tree = {
-    val tycon = if (symbolic) REF(cdef.symbol) else Ident(cdef.name)
+  private def classType(cdef: ClassDef, tparams: List[TypeDef]): Tree = {
+    // SI-7033 Unattributed to avoid forcing `cdef.symbol.info`.
+    val tycon = Ident(cdef.symbol)
     if (tparams.isEmpty) tycon else AppliedTypeTree(tycon, tparams map toIdent)
   }
 
@@ -81,26 +66,46 @@ trait Unapplies extends ast.TreeDSL
    *  @param param  The name of the parameter of the unapply method, assumed to be of type C[Ts]
    *  @param caseclazz  The case class C[Ts]
    */
-  private def caseClassUnapplyReturnValue(param: Name, caseclazz: Symbol) = {
-    def caseFieldAccessorValue(selector: Symbol): Tree = Ident(param) DOT selector
+  private def caseClassUnapplyReturnValue(param: Name, caseclazz: ClassDef) = {
+    def caseFieldAccessorValue(selector: ValDef): Tree = {
+      // Selecting by name seems to be the most straight forward way here to
+      // avoid forcing the symbol of the case class in order to list the accessors.
+      def selectByName = Ident(param) DOT caseAccessorName(caseclazz.symbol, selector.name)
+      // But, that gives a misleading error message in neg/t1422.scala, where a case
+      // class has an illegal private[this] parameter. We can detect this by checking
+      // the modifiers on the param accessors.
+      // We just generate a call to that param accessor here, which gives us an inaccessible
+      // symbol error, as before.
+      def localAccessor = caseclazz.impl.body find {
+        case t @ ValOrDefDef(mods, selector.name, _, _) => mods.isPrivateLocal
+        case _                                          => false
+      }
+      localAccessor.fold(selectByName)(Ident(param) DOT _.symbol)
+    }
 
-    caseclazz.caseFieldAccessors match {
-      case Nil      => TRUE
-      case xs       => SOME(xs map caseFieldAccessorValue: _*)
+    // Working with trees, rather than symbols, to avoid cycles like SI-5082
+    constrParamss(caseclazz).take(1).flatten match {
+      case Nil => TRUE
+      case xs  => SOME(xs map caseFieldAccessorValue: _*)
     }
   }
 
   /** The module corresponding to a case class; overrides toString to show the module's name
    */
   def caseModuleDef(cdef: ClassDef): ModuleDef = {
-    // > MaxFunctionArity is caught in Namers, but for nice error reporting instead of
-    // an abrupt crash we trim the list here.
-    def primaries      = constrParamss(cdef).head take MaxFunctionArity map (_.tpt)
-    def inheritFromFun = !cdef.mods.hasAbstractFlag && cdef.tparams.isEmpty && constrParamss(cdef).length == 1
-    def createFun      = gen.scalaFunctionConstr(primaries, toIdent(cdef), abstractFun = true)
+    val params = constrParamss(cdef)
+    def inheritFromFun = !cdef.mods.hasAbstractFlag && cdef.tparams.isEmpty && (params match {
+      case List(ps) if ps.length <= MaxFunctionArity => true
+      case _ => false
+    })
+    def createFun = {
+      def primaries = params.head map (_.tpt)
+      gen.scalaFunctionConstr(primaries, toIdent(cdef), abstractFun = true)
+    }
+
     def parents        = if (inheritFromFun) List(createFun) else Nil
     def toString       = DefDef(
-      Modifiers(OVERRIDE | FINAL),
+      Modifiers(OVERRIDE | FINAL | SYNTHETIC),
       nme.toString_,
       Nil,
       ListOfNil,
@@ -114,17 +119,15 @@ trait Unapplies extends ast.TreeDSL
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
-      Template(parents, emptyValDef, NoMods, Nil, body, cdef.impl.pos.focus))
+      gen.mkTemplate(parents, noSelfType, NoMods, Nil, body, cdef.impl.pos.focus))
   }
-
-  private val caseMods = Modifiers(SYNTHETIC | CASE)
 
   /** The apply method corresponding to a case class
    */
-  def factoryMeth(mods: Modifiers, name: TermName, cdef: ClassDef, symbolic: Boolean): DefDef = {
+  def factoryMeth(mods: Modifiers, name: TermName, cdef: ClassDef): DefDef = {
     val tparams   = cdef.tparams map copyUntypedInvariant
     val cparamss  = constrParamss(cdef)
-    def classtpe = classType(cdef, tparams, symbolic)
+    def classtpe = classType(cdef, tparams)
     atPos(cdef.pos.focus)(
       DefDef(mods, name, tparams, cparamss, classtpe,
         New(classtpe, mmap(cparamss)(gen.paramToArg)))
@@ -133,7 +136,7 @@ trait Unapplies extends ast.TreeDSL
 
   /** The apply method corresponding to a case class
    */
-  def caseModuleApplyMeth(cdef: ClassDef): DefDef = factoryMeth(caseMods, nme.apply, cdef, symbolic = true)
+  def caseModuleApplyMeth(cdef: ClassDef): DefDef = factoryMeth(caseMods, nme.apply, cdef)
 
   /** The unapply method corresponding to a case class
    */
@@ -145,7 +148,7 @@ trait Unapplies extends ast.TreeDSL
     }
     val cparams   = List(ValDef(Modifiers(PARAM | SYNTHETIC), unapplyParamName, classType(cdef, tparams), EmptyTree))
     val ifNull    = if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneModule)
-    val body      = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef.symbol) }, ifNull)(Ident(unapplyParamName))
+    val body      = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef) }, ifNull)(Ident(unapplyParamName))
 
     atPos(cdef.pos.focus)(
       DefDef(caseMods, method, tparams, List(cparams), TypeTree(), body)

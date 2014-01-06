@@ -1,0 +1,6 @@
+typing List(1, 2).map(((x) => {
+  val another = scala.Tuple2(t.nt, t.tr): @testAnn match {
+    case scala.Tuple2(_, _) => 1
+  };
+  x
+}))

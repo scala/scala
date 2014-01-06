@@ -7,5 +7,5 @@ object Test {
     println((Vector() ++ (0 until 32)) takeRight 0) // works
     println((Vector() ++ (0 until 33)) takeRight 0) // error
   }
-  
+
 }

@@ -1,0 +1,20 @@
+case class CaseClass[A <: scala.Seq[scala.Int]](i: A, s: scala.Predef.String) extends scala.AnyRef with scala.Product with scala.Serializable {
+  val i: A = { /* compiled code */ }
+  val s: scala.Predef.String = { /* compiled code */ }
+  def foo: scala.Int = { /* compiled code */ }
+  def copy[A <: scala.Seq[scala.Int]](i: A, s: scala.Predef.String): CaseClass[A] = { /* compiled code */ }
+  override def productPrefix: java.lang.String = { /* compiled code */ }
+  def productArity: scala.Int = { /* compiled code */ }
+  def productElement(x$1: scala.Int): scala.Any = { /* compiled code */ }
+  override def productIterator: scala.collection.Iterator[scala.Any] = { /* compiled code */ }
+  def canEqual(x$1: scala.Any): scala.Boolean = { /* compiled code */ }
+  override def hashCode(): scala.Int = { /* compiled code */ }
+  override def toString(): java.lang.String = { /* compiled code */ }
+  override def equals(x$1: scala.Any): scala.Boolean = { /* compiled code */ }
+}
+object CaseClass extends scala.AnyRef with scala.Serializable {
+  def this() = { /* compiled code */ }
+  final override def toString(): java.lang.String = { /* compiled code */ }
+  def apply[A <: scala.Seq[scala.Int]](i: A, s: scala.Predef.String): CaseClass[A] = { /* compiled code */ }
+  def unapply[A <: scala.Seq[scala.Int]](x$0: CaseClass[A]): scala.Option[scala.Tuple2[A, scala.Predef.String]] = { /* compiled code */ }
+}

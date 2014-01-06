@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 
@@ -24,6 +25,7 @@ package mutable
  *  @define Coll `SynchronizedStack`
  *  @define coll synchronized stack
  */
+@deprecated("Synchronization via selective overriding of methods is inherently unreliable.  Consider java.util.concurrent.LinkedBlockingDequeue instead.", "2.11.0")
 class SynchronizedStack[A] extends Stack[A] {
   import scala.collection.Traversable
 
@@ -67,13 +69,13 @@ class SynchronizedStack[A] extends Stack[A] {
 
   /** Removes the top element from the stack.
    */
-  override def pop(): A = synchronized { super.pop }
+  override def pop(): A = synchronized { super.pop() }
 
   /**
    * Removes all elements from the stack. After this operation completed,
    * the stack will be empty.
    */
-  override def clear(): Unit = synchronized { super.clear }
+  override def clear(): Unit = synchronized { super.clear() }
 
   /** Returns an iterator over all elements on the stack. This iterator
    *  is stable with respect to state changes in the stack object; i.e.

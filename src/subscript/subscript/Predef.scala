@@ -32,9 +32,9 @@ import subscript.DSL._
 // Predefined stuff - pass and some scripts: times, delta, epsilon, nu
 //
 object Predef {
-  def pass    (implicit node: CallGraphTreeNode[_]): Int = node.pass
-  def pass_up1(implicit node: CallGraphTreeNode[_]): Int = node.n_ary_op_ancestor.pass
-  def pass_up2(implicit node: CallGraphTreeNode[_]): Int = node.n_ary_op_ancestor.n_ary_op_ancestor.pass
+  def pass    (implicit node: CallGraphTreeNode): Int = node.pass
+  def pass_up1(implicit node: CallGraphTreeNode): Int = node.n_ary_op_ancestor.pass
+  def pass_up2(implicit node: CallGraphTreeNode): Int = node.n_ary_op_ancestor.n_ary_op_ancestor.pass
   
   def script..
     times(n:Int) = while(here.pass<n) // TBD: here should become implicit

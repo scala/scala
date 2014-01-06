@@ -8,6 +8,8 @@
 
 package scala.concurrent
 
+import java.util.concurrent.TimeUnit
+
 /** A class to provide safe concurrent access to a mutable cell.
  *  All methods are synchronized.
  *
@@ -23,14 +25,16 @@ class SyncVar[A] {
     value.get
   }
 
-  /** Waits `timeout` millis. If `timeout <= 0` just returns 0. If the system clock
-   *  went backward, it will return 0, so it never returns negative results.
-   */
+  /** Waits `timeout` millis. If `timeout <= 0` just returns 0.
+    * It never returns negative results.
+    */
   private def waitMeasuringElapsed(timeout: Long): Long = if (timeout <= 0) 0 else {
-    val start = System.currentTimeMillis
+    val start = System.nanoTime()
     wait(timeout)
-    val elapsed = System.currentTimeMillis - start
-    if (elapsed < 0) 0 else elapsed
+    val elapsed = System.nanoTime() - start
+    // nanoTime should be monotonic, but it's not possible to rely on that.
+    // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6458294.
+    if (elapsed < 0) 0 else TimeUnit.NANOSECONDS.toMillis(elapsed)
   }
 
   /** Waits for this SyncVar to become defined at least for
@@ -41,9 +45,9 @@ class SyncVar[A] {
    *  @return            `None` if variable is undefined after `timeout`, `Some(value)` otherwise
    */
   def get(timeout: Long): Option[A] = synchronized {
-    /** Defending against the system clock going backward
-     *  by counting time elapsed directly.  Loop required
-     *  to deal with spurious wakeups.
+    /* Defending against the system clock going backward
+     * by counting time elapsed directly.  Loop required
+     * to deal with spurious wakeups.
      */
     var rest = timeout
     while (!isDefined && rest > 0) {
@@ -79,6 +83,7 @@ class SyncVar[A] {
   // whether or not the SyncVar is already defined. So, set has been
   // deprecated in order to eventually be able to make "setting" private
   @deprecated("Use `put` instead, as `set` is potentionally error-prone", "2.10.0")
+  // NOTE: Used by SBT 0.13.0-M2 and below
   def set(x: A): Unit = setVal(x)
 
   /** Places a value in the SyncVar. If the SyncVar already has a stored value,
@@ -98,6 +103,7 @@ class SyncVar[A] {
   // whether or not the SyncVar is already defined. So, unset has been
   // deprecated in order to eventually be able to make "unsetting" private
   @deprecated("Use `take` instead, as `unset` is potentionally error-prone", "2.10.0")
+  // NOTE: Used by SBT 0.13.0-M2 and below
   def unset(): Unit = synchronized {
     isDefined = false
     value = None

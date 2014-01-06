@@ -1,11 +1,14 @@
+/*
+ * filter: inliner warning\(s\); re-run with -Yinline-warnings for details
+ */
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 
 object Test {
   val maxListLength = 7 // up to 16, but larger is slower
   var testCount = 0
-  
-  def checkStackOverflow() = {  
+
+  def checkStackOverflow() = {
     var xs: List[String] = Nil
     for (i <- 0 until 250000)
         xs = "X" :: xs
@@ -47,7 +50,7 @@ object Test {
             // Behaves like existing mapConserve with respect to  eq
             checkBehaviourUnchanged(data, data mapConserve lastHexDigit, data mapConserve lastHexDigit)
         }
-        
+
         checkStackOverflow();
     }
 }

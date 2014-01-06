@@ -16,7 +16,7 @@ trait CommandLineConfig {
 /** An instance of a command line, parsed according to a Spec.
  */
 class CommandLine(val spec: Reference, val originalArgs: List[String]) extends CommandLineConfig {
-  def this(spec: Reference, line: String) = this(spec, Parser tokenize line)
+  def this(spec: Reference, line: String) = this(spec, CommandLineParser tokenize line)
   def this(spec: Reference, args: Array[String]) = this(spec, args.toList)
 
   import spec.{ isUnaryOption, isBinaryOption, isExpandOption }
@@ -24,19 +24,19 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
   val Terminator = "--"
   val ValueForUnaryOption = "true"  // so if --opt is given, x(--opt) = true
 
-  def mapForUnary(opt: String) = Map(opt -> ValueForUnaryOption)
+  def mapForUnary(opt: String) = Map(fromOpt(opt) -> ValueForUnaryOption)
   def errorFn(msg: String) = println(msg)
 
   /** argMap is option -> argument (or "" if it is a unary argument)
    *  residualArgs are what is left after removing the options and their args.
    */
-  lazy val (argMap, residualArgs) = {
+  lazy val (argMap, residualArgs): (Map[String, String], List[String]) = {
     val residualBuffer = new ListBuffer[String]
 
     def loop(args: List[String]): Map[String, String] = {
       def residual(xs: List[String]) = { residualBuffer ++= xs ; Map[String, String]() }
 
-      /** Returns Some(List(args)) if this option expands to an
+      /*  Returns Some(List(args)) if this option expands to an
        *  argument list and it's not returning only the same arg.
        */
       def expand(s1: String) = {
@@ -48,7 +48,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
         else None
       }
 
-      /** Assumes known options have all been ruled out already. */
+      /* Assumes known options have all been ruled out already. */
       def isUnknown(opt: String) =
         onlyKnownOptions && (opt startsWith "-") && {
           errorFn("Option '%s' not recognized.".format(opt))
@@ -72,7 +72,7 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
 
           if (x2 == Terminator)         mapForUnary(x1) ++ residual(xs)
           else if (isUnaryOption(x1))   mapForUnary(x1) ++ loop(args.tail)
-          else if (isBinaryOption(x1))  Map(x1 -> x2) ++ loop(xs)
+          else if (isBinaryOption(x1))  Map(fromOpt(x1) -> x2) ++ loop(xs)
           else if (isUnknown(x1))       loop(args.tail)
           else                          residual(List(x1)) ++ loop(args.tail)
       }

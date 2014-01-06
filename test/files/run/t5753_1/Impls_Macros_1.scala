@@ -1,8 +1,8 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 import language.experimental.macros
 
 trait Impls {
-    def impl(c: Context)(x: c.Expr[Any]) = x
+    def impl(c: BlackboxContext)(x: c.Expr[Any]) = x
 }
 
 object Macros extends Impls {

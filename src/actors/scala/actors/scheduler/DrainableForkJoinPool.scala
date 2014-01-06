@@ -8,5 +8,4 @@ private class DrainableForkJoinPool(parallelism: Int, maxPoolSize: Int) extends 
 
   override def drainTasksTo(c: Collection[ _ >: ForkJoinTask[_]]): Int =
     super.drainTasksTo(c)
-
 }

@@ -2,7 +2,8 @@
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
  */
-package scala.reflect
+package scala
+package reflect
 package internal
 
 // todo implement in terms of BitSet
@@ -37,7 +38,7 @@ trait BaseTypeSeqs {
    *  This is necessary because when run from reflection every base type sequence needs to have a
    *  SynchronizedBaseTypeSeq as mixin.
    */
-  class BaseTypeSeq protected[BaseTypeSeqs] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
+  class BaseTypeSeq protected[reflect] (private[BaseTypeSeqs] val parents: List[Type], private[BaseTypeSeqs] val elems: Array[Type]) {
   self =>
     if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqCount)
     if (Statistics.canEnable) Statistics.incCounter(baseTypeSeqLenTotal, elems.length)
@@ -64,16 +65,15 @@ trait BaseTypeSeqs {
             //Console.println("compute closure of "+this+" => glb("+variants+")")
             pending += i
             try {
-              mergePrefixAndArgs(variants, -1, lubDepth(variants)) match {
-                case Some(tp0) =>
+              mergePrefixAndArgs(variants, Variance.Contravariant, lubDepth(variants)) match {
+                case NoType => typeError("no common type instance of base types "+(variants mkString ", and ")+" exists.")
+                case tp0    =>
                   pending(i) = false
                   elems(i) = tp0
                   tp0
-                case None =>
-                  typeError(
-                    "no common type instance of base types "+(variants mkString ", and ")+" exists.")
               }
-            } catch {
+            }
+            catch {
               case CyclicInheritance =>
                 typeError(
                   "computing the common type instance of base types "+(variants mkString ", and ")+" leads to a cycle.")
@@ -130,9 +130,9 @@ trait BaseTypeSeqs {
 
     lazy val maxDepth = maxDepthOfElems
 
-    protected def maxDepthOfElems: Int = {
-      var d = 0
-      for (i <- 1 until length) d = max(d, typeDepth(elems(i)))
+    protected def maxDepthOfElems: Depth = {
+      var d = Depth.Zero
+      1 until length foreach (i => d = d max typeDepth(elems(i)))
       d
     }
 
@@ -180,7 +180,7 @@ trait BaseTypeSeqs {
       def nextRawElem(i: Int): Type = {
         val j = index(i)
         val pbts = pbtss(i)
-        if (j < pbts.length) pbts.rawElem(j) else AnyClass.tpe
+        if (j < pbts.length) pbts.rawElem(j) else AnyTpe
       }
       var minSym: Symbol = NoSymbol
       while (minSym != AnyClass) {
@@ -193,15 +193,23 @@ trait BaseTypeSeqs {
           i += 1
         }
         var minTypes: List[Type] = List()
+        def alreadyInMinTypes(tp: Type): Boolean = {
+          @annotation.tailrec def loop(tps: List[Type]): Boolean = tps match {
+            case Nil     => false
+            case x :: xs => (tp =:= x) || loop(xs)
+          }
+          loop(minTypes)
+        }
+
         i = 0
         while (i < nparents) {
           if (nextTypeSymbol(i) == minSym) {
             nextRawElem(i) match {
               case RefinedType(variants, decls) =>
                 for (tp <- variants)
-                  if (!(minTypes exists (tp =:= _))) minTypes = tp :: minTypes
+                  if (!alreadyInMinTypes(tp)) minTypes ::= tp
               case tp =>
-                if (!(minTypes exists (tp =:= _))) minTypes = tp :: minTypes
+                if (!alreadyInMinTypes(tp)) minTypes ::= tp
             }
             index(i) = index(i) + 1
           }
@@ -226,7 +234,7 @@ trait BaseTypeSeqs {
     override def map(g: Type => Type) = lateMap(g)
     override def lateMap(g: Type => Type) = orig.lateMap(x => g(f(x)))
     override def exists(p: Type => Boolean) = elems exists (x => p(f(x)))
-    override protected def maxDepthOfElems: Int = elems.map(x => typeDepth(f(x))).max
+    override protected def maxDepthOfElems: Depth = elems.map(x => typeDepth(f(x))).max
     override def toString = elems.mkString("MBTS(", ",", ")")
   }
 

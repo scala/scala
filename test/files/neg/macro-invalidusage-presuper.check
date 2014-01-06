@@ -1,0 +1,4 @@
+Macros_Test_2.scala:3: error: only concrete field definitions allowed in early object initialization section
+class D extends { def x = macro impl } with AnyRef
+                      ^
+one error found

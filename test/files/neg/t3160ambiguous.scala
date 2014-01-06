@@ -1,15 +1,15 @@
 object Bippy {
-  private class Node
+  private class List[+T]
 }
 class Bippy {
   import Bippy._
-  import scala.xml._
+  import scala.collection.immutable._
 
-  def f(x: Node): String = ???  // ambiguous, because Bippy.Node is accessible
+  def f(x: List[Any]): String = ???  // ambiguous, because Bippy.List is accessible
 }
 class Other {
   import Bippy._
-  import scala.xml._
+  import scala.collection.immutable._
 
-  def f(x: Node): String = ???  // unambiguous, because Bippy.Node is inaccessible
+  def f(x: List[Any]): String = ???  // unambiguous, because Bippy.List is inaccessible
 }

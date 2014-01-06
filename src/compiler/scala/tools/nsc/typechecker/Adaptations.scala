@@ -24,6 +24,8 @@ trait Adaptations {
   trait Adaptation {
     self: Typer =>
 
+    import runDefinitions._
+
     def checkValidAdaptation(t: Tree, args: List[Tree]): Boolean = {
       def applyArg = t match {
         case Apply(_, arg :: Nil) => arg
@@ -66,9 +68,9 @@ trait Adaptations {
         )
       }
 
-      if (settings.noAdaptedArgs.value)
+      if (settings.noAdaptedArgs)
         adaptWarning("No automatic adaptation here: use explicit parentheses.")
-      else if (settings.warnAdaptedArgs.value)
+      else if (settings.warnAdaptedArgs)
         adaptWarning(
           if (args.isEmpty) "Adapting argument list by inserting (): " + (
             if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous."
@@ -77,7 +79,7 @@ trait Adaptations {
           else "Adapting argument list by creating a " + args.size + "-tuple: this may not be what you want."
         )
 
-      !settings.noAdaptedArgs.value
+      !settings.noAdaptedArgs
     }
   }
 }

@@ -20,7 +20,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
         printTree(
             if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.isInitialized) {
               tree match {
-                case ClassDef(_, _, _, impl @ Template(ps, emptyValDef, body))
+                case ClassDef(_, _, _, impl @ Template(ps, noSelfType, body))
                 if (tree.symbol.thisSym != tree.symbol) =>
                   ClassDef(tree.symbol, Template(ps, ValDef(tree.symbol.thisSym), body))
                 case ClassDef(_, _, _, impl)           => ClassDef(tree.symbol, impl)
@@ -42,7 +42,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
     }
   }
 
-  // overflow cases missing from TreePrinter in reflect.api
+  // overflow cases missing from TreePrinter in scala.reflect.api
   override def xprintTree(treePrinter: super.TreePrinter, tree: Tree) = tree match {
     case DocDef(comment, definition) =>
       treePrinter.print(comment.raw)
@@ -128,7 +128,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
         case Select(qualifier, name) =>
           printTree(qualifier)
           print(".")
-          print(quotedName(name, true))
+          print(quotedName(name, decode = true))
 
         // target.toString() ==> target.toString
         case Apply(fn, Nil)   => printTree(fn)
@@ -152,7 +152,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
         // If thenp or elsep has only one statement, it doesn't need more than one line.
         case If(cond, thenp, elsep) =>
           def ifIndented(x: Tree) = {
-            indent ; println() ; printTree(x) ; undent
+            indent() ; println() ; printTree(x) ; undent()
           }
 
           val List(thenStmts, elseStmts) = List(thenp, elsep) map allStatements
@@ -166,49 +166,27 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
 
           if (elseStmts.nonEmpty) {
             print(" else")
-            indent ; println()
+            indent() ; println()
             elseStmts match {
               case List(x)  => printTree(x)
               case _        => printTree(elsep)
             }
-            undent ; println()
+            undent() ; println()
           }
         case _        => s()
       }
     }
   }
 
-  /** This must guarantee not to force any evaluation, so we can learn
-   *  a little bit about trees in the midst of compilation without altering
-   *  the natural course of events.
-   */
-  class SafeTreePrinter(out: PrintWriter) extends TreePrinter(out) {
-
-    private def default(t: Tree) = t.getClass.getName.reverse.takeWhile(_ != '.').reverse
-    private def params(trees: List[Tree]): String = trees map safe mkString ", "
-
-    private def safe(name: Name): String = name.decode
-    private def safe(tree: Tree): String = tree match {
-      case Apply(fn, args)        => "%s(%s)".format(safe(fn), params(args))
-      case Select(qual, name)     => safe(qual) + "." + safe(name)
-      case This(qual)             => safe(qual) + ".this"
-      case Ident(name)            => safe(name)
-      case Literal(value)         => value.stringValue
-      case _                      => "(?: %s)".format(default(tree))
-    }
-
-    override def printTree(tree: Tree) { print(safe(tree)) }
-  }
-
-  def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
-  def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes.value, settings.uniqid.value, settings.Yshowsymkinds.value)
+  def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes, settings.uniqid, settings.Yshowsymkinds)
+  def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes, settings.uniqid, settings.Yshowsymkinds)
   def asCompactDebugString(t: Tree): String = render(t, newCompactTreePrinter, true, true, true)
 
   def newStandardTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newCompactTreePrinter(writer: PrintWriter): CompactTreePrinter = new CompactTreePrinter(writer)
 
   override def newTreePrinter(writer: PrintWriter): TreePrinter =
-    if (settings.Ycompacttrees.value) newCompactTreePrinter(writer)
+    if (settings.Ycompacttrees) newCompactTreePrinter(writer)
     else newStandardTreePrinter(writer)
   override def newTreePrinter(stream: OutputStream): TreePrinter = newTreePrinter(new PrintWriter(stream))
   override def newTreePrinter(): TreePrinter = newTreePrinter(new PrintWriter(ConsoleWriter))

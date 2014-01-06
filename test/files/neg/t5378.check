@@ -1,0 +1,31 @@
+t5378.scala:7: error: Type bound in structural refinement may not refer to an abstract type defined outside that refinement
+  def contains = new { def apply[T1 <: T](value: T1) = ??? }
+                                          ^
+t5378.scala:8: error: Type bound in structural refinement may not refer to an abstract type defined outside that refinement
+  def contains1 = new { def apply[T1 <: A1](value: T1) = ??? }
+                                            ^
+t5378.scala:9: error: Type bound in structural refinement may not refer to an abstract type defined outside that refinement
+  def contains2 = new { def apply[T1 <: A2](value: T1) = ??? }
+                                            ^
+t5378.scala:15: error: Type bound in structural refinement may not refer to an abstract type defined outside that refinement
+    new Bippy { def apply[T1 <: T](value: T1) = ??? }
+                                   ^
+t5378.scala:16: error: Type bound in structural refinement may not refer to an abstract type defined outside that refinement
+    new Bippy { def apply[T1 <: B1](value: T1) = ??? }
+                                    ^
+t5378.scala:17: error: Type bound in structural refinement may not refer to an abstract type defined outside that refinement
+    new Bippy { def apply[T1 <: B2](value: T1) = ??? }
+                                    ^
+t5378.scala:21: error: Type bound in structural refinement may not refer to an abstract type defined outside that refinement
+      def apply1[T1 <: B3](value: T1) = ???
+                           ^
+t5378.scala:23: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
+      def apply3(value: B3) = ???
+                 ^
+t5378.scala:28: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
+    def apply1(s: String)(x: Int)(value: T) = ???
+                                  ^
+t5378.scala:29: error: Type bound in structural refinement may not refer to an abstract type defined outside that refinement
+    def apply2[T1 <: T](s: String)(x: Int)(value: T1) = ???
+                                           ^
+10 errors found

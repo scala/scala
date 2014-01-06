@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> import scala.reflect.runtime.universe._
 import scala.reflect.runtime.universe._
 
@@ -22,11 +20,9 @@ scala> println(c.fullName)
 $line8.$read.$iw.$iw.$iw.$iw.A
 
 scala> println(c.typeSignature)
-java.lang.Object {
+scala.AnyRef {
   def <init>(): A
   def foo: scala.Nothing
 }
-
-scala> 
 
 scala> 

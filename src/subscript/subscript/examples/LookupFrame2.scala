@@ -17,6 +17,7 @@ import subscript.vm._
 object LookupFrame2 extends LookupFrame2Application
 
 class LookupFrame2Application extends SimpleSubscriptApplication {
+  import scala.language.implicitConversions
 
   val outputTA     = new TextArea         {editable      = false}
   val searchButton = new Button("Go"    ) {enabled       = false; focusable = false}

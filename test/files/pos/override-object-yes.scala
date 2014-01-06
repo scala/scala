@@ -14,8 +14,8 @@ package case1 {
       override def f = 3
     }
   }
-  
-  trait Foo3 {      
+
+  trait Foo3 {
     object Bar {
       def g: Traversable[Int] = Nil
     }

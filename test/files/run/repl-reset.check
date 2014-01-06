@@ -1,8 +1,6 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> val x1 = 1
 x1: Int = 1
 
@@ -35,6 +33,12 @@ scala> x1 + x2 + x3
 <console>:8: error: not found: value x1
               x1 + x2 + x3
               ^
+<console>:8: error: not found: value x2
+              x1 + x2 + x3
+                   ^
+<console>:8: error: not found: value x3
+              x1 + x2 + x3
+                        ^
 
 scala> val x1 = 4
 x1: Int = 4
@@ -49,7 +53,5 @@ defined class BippyBungus
 
 scala> { new BippyBungus ; x1 }
 res2: Int = 4
-
-scala> 
 
 scala> 

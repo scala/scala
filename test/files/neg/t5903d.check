@@ -1,0 +1,4 @@
+Test_2.scala:4: error: extractor macros can only be whitebox
+    case t"$x" => println(x)
+         ^
+one error found

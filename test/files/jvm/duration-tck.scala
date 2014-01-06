@@ -6,6 +6,8 @@ import scala.concurrent.duration._
 import scala.reflect._
 import scala.tools.partest.TestUtil.intercept
 
+import scala.language.{ postfixOps }
+
 object Test extends App {
 
   implicit class Assert(val left: Any) extends AnyVal {
@@ -176,8 +178,9 @@ object Test extends App {
 
   Thread.sleep(1.second.toMillis)
 
-  { val l = dead.timeLeft; assert(l <= 1.second, s"$l > 1.second") }
-  { val l = dead2.timeLeft; assert(l <= 1.second, s"$l > 1.second") }
+  // unfortunately it can happen that the sleep() returns early without throwing
+  { val l = dead.timeLeft; assert(l <= 1100.millis, s"$l > 1100.millis") }
+  { val l = dead2.timeLeft; assert(l <= 1100.millis, s"$l > 1100.millis") }
 
 
   // test integer mul/div

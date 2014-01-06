@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -63,6 +64,7 @@ object ListSet extends ImmutableSetFactory[ListSet] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@deprecatedInheritance("The semantics of immutable collections makes inheriting from ListSet error-prone.", "2.11.0")
 class ListSet[A] extends AbstractSet[A]
                     with Set[A]
                     with GenericSetTemplate[A, ListSet]
@@ -75,7 +77,7 @@ class ListSet[A] extends AbstractSet[A]
    *  @return number of set elements.
    */
   override def size: Int = 0
-  override def isEmpty: Boolean = true;
+  override def isEmpty: Boolean = true
 
   /** Checks if this set contains element `elem`.
    *
@@ -100,7 +102,7 @@ class ListSet[A] extends AbstractSet[A]
    */
   override def ++(xs: GenTraversableOnce[A]): ListSet[A] =
     if (xs.isEmpty) this
-    else (new ListSet.ListSetBuilder(this) ++= xs.seq).result
+    else (new ListSet.ListSetBuilder(this) ++= xs.seq).result()
 
   private[ListSet] def unchecked_+(e: A): ListSet[A] = new Node(e)
   private[ListSet] def unchecked_outer: ListSet[A] =
@@ -120,18 +122,18 @@ class ListSet[A] extends AbstractSet[A]
         that = that.tail
         res
       }
-      else Iterator.empty.next
+      else Iterator.empty.next()
   }
 
   /**
    *  @throws Predef.NoSuchElementException
    */
-  override def head: A = throw new NoSuchElementException("Set has no elements");
+  override def head: A = throw new NoSuchElementException("Set has no elements")
 
   /**
    *  @throws Predef.NoSuchElementException
    */
-  override def tail: ListSet[A] = throw new NoSuchElementException("Next of an empty set");
+  override def tail: ListSet[A] = throw new NoSuchElementException("Next of an empty set")
 
   override def stringPrefix = "ListSet"
 

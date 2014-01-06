@@ -1,4 +1,4 @@
-t5063.scala:2: error: value + is not a member of Object
+t5063.scala:2: error: value + is not a member of AnyRef
   super.+("")
         ^
 one error found

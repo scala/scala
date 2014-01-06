@@ -1,3 +1,5 @@
+import scala.language.existentials
+
 object Test {
   trait ToS { final override def toString = getClass.getName }
 

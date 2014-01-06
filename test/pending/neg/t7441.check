@@ -1,0 +1,6 @@
+t7441.scala:4: error: type mismatch;
+ found   : Int(1)
+ required: List[Any]
+    def test = apply(1)
+                     ^
+one error found

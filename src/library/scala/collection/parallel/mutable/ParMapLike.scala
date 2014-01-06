@@ -6,10 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel
+package scala
+package collection.parallel
 package mutable
-
-
 
 import scala.collection.generic._
 import scala.collection.mutable.Cloneable
@@ -50,6 +49,4 @@ extends scala.collection.GenMapLike[K, V, Repr]
   def -(key: K) = this.clone() -= key
 
   def clear(): Unit
-
 }
-

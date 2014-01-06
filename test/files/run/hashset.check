@@ -1,0 +1,26 @@
+*** HashSet primitives
+0 true,1 true,10 true,11 true,12 true,13 true,14 true,15 true,16 true,17 true,18 true,19 true,2 true,3 true,4 true,5 true,6 true,7 true,8 true,9 true
+20 false,21 false,22 false,23 false,24 false,25 false,26 false,27 false,28 false,29 false,30 false,31 false,32 false,33 false,34 false,35 false,36 false,37 false,38 false,39 false
+0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
+
+*** HashSet Strings with null
+null true
+0 true,1 true,10 true,11 true,12 true,13 true,14 true,15 true,16 true,17 true,18 true,19 true,2 true,3 true,4 true,5 true,6 true,7 true,8 true,9 true
+20 false,21 false,22 false,23 false,24 false,25 false,26 false,27 false,28 false,29 false,30 false,31 false,32 false,33 false,34 false,35 false,36 false,37 false,38 false,39 false
+0,1,10,11,12,13,14,15,16,17,18,19,2,3,4,5,6,7,8,9,null
+null false
+0 false,1 true,10 true,11 true,12 true,13 true,14 true,15 true,16 true,17 true,18 true,19 true,2 true,3 true,4 true,5 true,6 true,7 true,8 true,9 true
+
+*** ParHashSet primitives
+0 true,1 true,10 true,11 true,12 true,13 true,14 true,15 true,16 true,17 true,18 true,19 true,2 true,3 true,4 true,5 true,6 true,7 true,8 true,9 true
+20 false,21 false,22 false,23 false,24 false,25 false,26 false,27 false,28 false,29 false,30 false,31 false,32 false,33 false,34 false,35 false,36 false,37 false,38 false,39 false
+0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19
+
+*** ParHashSet Strings with null
+null true
+0 true,1 true,10 true,11 true,12 true,13 true,14 true,15 true,16 true,17 true,18 true,19 true,2 true,3 true,4 true,5 true,6 true,7 true,8 true,9 true
+20 false,21 false,22 false,23 false,24 false,25 false,26 false,27 false,28 false,29 false,30 false,31 false,32 false,33 false,34 false,35 false,36 false,37 false,38 false,39 false
+0,1,10,11,12,13,14,15,16,17,18,19,2,3,4,5,6,7,8,9,null
+null false
+0 false,1 true,10 true,11 true,12 true,13 true,14 true,15 true,16 true,17 true,18 true,19 true,2 true,3 true,4 true,5 true,6 true,7 true,8 true,9 true
+

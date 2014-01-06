@@ -169,7 +169,7 @@ class TailCall[S](s: S) {
     aux[T](x, y);
   }
   final def g3[T](x: Int, y: Int, zs: List[T]): Int = {
-    def aux[U](n: Int, v: Int, ls: List[Pair[T,U]]): Int =
+    def aux[U](n: Int, v: Int, ls: List[Tuple2[T,U]]): Int =
       if (n == 0) v else aux(n - 1, v - 1, ls);
     aux(x, y, Nil);
   }
@@ -194,10 +194,10 @@ object FancyTailCalls {
 }
 
 object PolyObject extends App {
-  def tramp[A](x: Int): Int = 
+  def tramp[A](x: Int): Int =
     if (x > 0)
       tramp[A](x - 1)
-    else 
+    else
       0
 }
 
@@ -233,7 +233,7 @@ class NonTailCall {
     if (n == 0) 0
     else f2(n - 1)
   }
-  
+
 }
 
 //############################################################################
@@ -273,7 +273,7 @@ object Test {
     }
     println
   }
-    
+
   def check_overflow(name: String, closure: => Int) {
     print("test " + name)
     try {
@@ -295,7 +295,7 @@ object Test {
     while (!stop) {
       try {
         calibrator.f(n, n);
-        if (n >= Int.MaxValue / 2) error("calibration failure");
+        if (n >= Int.MaxValue / 2) sys.error("calibration failure");
         n = 2 * n;
       } catch {
         case exception: compat.Platform.StackOverflowError => stop = true
@@ -307,7 +307,7 @@ object Test {
   def main(args: Array[String]) {
     // compute min and max iteration number
     val min = 16;
-    val max = calibrate;
+    val max = if (scala.tools.partest.utils.Properties.isAvian) 10000 else calibrate
 
     // test tail calls in different contexts
     val Final     = new Final()
@@ -367,7 +367,7 @@ object Test {
     check_success("TailCall.g3", TailCall.g3(max, max, Nil), 0)
     check_success("TailCall.h1", TailCall.h1(max, max     ), 0)
     println
-    
+
     val NonTailCall = new NonTailCall
     check_success("NonTailCall.f1", NonTailCall.f1(2), 0)
     check_overflow("NonTailCall.f2", NonTailCall.f2(max))
@@ -382,17 +382,30 @@ object Test {
   }
 
   // testing explicit tailcalls.
-  
+
   import scala.util.control.TailCalls._
 
   def isEven(xs: List[Int]): TailRec[Boolean] =
     if (xs.isEmpty) done(true) else tailcall(isOdd(xs.tail))
 
   def isOdd(xs: List[Int]): TailRec[Boolean] =
-    if (xs.isEmpty) done(false) else tailcall(isEven(xs.tail)) 
+    if (xs.isEmpty) done(false) else tailcall(isEven(xs.tail))
+
+  def fib(n: Int): TailRec[Int] =
+    if (n < 2) done(n) else for {
+      x <- tailcall(fib(n - 1))
+      y <- tailcall(fib(n - 2))
+    } yield (x + y)
+
+  def rec(n: Int): TailRec[Int] =
+    if (n == 1) done(n) else for {
+      x <- tailcall(rec(n - 1))
+    } yield x
 
   assert(isEven((1 to 100000).toList).result)
-  
+  //assert(fib(40).result == 102334155) // Commented out, as it takes a long time
+  assert(rec(100000).result == 1)
+
 }
 
 //############################################################################

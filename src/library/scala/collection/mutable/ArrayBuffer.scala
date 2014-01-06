@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -107,7 +108,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  the identity of the buffer. It takes time linear in
    *  the buffer size.
    *
-   *  @param elem  the element to append.
+   *  @param elem  the element to prepend.
    *  @return      the updated buffer.
    */
   def +=:(elem: A): this.type = {

@@ -1,7 +1,8 @@
 
-import scala.actors.Actor._
 
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.Actor._
   case object A
 
   def main(args: Array[String]) {

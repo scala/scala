@@ -1,4 +1,5 @@
 package subscript.test
+import scala.language.implicitConversions
 import scala.swing._
 import scala.swing.event._
 import subscript.Predef._

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel.immutable
+package scala
+package collection.parallel.immutable
 
 
 
@@ -106,7 +107,7 @@ self =>
     }
     def next(): T = {
       i += 1
-      triter.next
+      triter.next()
     }
     def hasNext: Boolean = {
       i < sz

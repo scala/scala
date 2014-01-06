@@ -13,6 +13,7 @@ import subscript.vm._
 
 object LifeFrame extends LifeFrameApplication
 class LifeFrameApplication extends BasicLifeFrameApplication {
+  import scala.language.implicitConversions
 
     //////////////////////////////////////////////
     // speed control
@@ -79,7 +80,7 @@ def script..
 	 multiStepStopCmd  =      stopButton + Key.Enter
 	
 	doExit             =   exitCommand var r:Boolean=false @{gui(there)}: {r=confirmExit} while (!r)
-	
+	                  //   exitCommand @{gui(there)}: {confirmExit} ==> while(!_)
        boardControl    = ...; noise / (..singleStep) multiStep || clear || randomize
 
       do1Step          = {*board.calculateGeneration*} @{gui(there)}: {!board.validate!}

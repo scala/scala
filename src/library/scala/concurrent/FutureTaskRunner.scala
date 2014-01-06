@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2009-2011, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2009-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -16,7 +16,7 @@ import scala.language.{implicitConversions, higherKinds}
  *  @author Philipp Haller
  */
 @deprecated("Use `ExecutionContext` instead.", "2.10.0")
-trait FutureTaskRunner extends TaskRunner {
+private[scala] trait FutureTaskRunner extends TaskRunner {
 
   /** The type of the futures that the underlying task runner supports.
    */

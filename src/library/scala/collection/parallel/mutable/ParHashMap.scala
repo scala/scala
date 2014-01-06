@@ -6,11 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection.parallel
+package scala
+package collection.parallel
 package mutable
-
-
 
 import scala.collection.generic._
 import scala.collection.mutable.DefaultEntry
@@ -18,8 +16,6 @@ import scala.collection.mutable.HashEntry
 import scala.collection.mutable.HashTable
 import scala.collection.mutable.UnrolledBuffer
 import scala.collection.parallel.Task
-
-
 
 /** A parallel hash map.
  *
@@ -97,7 +93,8 @@ self =>
 
   class ParHashMapIterator(start: Int, untilIdx: Int, totalSize: Int, e: DefaultEntry[K, V])
   extends EntryIterator[(K, V), ParHashMapIterator](start, untilIdx, totalSize, e) {
-    def entry2item(entry: DefaultEntry[K, V]) = (entry.key, entry.value);
+    def entry2item(entry: DefaultEntry[K, V]) = (entry.key, entry.value)
+
     def newIterator(idxFrom: Int, idxUntil: Int, totalSz: Int, es: DefaultEntry[K, V]) =
       new ParHashMapIterator(idxFrom, idxUntil, totalSz, es)
   }
@@ -143,9 +140,7 @@ self =>
       else ("Element " + e.key + " at " + i + " with " + elemHashCode(e.key) + " maps to " + index(elemHashCode(e.key))) :: check(e.next)
     check(table(i))
   }
-
 }
-
 
 /** $factoryInfo
  *  @define Coll `mutable.ParHashMap`
@@ -160,7 +155,6 @@ object ParHashMap extends ParMapFactory[ParHashMap] {
 
   implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParHashMap[K, V]] = new CanCombineFromMap[K, V]
 }
-
 
 private[mutable] abstract class ParHashMapCombiner[K, V](private val tableLoadFactor: Int)
 extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntry[K, V], ParHashMapCombiner[K, V]](ParHashMapCombiner.numblocks)
@@ -296,29 +290,13 @@ extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], Defau
     }
     def shouldSplitFurther = howmany > scala.collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, combinerTaskSupport.parallelismLevel)
   }
-
 }
-
 
 private[parallel] object ParHashMapCombiner {
   private[mutable] val discriminantbits = 5
   private[mutable] val numblocks = 1 << discriminantbits
-  private[mutable] val discriminantmask = ((1 << discriminantbits) - 1);
+  private[mutable] val discriminantmask = ((1 << discriminantbits) - 1)
   private[mutable] val nonmasklength = 32 - discriminantbits
 
   def apply[K, V] = new ParHashMapCombiner[K, V](HashTable.defaultLoadFactor) {} // was: with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,0 +1,4 @@
+macro-bundle-trait.scala:11: error: macro bundles must be monomorphic traits extending either BlackboxMacro or WhiteboxMacro and not implementing their `val c: BlackboxContext/WhiteboxContext` member
+  def foo = macro Bundle.impl
+                  ^
+one error found

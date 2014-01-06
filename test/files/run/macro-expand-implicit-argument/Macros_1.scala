@@ -5,7 +5,7 @@ import scala.{specialized => spec}
 import language.experimental.macros
 
 import scala.reflect.ClassTag
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Macros {
   def alloc[@spec A:ClassTag](src:Array[A], s1:Int, len:Int) = {
@@ -35,20 +35,20 @@ object Macros {
    *     arr
    *   }
    */
-  def arrayMacro[A:c.WeakTypeTag](c:Context)(as:c.Expr[A]*)(ct: c.Expr[ClassTag[A]]): c.Expr[Array[A]] = {
+  def arrayMacro[A:c.WeakTypeTag](c:BlackboxContext)(as:c.Expr[A]*)(ct: c.Expr[ClassTag[A]]): c.Expr[Array[A]] = {
     import c.mirror._
     import c.universe._
     def const(x:Int) = Literal(Constant(x))
 
     val n = as.length
-    val arr = newTermName("arr")
+    val arr = TermName("arr")
 
-    val create = Apply(Select(ct.tree, newTermName("newArray")), List(const(n)))
+    val create = Apply(Select(ct.tree, TermName("newArray")), List(const(n)))
     val arrtpe = TypeTree(implicitly[c.WeakTypeTag[Array[A]]].tpe)
     val valdef = ValDef(Modifiers(), arr, arrtpe, create)
 
     val updates = (0 until n).map {
-      i => Apply(Select(Ident(arr), newTermName("update")), List(const(i), as(i).tree))
+      i => Apply(Select(Ident(arr), TermName("update")), List(const(i), as(i).tree))
     }
 
     val exprs = (Seq(valdef) ++ updates ++ Seq(Ident(arr))).toList

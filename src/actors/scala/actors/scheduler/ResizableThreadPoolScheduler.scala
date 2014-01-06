@@ -22,6 +22,7 @@ import scala.concurrent.ManagedBlocker
  *
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 class ResizableThreadPoolScheduler(protected val terminate: Boolean,
                                    protected val daemon: Boolean)
   extends Thread with IScheduler with TerminationMonitor {
@@ -102,7 +103,7 @@ class ResizableThreadPoolScheduler(protected val terminate: Boolean,
       while (true) {
         this.synchronized {
           try {
-            wait(CHECK_FREQ)
+            wait(CHECK_FREQ.toLong)
           } catch {
             case _: InterruptedException =>
           }

@@ -33,7 +33,7 @@ import scala.language.{implicitConversions, higherKinds}
   * }}}
   *
   * An Ordering[T] is implemented by specifying compare(a:T, b:T), which
-  * decides how to order to instances a and b. Instances of Ordering[T] can be
+  * decides how to order two instances a and b. Instances of Ordering[T] can be
   * used by things like scala.util.Sorting to sort collections like Array[T].
   *
   * For example:
@@ -173,7 +173,7 @@ object Ordering extends LowPriorityOrderingImplicits {
           val ye = y.iterator
 
           while (xe.hasNext && ye.hasNext) {
-            val res = ord.compare(xe.next, ye.next)
+            val res = ord.compare(xe.next(), ye.next())
             if (res != 0) return res
           }
 
@@ -347,7 +347,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         val ye = y.iterator
 
         while (xe.hasNext && ye.hasNext) {
-          val res = ord.compare(xe.next, ye.next)
+          val res = ord.compare(xe.next(), ye.next())
           if (res != 0) return res
         }
 

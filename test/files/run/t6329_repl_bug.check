@@ -1,11 +1,15 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
+scala> import scala.reflect.runtime.universe._
+import scala.reflect.runtime.universe._
+
+scala> import scala.reflect.runtime._
+import scala.reflect.runtime._
 
 scala> classManifest[List[_]]
-warning: there were 1 deprecation warnings; re-run with -deprecation for details
-res0: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[Any]
+warning: there were 1 deprecation warning(s); re-run with -deprecation for details
+res0: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[<?>]
 
 scala> scala.reflect.classTag[List[_]]
 res1: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List

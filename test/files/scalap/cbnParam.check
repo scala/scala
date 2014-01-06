@@ -1,0 +1,3 @@
+class CbnParam extends scala.AnyRef {
+  def this(s: => scala.Predef.String) = { /* compiled code */ }
+}

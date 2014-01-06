@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.math
+package scala
+package math
 
 /** A slightly more specific conversion trait for classes which
  *  extend ScalaNumber (which excludes value classes.)
@@ -19,6 +20,7 @@ trait ScalaNumericConversions extends ScalaNumber with ScalaNumericAnyConversion
  *  across all the numeric types, suitable for use in value classes.
  */
 trait ScalaNumericAnyConversions extends Any {
+  /** @return `'''true'''` if this number has no decimal component, `'''false'''` otherwise. */
   def isWhole(): Boolean
   def underlying(): Any
 
@@ -32,37 +34,37 @@ trait ScalaNumericAnyConversions extends Any {
   /** Returns the value of this as a [[scala.Char]]. This may involve
     * rounding or truncation.
     */
-  def toChar = intValue.toChar
+  def toChar = intValue().toChar
 
   /** Returns the value of this as a [[scala.Byte]]. This may involve
     * rounding or truncation.
     */
-  def toByte = byteValue
+  def toByte = byteValue()
 
   /** Returns the value of this as a [[scala.Short]]. This may involve
     * rounding or truncation.
     */
-  def toShort = shortValue
+  def toShort = shortValue()
 
   /** Returns the value of this as an [[scala.Int]]. This may involve
     * rounding or truncation.
     */
-  def toInt = intValue
+  def toInt = intValue()
 
   /** Returns the value of this as a [[scala.Long]]. This may involve
     * rounding or truncation.
     */
-  def toLong = longValue
+  def toLong = longValue()
 
   /** Returns the value of this as a [[scala.Float]]. This may involve
     * rounding or truncation.
     */
-  def toFloat = floatValue
+  def toFloat = floatValue()
 
   /** Returns the value of this as a [[scala.Double]]. This may involve
     * rounding or truncation.
     */
-  def toDouble = doubleValue
+  def toDouble = doubleValue()
 
   /** Returns `true` iff this has a zero fractional part, and is within the
     * range of [[scala.Byte]] MinValue and MaxValue; otherwise returns `false`.

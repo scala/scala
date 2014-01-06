@@ -29,7 +29,10 @@ C(2,3)
       Statics.this.finalizeHash(acc, 2)
     };
     override <synthetic> def toString(): String = ScalaRunTime.this._toString(C.this);
-    override <synthetic> def equals(x$1: Any): Boolean = C.this.eq(x$1.asInstanceOf[Object]).||(x$1.isInstanceOf[C].&&({
+    override <synthetic> def equals(x$1: Any): Boolean = C.this.eq(x$1.asInstanceOf[Object]).||(x$1 match {
+  case (_: C) => true
+  case _ => false
+}.&&({
       <synthetic> val C$1: C = x$1.asInstanceOf[C];
       C.this.x.==(C$1.x).&&(C.this.y.==(C$1.y)).&&(C$1.canEqual(C.this))
     }))
@@ -39,14 +42,14 @@ C(2,3)
       C.super.<init>();
       ()
     };
-    final override def toString(): String = "C";
+    final override <synthetic> def toString(): String = "C";
     case <synthetic> def apply(x: Int, y: Int): C = new C(x, y);
     case <synthetic> def unapply(x$0: C): Option[(Int, Int)] = if (x$0.==(null))
       scala.this.None
     else
-      Some.apply[(Int, Int)](Tuple2.apply[Int, Int](x$0.x, x$0.y));
+      Some.apply[(Int, Int)](scala.Tuple2.apply[Int, Int](x$0.x, x$0.y));
     <synthetic> private def readResolve(): Object = C
   };
-  scala.this.Predef.println(C.apply(2, 3))
+  Predef.println(C.apply(2, 3))
 }
 error!

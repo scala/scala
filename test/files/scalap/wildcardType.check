@@ -1,0 +1,3 @@
+class WildcardType extends scala.AnyRef {
+  def this(f: scala.Function1[scala.Int, _]) = { /* compiled code */ }
+}

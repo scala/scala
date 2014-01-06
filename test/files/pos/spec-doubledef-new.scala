@@ -19,12 +19,12 @@ abstract class B[T, @specialized(scala.Int) U : TypeTag, @specialized(scala.Int)
     val u: U
     val v: V
 
-    def f(t: T, v2: V): Pair[U, V] = {
+    def f(t: T, v2: V): Tuple2[U, V] = {
         val m: Array[U] = null
         if (m.isEmpty) {
-            Pair(u, v)
+            (u, v)
         } else {
-            Pair(u, v2)
+            (u, v2)
         }
     }
 }

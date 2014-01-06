@@ -10,7 +10,7 @@ object Test {
         // throw new Exception("Unsupported compare " + first + "; " + second)
     }
   }
-    
+
   def main(args: Array[String]): Unit = {
     println("Both Int", -1, compare(0, 1))
     println("Both Float", 1, compare(1.0, 0.0))

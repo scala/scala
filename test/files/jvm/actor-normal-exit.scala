@@ -1,7 +1,9 @@
 
-import scala.actors.{Actor, Exit}
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.{Actor, Exit}
   object Master extends Actor {
     trapExit = true
     def act() {

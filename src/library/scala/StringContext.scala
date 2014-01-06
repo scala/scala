@@ -59,7 +59,8 @@ case class StringContext(parts: String*) {
    */
   def checkLengths(args: Seq[Any]): Unit =
     if (parts.length != args.length + 1)
-      throw new IllegalArgumentException("wrong number of arguments for interpolated string")
+      throw new IllegalArgumentException("wrong number of arguments ("+ args.length
+        +") for interpolated string with "+ parts.length +" parts")
 
 
   /** The simple string interpolator.
@@ -162,7 +163,7 @@ case class StringContext(parts: String*) {
    */
   // The implementation is hardwired to `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
   // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
-  def f(args: Any*): String = ??? // macro
+  def f(args: Any*): String = macro ???
 }
 
 object StringContext {

@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** This class implements synchronized priority queues using a binary heap.
@@ -23,6 +24,7 @@ package mutable
  *  @define Coll `SynchronizedPriorityQueue`
  *  @define coll synchronized priority queue
  */
+@deprecated("Comprehensive synchronization via selective overriding of methods is inherently unreliable.  Consider java.util.concurrent.ConcurrentSkipListSet as an alternative.", "2.11.0")
 class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQueue[A] {
 
   /** Checks if the queue is empty.
@@ -64,7 +66,7 @@ class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQu
    *
    *  @return   the element with the highest priority.
    */
-  override def dequeue(): A = synchronized { super.dequeue }
+  override def dequeue(): A = synchronized { super.dequeue() }
 
   /** Returns the element with the highest priority in the queue,
    *  or throws an error if there is no element contained in the queue.
@@ -76,7 +78,7 @@ class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQu
   /** Removes all elements from the queue. After this operation is completed,
    *  the queue will be empty.
    */
-  override def clear(): Unit = synchronized { super.clear }
+  override def clear(): Unit = synchronized { super.clear() }
 
   /** Returns an iterator which yield all the elements of the priority
    *  queue in descending priority order.

@@ -38,6 +38,7 @@ package remote
  *
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 object RemoteActor {
 
   private val kernels = new scala.collection.mutable.HashMap[InternalActor, NetKernel]
@@ -63,7 +64,7 @@ object RemoteActor {
     val serv = TcpService(port, cl)
     val kern = serv.kernel
     val s = Actor.self(Scheduler)
-    kernels += Pair(s, kern)
+    kernels(s) = kern
 
     s.onTerminate {
       Debug.info("alive actor "+s+" terminated")
@@ -89,7 +90,7 @@ object RemoteActor {
     val kernel = kernels.get(Actor.self(Scheduler)) match {
       case None =>
         val serv = TcpService(TcpService.generatePort, cl)
-        kernels += Pair(Actor.self(Scheduler), serv.kernel)
+        kernels(Actor.self(Scheduler)) = serv.kernel
         serv.kernel
       case Some(k) =>
         k
@@ -127,4 +128,5 @@ object RemoteActor {
  *
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 case class Node(address: String, port: Int)

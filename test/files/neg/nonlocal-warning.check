@@ -1,5 +1,4 @@
-nonlocal-warning.scala:4: warning: This catches all Throwables, which often has undesirable consequences.
-If intentional, use `case x : Throwable` to clear this warning.
+nonlocal-warning.scala:4: warning: This catches all Throwables. If this is really intended, use `case x : Throwable` to clear this warning.
     catch { case x => 11 }
                  ^
 nonlocal-warning.scala:2: warning: catch block may intercept non-local return from method foo

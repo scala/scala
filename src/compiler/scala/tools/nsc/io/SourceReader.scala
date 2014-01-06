@@ -74,7 +74,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
   protected def read(bytes: ByteBuffer): Array[Char] = {
     val decoder: CharsetDecoder = this.decoder.reset()
     val chars: CharBuffer = this.chars; chars.clear()
-    terminate(flush(decoder, decode(decoder, bytes, chars, true)))
+    terminate(flush(decoder, decode(decoder, bytes, chars, endOfInput = true)))
   }
 
   //########################################################################

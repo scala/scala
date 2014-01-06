@@ -1,0 +1,293 @@
+reload: Completions.scala
+
+askScopeCompletion at Completions.scala(12,8)
+================================================================================
+[response] askScopeCompletion at (12,8)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class fc extends AnyRef
+class ffc extends AnyRef
+def <init>(): test.Completion1
+def f: Unit
+def ff: Unit
+def fff: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(15,6)
+================================================================================
+[response] askScopeCompletion at (15,6)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class fc extends AnyRef
+class ffc extends AnyRef
+def <init>(): test.Completion1
+def f: Unit
+def ff: Unit
+def fff: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(18,8)
+================================================================================
+[response] askScopeCompletion at (18,8)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class fc extends AnyRef
+class ffc extends AnyRef
+def <init>(): ffc
+def f: Unit
+def ff: Unit
+def fff: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(21,6)
+================================================================================
+[response] askScopeCompletion at (21,6)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class fc extends AnyRef
+class ffc extends AnyRef
+def <init>(): test.Completion1
+def f: Unit
+def ff: Unit
+def fff: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(24,4)
+================================================================================
+[response] askScopeCompletion at (24,4)
+retrieved 6 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class fc extends AnyRef
+def <init>(): test.Completion1
+def f: Unit
+def ff: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(29,8)
+================================================================================
+[response] askScopeCompletion at (29,8)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class fc extends AnyRef
+class fcc extends AnyRef
+def <init>(): fc
+def f: Unit
+def fcf: Unit
+def ff: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(32,6)
+================================================================================
+[response] askScopeCompletion at (32,6)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class fc extends AnyRef
+class fcc extends AnyRef
+def <init>(): fc
+def f: Unit
+def fcf: Unit
+def ff: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(35,8)
+================================================================================
+[response] askScopeCompletion at (35,8)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class fc extends AnyRef
+class fcc extends AnyRef
+def <init>(): fc.this.fcc
+def f: Unit
+def fcf: Unit
+def ff: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(38,6)
+================================================================================
+[response] askScopeCompletion at (38,6)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class fc extends AnyRef
+class fcc extends AnyRef
+def <init>(): fc
+def f: Unit
+def fcf: Unit
+def ff: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(41,4)
+================================================================================
+[response] askScopeCompletion at (41,4)
+retrieved 6 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class fc extends AnyRef
+def <init>(): test.Completion1
+def f: Unit
+def ff: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(44,2)
+================================================================================
+[response] askScopeCompletion at (44,2)
+retrieved 4 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+def <init>(): test.Completion1
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(51,8)
+================================================================================
+[response] askScopeCompletion at (51,8)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class cc extends AnyRef
+class ccc extends AnyRef
+def <init>(): cc.this.ccc
+def ccf: Unit
+def cf: Unit
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(54,6)
+================================================================================
+[response] askScopeCompletion at (54,6)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class cc extends AnyRef
+class ccc extends AnyRef
+def <init>(): c.this.cc
+def ccf: Unit
+def cf: Unit
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(57,8)
+================================================================================
+[response] askScopeCompletion at (57,8)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class cc extends AnyRef
+class ccc extends AnyRef
+def <init>(): c.this.cc
+def ccf: Unit
+def cf: Unit
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(60,6)
+================================================================================
+[response] askScopeCompletion at (60,6)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class cc extends AnyRef
+class ccc extends AnyRef
+def <init>(): c.this.cc
+def ccf: Unit
+def cf: Unit
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(63,4)
+================================================================================
+[response] askScopeCompletion at (63,4)
+retrieved 6 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class cc extends AnyRef
+def <init>(): Completion1.this.c
+def cf: Unit
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(68,8)
+================================================================================
+[response] askScopeCompletion at (68,8)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class cc extends AnyRef
+class cfc extends AnyRef
+def <init>(): cfc
+def cf: Unit
+def cff: Unit
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(71,6)
+================================================================================
+[response] askScopeCompletion at (71,6)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class cc extends AnyRef
+class cfc extends AnyRef
+def <init>(): Completion1.this.c
+def cf: Unit
+def cff: Unit
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(74,8)
+================================================================================
+[response] askScopeCompletion at (74,8)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class cc extends AnyRef
+class cfc extends AnyRef
+def <init>(): Completion1.this.c
+def cf: Unit
+def cff: Unit
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(77,6)
+================================================================================
+[response] askScopeCompletion at (77,6)
+retrieved 8 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class cc extends AnyRef
+class cfc extends AnyRef
+def <init>(): Completion1.this.c
+def cf: Unit
+def cff: Unit
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(80,4)
+================================================================================
+[response] askScopeCompletion at (80,4)
+retrieved 6 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+class cc extends AnyRef
+def <init>(): Completion1.this.c
+def cf: Unit
+def f: Unit
+================================================================================
+
+askScopeCompletion at Completions.scala(83,2)
+================================================================================
+[response] askScopeCompletion at (83,2)
+retrieved 4 members
+class Completion1 extends AnyRef
+class c extends AnyRef
+def <init>(): test.Completion1
+def f: Unit
+================================================================================

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package script
 
 /** Classes that mix in the `Scriptable` class allow messages to be sent to
@@ -16,6 +17,7 @@ package script
  *  @version 1.0, 09/05/2004
  *  @since   2.8
  */
+@deprecated("Scripting is deprecated.", "2.11.0")
 trait Scriptable[A] {
   /** Send a message to this scriptable object.
    */

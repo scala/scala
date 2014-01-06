@@ -25,6 +25,8 @@
 */
 
 package subscript.swing
+
+
 import scala.swing._
 import scala.swing.event._
 import subscript._
@@ -52,8 +54,10 @@ abstract class SimpleSubscriptApplication extends SimpleSwingApplication{
  */
 object Scripts {
 
-  def gui1[N<:CallGraphNodeTrait[_]](there:N) = {there.adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}
-  def gui [N<:Any](there:N)                   = {there.asInstanceOf[CallGraphNodeTrait[_]]adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}
+  import scala.language.implicitConversions
+  
+  def gui1[N<:CallGraphNodeTrait](there:N) = {there.adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}
+  def gui [N<:Any](there:N)                = {there.asInstanceOf[CallGraphNodeTrait]adaptExecutor(new SwingCodeExecutorAdapter[CodeExecutorTrait])}
   // note that in some cases the type of the "there" parameter is inferred as Any.
   // This is for the time being a workaround:
   // only at the typing phase a refinement call is resoled into either a script call or a method call (=> code fragment)
@@ -73,7 +77,7 @@ object Scripts {
    * An extension on scala.swing.Reactor that supports event handling scripts in Subscript
    * Allows an event handling script to subscribe and unsubscribe to events
    */
-  abstract class ScriptReactor[N<:N_atomic_action_eh[N]] extends Reactor {
+  abstract class ScriptReactor[N<:N_atomic_action] extends Reactor {
     def publisher:Publisher
     var executor: EventHandlingCodeFragmentExecutor[N] = _
     def execute = executeMatching(true)
@@ -117,7 +121,7 @@ object Scripts {
    * A Reactor that has a swing Component as a Publisher. 
    * This automatically enables and disables the component
    */
-  abstract class EnablingReactor[N<:N_atomic_action_eh[N]](publisher:Publisher with Component, autoEnableComponent: Boolean = true) extends ScriptReactor[N] {
+  abstract class EnablingReactor[N<:N_atomic_action](publisher:Publisher with Component, autoEnableComponent: Boolean = true) extends ScriptReactor[N] {
     override def enabled_=(b:Boolean) = {
       super.enabled_=(b)
       if (autoEnableComponent) publisher.enabled = b
@@ -129,21 +133,21 @@ object Scripts {
   // In principle this should be cleaned up, but it is not yet clear how that can be done.
   
   // a ComponentReactor for any events
-  case class AnyEventReactor[N<:N_atomic_action_eh[N]](comp:Component) extends EnablingReactor[N](comp) {
+  case class AnyEventReactor[N<:N_atomic_action](comp:Component) extends EnablingReactor[N](comp) {
     def publisher = comp
     val listenedEvent: Event = null
     override def canDisableOnUnsubscribe = false
     private var myReaction: PartialFunction[Event,Unit] = {case e => currentEvent=e; execute; currentEvent=null}
     override def reaction: PartialFunction[Event,Unit] = myReaction
   }
-  case class WindowClosingReactor[N<:N_atomic_action_eh[N]](w:Window) extends ScriptReactor[N] {
+  case class WindowClosingReactor[N<:N_atomic_action](w:Window) extends ScriptReactor[N] {
     def publisher = w
     val listenedEvent: WindowClosing = null
     override def canDisableOnUnsubscribe = false
     private var myReaction: PartialFunction[Event,Unit] = {case e: WindowClosing => currentEvent=e; execute; currentEvent=null}
     override def reaction: PartialFunction[Event,Unit] = myReaction
   }
-  case class SliderStateChangedReactor[N<:N_atomic_action_eh[N]](s:Slider) extends ScriptReactor[N] {
+  case class SliderStateChangedReactor[N<:N_atomic_action](s:Slider) extends ScriptReactor[N] {
     def publisher = s
     val listenedEvent: ValueChanged = null
     override def canDisableOnUnsubscribe = false
@@ -154,38 +158,38 @@ object Scripts {
   /*
    * A Reactor that has a swing Component as a Publisher. 
    */
-  abstract class ComponentReactor[N<:N_atomic_action_eh[N]](comp:Component) extends ScriptReactor[N] {
+  abstract class ComponentReactor[N<:N_atomic_action](comp:Component) extends ScriptReactor[N] {
     def publisher = comp
     override def canDisableOnUnsubscribe = false
   }
   
-  // TBD: compact these classes somehow...
-  case class MouseClickedReactor[N<:N_atomic_action_eh[N]](comp:Component, forClicksCount: Int = 0) extends ComponentReactor[N](comp) {
+  // TBD: compact these classes someventhandlingow...
+  case class MouseClickedReactor[N<:N_atomic_action](comp:Component, forClicksCount: Int = 0) extends ComponentReactor[N](comp) {
     val listenedEvent: MouseClicked = null
     private var myReaction: PartialFunction[Event,Unit] = {case e: MouseClicked =>
       if (forClicksCount==0 
       ||  forClicksCount==e.clicks) {currentEvent=e; execute; currentEvent=null}}
     override def reaction: PartialFunction[Event,Unit] = myReaction
   }
-  case class MousePressedReactor[N<:N_atomic_action_eh[N]](comp:Component) extends ComponentReactor[N](comp) {
+  case class MousePressedReactor[N<:N_atomic_action](comp:Component) extends ComponentReactor[N](comp) {
     val listenedEvent: MousePressed = null
     private var myReaction: PartialFunction[Event,Unit] = {case e: MousePressed =>
       currentEvent=e; execute; currentEvent=null}
     override def reaction: PartialFunction[Event,Unit] = myReaction
   }
-  case class MouseReleasedReactor[N<:N_atomic_action_eh[N]](comp:Component) extends ComponentReactor[N](comp) {
+  case class MouseReleasedReactor[N<:N_atomic_action](comp:Component) extends ComponentReactor[N](comp) {
     val listenedEvent: MouseReleased = null
     private var myReaction: PartialFunction[Event,Unit] = {case e: MouseReleased =>
       currentEvent=e; execute; currentEvent=null}
     override def reaction: PartialFunction[Event,Unit] = myReaction
   }
-  case class MouseMovedReactor[N<:N_atomic_action_eh[N]](comp:Component) extends ComponentReactor[N](comp) {
+  case class MouseMovedReactor[N<:N_atomic_action](comp:Component) extends ComponentReactor[N](comp) {
     val listenedEvent: MouseMoved = null
     private var myReaction: PartialFunction[Event,Unit] = {case e: MouseMoved =>
       currentEvent=e; execute; currentEvent=null}
     override def reaction: PartialFunction[Event,Unit] = myReaction
   }
-  case class MouseDraggedReactor[N<:N_atomic_action_eh[N]](comp:Component) extends ComponentReactor[N](comp) {
+  case class MouseDraggedReactor[N<:N_atomic_action](comp:Component) extends ComponentReactor[N](comp) {
     val listenedEvent: MouseDragged = null
     private var myReaction: PartialFunction[Event,Unit] = {case e: MouseDragged =>
       currentEvent=e; execute; currentEvent=null}
@@ -196,7 +200,7 @@ object Scripts {
    * A EnablingReactor for clicked events on a button
    * TBD: a way to consume clicked events on the button
    */
-  case class ClickedReactor[N<:N_atomic_action_eh[N]](button:AbstractButton) extends EnablingReactor[N](button) {
+  case class ClickedReactor[N<:N_atomic_action](button:AbstractButton) extends EnablingReactor[N](button) {
     val wasFocusable = button.focusable
     override def enabled_=(b:Boolean) = {
       super.enabled_=(b)
@@ -214,7 +218,7 @@ object Scripts {
   /*
    * A Reactor for key typed events
    */
-  case class KeyTypedReactor[N<:N_atomic_action_eh[N]](publisher:Publisher, keyCode: FormalConstrainedParameter[Char]) extends ScriptReactor[N] {
+  case class KeyTypedReactor[N<:N_atomic_action](publisher:Publisher, keyCode: FormalConstrainedParameter[Char]) extends ScriptReactor[N] {
     val listenedEvent = null
     override def reaction = myReaction
     private val myReaction: PartialFunction[Event,Unit] = {
@@ -234,7 +238,7 @@ object Scripts {
   /*
    * A Reactor for virtual key press events
    */
-  case class VKeyTypedReactor[N<:N_atomic_action_eh[N]](publisher:Publisher, keyValue: FormalConstrainedParameter[Key.Value]) extends ScriptReactor[N] {
+  case class VKeyTypedReactor[N<:N_atomic_action](publisher:Publisher, keyValue: FormalConstrainedParameter[Key.Value]) extends ScriptReactor[N] {
     val listenedEvent = null
     override def reaction = myReaction
     private val myReaction: PartialFunction[Event,Unit] = {
@@ -249,7 +253,7 @@ object Scripts {
     }
   }
 
-  case class KeyTypedEventReactor[N<:N_atomic_action_eh[N]](publisher:Publisher, keyTypedEvent: FormalConstrainedParameter[KeyTyped]) extends ScriptReactor[N] {
+  case class KeyTypedEventReactor[N<:N_atomic_action](publisher:Publisher, keyTypedEvent: FormalConstrainedParameter[KeyTyped]) extends ScriptReactor[N] {
     val listenedEvent = null
     override def reaction = myReaction
     private val myReaction: PartialFunction[Event,Unit] = {
@@ -261,7 +265,7 @@ object Scripts {
     }
     override def unsubscribe: Unit = {publisher1.reactions -= reaction}
   }
-  case class KeyTypedEventsReactor[N<:N_atomic_action_eh[N]](publisher:Publisher) extends ScriptReactor[N] {
+  case class KeyTypedEventsReactor[N<:N_atomic_action](publisher:Publisher) extends ScriptReactor[N] {
     val listenedEvent = null
     override def reaction = myReaction
     private val myReaction: PartialFunction[Event,Unit] = {case e: KeyTyped =>
@@ -276,83 +280,83 @@ object Scripts {
     because enabling and disabling the button etc must there be done
   */
  implicit def script ..  // TBD: handle tabs in scanner so that line position becomes reasonable
-   stateChange(slider: Slider)                   = event(SliderStateChangedReactor[N_code_eh](slider))
-   clicked(button:Button)                        = event(           ClickedReactor[N_code_eh](button))
+   stateChange(slider: Slider)                   = event(SliderStateChangedReactor[N_code_eventhandling](slider))
+   clicked(button:Button)                        = event(           ClickedReactor[N_code_eventhandling](button))
 
  def script ..   // TBD: uncomment /*@gui:*/ and make it compile
-  event[E <: Event] (reactor:ScriptReactor[N_code_eh], ?e: E) =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {. e = reactor.currentEvent.asInstanceOf[E] .}
-  event (reactor:ScriptReactor[N_code_eh]) =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {.     .}
-  event_loop(reactor:ScriptReactor[N_code_eh_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
+  event[E <: Event] (reactor:ScriptReactor[N_code_eventhandling], ?e: E) =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {. e = reactor.currentEvent.asInstanceOf[E] .}
+  event (reactor:ScriptReactor[N_code_eventhandling]) =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: {.     .}
+  event_loop(reactor:ScriptReactor[N_code_eventhandling_loop], task: MouseEvent=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
                                                                                             {... task.apply(reactor.currentEvent.asInstanceOf[MouseEvent]) ...}
-  event_loop_KTE(reactor:ScriptReactor[N_code_eh_loop], task: KeyTyped=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
+  event_loop_KTE(reactor:ScriptReactor[N_code_eventhandling_loop], task: KeyTyped=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
                                                                                             {... task.apply(reactor.currentEvent.asInstanceOf[KeyTyped]) ...}
   // TBD: MouseEvent should become type parameter, as in the following (which does not compile)
-  //event_loop[E<:Event](reactor:Reactor[N_code_eh_loop], task: E=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
+  //event_loop[E<:Event](reactor:Reactor[N_code_eventhandling_loop], task: E=>Unit)   =  /*@gui:*/ @{reactor.subscribe(there); there.onDeactivate{reactor.unsubscribe}; there.onSuccess{reactor.acknowledgeEventHandled}}: 
   //                                                                                                {... task.apply(reactor.currentEvent.asInstanceOf[E]) ...}
-       anyEvent(comp: Component)                           = event(          AnyEventReactor[N_code_eh](comp))                                                    
-    windowClosing(window: Window)                          = event(     WindowClosingReactor[N_code_eh](window))
-// mouseClicks   (comp: Component, task: MouseEvent=>Unit) = event_loop( MouseClickedReactor[N_code_eh_loop](comp), task)
-   mousePresses  (comp: Component, task: MouseEvent=>Unit) = event_loop( MousePressedReactor[N_code_eh_loop](comp), task)
-   mouseDraggings(comp: Component, task: MouseEvent=>Unit) = event_loop( MouseDraggedReactor[N_code_eh_loop](comp), task)
-   mouseMoves    (comp: Component, task: MouseEvent=>Unit) = event_loop(   MouseMovedReactor[N_code_eh_loop](comp), task)
+       anyEvent(comp: Component)                           = event(          AnyEventReactor[N_code_eventhandling](comp))                                                    
+    windowClosing(window: Window)                          = event(     WindowClosingReactor[N_code_eventhandling](window))
+// mouseClicks   (comp: Component, task: MouseEvent=>Unit) = event_loop( MouseClickedReactor[N_code_eventhandling_loop](comp), task)
+   mousePresses  (comp: Component, task: MouseEvent=>Unit) = event_loop( MousePressedReactor[N_code_eventhandling_loop](comp), task)
+   mouseDraggings(comp: Component, task: MouseEvent=>Unit) = event_loop( MouseDraggedReactor[N_code_eventhandling_loop](comp), task)
+   mouseMoves    (comp: Component, task: MouseEvent=>Unit) = event_loop(   MouseMovedReactor[N_code_eventhandling_loop](comp), task)
 
    mouseSingleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(1, comp, ?p) // TBD: "p?"
    mouseDoubleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(2, comp, ?p)
    mouseTripleClick (comp: Component, ?p : java.awt.Point) = mouseClicks(3, comp, ?p)
    mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked=null 
-                                                             event(MouseClickedReactor[N_code_eh](comp, n), ActualOutputParameter(mce, (v:MouseClicked)=>mce=v) ) // TBD ...
+                                                             event(MouseClickedReactor[N_code_eventhandling](comp, n), ActualOutputParameter(mce, (v:MouseClicked)=>mce=v) ) // TBD ...
                                                              {! p=mce.point !}
    mouseMove        (comp: Component, ?p : java.awt.Point) = var mme: MouseMoved=null 
-                                                             event(   MouseMovedReactor[N_code_eh](comp), ActualOutputParameter(mme, (v:MouseMoved)=>mme=v) ) // TBD: "mme?" instead of "ActualOutputParameter(...)"
+                                                             event(   MouseMovedReactor[N_code_eventhandling](comp), ActualOutputParameter(mme, (v:MouseMoved)=>mme=v) ) // TBD: "mme?" instead of "ActualOutputParameter(...)"
                                                              {! p=mme.point !}
    mousePressed     (comp: Component, ?p : java.awt.Point) = var mpe: MousePressed=null 
-                                                             event(   MousePressedReactor[N_code_eh](comp), ActualOutputParameter(mpe, (v:MousePressed)=>mpe=v) ) // TBD: ...
+                                                             event(   MousePressedReactor[N_code_eventhandling](comp), ActualOutputParameter(mpe, (v:MousePressed)=>mpe=v) ) // TBD: ...
                                                              {! p=mpe.point !}
    mouseReleased    (comp: Component, ?p : java.awt.Point) = var mre: MouseReleased=null 
-                                                             event(   MouseReleasedReactor[N_code_eh](comp), ActualOutputParameter(mre, (v:MouseReleased)=>mre=v) ) // TBD: ...
+                                                             event(   MouseReleasedReactor[N_code_eventhandling](comp), ActualOutputParameter(mre, (v:MouseReleased)=>mre=v) ) // TBD: ...
                                                              {! p=mre.point !}
 /* these 4 scripts should become:
-   mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked =null; event( MouseClickedReactor[N_code_eh](comp, n), ?mce); {! p=mce.point !}
-   mouseMove        (comp: Component, ?p : java.awt.Point) = var mme: MouseMoved   =null; event(   MouseMovedReactor[N_code_eh](comp   ), ?mme); {! p=mme.point !}
-   mousePressed     (comp: Component, ?p : java.awt.Point) = var mpe: MousePressed =null; event( MousePressedReactor[N_code_eh](comp   ), ?mpe); {! p=mpe.point !}
-   mouseReleased    (comp: Component, ?p : java.awt.Point) = var mre: MouseReleased=null; event(MouseReleasedReactor[N_code_eh](comp   ), ?mre); {! p=mre.point !}
+   mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked =null; event( MouseClickedReactor[N_code_eventhandling](comp, n), ?mce); {! p=mce.point !}
+   mouseMove        (comp: Component, ?p : java.awt.Point) = var mme: MouseMoved   =null; event(   MouseMovedReactor[N_code_eventhandling](comp   ), ?mme); {! p=mme.point !}
+   mousePressed     (comp: Component, ?p : java.awt.Point) = var mpe: MousePressed =null; event( MousePressedReactor[N_code_eventhandling](comp   ), ?mpe); {! p=mpe.point !}
+   mouseReleased    (comp: Component, ?p : java.awt.Point) = var mre: MouseReleased=null; event(MouseReleasedReactor[N_code_eventhandling](comp   ), ?mre); {! p=mre.point !}
 
 for now:
 
 error: missing parameter type for expanded function ((x$4) => _mce.at(here).value = x$4)
-mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked =null; event( MouseClickedReactor[N_code_eh](comp, n), ?mce); {! p=mce.point !}
+mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked =null; event( MouseClickedReactor[N_code_eventhandling](comp, n), ?mce); {! p=mce.point !}
                                                                                                                                         ^
 */
 
      guard(comp: Component, test: () => Boolean)           = if (test()) .. else ... anyEvent(comp)
 
-     key2(publisher: Publisher, ??keyCode : Char     )     = event(         KeyTypedReactor[N_code_eh](publisher, _keyCode ))
-    vkey2(publisher: Publisher, ??keyValue: Key.Value)     = event(        VKeyTypedReactor[N_code_eh](publisher, _keyValue))
+     key2(publisher: Publisher, ??keyCode : Char     )     = event(         KeyTypedReactor[N_code_eventhandling](publisher, _keyCode ))
+    vkey2(publisher: Publisher, ??keyValue: Key.Value)     = event(        VKeyTypedReactor[N_code_eventhandling](publisher, _keyValue))
     
-     keyEvent2 (publisher: Publisher, ??keyTypedEvent : KeyTyped)  = event(         KeyTypedEventReactor [N_code_eh](publisher, _keyTypedEvent))
-     keyEvents2(publisher: Publisher, task: KeyTyped=>Unit)        = event_loop_KTE(KeyTypedEventsReactor[N_code_eh_loop](publisher), task)
+     keyEvent2 (publisher: Publisher, ??keyTypedEvent : KeyTyped)  = event(         KeyTypedEventReactor [N_code_eventhandling](publisher, _keyTypedEvent))
+     keyEvents2(publisher: Publisher, task: KeyTyped=>Unit)        = event_loop_KTE(KeyTypedEventsReactor[N_code_eventhandling_loop](publisher), task)
 /*
 
  Note: the manual compilation yielded for the first annotation the type
   
-   N_annotation[N_annotation[N_code_eh]]
+   N_annotation[N_annotation[N_code_eventhandling]]
    
  All the complicated generic type parameters on TemplateNodes and CallGraphNodes were needed
  to make it easy enforceable that "there" and even "there.there" would be of the proper type
 */
 /*
-  def _event(_r:FormalInputParameter[Reactor[N_code_eh]])  = {
+  def _event(_r:FormalInputParameter[Reactor[N_code_eventhandling]])  = {
    
-       _at{gui0} (_at{(there:N_code_eh) => {_r.value.subscribe(there); 
+       _at{gui0} (_at{(there:N_code_eventhandling) => {_r.value.subscribe(there); 
                         there.onDeactivate{_r.value.unsubscribe}; 
                         there.onSuccess   {_r.value.acknowledgeEventHandled}}}
          (_eventhandling0{})
        )
    } 
   }
-  def _event_loop[E<:Event](_r:FormalInputParameter[Reactor[N_code_eh_loop]], task: E=>Unit)  = {
+  def _event_loop[E<:Event](_r:FormalInputParameter[Reactor[N_code_eventhandling_loop]], task: E=>Unit)  = {
    _script(this, 'event_loop, _r~'r) {
-       _at{gui0} (_at{(there:N_code_eh_loop) => {_r.value.subscribe(there); 
+       _at{gui0} (_at{(there:N_code_eventhandling_loop) => {_r.value.subscribe(there); 
                              there.onDeactivate{_r.value.unsubscribe}; 
                              there.onSuccess   {_r.value.acknowledgeEventHandled}}}
          (_eventhandling_loop0{task.apply(_r.value.currentEvent.asInstanceOf[E])})
@@ -364,7 +368,7 @@ mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked 
   // likewise for _clicked and _clicked0
   implicit def  _key(_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Char     ])  = {
      _script(this,  'key, _p~'p, _k~??'k) { 
-       _at{gui0} (_at{(there:N_code_eh) => {val _r = KeyTypedReactor[N_code_eh](_p.value, _k) 
+       _at{gui0} (_at{(there:N_code_eventhandling) => {val _r = KeyTypedReactor[N_code_eventhandling](_p.value, _k) 
                                              _r.value.subscribe(there); 
                           there.onDeactivate{_r.value.unsubscribe}; 
                           there.onSuccess   {_r.value.acknowledgeEventHandled}}}
@@ -374,7 +378,7 @@ mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked 
   }           
   implicit def  _clicked(_b: FormalInputParameter[Button])  = {
      _script(this,  'clicked, _b~'b) { 
-       _at{gui0} (_at{(there:N_code_eh) => {val _r = ClickedReactor[N_code_eh](_b.value) 
+       _at{gui0} (_at{(there:N_code_eventhandling) => {val _r = ClickedReactor[N_code_eventhandling](_b.value) 
                                              _r.value.subscribe(there); 
                           there.onDeactivate{_r.value.unsubscribe}; 
                           there.onSuccess   {_r.value.acknowledgeEventHandled}}}
@@ -382,21 +386,21 @@ mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked 
       )
     }
   }           
-  implicit def  _key0(_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Char     ])  = {_script(this,  'key, _p~'p, _k~??'k) {_event( KeyTypedReactor[N_code_eh](_p.value, _k))}}
-  implicit def _vkey (_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Key.Value])  = {_script(this, 'vkey, _p~'p, _k~??'k) {_event(VKeyTypedReactor[N_code_eh](_p.value, _k))}}
+  implicit def  _key0(_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Char     ])  = {_script(this,  'key, _p~'p, _k~??'k) {_event( KeyTypedReactor[N_code_eventhandling](_p.value, _k))}}
+  implicit def _vkey (_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Key.Value])  = {_script(this, 'vkey, _p~'p, _k~??'k) {_event(VKeyTypedReactor[N_code_eventhandling](_p.value, _k))}}
                 
-  implicit def _clicked0(_b: FormalInputParameter[Button     ]) = {_script(this,       'clicked, _b~'b) {_event( ClickedReactor[N_code_eh](_b.value))} }
-           def _anyEvent(_c: FormalInputParameter[Component  ]) = {_script(this,      'anyEvent, _c~'c) {_event(AnyEventReactor[N_code_eh](_c.value))} }
-           def _windowClosing(_w: FormalInputParameter[Window]) = {_script(this, 'windowClosing, _w~'w) {_event(WindowClosingReactor[N_code_eh](_w.value))} }
+  implicit def _clicked0(_b: FormalInputParameter[Button     ]) = {_script(this,       'clicked, _b~'b) {_event( ClickedReactor[N_code_eventhandling](_b.value))} }
+           def _anyEvent(_c: FormalInputParameter[Component  ]) = {_script(this,      'anyEvent, _c~'c) {_event(AnyEventReactor[N_code_eventhandling](_c.value))} }
+           def _windowClosing(_w: FormalInputParameter[Window]) = {_script(this, 'windowClosing, _w~'w) {_event(WindowClosingReactor[N_code_eventhandling](_w.value))} }
 
-  implicit def _stateChange (_slider: FormalInputParameter[Slider]) = {_script(this, 'stateChange, _slider~'slider) {_event(SliderStateChangedReactor[N_code_eh](_slider.value))} }
+  implicit def _stateChange (_slider: FormalInputParameter[Slider]) = {_script(this, 'stateChange, _slider~'slider) {_event(SliderStateChangedReactor[N_code_eventhandling](_slider.value))} }
 
            def _mousePresses(_c: FormalInputParameter[Component], _task: FormalInputParameter[MouseEvent=>Unit]) 
-                = {_script(this, '_mousePresses, _c~'c, _task~'task) {_event_loop(MousePressedReactor[N_code_eh_loop](_c.value), _task.value)
+                = {_script(this, '_mousePresses, _c~'c, _task~'task) {_event_loop(MousePressedReactor[N_code_eventhandling_loop](_c.value), _task.value)
                                                                      } }
            
            def _mouseDraggings(_c: FormalInputParameter[Component], _task: FormalInputParameter[MouseEvent=>Unit]) 
-                = {_script(this, 'mouseDraggings, _c~'c, _task~'task) {_event_loop(MouseDraggedReactor[N_code_eh_loop](_c.value), _task.value)
+                = {_script(this, 'mouseDraggings, _c~'c, _task~'task) {_event_loop(MouseDraggedReactor[N_code_eventhandling_loop](_c.value), _task.value)
                                                                       } }
            def _guard(_comp: FormalInputParameter[Component], _test: FormalInputParameter[()=> Boolean]) = { 
                    _script(this, 'guard, _comp~'comp, _test~'test) {

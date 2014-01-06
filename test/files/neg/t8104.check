@@ -1,0 +1,4 @@
+Test_2.scala:20: error: could not find implicit value for parameter e: Generic.Aux[Test.C,(Int, Int)]
+  implicitly[Generic.Aux[C, (Int, Int)]]
+            ^
+one error found

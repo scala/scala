@@ -1,0 +1,6 @@
+t5189_inferred.scala:7: error: type mismatch;
+ found   : scala.collection.immutable.Nil.type
+ required: ?A1 where type ?A1
+  f(Invariant(arr): Covariant[Any])(0) = Nil
+                                         ^
+one error found

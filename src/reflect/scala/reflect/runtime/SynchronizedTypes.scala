@@ -1,8 +1,11 @@
-package scala.reflect
+package scala
+package reflect
 package runtime
 
-import scala.collection.mutable.WeakHashMap
-import java.lang.ref.WeakReference
+import scala.collection.mutable
+import java.lang.ref.{WeakReference => jWeakRef}
+import scala.ref.{WeakReference => sWeakRef}
+import scala.reflect.internal.Depth
 
 /** This trait overrides methods in reflect.internal, bracketing
  *  them in synchronized { ... } to make them thread-safe
@@ -12,9 +15,10 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   // No sharing of map objects:
   override protected def commonOwnerMap = new CommonOwnerMap
 
-  private object uniqueLock
-
-  private val uniques = WeakHashMap[Type, WeakReference[Type]]()
+  // we can keep this lock fine-grained, because super.unique just updates the cache
+  // and, in particular, doesn't call any reflection APIs which makes deadlocks impossible
+  private lazy val uniqueLock = new Object
+  private val uniques = mutable.WeakHashMap[Type, jWeakRef[Type]]()
   override def unique[T <: Type](tp: T): T = uniqueLock.synchronized {
     // we need to have weak uniques for runtime reflection
     // because unlike the normal compiler universe, reflective universe isn't organized in runs
@@ -28,7 +32,7 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
       val result = if (inCache.isDefined) inCache.get.get else null
       if (result ne null) result.asInstanceOf[T]
       else {
-        uniques(tp) = new WeakReference(tp)
+        uniques(tp) = new jWeakRef(tp)
         tp
       }
     } else {
@@ -36,47 +40,50 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
     }
   }
 
-  class SynchronizedUndoLog extends UndoLog {
-    private val actualLock = new java.util.concurrent.locks.ReentrantLock
+  private lazy val _skolemizationLevel = mkThreadLocalStorage(0)
+  override def skolemizationLevel = _skolemizationLevel.get
+  override def skolemizationLevel_=(value: Int) = _skolemizationLevel.set(value)
 
-    final override def lock(): Unit = actualLock.lock()
-    final override def unlock(): Unit = actualLock.unlock()
-  }
+  private lazy val _undoLog = mkThreadLocalStorage(new UndoLog)
+  override def undoLog = _undoLog.get
 
-  override protected def newUndoLog = new SynchronizedUndoLog
+  private lazy val _intersectionWitness = mkThreadLocalStorage(perRunCaches.newWeakMap[List[Type], sWeakRef[Type]]())
+  override def intersectionWitness = _intersectionWitness.get
 
-  override protected def baseTypeOfNonClassTypeRef(tpe: NonClassTypeRef, clazz: Symbol) =
-    synchronized { super.baseTypeOfNonClassTypeRef(tpe, clazz) }
+  private lazy val _volatileRecursions = mkThreadLocalStorage(0)
+  override def volatileRecursions = _volatileRecursions.get
+  override def volatileRecursions_=(value: Int) = _volatileRecursions.set(value)
 
-  private object subsametypeLock
+  private lazy val _pendingVolatiles = mkThreadLocalStorage(new mutable.HashSet[Symbol])
+  override def pendingVolatiles = _pendingVolatiles.get
 
-  override def isSameType(tp1: Type, tp2: Type): Boolean =
-    subsametypeLock.synchronized { super.isSameType(tp1, tp2) }
+  private lazy val _subsametypeRecursions = mkThreadLocalStorage(0)
+  override def subsametypeRecursions = _subsametypeRecursions.get
+  override def subsametypeRecursions_=(value: Int) = _subsametypeRecursions.set(value)
 
-  override def isDifferentType(tp1: Type, tp2: Type): Boolean =
-    subsametypeLock.synchronized { super.isDifferentType(tp1, tp2) }
+  private lazy val _pendingSubTypes = mkThreadLocalStorage(new mutable.HashSet[SubTypePair])
+  override def pendingSubTypes = _pendingSubTypes.get
 
-  override def isSubType(tp1: Type, tp2: Type, depth: Int): Boolean =
-    subsametypeLock.synchronized { super.isSubType(tp1, tp2, depth) }
+  private lazy val _basetypeRecursions = mkThreadLocalStorage(0)
+  override def basetypeRecursions = _basetypeRecursions.get
+  override def basetypeRecursions_=(value: Int) = _basetypeRecursions.set(value)
 
-  private object lubglbLock
+  private lazy val _pendingBaseTypes = mkThreadLocalStorage(new mutable.HashSet[Type])
+  override def pendingBaseTypes = _pendingBaseTypes.get
 
-  override def glb(ts: List[Type]): Type =
-    lubglbLock.synchronized { super.glb(ts) }
+  private lazy val _lubResults = mkThreadLocalStorage(new mutable.HashMap[(Depth, List[Type]), Type])
+  override def lubResults = _lubResults.get
 
-  override def lub(ts: List[Type]): Type =
-    lubglbLock.synchronized { super.lub(ts) }
+  private lazy val _glbResults = mkThreadLocalStorage(new mutable.HashMap[(Depth, List[Type]), Type])
+  override def glbResults = _glbResults.get
 
-  private object indentLock
+  private lazy val _indent = mkThreadLocalStorage("")
+  override def indent = _indent.get
+  override def indent_=(value: String) = _indent.set(value)
 
-  override protected def explain[T](op: String, p: (Type, T) => Boolean, tp1: Type, arg2: T): Boolean = {
-    indentLock.synchronized { super.explain(op, p, tp1, arg2) }
-  }
-
-  private object toStringLock
-
-  override protected def typeToString(tpe: Type): String =
-    toStringLock.synchronized(super.typeToString(tpe))
+  private lazy val _tostringRecursions = mkThreadLocalStorage(0)
+  override def tostringRecursions = _tostringRecursions.get
+  override def tostringRecursions_=(value: Int) = _tostringRecursions.set(value)
 
   /* The idea of caches is as follows.
    * When in reflexive mode, a cache is either null, or one sentinal
@@ -89,18 +96,18 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
    */
 
   override protected def defineUnderlyingOfSingleType(tpe: SingleType) =
-    tpe.synchronized { super.defineUnderlyingOfSingleType(tpe) }
+    gilSynchronized { super.defineUnderlyingOfSingleType(tpe) }
 
   override protected def defineBaseTypeSeqOfCompoundType(tpe: CompoundType) =
-    tpe.synchronized { super.defineBaseTypeSeqOfCompoundType(tpe) }
+    gilSynchronized { super.defineBaseTypeSeqOfCompoundType(tpe) }
 
   override protected def defineBaseClassesOfCompoundType(tpe: CompoundType) =
-    tpe.synchronized { super.defineBaseClassesOfCompoundType(tpe) }
+    gilSynchronized { super.defineBaseClassesOfCompoundType(tpe) }
 
   override protected def defineParentsOfTypeRef(tpe: TypeRef) =
-    tpe.synchronized { super.defineParentsOfTypeRef(tpe) }
+    gilSynchronized { super.defineParentsOfTypeRef(tpe) }
 
   override protected def defineBaseTypeSeqOfTypeRef(tpe: TypeRef) =
-    tpe.synchronized { super.defineBaseTypeSeqOfTypeRef(tpe) }
+    gilSynchronized { super.defineBaseTypeSeqOfTypeRef(tpe) }
 
 }

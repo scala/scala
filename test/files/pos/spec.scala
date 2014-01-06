@@ -7,7 +7,7 @@ class Bar[@specialized(Int, AnyRef) A](a: A) {
 }
 
 
-class WithInner[@specialized(Int, AnyRef) A](a: A) { 
+class WithInner[@specialized(Int, AnyRef) A](a: A) {
   class Inner {
     def meth = a
   }
@@ -42,7 +42,7 @@ class Qux[@specialized(AnyRef) A] {
 
 class Foo[@specialized(Int, AnyRef) A](val a: Array[A]) {
   a(0)
-  
+
   def id(elem: A) = a(0) = elem
 }
 
@@ -52,13 +52,13 @@ object Test {
   def main(arg: Array[String]) {
     val f = new Foo(new Array[String](5))
     f.id("")
-    
+
     val z = new Baz[Int, Double]
     z.ab(1, 1.0)
-    
+
     testspec(new Array[String](5))
     testspec(new Array[Int](5))
   }
-  
+
   def testspec[@specialized(Int, AnyRef) T](arr: Array[T]) = arr(0)
 }

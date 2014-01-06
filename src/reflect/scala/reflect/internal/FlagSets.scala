@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import scala.language.implicitConversions
@@ -41,5 +42,6 @@ trait FlagSets extends api.FlagSets { self: SymbolTable =>
     val DEFAULTPARAM  : FlagSet = Flags.DEFAULTPARAM
     val PRESUPER      : FlagSet = Flags.PRESUPER
     val DEFAULTINIT   : FlagSet = Flags.DEFAULTINIT
+    val SYNTHETIC     : FlagSet = Flags.SYNTHETIC
   }
 }

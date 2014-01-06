@@ -3,10 +3,12 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package api
 
 import scala.reflect.runtime.{universe => ru}
+import scala.annotation.compileTimeOnly
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
@@ -90,6 +92,7 @@ trait Exprs { self: Universe =>
      * }}}
      * because expr of type Expr[T] itself does not have a method foo.
      */
+    @compileTimeOnly("splice must be enclosed within a reify {} block")
     def splice: T
 
     /**
@@ -103,9 +106,10 @@ trait Exprs { self: Universe =>
      *
      * The corresponding macro implementation should have the following signature (note how the return type denotes path-dependency on x):
      * {{{
-     * object Impls { def foo_impl(c: Context)(x: c.Expr[X]): c.Expr[x.value.T] = ... }
+     * object Impls { def foo_impl(c: BlackboxContext)(x: c.Expr[X]): c.Expr[x.value.T] = ... }
      * }}}
      */
+    @compileTimeOnly("cannot use value except for signatures of macro implementations")
     val value: T
 
     override def canEqual(x: Any) = x.isInstanceOf[Expr[_]]

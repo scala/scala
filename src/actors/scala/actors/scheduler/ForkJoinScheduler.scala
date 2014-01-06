@@ -9,6 +9,7 @@ import scala.concurrent.forkjoin._
  *
  * @author Philipp Haller
  */
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean, fair: Boolean)
       extends Runnable with IScheduler with TerminationMonitor {
 
@@ -62,7 +63,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
       while (true) {
         this.synchronized {
           try {
-            wait(CHECK_FREQ)
+            wait(CHECK_FREQ.toLong)
           } catch {
             case _: InterruptedException =>
           }

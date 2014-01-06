@@ -1,0 +1,336 @@
+[0m[[0minfo[0m] [0mUpdating {file:/Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/}jline...[0m
+[0m[[0mdebug[0m] [0mpost 1.3 ivy file: using exact as default matcher[0m
+[0m[[0mdebug[0m] [0m:: resolving dependencies :: org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT[0m
+[0m[[0mdebug[0m] [0m	confs: [compile, runtime, test, provided, optional, compile-internal, runtime-internal, test-internal, plugin, sources, docs, pom][0m
+[0m[[0mdebug[0m] [0m	validate = true[0m
+[0m[[0mdebug[0m] [0m	refresh = false[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'compile'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=compile[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->default(compile)][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=compile[0m
+[0m[[0mdebug[0m] [0m	using sbt-chain to resolve org.fusesource.jansi#jansi;1.4[0m
+[0m[[0minfo[0m] [0mResolving org.fusesource.jansi#jansi;1.4 ...[0m
+[0m[[0mdebug[0m] [0msbt-chain: Checking cache for: dependency: org.fusesource.jansi#jansi;1.4 {compile=[default(compile)]}[0m
+[0m[[0mdebug[0m] [0msbt-chain: no namespace defined: using system[0m
+[0m[[0mdebug[0m] [0mNo entry is found in the ModuleDescriptorCache : /Users/andrevandelft/.ivy2/cache/org.fusesource.jansi/jansi/ivy-1.4.xml[0m
+[0m[[0mdebug[0m] [0mpost 1.3 ivy file: using exact as default matcher[0m
+[0m[[0mdebug[0m] [0m	resolver not found: redefined-public => trying to use the one configured for org.fusesource.jansi#jansi;1.4[0m
+[0m[[0mdebug[0m] [0m	configured resolver found for org.fusesource.jansi#jansi;1.4: sbt-chain: saving this data[0m
+[0m[[0mdebug[0m] [0m	found ivy file in cache for org.fusesource.jansi#jansi;1.4 (resolved by sbt-chain): /Users/andrevandelft/.ivy2/cache/org.fusesource.jansi/jansi/ivy-1.4.xml[0m
+[0m[[0mdebug[0m] [0msbt-chain: module revision found in cache: org.fusesource.jansi#jansi;1.4[0m
+[0m[[0mdebug[0m] [0msbt-chain: no latest strategy defined: using default[0m
+[0m[[0mdebug[0m] [0mlocal: no namespace defined: using system[0m
+[0m[[0mdebug[0m] [0mEntry is found in the ModuleDescriptorCache : /Users/andrevandelft/.ivy2/cache/org.fusesource.jansi/jansi/ivy-1.4.xml[0m
+[0m[[0mdebug[0m] [0m	found ivy file in cache for org.fusesource.jansi#jansi;1.4 (resolved by sbt-chain): /Users/andrevandelft/.ivy2/cache/org.fusesource.jansi/jansi/ivy-1.4.xml[0m
+[0m[[0mdebug[0m] [0m	local: revision in cache: org.fusesource.jansi#jansi;1.4[0m
+[0m[[0mdebug[0m] [0m	checking org.fusesource.jansi#jansi;1.4 from sbt-chain against [none][0m
+[0m[[0mdebug[0m] [0m	module revision kept as first found: org.fusesource.jansi#jansi;1.4 from sbt-chain[0m
+[0m[[0mdebug[0m] [0m	found org.fusesource.jansi#jansi;1.4 in sbt-chain[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->runtime][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=compile[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=compile[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->master][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=compile[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'runtime'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [runtime][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=runtime[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=runtime[0m
+[0m[[0mdebug[0m] [0mruntime is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->default(compile)][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=runtime[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->runtime][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=runtime[0m
+[0m[[0mdebug[0m] [0mruntime is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=runtime[0m
+[0m[[0mdebug[0m] [0mruntime is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->master][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=runtime[0m
+[0m[[0mdebug[0m] [0mruntime is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'test'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [test][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=test[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [runtime][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=test[0m
+[0m[[0mdebug[0m] [0mtest is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=test[0m
+[0m[[0mdebug[0m] [0mtest is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->default(compile)][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->runtime][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=test[0m
+[0m[[0mdebug[0m] [0mtest is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=test[0m
+[0m[[0mdebug[0m] [0mtest is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->master][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=test[0m
+[0m[[0mdebug[0m] [0mtest is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->com.novocode#junit-interface;0.7 [test->default][0m
+[0m[[0mdebug[0m] [0mloadData of com.novocode#junit-interface;0.7 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m	using sbt-chain to resolve com.novocode#junit-interface;0.7[0m
+[0m[[0minfo[0m] [0mResolving com.novocode#junit-interface;0.7 ...[0m
+[0m[[0mdebug[0m] [0msbt-chain: Checking cache for: dependency: com.novocode#junit-interface;0.7 {test=[default]}[0m
+[0m[[0mdebug[0m] [0mNo entry is found in the ModuleDescriptorCache : /Users/andrevandelft/.ivy2/cache/com.novocode/junit-interface/ivy-0.7.xml[0m
+[0m[[0mdebug[0m] [0mpost 1.3 ivy file: using exact as default matcher[0m
+[0m[[0mdebug[0m] [0m	found ivy file in cache for com.novocode#junit-interface;0.7 (resolved by junit interface repo): /Users/andrevandelft/.ivy2/cache/com.novocode/junit-interface/ivy-0.7.xml[0m
+[0m[[0mdebug[0m] [0msbt-chain: module revision found in cache: com.novocode#junit-interface;0.7[0m
+[0m[[0mdebug[0m] [0mEntry is found in the ModuleDescriptorCache : /Users/andrevandelft/.ivy2/cache/com.novocode/junit-interface/ivy-0.7.xml[0m
+[0m[[0mdebug[0m] [0m	found ivy file in cache for com.novocode#junit-interface;0.7 (resolved by junit interface repo): /Users/andrevandelft/.ivy2/cache/com.novocode/junit-interface/ivy-0.7.xml[0m
+[0m[[0mdebug[0m] [0m	local: revision in cache: com.novocode#junit-interface;0.7[0m
+[0m[[0mdebug[0m] [0m	checking com.novocode#junit-interface;0.7 from junit interface repo against [none][0m
+[0m[[0mdebug[0m] [0m	module revision kept as first found: com.novocode#junit-interface;0.7 from junit interface repo[0m
+[0m[[0mdebug[0m] [0m	found com.novocode#junit-interface;0.7 in junit interface repo[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->com.novocode#junit-interface;0.7 [test->runtime][0m
+[0m[[0mdebug[0m] [0mloadData of com.novocode#junit-interface;0.7 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->com.novocode#junit-interface;0.7 [test->compile][0m
+[0m[[0mdebug[0m] [0mloadData of com.novocode#junit-interface;0.7 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->junit#junit;4.8.2 [compile->master(*)][0m
+[0m[[0mdebug[0m] [0mloadData of junit#junit;4.8.2 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m	using sbt-chain to resolve junit#junit;4.8.2[0m
+[0m[[0minfo[0m] [0mResolving junit#junit;4.8.2 ...[0m
+[0m[[0mdebug[0m] [0msbt-chain: Checking cache for: dependency: junit#junit;4.8.2 {compile=[compile(*), master(*)], runtime=[runtime(*)]}[0m
+[0m[[0mdebug[0m] [0mNo entry is found in the ModuleDescriptorCache : /Users/andrevandelft/.ivy2/cache/junit/junit/ivy-4.8.2.xml[0m
+[0m[[0mdebug[0m] [0mpost 1.3 ivy file: using exact as default matcher[0m
+[0m[[0mdebug[0m] [0m	found ivy file in cache for junit#junit;4.8.2 (resolved by junit interface repo): /Users/andrevandelft/.ivy2/cache/junit/junit/ivy-4.8.2.xml[0m
+[0m[[0mdebug[0m] [0msbt-chain: module revision found in cache: junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0mEntry is found in the ModuleDescriptorCache : /Users/andrevandelft/.ivy2/cache/junit/junit/ivy-4.8.2.xml[0m
+[0m[[0mdebug[0m] [0m	found ivy file in cache for junit#junit;4.8.2 (resolved by junit interface repo): /Users/andrevandelft/.ivy2/cache/junit/junit/ivy-4.8.2.xml[0m
+[0m[[0mdebug[0m] [0m	local: revision in cache: junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0m	checking junit#junit;4.8.2 from junit interface repo against [none][0m
+[0m[[0mdebug[0m] [0m	module revision kept as first found: junit#junit;4.8.2 from junit interface repo[0m
+[0m[[0mdebug[0m] [0m	found junit#junit;4.8.2 in junit interface repo[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->junit#junit;4.8.2 [compile->compile(*)][0m
+[0m[[0mdebug[0m] [0mloadData of junit#junit;4.8.2 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->org.scala-tools.testing#test-interface;0.5 [compile->master(*)][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-tools.testing#test-interface;0.5 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m	using sbt-chain to resolve org.scala-tools.testing#test-interface;0.5[0m
+[0m[[0minfo[0m] [0mResolving org.scala-tools.testing#test-interface;0.5 ...[0m
+[0m[[0mdebug[0m] [0msbt-chain: Checking cache for: dependency: org.scala-tools.testing#test-interface;0.5 {compile=[compile(*), master(*)], runtime=[runtime(*)]}[0m
+[0m[[0mdebug[0m] [0mNo entry is found in the ModuleDescriptorCache : /Users/andrevandelft/.ivy2/cache/org.scala-tools.testing/test-interface/ivy-0.5.xml[0m
+[0m[[0mdebug[0m] [0mpost 1.3 ivy file: using exact as default matcher[0m
+[0m[[0mdebug[0m] [0m	found ivy file in cache for org.scala-tools.testing#test-interface;0.5 (resolved by sbt-chain): /Users/andrevandelft/.ivy2/cache/org.scala-tools.testing/test-interface/ivy-0.5.xml[0m
+[0m[[0mdebug[0m] [0msbt-chain: module revision found in cache: org.scala-tools.testing#test-interface;0.5[0m
+[0m[[0mdebug[0m] [0mEntry is found in the ModuleDescriptorCache : /Users/andrevandelft/.ivy2/cache/org.scala-tools.testing/test-interface/ivy-0.5.xml[0m
+[0m[[0mdebug[0m] [0m	found ivy file in cache for org.scala-tools.testing#test-interface;0.5 (resolved by sbt-chain): /Users/andrevandelft/.ivy2/cache/org.scala-tools.testing/test-interface/ivy-0.5.xml[0m
+[0m[[0mdebug[0m] [0m	local: revision in cache: org.scala-tools.testing#test-interface;0.5[0m
+[0m[[0mdebug[0m] [0m	checking org.scala-tools.testing#test-interface;0.5 from sbt-chain against [none][0m
+[0m[[0mdebug[0m] [0m	module revision kept as first found: org.scala-tools.testing#test-interface;0.5 from sbt-chain[0m
+[0m[[0mdebug[0m] [0m	found org.scala-tools.testing#test-interface;0.5 in sbt-chain[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->org.scala-tools.testing#test-interface;0.5 [compile->compile(*)][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-tools.testing#test-interface;0.5 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->junit#junit;4.8.2 [runtime->runtime(*)][0m
+[0m[[0mdebug[0m] [0mloadData of junit#junit;4.8.2 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->junit#junit;4.8.2 [runtime->compile][0m
+[0m[[0mdebug[0m] [0mloadData of junit#junit;4.8.2 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->org.scala-tools.testing#test-interface;0.5 [runtime->runtime(*)][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-tools.testing#test-interface;0.5 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->org.scala-tools.testing#test-interface;0.5 [runtime->compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-tools.testing#test-interface;0.5 of rootConf=test[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->com.novocode#junit-interface;0.7 [test->master][0m
+[0m[[0mdebug[0m] [0mloadData of com.novocode#junit-interface;0.7 of rootConf=test[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'provided'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [provided][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=provided[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'optional'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [optional][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=optional[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'compile-internal'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [compile-internal][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=compile-internal[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=compile-internal[0m
+[0m[[0mdebug[0m] [0mcompile-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->default(compile)][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=compile-internal[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->runtime][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=compile-internal[0m
+[0m[[0mdebug[0m] [0mcompile-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=compile-internal[0m
+[0m[[0mdebug[0m] [0mcompile-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->master][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=compile-internal[0m
+[0m[[0mdebug[0m] [0mcompile-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [optional][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=compile-internal[0m
+[0m[[0mdebug[0m] [0mcompile-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [provided][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=compile-internal[0m
+[0m[[0mdebug[0m] [0mcompile-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'runtime-internal'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [runtime-internal][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=runtime-internal[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [runtime][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=runtime-internal[0m
+[0m[[0mdebug[0m] [0mruntime-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=runtime-internal[0m
+[0m[[0mdebug[0m] [0mruntime-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->default(compile)][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=runtime-internal[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->runtime][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=runtime-internal[0m
+[0m[[0mdebug[0m] [0mruntime-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=runtime-internal[0m
+[0m[[0mdebug[0m] [0mruntime-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->master][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=runtime-internal[0m
+[0m[[0mdebug[0m] [0mruntime-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [optional][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=runtime-internal[0m
+[0m[[0mdebug[0m] [0mruntime-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'test-internal'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [test-internal][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [test][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [runtime][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->default(compile)][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->runtime][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->org.fusesource.jansi#jansi;1.4 [compile->master][0m
+[0m[[0mdebug[0m] [0mloadData of org.fusesource.jansi#jansi;1.4 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->com.novocode#junit-interface;0.7 [test->default][0m
+[0m[[0mdebug[0m] [0mloadData of com.novocode#junit-interface;0.7 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->com.novocode#junit-interface;0.7 [test->runtime][0m
+[0m[[0mdebug[0m] [0mloadData of com.novocode#junit-interface;0.7 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->com.novocode#junit-interface;0.7 [test->compile][0m
+[0m[[0mdebug[0m] [0mloadData of com.novocode#junit-interface;0.7 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->junit#junit;4.8.2 [compile->master(*)][0m
+[0m[[0mdebug[0m] [0mloadData of junit#junit;4.8.2 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->junit#junit;4.8.2 [compile->compile(*)][0m
+[0m[[0mdebug[0m] [0mloadData of junit#junit;4.8.2 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->org.scala-tools.testing#test-interface;0.5 [compile->master(*)][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-tools.testing#test-interface;0.5 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->org.scala-tools.testing#test-interface;0.5 [compile->compile(*)][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-tools.testing#test-interface;0.5 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->junit#junit;4.8.2 [runtime->runtime(*)][0m
+[0m[[0mdebug[0m] [0mloadData of junit#junit;4.8.2 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->junit#junit;4.8.2 [runtime->compile][0m
+[0m[[0mdebug[0m] [0mloadData of junit#junit;4.8.2 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->org.scala-tools.testing#test-interface;0.5 [runtime->runtime(*)][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-tools.testing#test-interface;0.5 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies com.novocode#junit-interface;0.7->org.scala-tools.testing#test-interface;0.5 [runtime->compile][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-tools.testing#test-interface;0.5 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT->com.novocode#junit-interface;0.7 [test->master][0m
+[0m[[0mdebug[0m] [0mloadData of com.novocode#junit-interface;0.7 of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [optional][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [provided][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=test-internal[0m
+[0m[[0mdebug[0m] [0mtest-internal is loaded and no conf to load.  Skip loading[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'plugin'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [plugin][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=plugin[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'sources'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [sources][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=sources[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'docs'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [docs][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=docs[0m
+[0m[[0mdebug[0m] [0mresolving dependencies for configuration 'pom'[0m
+[0m[[0mdebug[0m] [0m== resolving dependencies for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT [pom][0m
+[0m[[0mdebug[0m] [0mloadData of org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT of rootConf=pom[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 4[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : org.fusesource.jansi#jansi;1.4 / Number of dependencies = 1[0m
+[0m[[0mdebug[0m] [0mNon matching revision detected when sorting.  org.fusesource.jansi#jansi depends on junit#junit;4.7, doesn't match junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0mSort done for : org.fusesource.jansi#jansi;1.4[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : com.novocode#junit-interface;0.7 / Number of dependencies = 2[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : junit#junit;4.8.2 / Number of dependencies = 0[0m
+[0m[[0mdebug[0m] [0mSort done for : junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : org.scala-tools.testing#test-interface;0.5 / Number of dependencies = 0[0m
+[0m[[0mdebug[0m] [0mSort done for : org.scala-tools.testing#test-interface;0.5[0m
+[0m[[0mdebug[0m] [0mSort done for : com.novocode#junit-interface;0.7[0m
+[0m[[0mdebug[0m] [0mModule descriptor is processed : junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0mModule descriptor is processed : org.scala-tools.testing#test-interface;0.5[0m
+[0m[[0mdebug[0m] [0m	resolved ivy file produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/org.scala-lang/jline_2.9.2/2.10.0-SNAPSHOT/resolved.xml.xml[0m
+[0m[[0mdebug[0m] [0m:: downloading artifacts ::[0m
+[0m[[0mdebug[0m] [0m	[NOT REQUIRED] org.fusesource.jansi#jansi;1.4!jansi.jar[0m
+[0m[[0mdebug[0m] [0m	[NOT REQUIRED] com.novocode#junit-interface;0.7!junit-interface.jar[0m
+[0m[[0mdebug[0m] [0m	[NOT REQUIRED] junit#junit;4.8.2!junit.jar[0m
+[0m[[0mdebug[0m] [0m	[NOT REQUIRED] org.scala-tools.testing#test-interface;0.5!test-interface.jar[0m
+[0m[[0mdebug[0m] [0m:: resolution report :: resolve 789ms :: artifacts dl 34ms[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 1[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : org.fusesource.jansi#jansi;1.4 / Number of dependencies = 1[0m
+[0m[[0mdebug[0m] [0mSort done for : org.fusesource.jansi#jansi;1.4[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT compile produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/compile-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 1[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : org.fusesource.jansi#jansi;1.4 / Number of dependencies = 1[0m
+[0m[[0mdebug[0m] [0mSort done for : org.fusesource.jansi#jansi;1.4[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT runtime produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/runtime-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 4[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : org.fusesource.jansi#jansi;1.4 / Number of dependencies = 1[0m
+[0m[[0mdebug[0m] [0mNon matching revision detected when sorting.  org.fusesource.jansi#jansi depends on junit#junit;4.7, doesn't match junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0mSort done for : org.fusesource.jansi#jansi;1.4[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : com.novocode#junit-interface;0.7 / Number of dependencies = 2[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : junit#junit;4.8.2 / Number of dependencies = 0[0m
+[0m[[0mdebug[0m] [0mSort done for : junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : org.scala-tools.testing#test-interface;0.5 / Number of dependencies = 0[0m
+[0m[[0mdebug[0m] [0mSort done for : org.scala-tools.testing#test-interface;0.5[0m
+[0m[[0mdebug[0m] [0mSort done for : com.novocode#junit-interface;0.7[0m
+[0m[[0mdebug[0m] [0mModule descriptor is processed : junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0mModule descriptor is processed : org.scala-tools.testing#test-interface;0.5[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT test produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/test-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 0[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT provided produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/provided-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 0[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT optional produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/optional-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 1[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : org.fusesource.jansi#jansi;1.4 / Number of dependencies = 1[0m
+[0m[[0mdebug[0m] [0mSort done for : org.fusesource.jansi#jansi;1.4[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT compile-internal produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/compile-internal-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 1[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : org.fusesource.jansi#jansi;1.4 / Number of dependencies = 1[0m
+[0m[[0mdebug[0m] [0mSort done for : org.fusesource.jansi#jansi;1.4[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT runtime-internal produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/runtime-internal-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 4[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : org.fusesource.jansi#jansi;1.4 / Number of dependencies = 1[0m
+[0m[[0mdebug[0m] [0mNon matching revision detected when sorting.  org.fusesource.jansi#jansi depends on junit#junit;4.7, doesn't match junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0mSort done for : org.fusesource.jansi#jansi;1.4[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : com.novocode#junit-interface;0.7 / Number of dependencies = 2[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : junit#junit;4.8.2 / Number of dependencies = 0[0m
+[0m[[0mdebug[0m] [0mSort done for : junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0mSort dependencies of : org.scala-tools.testing#test-interface;0.5 / Number of dependencies = 0[0m
+[0m[[0mdebug[0m] [0mSort done for : org.scala-tools.testing#test-interface;0.5[0m
+[0m[[0mdebug[0m] [0mSort done for : com.novocode#junit-interface;0.7[0m
+[0m[[0mdebug[0m] [0mModule descriptor is processed : junit#junit;4.8.2[0m
+[0m[[0mdebug[0m] [0mModule descriptor is processed : org.scala-tools.testing#test-interface;0.5[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT test-internal produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/test-internal-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 0[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT plugin produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/plugin-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 0[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT sources produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/sources-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 0[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT docs produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/docs-resolved.xml[0m
+[0m[[0mdebug[0m] [0mNbr of module to sort : 0[0m
+[0m[[0mdebug[0m] [0m	report for org.scala-lang#jline_2.9.2;2.10.0-SNAPSHOT pom produced in /Users/andrevandelft/Documents/workspaces/workspace-subscript/scala/src/jline/target/resolution-cache/reports/org.scala-lang-jline_2.9.2/pom-resolved.xml[0m
+[0m[[0mdebug[0m] [0m	resolve done (789ms resolve - 34ms download)[0m
+[0m[[0minfo[0m] [0mDone updating.[0m

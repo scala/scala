@@ -1,10 +1,10 @@
 object Test {
 
-  def lookup(): Option[Pair[String, String]] =
-    ((null: Option[Pair[String, String]]) : @unchecked) match {
-      case Some(Pair(_, _)) =>
+  def lookup(): Option[Tuple2[String, String]] =
+    ((null: Option[Tuple2[String, String]]) : @unchecked) match {
+      case Some((_, _)) =>
 	if (true)
-	  Some(Pair(null, null))
+	  Some((null, null))
 	else
 	  lookup() match {
 	    case Some(_) => Some(null)

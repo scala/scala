@@ -1,4 +1,4 @@
-trait APQ {  
+trait APQ {
   class Placement {
   }
 
@@ -7,6 +7,6 @@ trait APQ {
   type PP = P
 
   def pq(numQueens: Int, numRows: Int) : List[Placement] = {
-    List(new PP) 
+    List(new PP)
   }
 }

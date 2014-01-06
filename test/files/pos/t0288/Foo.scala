@@ -6,4 +6,4 @@ class Foo extends Outer{
 
     val bar = new Inner(); // Shouldn't this work?
 
-} 
+}

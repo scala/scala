@@ -1,0 +1,4 @@
+class CovariantParam[+A] extends scala.AnyRef {
+  def this() = { /* compiled code */ }
+  def foo[A](a: A): scala.Int = { /* compiled code */ }
+}

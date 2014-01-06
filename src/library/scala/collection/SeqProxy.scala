@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 
 /** This trait implements a proxy for sequence objects. It forwards
  *  all calls to a different sequence object.
@@ -17,4 +18,5 @@ package scala.collection
  *  @version 2.8
  *  @since   2.8
  */
+@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
 trait SeqProxy[+A] extends Seq[A] with SeqProxyLike[A, Seq[A]]

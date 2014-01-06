@@ -1,0 +1,5 @@
+trait AbstractMethod extends scala.AnyRef {
+  def $init$(): scala.Unit = { /* compiled code */ }
+  def arity: scala.Int
+  def isCool: scala.Boolean = { /* compiled code */ }
+}

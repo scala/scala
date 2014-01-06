@@ -1,13 +1,15 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2012, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
+import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.generic.IsSeqLike
 import scala.math.Ordering
@@ -50,7 +52,7 @@ object Searching {
       *         sequence, or the `InsertionPoint` where the element would be inserted if
       *         the element is not in the sequence.
       */
-    final def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult = 
+    final def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult =
       coll match {
         case _: IndexedSeq[A] => binarySearch(elem, -1, coll.length)(ord)
         case _ => linearSearch(coll.view, elem, 0)(ord)
@@ -77,7 +79,7 @@ object Searching {
       *         the element is not in the sequence.
       */
     final def search[B >: A](elem: B, from: Int, to: Int)
-    (implicit ord: Ordering[B]): SearchResult = 
+    (implicit ord: Ordering[B]): SearchResult =
       coll match {
         case _: IndexedSeq[A] => binarySearch(elem, from-1, to)(ord)
         case _ => linearSearch(coll.view(from, to), elem, from)(ord)

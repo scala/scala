@@ -29,8 +29,6 @@ import scala.collection.mutable.Builder
 import scala.collection.GenTraversableOnce
 import scala.reflect.ClassTag
 
-
-
 /** Parallel sequence holding elements in a linear array.
  *
  *  `ParArray` is a parallel sequence with a predefined size. The size of the array
@@ -226,7 +224,7 @@ self =>
         if (all) i = nextuntil
         else {
           i = until
-          abort
+          abort()
         }
 
         if (isAborted) return false
@@ -241,7 +239,7 @@ self =>
         if (p(a(j).asInstanceOf[T])) j += 1
         else return false
       }
-      return true
+      true
     }
 
     override def exists(p: T => Boolean): Boolean = {
@@ -254,7 +252,7 @@ self =>
         some = exists_quick(p, array, nextuntil, i)
         if (some) {
           i = until
-          abort
+          abort()
         } else i = nextuntil
 
         if (isAborted) return true
@@ -269,7 +267,7 @@ self =>
         if (p(a(j).asInstanceOf[T])) return true
         else j += 1
       }
-      return false
+      false
     }
 
     override def find(p: T => Boolean): Option[T] = {
@@ -283,7 +281,7 @@ self =>
 
         if (r != None) {
           i = until
-          abort
+          abort()
         } else i = nextuntil
 
         if (isAborted) return r
@@ -298,7 +296,7 @@ self =>
         if (p(elem)) return Some(elem)
         else j += 1
       }
-      return None
+      None
     }
 
     override def drop(n: Int): ParArrayIterator = {
@@ -470,7 +468,6 @@ self =>
           Array.copy(arr, i, targetarr, 0, until - i)
           pac.buff.size = pac.buff.size + until - i
           pac.buff.lastPtr.size = until - i
-            pac
         } otherwise {
           copy2builder_quick(cb, arr, until, i)
           i = until
@@ -532,7 +529,6 @@ self =>
         val targetarr: Array[Any] = pac.lastbuff.internalArray.asInstanceOf[Array[Any]]
         reverse2combiner_quick(targetarr, arr, 0, i, until)
         pac.lastbuff.setInternalSize(sz)
-        pac
       } otherwise {
         cb.ifIs[UnrolledParArrayCombiner[T]] {
           pac =>
@@ -543,7 +539,6 @@ self =>
           reverse2combiner_quick(targetarr, arr, 0, i, until)
           pac.buff.size = pac.buff.size + sz
           pac.buff.lastPtr.size = sz
-          pac
         } otherwise super.reverse2combiner(cb)
       }
       cb
@@ -614,7 +609,8 @@ self =>
 
   class ScanToArray[U >: T](tree: ScanTree[U], z: U, op: (U, U) => U, targetarr: Array[Any])
   extends Task[Unit, ScanToArray[U]] {
-    var result = ();
+    var result = ()
+
     def leaf(prev: Option[Unit]) = iterate(tree)
     private def iterate(tree: ScanTree[U]): Unit = tree match {
       case ScanNode(left, right) =>
@@ -650,7 +646,8 @@ self =>
   }
 
   class Map[S](f: T => S, targetarr: Array[Any], offset: Int, howmany: Int) extends Task[Unit, Map[S]] {
-    var result = ();
+    var result = ()
+
     def leaf(prev: Option[Unit]) = {
       val tarr = targetarr
       val sarr = array
@@ -703,7 +700,7 @@ object ParArray extends ParFactory[ParArray] {
 
   private def wrapOrRebuild[T](arr: AnyRef, sz: Int) = arr match {
     case arr: Array[AnyRef] => new ParArray[T](new ExposedArraySeq[T](arr, sz))
-    case _ => new ParArray[T](new ExposedArraySeq[T](runtime.ScalaRunTime.toObjectArray(arr), sz))
+    case _ => new ParArray[T](new ExposedArraySeq[T](scala.runtime.ScalaRunTime.toObjectArray(arr), sz))
   }
 
   def createFromCopy[T <: AnyRef : ClassTag](arr: Array[T]): ParArray[T] = {
@@ -721,27 +718,3 @@ object ParArray extends ParFactory[ParArray] {
   }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,0 +1,4 @@
+Test_2.scala:4: error: String is not supported
+    case t"$x" => println(x)
+         ^
+one error found

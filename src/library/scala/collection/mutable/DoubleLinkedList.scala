@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -40,6 +41,7 @@ import generic._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@deprecated("Low-level linked lists are deprecated due to idiosyncracies in interface and incomplete features.", "2.11.0")
 @SerialVersionUID(-8144992287952814767L)
 class DoubleLinkedList[A]() extends AbstractSeq[A]
                             with LinearSeq[A]
@@ -68,7 +70,7 @@ class DoubleLinkedList[A]() extends AbstractSeq[A]
   override def clone(): DoubleLinkedList[A] = {
     val builder = newBuilder
     builder ++= this
-    builder.result
+    builder.result()
   }
 }
 
@@ -76,6 +78,7 @@ class DoubleLinkedList[A]() extends AbstractSeq[A]
  *  @define coll double linked list
  *  @define Coll `DoubleLinkedList`
  */
+@deprecated("Low-level linked lists are deprecated.", "2.11.0")
 object DoubleLinkedList extends SeqFactory[DoubleLinkedList] {
   /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, DoubleLinkedList[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]

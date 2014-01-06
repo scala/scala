@@ -50,9 +50,10 @@ class MoreAnyRefs {
   def f4 = (new A { def bippy() = 5 }).getClass()
 }
 
+@deprecated("Suppress warnings", since="2.11")
 object Test {
   def returnTypes[T: Manifest] = (
-    manifest[T].erasure.getMethods.toList
+    manifest[T].runtimeClass.getMethods.toList
       filter (_.getName startsWith "f")
       sortBy (_.getName)
       map (m => m.getName + ": " + m.getGenericReturnType.toString)

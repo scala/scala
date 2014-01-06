@@ -24,18 +24,18 @@
 // extends ParallelSeqCheck[T]("ParallelSeqView[" + tp + ", ParallelArray[" + tp + "]]") {
 //   // ForkJoinTasks.defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors * 2)
 //   // ForkJoinTasks.defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors * 2)
-  
+
 //   type CollType = ParallelSeqView[T, ParallelArray[T], ArraySeq[T]]
-  
+
 //   def isCheckingViews = true
-  
+
 //   def instances(vals: Seq[Gen[T]]): Gen[Seq[T]] = sized { sz =>
 //     val a = new ArrayBuffer[T](sz)
 //     val gen = vals(rnd.nextInt(vals.size))
 //     for (i <- 0 until sz) a += sample(gen)
 //     a
 //   }
-  
+
 //   def fromSeq(a: Seq[T]) = {
 //     val pa = new ParallelArray[T](a.size)
 //     var i = 0
@@ -45,13 +45,13 @@
 //     }
 //     pa.view
 //   }
-  
+
 //   property("forces must be equal") = forAll(collectionPairs) { case (s, coll) =>
 //     val smodif = (s ++ s).reverse.take(s.length).reverse.zip(s).drop(s.length / 2)
 //     val cmodif = (coll ++ s).reverse.take(s.length).reverse.zip(s).drop(s.length / 2).force
 //     smodif == cmodif
 //   }
-  
+
 // }
 
 
@@ -68,18 +68,18 @@
 // extends ParallelSeqCheck[T]("ParallelSeqView[" + tp + "], ParallelArray[" + tp + "].++.patch.reverse.take.reverse") {
 //   ForkJoinTasks.defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors * 2)
 //   ForkJoinTasks.defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors * 2)
-  
+
 //   type CollType = collection.parallel.ParallelSeq[T]
-  
+
 //   def isCheckingViews = true
-  
+
 //   def instances(vals: Seq[Gen[T]]): Gen[Seq[T]] = sized { sz =>
 //     val a = new ArrayBuffer[T](sz)
 //     val gen = vals(rnd.nextInt(vals.size))
 //     for (i <- 0 until sz) a += sample(gen)
 //     a
 //   }
-  
+
 //   def fromSeq(a: Seq[T]) = {
 //     val pa = new ParallelArray[T](a.size)
 //     var i = 0
@@ -91,7 +91,7 @@
 //     val original = modified.take(modified.length / 2).reverse
 //     original
 //   }
-  
+
 // }
 
 

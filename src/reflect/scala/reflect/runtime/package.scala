@@ -1,4 +1,5 @@
-package scala.reflect
+package scala
+package reflect
 
 /** Entry points into runtime reflection.
  *  See [[scala.reflect.api.package the overview page]] for details on how to use them.
@@ -20,12 +21,12 @@ package object runtime {
    */
   // implementation hardwired to the `currentMirror` method below
   // using the mechanism implemented in `scala.tools.reflect.FastTrack`
-  def currentMirror: universe.Mirror = ??? // macro
+  def currentMirror: universe.Mirror = macro ???
 }
 
 package runtime {
   private[scala] object Macros {
-    def currentMirror(c: scala.reflect.macros.Context): c.Expr[universe.Mirror] = {
+    def currentMirror(c: scala.reflect.macros.BlackboxContext): c.Expr[universe.Mirror] = {
       import c.universe._
       val runtimeClass = c.reifyEnclosingRuntimeClass
       if (runtimeClass.isEmpty) c.abort(c.enclosingPosition, "call site does not have an enclosing class")

@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -48,6 +49,7 @@ object ListMap extends ImmutableMapFactory[ListMap] {
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(301002838095710379L)
+@deprecatedInheritance("The semantics of immutable collections makes inheriting from ListMap error-prone.", "2.11.0")
 class ListMap[A, +B]
 extends AbstractMap[A, B]
    with Map[A, B]
@@ -157,7 +159,11 @@ extends AbstractMap[A, B]
      */
     override def apply(k: A): B1 = apply0(this, k)
 
-    @tailrec private def apply0(cur: ListMap[A, B1], k: A): B1 = if (k == cur.key) cur.value else apply0(cur.tail, k)
+
+    @tailrec private def apply0(cur: ListMap[A, B1], k: A): B1 =
+      if (cur.isEmpty) throw new NoSuchElementException("key not found: "+k)
+      else if (k == cur.key) cur.value
+      else apply0(cur.tail, k)
 
     /** Checks if this map maps `key` to a value and return the
      *  value if it exists.
@@ -176,7 +182,7 @@ extends AbstractMap[A, B]
      *  it will be overridden by this function.
      */
     override def updated [B2 >: B1](k: A, v: B2): ListMap[A, B2] = {
-      val m = if (contains(k)) this - k else this
+      val m = this - k
       new m.Node[B2](k, v)
     }
 
@@ -184,32 +190,17 @@ extends AbstractMap[A, B]
      *  If the map does not contain a mapping for the given key, the
      *  method returns the same map.
      */
-    override def - (k: A): ListMap[A, B1] = {
-      // This definition used to result in stack overflows
-      // if (k == key)
-      //   next
-      // else {
-      //   val tail = next - k
-      //   if (tail eq next) this
-      //   else new tail.Node(key, value)
-      // }
-      // we use an imperative one instead (and use an auxiliary list to preserve order!):
-      var cur: ListMap[A, B1] = this
-      var lst: List[(A, B1)] = Nil
-      while (cur.nonEmpty) {
-        if (k != cur.key) lst ::= ((cur.key, cur.value))
-        cur = cur.tail
-      }
-      var acc = ListMap[A, B1]()
-      while (lst != Nil) {
-        val elem = lst.head
-        val stbl = acc
-        acc = new stbl.Node(elem._1, elem._2)
-        lst = lst.tail
-      }
-      acc
-    }
+    override def - (k: A): ListMap[A, B1] = remove0(k, this, Nil)
 
+    @tailrec private def remove0(k: A, cur: ListMap[A, B1], acc: List[ListMap[A, B1]]): ListMap[A, B1] =
+      if (cur.isEmpty)
+        acc.last
+      else if (k == cur.key)
+        (cur.tail /: acc) {
+          case (t, h) => val tt = t; new tt.Node(h.key, h.value) // SI-7459
+        }
+      else
+        remove0(k, cur.tail, cur::acc)
 
     override def tail: ListMap[A, B1] = ListMap.this
   }

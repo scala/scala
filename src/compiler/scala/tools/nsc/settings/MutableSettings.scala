@@ -9,8 +9,9 @@ package nsc
 package settings
 
 import io.{ AbstractFile, Jar, Path, PlainFile, VirtualDirectory }
-import scala.reflect.internal.util.StringOps
+import scala.collection.generic.Clearable
 import scala.io.Source
+import scala.reflect.internal.util.StringOps
 import scala.reflect.{ ClassTag, classTag }
 
 /** A mutable Settings object.
@@ -82,13 +83,13 @@ class MutableSettings(val errorFn: String => Unit)
     }
     loop(arguments, Nil)
   }
-  def processArgumentString(params: String) = processArguments(splitParams(params), true)
+  def processArgumentString(params: String) = processArguments(splitParams(params), processAll = true)
 
   /** Create a new Settings object, copying all user-set values.
    */
   def copy(): Settings = {
     val s = new Settings()
-    s.processArguments(recreateArgs, true)
+    s.processArguments(recreateArgs, processAll = true)
     s
   }
 
@@ -107,7 +108,7 @@ class MutableSettings(val errorFn: String => Unit)
 
   /** Split the given line into parameters.
    */
-  def splitParams(line: String) = cmd.Parser.tokenize(line, errorFn)
+  def splitParams(line: String) = cmd.CommandLineParser.tokenize(line, errorFn)
 
   /** Returns any unprocessed arguments.
    */
@@ -126,7 +127,7 @@ class MutableSettings(val errorFn: String => Unit)
 
     // if arg is of form -Xfoo:bar,baz,quux
     def parseColonArg(s: String): Option[List[String]] = {
-      val (p, args) = StringOps.splitWhere(s, _ == ':', true) getOrElse (return None)
+      val (p, args) = StringOps.splitWhere(s, _ == ':', doDropIndex = true) getOrElse (return None)
 
       // any non-Nil return value means failure and we return s unmodified
       tryToSetIfExists(p, (args split ",").toList, (s: Setting) => s.tryToSetColon _)
@@ -213,6 +214,7 @@ class MutableSettings(val errorFn: String => Unit)
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
+  def ScalaVersionSetting(name: String, arg: String, descr: String, default: ScalaVersion) = add(new ScalaVersionSetting(name, arg, descr, default))
   def PathSetting(name: String, descr: String, default: String): PathSetting = {
     val prepend = StringSetting(name + "/p", "", "", "").internalOnly()
     val append = StringSetting(name + "/a", "", "", "").internalOnly()
@@ -247,8 +249,7 @@ class MutableSettings(val errorFn: String => Unit)
     private def checkDir(dir: AbstractFile, name: String, allowJar: Boolean = false): AbstractFile = (
       if (dir != null && dir.isDirectory)
         dir
-// was:      else if (allowJar && dir == null && Path.isJarOrZip(name, false))
-      else if (allowJar && dir == null && Jar.isJarOrZip(name, false))
+      else if (allowJar && dir == null && Jar.isJarOrZip(name, examineFile = false))
         new PlainFile(Path(name))
       else
         throw new FatalError(name + " does not exist or is not a directory")
@@ -259,7 +260,7 @@ class MutableSettings(val errorFn: String => Unit)
      */
     def setSingleOutput(outDir: String) {
       val dst = AbstractFile.getDirectory(outDir)
-      setSingleOutput(checkDir(dst, outDir, true))
+      setSingleOutput(checkDir(dst, outDir, allowJar = true))
     }
 
     def getSingleOutput: Option[AbstractFile] = singleOutDir
@@ -322,12 +323,12 @@ class MutableSettings(val errorFn: String => Unit)
         case Some(d) =>
           d match {
               case _: VirtualDirectory | _: io.ZipArchive => Nil
-              case _                   => List(d.lookupPathUnchecked(srcPath, false))
+              case _                   => List(d.lookupPathUnchecked(srcPath, directory = false))
           }
         case None =>
           (outputs filter (isBelow _).tupled) match {
             case Nil => Nil
-            case matches => matches.map(_._1.lookupPathUnchecked(srcPath, false))
+            case matches => matches.map(_._1.lookupPathUnchecked(srcPath, directory = false))
           }
       }
     }
@@ -381,7 +382,7 @@ class MutableSettings(val errorFn: String => Unit)
     def max = range map (_._2) getOrElse IntMax
 
     override def value_=(s: Int) =
-      if (isInputValid(s)) super.value_=(s) else errorMsg
+      if (isInputValid(s)) super.value_=(s) else errorMsg()
 
     // Validate that min and max are consistent
     assert(min <= max)
@@ -413,7 +414,7 @@ class MutableSettings(val errorFn: String => Unit)
       if (args.isEmpty) errorAndValue("missing argument", None)
       else parseArgument(args.head) match {
         case Some(i)  => value = i ; Some(args.tail)
-        case None     => errorMsg ; None
+        case None     => errorMsg() ; None
       }
 
     def unparse: List[String] =
@@ -478,6 +479,33 @@ class MutableSettings(val errorFn: String => Unit)
     withHelpSyntax(name + " <" + arg + ">")
   }
 
+  /** A setting represented by a Scala version, (`default` unless set) */
+  class ScalaVersionSetting private[nsc](
+    name: String,
+    val arg: String,
+    descr: String,
+    default: ScalaVersion)
+  extends Setting(name, descr) {
+    type T = ScalaVersion
+    protected var v: T = NoScalaVersion
+
+    override def tryToSet(args: List[String]) = {
+      value = default
+      Some(args)
+    }
+
+    override def tryToSetColon(args: List[String]) = args match {
+      case Nil      => value = default; Some(Nil)
+      case x :: xs  => value = ScalaVersion(x, errorFn) ; Some(xs)
+    }
+
+    override def tryToSetFromPropertyValue(s: String) = tryToSet(List(s))
+
+    def unparse: List[String] = if (value == NoScalaVersion) Nil else List(s"${name}:${value.unparse}")
+
+    withHelpSyntax(s"${name}:<${arg}>")
+  }
+
   class PathSetting private[nsc](
     name: String,
     descr: String,
@@ -515,7 +543,7 @@ class MutableSettings(val errorFn: String => Unit)
     name: String,
     val arg: String,
     descr: String)
-  extends Setting(name, descr) {
+  extends Setting(name, descr) with Clearable {
     type T = List[String]
     protected var v: T = Nil
     def appendToValue(str: String) { value ++= List(str) }
@@ -528,6 +556,7 @@ class MutableSettings(val errorFn: String => Unit)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
+    def clear(): Unit = (v = Nil)
     def unparse: List[String] = value map (name + ":" + _)
 
     withHelpSyntax(name + ":<" + arg + ">")
@@ -581,44 +610,49 @@ class MutableSettings(val errorFn: String => Unit)
     name: String,
     descr: String,
     default: String
-  ) extends Setting(name, mkPhasesHelp(descr, default)) {
+  ) extends Setting(name, mkPhasesHelp(descr, default)) with Clearable {
     private[nsc] def this(name: String, descr: String) = this(name, descr, "")
 
     type T = List[String]
-    protected var v: T = Nil
-    override def value = if (v contains "all") List("all") else super.value
-    private lazy val (numericValues, stringValues) =
-      value filterNot (_ == "" ) partition (_ forall (ch => ch.isDigit || ch == '-'))
-
-    /** A little ad-hoc parsing.  If a string is not the name of a phase, it can also be:
-     *    a phase id: 5
-     *    a phase id range: 5-10 (inclusive of both ends)
-     *    a range with no start: -5 means up to and including 5
-     *    a range with no end: 10- means 10 until completion.
-     */
-    private def stringToPhaseIdTest(s: String): Int => Boolean = (s indexOf '-') match {
-      case -1  => (_ == s.toInt)
-      case 0   => (_ <= s.tail.toInt)
-      case idx =>
-        if (s.last == '-') (_ >= s.init.toInt)
-        else (s splitAt idx) match {
-          case (s1, s2) => (id => id >= s1.toInt && id <= s2.tail.toInt)
-        }
-    }
-    private lazy val phaseIdTest: Int => Boolean =
-      (numericValues map stringToPhaseIdTest) match {
-        case Nil    => _ => false
-        case fns    => fns.reduceLeft((f1, f2) => id => f1(id) || f2(id))
+    private[this] var _v: T = Nil
+    private[this] var _numbs: List[(Int,Int)] = Nil
+    private[this] var _names: T = Nil
+    //protected var v: T = Nil
+    protected def v: T = _v
+    protected def v_=(t: T): Unit = {
+      // throws NumberFormat on bad range (like -5-6)
+      def asRange(s: String): (Int,Int) = (s indexOf '-') match {
+        case -1 => (s.toInt, s.toInt)
+        case 0  => (-1, s.tail.toInt)
+        case i if s.last == '-' => (s.init.toInt, Int.MaxValue)
+        case i  => (s.take(i).toInt, s.drop(i+1).toInt)
       }
+      val numsAndStrs = t filter (_.nonEmpty) partition (_ forall (ch => ch.isDigit || ch == '-'))
+      _numbs = numsAndStrs._1 map asRange
+      _names = numsAndStrs._2
+      _v     = t
+    }
+    override def value = if (v contains "all") List("all") else super.value // i.e., v
+    private def numericValues = _numbs
+    private def stringValues  = _names
+    private def phaseIdTest(i: Int): Boolean = numericValues exists (_ match {
+      case (min, max) => min <= i && i <= max
+    })
 
     def tryToSet(args: List[String]) =
       if (default == "") errorAndValue("missing phase", None)
-      else { tryToSetColon(List(default)) ; Some(args) }
+      else tryToSetColon(List(default)) map (_ => args)
 
-    override def tryToSetColon(args: List[String]) = args match {
-      case Nil  => if (default == "") errorAndValue("missing phase", None) else tryToSetColon(List(default))
-      case xs   => value = (value ++ xs).distinct.sorted ; Some(Nil)
-    }
+    override def tryToSetColon(args: List[String]) = try {
+      args match {
+        case Nil  => if (default == "") errorAndValue("missing phase", None)
+                     else tryToSetColon(List(default))
+        case xs   => value = (value ++ xs).distinct.sorted ; Some(Nil)
+      }
+    } catch { case _: NumberFormatException => None }
+
+    def clear(): Unit = (v = Nil)
+
     // we slightly abuse the usual meaning of "contains" here by returning
     // true if our phase list contains "all", regardless of the incoming argument
     def contains(phName: String)     = doAllPhases || containsName(phName)

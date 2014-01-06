@@ -43,18 +43,18 @@ trait CodeExecutorTrait {
   def executeAA(lowLevelCodeExecutor: CodeExecutorTrait): Unit  = shouldNotBeCalledHere // TBD: clean up class/trait hierarchy so that this def can be ditched
   def afterExecuteAA: Unit                                      = shouldNotBeCalledHere // TBD: clean up class/trait hierarchy so that this def can be ditched
   def interruptAA   : Unit                                      = shouldNotBeCalledHere // TBD: clean up class/trait hierarchy so that this def can be ditched
-  def n: CallGraphNodeTrait[_<:TemplateNode]
+  def n: CallGraphNodeTrait
   def scriptExecutor: ScriptExecutor
   def cancelAA = canceled=true 
 }
-case class TinyCodeExecutor(n: CallGraphNodeTrait[_ <: TemplateNode], scriptExecutor: ScriptExecutor) extends CodeExecutorTrait  { // TBD: for while, {!!}, @:, script call
+case class TinyCodeExecutor(n: CallGraphNodeTrait, scriptExecutor: ScriptExecutor) extends CodeExecutorTrait  { // TBD: for while, {!!}, @:, script call
   val asynchronousAllowed = false
   override def interruptAA   : Unit  = {} // TBD: clean up class/trait hierarchy so that this def can be ditched
   override def doCodeExecution[R](code: ()=>R): R = super.doCodeExecution{
     code
     }
 }
-abstract class AACodeFragmentExecutor[N<:N_atomic_action[N]](_n: N, _scriptExecutor: ScriptExecutor) extends CodeExecutorTrait  {
+abstract class AACodeFragmentExecutor[N<:N_atomic_action](_n: N, _scriptExecutor: ScriptExecutor) extends CodeExecutorTrait  {
   
   // Executor for Atomic Actions. These require some communication with the ScriptExecutor, to make sure that 
   // graph messages such as AAStarted, AAEnded en Success are properly sent.
@@ -73,7 +73,16 @@ abstract class AACodeFragmentExecutor[N<:N_atomic_action[N]](_n: N, _scriptExecu
     ()=>
       n.hasSuccess = true
       n.isExecuting = true
-      try {naa.template.code.apply.apply(naa)} finally {n.isExecuting = false}
+      try {
+        // naa.template.code.apply.apply(naa) don't get this to work, so use a match statement:
+        n match {
+          case n1@N_code_normal  (t) => t.code.apply.apply(n1)
+          case n1@N_code_unsure  (t) => t.code.apply.apply(n1)
+          case n1@N_code_threaded(t) => t.code.apply.apply(n1)
+        }
+        // may affect n.hasSuccess
+      } 
+      finally {n.isExecuting = false}
       executionFinished
   }
   def aaStarted = scriptExecutor.insert(AAStarted(n,null))
@@ -97,7 +106,7 @@ abstract class AACodeFragmentExecutor[N<:N_atomic_action[N]](_n: N, _scriptExecu
 
 }
 
-class NormalCodeFragmentExecutor[N<:N_atomic_action[N]](n: N, scriptExecutor: ScriptExecutor) extends AACodeFragmentExecutor[N](n, scriptExecutor)  {
+class NormalCodeFragmentExecutor[N<:N_atomic_action](n: N, scriptExecutor: ScriptExecutor) extends AACodeFragmentExecutor[N](n, scriptExecutor)  {
   //without the next two definitions the compiler would give the following error messages; TBD: get rid of these
   // class NormalCodeFragmentExecutor needs to be abstract, since: 
   //   method scriptExecutor in trait CodeExecutorTrait of type => subscript.vm.ScriptExecutor is not defined 
@@ -189,13 +198,18 @@ class SwingCodeExecutorAdapter[CE<:CodeExecutorTrait] extends CodeExecutorAdapte
     result
   }
 }
-case class EventHandlingCodeFragmentExecutor[N<:N_atomic_action_eh[N]](_n: N, _scriptExecutor: ScriptExecutor) extends AACodeFragmentExecutor(_n, _scriptExecutor)  {
+case class EventHandlingCodeFragmentExecutor[N<:N_atomic_action](_n: N, _scriptExecutor: ScriptExecutor) extends AACodeFragmentExecutor(_n, _scriptExecutor)  {
   override def executeAA(lowLevelCodeExecutor: CodeExecutorTrait): Unit = executeMatching(true) // dummy method needed because of a flaw in the class hierarchy
   def executeMatching(isMatching: Boolean): Unit = {  // not to be called by scriptExecutor, but by application code
     n.hasSuccess = isMatching
     if (n.hasSuccess) 
     {
-      n.template.code.apply.apply(n) // may affect n.hasSuccess
+      // n.template.code.apply.apply(n) // don't get this to compile, so use a match statement:
+      n match {
+        case n@N_code_eventhandling     (t) => t.code.apply.apply(n)
+        case n@N_code_eventhandling_loop(t) => t.code.apply.apply(n)
+      }
+      // may affect n.hasSuccess
     }
     if (n.hasSuccess)  // probably this test can be ditched
     {
@@ -207,13 +221,13 @@ case class EventHandlingCodeFragmentExecutor[N<:N_atomic_action_eh[N]](_n: N, _s
   override def afterExecuteAA: Unit = {
       if (n.isExcluded || !n.hasSuccess) return
       n match {
-        case eh:N_code_eh =>       
+        case eh:N_code_eventhandling =>       
           aaStarted
           aaEnded
           succeeded
           deactivate 
 
-        case eh:N_code_eh_loop =>
+        case eh:N_code_eventhandling_loop =>
              aaStarted
              aaEnded
              eh.result match {

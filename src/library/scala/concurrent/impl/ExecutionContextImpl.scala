@@ -19,6 +19,10 @@ import scala.util.control.NonFatal
 
 
 private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter: Throwable => Unit) extends ExecutionContextExecutor {
+  // Placed here since the creation of the executor needs to read this val
+  private[this] val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
+    def uncaughtException(thread: Thread, cause: Throwable): Unit = reporter(cause)
+  }
 
   val executor: Executor = es match {
     case null => createExecutorService
@@ -26,10 +30,10 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
   }
 
   // Implement BlockContext on FJP threads
-  class DefaultThreadFactory(daemonic: Boolean) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory { 
+  class DefaultThreadFactory(daemonic: Boolean) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
     def wire[T <: Thread](thread: T): T = {
       thread.setDaemon(daemonic)
-      //Potentially set things like uncaught exception handler, name etc
+      thread.setUncaughtExceptionHandler(uncaughtExceptionHandler)
       thread
     }
 
@@ -53,27 +57,27 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
 
   def createExecutorService: ExecutorService = {
 
-    def getInt(name: String, f: String => Int): Int =
-        try f(System.getProperty(name)) catch { case e: Exception => Runtime.getRuntime.availableProcessors }
-    def range(floor: Int, desired: Int, ceiling: Int): Int =
-      if (ceiling < floor) range(ceiling, desired, floor) else scala.math.min(scala.math.max(desired, floor), ceiling)
+    def getInt(name: String, default: String) = (try System.getProperty(name, default) catch {
+      case e: SecurityException => default
+    }) match {
+      case s if s.charAt(0) == 'x' => (Runtime.getRuntime.availableProcessors * s.substring(1).toDouble).ceil.toInt
+      case other => other.toInt
+    }
+
+    def range(floor: Int, desired: Int, ceiling: Int) = scala.math.min(scala.math.max(floor, desired), ceiling)
 
     val desiredParallelism = range(
-      getInt("scala.concurrent.context.minThreads", _.toInt),
-      getInt("scala.concurrent.context.numThreads", {
-        case null | "" => Runtime.getRuntime.availableProcessors
-        case s if s.charAt(0) == 'x' => (Runtime.getRuntime.availableProcessors * s.substring(1).toDouble).ceil.toInt
-        case other => other.toInt
-      }),
-      getInt("scala.concurrent.context.maxThreads", _.toInt))
+      getInt("scala.concurrent.context.minThreads", "1"),
+      getInt("scala.concurrent.context.numThreads", "x1"),
+      getInt("scala.concurrent.context.maxThreads", "x1"))
 
     val threadFactory = new DefaultThreadFactory(daemonic = true)
-    
+
     try {
       new ForkJoinPool(
         desiredParallelism,
         threadFactory,
-        null, //FIXME we should have an UncaughtExceptionHandler, see what Akka does
+        uncaughtExceptionHandler,
         true) // Async all the way baby
     } catch {
       case NonFatal(t) =>
@@ -94,13 +98,13 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
 
   def execute(runnable: Runnable): Unit = executor match {
     case fj: ForkJoinPool =>
+      val fjt: ForkJoinTask[_] = runnable match {
+        case t: ForkJoinTask[_] => t
+        case r                  => new ExecutionContextImpl.AdaptedForkJoinTask(r)
+      }
       Thread.currentThread match {
-        case fjw: ForkJoinWorkerThread if fjw.getPool eq fj =>
-          (runnable match {
-            case fjt: ForkJoinTask[_] => fjt
-            case _ => ForkJoinTask.adapt(runnable)
-          }).fork
-        case _ => fj.execute(runnable)
+        case fjw: ForkJoinWorkerThread if fjw.getPool eq fj => fjt.fork()
+        case _                                              => fj execute fjt
       }
     case generic => generic execute runnable
   }
@@ -110,6 +114,20 @@ private[scala] class ExecutionContextImpl private[impl] (es: Executor, reporter:
 
 
 private[concurrent] object ExecutionContextImpl {
+
+  final class AdaptedForkJoinTask(runnable: Runnable) extends ForkJoinTask[Unit] {
+          final override def setRawResult(u: Unit): Unit = ()
+          final override def getRawResult(): Unit = ()
+          final override def exec(): Boolean = try { runnable.run(); true } catch {
+            case anything: Throwable ⇒
+              val t = Thread.currentThread
+              t.getUncaughtExceptionHandler match {
+                case null ⇒
+                case some ⇒ some.uncaughtException(t, anything)
+              }
+              throw anything
+          }
+        }
 
   def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl = new ExecutionContextImpl(e, reporter)
   def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl with ExecutionContextExecutorService =

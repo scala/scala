@@ -6,11 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.collection
+package scala
+package collection
 package mutable
-
 
 /** This class can be used as an adaptor to create mutable sets from
  *  immutable set implementations. Only method `empty` has
@@ -22,6 +20,7 @@ package mutable
  *  @version 1.0, 21/07/2003
  *  @since   1
  */
+@deprecated("Adaptors are inherently unreliable and prone to performance problems.", "2.11.0")
 class ImmutableSetAdaptor[A](protected var set: immutable.Set[A])
 extends AbstractSet[A]
    with Set[A]
@@ -48,6 +47,4 @@ extends AbstractSet[A]
   def -=(elem: A): this.type = { set = set - elem; this }
 
   override def clear(): Unit = { set = set.empty }
-
 }
-

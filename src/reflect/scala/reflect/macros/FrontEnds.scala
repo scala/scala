@@ -1,15 +1,16 @@
-package scala.reflect
+package scala
+package reflect
 package macros
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A slice of [[scala.reflect.macros.Context the Scala macros context]] that
+ *  A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that
  *  provides facilities to communicate with the compiler's front end
  *  (emit warnings, errors and other sorts of messages).
  */
 trait FrontEnds {
-  self: Context =>
+  self: BlackboxContext =>
 
   /** For sending a message which should not be labeled as a warning/error,
    *  but also shouldn't require -verbose to be visible.

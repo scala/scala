@@ -1,10 +1,8 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> 
-
 scala> object x { def x={} }
-defined module x
+defined object x
 
 scala> import x._
 import x._
@@ -24,7 +22,5 @@ import x._
 and import x
               x
               ^
-
-scala> 
 
 scala> 

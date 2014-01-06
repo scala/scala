@@ -18,7 +18,7 @@ object Main extends App {
     def globalInit : Global;
     final def globalInit0 = globalInit.asInstanceOf[global.type];
   }
-  
+
   object global0 extends Global {
     object analyzer extends Analyzer {
       type Global = global0.type;

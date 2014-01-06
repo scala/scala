@@ -1,38 +1,27 @@
-package scala.reflect.internal.util
+package scala
+package reflect.internal.util
 
 import TableDef._
 import scala.language.postfixOps
 
 /** A class for representing tabular data in a way that preserves
- *  its inner beauty.  See Exceptional for an example usage.
+ *  its inner beauty.
  *  One creates an instance of TableDef by defining the columns of
  *  the table, then uses that to create an instance of Table by
  *  passing in a sequence of rows.
  */
 class TableDef[T](_cols: Column[T]*) {
-  /** These operators are about all there is to it.
-   *
-   *  ~   appends a column to the table
-   *  >>  creates a right-justified column and appends it
-   *  <<  creates a left-justified column and appends it
-   *  >+  specifies a string to separate the previous column from the next.
-   *      if none is specified, a space is used.
-   */
+  // These operators are about all there is to it.
+  /** Appends a column to the table. */
   def ~(next: Column[T])            = retThis(cols :+= next)
-  def >>(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, false)
-  def <<(pair: (String, T => Any))  = this ~ Column(pair._1, pair._2, true)
-  def >+(sep: String)               = retThis(separators += ((cols.size - 1, sep)))
 
-  /** Below this point should all be considered private/internal.
-   */
+  // Below this point should all be considered private/internal.
   private var cols: List[Column[T]] = _cols.toList
-  private var separators: Map[Int, String] = Map()
 
-  def defaultSep(index: Int) = if (index > (cols.size - 2)) "" else " "
-  def sepAfter(i: Int): String = separators.getOrElse(i, defaultSep(i))
-  def sepWidths = cols.indices map (i => sepAfter(i).length)
+  def defaultSep(index: Int)   = if (index > (cols.size - 2)) "" else " "
+  def sepAfter(i: Int): String = defaultSep(i)
+  def sepWidths                = cols.indices map (i => sepAfter(i).length)
 
-  def columns = cols
   def colNames = cols map (_.name)
   def colFunctions = cols map (_.f)
   def colApply(el: T) = colFunctions map (f => f(el))
@@ -58,8 +47,6 @@ class TableDef[T](_cols: Column[T]*) {
 
     def mkFormatString(sepf: Int => String): String =
       specs.zipWithIndex map { case (c, i) => c + sepf(i) } mkString
-
-    def pp(): Unit = allToSeq foreach println
 
     def toFormattedSeq = argLists map (xs => rowFormat.format(xs: _*))
     def allToSeq = headers ++ toFormattedSeq

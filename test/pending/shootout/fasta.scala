@@ -5,7 +5,7 @@
 
 import java.io._
 
-object fasta { 
+object fasta {
    def main(args: Array[String]) = {
 
       val ALU =
@@ -18,31 +18,31 @@ object fasta {
          "AGCCTGGGCGACAGAGCGAGACTCCGTCTCAAAAA"
 
       val _IUB = Array(
-         Pair('a', 0.27), 
-         Pair('c', 0.12), 
-         Pair('g', 0.12), 
-         Pair('t', 0.27), 
+         ('a', 0.27),
+         ('c', 0.12),
+         ('g', 0.12),
+         ('t', 0.27),
 
-         Pair('B', 0.02), 
-         Pair('D', 0.02),
-         Pair('H', 0.02), 
-         Pair('K', 0.02), 
-         Pair('M', 0.02),
-         Pair('N', 0.02), 
-         Pair('R', 0.02), 
-         Pair('S', 0.02),
-         Pair('V', 0.02), 
-         Pair('W', 0.02), 
-         Pair('Y', 0.02)
+         ('B', 0.02),
+         ('D', 0.02),
+         ('H', 0.02),
+         ('K', 0.02),
+         ('M', 0.02),
+         ('N', 0.02),
+         ('R', 0.02),
+         ('S', 0.02),
+         ('V', 0.02),
+         ('W', 0.02),
+         ('Y', 0.02)
       )
 
       val IUB = makeCumulative(_IUB)
 
       val _HomoSapiens = Array(
-         Pair('a', 0.3029549426680), 
-         Pair('c', 0.1979883004921),
-         Pair('g', 0.1975473066391), 
-         Pair('t', 0.3015094502008)
+         ('a', 0.3029549426680),
+         ('c', 0.1979883004921),
+         ('g', 0.1975473066391),
+         ('t', 0.3015094502008)
       )
 
       val HomoSapiens = makeCumulative(_HomoSapiens)
@@ -61,15 +61,15 @@ object fasta {
       s.writeRandomSequence(HomoSapiens,n*5)
 
       s.close
-   } 
+   }
 
-   def makeCumulative(a: Array[Pair[Char,Double]]) = {
+   def makeCumulative(a: Array[Tuple2[Char,Double]]) = {
       var cp = 0.0
       a map (frequency =>
-         frequency match { 
-            case Pair(code,percent) => 
-               cp = cp + percent; new Frequency(code.toByte,cp) 
-         } 
+         frequency match {
+            case (code,percent) =>
+               cp = cp + percent; new Frequency(code.toByte,cp)
+         }
       )
    }
 
@@ -79,7 +79,7 @@ object fasta {
 // We could use instances of Pair or Tuple2 but specific labels
 // make the code more readable than index numbers
 
-class Frequency(_code: Byte, _percent: Double){ 
+class Frequency(_code: Byte, _percent: Double){
    var code = _code; var percent = _percent;
 }
 
@@ -101,13 +101,13 @@ class FastaOutputStream(out: OutputStream) extends BufferedOutputStream(out) {
          val m = if (n < LineLength) n else LineLength
 
          var i = 0
-         while (i < m){ 
+         while (i < m){
             if (k == kn) k = 0
             val b = alu(k)
             if (count < buf.length){ buf(count) = b; count = count + 1 }
             else { write(b) } // flush buffer
             k = k+1
-            i = i+1 
+            i = i+1
          }
 
          write(nl)
@@ -122,11 +122,11 @@ class FastaOutputStream(out: OutputStream) extends BufferedOutputStream(out) {
          val m = if (n < LineLength) n else LineLength
 
          var i = 0
-         while (i < m){ 
+         while (i < m){
             val b = selectRandom(distribution)
             if (count < buf.length){ buf(count) = b; count = count + 1 }
             else { write(b) } // flush buffer
-            i = i+1 
+            i = i+1
          }
 
          if (count < buf.length){ buf(count) = nl; count = count + 1 }

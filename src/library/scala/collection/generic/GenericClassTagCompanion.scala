@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package generic
 
 import mutable.Builder
@@ -19,15 +20,15 @@ import scala.reflect.ClassTag
  *  @author Aleksandar Prokopec
  */
 abstract class GenericClassTagCompanion[+CC[X] <: Traversable[X]] {
-  type Coll = CC[_]
+  protected[this] type Coll = CC[_]
 
   def newBuilder[A](implicit ord: ClassTag[A]): Builder[A, CC[A]]
 
-  def empty[A: ClassTag]: CC[A] = newBuilder[A].result
+  def empty[A: ClassTag]: CC[A] = newBuilder[A].result()
 
   def apply[A](elems: A*)(implicit ord: ClassTag[A]): CC[A] = {
     val b = newBuilder[A]
     b ++= elems
-    b.result
+    b.result()
   }
 }

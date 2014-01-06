@@ -6,11 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection.parallel
-
+package scala
+package collection.parallel
 
 import scala.collection.Seq
-
 
 /** A precise splitter (or a precise split iterator) can be split into arbitrary number of splitters
  *  that traverse disjoint subsets of arbitrary sizes.
@@ -55,10 +54,4 @@ trait PreciseSplitter[+T] extends Splitter[T] {
   def psplit(sizes: Int*): Seq[PreciseSplitter[T]]
 
   def split: Seq[PreciseSplitter[T]]
-
 }
-
-
-
-
-

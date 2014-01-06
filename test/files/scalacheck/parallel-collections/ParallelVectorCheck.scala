@@ -17,18 +17,22 @@ import scala.collection.parallel.ops._
 import immutable.Vector
 import immutable.VectorBuilder
 
+import scala.collection.parallel.TaskSupport
+
 
 
 
 abstract class ParallelVectorCheck[T](tp: String) extends collection.parallel.ParallelSeqCheck[T]("ParVector[" + tp + "]") {
   // ForkJoinTasks.defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors * 2)
   // ForkJoinTasks.defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors * 2)
-  
+
   type CollType = ParVector[T]
-  
+
   def isCheckingViews = false
-  
+
   def hasStrictOrder = true
+
+  def tasksupport: TaskSupport
 
   def ofSize(vals: Seq[Gen[T]], sz: Int) = {
     val vb = new immutable.VectorBuilder[T]()
@@ -36,18 +40,20 @@ abstract class ParallelVectorCheck[T](tp: String) extends collection.parallel.Pa
     for (i <- 0 until sz) vb += sample(gen)
     vb.result
   }
-  
+
   def fromSeq(a: Seq[T]) = {
-    val pa = ParVector.newCombiner[T]
-    for (elem <- a.toList) pa += elem
-    pa.result
+    val pc = ParVector.newCombiner[T]
+    for (elem <- a.toList) pc += elem
+    val pv = pc.result
+    pv.tasksupport = tasksupport
+    pv
   }
-  
+
 }
 
 
 
-object IntParallelVectorCheck extends ParallelVectorCheck[Int]("Int") with IntSeqOperators with IntValues {
+class IntParallelVectorCheck(val tasksupport: TaskSupport) extends ParallelVectorCheck[Int]("Int") with IntSeqOperators with IntValues {
   override def instances(vals: Seq[Gen[Int]]) = oneOf(super.instances(vals), sized { sz =>
     (0 until sz).toArray.toSeq
   }, sized { sz =>

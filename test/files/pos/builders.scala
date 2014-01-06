@@ -18,16 +18,16 @@ object builders {
     def += (elem: B) { buf += elem }
     def result: List[B] = buf.toList
   }
-/*  
+/*
   def fill[A, Dim1, Dim2, Coll](n1: Int, n2: Int, elem: A)(implicit b1: Builder[Coll, Dim1, A], b2: Builder[Coll, Dim2, Dim1]) = {
     for (i <- 0 until n1) {
       for (j <- 0 until n2) {
         b1 += elem
-      }	
+      }
       b2 += b1.result
     }
     b2.result
-  }	
+  }
 */
 /*
   implicit def arrayBuilder[A, B] = new Builder[Array[A], Array[B], B] {
@@ -35,7 +35,7 @@ object builders {
     private val buf = new scala.collection.mutable.ListBuffer[B]
     def += (elem: B) { buf += elem }
     def result: Array[B] = buf.toArray
-  }	
+  }
 */
   class Iter[A, C](elems: List[A]) {
     def ++ [B  >: A, D](xs: Iterable[B])(implicit b: Builder[C, D, B]): D = {
@@ -48,7 +48,7 @@ object builders {
       b.result
     }
   }
-  
+
   def main(args : Array[String]) : Unit = {
     val x1 = new Iter[Int, List[Int]](List(1, 2, 3))
 //    val x2 = new Iter[Int, Array[Int]](List(1, 2, 3))

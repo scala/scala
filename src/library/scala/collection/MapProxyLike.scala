@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 // Methods could be printed by  cat MapLike.scala | egrep '^  (override )?def'
 
@@ -17,6 +18,7 @@ package scala.collection
  *  @version 2.8
  *  @since   2.8
  */
+@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
 trait MapProxyLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
       extends MapLike[A, B, This]
       with IterableProxyLike[(A, B), This]

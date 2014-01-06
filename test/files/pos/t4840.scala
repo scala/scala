@@ -1,6 +1,6 @@
 class Crashy {
   def g(): Option[Any] = None
-  
+
   def crashy() = {
     for (_ <- g()) {
       (null: Any) match {

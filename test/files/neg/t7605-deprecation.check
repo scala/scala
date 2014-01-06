@@ -1,0 +1,15 @@
+t7605-deprecation.scala:2: warning: Procedure syntax is deprecated. Convert procedure `bar` to method by adding `: Unit =`.
+  def bar {}
+          ^
+t7605-deprecation.scala:3: warning: Procedure syntax is deprecated. Convert procedure `baz` to method by adding `: Unit`.
+  def baz
+         ^
+t7605-deprecation.scala:4: warning: Procedure syntax is deprecated. Convert procedure `boo` to method by adding `: Unit`.
+  def boo(i: Int, l: Long)
+                          ^
+t7605-deprecation.scala:5: warning: Procedure syntax is deprecated. Convert procedure `boz` to method by adding `: Unit =`.
+  def boz(i: Int, l: Long) {}
+                           ^
+error: No warnings can be incurred under -Xfatal-warnings.
+four warnings found
+one error found

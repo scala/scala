@@ -1,7 +1,8 @@
 package life
 
+import scala.language.implicitConversions
 
- /*
+/*
  * Copied & adapted from http://rosettacode.org/wiki/Conway's_Game_of_Life/Scala
  */
 object ConwayPatterns extends ConwayPatterns

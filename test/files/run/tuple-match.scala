@@ -1,7 +1,7 @@
 object Test {
   val FOUR = (-1, -2, -3, "bingo donkey vegas")
   val THREE = (-1, -2, -3)
-  
+
   def f(x: Any) = x match {
     case FOUR         => "FOUR"
     case (_, _, 3, _) => "4, #3"
@@ -13,7 +13,7 @@ object Test {
     case (_, 2)       => "2, #2"
     case _            => "default"
   }
-  
+
   def main(args: Array[String]): Unit = {
     println(f((1, 2, 3, 4)))
     println(f((1, 2, 30, 4)))

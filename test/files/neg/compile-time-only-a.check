@@ -1,0 +1,79 @@
+compile-time-only-a.scala:10: error: C3
+@compileTimeOnly("C3") case class C3(x: Int)
+                                  ^
+compile-time-only-a.scala:12: error: C4
+@compileTimeOnly("C4") case class C4(x: Int)
+                                  ^
+compile-time-only-a.scala:17: error: C5
+  implicit class C5(val x: Int) {
+                 ^
+compile-time-only-a.scala:32: error: C1
+  new C1()
+      ^
+compile-time-only-a.scala:36: error: C2
+  C2
+  ^
+compile-time-only-a.scala:38: error: C3
+  new C3(2)
+      ^
+compile-time-only-a.scala:41: error: C4
+  new C4(2)
+      ^
+compile-time-only-a.scala:45: error: C5
+  2.ext
+  ^
+compile-time-only-a.scala:46: error: C5
+  C5(2)
+  ^
+compile-time-only-a.scala:49: error: C6.x
+  val _ = c6.x
+             ^
+compile-time-only-a.scala:50: error: C6.foo
+  c6.foo
+     ^
+compile-time-only-a.scala:51: error: C6.Foo
+  type Foo = c6.Foo
+                ^
+compile-time-only-a.scala:52: error: C6.y
+  c6.y = c6.y
+     ^
+compile-time-only-a.scala:52: error: C6.y
+  c6.y = c6.y
+            ^
+compile-time-only-a.scala:54: error: C7
+  val c701: (C7, C7) = ???
+            ^
+compile-time-only-a.scala:55: error: C7
+  val c702: (C7 => C7) = ???
+                ^
+compile-time-only-a.scala:56: error: C7
+  val c703: { val x: C7 } = ???
+            ^
+compile-time-only-a.scala:57: error: C7
+  val c704: AnyRef with C7 = ???
+            ^
+compile-time-only-a.scala:60: error: C7
+  val c706: C7 Either C7 = ???
+               ^
+compile-time-only-a.scala:61: error: C7
+  val c707a: List[C7] = ???
+             ^
+compile-time-only-a.scala:63: error: C7
+  val c708a: T forSome { type T <: C7 } = ???
+               ^
+compile-time-only-a.scala:66: error: C8
+  val c709: (C8[Int], C8[C7]) = ???
+            ^
+compile-time-only-a.scala:67: error: C8
+  val c710: (C8[_] => C8[_]) = ???
+                   ^
+compile-time-only-a.scala:74: error: placebo
+class Test {
+      ^
+compile-time-only-a.scala:75: error: placebo
+  @placebo def x = (2: @placebo)
+               ^
+compile-time-only-a.scala:75: error: placebo
+  @placebo def x = (2: @placebo)
+                        ^
+26 errors found

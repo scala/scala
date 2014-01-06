@@ -5,7 +5,7 @@ package foo {
   package object bar {
     def duh(n: Long)   = println("long")
     def duh(n: Double) = println("double")
-    
+
     def duh2(n: Double) = println("double")
     def duh2(n: Long)   = println("long")
   }
@@ -16,7 +16,7 @@ package foo {
         bip.bar.duh(33L)
         duh(33d)
         bip.bar.duh(33d)
-        
+
         duh2(33L)
         bip.bar.duh2(33L)
         duh2(33d)
@@ -35,7 +35,7 @@ package bip {
     def duh2(n: Double) = println("double")
     def duh2(n: Long)   = println("long")
   }
-  
+
   package object bar extends Duh with Duh2 { }
   package bar {
     object Main {
@@ -44,7 +44,7 @@ package bip {
         bip.bar.duh(33L)
         duh(33d)
         bip.bar.duh(33d)
-        
+
         duh2(33L)
         bip.bar.duh2(33L)
         duh2(33d)

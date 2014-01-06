@@ -1,4 +1,5 @@
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -70,9 +71,3 @@ extends SeqView[A, Coll]
 
   override def stringPrefix = "StreamView"
 }
-
-
-
-
-
-

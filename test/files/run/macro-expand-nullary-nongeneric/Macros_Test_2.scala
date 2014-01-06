@@ -1,8 +1,8 @@
 object Macros {
-  def foo1 = macro Impls.fooNullary
-  def foo2() = macro Impls.fooEmpty
-  def bar1(x: Int) = macro Impls.barNullary
-  def bar2(x: Int)() = macro Impls.barEmpty
+  def foo1: Unit = macro Impls.fooNullary
+  def foo2(): Unit = macro Impls.fooEmpty
+  def bar1(x: Int): Unit = macro Impls.barNullary
+  def bar2(x: Int)(): Unit = macro Impls.barEmpty
 }
 
 object Test extends App {

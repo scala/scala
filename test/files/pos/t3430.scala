@@ -1,6 +1,6 @@
 // package com.example
 
-object A {    
+object A {
   def f1(f: String => Boolean) = f("a")
 
   def f2(): Boolean =

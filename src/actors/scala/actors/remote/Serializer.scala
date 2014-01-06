@@ -16,6 +16,7 @@ import java.lang.ClassNotFoundException
 
 import java.io.{DataInputStream, DataOutputStream, EOFException, IOException}
 
+@deprecated("Use the akka.actor package instead. For migration from the scala.actors package refer to the Actors Migration Guide.", "2.11.0")
 abstract class Serializer(val service: Service) {
   def serialize(o: AnyRef): Array[Byte]
   def deserialize(a: Array[Byte]): AnyRef

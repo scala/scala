@@ -1,10 +1,10 @@
 package net.liftweb.util
- 
+
 /**
 * This trait adds functionality to Scala standard types
 */
 trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
- 
+
   /**
    * Compare two arrays of Byte for byte equality.
    * @return true if two Byte arrays contain the same bytes
@@ -19,5 +19,5 @@ trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
   }
 }
 
-trait StringHelpers 
+trait StringHelpers
 trait ControlHelpers

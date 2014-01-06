@@ -4,7 +4,7 @@
 
 sealed trait HList {
   type Self <: HList
-  
+
   type |: [E] = HCons[E, Self]
 
   final def |: [@specialized E](elem: E): |: [E] = new HCons[E, Self](elem, this.asInstanceOf[Self])
@@ -23,7 +23,7 @@ final object HNil extends HList {
 object Test extends App {
   val l1 = new HCons(42, "foo" |: HNil)
   println(l1.getClass)
-  
+
   val l2 = 42 |: "abc" |: HNil
   println(l2.getClass)
 }

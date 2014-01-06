@@ -1,0 +1,8 @@
+Macros_1.scala:14: error: macro implementation has incompatible shape:
+ required: (x: Impls.this.c.Expr[Int]): Impls.this.c.Expr[Unit]
+ or      : (x: Impls.this.c.Tree): Impls.this.c.Tree
+ found   : (x: Impls.this.c.universe.Block): Impls.this.c.Tree
+type mismatch for parameter x: Impls.this.c.Expr[Int] does not conform to Impls.this.c.universe.Block
+  def m3(x: Int): Unit = macro Impls.impl3
+                                     ^
+one error found

@@ -1,0 +1,7 @@
+t7259.scala:1: error: not found: type xxxxx
+@xxxxx // error: not found: type xxxx
+ ^
+t7259.scala:8: error: type xxxxx is not a member of package annotation
+@annotation.xxxxx // error: not found: type scala
+            ^
+two errors found

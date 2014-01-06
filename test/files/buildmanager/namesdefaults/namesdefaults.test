@@ -1,3 +1,0 @@
->>compile defparam.scala defparam-use.scala
->>compile defparam-use.scala
->>compile defparam-use.scala

@@ -1,4 +1,4 @@
-reload: NameDefaultTests.scala, PatMatTests.scala
+reload: NameDefaultTests.scala, PatMatTests.scala, SuperTypes.scala
 
 askHyperlinkPos for `someOtherInt` at (14,24) NameDefaultTests.scala
 ================================================================================
@@ -43,4 +43,139 @@ askHyperlinkPos for `x` at (25,13) PatMatTests.scala
 askHyperlinkPos for `y` at (25,21) PatMatTests.scala
 ================================================================================
 [response] found askHyperlinkPos for `y` at (23,13) PatMatTests.scala
+================================================================================
+
+askHyperlinkPos for `BadPos` at (10,26) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `BadPos` at (2,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `BadPos` at (11,26) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `BadPos` at (2,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `Trait` at (12,25) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `Trait` at (6,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `SubTrait` at (13,28) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `SubTrait` at (7,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `Trait` at (14,25) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `Trait` at (6,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `LateralTrait` at (14,48) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `LateralTrait` at (8,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `Base` at (15,24) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `Base` at (4,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `Trait` at (15,40) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `Trait` at (6,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `LateralTrait` at (15,63) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `LateralTrait` at (8,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PBase` at (19,29) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PBase` at (17,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PTrait` at (20,33) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PTrait` at (19,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PBase` at (21,36) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PBase` at (17,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PTrait` at (23,27) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PTrait` at (19,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PSubTrait` at (24,30) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PSubTrait` at (20,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PTrait` at (25,27) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PTrait` at (19,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PLateralTrait` at (25,56) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PLateralTrait` at (21,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PBase` at (26,26) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PBase` at (17,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PTrait` at (26,48) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PTrait` at (19,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PLateralTrait` at (26,77) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PLateralTrait` at (21,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `BadPos` at (28,23) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `BadPos` at (2,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PTrait` at (29,23) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PTrait` at (19,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PSubTrait` at (30,26) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PSubTrait` at (20,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PTrait` at (31,23) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PTrait` at (19,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PLateralTrait` at (31,52) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PLateralTrait` at (21,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PBase` at (32,22) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PBase` at (17,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PTrait` at (32,44) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PTrait` at (19,7) SuperTypes.scala
+================================================================================
+
+askHyperlinkPos for `PLateralTrait` at (32,73) SuperTypes.scala
+================================================================================
+[response] found askHyperlinkPos for `PLateralTrait` at (21,7) SuperTypes.scala
 ================================================================================

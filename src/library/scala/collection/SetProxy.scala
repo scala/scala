@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 /** This is a simple wrapper class for [[scala.collection.Set]].
  *  It is most useful for assembling customized set abstractions

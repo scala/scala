@@ -25,12 +25,12 @@ object Test {
 
   // A repl session to get you started.
 /*
-  val quux1 = EmptyPackageClass.tpe.member(newTermName("Quux1"))
-  val quux2 = EmptyPackageClass.tpe.member(newTermName("Quux2"))
+  val quux1 = EmptyPackageClass.tpe.member(TermName("Quux1"))
+  val quux2 = EmptyPackageClass.tpe.member(TermName("Quux2"))
   val tps   = List(quux1, quux2) map (_.tpe)
-  val test  = EmptyPackageClass.tpe.member(newTermName("Test"))
-  val f     = test.tpe.member(newTypeName("F")).tpe
-  
+  val test  = EmptyPackageClass.tpe.member(TermName("Test"))
+  val f     = test.tpe.member(TypeName("F")).tpe
+
   val fn    = f.normalize.asInstanceOf[ExistentialType]
   val fn2   = fn.underlying.asInstanceOf[TypeRef]
 */

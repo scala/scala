@@ -6,10 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-package scala.collection.parallel
-
-
+package scala
+package collection.parallel
 
 import scala.collection.generic.GenericCompanion
 import scala.collection.generic.GenericParCompanion
@@ -44,35 +42,9 @@ trait ParSeq[+T] extends GenSeq[T]
   override def stringPrefix = getClass.getSimpleName
 }
 
-
 object ParSeq extends ParFactory[ParSeq] {
   implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParSeq[T]] = new GenericCanCombineFrom[T]
 
   def newBuilder[T]: Combiner[T, ParSeq[T]] = ParArrayCombiner[T]
-
   def newCombiner[T]: Combiner[T, ParSeq[T]] = ParArrayCombiner[T]
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,0 +1,6 @@
+patmat-classtag-compound.scala:12: warning: abstract type pattern A is unchecked since it is eliminated by erasure
+    case b: A with Bar => true
+            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

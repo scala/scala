@@ -1,10 +1,10 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.BlackboxContext
 
 object Macros {
-  def impl(c:Context): c.Expr[Any] = {
+  def impl(c:BlackboxContext): c.Expr[Any] = {
     import c.universe._
 
-    val selfTree = This(c.enclosingClass.symbol.asModule.moduleClass)
+    val selfTree = This(c.enclosingImpl.symbol.asModule.moduleClass)
     c.Expr[AnyRef](selfTree)
   }
 

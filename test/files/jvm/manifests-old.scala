@@ -55,7 +55,7 @@ object Test1 extends TestUtil {
 }
 
 object Test2 {
-  import scala.util.Marshal._
+  import Marshal._
   println("()="+load[Unit](dump(())))
   println("true="+load[Boolean](dump(true)))
   println("a="+load[Char](dump('a')))
@@ -85,6 +85,38 @@ object Test2 {
 
   println("Array(Array(1), Array(2))="+loadArray[Array[Int]](dump(Array(Array(1), Array(2)))))
   println()
+}
+
+object Marshal {
+  import java.io._
+  import scala.reflect.ClassTag
+
+  def dump[A](o: A)(implicit t: ClassTag[A]): Array[Byte] = {
+    val ba = new ByteArrayOutputStream(512)
+    val out = new ObjectOutputStream(ba)
+    out.writeObject(t)
+    out.writeObject(o)
+    out.close()
+    ba.toByteArray()
+  }
+
+  @throws(classOf[IOException])
+  @throws(classOf[ClassCastException])
+  @throws(classOf[ClassNotFoundException])
+  def load[A](buffer: Array[Byte])(implicit expected: ClassTag[A]): A = {
+    val in = new ObjectInputStream(new ByteArrayInputStream(buffer))
+    val found = in.readObject.asInstanceOf[ClassTag[_]]
+    try {
+      found.runtimeClass.asSubclass(expected.runtimeClass)
+      in.readObject.asInstanceOf[A]
+    } catch {
+      case _: ClassCastException =>
+        in.close()
+        throw new ClassCastException("type mismatch;"+
+          "\n found : "+found+
+          "\n required: "+expected)
+    }
+  }
 }
 
 trait TestUtil {

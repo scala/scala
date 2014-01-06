@@ -1,0 +1,286 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> var x = 10
+x: Int = 10
+
+scala> var y = 11
+y: Int = 11
+
+scala> x = 12
+x: Int = 12
+
+scala> y = 13
+y: Int = 13
+
+scala> val z = x * y
+z: Int = 156
+
+scala> 2 ; 3
+<console>:7: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              2 ;;
+              ^
+res0: Int = 3
+
+scala> { 2 ; 3 }
+<console>:8: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              { 2 ; 3 }
+                ^
+res1: Int = 3
+
+scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+  1 +
+  2 +
+  3 } ; bippy+88+11
+<console>:7: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+              ^
+<console>:7: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+                  ^
+<console>:7: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+                                         ^
+<console>:7: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+                                                                                                ^
+defined object Cow
+defined class Moo
+bippy: Int
+res2: Int = 105
+
+scala> 
+
+scala> object Bovine { var x: List[_] = null } ; case class Ruminant(x: Int) ; bippy * bippy * bippy
+defined object Bovine
+defined class Ruminant
+res3: Int = 216
+
+scala> Bovine.x = List(Ruminant(5), Cow, new Moo)
+Bovine.x: List[Any] = List(Ruminant(5), Cow, Moooooo)
+
+scala> Bovine.x
+res4: List[Any] = List(Ruminant(5), Cow, Moooooo)
+
+scala> 
+
+scala> (2)
+res5: Int = 2
+
+scala> (2 + 2)
+res6: Int = 4
+
+scala> ((2 + 2))
+res7: Int = 4
+
+scala>   ((2 + 2))
+res8: Int = 4
+
+scala>   (  (2 + 2))
+res9: Int = 4
+
+scala>   (  (2 + 2 )  )
+res10: Int = 4
+
+scala> 5 ;   (  (2 + 2 )  ) ; ((5))
+<console>:7: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              5 ;   (  (2 + 2 )  ) ;;
+              ^
+<console>:7: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              5 ;   (  (2 + 2 )  ) ;;
+                          ^
+res11: Int = 5
+
+scala> (((2 + 2)), ((2 + 2)))
+res12: (Int, Int) = (4,4)
+
+scala> (((2 + 2)), ((2 + 2)), 2)
+res13: (Int, Int, Int) = (4,4,2)
+
+scala> (((((2 + 2)), ((2 + 2)), 2).productIterator ++ Iterator(3)).mkString)
+res14: String = 4423
+
+scala> 
+
+scala> 55 ; ((2 + 2)) ; (1, 2, 3)
+<console>:7: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              55 ; ((2 + 2)) ;;
+              ^
+<console>:7: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              55 ; ((2 + 2)) ;;
+                       ^
+res15: (Int, Int, Int) = (1,2,3)
+
+scala> 55 ; (x: Int) => x + 1 ; () => ((5))
+<console>:8: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              55 ; (x: Int) => x + 1 ;;
+              ^
+res16: () => Int = <function0>
+
+scala> 
+
+scala> () => 5
+res17: () => Int = <function0>
+
+scala> 55 ; () => 5
+<console>:7: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+              55 ;;
+              ^
+res18: () => Int = <function0>
+
+scala> () => { class X ; new X }
+res19: () => AnyRef = <function0>
+
+scala> 
+
+scala> def foo(x: Int)(y: Int)(z: Int) = x+y+z
+foo: (x: Int)(y: Int)(z: Int)Int
+
+scala> foo(5)(10)(15)+foo(5)(10)(15)
+res20: Int = 60
+
+scala> 
+
+scala> List(1) ++ List('a')
+res21: List[AnyVal] = List(1, a)
+
+scala> 
+
+scala> 1 to 100 map (_  + 1)
+res22: scala.collection.immutable.IndexedSeq[Int] = Vector(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101)
+
+scala> val x1 = 1
+x1: Int = 1
+
+scala> val x2 = 2
+x2: Int = 2
+
+scala> val x3 = 3
+x3: Int = 3
+
+scala> case class BippyBungus()
+defined class BippyBungus
+
+scala> x1 + x2 + x3
+res23: Int = 6
+
+scala> :reset
+Resetting interpreter state.
+Forgetting this session history:
+
+var x = 10
+var y = 11
+x = 12
+y = 13
+val z = x * y
+2 ; 3
+{ 2 ; 3 }
+5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
+  1 +
+  2 +
+  3 } ; bippy+88+11
+object Bovine { var x: List[_] = null } ; case class Ruminant(x: Int) ; bippy * bippy * bippy
+Bovine.x = List(Ruminant(5), Cow, new Moo)
+Bovine.x
+(2)
+(2 + 2)
+((2 + 2))
+  ((2 + 2))
+  (  (2 + 2))
+  (  (2 + 2 )  )
+5 ;   (  (2 + 2 )  ) ; ((5))
+(((2 + 2)), ((2 + 2)))
+(((2 + 2)), ((2 + 2)), 2)
+(((((2 + 2)), ((2 + 2)), 2).productIterator ++ Iterator(3)).mkString)
+55 ; ((2 + 2)) ; (1, 2, 3)
+55 ; (x: Int) => x + 1 ; () => ((5))
+() => 5
+55 ; () => 5
+() => { class X ; new X }
+def foo(x: Int)(y: Int)(z: Int) = x+y+z
+foo(5)(10)(15)+foo(5)(10)(15)
+List(1) ++ List('a')
+1 to 100 map (_  + 1)
+val x1 = 1
+val x2 = 2
+val x3 = 3
+case class BippyBungus()
+x1 + x2 + x3
+
+Forgetting all expression results and named terms: $intp, BippyBungus, Bovine, Cow, Ruminant, bippy, foo, x, x1, x2, x3, y, z
+Forgetting defined types: BippyBungus, Moo, Ruminant
+
+scala> x1 + x2 + x3
+<console>:8: error: not found: value x1
+              x1 + x2 + x3
+              ^
+<console>:8: error: not found: value x2
+              x1 + x2 + x3
+                   ^
+<console>:8: error: not found: value x3
+              x1 + x2 + x3
+                        ^
+
+scala> val x1 = 4
+x1: Int = 4
+
+scala> new BippyBungus
+<console>:8: error: not found: type BippyBungus
+              new BippyBungus
+                  ^
+
+scala> class BippyBungus() { def f = 5 }
+defined class BippyBungus
+
+scala> { new BippyBungus ; x1 }
+res2: Int = 4
+
+scala> object x {class y { case object z } }
+defined object x
+
+scala> case class BippyBups()
+defined class BippyBups
+
+scala> case class PuppyPups()
+defined class PuppyPups
+
+scala> case class Bingo()
+defined class Bingo
+
+scala> List(BippyBups(), PuppyPups(), Bingo()) // show
+class $read extends Serializable {
+  def <init>() = {
+    super.<init>;
+    ()
+  };
+  class $iw extends Serializable {
+    def <init>() = {
+      super.<init>;
+      ()
+    };
+    import $line44.$read.$iw.$iw.BippyBups;
+    import $line44.$read.$iw.$iw.BippyBups;
+    import $line45.$read.$iw.$iw.PuppyPups;
+    import $line45.$read.$iw.$iw.PuppyPups;
+    import $line46.$read.$iw.$iw.Bingo;
+    import $line46.$read.$iw.$iw.Bingo;
+    class $iw extends Serializable {
+      def <init>() = {
+        super.<init>;
+        ()
+      };
+      val res3 = List(BippyBups, PuppyPups, Bingo)
+    };
+    val $iw = new $iw.<init>
+  };
+  val $iw = new $iw.<init>
+}
+object $read extends $read {
+  def <init>() = {
+    super.<init>;
+    ()
+  }
+}
+res3: List[Product with Serializable] = List(BippyBups(), PuppyPups(), Bingo())
+
+scala> 

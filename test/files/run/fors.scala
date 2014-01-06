@@ -12,12 +12,6 @@ object Test extends App {
 
   val ar = "abc".toCharArray
 
-  val xml =
-    <html>
-      <head><title>Scala</title></head>
-      <body>{xs}</body>
-    </html>;
-
   /////////////////// old syntax ///////////////////
 
   def testOld {
@@ -48,10 +42,6 @@ object Test extends App {
     for {x <- ar
          if x.toInt > 97} print(x + " "); println
 
-    // sequences
-    for (x <- xml.child) println(x)
-    for (x <- xml.child;
-         if x.label == "head") println(x)
   }
 
   /////////////////// new syntax ///////////////////
@@ -85,9 +75,6 @@ object Test extends App {
     // arrays
     for (x <- ar) print(x + " "); println
 
-    // sequences
-    for (x <- xml.child) println(x)
-    for (x <- xml.child if x.label == "head") println(x)
   }
 
   ////////////////////////////////////////////////////

@@ -54,14 +54,14 @@ class SimpleScriptDebugger extends ScriptDebugger {
   }
   def traceTree: Unit = {
     var j = 0;
-	  def traceTree[T <: TemplateNode](n: CallGraphNodeTrait[T], branches: List[Int], depth: Int): Unit = {
+	  def traceTree[T <: TemplateNode](n: CallGraphNodeTrait, branches: List[Int], depth: Int): Unit = {
 	    for (i<-1 to 30) {
 	      print(if(i==depth)"*"else if (branches.contains(i)) "|" else if(j%5==0)"-"else" ")
 	    }
 	    j+=1
 	    println(n)
 	    n match {
-	      case p:CallGraphParentNodeTrait[_] => 
+	      case p:CallGraphParentNodeTrait => 
 	        val pcl=p.children.length
 	        p.children.foreach{ c =>
 	          var bs = if (c.template.indexAsChild<pcl-1) 
@@ -82,7 +82,7 @@ class SimpleScriptDebugger extends ScriptDebugger {
   }
   
   
-  def messageHandled(m: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait[_ <: subscript.vm.TemplateNode]]): Unit = {
+  def messageHandled(m: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait]): Unit = {
         trace(1,">> ",m)
         m match {
           case AAToBeExecuted(_) =>
@@ -91,8 +91,8 @@ class SimpleScriptDebugger extends ScriptDebugger {
           case _ =>  
         }
   }
-  def messageQueued      (m: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait[_ <: subscript.vm.TemplateNode]]                 ) = trace(2, "++ ", m)
-  def messageDequeued    (m: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait[_ <: subscript.vm.TemplateNode]]                ) = trace(2, "-- ", m)
-  def messageContinuation(m: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait[_ <: subscript.vm.TemplateNode]], c: Continuation) = trace(2, "** ", c)
+  def messageQueued      (m: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait]                 ) = trace(2, "++ ", m)
+  def messageDequeued    (m: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait]                ) = trace(2, "-- ", m)
+  def messageContinuation(m: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait], c: Continuation) = trace(2, "** ", c)
   def messageAwaiting: Unit = {traceTree; traceMessages}
 }

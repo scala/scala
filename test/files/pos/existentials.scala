@@ -11,7 +11,7 @@ class A {
   //   lazy val quux3a = f()
   //   quux3a
   // }
-  
+
   val bippy0 = f _
   def bippy1 = f _
   // lazy val bippy2 = f _

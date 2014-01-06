@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 // Methods could be printed by  cat SetLike.scala | egrep '^  (override )?def'
 
@@ -16,6 +17,7 @@ package scala.collection
  *  @author  Martin Odersky
  *  @version 2.8
  */
+@deprecated("Proxying is deprecated due to lack of use and compiler-level support.", "2.11.0")
 trait SetProxyLike[A, +This <: SetLike[A, This] with Set[A]] extends SetLike[A, This] with IterableProxyLike[A, This] {
   def empty: This
   override def contains(elem: A): Boolean = self.contains(elem)

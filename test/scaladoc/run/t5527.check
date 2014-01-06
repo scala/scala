@@ -1,0 +1,132 @@
+newSource1.scala:47: warning: discarding unmoored doc comment
+        /** Document this crucial constant for posterity.
+        ^
+newSource1.scala:64: warning: discarding unmoored doc comment
+        /*************************\
+        ^
+newSource1.scala:73: warning: discarding unmoored doc comment
+        val i = 10 */** Important!
+                   ^
+[[syntax trees at end of                    parser]] // newSource1.scala
+package <empty> {
+  object UselessComments extends scala.AnyRef {
+    def <init>() = {
+      super.<init>();
+      ()
+    };
+    var z = 0;
+    def test1 = {
+      object Maybe extends scala.AnyRef {
+        def <init>() = {
+          super.<init>();
+          ()
+        };
+        /** Some comment inside */
+        def nothing() = ()
+      };
+      ()
+    };
+    def test2 = {
+      var x = 4;
+      if (true)
+        {
+          x = 5;
+          val y = 6;
+          ()
+        }
+      else
+        ()
+    };
+    def test3 = {
+      if (true)
+        z = 3
+      else
+        ();
+      val t = 4;
+      0.to(4).foreach(((i) => println(i)))
+    };
+    val test4 = 'a' match {
+      case ('0'| '1'| '2'| '3'| '4'| '5'| '6'| '7'| '8'| '9') => true
+      case _ => false
+    };
+    def test5: scala.Unit = if (true)
+      $qmark$qmark$qmark
+    else
+      ();
+    def test6 = {
+      val u = 4;
+      0.to(u).foreach(((i) => println(i)))
+    };
+    def test7 = {
+      val u = 4;
+      0.to(u).foreach(((i) => println(i)))
+    };
+    def test8 = {
+      val z = "fancy";
+      z.replace("fanc", "arts")
+    };
+    def test9 = {
+      val i = 10.$times(10);
+      assert(i.$eq$eq(100))
+    }
+  };
+  /** comments that we should keep */
+  object UsefulComments extends scala.AnyRef {
+    def <init>() = {
+      super.<init>();
+      ()
+    };
+    /** class A */
+    class A extends scala.AnyRef {
+      def <init>() = {
+        super.<init>();
+        ()
+      };
+      /** f */
+      def f(i: Int) = i;
+      /** v */
+      val v = 1;
+      /** u */
+      var u = 2
+    };
+    /** trait B */
+    abstract trait B extends scala.AnyRef {
+      def $init$() = {
+        ()
+      };
+      /** T */
+      type T;
+      /** f */
+      def f(i: Int): scala.Unit;
+      /** v */
+      val v = 1;
+      /** u */
+      var u = 2
+    };
+    /** object C */
+    object C extends scala.AnyRef {
+      def <init>() = {
+        super.<init>();
+        ()
+      };
+      /** f */
+      def f(i: Int) = i;
+      /** v */
+      val v = 1;
+      /** u */
+      var u = 2
+    };
+    /** class D */
+    @new deprecated("use ... instead", "2.10.0") class D extends scala.AnyRef {
+      def <init>() = {
+        super.<init>();
+        ()
+      }
+    };
+    /** Get the simple value.
+       *  @return the default value
+       */
+    def value: Int = 7
+  }
+}
+

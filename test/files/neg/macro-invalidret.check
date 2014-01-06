@@ -1,0 +1,35 @@
+Macros_Test_2.scala:2: error: macro implementation has incompatible shape:
+ required: (c: scala.reflect.macros.BlackboxContext): c.Expr[Any]
+ or      : (c: scala.reflect.macros.BlackboxContext): c.Tree
+ found   : (c: scala.reflect.macros.BlackboxContext): Int
+type mismatch for return type: Int does not conform to c.Expr[Any]
+  def foo1 = macro Impls.foo1
+                         ^
+Macros_Test_2.scala:3: error: macro implementation has incompatible shape:
+ required: (c: scala.reflect.macros.BlackboxContext): c.Expr[Any]
+ or      : (c: scala.reflect.macros.BlackboxContext): c.Tree
+ found   : (c: scala.reflect.macros.BlackboxContext): reflect.runtime.universe.Literal
+type mismatch for return type: reflect.runtime.universe.Literal does not conform to c.Expr[Any]
+  def foo2 = macro Impls.foo2
+                         ^
+Macros_Test_2.scala:6: error: macro defs must have explicitly specified return types
+  def foo5 = macro Impls.foo5
+      ^
+Macros_Test_2.scala:7: warning: macro defs must have explicitly specified return types (inference of Int from macro impl's c.Expr[Int] is deprecated and is going to stop working in 2.12)
+  def foo6 = macro Impls.foo6
+      ^
+Macros_Test_2.scala:14: error: exception during macro expansion:
+scala.NotImplementedError: an implementation is missing
+	at scala.Predef$.$qmark$qmark$qmark(Predef.scala:227)
+	at Impls$.foo3(Impls_1.scala:7)
+
+  foo3
+  ^
+Macros_Test_2.scala:15: error: macro implementation is missing
+  foo4
+  ^
+Macros_Test_2.scala:17: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+  foo6
+  ^
+two warnings found
+5 errors found

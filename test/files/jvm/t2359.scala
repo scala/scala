@@ -1,6 +1,8 @@
-import scala.actors.Futures._
 
+
+@deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.actors.Futures._
   def main(args: Array[String]) {
     val x = future {
       try {

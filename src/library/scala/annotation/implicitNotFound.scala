@@ -9,8 +9,11 @@
 package scala.annotation
 
 /**
- * An annotation that specifies the error message that is emitted when the compiler
- * cannot find an implicit value of the annotated type.
+ * To customize the error message that's emitted when an implicit of type
+ * C[T1,..., TN] cannot be found, annotate the class C with @implicitNotFound.
+ * Assuming C has type parameters X1,..., XN, the error message will be the
+ * result of replacing all occurrences of ${Xi} in the string msg with the
+ * string representation of the corresponding type argument Ti. *
  *
  * @author Adriaan Moors
  * @since 2.8.1

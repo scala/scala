@@ -40,6 +40,12 @@ S.scala:10: warning: Adapting argument list by inserting (): this is unlikely to
  after adaptation: new J2((): Unit)
   val z2 = new J2()
            ^
+S.scala:14: warning: Adapting argument list by creating a 3-tuple: this may not be what you want.
+        signature: Test.anyId(a: Any): Any
+  given arguments: 1, 2, 3
+ after adaptation: Test.anyId((1, 2, 3): (Int, Int, Int))
+  val w1 = anyId(1, 2 ,3)
+                ^
 error: No warnings can be incurred under -Xfatal-warnings.
-7 warnings found
+8 warnings found
 one error found

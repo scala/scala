@@ -25,9 +25,9 @@ object test {
     val y1, y2 = 1;
   }
   val a: A { type X1 = Int; type X2 = Int } = b;
-  val a1 = new A { 
+  val a1 = new A {
     type X1 = Int;
-    type X2 = String; 
+    type X2 = String;
     val x1 = 1;
     val x2 = "hello"
   }

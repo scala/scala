@@ -32,6 +32,7 @@ object Interact extends InteractApp
  * Each event that has a non-numeric char value should be consumed.
  */
 class InteractApp extends SimpleSubscriptApplication {
+  import scala.language.implicitConversions
 
   // arrange buttons in a grid with 1 row, 2 columns
   // arrange text field and button panel in a grid with 2 row, 1 column
@@ -72,8 +73,8 @@ class InteractApp extends SimpleSubscriptApplication {
     /*
      * Helper scripts for key events
      */
-    keyEvent (keyTypedEvent??: KeyTyped) = keyEvent2( top, ActualAdaptingParameter(_keyTypedEvent))  // keyEvent2(top, keyTypedEvent?)
-    keyEvents(task: KeyTyped=>Unit)      = keyEvents2(top, ActualValueParameter(task))  //keyEvents2(top, keyTypedEvent)
+    keyEvent (??keyTypedEvent: KeyTyped) = keyEvent2( top, ??keyTypedEvent)  // keyEvent2(top, keyTypedEvent?)
+    keyEvents(task: KeyTyped=>Unit)      = keyEvents2(top, task)  //keyEvents2(top, keyTypedEvent)
     
     /*
      * Consume a key event when the given condition is met.
@@ -93,6 +94,7 @@ class InteractApp extends SimpleSubscriptApplication {
      * 2. Use script consumeKeys instead
      */
     consumeKey(cond: Char=>Boolean)      = var k: KeyTyped=null 
+                                        // keyEvent(? k if(cond(k)) {k.consume; true} else false) TBD...FTTB:
                                            keyEvent(ActualConstrainedParameter(k, (v:KeyTyped)=>k=v, (v:KeyTyped) => {if(cond(v.char)) {v.consume; true} else false}))
 
     /*

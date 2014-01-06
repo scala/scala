@@ -5,7 +5,7 @@ Object with Test$ToS
 Object with Test$ToS
 scala.Function0[Object with Test$ToS]
 scala.Function0[Object with Test$ToS]
-_ <: Object with _ <: Object with Test$ToS
+_ <: Object with _ <: Object with Object with Test$ToS
 _ <: Object with _ <: Object with _ <: Object with Test$ToS
 scala.collection.immutable.List[Object with scala.collection.Seq[Int]]
 scala.collection.immutable.List[Object with scala.collection.Seq[_ <: Int]]
@@ -16,7 +16,7 @@ Object with Test$ToS
 Object with Test$ToS
 scala.Function0[Object with Test$ToS]
 scala.Function0[Object with Test$ToS]
-_ <: Object with _ <: Object with Test$ToS
+_ <: Object with _ <: Object with Object with Test$ToS
 _ <: Object with _ <: Object with _ <: Object with Test$ToS
 scala.collection.immutable.List[Object with scala.collection.Seq[Int]]
 scala.collection.immutable.List[Object with scala.collection.Seq[_ <: Int]]

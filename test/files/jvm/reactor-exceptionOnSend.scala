@@ -1,3 +1,7 @@
+
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors.Reactor
 import scala.actors.Actor._
 
@@ -48,7 +52,6 @@ object B extends Reactor[Any] {
   }
 }
 
-object Test {
   def main(args: Array[String]) {
     B.start()
   }

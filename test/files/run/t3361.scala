@@ -40,7 +40,7 @@ object Test extends App {
   def insert_1 {
     val ten = DoubleLinkedList(1 to 10: _*)
     ten.append(DoubleLinkedList(11))
-    
+
     // Post-insert size test
     require(11 == ten.size)
     // Post-insert data test
@@ -57,7 +57,7 @@ object Test extends App {
       DoubleLinkedList().insert(ten)
     } catch {
       case _: IllegalArgumentException => require(true)
-      case _ => require(false)
+      case _: Throwable => require(false)
     }
     val zero = DoubleLinkedList(0)
     zero.insert(ten)
@@ -87,7 +87,7 @@ object Test extends App {
       DoubleLinkedList().append(ten)
     } catch {
       case _: IllegalArgumentException => require(true)
-      case _ => require(false)
+      case _: Throwable => require(false)
     }
     val zero = DoubleLinkedList(0)
     zero.append(ten)

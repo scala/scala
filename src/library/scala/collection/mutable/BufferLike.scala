@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -183,6 +184,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param cmd  the message to send.
    */
+  @deprecated("Scripting is deprecated.", "2.11.0")
   def <<(cmd: Message[A]): Unit = cmd match {
     case Include(Start, x)      => prepend(x)
     case Include(End, x)        => append(x)
@@ -198,7 +200,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     case Remove(Index(n), x)    => if (this(n) == x) remove(n)
     case Remove(NoLo, x)        => this -= x
 
-    case Reset()                => clear
+    case Reset()                => clear()
     case s: Script[_]           => s.iterator foreach <<
     case _                      => throw new UnsupportedOperationException("message " + cmd + " not understood")
   }
@@ -260,6 +262,6 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   override def clone(): This = {
     val bf = newBuilder
     bf ++= this
-    bf.result.asInstanceOf[This]
+    bf.result().asInstanceOf[This]
   }
 }

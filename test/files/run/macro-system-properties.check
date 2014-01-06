@@ -1,0 +1,22 @@
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> import language.experimental._, reflect.macros.BlackboxContext
+import language.experimental._
+import reflect.macros.BlackboxContext
+
+scala>     object GrabContext {
+      def lastContext = Option(System.getProperties.get("lastContext").asInstanceOf[reflect.macros.runtime.Context])
+      // System.properties lets you stash true globals (unlike statics which are classloader scoped)
+      def impl(c: BlackboxContext)() = { import c.universe._; System.getProperties.put("lastContext", c); c.Expr[Unit](q"()") }
+      def grab(): Unit = macro impl
+    }
+defined object GrabContext
+
+scala>     object Test { class C(implicit a: Any) { GrabContext.grab } }
+defined object Test
+
+scala>     object Test { class C(implicit a: Any) { GrabContext.grab } }
+defined object Test
+
+scala> 

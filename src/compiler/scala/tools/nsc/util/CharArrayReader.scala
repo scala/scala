@@ -8,15 +8,7 @@ package util
 
 import scala.reflect.internal.Chars._
 
-abstract class CharArrayReader { self =>
-
-  val buf: Array[Char]
-
-  def decodeUni: Boolean = true
-
-  /** An error routine to call on bad unicode escapes \\uxxxx. */
-  protected def error(offset: Int, msg: String): Unit
-
+trait CharArrayReaderData {
   /** the last read character */
   var ch: Char = _
 
@@ -29,7 +21,26 @@ abstract class CharArrayReader { self =>
   /** The start offset of the line before the current one */
   var lastLineStartOffset: Int = 0
 
-  private var lastUnicodeOffset = -1
+  protected var lastUnicodeOffset = -1
+
+  def copyFrom(cd: CharArrayReaderData): this.type = {
+    this.ch = cd.ch
+    this.charOffset = cd.charOffset
+    this.lineStartOffset = cd.lineStartOffset
+    this.lastLineStartOffset = cd.lastLineStartOffset
+    this.lastUnicodeOffset = cd.lastUnicodeOffset
+    this
+  }
+}
+
+abstract class CharArrayReader extends CharArrayReaderData { self =>
+
+  val buf: Array[Char]
+
+  def decodeUni: Boolean = true
+
+  /** An error routine to call on bad unicode escapes \\uxxxx. */
+  protected def error(offset: Int, msg: String): Unit
 
   /** Is last character a unicode escape \\uxxxx? */
   def isUnicodeEscape = charOffset == lastUnicodeOffset

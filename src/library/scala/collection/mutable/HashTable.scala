@@ -8,7 +8,8 @@
 
 
 
-package scala.collection
+package scala
+package collection
 package mutable
 
 /** This class can be used to construct data structures that are based
@@ -96,7 +97,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     val smDefined = in.readBoolean()
 
     table = new Array(capacity(sizeForThreshold(_loadFactor, size)))
-    threshold = newThreshold(_loadFactor, table.size)
+    threshold = newThreshold(_loadFactor, table.length)
 
     if (smDefined) sizeMapInit(table.length) else sizemap = null
 
@@ -126,6 +127,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** Find entry with given key in table, null if not found.
    */
+  @deprecatedOverriding("No sensible way to override findEntry as private findEntry0 is used in multiple places internally.", "2.11.0")
   protected def findEntry(key: A): Entry =
     findEntry0(key, index(elemHashCode(key)))
 
@@ -138,6 +140,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   /** Add entry to table
    *  pre: no entry with same key exists
    */
+  @deprecatedOverriding("No sensible way to override addEntry as private addEntry0 is used in multiple places internally.", "2.11.0")
   protected def addEntry(e: Entry) {
     addEntry0(e, index(elemHashCode(e.key)))
   }
@@ -171,6 +174,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   /** Remove entry from table if present.
    */
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def removeEntry(key: A) : Entry = {
     val h = index(elemHashCode(key))
     var e = table(h).asInstanceOf[Entry]
@@ -281,14 +285,17 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    * is converted into a parallel hash table, the size map is initialized, as it will be needed
    * there.
    */
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nnSizeMapAdd(h: Int) = if (sizemap ne null) {
     sizemap(h >> sizeMapBucketBitSize) += 1
   }
 
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nnSizeMapRemove(h: Int) = if (sizemap ne null) {
     sizemap(h >> sizeMapBucketBitSize) -= 1
   }
 
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nnSizeMapReset(tableLength: Int) = if (sizemap ne null) {
     val nsize = calcSizeMapSize(tableLength)
     if (sizemap.length != nsize) sizemap = new Array[Int](nsize)
@@ -297,6 +304,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
 
   private[collection] final def totalSizeMapBuckets = if (sizeMapBucketSize < table.length) 1 else table.length / sizeMapBucketSize
 
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def calcSizeMapSize(tableLength: Int) = (tableLength >> sizeMapBucketBitSize) + 1
 
   // discards the previous sizemap and only allocates a new one
@@ -305,6 +313,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
   }
 
   // discards the previous sizemap and populates the new one
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def sizeMapInitAndRebuild() {
     sizeMapInit(table.length)
 
@@ -335,8 +344,10 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     println(sizemap.toList)
   }
 
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def sizeMapDisable() = sizemap = null
 
+  @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def isSizeMapDefined = sizemap ne null
 
   // override to automatically initialize the size map
@@ -365,7 +376,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
       seedvalue = c.seedvalue
       sizemap = c.sizemap
     }
-    if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild
+    if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild()
   }
 
   private[collection] def hashTableContents = new HashTable.Contents(
@@ -382,7 +393,7 @@ private[collection] object HashTable {
   /** The load factor for the hash table (in 0.001 step).
    */
   private[collection] final def defaultLoadFactor: Int = 750 // corresponds to 75%
-  private[collection] final def loadFactorDenum = 1000;
+  private[collection] final def loadFactorDenum = 1000
 
   private[collection] final def newThreshold(_loadFactor: Int, size: Int) = ((size.toLong * _loadFactor) / loadFactorDenum).toInt
 
@@ -457,13 +468,13 @@ private[collection] object HashTable {
    */
   private[collection] def powerOfTwo(target: Int): Int = {
     /* See http://bits.stephan-brumme.com/roundUpToNextPowerOfTwo.html */
-    var c = target - 1;
-    c |= c >>>  1;
-    c |= c >>>  2;
-    c |= c >>>  4;
-    c |= c >>>  8;
-    c |= c >>> 16;
-    c + 1;
+    var c = target - 1
+    c |= c >>>  1
+    c |= c >>>  2
+    c |= c >>>  4
+    c |= c >>>  8
+    c |= c >>> 16
+    c + 1
   }
 
   class Contents[A, Entry >: Null <: HashEntry[A, Entry]](

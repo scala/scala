@@ -1,12 +1,9 @@
-import scala.reflect.macros.{Context => Ctx}
+import scala.reflect.macros.{BlackboxContext => Ctx}
 
 object Impls {
   def foo(unconventionalName: Ctx)(x: unconventionalName.Expr[Int]) = {
     import unconventionalName.universe._
-    val body = Block(List(
-      Apply(Select(Ident(definitions.PredefModule), newTermName("println")), List(Literal(Constant("invoking foo..."))))),
-      Literal(Constant(())))
-    unconventionalName.Expr[Unit](body)
+    unconventionalName.Expr[Unit](q"""println("invoking foo...")""")
   }
 }
 

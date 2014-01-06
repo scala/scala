@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 import convert._
 
@@ -24,7 +25,7 @@ import convert._
  *  - `scala.collection.mutable.Buffer` <=> `java.util.List`
  *  - `scala.collection.mutable.Set` <=> `java.util.Set`
  *  - `scala.collection.mutable.Map` <=> `java.util.Map`
- *  - `scala.collection.mutable.ConcurrentMap` <=> `java.util.concurrent.ConcurrentMap`
+ *  - `scala.collection.mutable.concurrent.Map` <=> `java.util.concurrent.ConcurrentMap`
  *
  *  In all cases, converting from a source type to a target type and back
  *  again will return the original source object, e.g.
@@ -54,15 +55,4 @@ import convert._
  *  @author Martin Odersky
  *  @since  2.8.1
  */
-object JavaConverters extends DecorateAsJava with DecorateAsScala {
-  @deprecated("Don't access these decorators directly.", "2.10.0")
-  type AsJava[A]            = Decorators.AsJava[A]
-  @deprecated("Don't access these decorators directly.", "2.10.0")
-  type AsScala[A]           = Decorators.AsScala[A]
-  @deprecated("Don't access these decorators directly.", "2.10.0")
-  type AsJavaCollection[A]  = Decorators.AsJavaCollection[A]
-  @deprecated("Don't access these decorators directly.", "2.10.0")
-  type AsJavaEnumeration[A] = Decorators.AsJavaEnumeration[A]
-  @deprecated("Don't access these decorators directly.", "2.10.0")
-  type AsJavaDictionary[A, B]  = Decorators.AsJavaDictionary[A, B]
-}
+object JavaConverters extends DecorateAsJava with DecorateAsScala

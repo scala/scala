@@ -4,6 +4,6 @@ object test {
       assert(keyword != null);
     }
 
-    def verifyKeyword(source : java.io.File, pos : Int) = 
+    def verifyKeyword(source : java.io.File, pos : Int) =
       verifyKeyword("", source, pos);
 }

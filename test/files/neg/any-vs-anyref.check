@@ -36,12 +36,28 @@ Such types can participate in value classes, but instances
 cannot appear in singleton types or in reference comparisons.
   def foo5(x: Quux with Product)                                    = (x eq "abc") && ("abc" eq x)
                                                                          ^
+any-vs-anyref.scala:10: error: type mismatch;
+ found   : Quux with Product
+ required: AnyRef
+Note that the parents of this type (Quux, Product) extend Any, not AnyRef.
+Such types can participate in value classes, but instances
+cannot appear in singleton types or in reference comparisons.
+  def foo5(x: Quux with Product)                                    = (x eq "abc") && ("abc" eq x)
+                                                                                                ^
 any-vs-anyref.scala:11: error: value eq is not a member of Quux with Product{def f: Int}
 Note that the parents of this type (Quux, Product) extend Any, not AnyRef.
 Such types can participate in value classes, but instances
 cannot appear in singleton types or in reference comparisons.
   def foo6(x: Quux with Product { def f: Int })                     = (x eq "abc") && ("abc" eq x)
                                                                          ^
+any-vs-anyref.scala:11: error: type mismatch;
+ found   : Quux with Product{def f: Int}
+ required: AnyRef
+Note that the parents of this type (Quux, Product) extend Any, not AnyRef.
+Such types can participate in value classes, but instances
+cannot appear in singleton types or in reference comparisons.
+  def foo6(x: Quux with Product { def f: Int })                     = (x eq "abc") && ("abc" eq x)
+                                                                                                ^
 any-vs-anyref.scala:12: error: type mismatch;
  found   : Quux with Product{def eq(other: String): Boolean}
  required: AnyRef
@@ -61,4 +77,4 @@ any-vs-anyref.scala:27: error: type mismatch;
  required: Quux{def g(x: Int): Int}
   f(new Quux { def g(x: String) = x })
     ^
-9 errors found
+11 errors found

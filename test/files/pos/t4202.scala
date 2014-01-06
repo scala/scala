@@ -2,7 +2,7 @@ object t4202_1 {
   () => {
     trait T {
       def t = ()
-    } 
+    }
   }
 }
 

@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 
 /** This is a simple wrapper class for [[scala.collection.Map]].
  *  It is most useful for assembling customized map abstractions

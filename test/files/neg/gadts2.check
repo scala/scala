@@ -1,0 +1,6 @@
+gadts2.scala:7: error: type mismatch;
+ found   : String("abc")
+ required: B
+  (s1: Super[Any]) match { case Sub(f) => f("abc") }
+                                            ^
+one error found

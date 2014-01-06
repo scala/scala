@@ -7,7 +7,8 @@
 \*                                                                      */
 
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 import generic._
@@ -31,6 +32,12 @@ trait Map[A, +B] extends Iterable[(A, B)]
                     with MapLike[A, B, Map[A, B]] { self =>
 
   override def empty: Map[A, B] = Map.empty
+  
+  /** Returns this $coll as an immutable map.
+   *  
+   *  A new map will not be built; lazy collections will stay lazy.
+   */
+  @deprecatedOverriding("Immutable maps should do nothing on toMap except return themselves cast as a map.",  "2.11.0")
   override def toMap[T, U](implicit ev: (A, B) <:< (T, U)): immutable.Map[T, U] =
     self.asInstanceOf[immutable.Map[T, U]]
 
@@ -51,7 +58,7 @@ trait Map[A, +B] extends Iterable[(A, B)]
    *
    *  Invoking transformer methods (e.g. `map`) will not preserve the default value.
    *
-   *  @param d     the function mapping keys to values, used for non-present keys
+   *  @param d     default value used for non-present keys
    *  @return      a wrapper of the map with a default value
    */
   def withDefaultValue[B1 >: B](d: B1): immutable.Map[A, B1] = new Map.WithDefault[A, B1](this, x => d)

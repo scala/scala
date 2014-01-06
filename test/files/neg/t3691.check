@@ -9,7 +9,7 @@ t3691.scala:5: error: type mismatch;
  val c = (new A[String]{}): { type A } // not ok
           ^
 t3691.scala:7: error: type mismatch;
- found   : Object{type A = String}
+ found   : AnyRef{type A = String}
  required: AnyRef{type A[X]}
  val x = (new { type A = String }): { type A[X] } // not ok
           ^

@@ -1,0 +1,6 @@
+t6771b.scala:14: error: type mismatch;
+ found   : x.type (with underlying type String)
+ required: Test.a.type
+  b = b match { case x => x }
+                          ^
+one error found

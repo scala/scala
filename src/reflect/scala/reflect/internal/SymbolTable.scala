@@ -3,18 +3,21 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import scala.annotation.elidable
 import scala.collection.{ mutable, immutable }
 import util._
+import java.util.concurrent.TimeUnit
 
 abstract class SymbolTable extends macros.Universe
                               with Collections
                               with Names
                               with Symbols
                               with Types
+                              with Variances
                               with Kinds
                               with ExistentialsAndSkolems
                               with FlagSets
@@ -38,6 +41,9 @@ abstract class SymbolTable extends macros.Universe
                               with StdAttachments
                               with StdCreators
                               with BuildUtils
+                              with PrivateWithin
+                              with pickling.Translations
+                              with FreshNames
 {
 
   val gen = new TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
@@ -45,11 +51,19 @@ abstract class SymbolTable extends macros.Universe
 
   def log(msg: => AnyRef): Unit
   def warning(msg: String): Unit     = Console.err.println(msg)
+  def inform(msg: String): Unit      = Console.err.println(msg)
   def globalError(msg: String): Unit = abort(msg)
   def abort(msg: String): Nothing    = throw new FatalError(supplementErrorMessage(msg))
 
+  protected def elapsedMessage(msg: String, start: Long) =
+    msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start) + "ms"
+
+  def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
+  def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))
+
   def shouldLogAtThisPhase = false
   def isPastTyper = false
+  protected def isDeveloper: Boolean = settings.debug
 
   @deprecated("Give us a reason", "2.10.0")
   def abort(): Nothing = abort("unknown error")
@@ -58,9 +72,13 @@ abstract class SymbolTable extends macros.Universe
   def debugwarn(msg: => String): Unit = devWarning(msg)
 
   /** Override with final implementation for inlining. */
-  def debuglog(msg:  => String): Unit = if (settings.debug.value) log(msg)
-  def devWarning(msg: => String): Unit = if (settings.debug.value) Console.err.println(msg)
+  def debuglog(msg:  => String): Unit = if (settings.debug) log(msg)
+  def devWarning(msg: => String): Unit = if (isDeveloper) Console.err.println(msg)
   def throwableAsString(t: Throwable): String = "" + t
+  def throwableAsString(t: Throwable, maxFrames: Int): String = t.getStackTrace take maxFrames mkString "\n  at "
+
+  @inline final def devWarningDumpStack(msg: => String, maxFrames: Int): Unit =
+    devWarning(msg + "\n" + throwableAsString(new Throwable, maxFrames))
 
   /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */
   def debugStack(t: Throwable): Unit  = devWarning(throwableAsString(t))
@@ -85,11 +103,32 @@ abstract class SymbolTable extends macros.Universe
     result
   }
   @inline
+  final private[scala] def debuglogResult[T](msg: => String)(result: T): T = {
+    debuglog(msg + ": " + result)
+    result
+  }
+  @inline
+  final private[scala] def devWarningResult[T](msg: => String)(result: T): T = {
+    devWarning(msg + ": " + result)
+    result
+  }
+  @inline
   final private[scala] def logResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
     if (cond(result))
       log(msg + ": " + result)
 
     result
+  }
+  @inline
+  final private[scala] def debuglogResultIf[T](msg: => String, cond: T => Boolean)(result: T): T = {
+    if (cond(result))
+      debuglog(msg + ": " + result)
+
+    result
+  }
+
+  @inline final def findSymbol(xs: TraversableOnce[Symbol])(p: Symbol => Boolean): Symbol = {
+    xs find p getOrElse NoSymbol
   }
 
   // For too long have we suffered in order to sort NAMES.
@@ -111,6 +150,8 @@ abstract class SymbolTable extends macros.Universe
   object traceSymbols extends {
     val global: SymbolTable.this.type = SymbolTable.this
   } with util.TraceSymbolActivity
+
+  val treeInfo: TreeInfo { val global: SymbolTable.this.type }
 
   /** Check that the executing thread is the compiler thread. No-op here,
    *  overridden in interactive.Global. */
@@ -203,11 +244,19 @@ abstract class SymbolTable extends macros.Universe
     finally popPhase(saved)
   }
 
+  def slowButSafeEnteringPhase[T](ph: Phase)(op: => T): T = {
+    if (isCompilerUniverse) enteringPhase(ph)(op)
+    else op
+  }
+
   @inline final def exitingPhase[T](ph: Phase)(op: => T): T = enteringPhase(ph.next)(op)
   @inline final def enteringPrevPhase[T](op: => T): T       = enteringPhase(phase.prev)(op)
 
   @inline final def enteringPhaseNotLaterThan[T](target: Phase)(op: => T): T =
     if (isAtPhaseAfter(target)) enteringPhase(target)(op) else op
+
+  def slowButSafeEnteringPhaseNotLaterThan[T](target: Phase)(op: => T): T =
+    if (isCompilerUniverse) enteringPhaseNotLaterThan(target)(op) else op
 
   final def isValid(period: Period): Boolean =
     period != 0 && runId(period) == currentRunId && {
@@ -220,7 +269,7 @@ abstract class SymbolTable extends macros.Universe
     def noChangeInBaseClasses(it: InfoTransformer, limit: Phase#Id): Boolean = (
       it.pid >= limit ||
       !it.changesBaseClasses && noChangeInBaseClasses(it.next, limit)
-    );
+    )
     period != 0 && runId(period) == currentRunId && {
       val pid = phaseId(period)
       if (phase.id > pid) noChangeInBaseClasses(infoTransformers.nextFrom(pid), phase.id)
@@ -291,33 +340,41 @@ abstract class SymbolTable extends macros.Universe
   }
 
   object perRunCaches {
-    import java.lang.ref.WeakReference
     import scala.collection.generic.Clearable
 
     // Weak references so the garbage collector will take care of
     // letting us know when a cache is really out of commission.
-    private val caches = mutable.HashSet[WeakReference[Clearable]]()
+    private val caches = WeakHashSet[Clearable]()
 
     def recordCache[T <: Clearable](cache: T): T = {
-      caches += new WeakReference(cache)
+      caches += cache
       cache
     }
 
     def clearAll() = {
       debuglog("Clearing " + caches.size + " caches.")
-      caches foreach { ref =>
-        val cache = ref.get()
-        if (cache == null)
-          caches -= ref
-        else
-          cache.clear()
-      }
+      caches foreach (_.clear)
     }
 
     def newWeakMap[K, V]()        = recordCache(mutable.WeakHashMap[K, V]())
     def newMap[K, V]()            = recordCache(mutable.HashMap[K, V]())
     def newSet[K]()               = recordCache(mutable.HashSet[K]())
     def newWeakSet[K <: AnyRef]() = recordCache(new WeakHashSet[K]())
+    def newGeneric[T](f: => T): () => T = {
+      val NoCached: T = null.asInstanceOf[T]
+      var cached: T = NoCached
+      var cachedRunId = NoRunId
+      caches += new Clearable {
+        def clear(): Unit = cached = NoCached
+      }
+      () => {
+        if (currentRunId != cachedRunId || cached == NoCached) {
+          cached = f
+          cachedRunId = currentRunId
+        }
+        cached
+      }
+    }
   }
 
   /** The set of all installed infotransformers. */

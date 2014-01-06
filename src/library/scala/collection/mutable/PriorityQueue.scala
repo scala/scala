@@ -6,9 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.collection
+package scala
+package collection
 package mutable
 
 import generic._
@@ -31,6 +30,7 @@ import generic._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@deprecatedInheritance("PriorityQueue is not intended to be subclassed due to extensive private implementation details.", "2.11.0")
 class PriorityQueue[A](implicit val ord: Ordering[A])
    extends AbstractIterable[A]
       with Iterable[A]
@@ -43,7 +43,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
 {
   import ord._
 
-  private class ResizableArrayAccess[A] extends AbstractSeq[A] with ResizableArray[A] {
+  private class ResizableArrayAccess[A] extends AbstractSeq[A] with ResizableArray[A] with Serializable {
     def p_size0 = size0
     def p_size0_=(s: Int) = size0 = s
     def p_array = array
@@ -134,20 +134,12 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
       throw new NoSuchElementException("no element to remove from heap")
 
   def dequeueAll[A1 >: A, That](implicit bf: CanBuildFrom[_, A1, That]): That = {
-    val b = bf.apply
+    val b = bf.apply()
     while (nonEmpty) {
       b += dequeue()
     }
-    b.result
+    b.result()
   }
-
-  /** Returns the element with the highest priority in the queue,
-   *  or throws an error if there is no element contained in the queue.
-   *
-   *  @return   the element with the highest priority.
-   */
-  @deprecated("Use `head` instead.", "2.9.0")
-  def max: A = if (resarr.p_size0 > 1) toA(resarr.p_array(1)) else throw new NoSuchElementException("queue is empty")
 
   /** Returns the element with the highest priority in the queue,
    *  or throws an error if there is no element contained in the queue.

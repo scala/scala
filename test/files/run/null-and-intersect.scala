@@ -2,7 +2,7 @@ object Test {
   trait Immortal
   class Bippy extends Immutable with Immortal
   class Boppy extends Immutable
-  
+
   def f[T](x: Traversable[T]) = x match {
     case _: Map[_, _]   => 3
     case _: Seq[_]      => 2
@@ -23,10 +23,10 @@ object Test {
     println(f(Seq(1)))
     println(f(Map(1 -> 2)))
     println(f(null))
-    
+
     println(g(new Bippy))
     println(g(null))
-    
+
     println(h(new Bippy))
     println(h(new Boppy))
     println(h(null))

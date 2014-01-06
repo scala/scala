@@ -1,5 +1,9 @@
+class WordExp {
+  abstract class Label
+  type _labelT <: Label
+}
+
 import scala.collection._
-import scala.util.regexp._
 
 abstract class S2 {
   val lang: WordExp

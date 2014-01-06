@@ -1,18 +1,25 @@
-package scala.reflect
+package scala
+package reflect
 package runtime
 
 import scala.reflect.io.AbstractFile
+import scala.collection.{ immutable, mutable }
 
 private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
-  override protected def nextId() = synchronized { super.nextId() }
+  private lazy val atomicIds = new java.util.concurrent.atomic.AtomicInteger(0)
+  override protected def nextId() = atomicIds.incrementAndGet()
 
-  override protected def freshExistentialName(suffix: String) =
-    synchronized { super.freshExistentialName(suffix) }
+  private lazy val atomicExistentialIds = new java.util.concurrent.atomic.AtomicInteger(0)
+  override protected def nextExistentialId() = atomicExistentialIds.incrementAndGet()
+
+  private lazy val _recursionTable = mkThreadLocalStorage(immutable.Map.empty[Symbol, Int])
+  override def recursionTable = _recursionTable.get
+  override def recursionTable_=(value: immutable.Map[Symbol, Int]) = _recursionTable.set(value)
 
   // Set the fields which point companions at one another.  Returns the module.
   override def connectModuleToClass(m: ModuleSymbol, moduleClass: ClassSymbol): ModuleSymbol =
-    synchronized { super.connectModuleToClass(m, moduleClass) }
+    gilSynchronized { super.connectModuleToClass(m, moduleClass) }
 
   override def newFreeTermSymbol(name: TermName, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
     new FreeTermSymbol(name, value, origin) with SynchronizedTermSymbol initFlags flags
@@ -24,35 +31,47 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
 
   trait SynchronizedSymbol extends Symbol {
 
-    override def rawflags = synchronized { super.rawflags }
-    override def rawflags_=(x: Long) = synchronized { super.rawflags_=(x) }
+    def gilSynchronizedIfNotInited[T](body: => T): T = {
+      // TODO JZ desired, but prone to race conditions. We need the runtime reflection based
+      //      type completers to establish a memory barrier upon initialization. Maybe a volatile
+      //      write? We need to consult with the experts here. Until them, lock pessimistically.
+      //
+      //      `run/reflection-sync-subtypes.scala` fails about 1/50 times otherwise.
+      //
+      //      if (isFullyInitialized) body
+      //      else gilSynchronized { body }
+      gilSynchronized { body }
+    }
 
-    override def rawowner = synchronized { super.rawowner }
-    override def owner_=(owner: Symbol) = synchronized { super.owner_=(owner) }
+    override def validTo = gilSynchronizedIfNotInited { super.validTo }
+    override def info = gilSynchronizedIfNotInited { super.info }
+    override def rawInfo: Type = gilSynchronizedIfNotInited { super.rawInfo }
 
-    override def validTo = synchronized { super.validTo }
-    override def validTo_=(x: Period) = synchronized { super.validTo_=(x) }
+    override def typeParams: List[Symbol] = gilSynchronizedIfNotInited {
+      if (isCompilerUniverse) super.typeParams
+      else {
+        if (isMonomorphicType) Nil
+        else {
+          // analogously to the "info" getter, here we allow for two completions:
+          //   one: sourceCompleter to LazyType, two: LazyType to completed type
+          if (validTo == NoPeriod)
+            rawInfo load this
+          if (validTo == NoPeriod)
+            rawInfo load this
 
-    override def pos = synchronized { super.pos }
-    override def setPos(pos: Position): this.type = { synchronized { super.setPos(pos) }; this }
+          rawInfo.typeParams
+        }
+      }
+    }
+    override def unsafeTypeParams: List[Symbol] = gilSynchronizedIfNotInited {
+      if (isCompilerUniverse) super.unsafeTypeParams
+      else {
+        if (isMonomorphicType) Nil
+        else rawInfo.typeParams
+      }
+    }
 
-    override def privateWithin = synchronized { super.privateWithin }
-    override def privateWithin_=(sym: Symbol) = synchronized { super.privateWithin_=(sym) }
-
-    override def info = synchronized { super.info }
-    override def info_=(info: Type) = synchronized { super.info_=(info) }
-    override def updateInfo(info: Type): Symbol = synchronized { super.updateInfo(info) }
-    override def rawInfo: Type = synchronized { super.rawInfo }
-
-    override def typeParams: List[Symbol] = synchronized { super.typeParams }
-
-    override def reset(completer: Type): this.type = synchronized { super.reset(completer) }
-
-    override def infosString: String = synchronized { super.infosString }
-
-    override def annotations: List[AnnotationInfo] = synchronized { super.annotations }
-    override def setAnnotations(annots: List[AnnotationInfo]): this.type = { synchronized { super.setAnnotations(annots) }; this }
-
+    override def isStable: Boolean = gilSynchronized { super.isStable }
 
 // ------ creators -------------------------------------------------------------------
 
@@ -89,50 +108,38 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override protected def createModuleSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
       new ModuleSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
 
-    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol = createModuleSymbol(name, pos, newFlags)
+    override protected def createPackageSymbol(name: TermName, pos: Position, newFlags: Long): ModuleSymbol =
+      createModuleSymbol(name, pos, newFlags)
 
-    // TODO
-    // override protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long)
-    // override protected def createValueMemberSymbol(name: TermName, pos: Position, newFlags: Long)
+    override protected def createValueParameterSymbol(name: TermName, pos: Position, newFlags: Long) =
+      new TermSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
+
+    override protected def createValueMemberSymbol(name: TermName, pos: Position, newFlags: Long) =
+      new TermSymbol(this, pos, name) with SynchronizedTermSymbol initFlags newFlags
   }
 
 // ------- subclasses ---------------------------------------------------------------------
 
-  trait SynchronizedTermSymbol extends TermSymbol with SynchronizedSymbol {
-    override def name_=(x: Name) = synchronized { super.name_=(x) }
-    override def rawname = synchronized { super.rawname }
-    override def referenced: Symbol = synchronized { super.referenced }
-    override def referenced_=(x: Symbol) = synchronized { super.referenced_=(x) }
-  }
+  trait SynchronizedTermSymbol extends SynchronizedSymbol
 
   trait SynchronizedMethodSymbol extends MethodSymbol with SynchronizedTermSymbol {
-    override def typeAsMemberOf(pre: Type): Type = synchronized { super.typeAsMemberOf(pre) }
-    override def paramss: List[List[Symbol]] = synchronized { super.paramss }
-    override def returnType: Type = synchronized { super.returnType }
+    // we can keep this lock fine-grained, because it's just a cache over asSeenFrom, which makes deadlocks impossible
+    // unfortunately we cannot elide this lock, because the cache depends on `pre`
+    private lazy val typeAsMemberOfLock = new Object
+    override def typeAsMemberOf(pre: Type): Type = gilSynchronizedIfNotInited { typeAsMemberOfLock.synchronized { super.typeAsMemberOf(pre) } }
   }
+
+  trait SynchronizedModuleSymbol extends ModuleSymbol with SynchronizedTermSymbol
 
   trait SynchronizedTypeSymbol extends TypeSymbol with SynchronizedSymbol {
-    override def name_=(x: Name) = synchronized { super.name_=(x) }
-    override def rawname = synchronized { super.rawname }
-    override def typeConstructor: Type = synchronized { super.typeConstructor }
-    override def tpe_* : Type = synchronized { super.tpe_* }
-    override def tpeHK : Type = synchronized { super.tpeHK }
+    // unlike with typeConstructor, a lock is necessary here, because tpe calculation relies on
+    // temporarily assigning NoType to tpeCache to detect cyclic reference errors
+    private lazy val tpeLock = new Object
+    override def tpe_* : Type = gilSynchronizedIfNotInited { tpeLock.synchronized { super.tpe_* } }
   }
 
-  trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol {
-    override def associatedFile = synchronized { super.associatedFile }
-    override def associatedFile_=(f: AbstractFile) = synchronized { super.associatedFile_=(f) }
-    override def thisSym: Symbol = synchronized { super.thisSym }
-    override def thisType: Type = synchronized { super.thisType }
-    override def typeOfThis: Type = synchronized { super.typeOfThis }
-    override def typeOfThis_=(tp: Type) = synchronized { super.typeOfThis_=(tp) }
-    override def children = synchronized { super.children }
-    override def addChild(sym: Symbol) = synchronized { super.addChild(sym) }
-  }
+  trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol
 
-  trait SynchronizedModuleClassSymbol extends ModuleClassSymbol with SynchronizedClassSymbol {
-    override def sourceModule = synchronized { super.sourceModule }
-    override def implicitMembers: Scope = synchronized { super.implicitMembers }
-  }
+  trait SynchronizedModuleClassSymbol extends ModuleClassSymbol with SynchronizedClassSymbol
 }
 

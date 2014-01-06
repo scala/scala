@@ -3,7 +3,8 @@
  * @author  Martin Odersky
  */
 
-package scala.reflect
+package scala
+package reflect
 package internal
 
 import pickling.ByteCodecs
@@ -12,7 +13,7 @@ import scala.collection.immutable.ListMap
 
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
-  import definitions.{ ThrowsClass, StaticAnnotationClass, isMetaAnnotation }
+  import definitions.{ ThrowsClass, ThrowableClass, StaticAnnotationClass, isMetaAnnotation }
 
   // Common annotation code between Symbol and Type.
   // For methods altering the annotation list, on Symbol it mutates
@@ -26,10 +27,22 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def filterAnnotations(p: AnnotationInfo => Boolean): Self // Retain only annotations meeting the condition.
     def withoutAnnotations: Self                              // Remove all annotations from this type.
 
+    def staticAnnotations = annotations filter (_.isStatic)
+
     /** Symbols of any @throws annotations on this symbol.
      */
     def throwsAnnotations(): List[Symbol] = annotations collect {
       case ThrownException(exc) => exc
+    }
+
+    def addThrowsAnnotation(throwableSym: Symbol): Self = {
+      val throwableTpe = if (throwableSym.isMonomorphicType) throwableSym.tpe else {
+        debuglog(s"Encountered polymorphic exception `${throwableSym.fullName}` while parsing class file.")
+        // in case we encounter polymorphic exception the best we can do is to convert that type to
+        // monomorphic one by introducing existentials, see SI-7009 for details
+        existentialAbstraction(throwableSym.typeParams, throwableSym.tpe)
+      }
+      this withAnnotation AnnotationInfo(appliedType(ThrowsClass, throwableTpe), List(Literal(Constant(throwableTpe))), Nil)
     }
 
     /** Tests for, get, or remove an annotation */
@@ -62,7 +75,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  - arrays of constants
    *  - or nested classfile annotations
    */
-  abstract class ClassfileAnnotArg extends Product
+  sealed abstract class ClassfileAnnotArg extends Product
   implicit val JavaArgumentTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])
   case object UnmappableAnnotArg extends ClassfileAnnotArg
 
@@ -110,25 +123,32 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *  must be `String`. This specialised class is used to encode Scala
    *  signatures for reasons of efficiency, both in term of class-file size
    *  and in term of compiler performance.
+   *  Details about the storage format of pickles at the bytecode level (classfile annotations) can be found in SIP-10.
    */
   case class ScalaSigBytes(bytes: Array[Byte]) extends ClassfileAnnotArg {
     override def toString = (bytes map { byte => (byte & 0xff).toHexString }).mkString("[ ", " ", " ]")
-    lazy val encodedBytes = ByteCodecs.encode(bytes)    // TODO remove after migration to ASM-based GenJVM complete
-    def isLong: Boolean = (encodedBytes.length > 65535) // TODO remove after migration to ASM-based GenJVM complete
     lazy val sevenBitsMayBeZero: Array[Byte] = {
       mapToNextModSevenBits(scala.reflect.internal.pickling.ByteCodecs.encode8to7(bytes))
     }
+
+    /* In order to store a byte array (the pickle) using a bytecode-level annotation,
+     * the most compact representation is used (which happens to be string-constant and not byte array as one would expect).
+     * However, a String constant in a classfile annotation is limited to a maximum of 65535 characters.
+     * Method `fitsInOneString` tells us whether the pickle can be held by a single classfile-annotation of string-type.
+     * Otherwise an array of strings will be used.
+     */
     def fitsInOneString: Boolean = {
+      // due to escaping, a zero byte in a classfile-annotation of string-type takes actually two characters.
       val numZeros = (sevenBitsMayBeZero count { b => b == 0 })
-      val res = (sevenBitsMayBeZero.length + numZeros) <= 65535
-      assert(this.isLong == !res, "As things stand, can't just swap in `fitsInOneString()` for `isLong()`")
-      res
+
+      (sevenBitsMayBeZero.length + numZeros) <= 65535
     }
+
     def sigAnnot: Type =
-      if (this.isLong)
-        definitions.ScalaLongSignatureAnnotation.tpe
-      else
+      if (fitsInOneString)
         definitions.ScalaSignatureAnnotation.tpe
+      else
+        definitions.ScalaLongSignatureAnnotation.tpe
 
     private def mapToNextModSevenBits(src: Array[Byte]): Array[Byte] = {
       var i = 0
@@ -326,13 +346,15 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
 
   object UnmappableAnnotation extends CompleteAnnotationInfo(NoType, Nil, Nil)
 
+  object ErroneousAnnotation extends CompleteAnnotationInfo(ErrorType, Nil, Nil)
+
   /** Extracts symbol of thrown exception from AnnotationInfo.
     *
     * Supports both “old-style” `@throws(classOf[Exception])`
     * as well as “new-stye” `@throws[Exception]("cause")` annotations.
     */
   object ThrownException {
-    def unapply(ann: AnnotationInfo): Option[Symbol] =
+    def unapply(ann: AnnotationInfo): Option[Symbol] = {
       ann match {
         case AnnotationInfo(tpe, _, _) if tpe.typeSymbol != ThrowsClass =>
           None
@@ -340,8 +362,11 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         case AnnotationInfo(_, List(Literal(Constant(tpe: Type))), _) =>
           Some(tpe.typeSymbol)
         // new-style: @throws[Exception], @throws[Exception]("cause")
-        case AnnotationInfo(TypeRef(_, _, args), _, _) =>
-          Some(args.head.typeSymbol)
+        case AnnotationInfo(TypeRef(_, _, arg :: _), _, _) =>
+          Some(arg.typeSymbol)
+        case AnnotationInfo(TypeRef(_, _, Nil), _, _) =>
+          Some(ThrowableClass)
       }
+    }
   }
 }

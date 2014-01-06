@@ -6,7 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.collection
+package scala
+package collection
 package immutable
 
 /** A default map which implements the `+` and `-`
@@ -38,24 +39,14 @@ trait DefaultMap[A, +B] extends Map[A, B] { self =>
     val b = Map.newBuilder[A, B1]
     b ++= this
     b += ((kv._1, kv._2))
-    b.result
+    b.result()
   }
 
   /** A default implementation which creates a new immutable map.
    */
   override def - (key: A): Map[A, B] = {
     val b = newBuilder
-    for (kv <- this.seq ; if kv._1 != key) b += kv
-    b.result
+    for (kv <- this ; if kv._1 != key) b += kv
+    b.result()
   }
 }
-
-
-
-
-
-
-
-
-
-

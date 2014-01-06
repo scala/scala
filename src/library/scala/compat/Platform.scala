@@ -6,9 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala.compat
+package scala
+package compat
 
 import java.lang.System
 

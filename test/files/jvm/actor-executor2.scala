@@ -1,3 +1,8 @@
+
+
+
+@deprecated("Suppress warnings", since="2.11")
+object Test {
 import scala.actors.{Actor, SchedulerAdapter, Exit}
 import Actor._
 import java.util.concurrent.{Executors, RejectedExecutionException}
@@ -48,7 +53,6 @@ trait AdaptedActor extends Actor {
     Test.scheduler
 }
 
-object Test {
   val NUM_MSG = 100000
 
   val executor =

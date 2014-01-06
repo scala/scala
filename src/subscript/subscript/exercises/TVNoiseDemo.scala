@@ -1,5 +1,6 @@
 package subscript.exercises
 
+import scala.language.implicitConversions
 import java.awt.{Graphics, Image, Color, Point}
 import java.awt.image.{BufferedImage}
 import javax.swing.{JPanel}
@@ -40,6 +41,7 @@ import subscript.vm._
 object TVNoiseDemo extends TVNoiseDemoApp
 
 class TVNoiseDemoApp  extends SimpleSubscriptApplication {
+  import scala.language.implicitConversions
  
   val    tvNoisePanel = new TVNoisePanel
   val     startButton = new Button("Start" ) {enabled       = false; focusable = false}
@@ -120,14 +122,14 @@ class TVNoiseDemoApp  extends SimpleSubscriptApplication {
 
   implicit def script..
   
-    key(c??: Char     ) =  key2(top, ActualAdaptingParameter(_c))  //key(top, c??) // TBD in subscript-scalac parser: recognize "??" and "?"
-   vkey(k??: Key.Value) = vkey2(top, ActualAdaptingParameter(_k)) //vkey(top, k??)
+    key(??c: Char     ) =  key2(top, ??c)
+   vkey(??k: Key.Value) = vkey2(top, ??k)
 
   def script.. // utilities
   
     TBD = {*Thread.sleep(34567)*}
 
-    numKey(i??: Int)       = var c:Char='0' key(ActualConstrainedParameter(c, (v:Char)=>c=v, (v:Char)=>v.isDigit)) {!i=c-'0'!}    //key(c? if?(c.isDigit)) 
+    numKey(??i: Int)       = var c:Char='0' key(ActualConstrainedParameter(c, (v:Char)=>c=v, (v:Char)=>v.isDigit)) {!i=c-'0'!}    //key(c? if?(c.isDigit)) 
     setSpeedValue(s: Int)  = @{gui(there)}: {!setSliderValue(s)!}
 
   override def script..
