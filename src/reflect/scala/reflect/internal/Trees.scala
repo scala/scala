@@ -541,7 +541,7 @@ trait Trees extends api.Trees {
        extends TypTree with TypeBoundsTreeApi
   object TypeBoundsTree extends TypeBoundsTreeExtractor
 
-  case class ExistentialTypeTree(tpt: Tree, whereClauses: List[Tree])
+  case class ExistentialTypeTree(tpt: Tree, whereClauses: List[MemberDef])
        extends TypTree with ExistentialTypeTreeApi
   object ExistentialTypeTree extends ExistentialTypeTreeExtractor
 
@@ -694,7 +694,7 @@ trait Trees extends api.Trees {
       new AppliedTypeTree(tpt, args).copyAttrs(tree)
     def TypeBoundsTree(tree: Tree, lo: Tree, hi: Tree) =
       new TypeBoundsTree(lo, hi).copyAttrs(tree)
-    def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]) =
+    def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[MemberDef]) =
       new ExistentialTypeTree(tpt, whereClauses).copyAttrs(tree)
   }
 
@@ -910,7 +910,7 @@ trait Trees extends api.Trees {
       if (lo0 == lo) && (hi0 == hi) => t
       case _ => treeCopy.TypeBoundsTree(tree, lo, hi)
     }
-    def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]) = tree match {
+    def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[MemberDef]) = tree match {
       case t @ ExistentialTypeTree(tpt0, whereClauses0)
       if (tpt0 == tpt) && (whereClauses0 == whereClauses) => t
       case _ => treeCopy.ExistentialTypeTree(tree, tpt, whereClauses)
@@ -1421,7 +1421,7 @@ trait Trees extends api.Trees {
       case CompoundTypeTree(templ) =>
         treeCopy.CompoundTypeTree(tree, transformTemplate(templ))
       case ExistentialTypeTree(tpt, whereClauses) =>
-        treeCopy.ExistentialTypeTree(tree, transform(tpt), transformTrees(whereClauses))
+        treeCopy.ExistentialTypeTree(tree, transform(tpt), transformMemberDefs(whereClauses))
       case Return(expr) =>
         treeCopy.Return(tree, transform(expr))
       case Alternative(trees) =>

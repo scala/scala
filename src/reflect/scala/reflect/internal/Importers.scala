@@ -409,7 +409,7 @@ trait Importers extends api.Importers { to: SymbolTable =>
       case from.TypeBoundsTree(lo, hi) =>
         new TypeBoundsTree(importTree(lo), importTree(hi))
       case from.ExistentialTypeTree(tpt, whereClauses) =>
-        new ExistentialTypeTree(importTree(tpt), whereClauses map importTree)
+        new ExistentialTypeTree(importTree(tpt), whereClauses map importMemberDef)
       case from.EmptyTree =>
         EmptyTree
       case null =>
@@ -475,6 +475,7 @@ trait Importers extends api.Importers { to: SymbolTable =>
       new ImportSelector(importName(sel.name), sel.namePos, if (sel.rename != null) importName(sel.rename) else null, sel.renamePos)
     def importValDef(tree: from.ValDef): ValDef = importTree(tree).asInstanceOf[ValDef]
     def importTypeDef(tree: from.TypeDef): TypeDef = importTree(tree).asInstanceOf[TypeDef]
+    def importMemberDef(tree: from.MemberDef): MemberDef = importTree(tree).asInstanceOf[MemberDef]
     def importTemplate(tree: from.Template): Template = importTree(tree).asInstanceOf[Template]
     def importRefTree(tree: from.RefTree): RefTree = importTree(tree).asInstanceOf[RefTree]
     def importIdent(tree: from.Ident): Ident = importTree(tree).asInstanceOf[Ident]

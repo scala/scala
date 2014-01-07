@@ -92,7 +92,7 @@ trait ArbitraryTreesAndNames {
       yield DefDef(mods, name, tparams, vparamss, tpt, rhs)
 
   def genExistentialTypeTree(size: Int) =
-    for(tpt <- genTree(size - 1); where <- smallList(size, genTree(size - 1)))
+    for(tpt <- genTree(size - 1); where <- smallList(size, oneOf(genValDef(size - 1), genTypeDef(size - 1))))
       yield ExistentialTypeTree(tpt, where)
 
   def genFunction(size: Int) =

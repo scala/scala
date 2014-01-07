@@ -623,15 +623,6 @@ self =>
         syntaxError(tpt.pos, "no * parameter type allowed here", skipIt = false)
     }
 
-    /** Check that tree is a legal clause of a forSome. */
-    def checkLegalExistential(t: Tree) = t match {
-      case TypeDef(_, _, _, TypeBoundsTree(_, _)) |
-           ValDef(_, _, _, EmptyTree) | EmptyTree =>
-             ;
-      case _ =>
-        syntaxError(t.pos, "not a legal existential clause", skipIt = false)
-    }
-
 /* -------------- TOKEN CLASSES ------------------------------------------- */
 
     def isModifier: Boolean = in.token match {
@@ -885,9 +876,14 @@ self =>
         }
       }
       private def makeExistentialTypeTree(t: Tree) = {
-        val whereClauses = refinement()
-        whereClauses foreach checkLegalExistential
-        ExistentialTypeTree(t, whereClauses)
+        // EmptyTrees in the result of refinement() stand for parse errors
+        // so it's okay for us to filter them out here
+        ExistentialTypeTree(t, refinement() flatMap {
+          case t @ TypeDef(_, _, _, TypeBoundsTree(_, _)) => Some(t)
+          case t @ ValDef(_, _, _, EmptyTree) => Some(t)
+          case EmptyTree => None
+          case _ => syntaxError(t.pos, "not a legal existential clause", skipIt = false); None
+        })
       }
 
       /** {{{
