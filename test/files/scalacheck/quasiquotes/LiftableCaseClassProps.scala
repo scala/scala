@@ -14,6 +14,11 @@ package inside.a {
   case class Package(pkg: String)
 }
 
+package a {
+  case class B()
+}
+
+
 object LiftableCaseClassProps extends QuasiquoteProperties("liftable case class") {
   property("lift simple case class") = test {
     val simple = Simple("simple", 42)
@@ -41,5 +46,17 @@ object LiftableCaseClassProps extends QuasiquoteProperties("liftable case class"
     implicitly[Liftable[Mutually]]
     implicitly[Liftable[Rec]]
     assert(true)
+  }
+
+  property("hygiene") = test {
+    val a = ""
+    val b = _root_.a.B()
+    val reify = ""
+    val implicitly = ""
+    case class Liftable()
+    case class Tree()
+    case class Apply()
+    case class List()
+    assert(q"$b" ≈ scala.reflect.runtime.universe.Apply(Ident(TermName("B")), scala.List()))
   }
 }
