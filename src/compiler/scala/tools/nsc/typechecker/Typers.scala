@@ -3275,9 +3275,14 @@ trait Typers extends Modes with Adaptations with Tags {
               //         are transplanted underneath synthetic temporary vals.
               //
               //         Here, we keep track of the symbols owned by `context.owner` to enable us to
-              //         rollback. Note that duplicating trees would not be enough to fix this problem,
-              //         we would also need to clone local symbols in the duplicated tree to truly isolate
-              //         things.
+              //         rollback, so that we don't end up with "orphaned" symbols.
+              //
+              //         TODO: Find a better way!
+              //
+              //         Note that duplicating trees would not be enough to fix this problem, we would also need to
+              //         clone local symbols in the duplicated tree to truly isolate things (in the spirit of BodyDuplicator),
+              //         or, better yet, disentangle the logic in `transformNamedApplication` so that we could
+              //         determine whether names/defaults is viable *before* transforming trees.
               def ownerOf(sym: Symbol) = if (sym == null || sym == NoSymbol) NoSymbol else sym.owner
               val symsOwnedByContextOwner = tree.collect {
                 case t @ (_: DefTree | _: Function) if ownerOf(t.symbol) == context.owner => t.symbol
