@@ -801,8 +801,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       isConstructor && !isPrimaryConstructor
 
     /** Is this symbol a synthetic apply or unapply method in a companion object of a case class? */
+    // xeno-by: why this obscure use of the CASE flag? why not simply compare name with nme.apply and nme.unapply?
     final def isCaseApplyOrUnapply =
       isMethod && isCase && isSynthetic
+
+    /** Is this symbol a synthetic copy method in a case class? */
+    final def isCaseCopy =
+      isMethod && owner.isCase && isSynthetic && name == nme.copy
 
     /** Is this symbol a trait which needs an implementation class? */
     final def needsImplClass = (
