@@ -126,10 +126,11 @@ object Plugin {
   }
 
   /** Load all plugins specified by the arguments.
-   *  Each of `jars` must be a valid plugin archive or exploded archive.
+   *  Each location of `paths` must be a valid plugin archive or exploded archive.
+   *  Each of `paths` must define one plugin.
    *  Each of `dirs` may be a directory containing arbitrary plugin archives.
    *  Skips all plugins named in `ignoring`.
-   *  A single classloader is created and used to load all of them.
+   *  A classloader is created to load each plugin.
    */
   def loadAllFrom(
     paths: List[List[Path]],
