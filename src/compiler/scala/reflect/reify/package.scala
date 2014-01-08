@@ -67,7 +67,7 @@ package object reify {
       case _ =>
         var erasure = tpe.erasure
         if (tpe.typeSymbol.isDerivedValueClass && global.phase.id < global.currentRun.erasurePhase.id) erasure = tpe
-        gen.mkNullaryCall(currentRun.runDefinitions.Predef_classOf, List(erasure))
+        gen.mkClassOf(erasure)
     }
   }
 
