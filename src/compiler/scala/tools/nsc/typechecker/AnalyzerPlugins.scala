@@ -13,7 +13,6 @@ package typechecker
 trait AnalyzerPlugins { self: Analyzer =>
   import global._
 
-
   trait AnalyzerPlugin {
     /**
      * Selectively activate this analyzer plugin, e.g. according to the compiler phase.
@@ -156,6 +155,117 @@ trait AnalyzerPlugins { self: Analyzer =>
     def pluginsTypedReturn(tpe: Type, typer: Typer, tree: Return, pt: Type): Type = tpe
   }
 
+  /**
+   * @define nonCumulativeReturnValueDoc Returns `None` if the plugin doesn't want to customize the default behavior
+   * or something else if the plugin knows better that the implementation provided in scala-compiler.jar.
+   * If multiple plugins return a non-empty result, it's going to be a compilation error.
+   */
+  trait MacroPlugin {
+    /**
+     * Selectively activate this analyzer plugin, e.g. according to the compiler phase.
+     *
+     * Note that the current phase can differ from the global compiler phase (look for `enteringPhase`
+     * invocations in the compiler). For instance, lazy types created by the UnPickler are completed
+     * at the phase in which their symbol is created. Observations show that this can even be the
+     * parser phase. Since symbol completion can trigger subtyping, typing etc, your plugin might
+     * need to be active also in phases other than namer and typer.
+     *
+     * Typically, this method can be implemented as
+     *
+     *   global.phase.id < global.currentRun.picklerPhase.id
+     */
+    def isActive(): Boolean = true
+
+    /**
+     * Typechecks the right-hand side of a macro definition (which typically features
+     * a mere reference to a macro implementation).
+     *
+     * Default implementation provided in `self.standardTypedMacroBody` makes sure that the rhs
+     * resolves to a reference to a method in either a static object or a macro bundle,
+     * verifies that the referred method is compatible with the macro def and upon success
+     * attaches a macro impl binding to the macro def's symbol.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsTypedMacroBody(typer: Typer, ddef: DefDef): Option[Tree] = None
+
+    /**
+     * Expands an application of a def macro (i.e. of a symbol that has the MACRO flag set),
+     * possibly using the current typer mode and the provided prototype.
+     *
+     * Default implementation provided in `self.standardMacroExpand` figures out whether the `expandee`
+     * needs to be expanded right away or its expansion has to be delayed until all undetermined
+     * parameters are inferred, then loads the macro implementation using `self.pluginsMacroRuntime`,
+     * prepares the invocation arguments for the macro implementation using `self.pluginsMacroArgs`,
+     * and finally calls into the macro implementation. After the call returns, it typechecks
+     * the expansion and performs some bookkeeping.
+     *
+     * This method is typically implemented if your plugin requires significant changes to the macro engine.
+     * If you only need to customize the macro context, consider implementing `pluginsMacroArgs`.
+     * If you only need to customize how macro implementation are invoked, consider going for `pluginsMacroRuntime`.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsMacroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Option[Tree] = None
+
+    /**
+     * Computes the arguments that need to be passed to the macro impl corresponding to a particular expandee.
+     *
+     * Default implementation provided in `self.standardMacroArgs` instantiates a `scala.reflect.macros.contexts.Context`,
+     * gathers type and value arguments of the macro application and throws them together into `MacroArgs`.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsMacroArgs(typer: Typer, expandee: Tree): Option[MacroArgs] = None
+
+    /**
+     * Summons a function that encapsulates macro implementation invocations for a particular expandee.
+     *
+     * Default implementation provided in `self.standardMacroRuntime` returns a function that
+     * loads the macro implementation binding from the macro definition symbol,
+     * then uses either Java or Scala reflection to acquire the method that corresponds to the impl,
+     * and then reflectively calls into that method.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsMacroRuntime(expandee: Tree): Option[MacroRuntime] = None
+
+    /**
+     * Creates a symbol for the given tree in lexical context encapsulated by the given namer.
+     *
+     * Default implementation provided in `namer.standardEnterSym` handles MemberDef's and Imports,
+     * doing nothing for other trees (DocDef's are seen through and rewrapped). Typical implementation
+     * of `enterSym` for a particular tree flavor creates a corresponding symbol, assigns it to the tree,
+     * enters the symbol into scope and then might even perform some code generation.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsEnterSym(namer: Namer, tree: Tree): Boolean = false
+
+    /**
+     * Makes sure that for the given class definition, there exists a companion object definition.
+     *
+     * Default implementation provided in `namer.standardEnsureCompanionObject` looks up a companion symbol for the class definition
+     * and then checks whether the resulting symbol exists or not. If it exists, then nothing else is done.
+     * If not, a synthetic object definition is created using the provided factory, which is then entered into namer's scope.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsEnsureCompanionObject(namer: Namer, cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Option[Symbol] = None
+
+    /**
+     * Prepares a list of statements for being typechecked by performing domain-specific type-agnostic code synthesis.
+     *
+     * Trees passed into this method are going to be named, but not typed.
+     * In particular, you can rely on the compiler having called `enterSym` on every stat prior to passing calling this method.
+     *
+     * Default implementation does nothing. Current approaches to code syntheses (generation of underlying fields
+     * for getters/setters, creation of companion objects for case classes, etc) are too disparate and ad-hoc
+     * to be treated uniformly, so I'm leaving this for future work.
+     */
+    def pluginsEnterStats(typer: Typer, stats: List[Tree]): List[Tree] = stats
+  }
+
 
 
   /** A list of registered analyzer plugins */
@@ -167,59 +277,158 @@ trait AnalyzerPlugins { self: Analyzer =>
       analyzerPlugins = plugin :: analyzerPlugins
   }
 
+  private abstract class CumulativeOp[T] {
+    def default: T
+    def accumulate: (T, AnalyzerPlugin) => T
+  }
+
+  private def invoke[T](op: CumulativeOp[T]): T = {
+    if (analyzerPlugins.isEmpty) op.default
+    else analyzerPlugins.foldLeft(op.default)((current, plugin) =>
+      if (!plugin.isActive()) current else op.accumulate(current, plugin))
+  }
 
   /** @see AnalyzerPlugin.pluginsPt */
   def pluginsPt(pt: Type, typer: Typer, tree: Tree, mode: Mode): Type =
+    // performance opt
     if (analyzerPlugins.isEmpty) pt
-    else analyzerPlugins.foldLeft(pt)((pt, plugin) =>
-      if (!plugin.isActive()) pt else plugin.pluginsPt(pt, typer, tree, mode))
+    else invoke(new CumulativeOp[Type] {
+      def default = pt
+      def accumulate = (pt, p) => p.pluginsPt(pt, typer, tree, mode)
+    })
 
   /** @see AnalyzerPlugin.pluginsTyped */
-  def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Mode, pt: Type): Type = {
-    // support deprecated methods in annotation checkers
-    val annotCheckersTpe = addAnnotations(tree, tpe)
-    if (analyzerPlugins.isEmpty) annotCheckersTpe
-    else analyzerPlugins.foldLeft(annotCheckersTpe)((tpe, plugin) =>
-      if (!plugin.isActive()) tpe else plugin.pluginsTyped(tpe, typer, tree, mode, pt))
-  }
+  def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Mode, pt: Type): Type =
+    // performance opt
+    if (analyzerPlugins.isEmpty) addAnnotations(tree, tpe)
+    else invoke(new CumulativeOp[Type] {
+      // support deprecated methods in annotation checkers
+      def default = addAnnotations(tree, tpe)
+      def accumulate = (tpe, p) => p.pluginsTyped(tpe, typer, tree, mode, pt)
+    })
 
   /** @see AnalyzerPlugin.pluginsTypeSig */
-  def pluginsTypeSig(tpe: Type, typer: Typer, defTree: Tree, pt: Type): Type =
-    if (analyzerPlugins.isEmpty) tpe
-    else analyzerPlugins.foldLeft(tpe)((tpe, plugin) =>
-      if (!plugin.isActive()) tpe else plugin.pluginsTypeSig(tpe, typer, defTree, pt))
+  def pluginsTypeSig(tpe: Type, typer: Typer, defTree: Tree, pt: Type): Type = invoke(new CumulativeOp[Type] {
+    def default = tpe
+    def accumulate = (tpe, p) => p.pluginsTypeSig(tpe, typer, defTree, pt)
+  })
 
   /** @see AnalyzerPlugin.pluginsTypeSigAccessor */
-  def pluginsTypeSigAccessor(tpe: Type, typer: Typer, tree: ValDef, sym: Symbol): Type =
-    if (analyzerPlugins.isEmpty) tpe
-    else analyzerPlugins.foldLeft(tpe)((tpe, plugin) =>
-      if (!plugin.isActive()) tpe else plugin.pluginsTypeSigAccessor(tpe, typer, tree, sym))
+  def pluginsTypeSigAccessor(tpe: Type, typer: Typer, tree: ValDef, sym: Symbol): Type = invoke(new CumulativeOp[Type] {
+    def default = tpe
+    def accumulate = (tpe, p) => p.pluginsTypeSigAccessor(tpe, typer, tree, sym)
+  })
 
   /** @see AnalyzerPlugin.canAdaptAnnotations */
-  def canAdaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Boolean = {
+  def canAdaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Boolean = invoke(new CumulativeOp[Boolean] {
     // support deprecated methods in annotation checkers
-    val annotCheckersExists = global.canAdaptAnnotations(tree, mode, pt)
-    annotCheckersExists || {
-      if (analyzerPlugins.isEmpty) false
-      else analyzerPlugins.exists(plugin =>
-        plugin.isActive() && plugin.canAdaptAnnotations(tree, typer, mode, pt))
+    def default = global.canAdaptAnnotations(tree, mode, pt)
+    def accumulate = (curr, p) => curr || p.canAdaptAnnotations(tree, typer, mode, pt)
+  })
+
+  /** @see AnalyzerPlugin.adaptAnnotations */
+  def adaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Tree = invoke(new CumulativeOp[Tree] {
+    // support deprecated methods in annotation checkers
+    def default = global.adaptAnnotations(tree, mode, pt)
+    def accumulate = (tree, p) => p.adaptAnnotations(tree, typer, mode, pt)
+  })
+
+  /** @see AnalyzerPlugin.pluginsTypedReturn */
+  def pluginsTypedReturn(tpe: Type, typer: Typer, tree: Return, pt: Type): Type = invoke(new CumulativeOp[Type] {
+    def default = adaptTypeOfReturn(tree.expr, pt, tpe)
+    def accumulate = (tpe, p) => p.pluginsTypedReturn(tpe, typer, tree, pt)
+  })
+
+  /** A list of registered macro plugins */
+  private var macroPlugins: List[MacroPlugin] = Nil
+
+  /** Registers a new macro plugin */
+  def addMacroPlugin(plugin: MacroPlugin) {
+    if (!macroPlugins.contains(plugin))
+      macroPlugins = plugin :: macroPlugins
+  }
+
+  private abstract class NonCumulativeOp[T] {
+    def position: Position
+    def description: String
+    def default: T
+    def custom(plugin: MacroPlugin): Option[T]
+  }
+
+  private def invoke[T](op: NonCumulativeOp[T]): T = {
+    if (macroPlugins.isEmpty) op.default
+    else {
+      val results = macroPlugins.filter(_.isActive()).map(plugin => (plugin, op.custom(plugin)))
+      results.flatMap { case (p, Some(result)) => Some((p, result)); case _ => None } match {
+        case (p1, _) :: (p2, _) :: _ => typer.context.error(op.position, s"both $p1 and $p2 want to ${op.description}"); op.default
+        case (_, custom) :: Nil => custom
+        case Nil => op.default
+      }
     }
   }
 
-  /** @see AnalyzerPlugin.adaptAnnotations */
-  def adaptAnnotations(tree: Tree, typer: Typer, mode: Mode, pt: Type): Tree = {
-    // support deprecated methods in annotation checkers
-    val annotCheckersTree = global.adaptAnnotations(tree, mode, pt)
-    if (analyzerPlugins.isEmpty) annotCheckersTree
-    else analyzerPlugins.foldLeft(annotCheckersTree)((tree, plugin) =>
-      if (!plugin.isActive()) tree else plugin.adaptAnnotations(tree, typer, mode, pt))
-  }
+  /** @see MacroPlugin.pluginsTypedMacroBody */
+  def pluginsTypedMacroBody(typer: Typer, ddef: DefDef): Tree = invoke(new NonCumulativeOp[Tree] {
+    def position = ddef.pos
+    def description = "typecheck this macro definition"
+    def default = standardTypedMacroBody(typer, ddef)
+    def custom(plugin: MacroPlugin) = plugin.pluginsTypedMacroBody(typer, ddef)
+  })
 
-  /** @see AnalyzerPlugin.pluginsTypedReturn */
-  def pluginsTypedReturn(tpe: Type, typer: Typer, tree: Return, pt: Type): Type = {
-    val annotCheckersType = adaptTypeOfReturn(tree.expr, pt, tpe)
-    if (analyzerPlugins.isEmpty) annotCheckersType
-    else analyzerPlugins.foldLeft(annotCheckersType)((tpe, plugin) =>
-      if (!plugin.isActive()) tpe else plugin.pluginsTypedReturn(tpe, typer, tree, pt))
+  /** @see MacroPlugin.pluginsMacroExpand */
+  def pluginsMacroExpand(typer: Typer, expandee: Tree, mode: Mode, pt: Type): Tree = invoke(new NonCumulativeOp[Tree] {
+    def position = expandee.pos
+    def description = "expand this macro application"
+    def default = standardMacroExpand(typer, expandee, mode, pt)
+    def custom(plugin: MacroPlugin) = plugin.pluginsMacroExpand(typer, expandee, mode, pt)
+  })
+
+  /** @see MacroPlugin.pluginsMacroArgs */
+  def pluginsMacroArgs(typer: Typer, expandee: Tree): MacroArgs = invoke(new NonCumulativeOp[MacroArgs] {
+    def position = expandee.pos
+    def description = "compute macro arguments for this macro application"
+    def default = standardMacroArgs(typer, expandee)
+    def custom(plugin: MacroPlugin) = plugin.pluginsMacroArgs(typer, expandee)
+  })
+
+  /** @see MacroPlugin.pluginsMacroRuntime */
+  def pluginsMacroRuntime(expandee: Tree): MacroRuntime = invoke(new NonCumulativeOp[MacroRuntime] {
+    def position = expandee.pos
+    def description = "compute macro runtime for this macro application"
+    def default = standardMacroRuntime(expandee)
+    def custom(plugin: MacroPlugin) = plugin.pluginsMacroRuntime(expandee)
+  })
+
+  /** @see MacroPlugin.pluginsEnterSym */
+  def pluginsEnterSym(namer: Namer, tree: Tree): Context =
+    if (macroPlugins.isEmpty) namer.standardEnterSym(tree)
+    else invoke(new NonCumulativeOp[Context] {
+      def position = tree.pos
+      def description = "enter a symbol for this tree"
+      def default = namer.standardEnterSym(tree)
+      def custom(plugin: MacroPlugin) = {
+        val hasExistingSym = tree.symbol != NoSymbol
+        val result = plugin.pluginsEnterSym(namer, tree)
+        if (result && hasExistingSym) Some(namer.context)
+        else if (result && tree.isInstanceOf[Import]) Some(namer.context.make(tree))
+        else if (result) Some(namer.context)
+        else None
+      }
+    })
+
+  /** @see MacroPlugin.pluginsEnsureCompanionObject */
+  def pluginsEnsureCompanionObject(namer: Namer, cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol = invoke(new NonCumulativeOp[Symbol] {
+    def position = cdef.pos
+    def description = "enter a companion symbol for this tree"
+    def default = namer.standardEnsureCompanionObject(cdef, creator)
+    def custom(plugin: MacroPlugin) = plugin.pluginsEnsureCompanionObject(namer, cdef, creator)
+  })
+
+  /** @see MacroPlugin.pluginsEnterStats */
+  def pluginsEnterStats(typer: Typer, stats: List[Tree]): List[Tree] = {
+    // performance opt
+    if (macroPlugins.isEmpty) stats
+    else macroPlugins.foldLeft(stats)((current, plugin) =>
+      if (!plugin.isActive()) current else plugin.pluginsEnterStats(typer, stats))
   }
 }

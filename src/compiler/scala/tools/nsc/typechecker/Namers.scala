@@ -22,7 +22,7 @@ trait Namers extends MethodSynthesis {
   import global._
   import definitions._
 
-  private var _lockedCount = 0
+  var _lockedCount = 0
   def lockedCount = this._lockedCount
 
   /** Replaces any Idents for which cond is true with fresh TypeTrees().
@@ -107,8 +107,8 @@ trait Namers extends MethodSynthesis {
     }
 
     protected def owner       = context.owner
-    private def contextFile = context.unit.source.file
-    private def typeErrorHandler[T](tree: Tree, alt: T): PartialFunction[Throwable, T] = {
+    def contextFile = context.unit.source.file
+    def typeErrorHandler[T](tree: Tree, alt: T): PartialFunction[Throwable, T] = {
       case ex: TypeError =>
         // H@ need to ensure that we handle only cyclic references
         TypeSigError(tree, ex)
@@ -243,7 +243,12 @@ trait Namers extends MethodSynthesis {
         validate(sym2.companionClass)
     }
 
-    def enterSym(tree: Tree): Context = {
+    def enterSym(tree: Tree): Context = pluginsEnterSym(this, tree)
+
+    /** Default implementation of `enterSym`.
+     *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsEnterSym for more details)
+     */
+    def standardEnterSym(tree: Tree): Context = {
       def dispatch() = {
         var returnContext = this.context
         tree match {
@@ -309,7 +314,7 @@ trait Namers extends MethodSynthesis {
      *  be transferred to the symbol as they are, supply a mask containing
      *  the flags to keep.
      */
-    private def createMemberSymbol(tree: MemberDef, name: Name, mask: Long): Symbol = {
+    def createMemberSymbol(tree: MemberDef, name: Name, mask: Long): Symbol = {
       val pos         = tree.pos
       val isParameter = tree.mods.isParameter
       val flags       = tree.mods.flags & mask
@@ -327,14 +332,14 @@ trait Namers extends MethodSynthesis {
           else owner.newValue(name.toTermName, pos, flags)
       }
     }
-    private def createFieldSymbol(tree: ValDef): TermSymbol =
+    def createFieldSymbol(tree: ValDef): TermSymbol =
       owner.newValue(tree.localName, tree.pos, tree.mods.flags & FieldFlags | PrivateLocal)
 
-    private def createImportSymbol(tree: Tree) =
+    def createImportSymbol(tree: Tree) =
       NoSymbol.newImport(tree.pos) setInfo completerOf(tree)
 
     /** All PackageClassInfoTypes come from here. */
-    private def createPackageSymbol(pos: Position, pid: RefTree): Symbol = {
+    def createPackageSymbol(pos: Position, pid: RefTree): Symbol = {
       val pkgOwner = pid match {
         case Ident(_)                 => if (owner.isEmptyPackageClass) rootMirror.RootClass else owner
         case Select(qual: RefTree, _) => createPackageSymbol(pos, qual).moduleClass
@@ -393,7 +398,7 @@ trait Namers extends MethodSynthesis {
     /** Given a ClassDef or ModuleDef, verifies there isn't a companion which
      *  has been defined in a separate file.
      */
-    private def validateCompanionDefs(tree: ImplDef) {
+    def validateCompanionDefs(tree: ImplDef) {
       val sym    = tree.symbol orElse { return }
       val ctx    = if (context.owner.isPackageObjectClass) context.outer else context
       val module = if (sym.isModule) sym else ctx.scope lookupModule tree.name
@@ -466,7 +471,13 @@ trait Namers extends MethodSynthesis {
      *  class definition tree.
      *  @return the companion object symbol.
      */
-    def ensureCompanionObject(cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol = {
+    def ensureCompanionObject(cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol =
+      pluginsEnsureCompanionObject(this, cdef, creator)
+
+    /** Default implementation of `ensureCompanionObject`.
+     *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsEnsureCompanionObject for more details)
+     */
+    def standardEnsureCompanionObject(cdef: ClassDef, creator: ClassDef => Tree = companionModuleDef(_)): Symbol = {
       val m = companionSymbolOf(cdef.symbol, context)
       // @luc: not sure why "currentRun.compiles(m)" is needed, things breaks
       // otherwise. documentation welcome.
@@ -828,9 +839,10 @@ trait Namers extends MethodSynthesis {
      *  assigns the type to the tpt's node.  Returns the type.
      */
     private def assignTypeToTree(tree: ValOrDefDef, defnTyper: Typer, pt: Type): Type = {
-      val rhsTpe =
-        if (tree.symbol.isTermMacro) defnTyper.computeMacroDefType(tree, pt)
-        else defnTyper.computeType(tree.rhs, pt)
+      val rhsTpe = tree match {
+        case ddef: DefDef if tree.symbol.isTermMacro => defnTyper.computeMacroDefType(ddef, pt)
+        case _ => defnTyper.computeType(tree.rhs, pt)
+      }
 
       val defnTpe = widenIfNecessary(tree.symbol, rhsTpe, pt)
       tree.tpt defineType defnTpe setPos tree.pos.focus
@@ -1620,7 +1632,7 @@ trait Namers extends MethodSynthesis {
     val tree: Tree
   }
 
-  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new LockingTypeCompleter {
+  def mkTypeCompleter(t: Tree)(c: Symbol => Unit) = new LockingTypeCompleter with FlagAgnosticCompleter {
     val tree = t
     def completeImpl(sym: Symbol) = c(sym)
   }

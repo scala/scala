@@ -1,0 +1,4 @@
+<plugin>
+  <name>macro-expand</name>
+  <classname>macroExpand.Plugin</classname>
+</plugin>
