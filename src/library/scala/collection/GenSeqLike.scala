@@ -190,7 +190,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    */
   def lastIndexWhere(p: A => Boolean, end: Int): Int
 
-  /** Returns new $coll wih elements in reversed order.
+  /** Returns new $coll with elements in reversed order.
    *
    *  $willNotTerminateInf
    *
