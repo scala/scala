@@ -80,7 +80,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
    * // mapIntString is java.lang.Class[Map[Int,String]] = interface scala.collection.immutable.Map
    * }}}
    */
-  def classOf[T]: Class[T] = null // This is a stub method. The actual implementation is filled in by the compiler.
+  def classOf[T : scala.reflect.ClassTag]: Class[T] = scala.reflect.classTag[T].runtimeClass.asInstanceOf[Class[T]]
 
   type String        = java.lang.String
   type Class[T]      = java.lang.Class[T]
