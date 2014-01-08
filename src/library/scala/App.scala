@@ -28,9 +28,8 @@ import scala.collection.mutable.ListBuffer
  *  functionality, which means that fields of the object will not have been initialized
  *  before the main method has been executed.'''''
  *
- *  It should also be noted that the `main` method will not normally need to be overridden:
- *  the purpose is to turn the whole class body into the “main method”. You should only
- *  chose to override it if you know what you are doing.
+ *  It should also be noted that the `main` method should not be overridden:
+ *  the whole class body becomes the “main method”.
  *
  *  @author  Martin Odersky
  *  @version 2.1, 15/02/2011
@@ -61,11 +60,12 @@ trait App extends DelayedInit {
   }
 
   /** The main method.
-   *  This stores all argument so that they can be retrieved with `args`
-   *  and the executes all initialization code segments in the order they were
-   *  passed to `delayedInit`
+   *  This stores all arguments so that they can be retrieved with `args`
+   *  and then executes all initialization code segments in the order in which
+   *  they were passed to `delayedInit`.
    *  @param args the arguments passed to the main method
    */
+  @deprecatedOverriding("main should not be overridden", "2.11.0")
   def main(args: Array[String]) = {
     this._args = args
     for (proc <- initCode) proc()
