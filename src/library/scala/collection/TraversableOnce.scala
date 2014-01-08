@@ -320,14 +320,14 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    * Example:
    *
    * {{{
-   *      scala> val a = LinkedList(1,2,3,4)
-   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4)
-   *
+   *      scala> val a = List(1,2,3,4)
+   *      a: List[Int] = List(1, 2, 3, 4)
+   *      
    *      scala> val b = new StringBuilder()
-   *      b: StringBuilder =
-   *
-   *      scala> a.addString(b, "LinkedList(", ", ", ")")
-   *      res1: StringBuilder = LinkedList(1, 2, 3, 4)
+   *      b: StringBuilder = 
+   *      
+   *      scala> a.addString(b , "List(" , ", " , ")")
+   *      res5: StringBuilder = List(1, 2, 3, 4)
    * }}}
    *
    *  @param  b    the string builder to which elements are appended.
@@ -362,9 +362,9 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    * Example:
    *
    * {{{
-   *      scala> val a = LinkedList(1,2,3,4)
-   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4)
-   *
+   *      scala> val a = List(1,2,3,4)
+   *      a: List[Int] = List(1, 2, 3, 4)
+   *      
    *      scala> val b = new StringBuilder()
    *      b: StringBuilder =
    *
@@ -385,14 +385,14 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    * Example:
    *
    * {{{
-   *      scala> val a = LinkedList(1,2,3,4)
-   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2, 3, 4)
-   *
+   *      scala> val a = List(1,2,3,4)
+   *      a: List[Int] = List(1, 2, 3, 4)
+   *      
    *      scala> val b = new StringBuilder()
    *      b: StringBuilder =
    *
    *      scala> val h = a.addString(b)
-   *      b: StringBuilder = 1234
+   *      h: StringBuilder = 1234
    * }}}
 
    *  @param  b    the string builder to which elements are appended.

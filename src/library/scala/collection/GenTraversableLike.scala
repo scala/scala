@@ -267,20 +267,20 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *
    *    Example:
    *    {{{
-   *      scala> val a = LinkedList(1)
-   *      a: scala.collection.mutable.LinkedList[Int] = LinkedList(1)
-   *
-   *      scala> val b = LinkedList(2)
-   *      b: scala.collection.mutable.LinkedList[Int] = LinkedList(2)
-   *
+   *      scala> val a = List(1)
+   *      a: List[Int] = List(1)
+   *      
+   *      scala> val b = List(2)
+   *      b: List[Int] = List(2)
+   *      
    *      scala> val c = a ++ b
-   *      c: scala.collection.mutable.LinkedList[Int] = LinkedList(1, 2)
-   *
-   *      scala> val d = LinkedList('a')
-   *      d: scala.collection.mutable.LinkedList[Char] = LinkedList(a)
-   *
+   *      c: List[Int] = List(1, 2)
+   *      
+   *      scala> val d = List('a')
+   *      d: List[Char] = List(a)
+   *      
    *      scala> val e = c ++ d
-   *      e: scala.collection.mutable.LinkedList[AnyVal] = LinkedList(1, 2, a)
+   *      e: List[AnyVal] = List(1, 2, a)
    *    }}}
    *
    *    @return       a new $coll which contains all elements of this $coll
