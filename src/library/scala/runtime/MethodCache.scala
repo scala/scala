@@ -22,7 +22,7 @@ import scala.annotation.tailrec
  *  generated per call point, and will uniquely relate to the method called
  *  at that point, making the method name and argument types irrelevant. */
 /* TODO: if performance is acceptable, PolyMethodCache should be made generic on the method type */
-sealed abstract class MethodCache {
+private[scala] sealed abstract class MethodCache {
   /** Searches for a cached method in the `MethodCache` chain that
    *  is compatible with receiver class `forReceiver`. If none is cached,
    *  `null` is returned. If `null` is returned, find's caller should look-
@@ -32,7 +32,7 @@ sealed abstract class MethodCache {
   def add(forReceiver: JClass[_], forMethod: JMethod): MethodCache
 }
 
-final class EmptyMethodCache extends MethodCache {
+private[scala] final class EmptyMethodCache extends MethodCache {
 
   def find(forReceiver: JClass[_]): JMethod = null
 
@@ -41,7 +41,7 @@ final class EmptyMethodCache extends MethodCache {
 
 }
 
-final class MegaMethodCache(
+private[scala] final class MegaMethodCache(
   private[this] val forName: String,
   private[this] val forParameterTypes: Array[JClass[_]]
 ) extends MethodCache {
@@ -53,7 +53,7 @@ final class MegaMethodCache(
 
 }
 
-final class PolyMethodCache(
+private[scala] final class PolyMethodCache(
   private[this] val next: MethodCache,
   private[this] val receiver: JClass[_],
   private[this] val method: JMethod,
