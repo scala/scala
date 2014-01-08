@@ -88,7 +88,6 @@ trait InteractiveAnalyzer extends Analyzer {
   }
 }
 
-
 /** The main class of the presentation compiler in an interactive environment such as an IDE
  */
 class Global(settings: Settings, _reporter: Reporter, projectName: String = "") extends {
@@ -104,6 +103,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   with Picklers {
 
   import definitions._
+
+  if (!settings.Ymacroexpand.isSetByUser)
+    settings.Ymacroexpand.value = settings.MacroExpand.Discard
 
   val debugIDE: Boolean = settings.YpresentationDebug.value
   val verboseIDE: Boolean = settings.YpresentationVerbose.value
