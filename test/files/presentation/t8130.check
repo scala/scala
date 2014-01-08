@@ -10,7 +10,7 @@ askHyperlinkPos for `applyDynamicNamed` at (3,13) A.scala
 [response] found askHyperlinkPos for `applyDynamicNamed` at (9,7) A.scala
 ================================================================================
 
-askHyperlinkPos for `applyDynamicNamed` at (4,3) A.scala
+askHyperlinkPos for `d` at (4,3) A.scala
 ================================================================================
-[response] found askHyperlinkPos for `applyDynamicNamed` at (9,7) A.scala
+[response] found askHyperlinkPos for `d` at (2,7) A.scala
 ================================================================================

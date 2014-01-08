@@ -939,8 +939,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case other =>
             other
         }
-        typedPos(tree.pos, mode, pt) {
-          Select(qual setPos tree.pos.makeTransparent, nme.apply)
+        typedPos(tree.pos.makeTransparent, mode, pt) {
+          Select(qual setPos tree.pos, nme.apply)
         }
       }
       def adaptConstant(value: Constant): Tree = {
@@ -3977,12 +3977,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
           findSelection(cxTree) match {
             case Some((opName, treeInfo.Applied(_, targs, _))) =>
-              val fun = gen.mkTypeApply(Select(qual, opName), targs)
+              val fun = atPos(qual.pos.makeTransparent)(gen.mkTypeApply(Select(qual, opName), targs))
               if (opName == nme.updateDynamic) suppressMacroExpansion(fun) // SI-7617
               val nameStringLit = atPos(treeSelection.pos.withStart(treeSelection.pos.point).makeTransparent) {
                 Literal(Constant(name.decode))
               }
-              markDynamicRewrite(atPos(qual.pos)(Apply(fun, List(nameStringLit))))
+              markDynamicRewrite(atPos(qual.pos.makeTransparent)(Apply(fun, List(nameStringLit))))
             case _ =>
               setError(tree)
           }
