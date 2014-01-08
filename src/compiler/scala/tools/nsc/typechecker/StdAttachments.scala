@@ -16,7 +16,7 @@ trait StdAttachments {
 
   /** Scratchpad for the macro expander, which is used to store all intermediate data except the details about the runtime.
    */
-  case class MacroExpanderAttachment(original: Tree, desugared: Tree, role: MacroRole)
+  case class MacroExpanderAttachment(original: Tree, desugared: Tree)
 
   /** Loads underlying MacroExpanderAttachment from a macro expandee or returns a default value for that attachment.
    */
@@ -24,15 +24,15 @@ trait StdAttachments {
     tree.attachments.get[MacroExpanderAttachment] getOrElse {
       tree match {
         case Apply(fn, _) if tree.isInstanceOf[ApplyToImplicitArgs] => macroExpanderAttachment(fn)
-        case _ => MacroExpanderAttachment(tree, EmptyTree, APPLY_ROLE)
+        case _ => MacroExpanderAttachment(tree, EmptyTree)
       }
     }
 
   /** After macro expansion is completed, links the expandee and the expansion result
    *  by annotating them both with a `MacroExpansionAttachment`.
    */
-  def linkExpandeeAndDesugared(expandee: Tree, desugared: Tree, role: MacroRole): Unit = {
-    val metadata = MacroExpanderAttachment(expandee, desugared, role)
+  def linkExpandeeAndDesugared(expandee: Tree, desugared: Tree): Unit = {
+    val metadata = MacroExpanderAttachment(expandee, desugared)
     expandee updateAttachment metadata
     desugared updateAttachment metadata
   }

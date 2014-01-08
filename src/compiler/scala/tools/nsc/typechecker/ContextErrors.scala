@@ -726,10 +726,6 @@ trait ContextErrors {
         NormalTypeError(expandee, "too many argument lists for " + fun)
       }
 
-      def MacroInvalidExpansionError(expandee: Tree, role: String, allowedExpansions: String) = {
-        issueNormalTypeError(expandee, s"macro in $role role can only expand into $allowedExpansions")
-      }
-
       def MacroIncompatibleEngineError(macroEngine: String) = {
         val message = s"macro cannot be expanded, because it was compiled by an incompatible macro engine $macroEngine"
         issueNormalTypeError(lastTreeToTyper, message)
