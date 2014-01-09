@@ -2058,8 +2058,8 @@ trait Trees { self: Universe =>
    *  @group Extractors
    */
   abstract class ExistentialTypeTreeExtractor {
-    def apply(tpt: Tree, whereClauses: List[Tree]): ExistentialTypeTree
-    def unapply(existentialTypeTree: ExistentialTypeTree): Option[(Tree, List[Tree])]
+    def apply(tpt: Tree, whereClauses: List[MemberDef]): ExistentialTypeTree
+    def unapply(existentialTypeTree: ExistentialTypeTree): Option[(Tree, List[MemberDef])]
   }
 
   /** The API that all existential type trees support
@@ -2069,8 +2069,12 @@ trait Trees { self: Universe =>
     /** The underlying type of the existential type. */
     def tpt: Tree
 
-    /** The clauses of the definition of the existential type. */
-    def whereClauses: List[Tree]
+    /** The clauses of the definition of the existential type.
+     *  Elements are one of the following:
+     *    1) TypeDef with TypeBoundsTree right-hand side
+     *    2) ValDef with empty right-hand side
+     */
+    def whereClauses: List[MemberDef]
   }
 
   /** A synthetic tree holding an arbitrary type.  Not to be confused with
@@ -2533,7 +2537,7 @@ trait Trees { self: Universe =>
     /** Creates a `ExistentialTypeTree` node from the given components, having a given `tree` as a prototype.
      *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
      */
-    def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[Tree]): ExistentialTypeTree
+    def ExistentialTypeTree(tree: Tree, tpt: Tree, whereClauses: List[MemberDef]): ExistentialTypeTree
   }
 
 // ---------------------- traversing and transforming ------------------------------
@@ -2654,6 +2658,8 @@ trait Trees { self: Universe =>
     def transformValDefss(treess: List[List[ValDef]]): List[List[ValDef]] =
       treess mapConserve (transformValDefs(_))
     /** Transforms a list of `CaseDef` nodes. */
+    def transformMemberDefs(trees: List[MemberDef]): List[MemberDef] =
+      trees mapConserve (tree => transform(tree).asInstanceOf[MemberDef])
     def transformCaseDefs(trees: List[CaseDef]): List[CaseDef] =
       trees mapConserve (tree => transform(tree).asInstanceOf[CaseDef])
     /** Transforms a list of `Ident` nodes. */

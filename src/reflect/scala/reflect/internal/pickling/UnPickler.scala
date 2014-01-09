@@ -487,6 +487,7 @@ abstract class UnPickler {
       def nameRef()     = readNameRef()
       def tparamRef()   = readTypeDefRef()
       def vparamRef()   = readValDefRef()
+      def memberRef()   = readMemberDefRef()
       def constRef()    = readConstantRef()
       def idRef()       = readIdentRef()
       def termNameRef() = readNameRef().toTermName
@@ -520,7 +521,7 @@ abstract class UnPickler {
         case CLASStree           => ClassDef(modsRef, typeNameRef, rep(tparamRef), implRef)
         case COMPOUNDTYPEtree    => CompoundTypeTree(implRef)
         case DEFDEFtree          => DefDef(modsRef, termNameRef, rep(tparamRef), rep(rep(vparamRef)), ref, ref)
-        case EXISTENTIALTYPEtree => ExistentialTypeTree(ref, all(ref))
+        case EXISTENTIALTYPEtree => ExistentialTypeTree(ref, all(memberRef))
         case FUNCTIONtree        => Function(rep(vparamRef), ref)
         case IMPORTtree          => Import(ref, selectorsRef)
         case LABELtree           => LabelDef(termNameRef, rep(idRef), ref)
@@ -633,6 +634,12 @@ abstract class UnPickler {
         case tree:TypeDef => tree
         case other =>
           errorBadSignature("expected an TypeDef (" + other + ")")
+      }
+    protected def readMemberDefRef(): MemberDef =
+      readTreeRef() match {
+        case tree:MemberDef => tree
+        case other =>
+          errorBadSignature("expected an MemberDef (" + other + ")")
       }
 
     protected def errorBadSignature(msg: String) =
