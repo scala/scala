@@ -16,7 +16,7 @@ import scala.util.Try
 /**
  * An `ExecutionContext` is an abstraction over an entity that can execute program logic.
  */
-@implicitNotFound("Cannot find an implicit ExecutionContext, either require one yourself or import ExecutionContext.Implicits.global")
+@implicitNotFound("Cannot find an implicit ExecutionContext, either import scala.concurrent.ExecutionContext.Implicits.global or use a custom one")
 trait ExecutionContext {
   
   /** Runs a block of code on this execution context.
