@@ -1,0 +1,11 @@
+reload: MacroCall.scala
+
+askHyperlinkPos for `foo` at (5,7) MacroCall.scala
+================================================================================
+[response] found askHyperlinkPos for `foo` at (2,7) MacroCall.scala
+================================================================================
+
+askHyperlinkPos for `foo` at (9,7) MacroCall.scala
+================================================================================
+[response] found askHyperlinkPos for `foo` at (2,7) MacroCall.scala
+================================================================================
