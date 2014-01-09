@@ -425,6 +425,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.languageFeatureModule
     definitions.metaAnnotations
     definitions.AnnotationDefaultAttr
+    // inaccessible: definitions.erasurePhase
     definitions.isPhantomClass
     definitions.syntheticCoreClasses
     definitions.syntheticCoreMethods

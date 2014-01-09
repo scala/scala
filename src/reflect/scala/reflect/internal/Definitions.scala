@@ -1207,15 +1207,21 @@ trait Definitions extends api.StandardDefinitions {
     }
     def getMemberMethod(owner: Symbol, name: Name): TermSymbol = {
       getMember(owner, name.toTermName) match {
-        // todo. member symbol becomes a term symbol in cleanup. is this a bug?
-        // case x: MethodSymbol => x
         case x: TermSymbol => x
         case _             => fatalMissingSymbol(owner, name, "method")
       }
     }
 
+    private lazy val erasurePhase = findPhaseWithName("erasure")
     def getMemberIfDefined(owner: Symbol, name: Name): Symbol =
-      owner.info.nonPrivateMember(name)
+      // findMember considered harmful after erasure; e.g.
+      //
+      // scala> exitingErasure(Symbol_apply).isOverloaded
+      // res27: Boolean = true
+      //
+      enteringPhaseNotLaterThan(erasurePhase )(
+        owner.info.nonPrivateMember(name)
+      )
 
     /** Using getDecl rather than getMember may avoid issues with
      *  OverloadedTypes turning up when you don't want them, if you
