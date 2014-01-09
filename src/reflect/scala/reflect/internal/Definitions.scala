@@ -847,7 +847,9 @@ trait Definitions extends api.StandardDefinitions {
         case m if m.paramss.nonEmpty => Nil
         case m                       => m :: loop(n + 1)
       }
-      loop(1)
+      // Since ErrorType always returns a symbol from a call to member, we
+      // had better not start looking for _1, _2, etc. expecting it to run out.
+      if (tpe.isErroneous) Nil else loop(1)
     }
 
     /** If `tp` has a term member `name`, the first parameter list of which
