@@ -13,7 +13,7 @@ Scala Tools
 - scalac      Scala compiler
 - fsc         Scala resident compiler
 - scaladoc    Scala API documentation generator
-- scalap      Scala classfile decoder 
+- scalap      Scala classfile decoder
 
 Run the command "scalac -help" to display the list of available
 compiler options.

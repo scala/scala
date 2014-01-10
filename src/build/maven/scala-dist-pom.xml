@@ -2,11 +2,11 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.scala-lang</groupId>
-  <artifactId>scala-compiler</artifactId>
+  <artifactId>scala-dist</artifactId>
   <packaging>jar</packaging>
   <version>@VERSION@</version>
-  <name>Scala Compiler</name>
-  <description>Compiler for the Scala Programming Language</description>
+  <name>Scala Distribution Artifacts</name>
+  <description>The Artifacts Distributed with Scala</description>
   <url>http://www.scala-lang.org/</url>
   <inceptionYear>2002</inceptionYear>
   <organization>
@@ -31,30 +31,24 @@
   <dependencies>
     <dependency>
       <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
+      <artifactId>scala-library-all</artifactId>
       <version>@VERSION@</version>
     </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
-      <artifactId>scala-reflect</artifactId>
+      <artifactId>scala-compiler</artifactId>
       <version>@VERSION@</version>
     </dependency>
-    <!-- TODO modularize compiler: these dependencies will disappear then the compiler is modularized -->
-    <dependency> <!-- for scala-compiler-doc -->
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-xml_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@XML_VERSION@</version>
-    </dependency>
-    <dependency> <!-- for scala-compiler-doc -->
-      <groupId>org.scala-lang.modules</groupId>
-      <artifactId>scala-parser-combinators_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@PARSER_COMBINATORS_VERSION@</version>
-    </dependency>
-    <dependency> <!-- for scala-compiler-repl; once it moves there, make it required -->
+    <!-- duplicated from scala-compiler, where it's optional,
+    so that resolving scala-dist's transitive dependencies does not include jline,
+    even though we need to include it in the dist, but macros depending on the compiler
+    shouldn't have to require jline...
+    another reason to modularize and move the dependency to scala-compiler-repl
+    TODO: remove duplication once we have the scala-compiler-repl module -->
+    <dependency>
       <groupId>jline</groupId>
       <artifactId>jline</artifactId>
       <version>@JLINE_VERSION@</version>
-      <optional>true</optional>
     </dependency>
   </dependencies>
   <distributionManagement>

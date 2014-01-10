@@ -2,11 +2,11 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.scala-lang</groupId>
-  <artifactId>scala-compiler</artifactId>
-  <packaging>jar</packaging>
+  <artifactId>scala-library-all</artifactId>
+  <packaging>pom</packaging>
   <version>@VERSION@</version>
-  <name>Scala Compiler</name>
-  <description>Compiler for the Scala Programming Language</description>
+  <name>Scala Library Powerpack</name>
+  <description>The Scala Standard Library and Official Modules</description>
   <url>http://www.scala-lang.org/</url>
   <inceptionYear>2002</inceptionYear>
   <organization>
@@ -39,22 +39,40 @@
       <artifactId>scala-reflect</artifactId>
       <version>@VERSION@</version>
     </dependency>
-    <!-- TODO modularize compiler: these dependencies will disappear then the compiler is modularized -->
-    <dependency> <!-- for scala-compiler-doc -->
+    <dependency>
       <groupId>org.scala-lang.modules</groupId>
       <artifactId>scala-xml_@SCALA_BINARY_VERSION@</artifactId>
       <version>@XML_VERSION@</version>
     </dependency>
-    <dependency> <!-- for scala-compiler-doc -->
+    <dependency>
       <groupId>org.scala-lang.modules</groupId>
       <artifactId>scala-parser-combinators_@SCALA_BINARY_VERSION@</artifactId>
       <version>@PARSER_COMBINATORS_VERSION@</version>
     </dependency>
-    <dependency> <!-- for scala-compiler-repl; once it moves there, make it required -->
-      <groupId>jline</groupId>
-      <artifactId>jline</artifactId>
-      <version>@JLINE_VERSION@</version>
-      <optional>true</optional>
+    <dependency>
+      <groupId>org.scala-lang.plugins</groupId>
+      <artifactId>scala-continuations-plugin_@SCALA_BINARY_VERSION@</artifactId>
+      <version>@CONTINUATIONS_PLUGIN_VERSION@</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang.plugins</groupId>
+      <artifactId>scala-continuations-library_@SCALA_BINARY_VERSION@</artifactId>
+      <version>@CONTINUATIONS_LIBRARY_VERSION@</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang.modules</groupId>
+      <artifactId>scala-swing_@SCALA_BINARY_VERSION@</artifactId>
+      <version>@SCALA_SWING_VERSION@</version>
+    </dependency>
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-actor_@SCALA_BINARY_VERSION@</artifactId>
+      <version>@AKKA_ACTOR_VERSION@</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-actors-migration_@SCALA_BINARY_VERSION@</artifactId>
+      <version>@ACTORS_MIGRATION_VERSION@</version>
     </dependency>
   </dependencies>
   <distributionManagement>
