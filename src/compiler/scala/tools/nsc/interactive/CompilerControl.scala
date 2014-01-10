@@ -94,7 +94,12 @@ trait CompilerControl { self: Global =>
   /** Locate smallest tree that encloses position
    *  @pre Position must be loaded
    */
-  def locateTree(pos: Position): Tree = onUnitOf(pos.source) { unit => new Locator(pos) locateIn unit.body }
+  def locateTree(pos: Position): Tree = enclosedTrees(pos).head
+
+  /** Collect the innermost enclosing trees up to the root 
+   *  @pre Position must be loaded
+   */
+  def enclosedTrees(pos: Position): List[Tree] = onUnitOf(pos.source) { unit => new Locator(pos) enclosedIn unit.body }
 
   /** Locates smallest context that encloses position as an optional value.
    */
@@ -134,8 +139,18 @@ trait CompilerControl { self: Global =>
   /** Sets sync var `response` to the smallest fully attributed tree that encloses position `pos`.
    *  Note: Unlike for most other ask... operations, the source file belonging to `pos` needs not be loaded.
    */
+  @deprecated("use `askEnclosingTreesAt`", "2.10.5")
   def askTypeAt(pos: Position, response: Response[Tree]) =
     postWorkItem(new AskTypeAtItem(pos, response))
+
+  /** Sets sync var `response` to the innermost enclosing tree up to the root. The returned trees are 
+   *  sorted so that inner trees are in front. Fuerhermore, they all have an opaque range position, and 
+   *  their position includes the passed `pos`.
+   *  Note: Only the innermost tree is guaranteed to be fully attributed.
+   *  Note: Unlike for most other ask... operations, the source file belonging to `pos` needs not be loaded.
+   */
+  def askEnclosingTreesAt(pos: Position, response: Response[List[Tree]]) =
+    postWorkItem(new AskEnclosingTreesAtItem(pos, response))
 
   /** Sets sync var `response` to the fully attributed & typechecked tree contained in `source`.
    *  @pre `source` needs to be loaded.
@@ -350,9 +365,18 @@ trait CompilerControl { self: Global =>
       response raise new MissingResponse
   }
 
+  @deprecated("use `askEnclosingTreesAt` and `AskEnclosingTreesAtItem`", "2.10.5")
   case class AskTypeAtItem(val pos: Position, response: Response[Tree]) extends WorkItem {
     def apply() = self.getTypedTreeAt(pos, response)
     override def toString = "typeat "+pos.source+" "+pos.show
+
+    def raiseMissing() =
+      response raise new MissingResponse
+  }
+
+  case class AskEnclosingTreesAtItem(val pos: Position, response: Response[List[Tree]]) extends WorkItem {
+    def apply() = self.getEnclosingTreesAt(pos, response)
+    override def toString = "trees at "+pos.source+" "+pos.show
 
     def raiseMissing() =
       response raise new MissingResponse

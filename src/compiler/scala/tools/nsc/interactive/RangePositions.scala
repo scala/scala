@@ -252,15 +252,30 @@ self: scala.tools.nsc.Global =>
 
   /** A locator for trees with given positions.
    *  Given a position `pos`, locator.apply returns
-   *  the smallest tree that encloses `pos`.
+   *  the innermost enclosing tree up to the root.
    */
   class Locator(pos: Position) extends Traverser {
-    var last: Tree = _
-    def locateIn(root: Tree): Tree = {
-      this.last = EmptyTree
+    /** The parents' chain of trees enclosing `pos` or `List(EmptyTree)` if no Tree is found at the passed `pos`*/
+    var parentsChain: List[Tree] = List(EmptyTree)
+
+    /** The innermost tree enclosing `pos` or `EmptyTree` if no Tree is found at the passed `pos` */
+    @deprecated("Use parentsChain.head", "2.10.5")
+    def last: Tree = parentsChain.head    
+
+    /** Returns the smallest tree (with an opaque range position) enclosing `pos`.
+     *  If no tree with an opaque position can be found in the `root`'s siblings, `EmptyTree` is returned.
+     */
+    final def locateIn(root: Tree): Tree = enclosedIn(root).head
+
+    /** Returns all trees (with an opaque range position) enclosing `pos`.
+     *  If no tree with an opaque position can be found in the `root`'s siblings, `List(EmptyTree)` is returned.
+     */
+    def enclosedIn(root: Tree): List[Tree] = {
+      this.parentsChain = Nil
       traverse(root)
-      this.last
+      if(this.parentsChain.isEmpty) List(EmptyTree) else parentsChain
     }
+
     protected def isEligible(t: Tree) = !t.pos.isTransparent
     override def traverse(t: Tree) {
       t match {
@@ -268,7 +283,7 @@ self: scala.tools.nsc.Global =>
           traverse(tt.original)
         case _ =>
           if (t.pos includes pos) {
-            if (isEligible(t)) last = t
+            if (isEligible(t)) parentsChain = t :: parentsChain	
             super.traverse(t)
           } else t match {
             case mdef: MemberDef =>
