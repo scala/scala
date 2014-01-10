@@ -16,7 +16,18 @@ trait ScaladocAnalyzer extends Analyzer {
   val global : Global // generally, a ScaladocGlobal
   import global._
 
+  override def newNamer(context: Context): ScaladocNamer = new Namer(context) with ScaladocNamer
+
   override def newTyper(context: Context): ScaladocTyper = new Typer(context) with ScaladocTyper
+
+  val namedPackages = collection.mutable.Set[Symbol]()
+
+  trait ScaladocNamer extends Namer {
+    override def enterPackage(tree: PackageDef) = {
+      super.enterPackage(tree)
+      namedPackages += tree.symbol
+    }
+  }
 
   trait ScaladocTyper extends Typer {
     private def unit = context.unit

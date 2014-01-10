@@ -188,14 +188,10 @@ abstract class HtmlPage extends Page { thisPage =>
 
   /** Returns the HTML code that represents the template in `tpl` as a hyperlinked name. */
   def templateToHtml(tpl: TemplateEntity, name: String = null) = tpl match {
-    case dTpl: DocTemplateEntity =>
-      if (hasPage(dTpl)) {
-        <a href={ relativeLinkTo(dTpl) } class="extype" name={ dTpl.qualifiedName }>{ if (name eq null) dTpl.name else name }</a>
-      } else {
-        scala.xml.Text(if (name eq null) dTpl.name else name)
-      }
-    case ndTpl: NoDocTemplate =>
-      scala.xml.Text(if (name eq null) ndTpl.name else name)
+    case dTpl: DocTemplateEntity if hasPage(dTpl) =>
+      <a href={ relativeLinkTo(dTpl) } class="extype" name={ dTpl.qualifiedName }>{ if (name eq null) dTpl.name else name }</a>
+    case dTpl: DocTemplateEntity => scala.xml.Text(if (name eq null) dTpl.name else name)
+    case ndTpl: NoDocTemplate    => scala.xml.Text(if (name eq null) ndTpl.name else name)
   }
 
   /** Returns the HTML code that represents the templates in `tpls` as a list of hyperlinked names. */

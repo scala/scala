@@ -69,7 +69,7 @@ abstract class ScaladocModelTest extends DirectTest {
       val universe = model.getOrElse({sys.error("Scaladoc Model Test ERROR: No universe generated!")})
       // 2 - check the model generated
       testModel(universe.rootPackage)
-      println("Done.")
+      done()
     } catch {
       case e: Exception =>
         println(e)
@@ -77,6 +77,9 @@ abstract class ScaladocModelTest extends DirectTest {
     }
     // set err back to the real err handler
     System.setErr(prevErr)
+  }
+  protected def done(): Unit = {
+    println("Done.")
   }
 
   private[this] var settings: doc.Settings = null
