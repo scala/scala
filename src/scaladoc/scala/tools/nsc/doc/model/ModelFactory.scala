@@ -8,7 +8,7 @@ package model
 import base.comment._
 import diagram._
 
-import scala.collection._
+import scala.collection.{ mutable, Map }
 import scala.util.matching.Regex
 import symtab.Flags
 
@@ -26,7 +26,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
                with MemberLookup =>
 
   import global._
-  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass, ListClass }
+  import definitions.{ ObjectClass, NothingClass, AnyClass, AnyValClass, AnyRefClass, ListClass, ScalaPackage }
   import rootMirror.{ RootPackage, RootClass, EmptyPackage }
 
   // Defaults for member grouping, that may be overridden by the template
@@ -40,6 +40,15 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   private var _modelFinished = false
   def modelFinished: Boolean = _modelFinished
   private var universe: Universe = null
+
+  /** Packages entered by namer should be documented. */
+  private lazy val namedPackages = exitingPhase(currentRun.namerPhase) {
+    val ps = currentRun.units.toList flatMap (_.body filter { t =>
+      val s = t.symbol
+      s != null && (s.isPackage || s.isPackageObject) && s.fullName != ScalaPackage.fullName
+    } map (_.symbol))
+    ps.to[Set]
+  }
 
   def makeModel: Option[Universe] = {
     val universe = new Universe { thisUniverse =>
@@ -456,7 +465,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def groupName(group: String): String = groupSearch(_.groupNames.get(group)) getOrElse { if (group == defaultGroup) defaultGroupName else group }
   }
 
-  abstract class PackageImpl(sym: Symbol, inTpl: PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {
+  class PackageImpl(sym: Symbol, inTpl: PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {
     override def inTemplate = inTpl
     override def toRoot: List[PackageImpl] = this :: inTpl.toRoot
     override def reprSymbol = sym.info.members.find (_.isPackageObject) getOrElse sym
@@ -659,24 +668,27 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
               s != EmptyPackage && s != RootPackage
             }
         })
-      else if (bSym.isPackage) // (2)
-        if (settings.skipPackage(makeQualifiedName(bSym)))
-          None
-        else
-          inTpl match {
-            case inPkg: PackageImpl =>
-              val pack = new PackageImpl(bSym, inPkg) {}
-              // Used to check package pruning works:
-              //println(pack.qualifiedName)
-              if (pack.templates.filter(_.isDocTemplate).isEmpty && pack.memberSymsLazy.isEmpty) {
-                droppedPackages += pack
-                None
-              } else
-                Some(pack)
-            case _ =>
-              sys.error("'" + bSym + "' must be in a package")
-          }
-      else {
+      else if (bSym.isPackage) { // (2)
+        inTpl match {
+          case _ if settings skipPackage makeQualifiedName(bSym) => None
+          case inPkg: PackageImpl =>
+            val pack = new PackageImpl(bSym, inPkg)
+            def somethingInPackage = pack.members exists (_ match {
+              case c: TemplateEntity with MemberEntity => c.isDocTemplate
+              case n: NonTemplateMemberEntity          => n.inTemplate.isDocTemplate
+              case _                                   => false
+            })
+            // packages entered by namer are inherently interesting
+            def ofInterest  = namedPackages(bSym) && somethingInPackage
+            def noTemplates = pack.templates.filter(_.isDocTemplate).isEmpty
+            if (!ofInterest && noTemplates && pack.memberSymsLazy.isEmpty) {
+              if (isDebugPruning) Console println s"Pruning package $pack"
+              droppedPackages += pack
+              None
+            } else Some(pack)
+          case _ => sys.error(s"'$bSym' must be in a package")
+        }
+      } else {
         // no class inheritance at this point
         assert(inOriginalOwner(bSym, inTpl), bSym + " in " + inTpl)
         Some(createDocTemplate(bSym, inTpl))
