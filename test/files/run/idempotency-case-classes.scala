@@ -12,7 +12,7 @@ object Test extends App {
   val tb = cm.mkToolBox()
   val tcasee = tb.typecheck(casee.tree)
   println(tcasee)
-  val rtcasee = tb.resetAllAttrs(tcasee)
+  val rtcasee = tb.untypecheck(tcasee)
   try {
     println(tb.eval(rtcasee))
   } catch {

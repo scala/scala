@@ -12,7 +12,7 @@ object Test extends App {
   val tthiss = tb.typecheck(thiss.tree)
   println(tthiss)
   println(showRaw(tthiss))
-  val rtthiss = tb.resetAllAttrs(tthiss)
+  val rtthiss = tb.untypecheck(tthiss)
   try {
     println(tb.eval(rtthiss))
   } catch {

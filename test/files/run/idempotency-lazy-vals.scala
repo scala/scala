@@ -17,7 +17,7 @@ object Test extends App {
   val tb = cm.mkToolBox()
   val tlazee = tb.typecheck(lazee.tree)
   println(tlazee)
-  val rtlazee = tb.resetAllAttrs(tlazee)
+  val rtlazee = tb.untypecheck(tlazee)
   try {
     println(tb.eval(rtlazee))
   } catch {

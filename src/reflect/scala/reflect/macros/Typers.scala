@@ -69,18 +69,32 @@ trait Typers {
   def inferImplicitView(tree: Tree, from: Type, to: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree
 
   /** Recursively resets symbols and types in a given tree.
-   *
-   *  Note that this does not revert the tree to its pre-typer shape.
-   *  For more info, read up https://issues.scala-lang.org/browse/SI-5464.
+   *  WARNING: Don't use this API, go for [[untypecheck]] instead.
    */
+  @deprecated("Use `c.untypecheck` instead", "2.11.0")
   def resetAllAttrs(tree: Tree): Tree
 
   /** Recursively resets locally defined symbols and types in a given tree.
-   *
-   *  Note that this does not revert the tree to its pre-typer shape.
-   *  For more info, read up https://issues.scala-lang.org/browse/SI-5464.
+   *  WARNING: Don't use this API, go for [[untypecheck]] instead.
    */
+  @deprecated("Use `c.untypecheck` instead", "2.11.0")
   def resetLocalAttrs(tree: Tree): Tree
+
+  /** In the current implementation of Scala's reflection API, untyped trees (also known as parser trees or unattributed trees)
+   *  are observationally different from typed trees (also known as typer trees, typechecked trees or attributed trees),
+   *
+   *  Usually, if some compiler API takes a tree, then both untyped and typed trees will do. However in some cases,
+   *  only untyped or only typed trees are appropriate. For example, [[eval]] only accepts untyped trees and one can only splice
+   *  typed trees inside typed trees. Therefore in the current reflection API, there is a need in functions
+   *  that go back and forth between untyped and typed trees. For this we have [[typecheck]] and `untypecheck`.
+   *
+   *  Note that `untypecheck` is currently afflicted by https://issues.scala-lang.org/browse/SI-5464,
+   *  which makes it sometimes corrupt trees so that they don't make sense anymore. Unfortunately, there's no workaround for that.
+   *  We plan to fix this issue soon, but for now please keep it in mind.
+   *
+   *  @see [[http://stackoverflow.com/questions/20936509/scala-macros-what-is-the-difference-between-typed-aka-typechecked-an-untyped]]
+   */
+  def untypecheck(tree: Tree): Tree
 }
 
 /** Indicates an error during one of the methods in [[scala.reflect.macros.Typers]].

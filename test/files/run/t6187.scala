@@ -5,7 +5,7 @@ object Test extends ReplTest {
 import language.experimental.macros, reflect.macros.BlackboxContext
 def macroImpl[T: c.WeakTypeTag](c: BlackboxContext)(t: c.Expr[T]): c.Expr[List[T]] = {
   val r = c.universe.reify { List(t.splice) }
-  c.Expr[List[T]]( c.resetLocalAttrs(r.tree) )
+  c.Expr[List[T]]( c.untypecheck(r.tree) )
 }
 def demo[T](t: T): List[T] = macro macroImpl[T]
 def m[T](t: T): List[List[T]] =
