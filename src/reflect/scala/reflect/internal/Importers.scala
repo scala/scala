@@ -260,6 +260,8 @@ trait Importers extends api.Importers { to: SymbolTable =>
         newExistentialType(tparams map importSymbol, importType(result))
       case from.OverloadedType(pre, alts) =>
         OverloadedType(importType(pre), alts map importSymbol)
+      case from.ImportType(qual) =>
+        ImportType(importTree(qual))
       case from.AntiPolyType(pre, targs) =>
         AntiPolyType(importType(pre), targs map importType)
       case their: from.TypeVar =>
