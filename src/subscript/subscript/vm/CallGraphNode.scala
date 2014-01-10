@@ -124,7 +124,7 @@ trait CallGraphParentNodeTrait extends CallGraphNodeTrait {
   }
 }
 
-trait DoCodeHolder[R] {
+trait DoCodeHolder[R] extends CallGraphNodeTrait {
   def doCode: R
   private var _isExecuting = false
   override def isExecuting = _isExecuting
@@ -297,13 +297,13 @@ case class N_n_ary_op           (template: T_n_ary_op      , isLeftMerge: Boolea
 // only one class for normal script calls and communicator-script calls
 // this will make parsing etc much easier,
 // but there are some fields that are either for normal script calls or for communicator-script calls
-case class N_call(template: T_call) extends CallGraphTreeParentNode with DoCodeHolder[Unit] {
+case class N_call(template: T_call) extends CallGraphTreeParentNode with DoCodeHolder[N_call => Unit] {
   type T = T_call
   var t_callee    : T_script     = null
   var t_commcallee: T_commscript = null
   def doCode = {
-    var v = template.code.apply.apply(this)
-    v(this)
+    template.code.apply.apply(this)
+//    v(this)
   }
   def communicator: Communicator = if (t_commcallee==null) null else t_commcallee.communicator
   def stopPending {if (communicator!=null) {communicator.removePendingCall(this)}}

@@ -88,7 +88,7 @@ trait TemplateNode {
     result
   }
 }
-trait TemplateCodeHolder[N <: DoCodeHolder, R] extends TemplateNode {
+trait TemplateCodeHolder[N <: DoCodeHolder[R], R] extends TemplateNode {
   val code: () => N => R
   def execute(here: N): R = code().apply(here)
 }

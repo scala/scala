@@ -315,6 +315,7 @@ object Scripts {
    mouseReleased    (comp: Component, ?p : java.awt.Point) = var mre: MouseReleased=null 
                                                              event(   MouseReleasedReactor[N_code_eventhandling](comp), ActualOutputParameter(mre, (v:MouseReleased)=>mre=v) ) // TBD: ...
                                                              {! p=mre.point !}
+
 /* these 4 scripts should become:
    mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked =null; event( MouseClickedReactor[N_code_eventhandling](comp, n), ?mce); {! p=mce.point !}
    mouseMove        (comp: Component, ?p : java.awt.Point) = var mme: MouseMoved   =null; event(   MouseMovedReactor[N_code_eventhandling](comp   ), ?mme); {! p=mme.point !}
@@ -325,7 +326,7 @@ for now:
 
 error: missing parameter type for expanded function ((x$4) => _mce.at(here).value = x$4)
 mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked =null; event( MouseClickedReactor[N_code_eventhandling](comp, n), ?mce); {! p=mce.point !}
-                                                                                                                                        ^
+                                                                                                                                                   ^
 */
 
      guard(comp: Component, test: () => Boolean)           = if (test()) .. else ... anyEvent(comp)
@@ -335,76 +336,4 @@ mouseClicks(n:Int,comp: Component, ?p : java.awt.Point) = var mce: MouseClicked 
     
      keyEvent2 (publisher: Publisher, ??keyTypedEvent : KeyTyped)  = event(         KeyTypedEventReactor [N_code_eventhandling](publisher, _keyTypedEvent))
      keyEvents2(publisher: Publisher, task: KeyTyped=>Unit)        = event_loop_KTE(KeyTypedEventsReactor[N_code_eventhandling_loop](publisher), task)
-/*
-
- Note: the manual compilation yielded for the first annotation the type
-  
-   N_annotation[N_annotation[N_code_eventhandling]]
-   
- All the complicated generic type parameters on TemplateNodes and CallGraphNodes were needed
- to make it easy enforceable that "there" and even "there.there" would be of the proper type
-*/
-/*
-  def _event(_r:FormalInputParameter[Reactor[N_code_eventhandling]])  = {
-   
-       _at{gui0} (_at{(there:N_code_eventhandling) => {_r.value.subscribe(there); 
-                        there.onDeactivate{_r.value.unsubscribe}; 
-                        there.onSuccess   {_r.value.acknowledgeEventHandled}}}
-         (_eventhandling0{})
-       )
-   } 
-  }
-  def _event_loop[E<:Event](_r:FormalInputParameter[Reactor[N_code_eventhandling_loop]], task: E=>Unit)  = {
-   _script(this, 'event_loop, _r~'r) {
-       _at{gui0} (_at{(there:N_code_eventhandling_loop) => {_r.value.subscribe(there); 
-                             there.onDeactivate{_r.value.unsubscribe}; 
-                             there.onSuccess   {_r.value.acknowledgeEventHandled}}}
-         (_eventhandling_loop0{task.apply(_r.value.currentEvent.asInstanceOf[E])})
-       )
-   } 
-  }
-  // in principle, _key could call _event, but that is one call level deeper, which is unhandy for the GraphicalScriptDebugger
-  // _key0 is a version that calls _event
-  // likewise for _clicked and _clicked0
-  implicit def  _key(_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Char     ])  = {
-     _script(this,  'key, _p~'p, _k~??'k) { 
-       _at{gui0} (_at{(there:N_code_eventhandling) => {val _r = KeyTypedReactor[N_code_eventhandling](_p.value, _k) 
-                                             _r.value.subscribe(there); 
-                          there.onDeactivate{_r.value.unsubscribe}; 
-                          there.onSuccess   {_r.value.acknowledgeEventHandled}}}
-         (_eventhandling0{})
-      )
-    }
-  }           
-  implicit def  _clicked(_b: FormalInputParameter[Button])  = {
-     _script(this,  'clicked, _b~'b) { 
-       _at{gui0} (_at{(there:N_code_eventhandling) => {val _r = ClickedReactor[N_code_eventhandling](_b.value) 
-                                             _r.value.subscribe(there); 
-                          there.onDeactivate{_r.value.unsubscribe}; 
-                          there.onSuccess   {_r.value.acknowledgeEventHandled}}}
-         (_eventhandling0{})
-      )
-    }
-  }           
-  implicit def  _key0(_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Char     ])  = {_script(this,  'key, _p~'p, _k~??'k) {_event( KeyTypedReactor[N_code_eventhandling](_p.value, _k))}}
-  implicit def _vkey (_p: FormalInputParameter[Publisher], _k: FormalConstrainedParameter[Key.Value])  = {_script(this, 'vkey, _p~'p, _k~??'k) {_event(VKeyTypedReactor[N_code_eventhandling](_p.value, _k))}}
-                
-  implicit def _clicked0(_b: FormalInputParameter[Button     ]) = {_script(this,       'clicked, _b~'b) {_event( ClickedReactor[N_code_eventhandling](_b.value))} }
-           def _anyEvent(_c: FormalInputParameter[Component  ]) = {_script(this,      'anyEvent, _c~'c) {_event(AnyEventReactor[N_code_eventhandling](_c.value))} }
-           def _windowClosing(_w: FormalInputParameter[Window]) = {_script(this, 'windowClosing, _w~'w) {_event(WindowClosingReactor[N_code_eventhandling](_w.value))} }
-
-  implicit def _stateChange (_slider: FormalInputParameter[Slider]) = {_script(this, 'stateChange, _slider~'slider) {_event(SliderStateChangedReactor[N_code_eventhandling](_slider.value))} }
-
-           def _mousePresses(_c: FormalInputParameter[Component], _task: FormalInputParameter[MouseEvent=>Unit]) 
-                = {_script(this, '_mousePresses, _c~'c, _task~'task) {_event_loop(MousePressedReactor[N_code_eventhandling_loop](_c.value), _task.value)
-                                                                     } }
-           
-           def _mouseDraggings(_c: FormalInputParameter[Component], _task: FormalInputParameter[MouseEvent=>Unit]) 
-                = {_script(this, 'mouseDraggings, _c~'c, _task~'task) {_event_loop(MouseDraggedReactor[N_code_eventhandling_loop](_c.value), _task.value)
-                                                                      } }
-           def _guard(_comp: FormalInputParameter[Component], _test: FormalInputParameter[()=> Boolean]) = { 
-                   _script(this, 'guard, _comp~'comp, _test~'test) {
-                     _seq(_if_else((n:N_if_else) => _test.value.apply) (_optionalBreak_loop, _loop), _anyEvent(_comp.value))
-                   } }
-*/           
 }

@@ -110,7 +110,7 @@ def script..
       mouseInput    = (mouseClickInput & mouseDragInput)
                     /  doubleClick (mouseMoveInput / doubleClick {!resetLastMousePos!})       ; ...
 
- //mouseClickInput  = mouseSingleClick (board, p?:java.awt.Point) {! doMouseSingleClick(p) !} ... 
+ //mouseClickInput  = mouseSingleClick (board, ?p:java.awt.Point) {! doMouseSingleClick(p) !} ... 
 //                     !@#%^&$ mouseSingleClick also reacts on double clicks!!! 
 //                     So wait 220 ms; if by then no mouseDoubleClick as arrived, do the singleClick action:
    mouseClickInput  = var p:java.awt.Point=null
@@ -121,9 +121,9 @@ def script..
                     ; {! handleMouseSingleClick(p) !}
                     ; ...
                     
-//doubleClick      = var p:java.awt.Point=null mouseDoubleClick(board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"
    doubleClick      = var p:java.awt.Point=null mouseDoubleClick(board, ?p)
-   mouse_Released   = var p:java.awt.Point=null mouseReleased(   board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "p?"; mouseReleased instead of mouse_Released yields "too many arguments for method" error
+   mouse_Released   = var p:java.awt.Point=null mouseReleased(   board, ?p)
+ //mouse_Released   = var p:java.awt.Point=null mouseReleased(   board, ActualOutputParameter(p, (v:java.awt.Point)=>p=v)) // TBD: "?p"; mouseReleased instead of mouse_Released yields "too many arguments for method" error
     mouseDragInput  = mouseDraggings(board, (e: MouseEvent) => handleMouseDrag(e.point)) / (mouse_Released  {!resetLastMousePos!}); ...
     mouseMoveInput  = mouseMoves(    board, (e: MouseEvent) => handleMouseMove(e.point)) 
   //mouseMoveToggle = var p:java.awt.Point=null mouseMove(board, p?) // doMouseDraw(p))  

@@ -63,7 +63,7 @@ class BasicLifeFrameApplication extends SimpleSubscriptApplication {
     speedSlider.value = s  
   }
   
-  setSpeedValue(7)
+  setSpeedValue(9)
   
   override def  live = _execute(_live())
   
