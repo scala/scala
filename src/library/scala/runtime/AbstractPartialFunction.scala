@@ -35,15 +35,3 @@ abstract class AbstractPartialFunction[@specialized(scala.Int, scala.Long, scala
   // let's not make it final so as not to confuse anyone
   /*final*/ def apply(x: T1): R = applyOrElse(x, PartialFunction.empty)
 }
-
-// Manual stand-ins for formerly specialized variations.
-// Not comprehensive, only sufficent to run scala-check built scala 2.11.0-M5
-// TODO Scala 2.10.0.M6 Remove this once scalacheck is published against M6.
-private[runtime] abstract class AbstractPartialFunction$mcIL$sp extends scala.runtime.AbstractPartialFunction[Any, Int] {
-    override def apply(x: Any): Int = apply$mcIL$sp(x)
-    def apply$mcIL$sp(x: Any): Int = applyOrElse(x, PartialFunction.empty)
-}
-private[runtime] abstract class AbstractPartialFunction$mcFL$sp extends scala.runtime.AbstractPartialFunction[Any, Float] {
-    override def apply(x: Any): Float = apply$mcIL$sp(x)
-    def apply$mcIL$sp(x: Any): Float = applyOrElse(x, PartialFunction.empty)
-}
