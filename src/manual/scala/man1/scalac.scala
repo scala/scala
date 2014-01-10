@@ -109,6 +109,9 @@ object scalac extends Command {
           CmdOption("extdirs", Argument("dirs")),
           "Override location of installed extensions."),
         Definition(
+          CmdOption("feature"),
+          "Emit warning and location for usages of features that should be imported explicitly."),
+        Definition(
           CmdOptionBound("g:", "{none,source,line,vars,notailcalls}"),
           SeqPara(
             Mono("\"none\"") & " generates no debugging info,",
@@ -128,6 +131,9 @@ object scalac extends Command {
           CmdOption("javaextdirs", Argument("path")),
           "Override Java extdirs classpath."),
         Definition(
+          CmdOptionBound("language:", Argument("feature")),
+          "Enable one or more language features."),
+        Definition(
           CmdOption("no-specialization"),
           "Ignore " & MItalic("@specialize") & " annotations."),
         Definition(
@@ -146,6 +152,12 @@ object scalac extends Command {
           CmdOption("sourcepath", Argument("path")),
           "Specify location(s) of source files."),
         Definition(
+          CmdOptionBound("target:", "{jvm-1.5,jvm-1.6,jvm-1.7}"),
+	  SeqPara(
+            Mono("\"jvm-1.5\"") & " target JVM 1.5 (deprecated),",
+            Mono("\"jvm-1.6\"") & " target JVM 1.6 (default),",
+            Mono("\"jvm-1.7\"") & " target JVM 1.7,")),
+        Definition(
           CmdOption("toolcp", Argument("path")),
           "Add to the runner classpath."),
         Definition(
@@ -158,6 +170,12 @@ object scalac extends Command {
         Definition(
           CmdOption("uniqid"),
           "Uniquely tag all identifiers in debugging output."),
+        Definition(
+          CmdOption("usejavacp"),
+          "Utilize the java.class.path in classpath resolution."),
+        Definition(
+          CmdOption("usemanifestcp"),
+          "Utilize the manifest in classpath resolution."),
         Definition(
           CmdOption("verbose"),
           "Output messages about what the compiler is doing"),
@@ -175,11 +193,11 @@ object scalac extends Command {
     Section("Advanced Options",
       DefinitionList(
         Definition(
-          CmdOption("Xcheck-null"),
-          "Warn upon selection of nullable reference"),
-        Definition(
           CmdOption("Xcheckinit"),
           "Wrap field accessors to throw an exception on uninitialized access."),
+	Definition(
+          CmdOption("Xdev"),
+          "Enable warnings for developers working on the Scala compiler"),
         Definition(
           CmdOption("Xdisable-assertions"),
           "Generate no assertions and assumptions"),
@@ -193,6 +211,9 @@ object scalac extends Command {
         Definition(
           CmdOption("Xfatal-warnings"),
           "Fail the compilation if there are any warnings."),
+	Definition(
+          CmdOption("Xfull-lubs"),
+          "Retain pre 2.10 behavior of less aggressive truncation of least upper bounds."),
         Definition(
           CmdOption("Xfuture"),
           "Turn on future language features."),
@@ -202,18 +223,39 @@ object scalac extends Command {
         Definition(
           CmdOption("Xlint"),
           "Enable recommended additional warnings."),
+	Definition(
+          CmdOption("Xlog-free-terms"),
+          "Print a message when reification creates a free term."),
+	Definition(
+          CmdOption("Xlog-free-types"),
+          "Print a message when reification resorts to generating a free type."),
+	Definition(
+          CmdOption("Xlog-implicit-conversions"),
+          "Print a message whenever an implicit conversion is inserted."),
         Definition(
           CmdOption("Xlog-implicits"),
           "Show more detail on why some implicits are not applicable."),
+	Definition(
+          CmdOption("Xlog-reflective-calls"),
+          "Print a message when a reflective method call is generated."),
+	Definition(
+          CmdOptionBound("Xmacro-settings:", Argument("option")),
+          "Custom settings for macros."),
+	Definition(
+          CmdOption("Xmain-class", Argument("path")),
+          "Class for manifest's Main-Class entry (only useful with -d <jar>)."),
         Definition(
           CmdOption("Xmax-classfile-name", Argument("n")),
           "Maximum filename length for generated classes."),
         Definition(
-          CmdOption("Xmigration"),
-          "Warn about constructs whose behavior may have changed between 2.7 and 2.8."),
+          CmdOptionBound("Xmigration:", Argument("version")),
+          "Warn about constructs whose behavior may have changed since" & Argument("version") & "."),
         Definition(
           CmdOption("Xno-forwarders"),
           "Do not generate static forwarders in mirror classes."),
+	Definition(
+          CmdOption("Xno-patmat-analysis"),
+          "Don't perform exhaustivity/unreachability analysis. Also, ignore " & MItalic("@switch") & " annotation."),
         Definition(
           CmdOption("Xno-uescape"),
           "Disable handling of " & BSlash & "u unicode escapes"),
@@ -221,26 +263,26 @@ object scalac extends Command {
           CmdOption("Xnojline"),
           "Do not use JLine for editing."),
         Definition(
-          CmdOptionBound("Xplugin:", Argument("file")),
-          "Load a plugin from a file"),
+          CmdOptionBound("Xplugin:", Argument("paths")),
+          "Load a plugin from each classpath."),
         Definition(
           CmdOptionBound("Xplugin-disable:", Argument("plugin")),
-          "Disable a plugin"),
+          "Disable plugins by name."),
         Definition(
           CmdOption("Xplugin-list"),
-          "Print a synopsis of loaded plugins"),
+          "Print a synopsis of loaded plugins."),
         Definition(
           CmdOptionBound("Xplugin-require:", Argument("plugin")),
-          "Abort unless the given plugin(s) are available"),
+          "Abort if a named plugin is not loaded."),
         Definition(
           CmdOption("Xpluginsdir", Argument("path")),
-          "Path to search compiler plugins."),
+          "Path to search for plugin archives."),
         Definition(
           CmdOptionBound("Xprint:", Argument("phases")),
           "Print out program after " & Argument("phases") & " (see below)."),
         Definition(
-          CmdOption("Xprint-icode"),
-          "Log internal icode to *.icode files."),
+          CmdOptionBound("Xprint-icode", "[:" & Argument("phases") & "]"),
+          "Log internal icode to *.icode files after" & Argument("phases") & " (default: icode)."),
         Definition(
           CmdOption("Xprint-pos"),
           "Print tree positions, as offsets."),
@@ -269,9 +311,12 @@ object scalac extends Command {
         Definition(
           CmdOption("Xsource-reader", Argument("classname")),
           "Specify a custom method for reading source files."),
+	Definition(
+          CmdOption("Xstrict-inference"),
+          "Don't infer known-unsound types."),
         Definition(
           CmdOption("Xverify"),
-          "Verify generic signatures in generated bytecode."),
+          "Verify generic signatures in generated bytecode (asm backend only)."),
         Definition(
           CmdOption("Y"),
           "Print a synopsis of private options.")
@@ -281,65 +326,101 @@ object scalac extends Command {
     Section("Compilation Phases",
       DefinitionList(
         Definition(
-          MItalic("initial"),
-          "initializing compiler"),
-        Definition(
-          MItalic("parse"),
-          "parse source files"),
+          MItalic("parser"),
+          "parse source into ASTs, perform simple desugaring"),
         Definition(
           MItalic("namer"),
-          "create symbols"),
+          "resolve names, attach symbols to named trees"),
+	Definition(
+          MItalic("packageobjects"),
+          "load package objects"),
+	Definition(
+          MItalic("typer"),
+          "the meat and potatoes: type the trees"),
         Definition(
-          MItalic("analyze"),
-          "name and type analysis"),
+          MItalic("patmat"),
+          "translate match expressions"),
+	Definition(
+          MItalic("superaccessors"),
+          "add super accessors in traits and nested classes"),
+	Definition(
+          MItalic("extmethods"),
+          "add extension methods for inline classes"),
+	Definition(
+          MItalic("pickler"),
+          "serialize symbol tables"),
         Definition(
-          MItalic("refcheck"),
-          "reference checking"),
-        Definition(
+          MItalic("refchecks"),
+          "reference/override checking, translate nested objects"),
+	Definition(
+          MItalic("selectiveanf"),
+          "ANF pre-transform for " & MItalic("@cps") & " (CPS plugin)"),
+	Definition(
+          MItalic("selectivecps"),
+          MItalic("@cps") & "-driven transform of selectiveanf assignements (CPS plugin)"),
+	Definition(
           MItalic("uncurry"),
-          "uncurry function types and applications"),
+          "uncurry, translate function values to anonymous classes"),
         Definition(
-          MItalic("lambdalift"),
-          "lambda lifter"),
+          MItalic("tailcalls"),
+          "replace tail calls by jumps"),
         Definition(
-          MItalic("typesasvalues"),
-          "represent types as values"),
+          MItalic("specialize"),
+          MItalic("@specialized") & "-driven class and method specialization"),
         Definition(
-          MItalic("addaccessors"),
-          "add accessors for constructor arguments"),
-        Definition(
-          MItalic("explicitouterclasses"),
-          "make links from inner classes to enclosing one explicit"),
-        Definition(
-          MItalic("addconstructors"),
-          "add explicit constructor for each class"),
-        Definition(
-          MItalic("tailcall"),
-          "add tail-calls"),
-        Definition(
-          MItalic("wholeprog"),
-          "perform whole program analysis"),
-        Definition(
-          MItalic("addinterfaces"),
-          "add one interface per class"),
-        Definition(
-          MItalic("expandmixins"),
-          "expand mixins by code copying"),
-        Definition(
-          MItalic("boxing"),
-          "makes boxing explicit"),
+          MItalic("explicitouter"),
+          "this refs to outer pointers, translate patterns"),
         Definition(
           MItalic("erasure"),
-          "type eraser"),
+          "erase types, add interfaces for traits"),
+        Definition(
+          MItalic("posterasure"),
+          "clean up erased inline classes"),
+        Definition(
+          MItalic("lazyvals"),
+          "allocate bitmaps, translate lazy vals into lazified defs"),
+        Definition(
+          MItalic("lambdalift"),
+          "move nested functions to top level"),
+        Definition(
+          MItalic("constructors"),
+          "move field definitions into constructors"),
+        Definition(
+          MItalic("flatten"),
+          "eliminate inner classes"),
+        Definition(
+          MItalic("mixin"),
+          "mixin composition"),
+        Definition(
+          MItalic("cleanup"),
+          "platform-specific cleanups, generate reflective calls"),
+        Definition(
+          MItalic("delambdafy"),
+          "remove lambdas"),
         Definition(
           MItalic("icode"),
-          "generate icode"),
+          "generate portable intermediate code"),
         Definition(
-          MItalic("codegen"),
-          "enable code generation"),
+          MItalic("inliner"),
+          "optimization: do inlining"),
+        Definition(
+          MItalic("inlineHandlers"),
+          "optimization: inline exception handlers"),
+        Definition(
+          MItalic("closelim"),
+          "optimization: eliminate uncalled closures"),
+        Definition(
+          MItalic("constopt"),
+          "optimization: optimize null and other constants"),
+        Definition(
+          MItalic("dce"),
+          "optimization: eliminate dead code"),
+        Definition(
+          MItalic("jvm"),
+          "generate JVM bytecode"),
         Definition(
           MItalic("terminal"),
-          "compilation terminated"),
+          "the last phase in the compiler chain"),
         Definition(
           MItalic("all"),
           "matches all phases"))))
