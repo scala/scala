@@ -13,7 +13,7 @@ object Test extends App {
   val tb = cm.mkToolBox()
   val tlabel = tb.typecheck(label.tree)
   println(tlabel)
-  val rtlabel = tb.resetAllAttrs(tlabel)
+  val rtlabel = tb.untypecheck(tlabel)
   try {
     println(tb.eval(rtlabel))
   } catch {

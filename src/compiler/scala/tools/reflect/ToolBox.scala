@@ -72,18 +72,21 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
   def inferImplicitView(tree: u.Tree, from: u.Type, to: u.Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: u.Position = u.NoPosition): u.Tree
 
   /** Recursively resets symbols and types in a given tree.
-   *
-   *  Note that this does not revert the tree to its pre-typer shape.
-   *  For more info, read up https://issues.scala-lang.org/browse/SI-5464.
+   *  WARNING: Don't use this API, go for [[untypecheck]] instead.
    */
+  @deprecated("Use `tb.untypecheck` instead", "2.11.0")
   def resetAllAttrs(tree: u.Tree): u.Tree
 
   /** Recursively resets locally defined symbols and types in a given tree.
-   *
-   *  Note that this does not revert the tree to its pre-typer shape.
-   *  For more info, read up https://issues.scala-lang.org/browse/SI-5464.
+   *  WARNING: Don't use this API, go for [[untypecheck]] instead.
    */
+  @deprecated("Use `tb.untypecheck` instead", "2.11.0")
   def resetLocalAttrs(tree: u.Tree): u.Tree
+
+  /**
+   *  @see [[scala.reflect.macros.Typers.untypecheck]]
+   */
+  def untypecheck(tree: u.Tree): u.Tree
 
   /** .. */
   def parse(code: String): u.Tree
