@@ -169,6 +169,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.PolyType
     this.ExistentialType
     this.OverloadedType
+    this.ImportType
     this.AntiPolyType
     this.HasTypeMember
     this.ArrayTypeRef

@@ -956,7 +956,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       singleType(qual.tpe, tree.symbol)
     case Import(expr, selectors) =>
       tree.symbol.info match {
-        case analyzer.ImportType(expr) => expr match {
+        case ImportType(expr) => expr match {
           case s@Select(qual, name) if treeInfo.admitsTypeSelection(expr) => singleType(qual.tpe, s.symbol)
           case i : Ident => i.tpe
           case _ => tree.tpe
@@ -1021,7 +1021,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
       locals.add(sym, pre, implicitlyAdded = false) { (s, st) =>
         // imported val and var are always marked as inaccessible, but they could be accessed through their getters. SI-7995
-        if (s.hasGetter) 
+        if (s.hasGetter)
           new ScopeMember(s, st, context.isAccessible(s.getter, pre, superAccess = false), viaImport)
         else
           new ScopeMember(s, st, context.isAccessible(s, pre, superAccess = false), viaImport)
@@ -1111,7 +1111,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val pre = stabilizedType(tree)
 
     val ownerTpe = tree.tpe match {
-      case analyzer.ImportType(expr) => expr.tpe
+      case ImportType(expr) => expr.tpe
       case null => pre
       case MethodType(List(), rtpe) => rtpe
       case _ => tree.tpe
