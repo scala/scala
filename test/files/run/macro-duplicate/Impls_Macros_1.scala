@@ -1,7 +1,7 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Macros {
-  def impl(c: BlackboxContext) = {
+  def impl(c: Context) = {
     import c.universe._
     val Expr(Block((cdef: ClassDef) :: Nil, _)) = reify { class C { def x = 2 } }
     val cdef1 =

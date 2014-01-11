@@ -1,7 +1,7 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.BlackboxMacro
+import scala.reflect.macros.blackbox.Macro
 
-trait Bundle[T] extends BlackboxMacro {
+trait Bundle[T] extends Macro {
   def impl = ???
 }
 

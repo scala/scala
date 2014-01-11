@@ -1,8 +1,8 @@
 import language.experimental.macros
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Macros {
-  def impl(c: BlackboxContext) = {
+  def impl(c: Context) = {
     import c.universe._
     val decls = c.typeOf[JavaClassWithCheckedExceptions_1[_]].declarations.toList
     val s = decls.sortBy(_.name.toString).map(decl => (s"${decl.name}: ${decl.annotations}")).mkString(scala.compat.Platform.EOL)

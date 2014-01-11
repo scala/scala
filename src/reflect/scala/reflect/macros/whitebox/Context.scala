@@ -1,6 +1,7 @@
 package scala
 package reflect
 package macros
+package whitebox
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
@@ -24,22 +25,22 @@ package macros
  *  enclosing trees and compilation units, evaluating trees, logging warnings/errors and much more.
  *  Refer to the documentation of top-level traits in this package to learn the details.
  *
- *  If a macro def refers to a macro impl that uses `WhiteboxContext`, then this macro def becomes a whitebox macro,
+ *  If a macro def refers to a macro impl that uses `whitebox.Context`, then this macro def becomes a whitebox macro,
  *  gaining the ability to refine the type of its expansion beyond its official return type, which enables a number of important use cases.
- *  Blackbox macros, i.e. the ones defined with `BlackboxContext`, can't do that, so they are less powerful.
+ *  Blackbox macros, i.e. the ones defined with `blackbox.Context`, can't do that, so they are less powerful.
  *  However blackbox macros are also going to enjoy better support than whitebox macros, so choose wisely.
  *  See the [[http://docs.scala-lang.org/overviews/macros.html Macros Guide]] for more information.
  *
- *  @see `scala.reflect.macros.BlackboxContext`
+ *  @see `scala.reflect.macros.blackbox.Context`
  */
-trait WhiteboxContext extends BlackboxContext {
+trait Context extends blackbox.Context {
   /** @inheritdoc
    */
-  def openMacros: List[WhiteboxContext]
+  def openMacros: List[Context]
 
   /** @inheritdoc
    */
-  def enclosingMacros: List[WhiteboxContext]
+  def enclosingMacros: List[Context]
 
   /** Information about one of the currently considered implicit candidates.
    *  Candidates are used in plural form, because implicit parameters may themselves have implicit parameters,

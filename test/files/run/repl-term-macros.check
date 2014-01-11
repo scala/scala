@@ -1,16 +1,16 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> import scala.reflect.macros.BlackboxContext
-import scala.reflect.macros.BlackboxContext
+scala> import scala.reflect.macros.blackbox.Context
+import scala.reflect.macros.blackbox.Context
 
 scala> import language.experimental.macros
 import language.experimental.macros
 
 scala> 
 
-scala> def impl1(c: BlackboxContext) = { import c.universe._; c.Expr[Unit](q"()") }
-impl1: (c: scala.reflect.macros.BlackboxContext)c.Expr[Unit]
+scala> def impl1(c: Context) = { import c.universe._; c.Expr[Unit](q"()") }
+impl1: (c: scala.reflect.macros.blackbox.Context)c.Expr[Unit]
 
 scala> def foo1: Unit = macro impl1
 defined term macro foo1: Unit
@@ -19,8 +19,8 @@ scala> foo1
 
 scala> 
 
-scala> def impl2(c: BlackboxContext)() = { import c.universe._; c.Expr[Unit](q"()") }
-impl2: (c: scala.reflect.macros.BlackboxContext)()c.Expr[Unit]
+scala> def impl2(c: Context)() = { import c.universe._; c.Expr[Unit](q"()") }
+impl2: (c: scala.reflect.macros.blackbox.Context)()c.Expr[Unit]
 
 scala> def foo2(): Unit = macro impl2
 defined term macro foo2: ()Unit
@@ -29,8 +29,8 @@ scala> foo2()
 
 scala> 
 
-scala> def impl3(c: BlackboxContext)(x: c.Expr[Int])(y: c.Expr[Int]) = { import c.universe._; c.Expr[Unit](q"()") }
-impl3: (c: scala.reflect.macros.BlackboxContext)(x: c.Expr[Int])(y: c.Expr[Int])c.Expr[Unit]
+scala> def impl3(c: Context)(x: c.Expr[Int])(y: c.Expr[Int]) = { import c.universe._; c.Expr[Unit](q"()") }
+impl3: (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Int])(y: c.Expr[Int])c.Expr[Unit]
 
 scala> def foo3(x: Int)(y: Int): Unit = macro impl3
 defined term macro foo3: (x: Int)(y: Int)Unit

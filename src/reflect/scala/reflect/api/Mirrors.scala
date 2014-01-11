@@ -29,19 +29,19 @@ package api
  * Compile-time `Mirror`s make use of only classloader `Mirror`s to load `Symbol`s
  * by name.
  *
- * The entry point to classloader `Mirror`s is via [[scala.reflect.macros.BlackboxContext#mirror]] or [[scala.reflect.macros.WhiteboxContext#mirror]].
+ * The entry point to classloader `Mirror`s is via [[scala.reflect.macros.blackbox.Context#mirror]] or [[scala.reflect.macros.whitebox.Context#mirror]].
  * Typical methods which use classloader `Mirror`s include [[scala.reflect.api.Mirror#staticClass]],
  * [[scala.reflect.api.Mirror#staticModule]], and [[scala.reflect.api.Mirror#staticPackage]]. For
  * example:
  * {{{
- *  import scala.reflect.macros.BlackboxContext
+ *  import scala.reflect.macros.blackbox.Context
  *
  *  case class Location(filename: String, line: Int, column: Int)
  *
  *  object Macros {
  *    def currentLocation: Location = macro impl
  *
- *    def impl(c: BlackboxContext): c.Expr[Location] = {
+ *    def impl(c: Context): c.Expr[Location] = {
  *      import c.universe._
  *      val pos = c.macroApplication.pos
  *      val clsLocation = c.mirror.staticModule("Location") // get symbol of "Location" object

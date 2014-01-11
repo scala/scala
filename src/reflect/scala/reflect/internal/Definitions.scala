@@ -482,12 +482,12 @@ trait Definitions extends api.StandardDefinitions {
     lazy val TypeCreatorClass      = getClassIfDefined("scala.reflect.api.TypeCreator") // defined in scala-reflect.jar, so we need to be careful
     lazy val TreeCreatorClass      = getClassIfDefined("scala.reflect.api.TreeCreator") // defined in scala-reflect.jar, so we need to be careful
 
-    lazy val BlackboxMacroClass           = getClassIfDefined("scala.reflect.macros.BlackboxMacro") // defined in scala-reflect.jar, so we need to be careful
+    lazy val BlackboxMacroClass           = getClassIfDefined("scala.reflect.macros.blackbox.Macro") // defined in scala-reflect.jar, so we need to be careful
          def BlackboxMacroContextValue    = BlackboxMacroClass.map(sym => getMemberValue(sym, nme.c))
-    lazy val WhiteboxMacroClass           = getClassIfDefined("scala.reflect.macros.WhiteboxMacro") // defined in scala-reflect.jar, so we need to be careful
+    lazy val WhiteboxMacroClass           = getClassIfDefined("scala.reflect.macros.whitebox.Macro") // defined in scala-reflect.jar, so we need to be careful
          def WhiteboxMacroContextValue    = WhiteboxMacroClass.map(sym => getMemberValue(sym, nme.c))
-    lazy val BlackboxContextClass         = getClassIfDefined("scala.reflect.macros.BlackboxContext") // defined in scala-reflect.jar, so we need to be careful
-    lazy val WhiteboxContextClass         = getClassIfDefined("scala.reflect.macros.WhiteboxContext") // defined in scala-reflect.jar, so we need to be careful
+    lazy val BlackboxContextClass         = getClassIfDefined("scala.reflect.macros.blackbox.Context") // defined in scala-reflect.jar, so we need to be careful
+    lazy val WhiteboxContextClass         = getClassIfDefined("scala.reflect.macros.whitebox.Context") // defined in scala-reflect.jar, so we need to be careful
          def MacroContextPrefix           = BlackboxContextClass.map(sym => getMemberMethod(sym, nme.prefix))
          def MacroContextPrefixType       = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.PrefixType))
          def MacroContextUniverse         = BlackboxContextClass.map(sym => getMemberMethod(sym, nme.universe))

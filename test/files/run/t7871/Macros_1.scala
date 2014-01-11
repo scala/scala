@@ -1,4 +1,4 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.whitebox.Context
 import language.experimental.macros
 
 trait Tree

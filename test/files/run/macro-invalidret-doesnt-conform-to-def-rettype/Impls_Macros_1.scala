@@ -1,7 +1,7 @@
-import scala.reflect.macros.{BlackboxContext => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 object Impls {
-  def foo(c: Ctx): c.Expr[Int] = {
+  def foo(c: Context): c.Expr[Int] = {
     import c.universe._
     c.Expr(Literal(Constant("42")))
   }

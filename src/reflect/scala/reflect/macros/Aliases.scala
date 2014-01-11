@@ -5,11 +5,11 @@ package macros
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that defines shorthands for the
+ *  A slice of [[scala.reflect.macros.blackbox.Context the Scala macros context]] that defines shorthands for the
  *  most frequently used types and functions of the underlying compiler universe.
  */
 trait Aliases {
-  self: BlackboxContext =>
+  self: blackbox.Context =>
 
   /** The type of symbols representing declarations. */
   type Symbol = universe.Symbol

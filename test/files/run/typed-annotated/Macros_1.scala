@@ -1,10 +1,10 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 import language.experimental.macros
 
 class ann extends scala.annotation.StaticAnnotation
 
 object Macros {
-  def impl(c: BlackboxContext) = {
+  def impl(c: Context) = {
     import c.universe._
     // val tpt = Annotated(Apply(Select(New(Ident(newTypeName("ann"))), nme.CONSTRUCTOR), List()), Ident(newTypeName("Int")))
     val tpt = Annotated(Apply(Select(New(Ident(newTypeName("ann"))), nme.CONSTRUCTOR), List()), TypeTree(weakTypeOf[Int]))

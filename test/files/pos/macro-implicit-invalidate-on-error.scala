@@ -1,5 +1,5 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.Context
+import scala.reflect.macros.blackbox.Context
 
 trait LegacyLiftable[T] {
   def apply(universe: scala.reflect.api.Universe, value: T): universe.Tree

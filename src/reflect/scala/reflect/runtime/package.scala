@@ -26,7 +26,7 @@ package object runtime {
 
 package runtime {
   private[scala] object Macros {
-    def currentMirror(c: scala.reflect.macros.BlackboxContext): c.Expr[universe.Mirror] = {
+    def currentMirror(c: scala.reflect.macros.blackbox.Context): c.Expr[universe.Mirror] = {
       import c.universe._
       val runtimeClass = c.reifyEnclosingRuntimeClass
       if (runtimeClass.isEmpty) c.abort(c.enclosingPosition, "call site does not have an enclosing class")

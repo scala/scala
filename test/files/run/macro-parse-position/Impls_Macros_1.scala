@@ -1,8 +1,8 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.{BlackboxContext => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 object Macros {
-  def impl(c: Ctx)() = {
+  def impl(c: Context)() = {
     import c.universe._
     val t = c.parse("foo bar")
     val out = s"${t.pos == NoPosition}\n${t.pos}\n${t.pos.source.content.length}\n${new String(t.pos.source.content)}"

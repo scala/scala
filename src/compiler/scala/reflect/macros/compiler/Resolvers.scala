@@ -46,8 +46,8 @@ trait Resolvers {
         if (!isMacroBundleProtoType(bundleProto.tpe)) MacroBundleWrongShapeError()
         if (!bundleProto.owner.isStaticOwner) MacroBundleNonStaticError()
 
-        // synthesize the bundle, i.e. given a static `trait Foo extends Macro { def expand = ... } `
-        // create a top-level definition `class Foo$Bundle(val c: BlackboxContext/WhiteboxContext) extends Foo` in a package next to `Foo`
+        // synthesize the bundle, i.e. given a static `trait Foo extends *box.Macro { def expand = ... } `
+        // create a top-level definition `class Foo$Bundle(val c: *box.Context) extends Foo` in a package next to `Foo`
         val bundlePid = gen.mkUnattributedRef(bundlePkg)
         val bundlePrefix =
           if (bundlePkg == EmptyPackageClass) bundleProto.fullName('$')

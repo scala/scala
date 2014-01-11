@@ -19,10 +19,10 @@ package object macros {
    *  with the former being better supported and the latter being more powerful. You can read about
    *  the details of the split and the associated trade-offs in the [[http://docs.scala-lang.org/overviews/macros.html Macros Guide]].
    *
-   *  `scala.reflect.macros.Context` follows this tendency and turns into `scala.reflect.macros.BlackboxContext`
-   *  and `scala.reflect.macros.WhiteboxContext`. The original `Context` is left in place for compatibility reasons,
+   *  `scala.reflect.macros.Context` follows this tendency and turns into `scala.reflect.macros.blackbox.Context`
+   *  and `scala.reflect.macros.whitebox.Context`. The original `Context` is left in place for compatibility reasons,
    *  but it is now deprecated, nudging the users to choose between blackbox and whitebox macros.
    */
-  @deprecated("Use BlackboxContext or WhiteboxContext instead", "2.11.0")
-  type Context = WhiteboxContext
+  @deprecated("Use blackbox.Context or whitebox.Context instead", "2.11.0")
+  type Context = whitebox.Context
 }

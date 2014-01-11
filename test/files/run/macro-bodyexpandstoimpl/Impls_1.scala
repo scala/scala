@@ -1,5 +1,6 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.{BlackboxContext, WhiteboxContext}
+import scala.reflect.macros.blackbox.{Context => BlackboxContext}
+import scala.reflect.macros.whitebox.{Context => WhiteboxContext}
 
 object Impls {
   def foo(c: BlackboxContext)(x: c.Expr[Int]) = x

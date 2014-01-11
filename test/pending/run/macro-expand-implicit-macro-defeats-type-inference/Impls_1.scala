@@ -1,4 +1,4 @@
-import scala.reflect.macros.Context
+import scala.reflect.macros.whitebox.Context
 
 object Impls {
   def foo[T: c.WeakTypeTag](c: Context): c.Expr[List[T]] = c.universe.reify {

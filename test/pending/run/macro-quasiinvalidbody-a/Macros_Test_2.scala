@@ -1,4 +1,4 @@
-import scala.reflect.macros.{Context => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 object Macros extends Impls {
   def foo(x: Any) = macro impl

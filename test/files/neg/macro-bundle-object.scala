@@ -1,8 +1,8 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.{BlackboxMacro, BlackboxContext}
+import scala.reflect.macros.blackbox._
 
-object Bundle extends BlackboxMacro {
-  val c: BlackboxContext = ???
+object Bundle extends Macro {
+  val c: Context = ???
   def impl = ???
 }
 

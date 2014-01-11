@@ -1,4 +1,4 @@
-import reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 abstract class RangeDefault {
   val from, to: Int
@@ -10,7 +10,7 @@ abstract class RangeDefault {
 
 /** This class should go into reflect.macro once it is a bit more stable. */
 abstract class Utils {
-  val context: BlackboxContext
+  val context: Context
   import context.universe._
 
   class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {

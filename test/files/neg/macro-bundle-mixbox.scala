@@ -1,5 +1,6 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.{BlackboxMacro, WhiteboxMacro}
+import scala.reflect.macros.blackbox.{Macro => BlackboxMacro}
+import scala.reflect.macros.whitebox.{Macro => WhiteboxMacro}
 
 trait Bundle extends BlackboxMacro with WhiteboxMacro {
   def impl = ???

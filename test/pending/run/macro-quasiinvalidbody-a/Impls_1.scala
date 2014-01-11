@@ -1,5 +1,5 @@
-import scala.reflect.macros.{Context => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 trait Impls {
-  def impl(c: Ctx)(x: c.Expr[Any]) = x
+  def impl(c: Context)(x: c.Expr[Any]) = x
 }

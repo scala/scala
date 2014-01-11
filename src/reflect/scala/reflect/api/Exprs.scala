@@ -106,7 +106,7 @@ trait Exprs { self: Universe =>
      *
      * The corresponding macro implementation should have the following signature (note how the return type denotes path-dependency on x):
      * {{{
-     * object Impls { def foo_impl(c: BlackboxContext)(x: c.Expr[X]): c.Expr[x.value.T] = ... }
+     * object Impls { def foo_impl(c: Context)(x: c.Expr[X]): c.Expr[x.value.T] = ... }
      * }}}
      */
     @compileTimeOnly("cannot use value except for signatures of macro implementations")

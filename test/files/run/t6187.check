@@ -1,15 +1,15 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> import language.experimental.macros, reflect.macros.BlackboxContext
-import language.experimental.macros
-import reflect.macros.BlackboxContext
+scala> import scala.language.experimental.macros, scala.reflect.macros.blackbox.Context
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox.Context
 
-scala> def macroImpl[T: c.WeakTypeTag](c: BlackboxContext)(t: c.Expr[T]): c.Expr[List[T]] = {
+scala> def macroImpl[T: c.WeakTypeTag](c: Context)(t: c.Expr[T]): c.Expr[List[T]] = {
   val r = c.universe.reify { List(t.splice) }
   c.Expr[List[T]]( c.resetLocalAttrs(r.tree) )
 }
-macroImpl: [T](c: scala.reflect.macros.BlackboxContext)(t: c.Expr[T])(implicit evidence$1: c.WeakTypeTag[T])c.Expr[List[T]]
+macroImpl: [T](c: scala.reflect.macros.blackbox.Context)(t: c.Expr[T])(implicit evidence$1: c.WeakTypeTag[T])c.Expr[List[T]]
 
 scala> def demo[T](t: T): List[T] = macro macroImpl[T]
 defined term macro demo: [T](t: T)List[T]

@@ -1,10 +1,10 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 import language.experimental.macros
 
 object MyAttachment
 
 object Macros {
-  def impl(c: BlackboxContext) = {
+  def impl(c: Context) = {
     import c.universe._
     val ident = Ident(TermName("bar")) updateAttachment MyAttachment
     assert(ident.attachments.get[MyAttachment.type].isDefined, ident.attachments)

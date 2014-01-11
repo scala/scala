@@ -1,5 +1,5 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Impls {
-  def impl(c: BlackboxContext) = { import c.universe._; c.Expr[Unit](q"()") }
+  def impl(c: Context) = { import c.universe._; c.Expr[Unit](q"()") }
 }

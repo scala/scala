@@ -1,7 +1,7 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Macros {
-  def impl(c: BlackboxContext) = {
+  def impl(c: Context) = {
     c.universe.reify { implicitly[SourceLocation] }
   }
 

@@ -29,7 +29,7 @@ import Fingerprint._
  *  Then fooBar needs to point to a static method of the following form:
  *
  *    def fooBar[T: c.WeakTypeTag] // type tag annotation is optional
- *           (c: scala.reflect.macros.BlackboxContext)
+ *           (c: scala.reflect.macros.blackbox.Context)
  *           (xs: c.Expr[List[T]])
  *           : c.Expr[T] = {
  *      ...
@@ -67,7 +67,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *
    *  This solution is very simple, but unfortunately it's also lacking. If we use it, then
    *  signatures of macro defs become transitively dependent on scala-reflect.jar
-   *  (because they refer to macro impls, and macro impls refer to scala.reflect.macros.BlackboxContext/WhiteboxContext defined in scala-reflect.jar).
+   *  (because they refer to macro impls, and macro impls refer to *box.Context defined in scala-reflect.jar).
    *  More details can be found in comments to https://issues.scala-lang.org/browse/SI-5940.
    *
    *  Therefore we have to avoid putting macro impls into binding pickles and come up with our own serialization format.
@@ -81,9 +81,9 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *  and various accounting information necessary when composing an argument list for the reflective invocation.
    */
   case class MacroImplBinding(
-      // Is this macro impl a bundle (a trait extending BlackboxMacro or WhiteboxMacro) or a vanilla def?
+      // Is this macro impl a bundle (a trait extending *box.Macro) or a vanilla def?
       val isBundle: Boolean,
-      // Is this macro impl blackbox (i.e. having BlackboxContext in its signature)?
+      // Is this macro impl blackbox (i.e. having blackbox.Context in its signature)?
       val isBlackbox: Boolean,
       // Java class name of the class that contains the macro implementation
       // is used to load the corresponding object with Java reflection
@@ -97,8 +97,8 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       //   * c.Expr[T] => LiftedTyped
       //   * c.Tree => LiftedUntyped
       //   * c.WeakTypeTag[T] => Tagged(index of the type parameter corresponding to that type tag)
-      //   * everything else (e.g. scala.reflect.macros.BlackboxContext/WhiteboxContext) => Other
-      // f.ex. for: def impl[T: WeakTypeTag, U, V: WeakTypeTag](c: BlackboxContext)(x: c.Expr[T], y: c.Tree): (U, V) = ???
+      //   * everything else (e.g. *box.Context) => Other
+      // f.ex. for: def impl[T: WeakTypeTag, U, V: WeakTypeTag](c: blackbox.Context)(x: c.Expr[T], y: c.Tree): (U, V) = ???
       // `signature` will be equal to List(List(Other), List(LiftedTyped, LiftedUntyped), List(Tagged(0), Tagged(2)))
       signature: List[List[Fingerprint]],
       // type arguments part of a macro impl ref (the right-hand side of a macro definition)
@@ -116,7 +116,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *  with synthetic content that carries the payload described in `MacroImplBinding`.
    *
    *  For example, for a pair of macro definition and macro implementation:
-   *    def impl(c: scala.reflect.macros.BlackboxContext): c.Expr[Unit] = ???
+   *    def impl(c: scala.reflect.macros.blackbox.Context): c.Expr[Unit] = ???
    *    def foo: Unit = macro impl
    *
    *  We will have the following annotation added on the macro definition `foo`:
@@ -478,7 +478,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   }
 
   /** Keeps track of macros in-flight.
-   *  See more informations in comments to `openMacros` in `scala.reflect.macros.WhiteboxContext`.
+   *  See more informations in comments to `openMacros` in `scala.reflect.macros.whitebox.Context`.
    */
   var _openMacros = List[MacroContext]()
   def openMacros = _openMacros

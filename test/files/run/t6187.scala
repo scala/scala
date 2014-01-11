@@ -2,8 +2,8 @@ import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
   override def code = """
-import language.experimental.macros, reflect.macros.BlackboxContext
-def macroImpl[T: c.WeakTypeTag](c: BlackboxContext)(t: c.Expr[T]): c.Expr[List[T]] = {
+import scala.language.experimental.macros, scala.reflect.macros.blackbox.Context
+def macroImpl[T: c.WeakTypeTag](c: Context)(t: c.Expr[T]): c.Expr[List[T]] = {
   val r = c.universe.reify { List(t.splice) }
   c.Expr[List[T]]( c.resetLocalAttrs(r.tree) )
 }

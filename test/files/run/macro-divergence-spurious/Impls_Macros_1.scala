@@ -1,4 +1,4 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 import language.experimental.macros
 
 trait Complex[T]
@@ -7,7 +7,7 @@ class Foo(val bar: Bar)
 class Bar(val s: String)
 
 object Complex {
-  def impl[T: c.WeakTypeTag](c: BlackboxContext): c.Expr[Complex[T]] = {
+  def impl[T: c.WeakTypeTag](c: Context): c.Expr[Complex[T]] = {
     import c.universe._
     val tpe = weakTypeOf[T]
     for (f <- tpe.declarations.collect{case f: TermSymbol if f.isParamAccessor && !f.isMethod => f}) {

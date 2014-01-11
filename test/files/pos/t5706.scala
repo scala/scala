@@ -1,5 +1,5 @@
-import scala.reflect.macros.BlackboxContext
-import scala.reflect.macros.WhiteboxContext
+import scala.reflect.macros.blackbox.{Context => BlackboxContext}
+import scala.reflect.macros.whitebox.{Context => WhiteboxContext}
 
 class Logger {
   def error1(message: String) = macro Impls.error1

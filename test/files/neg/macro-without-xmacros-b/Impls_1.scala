@@ -1,17 +1,17 @@
-import scala.reflect.macros.{BlackboxContext => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 object Impls {
-  def foo_impl(c: Ctx)(x: c.Expr[Int]): c.Expr[Int] = {
+  def foo_impl(c: Context)(x: c.Expr[Int]): c.Expr[Int] = {
     import c.universe._
     c.Expr(q"$x + 1")
   }
 
-  def bar_impl(c: Ctx)(x: c.Expr[Int]): c.Expr[Int] = {
+  def bar_impl(c: Context)(x: c.Expr[Int]): c.Expr[Int] = {
     import c.universe._
     c.Expr(q"$x + 2")
   }
 
-  def quux_impl(c: Ctx)(x: c.Expr[Int]): c.Expr[Int] = {
+  def quux_impl(c: Context)(x: c.Expr[Int]): c.Expr[Int] = {
     import c.universe._
     c.Expr(q"$x + 3")
   }

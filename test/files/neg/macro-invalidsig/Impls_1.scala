@@ -1,8 +1,8 @@
 import scala.reflect.runtime.universe._
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Impls1 {
-  def foo[U: c.WeakTypeTag: Numeric](c: BlackboxContext) = { import c.universe._; q"42" }
+  def foo[U: c.WeakTypeTag: Numeric](c: Context) = { import c.universe._; q"42" }
 }
 
 object Impls2 {
@@ -14,15 +14,15 @@ object Impls3 {
 }
 
 object Impls4 {
-  def foo(cs: BlackboxContext*) = ???
+  def foo(cs: Context*) = ???
 }
 
 object Impls5 {
-  def foo(c: BlackboxContext) = ???
+  def foo(c: Context) = ???
 }
 
 object Impls6 {
-  def foo[T, U: c.WeakTypeTag](c: BlackboxContext)(implicit x: c.Expr[Int]) = {
+  def foo[T, U: c.WeakTypeTag](c: Context)(implicit x: c.Expr[Int]) = {
     import c.{prefix => prefix}
     import c.universe._
     c.Expr[Unit](q"""
@@ -34,39 +34,39 @@ object Impls6 {
 }
 
 object Impls7 {
-  def foo(c: BlackboxContext)(x: c.Expr[Int], y: c.Expr[Int]) = ???
+  def foo(c: Context)(x: c.Expr[Int], y: c.Expr[Int]) = ???
 }
 
 object Impls8 {
-  def foo(c: BlackboxContext)(x: c.universe.Symbol) = ???
+  def foo(c: Context)(x: c.universe.Symbol) = ???
 }
 
 object Impls9 {
-  def foo(c: BlackboxContext)(xs: c.Expr[Int]*) = ???
+  def foo(c: Context)(xs: c.Expr[Int]*) = ???
 }
 
 object Impls10 {
-  def foo(c: BlackboxContext)(y: c.Expr[Int], x: c.Expr[Int]) = ???
+  def foo(c: Context)(y: c.Expr[Int], x: c.Expr[Int]) = ???
 }
 
 object Impls11 {
-  def foo[U](c: BlackboxContext)(U: c.universe.Type) = ???
+  def foo[U](c: Context)(U: c.universe.Type) = ???
 }
 
 object Impls12 {
-  def foo[U <: String](c: BlackboxContext) = ???
+  def foo[U <: String](c: Context) = ???
 }
 
 object Impls13 {
-  def foo[U <: String](c: BlackboxContext) = ???
+  def foo[U <: String](c: Context) = ???
 }
 
 object Impls14 {
-  def foo[U: c.WeakTypeTag](c: BlackboxContext) = ???
+  def foo[U: c.WeakTypeTag](c: Context) = ???
 }
 
 object Impls15 {
-  def foo[T: c.WeakTypeTag, U: c.WeakTypeTag, V](c: BlackboxContext)(implicit V: c.WeakTypeTag[V]): c.Expr[Unit] = {
+  def foo[T: c.WeakTypeTag, U: c.WeakTypeTag, V](c: Context)(implicit V: c.WeakTypeTag[V]): c.Expr[Unit] = {
     import c.universe._
     println(implicitly[c.WeakTypeTag[T]])
     println(implicitly[c.WeakTypeTag[U]])
@@ -76,7 +76,7 @@ object Impls15 {
 }
 
 object Impls16 {
-  def foo[T: c.WeakTypeTag, U: c.WeakTypeTag, V](c: BlackboxContext)(implicit V: c.WeakTypeTag[V]): c.Expr[Unit] = {
+  def foo[T: c.WeakTypeTag, U: c.WeakTypeTag, V](c: Context)(implicit V: c.WeakTypeTag[V]): c.Expr[Unit] = {
     import c.universe._
     println(implicitly[c.WeakTypeTag[T]])
     println(implicitly[c.WeakTypeTag[U]])

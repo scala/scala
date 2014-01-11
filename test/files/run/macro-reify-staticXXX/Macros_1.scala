@@ -1,4 +1,4 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object B { override def toString = "object" }
 class C { override def toString = "class" }
@@ -14,7 +14,7 @@ object foo {
 }
 
 object packageless {
-  def impl(c: BlackboxContext) = {
+  def impl(c: Context) = {
     import c.universe._
     reify {
       println(B)
@@ -31,7 +31,7 @@ object packageless {
 
 package packageful {
   object Test {
-    def impl(c: BlackboxContext) = {
+    def impl(c: Context) = {
       import c.universe._
       reify {
         println(B)

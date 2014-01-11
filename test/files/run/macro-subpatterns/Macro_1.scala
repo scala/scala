@@ -1,9 +1,9 @@
-import scala.reflect.macros.WhiteboxContext
+import scala.reflect.macros.whitebox.Context
 import language.experimental.macros
 
 object Extractor {
   def unapply(x: Any): Any = macro unapplyImpl
-  def unapplyImpl(c: WhiteboxContext)(x: c.Tree) = {
+  def unapplyImpl(c: Context)(x: c.Tree) = {
     val st = c.universe.asInstanceOf[reflect.internal.SymbolTable]
     import st._
     val subpatterns = x.attachments.get[SubpatternsAttachment].get.patterns

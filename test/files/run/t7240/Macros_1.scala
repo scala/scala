@@ -1,7 +1,7 @@
 package bakery
 
 import scala.language.experimental.macros
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 trait FailureCake {
   implicit def liftAnyFails[T: Manifest]: Any = ???
@@ -13,7 +13,7 @@ trait FailureCake {
 object Bakery {
 
   def failure: Any = macro failureImpl
-  def failureImpl(c: BlackboxContext): c.Expr[Any] = {
+  def failureImpl(c: Context): c.Expr[Any] = {
     import c.universe._
 
     def dslTrait(dslName: String) = {

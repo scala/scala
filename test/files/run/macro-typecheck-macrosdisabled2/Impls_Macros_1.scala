@@ -1,7 +1,7 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Macros {
-  def impl_with_macros_enabled(c: BlackboxContext) = {
+  def impl_with_macros_enabled(c: Context) = {
     import c.universe._
 
     val ru = Select(Select(Select(Select(Ident(TermName("scala")), TermName("reflect")), TermName("runtime")), TermName("package")), TermName("universe"))
@@ -12,7 +12,7 @@ object Macros {
 
   def foo_with_macros_enabled = macro impl_with_macros_enabled
 
-  def impl_with_macros_disabled(c: BlackboxContext) = {
+  def impl_with_macros_disabled(c: Context) = {
     import c.universe._
 
     val rupkg = c.mirror.staticModule("scala.reflect.runtime.package")

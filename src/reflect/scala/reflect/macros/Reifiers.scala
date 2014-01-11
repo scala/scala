@@ -5,11 +5,11 @@ package macros
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- * A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that
+ * A slice of [[scala.reflect.macros.blackbox.Context the Scala macros context]] that
  *  exposes functions to save reflection artifacts for runtime.
  */
 trait Reifiers {
-  self: BlackboxContext =>
+  self: blackbox.Context =>
 
   /** Given a tree, generate a tree that when compiled and executed produces the original tree.
    *  For more information and examples see the documentation for `Universe.reify`.

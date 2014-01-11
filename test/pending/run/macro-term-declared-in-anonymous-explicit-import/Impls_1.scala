@@ -1,7 +1,7 @@
-import scala.reflect.macros.{Context => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 object Impls {
-  def foo(c: Ctx) = {
+  def foo(c: Context) = {
     import c.{prefix => prefix}
     import c.universe._
     val printPrefix = Apply(Select(Ident(definitions.PredefModule), TermName("println")), List(Literal(Constant("prefix = " + prefix))))
