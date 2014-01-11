@@ -1,4 +1,0 @@
-macro-bundle-nonmacro.scala:8: error: not found: value Bundle
-  def foo = Bundle.impl
-            ^
-one error found

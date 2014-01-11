@@ -1,4 +1,5 @@
-import scala.reflect.macros.blackbox.Context
+import scala.language.experimental.macros
+import scala.reflect.macros.whitebox.Context
 
 class Impl(val c: Context) {
   def mono = { import c.universe._; c.Expr[Unit](q"()") }

@@ -2,7 +2,7 @@ package scala.reflect.macros
 package runtime
 
 import scala.reflect.runtime.ReflectionUtils
-import scala.reflect.macros.{Context => ApiContext}
+import scala.reflect.macros.blackbox.{Context => ApiContext}
 
 trait JavaReflectionRuntimes {
   self: scala.tools.nsc.typechecker.Analyzer =>
@@ -19,7 +19,7 @@ trait JavaReflectionRuntimes {
       macroLogVerbose(s"successfully loaded macro impl as ($implClass, $implMeth)")
       args => {
         val implObj =
-          if (isBundle) implClass.getConstructor(classOf[ApiContext]).newInstance(args.c)
+          if (isBundle) implClass.getConstructors().head.newInstance(args.c)
           else ReflectionUtils.staticSingletonInstance(implClass)
         val implArgs = if (isBundle) args.others else args.c +: args.others
         implMeth.invoke(implObj, implArgs.asInstanceOf[Seq[AnyRef]]: _*)

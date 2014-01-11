@@ -1,7 +1,7 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.blackbox._
+import scala.reflect.macros.blackbox.Context
 
-trait Bundle extends Macro {
+trait Bundle {
   val c: Context = ???
   def impl = ???
 }

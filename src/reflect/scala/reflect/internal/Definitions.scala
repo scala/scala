@@ -482,10 +482,6 @@ trait Definitions extends api.StandardDefinitions {
     lazy val TypeCreatorClass      = getClassIfDefined("scala.reflect.api.TypeCreator") // defined in scala-reflect.jar, so we need to be careful
     lazy val TreeCreatorClass      = getClassIfDefined("scala.reflect.api.TreeCreator") // defined in scala-reflect.jar, so we need to be careful
 
-    lazy val BlackboxMacroClass           = getClassIfDefined("scala.reflect.macros.blackbox.Macro") // defined in scala-reflect.jar, so we need to be careful
-         def BlackboxMacroContextValue    = BlackboxMacroClass.map(sym => getMemberValue(sym, nme.c))
-    lazy val WhiteboxMacroClass           = getClassIfDefined("scala.reflect.macros.whitebox.Macro") // defined in scala-reflect.jar, so we need to be careful
-         def WhiteboxMacroContextValue    = WhiteboxMacroClass.map(sym => getMemberValue(sym, nme.c))
     lazy val BlackboxContextClass         = getClassIfDefined("scala.reflect.macros.blackbox.Context") // defined in scala-reflect.jar, so we need to be careful
     lazy val WhiteboxContextClass         = getClassIfDefined("scala.reflect.macros.whitebox.Context") // defined in scala-reflect.jar, so we need to be careful
          def MacroContextPrefix           = BlackboxContextClass.map(sym => getMemberMethod(sym, nme.prefix))
@@ -603,31 +599,29 @@ trait Definitions extends api.StandardDefinitions {
     def isWhiteboxContextType(tp: Type) =
       isMacroContextType(tp) && (tp <:< WhiteboxContextClass.tpe)
 
-    def mightBeMacroBundleType(tp: Type) =
-      tp.baseClasses.contains(WhiteboxMacroClass) ||
-      tp.baseClasses.contains(BlackboxMacroClass)
+    private def macroBundleParamInfo(tp: Type) = {
+      val ctor = tp.erasure.typeSymbol.primaryConstructor
+      ctor.paramss match {
+        case List(List(c)) =>
+          val sym = c.info.typeSymbol
+          val isContextCompatible = sym.isNonBottomSubClass(BlackboxContextClass) || sym.isNonBottomSubClass(WhiteboxContextClass)
+          if (isContextCompatible) c.info else NoType
+        case _ =>
+          NoType
+      }
+    }
 
-    def isMacroBundleType(tp: Type) = tp.baseClasses match {
-      case _ :: proto :: _ if isMacroBundleProtoType(proto.tpe) => true
-      case _ => false
+    def looksLikeMacroBundleType(tp: Type) =
+      macroBundleParamInfo(tp) != NoType
+
+    def isMacroBundleType(tp: Type) = {
+      val isContextCompatible = macroBundleParamInfo(tp) != NoType
+      val nonAbstract = !tp.erasure.typeSymbol.isAbstractClass
+      isContextCompatible && nonAbstract
     }
 
     def isBlackboxMacroBundleType(tp: Type) =
-      isMacroBundleType(tp) && (tp <:< BlackboxMacroClass.tpe) && !(tp <:< WhiteboxMacroClass.tpe)
-
-    def isMacroBundleProtoType(tp: Type) = {
-      val sym = tp.typeSymbol
-      val isNonTrivial = tp != ErrorType && tp != NothingTpe && tp != NullTpe
-      def subclasses(sym: Symbol) = sym != NoSymbol && tp.baseClasses.contains(sym)
-      val isMacroCompatible = subclasses(BlackboxMacroClass) ^ subclasses(WhiteboxMacroClass)
-      val isBundlePrototype = sym != BlackboxMacroClass && sym != WhiteboxMacroClass && sym.isTrait && {
-        val c = sym.info.member(nme.c)
-        def overrides(sym: Symbol) = c.overrideChain.contains(sym)
-        val cIsOk = (overrides(BlackboxMacroContextValue) || overrides(WhiteboxMacroContextValue)) && c.isDeferred
-        cIsOk && sym.isMonomorphicType
-      }
-      isNonTrivial && isMacroCompatible && isBundlePrototype
-    }
+      isMacroBundleType(tp) && (macroBundleParamInfo(tp) <:< BlackboxContextClass.tpe)
 
     def isIterableType(tp: Type) = tp <:< classExistentialType(IterableClass)
 
