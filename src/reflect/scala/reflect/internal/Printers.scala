@@ -580,7 +580,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case Select(qual, name) if name.isTermName => s"${resolveSelect(qual)}.${printedName(name)}"
         case Select(qual, name) if name.isTypeName => s"${resolveSelect(qual)}#${blankForOperatorName(name)}%${printedName(name)}"
         case Ident(name) => printedName(name)
-        case _ => toCode(t)
+        case _ => showCode(t)
       }
     }
 

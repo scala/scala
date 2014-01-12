@@ -25,8 +25,8 @@ object PrinterHelper {
       } catch {
         case e:scala.tools.reflect.ToolBoxError => throw new Exception(e.getMessage + ": " + code)
       }
-    if (tree ne EmptyTree) assertEquals("using quasiquote or given tree"+"\n", code.trim, toCode(tree))
-    else assertEquals("using toolbox parser", code.trim, toCode(toolboxTree))
+    if (tree ne EmptyTree) assertEquals("using quasiquote or given tree"+"\n", code.trim, showCode(tree))
+    else assertEquals("using toolbox parser", code.trim, showCode(toolboxTree))
   }
   
   implicit class StrContextStripMarginOps(val stringContext: StringContext) extends util.StripMarginInterpolator

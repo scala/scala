@@ -212,10 +212,10 @@ trait Printers { self: Universe =>
    *
    *  @group Printers
    */
-  def toCode(tree: Tree) = render(tree, newCodePrinter)
+  def showCode(tree: Tree) = render(tree, newCodePrinter)
 
   /**
-   * Hook to define what `toCode(...)` means.
+   * Hook to define what `showCode(...)` means.
    * @group Printers
    */
   protected def newCodePrinter(out: PrintWriter): TreePrinter
