@@ -356,16 +356,18 @@ abstract class SymbolTable extends macros.Universe
 
     // Weak references so the garbage collector will take care of
     // letting us know when a cache is really out of commission.
-    private val caches = WeakHashSet[Clearable]()
+    import java.lang.ref.WeakReference
+    private var caches = List[WeakReference[Clearable]]()
 
     def recordCache[T <: Clearable](cache: T): T = {
-      caches += cache
+      caches ::= new WeakReference(cache)
       cache
     }
 
     def clearAll() = {
       debuglog("Clearing " + caches.size + " caches.")
-      caches foreach (_.clear)
+      caches foreach (ref => Option(ref.get).foreach(_.clear))
+      caches = caches.filterNot(_.get == null)
     }
 
     def newWeakMap[K, V]()        = recordCache(mutable.WeakHashMap[K, V]())
@@ -376,9 +378,9 @@ abstract class SymbolTable extends macros.Universe
       val NoCached: T = null.asInstanceOf[T]
       var cached: T = NoCached
       var cachedRunId = NoRunId
-      caches += new Clearable {
+      recordCache(new Clearable {
         def clear(): Unit = cached = NoCached
-      }
+      })
       () => {
         if (currentRunId != cachedRunId || cached == NoCached) {
           cached = f

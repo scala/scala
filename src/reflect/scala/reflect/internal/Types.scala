@@ -8,7 +8,6 @@ package reflect
 package internal
 
 import scala.collection.{ mutable, immutable, generic }
-import generic.Clearable
 import scala.ref.WeakReference
 import mutable.ListBuffer
 import Flags._
@@ -3660,7 +3659,11 @@ trait Types
     if (Statistics.canEnable) Statistics.incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
       uniques = util.WeakHashSet[Type](initialUniquesCapacity)
-      perRunCaches.recordCache(uniques)
+      // JZ: We used to register this as a perRunCache so it would be cleared eagerly at
+      // the end of the compilation run. But, that facility didn't actually clear this map (SI-8129)!
+      // When i fixed that bug, run/tpeCache-tyconCache.scala started failing. Why was that?
+      // I've removed the registration for now. I don't think its particularly harmful anymore
+      // as a) this is now a weak set, and b) it is discarded completely before the next run.
       uniqueRunId = currentRunId
     }
     (uniques findEntryOrUpdate tp).asInstanceOf[T]
