@@ -51,7 +51,7 @@ trait Errors extends Traces {
 
   def MacroBundleNonStaticError() = bundleRefError("macro bundles must be static")
 
-  def MacroBundleWrongShapeError() = bundleRefError("macro bundles must be concrete classes having a single `val c: Context` parameter")
+  def MacroBundleWrongShapeError() = bundleRefError("macro bundles must be concrete classes having a single constructor with a `val c: Context` parameter")
 
   // compatibility errors
 
