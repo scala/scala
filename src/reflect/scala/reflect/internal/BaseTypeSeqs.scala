@@ -166,9 +166,10 @@ trait BaseTypeSeqs {
       val index = new Array[Int](nparents)
       var i = 0
       for (p <- parents) {
+        val parentBts = p.dealias.baseTypeSeq // dealias need for SI-8046.
         pbtss(i) =
-          if (p.baseTypeSeq eq undetBaseTypeSeq) AnyClass.info.baseTypeSeq
-          else p.baseTypeSeq
+          if (parentBts eq undetBaseTypeSeq) AnyClass.info.baseTypeSeq
+          else parentBts
         index(i) = 0
         i += 1
       }
