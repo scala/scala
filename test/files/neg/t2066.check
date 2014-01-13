@@ -1,0 +1,21 @@
+t2066.scala:6: error: overriding method f in trait A1 of type [T[_]]=> Unit;
+ method f has incompatible type
+  override def f[T[+_]] = ()
+               ^
+t2066.scala:10: error: overriding method f in trait A1 of type [T[_]]=> Unit;
+ method f has incompatible type
+  override def f[T[-_]] = ()
+               ^
+t2066.scala:23: error: overriding method f in trait A2 of type [T[+_]]=> Unit;
+ method f has incompatible type
+  override def f[T[-_]] = ()
+               ^
+t2066.scala:45: error: overriding method f in trait A4 of type [T[X[+_]]]=> Unit;
+ method f has incompatible type
+  override def f[T[X[_]]] = ()
+               ^
+t2066.scala:53: error: overriding method f in trait A5 of type [T[X[-_]]]=> Unit;
+ method f has incompatible type
+  override def f[T[X[_]]] = ()
+               ^
+5 errors found
