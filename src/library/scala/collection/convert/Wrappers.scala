@@ -102,8 +102,14 @@ private[collection] trait Wrappers {
     override def clone(): JListWrapper[A] = JListWrapper(new ju.ArrayList[A](underlying))
   }
 
+  // Note various overrides to avoid performance gotchas.
   class SetWrapper[A](underlying: Set[A]) extends ju.AbstractSet[A] {
     self =>
+    override def contains(o: Object): Boolean = {
+      try { underlying.contains(o.asInstanceOf[A]) }
+      catch { case cce: ClassCastException => false }
+    }
+    override def isEmpty = underlying.isEmpty
     def size = underlying.size
     def iterator = new ju.Iterator[A] {
       val ui = underlying.iterator
