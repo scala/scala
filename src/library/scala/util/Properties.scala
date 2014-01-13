@@ -173,7 +173,7 @@ private[scala] trait PropertiesTrait {
    * isJavaAtLeast("1.6")            // true
    * isJavaAtLeast("1.7")            // true
    * isJavaAtLeast("1.8")            // false
-   * }}
+   * }}}
    */
   def isJavaAtLeast(version: String): Boolean = {
     def parts(x: String) = {
