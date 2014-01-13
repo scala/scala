@@ -122,10 +122,31 @@ trait Namers extends MethodSynthesis {
       || (vd.mods.isPrivateLocal && !vd.mods.isCaseAccessor)
       || (vd.name startsWith nme.OUTER)
       || (context.unit.isJava)
+      || isEnumConstant(vd)
     )
+
     def noFinishGetterSetter(vd: ValDef) = (
          (vd.mods.isPrivateLocal && !vd.mods.isLazy) // all lazy vals need accessors, even private[this]
-      || vd.symbol.isModuleVar)
+      || vd.symbol.isModuleVar
+      || isEnumConstant(vd))
+
+    /** Determines whether this field holds an enum constant.
+      * To qualify, the following conditions must be met:
+      *  - The field's class has the ENUM flag set
+      *  - The field's class extends java.lang.Enum
+      *  - The field has the ENUM flag set
+      *  - The field is static
+      *  - The field is stable
+      */
+    def isEnumConstant(vd: ValDef) = {
+      val ownerHasEnumFlag =
+        // Necessary to check because scalac puts Java's static members into the companion object
+        // while Scala's enum constants live directly in the class.
+        // We don't check for clazz.superClass == JavaEnumClass, because this causes a illegal
+        // cyclic reference error. See the commit message for details.
+        if (context.unit.isJava) owner.companionClass.hasEnumFlag else owner.hasEnumFlag
+      vd.mods.hasAllFlags(ENUM | STABLE | STATIC) && ownerHasEnumFlag
+    }
 
     def setPrivateWithin[T <: Symbol](tree: Tree, sym: T, mods: Modifiers): T =
       if (sym.isPrivateLocal || !mods.hasAccessBoundary) sym
@@ -620,11 +641,7 @@ trait Namers extends MethodSynthesis {
       else
         enterGetterSetter(tree)
 
-      // When java enums are read from bytecode, they are known to have
-      // constant types by the jvm flag and assigned accordingly.  When
-      // they are read from source, the java parser marks them with the
-      // STABLE flag, and now we receive that signal.
-      if (tree.symbol hasAllFlags STABLE | JAVA)
+      if (isEnumConstant(tree))
         tree.symbol setInfo ConstantType(Constant(tree.symbol))
     }
 
