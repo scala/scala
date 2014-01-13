@@ -88,14 +88,16 @@ abstract class MacroImplementations {
       val strIsEmpty = strLen == 0
       def charAtIndexIs(idx: Int, ch: Char) = idx < strLen && str(idx) == ch
       def isPercent(idx: Int) = charAtIndexIs(idx, '%')
-      def isConversion(idx: Int) = isPercent(idx) && !charAtIndexIs(idx + 1, 'n') && !charAtIndexIs(idx + 1, '%')
+      val nonConverters = Seq('n', '%', 'q')
+      def isNonConversion(idx: Int) = nonConverters exists (c => charAtIndexIs(idx, c))
+      def isConversion(idx: Int) = isPercent(idx) && !isNonConversion(idx + 1)
       var idx = 0
 
       def errorAtIndex(idx: Int, msg: String) = c.error(Position.offset(strTree.pos.source, strTree.pos.point + idx), msg)
       def wrongConversionString(idx: Int) = errorAtIndex(idx, "wrong conversion string")
       def illegalConversionCharacter(idx: Int) = errorAtIndex(idx, "illegal conversion character")
       def nonEscapedPercent(idx: Int) = errorAtIndex(idx,
-        "conversions must follow a splice; use %% for literal %, %n for newline")
+        "conversions must follow a splice; use %% for literal %, %n for newline, %q for quote")
 
       // STEP 1: handle argument conversion
       // 1) "...${smth}" => okay, equivalent to "...${smth}%s"
@@ -103,8 +105,9 @@ abstract class MacroImplementations {
       // 3) "...${smth}%" => error
       // 4) "...${smth}%n" => okay, equivalent to "...${smth}%s%n"
       // 5) "...${smth}%%" => okay, equivalent to "...${smth}%s%%"
-      // 6) "...${smth}[%legalJavaConversion]" => okay, according to http://docs.oracle.com/javase/1.5.0/docs/api/java/util/Formatter.html
-      // 7) "...${smth}[%illegalJavaConversion]" => error
+      // 6) "...${smth}%q" => okay, equivalent to "...${smth}%s" + "\""
+      // 7) "...${smth}[%legalJavaConversion]" => okay, according to http://docs.oracle.com/javase/1.5.0/docs/api/java/util/Formatter.html
+      // 8) "...${smth}[%illegalJavaConversion]" => error
       if (!first) {
         val arg = argStack.pop()
         if (isConversion(0)) {
@@ -127,25 +130,37 @@ abstract class MacroImplementations {
             wrongConversionString(pos - 1)
           }
           idx = 1
+          bldr append "%"  // rest is handled in step 2
         } else {
-          bldr append "%s"
           defval(arg, AnyTpe)
+          bldr append "%s"
         }
       }
 
       // STEP 2: handle the rest of the text
       // 1) %n tokens are left as is
       // 2) %% tokens are left as is
-      // 3) other usages of percents are reported as errors
+      // 3) %q tokens are converted immediately to `"`
+      // 4) other usages of percents are reported as errors
       if (!strIsEmpty) {
-        while (idx < strLen) {
-          if (isPercent(idx)) {
-            if (isConversion(idx)) nonEscapedPercent(idx)
-            else idx += 1 // skip n and % in %n and %%
+        def remainder(): Unit = {
+          val start = idx;
+          while (idx < strLen) {
+            if (isPercent(idx)) {
+              if (isConversion(idx)) nonEscapedPercent(idx)
+              else if (charAtIndexIs(idx + 1, 'q')) {
+                bldr append str.slice(start, idx) append "\""
+                idx += 2 // skip %q in %q
+                remainder()
+                return
+              } else
+                idx += 1 // skip n and % in %n and %%
+            }
+            idx += 1
           }
-          idx += 1
+          bldr append str.slice(start, idx)
         }
-        bldr append (str take idx)
+        remainder()
       }
     }
 
