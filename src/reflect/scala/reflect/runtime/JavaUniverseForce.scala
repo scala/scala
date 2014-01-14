@@ -198,6 +198,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ErroneousCollector
     this.adaptToNewRunMap
     // inaccessible: this.commonOwnerMapObj
+    this.SubTypePair
     this.SymbolKind
     this.NoSymbol
     this.CyclicReference
