@@ -4,17 +4,17 @@ Type :help for more information.
 scala> import scala.language.experimental.macros
 import scala.language.experimental.macros
 
-scala> import scala.reflect.macros.BlackboxMacro
-import scala.reflect.macros.BlackboxMacro
+scala> import scala.reflect.macros.blackbox.Context
+import scala.reflect.macros.blackbox.Context
 
-scala> trait Bar extends BlackboxMacro { def impl = { import c.universe._; c.Expr[Unit](q"()") } };def bar: Unit = macro Bar.impl
-defined trait Bar
+scala> class Bar(val c: Context) { def impl = { import c.universe._; c.Expr[Unit](q"()") } };def bar: Unit = macro Bar.impl
+defined class Bar
 defined term macro bar: Unit
 
 scala> bar
 
-scala> trait Foo extends BlackboxMacro { def impl = { import c.universe._; c.Expr[Unit](q"()") } }
-defined trait Foo
+scala> class Foo(val c: Context) { def impl = { import c.universe._; c.Expr[Unit](q"()") } }
+defined class Foo
 
 scala> def foo: Unit = macro Foo.impl
 defined term macro foo: Unit

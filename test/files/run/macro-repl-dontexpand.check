@@ -1,14 +1,14 @@
 Type in expressions to have them evaluated.
 Type :help for more information.
 
-scala> def bar1(c: scala.reflect.macros.BlackboxContext) = ???
-bar1: (c: scala.reflect.macros.BlackboxContext)Nothing
+scala> def bar1(c: scala.reflect.macros.blackbox.Context) = ???
+bar1: (c: scala.reflect.macros.blackbox.Context)Nothing
 
 scala> def foo1 = macro bar1
 defined term macro foo1: Nothing
 
-scala> def bar2(c: scala.reflect.macros.WhiteboxContext) = ???
-bar2: (c: scala.reflect.macros.WhiteboxContext)Nothing
+scala> def bar2(c: scala.reflect.macros.whitebox.Context) = ???
+bar2: (c: scala.reflect.macros.whitebox.Context)Nothing
 
 scala> def foo2 = macro bar2
 defined term macro foo2: Nothing

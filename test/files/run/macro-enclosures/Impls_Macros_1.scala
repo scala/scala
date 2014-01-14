@@ -1,7 +1,7 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Macros {
-  def impl(c: BlackboxContext) = {
+  def impl(c: Context) = {
     import c.universe._
     reify {
       println("enclosingPackage = " + c.Expr[String](Literal(Constant(c.enclosingPackage.toString))).splice)

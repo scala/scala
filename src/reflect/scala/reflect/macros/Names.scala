@@ -5,11 +5,11 @@ package macros
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that
+ *  A slice of [[scala.reflect.macros.blackbox.Context the Scala macros context]] that
  *  provides functions that generate unique names.
  */
 trait Names {
-  self: BlackboxContext =>
+  self: blackbox.Context =>
 
   /** Creates a unique string. */
   @deprecated("Use freshName instead", "2.11.0")

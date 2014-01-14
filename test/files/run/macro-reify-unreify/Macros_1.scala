@@ -1,10 +1,10 @@
-import scala.reflect.macros.{BlackboxContext => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 object Macros {
   def foo(s: String) = macro Impls.foo
 
   object Impls {
-    def foo(c: Ctx)(s: c.Expr[String]) = {
+    def foo(c: Context)(s: c.Expr[String]) = {
       import c.universe._
       import treeBuild._
 

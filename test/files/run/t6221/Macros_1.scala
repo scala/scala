@@ -1,6 +1,6 @@
 import language.experimental.macros
 import language.implicitConversions
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 import scala.reflect.runtime.universe.Tree
 
 class ReflectiveClosure[A, B](val tree: Tree, fn: A => B) extends (A => B) {
@@ -12,7 +12,7 @@ object ReflectiveClosure {
 }
 
 object Macros {
-  def reflectiveClosureImpl[A, B](c: BlackboxContext)(f: c.Expr[A => B]): c.Expr[ReflectiveClosure[A, B]] = {
+  def reflectiveClosureImpl[A, B](c: Context)(f: c.Expr[A => B]): c.Expr[ReflectiveClosure[A, B]] = {
     import c.universe._
     val u = treeBuild.mkRuntimeUniverseRef
     val m = EmptyTree

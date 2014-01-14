@@ -1,6 +1,6 @@
-import scala.reflect.macros.BlackboxMacro
+import scala.reflect.macros.blackbox.Context
 
-trait Impl extends BlackboxMacro {
+class Impl(val c: Context) {
   def mono = { import c.universe._; c.Expr[Unit](q"()") }
   def poly[T: c.WeakTypeTag] = { import c.universe._; c.Expr[String](q"${c.weakTypeOf[T].toString}") }
   def weird = macro mono
@@ -12,7 +12,7 @@ object Macros {
 }
 
 package pkg {
-  trait Impl extends BlackboxMacro {
+  class Impl(val c: Context) {
     def mono = { import c.universe._; c.Expr[Boolean](q"true") }
     def poly[T: c.WeakTypeTag] = { import c.universe._; c.Expr[String](q"${c.weakTypeOf[T].toString + c.weakTypeOf[T].toString}") }
     def weird = macro mono

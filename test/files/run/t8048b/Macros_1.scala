@@ -6,10 +6,10 @@
 // * https://groups.google.com/forum/#!topic/scala-internals/eXQt-BPm4i8
 
 import scala.language.experimental.macros
-import scala.reflect.macros.WhiteboxContext
+import scala.reflect.macros.whitebox.Context
 
 object Macros {
-  def impl1(c: WhiteboxContext) = {
+  def impl1(c: Context) = {
     import c.universe._
     q"""
       trait Foo { def x = 2 }
@@ -18,7 +18,7 @@ object Macros {
   }
   def foo1: Any = macro impl1
 
-  def impl2(c: WhiteboxContext) = {
+  def impl2(c: Context) = {
     import c.universe._
     q"""
       class Foo { def x = 2 }
@@ -27,7 +27,7 @@ object Macros {
   }
   def foo2: Any = macro impl2
 
-  def impl3(c: WhiteboxContext) = {
+  def impl3(c: Context) = {
     import c.universe._
     q"""
       new { def x = 2 }

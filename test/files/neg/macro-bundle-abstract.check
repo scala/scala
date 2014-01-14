@@ -1,4 +1,4 @@
-macro-bundle-abstract.scala:4: error: class Bundle$Bundle needs to be abstract, since method deferred in trait Bundle of type => Int is not defined
-trait Bundle extends BlackboxMacro {
-      ^
+macro-bundle-abstract.scala:10: error: macro bundles must be concrete classes having a single constructor with a `val c: Context` parameter
+  def foo = macro Bundle.impl
+                  ^
 one error found

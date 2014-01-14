@@ -26,9 +26,9 @@ trait Validators {
     if (macroImpl.isOverloaded) MacroImplOverloadedError()
     val implicitParams = aparamss.flatten filter (_.isImplicit)
     if (implicitParams.nonEmpty) MacroImplNonTagImplicitParameters(implicitParams)
-    val declaredInStaticObject = isImplMethod && (macroImplOwner.isStaticOwner || macroImplOwner.moduleClass.isStaticOwner)
-    val declaredInTopLevelClass = isImplBundle && macroImplOwner.owner.isPackageClass
-    if (!declaredInStaticObject && !declaredInTopLevelClass) MacroImplReferenceWrongShapeError()
+    val effectiveOwner = if (isImplMethod) macroImplOwner else macroImplOwner.owner
+    val declaredInStaticObject = effectiveOwner.isStaticOwner || effectiveOwner.moduleClass.isStaticOwner
+    if (!declaredInStaticObject) MacroImplReferenceWrongShapeError()
   }
 
   private def checkMacroDefMacroImplCorrespondence() = {
@@ -93,20 +93,20 @@ trait Validators {
    *
    *  For the following macro impl:
    *    def fooBar[T: c.WeakTypeTag]
-   *           (c: scala.reflect.macros.BlackboxContext)
+   *           (c: scala.reflect.macros.blackbox.Context)
    *           (xs: c.Expr[List[T]])
    *           : c.Expr[T] = ...
    *
    *  This function will return:
-   *    (c: scala.reflect.macros.BlackboxContext)(xs: c.Expr[List[T]])c.Expr[T]
+   *    (c: scala.reflect.macros.blackbox.Context)(xs: c.Expr[List[T]])c.Expr[T]
    *
    *  Note that type tag evidence parameters are not included into the result.
    *  Type tag context bounds for macro impl tparams are optional.
    *  Therefore compatibility checks ignore such parameters, and we don't need to bother about them here.
    *
    *  This method cannot be reduced to just macroImpl.info, because macro implementations might
-   *  come in different shapes. If the implementation is an apply method of a BlackboxMacro/WhiteboxMacro-compatible object,
-   *  then it won't have (c: BlackboxContext/WhiteboxContext) in its parameters, but will rather refer to BlackboxMacro/WhiteboxMacro.c.
+   *  come in different shapes. If the implementation is an apply method of a *box.Macro-compatible object,
+   *  then it won't have (c: *box.Context) in its parameters, but will rather refer to *boxMacro.c.
    *
    *  @param macroImpl The macro implementation symbol
    */
@@ -123,8 +123,8 @@ trait Validators {
    *    def foo[T](xs: List[T]): T = macro fooBar
    *
    *  This function will return:
-   *    (c: scala.reflect.macros.BlackboxContext)(xs: c.Expr[List[T]])c.Expr[T] or
-   *    (c: scala.reflect.macros.WhiteboxContext)(xs: c.Expr[List[T]])c.Expr[T]
+   *    (c: scala.reflect.macros.blackbox.Context)(xs: c.Expr[List[T]])c.Expr[T] or
+   *    (c: scala.reflect.macros.whitebox.Context)(xs: c.Expr[List[T]])c.Expr[T]
    *
    *  Note that type tag evidence parameters are not included into the result.
    *  Type tag context bounds for macro impl tparams are optional.

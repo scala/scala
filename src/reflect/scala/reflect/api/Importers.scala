@@ -34,7 +34,7 @@ package api
  *  {{{
  *  def staticEval[T](x: T) = macro staticEval[T]
  *
- *  def staticEval[T](c: scala.reflect.macros.BlackboxContext)(x: c.Expr[T]) = {
+ *  def staticEval[T](c: scala.reflect.macros.blackbox.Context)(x: c.Expr[T]) = {
  *    // creates a runtime reflection universe to host runtime compilation
  *    import scala.reflect.runtime.{universe => ru}
  *    val mirror = ru.runtimeMirror(c.libraryClassLoader)

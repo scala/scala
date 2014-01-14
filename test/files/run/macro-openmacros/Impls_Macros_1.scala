@@ -1,7 +1,7 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Macros {
-  def impl(c: BlackboxContext): c.Expr[Unit] = {
+  def impl(c: Context): c.Expr[Unit] = {
     // we're macros, so we can reflect against our source path
     // so we don't need any partests to clean up after us!
     val dir = c.enclosingUnit.source.file.file.getCanonicalFile.getParentFile

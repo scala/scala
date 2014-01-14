@@ -1,11 +1,11 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.WhiteboxContext
+import scala.reflect.macros.whitebox.Context
 
 object Macros {
   def id[A]: A = null.asInstanceOf[A]
 
   def foo: Any = macro impl
-  def impl(c: WhiteboxContext): c.Tree = {
+  def impl(c: Context): c.Tree = {
     import c.universe._
     import Flag._
 

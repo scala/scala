@@ -1,11 +1,11 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Helper {
   def unapplySeq[T](x: List[T]): Option[Seq[T]] =
 }
 
 object Macros {
-  def impl[T: c.WeakTypeTag](c: BlackboxContext)(x: c.Expr[List[T]]) = {
+  def impl[T: c.WeakTypeTag](c: Context)(x: c.Expr[List[T]]) = {
     c.universe.reify(Helper.unapplySeq(x.splice))
   }
 

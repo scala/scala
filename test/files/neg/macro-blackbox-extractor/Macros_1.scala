@@ -1,4 +1,4 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 import language.experimental.macros
 
 object Extractor {
@@ -6,7 +6,7 @@ object Extractor {
 }
 
 object Macros {
-  def unapplyImpl(c: BlackboxContext)(x: c.Tree) = {
+  def unapplyImpl(c: Context)(x: c.Tree) = {
     import c.universe._
     q"""
       new {

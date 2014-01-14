@@ -1,5 +1,5 @@
 import language.experimental.macros
-import scala.reflect.macros.Context
+import scala.reflect.macros.blackbox.Context
 
 object Macro {
   def apply(a: Any): Any = macro impl

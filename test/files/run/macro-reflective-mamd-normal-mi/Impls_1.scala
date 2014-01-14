@@ -1,7 +1,7 @@
-import scala.reflect.macros.{BlackboxContext => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 object Impls {
-  def foo(c: Ctx)(x: c.Expr[Int]) = {
+  def foo(c: Context)(x: c.Expr[Int]) = {
     import c.universe._
     val body = Apply(Select(x.tree, TermName("$plus")), List(Literal(Constant(1))))
     c.Expr[Int](body)

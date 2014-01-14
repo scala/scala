@@ -1,7 +1,7 @@
 package test56
 
 import scala.reflect.runtime.universe._
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 import scala.reflect.api.Universe
 
 object Macros {

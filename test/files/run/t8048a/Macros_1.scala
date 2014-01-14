@@ -1,8 +1,8 @@
-import scala.reflect.macros.WhiteboxContext
+import scala.reflect.macros.whitebox.Context
 import scala.language.experimental.macros
 
 object Macros {
-  def impl(c: WhiteboxContext) = {
+  def impl(c: Context) = {
     import c.universe._
     q"if (true) Some(2) else None"
   }

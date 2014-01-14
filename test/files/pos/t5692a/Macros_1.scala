@@ -1,6 +1,6 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Macros {
-  def impl[T](c: BlackboxContext) = { import c.universe._; c.Expr[Unit](q"()") }
+  def impl[T](c: Context) = { import c.universe._; c.Expr[Unit](q"()") }
   def foo[T] = macro impl[T]
 }

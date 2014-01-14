@@ -1,7 +1,7 @@
 import language.experimental.macros
-import scala.reflect.macros.BlackboxMacro
+import scala.reflect.macros.blackbox.Context
 
-trait Impls extends BlackboxMacro {
+class Impls(val c: Context) {
   import c.universe._
   def impl1 = q"println(1)"
   def impl2 = q"{ println(2); println(3) }"

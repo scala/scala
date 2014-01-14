@@ -1,4 +1,4 @@
-import scala.reflect.macros.WhiteboxContext
+import scala.reflect.macros.whitebox.Context
 import language.experimental.macros
 
 object Extractor {
@@ -6,7 +6,7 @@ object Extractor {
 }
 
 object Macros {
-  def unapplyImpl(c: WhiteboxContext)(x: c.Tree) = {
+  def unapplyImpl(c: Context)(x: c.Tree) = {
     import c.universe._
     q"""
       new {

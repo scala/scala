@@ -1,7 +1,7 @@
-import scala.reflect.macros.BlackboxContext
+import scala.reflect.macros.blackbox.Context
 
 object Macros {
-  def impl(c:BlackboxContext): c.Expr[Any] = {
+  def impl(c:Context): c.Expr[Any] = {
     import c.universe._
 
     val selfTree = This(c.enclosingImpl.symbol.asModule.moduleClass)

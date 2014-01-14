@@ -5,11 +5,11 @@ package macros
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- *  A slice of [[scala.reflect.macros.BlackboxContext the Scala macros context]] that provides
+ *  A slice of [[scala.reflect.macros.blackbox.Context the Scala macros context]] that provides
  *  a facility to evaluate trees.
  */
 trait Evals {
-  self: BlackboxContext =>
+  self: blackbox.Context =>
 
   /** Takes a typed wrapper for a tree of type `T` and evaluates it to a value of type `T`.
    *
@@ -21,12 +21,12 @@ trait Evals {
    *  mutates the tree in place, therefore the conventional approach is to `duplicate` the tree first.
    *
    *  {{{
-   *  scala> def impl(c: BlackboxContext)(x: c.Expr[String]) = {
+   *  scala> def impl(c: Context)(x: c.Expr[String]) = {
    *       | val x1 = c.Expr[String](c.resetAllAttrs(x.tree.duplicate))
    *       | println(s"compile-time value is: \${c.eval(x1)}")
    *       | x
    *       | }
-   *  impl: (c: BlackboxContext)(x: c.Expr[String])c.Expr[String]
+   *  impl: (c: Context)(x: c.Expr[String])c.Expr[String]
    *
    *  scala> def test(x: String) = macro impl
    *  test: (x: String)String

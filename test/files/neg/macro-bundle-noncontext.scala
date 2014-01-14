@@ -1,6 +1,6 @@
 import scala.language.experimental.macros
 
-trait Bundle {
+class Bundle {
   def impl = ???
 }
 

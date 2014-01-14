@@ -1145,7 +1145,7 @@ trait Implicits {
             gen.mkAttributedThis(thisSym)
           case _ =>
             // if `pre` is not a PDT, e.g. if someone wrote
-            //   implicitly[scala.reflect.macros.BlackboxContext#TypeTag[Int]]
+            //   implicitly[scala.reflect.macros.blackbox.Context#TypeTag[Int]]
             // then we need to fail, because we don't know the prefix to use during type reification
             // upd. we also need to fail silently, because this is a very common situation
             // e.g. quite often we're searching for BaseUniverse#TypeTag, e.g. for a type tag in any universe

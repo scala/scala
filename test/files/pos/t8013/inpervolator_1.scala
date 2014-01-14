@@ -4,7 +4,7 @@ package t8013
 // perverse macro to confuse Xlint
 
 import scala.language.experimental.macros
-import scala.reflect.macros.{ BlackboxContext => Context }
+import scala.reflect.macros.blackbox.Context
 
 object Perverse {
 

@@ -1,8 +1,8 @@
 import scala.reflect.runtime.universe._
-import scala.reflect.macros.{BlackboxContext => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 object Impls {
-  def foo_targs[T, U: c.WeakTypeTag](c: Ctx = null)(x: c.Expr[Int] = null) = {
+  def foo_targs[T, U: c.WeakTypeTag](c: Context = null)(x: c.Expr[Int] = null) = {
     import c.{prefix => prefix}
     import c.universe._
     val U = implicitly[c.WeakTypeTag[U]]

@@ -1,7 +1,7 @@
-import scala.reflect.macros.{BlackboxContext => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 object Impls {
-  def foo(c: Ctx)(xs: c.Expr[Int]*) = {
+  def foo(c: Context)(xs: c.Expr[Int]*) = {
     import c.universe._
     val stripped_xs = xs map (_.tree) toList match {
       case List(Typed(stripped, Ident(wildstar))) if wildstar == tpnme.WILDCARD_STAR => List(stripped)

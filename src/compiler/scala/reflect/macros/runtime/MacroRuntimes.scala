@@ -4,7 +4,7 @@ package runtime
 import scala.reflect.internal.Flags._
 import scala.reflect.runtime.ReflectionUtils
 
-trait MacroRuntimes extends JavaReflectionRuntimes with ScalaReflectionRuntimes {
+trait MacroRuntimes extends JavaReflectionRuntimes {
   self: scala.tools.nsc.typechecker.Analyzer =>
 
   import global._
@@ -49,8 +49,7 @@ trait MacroRuntimes extends JavaReflectionRuntimes with ScalaReflectionRuntimes 
   /** Abstracts away resolution of macro runtimes.
    */
   type MacroRuntime = MacroArgs => Any
-  class MacroRuntimeResolver(val macroDef: Symbol) extends JavaReflectionResolvers
-                                                      with ScalaReflectionResolvers {
+  class MacroRuntimeResolver(val macroDef: Symbol) extends JavaReflectionResolvers {
     val binding = loadMacroImplBinding(macroDef).get
     val isBundle = binding.isBundle
     val className = binding.className
@@ -63,7 +62,6 @@ trait MacroRuntimes extends JavaReflectionRuntimes with ScalaReflectionRuntimes 
         try {
           macroLogVerbose(s"resolving macro implementation as $className.$methName (isBundle = $isBundle)")
           macroLogVerbose(s"classloader is: ${ReflectionUtils.show(defaultMacroClassloader)}")
-          // resolveScalaReflectionRuntime(defaultMacroClassloader)
           resolveJavaReflectionRuntime(defaultMacroClassloader)
         } catch {
           case ex: Exception =>

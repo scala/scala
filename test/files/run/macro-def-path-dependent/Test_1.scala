@@ -2,7 +2,7 @@
 
 // package test1
 //
-// import scala.reflect.macros.{BlackboxContext => Ctx}
+// import scala.reflect.macros.blackbox.Context
 //
 // trait Exprs {
 //   self: Universe =>
@@ -21,5 +21,5 @@
 // trait Universe extends Exprs with Reifiers
 //
 // object Impls {
-//   def reify[T](cc: Ctx{ type PrefixType = Reifiers })(expr: cc.Expr[T]): cc.Expr[cc.prefix.value.Expr[T]] = ???
+//   def reify[T](cc: Context{ type PrefixType = Reifiers })(expr: cc.Expr[T]): cc.Expr[cc.prefix.value.Expr[T]] = ???
 // }

@@ -1,8 +1,9 @@
 import scala.language.experimental.macros
-import scala.reflect.macros.{Context => Ctx, ParseException}
+import scala.reflect.macros.blackbox.Context
+import scala.reflect.macros.ParseException
 
 object Macros {
-  def impl(c: Ctx)() = {
+  def impl(c: Context)() = {
     import c.universe._
     val out = try {
       c.parse("foo(bar")

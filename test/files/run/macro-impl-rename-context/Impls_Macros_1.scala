@@ -1,7 +1,7 @@
-import scala.reflect.macros.{BlackboxContext => Ctx}
+import scala.reflect.macros.blackbox.Context
 
 object Impls {
-  def foo(unconventionalName: Ctx)(x: unconventionalName.Expr[Int]) = {
+  def foo(unconventionalName: Context)(x: unconventionalName.Expr[Int]) = {
     import unconventionalName.universe._
     unconventionalName.Expr[Unit](q"""println("invoking foo...")""")
   }

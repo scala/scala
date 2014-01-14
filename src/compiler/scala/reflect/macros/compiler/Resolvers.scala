@@ -40,36 +40,11 @@ trait Resolvers {
     }
 
     val untypedImplRef = typer.silent(_.typedTypeConstructor(maybeBundleRef)) match {
-      case SilentResultValue(result) if mightBeMacroBundleType(result.tpe) =>
-        val bundleProto = result.tpe.typeSymbol
-        val bundlePkg = bundleProto.enclosingPackageClass
-        if (!isMacroBundleProtoType(bundleProto.tpe)) MacroBundleWrongShapeError()
-        if (!bundleProto.owner.isStaticOwner) MacroBundleNonStaticError()
-
-        // synthesize the bundle, i.e. given a static `trait Foo extends Macro { def expand = ... } `
-        // create a top-level definition `class Foo$Bundle(val c: BlackboxContext/WhiteboxContext) extends Foo` in a package next to `Foo`
-        val bundlePid = gen.mkUnattributedRef(bundlePkg)
-        val bundlePrefix =
-          if (bundlePkg == EmptyPackageClass) bundleProto.fullName('$')
-          else bundleProto.fullName('$').substring(bundlePkg.fullName('$').length + 1)
-        val bundleName = TypeName(bundlePrefix + tpnme.MACRO_BUNDLE_SUFFIX)
-        val existingBundle = bundleProto.enclosingPackageClass.info.decl(bundleName)
-        if (!currentRun.compiles(existingBundle)) {
-          val contextType = if (isBlackboxMacroBundleType(bundleProto.tpe)) BlackboxContextClass.tpe else WhiteboxContextClass.tpe
-          def mkContextValDef(flags: Long) = ValDef(Modifiers(flags), nme.c, TypeTree(contextType), EmptyTree)
-          val contextField = mkContextValDef(PARAMACCESSOR)
-          val contextParam = mkContextValDef(PARAM | PARAMACCESSOR)
-          val bundleCtor = DefDef(Modifiers(), nme.CONSTRUCTOR, Nil, List(List(contextParam)), TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
-          val bundleParent = gen.mkAppliedTypeTree(Ident(bundleProto), bundleProto.typeParams.map(sym => Ident(sym.name)))
-          val bundleTemplate = Template(List(bundleParent), noSelfType, List(contextField, bundleCtor))
-          val bundle = atPos(bundleProto.pos)(ClassDef(NoMods, bundleName, bundleProto.typeParams.map(TypeDef(_)), bundleTemplate))
-          currentRun.compileLate(bundleName + ".scala", PackageDef(bundlePid, List(bundle)))
-        }
-
-        // synthesize the macro impl reference, which is going to look like:
-        // `new FooBundle(???).macroName` plus the optional type arguments
-        val bundleInstance = New(Select(bundlePid, bundleName), List(List(Ident(Predef_???))))
-        atPos(macroDdef.rhs.pos)(gen.mkTypeApply(Select(bundleInstance, methName), targs))
+      case SilentResultValue(result) if looksLikeMacroBundleType(result.tpe) =>
+        val bundle = result.tpe.typeSymbol
+        if (!isMacroBundleType(bundle.tpe)) MacroBundleWrongShapeError()
+        if (!bundle.owner.isStaticOwner) MacroBundleNonStaticError()
+        atPos(macroDdef.rhs.pos)(gen.mkTypeApply(Select(New(bundle, Ident(Predef_???)), methName), targs))
       case _ =>
         macroDdef.rhs
     }

@@ -2,8 +2,8 @@ import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
   def code = """
-    |import language.experimental.macros
-    |def pos_impl(c: reflect.macros.BlackboxContext): c.Expr[String] = {
+    |import scala.language.experimental.macros
+    |def pos_impl(c: scala.reflect.macros.blackbox.Context): c.Expr[String] = {
     |  import c.universe._
     |  c.Expr[String](Literal(Constant(c.enclosingPosition.getClass.toString)))
     |}
