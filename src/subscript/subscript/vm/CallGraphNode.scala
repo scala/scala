@@ -61,7 +61,6 @@ trait CallGraphNodeTrait {
   var isExcluded = false
   var pass = 0
   def template: T
-  def n_ary_op_else_ancestor: N_n_ary_op
   def lowestSingleCommonAncestor: CallGraphParentNodeTrait
   def forEachParent(n: CallGraphParentNodeTrait => Unit): Unit
   def isExecuting  = false
@@ -114,24 +113,6 @@ trait CallGraphNodeTrait {
   // TBD: are these necessary? :
   //var aaStartedCountAtLastSuccess = 0
   //def recentSuccess = aaStartedCountAtLastSuccess==aaStartedCount
-}
-
-// a non-leaf node:
-trait CallGraphParentNodeTrait extends CallGraphNodeTrait {
-  val children = new ListBuffer[CallGraphNodeTrait]
-  def forEachChild(task: (CallGraphNodeTrait) => Unit): Unit = {
-    children.foreach(task(_))
-  }
-}
-
-trait DoCodeHolder[R] extends CallGraphNodeTrait {
-  def doCode: R
-  private var _isExecuting = false
-  override def isExecuting = _isExecuting
-           def isExecuting_=(value: Boolean) = _isExecuting=value
-}
-
-trait CallGraphNode extends CallGraphNodeTrait {
   
   def n_ary_op_else_ancestor: N_n_ary_op = {
     this match {
@@ -161,10 +142,24 @@ trait CallGraphNode extends CallGraphNodeTrait {
   }
 }
 
+// a non-leaf node:
+trait CallGraphParentNodeTrait extends CallGraphNodeTrait {
+  val children = new ListBuffer[CallGraphNodeTrait]
+  def forEachChild(task: (CallGraphNodeTrait) => Unit): Unit = {
+    children.foreach(task(_))
+  }
+}
+
+trait DoCodeHolder[R] extends CallGraphNodeTrait {
+  def doCode: R
+  private var _isExecuting = false
+  override def isExecuting = _isExecuting
+           def isExecuting_=(value: Boolean) = _isExecuting=value
+}
 
 // a node that may have at most 1 parent; always used, except for rendez-vous style communication
 // should this not be an abstract class?
-trait CallGraphTreeNode extends CallGraphNode {
+trait CallGraphTreeNode extends CallGraphNodeTrait {
   var parent: CallGraphParentNodeTrait = null
   // answer the n_ary_op ancestor in case there is one and the path leading thereto does not branch
   def n_ary_op_ancestor = if (parent==null) null else parent.n_ary_op_else_ancestor
@@ -199,7 +194,7 @@ trait CallGraphTreeNode extends CallGraphNode {
 }
 // a node that may have multiple parents; used for rendez-vous style communication
 // should this not be an abstract class?
-trait CallGraphNonTreeNode extends CallGraphNode {
+trait CallGraphNonTreeNode extends CallGraphNodeTrait {
   val parents = new LinkedList[CallGraphParentNodeTrait]
   var lowestSingleCommonAncestor: CallGraphParentNodeTrait = null
 
@@ -422,7 +417,7 @@ object CallGraphNode {
   // the oldest of such candidates is considered the one.
   //
   // NOTE: this will return a false LCA when the true LCA has multiple paths to the graph source!!!
-  private def getLowestSingleCommonAncestor(nodes: List[CallGraphNode]): CallGraphNodeTrait = {
+  private def getLowestSingleCommonAncestor(nodes: List[CallGraphNodeTrait]): CallGraphNodeTrait = {
     nextStamp() 
     lowestSingleCommonAncestor = null
     nodes.foreach(stampNodeWithAncestors(_))

@@ -150,12 +150,12 @@ class CommonScriptExecutor extends ScriptExecutor {
   
  
   // send out a success when in an And-like context
-  def doNeutral(n: CallGraphNode) =
+  def doNeutral(n: CallGraphNodeTrait) =
     if (n.getLogicalKind_n_ary_op_ancestor!=LogicalKind.Or) {
          insert(Success(n))
     }
   // .. ... for and while operate on the closest ancestor node that has an n_ary operator
-  def setIteration_n_ary_op_ancestor(n: CallGraphNode) = {
+  def setIteration_n_ary_op_ancestor(n: CallGraphNodeTrait) = {
     val a = n.n_ary_op_ancestor
     if (a!=null) a.isIteration = true
   }
@@ -165,18 +165,15 @@ class CommonScriptExecutor extends ScriptExecutor {
     childNode.parent = parentNode
     childNode.scriptExecutor = parentNode.scriptExecutor
     parentNode.children.append(childNode)
-    if (parentNode.isInstanceOf[CallGraphTreeNode_n_ary]) {
-      val p = parentNode.asInstanceOf[CallGraphTreeNode_n_ary]
-      p.lastActivatedChild = childNode
-    }
+    parentNode match {case p: CallGraphTreeNode_n_ary => p.lastActivatedChild = childNode case _ =>}
   }
   // disconnect a child node from its parent
   def disconnect(childNode: CallGraphNodeTrait) {
-    if (childNode.isInstanceOf[CallGraphTreeNode]) {
-      val ctn = childNode.asInstanceOf[CallGraphTreeNode]
-      val parentNode = ctn.parent
-      if (parentNode==null) return;
-      parentNode.children -= ctn
+    childNode match {
+      case cn: CallGraphTreeNode => val parentNode = cn.parent
+                                    if (parentNode==null) return;
+                                    parentNode.children -= cn
+       case _ =>
     }
   }
  
@@ -186,6 +183,10 @@ class CommonScriptExecutor extends ScriptExecutor {
     m.index = nextMessageID()
     messageQueued(m)
     queueCallGraphMessage(m)
+    // AA nodes keep track of associated "to be executed" messages.
+    // This way, if such a node is excluded by another process, it will be able to get such a message out of the queue;
+    // then that message may be garbage collected and the link to the node will be gone, so that the node may also 
+    // be garbage collected
     m match {
       case maa@AAToBeExecuted  (n: CallGraphNodeTrait) => n.asInstanceOf[N_atomic_action].msgAAToBeExecuted = maa
       case maa@AAToBeReexecuted(n: CallGraphNodeTrait) => n.asInstanceOf[N_atomic_action].msgAAToBeExecuted = maa
@@ -288,10 +289,8 @@ class CommonScriptExecutor extends ScriptExecutor {
     val n = createNode(template)
     n.pass = pass.getOrElse(if(parent.isInstanceOf[N_n_ary_op]) 0 else parent.pass)
     connect(parentNode = parent, childNode = n)
-    if (n.isInstanceOf[N_script]) {
-      val ns = n.asInstanceOf[N_script]
-      val pc = ns.parent.asInstanceOf[N_call]
-    }
+    // ?? probably delete the following line
+    //n match {case ns: N_script => val pc = ns.parent.asInstanceOf[N_call]; what to do with this}
     insert(Activation(n))
     n
   }
@@ -405,10 +404,9 @@ class CommonScriptExecutor extends ScriptExecutor {
            case n@( N_code_eventhandling       (_) 
                   | N_code_eventhandling_loop  (_)) => // ehNodesAwaitingExecution.append(n) not used; could be handy for debugging
               
-           case n@N_break                      (t) => doNeutral(n); insert(Break(n, null, ActivationMode.Inactive)); insertDeactivation(n,null)
-           case n@N_optional_break             (t) => doNeutral(n); insert(Break(n, null, ActivationMode.Optional)); insertDeactivation(n,null)
-           case n@N_optional_break_loop
-                                               (t) => setIteration_n_ary_op_ancestor(n); doNeutral(n); insert(Break(n, null, ActivationMode.Optional)); insertDeactivation(n,null)
+           case n@N_break                      (t) =>                                    doNeutral(n); insert(Break(n, null, ActivationMode.Inactive)); insertDeactivation(n,null)
+           case n@N_optional_break             (t) =>                                    doNeutral(n); insert(Break(n, null, ActivationMode.Optional)); insertDeactivation(n,null)
+           case n@N_optional_break_loop        (t) => setIteration_n_ary_op_ancestor(n); doNeutral(n); insert(Break(n, null, ActivationMode.Optional)); insertDeactivation(n,null)
            case n@N_loop                       (t) => setIteration_n_ary_op_ancestor(n); doNeutral(n); insertDeactivation(n,null)
            case n@N_delta                      (t) =>                     insertDeactivation(n,null)
            case n@N_epsilon                    (t) => insert(Success(n)); insertDeactivation(n,null)
@@ -474,7 +472,7 @@ class CommonScriptExecutor extends ScriptExecutor {
                                                                  }
                case n@  N_call          (_: T_call          ) => if (!n.allActualParametersMatch) {return}
                                                                  n.transferParameters
-               case _ => {}
+               case _ =>
           }
          message.node.hasSuccess = true
          executeCodeIfDefined(message.node, message.node.onSuccess)
@@ -735,13 +733,14 @@ class CommonScriptExecutor extends ScriptExecutor {
     val n = message.node
     n.isExcluded = true
     
-    if (       n.isInstanceOf[DoCodeHolder[_]]) {
-      val nc = n.asInstanceOf[DoCodeHolder[_]]
-      if (nc.codeExecutor != null) {
-        nc.codeExecutor.interruptAA
-      }
-    }
     message.node match {
+      case dch: DoCodeHolder[_] => 
+       if (dch.codeExecutor != null) {
+           dch.codeExecutor.interruptAA
+       }
+      case _ =>
+    }
+    n match {
       case cc: N_call => cc.stopPending
       case aa: N_atomic_action =>
         aa.codeExecutor.cancelAA
@@ -753,10 +752,8 @@ class CommonScriptExecutor extends ScriptExecutor {
         insert(Deactivation(aa, null, excluded=true))
       case _ =>
     }
-    if (      n.isInstanceOf[CallGraphTreeParentNode]) {
-      val p = n.asInstanceOf[CallGraphTreeParentNode]
-      p.forEachChild(c => insert(Exclude(n,c)))
-      return
+    n match {case p: CallGraphTreeParentNode => p.forEachChild(c => insert(Exclude(n,c)))
+             case _ =>
     }
   }
 	
@@ -813,7 +810,8 @@ class CommonScriptExecutor extends ScriptExecutor {
   /*
    * handleContinuation:
    * 
-   * The most complicated method of the Script Executor: determine what an N-ary operator will do
+   * The most complicated method of the Script Executor: 
+   * determine what an N-ary operator will do
    * after it has received a set of messages. Potential outcomes include:
    * - activate next operand and/or have success
    * - suspend, resume, exclude
@@ -858,6 +856,7 @@ class CommonScriptExecutor extends ScriptExecutor {
                   }
       case ";" | "|;" 
        | "||;" |  "|;|" => // messy; maybe the outer if on the activationMode should be moved inside the match{}
+                           // ??? if both s && b: why not doing something with both s.child & b.child ???
                          val s = message.success
                          val b = message.break
                          if      (s!=null) {activateNextOrEnded = true; childNode = s.child}
@@ -953,6 +952,7 @@ class CommonScriptExecutor extends ScriptExecutor {
                   
       case "&&"  | "||" 
          | "&&:" | "||:" => val isLogicalOr = T_n_ary_op.getLogicalKind(n.template.kind)==LogicalKind.Or
+                            // TBD: better descriptive name for consideredNodes
                             val consideredNodes = message.deactivations.map(_.child).filter(
                                (c: CallGraphNodeTrait) => c.hasSuccess==isLogicalOr)
                             if (!consideredNodes.isEmpty) {
