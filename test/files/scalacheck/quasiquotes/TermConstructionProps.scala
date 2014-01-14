@@ -224,4 +224,9 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
   property("SI-8009") = test {
     q"`foo`".asInstanceOf[reflect.internal.SymbolTable#Ident].isBackquoted
   }
+
+  property("SI-8148") = test {
+    val q"($a, $b) => $_" = q"_ + _"
+    assert(a.name != b.name)
+  }
 }

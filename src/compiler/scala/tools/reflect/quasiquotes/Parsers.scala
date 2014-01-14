@@ -55,7 +55,7 @@ trait Parsers { self: Quasiquotes =>
 
       def isHole(name: Name): Boolean = holeMap.contains(name)
 
-      override implicit def fresh: FreshNameCreator = new FreshNameCreator(nme.QUASIQUOTE_PREFIX)
+      override implicit lazy val fresh: FreshNameCreator = new FreshNameCreator(nme.QUASIQUOTE_PREFIX)
 
       override val treeBuilder = new ParserTreeBuilder {
         override implicit def fresh: FreshNameCreator = parser.fresh
