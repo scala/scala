@@ -12,9 +12,9 @@ package scala
 package collection
 package immutable
 
-import scala.annotation.unchecked.{ uncheckedVariance => uV }
 import generic._
 import scala.collection.parallel.immutable.ParHashSet
+import scala.collection.GenSet
 
 /** This class implements immutable sets using a hash trie.
  *
@@ -53,6 +53,30 @@ class HashSet[A] extends AbstractSet[A]
   override def foreach[U](f: A =>  U): Unit = { }
 
   def contains(e: A): Boolean = get0(e, computeHash(e), 0)
+
+  override def subsetOf(that: GenSet[A]) = that match {
+    case that:HashSet[A] =>
+      // call the specialized implementation with a level of 0 since both this and that are top-level hash sets
+      subsetOf0(that, 0)
+    case _ =>
+      // call the generic implementation
+      super.subsetOf(that)
+  }
+
+  /**
+   * A specialized implementation of subsetOf for when both this and that are HashSet[A] and we can take advantage
+   * of the tree structure of both operands and the precalculated hashcodes of the HashSet1 instances.
+   * @param that the other set
+   * @param level the level of this and that hashset
+   *              The purpose of level is to keep track of how deep we are in the tree.
+   *              We need this information for when we arrive at a leaf and have to call get0 on that
+   *              The value of level is 0 for a top-level HashSet and grows in increments of 5
+   * @return true if all elements of this set are contained in that set
+   */
+  protected def subsetOf0(that: HashSet[A], level: Int) = {
+    // The default implementation is for the empty set and returns true because the empty set is a subset of all sets
+    true
+  }
 
   override def + (e: A): HashSet[A] = updated0(e, computeHash(e), 0)
 
@@ -136,6 +160,14 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def get0(key: A, hash: Int, level: Int): Boolean =
       (hash == this.hash && key == this.key)
 
+    override def subsetOf0(that: HashSet[A], level: Int) = {
+      // check if that contains this.key
+      // we use get0 with our key and hash at the correct level instead of calling contains,
+      // which would not work since that might not be a top-level HashSet
+      // and in any case would be inefficient because it would require recalculating the hash code
+      that.get0(key, hash, level)
+    }
+
     override def updated0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash && key == this.key) this
       else {
@@ -161,6 +193,14 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
     override def get0(key: A, hash: Int, level: Int): Boolean =
       if (hash == this.hash) ks.contains(key) else false
+
+    override def subsetOf0(that: HashSet[A], level: Int) = {
+      // we have to check each element
+      // we use get0 with our hash at the correct level instead of calling contains,
+      // which would not work since that might not be a top-level HashSet
+      // and in any case would be inefficient because it would require recalculating the hash code
+      ks.forall(key => that.get0(key, hash, level))
+    }
 
     override def updated0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash) new HashSetCollision1(hash, ks + key)
@@ -277,6 +317,49 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       } else {
         this
       }
+    }
+
+    override def subsetOf0(that: HashSet[A], level: Int): Boolean = if (that eq this) true else that match {
+      case that: HashTrieSet[A] if this.size0 <= that.size0 =>
+        // create local mutable copies of members
+        var abm = this.bitmap
+        val a = this.elems
+        var ai = 0
+        val b = that.elems
+        var bbm = that.bitmap
+        var bi = 0
+        if ((abm & bbm) == abm) {
+          // I tried rewriting this using tail recursion, but the generated java byte code was less than optimal
+          while(abm!=0) {
+            // highest remaining bit in abm
+            val alsb = abm ^ (abm & (abm - 1))
+            // highest remaining bit in bbm
+            val blsb = bbm ^ (bbm & (bbm - 1))
+            // if both trees have a bit set at the same position, we need to check the subtrees
+            if (alsb == blsb) {
+              // we are doing a comparison of a child of this with a child of that,
+              // so we have to increase the level by 5 to keep track of how deep we are in the tree
+              if (!a(ai).subsetOf0(b(bi), level + 5))
+                return false
+              // clear lowest remaining one bit in abm and increase the a index
+              abm &= ~alsb; ai += 1
+            }
+            // clear lowermost remaining one bit in bbm and increase the b index
+            // we must do this in any case
+            bbm &= ~blsb; bi += 1
+          }
+          true
+        } else {
+          // the bitmap of this contains more one bits than the bitmap of that,
+          // so this can not possibly be a subset of that
+          false
+        }
+      case _ =>
+        // if the other set is a HashTrieSet but has less elements than this, it can not be a subset
+        // if the other set is a HashSet1, we can not be a subset of it because we are a HashTrieSet with at least two children (see assertion)
+        // if the other set is a HashSetCollision1, we can not be a subset of it because we are a HashTrieSet with at least two different hash codes
+        // if the other set is the empty set, we are not a subset of it because we are not empty
+        false
     }
 
     override def iterator = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
