@@ -1,0 +1,4 @@
+t7897.scala:19: error: value length is not a member of p0.Single
+      case p0.Single(x) => println(s"`$x` has ${x.length} chars")
+                                                  ^
+one error found

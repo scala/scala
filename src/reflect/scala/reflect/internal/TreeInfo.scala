@@ -612,8 +612,8 @@ abstract class TreeInfo {
   def effectivePatternArity(args: List[Tree]): Int = flattenedPatternArgs(args).length
 
   def flattenedPatternArgs(args: List[Tree]): List[Tree] = args map unbind match {
-    case Apply(fun, xs) :: Nil if isTupleSymbol(fun.symbol) => xs
-    case xs                                                 => xs
+    case build.SyntacticTuple(xs) :: Nil => xs
+    case xs                              => xs
   }
 
   // used in the symbols for labeldefs and valdefs emitted by the pattern matcher

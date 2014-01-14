@@ -1,0 +1,37 @@
+t6675b.scala:17: warning: object LeftOrRight expects 2 patterns to hold (Int, Int) but crushing into 2-tuple to fit single pattern (SI-6675)
+  def f1 = (Left((0, 0)): Either[(Int, Int), (Int, Int)]) match { case LeftOrRight(a) => a  }          // warn
+                                                                       ^
+t6675b.scala:19: error: constructor cannot be instantiated to expected type;
+ found   : (T1, T2, T3)
+ required: (Int, Int)
+  def f3 = (Left((0, 0)): Either[(Int, Int), (Int, Int)]) match { case LeftOrRight((a, b, c)) => a  }  // fail
+                                                                                   ^
+t6675b.scala:24: warning: object LeftOrRight expects 2 patterns to hold (A, A) but crushing into 2-tuple to fit single pattern (SI-6675)
+  def f2[A](x: A) = (Left(x -> x): Either[(A, A), (A, A)]) match { case LeftOrRight(a) => a  }          // warn
+                                                                        ^
+t6675b.scala:26: error: constructor cannot be instantiated to expected type;
+ found   : (T1, T2, T3)
+ required: (?A11, ?A12) where type ?A12 <: A (this is a GADT skolem), type ?A11 <: A (this is a GADT skolem)
+  def f4[A](x: A) = (Left(x -> x): Either[(A, A), (A, A)]) match { case LeftOrRight((a, b, c)) => a  }  // fail
+                                                                                    ^
+t6675b.scala:30: warning: object NativelyTwo expects 2 patterns to hold ((Int, Int), (Int, Int)) but crushing into 2-tuple to fit single pattern (SI-6675)
+  def f1 = (Left((0, 0)): Either[(Int, Int), (Int, Int)]) match { case NativelyTwo(a) => a  }          // warn
+                                                                       ^
+t6675b.scala:32: error: constructor cannot be instantiated to expected type;
+ found   : (T1, T2, T3)
+ required: ((Int, Int), (Int, Int))
+  def f3 = (Left((0, 0)): Either[(Int, Int), (Int, Int)]) match { case NativelyTwo((a, b, c)) => a  }  // fail
+                                                                                   ^
+t6675b.scala:36: warning: object NativelyTwo expects 2 patterns to hold (A, A) but crushing into 2-tuple to fit single pattern (SI-6675)
+  def f1[A](x: A) = (Left(x): Either[A, A])                match { case NativelyTwo(a) => a  }          // warn
+                                                                        ^
+t6675b.scala:37: warning: object NativelyTwo expects 2 patterns to hold ((A, A), (A, A)) but crushing into 2-tuple to fit single pattern (SI-6675)
+  def f2[A](x: A) = (Left(x -> x): Either[(A, A), (A, A)]) match { case NativelyTwo(a) => a  }          // warn
+                                                                        ^
+t6675b.scala:39: error: constructor cannot be instantiated to expected type;
+ found   : (T1, T2, T3)
+ required: ((?A17, ?A18), (?A19, ?A20)) where type ?A20 <: A (this is a GADT skolem), type ?A19 <: A (this is a GADT skolem), type ?A18 <: A (this is a GADT skolem), type ?A17 <: A (this is a GADT skolem)
+  def f4[A](x: A) = (Left(x -> x): Either[(A, A), (A, A)]) match { case NativelyTwo((a, b, c)) => a  }  // fail
+                                                                                    ^
+5 warnings found
+four errors found

@@ -395,8 +395,10 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       debug.patmat("TTTM"+((prevBinder, extractorArgTypeTest, testedBinder, expectedTp, nextBinderTp)))
 
       lazy val outerTestNeeded = (
-          !((expectedTp.prefix eq NoPrefix) || expectedTp.prefix.typeSymbol.isPackageClass)
-        && needsOuterTest(expectedTp, testedBinder.info, matchOwner))
+           (expectedTp.prefix ne NoPrefix)
+        && !expectedTp.prefix.typeSymbol.isPackageClass
+        && needsOuterTest(expectedTp, testedBinder.info, matchOwner)
+      )
 
       // the logic to generate the run-time test that follows from the fact that
       // a `prevBinder` is expected to have type `expectedTp`
@@ -406,44 +408,52 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       def renderCondition(cs: TypeTestCondStrategy): cs.Result = {
         import cs._
 
-        def default =
-          // do type test first to ensure we won't select outer on null
-          if (outerTestNeeded) and(typeTest(testedBinder, expectedTp), outerTest(testedBinder, expectedTp))
-          else typeTest(testedBinder, expectedTp)
-
         // propagate expected type
         def expTp(t: Tree): t.type = t setType expectedTp
 
+        def testedWide              = testedBinder.info.widen
+        def expectedWide            = expectedTp.widen
+        def isAnyRef                = testedWide <:< AnyRefTpe
+        def isAsExpected            = testedWide <:< expectedTp
+        def isExpectedPrimitiveType = isAsExpected && isPrimitiveValueType(expectedTp)
+        def isExpectedReferenceType = isAsExpected && (expectedTp <:< AnyRefTpe)
+        def mkNullTest              = nonNullTest(testedBinder)
+        def mkOuterTest             = outerTest(testedBinder, expectedTp)
+        def mkTypeTest              = typeTest(testedBinder, expectedWide)
+
+        def mkEqualsTest(lhs: Tree): cs.Result      = equalsTest(lhs, testedBinder)
+        def mkEqTest(lhs: Tree): cs.Result          = eqTest(lhs, testedBinder)
+        def addOuterTest(res: cs.Result): cs.Result = if (outerTestNeeded) and(res, mkOuterTest) else res
+
+        // If we conform to expected primitive type:
+        //   it cannot be null and cannot have an outer pointer. No further checking.
+        // If we conform to expected reference type:
+        //   have to test outer and non-null
+        // If we do not conform to expected type:
+        //   have to test type and outer (non-null is implied by successful type test)
+        def mkDefault = (
+          if (isExpectedPrimitiveType) tru
+          else addOuterTest(
+            if (isExpectedReferenceType) mkNullTest
+            else mkTypeTest
+          )
+        )
+
         // true when called to type-test the argument to an extractor
         // don't do any fancy equality checking, just test the type
-        if (extractorArgTypeTest) default
+        // TODO: verify that we don't need to special-case Array
+        // I think it's okay:
+        //  - the isInstanceOf test includes a test for the element type
+        //  - Scala's arrays are invariant (so we don't drop type tests unsoundly)
+        if (extractorArgTypeTest) mkDefault
         else expectedTp match {
-          // TODO: [SPEC] the spec requires `eq` instead of `==` for singleton types
-          // this implies sym.isStable
-          case SingleType(_, sym)                       => and(equalsTest(gen.mkAttributedQualifier(expectedTp), testedBinder), typeTest(testedBinder, expectedTp.widen))
-          // must use == to support e.g. List() == Nil
-          case ThisType(sym) if sym.isModule            => and(equalsTest(CODE.REF(sym), testedBinder), typeTest(testedBinder, expectedTp.widen))
-          case ConstantType(Constant(null)) if testedBinder.info.widen <:< AnyRefTpe
-                                                        => eqTest(expTp(CODE.NULL), testedBinder)
-          case ConstantType(const)                      => equalsTest(expTp(Literal(const)), testedBinder)
-          case ThisType(sym)                            => eqTest(expTp(This(sym)), testedBinder)
-
-          // TODO: verify that we don't need to special-case Array
-          // I think it's okay:
-          //  - the isInstanceOf test includes a test for the element type
-          //  - Scala's arrays are invariant (so we don't drop type tests unsoundly)
-          case _ if testedBinder.info.widen <:< expectedTp =>
-            // if the expected type is a primitive value type, it cannot be null and it cannot have an outer pointer
-            // since the types conform, no further checking is required
-            if (isPrimitiveValueType(expectedTp)) tru
-            // have to test outer and non-null only when it's a reference type
-            else if (expectedTp <:< AnyRefTpe) {
-              // do non-null check first to ensure we won't select outer on null
-              if (outerTestNeeded) and(nonNullTest(testedBinder), outerTest(testedBinder, expectedTp))
-              else nonNullTest(testedBinder)
-            } else default
-
-          case _ => default
+          // TODO: [SPEC] the spec requires `eq` instead of `==` for singleton types - this implies sym.isStable
+          case SingleType(_, sym)                       => and(mkEqualsTest(gen.mkAttributedQualifier(expectedTp)), mkTypeTest)
+          case ThisType(sym) if sym.isModule            => and(mkEqualsTest(CODE.REF(sym)), mkTypeTest) // must use == to support e.g. List() == Nil
+          case ConstantType(Constant(null)) if isAnyRef => mkEqTest(expTp(CODE.NULL))
+          case ConstantType(const)                      => mkEqualsTest(expTp(Literal(const)))
+          case ThisType(sym)                            => mkEqTest(expTp(This(sym)))
+          case _                                        => mkDefault
         }
       }
 

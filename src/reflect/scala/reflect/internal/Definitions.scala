@@ -813,45 +813,31 @@ trait Definitions extends api.StandardDefinitions {
     def byNameType(arg: Type)        = appliedType(ByNameParamClass, arg)
     def iteratorOfType(tp: Type)     = appliedType(IteratorClass, tp)
     def javaRepeatedType(arg: Type)  = appliedType(JavaRepeatedParamClass, arg)
+    def optionType(tp: Type)         = appliedType(OptionClass, tp)
     def scalaRepeatedType(arg: Type) = appliedType(RepeatedParamClass, arg)
     def seqType(arg: Type)           = appliedType(SeqClass, arg)
 
     // FYI the long clunky name is because it's really hard to put "get" into the
     // name of a method without it sounding like the method "get"s something, whereas
     // this method is about a type member which just happens to be named get.
-    def typeOfMemberNamedGet(tp: Type)       = resultOfMatchingMethod(tp, nme.get)()
-    def typeOfMemberNamedHead(tp: Type)      = resultOfMatchingMethod(tp, nme.head)()
-    def typeOfMemberNamedApply(tp: Type)     = resultOfMatchingMethod(tp, nme.apply)(IntTpe)
-    def typeOfMemberNamedDrop(tp: Type)      = resultOfMatchingMethod(tp, nme.drop)(IntTpe)
-    def typeOfMemberNamedGetOrSelf(tp: Type) = typeOfMemberNamedGet(tp) orElse tp
-    def typesOfSelectors(tp: Type)           = getterMemberTypes(tp, productSelectors(tp))
-    def typesOfCaseAccessors(tp: Type)       = getterMemberTypes(tp, tp.typeSymbol.caseFieldAccessors)
-
-    /** If this is a case class, the case field accessors (which may be an empty list.)
-     *  Otherwise, if there are any product selectors, that list.
-     *  Otherwise, a list containing only the type itself.
-     */
-    def typesOfSelectorsOrSelf(tp: Type): List[Type] = (
-      if (tp.typeSymbol.isCase)
-        typesOfCaseAccessors(tp)
-      else typesOfSelectors(tp) match {
-        case Nil => tp :: Nil
-        case tps => tps
-      }
-    )
-
-    /** If the given type has one or more product selectors, the type of the last one.
-     *  Otherwise, the type itself.
-     */
-    def typeOfLastSelectorOrSelf(tp: Type) = typesOfSelectorsOrSelf(tp).last
-
-    def elementTypeOfLastSelectorOrSelf(tp: Type) = {
-      val last = typeOfLastSelectorOrSelf(tp)
-      ( typeOfMemberNamedHead(last)
-          orElse typeOfMemberNamedApply(last)
-          orElse elementType(ArrayClass, last)
-      )
+    def typeOfMemberNamedGet(tp: Type)   = typeArgOfBaseTypeOr(tp, OptionClass)(resultOfMatchingMethod(tp, nme.get)())
+    def typeOfMemberNamedHead(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.head)())
+    def typeOfMemberNamedApply(tp: Type) = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.apply)(IntTpe))
+    def typeOfMemberNamedDrop(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.drop)(IntTpe))
+    def typesOfSelectors(tp: Type)       = getterMemberTypes(tp, productSelectors(tp))
+    // SI-8128 Still using the type argument of the base type at Seq/Option if this is an old-style (2.10 compatible)
+    //         extractor to limit exposure to regressions like the reported problem with existentials.
+    //         TODO fix the existential problem in the general case, see test/pending/pos/t8128.scala
+    private def typeArgOfBaseTypeOr(tp: Type, baseClass: Symbol)(or: => Type): Type = (tp baseType baseClass).typeArgs match {
+      case x :: Nil => x
+      case _        => or
     }
+
+    // Can't only check for _1 thanks to pos/t796.
+    def hasSelectors(tp: Type) = (
+         (tp.members containsName nme._1)
+      && (tp.members containsName nme._2)
+    )
 
     /** Returns the method symbols for members _1, _2, ..., _N
      *  which exist in the given type.
@@ -862,7 +848,9 @@ trait Definitions extends api.StandardDefinitions {
         case m if m.paramss.nonEmpty => Nil
         case m                       => m :: loop(n + 1)
       }
-      loop(1)
+      // Since ErrorType always returns a symbol from a call to member, we
+      // had better not start looking for _1, _2, etc. expecting it to run out.
+      if (tpe.isErroneous) Nil else loop(1)
     }
 
     /** If `tp` has a term member `name`, the first parameter list of which

@@ -78,25 +78,33 @@ trait PatternTypers {
       // Do some ad-hoc overloading resolution and update the tree's symbol and type
       // do not update the symbol if the tree's symbol's type does not define an unapply member
       // (e.g. since it's some method that returns an object with an unapply member)
-      val fun       = inPlaceAdHocOverloadingResolution(fun0)(hasUnapplyMember)
-      def caseClass = fun.tpe.typeSymbol.linkedClassOfClass
+      val fun         = inPlaceAdHocOverloadingResolution(fun0)(hasUnapplyMember)
+      val caseClass   = fun.tpe.typeSymbol.linkedClassOfClass
+      val member      = unapplyMember(fun.tpe)
+      def resultType  = (fun.tpe memberType member).finalResultType
+      def isEmptyType = resultOfMatchingMethod(resultType, nme.isEmpty)()
+      def isOkay      = (
+           resultType.isErroneous
+        || (resultType <:< BooleanTpe)
+        || (isEmptyType <:< BooleanTpe)
+        || member.isMacro
+        || member.isOverloaded // the whole overloading situation is over the rails
+      )
 
       // Dueling test cases: pos/overloaded-unapply.scala, run/case-class-23.scala, pos/t5022.scala
       // A case class with 23+ params has no unapply method.
-      // A case class constructor be overloaded with unapply methods in the companion.
-      if (caseClass.isCase && !unapplyMember(fun.tpe).isOverloaded)
+      // A case class constructor may be overloaded with unapply methods in the companion.
+      if (caseClass.isCase && !member.isOverloaded)
         logResult(s"convertToCaseConstructor($fun, $caseClass, pt=$pt)")(convertToCaseConstructor(fun, caseClass, pt))
-      else if (hasUnapplyMember(fun))
+      else if (!reallyExists(member))
+        CaseClassConstructorError(fun, s"${fun.symbol} is not a case class, nor does it have an unapply/unapplySeq member")
+      else if (isOkay)
         fun
+      else if (isEmptyType == NoType)
+        CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean")
       else
-        CaseClassConstructorError(fun)
+        CaseClassConstructorError(fun, s"an unapply result must have a member `def isEmpty: Boolean (found: def isEmpty: $isEmptyType)")
     }
-
-    def expectedPatternTypes(fun: Tree, args: List[Tree]): List[Type] =
-      newExtractorShape(fun, args).expectedPatternTypes
-
-    def typedPatternArgs(fun: Tree, args: List[Tree], mode: Mode): List[Tree] =
-      typedArgsForFormals(args, newExtractorShape(fun, args).formals, mode)
 
     def typedArgsForFormals(args: List[Tree], formals: List[Type], mode: Mode): List[Tree] = {
       def typedArgWithFormal(arg: Tree, pt: Type) = {
@@ -158,109 +166,6 @@ trait PatternTypers {
         case _         => wrapClassTagUnapply(treeTyped, extractor, tpe)
       }
     }
-
-    def newExtractorShape(fun: Tree, args: List[Tree]): ExtractorShape = ExtractorShape(fun, args)
-
-    case class CaseClassInfo(clazz: Symbol, classType: Type) {
-      def constructor     = clazz.primaryConstructor
-      def constructorType = classType.prefix memberType clazz memberType constructor
-      def accessors       = clazz.caseFieldAccessors
-    }
-    object NoCaseClassInfo extends CaseClassInfo(NoSymbol, NoType) {
-      override def toString = "NoCaseClassInfo"
-    }
-
-    case class UnapplyMethodInfo(unapply: Symbol, tpe: Type) {
-      def name         = unapply.name
-      def isUnapplySeq = name == nme.unapplySeq
-      def unapplyType  = tpe memberType method
-      def resultType   = tpe.finalResultType
-      def method       = unapplyMember(tpe)
-      def paramType    = firstParamType(unapplyType)
-      def rawGet       = if (isBool) UnitTpe else typeOfMemberNamedGetOrSelf(resultType)
-      def rawTypes     = if (isBool) Nil else typesOfSelectorsOrSelf(rawGet)
-      def isBool       = resultType =:= BooleanTpe   // aka "Tuple0" or "Option[Unit]"
-    }
-
-    object NoUnapplyMethodInfo extends UnapplyMethodInfo(NoSymbol, NoType) {
-      override def toString = "NoUnapplyMethodInfo"
-    }
-
-    case class ExtractorShape(fun: Tree, args: List[Tree]) {
-      def pos            = fun.pos
-      private def symbol = fun.symbol
-      private def tpe    = fun.tpe
-
-      val ccInfo = tpe.typeSymbol.linkedClassOfClass match {
-        case clazz if clazz.isCase => CaseClassInfo(clazz, tpe)
-        case _                     => NoCaseClassInfo
-      }
-      val exInfo = UnapplyMethodInfo(symbol, tpe)
-      import exInfo.{ rawGet, rawTypes, isUnapplySeq }
-
-      override def toString = s"ExtractorShape($fun, $args)"
-
-      def unapplyMethod    = exInfo.method
-      def unapplyType      = exInfo.unapplyType
-      def unapplyParamType = exInfo.paramType
-      def enclClass        = symbol.enclClass
-
-      // TODO - merge these. The difference between these two methods is that expectedPatternTypes
-      // expands the list of types so it is the same length as the number of patterns, whereas formals
-      // leaves the varargs type unexpanded.
-      def formals   = (
-        if (isUnapplySeq) productTypes :+ varargsType
-        else if (elementArity == 0) productTypes
-        else if (isSingle) squishIntoOne()
-        else wrongArity(patternFixedArity)
-      )
-      def expectedPatternTypes = elementArity match {
-        case 0                                               => productTypes
-        case _ if elementArity > 0 && isUnapplySeq           => productTypes ::: elementTypes
-        case _ if productArity > 1 && patternFixedArity == 1 => squishIntoOne()
-        case _                                               => wrongArity(patternFixedArity)
-      }
-
-      def elementType = elementTypeOfLastSelectorOrSelf(rawGet)
-
-      private def hasBogusExtractor = directUnapplyMember(tpe).exists && !unapplyMethod.exists
-      private def expectedArity = "" + productArity + ( if (isUnapplySeq) "+" else "")
-      private def wrongArityMsg(n: Int) = (
-        if (hasBogusExtractor) s"$enclClass does not define a valid extractor method"
-        else s"wrong number of patterns for $enclClass offering $rawTypes_s: expected $expectedArity, found $n"
-      )
-      private def rawTypes_s = rawTypes match {
-        case Nil       => "()"
-        case tp :: Nil => "" + tp
-        case tps       => tps.mkString("(", ", ", ")")
-      }
-
-      private def err(msg: String)    = { unit.error(pos, msg) ; throw new TypeError(msg) }
-      private def wrongArity(n: Int)  = err(wrongArityMsg(n))
-
-      def squishIntoOne()     = {
-        if (settings.lint)
-          unit.warning(pos, s"$enclClass expects $expectedArity patterns to hold $rawGet but crushing into $productArity-tuple to fit single pattern (SI-6675)")
-
-        rawGet :: Nil
-      }
-      // elementArity is the number of non-sequence patterns minus the
-      // the number of non-sequence product elements returned by the extractor.
-      // If it is zero, there is a perfect match between those parts, and
-      // if there is a wildcard star it will match any sequence.
-      // If it is positive, there are more patterns than products,
-      // so a sequence will have to fill in the elements. If it is negative,
-      // there are more products than patterns, which is a compile time error.
-      def elementArity      = patternFixedArity - productArity
-      def patternFixedArity = treeInfo effectivePatternArity args
-      def productArity      = productTypes.size
-      def isSingle          = !isUnapplySeq && (patternFixedArity == 1)
-
-      def productTypes = if (isUnapplySeq) rawTypes dropRight 1 else rawTypes
-      def elementTypes = List.fill(elementArity)(elementType)
-      def varargsType  = scalaRepeatedType(elementType)
-    }
-
     private class VariantToSkolemMap extends TypeMap(trackVariance = true) {
       private val skolemBuffer = mutable.ListBuffer[TypeSymbol]()
 
@@ -365,10 +270,12 @@ trait PatternTypers {
         case OverloadedType(_, _)      => OverloadedUnapplyError(fun) ; ErrorType
         case _                         => UnapplyWithSingleArgError(fun) ; ErrorType
       }
-      val shape = newExtractorShape(fun, args)
-      import shape.{ unapplyParamType, unapplyType, unapplyMethod }
+      val unapplyMethod    = unapplyMember(fun.tpe)
+      val unapplyType      = fun.tpe memberType unapplyMethod
+      val unapplyParamType = firstParamType(unapplyType)
+      def isSeq            = unapplyMethod.name == nme.unapplySeq
 
-      def extractor     = extractorForUncheckedType(shape.pos, unapplyParamType)
+      def extractor     = extractorForUncheckedType(fun.pos, unapplyParamType)
       def canRemedy     = unapplyParamType match {
         case RefinedType(_, decls) if !decls.isEmpty                 => false
         case RefinedType(parents, _) if parents exists isUncheckable => false
@@ -400,7 +307,8 @@ trait PatternTypers {
         // the union of the expected type and the inferred type of the argument to unapply
         val glbType        = glb(ensureFullyDefined(pt) :: unapplyArg.tpe_* :: Nil)
         val wrapInTypeTest = canRemedy && !(fun1.symbol.owner isNonBottomSubClass ClassTagClass)
-        val args1          = typedPatternArgs(fun1, args, mode)
+        val formals        = patmat.alignPatterns(fun1, args).unexpandedFormals
+        val args1          = typedArgsForFormals(args, formals, mode)
         val result         = UnApply(fun1, args1) setPos tree.pos setType glbType
 
         if (wrapInTypeTest)
