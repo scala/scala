@@ -134,20 +134,19 @@ class BatchSourceFile(val file : AbstractFile, val content0: Array[Char]) extend
       super.identifier(pos)
     }
 
-  def isLineBreak(idx: Int) =
-    (idx < length) && (content(idx) match {
-      // don't identify the CR in CR LF as a line break, since LF will do.
-      case CR => (idx + 1 == length) || (content(idx + 1) != LF)
-      case ch => isLineBreakChar(ch)
-    })
+  private def charAtIsEOL(idx: Int)(p: Char => Boolean) = {
+    // don't identify the CR in CR LF as a line break, since LF will do.
+    def notCRLF0 = content(idx) != CR || idx + 1 >= length || content(idx + 1) != LF
 
-  def isEndOfLine(idx: Int) =
-    (idx < length) && (content(idx) match {
-      // don't identify the CR in CR LF as a line break, since LF will do.
-      case CR => (idx + 1 == length) || (content(idx + 1) != LF)
-      case LF => true
-      case _  => false
-    })
+    idx < length && notCRLF0 && p(content(idx))
+  }
+
+  def isLineBreak(idx: Int) = charAtIsEOL(idx)(isLineBreakChar)
+
+  def isEndOfLine(idx: Int) = charAtIsEOL(idx) {
+    case CR | LF => true
+    case _       => false
+  }
 
   def calculateLineIndices(cs: Array[Char]) = {
     val buf = new ArrayBuffer[Int]

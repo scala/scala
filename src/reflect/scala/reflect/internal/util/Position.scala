@@ -206,19 +206,27 @@ private[util] trait InternalPositionImpl {
   @deprecated("use `lineCaret`", since="2.11.0")
   def lineCarat: String   = lineCaret
 
-  def showError(msg: String): String = finalPosition match {
-    case FakePos(fmsg) => s"$fmsg $msg"
-    case NoPosition    => msg
-    case pos           => f"${pos.line}: $msg%n${u(pos.lineContent)}%n${pos.lineCaret}"
-  }
-  private def u(s: String) = {
-    def uu(c: Int) = f"\\u$c%04x"
-    def uable(c: Int) = (c < 0x20 && c != '\t') || c == 0x7F
-    if (s exists (c => uable(c))) {
-      val sb = new StringBuilder
-      s foreach (c => sb append (if (uable(c)) uu(c) else c))
-      sb.toString
-    } else s
+  def showError(msg: String): String = {
+    def escaped(s: String) = {
+      def u(c: Int) = f"\\u$c%04x"
+      def uable(c: Int) = (c < 0x20 && c != '\t') || c == 0x7F
+      if (s exists (c => uable(c))) {
+        val sb = new StringBuilder
+        s foreach (c => sb append (if (uable(c)) u(c) else c))
+        sb.toString
+      } else s
+    }
+    def errorAt(p: Pos) = {
+      def where     = p.line
+      def content   = escaped(p.lineContent)
+      def indicator = p.lineCaret
+      f"$where: $msg%n$content%n$indicator"
+    }
+    finalPosition match {
+      case FakePos(fmsg) => s"$fmsg $msg"
+      case NoPosition    => msg
+      case pos           => errorAt(pos)
+    }
   }
   def showDebug: String = toString
   def show = (
