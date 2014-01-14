@@ -1,0 +1,9 @@
+t8146-non-finitary-2.scala:5: error: class graph is not finitary because type parameter X is expansively recursive
+trait C[X] extends N[N[C[D[X]]]]
+        ^
+t8146-non-finitary-2.scala:7: error: type mismatch;
+ found   : C[Int]
+ required: N[C[Int]]
+  def foo(c: C[Int]): N[C[Int]] = c
+                                  ^
+two errors found
