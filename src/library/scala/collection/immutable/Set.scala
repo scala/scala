@@ -53,8 +53,7 @@ trait Set[A] extends Iterable[A]
 object Set extends ImmutableSetFactory[Set] {
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
-  override def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]
-
+  
   /** An optimized representation for immutable empty sets */
   private object EmptySet extends AbstractSet[Any] with Set[Any] with Serializable {
     override def size: Int = 0
@@ -64,6 +63,7 @@ object Set extends ImmutableSetFactory[Set] {
     def iterator: Iterator[Any] = Iterator.empty
     override def foreach[U](f: Any =>  U): Unit = {}
   }
+  private[collection] def emptyInstance: Set[Any] = EmptySet
 
   /** An optimized representation for immutable sets of size 1 */
   @SerialVersionUID(1233385750652442003L)
