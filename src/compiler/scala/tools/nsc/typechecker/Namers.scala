@@ -436,6 +436,10 @@ trait Namers extends MethodSynthesis {
       var m: Symbol = context.scope lookupModule tree.name
       val moduleFlags = tree.mods.flags | MODULE
       if (m.isModule && !m.isPackage && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
+        if (m.isPackageObject) {
+          val packageScope = m.enclosingPackageClass.rawInfo.decls
+          packageScope.filter(_.owner != m.enclosingPackageClass).toList.foreach(packageScope unlink _)
+        }
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m)
         m.moduleClass andAlso (setPrivateWithin(tree, _))
