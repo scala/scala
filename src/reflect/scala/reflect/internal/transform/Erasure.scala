@@ -144,7 +144,7 @@ trait Erasure {
           else apply(mt.resultType(mt.paramTypes)))
       case RefinedType(parents, decls) =>
         apply(mergeParents(parents))
-      case AnnotatedType(_, atp, _) =>
+      case AnnotatedType(_, atp) =>
         apply(atp)
       case ClassInfoType(parents, decls, clazz) =>
         ClassInfoType(

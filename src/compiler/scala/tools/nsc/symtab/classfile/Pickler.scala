@@ -238,9 +238,8 @@ abstract class Pickler extends SubComponent {
         case ExistentialType(tparams, restpe) =>
           putType(restpe)
           putSymbols(tparams)
-        case AnnotatedType(_, underlying, selfsym) =>
+        case AnnotatedType(_, underlying) =>
           putType(underlying)
-          if (settings.selfInAnnots) putSymbol(selfsym)
           tp.staticAnnotations foreach putAnnotation
         case _ =>
           throw new FatalError("bad type: " + tp + "(" + tp.getClass + ")")
@@ -450,7 +449,7 @@ abstract class Pickler extends SubComponent {
         case PolyType(tparams, restpe)           => writeRef(restpe); writeRefs(tparams)
         case ExistentialType(tparams, restpe)    => writeRef(restpe); writeRefs(tparams)
         case StaticallyAnnotatedType(annots, tp) => writeRef(tp) ; writeRefs(annots)
-        case AnnotatedType(_, tp, _)             => writeTypeBody(tp) // write the underlying type if there are no static annotations
+        case AnnotatedType(_, tp)                => writeTypeBody(tp) // write the underlying type if there are no static annotations
         case CompoundType(parents, _, clazz)     => writeRef(clazz); writeRefs(parents)
       }
 

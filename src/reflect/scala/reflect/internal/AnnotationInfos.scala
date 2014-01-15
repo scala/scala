@@ -290,8 +290,8 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
      *  metaAnnotations = List(setter, field).
      */
     def metaAnnotations: List[AnnotationInfo] = atp match {
-      case AnnotatedType(metas, _, _) => metas
-      case _                          => Nil
+      case AnnotatedType(metas, _) => metas
+      case _                       => Nil
     }
 
     /** The default kind of members to which this annotation is attached.

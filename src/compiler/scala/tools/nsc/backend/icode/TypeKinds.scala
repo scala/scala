@@ -393,7 +393,7 @@ trait TypeKinds { self: ICodes =>
     // if the first two cases exist because they do or as a defensive measure, but
     // at the time I added it, RefinedTypes were indeed reaching here.
     case ExistentialType(_, t)           => toTypeKind(t)
-    case AnnotatedType(_, t, _)          => toTypeKind(t)
+    case AnnotatedType(_, t)             => toTypeKind(t)
     case RefinedType(parents, _)         => parents map toTypeKind reduceLeft lub
     // For sure WildcardTypes shouldn't reach here either, but when
     // debugging such situations this may come in handy.

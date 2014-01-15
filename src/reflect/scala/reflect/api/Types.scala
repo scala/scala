@@ -707,14 +707,14 @@ trait Types {
   val AnnotatedType: AnnotatedTypeExtractor
 
   /** An extractor class to create and pattern match with syntax
-   * `AnnotatedType(annotations, underlying, selfsym)`.
+   * `AnnotatedType(annotations, underlying)`.
    *  Here, `annotations` are the annotations decorating the underlying type `underlying`.
    *  `selfSym` is a symbol representing the annotated type itself.
    *  @group Extractors
    */
   abstract class AnnotatedTypeExtractor {
-    def apply(annotations: List[Annotation], underlying: Type, selfsym: Symbol): AnnotatedType
-    def unapply(tpe: AnnotatedType): Option[(List[Annotation], Type, Symbol)]
+    def apply(annotations: List[Annotation], underlying: Type): AnnotatedType
+    def unapply(tpe: AnnotatedType): Option[(List[Annotation], Type)]
   }
 
   /** The API that all annotated types support.
@@ -727,9 +727,6 @@ trait Types {
 
     /** The annotee. */
     def underlying: Type
-
-    /** A symbol that represents the annotated type itself. */
-    def selfsym: Symbol
   }
 
   /** The `TypeBounds` type signature is used to indicate lower and upper type bounds

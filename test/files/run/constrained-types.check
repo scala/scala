@@ -149,13 +149,3 @@ scala> val x = 3 : Int @Annot(e+f+g+h) // should have a graceful error message
                                     ^
 
 scala> 
-
-scala> class Where(condition: Boolean) extends annotation.Annotation
-defined class Where
-
-scala> 
-
-scala> val x : Int @Where(self > 0 && self < 100) = 3
-x: Int @Where(self.>(0).&&(self.<(100))) = 3
-
-scala> 

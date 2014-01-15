@@ -44,7 +44,7 @@ import TypeConstants._
     // parent1 with ... with parentn { defs }
   case ExistentialType(tparams, result) =>
     // result forSome { tparams }
-  case AnnotatedType(annots, tp, selfsym) =>
+  case AnnotatedType(annots, tp) =>
     // tp @annots
 
   // the following are non-value types; you cannot write them down in Scala source.
@@ -1190,13 +1190,6 @@ trait Types
     def filterAnnotations(p: AnnotationInfo => Boolean): Type = this
     def setAnnotations(annots: List[AnnotationInfo]): Type  = annotatedType(annots, this)
     def withAnnotations(annots: List[AnnotationInfo]): Type = annotatedType(annots, this)
-
-    /** Set the self symbol of an annotated type, or do nothing
-     *  otherwise.  */
-    def withSelfsym(sym: Symbol) = this
-
-    /** The selfsym of an annotated type, or NoSymbol of anything else */
-    def selfsym: Symbol = NoSymbol
 
     /** The kind of this type; used for debugging */
     def kind: String = "unknown type of class "+getClass()
@@ -3235,13 +3228,9 @@ trait Types
    *
    *  @param annotations the list of annotations on the type
    *  @param underlying the type without the annotation
-   *  @param selfsym a "self" symbol with type `underlying`;
-   *    only available if -Yself-in-annots is turned on. Can be `NoSymbol`
-   *    if it is not used.
    */
   case class AnnotatedType(override val annotations: List[AnnotationInfo],
-                           override val underlying: Type,
-                           override val selfsym: Symbol)
+                           override val underlying: Type)
   extends RewrappingTypeProxy with AnnotatedTypeApi {
 
     assert(!annotations.isEmpty, "" + underlying)
@@ -3274,9 +3263,6 @@ trait Types
      */
     override def withoutAnnotations = underlying.withoutAnnotations
 
-    /** Set the self symbol */
-    override def withSelfsym(sym: Symbol) = copy(selfsym = sym)
-
     /** Drop the annotations on the bounds, unless the low and high
      *  bounds are exactly tp.
      */
@@ -3291,7 +3277,7 @@ trait Types
           formals, actuals), info.args, info.assocs).setPos(info.pos))
       val underlying1 = underlying.instantiateTypeParams(formals, actuals)
       if ((annotations1 eq annotations) && (underlying1 eq underlying)) this
-      else AnnotatedType(annotations1, underlying1, selfsym)
+      else AnnotatedType(annotations1, underlying1)
     }
 
     /** Return the base type sequence of tp, dropping the annotations, unless the base type sequence of tp
@@ -3310,9 +3296,9 @@ trait Types
   /** Creator for AnnotatedTypes.  It returns the underlying type if annotations.isEmpty
    *  rather than walking into the assertion.
    */
-  def annotatedType(annots: List[AnnotationInfo], underlying: Type, selfsym: Symbol = NoSymbol): Type =
+  def annotatedType(annots: List[AnnotationInfo], underlying: Type): Type =
     if (annots.isEmpty) underlying
-    else AnnotatedType(annots, underlying, selfsym)
+    else AnnotatedType(annots, underlying)
 
   object AnnotatedType extends AnnotatedTypeExtractor
 
@@ -3565,7 +3551,7 @@ trait Types
       case RefinedType(parents, decls)                    => RefinedType(parents map (appliedType(_, args)), decls)   // @PP: Can this be right?
       case TypeBounds(lo, hi)                             => TypeBounds(appliedType(lo, args), appliedType(hi, args)) // @PP: Can this be right?
       case tv@TypeVar(_, _)                               => tv.applyArgs(args)
-      case AnnotatedType(annots, underlying, self)        => AnnotatedType(annots, appliedType(underlying, args), self)
+      case AnnotatedType(annots, underlying)              => AnnotatedType(annots, appliedType(underlying, args))
       case ErrorType | WildcardType                       => tycon
       case _                                              => abort(debugString(tycon))
     }
@@ -3670,7 +3656,7 @@ trait Types
 
   class TypeUnwrapper(poly: Boolean, existential: Boolean, annotated: Boolean, nullary: Boolean) extends (Type => Type) {
     def apply(tp: Type): Type = tp match {
-      case AnnotatedType(_, underlying, _) if annotated   => apply(underlying)
+      case AnnotatedType(_, underlying) if annotated      => apply(underlying)
       case ExistentialType(_, underlying) if existential  => apply(underlying)
       case PolyType(_, underlying) if poly                => apply(underlying)
       case NullaryMethodType(underlying) if nullary       => apply(underlying)
@@ -3713,7 +3699,7 @@ trait Types
 
   def transparentShallowTransform(container: Symbol, tp: Type)(f: Type => Type): Type = {
     def loop(tp: Type): Type = tp match {
-      case tp @ AnnotatedType(_, underlying, _)     => tp.copy(underlying = loop(underlying))
+      case tp @ AnnotatedType(_, underlying)        => tp.copy(underlying = loop(underlying))
       case tp @ ExistentialType(_, underlying)      => tp.copy(underlying = loop(underlying))
       case tp @ PolyType(_, resultType)             => tp.copy(resultType = loop(resultType))
       case tp @ NullaryMethodType(resultType)       => tp.copy(resultType = loop(resultType))
@@ -4074,7 +4060,7 @@ trait Types
   private def isValueElseNonValue(tp: Type): Boolean = tp match {
     case tp if isAlwaysValueType(tp)           => true
     case tp if isAlwaysNonValueType(tp)        => false
-    case AnnotatedType(_, underlying, _)       => isValueElseNonValue(underlying)
+    case AnnotatedType(_, underlying)          => isValueElseNonValue(underlying)
     case SingleType(_, sym)                    => sym.isValue           // excludes packages and statics
     case TypeRef(_, _, _) if tp.isHigherKinded => false                 // excludes type constructors
     case ThisType(sym)                         => !sym.isPackageClass   // excludes packages

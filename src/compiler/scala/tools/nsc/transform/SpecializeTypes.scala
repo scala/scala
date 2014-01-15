@@ -438,7 +438,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case NullaryMethodType(resTpe)   => specializedTypeVars(resTpe)
     case MethodType(argSyms, resTpe) => specializedTypeVars(resTpe :: argSyms.map(_.tpe))
     case ExistentialType(_, res)     => specializedTypeVars(res)
-    case AnnotatedType(_, tp, _)     => specializedTypeVars(tp)
+    case AnnotatedType(_, tp)        => specializedTypeVars(tp)
     case TypeBounds(lo, hi)          => specializedTypeVars(lo :: hi :: Nil)
     case RefinedType(parents, _)     => parents flatMap specializedTypeVars toSet
     case _                           => immutable.Set.empty
@@ -1098,7 +1098,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case (ThisType(_), _)                             => unify(tp1.widen, tp2, env, strict)
     case (_, ThisType(_))                             => unify(tp1, tp2.widen, env, strict)
     case (RefinedType(_, _), RefinedType(_, _))       => env
-    case (AnnotatedType(_, tp1, _), tp2)              => unify(tp2, tp1, env, strict)
+    case (AnnotatedType(_, tp1), tp2)                 => unify(tp2, tp1, env, strict)
     case (ExistentialType(_, res1), _)                => unify(tp2, res1, env, strict)
     case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) => unify(List(lo1, hi1), List(lo2, hi2), env, strict)
     case _ =>

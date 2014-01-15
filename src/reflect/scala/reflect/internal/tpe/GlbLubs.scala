@@ -316,7 +316,7 @@ private[internal] trait GlbLubs {
         NullaryMethodType(lub0(matchingRestypes(ts, Nil)))
       case ts @ TypeBounds(_, _) :: rest =>
         TypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
-      case ts @ AnnotatedType(annots, tpe, _) :: rest =>
+      case ts @ AnnotatedType(annots, tpe) :: rest =>
         annotationsLub(lub0(ts map (_.withoutAnnotations)), ts)
       case ts =>
         lubResults get ((depth, ts)) match {

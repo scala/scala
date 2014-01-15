@@ -1122,7 +1122,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (treeInfo.isMacroApplication(tree)) adapt(unmarkMacroImplRef(tree), mode, pt, original)
         else tree
       } else tree.tpe match {
-        case atp @ AnnotatedType(_, _, _) if canAdaptAnnotations(tree, this, mode, pt) => // (-1)
+        case atp @ AnnotatedType(_, _) if canAdaptAnnotations(tree, this, mode, pt) => // (-1)
           adaptAnnotations(tree, this, mode, pt)
         case ct @ ConstantType(value) if mode.inNone(TYPEmode | FUNmode) && (ct <:< pt) && canAdaptConstantTypeToLiteral => // (0)
           adaptConstant(value)
@@ -3470,7 +3470,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     /**
      * Convert an annotation constructor call into an AnnotationInfo.
      */
-    def typedAnnotation(ann: Tree, mode: Mode = EXPRmode, selfsym: Symbol = NoSymbol): AnnotationInfo = {
+    def typedAnnotation(ann: Tree, mode: Mode = EXPRmode): AnnotationInfo = {
       var hasError: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
 
@@ -3519,7 +3519,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           reportAnnotationError(ArrayConstantsError(tree)); None
 
         case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-          val annInfo = typedAnnotation(ann, mode, NoSymbol)
+          val annInfo = typedAnnotation(ann, mode)
           val annType = annInfo.tpe
 
           if (!annType.typeSymbol.isSubClass(pt.typeSymbol))
@@ -3631,27 +3631,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         }
         else {
-          val typedAnn = if (selfsym == NoSymbol) {
+          val typedAnn: Tree = {
             // local dummy fixes SI-5544
             val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
             localTyper.typed(ann, mode, annType)
-          }
-          else {
-            // Since a selfsym is supplied, the annotation should have an extra
-            // "self" identifier in scope for type checking. This is implemented
-            // by wrapping the rhs in a function like "self => rhs" during type
-            // checking, and then stripping the "self =>" and substituting in
-            // the supplied selfsym.
-            val funcparm = ValDef(NoMods, nme.self, TypeTree(selfsym.info), EmptyTree)
-            // The .duplicate of annot.constr deals with problems that accur
-            // if this annotation is later typed again, which the compiler
-            // sometimes does. The problem is that "self" ident's within
-            // annot.constr will retain the old symbol from the previous typing.
-            val func     = Function(funcparm :: Nil, ann.duplicate)
-            val funcType = appliedType(FunctionClass(1), selfsym.info, annType)
-            val Function(arg :: Nil, rhs) = typed(func, mode, funcType)
-
-            rhs.substituteSymbols(arg.symbol :: Nil, selfsym :: Nil)
           }
           def annInfo(t: Tree): AnnotationInfo = t match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
@@ -3770,7 +3753,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           t match {
             case ExistentialType(tparams, _) =>
               boundSyms ++= tparams
-            case AnnotatedType(annots, _, _) =>
+            case AnnotatedType(annots, _) =>
               for (annot <- annots; arg <- annot.args) {
                 arg match {
                   case Ident(_) =>
@@ -4035,39 +4018,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (arg1.isType) {
           // make sure the annotation is only typechecked once
           if (ann.tpe == null) {
-            // an annotated type
-            val selfsym =
-              if (!settings.selfInAnnots)
-                NoSymbol
-              else
-                arg1.tpe.selfsym orElse {
-                  /* Implementation limitation: Currently this
-                   * can cause cyclical reference errors even
-                   * when the self symbol is not referenced at all.
-                   * Surely at least some of these cases can be
-                   * fixed by proper use of LazyType's.  Lex tinkered
-                   * on this but did not succeed, so is leaving
-                   * it alone for now. Example code with the problem:
-                   *  class peer extends Annotation
-                   *  class NPE[T <: NPE[T] @peer]
-                   *
-                   * (Note: -Yself-in-annots must be on to see the problem)
-                   * */
-                  ( context.owner
-                      newLocalDummy (ann.pos)
-                      newValue (nme.self, ann.pos)
-                      setInfo (arg1.tpe.withoutAnnotations)
-                  )
-                }
-
-            val ainfo = typedAnnotation(ann, annotMode, selfsym)
-            val atype0 = arg1.tpe.withAnnotation(ainfo)
-            val atype =
-              if ((selfsym != NoSymbol) && (ainfo.refsSymbol(selfsym)))
-                atype0.withSelfsym(selfsym)
-              else
-                atype0 // do not record selfsym if
-                       // this annotation did not need it
+            val ainfo = typedAnnotation(ann, annotMode)
+            val atype = arg1.tpe.withAnnotation(ainfo)
 
             if (ainfo.isErroneous)
               // Erroneous annotations were already reported in typedAnnotation

@@ -1431,7 +1431,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     private def checkTypeRefBounds(tp: Type, tree: Tree) = {
       var skipBounds = false
       tp match {
-        case AnnotatedType(ann :: Nil, underlying, selfSym) if ann.symbol == UncheckedBoundsClass =>
+        case AnnotatedType(ann :: Nil, underlying) if ann.symbol == UncheckedBoundsClass =>
           skipBounds = true
           underlying
         case TypeRef(pre, sym, args) =>
@@ -1474,7 +1474,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           }
 
           doTypeTraversal(tree) {
-            case tp @ AnnotatedType(annots, _, _)  =>
+            case tp @ AnnotatedType(annots, _)  =>
               applyChecks(annots)
             case tp =>
           }

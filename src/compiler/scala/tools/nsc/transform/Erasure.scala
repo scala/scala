@@ -61,7 +61,7 @@ abstract class Erasure extends AddInterfaces
             parents foreach traverse
           case ClassInfoType(parents, _, _) =>
             parents foreach traverse
-          case AnnotatedType(_, atp, _) =>
+          case AnnotatedType(_, atp) =>
             traverse(atp)
           case _ =>
             mapOver(tp)
@@ -302,7 +302,7 @@ abstract class Erasure extends AddInterfaces
           boxedSig(parent)
         case ClassInfoType(parents, _, _) =>
           superSig(parents)
-        case AnnotatedType(_, atp, _) =>
+        case AnnotatedType(_, atp) =>
           jsig(atp, existentiallyBound, toplevel, primitiveOK)
         case BoundedWildcardType(bounds) =>
           println("something's wrong: "+sym0+":"+sym0.tpe+" has a bounded wildcard type")
