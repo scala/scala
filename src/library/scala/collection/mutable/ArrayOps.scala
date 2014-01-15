@@ -53,14 +53,14 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
       super.toArray[U]
   }
 
-  def :+[B >: T: scala.reflect.ClassTag](elem: B): Array[B] = {
+  def :+[B >: T: ClassTag](elem: B): Array[B] = {
     val result = Array.ofDim[B](repr.length + 1)
     Array.copy(repr, 0, result, 0, repr.length)
     result(repr.length) = elem
     result
   }
 
-  def +:[B >: T: scala.reflect.ClassTag](elem: B): Array[B] = {
+  def +:[B >: T: ClassTag](elem: B): Array[B] = {
     val result = Array.ofDim[B](repr.length + 1)
     result(0) = elem
     Array.copy(repr, 0, result, 1, repr.length)
@@ -107,6 +107,54 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
       bb.result()
     }
   }
+  
+  /** Converts an array of pairs into an array of first elements and an array of second elements.
+   *  
+   *  @tparam T1    the type of the first half of the element pairs
+   *  @tparam T2    the type of the second half of the element pairs
+   *  @param asPair an implicit conversion which asserts that the element type
+   *                of this Array is a pair.
+   *  @return       a pair of Arrays, containing, respectively, the first and second half
+   *                of each element pair of this Array.
+   */
+  def unzip[T1: ClassTag, T2: ClassTag](implicit asPair: T => (T1, T2)): (Array[T1], Array[T2]) = {
+    val a1 = new Array[T1](length)
+    val a2 = new Array[T2](length)
+    var i = 0
+    while (i < length) {
+      val e = apply(i)
+      a1(i) = e._1
+      a2(i) = e._2
+      i += 1
+    }
+    (a1, a2)
+  }
+  
+  /** Converts an array of triples into three arrays, one containing the elements from each position of the triple.
+   *  
+   *  @tparam T1      the type of the first of three elements in the triple
+   *  @tparam T2      the type of the second of three elements in the triple
+   *  @tparam T3      the type of the third of three elements in the triple
+   *  @param asTriple an implicit conversion which asserts that the element type
+   *                  of this Array is a triple.
+   *  @return         a triple of Arrays, containing, respectively, the first, second, and third
+   *                  elements from each element triple of this Array.
+   */
+  def unzip3[T1: ClassTag, T2: ClassTag, T3: ClassTag](implicit asTriple: T => (T1, T2, T3)): (Array[T1], Array[T2], Array[T3]) = {
+    val a1 = new Array[T1](length)
+    val a2 = new Array[T2](length)
+    val a3 = new Array[T3](length)
+    var i = 0
+    while (i < length) {
+      val e = apply(i)
+      a1(i) = e._1
+      a2(i) = e._2
+      a3(i) = e._3
+      i += 1
+    }
+    (a1, a2, a3)
+  }
+  
 
   def seq = thisCollection
 
