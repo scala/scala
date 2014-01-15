@@ -42,7 +42,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
   // overriden by ReflectGlobal
   def rootClassLoader: ClassLoader = this.getClass.getClassLoader
 
-  trait JavaClassCompleter extends FlagAssigningCompleter
+  trait JavaClassCompleter
 
   def runtimeMirror(cl: ClassLoader): Mirror = gilSynchronized {
     mirrors get cl match {
@@ -655,7 +655,15 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      *  @param   module  The Scala companion object for which info is copied
      *  @param   jclazz  The Java class
      */
-    private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType with JavaClassCompleter with FlagAssigningCompleter {
+    private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType with JavaClassCompleter with FlagAgnosticCompleter {
+      // one doesn't need to do non-trivial computations to assign flags for Java-based reflection artifacts
+      // therefore I'm moving flag-assigning logic from completion to construction
+      val flags = jclazz.scalaFlags
+      clazz setFlag (flags | JAVA)
+      if (module != NoSymbol) {
+        module setFlag (flags & PRIVATE | JAVA)
+        module.moduleClass setFlag (flags & PRIVATE | JAVA)
+      }
 
       /** used to avoid cycles while initializing classes */
       private var parentsLevel = 0
@@ -665,12 +673,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       override def load(sym: Symbol): Unit = {
         debugInfo("completing from Java " + sym + "/" + clazz.fullName)//debug
         assert(sym == clazz || (module != NoSymbol && (sym == module || sym == module.moduleClass)), sym)
-        val flags = jclazz.scalaFlags
-        clazz setFlag (flags | JAVA)
-        if (module != NoSymbol) {
-          module setFlag (flags & PRIVATE | JAVA)
-          module.moduleClass setFlag (flags & PRIVATE | JAVA)
-        }
 
         propagatePackageBoundary(jclazz, relatedSymbols: _*)
         copyAnnotations(clazz, jclazz)
