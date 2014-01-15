@@ -909,11 +909,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           // case DeBruijnIndex(_, _) =>
           case SingleType(pre, sym) =>
             validateVariance(pre, variance)
+          case TypeRef(_, sym, _) if sym.isAliasType =>
+            // okay to ignore pre/args here. In 2.10.3 we used to check them in addition to checking
+            // the normalized type, which led to exponential time type checking, see pos/t8152-performance.scala
+            validateVariance(tp.normalize, variance)
           case TypeRef(pre, sym, args) =>
 //            println("validate "+sym+" at "+relativeVariance(sym))
-            if (sym.isAliasType/* && relativeVariance(sym) == AnyVariance*/)
-              validateVariance(tp.normalize, variance)
-            else if (sym.variance != NoVariance) {
+            if (sym.variance != NoVariance) {
               val v = relativeVariance(sym)
               if (v != AnyVariance && sym.variance != v * variance) {
                 //Console.println("relativeVariance(" + base + "," + sym + ") = " + v);//DEBUG
