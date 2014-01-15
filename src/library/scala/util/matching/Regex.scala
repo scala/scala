@@ -704,6 +704,14 @@ object Regex {
     def replace(rs: String) = matcher.appendReplacement(sb, rs)
   }
 
+  /** Quotes strings to be used literally in regex patterns.
+   *
+   *  All regex metacharacters in the input match themselves literally in the output.
+   *
+   *  @example {{{List("US$", "CAN$").map(Regex.quote).mkString("|").r}}}
+   */
+  def quote(text: String): String = Pattern quote text
+
   /** Quotes replacement strings to be used in replacement methods.
    *
    *  Replacement methods give special meaning to backslashes (`\`) and

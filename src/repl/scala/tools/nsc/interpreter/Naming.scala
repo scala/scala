@@ -8,6 +8,7 @@ package tools.nsc
 package interpreter
 
 import scala.util.Properties.lineSeparator
+import scala.util.matching.Regex
 
 /** This is for name logic which is independent of the compiler (notice there's no Global.)
  *  That includes at least generating, metaquoting, mangling, and unmangling.
@@ -38,12 +39,10 @@ trait Naming {
   //
   // $line3.$read.$iw.$iw.Bippy =
   //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
-
-  private def noMeta(s: String) = "\\Q" + s + "\\E"
   lazy val lineRegex = {
     val sn = sessionNames
-    val members = List(sn.read, sn.eval, sn.print) map noMeta mkString ("(?:", "|", ")")
-    debugging("lineRegex")(noMeta(sn.line) + """\d+[./]""" + members + """[$.]""")
+    val members = List(sn.read, sn.eval, sn.print) map Regex.quote mkString ("(?:", "|", ")")
+    debugging("lineRegex")(Regex.quote(sn.line) + """\d+[./]""" + members + """[$.]""")
   }
 
   private def removeLineWrapper(s: String) = s.replaceAll(lineRegex, "")
