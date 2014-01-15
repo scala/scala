@@ -30,12 +30,12 @@ trait Definitions extends api.StandardDefinitions {
 
   private def enterNewClass(owner: Symbol, name: TypeName, parents: List[Type], flags: Long = 0L): ClassSymbol = {
     val clazz = owner.newClassSymbol(name, NoPosition, flags)
-    clazz setInfoAndEnter ClassInfoType(parents, newScope, clazz)
+    clazz setInfoAndEnter ClassInfoType(parents, newScope, clazz) markAllCompleted
   }
   private def newMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long): MethodSymbol = {
     val msym   = owner.newMethod(name.encode, NoPosition, flags)
     val params = msym.newSyntheticValueParams(formals)
-    msym setInfo MethodType(params, restpe)
+    msym setInfo MethodType(params, restpe) markAllCompleted
   }
   private def enterNewMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long = 0L): MethodSymbol =
     owner.info.decls enter newMethod(owner, name, formals, restpe, flags)
@@ -251,8 +251,8 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     // top types
-    lazy val AnyClass    = enterNewClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT)
-    lazy val AnyRefClass = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectTpe)
+    lazy val AnyClass    = enterNewClass(ScalaPackageClass, tpnme.Any, Nil, ABSTRACT) markAllCompleted
+    lazy val AnyRefClass = newAlias(ScalaPackageClass, tpnme.AnyRef, ObjectTpe) markAllCompleted
     lazy val ObjectClass = getRequiredClass(sn.Object.toString)
 
     // Cached types for core monomorphic classes
@@ -275,7 +275,7 @@ trait Definitions extends api.StandardDefinitions {
       val anyval    = enterNewClass(ScalaPackageClass, tpnme.AnyVal, AnyTpe :: Nil, ABSTRACT)
       val av_constr = anyval.newClassConstructor(NoPosition)
       anyval.info.decls enter av_constr
-      anyval
+      anyval markAllCompleted
     }).asInstanceOf[ClassSymbol]
       def AnyVal_getClass = getMemberMethod(AnyValClass, nme.getClass_)
 
@@ -287,8 +287,10 @@ trait Definitions extends api.StandardDefinitions {
       locally {
         this initFlags ABSTRACT | FINAL
         this setInfoAndEnter ClassInfoType(List(parent.tpe), newScope, this)
+        this markAllCompleted
       }
       final override def isBottomClass = true
+      final override def isThreadsafe(purpose: SymbolOps): Boolean = true
     }
     final object NothingClass extends BottomClassSymbol(tpnme.Nothing, AnyClass) {
       override def isSubClass(that: Symbol) = true
@@ -357,7 +359,7 @@ trait Definitions extends api.StandardDefinitions {
       def delayedInitMethod = getMemberMethod(DelayedInitClass, nme.delayedInit)
 
     lazy val TypeConstraintClass   = requiredClass[scala.annotation.TypeConstraint]
-    lazy val SingletonClass        = enterNewClass(ScalaPackageClass, tpnme.Singleton, AnyTpe :: Nil, ABSTRACT | TRAIT | FINAL)
+    lazy val SingletonClass        = enterNewClass(ScalaPackageClass, tpnme.Singleton, AnyTpe :: Nil, ABSTRACT | TRAIT | FINAL) markAllCompleted
     lazy val SerializableClass     = requiredClass[scala.Serializable]
     lazy val JavaSerializableClass = requiredClass[java.io.Serializable] modifyInfo fixupAsAnyTrait
     lazy val ComparableClass       = requiredClass[java.lang.Comparable[_]] modifyInfo fixupAsAnyTrait
@@ -1126,6 +1128,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val AnnotationDefaultAttr: ClassSymbol = {
       val sym = RuntimePackageClass.newClassSymbol(tpnme.AnnotationDefaultATTR, NoPosition, 0L)
       sym setInfo ClassInfoType(List(AnnotationClass.tpe), newScope, sym)
+      markAllCompleted(sym)
       RuntimePackageClass.info.decls.toList.filter(_.name == sym.name) match {
         case existing :: _ =>
           existing.asInstanceOf[ClassSymbol]
@@ -1225,7 +1228,7 @@ trait Definitions extends api.StandardDefinitions {
       val tparam  = clazz.newSyntheticTypeParam("T0", flags)
       val parents = List(AnyRefTpe, parentFn(tparam))
 
-      clazz setInfo GenPolyType(List(tparam), ClassInfoType(parents, newScope, clazz))
+      clazz setInfo GenPolyType(List(tparam), ClassInfoType(parents, newScope, clazz)) markAllCompleted
     }
 
     def newPolyMethod(typeParamCount: Int, owner: Symbol, name: TermName, flags: Long)(createFn: PolyMethodCreator): MethodSymbol = {
@@ -1236,7 +1239,7 @@ trait Definitions extends api.StandardDefinitions {
         case (_, restpe)             => NullaryMethodType(restpe)
       }
 
-      msym setInfoAndEnter genPolyType(tparams, mtpe)
+      msym setInfoAndEnter genPolyType(tparams, mtpe) markAllCompleted
     }
 
     /** T1 means one type parameter.

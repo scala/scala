@@ -4,6 +4,7 @@ package internal
 
 import scala.collection.mutable.WeakHashMap
 import scala.ref.WeakReference
+import scala.reflect.internal.Flags._
 
 // SI-6241: move importers to a mirror
 trait Importers extends api.Importers { to: SymbolTable =>
@@ -87,6 +88,7 @@ trait Importers extends api.Importers { to: SymbolTable =>
             }
             my setInfo GenPolyType(mytypeParams, importType(theirCore))
             my setAnnotations (their.annotations map importAnnotationInfo)
+            markAllCompleted(my)
           }
         }
       } finally {
@@ -142,6 +144,7 @@ trait Importers extends api.Importers { to: SymbolTable =>
           myowner.newTypeSymbol(myname.toTypeName, mypos, myflags)
       }
       symMap.weakUpdate(their, my)
+      markFlagsCompleted(my)(mask = AllFlags)
       my setInfo recreatedSymbolCompleter(my, their)
     }
 

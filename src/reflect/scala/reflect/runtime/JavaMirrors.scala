@@ -63,10 +63,10 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     private[reflect] lazy val runDefinitions = new definitions.RunDefinitions // only one "run" in the reflection universe
     import runDefinitions._
 
-    override lazy val RootPackage = new RootPackage with SynchronizedTermSymbol
-    override lazy val RootClass = new RootClass with SynchronizedModuleClassSymbol
-    override lazy val EmptyPackage = new EmptyPackage with SynchronizedTermSymbol
-    override lazy val EmptyPackageClass = new EmptyPackageClass with SynchronizedModuleClassSymbol
+    override lazy val RootPackage = (new RootPackage with SynchronizedTermSymbol).markFlagsCompleted(mask = AllFlags)
+    override lazy val RootClass = (new RootClass with SynchronizedModuleClassSymbol).markFlagsCompleted(mask = AllFlags)
+    override lazy val EmptyPackage = (new EmptyPackage with SynchronizedTermSymbol).markFlagsCompleted(mask = AllFlags)
+    override lazy val EmptyPackageClass = (new EmptyPackageClass with SynchronizedModuleClassSymbol).markFlagsCompleted(mask = AllFlags)
 
     /** The lazy type for root.
      */
@@ -575,6 +575,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
             val bytes = ssig.getBytes
             val len = ByteCodecs.decode(bytes)
             unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
+            markAllCompleted(clazz, module)
           case None =>
             loadBytes[Array[String]]("scala.reflect.ScalaLongSignature") match {
               case Some(slsig) =>
@@ -583,6 +584,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
                 val len = ByteCodecs.decode(encoded)
                 val decoded = encoded.take(len)
                 unpickler.unpickle(decoded, 0, clazz, module, jclazz.getName)
+                markAllCompleted(clazz, module)
               case None =>
                 // class does not have a Scala signature; it's a Java class
                 info("translating reflection info for Java " + jclazz) //debug
@@ -605,6 +607,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     private def createTypeParameter(jtvar: jTypeVariable[_ <: GenericDeclaration]): TypeSymbol = {
       val tparam = sOwner(jtvar).newTypeParameter(newTypeName(jtvar.getName))
         .setInfo(new TypeParamCompleter(jtvar))
+      markFlagsCompleted(tparam)(mask = AllFlags)
       tparamCache enter (jtvar, tparam)
       tparam
     }
@@ -617,6 +620,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       override def load(sym: Symbol) = complete(sym)
       override def complete(sym: Symbol) = {
         sym setInfo TypeBounds.upper(glb(jtvar.getBounds.toList map typeToScala map objToAny))
+        markAllCompleted(sym)
       }
     }
 
@@ -664,6 +668,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         module setFlag (flags & PRIVATE | JAVA)
         module.moduleClass setFlag (flags & PRIVATE | JAVA)
       }
+      markFlagsCompleted(clazz, module)(mask = AllFlags)
 
       /** used to avoid cycles while initializing classes */
       private var parentsLevel = 0
@@ -688,6 +693,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       override def complete(sym: Symbol): Unit = {
         load(sym)
         completeRest()
+        markAllCompleted(clazz, module)
       }
 
       def completeRest(): Unit = gilSynchronized {
@@ -740,6 +746,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       class LazyPolyType(override val typeParams: List[Symbol]) extends LazyType with FlagAgnosticCompleter {
         override def complete(sym: Symbol) {
           completeRest()
+          markAllCompleted(clazz, module)
         }
       }
     }
@@ -894,6 +901,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         val pkg = owner.newPackage(name)
         pkg.moduleClass setInfo new LazyPackageType
         pkg setInfoAndEnter pkg.moduleClass.tpe
+        markFlagsCompleted(pkg)(mask = AllFlags)
         info("made Scala "+pkg)
         pkg
       } else
@@ -1076,6 +1084,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       fieldCache.enter(jfield, field)
       propagatePackageBoundary(jfield, field)
       copyAnnotations(field, jfield)
+      markAllCompleted(field)
       field
     }
 
@@ -1102,11 +1111,9 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       setMethType(meth, tparams, paramtpes, resulttpe)
       propagatePackageBoundary(jmeth.javaFlags, meth)
       copyAnnotations(meth, jmeth)
-
-      if (jmeth.javaFlags.isVarargs)
-        meth modifyInfo arrayToRepeated
-      else
-        meth
+      if (jmeth.javaFlags.isVarargs) meth modifyInfo arrayToRepeated
+      markAllCompleted(meth)
+      meth
     }
 
     /**
@@ -1129,6 +1136,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       constr setInfo GenPolyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
       propagatePackageBoundary(jconstr.javaFlags, constr)
       copyAnnotations(constr, jconstr)
+      markAllCompleted(constr)
       constr
     }
 

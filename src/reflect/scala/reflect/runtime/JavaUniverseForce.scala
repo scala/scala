@@ -200,6 +200,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.NoSymbol
     this.CyclicReference
     // inaccessible: this.TypeHistory
+    this.SymbolOps
     this.TermName
     this.TypeName
     this.Liftable
