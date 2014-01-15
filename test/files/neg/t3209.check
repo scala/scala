@@ -1,4 +1,4 @@
-t3209.scala:2: error: expected start of definition
+t3209.scala:2: error: identifier expected but eof found.
 package test
-^
+            ^
 one error found

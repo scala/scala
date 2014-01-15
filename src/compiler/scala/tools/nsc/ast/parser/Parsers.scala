@@ -2664,8 +2664,7 @@ self =>
     }
 
     /** Hook for IDE, for top-level classes/objects. */
-    def topLevelTmplDef: Tree = {
-      val annots = annotations(skipNewLines = true)
+    def topLevelTmplDef(annots: List[Tree]): Tree = {
       val pos    = caseAwareTokenOffset
       val mods   = modifiers() withAnnotations annots
       tmplDef(pos, mods)
@@ -2764,8 +2763,8 @@ self =>
      *    }
      *  }}}
      */
-    def packageObjectDef(start: Offset): PackageDef = {
-      val defn   = objectDef(in.offset, NoMods)
+    def packageObjectDef(start: Offset, annots: List[Tree] = Nil): PackageDef = {
+      val defn   = objectDef(in.offset, NoMods withAnnotations annots)
       val pidPos = o2p(defn.pos.startOrPoint)
       val pkgPos = r2p(start, pidPos.point)
       gen.mkPackageObject(defn, pidPos, pkgPos)
@@ -2942,7 +2941,7 @@ self =>
      *  TopStatSeq ::= TopStat {semi TopStat}
      *  TopStat ::= Annotations Modifiers TmplDef
      *            | Packaging
-     *            | package object objectDef
+     *            | Annotations package object objectDef
      *            | Import
      *            |
      *  }}}
@@ -2954,8 +2953,16 @@ self =>
       case IMPORT =>
         in.flushDoc
         importClause()
-      case _ if isAnnotation || isTemplateIntro || isModifier =>
-        joinComment(topLevelTmplDef :: Nil)
+      case _ if isAnnotation =>
+        val annots = annotations(skipNewLines = true)
+        in.token match {
+          case PACKAGE =>
+            joinComment(packageObjectDef(in.skipToken(), annots) :: Nil)
+          case _ =>
+            joinComment(topLevelTmplDef(annots) :: Nil)
+        }
+      case _ if isTemplateIntro || isModifier =>
+        joinComment(topLevelTmplDef(Nil) :: Nil)
     }
 
     /** {{{

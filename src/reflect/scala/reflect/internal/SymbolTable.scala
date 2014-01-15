@@ -311,6 +311,8 @@ abstract class SymbolTable extends macros.Universe
         openPackageModule(p, dest)
       }
     }
+    // copy annotations from package object symbol to package module symbol
+    dest.sourceModule withAnnotations container.annotations
   }
 
   /** Convert array parameters denoting a repeated parameter of a Java method
