@@ -1605,7 +1605,7 @@ TODO:
     <mkdir dir="${bc-build.dir}"/>
     <!-- Pull down MIMA -->
     <artifact:dependencies pathId="mima.classpath">
-      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.2" version="0.1.5"/>
+      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.10" version="0.1.6"/>
     </artifact:dependencies>
     <artifact:dependencies pathId="old.bc.classpath">
       <dependency groupId="org.scala-lang" artifactId="scala-swing" version="${bc-reference-version}"/>
