@@ -59,7 +59,6 @@ class HashMap[A, +B] extends AbstractMap[A, B]
 
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): HashMap[A, B1] =
     this + elem1 + elem2 ++ elems
-    // TODO: optimize (might be able to use mutable updates)
 
   def - (key: A): HashMap[A, B] =
     removed0(key, computeHash(key), 0)
@@ -168,8 +167,6 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     }
   }
 
-  // TODO: add HashMap2, HashMap3, ...
-
   class HashMap1[A,+B](private[collection] val key: A, private[collection] val hash: Int, private[collection] val value: (B @uV), private[collection] var kv: (A,B @uV)) extends HashMap[A,B] {
     override def size = 1
 
@@ -277,7 +274,6 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         elems(index & 0x1f).get0(key, hash, level + 5)
       } else if ((bitmap & mask) != 0) {
         val offset = Integer.bitCount(bitmap & (mask-1))
-        // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         elems(offset).get0(key, hash, level + 5)
       } else
         None
@@ -289,7 +285,6 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       val offset = Integer.bitCount(bitmap & (mask-1))
       if ((bitmap & mask) != 0) {
         val sub = elems(offset)
-        // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         val subNew = sub.updated0(key, hash, level + 5, value, kv, merger)
         if(subNew eq sub) this else {
           val elemsNew = new Array[HashMap[A,B1]](elems.length)
@@ -312,7 +307,6 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       val offset = Integer.bitCount(bitmap & (mask-1))
       if ((bitmap & mask) != 0) {
         val sub = elems(offset)
-        // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         val subNew = sub.removed0(key, hash, level + 5)
         if (subNew eq sub) this
         else if (subNew.isEmpty) {
