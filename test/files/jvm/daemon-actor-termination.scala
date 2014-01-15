@@ -11,7 +11,7 @@ object Test {
       react {
         case 'hello =>
           println("MSG1")
-          reply()
+          reply(())
           react {
             case 'bye =>
               println("done")
