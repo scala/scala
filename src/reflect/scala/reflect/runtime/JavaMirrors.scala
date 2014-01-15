@@ -575,6 +575,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
             val bytes = ssig.getBytes
             val len = ByteCodecs.decode(bytes)
             unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
+            markCompleted(clazz, module)
           case None =>
             loadBytes[Array[String]]("scala.reflect.ScalaLongSignature") match {
               case Some(slsig) =>
@@ -583,6 +584,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
                 val len = ByteCodecs.decode(encoded)
                 val decoded = encoded.take(len)
                 unpickler.unpickle(decoded, 0, clazz, module, jclazz.getName)
+                markCompleted(clazz, module)
               case None =>
                 // class does not have a Scala signature; it's a Java class
                 info("translating reflection info for Java " + jclazz) //debug
@@ -686,8 +688,10 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       }
 
       override def complete(sym: Symbol): Unit = {
+        markBeingCompleted(clazz, module)
         load(sym)
         completeRest()
+        markCompleted(clazz, module)
       }
 
       def completeRest(): Unit = gilSynchronized {
@@ -1076,6 +1080,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       fieldCache.enter(jfield, field)
       propagatePackageBoundary(jfield, field)
       copyAnnotations(field, jfield)
+      markCompleted(field)
       field
     }
 
@@ -1102,11 +1107,9 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       setMethType(meth, tparams, paramtpes, resulttpe)
       propagatePackageBoundary(jmeth.javaFlags, meth)
       copyAnnotations(meth, jmeth)
-
-      if (jmeth.javaFlags.isVarargs)
-        meth modifyInfo arrayToRepeated
-      else
-        meth
+      if (jmeth.javaFlags.isVarargs) meth modifyInfo arrayToRepeated
+      markCompleted(meth)
+      meth
     }
 
     /**
@@ -1129,6 +1132,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       constr setInfo GenPolyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
       propagatePackageBoundary(jconstr.javaFlags, constr)
       copyAnnotations(constr, jconstr)
+      markCompleted(constr)
       constr
     }
 
