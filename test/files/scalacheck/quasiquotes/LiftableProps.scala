@@ -111,4 +111,41 @@ object LiftableProps extends QuasiquoteProperties("liftable") {
     assert(q"${(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21)}" ≈ q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21)")
     assert(q"${(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)}" ≈ q"(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)")
   }
+
+  property("lift nil") = test {
+    val nil = Nil
+    assert(q"$nil" ≈ q"scala.collection.immutable.Nil")
+  }
+
+  property("lift some") = test {
+    val some1 = Some(1)
+    assert(q"$some1" ≈ q"scala.Some(1)")
+    val some2: Option[Int] = Some(1)
+    assert(q"$some2" ≈ q"scala.Some(1)")
+  }
+
+  property("lift none") = test {
+    val none1 = None
+    assert(q"$none1" ≈ q"scala.None")
+    val none2: Option[Int] = None
+    assert(q"$none2" ≈ q"scala.None")
+  }
+
+  property("lift left") = test {
+    val left1 = Left(1)
+    assert(q"$left1" ≈ q"scala.util.Left(1)")
+    val left2: Left[Int, Int] = Left(1)
+    assert(q"$left2" ≈ q"scala.util.Left(1)")
+    val left3: Either[Int, Int] = Left(1)
+    assert(q"$left3" ≈ q"scala.util.Left(1)")
+  }
+
+  property("lift right") = test {
+    val right1 = Right(1)
+    assert(q"$right1" ≈ q"scala.util.Right(1)")
+    val right2: Right[Int, Int] = Right(1)
+    assert(q"$right2" ≈ q"scala.util.Right(1)")
+    val right3: Either[Int, Int] = Right(1)
+    assert(q"$right3" ≈ q"scala.util.Right(1)")
+  }
 }
