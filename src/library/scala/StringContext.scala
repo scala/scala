@@ -133,7 +133,8 @@ case class StringContext(parts: String*) {
    *  Finally, if an interpolated expression is followed by a `parts` string
    *  that starts with a formatting specifier, the expression is formatted according to that
    *  specifier. All specifiers allowed in Java format strings are handled, and in the same
-   *  way they are treated in Java.
+   *  way they are treated in Java. In addition, a `"%q"` conversion is provided that is
+   *  expanded to `'"'`.
    *
    *  For example:
    *  {{{
@@ -157,9 +158,9 @@ case class StringContext(parts: String*) {
    *      If a formatting position does not refer to a `%` character (which is assumed to
    *      start a format specifier), then the string format specifier `%s` is inserted.
    *
-   *   2. Any `%` characters not in formatting positions are left in the resulting
-   *      string literally. This is achieved by replacing each such occurrence by the
-   *      format specifier `%%`.
+   *   2. Any `%` characters not in formatting positions must begin one of the conversions
+   *      `%%` (the literal percent), `%n` (the platform-specific line separator) or
+   *      `%q` (the literal double-quote).
    */
   // The implementation is hardwired to `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
   // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
