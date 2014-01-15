@@ -157,9 +157,8 @@ case class StringContext(parts: String*) {
    *      If a formatting position does not refer to a `%` character (which is assumed to
    *      start a format specifier), then the string format specifier `%s` is inserted.
    *
-   *   2. Any `%` characters not in formatting positions are left in the resulting
-   *      string literally. This is achieved by replacing each such occurrence by the
-   *      format specifier `%%`.
+   *   2. Any `%` characters not in formatting positions must begin one of the conversions
+   *      `%%` (the literal percent) or `%n` (the platform-specific line separator).
    */
   // The implementation is hardwired to `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
   // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
