@@ -11,10 +11,10 @@ package collection
 package mutable
 
 /**
- * An immutable AVL Tree implementation used by mutable.TreeSet
+ * An immutable AVL Tree implementation formerly used by mutable.TreeSet
  *
  * @author Lucien Pereira
- * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11")
+ * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11.0")
  */
 private[mutable] sealed trait AVLTree[+A] extends Serializable {
   def balance: Int
@@ -65,7 +65,7 @@ private[mutable] sealed trait AVLTree[+A] extends Serializable {
 }
 
 /**
- * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11")
+ * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11.0")
  */
 private case object Leaf extends AVLTree[Nothing] {
   override val balance: Int = 0
@@ -74,7 +74,7 @@ private case object Leaf extends AVLTree[Nothing] {
 }
 
 /**
- * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11")
+ * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11.0")
  */
 private case class Node[A](data: A, left: AVLTree[A], right: AVLTree[A]) extends AVLTree[A] {
   override val balance: Int = right.depth - left.depth
@@ -211,7 +211,7 @@ private case class Node[A](data: A, left: AVLTree[A], right: AVLTree[A]) extends
 }
 
 /**
- * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11")
+ * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11.0")
  */
 private class AVLIterator[A](root: Node[A]) extends Iterator[A] {
   val stack = mutable.ArrayStack[Node[A]](root)

@@ -95,8 +95,6 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   type Set[A]     = immutable.Set[A]
   val Map         = immutable.Map
   val Set         = immutable.Set
-  // @deprecated("Use scala.AnyRef instead", "2.10.0")
-  // def AnyRef = scala.AnyRef
 
   // Manifest types, companions, and incantations for summoning
   @annotation.implicitNotFound(msg = "No ClassManifest available for ${T}.")

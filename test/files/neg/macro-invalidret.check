@@ -20,7 +20,7 @@ Macros_Test_2.scala:7: warning: macro defs must have explicitly specified return
       ^
 Macros_Test_2.scala:14: error: exception during macro expansion:
 scala.NotImplementedError: an implementation is missing
-	at scala.Predef$.$qmark$qmark$qmark(Predef.scala:227)
+	at scala.Predef$.$qmark$qmark$qmark(Predef.scala:225)
 	at Impls$.foo3(Impls_1.scala:7)
 
   foo3
