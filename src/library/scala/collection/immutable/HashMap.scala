@@ -40,6 +40,8 @@ class HashMap[A, +B] extends AbstractMap[A, B]
                         with Serializable
                         with CustomParallelizable[(A, B), ParHashMap[A, B]]
 {
+  import HashMap.{nullToEmpty, bufferSize}
+
   override def size: Int = 0
 
   override def empty = HashMap.empty[A, B]
@@ -62,6 +64,18 @@ class HashMap[A, +B] extends AbstractMap[A, B]
 
   def - (key: A): HashMap[A, B] =
     removed0(key, computeHash(key), 0)
+
+  override def filter(p: ((A, B)) => Boolean) = {
+    val buffer = new Array[HashMap[A, B]](bufferSize(size))
+    nullToEmpty(filter0(p, false, 0, buffer, 0))
+  }
+
+  override def filterNot(p: ((A, B)) => Boolean) = {
+    val buffer = new Array[HashMap[A, B]](bufferSize(size))
+    nullToEmpty(filter0(p, true, 0, buffer, 0))
+  }
+
+  protected def filter0(p: ((A, B)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[A, B @uV]], offset0: Int): HashMap[A, B] = null
 
   protected def elemHashCode(key: A) = key.##
 
@@ -200,6 +214,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def removed0(key: A, hash: Int, level: Int): HashMap[A, B] =
       if (hash == this.hash && key == this.key) HashMap.empty[A,B] else this
 
+    override protected def filter0(p: ((A, B)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[A, B @uV]], offset0: Int): HashMap[A, B] =
+      if (negate ^ p(ensurePair)) this else null
+
     override def iterator: Iterator[(A,B)] = Iterator(ensurePair)
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
     // this method may be called multiple times in a multithreaded environment, but that's ok
@@ -240,6 +257,21 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         } else
           new HashMapCollision1(hash, kvs1)
       } else this
+
+    override protected def filter0(p: ((A, B)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[A, B @uV]], offset0: Int): HashMap[A, B] = {
+      val kvs1 = if(negate) kvs.filterNot(p) else kvs.filter(p)
+      kvs1.size match {
+        case 0 =>
+          null
+        case 1 =>
+          val kv@(k,v) = kvs1.head
+          new HashMap1(k, hash, v, kv)
+        case x if x == kvs.size =>
+          this
+        case _ =>
+          new HashMapCollision1(hash, kvs1)
+      }
+    }
 
     override def iterator: Iterator[(A,B)] = kvs.iterator
     override def foreach[U](f: ((A, B)) => U): Unit = kvs.foreach(f)
@@ -333,6 +365,52 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         }
       } else {
         this
+      }
+    }
+
+    override protected def filter0(p: ((A, B)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[A, B @uV]], offset0: Int): HashMap[A, B] = {
+      // current offset
+      var offset = offset0
+      // result size
+      var rs = 0
+      // bitmap for kept elems
+      var kept = 0
+      // loop over all elements
+      var i = 0
+      while (i < elems.length) {
+        val result = elems(i).filter0(p, negate, level + 5, buffer, offset)
+        if (result ne null) {
+          buffer(offset) = result
+          offset += 1
+          // add the result size
+          rs += result.size
+          // mark the bit i as kept
+          kept |= (1 << i)
+        }
+        i += 1
+      }
+      if (offset == offset0) {
+        // empty
+        null
+      } else if (rs == size0) {
+        // unchanged
+        this
+      } else if (offset == offset0 + 1 && !buffer(offset0).isInstanceOf[HashTrieMap[A, B]]) {
+        // leaf
+        buffer(offset0)
+      } else {
+        // we have to return a HashTrieMap
+        val length = offset - offset0
+        val elems1 = new Array[HashMap[A, B]](length)
+        System.arraycopy(buffer, offset0, elems1, 0, length)
+        val bitmap1 = if (length == elems.length) {
+          // we can reuse the original bitmap
+          bitmap
+        } else {
+          // calculate new bitmap by keeping just bits in the kept bitmask
+          keepBits(bitmap, kept)
+        }
+        new HashTrieMap(bitmap1, elems1, rs)
       }
     }
 
@@ -437,6 +515,50 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       case hm: HashMap[_, _] => this
       case _ => sys.error("section supposed to be unreachable.")
     }
+  }
+
+  /**
+   * Calculates the maximum buffer size given the maximum possible total size of the trie-based collection
+   * @param size the maximum size of the collection to be generated
+   * @return the maximum buffer size
+   */
+  @inline private def bufferSize(size: Int): Int = (size + 6) min (32 * 7)
+
+  /**
+   * In many internal operations the empty map is represented as null for performance reasons. This method converts
+   * null to the empty map for use in public methods
+   */
+  @inline private def nullToEmpty[A, B](m: HashMap[A, B]): HashMap[A, B] = if (m eq null) empty[A, B] else m
+
+  /**
+   * Utility method to keep a subset of all bits in a given bitmap
+   *
+   * Example
+   *    bitmap (binary): 00000001000000010000000100000001
+   *    keep (binary):                               1010
+   *    result (binary): 00000001000000000000000100000000
+   *
+   * @param bitmap the bitmap
+   * @param keep a bitmask containing which bits to keep
+   * @return the original bitmap with all bits where keep is not 1 set to 0
+   */
+  private def keepBits(bitmap: Int, keep: Int): Int = {
+    var result = 0
+    var current = bitmap
+    var kept = keep
+    while (kept != 0) {
+      // lowest remaining bit in current
+      val lsb = current ^ (current & (current - 1))
+      if ((kept & 1) != 0) {
+        // mark bit in result bitmap
+        result |= lsb
+      }
+      // clear lowest remaining one bit in abm
+      current &= ~lsb
+      // look at the next kept bit
+      kept >>>= 1
+    }
+    result
   }
 
   @SerialVersionUID(2L)

@@ -38,6 +38,8 @@ class HashSet[A] extends AbstractSet[A]
                     with CustomParallelizable[A, ParHashSet[A]]
                     with Serializable
 {
+  import HashSet.{nullToEmpty, bufferSize}
+
   override def companion: GenericCompanion[HashSet] = HashSet
 
   //class HashSet[A] extends Set[A] with SetLike[A, HashSet[A]] {
@@ -85,6 +87,18 @@ class HashSet[A] extends AbstractSet[A]
 
   def - (e: A): HashSet[A] =
     removed0(e, computeHash(e), 0)
+
+  override def filter(p: A => Boolean) = {
+    val buffer = new Array[HashSet[A]](bufferSize(size))
+    nullToEmpty(filter0(p, false, 0, buffer, 0))
+  }
+
+  override def filterNot(p: A => Boolean) = {
+    val buffer = new Array[HashSet[A]](bufferSize(size))
+    nullToEmpty(filter0(p, true, 0, buffer, 0))
+  }
+
+  protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = null
 
   protected def elemHashCode(key: A) = key.##
 
@@ -179,6 +193,9 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def removed0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash && key == this.key) HashSet.empty[A] else this
 
+    override protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] =
+      if (negate ^ p(key)) this else null
+
     override def iterator: Iterator[A] = Iterator(key)
     override def foreach[U](f: A => U): Unit = f(key)
   }
@@ -213,6 +230,20 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         else
           new HashSetCollision1(hash, ks1)
       } else this
+
+    override protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
+      val ks1 = if(negate) ks.filterNot(p) else ks.filter(p)
+      ks1.size match {
+        case 0 =>
+          null
+        case 1 =>
+          new HashSet1(ks1.head, hash)
+        case x if x == ks.size =>
+          this
+        case _ =>
+          new HashSetCollision1(hash, ks1)
+      }
+    }
 
     override def iterator: Iterator[A] = ks.iterator
     override def foreach[U](f: A => U): Unit = ks.foreach(f)
@@ -392,6 +423,52 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         false
     }
 
+    override protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
+      // current offset
+      var offset = offset0
+      // result size
+      var rs = 0
+      // bitmap for kept elems
+      var kept = 0
+      // loop over all elements
+      var i = 0
+      while (i < elems.length) {
+        val result = elems(i).filter0(p, negate, level + 5, buffer, offset)
+        if (result ne null) {
+          buffer(offset) = result
+          offset += 1
+          // add the result size
+          rs += result.size
+          // mark the bit i as kept
+          kept |= (1 << i)
+        }
+        i += 1
+      }
+      if (offset == offset0) {
+        // empty
+        null
+      } else if (rs == size0) {
+        // unchanged
+        this
+      } else if (offset == offset0 + 1 && !buffer(offset0).isInstanceOf[HashTrieSet[A]]) {
+        // leaf
+        buffer(offset0)
+      } else {
+        // we have to return a HashTrieSet
+        val length = offset - offset0
+        val elems1 = new Array[HashSet[A]](length)
+        System.arraycopy(buffer, offset0, elems1, 0, length)
+        val bitmap1 = if (length == elems.length) {
+          // we can reuse the original bitmap
+          bitmap
+        } else {
+          // calculate new bitmap by keeping just bits in the kept bitmask
+          keepBits(bitmap, kept)
+        }
+        new HashTrieSet(bitmap1, elems1, rs)
+      }
+    }
+
     override def iterator = new TrieIterator[A](elems.asInstanceOf[Array[Iterable[A]]]) {
       final override def getElem(cc: AnyRef): A = cc.asInstanceOf[HashSet1[A]].key
     }
@@ -403,6 +480,50 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         i += 1
       }
     }
+  }
+
+  /**
+   * Calculates the maximum buffer size given the maximum possible total size of the trie-based collection
+   * @param size the maximum size of the collection to be generated
+   * @return the maximum buffer size
+   */
+  @inline private def bufferSize(size: Int): Int = (size + 6) min (32 * 7)
+
+  /**
+   * In many internal operations the empty set is represented as null for performance reasons. This method converts
+   * null to the empty set for use in public methods
+   */
+  @inline private def nullToEmpty[A](s: HashSet[A]): HashSet[A] = if (s eq null) empty[A] else s
+
+  /**
+   * Utility method to keep a subset of all bits in a given bitmap
+   *
+   * Example
+   *    bitmap (binary): 00000001000000010000000100000001
+   *    keep (binary):                               1010
+   *    result (binary): 00000001000000000000000100000000
+   *
+   * @param bitmap the bitmap
+   * @param keep a bitmask containing which bits to keep
+   * @return the original bitmap with all bits where keep is not 1 set to 0
+   */
+  private def keepBits(bitmap: Int, keep: Int): Int = {
+    var result = 0
+    var current = bitmap
+    var kept = keep
+    while (kept != 0) {
+      // lowest remaining bit in current
+      val lsb = current ^ (current & (current - 1))
+      if ((kept & 1) != 0) {
+        // mark bit in result bitmap
+        result |= lsb
+      }
+      // clear lowest remaining one bit in abm
+      current &= ~lsb
+      // look at the next kept bit
+      kept >>>= 1
+    }
+    result
   }
 
   @SerialVersionUID(2L) private class SerializationProxy[A,B](@transient private var orig: HashSet[A]) extends Serializable {
