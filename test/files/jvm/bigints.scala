@@ -31,7 +31,6 @@ object Test_BigDecimal {
 
     val xi: BigDecimal = 1
     val xd: BigDecimal = 1.0
-    val xf: BigDecimal = BigDecimal(1.0f)
     val xs: BigDecimal = BigDecimal("1.0")
     val xbi: BigDecimal = BigDecimal(scala.BigInt(1))
 
