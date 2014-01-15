@@ -796,7 +796,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      * Stability and volatility are checked separately to allow volatile paths in patterns that amount to equality checks. SI-6815
      */
-          def isStable        = isTerm && !isMutable && !(hasFlag(BYNAMEPARAM)) && (!isMethod || hasStableFlag)
+    final def isStable        = isTerm && !isMutable && !(hasFlag(BYNAMEPARAM)) && (!isMethod || hasStableFlag)
     final def hasVolatileType = tpe.isVolatile && !hasAnnotation(uncheckedStableClass)
 
     /** Does this symbol denote the primary constructor of its enclosing class? */
