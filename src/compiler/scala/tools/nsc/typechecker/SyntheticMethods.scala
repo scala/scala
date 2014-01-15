@@ -380,7 +380,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         val original = ddef.symbol
         val newAcc = deriveMethod(ddef.symbol, name => context.unit.freshTermName(name + "$")) { newAcc =>
           newAcc.makePublic
-          newAcc resetFlag (ACCESSOR | PARAMACCESSOR)
+          newAcc resetFlag (ACCESSOR | PARAMACCESSOR | OVERRIDE)
           ddef.rhs.duplicate
         }
         // TODO: shouldn't the next line be: `original resetFlag CASEACCESSOR`?
