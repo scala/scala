@@ -99,10 +99,10 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
-  override def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
 
   private object EmptyHashSet extends HashSet[Any] { }
-
+  private[collection] def emptyInstance: HashSet[Any] = EmptyHashSet
+  
   // utility method to create a HashTrieSet from two leaf HashSets (HashSet1 or HashSetCollision1) with non-colliding hash code)
   private def makeHashTrieSet[A](hash0:Int, elem0:HashSet[A], hash1:Int, elem1:HashSet[A], level:Int) : HashTrieSet[A] = {
     val index0 = (hash0 >>> level) & 0x1f
