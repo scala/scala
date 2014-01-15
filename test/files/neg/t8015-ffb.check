@@ -1,0 +1,6 @@
+t8015-ffb.scala:10: warning: side-effecting nullary methods are discouraged: suggest defining as `def w()` instead
+  def w = { x\u000c() }       // ^L is colored blue on this screen, hardly visible
+      ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
