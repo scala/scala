@@ -1594,7 +1594,7 @@ self =>
                              "=="  networkingArrow        
                              "+" 
                              "/"  "/"  "%"  "%/"  "%/%/"  "%&"  "%;"
-                             "·"
+                             "��"
                              ("?" simpleValueExpression ":")
  
    networkingArrow        =+ "<=="  "==>"  "<==>"   "<<==>"   "<==>>"  "<<==>>"
@@ -1850,7 +1850,7 @@ self =>
   scriptExpression_4      = scriptExpression_3 .. (+ "=="  networkingArrow)
   scriptExpression_3      = scriptExpression_2 .. (  "+")
   scriptExpression_2      = scriptExpression_1 .. (+ "/"  "%"  "%/"  "%/%/"  "%&"  "%;")
-  scriptExpression_1      = scriptExpression_0 .. (  "·")
+  scriptExpression_1      = scriptExpression_0 .. (  "��")
   scriptExpression_0      = scriptTerm         .. if commasOmittable (-) else (+)
      */
     
@@ -2052,7 +2052,7 @@ self =>
           else Ident(name)
       }
       accept(COLON) // optionality for the typer is not supported yet...would require some work since the type is needed (?) at the start of the method generated for the script
-      val tp  = exprSimpleType() 
+      val tp  = exprSimpleType()
       val rhs =
         if (tp.isEmpty || in.token == EQUALS || !newmods.isMutable || true /*FTTB enforce initialisation*/) {
           accept(EQUALS)
@@ -2063,28 +2063,37 @@ self =>
           else {simpleNativeValueExpr()}
         }
         else {newmods = newmods | Flags.DEFERRED; EmptyTree}
-      
+     
       // TBD: val result = ScriptValDef(newmods, name.toTermName, tp, rhs)    FTTB a quick solution:
       // val c = initializer ===> subscript.DSL._val(_c, here: subscript.DSL.N_localvar[Char] => initializer)   likewise for var
-      
+     
       val vIdent          = Ident(newTermName(underscore_prefix(name.toString)))
       val  sFunValOrVar   = dslFunFor(if (mods.isMutable) VAR else VAL)
       val sNodeValOrVar   = vmNodeFor(if (mods.isMutable) VAR else VAL)
-      
-    //val typer           = AppliedTypeTree(sNodeValOrVar, List(tp)) this does NOT work; need a wildcard type
-      val typer           = placeholderTypeBoundary{
-        AppliedTypeTree(sNodeValOrVar, List(wildcardType(pos))) // note: wildcardType fills placeholderTypes, used by placeholderTypes
-      }
-        
-      val initializerCode = blockToFunction_here (rhs, typer, rhs.pos)
+     
+      val typer           = AppliedTypeTree(sNodeValOrVar, List(tp))
+     
+      // Creating a block with a value definition of type `tp` and value `rhs`,
+      // returning that definition from the block.
+      // This way, compiler will act as if that was a standard value declaration,
+      // and will use standard means (implicit conversions) if somethin's wrong with
+      // types.
+      val typeSafetyDefinition = ValDef(Modifiers(0), TermName("toReturn"), tp, rhs)
+      val typeSafetyBlock = Block(typeSafetyDefinition, Ident("toReturn"))
+     
+      val initializerCode = blockToFunction_here (typeSafetyBlock, typer, rhs.pos)
       if (mods.isMutable) scriptLocalVariables += name->tp
       else                scriptLocalValues    += name->tp
 
       atPos(pos) {
         if (rhs.isEmpty) {dslFunFor(LPAREN_PLUS_MINUS_RPAREN)} // neutral; there is no value to provide
-        else Apply(sFunValOrVar, List(vIdent, initializerCode))
+        else {
+          val parameterizedFunction = TypeApply(sFunValOrVar, List(tp))
+          Apply(parameterizedFunction, List(vIdent, initializerCode))
+        }
       }
     }
+
 
     def unaryPostfixScriptTerm (): Tree = {
       var result = unaryPrefixScriptTerm()
@@ -2322,7 +2331,7 @@ self =>
       }
       inSubscriptArgumentParens(if (in.token == RPAREN) Nil else args())
     }
-   
+    
 /* ----------- EXPRESSIONS ------------------------------------------------ */
 
     def condExpr(): Tree = {
@@ -4135,5 +4144,34 @@ self =>
           makeEmptyPackage(start, stats)
       }
     }
+    
+    object TypeOperations {
+      
+      def enforcingType(block: Tree, ttype: Tree): Tree = {
+        val typeSafetyDefinition = ValDef(Modifiers(0), Ident("typedReturn"), ttype, block)
+        Block(typeSafetyDefinition, Ident("typedReturn"))
+      }
+      
+      def withTypeOf(target: Tree, block: Tree, typePlaceholder: String): Tree = {
+        // Generating a type-capturing function (DefDef)
+        val mods = NoMods
+        val name = newTermName("capturingFunction")
+        val typeParam = TypeDef(NoMods, newTypeName(typePlaceholder), List(), TypeTree())
+        val valueParam = ValDef(Modifiers(scala.reflect.internal.ModifierFlags.BYNAMEPARAM), newTermName("x"), typeParam, EmptyTree)
+        val returnType = TypeTree()
+        
+        val capturingFunction = DefDef(mods, name, List(typeParam), List(List(valueParam)), returnType, block)
+        
+        
+        // Constructing function application to the target tree
+        val application = Apply(Ident(name), List(target))
+        
+        
+        // Returning a block with the capturing function and it's application
+        Block(capturingFunction, application)
+      }
+      
+    }
+    
   }
 }
