@@ -1403,6 +1403,36 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             concrOvers.map(_.name.decode).mkString("    ", ", ", ""))
       }
     }
+
+    /** Check that a ValDef, DefDef or TypeDef is either:
+      *  - Not empty
+      *  - Is in a position where this is allowed
+      */
+    private def checkAllowUndefined(tree: Tree): Unit = {
+      val sym = tree.symbol
+
+      // Is this symbol type always allowed the deferred flag?
+      def symbolAllowsDeferred = (
+           sym.isValueParameter
+        || sym.isTypeParameterOrSkolem
+        || tree.isInstanceOf[ExistentialTypeTree]
+      )
+      // Does the symbol owner require no undefined members?
+      def ownerRequiresConcrete = (
+           !sym.owner.isClass
+        ||  sym.owner.isModuleClass
+        ||  sym.owner.isAnonymousClass
+      )
+
+      if (sym.isDeferred &&
+        !symbolAllowsDeferred &&
+        ownerRequiresConcrete) {
+
+        unit.error(tree.pos, "only classes can have declared but " +
+          s"undefined members ${analyzer.abstractVarMessage(sym)}")
+      }
+    }
+
     private def isRepeatedParamArg(tree: Tree) = currentApplication match {
       case Apply(fn, args) =>
         (    args.nonEmpty
@@ -1616,6 +1646,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
             transform(deriveDefDef(tree)(_ => typed(gen.mkSysErrorCall("native method stub"))))
 
           case ValDef(_, _, _, _) | DefDef(_, _, _, _, _, _) =>
+            checkAllowUndefined(tree)
             checkDeprecatedOvers(tree)
             checkInfiniteLoop(tree.asInstanceOf[ValOrDefDef])
             if (settings.warnNullaryUnit)
@@ -1628,6 +1659,10 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
               case dd: DefDef => checkByNameRightAssociativeDef(dd)
               case _          =>
             }
+            tree
+
+          case _: TypeDef =>
+            checkAllowUndefined(tree)
             tree
 
           case Template(parents, self, body) =>
