@@ -478,7 +478,7 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def si8213() {
+  def testSI8213() {
     val am = new scala.collection.mutable.AnyRefMap[String, Int]
     for (i <- 0 until 1024) am += i.toString -> i
     am.getOrElseUpdate("1024", { am.clear; -1 })
@@ -487,5 +487,24 @@ class SetMapConsistencyTest {
     for (i <- 0 until 1024) lm += i.toLong -> i
     lm.getOrElseUpdate(1024, { lm.clear; -1 })
     assert(lm == scala.collection.mutable.LongMap(1024L -> -1))
+  }
+  
+  // Mutating when an iterator is in the wild shouldn't produce random junk in the iterator
+  // Todo: test all sets/maps this way
+  @Test
+  def testSI8154() {
+    def f() = {
+      val xs = scala.collection.mutable.AnyRefMap[String, Int]("a" -> 1)
+      val it = xs.iterator
+      it.hasNext
+      xs.clear()
+    
+      if (it.hasNext) Some(it.next)
+      else None
+    }
+    assert(f() match {
+      case Some((a,b)) if (a==null || b==null) => false
+      case _ => true
+    })
   }
 }
