@@ -1214,7 +1214,26 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     /** Have we already supplemented the error message of a compiler crash? */
     private[nsc] final var supplementedError = false
 
-    private val unitbuf = new mutable.ListBuffer[CompilationUnit]
+    private class SyncedCompilationBuffer { self =>
+      private val underlying = new mutable.ArrayBuffer[CompilationUnit]
+      def size = synchronized { underlying.size }
+      def +=(cu: CompilationUnit): this.type = { synchronized { underlying += cu }; this }
+      def head: CompilationUnit = synchronized{ underlying.head }
+      def apply(i: Int): CompilationUnit = synchronized { underlying(i) }
+      def iterator: Iterator[CompilationUnit] = new collection.AbstractIterator[CompilationUnit] {
+        private var used = 0
+        def hasNext = self.synchronized{ used < underlying.size }
+        def next = self.synchronized {
+          if (!hasNext) throw new NoSuchElementException("next on empty Iterator")
+          used += 1
+          underlying(used-1)
+        }
+      }
+      def toList: List[CompilationUnit] = synchronized{ underlying.toList }
+    }
+
+    private val unitbuf = new SyncedCompilationBuffer
+      
     val compiledFiles   = new mutable.HashSet[String]
 
     /** A map from compiled top-level symbols to their source files */
@@ -1225,9 +1244,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     private var phasec: Int  = 0   // phases completed
     private var unitc: Int   = 0   // units completed this phase
-    private var _unitbufSize = 0
 
-    def size = _unitbufSize
+    def size = unitbuf.size
     override def toString = "scalac Run for:\n  " + compiledFiles.toList.sorted.mkString("\n  ")
 
     // Calculate where to stop based on settings -Ystop-before or -Ystop-after.
@@ -1452,7 +1470,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     /** add unit to be compiled in this run */
     private def addUnit(unit: CompilationUnit) {
       unitbuf += unit
-      _unitbufSize += 1 // counting as they're added so size is cheap
       compiledFiles += unit.source.file.path
     }
     private def checkDeprecatedSettings(unit: CompilationUnit) {
@@ -1468,11 +1485,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     /* !!! Note: changing this to unitbuf.toList.iterator breaks a bunch
        of tests in tests/res.  This is bad, it means the resident compiler
        relies on an iterator of a mutable data structure reflecting changes
-       made to the underlying structure (in whatever accidental way it is
-       currently depending upon.)
+       made to the underlying structure.
      */
     def units: Iterator[CompilationUnit] = unitbuf.iterator
-
+    
     def registerPickle(sym: Symbol): Unit = ()
 
     /** does this run compile given class, module, or case factory? */
