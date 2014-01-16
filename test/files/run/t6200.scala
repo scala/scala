@@ -10,7 +10,7 @@ object Test extends App {
 
   def testCorrectness[T: Ordering](n: Int, mkKey: Int => T) {
     val o = implicitly[Ordering[T]]
-    val s = HashMap.empty[T, Unit] ++ (0 until n).map(x => mkKey(x) ->())
+    val s = HashMap.empty[T, Unit] ++ (0 until n).map(x => mkKey(x) -> (()))
     for (i <- 0 until n) {
       val ki = mkKey(i)
       val a = s.filter(kv => o.lt(kv._1, ki))
@@ -24,7 +24,7 @@ object Test extends App {
   // I could not come up with a simple test that tests structural sharing when only parts are reused, but
   // at least this fails with the old and passes with the new implementation
   def testSharing() {
-    val s = HashMap.empty[Int, Unit] ++ (0 until 100).map(_ ->())
+    val s = HashMap.empty[Int, Unit] ++ (0 until 100).map(_ -> (()))
     require(s.filter(_ => true) eq s)
     require(s.filterNot(_ => false) eq s)
   }
@@ -50,7 +50,7 @@ object Test extends App {
       }
     }
 
-    val s = HashMap.empty[HashCounter, Unit] ++ (0 until 100).map(k => HashCounter(k) ->())
+    val s = HashMap.empty[HashCounter, Unit] ++ (0 until 100).map(k => HashCounter(k) -> (()))
     val hashCount0 = hashCount
     val equalsCount0 = equalsCount
     val t = s.filter(_._1 < HashCounter(50))
