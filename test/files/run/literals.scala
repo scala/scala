@@ -35,6 +35,7 @@ object Test {
     // char
     check_success("'\\u0024' == '$'", '\u0024', '$')
     check_success("'\\u005f' == '_'", '\u005f', '_')
+    // this cast is deprecated
     check_success("65.asInstanceOf[Char] == 'A'", 65.asInstanceOf[Char], 'A')
     check_success("\"\\141\\142\" == \"ab\"", "\141\142", "ab")
     check_success("\"\\0x61\\0x62\".trim() == \"x61\\0x62\"", "\0x61\0x62".substring(1), "x61\0x62")
@@ -72,6 +73,7 @@ object Test {
     // long
     check_success("1l == 1L", 1l, 1L)
     check_success("1L == 1l", 1L, 1l)
+    // this cast is deprecated
     check_success("1.asInstanceOf[Long] == 1l", 1.asInstanceOf[Long], 1l)
 
     check_success("0x7fffffffffffffffL == 9223372036854775807L",
@@ -94,6 +96,7 @@ object Test {
     check_success("3.14f == 3.14f", 3.14f, 3.14f)
     check_success("6.022e23f == 6.022e23f", 6.022e23f, 6.022e23f)
     check_success("09f == 9.0f", 09f, 9.0f)
+    // these casts are deprecated
     check_success("1.asInstanceOf[Float] == 1.0", 1.asInstanceOf[Float], 1.0f)
     check_success("1l.asInstanceOf[Float] == 1.0", 1l.asInstanceOf[Float], 1.0f)
 
@@ -109,6 +112,7 @@ object Test {
     check_success("3.14 == 3.14", 3.14, 3.14)
     check_success("1e-9d == 1.0e-9", 1e-9d, 1.0e-9)
     check_success("1e137 == 1.0e137", 1e137, 1.0e137)
+    // these casts are deprecated
     check_success("1.asInstanceOf[Double] == 1.0", 1.asInstanceOf[Double], 1.0)
     check_success("1l.asInstanceOf[Double] == 1.0", 1l.asInstanceOf[Double], 1.0)
 
