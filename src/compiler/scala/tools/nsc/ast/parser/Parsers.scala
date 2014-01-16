@@ -2042,6 +2042,8 @@ self =>
       case _       => unaryPostfixScriptTerm()
     }
     def scriptLocalValOrVar(mods: Modifiers): Tree = {
+      import TypeOperations._
+      
       val pos = in.offset
       var newmods = mods
       in.nextToken()
@@ -2073,15 +2075,10 @@ self =>
      
       val typer           = AppliedTypeTree(sNodeValOrVar, List(tp))
      
-      // Creating a block with a value definition of type `tp` and value `rhs`,
-      // returning that definition from the block.
-      // This way, compiler will act as if that was a standard value declaration,
-      // and will use standard means (implicit conversions) if somethin's wrong with
-      // types.
-      val typeSafetyDefinition = ValDef(Modifiers(0), TermName("toReturn"), tp, rhs)
-      val typeSafetyBlock = Block(typeSafetyDefinition, Ident("toReturn"))
-     
-      val initializerCode = blockToFunction_here (typeSafetyBlock, typer, rhs.pos)
+      // We need to enforce correct type here
+      val initializerCode = withTypeOf(rhs, Ident(newTypeName("T"))) {
+        blockToFunction_here (enforcingType(Ident(newTypeName("T"))) {rhs}, typer, rhs.pos)
+      }
       if (mods.isMutable) scriptLocalVariables += name->tp
       else                scriptLocalValues    += name->tp
 
@@ -2089,7 +2086,7 @@ self =>
         if (rhs.isEmpty) {dslFunFor(LPAREN_PLUS_MINUS_RPAREN)} // neutral; there is no value to provide
         else {
           val parameterizedFunction = TypeApply(sFunValOrVar, List(tp))
-          Apply(parameterizedFunction, List(vIdent, initializerCode))
+          Apply(sFunValOrVar, List(vIdent, initializerCode))
         }
       }
     }
@@ -4147,20 +4144,36 @@ self =>
     
     object TypeOperations {
       
-      def enforcingType(block: Tree, ttype: Tree): Tree = {
-        val typeSafetyDefinition = ValDef(Modifiers(0), Ident("typedReturn"), ttype, block)
+      def enforcingType(ttype: Tree)(tree: Tree): Tree = {
+        val typeSafetyDefinition = ValDef(Modifiers(0), newTermName("typedReturn"), ttype, tree)
         Block(typeSafetyDefinition, Ident("typedReturn"))
       }
       
-      def withTypeOf(target: Tree, block: Tree, typePlaceholder: String): Tree = {
+      def withTypeOf(target: Tree, typePlaceholder: Ident)(tree: Tree): Tree = {
+        import scala.reflect.internal.ModifierFlags._
+        
         // Generating a type-capturing function (DefDef)
         val mods = NoMods
         val name = newTermName("capturingFunction")
-        val typeParam = TypeDef(NoMods, newTypeName(typePlaceholder), List(), TypeTree())
-        val valueParam = ValDef(Modifiers(scala.reflect.internal.ModifierFlags.BYNAMEPARAM), newTermName("x"), typeParam, EmptyTree)
+        
+        val typeParam =
+          TypeDef(
+              Modifiers(DEFERRED),
+              typePlaceholder.name.asInstanceOf[TypeName],
+              List(),
+              TypeBoundsTree(EmptyTree, EmptyTree)
+          )
+              
+        val valueParam =
+          ValDef(
+            Modifiers(BYNAMEPARAM),
+            newTermName("x"),
+            typePlaceholder,
+            EmptyTree
+          )
         val returnType = TypeTree()
         
-        val capturingFunction = DefDef(mods, name, List(typeParam), List(List(valueParam)), returnType, block)
+        val capturingFunction = DefDef(mods, name, List(typeParam), List(List(valueParam)), returnType, tree)
         
         
         // Constructing function application to the target tree
