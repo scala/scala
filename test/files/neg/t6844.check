@@ -1,0 +1,6 @@
+t6844.scala:4: error: type mismatch;
+ found   : reflect.runtime.universe.TermName
+ required: reflect.runtime.universe.Tree
+  q"def foo($x)"
+             ^
+one error found

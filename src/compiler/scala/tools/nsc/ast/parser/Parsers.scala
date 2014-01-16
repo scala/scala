@@ -2121,8 +2121,6 @@ self =>
 
 /* -------- PARAMETERS ------------------------------------------- */
 
-    def allowTypelessParams = false
-
     /** {{{
      *  ParamClauses      ::= {ParamClause} [[nl] `(' implicit Params `)']
      *  ParamClause       ::= [nl] `(' [Params] `)'
@@ -2137,56 +2135,6 @@ self =>
     def paramClauses(owner: Name, contextBounds: List[Tree], ofCaseClass: Boolean): List[List[ValDef]] = {
       var implicitmod = 0
       var caseParam = ofCaseClass
-      def param(): ValDef = {
-        val start = in.offset
-        val annots = annotations(skipNewLines = false)
-        var mods = Modifiers(Flags.PARAM)
-        if (owner.isTypeName) {
-          mods = modifiers() | Flags.PARAMACCESSOR
-          if (mods.isLazy) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", skipIt = false)
-          in.token match {
-            case v @ (VAL | VAR) =>
-              mods = mods withPosition (in.token.toLong, tokenRange(in))
-              if (v == VAR) mods |= Flags.MUTABLE
-              in.nextToken()
-            case _ =>
-              if (mods.flags != Flags.PARAMACCESSOR) accept(VAL)
-              if (!caseParam) mods |= Flags.PrivateLocal
-          }
-          if (caseParam) mods |= Flags.CASEACCESSOR
-        }
-        val nameOffset = in.offset
-        val name = ident()
-        var bynamemod = 0
-        val tpt =
-          if (((settings.YmethodInfer && !owner.isTypeName) || allowTypelessParams) && in.token != COLON) {
-            TypeTree()
-          } else { // XX-METHOD-INFER
-            accept(COLON)
-            if (in.token == ARROW) {
-              if (owner.isTypeName && !mods.hasLocalFlag)
-                syntaxError(
-                  in.offset,
-                  (if (mods.isMutable) "`var'" else "`val'") +
-                  " parameters may not be call-by-name", skipIt = false)
-              else if (implicitmod != 0)
-                syntaxError(
-                  in.offset,
-                  "implicit parameters may not be call-by-name", skipIt = false)
-              else bynamemod = Flags.BYNAMEPARAM
-            }
-            paramType()
-          }
-        val default =
-          if (in.token == EQUALS) {
-            in.nextToken()
-            mods |= Flags.DEFAULTPARAM
-            expr()
-          } else EmptyTree
-        atPos(start, if (name == nme.ERROR) start else nameOffset) {
-          ValDef((mods | implicitmod.toLong | bynamemod) withAnnotations annots, name.toTermName, tpt, default)
-        }
-      }
       def paramClause(): List[ValDef] = {
         if (in.token == RPAREN)
           return Nil
@@ -2195,7 +2143,7 @@ self =>
           in.nextToken()
           implicitmod = Flags.IMPLICIT
         }
-        commaSeparated(param())
+        commaSeparated(param(owner, implicitmod, caseParam  ))
       }
       val vds = new ListBuffer[List[ValDef]]
       val start = in.offset
@@ -2240,6 +2188,57 @@ self =>
             else atPos(t.pos.start, t.pos.point)(repeatedApplication(t))
           }
           else t
+      }
+    }
+
+    def param(owner: Name, implicitmod: Int, caseParam: Boolean): ValDef = {
+      val start = in.offset
+      val annots = annotations(skipNewLines = false)
+      var mods = Modifiers(Flags.PARAM)
+      if (owner.isTypeName) {
+        mods = modifiers() | Flags.PARAMACCESSOR
+        if (mods.isLazy) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", skipIt = false)
+        in.token match {
+          case v @ (VAL | VAR) =>
+            mods = mods withPosition (in.token.toLong, tokenRange(in))
+            if (v == VAR) mods |= Flags.MUTABLE
+            in.nextToken()
+          case _ =>
+            if (mods.flags != Flags.PARAMACCESSOR) accept(VAL)
+            if (!caseParam) mods |= Flags.PrivateLocal
+        }
+        if (caseParam) mods |= Flags.CASEACCESSOR
+      }
+      val nameOffset = in.offset
+      val name = ident()
+      var bynamemod = 0
+      val tpt =
+        if ((settings.YmethodInfer && !owner.isTypeName) && in.token != COLON) {
+          TypeTree()
+        } else { // XX-METHOD-INFER
+          accept(COLON)
+          if (in.token == ARROW) {
+            if (owner.isTypeName && !mods.hasLocalFlag)
+              syntaxError(
+                in.offset,
+                (if (mods.isMutable) "`var'" else "`val'") +
+                " parameters may not be call-by-name", skipIt = false)
+            else if (implicitmod != 0)
+              syntaxError(
+                in.offset,
+                "implicit parameters may not be call-by-name", skipIt = false)
+            else bynamemod = Flags.BYNAMEPARAM
+          }
+          paramType()
+        }
+      val default =
+        if (in.token == EQUALS) {
+          in.nextToken()
+          mods |= Flags.DEFAULTPARAM
+          expr()
+        } else EmptyTree
+      atPos(start, if (name == nme.ERROR) start else nameOffset) {
+        ValDef((mods | implicitmod.toLong | bynamemod) withAnnotations annots, name.toTermName, tpt, default)
       }
     }
 

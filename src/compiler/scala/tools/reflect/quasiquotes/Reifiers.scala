@@ -137,6 +137,7 @@ trait Reifiers { self: Quasiquotes =>
       case RefineStatPlaceholder(hole) => reifyRefineStat(hole)
       case EarlyDefPlaceholder(hole) => reifyEarlyDef(hole)
       case PackageStatPlaceholder(hole) => reifyPackageStat(hole)
+      case ParamPlaceholder(hole) => hole.tree
       // for enumerators are checked not during splicing but during
       // desugaring of the for loop in SyntacticFor & SyntacticForYield
       case ForEnumPlaceholder(hole) => hole.tree
@@ -311,6 +312,8 @@ trait Reifiers { self: Quasiquotes =>
       case EarlyDefPlaceholder(h @ Hole(_, DotDot)) => reifyEarlyDef(h)
       case PackageStatPlaceholder(h @ Hole(_, DotDot)) => reifyPackageStat(h)
       case ForEnumPlaceholder(Hole(tree, DotDot)) => tree
+      case ParamPlaceholder(Hole(tree, DotDot)) => tree
+      case List(ParamPlaceholder(Hole(tree, DotDotDot))) => tree
       case List(Placeholder(Hole(tree, DotDotDot))) => tree
     } {
       reify(_)

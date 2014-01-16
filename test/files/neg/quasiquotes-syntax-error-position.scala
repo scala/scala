@@ -12,4 +12,5 @@ object test extends App {
   tq"$t => $t $t]"
   cq"pattern => body ; case pattern2 =>"
   pq"$a(bar"
+  q"def foo(x)"
 }

@@ -71,15 +71,18 @@ trait BuildUtils { self: SymbolTable =>
 
     def mkAnnotation(trees: List[Tree]): List[Tree] = trees.map(mkAnnotation)
 
-    def mkVparamss(argss: List[List[Tree]]): List[List[ValDef]] = argss.map(_.map(mkParam))
+    def mkParam(argss: List[List[Tree]], extraFlags: FlagSet = NoFlags): List[List[ValDef]] =
+      argss.map { args => args.map { mkParam(_, extraFlags) } }
 
-    def mkParam(tree: Tree): ValDef = tree match {
+    def mkParam(tree: Tree, extraFlags: FlagSet): ValDef = tree match {
+      case Typed(Ident(name: TermName), tpt) =>
+        mkParam(ValDef(NoMods, name, tpt, EmptyTree), extraFlags)
       case vd: ValDef =>
-        var newmods = (vd.mods | PARAM) & (~DEFERRED)
+        var newmods = vd.mods & (~DEFERRED)
         if (vd.rhs.nonEmpty) newmods |= DEFAULTPARAM
-        copyValDef(vd)(mods = newmods)
+        copyValDef(vd)(mods = newmods | extraFlags)
       case _ =>
-        throw new IllegalArgumentException(s"$tree is not valid represenation of function parameter, " +
+        throw new IllegalArgumentException(s"$tree is not valid represenation of a parameter, " +
                                             """consider reformatting it into q"val $name: $T = $default" shape""")
     }
 
@@ -239,14 +242,10 @@ trait BuildUtils { self: SymbolTable =>
 
     object SyntacticClassDef extends SyntacticClassDefExtractor {
       def apply(mods: Modifiers, name: TypeName, tparams: List[Tree],
-                constrMods: Modifiers, vparamss: List[List[Tree]], earlyDefs: List[Tree],
-                parents: List[Tree], selfType: Tree, body: List[Tree]): ClassDef = {
+                constrMods: Modifiers, vparamss: List[List[Tree]],
+                earlyDefs: List[Tree], parents: List[Tree], selfType: Tree, body: List[Tree]): ClassDef = {
         val extraFlags = PARAMACCESSOR | (if (mods.isCase) CASEACCESSOR else 0L)
-        val vparamss0 = vparamss.map { _.map {
-          case vd: ValDef => copyValDef(vd)(mods = (vd.mods | extraFlags) & (~DEFERRED))
-          case tree => throw new IllegalArgumentException(s"$tree is not valid representation of class parameter, " +
-                                                          """consider reformatting it into q"val $name: $T = $default" shape""")
-        } }
+        val vparamss0 = mkParam(vparamss, extraFlags)
         val tparams0 = mkTparams(tparams)
         val parents0 = gen.mkParents(mods,
           if (mods.isCase) parents.filter {
@@ -393,7 +392,7 @@ trait BuildUtils { self: SymbolTable =>
 
     object SyntacticFunction extends SyntacticFunctionExtractor {
       def apply(params: List[Tree], body: Tree): Tree = {
-        val params0 :: Nil = mkVparamss(params :: Nil)
+        val params0 :: Nil = mkParam(params :: Nil, PARAM)
         require(params0.forall { _.rhs.isEmpty }, "anonymous functions don't support parameters with default values")
         Function(params0, body)
       }
@@ -420,11 +419,15 @@ trait BuildUtils { self: SymbolTable =>
     }
 
     object SyntacticDefDef extends SyntacticDefDefExtractor {
-      def apply(mods: Modifiers, name: TermName, tparams: List[Tree], vparamss: List[List[Tree]], tpt: Tree, rhs: Tree): DefDef =
-        DefDef(mods, name, mkTparams(tparams), mkVparamss(vparamss), tpt, rhs)
+      def apply(mods: Modifiers, name: TermName, tparams: List[Tree],
+                vparamss: List[List[Tree]], tpt: Tree, rhs: Tree): DefDef = {
+        val vparamss0 = mkParam(vparamss, PARAM)
+        DefDef(mods, name, mkTparams(tparams), vparamss0, tpt, rhs)
+      }
 
-      def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[List[ValDef]], Tree, Tree)] = tree match {
-        case DefDef(mods, name, tparams, vparamss, tpt, rhs) => Some((mods, name, tparams, vparamss, tpt, rhs))
+      def unapply(tree: Tree): Option[(Modifiers, TermName, List[TypeDef], List[List[ValDef]], Tree, Tree)] = tree match {
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+          Some((mods, name, tparams, vparamss, tpt, rhs))
         case _ => None
       }
     }

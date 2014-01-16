@@ -29,4 +29,7 @@ quasiquotes-syntax-error-position.scala:13: error: end of quote expected but 'ca
 quasiquotes-syntax-error-position.scala:14: error: ')' expected but end of quote found.
   pq"$a(bar"
            ^
-10 errors found
+quasiquotes-syntax-error-position.scala:15: error: ':' expected but ')' found.
+  q"def foo(x)"
+             ^
+11 errors found
