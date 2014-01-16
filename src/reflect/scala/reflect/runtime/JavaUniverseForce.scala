@@ -266,6 +266,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.StringAddClass
     definitions.ScalaNumberClass
     definitions.TraitSetterAnnotationClass
+    definitions.ValueTypeAnnotationClass
     definitions.DelayedInitClass
     definitions.TypeConstraintClass
     definitions.SingletonClass
