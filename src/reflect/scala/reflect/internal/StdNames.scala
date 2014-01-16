@@ -576,6 +576,7 @@ trait StdNames {
     val Flag : NameType                = "Flag"
     val FlagsRepr: NameType            = "FlagsRepr"
     val Ident: NameType                = "Ident"
+    val ImplicitParams: NameType       = "ImplicitParams"
     val Import: NameType               = "Import"
     val Literal: NameType              = "Literal"
     val LiteralAnnotArg: NameType      = "LiteralAnnotArg"

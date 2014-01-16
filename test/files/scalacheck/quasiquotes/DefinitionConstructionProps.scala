@@ -7,6 +7,7 @@ object DefinitionConstructionProps
     with TraitConstruction
     with TypeDefConstruction
     with ValDefConstruction
+    with DefConstruction
     with PackageConstruction {
   property("SI-6842") = test {
     val x: Tree = q"val x: Int"
@@ -348,5 +349,17 @@ trait PackageConstruction { self: QuasiquoteProperties =>
     val edefs = q"val x = 1" :: q"type I = Int" :: Nil
     assertEqAst(q"package object foo extends { ..$edefs } with Any",
                  "package object foo extends { val x = 1; type I = Int } with Any")
+  }
+}
+
+trait DefConstruction { self: QuasiquoteProperties =>
+  property("construct implicit args (1)") = test {
+    val x = q"val x: Int"
+    assertEqAst(q"def foo(implicit $x) = x", "def foo(implicit x: Int) = x")
+  }
+
+  property("construct implicit args (2)") = test {
+    val xs = q"val x1: Int" :: q"val x2: Long" :: Nil
+    assertEqAst(q"def foo(implicit ..$xs) = x1 + x2", "def foo(implicit x1: Int, x2: Long) = x1 + x2")
   }
 }

@@ -160,8 +160,12 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticObjectDef, mods, name, earlyDefs, parents, selfdef, body)
       case SyntacticNew(earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticNew, earlyDefs, parents, selfdef, body)
-      case SyntacticDefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-        reifyBuildCall(nme.SyntacticDefDef, mods, name, tparams, vparamss, tpt, rhs)
+      case SyntacticDefDef(mods, name, tparams, build.ImplicitParams(vparamss, implparams), tpt, rhs) =>
+        if (implparams.nonEmpty)
+          mirrorBuildCall(nme.SyntacticDefDef, reify(mods), reify(name), reify(tparams), 
+                          reifyBuildCall(nme.ImplicitParams, vparamss, implparams), reify(tpt), reify(rhs))
+        else
+          reifyBuildCall(nme.SyntacticDefDef, mods, name, tparams, vparamss, tpt, rhs)
       case SyntacticValDef(mods, name, tpt, rhs) if tree != noSelfType =>
         reifyBuildCall(nme.SyntacticValDef, mods, name, tpt, rhs)
       case SyntacticVarDef(mods, name, tpt, rhs) =>

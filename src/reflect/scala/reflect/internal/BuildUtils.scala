@@ -86,6 +86,10 @@ trait BuildUtils { self: SymbolTable =>
                                             """consider reformatting it into q"val $name: $T = $default" shape""")
     }
 
+    def mkImplicitParam(args: List[Tree]): List[ValDef] = args.map(mkImplicitParam)
+
+    def mkImplicitParam(tree: Tree): ValDef = mkParam(tree, IMPLICIT | PARAM)
+
     def mkTparams(tparams: List[Tree]): List[TypeDef] =
       tparams.map {
         case td: TypeDef => copyTypeDef(td)(mods = (td.mods | PARAM) & (~DEFERRED))
@@ -142,6 +146,16 @@ trait BuildUtils { self: SymbolTable =>
     def freshTypeName(prefix: String): TypeName = self.freshTypeName(prefix)
 
     protected implicit def fresh: FreshNameCreator = self.currentFreshNameCreator
+
+    object ImplicitParams extends ImplicitParamsExtractor {
+      def apply(paramss: List[List[ValDef]], implparams: List[ValDef]): List[List[ValDef]] =
+        if (implparams.nonEmpty) paramss :+ mkImplicitParam(implparams) else paramss
+
+      def unapply(vparamss: List[List[ValDef]]): Some[(List[List[ValDef]], List[ValDef])] = vparamss match {
+        case init :+ (last @ (initlast :: _)) if initlast.mods.isImplicit => Some((init, last))
+        case _ => Some((vparamss, Nil))
+      }
+    }
 
     object FlagsRepr extends FlagsReprExtractor {
       def apply(bits: Long): FlagSet = bits

@@ -94,6 +94,13 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def freshTypeName(prefix: String): TypeName
 
+    val ImplicitParams: ImplicitParamsExtractor
+
+    trait ImplicitParamsExtractor {
+      def apply(paramss: List[List[ValDef]], implparams: List[ValDef]): List[List[ValDef]]
+      def unapply(vparamss: List[List[ValDef]]): Some[(List[List[ValDef]], List[ValDef])]
+    }
+
     val ScalaDot: ScalaDotExtractor
 
     trait ScalaDotExtractor {
