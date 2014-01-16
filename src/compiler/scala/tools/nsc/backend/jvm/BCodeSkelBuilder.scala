@@ -460,7 +460,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     }
     def lineNumber(tree: Tree) {
       if (!emitLines || !tree.pos.isDefined) return;
-      val nr = tree.pos.line
+      val nr = tree.pos.finalPosition.line
       if (nr != lastEmittedLineNr) {
         lastEmittedLineNr = nr
         lastInsn match {

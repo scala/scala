@@ -24,11 +24,15 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   // when compiling the Scala library, some assertions don't hold (e.g., scala.Boolean has null superClass although it's not an interface)
   val isCompilingStdLib = !(settings.sourcepath.isDefault)
 
+  val srBoxedUnit  = brefType("scala/runtime/BoxedUnit")
+
   // special names
   var StringReference             : BType = null
   var ThrowableReference          : BType = null
   var jlCloneableReference        : BType = null // java/lang/Cloneable
+  var jlNPEReference              : BType = null // java/lang/NullPointerException
   var jioSerializableReference    : BType = null // java/io/Serializable
+  var scalaSerializableReference  : BType = null // scala/Serializable
   var classCastExceptionReference : BType = null // java/lang/ClassCastException
 
   /* A map from scala primitive type-symbols to BTypes */
@@ -51,6 +55,8 @@ abstract class BCodeTypes extends BCodeIdiomatic {
 
   /* The Object => String overload. */
   var String_valueOf: Symbol = null
+
+  var ArrayInterfaces: Set[Tracked] = null
 
   // scala.FunctionX and scala.runtim.AbstractFunctionX
   val FunctionReference                 = new Array[Tracked](definitions.MaxFunctionArity + 1)
@@ -128,15 +134,17 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       )
     }
 
-    exemplar(JavaCloneableClass).c
-    exemplar(JavaSerializableClass).c
-    exemplar(SerializableClass).c
+    exemplar(JavaCloneableClass)
+    exemplar(JavaSerializableClass)
+    exemplar(SerializableClass)
 
     StringReference             = exemplar(StringClass).c
     StringBuilderReference      = exemplar(StringBuilderClass).c
     ThrowableReference          = exemplar(ThrowableClass).c
     jlCloneableReference        = exemplar(JavaCloneableClass).c
+    jlNPEReference              = exemplar(NullPointerExceptionClass).c
     jioSerializableReference    = exemplar(JavaSerializableClass).c
+    scalaSerializableReference  = exemplar(SerializableClass).c
     classCastExceptionReference = exemplar(ClassCastExceptionClass).c
 
     /*
@@ -203,6 +211,23 @@ abstract class BCodeTypes extends BCodeIdiomatic {
    *  All methods of this class can-multi-thread
    */
   case class Tracked(c: BType, flags: Int, sc: Tracked, ifaces: Array[Tracked], innersChain: Array[InnerClassEntry]) {
+
+    // not a case-field because we initialize it only for JVM classes we emit.
+    private var _directMemberClasses: List[BType] = null
+
+    def directMemberClasses: List[BType] = {
+      assert(_directMemberClasses != null, s"getter directMemberClasses() invoked too early for $c")
+      _directMemberClasses
+    }
+
+    def directMemberClasses_=(bs: List[BType]) {
+      if (_directMemberClasses != null) {
+        // TODO we enter here when both mirror class and plain class are emitted for the same ModuleClassSymbol.
+        assert(_directMemberClasses == bs.sortBy(_.off))
+      }
+      _directMemberClasses = bs.sortBy(_.off)
+    }
+
     /* `isCompilingStdLib` saves the day when compiling:
      *     (1) scala.Nothing (the test `c.isNonSpecial` fails for it)
      *     (2) scala.Boolean (it has null superClass and is not an interface)
