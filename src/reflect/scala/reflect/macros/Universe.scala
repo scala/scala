@@ -197,34 +197,44 @@ abstract class Universe extends scala.reflect.api.Universe {
   def capturedVariableType(vble: Symbol): Type
 
   /** The type of compilation runs.
+   *  @see [[scala.reflect.macros.Enclosures]]
    *  @template
    *  @group Macros
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   type Run <: RunContextApi
 
   /** Compilation run uniquely identifies current invocation of the compiler
    *  (e.g. can be used to implement per-run caches for macros) and provides access to units of work
    *  of the invocation (currently processed unit of work and the list of all units).
+   *  @see [[scala.reflect.macros.Enclosures]]
    *  @group API
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   trait RunContextApi {
     /** Currently processed unit of work (a real or a virtual file). */
+    @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
     def currentUnit: CompilationUnit
 
     /** All units of work comprising this compilation run. */
+    @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
     def units: Iterator[CompilationUnit]
   }
 
   /** The type of compilation units.
+   *  @see [[scala.reflect.macros.Enclosures]]
    *  @template
    *  @group Macros
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   type CompilationUnit <: CompilationUnitContextApi
 
   /** Compilation unit describes a unit of work of the compilation run.
    *  It provides such information as file name, textual representation of the unit and the underlying AST.
+   *  @see [[scala.reflect.macros.Enclosures]]
    *  @group API
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   trait CompilationUnitContextApi {
     /** Source file corresponding to this compilation unit.
      *
@@ -235,9 +245,11 @@ abstract class Universe extends scala.reflect.api.Universe {
      *  It should not be used unless you know what you are doing. In subsequent releases, this API will be refined
      *  and exposed as a part of scala.reflect.api.
      */
+    @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
     def source: scala.reflect.internal.util.SourceFile
 
     /** The AST that corresponds to this compilation unit. */
+    @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
     def body: Tree
   }
 }

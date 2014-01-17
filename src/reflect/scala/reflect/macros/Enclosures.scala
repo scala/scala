@@ -8,9 +8,21 @@ import scala.language.existentials // SI-6541
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
  *  A slice of [[scala.reflect.macros.blackbox.Context the Scala macros context]] that exposes
- *  enclosing trees (method, class, compilation unit and currently compiled application),
+ *  enclosing trees (method, class, compilation unit and currently compiled macro application),
  *  the enclosing position of the macro expansion, as well as macros and implicits
  *  that are currently in-flight.
+ *
+ *  Starting from Scala 2.11.0, the APIs to get the trees enclosing by the current macro application are deprecated,
+ *  and the reasons for that are two-fold. Firstly, we would like to move towards the philosophy of locally-expanded macros,
+ *  as it has proven to be important for understanding of code. Secondly, within the current architecture of scalac,
+ *  we are unable to have c.enclosingTree-style APIs working robustly. Required changes to the typechecker would greatly
+ *  exceed the effort that we would like to expend on this feature given the existence of more pressing concerns at the moment.
+ *  This is somewhat aligned with the overall evolution of macros during the 2.11 development cycle, where we played with
+ *  `c.introduceTopLevel` and `c.introduceMember`, but at the end of the day decided to reject them.
+ *
+ *  If you're relying on the now deprecated APIs, consider reformulating your macros in terms of completely local expansion
+ *  and/or joining a discussion of a somewhat related potential language feature at [[https://groups.google.com/forum/#!topic/scala-debate/f4CLmYShX6Q]].
+ *  We also welcome questions and suggestions on our mailing lists, where we would be happy to further discuss this matter.
  */
 trait Enclosures {
   self: blackbox.Context =>
@@ -40,46 +52,62 @@ trait Enclosures {
   def enclosingPosition: Position
 
   /** Tree that corresponds to the enclosing method, or EmptyTree if not applicable.
+   *  @see [[scala.reflect.macros.Enclosures]]
    */
-  @deprecated("Use enclosingDef instead, but be wary of changes in semantics", "2.10.1")
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   def enclosingMethod: Tree
 
   /** Tree that corresponds to the enclosing class, or EmptyTree if not applicable.
+   *  @see [[scala.reflect.macros.Enclosures]]
    */
-  @deprecated("Use enclosingImpl instead, but be wary of changes in semantics", "2.10.1")
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   def enclosingClass: Tree
 
   /** Tree that corresponds to the enclosing DefDef tree.
    *  Throws `EnclosureException` if there's no such enclosing tree.
+   *  @see [[scala.reflect.macros.Enclosures]]
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   def enclosingDef: universe.DefDef
 
   /** Tree that corresponds to the enclosing Template tree.
    *  Throws `EnclosureException` if there's no such enclosing tree.
+   *  @see [[scala.reflect.macros.Enclosures]]
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   def enclosingTemplate: universe.Template
 
   /** Tree that corresponds to the enclosing ImplDef tree (i.e. either ClassDef or ModuleDef).
    *  Throws `EnclosureException` if there's no such enclosing tree.
+   *  @see [[scala.reflect.macros.Enclosures]]
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   def enclosingImpl: universe.ImplDef
 
   /** Tree that corresponds to the enclosing PackageDef tree.
    *  Throws `EnclosureException` if there's no such enclosing tree.
+   *  @see [[scala.reflect.macros.Enclosures]]
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   def enclosingPackage: universe.PackageDef
 
   /** Compilation unit that contains this macro application.
+   *  @see [[scala.reflect.macros.Enclosures]]
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   def enclosingUnit: CompilationUnit
 
   /** Compilation run that contains this macro application.
+   *  @see [[scala.reflect.macros.Enclosures]]
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   def enclosingRun: Run
 
   /** Indicates than one of the enclosure methods failed to find a tree
    *  of required type among enclosing trees.
+   *  @see [[scala.reflect.macros.Enclosures]]
    */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   case class EnclosureException(expected: Class[_], enclosingTrees: List[Tree])
   extends Exception(s"Couldn't find a tree of type $expected among enclosing trees $enclosingTrees")
 }

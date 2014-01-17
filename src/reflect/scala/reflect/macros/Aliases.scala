@@ -40,10 +40,16 @@ trait Aliases {
   /** The type of tree modifiers. */
   type Modifiers = universe.Modifiers
 
-  /** The type of compilation runs. */
+  /** The type of compilation runs.
+   *  @see [[scala.reflect.macros.Enclosures]]
+   */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   type Run = universe.Run
 
-  /** The type of compilation units. */
+  /** The type of compilation units.
+   *  @see [[scala.reflect.macros.Enclosures]]
+   */
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.11.0")
   type CompilationUnit = universe.CompilationUnit
 
   /** Expr wraps an abstract syntax tree and tags it with its type. */
