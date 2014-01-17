@@ -455,14 +455,14 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
 
-    def UnliftHelper1[T](unliftable: Unliftable[T]) = new UnliftHelper1[T] {
+    def UnliftListElementwise[T](unliftable: Unliftable[T]) = new UnliftListElementwise[T] {
       def unapply(lst: List[Tree]): Option[List[T]] = {
         val unlifted = lst.flatMap { unliftable.unapply(_) }
         if (unlifted.length == lst.length) Some(unlifted) else None
       }
     }
 
-    def UnliftHelper2[T](unliftable: Unliftable[T]) = new UnliftHelper2[T] {
+    def UnliftListOfListsElementwise[T](unliftable: Unliftable[T]) = new UnliftListOfListsElementwise[T] {
       def unapply(lst: List[List[Tree]]): Option[List[List[T]]] = {
         val unlifted = lst.map { l => l.flatMap { unliftable.unapply(_) } }
         if (unlifted.flatten.length == lst.flatten.length) Some(unlifted) else None

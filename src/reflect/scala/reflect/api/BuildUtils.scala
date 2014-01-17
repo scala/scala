@@ -246,13 +246,13 @@ private[reflect] trait BuildUtils { self: Universe =>
       def unapply(tree: Tree): Option[(List[Tree], Tree)]
     }
 
-    def UnliftHelper1[T](unliftable: Unliftable[T]): UnliftHelper1[T]
-    trait UnliftHelper1[T] {
+    def UnliftListElementwise[T](unliftable: Unliftable[T]): UnliftListElementwise[T]
+    trait UnliftListElementwise[T] {
       def unapply(lst: List[Tree]): Option[List[T]]
     }
 
-    def UnliftHelper2[T](unliftable: Unliftable[T]): UnliftHelper2[T]
-    trait UnliftHelper2[T] {
+    def UnliftListOfListsElementwise[T](unliftable: Unliftable[T]): UnliftListOfListsElementwise[T]
+    trait UnliftListOfListsElementwise[T] {
       def unapply(lst: List[List[Tree]]): Option[List[List[T]]]
     }
 

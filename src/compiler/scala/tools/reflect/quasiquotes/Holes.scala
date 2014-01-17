@@ -115,8 +115,7 @@ trait Holes { self: Quasiquotes =>
       val lifter = inferLiftable(tpe)
       assert(lifter != EmptyTree, s"couldnt find a liftable for $tpe")
       val lifted = Apply(lifter, List(tree))
-      val targetType = Select(u, tpnme.Tree)
-      atPos(tree.pos)(TypeApply(Select(lifted, nme.asInstanceOf_), List(targetType)))
+      atPos(tree.pos)(lifted)
     }
 
     protected def iterated(card: Cardinality, tpe: Type, elementTransform: Tree => Tree = identity)(tree: Tree): Tree = {
@@ -167,16 +166,15 @@ trait Holes { self: Quasiquotes =>
   /** Full support for unliftable implies that it's possible to interleave
    *  deconstruction with higher cardinality and unlifting of the values.
    *  In particular extraction of List[Tree] as List[T: Unliftable] requires
-   *  helper extractors that would do the job: UnliftHelper1[T]. Similarly
-   *  List[List[Tree]] needs UnliftHelper2[T].
+   *  helper extractors that would do the job: UnliftListElementwise[T]. Similarly
+   *  List[List[Tree]] needs UnliftListOfListsElementwise[T].
    *
    *  See also "unlift list" tests in UnapplyProps.scala
    */
   object unlifters {
     private var records = List.empty[(Type, Cardinality)]
-    // Request an UnliftHelperN[T] where n == card and T == tpe.
-    // If card == 0 then helper is not needed and plain instance
-    // of unliftable is returned.
+    // Materialize unlift helper that does elementwise
+    // unlifting for corresponding cardinality and type.
     def spawn(tpe: Type, card: Cardinality): Option[Tree] = {
       val unlifter = inferUnliftable(tpe)
       if (unlifter == EmptyTree) None
@@ -191,7 +189,10 @@ trait Holes { self: Quasiquotes =>
     def preamble(): List[Tree] =
       records.zipWithIndex.map { case ((tpe, card), idx) =>
         val name = TermName(nme.QUASIQUOTE_UNLIFT_HELPER + idx)
-        val helperName = card match { case DotDot => nme.UnliftHelper1 case DotDotDot => nme.UnliftHelper2 }
+        val helperName = card match {
+          case DotDot    => nme.UnliftListElementwise
+          case DotDotDot => nme.UnliftListOfListsElementwise
+        }
         val lifter = inferUnliftable(tpe)
         assert(helperName.isTermName)
         // q"val $name: $u.build.${helperName.toTypeName} = $u.build.$helperName($lifter)"

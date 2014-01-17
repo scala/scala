@@ -11,16 +11,16 @@ trait StandardLiftables { self: Universe =>
     private def callCollection(name: Name)(args: List[Tree]) = callScala(nme.collection, nme.immutable, name)(args)
     private def liftAsLiteral[T]: Liftable[T]                = Liftable { v => Literal(Constant(v)) }
 
-    implicit def liftByte[T <: Byte]: Liftable[T]     = liftAsLiteral[T]
-    implicit def liftShort[T <: Short]: Liftable[T]   = liftAsLiteral[T]
-    implicit def liftChar[T <: Char]: Liftable[T]     = liftAsLiteral[T]
-    implicit def liftInt[T <: Int]: Liftable[T]       = liftAsLiteral[T]
-    implicit def liftLong[T <: Long]: Liftable[T]     = liftAsLiteral[T]
-    implicit def liftFloat[T <: Float]: Liftable[T]   = liftAsLiteral[T]
-    implicit def liftDouble[T <: Double]: Liftable[T] = liftAsLiteral[T]
-    implicit def liftBoolean: Liftable[Boolean]       = liftAsLiteral[Boolean]
-    implicit def liftUnit: Liftable[Unit]             = liftAsLiteral[Unit]
-    implicit def liftString: Liftable[String]         = liftAsLiteral[String]
+    implicit def liftByte[T <: Byte]: Liftable[T]       = liftAsLiteral[T]
+    implicit def liftShort[T <: Short]: Liftable[T]     = liftAsLiteral[T]
+    implicit def liftChar[T <: Char]: Liftable[T]       = liftAsLiteral[T]
+    implicit def liftInt[T <: Int]: Liftable[T]         = liftAsLiteral[T]
+    implicit def liftLong[T <: Long]: Liftable[T]       = liftAsLiteral[T]
+    implicit def liftFloat[T <: Float]: Liftable[T]     = liftAsLiteral[T]
+    implicit def liftDouble[T <: Double]: Liftable[T]   = liftAsLiteral[T]
+    implicit def liftBoolean[T <: Boolean]: Liftable[T] = liftAsLiteral[T]
+    implicit def liftUnit: Liftable[Unit]               = liftAsLiteral[Unit]
+    implicit def liftString[T <: String]: Liftable[T]   = liftAsLiteral[T]
 
     implicit def liftScalaSymbol: Liftable[scala.Symbol] = Liftable { v =>
       callScala(nme.Symbol)(Literal(Constant(v.name)) :: Nil)
@@ -35,16 +35,22 @@ trait StandardLiftables { self: Universe =>
     implicit def liftArray[T: Liftable]: Liftable[Array[T]]             = Liftable { arr => callScala(nme.Array)(arr.map(lift(_)).toList) }
     implicit def liftVector[T: Liftable]: Liftable[Vector[T]]           = Liftable { vect => callCollection(nme.Vector)(vect.map(lift(_)).toList) }
     implicit def liftList[T: Liftable]: Liftable[List[T]]               = Liftable { lst => callCollection(nme.List)(lst.map(lift(_))) }
+    implicit def liftNil: Liftable[Nil.type]                            = Liftable { _ => selectScala(nme.collection, nme.immutable, nme.Nil) }
     implicit def liftMap[K: Liftable, V: Liftable]: Liftable[Map[K, V]] = Liftable { m => callCollection(nme.Map)(m.toList.map(lift(_))) }
     implicit def liftSet[T: Liftable]: Liftable[Set[T]]                 = Liftable { s => callCollection(nme.Set)(s.toList.map(lift(_))) }
 
+    implicit def liftSome[T: Liftable]: Liftable[Some[T]]     = Liftable { case Some(v) => callScala(nme.Some)(lift(v) :: Nil) }
+    implicit def liftNone: Liftable[None.type]                = Liftable { _ => selectScala(nme.None) }
     implicit def liftOption[T: Liftable]: Liftable[Option[T]] = Liftable {
-      case Some(v) => callScala(nme.Some)(lift(v) :: Nil)
-      case None    => selectScala(nme.None)
+      case some: Some[T]   => lift(some)
+      case none: None.type => lift(none)
     }
+
+    implicit def liftLeft[L: Liftable, R]: Liftable[Left[L, R]]               = Liftable { case Left(v)  => callScala(nme.util, nme.Left)(lift(v) :: Nil) }
+    implicit def liftRight[L, R: Liftable]: Liftable[Right[L, R]]             = Liftable { case Right(v) => callScala(nme.util, nme.Right)(lift(v) :: Nil) }
     implicit def liftEither[L: Liftable, R: Liftable]: Liftable[Either[L, R]] = Liftable {
-      case Left(l)  => callScala(nme.util, nme.Left)(lift(l) :: Nil)
-      case Right(r) => callScala(nme.util, nme.Right)(lift(r) :: Nil)
+      case left: Left[L, R]   => lift(left)
+      case right: Right[L, R] => lift(right)
     }
 
     implicit def liftTuple1[T1](implicit liftT1: Liftable[T1]): Liftable[Tuple1[T1]] = Liftable { t =>
@@ -220,6 +226,7 @@ trait StandardLiftables { self: Universe =>
     val List       = TermName("List")
     val Map        = TermName("Map")
     val None       = TermName("None")
+    val Nil        = TermName("Nil")
     val Right      = TermName("Right")
     val Set        = TermName("Set")
     val Some       = TermName("Some")
