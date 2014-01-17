@@ -1594,7 +1594,7 @@ self =>
                              "=="  networkingArrow        
                              "+" 
                              "/"  "/"  "%"  "%/"  "%/%/"  "%&"  "%;"
-                             "��"
+                             "·"
                              ("?" simpleValueExpression ":")
  
    networkingArrow        =+ "<=="  "==>"  "<==>"   "<<==>"   "<==>>"  "<<==>>"
@@ -1873,7 +1873,7 @@ self =>
   scriptExpression_4      = scriptExpression_3 .. (+ "=="  networkingArrow)
   scriptExpression_3      = scriptExpression_2 .. (  "+")
   scriptExpression_2      = scriptExpression_1 .. (+ "/"  "%"  "%/"  "%/%/"  "%&"  "%;")
-  scriptExpression_1      = scriptExpression_0 .. (  "��")
+  scriptExpression_1      = scriptExpression_0 .. (  "·")
   scriptExpression_0      = scriptTerm         .. if commasOmittable (-) else (+)
      */
     
