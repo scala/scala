@@ -19,14 +19,19 @@ class PrintersTest extends BasePrintTests
 object PrinterHelper {
   val toolbox = cm.mkToolBox()
   def assertPrintedCode(code: String, tree: Tree = EmptyTree) = {
+    def processEOL(resultCode: String) = {
+      import scala.reflect.internal.Chars._
+      resultCode.replaceAll(s"$CR$LF", s"$LF").replace(CR, LF)
+    }
+
     val toolboxTree = 
       try{
         toolbox.parse(code)
       } catch {
         case e:scala.tools.reflect.ToolBoxError => throw new Exception(e.getMessage + ": " + code)
       }
-    if (tree ne EmptyTree) assertEquals("using quasiquote or given tree"+"\n", code.trim, showCode(tree))
-    else assertEquals("using toolbox parser", code.trim, showCode(toolboxTree))
+    if (tree ne EmptyTree) assertEquals("using quasiquote or given tree"+"\n", code.trim, processEOL(showCode(tree)))
+    else assertEquals("using toolbox parser", code.trim, processEOL(showCode(toolboxTree)))
   }
   
   implicit class StrContextStripMarginOps(val stringContext: StringContext) extends util.StripMarginInterpolator
