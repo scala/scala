@@ -1,0 +1,4 @@
+t8157.scala:1: error: in object Test, multiple overloaded alternatives of method foo define default arguments.
+object Test {
+       ^
+one error found
