@@ -735,7 +735,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
                 println()
               };
             case _ =>
-              printPackageDef(pd, "\n")
+              val separator = scala.util.Properties.lineSeparator
+              printPackageDef(pd, separator)
           }
 
         case md @ ModuleDef(mods, name, impl) =>
@@ -944,15 +945,16 @@ trait Printers extends api.Printers { self: SymbolTable =>
           }
 
         case l @ Literal(x) =>
+          import Chars.LF
           x match {
             case Constant(v: String) if {
               val strValue = x.stringValue
-              strValue.contains("\n") && strValue.contains("\"\"\"") && strValue.size > 1
+              strValue.contains(LF) && strValue.contains("\"\"\"") && strValue.size > 1
             } =>
-              val splitValue = x.stringValue.split('\n'.toString).toList
-              val multilineStringValue = if (x.stringValue.endsWith("\n")) splitValue :+ "" else splitValue
+              val splitValue = x.stringValue.split(s"$LF").toList
+              val multilineStringValue = if (x.stringValue.endsWith(s"$LF")) splitValue :+ "" else splitValue
               val trQuotes = "\"\"\""
-              print(trQuotes); printSeq(multilineStringValue) { print(_) } { print("\n") }; print(trQuotes)
+              print(trQuotes); printSeq(multilineStringValue) { print(_) } { print(LF) }; print(trQuotes)
             case _ =>
               // processing Float constants
               val printValue = x.escapedStringValue + (if (x.value.isInstanceOf[Float]) "F" else "")
