@@ -1,0 +1,4 @@
+dotless-targs.scala:2: error: type application is not allowed for postfix operators
+  def f1 = "f1" isInstanceOf[String] // not ok
+                ^
+one error found
