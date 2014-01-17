@@ -153,7 +153,7 @@ package api
  *
  * '''[[scala.reflect.api.Mirrors#ClassMirror]]'''. Used for creating invoker mirrors for constructors.
  * Entry points: for ''static classes'' `val cm1 = m.reflectClass(<class symbol>)`,
- * for ''inner classes'' `val mm2 = im.reflectClass(<module symbol>)`.
+ * for ''inner classes'' `val mm2 = im.reflectClass(<class symbol>)`.
  * Example:
  * {{{
  *   scala> case class C(x: Int)
