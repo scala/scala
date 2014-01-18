@@ -469,9 +469,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         }
         bytecodeWriter.writeClass(label, jclassName, arr, outF)
       } catch {
-        case e: java.lang.RuntimeException if(e.getMessage() == "Class file too large!") =>
-          // TODO check where ASM throws the equivalent of CodeSizeTooBigException
-          log("Skipped class "+jclassName+" because it exceeds JVM limits (it's too big or has methods that are too long).")
+        case e: java.lang.RuntimeException if e != null && (e.getMessage contains "too large!") =>
+          reporter.error(sym.pos,
+            s"Could not write class $jclassName because it exceeds JVM code size limits. ${e.getMessage}")
       }
     }
 
