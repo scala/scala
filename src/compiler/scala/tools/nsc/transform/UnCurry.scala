@@ -878,11 +878,13 @@ abstract class UnCurry extends InfoTransform
           case Packed(param, tempVal) => (param, tempVal)
         }.unzip
 
-        val rhs1 = localTyper.typedPos(rhs.pos) {
-          // Patch the method body to refer to the temp vals
-          val rhsSubstituted = rhs.substituteSymbols(packedParams map (_.symbol), tempVals map (_.symbol))
-          // The new method body: { val p$1 = p.asInstanceOf[<dependent type>]; ...; <rhsSubstituted> }
-          Block(tempVals, rhsSubstituted)
+        val rhs1 = if (tempVals.isEmpty) rhs else {
+          localTyper.typedPos(rhs.pos) {
+            // Patch the method body to refer to the temp vals
+            val rhsSubstituted = rhs.substituteSymbols(packedParams map (_.symbol), tempVals map (_.symbol))
+            // The new method body: { val p$1 = p.asInstanceOf[<dependent type>]; ...; <rhsSubstituted> }
+            Block(tempVals, rhsSubstituted)
+          }
         }
 
         (allParams :: Nil, rhs1)
