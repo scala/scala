@@ -1030,7 +1030,11 @@ self =>
 
     /** Assumed (provisionally) to be TermNames. */
     def ident(skipIt: Boolean): Name = (
-      if (isIdent) rawIdent().encode
+      if (isIdent) {
+        val name = in.name.encode
+        in.nextToken()
+        name
+      }
       else syntaxErrorOrIncompleteAnd(expectedMsg(IDENTIFIER), skipIt)(nme.ERROR)
     )
 

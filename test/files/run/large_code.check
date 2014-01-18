@@ -1,0 +1,3 @@
+newSource1.scala:1: error: Could not write class BigEnoughToFail because it exceeds JVM code size limits. Method tooLong's code too large!
+class BigEnoughToFail {
+      ^

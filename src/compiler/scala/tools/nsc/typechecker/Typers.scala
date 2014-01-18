@@ -3326,6 +3326,28 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // calls to the default getters. Example:
               //  foo[Int](a)()  ==>  foo[Int](a)(b = foo$qual.foo$default$2[Int](a))
               checkNotMacro()
+
+              // SI-8111 transformNamedApplication eagerly shuffles around the application to preserve
+              //         evaluation order. During this process, it calls `changeOwner` on symbols that
+              //         are transplanted underneath synthetic temporary vals.
+              //
+              //         Here, we keep track of the symbols owned by `context.owner` to enable us to
+              //         rollback, so that we don't end up with "orphaned" symbols.
+              //
+              //         TODO: Find a better way!
+              //
+              //         Note that duplicating trees would not be enough to fix this problem, we would also need to
+              //         clone local symbols in the duplicated tree to truly isolate things (in the spirit of BodyDuplicator),
+              //         or, better yet, disentangle the logic in `transformNamedApplication` so that we could
+              //         determine whether names/defaults is viable *before* transforming trees.
+              def ownerOf(sym: Symbol) = if (sym == null || sym == NoSymbol) NoSymbol else sym.owner
+              val symsOwnedByContextOwner = tree.collect {
+                case t @ (_: DefTree | _: Function) if ownerOf(t.symbol) == context.owner => t.symbol
+              }
+              def rollbackNamesDefaultsOwnerChanges() {
+                symsOwnedByContextOwner foreach (_.owner = context.owner)
+              }
+
               val fun1 = transformNamedApplication(Typer.this, mode, pt)(fun, x => x)
               if (fun1.isErroneous) duplErrTree
               else {
@@ -3354,6 +3376,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   if (!(context.diagnostic contains note)) context.diagnostic = note :: context.diagnostic
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
                 } else {
+                  rollbackNamesDefaultsOwnerChanges()
                   tryTupleApply orElse duplErrorTree(NotEnoughArgsError(tree, fun, missing))
                 }
               }
