@@ -2419,7 +2419,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isTrait) ("trait", "trait", "TRT")
         else if (isClass) ("class", "class", "CLS")
         else if (isType) ("type", "type", "TPE")
-        else if (isClassConstructor && isPrimaryConstructor) ("primary constructor", "constructor", "PCTOR")
+        else if (isClassConstructor && (owner.hasCompleteInfo && isPrimaryConstructor)) ("primary constructor", "constructor", "PCTOR")
         else if (isClassConstructor) ("constructor", "constructor", "CTOR")
         else if (isSourceMethod) ("method", "method", "METH")
         else if (isTerm) ("value", "value", "VAL")
