@@ -3,6 +3,8 @@ package reflect
 package internal
 package tpe
 
+import scala.collection.mutable.HashSet
+
 private[internal] trait TypeToStrings {
   self: SymbolTable =>
 
@@ -14,8 +16,15 @@ private[internal] trait TypeToStrings {
   def tostringRecursions = _tostringRecursions
   def tostringRecursions_=(value: Int) = _tostringRecursions = value
 
+  private var _tostringSubjects = HashSet[Type]()
+  def tostringSubjects = _tostringSubjects
+
   protected def typeToString(tpe: Type): String =
-    if (tostringRecursions >= maxTostringRecursions) {
+    if (tostringSubjects contains tpe) {
+      // handles self-referential anonymous classes and who knows what else
+      "..."
+    }
+    else if (tostringRecursions >= maxTostringRecursions) {
       devWarning("Exceeded recursion depth attempting to print " + util.shortClassOfInstance(tpe))
       if (settings.debug)
         (new Throwable).printStackTrace
@@ -25,8 +34,10 @@ private[internal] trait TypeToStrings {
     else
       try {
         tostringRecursions += 1
+        tostringSubjects += tpe
         tpe.safeToString
       } finally {
+        tostringSubjects -= tpe
         tostringRecursions -= 1
       }
 }

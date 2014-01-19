@@ -42,6 +42,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     // inaccessible: this._glbResults
     // inaccessible: this._indent
     // inaccessible: this._tostringRecursions
+    // inaccessible: this._tostringSubjects
     // inaccessible: this.atomicIds
     // inaccessible: this.atomicExistentialIds
     // inaccessible: this._recursionTable

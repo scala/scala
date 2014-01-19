@@ -85,6 +85,9 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   override def tostringRecursions = _tostringRecursions.get
   override def tostringRecursions_=(value: Int) = _tostringRecursions.set(value)
 
+  private lazy val _tostringSubjects = mkThreadLocalStorage(new mutable.HashSet[Type])
+  override def tostringSubjects = _tostringSubjects.get
+
   /* The idea of caches is as follows.
    * When in reflexive mode, a cache is either null, or one sentinal
    * value representing undefined or the final defined
