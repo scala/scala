@@ -5230,30 +5230,15 @@ trait Types extends api.Types { self: SymbolTable =>
     }
   }
 
-  class SubTypePair(val tp1: Type, val tp2: Type) {
-    override def hashCode = tp1.hashCode * 41 + tp2.hashCode
-    override def equals(other: Any) = other match {
-      case stp: SubTypePair =>
-        // suspend TypeVars in types compared by =:=,
-        // since we don't want to mutate them simply to check whether a subtype test is pending
-        // in addition to making subtyping "more correct" for type vars,
-        // it should avoid the stackoverflow that's been plaguing us (https://groups.google.com/d/topic/scala-internals/2gHzNjtB4xA/discussion)
-        // this method is only called when subtyping hits a recursion threshold (subsametypeRecursions >= LogPendingSubTypesThreshold)
-        def suspend(tp: Type) =
-          if (tp.isGround) null else suspendTypeVarsInType(tp)
-        def revive(suspension: List[TypeVar]) =
-          if (suspension ne null) suspension foreach (_.suspended = false)
+  final case class SubTypePair(tp1: Type, tp2: Type) {
+    // SI-8146 we used to implement equality here in terms of pairwise =:=.
+    //         But, this was inconsistent with hashCode, which was based on the
+    //         Type#hashCode, based on the structure of types, not the meaning.
+    //         Now, we use `Type#{equals,hashCode}` as the (consistent) basis for
+    //         detecting cycles (aka keeping subtyping decidable.)
+    //
+    //         I added tests to show that we detect the cycle: neg/t8146-no-finitary*
 
-        val suspensions = Array(tp1, stp.tp1, tp2, stp.tp2) map suspend
-
-        val sameTypes = (tp1 =:= stp.tp1) && (tp2 =:= stp.tp2)
-
-        suspensions foreach revive
-
-        sameTypes
-      case _ =>
-        false
-    }
     override def toString = tp1+" <:<? "+tp2
   }
 
@@ -5819,7 +5804,7 @@ trait Types extends api.Types { self: SymbolTable =>
         if (subsametypeRecursions >= LogPendingSubTypesThreshold) {
           val p = new SubTypePair(tp1, tp2)
           if (pendingSubTypes(p))
-            false
+            false // see neg/t8146-no-finitary*
           else
             try {
               pendingSubTypes += p
