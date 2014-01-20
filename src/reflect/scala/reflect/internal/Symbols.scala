@@ -2536,7 +2536,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         case PolyType(tparams, res)    => typeParamsString(tp) + infoString(res)
         case NullaryMethodType(res)    => infoString(res)
         case MethodType(params, res)   => valueParamsString(tp) + infoString(res)
-        case _ if isStructuralThisType => ": this.type"
+        case _ if isStructuralThisType => ": " + owner.name
         case _                         => ": " + tp
       }
     }
