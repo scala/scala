@@ -139,6 +139,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
              with Annotatable[Symbol]
              with Attachable {
 
+    // makes sure that all symbols that runtime reflection deals with are synchronized
+    private def isSynchronized = this.isInstanceOf[scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol]
+    private def isAprioriThreadsafe = isThreadsafe(AllOps)
+    assert(isCompilerUniverse || isSynchronized || isAprioriThreadsafe, s"unsafe symbol $initName (child of $initOwner) in runtime reflection universe")
+
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
 

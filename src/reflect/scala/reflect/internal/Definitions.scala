@@ -290,6 +290,7 @@ trait Definitions extends api.StandardDefinitions {
         this markAllCompleted
       }
       final override def isBottomClass = true
+      final override def isThreadsafe(purpose: SymbolOps): Boolean = true
     }
     final object NothingClass extends BottomClassSymbol(tpnme.Nothing, AnyClass) {
       override def isSubClass(that: Symbol) = true
