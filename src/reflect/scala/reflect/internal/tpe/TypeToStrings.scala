@@ -10,21 +10,21 @@ private[internal] trait TypeToStrings {
 
   /** The maximum number of recursions allowed in toString
     */
-  final val maxTostringRecursions = 50
+  final val maxToStringRecursions = 50
 
-  private var _tostringRecursions = 0
-  def tostringRecursions = _tostringRecursions
-  def tostringRecursions_=(value: Int) = _tostringRecursions = value
+  private var _toStringRecursions = 0
+  def toStringRecursions = _toStringRecursions
+  def toStringRecursions_=(value: Int) = _toStringRecursions = value
 
-  private var _tostringSubjects = HashSet[Type]()
-  def tostringSubjects = _tostringSubjects
+  private var _toStringSubjects = HashSet[Type]()
+  def toStringSubjects = _toStringSubjects
 
   protected def typeToString(tpe: Type): String =
-    if (tostringSubjects contains tpe) {
+    if (toStringSubjects contains tpe) {
       // handles self-referential anonymous classes and who knows what else
       "..."
     }
-    else if (tostringRecursions >= maxTostringRecursions) {
+    else if (toStringRecursions >= maxToStringRecursions) {
       devWarning("Exceeded recursion depth attempting to print " + util.shortClassOfInstance(tpe))
       if (settings.debug)
         (new Throwable).printStackTrace
@@ -33,11 +33,11 @@ private[internal] trait TypeToStrings {
     }
     else
       try {
-        tostringRecursions += 1
-        tostringSubjects += tpe
+        toStringRecursions += 1
+        toStringSubjects += tpe
         tpe.safeToString
       } finally {
-        tostringSubjects -= tpe
-        tostringRecursions -= 1
+        toStringSubjects -= tpe
+        toStringRecursions -= 1
       }
 }
