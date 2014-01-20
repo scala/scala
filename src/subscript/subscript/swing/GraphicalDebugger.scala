@@ -384,7 +384,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
         var resultW = 0d // drawn width of this subtree
         var childHCs = new ListBuffer[Double]
         
-        val isCurrentNode = currentMessage != null && currentMessage.node.asInstanceOf[CallGraphNode].index == n.index
+        val isCurrentNode = currentMessage != null && currentMessage.node.asInstanceOf[CallGraphNodeTrait].index == n.index
 	    n match {
 	      case p:CallGraphParentNodeTrait => 
 	        val pcl=p.children.length

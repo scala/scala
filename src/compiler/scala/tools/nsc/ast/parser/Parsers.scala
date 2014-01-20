@@ -1665,8 +1665,13 @@ self =>
     // context sensitive transformations should be moved to a later compiler phase
     var scriptFormalOutputParameters      = new scala.collection.mutable.HashMap[String,Tree]
     var scriptFormalConstrainedParameters = new scala.collection.mutable.HashMap[String,Tree]
-    var scriptLocalVariables              = new scala.collection.mutable.HashMap[Name,Tree] // should be in a context stack; now the scope becomes too big 
-    var scriptLocalValues                 = new scala.collection.mutable.HashMap[Name,Tree]
+    
+    // These are maps from Name to pairs of Tree and Boolean. Here's what Boolean means:
+    // 1) true - Tree IS a type definition that can be used out-of-the-box
+    // 2) flase - Tree is NOT a type definition. It is a value, for which this local variable is declared,
+    //            but who's type is still unknown.
+    var scriptLocalVariables              = new scala.collection.mutable.HashMap[Name,(Tree, Boolean)] // should be in a context stack; now the scope becomes too big 
+    var scriptLocalValues                 = new scala.collection.mutable.HashMap[Name,(Tree, Boolean)]
     
     def scriptDefsOrDcls(start : Int, mods: Modifiers): List[Tree] = {
       in.isInSubScript_script = true
@@ -1799,13 +1804,31 @@ self =>
 		        
 		        // add for each variable and value: val _c = subscript.DSL._declare[Char]('c)
 		        val rhs_withVariablesAndValuesDeclarations = new ListBuffer[Tree]
-		        for ((vn,vt) <- scriptLocalVariables ++ scriptLocalValues) {
+		        
+		        // This pattern captures the algorithm of the local variable's body generation
+		        // First argument is the name of the variable, second - it's type, that makes sence
+		        // in current scope
+		        def localValBody(vn: Name, vt: Tree): Tree = {
 		          val vSym               = Apply(scalaDot(nme.Symbol), List(Literal(Constant(vn.toString))))
+                  val declare_typed      = TypeApply      (dslFunFor(DEF), List(vt))
+                  val rhs                = Apply(declare_typed, List(vSym))
+                  rhs
+		        }
+		        
+		        // This pattern captures the local variable declaration.
+		        // First algorithm is the name, second algorithm is the body
+		        def localValDef(vn: Name, rhs: Tree): ValDef = {
 		          val underscored_v_name = newTermName(underscore_prefix(vn.toString))
-		        //val tp                 = AppliedTypeTree(vmNodeFor(VAL), List(vt))
-		          val declare_typed      = TypeApply      (dslFunFor(DEF), List(vt))
-		          val rhs                = Apply(declare_typed, List(vSym))
-		          val valDef             = ValDef(NoMods, underscored_v_name, TypeTree(), rhs)
+		          val valDef = ValDef(NoMods, underscored_v_name, TypeTree(), rhs)
+		          valDef
+		        }
+		        
+		        import TypeOperations._
+		        for ((vn,(vt, isType)) <- scriptLocalVariables ++ scriptLocalValues) {
+		          val valDef = {
+		            val rhs = if (isType) localValBody(vn, vt) else withTypeOf(vt)(localValBody(vn, _))
+		            localValDef(vn, rhs)
+		          }
 		          rhs_withVariablesAndValuesDeclarations += valDef
 		        }
 		        
@@ -2051,40 +2074,86 @@ self =>
           if (tok == BACKQUOTED_IDENT) Ident(name) updateAttachment BackquotedIdentifierAttachment
           else Ident(name)
       }
-      accept(COLON) // optionality for the typer is not supported yet...would require some work since the type is needed (?) at the start of the method generated for the script
-      val tp  = exprSimpleType() 
-      val rhs =
-        if (tp.isEmpty || in.token == EQUALS || !newmods.isMutable || true /*FTTB enforce initialisation*/) {
-          accept(EQUALS)
-          if (!tp.isEmpty && newmods.isMutable &&
-              lhs.isInstanceOf[Ident] && in.token == USCORE) {
-            in.nextToken()
-            newmods = newmods | Flags.DEFAULTINIT; EmptyTree}
-          else {simpleNativeValueExpr()}
-        }
-        else {newmods = newmods | Flags.DEFERRED; EmptyTree}
       
-      // TBD: val result = ScriptValDef(newmods, name.toTermName, tp, rhs)    FTTB a quick solution:
-      // val c = initializer ===> subscript.DSL._val(_c, here: subscript.DSL.N_localvar[Char] => initializer)   likewise for var
-      
-      val vIdent          = Ident(newTermName(underscore_prefix(name.toString)))
-      val  sFunValOrVar   = dslFunFor(if (mods.isMutable) VAR else VAL)
-      val sNodeValOrVar   = vmNodeFor(if (mods.isMutable) VAR else VAL)
-      
-    //val typer           = AppliedTypeTree(sNodeValOrVar, List(tp)) this does NOT work; need a wildcard type
-      val typer           = placeholderTypeBoundary{
-        AppliedTypeTree(sNodeValOrVar, List(wildcardType(pos))) // note: wildcardType fills placeholderTypes, used by placeholderTypes
-      }
+      // A pattern function that captures the tree that will be constructed
+      // Also, it captures the fact of passing rhs or tp out of the scope
+      // in order to generate definitions at the beginning of the script
+      //
+      // isTypeTaransmittable variable indicates whether `tp` type can be
+      // transfered out of current scope (true) or not (false)
+      def operationPattern(rhs: Tree, tp: Tree, isTypeTransmittable: Boolean) = {
+        import TypeOperations._
         
-      val initializerCode = blockToFunction_here (rhs, typer, rhs.pos)
-      if (mods.isMutable) scriptLocalVariables += name->tp
-      else                scriptLocalValues    += name->tp
-
-      atPos(pos) {
-        if (rhs.isEmpty) {dslFunFor(LPAREN_PLUS_MINUS_RPAREN)} // neutral; there is no value to provide
-        else Apply(sFunValOrVar, List(vIdent, initializerCode))
+        val vIdent          = Ident(newTermName(underscore_prefix(name.toString)))
+        val  sFunValOrVar   = dslFunFor(if (mods.isMutable) VAR else VAL)
+        val sNodeValOrVar   = vmNodeFor(if (mods.isMutable) VAR else VAL)
+     
+        val typer           = AppliedTypeTree(sNodeValOrVar, List(tp))
+       
+        // If the type is transmittable (already known), enforce it
+        // If it is just an unknown identifier, infer it
+        val initializerCode =
+          if (isTypeTransmittable) blockToFunction_here (enforcingType(tp)(rhs), typer, rhs.pos)
+          else withTypeOf(rhs, tp.asInstanceOf[Ident]){_ =>
+            blockToFunction_here(rhs, typer, rhs.pos)  // Typer is already influenced by `tp` type parameter
+          }
+        
+        // If tp is just a local identifier, it will be useless out of this scope
+        // Hence, we'll need to pass the actual value `rhs` instead of `tp`
+        // in order to infer the type from it on later stages of compilation
+        // (see TypeOperations.withTypeOf transformation)
+        //
+        // Also, we'll need to set a proper Boolean flag in order to distinguish
+        // between values and types trees
+        
+        val treeToPass = if (isTypeTransmittable) tp else rhs
+        if (mods.isMutable) scriptLocalVariables += name->((treeToPass, isTypeTransmittable))
+        else                scriptLocalValues    += name->((treeToPass, isTypeTransmittable))
+        
+        atPos(pos) {
+          if (rhs.isEmpty) {dslFunFor(LPAREN_PLUS_MINUS_RPAREN)} // neutral; there is no value to provide
+          else Apply(sFunValOrVar, List(vIdent, initializerCode))
+        }
       }
+      
+      in.token match {
+        // Type is present
+        case COLON =>
+          accept(COLON)
+          val tp  = exprSimpleType()
+          val rhs =
+            if (tp.isEmpty || in.token == EQUALS || !newmods.isMutable || true /*FTTB enforce initialisation*/) {
+              accept(EQUALS)
+              if (!tp.isEmpty && newmods.isMutable &&
+                  lhs.isInstanceOf[Ident] && in.token == USCORE) {
+                in.nextToken()
+                newmods = newmods | Flags.DEFAULTINIT; EmptyTree}
+                else {simpleNativeValueExpr()}
+              }
+              else {newmods = newmods | Flags.DEFERRED; EmptyTree}
+          
+          operationPattern(rhs, tp, true)
+          // TBD: val result = ScriptValDef(newmods, name.toTermName, tp, rhs)    FTTB a quick solution:
+          // val c = initializer ===> subscript.DSL._val(_c, here: subscript.DSL.N_localvar[Char] => initializer)   likewise for var
+      
+        // Type is absent
+        // Copy pasting is not good - further abstractin will be required
+        // for `rhs` computation
+        case _ =>
+          val rhs = {
+              accept(EQUALS)
+              if (newmods.isMutable &&
+                  lhs.isInstanceOf[Ident] && in.token == USCORE) {
+                in.nextToken()
+                newmods = newmods | Flags.DEFAULTINIT; EmptyTree}
+                else {simpleNativeValueExpr()}
+          }
+          operationPattern(rhs, Ident(newTypeName("T")), false)
+      }
+
+      
     }
+
 
     def unaryPostfixScriptTerm (): Tree = {
       var result = unaryPrefixScriptTerm()
@@ -2322,7 +2391,7 @@ self =>
       }
       inSubscriptArgumentParens(if (in.token == RPAREN) Nil else args())
     }
-   
+    
 /* ----------- EXPRESSIONS ------------------------------------------------ */
 
     def condExpr(): Tree = {
@@ -4135,5 +4204,98 @@ self =>
           makeEmptyPackage(start, stats)
       }
     }
+    
+    /**
+     * This object contains various transformations of the trees. The resulting trees,
+     * as a rule, have some interesting properties from typing point of view, so that
+     * you can generate trees that will be typed and treated properly.
+     */
+    object TypeOperations {
+      
+      /**
+       * This is roughly type casting in pre-typer phase.
+       * Wraps the `tree` in a block of following contents:
+       * {
+       *   val typedReturn: `ttype` = `tree`
+       *   typedReturn
+       * }
+       * 
+       * This gives a guarantee, that a) this tree can be assigned to
+       * a variable of a given type and b) you actually get a tree of the
+       * desired type.
+       * 
+       * @param ttype - desired type
+       * @param tree - tree to be 'casted'
+       */
+      def enforcingType(ttype: Tree)(tree: Tree): Tree = {
+        val typeSafetyDefinition = ValDef(Modifiers(0), newTermName("typedReturn"), ttype, tree)
+        Block(typeSafetyDefinition, Ident("typedReturn"))
+      }
+      
+      def withTypeOf(target: Tree)(identToTree: Ident => Tree): Tree =
+        withTypeOf(target, Ident(newTypeName("T")))(identToTree)   // TBD: come up with a way to generate unique names for Idents
+        
+      /**
+       * This transformation allows you to capture the type of a `target` value, encapsulate it
+       * into the `typePlaceholder` identifier and generate a tree with this type using the Ident => Tree
+       * function. The argument that will be passed to this function is the captured type.
+       * 
+       * Assume this block `block` is given:
+       * {
+       *   f[T]("Hello, World")
+       * }
+       * where f is some function and T is unknown type.
+       * 
+       * Assume some value tree `target` is given, and there's a need to substitute all
+       * unknown parameters T in the block with the type of `target`, that is not known either (and
+       * will not be known till infered by the compiler on later stages).
+       * 
+       * Then, withTypeOf(target, Ident(newTypeName("T")))(block) will generate following AST block:
+       * {
+       *   def capturingFunction[T](x: T) = {
+       *     f[T]("Hello, World")
+       *   }
+       *   capturingFunction(target)
+       * }
+       */  
+      def withTypeOf(target: Tree, typePlaceholder: Ident)(identToTree: Ident => Tree): Tree = {
+        import scala.reflect.internal.ModifierFlags._
+    
+        val tree = identToTree(typePlaceholder)
+        
+        // Generating a type-capturing function (DefDef)
+        val mods = NoMods
+        val name = newTermName("capturingFunction")
+        
+        val typeParam =
+          TypeDef(
+            Modifiers(DEFERRED | PARAM),
+            typePlaceholder.name.asInstanceOf[TypeName],
+            List(),
+            TypeBoundsTree(EmptyTree, EmptyTree)
+          )
+              
+        val valueParam =
+          ValDef(
+            Modifiers(BYNAMEPARAM | PARAM),    // TBD: BYNAMEPARAM doesn't seem to actually make it 'by name'
+            newTermName("x"),
+            typePlaceholder,
+            EmptyTree
+          )
+        val returnType = TypeTree()
+        
+        val capturingFunction = DefDef(mods, name, List(typeParam), List(List(valueParam)), returnType, tree)
+        
+        
+        // Constructing function application to the target tree
+        val application = Apply(Ident(name), List(target))
+        
+        
+        // Returning a block with the capturing function and it's application
+        Block(capturingFunction, application)
+      }
+      
+    }
+    
   }
 }
