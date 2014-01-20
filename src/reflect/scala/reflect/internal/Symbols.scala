@@ -118,6 +118,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def baseClasses                       = info.baseClasses
     def module                            = sourceModule
     def thisPrefix: Type                  = thisType
+
+    // automatic full initialization on access to info from reflection API is a double-edged sword
+    // on the one hand, it's convenient so that the users don't have to deal with initialization themselves before printing out stuff
+    // (e.g. printing out a method's signature without fully initializing it would result in <_>'s for parameters
+    // on the other hand, this strategy can potentially cause unexpected effects due to being inconsistent with compiler's behavior
+    // so far I think user convenience outweighs the scariness, but we need to keep the tradeoff in mind
+    // NOTE: if you end up removing the call to fullyInitializeSymbol, consider that it would affect both runtime reflection and macros
     def typeSignature: Type               = { fullyInitializeSymbol(this); info }
     def typeSignatureIn(site: Type): Type = { fullyInitializeSymbol(this); site memberInfo this }
 
