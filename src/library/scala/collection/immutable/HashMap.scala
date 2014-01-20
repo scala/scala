@@ -247,15 +247,17 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def removed0(key: A, hash: Int, level: Int): HashMap[A, B] =
       if (hash == this.hash) {
         val kvs1 = kvs - key
-        if (kvs1 eq kvs)
-          this
-        else if (kvs1.isEmpty)
-          HashMap.empty[A,B]
-        else if(kvs1.tail.isEmpty) {
-          val kv = kvs1.head
-          new HashMap1[A,B](kv._1,hash,kv._2,kv)
-        } else
-          new HashMapCollision1(hash, kvs1)
+        kvs1.size match {
+          case 0 =>
+            HashMap.empty[A,B]
+          case 1 =>
+            val kv = kvs1.head
+            new HashMap1(kv._1,hash,kv._2,kv)
+          case x if x == kvs.size =>
+            this
+          case _ =>
+            new HashMapCollision1(hash, kvs1)
+        }
       } else this
 
     override protected def filter0(p: ((A, B)) => Boolean, negate: Boolean, level: Int, buffer: Array[HashMap[A, B @uV]], offset0: Int): HashMap[A, B] = {
