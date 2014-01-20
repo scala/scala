@@ -18,12 +18,15 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
    */
   class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader with FlagAssigningCompleter {
     override def complete(sym: Symbol) = {
+      markBeingCompleted(clazz, module)
       debugInfo("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
       slowButSafeEnteringPhaseNotLaterThan(picklerPhase) {
         val loadingMirror = mirrorThatLoaded(sym)
         val javaClass = loadingMirror.javaClass(clazz.javaClassName)
         loadingMirror.unpickleClass(clazz, module, javaClass)
+        // NOTE: can't mark as thread-safe here, because unpickleClass might decide to delegate to FromJavaClassCompleter
+        // if (!isCompilerUniverse) markThreadsafe(clazz, module)
       }
     }
     override def load(sym: Symbol) = complete(sym)
@@ -60,10 +63,12 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
    */
   class LazyPackageType extends LazyType with FlagAgnosticCompleter {
     override def complete(sym: Symbol) {
+      markBeingCompleted(sym)
       assert(sym.isPackageClass)
       sym setInfo new ClassInfoType(List(), new PackageScope(sym), sym)
         // override def safeToString = pkgClass.toString
       openPackageModule(sym)
+      markCompleted(sym)
     }
   }
 

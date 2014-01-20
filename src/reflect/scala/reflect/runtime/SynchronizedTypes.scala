@@ -50,13 +50,6 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   private lazy val _intersectionWitness = mkThreadLocalStorage(perRunCaches.newWeakMap[List[Type], sWeakRef[Type]]())
   override def intersectionWitness = _intersectionWitness.get
 
-  private lazy val _volatileRecursions = mkThreadLocalStorage(0)
-  override def volatileRecursions = _volatileRecursions.get
-  override def volatileRecursions_=(value: Int) = _volatileRecursions.set(value)
-
-  private lazy val _pendingVolatiles = mkThreadLocalStorage(new mutable.HashSet[Symbol])
-  override def pendingVolatiles = _pendingVolatiles.get
-
   private lazy val _subsametypeRecursions = mkThreadLocalStorage(0)
   override def subsametypeRecursions = _subsametypeRecursions.get
   override def subsametypeRecursions_=(value: Int) = _subsametypeRecursions.set(value)

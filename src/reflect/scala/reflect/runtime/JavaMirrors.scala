@@ -575,6 +575,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
             val bytes = ssig.getBytes
             val len = ByteCodecs.decode(bytes)
             unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
+            markCompleted(clazz, module)
           case None =>
             loadBytes[Array[String]]("scala.reflect.ScalaLongSignature") match {
               case Some(slsig) =>
@@ -583,6 +584,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
                 val len = ByteCodecs.decode(encoded)
                 val decoded = encoded.take(len)
                 unpickler.unpickle(decoded, 0, clazz, module, jclazz.getName)
+                markCompleted(clazz, module)
               case None =>
                 // class does not have a Scala signature; it's a Java class
                 info("translating reflection info for Java " + jclazz) //debug
@@ -655,7 +657,15 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
      *  @param   module  The Scala companion object for which info is copied
      *  @param   jclazz  The Java class
      */
-    private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType with JavaClassCompleter with FlagAssigningCompleter {
+    private class FromJavaClassCompleter(clazz: Symbol, module: Symbol, jclazz: jClass[_]) extends LazyType with JavaClassCompleter with FlagAgnosticCompleter {
+      // one doesn't need to do non-trivial computations to assign flags for Java-based reflection artifacts
+      // therefore I'm moving flag-assigning logic from completion to construction
+      val flags = jclazz.scalaFlags
+      clazz setFlag (flags | JAVA)
+      if (module != NoSymbol) {
+        module setFlag (flags & PRIVATE | JAVA)
+        module.moduleClass setFlag (flags & PRIVATE | JAVA)
+      }
 
       /** used to avoid cycles while initializing classes */
       private var parentsLevel = 0
@@ -665,12 +675,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       override def load(sym: Symbol): Unit = {
         debugInfo("completing from Java " + sym + "/" + clazz.fullName)//debug
         assert(sym == clazz || (module != NoSymbol && (sym == module || sym == module.moduleClass)), sym)
-        val flags = jclazz.scalaFlags
-        clazz setFlag (flags | JAVA)
-        if (module != NoSymbol) {
-          module setFlag (flags & PRIVATE | JAVA)
-          module.moduleClass setFlag (flags & PRIVATE | JAVA)
-        }
 
         propagatePackageBoundary(jclazz, relatedSymbols: _*)
         copyAnnotations(clazz, jclazz)
@@ -684,8 +688,10 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       }
 
       override def complete(sym: Symbol): Unit = {
+        markBeingCompleted(clazz, module)
         load(sym)
         completeRest()
+        markCompleted(clazz, module)
       }
 
       def completeRest(): Unit = gilSynchronized {
@@ -1074,6 +1080,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       fieldCache.enter(jfield, field)
       propagatePackageBoundary(jfield, field)
       copyAnnotations(field, jfield)
+      markCompleted(field)
       field
     }
 
@@ -1100,11 +1107,9 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       setMethType(meth, tparams, paramtpes, resulttpe)
       propagatePackageBoundary(jmeth.javaFlags, meth)
       copyAnnotations(meth, jmeth)
-
-      if (jmeth.javaFlags.isVarargs)
-        meth modifyInfo arrayToRepeated
-      else
-        meth
+      if (jmeth.javaFlags.isVarargs) meth modifyInfo arrayToRepeated
+      markCompleted(meth)
+      meth
     }
 
     /**
@@ -1127,6 +1132,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       constr setInfo GenPolyType(tparams, MethodType(clazz.newSyntheticValueParams(paramtpes), clazz.tpe))
       propagatePackageBoundary(jconstr.javaFlags, constr)
       copyAnnotations(constr, jconstr)
+      markCompleted(constr)
       constr
     }
 

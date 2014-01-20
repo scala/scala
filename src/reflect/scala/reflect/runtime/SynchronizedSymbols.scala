@@ -4,6 +4,9 @@ package runtime
 
 import scala.reflect.io.AbstractFile
 import scala.collection.{ immutable, mutable }
+import scala.reflect.internal.Flags._
+import scala.reflect.internal.SymbolOps
+import scala.reflect.internal.SymbolOps._
 
 private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>
 
@@ -31,23 +34,97 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
 
   trait SynchronizedSymbol extends Symbol {
 
-    def gilSynchronizedIfNotInited[T](body: => T): T = {
-      // TODO JZ desired, but prone to race conditions. We need the runtime reflection based
-      //      type completers to establish a memory barrier upon initialization. Maybe a volatile
-      //      write? We need to consult with the experts here. Until them, lock pessimistically.
-      //
-      //      `run/reflection-sync-subtypes.scala` fails about 1/50 times otherwise.
-      //
-      //      if (isFullyInitialized) body
-      //      else gilSynchronized { body }
-      gilSynchronized { body }
+    /** (Things written in this comment only applies to runtime reflection. Compile-time reflection,
+     *  especially across phases and runs, is somewhat more complicated, but we won't be touching it,
+     *  because at the moment we only care about synchronizing runtime reflection).
+     *
+     *  As it has been noted on multiple occasions, generally speaking, reflection artifacts aren't thread-safe.
+     *  Reasons for that differ from artifact to artifact. In some cases it's quite bad (e.g. types use a number
+     *  of non-concurrent compiler caches, so we need to serialize certain operations on types in order to make
+     *  sure that things stay deterministic). However, in case of symbols there's hope, because it's only during
+     *  initializaton that symbols are thread-unsafe. After everything's set up, symbols become immutable
+     *  (sans a few deterministic caches that can be populated simultaneously by multiple threads) and therefore thread-safe.
+     *
+     *  Note that by saying "symbols become immutable" I mean literally that. In a very common case of PackageClassSymbol's,
+     *  even when a symbol finishes its initialization and becomes immutable, its info forever remains mutable.
+     *  Therefore even if we no longer need to synchronize a PackageClassSymbol after it's initialized, we still have to take
+     *  care of its ClassInfoType (or, more precisely, of the underlying Scope), but that's done elsewhere, and
+     *  here we don't need to worry about that.
+     *
+     *  Okay, so now we simply check `Symbol.isInitialized` and if it's true, then everything's fine? Haha, nope!
+     *  The thing is that some completers call sym.setInfo when still in-flight and then proceed with initialization
+     *  (e.g. see LazyPackageType). Consequently, setInfo sets _validTo to current period, which means that after
+     *  a call to setInfo isInitialized will start returning true. Unfortunately, this doesn't mean that info becomes
+     *  ready to be used, because subsequent initialization might change the info.
+     *
+     *  Therefore we need to somehow distinguish between initialized and really initialized symbol states.
+     *  Okay, let's do it on per-completer basis. We have five completers to worry about:
+     *    1) LazyPackageType that initializes packages and their underlying package classes
+     *    2) TopClassCompleter that initializes top-level Scala-based class-module companion pairs of static definitions
+     *    3) LazyTypeRef and LazyTypeRefAndAlias set up by TopClassCompleter that initialize (transitive members) of top-level classes/modules
+     *    4) FromJavaClassCompleter that do the same for both top-level and non-toplevel Java-based classes/modules
+     *    5) Fully-initialized signatures of non-class/module Java-based reflection artifacts
+     *
+     *  The mechanisms underlying completion are quite complex, and it'd be only natural to suppose that I overlooked something.
+     *  Wrt isThreadsafe we could have two wrong situations: false positives (isThreadsafe = true, but the symbol isn't actually threadsafe)
+     *  and false negatives (isThreadsafe = false, but the symbol is actually threadsafe). However, even though both are wrong, only the former
+     *  is actively malicious. Indeed, false positives might lead to races, inconsistent state and crashes, while the latter would only cause
+     *  `initialize` to be called and a gil to be taken on every potentially auto-initializable operation. Unpleasant yes, but still robust.
+     *
+     *  What makes me hopeful is that:
+     *    1) By default (e.g. if some new completion mechanism gets introduced for a special flavor of symbols and we forget to call markCompleted)
+     *       isThreadsafe is always in false negative state, which is unpleasant but safe.
+     *    2) Calls to `markCompleted` which are the only potential source of erroneous behavior are few and are relatively easy to place:
+     *       just put them just before your completer's `complete` returns, and you should be fine.
+     */
+    override def isThreadsafe(purpose: SymbolOps) = {
+      if (isCompilerUniverse) false
+      else if (mask != 0L && (_initializationMask & mask) == 0) true
+      else _initializationStatus == -1L || _initializationStatus == Thread.currentThread.getId
     }
 
-    override def validTo = gilSynchronizedIfNotInited { super.validTo }
-    override def info = gilSynchronizedIfNotInited { super.info }
-    override def rawInfo: Type = gilSynchronizedIfNotInited { super.rawInfo }
+    /** Communicates with completers declared in scala.reflect.runtime.SymbolLoaders
+     *  about the status of initialization of the underlying symbol.
+     *
+     *  Unfortunately, it's not as easy as just introducing the `markThreadsafe` method that would be called
+     *  by the completers when they are really done (as opposed to `setInfo` that, as mentioned above, doesn't mean anything).
+     *
+     *  Since we also want to auto-initialize symbols when certain methods are being called (`Symbol.hasFlag` for example),
+     *  we need to track the identity of the initializer, so as to block until initialization is complete if the caller
+     *  comes from a different thread, but to skip auto-initialization if we're the initializing thread.
+     *
+     *  Just a volatile var is fine, because:
+     *    1) Status can only be changed in a single-threaded fashion (this is enforced by gilSynchronized
+     *       that effecively guards `Symbol.initialize`), which means that there can't be update conflicts.
+     *    2) If someone reads a stale value of status, then the worst thing that might happen is that this someone
+     *       is going to spuriously call `initialize`, which is either a gil-protected operation (if the symbol isn't inited yet)
+     *       or a no-op (if the symbol is already inited), and that is fine in both cases.
+     *
+     *  Here are what different values of initializationStatus mean:
+     *    * 0               => not initialized yet
+     *    * positive number => ID of the thread performing initialization
+     *    * -1              => initialized to the point of thread-safety
+     *
+     *  upd. It looks like we also need to keep track of a mask of initialized flags to make sure
+     *  that normal symbol initialization routines don't trigger auto-init in Symbol.flags-related routines (e.g. Symbol.getFlag).
+     *  Due to the same reasoning as above, a single volatile var is enough for to store the mask.
+     */
+    @volatile private[this] var _initializationStatus = 0L
+    @volatile private[this] var _initializationMask = -1L
+    override def markBeingCompleted() = _initializationStatus = Thread.currentThread.getId
+    override def markFlagsCompleted(mask: Long): Unit = _initializationMask = ~mask
+    override def markAllCompleted(): Unit = { _initializationMask = 0L; _initializationStatus = -1L }
 
-    override def typeParams: List[Symbol] = gilSynchronizedIfNotInited {
+    def gilSynchronizedIfNotThreadsafe[T](body: => T): T = {
+      if (isThreadsafe(purpose = AllOps)) body
+      else gilSynchronized { body }
+    }
+
+    override def validTo = gilSynchronizedIfNotThreadsafe { super.validTo }
+    override def info = gilSynchronizedIfNotThreadsafe { super.info }
+    override def rawInfo: Type = gilSynchronizedIfNotThreadsafe { super.rawInfo }
+
+    override def typeParams: List[Symbol] = gilSynchronizedIfNotThreadsafe {
       if (isCompilerUniverse) super.typeParams
       else {
         if (isMonomorphicType) Nil
@@ -63,15 +140,13 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
         }
       }
     }
-    override def unsafeTypeParams: List[Symbol] = gilSynchronizedIfNotInited {
+    override def unsafeTypeParams: List[Symbol] = gilSynchronizedIfNotThreadsafe {
       if (isCompilerUniverse) super.unsafeTypeParams
       else {
         if (isMonomorphicType) Nil
         else rawInfo.typeParams
       }
     }
-
-    override def isStable: Boolean = gilSynchronized { super.isStable }
 
 // ------ creators -------------------------------------------------------------------
 
@@ -126,7 +201,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     // we can keep this lock fine-grained, because it's just a cache over asSeenFrom, which makes deadlocks impossible
     // unfortunately we cannot elide this lock, because the cache depends on `pre`
     private lazy val typeAsMemberOfLock = new Object
-    override def typeAsMemberOf(pre: Type): Type = gilSynchronizedIfNotInited { typeAsMemberOfLock.synchronized { super.typeAsMemberOf(pre) } }
+    override def typeAsMemberOf(pre: Type): Type = gilSynchronizedIfNotThreadsafe { typeAsMemberOfLock.synchronized { super.typeAsMemberOf(pre) } }
   }
 
   trait SynchronizedModuleSymbol extends ModuleSymbol with SynchronizedTermSymbol
@@ -135,7 +210,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     // unlike with typeConstructor, a lock is necessary here, because tpe calculation relies on
     // temporarily assigning NoType to tpeCache to detect cyclic reference errors
     private lazy val tpeLock = new Object
-    override def tpe_* : Type = gilSynchronizedIfNotInited { tpeLock.synchronized { super.tpe_* } }
+    override def tpe_* : Type = gilSynchronizedIfNotThreadsafe { tpeLock.synchronized { super.tpe_* } }
   }
 
   trait SynchronizedClassSymbol extends ClassSymbol with SynchronizedTypeSymbol
