@@ -281,6 +281,10 @@ abstract class TreeInfo {
     }
   }
 
+  def isDefaultGetter(tree: Tree) = {
+    tree.symbol != null && tree.symbol.isDefaultGetter
+  }
+
   /** Is tree a self constructor call this(...)? I.e. a call to a constructor of the
    *  same object?
    */

@@ -525,7 +525,6 @@ trait TypeDiagnostics {
         val unused = p.unusedTerms
         unused foreach { defn: DefTree =>
           val sym             = defn.symbol
-          val isDefaultGetter = sym.name containsName nme.DEFAULT_GETTER_STRING
           val pos = (
             if (defn.pos.isDefined) defn.pos
             else if (sym.pos.isDefined) sym.pos
@@ -536,7 +535,7 @@ trait TypeDiagnostics {
           )
           val why = if (sym.isPrivate) "private" else "local"
           val what = (
-            if (isDefaultGetter) "default argument"
+            if (sym.isDefaultGetter) "default argument"
             else if (sym.isConstructor) "constructor"
             else if (sym.isVar || sym.isGetter && sym.accessed.isVar) "var"
             else if (sym.isVal || sym.isGetter && sym.accessed.isVal) "val"
