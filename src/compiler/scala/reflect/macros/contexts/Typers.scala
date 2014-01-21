@@ -49,4 +49,6 @@ trait Typers {
   def resetAllAttrs(tree: Tree): Tree = universe.resetAllAttrs(universe.duplicateAndKeepPositions(tree))
 
   def resetLocalAttrs(tree: Tree): Tree = universe.resetLocalAttrs(universe.duplicateAndKeepPositions(tree))
+
+  def untypecheck(tree: Tree): Tree = universe.resetLocalAttrs(universe.duplicateAndKeepPositions(tree))
 }

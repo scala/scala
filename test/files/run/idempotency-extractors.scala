@@ -12,7 +12,7 @@ object Test extends App {
   val tb = cm.mkToolBox()
   val textractor = tb.typecheck(extractor.tree)
   println(textractor)
-  val rtextractor = tb.resetAllAttrs(textractor)
+  val rtextractor = tb.untypecheck(textractor)
   try {
     println(tb.eval(rtextractor))
   } catch {
