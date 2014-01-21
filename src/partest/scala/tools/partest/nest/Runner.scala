@@ -254,6 +254,7 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
       val (invert, token) =
         if (f startsWith "!") (true, f drop 1) else (false, f)
       val cond = token.trim match {
+        case "java8"  => javaVersion startsWith "1.8"
         case "java7"  => javaVersion startsWith "1.7"
         case "java6"  => javaVersion startsWith "1.6"
         case "avian"  => isAvian
