@@ -266,8 +266,8 @@ trait Importers extends api.Importers { to: SymbolTable =>
         val myconstr = new TypeConstraint(their.constr.loBounds map importType, their.constr.hiBounds map importType)
         myconstr.inst = importType(their.constr.inst)
         TypeVar(importType(their.origin), myconstr, their.typeArgs map importType, their.params map importSymbol)
-      case from.AnnotatedType(annots, result, selfsym) =>
-        AnnotatedType(annots map importAnnotationInfo, importType(result), importSymbol(selfsym))
+      case from.AnnotatedType(annots, result) =>
+        AnnotatedType(annots map importAnnotationInfo, importType(result))
       case from.ErrorType =>
         ErrorType
       case from.WildcardType =>

@@ -95,7 +95,7 @@ abstract class TreeGen extends macros.TreeBuilder {
       case ConstantType(value) =>
         Literal(value) setType tpe
 
-      case AnnotatedType(_, atp, _) =>
+      case AnnotatedType(_, atp) =>
         mkAttributedQualifier(atp)
 
       case RefinedType(parents, _) =>

@@ -389,7 +389,7 @@ trait Implicits {
     private def dominates(dtor: Type, dted: Type): Boolean = {
       def core(tp: Type): Type = tp.dealiasWiden match {
         case RefinedType(parents, defs)         => intersectionType(parents map core, tp.typeSymbol.owner)
-        case AnnotatedType(annots, tp, selfsym) => core(tp)
+        case AnnotatedType(annots, tp)          => core(tp)
         case ExistentialType(tparams, result)   => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
         case PolyType(tparams, result)          => core(result).subst(tparams, tparams map (t => core(t.info.bounds.hi)))
         case _                                  => tp
@@ -1060,7 +1060,7 @@ trait Implicits {
             getParts(restpe)
           case RefinedType(ps, _) =>
             for (p <- ps) getParts(p)
-          case AnnotatedType(_, t, _) =>
+          case AnnotatedType(_, t) =>
             getParts(t)
           case ExistentialType(_, t) =>
             getParts(t)

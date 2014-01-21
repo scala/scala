@@ -161,7 +161,6 @@ trait ScalaSettings extends AbsScalaSettings
   val nopredef        = BooleanSetting    ("-Yno-predef", "Compile without importing Predef.")
   val noAdaptedArgs   = BooleanSetting    ("-Yno-adapted-args", "Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.")
   val Yrecursion      = IntSetting        ("-Yrecursion", "Set recursion depth used when locking symbols.", 0, Some((0, Int.MaxValue)), (_: String) => None)
-  val selfInAnnots    = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations.")
   val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Xprint:) Print detailed ASTs in formatted form.")
   val XshowtreesCompact
                       = BooleanSetting    ("-Yshow-trees-compact", "(Requires -Xprint:) Print detailed ASTs in compact form.")

@@ -688,7 +688,7 @@ trait Definitions extends api.StandardDefinitions {
       case TypeRef(pre, sym, _) if sym.isModuleClass    => isStable(pre)
       case TypeRef(_, _, _) if tp ne tp.dealias         => isStable(tp.dealias)
       case TypeVar(origin, _)                           => isStable(origin)
-      case AnnotatedType(_, atp, _)                     => isStable(atp)    // Really?
+      case AnnotatedType(_, atp)                        => isStable(atp)    // Really?
       case _: SimpleTypeProxy                           => isStable(tp.underlying)
       case _                                            => false
     }

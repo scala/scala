@@ -362,7 +362,7 @@ abstract class UnPickler {
         case METHODtpe                 => MethodTypeRef(readTypeRef(), readSymbols())
         case POLYtpe                   => PolyOrNullaryType(readTypeRef(), readSymbols())
         case EXISTENTIALtpe            => ExistentialType(underlying = readTypeRef(), quantified = readSymbols())
-        case ANNOTATEDtpe              => AnnotatedType(underlying = readTypeRef(), annotations = readAnnots(), selfsym = NoSymbol)
+        case ANNOTATEDtpe              => AnnotatedType(underlying = readTypeRef(), annotations = readAnnots())
       }
     }
 

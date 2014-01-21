@@ -410,14 +410,14 @@ trait TypeComparers {
           case _ =>
             secondTry
         }
-      case AnnotatedType(_, _, _) =>
+      case AnnotatedType(_, _) =>
         isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
           annotationsConform(tp1, tp2)
       case BoundedWildcardType(bounds) =>
         isSubType(tp1, bounds.hi, depth)
       case tv2 @ TypeVar(_, constr2) =>
         tp1 match {
-          case AnnotatedType(_, _, _) | BoundedWildcardType(_) =>
+          case AnnotatedType(_, _) | BoundedWildcardType(_) =>
             secondTry
           case _ =>
             tv2.registerBound(tp1, isLowerBound = true)
@@ -432,7 +432,7 @@ trait TypeComparers {
      *   - handle existential types by skolemization.
      */
     def secondTry = tp1 match {
-      case AnnotatedType(_, _, _) =>
+      case AnnotatedType(_, _) =>
         isSubType(tp1.withoutAnnotations, tp2.withoutAnnotations, depth) &&
           annotationsConform(tp1, tp2)
       case BoundedWildcardType(bounds) =>

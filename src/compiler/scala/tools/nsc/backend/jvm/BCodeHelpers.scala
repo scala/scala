@@ -516,7 +516,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
         // !!! Iulian says types which make no sense after erasure should not reach here, which includes the ExistentialType, AnnotatedType, RefinedType.
         case ExistentialType(_, t)   => toTypeKind(t) // TODO shouldn't get here but the following does: akka-actor/src/main/scala/akka/util/WildcardTree.scala
-        case AnnotatedType(_, w, _)  => toTypeKind(w) // TODO test/files/jvm/annotations.scala causes an AnnotatedType to reach here.
+        case AnnotatedType(_, w)     => toTypeKind(w) // TODO test/files/jvm/annotations.scala causes an AnnotatedType to reach here.
         case RefinedType(parents, _) => parents map toTypeKind reduceLeft jvmWiseLUB
 
         // For sure WildcardTypes shouldn't reach here either, but when debugging such situations this may come in handy.

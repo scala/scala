@@ -84,7 +84,7 @@ trait Variances {
         loop(base, Covariant)
       }
       def isUncheckedVariance(tp: Type) = tp match {
-        case AnnotatedType(annots, _, _) => annots exists (_ matches definitions.uncheckedVarianceClass)
+        case AnnotatedType(annots, _)    => annots exists (_ matches definitions.uncheckedVarianceClass)
         case _                           => false
       }
 
@@ -202,7 +202,7 @@ trait Variances {
       case MethodType(params, restpe)                   => inSyms(params).flip         & inType(restpe)
       case PolyType(tparams, restpe)                    => inSyms(tparams).flip        & inType(restpe)
       case ExistentialType(tparams, restpe)             => inSyms(tparams)             & inType(restpe)
-      case AnnotatedType(annots, tp, _)                 => inTypes(annots map (_.atp)) & inType(tp)
+      case AnnotatedType(annots, tp)                    => inTypes(annots map (_.atp)) & inType(tp)
     }
 
     inType(tp)

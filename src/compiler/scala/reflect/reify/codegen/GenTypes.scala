@@ -60,7 +60,7 @@ trait GenTypes {
         reifyProduct(tpe)
       case tpe @ NullaryMethodType(restpe) =>
         reifyProduct(tpe)
-      case tpe @ AnnotatedType(anns, underlying, selfsym) =>
+      case tpe @ AnnotatedType(anns, underlying) =>
         reifyAnnotatedType(tpe)
       case _ =>
         reifyToughType(tpe)
@@ -162,8 +162,8 @@ trait GenTypes {
 
   /** Reify an annotated type, i.e. the one that makes us deal with AnnotationInfos */
   private def reifyAnnotatedType(tpe: AnnotatedType): Tree = {
-    val AnnotatedType(anns, underlying, selfsym) = tpe
-    mirrorFactoryCall(nme.AnnotatedType, mkList(anns map reifyAnnotationInfo), reify(underlying), reify(selfsym))
+    val AnnotatedType(anns, underlying) = tpe
+    mirrorFactoryCall(nme.AnnotatedType, mkList(anns map reifyAnnotationInfo), reify(underlying))
   }
 
   /** Reify a tough type, i.e. the one that leads to creation of auxiliary symbols */

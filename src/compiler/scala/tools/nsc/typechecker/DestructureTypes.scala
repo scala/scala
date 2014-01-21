@@ -180,7 +180,7 @@ trait DestructureTypes {
       case SuperType(thistp, supertp)                => product(tp, this("this", thistp), this("super", supertp))
       case ThisType(clazz)                           => product(tp, wrapAtom(clazz))
       case TypeVar(inst, constr)                     => product(tp, this("inst", inst), typeConstraint(constr))
-      case AnnotatedType(annotations, underlying, _) => annotatedType(annotations, underlying)
+      case AnnotatedType(annotations, underlying)    => annotatedType(annotations, underlying)
       case ExistentialType(tparams, underlying)      => polyFunction(tparams, underlying)
       case PolyType(tparams, restpe)                 => polyFunction(tparams, restpe)
       case MethodType(params, restpe)                => monoFunction(params, restpe)

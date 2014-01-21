@@ -48,7 +48,7 @@ private[internal] trait TypeMaps {
       case TypeRef(_, sym, _) if sym.isAliasType    => apply(tp.dealias)
       case TypeRef(_, sym, _) if sym.isAbstractType => apply(tp.bounds.hi)
       case rtp @ RefinedType(parents, decls)        => copyRefinedType(rtp, parents mapConserve this, decls)
-      case AnnotatedType(_, _, _)                   => mapOver(tp)
+      case AnnotatedType(_, _)                      => mapOver(tp)
       case _                                        => tp             // no recursion - top level only
     }
   }
@@ -174,12 +174,12 @@ private[internal] trait TypeMaps {
       case tv@TypeVar(_, constr) =>
         if (constr.instValid) this(constr.inst)
         else tv.applyArgs(mapOverArgs(tv.typeArgs, tv.params))  //@M !args.isEmpty implies !typeParams.isEmpty
-      case AnnotatedType(annots, atp, selfsym) =>
+      case AnnotatedType(annots, atp) =>
         val annots1 = mapOverAnnotations(annots)
         val atp1 = this(atp)
         if ((annots1 eq annots) && (atp1 eq atp)) tp
         else if (annots1.isEmpty) atp1
-        else AnnotatedType(annots1, atp1, selfsym)
+        else AnnotatedType(annots1, atp1)
       /*
             case ErrorType => tp
             case WildcardType => tp
@@ -1142,7 +1142,7 @@ private[internal] trait TypeMaps {
       case SuperType(_, _) => mapOver(tp)
       case TypeBounds(_, _) => mapOver(tp)
       case TypeVar(_, _) => mapOver(tp)
-      case AnnotatedType(_,_,_) => mapOver(tp)
+      case AnnotatedType(_, _) => mapOver(tp)
       case ExistentialType(_, _) => mapOver(tp)
       case _ => tp
     }

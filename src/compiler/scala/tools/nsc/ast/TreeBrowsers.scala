@@ -619,7 +619,7 @@ abstract class TreeBrowsers {
                         toDocument(result) :: ")")
         )
 
-      case AnnotatedType(annots, tp, _) =>
+      case AnnotatedType(annots, tp) =>
         Document.group(
           Document.nest(4, "AnnotatedType(" :/:
                         annots.mkString("[", ",", "]") :/:
