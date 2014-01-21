@@ -552,6 +552,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isConstructor       = false
     def isEarlyInitialized  = false
     def isGetter            = false
+    def isDefaultGetter     = false
     def isLocalDummy        = false
     def isMixinConstructor  = false
     def isOverloaded        = false
@@ -2629,6 +2630,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isSetterParameter  = isValueParameter && owner.isSetter
     override def isAccessor         = this hasFlag ACCESSOR
     override def isGetter           = isAccessor && !isSetter
+    override def isDefaultGetter    = name containsName nme.DEFAULT_GETTER_STRING
     override def isSetter           = isAccessor && nme.isSetterName(name)  // todo: make independent of name, as this can be forged.
     override def isLocalDummy       = nme.isLocalDummyName(name)
     override def isClassConstructor = name == nme.CONSTRUCTOR
