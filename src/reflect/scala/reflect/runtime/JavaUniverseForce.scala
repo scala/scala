@@ -32,8 +32,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     // inaccessible: this._skolemizationLevel
     // inaccessible: this._undoLog
     // inaccessible: this._intersectionWitness
-    // inaccessible: this._volatileRecursions
-    // inaccessible: this._pendingVolatiles
     // inaccessible: this._subsametypeRecursions
     // inaccessible: this._pendingSubTypes
     // inaccessible: this._basetypeRecursions
@@ -204,6 +202,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.NoSymbol
     this.CyclicReference
     // inaccessible: this.TypeHistory
+    this.SymbolOps
     this.TermName
     this.TypeName
     this.Liftable

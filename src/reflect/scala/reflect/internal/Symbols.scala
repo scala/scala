@@ -55,16 +55,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   def newFreeTypeSymbol(name: TypeName, flags: Long = 0L, origin: String): FreeTypeSymbol =
     new FreeTypeSymbol(name, origin) initFlags flags
 
-  /** Determines whether the given information request should trigger the given symbol's completer.
-   *  See comments to `Symbol.needsInitialize` for details.
-   */
-  protected def shouldTriggerCompleter(symbol: Symbol, completer: Type, isFlagRelated: Boolean, mask: Long) =
-    completer match {
-      case null => false
-      case _: FlagAgnosticCompleter => !isFlagRelated
-      case _ => abort(s"unsupported completer: $completer of class ${if (completer != null) completer.getClass else null} for symbol ${symbol.fullName}")
-    }
-
   /** The original owner of a class. Used by the backend to generate
    *  EnclosingMethod attributes.
    */
@@ -106,18 +96,27 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     def knownDirectSubclasses = {
-      if (!isCompilerUniverse && needsInitialize(isFlagRelated = false, mask = 0)) initialize
+      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
+      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
       children
     }
 
     def selfType = {
-      if (!isCompilerUniverse && needsInitialize(isFlagRelated = false, mask = 0)) initialize
+      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
+      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
       typeOfThis
     }
 
     def baseClasses                       = info.baseClasses
     def module                            = sourceModule
     def thisPrefix: Type                  = thisType
+
+    // automatic full initialization on access to info from reflection API is a double-edged sword
+    // on the one hand, it's convenient so that the users don't have to deal with initialization themselves before printing out stuff
+    // (e.g. printing out a method's signature without fully initializing it would result in <_>'s for parameters
+    // on the other hand, this strategy can potentially cause unexpected effects due to being inconsistent with compiler's behavior
+    // so far I think user convenience outweighs the scariness, but we need to keep the tradeoff in mind
+    // NOTE: if you end up removing the call to fullyInitializeSymbol, consider that it would affect both runtime reflection and macros
     def typeSignature: Type               = { fullyInitializeSymbol(this); info }
     def typeSignatureIn(site: Type): Type = { fullyInitializeSymbol(this); site memberInfo this }
 
@@ -139,6 +138,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
              with HasFlags
              with Annotatable[Symbol]
              with Attachable {
+
+    // makes sure that all symbols that runtime reflection deals with are synchronized
+    private def isSynchronized = this.isInstanceOf[scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol]
+    private def isAprioriThreadsafe = isThreadsafe(AllOps)
+    assert(isCompilerUniverse || isSynchronized || isAprioriThreadsafe, s"unsafe symbol $initName (child of $initOwner) in runtime reflection universe")
 
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
@@ -609,20 +613,55 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       && isTopLevel
       && nme.isReplWrapperName(name)
     )
+
+    /** In our current architecture, symbols for top-level classes and modules
+     *  are created as dummies. Package symbols just call newClass(name) or newModule(name) and
+     *  consider their job done.
+     *
+     *  In order for such a dummy to provide meaningful info (e.g. a list of its members),
+     *  it needs to go through unpickling. Unpickling is a process of reading Scala metadata
+     *  from ScalaSignature annotations and assigning it to symbols and types.
+     *
+     *  A single unpickling session takes a top-level class or module, parses the ScalaSignature annotation
+     *  and then reads metadata for the unpicklee, its companion (if any) and all their members recursively
+     *  (i.e. the pickle not only contains info about directly nested classes/modules, but also about
+     *  classes/modules nested into those and so on).
+     *
+     *  Unpickling is triggered automatically whenever typeSignature (info in compiler parlance) is called.
+     *  This happens because package symbols assign completer thunks to the dummies they create.
+     *  Therefore metadata loading happens lazily and transparently.
+     *
+     *  Almost transparently. Unfortunately metadata isn't limited to just signatures (i.e. lists of members).
+     *  It also includes flags (which determine e.g. whether a class is sealed or not), annotations and privateWithin.
+     *  This gives rise to unpleasant effects like in SI-6277, when a flag test called on an uninitialize symbol
+     *  produces incorrect results.
+     *
+     *  One might think that the solution is simple: automatically call the completer
+     *  whenever one needs flags, annotations and privateWithin - just like it's done for typeSignature.
+     *  Unfortunately, this leads to weird crashes in scalac, and currently we can't attempt
+     *  to fix the core of the compiler risk stability a few weeks before the final release.
+     *  upd. Haha, "a few weeks before the final release". This surely sounds familiar :)
+     *
+     *  However we do need to fix this for runtime reflection, since this idionsynchrazy is not something
+     *  we'd like to expose to reflection users. Therefore a proposed solution is to check whether we're in a
+     *  runtime reflection universe, and if yes and if we've not yet loaded the requested info, then to commence initialization.
+     */
     final def getFlag(mask: Long): Long = {
-      if (!isCompilerUniverse && needsInitialize(isFlagRelated = true, mask = mask)) initialize
+      if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
       flags & mask
     }
     /** Does symbol have ANY flag in `mask` set? */
     final def hasFlag(mask: Long): Boolean = {
-      if (!isCompilerUniverse && needsInitialize(isFlagRelated = true, mask = mask)) initialize
+      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
+      if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
       (flags & mask) != 0
     }
     def hasFlag(mask: Int): Boolean = hasFlag(mask.toLong)
 
     /** Does symbol have ALL the flags in `mask` set? */
     final def hasAllFlags(mask: Long): Boolean = {
-      if (!isCompilerUniverse && needsInitialize(isFlagRelated = true, mask = mask)) initialize
+      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
+      if (!isCompilerUniverse && !isThreadsafe(purpose = FlagOps(mask))) initialize
       (flags & mask) == mask
     }
 
@@ -789,7 +828,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      * Stability and volatility are checked separately to allow volatile paths in patterns that amount to equality checks. SI-6815
      */
-          def isStable        = isTerm && !isMutable && !(hasFlag(BYNAMEPARAM)) && (!isMethod || hasStableFlag)
+    final def isStable        = isTerm && !isMutable && !(hasFlag(BYNAMEPARAM)) && (!isMethod || hasStableFlag)
     final def hasVolatileType = tpe.isVolatile && !hasAnnotation(uncheckedStableClass)
 
     /** Does this symbol denote the primary constructor of its enclosing class? */
@@ -943,12 +982,22 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isInitialized: Boolean =
       validTo != NoPeriod
 
-    /** Some completers call sym.setInfo when still in-flight and then proceed with initialization (e.g. see LazyPackageType)
-     *  setInfo sets _validTo to current period, which means that after a call to setInfo isInitialized will start returning true.
-     *  Unfortunately, this doesn't mean that info becomes ready to be used, because subsequent initialization might change the info.
-     *  Therefore we need this method to distinguish between initialized and really initialized symbol states.
+    /** We consider a symbol to be thread-safe, when multiple concurrent threads can call its methods
+     *  (either directly or indirectly via public reflection or internal compiler infrastructure),
+     *  without any locking and everything works as it should work.
+     *
+     *  In its basic form, `isThreadsafe` always returns false. Runtime reflection augments reflection infrastructure
+     *  with threadsafety-tracking mechanism implemented in `SynchronizedSymbol` that communicates with underlying completers
+     *  and can sometimes return true if the symbol has been completed to the point of thread safety.
+     *
+     *  The `purpose` parameter signifies whether we want to just check immutability of certain flags for the given mask.
+     *  This is necessary to enable robust auto-initialization of `Symbol.flags` for runtime reflection, and is also quite handy
+     *  in avoiding unnecessary initializations when requesting for flags that have already been set.
      */
-    final def isFullyInitialized: Boolean = _validTo != NoPeriod && (flags & LOCKED) == 0
+    def isThreadsafe(purpose: SymbolOps): Boolean = false
+    def markBeingCompleted(): this.type = this
+    def markFlagsCompleted(mask: Long): this.type = this
+    def markAllCompleted(): this.type = this
 
     /** Can this symbol be loaded by a reflective mirror?
      *
@@ -1225,7 +1274,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     private[this] var _privateWithin: Symbol = _
     def privateWithin = {
-      if (!isCompilerUniverse && needsInitialize(isFlagRelated = false, mask = 0)) initialize
+      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
+      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
       _privateWithin
     }
     def privateWithin_=(sym: Symbol) { _privateWithin = sym }
@@ -1483,46 +1533,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       catch { case _: CyclicReference => debuglog("Hit cycle in maybeInitialize of $this") ; false }
     }
 
-    /** Called when the programmer requests information that might require initialization of the underlying symbol.
-     *
-     *  `isFlagRelated` and `mask` describe the nature of this information.
-     *  isFlagRelated = true means that the programmer needs particular bits in flags.
-     *  isFlagRelated = false means that the request is unrelated to flags (annotations or privateWithin).
-     *
-     *  In our current architecture, symbols for top-level classes and modules
-     *  are created as dummies. Package symbols just call newClass(name) or newModule(name) and
-     *  consider their job done.
-     *
-     *  In order for such a dummy to provide meaningful info (e.g. a list of its members),
-     *  it needs to go through unpickling. Unpickling is a process of reading Scala metadata
-     *  from ScalaSignature annotations and assigning it to symbols and types.
-     *
-     *  A single unpickling session takes a top-level class or module, parses the ScalaSignature annotation
-     *  and then reads metadata for the unpicklee, its companion (if any) and all their members recursively
-     *  (i.e. the pickle not only contains info about directly nested classes/modules, but also about
-     *  classes/modules nested into those and so on).
-     *
-     *  Unpickling is triggered automatically whenever typeSignature (info in compiler parlance) is called.
-     *  This happens because package symbols assign completer thunks to the dummies they create.
-     *  Therefore metadata loading happens lazily and transparently.
-     *
-     *  Almost transparently. Unfortunately metadata isn't limited to just signatures (i.e. lists of members).
-     *  It also includes flags (which determine e.g. whether a class is sealed or not), annotations and privateWithin.
-     *  This gives rise to unpleasant effects like in SI-6277, when a flag test called on an uninitialize symbol
-     *  produces incorrect results.
-     *
-     *  One might think that the solution is simple: automatically call the completer whenever one needs
-     *  flags, annotations and privateWithin - just like it's done for typeSignature. Unfortunately, this
-     *  leads to weird crashes in scalac, and currently we can't attempt to fix the core of the compiler
-     *  risk stability a few weeks before the final release.
-     *
-     *  However we do need to fix this for runtime reflection, since it's not something we'd like to
-     *  expose to reflection users. Therefore a proposed solution is to check whether we're in a
-     *  runtime reflection universe and if yes then to commence initialization.
-     */
-    protected def needsInitialize(isFlagRelated: Boolean, mask: Long) =
-      !isInitialized && (flags & LOCKED) == 0 && shouldTriggerCompleter(this, if (infos ne null) infos.info else null, isFlagRelated, mask)
-
     /** Was symbol's type updated during given phase? */
     final def hasTypeAt(pid: Phase#Id): Boolean = {
       assert(isCompilerUniverse)
@@ -1681,7 +1691,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  the annotations attached to member a definition (class, method, type, field).
      */
     def annotations: List[AnnotationInfo] = {
-      if (!isCompilerUniverse && needsInitialize(isFlagRelated = false, mask = 0)) initialize
+      // See `getFlag` to learn more about the `isThreadsafe` call in the body of this method.
+      if (!isCompilerUniverse && !isThreadsafe(purpose = AllOps)) initialize
       _annotations
     }
 
@@ -3510,6 +3521,18 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   Statistics.newView("#symbols")(ids)
 
+
+// -------------- Completion --------------------------------------------------------
+
+  // is used to differentiate levels of thread-safety in `Symbol.isThreadsafe`
+  case class SymbolOps(isFlagRelated: Boolean, mask: Long)
+  val AllOps = SymbolOps(isFlagRelated = false, mask = 0L)
+  def FlagOps(mask: Long) = SymbolOps(isFlagRelated = true, mask = mask)
+
+  private def relevantSymbols(syms: Seq[Symbol]) = syms.flatMap(sym => List(sym, sym.moduleClass, sym.sourceModule))
+  def markBeingCompleted(syms: Symbol*): Unit = relevantSymbols(syms).foreach(_.markBeingCompleted)
+  def markFlagsCompleted(syms: Symbol*)(mask: Long): Unit = relevantSymbols(syms).foreach(_.markFlagsCompleted(mask))
+  def markAllCompleted(syms: Symbol*): Unit = relevantSymbols(syms).foreach(_.markAllCompleted)
 }
 
 object SymbolsStats {
