@@ -276,6 +276,16 @@ TODO:
 
       <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
 
+      <!-- prepare, for each of the names below, the property "@{name}.cross", set to the
+           necessary cross suffix (usually something like "_2.11.0-M6". -->
+      <prepareCross name="scala-xml" />
+      <prepareCross name="scala-parser-combinators" />
+      <prepareCross name="scala-continuations-plugin" />
+      <prepareCross name="scala-continuations-library"/>
+      <prepareCross name="scala-swing"/>
+      <prepareCross name="scala-partest"/>
+      <prepareCross name="scalacheck"/>
+
       <!-- TODO: delay until absolutely necessary to allow minimal build, also move out partest dependency from scaladoc -->
       <artifact:dependencies pathId="partest.classpath" filesetId="partest.fileset" versionsId="partest.versions">
         <!-- uncomment the following if you're deploying your own partest locally -->
@@ -284,13 +294,13 @@ TODO:
             (we don't distribute partest with Scala, so the risk of sonatype and maven being out of synch is irrelevant):
           -->
         <artifact:remoteRepository refid="extra-repo"/>
-        <dependency groupId="org.scala-lang.modules" artifactId="scala-partest_${scala.binary.version}" version="${partest.version.number}" />
+        <dependency groupId="org.scala-lang.modules" artifactId="scala-partest${scala-partest.cross}" version="${partest.version.number}" />
       </artifact:dependencies>
       <copy-deps project="partest"/>
 
       <artifact:dependencies pathId="scalacheck.classpath" filesetId="scalacheck.fileset" versionsId="scalacheck.versions">
         <artifact:remoteRepository refid="extra-repo"/>
-        <dependency groupId="org.scalacheck"         artifactId="scalacheck_${scala.binary.version}"    version="${scalacheck.version.number}" />
+        <dependency groupId="org.scalacheck"         artifactId="scalacheck${scalacheck.cross}"    version="${scalacheck.version.number}" />
       </artifact:dependencies>
 
       <artifact:dependencies pathId="repl.deps.classpath" filesetId="repl.fileset" versionsId="repl.deps.versions">
@@ -302,11 +312,11 @@ TODO:
            must specify sourcesFilesetId, javadocFilesetId to download these types of artifacts -->
       <artifact:dependencies pathId="external-modules.deps.classpath" sourcesFilesetId="external-modules.sources.fileset" javadocFilesetId="external-modules.javadoc.fileset">
         <artifact:remoteRepository refid="extra-repo"/>
-        <dependency groupId="org.scala-lang.modules" artifactId="scala-xml_${scala.binary.version}" version="${scala-xml.version.number}"/>
-        <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators_${scala.binary.version}" version="${scala-parser-combinators.version.number}"/>
-        <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-plugin_${scala.binary.version}"  version="${scala-continuations-plugin.version.number}"/>
-        <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-library_${scala.binary.version}" version="${scala-continuations-library.version.number}"/>
-        <dependency groupId="org.scala-lang.modules" artifactId="scala-swing_${scala.binary.version}" version="${scala-swing.version.number}"/>
+        <dependency groupId="org.scala-lang.modules" artifactId="scala-xml${scala-xml.cross}" version="${scala-xml.version.number}"/>
+        <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators${scala-parser-combinators.cross}" version="${scala-parser-combinators.version.number}"/>
+        <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-plugin${scala-continuations-plugin.cross}"  version="${scala-continuations-plugin.version.number}"/>
+        <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-library${scala-continuations-library.cross}" version="${scala-continuations-library.version.number}"/>
+        <dependency groupId="org.scala-lang.modules" artifactId="scala-swing${scala-swing.cross}" version="${scala-swing.version.number}"/>
       </artifact:dependencies>
 
       <!-- External modules, excluding the core -->
