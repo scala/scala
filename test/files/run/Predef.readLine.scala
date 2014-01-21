@@ -1,5 +1,5 @@
 import java.io.StringReader
-import scala.io.ReadStdin.readLine
+import scala.io.StdIn.readLine
 
 object Test extends App {
   Console.withIn(new StringReader("")) {

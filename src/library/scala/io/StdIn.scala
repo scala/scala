@@ -7,7 +7,7 @@ import java.text.MessageFormat
  *  in the standard library, at least not in this idiosyncractic form.
  *  Factored into trait because it is better code structure regardless.
  */
-private[scala] trait ReadStdin {
+private[scala] trait StdIn {
   import scala.Console._
 
   /** Read a full line from the default input.  Returns `null` if the end of the
@@ -225,4 +225,4 @@ private[scala] trait ReadStdin {
   }
 }
 
-object ReadStdin extends ReadStdin { }
+object StdIn extends StdIn
