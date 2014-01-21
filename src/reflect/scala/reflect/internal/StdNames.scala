@@ -305,6 +305,8 @@ trait StdNames {
     val PROTECTED_SET_PREFIX          = PROTECTED_PREFIX + "set"
     val SUPER_PREFIX_STRING           = "super$"
     val WHILE_PREFIX                  = "while$"
+    val QUAL_PREFIX                   = "qual$"
+    val NAMEDARG_PREFIX               = "x$"
 
     // Compiler internal names
     val ANYname: NameType                  = "<anyname>"
