@@ -45,7 +45,7 @@ extends scala.collection.GenSeqLike[T, Repr]
    with ParIterableLike[T, Repr, Sequential] {
 self =>
   
-  type SuperParIterator = IterableSplitter[T]
+  protected[this] type SuperParIterator = IterableSplitter[T]
 
   /** A more refined version of the iterator found in the `ParallelIterable` trait,
    *  this iterator can be split into arbitrary subsets of iterators.

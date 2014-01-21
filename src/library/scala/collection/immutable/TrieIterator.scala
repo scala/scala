@@ -46,7 +46,7 @@ private[collection] abstract class TrieIterator[+T](elems: Array[Iterable[T]]) e
     case x: HashSetCollision1[_]    => x.ks.map(x => HashSet(x)).toArray
   }).asInstanceOf[Array[Iterable[T]]]
 
-  private type SplitIterators = ((Iterator[T], Int), Iterator[T])
+  private[this] type SplitIterators = ((Iterator[T], Int), Iterator[T])
 
   private def isTrie(x: AnyRef) = x match {
     case _: HashTrieMap[_,_] | _: HashTrieSet[_] => true
