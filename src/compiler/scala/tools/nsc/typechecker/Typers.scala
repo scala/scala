@@ -555,7 +555,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         val qual = typedQualifier { atPos(tree.pos.makeTransparent) {
           tree match {
-            case Ident(_) => Ident(nme.PACKAGEkw)
+            case Ident(_) => Ident(rootMirror.getPackageObjectWithMember(pre, sym))
             case Select(qual, _) => Select(qual, nme.PACKAGEkw)
             case SelectFromTypeTree(qual, _) => Select(qual, nme.PACKAGEkw)
           }
