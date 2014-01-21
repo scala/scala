@@ -7,7 +7,7 @@ import scala.reflect.macros.blackbox.Context
 
 scala> def macroImpl[T: c.WeakTypeTag](c: Context)(t: c.Expr[T]): c.Expr[List[T]] = {
   val r = c.universe.reify { List(t.splice) }
-  c.Expr[List[T]]( c.resetLocalAttrs(r.tree) )
+  c.Expr[List[T]]( c.untypecheck(r.tree) )
 }
 macroImpl: [T](c: scala.reflect.macros.blackbox.Context)(t: c.Expr[T])(implicit evidence$1: c.WeakTypeTag[T])c.Expr[List[T]]
 

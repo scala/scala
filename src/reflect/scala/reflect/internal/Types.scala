@@ -2755,6 +2755,10 @@ trait Types
     case _          => OverloadedType(pre, alternatives)
   }
 
+  case class ImportType(expr: Tree) extends Type {
+    override def safeToString = "ImportType("+expr+")"
+  }
+
   /** A class remembering a type instantiation for some a set of overloaded
    *  polymorphic symbols.
    *  Not used after phase `typer`.

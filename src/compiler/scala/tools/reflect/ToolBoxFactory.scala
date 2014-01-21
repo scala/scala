@@ -401,6 +401,8 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       uttree
     }
 
+    def untypecheck(tree: u.Tree): u.Tree = resetLocalAttrs(tree)
+
     def parse(code: String): u.Tree = withCompilerApi { compilerApi =>
       import compilerApi._
       if (compiler.settings.verbose) println("parsing "+code)
