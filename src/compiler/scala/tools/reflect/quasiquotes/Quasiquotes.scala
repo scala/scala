@@ -11,7 +11,7 @@ abstract class Quasiquotes extends Parsers
   val global: c.universe.type = c.universe
   import c.universe._
 
-  def debug(msg: String): Unit =
+  def debug(msg: => String): Unit =
     if (settings.Yquasiquotedebug.value) println(msg)
 
   lazy val (universe: Tree, args, parts, parse, reify, method) = c.macroApplication match {
@@ -48,7 +48,7 @@ abstract class Quasiquotes extends Parsers
     val tree = parse(code)
     debug(s"parsed:\n${showRaw(tree)}\n$tree\n")
     val reified = reify(tree)
-    val sreified =
+    def sreified =
       reified
         .toString
         .replace("scala.reflect.runtime.`package`.universe.build.", "")

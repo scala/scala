@@ -81,9 +81,12 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   override def indent = _indent.get
   override def indent_=(value: String) = _indent.set(value)
 
-  private lazy val _tostringRecursions = mkThreadLocalStorage(0)
-  override def tostringRecursions = _tostringRecursions.get
-  override def tostringRecursions_=(value: Int) = _tostringRecursions.set(value)
+  private lazy val _toStringRecursions = mkThreadLocalStorage(0)
+  override def toStringRecursions = _toStringRecursions.get
+  override def toStringRecursions_=(value: Int) = _toStringRecursions.set(value)
+
+  private lazy val _toStringSubjects = mkThreadLocalStorage(new mutable.HashSet[Type])
+  override def toStringSubjects = _toStringSubjects.get
 
   /* The idea of caches is as follows.
    * When in reflexive mode, a cache is either null, or one sentinal

@@ -1456,7 +1456,7 @@ trait Types
 
     override def safeToString = scalaNotation(_.toString)
 
-    /** Bounds notation used in Scala sytanx.
+    /** Bounds notation used in Scala syntax.
       * For example +This <: scala.collection.generic.Sorted[K,This].
       */
     private[internal] def scalaNotation(typeString: Type => String): String = {

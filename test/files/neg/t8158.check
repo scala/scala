@@ -1,0 +1,4 @@
+Test_2.scala:10: error: not enough patterns for <$anon: AnyRef> offering AnyRef{def isEmpty: Boolean; def get: $anon; def unapply(x: String): $anon}: expected 1, found 0
+      case X() =>
+           ^
+one error found
