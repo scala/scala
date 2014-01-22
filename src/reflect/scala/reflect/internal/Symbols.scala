@@ -2472,6 +2472,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If !settings.debug translates expansions of operators back to operator symbol.
      *  E.g. $eq => =.
      *  If settings.uniqid, adds id.
+     *  If settings.Yshowsymowners, adds owner's id
      *  If settings.Yshowsymkinds, adds abbreviated symbol kind.
      */
     def nameString: String = {
@@ -2492,7 +2493,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** If settings.uniqid is set, the symbol's id, else "" */
-    final def idString = if (settings.uniqid.value) "#"+id else ""
+    final def idString = {
+      val id_s = if (settings.uniqid.value) "#"+id else ""
+      val owner_s = if (settings.Yshowsymowners.value) "@"+owner.id else ""
+      id_s + owner_s
+    }
 
     /** String representation, including symbol's kind e.g., "class Foo", "method Bar".
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
