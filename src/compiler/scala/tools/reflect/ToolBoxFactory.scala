@@ -174,7 +174,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def typecheck(expr: Tree, pt: Type, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =
         transformDuringTyper(expr, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, expr) => {
-            trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, true, true, settings.Yshowsymkinds.value))
+            trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
             currentTyper.silent(_.typed(expr, pt), reportAmbiguousErrors = false) match {
               case analyzer.SilentResultValue(result) =>
                 trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
@@ -189,7 +189,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       def inferImplicit(tree: Tree, pt: Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: Position): Tree =
         transformDuringTyper(tree, withImplicitViewsDisabled = false, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, tree) => {
-            trace("inferring implicit %s (macros = %s): ".format(if (isView) "view" else "value", !withMacrosDisabled))(showAttributed(pt, true, true, settings.Yshowsymkinds.value))
+            trace("inferring implicit %s (macros = %s): ".format(if (isView) "view" else "value", !withMacrosDisabled))(showAttributed(pt, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
             analyzer.inferImplicit(tree, pt, isView, currentTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw ToolBoxError(msg))
           })
 
@@ -234,10 +234,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
                   List(),
                   List(methdef),
                   NoPosition))
-          trace("wrapped: ")(showAttributed(moduledef, true, true, settings.Yshowsymkinds.value))
+          trace("wrapped: ")(showAttributed(moduledef, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
 
           val cleanedUp = resetLocalAttrs(moduledef)
-          trace("cleaned up: ")(showAttributed(cleanedUp, true, true, settings.Yshowsymkinds.value))
+          trace("cleaned up: ")(showAttributed(cleanedUp, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
           cleanedUp.asInstanceOf[ModuleDef]
         }
 
@@ -285,19 +285,22 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         tree
       }
 
-      def showAttributed(artifact: Any, printTypes: Boolean = true, printIds: Boolean = true, printKinds: Boolean = false): String = {
+      def showAttributed(artifact: Any, printTypes: Boolean = true, printIds: Boolean = true, printOwners: Boolean = false, printKinds: Boolean = false): String = {
         val saved1 = settings.printtypes.value
         val saved2 = settings.uniqid.value
-        val saved3 = settings.Yshowsymkinds.value
+        val saved3 = settings.Yshowsymowners.value
+        val saved4 = settings.Yshowsymkinds.value
         try {
           settings.printtypes.value = printTypes
           settings.uniqid.value = printIds
+          settings.Yshowsymowners.value = printOwners
           settings.Yshowsymkinds.value = printKinds
           artifact.toString
         } finally {
           settings.printtypes.value = saved1
           settings.uniqid.value = saved2
-          settings.Yshowsymkinds.value = saved3
+          settings.Yshowsymowners.value = saved3
+          settings.Yshowsymkinds.value = saved4
         }
       }
 

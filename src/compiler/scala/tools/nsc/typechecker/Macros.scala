@@ -353,7 +353,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
     new {
       val universe: self.global.type = self.global
       val callsiteTyper: universe.analyzer.Typer = typer.asInstanceOf[global.analyzer.Typer]
-      val expandee = universe.analyzer.macroExpanderAttachment(expandeeTree).original orElse duplicateAndKeepPositions(expandeeTree)
+      val expandee = universe.analyzer.macroExpanderAttachment(expandeeTree).desugared orElse duplicateAndKeepPositions(expandeeTree)
     } with UnaffiliatedMacroContext {
       val prefix = Expr[Nothing](prefixTree)(TypeTag.Nothing)
       override def toString = "MacroContext(%s@%s +%d)".format(expandee.symbol.name, expandee.pos, enclosingMacros.length - 1 /* exclude myself */)
@@ -371,7 +371,15 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   def standardMacroArgs(typer: Typer, expandee: Tree): MacroArgs = {
     val macroDef = expandee.symbol
     val paramss = macroDef.paramss
-    val treeInfo.Applied(core, targs, argss) = expandee
+    val treeInfo.Applied(core, targs, maybeNamedArgss) = expandee
+    val argss = map2(maybeNamedArgss, paramss)((args, params) => {
+      if (args.exists(_.isInstanceOf[AssignOrNamedArg])) {
+        val sorted = ListBuffer.fill(params.length)(EmptyTree: Tree)
+        args foreach { case AssignOrNamedArg(Ident(name), arg) => sorted(params.indexWhere(_.name == name)) = arg }
+        sorted.toList
+      } else if (params.length == args.length) args
+      else args ++ List.fill(params.length - args.length)(EmptyTree)
+    })
     val prefix = core match { case Select(qual, _) => qual; case _ => EmptyTree }
     val context = expandee.attachments.get[MacroRuntimeAttachment].flatMap(_.macroContext).getOrElse(macroContext(typer, prefix, expandee))
 
@@ -383,16 +391,11 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       |paramss: $paramss
     """.trim)
 
-    import typer.TyperErrorGen._
-    val isNullaryArgsEmptyParams = argss.isEmpty && paramss == ListOfNil
-    if (paramss.length < argss.length) MacroTooManyArgumentListsError(expandee)
-    if (paramss.length > argss.length && !isNullaryArgsEmptyParams) MacroTooFewArgumentListsError(expandee)
-
     val macroImplArgs: List[Any] =
       if (fastTrack contains macroDef) {
         // Take a dry run of the fast track implementation
         if (fastTrack(macroDef) validate expandee) argss.flatten
-        else MacroTooFewArgumentListsError(expandee)
+        else typer.TyperErrorGen.MacroFastTrackFailed(expandee)
       }
       else {
         def calculateMacroArgs(binding: MacroImplBinding) = {
@@ -403,14 +406,6 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
           // wrap argss in c.Expr if necessary (i.e. if corresponding macro impl param is of type c.Expr[T])
           // expand varargs (nb! varargs can apply to any parameter section, not necessarily to the last one)
           val trees = map3(argss, paramss, signature)((args, defParams, implParams) => {
-            val isVarargs = isVarArgsList(defParams)
-            if (isVarargs) {
-              if (defParams.length > args.length + 1) MacroTooFewArgumentsError(expandee)
-            } else {
-              if (defParams.length < args.length) MacroTooManyArgumentsError(expandee)
-              if (defParams.length > args.length) MacroTooFewArgumentsError(expandee)
-            }
-
             val wrappedArgs = mapWithIndex(args)((arg, j) => {
               val fingerprint = implParams(min(j, implParams.length - 1))
               fingerprint match {
@@ -421,7 +416,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
               }
             })
 
-            if (isVarargs) {
+            if (isVarArgsList(defParams)) {
               val (normal, varargs) = wrappedArgs splitAt (defParams.length - 1)
               normal :+ varargs // pack all varargs into a single Seq argument (varargs Scala style)
             } else wrappedArgs
@@ -529,9 +524,11 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
    *    the expandee with an error marker set   if there has been an error
    */
   abstract class MacroExpander(val typer: Typer, val expandee: Tree) {
+    val symbol = expandee match { case Block(_, expr) => expr.symbol; case tree => tree.symbol }
+
     def onSuccess(expanded: Tree): Tree
     def onFallback(expanded: Tree): Tree
-    def onSuppressed(expandee: Tree): Tree = expandee
+    def onSuppressed(expanded: Tree): Tree = expanded
     def onDelayed(expanded: Tree): Tree = expanded
     def onSkipped(expanded: Tree): Tree = expanded
     def onFailure(expanded: Tree): Tree = { typer.infer.setError(expandee); expandee }
@@ -551,15 +548,15 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       if (Statistics.canEnable) Statistics.incCounter(macroExpandCount)
       try {
         withInfoLevel(nodePrinters.InfoLevel.Quiet) { // verbose printing might cause recursive macro expansions
-          if (expandee.symbol.isErroneous || (expandee exists (_.isErroneous))) {
-            val reason = if (expandee.symbol.isErroneous) "not found or incompatible macro implementation" else "erroneous arguments"
+          if (symbol.isErroneous || (expandee exists (_.isErroneous)) || (desugared exists (_.isErroneous))) {
+            val reason = if (symbol.isErroneous) "not found or incompatible macro implementation" else "erroneous arguments"
             macroLogVerbose(s"cancelled macro expansion because of $reason: $expandee")
             onFailure(typer.infer.setError(expandee))
           } else try {
             val expanded = {
-              val runtime = macroRuntime(expandee)
-              if (runtime != null) macroExpandWithRuntime(typer, expandee, runtime)
-              else macroExpandWithoutRuntime(typer, expandee)
+              val runtime = macroRuntime(desugared)
+              if (runtime != null) macroExpandWithRuntime(typer, desugared, runtime)
+              else macroExpandWithoutRuntime(typer, desugared)
             }
             expanded match {
               case Success(expanded) =>
@@ -591,13 +588,57 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   extends MacroExpander(typer, expandee) {
     lazy val innerPt = {
       val tp = if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe
-      if (isBlackbox(expandee)) tp
+      if (isBlackbox(symbol)) tp
       else {
         // approximation is necessary for whitebox macros to guide type inference
         // read more in the comments for onDelayed below
         val undetparams = tp collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
         deriveTypeWithWildcards(undetparams)(tp)
       }
+    }
+    override protected def expand(desugared: Tree) = {
+      // SI-5940 in order for a macro expansion that involves named or default arguments
+      //         to see the actual prefix and arguments being passed by the user instead of their desugarings
+      //         we need to inline synthetics in case when `fun` is actually a macro
+      //         underlying macro implementation is going to get explicitly passed arguments in correct order
+      //         and the rest (defaults filled in by the vanilla part of `tryNamesDefaults`) will become empty trees
+      //         in order for the macro to be able to account for evaluation order, the original is provided in `c.macroApplication`
+      //         of course, ideally we would like to provide the impl with right-hand sides of those default arguments
+      //         but currently that is flat out impossible because of the difference in scopes
+      //         anyway this is already an improvement over the former status quo when named/default invocations were outright prohibited
+      def undoNamesDefaults(tree: Tree): Tree = {
+        val (qualsym, qual, vdefs0, app @ Applied(_, _, argss)) = tree match {
+          case Block((qualdef @ ValDef(_, name, _, qual)) +: vdefs, app) if name.startsWith(nme.QUAL_PREFIX) => (qualdef.symbol, qual, vdefs, app)
+          case Block(vdefs, app) => (NoSymbol, EmptyTree, vdefs, app)
+          case tree => (NoSymbol, EmptyTree, Nil, tree)
+        }
+        val vdefs = vdefs0.map{ case vdef: ValDef => vdef }
+        def hasNamesDefaults(args: List[Tree]) = {
+          args.exists(arg => isDefaultGetter(arg) || vdefs.exists(_.symbol == arg.symbol))
+        }
+        def undoNamesDefaults(args: List[Tree], depth: Int) = {
+          def extractRhs(vdef: ValDef) = vdef.rhs.changeOwner(vdef.symbol -> typer.context.owner)
+          case class Arg(tree: Tree, ipos: Int, inamed: Int) { val param = app.symbol.paramss(depth)(ipos) }
+          val indexed = args.map(arg => arg -> vdefs.indexWhere(_.symbol == arg.symbol)).zipWithIndex.flatMap({
+            /*    default    */ case ((arg, _), _) if isDefaultGetter(arg) => None
+            /*   positional  */ case ((arg, -1), ipos) => Some(Arg(arg, ipos, -1))
+            /* default+named */ case ((_, inamed), _) if isDefaultGetter(extractRhs(vdefs(inamed))) => None
+            /*     named     */ case ((arg, inamed), ipos) => Some(Arg(extractRhs(vdefs(inamed)), ipos, inamed))
+          })
+          if (indexed.forall(_.inamed == -1)) indexed.map(_.tree)
+          else indexed.sortBy(_.inamed).map(arg => AssignOrNamedArg(Ident(arg.param.name), arg.tree))
+        }
+        def loop(tree: Tree, depth: Int): Tree = tree match {
+          case Apply(fun, args) if hasNamesDefaults(args) => treeCopy.Apply(tree, loop(fun, depth - 1), undoNamesDefaults(args, depth))
+          case Apply(fun, args) => treeCopy.Apply(tree, loop(fun, depth - 1), args)
+          case TypeApply(core, targs) => treeCopy.TypeApply(tree, core, targs)
+          case Select(core, name) if qualsym != NoSymbol && core.symbol == qualsym => treeCopy.Select(tree, qual, name)
+          case core => core
+        }
+        if (app.symbol == null || app.symbol == NoSymbol || app.exists(_.isErroneous)) tree
+        else loop(app, depth = argss.length - 1)
+      }
+      super.expand(undoNamesDefaults(desugared))
     }
     override def onSuccess(expanded0: Tree) = {
       // prematurely annotate the tree with a macro expansion attachment
@@ -616,7 +657,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         }
       }
 
-      if (isBlackbox(expandee)) {
+      if (isBlackbox(symbol)) {
         val expanded1 = atPos(enclosingMacroPosition.makeTransparent)(Typed(expanded0, TypeTree(innerPt)))
         typecheck("blackbox typecheck", expanded1, outerPt)
       } else {
@@ -676,7 +717,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       // Thanks to that the materializer can take a look at what's going on and react accordingly.
       val shouldInstantiate = typer.context.undetparams.nonEmpty && !mode.inPolyMode
       if (shouldInstantiate) {
-        if (isBlackbox(expandee)) typer.instantiatePossiblyExpectingUnit(delayed, mode, outerPt)
+        if (isBlackbox(symbol)) typer.instantiatePossiblyExpectingUnit(delayed, mode, outerPt)
         else {
           forced += delayed
           typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), outerPt, keepNothings = false)
