@@ -141,6 +141,10 @@ abstract class SymbolTable extends macros.Universe
     )
   }
 
+  // SI-6879 Keeps track of counters that are supposed to be globally unique
+  //         as opposed to traditional freshers that are unique to compilation units.
+  val globalFreshNameCreator = new FreshNameCreator
+
   /** Dump each symbol to stdout after shutdown.
    */
   final val traceSymbolActivity = sys.props contains "scalac.debug.syms"
