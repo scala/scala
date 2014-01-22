@@ -9,6 +9,10 @@ package internal
 import scala.reflect.internal.util.FreshNameCreator
 
 trait FreshNames { self: Names =>
+  // SI-6879 Keeps track of counters that are supposed to be globally unique
+  //         as opposed to traditional freshers that are unique to compilation units.
+  val globalFreshNameCreator = new FreshNameCreator
+
   // default fresh name creator used to abstract over currentUnit.fresh and runtime fresh name creator
   def currentFreshNameCreator: FreshNameCreator
 
