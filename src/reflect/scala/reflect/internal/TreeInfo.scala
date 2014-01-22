@@ -868,13 +868,12 @@ abstract class TreeInfo {
       case _ => false
     })
 
-  def isMacroApplication(tree: Tree): Boolean = !tree.isDef && {
-    val sym = tree.symbol
-    sym != null && sym.isTermMacro && !sym.isErroneous
-  }
-
-  def isMacroApplicationOrBlock(tree: Tree): Boolean = tree match {
-    case Block(_, expr) => isMacroApplicationOrBlock(expr)
-    case tree => isMacroApplication(tree)
+  def isMacroApplication(tree: Tree): Boolean = tree match {
+    case Block(_, expr) =>
+      isMacroApplication(expr)
+    case tree =>
+      def symbolOk = tree.symbol != null && tree.symbol.isTermMacro && !tree.symbol.isErroneous
+      def tpeOk = !tree.exists(_.isErroneous)
+      !tree.isDef && symbolOk && tpeOk
   }
 }
