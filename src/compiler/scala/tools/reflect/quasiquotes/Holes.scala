@@ -41,12 +41,14 @@ trait Holes { self: Quasiquotes =>
     (tpe <:< flagsType) || (tpe <:< symbolType)
   protected def isBottomType(tpe: Type) =
     tpe <:< NothingClass.tpe || tpe <:< NullClass.tpe
+  protected def extractIterableTParam(tpe: Type) =
+    IterableTParam.asSeenFrom(tpe, IterableClass)
   protected def stripIterable(tpe: Type, limit: Option[Cardinality] = None): (Cardinality, Type) =
     if (limit.map { _ == NoDot }.getOrElse { false }) (NoDot, tpe)
     else if (tpe != null && !isIterableType(tpe)) (NoDot, tpe)
     else if (isBottomType(tpe)) (NoDot, tpe)
     else {
-      val targ = IterableTParam.asSeenFrom(tpe, IterableClass)
+      val targ = extractIterableTParam(tpe)
       val (card, innerTpe) = stripIterable(targ, limit.map { _.pred })
       (card.succ, innerTpe)
     }
@@ -88,7 +90,7 @@ trait Holes { self: Quasiquotes =>
         else if (isLiftableType(itpe)) lifted(itpe)(tree)
         else global.abort("unreachable")
       if (card == NoDot) inner(strippedTpe)(splicee)
-      else iterated(card, strippedTpe, inner(strippedTpe))(splicee)
+      else iterated(card, splicee, splicee.tpe)
     }
 
     val pos = splicee.pos
@@ -118,21 +120,54 @@ trait Holes { self: Quasiquotes =>
       atPos(tree.pos)(lifted)
     }
 
-    protected def iterated(card: Cardinality, tpe: Type, elementTransform: Tree => Tree = identity)(tree: Tree): Tree = {
-      assert(card != NoDot)
-      def reifyIterable(tree: Tree, n: Cardinality): Tree = {
-        def loop(tree: Tree, n: Cardinality): Tree =
-          if (n == NoDot) elementTransform(tree)
-          else {
-            val x: TermName = c.freshName()
-            val wrapped = reifyIterable(Ident(x), n.pred)
-            val xToWrapped = Function(List(ValDef(Modifiers(PARAM), x, TypeTree(), EmptyTree)), wrapped)
-            Select(Apply(Select(tree, nme.map), List(xToWrapped)), nme.toList)
-          }
-        if (tree.tpe != null && (tree.tpe <:< listTreeType || tree.tpe <:< listListTreeType)) tree
-        else atPos(tree.pos)(loop(tree, n))
+    protected def toList(tree: Tree, tpe: Type): Tree =
+      if (isListType(tpe)) tree
+      else Select(tree, nme.toList)
+
+    protected def mapF(tree: Tree, f: Tree => Tree): Tree =
+      if (f(Ident(TermName("x"))) equalsStructure Ident(TermName("x"))) tree
+      else {
+        val x: TermName = c.freshName()
+        // q"$tree.map { $x => ${f(Ident(x))} }"
+        Apply(Select(tree, nme.map),
+          Function(ValDef(Modifiers(PARAM), x, TypeTree(), EmptyTree) :: Nil,
+            f(Ident(x))) :: Nil)
       }
-      reifyIterable(tree, card)
+
+    protected object IterableType {
+      def unapply(tpe: Type): Option[Type] =
+        if (isIterableType(tpe)) Some(extractIterableTParam(tpe)) else None
+    }
+
+    protected object LiftedType {
+      def unapply(tpe: Type): Option[Tree => Tree] =
+        if (tpe <:< treeType) Some(t => t)
+        else if (isLiftableType(tpe)) Some(lifted(tpe)(_))
+        else None
+    }
+
+    /** Map high-cardinality splice onto an expression that eveluates as a list of given cardinality.
+     *
+     *  All possible combinations of representations are given in the table below:
+     *
+     *    input                          output for T <: Tree          output for T: Liftable
+     *
+     *    ..${x: List[T]}                x                             x.map(lift)
+     *    ..${x: Iterable[T]}            x.toList                      x.toList.map(lift)
+     *
+     *    ...${x: List[List[T]]}         x                             x.map { _.map(lift) } }
+     *    ...${x: List[Iterable[T]}      x.map { _.toList }            x.map { _.toList.map(lift) } }
+     *    ...${x: Iterable[List[T]]}     x.toList                      x.toList.map { _.map(lift) }
+     *    ...${x: Iterable[Iterable[T]]} x.toList { _.toList }         x.toList.map { _.toList.map(lift) }
+     *
+     *  As you can see table is quite repetetive. Middle column is equivalent to the right one with
+     *  lift function equal to identity. Cases with List are equivalent to Iterated ones (due to
+     *  the fact that toList method call is just an identity we can omit it altogether.)
+     */
+    protected def iterated(card: Cardinality, tree: Tree, tpe: Type): Tree = (card, tpe) match {
+      case (DotDot, tpe @ IterableType(LiftedType(lift))) => mapF(toList(tree, tpe), lift)
+      case (DotDotDot, tpe @ IterableType(inner))         => mapF(toList(tree, tpe), t => iterated(DotDot, t, inner))
+      case _                                              => global.abort("unreachable")
     }
   }
 
