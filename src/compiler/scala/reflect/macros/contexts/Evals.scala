@@ -12,7 +12,12 @@ trait Evals {
   private lazy val evalImporter = ru.mkImporter(universe).asInstanceOf[ru.Importer { val from: universe.type }]
 
   def eval[T](expr: Expr[T]): T = {
-    val imported = evalImporter.importTree(expr.tree)
-    evalToolBox.eval(imported).asInstanceOf[T]
+    expr.tree match {
+      case global.Literal(global.Constant(value)) =>
+        value.asInstanceOf[T]
+      case _ =>
+        val imported = evalImporter.importTree(expr.tree)
+        evalToolBox.eval(imported).asInstanceOf[T]
+    }
   }
 }
