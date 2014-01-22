@@ -229,4 +229,43 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     val q"($a, $b) => $_" = q"_ + _"
     assert(a.name != b.name)
   }
+
+  property("SI-7275 a") = test {
+    val t = q"stat1; stat2"
+    assertEqAst(q"..$t", "{stat1; stat2}")
+  }
+
+  property("SI-7275 b") = test {
+    def f(t: Tree) = q"..$t"
+    assertEqAst(f(q"stat1; stat2"), "{stat1; stat2}")
+  }
+
+  property("SI-7275 c1") = test {
+    object O
+    implicit val liftO = Liftable[O.type] { _ => q"foo; bar" }
+    assertEqAst(q"f(..$O)", "f(foo, bar)")
+  }
+
+  property("SI-7275 c2") = test {
+    object O
+    implicit val liftO = Liftable[O.type] { _ => q"{ foo; bar }; { baz; bax }" }
+    assertEqAst(q"f(...$O)", "f(foo, bar)(baz, bax)")
+  }
+
+  property("SI-7275 d") = test {
+    val l = q"a; b" :: q"c; d" :: Nil
+    assertEqAst(q"f(...$l)", "f(a, b)(c, d)")
+    val l2: Iterable[Tree] = l
+    assertEqAst(q"f(...$l2)", "f(a, b)(c, d)")
+  }
+
+  property("SI-7275 e") = test {
+    val t = q"{ a; b }; { c; d }"
+    assertEqAst(q"f(...$t)", "f(a, b)(c, d)")
+  }
+
+  property("SI-7275 e2") = test {
+    val t = q"{ a; b }; c; d"
+    assertEqAst(q"f(...$t)", "f(a, b)(c)(d)")
+  }
 }

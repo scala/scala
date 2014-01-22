@@ -61,6 +61,8 @@ trait BuildUtils { self: SymbolTable =>
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T = { tree.setSymbol(sym); tree }
 
+    def toStats(tree: Tree): List[Tree] = SyntacticBlock.unapply(tree).get
+
     def mkAnnotation(tree: Tree): Tree = tree match {
       case SyntacticNew(Nil, SyntacticApplied(SyntacticTypeApplied(_, _), _) :: Nil, noSelfType, Nil) =>
         tree

@@ -76,8 +76,7 @@ trait Holes { self: Quasiquotes =>
 
   class ApplyHole(card: Cardinality, splicee: Tree) extends Hole {
     val (strippedTpe, tpe): (Type, Type) = {
-      if (stripIterable(splicee.tpe)._1.value < card.value) cantSplice()
-      val (_, strippedTpe) = stripIterable(splicee.tpe, limit = Some(card))
+      val (strippedCard, strippedTpe) = stripIterable(splicee.tpe, limit = Some(card))
       if (isBottomType(strippedTpe)) cantSplice()
       else if (isNativeType(strippedTpe)) (strippedTpe, iterableTypeFromCard(card, strippedTpe))
       else if (isLiftableType(strippedTpe)) (strippedTpe, iterableTypeFromCard(card, treeType))
@@ -120,6 +119,10 @@ trait Holes { self: Quasiquotes =>
       atPos(tree.pos)(lifted)
     }
 
+    protected def toStats(tree: Tree): Tree =
+      // q"$u.build.toStats($tree)"
+      Apply(Select(Select(u, nme.build), nme.toStats), tree :: Nil)
+
     protected def toList(tree: Tree, tpe: Type): Tree =
       if (isListType(tpe)) tree
       else Select(tree, nme.toList)
@@ -154,11 +157,15 @@ trait Holes { self: Quasiquotes =>
      *
      *    ..${x: List[T]}                x                             x.map(lift)
      *    ..${x: Iterable[T]}            x.toList                      x.toList.map(lift)
+     *    ..${x: T}                      toStats(x)                    toStats(lift(x))
      *
      *    ...${x: List[List[T]]}         x                             x.map { _.map(lift) } }
      *    ...${x: List[Iterable[T]}      x.map { _.toList }            x.map { _.toList.map(lift) } }
+     *    ...${x: List[T]}               x.map { toStats(_) }          x.map { toStats(lift(_)) }
      *    ...${x: Iterable[List[T]]}     x.toList                      x.toList.map { _.map(lift) }
      *    ...${x: Iterable[Iterable[T]]} x.toList { _.toList }         x.toList.map { _.toList.map(lift) }
+     *    ...${x: Iterable[T]}           x.toList.map { toStats(_) }   x.toList.map { toStats(lift(_)) }
+     *    ...${x: T}                     toStats(x).map { toStats(_) } toStats(lift(x)).map(toStats)
      *
      *  As you can see table is quite repetetive. Middle column is equivalent to the right one with
      *  lift function equal to identity. Cases with List are equivalent to Iterated ones (due to
@@ -166,7 +173,9 @@ trait Holes { self: Quasiquotes =>
      */
     protected def iterated(card: Cardinality, tree: Tree, tpe: Type): Tree = (card, tpe) match {
       case (DotDot, tpe @ IterableType(LiftedType(lift))) => mapF(toList(tree, tpe), lift)
+      case (DotDot, LiftedType(lift))                     => toStats(lift(tree))
       case (DotDotDot, tpe @ IterableType(inner))         => mapF(toList(tree, tpe), t => iterated(DotDot, t, inner))
+      case (DotDotDot, LiftedType(lift))                  => mapF(toStats(lift(tree)), toStats)
       case _                                              => global.abort("unreachable")
     }
   }
