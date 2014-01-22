@@ -1663,7 +1663,7 @@ TODO:
       <fileset dir="${build-docs.dir}/library"/>
     </copy>
 
-    <copy toDir="${dist.dir}/doc/api" overwrite="true" flatten="true">
+    <copy toDir="${dist.dir}/api" overwrite="true" flatten="true">
       <file file="${scala-xml-javadoc}"/>
       <file file="${scala-parser-combinators-javadoc}"/>
       <file file="${scala-continuations-plugin-javadoc}"/>
