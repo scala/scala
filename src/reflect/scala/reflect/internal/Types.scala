@@ -1988,12 +1988,23 @@ trait Types
       // too little information is known to determine its kind, and
       // it later turns out not to have kind *. See SI-4070.  Only
       // logging it for now.
-      if (sym.typeParams.size != args.size)
+      val tparams = sym.typeParams
+      if (tparams.size != args.size)
         devWarning(s"$this.transform($tp), but tparams.isEmpty and args=$args")
-
-      val GenPolyType(tparams, result) = asSeenFromOwner(tp)
-      assert((tparams eq Nil) || tparams == sym.typeParams, (tparams, sym.typeParams))
-      result.instantiateTypeParams(sym.typeParams, args)
+      def asSeenFromInstantiated(tp: Type) =
+        asSeenFromOwner(tp).instantiateTypeParams(tparams, args)
+      // If we're called with a poly type, and we were to run the `asSeenFrom`, over the entire
+      // type, we can end up with new symbols for the type parameters (clones from TypeMap).
+      // The subsequent substitution of type arguments would fail. This problem showed up during
+      // the fix for SI-8046, however the solution taken there wasn't quite right, and led to
+      // SI-8170.
+      //
+      // Now, we detect the PolyType before both the ASF *and* the substitution, and just operate
+      // on the result type.
+      tp match {
+        case PolyType(`tparams`, result) => PolyType(tparams, asSeenFromInstantiated(result))
+        case _                           => asSeenFromInstantiated(tp)
+      }
     }
 
     // note: does not go through typeRef. There's no need to because
