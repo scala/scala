@@ -1,0 +1,56 @@
+Test.this.one(2, -40) = 42
+Test.this.one(y = -40, x = 2) = 42
+Test.this.one(2, -40) = 42
+Test.this.one(100) = 140
+Test.this.one(y = 100) = -98
+Test.this.one(100) = 140
+Test.this.one() = 42
+Test.this.qualone.one(2, -40) = 42
+Test.this.qualone.one(y = -40, x = 2) = 42
+Test.this.qualone.one(2, -40) = 42
+Test.this.qualone.one(x = 100) = 140
+Test.this.qualone.one(y = 100) = -98
+Test.this.qualone.one(x = 100) = 140
+Test.this.qualone.one() = 42
+Test.this.onezero(2, -40)(1, 2) = 41
+Test.this.onezero(y = -40, x = 2)(z = 3, w = 4) = 41
+Test.this.onezero(2, -40)(5, 6) = 41
+Test.this.onezero(100)(7, 8) = 139
+Test.this.onezero(y = 100)(z = 9, w = 10) = -99
+Test.this.onezero(100)(11, 12) = 139
+Test.this.onezero()(13, 14) = 41
+Test.this.qualonezero.onezero(2, -40)(15, 16) = 41
+Test.this.qualonezero.onezero(y = -40, x = 2)(z = 17, w = 18) = 41
+Test.this.qualonezero.onezero(2, -40)(19, 20) = 41
+Test.this.qualonezero.onezero(x = 100)(z = 21, w = 22) = 139
+Test.this.qualonezero.onezero(y = 100)(z = 23, w = 24) = -99
+Test.this.qualonezero.onezero(x = 100)(z = 25, w = 26) = 139
+Test.this.qualonezero.onezero()(z = 27, w = 28) = 41
+Test.this.zeroone(1, 2)(2, -40) = 41
+Test.this.zeroone(x = 3, y = 4)(w = -40, z = 2) = 41
+Test.this.zeroone(5, 6)(2, -40) = 41
+Test.this.zeroone(x = 7, y = 8)(z = 100) = 139
+Test.this.zeroone(x = 9, y = 10)(w = 100) = -99
+Test.this.zeroone(x = 11, y = 12)(z = 100) = 139
+Test.this.zeroone(x = 13, y = 14)() = 41
+Test.this.qualzeroone.zeroone(15, 16)(2, -40) = 41
+Test.this.qualzeroone.zeroone(x = 17, y = 18)(w = -40, z = 2) = 41
+Test.this.qualzeroone.zeroone(19, 20)(2, -40) = 41
+Test.this.qualzeroone.zeroone(x = 21, y = 22)(z = 100) = 139
+Test.this.qualzeroone.zeroone(x = 23, y = 24)(w = 100) = -99
+Test.this.qualzeroone.zeroone(x = 25, y = 26)(z = 100) = 139
+Test.this.qualzeroone.zeroone(x = 27, y = 28)() = 41
+Test.this.oneone(2, -40)(2, -40) = 84
+Test.this.oneone(y = -40, x = 2)(w = -40, z = 2) = 84
+Test.this.oneone(2, -40)(2, -40) = 84
+Test.this.oneone(x = 100)(z = 100) = 280
+Test.this.oneone(y = 100)(w = 100) = -196
+Test.this.oneone(x = 100)(z = 100) = 280
+Test.this.oneone()() = 84
+Test.this.qualoneone.oneone(2, -40)(2, -40) = 84
+Test.this.qualoneone.oneone(y = -40, x = 2)(w = -40, z = 2) = 84
+Test.this.qualoneone.oneone(2, -40)(2, -40) = 84
+Test.this.qualoneone.oneone(x = 100)(z = 100) = 280
+Test.this.qualoneone.oneone(y = 100)(w = 100) = -196
+Test.this.qualoneone.oneone(x = 100)(z = 100) = 280
+Test.this.qualoneone.oneone()() = 84

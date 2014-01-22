@@ -1,0 +1,55 @@
+Test_2.scala:36: error: positional after named argument.
+  Macros.bar(xs = 2, 3, x = 1)
+                     ^
+Test_2.scala:60: error: when using named arguments, the vararg parameter has to be specified exactly once
+  Macros.baz(y = 2, x = 1)
+            ^
+Test_2.scala:61: error: positional after named argument.
+  Macros.baz(y = 2, x = 1, 3)
+                           ^
+Test_2.scala:62: error: positional after named argument.
+  Macros.baz(y = 2, x = 1, 3, 4)
+                           ^
+Test_2.scala:62: error: positional after named argument.
+  Macros.baz(y = 2, x = 1, 3, 4)
+                              ^
+Test_2.scala:63: error: positional after named argument.
+  Macros.baz(y = 2, x = 1, 3, 4, 5)
+                           ^
+Test_2.scala:63: error: positional after named argument.
+  Macros.baz(y = 2, x = 1, 3, 4, 5)
+                              ^
+Test_2.scala:63: error: positional after named argument.
+  Macros.baz(y = 2, x = 1, 3, 4, 5)
+                                 ^
+Test_2.scala:65: error: positional after named argument.
+  Macros.baz(xs = 3, 4, x = 1, y = 2)
+                     ^
+Test_2.scala:65: error: parameter 'y' is already specified at parameter position 2
+  Macros.baz(xs = 3, 4, x = 1, y = 2)
+                                 ^
+Test_2.scala:66: error: positional after named argument.
+  Macros.baz(xs = 3, 4, 5, x = 1, y = 2)
+                     ^
+Test_2.scala:66: error: positional after named argument.
+  Macros.baz(xs = 3, 4, 5, x = 1, y = 2)
+                        ^
+Test_2.scala:66: error: parameter 'y' is already specified at parameter position 2
+  Macros.baz(xs = 3, 4, 5, x = 1, y = 2)
+                                    ^
+Test_2.scala:72: error: positional after named argument.
+  Macros.baz(xs = 3, 4, y = 1, x = 2)
+                     ^
+Test_2.scala:72: error: parameter 'y' is already specified at parameter position 2
+  Macros.baz(xs = 3, 4, y = 1, x = 2)
+                          ^
+Test_2.scala:73: error: positional after named argument.
+  Macros.baz(xs = 3, 4, 5, y = 1, x = 2)
+                     ^
+Test_2.scala:73: error: positional after named argument.
+  Macros.baz(xs = 3, 4, 5, y = 1, x = 2)
+                        ^
+Test_2.scala:73: error: parameter 'y' is already specified at parameter position 2
+  Macros.baz(xs = 3, 4, 5, y = 1, x = 2)
+                             ^
+18 errors found
