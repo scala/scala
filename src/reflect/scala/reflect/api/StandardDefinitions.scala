@@ -214,6 +214,14 @@ trait StandardDefinitions {
     /** The module symbol of module `scala.Some`. */
     def SomeModule: ModuleSymbol
 
+    /** Function-like api that lets you acess symbol
+     *  of the definition with given arity and also look
+     *  through all known symbols via `seq`.
+     */
+    abstract class VarArityClassApi extends (Int => Symbol) {
+      def seq: Seq[ClassSymbol]
+    }
+
     /** Function-like object that maps arity to symbols for classes `scala.ProductX`.
      *   -  0th element is `Unit`
      *   -  1st element is `Product1`
@@ -222,7 +230,7 @@ trait StandardDefinitions {
      *   - 23nd element is `NoSymbol`
      *   - ...
      */
-    def ProductClass: Int => Symbol
+    def ProductClass: VarArityClassApi
 
     /** Function-like object that maps arity to symbols for classes `scala.FunctionX`.
      *   -  0th element is `Function0`
@@ -232,17 +240,17 @@ trait StandardDefinitions {
      *   - 23nd element is `NoSymbol`
      *   - ...
      */
-    def FunctionClass: Int => Symbol
+    def FunctionClass: VarArityClassApi
 
     /** Function-like object that maps arity to symbols for classes `scala.TupleX`.
      *   -  0th element is `NoSymbol`
-     *   -  1st element is `Product1`
+     *   -  1st element is `Tuple1`
      *   -  ...
-     *   - 22nd element is `Product22`
+     *   - 22nd element is `Tuple22`
      *   - 23nd element is `NoSymbol`
      *   - ...
      */
-    def TupleClass: Int => Symbol
+    def TupleClass: VarArityClassApi
 
     /** Contains Scala primitive value classes:
      *   - Byte

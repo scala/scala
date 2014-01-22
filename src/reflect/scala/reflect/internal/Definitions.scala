@@ -522,7 +522,7 @@ trait Definitions extends api.StandardDefinitions {
     def hasJavaMainMethod(sym: Symbol): Boolean =
       (sym.tpe member nme.main).alternatives exists isJavaMainMethod
 
-    class VarArityClass(name: String, maxArity: Int, countFrom: Int = 0, init: Option[ClassSymbol] = None) extends (Int => Symbol) {
+    class VarArityClass(name: String, maxArity: Int, countFrom: Int = 0, init: Option[ClassSymbol] = None) extends VarArityClassApi {
       private val offset = countFrom - init.size
       private def isDefinedAt(i: Int) = i < seq.length + offset && i >= offset
       val seq: IndexedSeq[ClassSymbol] = (init ++: countFrom.to(maxArity).map { i => getRequiredClass("scala." + name + i) }).toVector
