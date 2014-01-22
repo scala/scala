@@ -2466,10 +2466,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def nameString: String = {
       val name_s = if (settings.debug.value) "" + unexpandedName else unexpandedName.dropLocal.decode
-      val id_s   = if (settings.uniqid.value) "#" + id else ""
       val kind_s = if (settings.Yshowsymkinds.value) "#" + abbreviatedKindString else ""
 
-      name_s + id_s + kind_s
+      name_s + idString + kind_s
     }
 
     def fullNameString: String = {
