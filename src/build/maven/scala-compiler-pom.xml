@@ -39,7 +39,7 @@
       <artifactId>scala-reflect</artifactId>
       <version>@VERSION@</version>
     </dependency>
-    <!-- TODO modularize compiler: these dependencies will disappear then the compiler is modularized -->
+    <!-- TODO modularize compiler: these dependencies will disappear when the compiler is modularized -->
     <dependency> <!-- for scala-compiler-doc -->
       <groupId>org.scala-lang.modules</groupId>
       <artifactId>scala-xml_@SCALA_BINARY_VERSION@</artifactId>
@@ -57,17 +57,6 @@
       <optional>true</optional>
     </dependency>
   </dependencies>
-  <distributionManagement>
-    <repository>
-      <id>scala-tools.org</id>
-      <url>@RELEASE_REPOSITORY@</url>
-    </repository>
-    <snapshotRepository>
-      <id>scala-tools.org</id>
-      <url>@SNAPSHOT_REPOSITORY@</url>
-      <uniqueVersion>false</uniqueVersion>
-    </snapshotRepository>
-  </distributionManagement>
   <developers>
     <developer>
       <id>lamp</id>
