@@ -178,9 +178,9 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
     }
   }
 
-  def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes, settings.uniqid, settings.Yshowsymkinds)
-  def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes, settings.uniqid, settings.Yshowsymkinds)
-  def asCompactDebugString(t: Tree): String = render(t, newCompactTreePrinter, true, true, true)
+  def asString(t: Tree): String = render(t, newStandardTreePrinter, settings.printtypes, settings.uniqid, settings.Yshowsymowners, settings.Yshowsymkinds)
+  def asCompactString(t: Tree): String = render(t, newCompactTreePrinter, settings.printtypes, settings.uniqid, settings.Yshowsymowners, settings.Yshowsymkinds)
+  def asCompactDebugString(t: Tree): String = render(t, newCompactTreePrinter, true, true, true, true)
 
   def newStandardTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newCompactTreePrinter(writer: PrintWriter): CompactTreePrinter = new CompactTreePrinter(writer)
