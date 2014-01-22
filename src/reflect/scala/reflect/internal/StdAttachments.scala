@@ -36,6 +36,10 @@ trait StdAttachments {
    */
   case object ForAttachment extends PlainAttachment
 
+  /** Identifies unit constants which were inserted by the compiler.
+   */
+  case object SyntheticUnitAttachment extends PlainAttachment
+
   /** Untyped list of subpatterns attached to selector dummy. */
   case class SubpatternsAttachment(patterns: List[Tree])
 }

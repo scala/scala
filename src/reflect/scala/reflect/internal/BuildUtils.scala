@@ -385,6 +385,8 @@ trait BuildUtils { self: SymbolTable =>
       def apply(stats: List[Tree]): Tree = gen.mkBlock(stats)
 
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
+        case EmptyTree => Some(Nil)
+        case self.Block(stats, expr) if expr.hasAttachment[SyntheticUnitAttachment.type] => Some(stats)
         case self.Block(stats, expr) => Some(stats :+ expr)
         case _ if tree.isTerm => Some(tree :: Nil)
         case _ => None
