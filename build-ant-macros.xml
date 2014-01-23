@@ -23,15 +23,35 @@
     </sequential>
   </macrodef>
 
+  <!-- Set a property @{name}.cross to the actual cross suffix that should be
+	used when resolving the module "@{name}". If the (user-supplied)
+	@{name}.cross.suffix property exists then use that value, otherwise use
+	"_${scala.binary.version}". -->
+  <macrodef name="prepareCross">
+    <attribute name="name" />
+    <sequential>
+      <if>
+        <isset property="@{name}.cross.suffix" />
+        <then>
+          <property name="@{name}.cross" value="${@{name}.cross.suffix}" />
+        </then>
+        <else>
+          <property name="@{name}.cross" value="_${scala.binary.version}" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+
   <!-- Set property named @{name} to the jar resolved as @{jar}_${scala.binary.version}:jar.
            @{jar}_${scala.binary.version} must be a maven dependency. -->
   <macrodef name="propertyForCrossedArtifact">
     <attribute name="name"/>
     <attribute name="jar"/>
+    <attribute name="suffix" default="${@{name}.cross}"/>
     <sequential>
-      <readProperty name="@{name}" property="@{jar}_${scala.binary.version}:jar"/>
-      <readProperty name="@{name}-sources" property="@{jar}_${scala.binary.version}:java-source:sources"/>
-      <readProperty name="@{name}-javadoc" property="@{jar}_${scala.binary.version}:java-source:javadoc"/>
+      <readProperty name="@{name}" property="@{jar}@{suffix}:jar"/>
+      <readProperty name="@{name}-sources" property="@{jar}@{suffix}:java-source:sources"/>
+      <readProperty name="@{name}-javadoc" property="@{jar}@{suffix}:java-source:javadoc"/>
     </sequential>
   </macrodef>
 
