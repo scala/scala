@@ -1,0 +1,4 @@
+t8092.scala:3: error: Bad format: java.util.IllegalFormatPrecisionException: 2
+  def k = f"${0x1234}%.2x"  // DNC
+          ^
+one error found

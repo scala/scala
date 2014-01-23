@@ -155,6 +155,54 @@ abstract class MacroImplementations {
     }
 
     val fstring = bldr.toString
+
+    // Attempt to verify the format string
+    def checkFormat(f: String) = {
+      import java.lang.reflect.InvocationTargetException
+      import java.util.{ Formatter, IllegalFormatException }
+      // dummy values when calling format to verify the string
+      def defaultOf(t: Tree): Any = t.tpe.typeSymbol match {
+        case UnitClass    => ()
+        case BooleanClass => false
+        case FloatClass   => 0.0f
+        case DoubleClass  => 0.0d
+        case ByteClass    => 0.toByte
+        case ShortClass   => 0.toShort
+        case IntClass     => 0
+        case LongClass    => 0L
+        case CharClass    => 0.toChar
+        case _            => new AnyRef
+      }
+      // try the format string with arbitrary default values
+      def attemptApplyingDefaults(s: String): Boolean = {
+        s.format(args map defaultOf: _*)
+        true
+      }
+      /** Attempt to verify the format string by invoking
+       *  the private `parse` method, available on OpenJDK.
+       */
+      def attemptFormatParse(s: String): Boolean = {
+        try {
+          val m = classOf[Formatter].getDeclaredMethod("parse", classOf[String])
+          m setAccessible true
+          m.invoke(new Formatter, s)
+          true
+        } catch {
+          case e: InvocationTargetException if e.getCause.isInstanceOf[IllegalFormatException] =>
+            throw e.getCause
+          case _: InvocationTargetException | _: NoSuchMethodException => false
+        }
+      }
+      def msg(e: Throwable) = s"Bad format: ${e.getClass.getName}: ${e.getMessage}"
+      try {
+        if (!c.hasErrors && (f contains '%') && !attemptFormatParse(f) && !attemptApplyingDefaults(f))
+          c.warning(c.macroApplication.pos, s"Could not verify format `$f`")
+      } catch {
+        case e: IllegalFormatException => c.error(c.macroApplication.pos, msg(e))
+      }
+    }
+    checkFormat(fstring)
+
 //  val expr = c.reify(fstring.format((ids.map(id => Expr(id).eval)) : _*))
 //  https://issues.scala-lang.org/browse/SI-5824, therefore
     val expr =
