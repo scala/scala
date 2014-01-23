@@ -189,7 +189,7 @@ trait Reifiers { self: Quasiquotes =>
         mirrorBuildCall(nme.SyntacticBlock, tree)
       case Block(Nil, other) =>
         reifyTree(other)
-      case SyntacticBlock(stats) if stats.size > 1 =>
+      case SyntacticBlock(stats @ (_ :: _ :: _)) =>
         reifyBuildCall(nme.SyntacticBlock, stats)
       case Try(block, catches, finalizer) =>
         reifyBuildCall(nme.SyntacticTry, block, catches, finalizer)
