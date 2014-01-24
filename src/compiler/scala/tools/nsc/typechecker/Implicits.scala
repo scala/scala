@@ -615,23 +615,7 @@ trait Implicits {
               atPos(itree0.pos)(Apply(itree1, List(Ident("<argument>") setType approximate(arg1)))),
               EXPRmode,
               approximate(arg2)
-            ) match {
-              // try to infer implicit parameters immediately in order to:
-              //   1) guide type inference for implicit views
-              //   2) discard ineligible views right away instead of risking spurious ambiguous implicits
-              //
-              // this is an improvement of the state of the art that brings consistency to implicit resolution rules
-              // (and also helps fundep materialization to be applicable to implicit views)
-              //
-              // there's one caveat though. we need to turn this behavior off for scaladoc
-              // because scaladoc usually doesn't know the entire story
-              // and is just interested in views that are potentially applicable
-              // for instance, if we have `class C[T]` and `implicit def conv[T: Numeric](c: C[T]) = ???`
-              // then Scaladoc will give us something of type `C[T]`, and it would like to know
-              // that `conv` is potentially available under such and such conditions
-              case tree if isImplicitMethodType(tree.tpe) && !isScalaDoc => applyImplicitArgs(tree)
-              case tree => tree
-            }
+            )
           case _ => fallback
         }
         context.firstError match { // using match rather than foreach to avoid non local return.
