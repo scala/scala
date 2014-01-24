@@ -51,6 +51,8 @@ abstract class MutableSettings extends AbsSettings {
 
   def Yrecursion: IntSetting
   def maxClassfileName: IntSetting
+
+  def isScala211: Boolean
 }
 
 object MutableSettings {
