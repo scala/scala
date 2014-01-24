@@ -170,7 +170,12 @@ trait Parsers { self: Quasiquotes =>
   }
 
   object TypeParser extends Parser {
-    def entryPoint = _.typ()
+    def entryPoint = { parser =>
+      if (parser.in.token == EOF)
+        TypeTree()
+      else
+        parser.typ()
+    }
   }
 
   object CaseParser extends Parser {
