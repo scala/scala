@@ -189,7 +189,9 @@ trait Reifiers { self: Quasiquotes =>
         mirrorBuildCall(nme.SyntacticBlock, tree)
       case Block(Nil, other) =>
         reifyTree(other)
-      case SyntacticBlock(stats @ (_ :: _ :: _)) =>
+      // Syntactic block always matches so we have to be careful
+      // not to cause infinite recursion.
+      case block @ SyntacticBlock(stats) if block.isInstanceOf[Block] =>
         reifyBuildCall(nme.SyntacticBlock, stats)
       case Try(block, catches, finalizer) =>
         reifyBuildCall(nme.SyntacticTry, block, catches, finalizer)
