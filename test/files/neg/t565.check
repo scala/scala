@@ -1,5 +1,5 @@
-t565.scala:2: error: only classes can have declared but undefined members
+t565.scala:1: error: object creation impossible, since variable s0 is not defined
 (Note that variables need to be initialized to be defined)
-  var s0: String
-      ^
+object test {
+       ^
 one error found
