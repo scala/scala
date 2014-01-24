@@ -28,7 +28,7 @@ it's important to print the list of AnyVal's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
 constructor AnyVal: ()AnyVal
 method getClass: ()Class[_ <: AnyVal]
-testing AnyVal.<init>: class java.lang.InstantiationException: null
+testing AnyVal.<init>: class scala.ScalaReflectionException: unsupported symbol constructor AnyVal when invoking constructor mirror for scala.AnyVal.<init>(): AnyVal (bound to null)
 testing AnyVal.getClass: class scala.ScalaReflectionException: expected a member of class Integer, you provided method scala.AnyVal.getClass
 ============
 AnyRef

@@ -118,15 +118,16 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
     private def abort(msg: String) = throw new ScalaReflectionException(msg)
 
-    private def ErrorInnerClass(sym: Symbol)                    = abort(s"$sym is an inner class, use reflectClass on an InstanceMirror to obtain its ClassMirror")
-    private def ErrorInnerModule(sym: Symbol)                   = abort(s"$sym is an inner module, use reflectModule on an InstanceMirror to obtain its ModuleMirror")
-    private def ErrorStaticClass(sym: Symbol)                   = abort(s"$sym is a static class, use reflectClass on a RuntimeMirror to obtain its ClassMirror")
-    private def ErrorStaticModule(sym: Symbol)                  = abort(s"$sym is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
-    private def ErrorNotMember(sym: Symbol, owner: Symbol)      = abort(s"expected a member of $owner, you provided ${sym.kindString} ${sym.fullName}")
-    private def ErrorNotField(sym: Symbol)                      = abort(s"expected a field or an accessor method symbol, you provided $sym")
-    private def ErrorNotConstructor(sym: Symbol, owner: Symbol) = abort(s"expected a constructor of $owner, you provided $sym")
-    private def ErrorFree(member: Symbol, freeType: Symbol)     = abort(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a weak type ${freeType.name}")
-    private def ErrorNonExistentField(sym: Symbol)              = abort(
+    private def ErrorInnerClass(sym: Symbol)                      = abort(s"$sym is an inner class, use reflectClass on an InstanceMirror to obtain its ClassMirror")
+    private def ErrorInnerModule(sym: Symbol)                     = abort(s"$sym is an inner module, use reflectModule on an InstanceMirror to obtain its ModuleMirror")
+    private def ErrorStaticClass(sym: Symbol)                     = abort(s"$sym is a static class, use reflectClass on a RuntimeMirror to obtain its ClassMirror")
+    private def ErrorStaticModule(sym: Symbol)                    = abort(s"$sym is a static module, use reflectModule on a RuntimeMirror to obtain its ModuleMirror")
+    private def ErrorNotMember(sym: Symbol, owner: Symbol)        = abort(s"expected a member of $owner, you provided ${sym.kindString} ${sym.fullName}")
+    private def ErrorNotField(sym: Symbol)                        = abort(s"expected a field or an accessor method symbol, you provided $sym")
+    private def ErrorNotConstructor(sym: Symbol, owner: Symbol)   = abort(s"expected a constructor of $owner, you provided $sym")
+    private def ErrorArrayConstructor(sym: Symbol, owner: Symbol) = abort(s"Cannot instantiate arrays with mirrors. Consider using `scala.reflect.ClassTag(<class of element>).newArray(<length>)` instead")
+    private def ErrorFree(member: Symbol, freeType: Symbol)       = abort(s"cannot reflect ${member.kindString} ${member.name}, because it's a member of a weak type ${freeType.name}")
+    private def ErrorNonExistentField(sym: Symbol)                = abort(
       sm"""Scala field ${sym.name} isn't represented as a Java field, neither it has a Java accessor method
           |note that private parameters of class constructors don't get mapped onto fields and/or accessors,
           |unless they are used outside of their declaring constructors.""")
@@ -221,6 +222,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
     private def checkConstructorOf(sym: Symbol, owner: ClassSymbol) {
       if (!sym.isClassConstructor) ErrorNotConstructor(sym, owner)
+      if (owner == ArrayClass) ErrorArrayConstructor(sym, owner)
       ensuringNotFree(sym) {
         if (!owner.info.decls.toList.contains(sym)) ErrorNotConstructor(sym, owner)
       }
@@ -334,53 +336,76 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         }
       }
     }
+
     private abstract class JavaMethodMirror(val symbol: MethodSymbol) extends MethodMirror {
       lazy val jmeth = ensureAccessible(methodToJava(symbol))
-      def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+      lazy val jconstr = ensureAccessible(constructorToJava(symbol))
 
-      def jinvoke(jmeth: jMethod, receiver: Any, args: Seq[Any]): Any = {
-        val result = jinvokeraw(jmeth, receiver, args)
-        if (jmeth.getReturnType == java.lang.Void.TYPE) ()
+      def jinvokeraw(args: Seq[Any]) =
+        if (!symbol.isConstructor) jmeth.invoke(receiver, args.asInstanceOf[Seq[AnyRef]]: _*)
+        else if (receiver == null) jconstr.newInstance(args.asInstanceOf[Seq[AnyRef]]: _*)
+        else jconstr.newInstance((receiver +: args).asInstanceOf[Seq[AnyRef]]: _*)
+      def jinvoke(args: Seq[Any]): Any = {
+        val result = jinvokeraw(args)
+        if (!symbol.isConstructor && jmeth.getReturnType == java.lang.Void.TYPE) ()
         else result
       }
 
-      override def toString = s"method mirror for ${showMethodSig(symbol)} (bound to $receiver)"
+      override def toString = {
+        val what = if (symbol.isConstructor) "constructor mirror" else "method mirror"
+        s"$what for ${showMethodSig(symbol)} (bound to $receiver)"
+      }
     }
 
     private class JavaVanillaMethodMirror(val receiver: Any, symbol: MethodSymbol)
             extends JavaMethodMirror(symbol) {
       def bind(newReceiver: Any) = new JavaVanillaMethodMirror(newReceiver, symbol)
-      def apply(args: Any*): Any = jinvoke(jmeth, receiver, args)
+      def apply(args: Any*): Any = jinvoke(args)
     }
 
     private class JavaVanillaMethodMirror0(receiver: Any, symbol: MethodSymbol)
             extends JavaVanillaMethodMirror(receiver, symbol) {
       override def bind(newReceiver: Any) = new JavaVanillaMethodMirror0(newReceiver, symbol)
-      override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver)
+      override def jinvokeraw(args: Seq[Any]) =
+        if (!symbol.isConstructor) jmeth.invoke(receiver)
+        else if (receiver == null) jconstr.newInstance()
+        else jconstr.newInstance(receiver.asInstanceOf[AnyRef])
     }
 
     private class JavaVanillaMethodMirror1(receiver: Any, symbol: MethodSymbol)
             extends JavaVanillaMethodMirror(receiver, symbol) {
       override def bind(newReceiver: Any) = new JavaVanillaMethodMirror1(newReceiver, symbol)
-      override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef])
+      override def jinvokeraw(args: Seq[Any]) =
+        if (!symbol.isConstructor) jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef])
+        else if (receiver == null) jconstr.newInstance(args(0).asInstanceOf[AnyRef])
+        else jconstr.newInstance(receiver.asInstanceOf[AnyRef], args(0).asInstanceOf[AnyRef])
     }
 
     private class JavaVanillaMethodMirror2(receiver: Any, symbol: MethodSymbol)
             extends JavaVanillaMethodMirror(receiver, symbol) {
       override def bind(newReceiver: Any) = new JavaVanillaMethodMirror2(newReceiver, symbol)
-      override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef])
+      override def jinvokeraw(args: Seq[Any]) =
+        if (!symbol.isConstructor) jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef])
+        else if (receiver == null) jconstr.newInstance(args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef])
+        else jconstr.newInstance(receiver.asInstanceOf[AnyRef], args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef])
     }
 
     private class JavaVanillaMethodMirror3(receiver: Any, symbol: MethodSymbol)
             extends JavaVanillaMethodMirror(receiver, symbol) {
       override def bind(newReceiver: Any) = new JavaVanillaMethodMirror3(newReceiver, symbol)
-      override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef])
+      override def jinvokeraw(args: Seq[Any]) =
+        if (!symbol.isConstructor) jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef])
+        else if (receiver == null) jconstr.newInstance(args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef])
+        else jconstr.newInstance(receiver.asInstanceOf[AnyRef], args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef])
     }
 
     private class JavaVanillaMethodMirror4(receiver: Any, symbol: MethodSymbol)
             extends JavaVanillaMethodMirror(receiver, symbol) {
       override def bind(newReceiver: Any) = new JavaVanillaMethodMirror4(newReceiver, symbol)
-      override def jinvokeraw(jmeth: jMethod, receiver: Any, args: Seq[Any]) = jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef], args(3).asInstanceOf[AnyRef])
+      override def jinvokeraw(args: Seq[Any]) =
+        if (!symbol.isConstructor) jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef], args(3).asInstanceOf[AnyRef])
+        else if (receiver == null) jconstr.newInstance(args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef], args(3).asInstanceOf[AnyRef])
+        else jconstr.newInstance(receiver.asInstanceOf[AnyRef], args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef], args(3).asInstanceOf[AnyRef])
     }
 
     // caches MethodSymbol metadata, so that we minimize the work that needs to be done during Mirror.apply
@@ -414,7 +439,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
           else if (isValueClass(i)) args1(i) = paramUnboxers(i).invoke(arg)
           i += 1
         }
-        jinvoke(jmeth, receiver, args1)
+        jinvoke(args1)
       }
     }
 
@@ -444,7 +469,10 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         def invokePrimitiveMethod = {
           val jmeths = classOf[BoxesRunTime].getDeclaredMethods.filter(_.getName == nme.primitiveMethodName(symbol.name).toString)
           assert(jmeths.length == 1, jmeths.toList)
-          jinvoke(jmeths.head, null, objReceiver +: objArgs)
+          val jmeth = jmeths.head
+          val result = jmeth.invoke(null, (objReceiver +: objArgs).asInstanceOf[Seq[AnyRef]]: _*)
+          if (jmeth.getReturnType == java.lang.Void.TYPE) ()
+          else result
         }
 
         symbol match {
@@ -475,23 +503,6 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       }
     }
 
-    private class JavaConstructorMirror(val outer: AnyRef, val symbol: MethodSymbol)
-            extends MethodMirror {
-      def bind(newReceiver: Any) = new JavaConstructorMirror(newReceiver.asInstanceOf[AnyRef], symbol)
-      override val receiver = outer
-      lazy val jconstr = ensureAccessible(constructorToJava(symbol))
-      def apply(args: Any*): Any = {
-        if (symbol.owner == ArrayClass)
-          abort("Cannot instantiate arrays with mirrors. Consider using `scala.reflect.ClassTag(<class of element>).newArray(<length>)` instead")
-
-        val effectiveArgs =
-          if (outer == null) args.asInstanceOf[Seq[AnyRef]]
-          else outer +: args.asInstanceOf[Seq[AnyRef]]
-        jconstr.newInstance(effectiveArgs: _*)
-      }
-      override def toString = s"constructor mirror for ${showMethodSig(symbol)} (bound to $outer)"
-    }
-
     private abstract class JavaTemplateMirror
             extends TemplateMirror {
       def outer: AnyRef
@@ -504,7 +515,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       def isStatic = false
       def reflectConstructor(constructor: MethodSymbol) = {
         checkConstructorOf(constructor, symbol)
-        new JavaConstructorMirror(outer, constructor)
+        mkJavaMethodMirror(outer, constructor)
       }
       override def toString = s"class mirror for ${symbol.fullName} (bound to $outer)"
     }
