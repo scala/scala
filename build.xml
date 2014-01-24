@@ -421,8 +421,12 @@ TODO:
     <condition property="has.java7">
         <equals arg1="${ant.java.version}" arg2="1.7"/>
     </condition>
+    <condition property="has.java8">
+        <equals arg1="${ant.java.version}" arg2="1.8"/>
+    </condition>
     <condition property="has.unsupported.jdk">
        <not><or>
+         <isset property="has.java8" />
          <isset property="has.java7" />
          <isset property="has.java6" />
        </or></not>
