@@ -475,14 +475,17 @@ trait Scanners extends ScannersCommon {
             if (token == INTERPOLATIONID) {
               nextRawChar()
               if (ch == '\"') {
-                nextRawChar()
-                if (ch == '\"') {
+                val lookahead = lookaheadReader
+                lookahead.nextChar()
+                if (lookahead.ch == '\"') {
+                  nextRawChar()                        // now eat it
                   offset += 3
                   nextRawChar()
                   getStringPart(multiLine = true)
                   sepRegions = STRINGPART :: sepRegions // indicate string part
                   sepRegions = STRINGLIT :: sepRegions // once more to indicate multi line string part
                 } else {
+                  nextChar()
                   token = STRINGLIT
                   strVal = ""
                 }
