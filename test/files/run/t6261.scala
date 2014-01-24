@@ -2,12 +2,6 @@ import scala.collection.immutable._
 
 object Test extends App {
 
-  def test0() {
-    val m=ListMap(1->2,3->4)
-    if(m.tail ne m.tail)
-      println("ListMap.tail uses a builder, so it is not O(1)")
-  }
-
   def test1() {
     // test that a HashTrieMap with one leaf element is not created!
     val x = HashMap.empty + (1->1) + (2->2)
@@ -92,7 +86,6 @@ object Test extends App {
     // StructureTests.printStructure(z)
     require(z.size == 2 && z.contains(a._1) && z.contains(c._1))
   }
-  test0()
   test1()
   test2()
   test3()
