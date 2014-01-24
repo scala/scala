@@ -38,6 +38,14 @@ meth = method yl_5
 as seen by Scala reflection: def yl_5(ys: List[Y[String]]): List[String]
 as seen by Java reflection: public scala.collection.immutable.List a$.yl_5(scala.collection.immutable.List)
 result = List(5)
+meth = method yni_7
+as seen by Scala reflection: def yni_7(y: => Y[Int]): Int
+as seen by Java reflection: public int a$.yni_7(scala.Function0)
+result = 7
+meth = method yns_8
+as seen by Scala reflection: def yns_8(y: => Y[String]): String
+as seen by Java reflection: public java.lang.String a$.yns_8(scala.Function0)
+result = 8
 meth = method zg_1
 as seen by Scala reflection: def zg_1[T](z: Z[T]): T
 as seen by Java reflection: public java.lang.Object a$.zg_1(Z)
@@ -78,3 +86,11 @@ meth = method zl_5
 as seen by Scala reflection: def zl_5(zs: List[Z[String]]): List[String]
 as seen by Java reflection: public scala.collection.immutable.List a$.zl_5(scala.collection.immutable.List)
 result = List(5)
+meth = method zni_7
+as seen by Scala reflection: def zni_7(z: => Z[Int]): Int
+as seen by Java reflection: public int a$.zni_7(scala.Function0)
+result = 7
+meth = method zns_8
+as seen by Scala reflection: def zns_8(z: => Z[String]): String
+as seen by Java reflection: public java.lang.String a$.zns_8(scala.Function0)
+result = 8
