@@ -28,4 +28,10 @@ object TypeConstructionProps extends QuasiquoteProperties("type construction")  
     val restpe = tq"C"
     assert(tq"..$argtpes => $restpe" ≈ tq"(A, B) => C")
   }
+
+  property("empty tq") = test {
+    val tt: TypeTree = tq" "
+    assert(tt.tpe == null)
+    assert(tt.original == null)
+  }
 }

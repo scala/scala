@@ -289,7 +289,7 @@ trait BuildUtils { self: SymbolTable =>
 
     object SyntacticObjectDef extends SyntacticObjectDefExtractor {
       def apply(mods: Modifiers, name: TermName, earlyDefs: List[Tree],
-                parents: List[Tree], selfType: Tree, body: List[Tree]) =
+                parents: List[Tree], selfType: Tree, body: List[Tree]): ModuleDef =
         ModuleDef(mods, name, gen.mkTemplate(parents, mkSelfType(selfType), NoMods, Nil, earlyDefs ::: body))
 
       def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
@@ -302,7 +302,7 @@ trait BuildUtils { self: SymbolTable =>
 
     object SyntacticPackageObjectDef extends SyntacticPackageObjectDefExtractor {
       def apply(name: TermName, earlyDefs: List[Tree],
-                parents: List[Tree], selfType: Tree, body: List[Tree]): Tree =
+                parents: List[Tree], selfType: Tree, body: List[Tree]): PackageDef =
         gen.mkPackageObject(SyntacticObjectDef(NoMods, name, earlyDefs, parents, selfType, body))
 
       def unapply(tree: Tree): Option[(TermName, List[Tree], List[Tree], ValDef, List[Tree])] = tree match {

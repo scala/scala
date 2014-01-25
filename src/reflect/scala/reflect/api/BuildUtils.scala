@@ -145,7 +145,7 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     trait SyntacticObjectDefExtractor {
       def apply(mods: Modifiers, name: TermName, earlyDefs: List[Tree],
-                parents: List[Tree], selfType: Tree, body: List[Tree]): Tree
+                parents: List[Tree], selfType: Tree, body: List[Tree]): ModuleDef
       def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[Tree], ValDef, List[Tree])]
     }
 
@@ -153,7 +153,7 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     trait SyntacticPackageObjectDefExtractor {
       def apply(name: TermName, earlyDefs: List[Tree],
-                parents: List[Tree], selfType: Tree, body: List[Tree]): Tree
+                parents: List[Tree], selfType: Tree, body: List[Tree]): PackageDef
       def unapply(tree: Tree): Option[(TermName, List[Tree], List[Tree], ValDef, List[Tree])]
     }
 
