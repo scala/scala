@@ -48,4 +48,5 @@ private[reflect] class Settings extends MutableSettings {
 
   val Yrecursion        = new IntSetting(0)
   val maxClassfileName  = new IntSetting(255)
+  def isScala211        = true
 }
