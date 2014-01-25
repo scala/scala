@@ -1,20 +1,24 @@
+
+object Test extends org.scalacheck.Properties("CommentFactory") with scala.tools.nsc.doc.Test
+
+package scala.tools.nsc.doc {
+
 import org.scalacheck._
 import org.scalacheck.Prop._
 
 import scala.tools.nsc.Global
-import scala.tools.nsc.doc
 import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.model.diagram._
 
-class Factory(val g: Global, val s: doc.Settings)
-  extends doc.model.ModelFactory(g, s) {
+class Factory(val g: ScaladocGlobal, val s: Settings)
+  extends ModelFactory(g, s) {
   thisFactory: Factory
   with ModelFactoryImplicitSupport
   with ModelFactoryTypeSupport
   with DiagramFactory
   with CommentFactory
-  with doc.model.TreeFactory
+  with TreeFactory
   with MemberLookup =>
 
   def strip(c: Comment): Option[Inline] = {
@@ -31,17 +35,17 @@ class Factory(val g: Global, val s: doc.Settings)
     parse(s, "", scala.tools.nsc.util.NoPosition, null).body
 }
 
-object Test extends Properties("CommentFactory") {
+trait Test { _: Properties =>
   val factory = {
-    val settings = new doc.Settings((str: String) => {})
+    val settings = new Settings((str: String) => {})
     val reporter = new scala.tools.nsc.reporters.ConsoleReporter(settings)
-    val g = new Global(settings, reporter)
+    val g = new ScaladocGlobal(settings, reporter)
     (new Factory(g, settings)
       with ModelFactoryImplicitSupport
       with ModelFactoryTypeSupport
       with DiagramFactory
       with CommentFactory
-      with doc.model.TreeFactory
+      with TreeFactory
       with MemberLookup)
   }
 
@@ -166,4 +170,5 @@ object Test extends Properties("CommentFactory") {
     }
   }
 
+}
 }

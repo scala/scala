@@ -66,6 +66,11 @@ object ScalaDoc extends ScalaDoc {
     )
   }
 
+  /** System properties for turning on debug. */
+  trait DebugSettings {
+    def isDebugPruning = sys.BooleanProp keyExists "scala.doc.debug.pruning"
+  }
+
   def main(args: Array[String]): Unit = sys exit {
     if (process(args)) 0 else 1
   }
