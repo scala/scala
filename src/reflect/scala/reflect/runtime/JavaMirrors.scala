@@ -249,7 +249,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       }
       def reflectMethod(method: MethodSymbol): MethodMirror = {
         checkMemberOf(method, symbol)
-        mkJavaMethodMirror(instance, method)
+        mkMethodMirror(instance, method)
       }
       def reflectClass(cls: ClassSymbol): ClassMirror = {
         if (cls.isStatic) ErrorStaticClass(cls)
@@ -264,16 +264,35 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       override def toString = s"instance mirror for $instance"
     }
 
-    private class JavaFieldMirror(val receiver: Any, val symbol: TermSymbol)
+    // caches value class metadata, so that we minimize the work that needs to be done during Mirror.apply
+    private class DerivedValueClassMetadata(info: Type) {
+      val symbol = info.typeSymbol
+      val isDerivedValueClass = symbol.isDerivedValueClass
+      lazy val boxer = runtimeClass(symbol.toType).getDeclaredConstructors().head
+      lazy val unboxer = {
+        val fields @ (field :: _) = symbol.toType.declarations.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList
+        assert(fields.length == 1, s"$symbol: $fields")
+        runtimeClass(symbol.asClass).getDeclaredMethod(field.name.toString)
+      }
+    }
+
+    private class JavaFieldMirror(val receiver: Any, val symbol: TermSymbol, metadata: DerivedValueClassMetadata)
             extends FieldMirror {
+      def this(receiver: Any, symbol: TermSymbol) = this(receiver, symbol, new DerivedValueClassMetadata(symbol.info))
+      def bind(newReceiver: Any) = new JavaFieldMirror(newReceiver, symbol, metadata)
+      import metadata._
+
       lazy val jfield = ensureAccessible(fieldToJava(symbol))
-      def get = jfield get receiver
+      def get = {
+        val value = jfield get receiver
+        if (isDerivedValueClass) boxer.newInstance(value) else value
+      }
       def set(value: Any) = {
         // it appears useful to be able to set values of vals, therefore I'm disabling this check
         // if (!symbol.isMutable) ErrorSetImmutableField(symbol)
-        jfield.set(receiver, value)
+        jfield.set(receiver, if (isDerivedValueClass) unboxer.invoke(value) else value)
       }
-      def bind(newReceiver: Any) = new JavaFieldMirror(newReceiver, symbol)
+
       override def toString = s"field mirror for ${symbol.fullName} (bound to $receiver)"
     }
 
@@ -321,9 +340,9 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     // that's because we want to have decent performance
     // therefore we move special cases into separate subclasses
     // rather than have them on a hot path them in a unified implementation of the `apply` method
-    private def mkJavaMethodMirror[T: ClassTag](receiver: T, symbol: MethodSymbol): JavaMethodMirror = {
+    private def mkMethodMirror[T: ClassTag](receiver: T, symbol: MethodSymbol): MethodMirror = {
       def existsParam(pred: Type => Boolean) = symbol.paramss.flatten.map(_.info).exists(pred)
-      if (isBytecodelessMethod(symbol)) new JavaBytecodelessMethodMirror(receiver, symbol)
+      if (isBytecodelessMethod(symbol)) new BytecodelessMethodMirror(receiver, symbol)
       else if (existsParam(isByNameParam) || existsParam(isValueClassParam)) new JavaTransformingMethodMirror(receiver, symbol)
       else {
         symbol.paramss.flatten.length match {
@@ -337,7 +356,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       }
     }
 
-    private abstract class JavaMethodMirror(val symbol: MethodSymbol) extends MethodMirror {
+    private abstract class JavaMethodMirror(val symbol: MethodSymbol, protected val ret: DerivedValueClassMetadata) extends MethodMirror {
       lazy val jmeth = ensureAccessible(methodToJava(symbol))
       lazy val jconstr = ensureAccessible(constructorToJava(symbol))
 
@@ -348,6 +367,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       def jinvoke(args: Seq[Any]): Any = {
         val result = jinvokeraw(args)
         if (!symbol.isConstructor && jmeth.getReturnType == java.lang.Void.TYPE) ()
+        else if (!symbol.isConstructor && ret.isDerivedValueClass) ret.boxer.newInstance(result.asInstanceOf[AnyRef])
         else result
       }
 
@@ -357,51 +377,57 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       }
     }
 
-    private class JavaVanillaMethodMirror(val receiver: Any, symbol: MethodSymbol)
-            extends JavaMethodMirror(symbol) {
-      def bind(newReceiver: Any) = new JavaVanillaMethodMirror(newReceiver, symbol)
+    private class JavaVanillaMethodMirror(val receiver: Any, symbol: MethodSymbol, ret: DerivedValueClassMetadata)
+            extends JavaMethodMirror(symbol, ret) {
+      def this(receiver: Any, symbol: MethodSymbol) = this(receiver, symbol, new DerivedValueClassMetadata(symbol.returnType))
+      def bind(newReceiver: Any) = new JavaVanillaMethodMirror(newReceiver, symbol, ret)
       def apply(args: Any*): Any = jinvoke(args)
     }
 
-    private class JavaVanillaMethodMirror0(receiver: Any, symbol: MethodSymbol)
-            extends JavaVanillaMethodMirror(receiver, symbol) {
-      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror0(newReceiver, symbol)
+    private class JavaVanillaMethodMirror0(receiver: Any, symbol: MethodSymbol, ret: DerivedValueClassMetadata)
+            extends JavaVanillaMethodMirror(receiver, symbol, ret) {
+      def this(receiver: Any, symbol: MethodSymbol) = this(receiver, symbol, new DerivedValueClassMetadata(symbol.returnType))
+      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror0(newReceiver, symbol, ret)
       override def jinvokeraw(args: Seq[Any]) =
         if (!symbol.isConstructor) jmeth.invoke(receiver)
         else if (receiver == null) jconstr.newInstance()
         else jconstr.newInstance(receiver.asInstanceOf[AnyRef])
     }
 
-    private class JavaVanillaMethodMirror1(receiver: Any, symbol: MethodSymbol)
-            extends JavaVanillaMethodMirror(receiver, symbol) {
-      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror1(newReceiver, symbol)
+    private class JavaVanillaMethodMirror1(receiver: Any, symbol: MethodSymbol, ret: DerivedValueClassMetadata)
+            extends JavaVanillaMethodMirror(receiver, symbol, ret) {
+      def this(receiver: Any, symbol: MethodSymbol) = this(receiver, symbol, new DerivedValueClassMetadata(symbol.returnType))
+      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror1(newReceiver, symbol, ret)
       override def jinvokeraw(args: Seq[Any]) =
         if (!symbol.isConstructor) jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef])
         else if (receiver == null) jconstr.newInstance(args(0).asInstanceOf[AnyRef])
         else jconstr.newInstance(receiver.asInstanceOf[AnyRef], args(0).asInstanceOf[AnyRef])
     }
 
-    private class JavaVanillaMethodMirror2(receiver: Any, symbol: MethodSymbol)
-            extends JavaVanillaMethodMirror(receiver, symbol) {
-      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror2(newReceiver, symbol)
+    private class JavaVanillaMethodMirror2(receiver: Any, symbol: MethodSymbol, ret: DerivedValueClassMetadata)
+            extends JavaVanillaMethodMirror(receiver, symbol, ret) {
+      def this(receiver: Any, symbol: MethodSymbol) = this(receiver, symbol, new DerivedValueClassMetadata(symbol.returnType))
+      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror2(newReceiver, symbol, ret)
       override def jinvokeraw(args: Seq[Any]) =
         if (!symbol.isConstructor) jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef])
         else if (receiver == null) jconstr.newInstance(args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef])
         else jconstr.newInstance(receiver.asInstanceOf[AnyRef], args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef])
     }
 
-    private class JavaVanillaMethodMirror3(receiver: Any, symbol: MethodSymbol)
-            extends JavaVanillaMethodMirror(receiver, symbol) {
-      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror3(newReceiver, symbol)
+    private class JavaVanillaMethodMirror3(receiver: Any, symbol: MethodSymbol, ret: DerivedValueClassMetadata)
+            extends JavaVanillaMethodMirror(receiver, symbol, ret) {
+      def this(receiver: Any, symbol: MethodSymbol) = this(receiver, symbol, new DerivedValueClassMetadata(symbol.returnType))
+      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror3(newReceiver, symbol, ret)
       override def jinvokeraw(args: Seq[Any]) =
         if (!symbol.isConstructor) jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef])
         else if (receiver == null) jconstr.newInstance(args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef])
         else jconstr.newInstance(receiver.asInstanceOf[AnyRef], args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef])
     }
 
-    private class JavaVanillaMethodMirror4(receiver: Any, symbol: MethodSymbol)
-            extends JavaVanillaMethodMirror(receiver, symbol) {
-      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror4(newReceiver, symbol)
+    private class JavaVanillaMethodMirror4(receiver: Any, symbol: MethodSymbol, ret: DerivedValueClassMetadata)
+            extends JavaVanillaMethodMirror(receiver, symbol, ret) {
+      def this(receiver: Any, symbol: MethodSymbol) = this(receiver, symbol, new DerivedValueClassMetadata(symbol.returnType))
+      override def bind(newReceiver: Any) = new JavaVanillaMethodMirror4(newReceiver, symbol, ret)
       override def jinvokeraw(args: Seq[Any]) =
         if (!symbol.isConstructor) jmeth.invoke(receiver, args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef], args(3).asInstanceOf[AnyRef])
         else if (receiver == null) jconstr.newInstance(args(0).asInstanceOf[AnyRef], args(1).asInstanceOf[AnyRef], args(2).asInstanceOf[AnyRef], args(3).asInstanceOf[AnyRef])
@@ -412,41 +438,40 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     // TODO: vararg is only supported in the last parameter list (SI-6182), so we don't need to worry about the rest for now
     private class MethodMetadata(symbol: MethodSymbol) {
       private val params = symbol.paramss.flatten.toArray
+      private val vcMetadata = params.map(p => new DerivedValueClassMetadata(p.info))
       val isByName = params.map(p => isByNameParam(p.info))
-      val isValueClass = params.map(p => isValueClassParam(p.info))
-      private def valueClassUnboxer(p: Symbol) = {
-        val fields @ (field :: _) = p.info.declarations.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList
-        assert(fields.length == 1, s"$p: $fields")
-        runtimeClass(p.info).getDeclaredMethod(field.name.toString)
-      }
-      val paramUnboxers = params.map(p => if (isValueClassParam(p.info)) valueClassUnboxer(p) else null)
+      def isDerivedValueClass(i: Int) = vcMetadata(i).isDerivedValueClass
+      def paramUnboxers(i: Int) = vcMetadata(i).unboxer
       val paramCount = params.length
+      val ret = new DerivedValueClassMetadata(symbol.returnType)
     }
 
     private class JavaTransformingMethodMirror(val receiver: Any, symbol: MethodSymbol, metadata: MethodMetadata)
-            extends JavaMethodMirror(symbol) {
+            extends JavaMethodMirror(symbol, metadata.ret) {
       def this(receiver: Any, symbol: MethodSymbol) = this(receiver, symbol, new MethodMetadata(symbol))
       override def bind(newReceiver: Any) = new JavaTransformingMethodMirror(newReceiver, symbol, metadata)
+      import metadata._
 
       def apply(args: Any*): Any = {
-        import metadata._
         val args1 = new Array[Any](args.length)
         var i = 0
         while (i < args1.length) {
           val arg = args(i)
           if (i >= paramCount) args1(i) = arg // don't transform varargs
           else if (isByName(i)) args1(i) = () => arg // don't transform by-name value class params
-          else if (isValueClass(i)) args1(i) = paramUnboxers(i).invoke(arg)
+          else if (isDerivedValueClass(i)) args1(i) = paramUnboxers(i).invoke(arg)
           i += 1
         }
         jinvoke(args1)
       }
     }
 
-    private class JavaBytecodelessMethodMirror[T: ClassTag](val receiver: T, symbol: MethodSymbol)
-            extends JavaMethodMirror(symbol) {
-       def bind(newReceiver: Any) = new JavaBytecodelessMethodMirror(newReceiver.asInstanceOf[T], symbol)
-       def apply(args: Any*): Any = {
+    private class BytecodelessMethodMirror[T: ClassTag](val receiver: T, val symbol: MethodSymbol)
+            extends MethodMirror {
+      def bind(newReceiver: Any) = new BytecodelessMethodMirror(newReceiver.asInstanceOf[T], symbol)
+      override def toString = s"bytecodeless method mirror for ${showMethodSig(symbol)} (bound to $receiver)"
+
+      def apply(args: Any*): Any = {
         // checking type conformance is too much of a hassle, so we don't do it here
         // actually it's not even necessary, because we manually dispatch arguments below
         val params = symbol.paramss.flatten
@@ -515,7 +540,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       def isStatic = false
       def reflectConstructor(constructor: MethodSymbol) = {
         checkConstructorOf(constructor, symbol)
-        mkJavaMethodMirror(outer, constructor)
+        mkMethodMirror(outer, constructor)
       }
       override def toString = s"class mirror for ${symbol.fullName} (bound to $outer)"
     }
