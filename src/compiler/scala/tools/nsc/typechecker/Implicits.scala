@@ -847,6 +847,8 @@ trait Implicits {
           } else search
       }
 
+      private final val sortMatches = sys.props contains "scalac.debug.sortEligibleImplicits"
+
       /** Sorted list of eligible implicits.
        */
       val eligible = {
@@ -857,7 +859,7 @@ trait Implicits {
         }
 
         // most frequent one first
-        matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
+        if (sortMatches) matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg) else matches
       }
       if (eligible.nonEmpty)
         printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
