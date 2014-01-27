@@ -39,7 +39,7 @@ trait GenTrees {
     //
     // why bother? because this brings method to the madness
     // the first prototype of reification reified all types and symbols for all trees => this quickly became unyieldy
-    // the second prototype reified external types, but avoided reifying local ones => this created an ugly irregularity
+    // the second prototype reified external types, but avoided reifying ones local to the reifee => this created an ugly irregularity
     // current approach is uniform and compact
     var rtree: Tree = tree match {
       case FreeDef(_, _, _, _, _) => reifyNestedFreeDef(tree)
@@ -102,7 +102,7 @@ trait GenTrees {
               if (reifyDebug) println("inlining the splicee")
               // all free vars local to the enclosing reifee should've already been inlined by `Metalevels`
               for (sym <- inlinedSymtab.syms if sym.isLocalToReifee)
-                abort("local free var, should have already been inlined by Metalevels: " + inlinedSymtab.symDef(sym))
+                abort("free var local to the reifee, should have already been inlined by Metalevels: " + inlinedSymtab.symDef(sym))
               state.symtab ++= inlinedSymtab
               rtree
             case tree =>
@@ -173,7 +173,7 @@ trait GenTrees {
       assert(tpe != null, "unexpected: bound type that doesn't have a tpe: " + showRaw(tree))
 
       // if a symbol or a type of the scrutinee are local to reifee
-      // (e.g. point to a locally declared class or to a path-dependent thingie that depends on a local variable)
+      // (e.g. point to a locally declared class or to a path-dependent thingie that depends on a variable defined within the reifee)
       // then we can reify the scrutinee as a symless AST and that will definitely be hygienic
       // why? because then typechecking of a scrutinee doesn't depend on the environment external to the quasiquote
       // otherwise we need to reify the corresponding type

@@ -26,7 +26,7 @@ trait Calculate {
     }
 
   /**
-   *  Merely traverses the reifiee and records local symbols along with their metalevels.
+   *  Merely traverses the reifiee and records symbols local to the reifee along with their metalevels.
    */
   val calculate = new Traverser {
     // see the explanation of metalevels in `Metalevels`

@@ -13,7 +13,7 @@ trait GenSymbols {
    *  Keeps track of auxiliary symbols that are necessary for this reification session.
    *  These include:
    *    1) Free vars (terms, types and existentials),
-   *    2) Non-locatable symbols (sometimes, e.g. for RefinedTypes, we need to reify these; to do that we create their local copies in the reificode)
+   *    2) Non-locatable symbols (sometimes, e.g. for RefinedTypes, we need to reify these; to do that we create their copies in the reificode)
    *    3) Non-locatable symbols that are referred by #1, #2 and #3
    *
    *  Exposes three main methods:
@@ -90,7 +90,7 @@ trait GenSymbols {
           mirrorBuildCall(nme.selectTerm, rowner, rname)
       }
     } else {
-      // todo. make sure that free methods and free local defs work correctly
+      // todo. make sure that free methods work correctly
       if (sym.isExistential) reifySymDef(sym)
       else if (sym.isTerm) reifyFreeTerm(Ident(sym))
       else reifyFreeType(Ident(sym))

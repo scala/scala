@@ -26,7 +26,7 @@ trait Resolvers {
    *
    *    qualifier.method[targs]
    *
-   *  Qualifier here might be omitted (local macro defs), be a static object (vanilla macro defs)
+   *  Qualifier here might be omitted (macro defs local to blocks), be a static object (vanilla macro defs)
    *  or be a dummy instance of a macro bundle (e.g. new MyMacro(???).expand).
    */
   lazy val macroImplRef: Tree = {
