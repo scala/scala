@@ -116,7 +116,7 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
 
   def blockInvariant(quote: Tree, trees: List[Tree]) =
     quote ≈ (trees match {
-      case Nil => q"()"
+      case Nil => q""
       case _ :+ last if !last.isTerm => Block(trees, q"()")
       case head :: Nil => head
       case init :+ last => Block(init, last)
@@ -267,5 +267,28 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
   property("SI-7275 e2") = test {
     val t = q"{ a; b }; c; d"
     assertEqAst(q"f(...$t)", "f(a, b)(c)(d)")
+  }
+
+  property("remove synthetic unit") = test {
+    val q"{ ..$stats1 }" = q"{ def x = 2 }"
+    assert(stats1 ≈ List(q"def x = 2"))
+    val q"{ ..$stats2 }" = q"{ class X }"
+    assert(stats2 ≈ List(q"class X"))
+    val q"{ ..$stats3 }" = q"{ type X = Int }"
+    assert(stats3 ≈ List(q"type X = Int"))
+    val q"{ ..$stats4 }" = q"{ val x = 2 }"
+    assert(stats4 ≈ List(q"val x = 2"))
+  }
+
+  property("don't remove user-defined unit") = test {
+    val q"{ ..$stats }" = q"{ def x = 2; () }"
+    assert(stats ≈ List(q"def x = 2", q"()"))
+  }
+
+  property("empty-tree as block") = test {
+    val q"{ ..$stats1 }" = q" "
+    assert(stats1.isEmpty)
+    val stats2 = List.empty[Tree]
+    assert(q"{ ..$stats2 }" ≈ q"")
   }
 }

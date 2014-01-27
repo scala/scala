@@ -185,9 +185,9 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticFunction, args, body)
       case SyntacticIdent(name, isBackquoted) =>
         reifyBuildCall(nme.SyntacticIdent, name, isBackquoted)
-      case Block(Nil, Placeholder(Hole(tree, DotDot))) =>
+      case Q(Placeholder(Hole(tree, DotDot))) =>
         mirrorBuildCall(nme.SyntacticBlock, tree)
-      case Block(Nil, other) =>
+      case Q(other) =>
         reifyTree(other)
       // Syntactic block always matches so we have to be careful
       // not to cause infinite recursion.

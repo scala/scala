@@ -160,13 +160,17 @@ trait Parsers { self: Quasiquotes =>
     }
   }
 
-  object TermParser extends Parser {
-    def entryPoint = { parser =>
-      parser.templateOrTopStatSeq() match {
-        case head :: Nil => Block(Nil, head)
-        case lst => gen.mkTreeOrBlock(lst)
-      }
+  /** Wrapper around tree parsed in q"..." quote. Needed to support ..$ splicing on top-level. */
+  object Q {
+    def apply(tree: Tree): Block = Block(Nil, tree).updateAttachment(Q)
+    def unapply(tree: Tree): Option[Tree] = tree match {
+      case Block(Nil, contents) if tree.hasAttachment[Q.type] => Some(contents)
+      case _ => None
     }
+  }
+
+  object TermParser extends Parser {
+    def entryPoint = parser => Q(gen.mkTreeOrBlock(parser.templateOrTopStatSeq()))
   }
 
   object TypeParser extends Parser {
