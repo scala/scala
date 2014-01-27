@@ -1613,22 +1613,8 @@ trait Namers extends MethodSynthesis {
         checkNoConflict(ABSTRACT, FINAL)
 
       if (sym.isDeferred) {
-        // Is this symbol type always allowed the deferred flag?
-        def symbolAllowsDeferred = (
-             sym.isValueParameter
-          || sym.isTypeParameterOrSkolem
-          || context.tree.isInstanceOf[ExistentialTypeTree]
-        )
-        // Does the symbol owner require no undefined members?
-        def ownerRequiresConcrete = (
-             !sym.owner.isClass
-          ||  sym.owner.isModuleClass
-          ||  sym.owner.isAnonymousClass
-        )
         if (sym hasAnnotation NativeAttr)
           sym resetFlag DEFERRED
-        else if (!symbolAllowsDeferred && ownerRequiresConcrete)
-          fail(AbstractVar)
 
         checkWithDeferred(PRIVATE)
         checkWithDeferred(FINAL)
