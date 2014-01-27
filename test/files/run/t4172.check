@@ -2,7 +2,7 @@ Type in expressions to have them evaluated.
 Type :help for more information.
 
 scala> val c = { class C { override def toString = "C" }; ((new C, new C { def f = 2 })) }
-warning: there were 1 feature warning(s); re-run with -feature for details
+warning: there was one feature warning; re-run with -feature for details
 c: (C, C{def f: Int}) forSome { type C <: AnyRef } = (C,C)
 
 scala> 
