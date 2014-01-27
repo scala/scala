@@ -171,7 +171,7 @@ trait Symbols { self: Universe =>
     /** The name of the symbol as a member of the `Name` type.
      *  @group Basics
      */
-    def name: Name
+    def name: NameType
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by periods.
