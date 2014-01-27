@@ -26,4 +26,8 @@ object Test {
   locally {
     new AV(0): AnyRef
   }
+
+  "": AnyVal
+
+  new Object() : AnyVal
 }

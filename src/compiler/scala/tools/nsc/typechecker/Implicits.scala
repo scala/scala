@@ -137,10 +137,6 @@ trait Implicits {
   private val improvesCache = perRunCaches.newMap[(ImplicitInfo, ImplicitInfo), Boolean]()
   private val implicitSearchId = { var id = 1 ; () => try id finally id += 1 }
 
-  private def isInvalidConversionTarget(tpe: Type): Boolean = tpe match {
-    case Function1(_, out) => AnyRefClass.tpe <:< out
-    case _                 => false
-  }
   private def isInvalidConversionSource(tpe: Type): Boolean = tpe match {
     case Function1(in, _) => in <:< NullClass.tpe
     case _                => false
@@ -629,7 +625,8 @@ trait Implicits {
               // for instance, if we have `class C[T]` and `implicit def conv[T: Numeric](c: C[T]) = ???`
               // then Scaladoc will give us something of type `C[T]`, and it would like to know
               // that `conv` is potentially available under such and such conditions
-              case tree if isImplicitMethodType(tree.tpe) && !isScalaDoc => applyImplicitArgs(tree)
+              case tree if isImplicitMethodType(tree.tpe) && !isScalaDoc =>
+                applyImplicitArgs(tree)
               case tree => tree
             }
           case _ => fallback
@@ -1361,11 +1358,17 @@ trait Implicits {
           if (context.ambiguousErrors)
             context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, msg))
         }
-        if (isInvalidConversionTarget(pt)) {
-          maybeInvalidConversionError("the result type of an implicit conversion must be more specific than AnyRef")
-          result = SearchFailure
+        pt match {
+          case Function1(_, out) =>
+            def prohibit(sym: Symbol) = if (sym.tpe <:< out) {
+               maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than ${sym.name}")
+              result = SearchFailure
+            }
+            prohibit(AnyRefClass)
+            if (settings.isScala211) prohibit(AnyValClass)
+          case _                 => false
         }
-        else if (settings.isScala211 && isInvalidConversionSource(pt)) {
+        if (settings.isScala211 && isInvalidConversionSource(pt)) {
           maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
           result = SearchFailure
         }
