@@ -376,7 +376,7 @@ abstract class TreeCheckers extends Analyzer {
         def isOk(sym: Symbol) = treeSym hasTransOwner sym.enclosingSuchThat(x => !x.isTypeParameterOrSkolem) // account for higher order type params
         def isEligible(sym: Symbol) = (sym ne NoSymbol) && (
              sym.isTypeParameter
-          || sym.isLocal
+          || sym.isLocalToBlock
         )
         val referencedSymbols = (treeSym :: referencesInType(treeInfo)).distinct filter (sym => isEligible(sym) && !isOk(sym))
         def mk[T](what: String, x: T, str: T => String = (x: T) => "" + x): ((Any, String)) =

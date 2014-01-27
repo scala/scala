@@ -224,7 +224,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               if (settings.lint) {
                 if (sym.isPrivateLocal && sym.paramss.isEmpty) {
                   qual.symbol.ancestors foreach { parent =>
-                    parent.info.decls filterNot (x => x.isPrivate || x.hasLocalFlag) foreach { m2 =>
+                    parent.info.decls filterNot (x => x.isPrivate || x.isLocalToThis) foreach { m2 =>
                       if (sym.name == m2.name && m2.isGetter && m2.accessed.isMutable) {
                         unit.warning(sel.pos,
                           sym.accessString + " " + sym.fullLocationString + " shadows mutable " + m2.name

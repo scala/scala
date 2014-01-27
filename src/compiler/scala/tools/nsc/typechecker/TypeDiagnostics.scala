@@ -452,10 +452,10 @@ trait TypeDiagnostics {
         val treeTypes = mutable.Set[Type]()
 
         def defnSymbols = defnTrees.toList map (_.symbol)
-        def localVars   = defnSymbols filter (t => t.isLocal && t.isVar)
+        def localVars   = defnSymbols filter (t => t.isLocalToBlock && t.isVar)
 
         def qualifiesTerm(sym: Symbol) = (
-             (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocal)
+             (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocalToBlock)
           && !nme.isLocalName(sym.name)
           && !sym.isParameter
           && !sym.isParamAccessor       // could improve this, but it's a pain
@@ -499,12 +499,12 @@ trait TypeDiagnostics {
         def isUnusedType(m: Symbol): Boolean = (
               m.isType
           && !m.isTypeParameterOrSkolem // would be nice to improve this
-          && (m.isPrivate || m.isLocal)
+          && (m.isPrivate || m.isLocalToBlock)
           && !(treeTypes.exists(tp => tp exists (t => t.typeSymbolDirect == m)))
         )
         def isUnusedTerm(m: Symbol): Boolean = (
              (m.isTerm)
-          && (m.isPrivate || m.isLocal)
+          && (m.isPrivate || m.isLocalToBlock)
           && !targets(m)
           && !(m.name == nme.WILDCARD)              // e.g. val _ = foo
           && !ignoreNames(m.name.toTermName)        // serialization methods

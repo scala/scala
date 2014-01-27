@@ -122,7 +122,7 @@ abstract class LambdaLift extends InfoTransform {
      *  and the owner of `sym`.
      *  Return `true` if there is no class between `enclosure` and
      *  the owner of sym.
-     *  pre: sym.isLocal, (enclosure.isMethod || enclosure.isClass)
+     *  pre: sym.isLocalToBlock, (enclosure.isMethod || enclosure.isClass)
      *
      *  The idea of `markFree` is illustrated with an example:
      *
@@ -180,7 +180,7 @@ abstract class LambdaLift extends InfoTransform {
         tree match {
           case ClassDef(_, _, _, _) =>
             liftedDefs(tree.symbol) = Nil
-            if (sym.isLocal) {
+            if (sym.isLocalToBlock) {
               // Don't rename implementation classes independently of their interfaces. If
               // the interface is to be renamed, then we will rename the implementation
               // class at that time. You'd think we could call ".implClass" on the trait
@@ -201,7 +201,7 @@ abstract class LambdaLift extends InfoTransform {
               }
             }
           case DefDef(_, _, _, _, _, _) =>
-            if (sym.isLocal) {
+            if (sym.isLocalToBlock) {
               renamable += sym
               sym setFlag (PrivateLocal | FINAL)
             } else if (sym.isPrimaryConstructor) {
@@ -210,14 +210,14 @@ abstract class LambdaLift extends InfoTransform {
           case Ident(name) =>
             if (sym == NoSymbol) {
               assert(name == nme.WILDCARD)
-            } else if (sym.isLocal) {
+            } else if (sym.isLocalToBlock) {
               val owner = currentOwner.logicallyEnclosingMember
               if (sym.isTerm && !sym.isMethod) markFree(sym, owner)
               else if (sym.isMethod) markCalled(sym, owner)
                 //symSet(called, owner) += sym
             }
           case Select(_, _) =>
-            if (sym.isConstructor && sym.owner.isLocal)
+            if (sym.isConstructor && sym.owner.isLocalToBlock)
               markCalled(sym, currentOwner.logicallyEnclosingMember)
           case _ =>
         }
@@ -362,7 +362,7 @@ abstract class LambdaLift extends InfoTransform {
 
     private def proxyRef(sym: Symbol) = {
       val psym = proxy(sym)
-      if (psym.isLocal) gen.mkAttributedIdent(psym) else memberRef(psym)
+      if (psym.isLocalToBlock) gen.mkAttributedIdent(psym) else memberRef(psym)
     }
 
     private def addFreeArgs(pos: Position, sym: Symbol, args: List[Tree]) = {
@@ -459,10 +459,10 @@ abstract class LambdaLift extends InfoTransform {
       tree match {
         case ClassDef(_, _, _, _) =>
           val tree1 = addFreeParams(tree, sym)
-          if (sym.isLocal) liftDef(tree1) else tree1
+          if (sym.isLocalToBlock) liftDef(tree1) else tree1
         case DefDef(_, _, _, _, _, _) =>
           val tree1 = addFreeParams(tree, sym)
-          if (sym.isLocal) liftDef(tree1) else tree1
+          if (sym.isLocalToBlock) liftDef(tree1) else tree1
         case ValDef(mods, name, tpt, rhs) =>
           if (sym.isCapturedVariable) {
             val tpt1 = TypeTree(sym.tpe) setPos tpt.pos
@@ -499,7 +499,7 @@ abstract class LambdaLift extends InfoTransform {
             if (sym.isTerm && !sym.isLabel)
               if (sym.isMethod)
                 atPos(tree.pos)(memberRef(sym))
-              else if (sym.isLocal && !isSameOwnerEnclosure(sym))
+              else if (sym.isLocalToBlock && !isSameOwnerEnclosure(sym))
                 atPos(tree.pos)(proxyRef(sym))
               else tree
             else tree

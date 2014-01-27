@@ -33,7 +33,7 @@ trait Variances {
     /** Is every symbol in the owner chain between `site` and the owner of `sym`
      *  either a term symbol or private[this]? If not, add `sym` to the set of
      *  esacped locals.
-     *  @pre  sym.hasLocalFlag
+     *  @pre  sym.isLocalToThis
      */
     @tailrec final def checkForEscape(sym: Symbol, site: Symbol) {
       if (site == sym.owner || site == sym.owner.moduleClass || site.isPackage) () // done
@@ -53,8 +53,8 @@ trait Variances {
     // return Bivariant if `sym` is local to a term
     // or is private[this] or protected[this]
     def isLocalOnly(sym: Symbol) = !sym.owner.isClass || (
-         sym.isTerm
-      && (sym.hasLocalFlag || sym.isSuperAccessor) // super accessors are implicitly local #4345
+         sym.isTerm // ?? shouldn't this be sym.owner.isTerm according to the comments above?
+      && (sym.isLocalToThis || sym.isSuperAccessor) // super accessors are implicitly local #4345
       && !escapedLocals(sym)
     )
 
@@ -143,7 +143,7 @@ trait Variances {
       // Or constructors, or case class factory or extractor.
       def skip = (
            sym == NoSymbol
-        || sym.hasLocalFlag
+        || sym.isLocalToThis
         || sym.owner.isConstructor
         || sym.owner.isCaseApplyOrUnapply
       )

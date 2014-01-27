@@ -716,7 +716,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
           enterMember(specVal)
           // create accessors
-          // debuglog("m: " + m + " isLocal: " + nme.isLocalName(m.name) + " specVal: " + specVal.name + " isLocal: " + nme.isLocalName(specVal.name))
 
           if (nme.isLocalName(m.name)) {
             val specGetter = mkAccessor(specVal, specVal.getterName) setInfo MethodType(Nil, specVal.info)

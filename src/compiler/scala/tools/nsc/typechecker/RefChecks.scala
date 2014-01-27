@@ -903,7 +903,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       var index = -1
       for (stat <- stats) {
         index = index + 1
-        def enterSym(sym: Symbol) = if (sym.isLocal) {
+        def enterSym(sym: Symbol) = if (sym.isLocalToBlock) {
           currentLevel.scope.enter(sym)
           symIndex(sym) = index
         }
@@ -920,7 +920,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     }
 
     private def enterReference(pos: Position, sym: Symbol) {
-      if (sym.isLocal) {
+      if (sym.isLocalToBlock) {
         val e = currentLevel.scope.lookupEntry(sym.name)
         if ((e ne null) && sym == e.sym) {
           var l = currentLevel
@@ -1225,7 +1225,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         if (tree1.symbol.isLazy) tree1 :: Nil
         else {
           val lazySym = tree.symbol.lazyAccessorOrSelf
-          if (lazySym.isLocal && index <= currentLevel.maxindex) {
+          if (lazySym.isLocalToBlock && index <= currentLevel.maxindex) {
             debuglog("refsym = " + currentLevel.refsym)
             unit.error(currentLevel.refpos, "forward reference extends over definition of " + lazySym)
           }
@@ -1544,7 +1544,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
       if (!sym.exists)
         devWarning("Select node has NoSymbol! " + tree + " / " + tree.tpe)
-      else if (sym.hasLocalFlag)
+      else if (sym.isLocalToThis)
         varianceValidator.checkForEscape(sym, currentClass)
 
       def checkSuper(mix: Name) =
@@ -1753,7 +1753,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         result match {
           case ClassDef(_, _, _, _)
              | TypeDef(_, _, _, _) =>
-            if (result.symbol.isLocal || result.symbol.isTopLevel)
+            if (result.symbol.isLocalToBlock || result.symbol.isTopLevel)
               varianceValidator.traverse(result)
           case tt @ TypeTree() if tt.original != null =>
             varianceValidator.traverse(tt.original) // See SI-7872

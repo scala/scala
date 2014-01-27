@@ -412,7 +412,7 @@ abstract class UnCurry extends InfoTransform
       val sym = tree.symbol
 
       // true if the taget is a lambda body that's been lifted into a method
-      def isLiftedLambdaBody(target: Tree) = target.symbol.isLocal && target.symbol.isArtifact && target.symbol.name.containsName(nme.ANON_FUN_NAME)
+      def isLiftedLambdaBody(target: Tree) = target.symbol.isLocalToBlock && target.symbol.isArtifact && target.symbol.name.containsName(nme.ANON_FUN_NAME)
 
       val result = (
         // TODO - settings.noassertions.value temporarily retained to avoid

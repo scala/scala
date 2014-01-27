@@ -393,7 +393,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           declared += tree.symbol
         case Ident(_) =>
           val sym = tree.symbol
-          if ((sym != NoSymbol) && sym.isLocal && sym.isTerm && !sym.isMethod && !declared.contains(sym)) freeVars += sym
+          if ((sym != NoSymbol) && sym.isLocalToBlock && sym.isTerm && !sym.isMethod && !declared.contains(sym)) freeVars += sym
         case _ =>
       }
       super.traverse(tree)

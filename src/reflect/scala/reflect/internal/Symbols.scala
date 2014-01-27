@@ -901,7 +901,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || isModuleOrModuleClass && (isTopLevel || !settings.overrideObjects)
       || isTerm && (
              isPrivate
-          || isLocal
+          || isLocalToBlock
           || isNotOverridden
          )
     )
@@ -909,8 +909,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol owned by a package? */
     final def isTopLevel = owner.isPackageClass
 
-    /** Is this symbol locally defined? I.e. not accessed from outside `this` instance */
+    /** Is this symbol defined in a block? */
+    @deprecated("Use isLocalToBlock instead", "2.11.0")
     final def isLocal: Boolean = owner.isTerm
+
+    /** Is this symbol defined in a block? */
+    final def isLocalToBlock: Boolean = owner.isTerm
 
     /** Is this symbol a constant? */
     final def isConstant: Boolean = isStable && isConstantType(tpe.resultType)
@@ -1254,7 +1258,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  as public.
      */
     def accessBoundary(base: Symbol): Symbol = {
-      if (hasFlag(PRIVATE) || isLocal) owner
+      if (hasFlag(PRIVATE) || isLocalToBlock) owner
       else if (hasAllFlags(PROTECTED | STATIC | JAVA)) enclosingRootClass
       else if (hasAccessBoundary && !phase.erasedTypes) privateWithin
       else if (hasFlag(PROTECTED)) base
@@ -2819,7 +2823,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   class AliasTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
     type TypeOfClonedSymbol = TypeSymbol
-    override def variance = if (hasLocalFlag) Bivariant else info.typeSymbol.variance
+    override def variance = if (isLocalToThis) Bivariant else info.typeSymbol.variance
     override def isContravariant = variance.isContravariant
     override def isCovariant     = variance.isCovariant
     final override def isAliasType = true
@@ -3105,7 +3109,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     override def isLocalClass = (
          isAnonOrRefinementClass
-      || isLocal
+      || isLocalToBlock
       || !isTopLevel && owner.isLocalClass
     )
 
