@@ -114,4 +114,9 @@ trait ImplicitTags {
   implicit val UnApplyTag: ClassTag[UnApply]
   implicit val ValDefTag: ClassTag[ValDef]
   implicit val ValOrDefDefTag: ClassTag[ValOrDefDef]
+
+  // Miscellaneous
+  implicit val TreeCopierTag: ClassTag[TreeCopier]
+  implicit val RuntimeClassTag: ClassTag[RuntimeClass]
+  implicit val MirrorTag: ClassTag[Mirror]
 }

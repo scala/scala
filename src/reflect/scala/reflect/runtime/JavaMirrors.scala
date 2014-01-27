@@ -22,7 +22,7 @@ import ReflectionUtils._
 import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 
-private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
+private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
 
   private lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
 
@@ -33,9 +33,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     jm
   }
 
-  override type RuntimeClass = java.lang.Class[_]
-
   override type Mirror = JavaMirror
+  implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[JavaMirror])
 
   override lazy val rootMirror: Mirror = createMirror(NoSymbol, rootClassLoader)
 

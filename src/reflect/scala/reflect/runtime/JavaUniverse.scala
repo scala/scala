@@ -20,6 +20,7 @@ class JavaUniverse extends internal.SymbolTable with JavaUniverseForce with Refl
   def log(msg: => AnyRef): Unit = if (isLogging) Console.err.println("[reflect] " + msg)
 
   type TreeCopier = InternalTreeCopierOps
+  implicit val TreeCopierTag: ClassTag[TreeCopier] = ClassTag[TreeCopier](classOf[TreeCopier])
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
   def newLazyTreeCopier: TreeCopier = new LazyTreeCopier
 

@@ -1,6 +1,7 @@
 package scala.tools.nsc
 package symtab
 
+import scala.reflect.ClassTag
 import scala.reflect.internal.{Phase, NoPhase, SomePhase}
 import scala.tools.util.PathResolver
 import util.ClassPath
@@ -89,4 +90,9 @@ class SymbolTableForUnitTesting extends SymbolTable {
   val currentFreshNameCreator = new reflect.internal.util.FreshNameCreator
 
   phase = SomePhase
+
+  type RuntimeClass = java.lang.Class[_]
+  implicit val RuntimeClassTag: ClassTag[RuntimeClass] = ClassTag[RuntimeClass](classOf[RuntimeClass])
+  implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[GlobalMirror])
+  implicit val TreeCopierTag: ClassTag[TreeCopier] = ClassTag[TreeCopier](classOf[TreeCopier])
 }

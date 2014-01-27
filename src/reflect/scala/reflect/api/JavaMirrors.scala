@@ -24,6 +24,7 @@ trait JavaMirrors { self: JavaUniverse =>
    *  @group JavaMirrors
    */
   type RuntimeClass = java.lang.Class[_]
+  implicit val RuntimeClassTag: ClassTag[RuntimeClass] = ClassTag[RuntimeClass](classOf[RuntimeClass])
 
   /** In runtime reflection universes, mirrors are `JavaMirrors`.
    *  @group JavaMirrors
