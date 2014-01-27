@@ -1,0 +1,22 @@
+t8182.scala:4: error: illegal start of simple pattern
+}
+^
+t8182.scala:7: error: illegal start of simple pattern
+}
+^
+t8182.scala:6: error: type application is not allowed in pattern
+  val a b[B]  // error then continue as for X
+        ^
+t8182.scala:10: error: illegal start of simple pattern
+    case a b[B] => // bumpy recovery
+                ^
+t8182.scala:10: error: type application is not allowed in pattern
+    case a b[B] => // bumpy recovery
+           ^
+t8182.scala:11: error: '=>' expected but '}' found.
+  }
+  ^
+t8182.scala:16: error: type application is not allowed in pattern
+    case a B[T] b =>
+           ^
+7 errors found
