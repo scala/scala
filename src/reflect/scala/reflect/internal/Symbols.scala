@@ -90,6 +90,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isVal: Boolean = isTerm && !isModule && !isMethod && !isMutable
     def isVar: Boolean = isTerm && !isModule && !isMethod && !isLazy && isMutable
     def isAbstract: Boolean = isAbstractClass || isDeferred || isAbstractType
+    def isPrivateThis = (this hasFlag PRIVATE) && (this hasFlag LOCAL)
+    def isProtectedThis = (this hasFlag PROTECTED) && (this hasFlag LOCAL)
 
     def newNestedSymbol(name: Name, pos: Position, newFlags: Long, isClass: Boolean): Symbol = name match {
       case n: TermName => newTermSymbol(n, pos, newFlags)

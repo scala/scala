@@ -380,16 +380,13 @@ trait Symbols { self: Universe =>
      */
     def isImplementationArtifact: Boolean
 
-    /** Does this symbol represent a local declaration or definition?
-     *
-     *  If yes, either `isPrivate` or `isProtected` are guaranteed to be true.
-     *  Local symbols can only be accessed from the same object instance.
-     *
-     *  If yes, `privateWithin` might tell more about this symbol's visibility scope.
+    /** Does this symbol represent a declaration or definition written in a source file as `private[this]`
+     *  or generated in tree/symbol form with the combination of flags LOCAL and PRIVATE?
+     *  If yes, `isPrivate` is guaranteed to be true,
      *
      *  @group Tests
      */
-    def isLocal: Boolean
+    def isPrivateThis: Boolean
 
     /** Does this symbol represent a private declaration or definition?
      *  If yes, `privateWithin` might tell more about this symbol's visibility scope.
@@ -397,6 +394,14 @@ trait Symbols { self: Universe =>
      *  @group Tests
      */
     def isPrivate: Boolean
+
+    /** Does this symbol represent a declaration or definition written in a source file as `protected[this]`
+     *  or generated in tree/symbol form with the combination of flags LOCAL and PROTECTED?
+     *  If yes, `isProtected` is guaranteed to be true,
+     *
+     *  @group Tests
+     */
+    def isProtectedThis: Boolean
 
     /** Does this symbol represent a protected declaration or definition?
      *  If yes, `privateWithin` might tell more about this symbol's visibility scope.
@@ -412,7 +417,7 @@ trait Symbols { self: Universe =>
     def isPublic: Boolean
 
     /**
-     * Set when symbol has a modifier of the form private[X], NoSymbol otherwise.
+     *  Set when symbol has a modifier of the form private[X] or protected[X], NoSymbol otherwise.
      *
      *  Access level encoding: there are three scala flags (PRIVATE, PROTECTED,
      *  and LOCAL) which combine with value privateWithin (the "foo" in private[foo])

@@ -131,8 +131,8 @@ trait FlagSets { self: Universe =>
     /** Flag indicating that tree has `protected` modifier set */
     val PROTECTED: FlagSet
 
-    /** Flag indicating that tree represents a member local to current class
-     *  (i.e. private[this] or protected[this].
+    /** Flag indicating that tree represents a member local to current class,
+     *  i.e. private[this] or protected[this].
      *  This requires having either PRIVATE or PROTECTED set as well.
      */
     val LOCAL: FlagSet
