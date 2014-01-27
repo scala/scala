@@ -118,21 +118,9 @@ class ModifierFlags {
   final val PRESUPER      = 1L << 37      // value is evaluated before super call
   final val DEFAULTINIT   = 1L << 41      // symbol is initialized to the default value: used by -Xcheckinit
   final val ARTIFACT      = 1L << 46      // symbol should be ignored when typechecking; will be marked ACC_SYNTHETIC in bytecode
+                                          // to see which symbols are marked as ARTIFACT, see scaladocs for FlagValues.ARTIFACT
   final val DEFAULTMETHOD = 1L << 47      // symbol is a java default method
   final val ENUM          = 1L << 48      // symbol is an enum
-
-  /** Symbols which are marked ARTIFACT. (Expand this list?)
-   *
-   *  - $outer fields and accessors
-   *  - super accessors
-   *  - protected accessors
-   *  - lazy local accessors
-   *  - bridge methods
-   *  - default argument getters
-   *  - evaluation-order preserving locals for right-associative and out-of-order named arguments
-   *  - catch-expression storing vals
-   *  - anything else which feels a setFlag(ARTIFACT)
-   */
 
   // Overridden.
   def flagToString(flag: Long): String = ""
