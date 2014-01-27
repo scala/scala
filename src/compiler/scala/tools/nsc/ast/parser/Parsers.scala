@@ -837,8 +837,14 @@ self =>
       if (samePrecedence)
         checkHeadAssoc(leftAssoc)
 
-      def loop(top: Tree): Tree =
-        if (canReduce) loop(finishBinaryOp(isExpr, popOpInfo(), top)) else top
+      def loop(top: Tree): Tree = if (canReduce) {
+        val popo = popOpInfo()
+        val info = if (isExpr || popo.targs.isEmpty) popo else {
+          syntaxError(popo.offset, "type application is not allowed in pattern")
+          popo.copy(targs = Nil)  // let it limp on
+        }
+        loop(finishBinaryOp(isExpr, info, top))
+      } else top
 
       loop(top)
     }
