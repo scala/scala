@@ -597,7 +597,7 @@ trait Trees extends api.Trees {
   def TypeBoundsTree(bounds: TypeBounds): TypeBoundsTree = TypeBoundsTree(TypeTree(bounds.lo), TypeTree(bounds.hi))
   def TypeBoundsTree(sym: Symbol): TypeBoundsTree        = atPos(sym.pos)(TypeBoundsTree(sym.info.bounds))
 
-  override type TreeCopier <: InternalTreeCopierOps
+  override type TreeCopier >: Null <: InternalTreeCopierOps
   abstract class InternalTreeCopierOps extends TreeCopierOps {
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]): ApplyDynamic
     def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]): ArrayValue

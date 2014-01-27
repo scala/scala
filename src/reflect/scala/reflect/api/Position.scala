@@ -20,7 +20,7 @@ import scala.reflect.macros.Attachments
 trait Position extends Attachments {
 
   /** @inheritdoc */
-  type Pos >: Null <: Position
+  type Pos >: Null <: AnyRef with Position
 
   /** Java file corresponding to the source file of this position.
    *

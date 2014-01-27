@@ -19,7 +19,8 @@ trait Positions {
    *  The main documentation entry about positions is located at [[scala.reflect.api.Position]].
    *  @group Positions
    */
-  type Position >: Null <: scala.reflect.api.Position { type Pos = Position }
+  type Position >: Null <: AnyRef with scala.reflect.api.Position { type Pos = Position }
+
   /** A special "missing" position.
    *  @group Positions
    */

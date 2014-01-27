@@ -44,17 +44,27 @@ trait Names {
   /** The abstract type of names.
    *  @group Names
    */
-  type Name >: Null <: NameApi
+  type Name >: Null <: AnyRef with NameApi
 
   /** The abstract type of names representing terms.
    *  @group Names
    */
-  type TypeName >: Null <: Name
+  type TypeName >: Null <: TypeNameApi with Name
+
+  /** Has no special methods. Is here to provides erased identity for `TypeName`.
+   *  @group API
+   */
+  trait TypeNameApi
 
   /** The abstract type of names representing types.
    *  @group Names
    */
-  type TermName >: Null <: Name
+  type TermName >: Null <: TermNameApi with Name
+
+  /** Has no special methods. Is here to provides erased identity for `TermName`.
+   *  @group API
+   */
+  trait TermNameApi
 
   /** The API of Name instances.
    *  @group API

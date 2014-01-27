@@ -535,7 +535,7 @@ trait Names extends api.Names {
   }
 
   // SYNCNOTE: caller to constructor must synchronize if `synchronizeNames` is enabled
-  sealed abstract class TermName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) {
+  sealed abstract class TermName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) with TermNameApi {
     type ThisNameType = TermName
     protected[this] def thisName: TermName = this
     val next: TermName = termHashtable(hash)
@@ -572,7 +572,7 @@ trait Names extends api.Names {
     def unapply(name: TermName): Option[String] = Some(name.toString)
   }
 
-  sealed abstract class TypeName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) {
+  sealed abstract class TypeName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) with TypeNameApi {
     type ThisNameType = TypeName
     protected[this] def thisName: TypeName = this
 

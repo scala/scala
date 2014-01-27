@@ -27,7 +27,7 @@ trait Scopes { self: Universe =>
    *  @template
    *  @group Scopes
    */
-  type Scope >: Null <: ScopeApi
+  type Scope >: Null <: AnyRef with ScopeApi
 
   /** The API that all scopes support
    *  @group API
@@ -43,7 +43,7 @@ trait Scopes { self: Universe =>
    *  @template
    *  @group Scopes
    */
-  type MemberScope >: Null <: Scope with MemberScopeApi
+  type MemberScope >: Null <: AnyRef with MemberScopeApi with Scope
 
   /** The API that all member scopes support
    *  @group API

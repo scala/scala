@@ -83,14 +83,18 @@ trait Annotations { self: Universe =>
    *  @template
    *  @group Annotations
    */
-  type JavaArgument >: Null <: AnyRef
+  type JavaArgument >: Null <: AnyRef with JavaArgumentApi
 
+  /** Has no special methods. Is here to provides erased identity for `CompoundType`.
+   *  @group API
+   */
+  trait JavaArgumentApi
 
   /** A literal argument to a Java annotation as `"Use X instead"` in `@Deprecated("Use X instead")`
    *  @template
    *  @group Annotations
    */
-  type LiteralArgument >: Null <: AnyRef with JavaArgument with LiteralArgumentApi
+  type LiteralArgument >: Null <: LiteralArgumentApi with JavaArgument
 
   /** The constructor/extractor for `LiteralArgument` instances.
    *  @group Extractors
@@ -119,7 +123,7 @@ trait Annotations { self: Universe =>
    *  @template
    *  @group Annotations
    */
-  type ArrayArgument >: Null <: AnyRef with JavaArgument with ArrayArgumentApi
+  type ArrayArgument >: Null <: ArrayArgumentApi with JavaArgument
 
   /** The constructor/extractor for `ArrayArgument` instances.
    *  @group Extractors
@@ -148,7 +152,7 @@ trait Annotations { self: Universe =>
    *  @template
    *  @group Annotations
    */
-  type NestedArgument >: Null <: AnyRef with JavaArgument with NestedArgumentApi
+  type NestedArgument >: Null <: NestedArgumentApi with JavaArgument
 
   /** The constructor/extractor for `NestedArgument` instances.
    *  @group Extractors

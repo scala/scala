@@ -59,7 +59,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Tree >: Null <: TreeApi
+  type Tree >: Null <: AnyRef with TreeApi
 
   /** The API that all trees support.
    *  The main source of information about trees is the [[scala.reflect.api.Trees]] page.
@@ -216,7 +216,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TermTree >: Null <: AnyRef with Tree with TermTreeApi
+  type TermTree >: Null <: TermTreeApi with Tree
 
   /** The API that all term trees support
    *  @group API
@@ -229,7 +229,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TypTree >: Null <: AnyRef with Tree with TypTreeApi
+  type TypTree >: Null <: TypTreeApi with Tree
 
   /** The API that all typ trees support
    *  @group API
@@ -241,7 +241,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type SymTree >: Null <: AnyRef with Tree with SymTreeApi
+  type SymTree >: Null <: SymTreeApi with Tree
 
   /** The API that all sym trees support
    *  @group API
@@ -255,7 +255,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type NameTree >: Null <: AnyRef with Tree with NameTreeApi
+  type NameTree >: Null <: NameTreeApi with Tree
 
   /** The API that all name trees support
    *  @group API
@@ -273,7 +273,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type RefTree >: Null <: SymTree with NameTree with RefTreeApi
+  type RefTree >: Null <: RefTreeApi with SymTree with NameTree
 
   /** The API that all ref trees support
    *  @group API
@@ -307,7 +307,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type DefTree >: Null <: SymTree with NameTree with DefTreeApi
+  type DefTree >: Null <: DefTreeApi with SymTree with NameTree
 
   /** The API that all def trees support
    *  @group API
@@ -322,7 +322,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type MemberDef >: Null <: DefTree with MemberDefApi
+  type MemberDef >: Null <: MemberDefApi with DefTree
 
   /** The API that all member defs support
    *  @group API
@@ -336,7 +336,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type PackageDef >: Null <: MemberDef with PackageDefApi
+  type PackageDef >: Null <: PackageDefApi with MemberDef
 
   /** The constructor/extractor for `PackageDef` instances.
    *  @group Extractors
@@ -369,7 +369,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ImplDef >: Null <: MemberDef with ImplDefApi
+  type ImplDef >: Null <: ImplDefApi with MemberDef
 
   /** The API that all impl defs support
    *  @group API
@@ -383,7 +383,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ClassDef >: Null <: ImplDef with ClassDefApi
+  type ClassDef >: Null <: ClassDefApi with ImplDef
 
   /** The constructor/extractor for `ClassDef` instances.
    *  @group Extractors
@@ -428,7 +428,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ModuleDef >: Null <: ImplDef with ModuleDefApi
+  type ModuleDef >: Null <: ModuleDefApi with ImplDef
 
   /** The constructor/extractor for `ModuleDef` instances.
    *  @group Extractors
@@ -468,7 +468,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ValOrDefDef >: Null <: MemberDef with ValOrDefDefApi
+  type ValOrDefDef >: Null <: ValOrDefDefApi with MemberDef
 
   /** The API that all val defs and def defs support
    *  @group API
@@ -499,7 +499,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ValDef >: Null <: ValOrDefDef with ValDefApi
+  type ValDef >: Null <: ValDefApi with ValOrDefDef
 
   /** The constructor/extractor for `ValDef` instances.
    *  @group Extractors
@@ -548,7 +548,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type DefDef >: Null <: ValOrDefDef with DefDefApi
+  type DefDef >: Null <: DefDefApi with ValOrDefDef
 
   /** The constructor/extractor for `DefDef` instances.
    *  @group Extractors
@@ -597,7 +597,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TypeDef >: Null <: MemberDef with TypeDefApi
+  type TypeDef >: Null <: TypeDefApi with MemberDef
 
   /** The constructor/extractor for `TypeDef` instances.
    *  @group Extractors
@@ -656,7 +656,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type LabelDef >: Null <: DefTree with TermTree with LabelDefApi
+  type LabelDef >: Null <: LabelDefApi with DefTree with TermTree
 
   /** The constructor/extractor for `LabelDef` instances.
    *  @group Extractors
@@ -758,7 +758,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Import >: Null <: SymTree with ImportApi
+  type Import >: Null <: ImportApi with SymTree
 
   /** The constructor/extractor for `Import` instances.
    *  @group Extractors
@@ -810,7 +810,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Template >: Null <: SymTree with TemplateApi
+  type Template >: Null <: TemplateApi with SymTree
 
   /** The constructor/extractor for `Template` instances.
    *  @group Extractors
@@ -862,7 +862,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Block >: Null <: TermTree with BlockApi
+  type Block >: Null <: BlockApi with TermTree
 
   /** The constructor/extractor for `Block` instances.
    *  @group Extractors
@@ -901,7 +901,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type CaseDef >: Null <: AnyRef with Tree with CaseDefApi
+  type CaseDef >: Null <: CaseDefApi with Tree
 
   /** The constructor/extractor for `CaseDef` instances.
    *  @group Extractors
@@ -948,7 +948,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Alternative >: Null <: TermTree with AlternativeApi
+  type Alternative >: Null <: AlternativeApi with TermTree
 
   /** The constructor/extractor for `Alternative` instances.
    *  @group Extractors
@@ -980,7 +980,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Star >: Null <: TermTree with StarApi
+  type Star >: Null <: StarApi with TermTree
 
   /** The constructor/extractor for `Star` instances.
    *  @group Extractors
@@ -1015,7 +1015,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Bind >: Null <: DefTree with BindApi
+  type Bind >: Null <: BindApi with DefTree
 
   /** The constructor/extractor for `Bind` instances.
    *  @group Extractors
@@ -1078,7 +1078,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type UnApply >: Null <: TermTree with UnApplyApi
+  type UnApply >: Null <: UnApplyApi with TermTree
 
   /** The constructor/extractor for `UnApply` instances.
    *  @group Extractors
@@ -1114,7 +1114,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Function >: Null <: TermTree with SymTree with FunctionApi
+  type Function >: Null <: FunctionApi with TermTree with SymTree
 
   /** The constructor/extractor for `Function` instances.
    *  @group Extractors
@@ -1152,7 +1152,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Assign >: Null <: TermTree with AssignApi
+  type Assign >: Null <: AssignApi with TermTree
 
   /** The constructor/extractor for `Assign` instances.
    *  @group Extractors
@@ -1188,7 +1188,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type AssignOrNamedArg >: Null <: TermTree with AssignOrNamedArgApi
+  type AssignOrNamedArg >: Null <: AssignOrNamedArgApi with TermTree
 
   /** The constructor/extractor for `AssignOrNamedArg` instances.
    *  @group Extractors
@@ -1229,7 +1229,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type If >: Null <: TermTree with IfApi
+  type If >: Null <: IfApi with TermTree
 
   /** The constructor/extractor for `If` instances.
    *  @group Extractors
@@ -1280,7 +1280,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Match >: Null <: TermTree with MatchApi
+  type Match >: Null <: MatchApi with TermTree
 
   /** The constructor/extractor for `Match` instances.
    *  @group Extractors
@@ -1315,7 +1315,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Return >: Null <: TermTree with SymTree with ReturnApi
+  type Return >: Null <: ReturnApi with SymTree with TermTree
 
   /** The constructor/extractor for `Return` instances.
    *  @group Extractors
@@ -1347,7 +1347,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Try >: Null <: TermTree with TryApi
+  type Try >: Null <: TryApi with TermTree
 
   /** The constructor/extractor for `Try` instances.
    *  @group Extractors
@@ -1385,7 +1385,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Throw >: Null <: TermTree with ThrowApi
+  type Throw >: Null <: ThrowApi with TermTree
 
   /** The constructor/extractor for `Throw` instances.
    *  @group Extractors
@@ -1415,7 +1415,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type New >: Null <: TermTree with NewApi
+  type New >: Null <: NewApi with TermTree
 
   /** The constructor/extractor for `New` instances.
    *  @group Extractors
@@ -1465,7 +1465,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Typed >: Null <: TermTree with TypedApi
+  type Typed >: Null <: TypedApi with TermTree
 
   /** The constructor/extractor for `Typed` instances.
    *  @group Extractors
@@ -1498,7 +1498,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type GenericApply >: Null <: TermTree with GenericApplyApi
+  type GenericApply >: Null <: GenericApplyApi with TermTree
 
   /** The API that all applies support
    *  @group API
@@ -1519,7 +1519,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TypeApply >: Null <: GenericApply with TypeApplyApi
+  type TypeApply >: Null <: TypeApplyApi with GenericApply
 
   /** The constructor/extractor for `TypeApply` instances.
    *  @group Extractors
@@ -1557,7 +1557,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Apply >: Null <: GenericApply with ApplyApi
+  type Apply >: Null <: ApplyApi with GenericApply
 
   /** The constructor/extractor for `Apply` instances.
    *  @group Extractors
@@ -1594,7 +1594,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Super >: Null <: TermTree with SuperApi
+  type Super >: Null <: SuperApi with TermTree
 
   /** The constructor/extractor for `Super` instances.
    *  @group Extractors
@@ -1640,7 +1640,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type This >: Null <: TermTree with SymTree with ThisApi
+  type This >: Null <: ThisApi with TermTree with SymTree
 
   /** The constructor/extractor for `This` instances.
    *  @group Extractors
@@ -1675,7 +1675,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Select >: Null <: RefTree with SelectApi
+  type Select >: Null <: SelectApi with RefTree
 
   /** The constructor/extractor for `Select` instances.
    *  @group Extractors
@@ -1714,7 +1714,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Ident >: Null <: RefTree with IdentApi
+  type Ident >: Null <: IdentApi with RefTree
 
   /** The constructor/extractor for `Ident` instances.
    *  @group Extractors
@@ -1753,7 +1753,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ReferenceToBoxed >: Null <: TermTree with ReferenceToBoxedApi
+  type ReferenceToBoxed >: Null <: ReferenceToBoxedApi with TermTree
 
   /** The constructor/extractor for `ReferenceToBoxed` instances.
    *  @group Extractors
@@ -1797,7 +1797,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Literal >: Null <: TermTree with LiteralApi
+  type Literal >: Null <: LiteralApi with TermTree
 
   /** The constructor/extractor for `Literal` instances.
    *  @group Extractors
@@ -1830,7 +1830,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Annotated >: Null <: AnyRef with Tree with AnnotatedApi
+  type Annotated >: Null <: AnnotatedApi with Tree
 
   /** The constructor/extractor for `Annotated` instances.
    *  @group Extractors
@@ -1864,7 +1864,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type SingletonTypeTree >: Null <: TypTree with SingletonTypeTreeApi
+  type SingletonTypeTree >: Null <: SingletonTypeTreeApi with TypTree
 
   /** The constructor/extractor for `SingletonTypeTree` instances.
    *  @group Extractors
@@ -1894,7 +1894,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type SelectFromTypeTree >: Null <: TypTree with RefTree with SelectFromTypeTreeApi
+  type SelectFromTypeTree >: Null <: SelectFromTypeTreeApi with TypTree with RefTree
 
   /** The constructor/extractor for `SelectFromTypeTree` instances.
    *  @group Extractors
@@ -1935,7 +1935,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type CompoundTypeTree >: Null <: TypTree with CompoundTypeTreeApi
+  type CompoundTypeTree >: Null <: CompoundTypeTreeApi with TypTree
 
   /** The constructor/extractor for `CompoundTypeTree` instances.
    *  @group Extractors
@@ -1965,7 +1965,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type AppliedTypeTree >: Null <: TypTree with AppliedTypeTreeApi
+  type AppliedTypeTree >: Null <: AppliedTypeTreeApi with TypTree
 
   /** The constructor/extractor for `AppliedTypeTree` instances.
    *  @group Extractors
@@ -2007,7 +2007,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TypeBoundsTree >: Null <: TypTree with TypeBoundsTreeApi
+  type TypeBoundsTree >: Null <: TypeBoundsTreeApi with TypTree
 
   /** The constructor/extractor for `TypeBoundsTree` instances.
    *  @group Extractors
@@ -2044,7 +2044,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ExistentialTypeTree >: Null <: TypTree with ExistentialTypeTreeApi
+  type ExistentialTypeTree >: Null <: ExistentialTypeTreeApi with TypTree
 
   /** The constructor/extractor for `ExistentialTypeTree` instances.
    *  @group Extractors
@@ -2085,7 +2085,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TypeTree >: Null <: TypTree with TypeTreeApi
+  type TypeTree >: Null <: TypeTreeApi with TypTree
 
   /** The constructor/extractor for `TypeTree` instances.
    *  @group Extractors
@@ -2313,7 +2313,7 @@ trait Trees { self: Universe =>
    *  @template
    *  @group Copying
    */
-  type TreeCopier <: TreeCopierOps
+  type TreeCopier >: Null <: AnyRef with TreeCopierOps
 
   /** The standard (lazy) tree copier.
    *  @group Copying

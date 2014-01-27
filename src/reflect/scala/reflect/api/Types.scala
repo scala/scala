@@ -59,7 +59,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type Type >: Null <: TypeApi
+  type Type >: Null <: AnyRef with TypeApi
 
   /** This constant is used as a special value that indicates that no meaningful type exists.
    *  @group Types
@@ -256,7 +256,12 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type SingletonType >: Null <: Type
+  type SingletonType >: Null <: SingletonTypeApi with Type
+
+  /** Has no special methods. Is here to provides erased identity for `SingletonType`.
+   *  @group API
+   */
+  trait SingletonTypeApi
 
   /** A singleton type that describes types of the form on the left with the
    *  corresponding `ThisType` representation to the right:
@@ -266,7 +271,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type ThisType >: Null <: AnyRef with SingletonType with ThisTypeApi
+  type ThisType >: Null <: ThisTypeApi with SingletonType
 
   /** The constructor/extractor for `ThisType` instances.
    *  @group Extractors
@@ -304,7 +309,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type SingleType >: Null <: AnyRef with SingletonType with SingleTypeApi
+  type SingleType >: Null <: SingleTypeApi with SingletonType
 
   /** The constructor/extractor for `SingleType` instances.
    *  @group Extractors
@@ -343,7 +348,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type SuperType >: Null <: AnyRef with SingletonType with SuperTypeApi
+  type SuperType >: Null <: SuperTypeApi with SingletonType
 
   /** The constructor/extractor for `SuperType` instances.
    *  @group Extractors
@@ -382,7 +387,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type ConstantType >: Null <: AnyRef with SingletonType with ConstantTypeApi
+  type ConstantType >: Null <: ConstantTypeApi with SingletonType
 
   /** The constructor/extractor for `ConstantType` instances.
    *  @group Extractors
@@ -420,7 +425,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type TypeRef >: Null <: AnyRef with Type with TypeRefApi
+  type TypeRef >: Null <: TypeRefApi with Type
 
   /** The constructor/extractor for `TypeRef` instances.
    *  @group Extractors
@@ -461,7 +466,12 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type CompoundType >: Null <: AnyRef with Type
+  type CompoundType >: Null <: CompoundTypeApi with Type
+
+  /** Has no special methods. Is here to provides erased identity for `CompoundType`.
+   *  @group API
+   */
+  trait CompoundTypeApi
 
   /** The `RefinedType` type defines types of any of the forms on the left,
    *  with their RefinedType representations to the right.
@@ -473,7 +483,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type RefinedType >: Null <: AnyRef with CompoundType with RefinedTypeApi
+  type RefinedType >: Null <: RefinedTypeApi with CompoundType
 
   /** The constructor/extractor for `RefinedType` instances.
    *  @group Extractors
@@ -519,7 +529,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type ClassInfoType >: Null <: AnyRef with CompoundType with ClassInfoTypeApi
+  type ClassInfoType >: Null <: ClassInfoTypeApi with CompoundType
 
   /** The constructor/extractor for `ClassInfoType` instances.
    *  @group Extractors
@@ -556,7 +566,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type MethodType >: Null <: AnyRef with Type with MethodTypeApi
+  type MethodType >: Null <: MethodTypeApi with Type
 
   /** The constructor/extractor for `MethodType` instances.
    *  @group Extractors
@@ -600,7 +610,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type NullaryMethodType >: Null <: AnyRef with Type with NullaryMethodTypeApi
+  type NullaryMethodType >: Null <: NullaryMethodTypeApi with Type
 
   /** The constructor/extractor for `NullaryMethodType` instances.
    *  @group Extractors
@@ -630,7 +640,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type PolyType >: Null <: AnyRef with Type with PolyTypeApi
+  type PolyType >: Null <: PolyTypeApi with Type
 
   /** The constructor/extractor for `PolyType` instances.
    *  @group Extractors
@@ -664,7 +674,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type ExistentialType >: Null <: AnyRef with Type with ExistentialTypeApi
+  type ExistentialType >: Null <: ExistentialTypeApi with Type
 
   /** The constructor/extractor for `ExistentialType` instances.
    *  @group Extractors
@@ -699,7 +709,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type AnnotatedType >: Null <: AnyRef with Type with AnnotatedTypeApi
+  type AnnotatedType >: Null <: AnnotatedTypeApi with Type
 
   /** The constructor/extractor for `AnnotatedType` instances.
    *  @group Extractors
@@ -741,7 +751,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type TypeBounds >: Null <: AnyRef with Type with TypeBoundsApi
+  type TypeBounds >: Null <: TypeBoundsApi with Type
 
   /** The constructor/extractor for `TypeBounds` instances.
    *  @group Extractors
@@ -792,7 +802,7 @@ trait Types {
    *  @template
    *  @group Types
    */
-  type BoundedWildcardType >: Null <: AnyRef with Type with BoundedWildcardTypeApi
+  type BoundedWildcardType >: Null <: BoundedWildcardTypeApi with Type
 
   /** The constructor/extractor for `BoundedWildcardType` instances.
    *  @group Extractors

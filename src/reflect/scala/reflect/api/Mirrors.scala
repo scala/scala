@@ -225,7 +225,12 @@ trait Mirrors { self: Universe =>
   /** Abstracts the runtime representation of a class on the underlying platform.
    *  @group Mirrors
    */
-  type RuntimeClass >: Null
+  type RuntimeClass >: Null <: AnyRef
+
+  /** Has no special methods. Is here to provides erased identity for `RuntimeClass`.
+   *  @group API
+   */
+  trait RuntimeClassApi
 
   // todo. an improvement might be having mirrors reproduce the structure of the reflection domain
   // e.g. a ClassMirror could also have a list of fields, methods, constructors and so on

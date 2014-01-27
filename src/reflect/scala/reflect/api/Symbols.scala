@@ -60,51 +60,51 @@ trait Symbols { self: Universe =>
    *  @group Symbols
    *  @template
    */
-  type Symbol >: Null <: SymbolApi
+  type Symbol >: Null <: AnyRef with SymbolApi
 
   /** The type of type symbols representing type, class, and trait declarations,
    *  as well as type parameters.
    *  @group Symbols
    *  @template
    */
-  type TypeSymbol >: Null <: Symbol with TypeSymbolApi
+  type TypeSymbol >: Null <: TypeSymbolApi with Symbol
 
   /** The type of term symbols representing val, var, def, and object declarations as
    *  well as packages and value parameters.
    *  @group Symbols
    *  @template
    */
-  type TermSymbol >: Null <: Symbol with TermSymbolApi
+  type TermSymbol >: Null <: TermSymbolApi with Symbol
 
   /** The type of method symbols representing def declarations.
    *  @group Symbols
    *  @template
    */
-  type MethodSymbol >: Null <: TermSymbol with MethodSymbolApi
+  type MethodSymbol >: Null <: MethodSymbolApi with TermSymbol
 
   /** The type of module symbols representing object declarations.
    *  @group Symbols
    *  @template
    */
-  type ModuleSymbol >: Null <: TermSymbol with ModuleSymbolApi
+  type ModuleSymbol >: Null <: ModuleSymbolApi with TermSymbol
 
   /** The type of class symbols representing class and trait definitions.
    *  @group Symbols
    *  @template
    */
-  type ClassSymbol >: Null <: TypeSymbol with ClassSymbolApi
+  type ClassSymbol >: Null <: ClassSymbolApi with TypeSymbol
 
   /** The type of free terms introduced by reification.
    *  @group Symbols
    *  @template
    */
-  type FreeTermSymbol >: Null <: TermSymbol with FreeTermSymbolApi
+  type FreeTermSymbol >: Null <: FreeTermSymbolApi with TermSymbol
 
   /** The type of free types introduced by reification.
    *  @group Symbols
    *  @template
    */
-  type FreeTypeSymbol >: Null <: TypeSymbol with FreeTypeSymbolApi
+  type FreeTypeSymbol >: Null <: FreeTypeSymbolApi with TypeSymbol
 
   /** A special "missing" symbol. Commonly used in the API to denote a default or empty value.
    *  @group Symbols

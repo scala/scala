@@ -1055,7 +1055,7 @@ trait Types
   /** A base class for types that represent a single value
    *  (single-types and this-types).
    */
-  abstract class SingletonType extends SubType with SimpleTypeProxy {
+  abstract class SingletonType extends SubType with SimpleTypeProxy with SingletonTypeApi {
     def supertype = underlying
     override def isTrivial = false
     override def widen: Type = underlying.widen
@@ -1323,7 +1323,7 @@ trait Types
 
   /** A common base class for intersection types and class types
    */
-  abstract class CompoundType extends Type {
+  abstract class CompoundType extends Type with CompoundTypeApi {
 
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _
     private[reflect] var baseTypeSeqPeriod = NoPeriod
