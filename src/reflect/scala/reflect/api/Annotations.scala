@@ -46,10 +46,10 @@ trait Annotations { self: Universe =>
    */
   type Annotation >: Null <: AnyRef with AnnotationApi
 
-   /** The constructor/extractor for `Annotation` instances.
-    *  @group Extractors
-    */
-   val Annotation: AnnotationExtractor
+  /** The constructor/extractor for `Annotation` instances.
+   *  @group Extractors
+   */
+  val Annotation: AnnotationExtractor
 
   /** An extractor class to create and pattern match with syntax `Annotation(tpe, scalaArgs, javaArgs)`.
    *  Here, `tpe` is the annotation type, `scalaArgs` the payload of Scala annotations, and `javaArgs` the payload of Java annotations.
