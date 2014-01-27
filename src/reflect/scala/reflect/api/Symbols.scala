@@ -280,6 +280,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Basics
      */
+    @deprecated("Use `pos.source.file` instead", "2.11.0")
     def associatedFile: scala.reflect.io.AbstractFile
 
     /** A list of annotations attached to this Symbol.

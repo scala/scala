@@ -614,6 +614,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
             info(s"unpickling Scala $clazz and $module, owner = ${clazz.owner}")
             val bytes = ssig.getBytes
             val len = ByteCodecs.decode(bytes)
+            assignAssociatedFile(clazz, module, jclazz)
             unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
             markAllCompleted(clazz, module)
           case None =>
@@ -623,6 +624,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
                 val encoded = slsig flatMap (_.getBytes)
                 val len = ByteCodecs.decode(encoded)
                 val decoded = encoded.take(len)
+                assignAssociatedFile(clazz, module, jclazz)
                 unpickler.unpickle(decoded, 0, clazz, module, jclazz.getName)
                 markAllCompleted(clazz, module)
               case None =>
@@ -662,6 +664,12 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         sym setInfo TypeBounds.upper(glb(jtvar.getBounds.toList map typeToScala map objToAny))
         markAllCompleted(sym)
       }
+    }
+
+    private def assignAssociatedFile(clazz: Symbol, module: Symbol, jclazz: jClass[_]): Unit = {
+      val associatedFile = ReflectionUtils.associatedFile(jclazz)
+      clazz.associatedFile = associatedFile
+      if (module != NoSymbol) module.associatedFile = associatedFile
     }
 
     /**
@@ -719,6 +727,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         debugInfo("completing from Java " + sym + "/" + clazz.fullName)//debug
         assert(sym == clazz || (module != NoSymbol && (sym == module || sym == module.moduleClass)), sym)
 
+        assignAssociatedFile(clazz, module, jclazz)
         propagatePackageBoundary(jclazz, relatedSymbols: _*)
         copyAnnotations(clazz, jclazz)
         // to do: annotations to set also for module?

@@ -3166,8 +3166,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def associatedFile = (
       if (!isTopLevel) super.associatedFile
-      else if (_associatedFile eq null) NoAbstractFile // guarantee not null, but save cost of initializing the var
-      else _associatedFile
+      else {
+        if (_associatedFile eq null) NoAbstractFile // guarantee not null, but save cost of initializing the var
+        else _associatedFile
+      }
     )
     override def associatedFile_=(f: AbstractFile) { _associatedFile = f }
 
