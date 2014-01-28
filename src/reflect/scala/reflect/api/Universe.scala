@@ -75,14 +75,14 @@ abstract class Universe extends Symbols
                            with Printers
                            with Importers
 {
-  /** Use `refiy` to produce the abstract syntax tree representing a given Scala expression.
+  /** Use `reify` to produce the abstract syntax tree representing a given Scala expression.
    *
    * For example:
    *
    * {{{
-   * val five = reify{ 5 }    // Literal(Constant(5))
-   * reify{ 2 + 4 }           // Apply( Select( Literal(Constant(2)), newTermName("\$plus")), List( Literal(Constant(4)) ) )
-   * reify{ five.splice + 4 } // Apply( Select( Literal(Constant(5)), newTermName("\$plus")), List( Literal(Constant(4)) ) )
+   * val five = reify{ 5 }         // Literal(Constant(5))
+   * reify{ 5.toString }           // Apply(Select(Literal(Constant(5)), TermName("toString")), List())
+   * reify{ five.splice.toString } // Apply(Select(five, TermName("toString")), List())
    * }}}
    *
    * The produced tree is path dependent on the Universe `reify` was called from.
