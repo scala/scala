@@ -345,6 +345,12 @@ trait TypeTags { self: Universe =>
    * @group TypeTags
    */
   def typeOf[T: TypeTag](x: => T): Type = typeOf[T]
+
+  /**
+   * Type symbol of `x` as derived from a type tag.
+   * @group TypeTags
+   */
+  def symbolOf[T: WeakTypeTag]: TypeSymbol
 }
 
 private[scala] class SerializedTypeTag(var tpec: TypeCreator, var concrete: Boolean) extends Serializable {

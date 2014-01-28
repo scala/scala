@@ -126,4 +126,9 @@ trait Aliases {
    * Type of `x` as derived from a type tag.
    */
   def typeOf[T: TypeTag](x: => T): Type = typeOf[T]
+
+  /**
+   * Type symbol of `x` as derived from a type tag.
+   */
+  def symbolOf[T: WeakTypeTag]: universe.TypeSymbol = universe.symbolOf[T]
 }

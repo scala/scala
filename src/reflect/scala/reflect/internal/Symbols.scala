@@ -77,6 +77,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
   }
 
+  def symbolOf[T: WeakTypeTag]: TypeSymbol = weakTypeOf[T].typeSymbolDirect.asType
+
   abstract class SymbolContextApiImpl extends SymbolContextApi {
     this: Symbol =>
 
