@@ -952,6 +952,19 @@ trait Symbols { self: Universe =>
      *  @group Class
      */
     def typeParams: List[Symbol]
+
+    /** For a Scala class or module class, the primary constructor of the class.
+     *  For a Scala trait, its mixin constructor.
+     *  For a Scala package class, NoSymbol.
+     *  For a Java class, NoSymbol.
+     *
+     *  @group Class
+     */
+    // TODO: SI-8193 I think we should only return a non-empty symbol if called for Scala classes
+    // returning something for traits and module classes is outright confusing
+    // This, however, will require some refactoring in the compiler, so I'll leave it for later
+    // as at the moment we don't have time or risk tolerance for that
+    def primaryConstructor: Symbol
   }
 
   /** The API of free term symbols.
