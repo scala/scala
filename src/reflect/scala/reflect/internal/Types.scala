@@ -194,6 +194,7 @@ trait Types
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = underlying.instantiateTypeParams(formals, actuals)
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) = underlying.skolemizeExistential(owner, origin)
     override def normalize = maybeRewrap(underlying.normalize)
+    override def etaExpand = maybeRewrap(underlying.etaExpand)
     override def dealias = maybeRewrap(underlying.dealias)
     override def cloneInfo(owner: Symbol) = maybeRewrap(underlying.cloneInfo(owner))
     override def atOwner(owner: Symbol) = maybeRewrap(underlying.atOwner(owner))
@@ -497,6 +498,8 @@ trait Types
      *  your heart with fear.
      */
     def normalize = this // @MAT
+
+    def etaExpand = this
 
     /** Expands type aliases. */
     def dealias = this
@@ -1589,20 +1592,27 @@ trait Types
       } else if (flattened != parents) {
         refinedType(flattened, if (typeSymbol eq NoSymbol) NoSymbol else typeSymbol.owner, decls, NoPosition)
       } else if (isHigherKinded) {
-        // MO to AM: This is probably not correct
-        // If they are several higher-kinded parents with different bounds we need
-        // to take the intersection of their bounds
-        typeFun(
-          typeParams,
-          RefinedType(
-            parents map {
-              case TypeRef(pre, sym, List()) => TypeRef(pre, sym, dummyArgs)
-              case p => p
-            },
-            decls,
-            typeSymbol))
+        etaExpand
       } else super.normalize
     }
+
+    final override def etaExpand: Type = {
+      // MO to AM: This is probably not correct
+      // If they are several higher-kinded parents with different bounds we need
+      // to take the intersection of their bounds
+      // !!! inconsistent with TypeRef.etaExpand that uses initializedTypeParams
+      if (!isHigherKinded) this
+      else typeFun(
+        typeParams,
+        RefinedType(
+          parents map {
+            case TypeRef(pre, sym, List()) => TypeRef(pre, sym, dummyArgs)
+            case p => p
+          },
+          decls,
+          typeSymbol))
+    }
+
     override def kind = "RefinedType"
   }
 
@@ -2119,7 +2129,7 @@ trait Types
       || pre.isGround && args.forall(_.isGround)
     )
 
-    def etaExpand: Type = {
+    final override def etaExpand: Type = {
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
       if (tpars.isEmpty) this
@@ -3119,8 +3129,12 @@ trait Types
       if (instValid) inst
       // get here when checking higher-order subtyping of the typevar by itself
       // TODO: check whether this ever happens?
-      else if (isHigherKinded) logResult("Normalizing HK $this")(typeFun(params, applyArgs(params map (_.typeConstructor))))
+      else if (isHigherKinded) etaExpand
       else super.normalize
+    )
+    override def etaExpand: Type = (
+      if (!isHigherKinded) this
+      else logResult("Normalizing HK $this")(typeFun(params, applyArgs(params map (_.typeConstructor))))
     )
     override def typeSymbol = origin.typeSymbol
 

@@ -76,6 +76,12 @@ trait Types {
   /** The API of types.
    *  The main source of information about types is the [[scala.reflect.api.Types]] page.
    *  @group API
+   *
+   *  @define dealiasWidenWarning Note that type aliases can hide beneath
+   *  singleton types and singleton types can hide inside type aliases.
+   *  Moreover, aliases might lurk in the upper bounds of abstract types.
+   *  Therefore careful thought has to be applied to identify and carry out
+   *  unwrapping logic specific to your use case.
    */
   abstract class TypeApi {
     /** The term symbol associated with the type, or `NoSymbol` for types
@@ -123,7 +129,7 @@ trait Types {
      */
     def typeConstructor: Type
 
-    /**
+    /** Reduce to beta eta-long normal form.
      *  Expands type aliases and converts higher-kinded TypeRefs to PolyTypes.
      *  Functions on types are also implemented as PolyTypes.
      *
@@ -131,7 +137,17 @@ trait Types {
      *    TypeRef(pre, <List>, List()) is replaced by
      *    PolyType(X, TypeRef(pre, <List>, List(X)))
      */
+    @deprecated("Use `dealias` or `etaExpand` instead", "2.11.0")
     def normalize: Type
+
+    /** Converts higher-kinded TypeRefs to PolyTypes.
+     *  Functions on types are also implemented as PolyTypes.
+     *
+     *  Example: (in the below, <List> is the type constructor of List)
+     *    TypeRef(pre, <List>, List()) is replaced by
+     *    PolyType(X, TypeRef(pre, <List>, List(X)))
+     */
+    def etaExpand: Type
 
     /** Does this type conform to given type argument `that`? */
     def <:< (that: Type): Boolean
@@ -205,8 +221,15 @@ trait Types {
      *  class Outer { class C ; val x: C }
      *  val o: Outer
      *  <o.x.type>.widen = o.C
+     *
+     *  $dealiasWidenWarning
      */
     def widen: Type
+
+    /** Expands type aliases arising from type members.
+     *  $dealiasWidenWarning
+     */
+    def dealias: Type
 
     /******************* helpers *******************/
 
