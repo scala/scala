@@ -1,13 +1,13 @@
-t7325.scala:2: error: conversions must follow a splice; use %% for literal %, %n for newline
+t7325.scala:2: error: Missing conversion operator in '%'; use %% for literal %, %n for newline
   println(f"%")
             ^
-t7325.scala:4: error: conversions must follow a splice; use %% for literal %, %n for newline
+t7325.scala:4: error: Missing conversion operator in '%'; use %% for literal %, %n for newline
   println(f"%%%")
               ^
-t7325.scala:6: error: conversions must follow a splice; use %% for literal %, %n for newline
+t7325.scala:6: error: Missing conversion operator in '%'; use %% for literal %, %n for newline
   println(f"%%%%%")
                 ^
-t7325.scala:16: error: wrong conversion string
+t7325.scala:16: error: Missing conversion operator in '%'; use %% for literal %, %n for newline
   println(f"${0}%")
                 ^
 t7325.scala:19: error: conversions must follow a splice; use %% for literal %, %n for newline

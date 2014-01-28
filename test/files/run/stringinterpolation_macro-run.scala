@@ -72,6 +72,14 @@ println(f"${120 : java.lang.Integer}%d")
 println(f"${120 : java.lang.Long}%d")
 println(f"${BigInt(120)}%d")
 println(f"${new java.math.BigInteger("120")}%d")
+println(f"${4}%#10X")
+
+locally {
+  val fff  = new java.util.Formattable {
+    def formatTo(f: java.util.Formatter, g: Int, w: Int, p: Int) = f.format("4")
+  }
+  println(f"She is ${fff}%#s feet tall.")
+}
 
 {
   implicit val strToShort = (s: String) => java.lang.Short.parseShort(s)
@@ -103,4 +111,11 @@ println(f"${c.getTime.getTime}%TD")
 
 implicit val strToDate = (x: String) => c
 println(f"""${"1234"}%TD""")
+
+
+// literals and arg indexes
+println(f"%%")
+println(f"${7}%d %<d ${9}%d")
+println(f"${7}%d %2$$d ${9}%d")
+
 }
