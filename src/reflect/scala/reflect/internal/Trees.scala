@@ -303,7 +303,7 @@ trait Trees extends api.Trees {
   object ModuleDef extends ModuleDefExtractor
 
   abstract class ValOrDefDef extends MemberDef with ValOrDefDefApi {
-    def name: Name
+    def name: TermName
     def tpt: Tree
     def rhs: Tree
   }

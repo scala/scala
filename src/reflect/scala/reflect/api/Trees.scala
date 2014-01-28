@@ -475,7 +475,7 @@ trait Trees { self: Universe =>
    */
   trait ValOrDefDefApi extends MemberDefApi { this: ValOrDefDef =>
     /** @inheritdoc */
-    def name: Name // can't be a TermName because macros can be type names.
+    def name: TermName
 
     /** The type ascribed to the definition.
      *  An empty `TypeTree` if the type hasn't been specified explicitly
