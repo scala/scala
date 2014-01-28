@@ -133,6 +133,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def getter: Symbol = getter(owner)
     def setter: Symbol = setter(owner)
+
+    def companion: Symbol = {
+      if (isModule && !isPackage) companionSymbol
+      else if (isModuleClass && !isPackageClass) sourceModule.companionSymbol
+      else if (isClass && !isModuleClass && !isPackageClass) companionSymbol
+      else NoSymbol
+    }
   }
 
   private[reflect] case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)

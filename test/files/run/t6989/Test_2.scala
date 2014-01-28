@@ -11,9 +11,9 @@ import scala.reflect.runtime.universe._
 package object foo {
   def testAll(): Unit = {
     test(typeOf[foo.PackagePrivateJavaClass].typeSymbol)
-    test(typeOf[foo.PackagePrivateJavaClass].typeSymbol.companionSymbol)
+    test(typeOf[foo.PackagePrivateJavaClass].typeSymbol.companion)
     test(typeOf[foo.JavaClass_1].typeSymbol)
-    test(typeOf[foo.JavaClass_1].typeSymbol.companionSymbol)
+    test(typeOf[foo.JavaClass_1].typeSymbol.companion)
   }
 
   def test(sym: Symbol): Unit = {

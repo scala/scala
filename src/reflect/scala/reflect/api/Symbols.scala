@@ -335,9 +335,20 @@ trait Symbols { self: Universe =>
      *  For a module: the class with the same name in the same package.
      *  For all others: NoSymbol
      *
+     *  This API may return unexpected results for module classes, packages and package classes.
+     *  Use `companion` instead in order to get predictable results.
+     *
      *  @group Basics
      */
+    @deprecated("Use `companion` instead", "2.11.0")
     def companionSymbol: Symbol
+
+    /** For a class: its companion object if exists.
+     *  For a module or a module class: companion class of the module if exists.
+     *  For a package or a package class: NoSymbol.
+     *  For all others: NoSymbol.
+     */
+    def companion: Symbol
 
     /** The type signature of this symbol seen as a member of given type `site`.
      *
