@@ -824,6 +824,14 @@ trait Symbols { self: Universe =>
      *  @group Method
      */
     def returnType: Type
+
+    /** Exceptions that this method is known to throw.
+     *  For Scala methods, the list is calculated from [[throws]] annotations present on a method.
+     *  For Java methods, the list is calculated from `throws` clauses attached to the method and stored in bytecode.
+     *
+     *  @group Method
+     */
+    def exceptions: List[Symbol]
   }
 
   /** The API of module symbols.
