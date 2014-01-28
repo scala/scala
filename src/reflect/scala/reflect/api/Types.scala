@@ -231,6 +231,21 @@ trait Types {
      */
     def dealias: Type
 
+    /******* popular methods from subclasses *******/
+
+    /** List of type arguments ingrained in this type reference.
+     *  Depending on your use case you might or might not want to call `dealias` first.
+     *    scala> type T = List[Int]
+     *    defined type alias T
+     *
+     *    scala> typeOf[T].typeArgs
+     *    res0: List[reflect.runtime.universe.Type] = List()
+     *
+     *    scala> typeOf[T].dealias.typeArgs
+     *    res1: List[reflect.runtime.universe.Type] = List(scala.Int)
+     */
+    def typeArgs: List[Type]
+
     /******************* helpers *******************/
 
     /** Provides an alternate if type is NoType.
