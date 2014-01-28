@@ -219,7 +219,7 @@ trait Printers { self: Universe =>
    * @group Printers
    */
   protected def newCodePrinter(out: PrintWriter): TreePrinter
-  
+
   /** Renders internal structure of a reflection artifact as the
    *  visualization of a Scala syntax tree.
    *
@@ -252,4 +252,9 @@ trait Printers { self: Universe =>
    * @group Printers
    */
   def showRaw(flags: FlagSet): String = flags.toString
+
+  /** Renders a string that represents a declaration of this symbol written in Scala.
+   * @group Printers
+   */
+  def showDeclaration(sym: Symbol): String
 }
