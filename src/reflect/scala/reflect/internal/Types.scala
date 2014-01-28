@@ -243,6 +243,14 @@ trait Types
     def isSpliceable = {
       this.isInstanceOf[TypeRef] && typeSymbol.isAbstractType && !typeSymbol.isExistential
     }
+
+    def companionType = {
+      val sym = typeSymbolDirect
+      if (sym.isModule && !sym.isPackage) sym.companionSymbol.tpe
+      else if (sym.isModuleClass && !sym.isPackageClass) sym.sourceModule.companionSymbol.tpe
+      else if (sym.isClass && !sym.isModuleClass && !sym.isPackageClass) sym.companionSymbol.info
+      else NoType
+    }
   }
 
   /** The base class for all types */
