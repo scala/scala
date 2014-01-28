@@ -10,8 +10,8 @@ object Macros {
   def selFieldImpl(c: Context) = {
     import c.universe._
     val field = c.macroApplication.symbol
-    val bodyAnn = field.annotations.filter(_.tpe <:< typeOf[body]).head
-    c.Expr[Any](bodyAnn.scalaArgs.head)
+    val bodyAnn = field.annotations.filter(_.tree.tpe <:< typeOf[body]).head
+    c.Expr[Any](bodyAnn.tree.children(1))
   }
 
   def mkObjectImpl(c: Context)(xs: c.Expr[Any]*) = {

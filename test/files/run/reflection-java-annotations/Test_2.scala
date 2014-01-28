@@ -4,4 +4,6 @@ object Test extends App {
   sym.typeSignature
   sym.annotations foreach (_.javaArgs)
   println(sym.annotations)
+  println("=======")
+  sym.annotations.map(_.tree).map(println)
 }

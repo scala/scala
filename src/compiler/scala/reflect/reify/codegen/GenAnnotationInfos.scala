@@ -38,19 +38,10 @@ trait GenAnnotationInfos {
       }
     }
 
-    def reifyClassfileAnnotArg(arg: ClassfileAnnotArg): Tree = arg match {
-      case LiteralAnnotArg(const) =>
-        mirrorFactoryCall(nme.LiteralAnnotArg, reifyProduct(const))
-      case ArrayAnnotArg(args) =>
-        mirrorFactoryCall(nme.ArrayAnnotArg, scalaFactoryCall(nme.Array, args map reifyClassfileAnnotArg: _*))
-      case NestedAnnotArg(ann) =>
-        mirrorFactoryCall(nme.NestedAnnotArg, reifyAnnotationInfo(ann))
-      case _ =>
-        sys.error(s"Don't know what to do with $arg")
-    }
-
     // if you reify originals of anns, you get SO when trying to reify AnnotatedTypes, so screw it - after all, it's not that important
-    val reifiedAssocs = ann.assocs map (assoc => scalaFactoryCall(nme.Tuple2, reify(assoc._1), reifyClassfileAnnotArg(assoc._2)))
-    mirrorFactoryCall(nme.Annotation, reify(ann.atp), mkList(reifiedArgs), mkListMap(reifiedAssocs))
+    val Apply(Select(New(tpt), name), args) = annotationToTree(ann)
+    val reifiedAtp = mirrorCall(nme.Select, mirrorCall(nme.New, mirrorCall(nme.TypeTree, reifyType(tpt.tpe))), reify(name))
+    val reifiedAnnRepr = mirrorCall(nme.Apply, reifiedAtp, reifyList(args))
+    mirrorFactoryCall(nme.Annotation, reifiedAnnRepr)
   }
 }

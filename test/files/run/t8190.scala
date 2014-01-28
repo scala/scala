@@ -4,10 +4,6 @@ trait Overloads {
   // makes sure noone erases to Any or AnyRef
   def test(x: AnyRef) = "AnyRef"
   def test(x: Annotation) = "Annotation"
-  def test(x: JavaArgument) = "JavaArgument"
-  def test(x: LiteralArgument) = "LiteralArgument"
-  def test(x: ArrayArgument) = "ArrayArgument"
-  def test(x: NestedArgument) = "NestedArgument"
   def test(x: Constant) = "Constant"
   def test(x: Mirror) = "Mirror"
   def test(x: Name) = "Name"
@@ -110,14 +106,14 @@ object Test extends App with Overloads {
     types = types.filter(_ != "ModifiersCreator") // type ModifiersCreator = ModifiersExtractor
     types = types.filter(_ != "FlagSet") // type FlagSet
     types = types.filter(_ != "RuntimeClass") // type RuntimeClass = java.lang.Class[_]
+    types = types.filter(_ != "JavaArgument") // deprecated
+    types = types.filter(_ != "LiteralArgument") // deprecated
+    types = types.filter(_ != "ArrayArgument") // deprecated
+    types = types.filter(_ != "NestedArgument") // deprecated
     val diff = types.toList diff buf.toList
     println("uncovered type members: " + diff)
   }
   record(test(null: Annotation))
-  record(test(null: JavaArgument))
-  record(test(null: LiteralArgument))
-  record(test(null: ArrayArgument))
-  record(test(null: NestedArgument))
   record(test(null: Constant))
   record(test(null: Mirror))
   record(test(null: Name))
