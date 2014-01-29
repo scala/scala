@@ -1,0 +1,8 @@
+t1503.scala:7: warning: Typing of identifier patterns will become more conservative (see SI-1503).
+Value n (the value matched by Whatever) is wrongly assumed to have type Whatever.type,
+whereas we can only safely count on it having type Any, as the pattern is matched using ==.
+  def matchWhateverCCE(x: Any) = x match { case n @ Whatever => n }
+                                                    ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
