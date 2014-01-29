@@ -491,12 +491,6 @@ trait Symbols { self: Universe =>
      */
     def isFinal: Boolean
 
-    /** Is this symbol overriding something?
-     *
-     *  @group Tests
-     */
-    def isOverride: Boolean
-
     /** Is this symbol abstract (i.e. an abstract class, an abstract method, value or type member)?
      *
      *  @group Tests
