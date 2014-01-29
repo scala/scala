@@ -53,14 +53,17 @@ trait StdNames {
      *
      * We obtain the formula:
      *
-     *   FileNameLength = 2*(MaxNameLength / 4) + 2.marker.length + 32 + 6
+     *   FileNameLength = 2*(MaxNameLength / 4) + 2.marker.length + 32 + suffixLength
      *
-     * (+6 for ".class"). MaxNameLength can therefore be computed as follows:
+     * (+suffixLength for ".class" and potential module class suffix that is added *after* this transform).
+     *
+     * MaxNameLength can therefore be computed as follows:
      */
     val marker = "$$$$"
+    val maxSuffixLength = "$.class".length + 1 // potential module class suffix and file extension
     val MaxNameLength = math.min(
-      settings.maxClassfileName.value - 6,
-      2 * (settings.maxClassfileName.value - 6 - 2*marker.length - 32)
+      settings.maxClassfileName.value - maxSuffixLength,
+      2 * (settings.maxClassfileName.value - maxSuffixLength - 2*marker.length - 32)
     )
     def toMD5(s: String, edge: Int): String = {
       val prefix = s take edge
