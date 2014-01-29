@@ -1219,7 +1219,7 @@ self =>
       // Like Swiss cheese, with holes
       def stringCheese: Tree = atPos(in.offset) {
         val start = in.offset
-        val interpolator = in.name
+        val interpolator = in.name.encoded // ident() for INTERPOLATIONID
 
         val partsBuf = new ListBuffer[Tree]
         val exprBuf = new ListBuffer[Tree]
