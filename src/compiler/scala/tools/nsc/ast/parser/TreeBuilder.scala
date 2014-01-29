@@ -56,7 +56,7 @@ abstract class TreeBuilder {
 
   /** Create tree representing (unencoded) binary operation expression or pattern. */
   def makeBinop(isExpr: Boolean, left: Tree, op: TermName, right: Tree, opPos: Position, targs: List[Tree] = Nil): Tree = {
-    require(isExpr || targs.isEmpty, s"Incompatible args to makeBinop: !isExpr but targs=$targs")
+    require(isExpr || targs.isEmpty || targs.exists(_.isErroneous), s"Incompatible args to makeBinop: !isExpr but targs=$targs")
 
     def mkSelection(t: Tree) = {
       def sel = atPos(opPos union t.pos)(Select(stripParens(t), op.encode))
