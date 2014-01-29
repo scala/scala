@@ -36,7 +36,7 @@ trait Variances {
      *  @pre  sym.isLocalToThis
      */
     @tailrec final def checkForEscape(sym: Symbol, site: Symbol) {
-      if (site == sym.owner || site == sym.owner.moduleClass || site.isPackage) () // done
+      if (site == sym.owner || site == sym.owner.moduleClass || site.hasPackageFlag) () // done
       else if (site.isTerm || site.isPrivateLocal) checkForEscape(sym, site.owner) // ok - recurse to owner
       else escapedLocals += sym
     }

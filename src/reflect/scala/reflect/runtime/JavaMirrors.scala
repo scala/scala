@@ -935,7 +935,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val owner = ownerModule.moduleClass
       val name = (fullname: TermName) drop split + 1
       val opkg = owner.info decl name
-      if (opkg.isPackage)
+      if (opkg.hasPackageFlag)
         opkg.asModule
       else if (opkg == NoSymbol) {
         val pkg = owner.newPackage(name)

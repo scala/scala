@@ -108,6 +108,7 @@ trait HasFlags {
   def isOverride         = hasFlag(OVERRIDE)
   def isParamAccessor    = hasFlag(PARAMACCESSOR)
   def isPrivate          = hasFlag(PRIVATE)
+  @deprecated ("Use `hasPackageFlag` instead", "2.11.0")
   def isPackage          = hasFlag(PACKAGE)
   def isPrivateLocal     = hasAllFlags(PrivateLocal)
   def isProtected        = hasFlag(PROTECTED)

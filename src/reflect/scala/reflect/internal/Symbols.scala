@@ -2424,7 +2424,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isClass) "class"
       else if (isType && !isParameter) "type"
       else if (isVariable) "var"
-      else if (isPackage) "package"
+      else if (hasPackageFlag) "package"
       else if (isModule) "object"
       else if (isSourceMethod) "def"
       else if (isTerm && (!isParameter || isParamAccessor)) "val"
@@ -2435,8 +2435,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         if (isTermMacro) ("term macro", "macro method", "MACM")
         else if (isInstanceOf[FreeTermSymbol]) ("free term", "free term", "FTE")
         else if (isInstanceOf[FreeTypeSymbol]) ("free type", "free type", "FTY")
-        else if (isPackage) ("package", "package", "PK")
         else if (isPackageClass) ("package class", "package", "PKC")
+        else if (isPackage) ("package", "package", "PK")
         else if (isPackageObject) ("package object", "package", "PKO")
         else if (isPackageObjectClass) ("package object class", "package", "PKOC")
         else if (isAnonymousClass) ("anonymous class", "anonymous class", "AC")
@@ -2660,7 +2660,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         (infos ne null) && infos.info.isInstanceOf[OverloadedType]
     )
     ***/
-    override def isPackage          = this hasFlag PACKAGE
     override def isValueParameter   = this hasFlag PARAM
 
     override def isSetterParameter  = isValueParameter && owner.isSetter

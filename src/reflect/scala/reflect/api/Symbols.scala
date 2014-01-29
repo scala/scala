@@ -457,7 +457,7 @@ trait Symbols { self: Universe =>
     def privateWithin: Symbol
 
     /** Does this symbol represent the definition of a package?
-     *  If yes, `isTerm` is also guaranteed to be true.
+     *  Known issues: [[https://issues.scala-lang.org/browse/SI-6732]].
      *
      *  @group Tests
      */

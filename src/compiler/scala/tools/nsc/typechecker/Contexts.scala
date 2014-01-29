@@ -977,7 +977,7 @@ trait Contexts { self: Analyzer =>
         //   2) sym.owner is inherited by the correct package object class
         // We try to establish 1) by inspecting the owners directly, and then we try
         // to rule out 2), and only if both those fail do we resort to looking in the info.
-        !sym.isPackage && sym.owner.exists && (
+        !sym.hasPackageFlag && sym.owner.exists && (
           if (sym.owner.isPackageObjectClass)
             sym.owner.owner == pkgClass
           else

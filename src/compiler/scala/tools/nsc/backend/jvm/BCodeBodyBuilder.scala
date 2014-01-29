@@ -350,7 +350,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
         case Ident(name) =>
           val sym = tree.symbol
-          if (!sym.isPackage) {
+          if (!sym.hasPackageFlag) {
             val tk = symInfoTK(sym)
             if (sym.isModule) { genLoadModule(tree) }
             else { locals.load(sym) }

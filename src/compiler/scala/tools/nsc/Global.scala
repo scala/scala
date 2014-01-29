@@ -1353,7 +1353,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       val toReload = mutable.Set[String]()
       for (sym <- root.info.decls) {
         if (sym.isInitialized && clearOnNextRun(sym))
-          if (sym.isPackage) {
+          if (sym.hasPackageFlag) {
             resetProjectClasses(sym.moduleClass)
             openPackageModule(sym.moduleClass)
           } else {

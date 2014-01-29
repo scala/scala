@@ -48,7 +48,7 @@ class JLineCompletion(val intp: IMain) extends Completion with CompletionOutput 
     // compiler to crash for reasons not yet known.
     def members     = exitingTyper((effectiveTp.nonPrivateMembers.toList ++ anyMembers) filter (_.isPublic))
     def methods     = members.toList filter (_.isMethod)
-    def packages    = members.toList filter (_.isPackage)
+    def packages    = members.toList filter (_.hasPackageFlag)
     def aliases     = members.toList filter (_.isAliasType)
 
     def memberNames   = members map tos
