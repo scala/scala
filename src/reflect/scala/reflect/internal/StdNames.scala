@@ -250,12 +250,13 @@ trait StdNames {
     final val Quasiquote: NameType          = "Quasiquote"
 
     // quasiquote-specific names
-    final val QUASIQUOTE_MODS: NameType         = "$quasiquote$mods$"
-    final val QUASIQUOTE_TUPLE: NameType        = "$quasiquote$tuple$"
-    final val QUASIQUOTE_FUNCTION: NameType     = "$quasiquote$function$"
-    final val QUASIQUOTE_REFINE_STAT: NameType  = "$quasiquote$refine$stat$"
     final val QUASIQUOTE_EARLY_DEF: NameType    = "$quasiquote$early$def$"
+    final val QUASIQUOTE_FUNCTION: NameType     = "$quasiquote$function$"
+    final val QUASIQUOTE_MODS: NameType         = "$quasiquote$mods$"
     final val QUASIQUOTE_PACKAGE_STAT: NameType = "$quasiquote$package$stat$"
+    final val QUASIQUOTE_PARAM: NameType        = "$quasiquote$param$"
+    final val QUASIQUOTE_REFINE_STAT: NameType  = "$quasiquote$refine$stat$"
+    final val QUASIQUOTE_TUPLE: NameType        = "$quasiquote$tuple$"
 
     // Annotation simple names, used in Namer
     final val BeanPropertyAnnot: NameType = "BeanProperty"
@@ -577,6 +578,7 @@ trait StdNames {
     val Flag : NameType                = "Flag"
     val FlagsRepr: NameType            = "FlagsRepr"
     val Ident: NameType                = "Ident"
+    val ImplicitParams: NameType       = "ImplicitParams"
     val Import: NameType               = "Import"
     val Literal: NameType              = "Literal"
     val LiteralAnnotArg: NameType      = "LiteralAnnotArg"
@@ -705,9 +707,9 @@ trait StdNames {
     val materializeTypeTag: NameType   = "materializeTypeTag"
     val moduleClass : NameType         = "moduleClass"
     val mkAnnotation: NameType         = "mkAnnotation"
-    val mkRefineStat: NameType         = "mkRefineStat"
     val mkEarlyDef: NameType           = "mkEarlyDef"
     val mkPackageStat: NameType        = "mkPackageStat"
+    val mkRefineStat: NameType         = "mkRefineStat"
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
     val newFreeTerm: NameType          = "newFreeTerm"

@@ -8,6 +8,7 @@ object DefinitionDeconstructionProps
   with ObjectDeconstruction
   with ModsDeconstruction
   with ValVarDeconstruction
+  with DefDeconstruction
   with PackageDeconstruction
 
 trait TraitDeconstruction { self: QuasiquoteProperties =>
@@ -178,5 +179,33 @@ trait PackageDeconstruction { self: QuasiquoteProperties =>
     matches("package object foo extends mammy with daddy { def baz }")
     matches("package object foo extends { val early = 1 } with daddy")
     assertThrows[MatchError] { matches("object foo") }
+  }
+}
+
+trait DefDeconstruction { self: QuasiquoteProperties =>
+  property("exhaustive def matcher") = test {
+    def matches(line: String) = {
+      val t = parse(line)
+      val q"$mods0 def $name0[..$targs0](...$argss0): $restpe0 = $body0" = t
+      val q"$mods1 def $name1[..$targs1](...$argss1)(implicit ..$impl1): $restpe1 = $body1" = t
+    }
+    matches("def foo = foo")
+    matches("implicit def foo: Int = 2")
+    matches("def foo[T](x: T): T = x")
+    matches("def foo[A: B] = implicitly[B[A]]")
+    matches("private def foo = 0")
+    matches("def foo[A <% B] = null")
+    matches("def foo(one: One)(two: Two) = (one, two)")
+    matches("def foo[T](args: T*) = args.toList")
+  }
+
+  property("extract implicit arg list (1)") = test {
+    val q"def foo(...$argss)(implicit ..$impl)" = q"def foo(x: Int)(implicit y: Int)"
+    assert(impl ≈ List(q"${Modifiers(IMPLICIT | PARAM)} val y: Int"))
+  }
+
+  property("extract implicit arg list (2)") = test {
+    val q"def foo(...$argss)(implicit ..$impl)" = q"def foo(x: Int)"
+    assert(impl.isEmpty)
   }
 }

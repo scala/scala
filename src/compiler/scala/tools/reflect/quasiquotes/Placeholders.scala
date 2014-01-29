@@ -95,7 +95,6 @@ trait Placeholders { self: Quasiquotes =>
       case Ident(name) => name
       case Bind(name, Ident(nme.WILDCARD)) => name
       case TypeDef(_, name, List(), TypeBoundsTree(EmptyTree, EmptyTree)) => name
-      case ValDef(_, name, TypeTree(), EmptyTree) => name
     }
   }
 
@@ -108,6 +107,12 @@ trait Placeholders { self: Quasiquotes =>
   object AnnotPlaceholder extends HolePlaceholder {
     def matching = {
       case Apply(Select(New(Ident(name)), nme.CONSTRUCTOR), Nil) => name
+    }
+  }
+
+  object ParamPlaceholder extends HolePlaceholder {
+    def matching = {
+      case ValDef(_, name, Ident(tpnme.QUASIQUOTE_PARAM), EmptyTree) => name
     }
   }
 

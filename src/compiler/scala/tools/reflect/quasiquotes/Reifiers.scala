@@ -137,6 +137,7 @@ trait Reifiers { self: Quasiquotes =>
       case RefineStatPlaceholder(hole) => reifyRefineStat(hole)
       case EarlyDefPlaceholder(hole) => reifyEarlyDef(hole)
       case PackageStatPlaceholder(hole) => reifyPackageStat(hole)
+      case ParamPlaceholder(hole) => hole.tree
       // for enumerators are checked not during splicing but during
       // desugaring of the for loop in SyntacticFor & SyntacticForYield
       case ForEnumPlaceholder(hole) => hole.tree
@@ -159,8 +160,12 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticObjectDef, mods, name, earlyDefs, parents, selfdef, body)
       case SyntacticNew(earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticNew, earlyDefs, parents, selfdef, body)
-      case SyntacticDefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-        reifyBuildCall(nme.SyntacticDefDef, mods, name, tparams, vparamss, tpt, rhs)
+      case SyntacticDefDef(mods, name, tparams, build.ImplicitParams(vparamss, implparams), tpt, rhs) =>
+        if (implparams.nonEmpty)
+          mirrorBuildCall(nme.SyntacticDefDef, reify(mods), reify(name), reify(tparams), 
+                          reifyBuildCall(nme.ImplicitParams, vparamss, implparams), reify(tpt), reify(rhs))
+        else
+          reifyBuildCall(nme.SyntacticDefDef, mods, name, tparams, vparamss, tpt, rhs)
       case SyntacticValDef(mods, name, tpt, rhs) if tree != noSelfType =>
         reifyBuildCall(nme.SyntacticValDef, mods, name, tpt, rhs)
       case SyntacticVarDef(mods, name, tpt, rhs) =>
@@ -313,6 +318,8 @@ trait Reifiers { self: Quasiquotes =>
       case EarlyDefPlaceholder(h @ Hole(_, DotDot)) => reifyEarlyDef(h)
       case PackageStatPlaceholder(h @ Hole(_, DotDot)) => reifyPackageStat(h)
       case ForEnumPlaceholder(Hole(tree, DotDot)) => tree
+      case ParamPlaceholder(Hole(tree, DotDot)) => tree
+      case List(ParamPlaceholder(Hole(tree, DotDotDot))) => tree
       case List(Placeholder(Hole(tree, DotDotDot))) => tree
     } {
       reify(_)

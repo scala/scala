@@ -80,8 +80,20 @@ trait Parsers { self: Quasiquotes =>
       }
       import treeBuilder.{global => _, unit => _, _}
 
+      def quasiquoteParam(name: Name, flags: FlagSet = NoFlags) =
+        ValDef(Modifiers(flags), name.toTermName, Ident(tpnme.QUASIQUOTE_PARAM), EmptyTree)
+
       // q"def foo($x)"
-      override def allowTypelessParams = true
+      override def param(owner: Name, implicitmod: Int, caseParam: Boolean): ValDef =
+        if (isHole && lookingAhead { in.token == COMMA || in.token == RPAREN }) {
+          quasiquoteParam(ident(), implicitmod)
+        } else super.param(owner, implicitmod, caseParam)
+
+      // q"($x) => ..." && q"class X { selfie => }
+      override def convertToParam(tree: Tree): ValDef = tree match {
+        case Ident(name) if isHole(name) => quasiquoteParam(name)
+        case _ => super.convertToParam(tree)
+      }
 
       // q"foo match { case $x }"
       override def caseClause(): CaseDef =

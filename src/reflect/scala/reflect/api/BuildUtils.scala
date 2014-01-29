@@ -96,6 +96,13 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     def freshTypeName(prefix: String): TypeName
 
+    val ImplicitParams: ImplicitParamsExtractor
+
+    trait ImplicitParamsExtractor {
+      def apply(paramss: List[List[ValDef]], implparams: List[ValDef]): List[List[ValDef]]
+      def unapply(vparamss: List[List[ValDef]]): Some[(List[List[ValDef]], List[ValDef])]
+    }
+
     val ScalaDot: ScalaDotExtractor
 
     trait ScalaDotExtractor {
@@ -128,8 +135,8 @@ private[reflect] trait BuildUtils { self: Universe =>
 
     trait SyntacticClassDefExtractor {
       def apply(mods: Modifiers, name: TypeName, tparams: List[Tree],
-                constrMods: Modifiers, vparamss: List[List[Tree]], earlyDefs: List[Tree],
-                parents: List[Tree], selfType: Tree, body: List[Tree]): ClassDef
+                constrMods: Modifiers, vparamss: List[List[Tree]],
+                earlyDefs: List[Tree], parents: List[Tree], selfType: Tree, body: List[Tree]): ClassDef
       def unapply(tree: Tree): Option[(Modifiers, TypeName, List[TypeDef], Modifiers, List[List[ValDef]],
                                        List[Tree], List[Tree], ValDef, List[Tree])]
     }
@@ -199,9 +206,10 @@ private[reflect] trait BuildUtils { self: Universe =>
     val SyntacticDefDef: SyntacticDefDefExtractor
 
     trait SyntacticDefDefExtractor {
-      def apply(mods: Modifiers, name: TermName, tparams: List[Tree], vparamss: List[List[Tree]], tpt: Tree, rhs: Tree): DefDef
+      def apply(mods: Modifiers, name: TermName, tparams: List[Tree],
+                vparamss: List[List[Tree]], tpt: Tree, rhs: Tree): DefDef
 
-      def unapply(tree: Tree): Option[(Modifiers, TermName, List[Tree], List[List[ValDef]], Tree, Tree)]
+      def unapply(tree: Tree): Option[(Modifiers, TermName, List[TypeDef], List[List[ValDef]], Tree, Tree)]
     }
 
     val SyntacticValDef: SyntacticValDefExtractor
