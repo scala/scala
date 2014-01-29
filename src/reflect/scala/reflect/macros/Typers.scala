@@ -2,6 +2,8 @@ package scala
 package reflect
 package macros
 
+import scala.reflect.internal.{Mode => InternalMode}
+
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
@@ -23,13 +25,39 @@ trait Typers {
    */
   def openMacros: List[blackbox.Context]
 
+  /** Represents mode of operations of the typechecker underlying `c.typecheck` calls.
+   *  Is necessary since the shape of the typechecked tree alone is not enough to guess how it should be typechecked.
+   *  Can be EXPRmode (typecheck as a term) or TYPEmode (typecheck as a type).
+   */
+  // I'd very much like to make use of https://github.com/dsl-paradise/dsl-paradise here!
+  type TypecheckMode
+
+  /** Indicates that an argument to `c.typecheck` should be typechecked as a term.
+   *  This is the default typechecking mode in Scala 2.11 and the only one supported in Scala 2.10.
+   */
+  val TERMmode: TypecheckMode
+
+  /** Indicates that an argument to `c.typecheck` should be typechecked as a type.
+   */
+  val TYPEmode: TypecheckMode
+
+  /** @see `scala.reflect.macros.TypecheckException`
+   */
+  type TypecheckException = scala.reflect.macros.TypecheckException
+
+  /** @see `scala.reflect.macros.TypecheckException`
+   */
+  val TypecheckException = scala.reflect.macros.TypecheckException
+
   /** @see `Typers.typecheck`
    */
   @deprecated("Use `c.typecheck` instead", "2.11.0")
   def typeCheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree =
-    typecheck(tree, pt, silent, withImplicitViewsDisabled, withMacrosDisabled)
+    typecheck(tree, TERMmode, pt, silent, withImplicitViewsDisabled, withMacrosDisabled)
 
-  /** Typechecks the provided tree against the expected type `pt` in the macro callsite context.
+  /** Typechecks the provided tree against the expected type `pt` in the macro callsite context
+   *  under typechecking mode specified in `mode` with [[EXPRmode]] being default.
+   *  This populates symbols and types of the tree and possibly transforms it to reflect certain desugarings.
    *
    *  If `silent` is false, `TypecheckException` will be thrown in case of a typecheck error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
@@ -42,7 +70,7 @@ trait Typers {
    *
    *  @throws [[scala.reflect.macros.TypecheckException]]
    */
-  def typecheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree
+  def typecheck(tree: Tree, mode: TypecheckMode = TERMmode, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree
 
   /** Infers an implicit value of the expected type `pt` in the macro callsite context.
    *  Optional `pos` parameter provides a position that will be associated with the implicit search.

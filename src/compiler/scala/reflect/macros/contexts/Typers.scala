@@ -1,8 +1,6 @@
 package scala.reflect.macros
 package contexts
 
-import scala.reflect.internal.Mode
-
 trait Typers {
   self: Context =>
 
@@ -10,10 +8,15 @@ trait Typers {
 
   def openImplicits: List[ImplicitCandidate] = callsiteTyper.context.openImplicits.map(_.toImplicitCandidate)
 
+  type TypecheckMode = scala.reflect.internal.Mode
+  val TypecheckMode = scala.reflect.internal.Mode
+  val TERMmode = TypecheckMode.EXPRmode
+  val TYPEmode = TypecheckMode.TYPEmode | TypecheckMode.FUNmode
+
   /**
    * @see [[scala.tools.reflect.ToolBox.typeCheck]]
    */
-  def typecheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree = {
+  def typecheck(tree: Tree, mode: TypecheckMode = TERMmode, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree = {
     macroLogVerbose("typechecking %s with expected type %s, implicit views = %s, macros = %s".format(tree, pt, !withImplicitViewsDisabled, !withMacrosDisabled))
     val context = callsiteTyper.context
     val wrapper1 = if (!withImplicitViewsDisabled) (context.withImplicitsEnabled[Tree] _) else (context.withImplicitsDisabled[Tree] _)
@@ -24,7 +27,7 @@ trait Typers {
     // typechecking uses silent anyways (e.g. in typedSelect), so you'll only waste your time
     // I'd advise fixing the root cause: finding why the context is not set to report errors
     // (also see reflect.runtime.ToolBoxes.typeCheckExpr for a workaround that might work for you)
-    wrapper(callsiteTyper.silent(_.typed(universe.duplicateAndKeepPositions(tree), pt), reportAmbiguousErrors = false) match {
+    wrapper(callsiteTyper.silent(_.typed(universe.duplicateAndKeepPositions(tree), mode, pt), reportAmbiguousErrors = false) match {
       case universe.analyzer.SilentResultValue(result) =>
         macroLogVerbose(result)
         result

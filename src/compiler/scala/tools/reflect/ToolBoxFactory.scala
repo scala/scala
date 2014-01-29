@@ -171,11 +171,11 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         unwrapped
       }
 
-      def typecheck(expr: Tree, pt: Type, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =
+      def typecheck(expr: Tree, pt: Type, mode: scala.reflect.internal.Mode, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =
         transformDuringTyper(expr, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, expr) => {
             trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, true, true, settings.Yshowsymkinds.value))
-            currentTyper.silent(_.typed(expr, pt), reportAmbiguousErrors = false) match {
+            currentTyper.silent(_.typed(expr, mode, pt), reportAmbiguousErrors = false) match {
               case analyzer.SilentResultValue(result) =>
                 trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
                 result
@@ -361,7 +361,12 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       }
     }
 
-    def typecheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = withCompilerApi { compilerApi =>
+    type TypecheckMode = scala.reflect.internal.Mode
+    val TypecheckMode = scala.reflect.internal.Mode
+    val TERMmode = TypecheckMode.EXPRmode
+    val TYPEmode = TypecheckMode.TYPEmode | TypecheckMode.FUNmode
+
+    def typecheck(tree: u.Tree, mode: TypecheckMode = TERMmode, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = withCompilerApi { compilerApi =>
       import compilerApi._
 
       if (compiler.settings.verbose) println("importing "+tree+", expectedType = "+expectedType)
@@ -369,7 +374,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       val cexpectedType: compiler.Type = importer.importType(expectedType)
 
       if (compiler.settings.verbose) println("typing "+ctree+", expectedType = "+expectedType)
-      val ttree: compiler.Tree = compiler.typecheck(ctree, cexpectedType, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
+      val ttree: compiler.Tree = compiler.typecheck(ctree, cexpectedType, mode, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
       val uttree = exporter.importTree(ttree)
       uttree
     }
