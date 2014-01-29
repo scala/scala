@@ -4080,9 +4080,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
 
             val body1 = typed(body, mode, pt)
+            val impliedType = patmat.binderTypeImpliedByPattern(body1, pt, sym) // SI-1503, SI-5204
             val symTp =
-              if (treeInfo.isSequenceValued(body)) seqType(body1.tpe)
-              else body1.tpe
+              if (treeInfo.isSequenceValued(body)) seqType(impliedType)
+              else impliedType
             sym setInfo symTp
 
             // have to imperatively set the symbol for this bind to keep it in sync with the symbols used in the body of a case
