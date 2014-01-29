@@ -1035,7 +1035,7 @@ trait ContextErrors {
         val ImplicitConstr, ImplicitNotTermOrClass, ImplicitAtToplevel,
           OverrideClass, SealedNonClass, AbstractNonClass,
           OverrideConstr, AbstractOverride, AbstractOverrideOnTypeMember, LazyAndEarlyInit,
-          ByNameParameter, AbstractVar = Value
+          ByNameParameter = Value
       }
 
       object DuplicatesErrorKinds extends Enumeration {
@@ -1138,9 +1138,6 @@ trait ContextErrors {
 
           case ByNameParameter =>
             "pass-by-name arguments not allowed for case class parameters"
-
-          case AbstractVar =>
-            "only classes can have declared but undefined members" + abstractVarMessage(sym)
 
         }
         issueSymbolTypeError(sym, msg)
