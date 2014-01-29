@@ -1,0 +1,2 @@
+public abstract java.lang.Object C.bar(java.lang.Object)
+public abstract java.lang.Object C.foo(java.lang.Object)
