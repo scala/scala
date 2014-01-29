@@ -143,7 +143,13 @@ class BatchSourceFile(val file : AbstractFile, val content0: Array[Char]) extend
 
   def isLineBreak(idx: Int) = charAtIsEOL(idx)(isLineBreakChar)
 
-  def isEndOfLine(idx: Int) = charAtIsEOL(idx) {
+  /** True if the index is included by an EOL sequence. */
+  def isEndOfLine(idx: Int) = (content isDefinedAt idx) && PartialFunction.cond(content(idx)) {
+    case CR | LF => true
+  }
+
+  /** True if the index is end of an EOL sequence. */
+  def isAtEndOfLine(idx: Int) = charAtIsEOL(idx) {
     case CR | LF => true
     case _       => false
   }
@@ -151,7 +157,7 @@ class BatchSourceFile(val file : AbstractFile, val content0: Array[Char]) extend
   def calculateLineIndices(cs: Array[Char]) = {
     val buf = new ArrayBuffer[Int]
     buf += 0
-    for (i <- 0 until cs.length) if (isEndOfLine(i)) buf += i + 1
+    for (i <- 0 until cs.length) if (isAtEndOfLine(i)) buf += i + 1
     buf += cs.length // sentinel, so that findLine below works smoother
     buf.toArray
   }
