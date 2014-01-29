@@ -40,8 +40,8 @@ abstract class SourceFile {
   def lineToString(index: Int): String = {
     val start = lineToOffset(index)
     var end = start
-    while (!isEndOfLine(end)) end += 1
-    content.slice(start, end) mkString ""
+    while (!isEndOfLine(end) && end <= length) end += 1
+    new String(content, start, end - start)
   }
 
   @tailrec
@@ -136,7 +136,7 @@ class BatchSourceFile(val file : AbstractFile, val content0: Array[Char]) extend
 
   private def charAtIsEOL(idx: Int)(p: Char => Boolean) = {
     // don't identify the CR in CR LF as a line break, since LF will do.
-    def notCRLF0 = content(idx) != CR || idx + 1 >= length || content(idx + 1) != LF
+    def notCRLF0 = content(idx) != CR || !content.isDefinedAt(idx + 1) || content(idx + 1) != LF
 
     idx < length && notCRLF0 && p(content(idx))
   }
