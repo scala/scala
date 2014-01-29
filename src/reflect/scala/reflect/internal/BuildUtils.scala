@@ -61,6 +61,8 @@ trait BuildUtils { self: SymbolTable =>
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T = { tree.setSymbol(sym); tree }
 
+    def toStats(tree: Tree): List[Tree] = SyntacticBlock.unapply(tree).get
+
     def mkAnnotation(tree: Tree): Tree = tree match {
       case SyntacticNew(Nil, SyntacticApplied(SyntacticTypeApplied(_, _), _) :: Nil, noSelfType, Nil) =>
         tree
@@ -381,13 +383,41 @@ trait BuildUtils { self: SymbolTable =>
       }
     }
 
+    object SyntheticUnit {
+      def unapply(tree: Tree): Boolean = tree match {
+        case Literal(Constant(())) if tree.hasAttachment[SyntheticUnitAttachment.type] => true
+        case _ => false
+      }
+    }
+
+    /** Syntactic combinator that abstracts over Block tree.
+     *
+     *  Apart from providing a more straightforward api that exposes
+     *  block as a list of elements rather than (stats, expr) pair
+     *  it also:
+     *
+     *  1. Treats of q"" (empty tree) as zero-element block.
+     *
+     *  2. Strips trailing synthetic units which are inserted by the
+     *     compiler if the block ends with a definition rather
+     *     than an expression.
+     *
+     *  3. Matches non-block term trees and recognizes them as
+     *     single-element blocks for sake of consistency with
+     *     compiler's default to treat single-element blocks with
+     *     expressions as just expressions.
+     */
     object SyntacticBlock extends SyntacticBlockExtractor {
-      def apply(stats: List[Tree]): Tree = gen.mkBlock(stats)
+      def apply(stats: List[Tree]): Tree =
+        if (stats.isEmpty) EmptyTree
+        else gen.mkBlock(stats)
 
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
-        case self.Block(stats, expr) => Some(stats :+ expr)
-        case _ if tree.isTerm => Some(tree :: Nil)
-        case _ => None
+        case self.Block(stats, SyntheticUnit()) => Some(stats)
+        case self.Block(stats, expr)            => Some(stats :+ expr)
+        case EmptyTree                          => Some(Nil)
+        case _ if tree.isTerm                   => Some(tree :: Nil)
+        case _                                  => None
       }
     }
 

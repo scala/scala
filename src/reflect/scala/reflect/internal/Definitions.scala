@@ -625,6 +625,7 @@ trait Definitions extends api.StandardDefinitions {
     def isBlackboxMacroBundleType(tp: Type) =
       isMacroBundleType(tp) && (macroBundleParamInfo(tp) <:< BlackboxContextClass.tpe)
 
+    def isListType(tp: Type)     = tp <:< classExistentialType(ListClass)
     def isIterableType(tp: Type) = tp <:< classExistentialType(IterableClass)
 
     // These "direct" calls perform no dealiasing. They are most needed when

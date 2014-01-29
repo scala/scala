@@ -116,7 +116,7 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
 
   def blockInvariant(quote: Tree, trees: List[Tree]) =
     quote ≈ (trees match {
-      case Nil => q"()"
+      case Nil => q""
       case _ :+ last if !last.isTerm => Block(trees, q"()")
       case head :: Nil => head
       case init :+ last => Block(init, last)
@@ -228,5 +228,67 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
   property("SI-8148") = test {
     val q"($a, $b) => $_" = q"_ + _"
     assert(a.name != b.name)
+  }
+
+  property("SI-7275 a") = test {
+    val t = q"stat1; stat2"
+    assertEqAst(q"..$t", "{stat1; stat2}")
+  }
+
+  property("SI-7275 b") = test {
+    def f(t: Tree) = q"..$t"
+    assertEqAst(f(q"stat1; stat2"), "{stat1; stat2}")
+  }
+
+  property("SI-7275 c1") = test {
+    object O
+    implicit val liftO = Liftable[O.type] { _ => q"foo; bar" }
+    assertEqAst(q"f(..$O)", "f(foo, bar)")
+  }
+
+  property("SI-7275 c2") = test {
+    object O
+    implicit val liftO = Liftable[O.type] { _ => q"{ foo; bar }; { baz; bax }" }
+    assertEqAst(q"f(...$O)", "f(foo, bar)(baz, bax)")
+  }
+
+  property("SI-7275 d") = test {
+    val l = q"a; b" :: q"c; d" :: Nil
+    assertEqAst(q"f(...$l)", "f(a, b)(c, d)")
+    val l2: Iterable[Tree] = l
+    assertEqAst(q"f(...$l2)", "f(a, b)(c, d)")
+  }
+
+  property("SI-7275 e") = test {
+    val t = q"{ a; b }; { c; d }"
+    assertEqAst(q"f(...$t)", "f(a, b)(c, d)")
+  }
+
+  property("SI-7275 e2") = test {
+    val t = q"{ a; b }; c; d"
+    assertEqAst(q"f(...$t)", "f(a, b)(c)(d)")
+  }
+
+  property("remove synthetic unit") = test {
+    val q"{ ..$stats1 }" = q"{ def x = 2 }"
+    assert(stats1 ≈ List(q"def x = 2"))
+    val q"{ ..$stats2 }" = q"{ class X }"
+    assert(stats2 ≈ List(q"class X"))
+    val q"{ ..$stats3 }" = q"{ type X = Int }"
+    assert(stats3 ≈ List(q"type X = Int"))
+    val q"{ ..$stats4 }" = q"{ val x = 2 }"
+    assert(stats4 ≈ List(q"val x = 2"))
+  }
+
+  property("don't remove user-defined unit") = test {
+    val q"{ ..$stats }" = q"{ def x = 2; () }"
+    assert(stats ≈ List(q"def x = 2", q"()"))
+  }
+
+  property("empty-tree as block") = test {
+    val q"{ ..$stats1 }" = q" "
+    assert(stats1.isEmpty)
+    val stats2 = List.empty[Tree]
+    assert(q"{ ..$stats2 }" ≈ q"")
   }
 }

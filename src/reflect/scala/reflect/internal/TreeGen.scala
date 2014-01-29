@@ -342,7 +342,7 @@ abstract class TreeGen extends macros.TreeBuilder {
       }
       param
     }
-    
+
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
     val gvdefs = evdefs map {
@@ -381,11 +381,11 @@ abstract class TreeGen extends macros.TreeBuilder {
     }
     constr foreach (ensureNonOverlapping(_, parents ::: gvdefs, focus = false))
     // Field definitions for the class - remove defaults.
-    
+
     val fieldDefs = vparamss.flatten map (vd => {
       val field = copyValDef(vd)(mods = vd.mods &~ DEFAULTPARAM, rhs = EmptyTree)
       // Prevent overlapping of `field` end's position with default argument's start position.
-      // This is needed for `Positions.Locator(pos).traverse` to return the correct tree when 
+      // This is needed for `Positions.Locator(pos).traverse` to return the correct tree when
       // the `pos` is a point position with all its values equal to `vd.rhs.pos.start`.
       if(field.pos.isRange && vd.rhs.pos.isRange) field.pos = field.pos.withEnd(vd.rhs.pos.start - 1)
       field
@@ -444,13 +444,23 @@ abstract class TreeGen extends macros.TreeBuilder {
   def mkFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
     AppliedTypeTree(rootScalaDot(newTypeName("Function" + argtpes.length)), argtpes ::: List(restpe))
 
+  /** Create a literal unit tree that is inserted by the compiler but not
+   *  written by end user. It's important to distinguish the two so that
+   *  quasiquotes can strip synthetic ones away.
+   */
+  def mkSyntheticUnit() = Literal(Constant(())).updateAttachment(SyntheticUnitAttachment)
+
   /** Create block of statements `stats`  */
   def mkBlock(stats: List[Tree]): Tree =
     if (stats.isEmpty) Literal(Constant(()))
-    else if (!stats.last.isTerm) Block(stats, Literal(Constant(())))
+    else if (!stats.last.isTerm) Block(stats, mkSyntheticUnit())
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
 
+  /** Create a block that wraps multiple statements but don't
+   *  do any wrapping if there is just one statement. Used by
+   *  quasiquotes, macro c.parse api and toolbox.
+   */
   def mkTreeOrBlock(stats: List[Tree]) = stats match {
     case Nil         => EmptyTree
     case head :: Nil => head

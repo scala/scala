@@ -58,6 +58,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.CompoundTypeTreeOriginalAttachment
     this.BackquotedIdentifierAttachment
     this.ForAttachment
+    this.SyntheticUnitAttachment
     this.SubpatternsAttachment
     this.noPrint
     this.typeDebug
