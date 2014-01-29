@@ -2280,7 +2280,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  seen from class `base`. This symbol is always concrete.
      *  pre: `this.owner` is in the base class sequence of `base`.
      */
-    final def superSymbol(base: Symbol): Symbol = {
+    @deprecated("Use `superSymbolIn` instead", "2.11.0")
+    final def superSymbol(base: Symbol): Symbol = superSymbolIn(base)
+
+    final def superSymbolIn(base: Symbol): Symbol = {
       var bcs = base.info.baseClasses dropWhile (owner != _) drop 1
       var sym: Symbol = NoSymbol
       while (!bcs.isEmpty && sym == NoSymbol) {
@@ -2294,7 +2297,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The getter of this value or setter definition in class `base`, or NoSymbol if
      *  none exists.
      */
-    final def getter(base: Symbol): Symbol =
+    @deprecated("Use `getterIn` instead", "2.11.0")
+    final def getter(base: Symbol): Symbol = getterIn(base)
+
+    final def getterIn(base: Symbol): Symbol =
       base.info decl getterName filter (_.hasAccessorFlag)
 
     def getterName: TermName = name.getterName
