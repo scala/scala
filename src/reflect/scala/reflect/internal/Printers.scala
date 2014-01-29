@@ -1238,6 +1238,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
   }
 
+  def show(position: Position): String = {
+    position.show
+  }
+
   def showDeclaration(sym: Symbol): String = {
     if (!isCompilerUniverse) definitions.fullyInitializeSymbol(sym)
     sym.defString

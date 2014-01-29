@@ -8,43 +8,6 @@ package reflect
 package internal
 package util
 
-/** The Position class and its subclasses represent positions of ASTs and symbols.
- *  Every subclass of DefinedPosition refers to a SourceFile and three character
- *  offsets within it: start, end, and point. The point is where the ^ belongs when
- *  issuing an error message, usually a Name. A range position can be designated
- *  as transparent, which excuses it from maintaining the invariants to follow. If
- *  a transparent position has opaque children, those are considered as if they were
- *  the direct children of the transparent position's parent.
- *
- *  Note: some of these invariants actually apply to the trees which carry
- *  the positions, but they are phrased as if the positions themselves were
- *  the parent/children for conciseness.
- *
- *  Invariant 1: in a focused/offset position, start == point == end
- *  Invariant 2: in a range position,          start <= point <  end
- *  Invariant 3: an offset position never has a child with a range position
- *  Invariant 4: every range position child of a range position parent is contained within its parent
- *  Invariant 5: opaque range position siblings overlap at most at a single point
- *
- *  The following tests are useful on positions:
- *
- *  pos.isDefined     true if position is not an UndefinedPosition (those being NoPosition and FakePos)
- *  pos.isRange       true if position is a range (opaque or transparent) which implies start < end
- *  pos.isOpaqueRange true if position is an opaque range
- *
- *  The following accessor methods are provided - an exception will be thrown if
- *  point/start/end are attempted on an UndefinedPosition.
- *
- *  pos.source       The source file of the position, or NoSourceFile if unavailable
- *  pos.point        The offset of the point
- *  pos.start        The (inclusive) start offset, or the point of an offset position
- *  pos.end          The (exclusive) end offset, or the point of an offset position
- *
- *  The following conversion methods are often used:
- *
- *  pos.focus           Converts a range position to an offset position focused on the point
- *  pos.makeTransparent Convert an opaque range into a transparent range
- */
 class Position extends scala.reflect.api.Position with InternalPositionImpl with DeprecatedPosition {
   type Pos = Position
   def pos: Position = this

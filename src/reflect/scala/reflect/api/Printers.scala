@@ -248,10 +248,20 @@ trait Printers { self: Universe =>
    */
   def show(flags: FlagSet): String
 
+  /** Renders a prettified representation of a position.
+   * @group Printers
+   */
+  def show(position: Position): String
+
   /** Renders internal structure of a flag set.
    * @group Printers
    */
   def showRaw(flags: FlagSet): String = flags.toString
+
+  /** Renders internal structure of a position.
+   * @group Printers
+   */
+  def showRaw(position: Position): String = position.toString
 
   /** Renders a string that represents a declaration of this symbol written in Scala.
    * @group Printers
