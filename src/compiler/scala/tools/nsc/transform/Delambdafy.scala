@@ -282,18 +282,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         if (sym == NoSymbol) sym.toString
         else s"$sym: ${sym.tpe} in ${sym.owner}"
 
-      def clashError(bm: Symbol) = {
-        unit.error(
-          applyMethodDef.symbol.pos,
-            sm"""bridge generated for member ${fulldef(applyMethodDef.symbol)}
-                |which overrides ${fulldef(getMember(abstractFunctionErasedType.typeSymbol, nme.apply))}
-                |clashes with definition of the member itself;
-                |both have erased type ${exitingPostErasure(bm.tpe)}""")
-        }
-
         bridgeMethod foreach (bm =>
           if (bm.symbol.tpe =:= applyMethodDef.symbol.tpe)
-            clashError(bm.symbol)
+            erasure.expandNameOfMethodThatClashesBridge(applyMethodDef.symbol)
         )
 
         val body = members ++ List(constr, applyMethodDef) ++ bridgeMethod

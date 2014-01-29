@@ -403,19 +403,19 @@ abstract class Erasure extends AddInterfaces
      *  @param  other    The overidden symbol for which the bridge was generated
      *  @param  bridge   The bridge
      */
-    def checkBridgeOverrides(member: Symbol, other: Symbol, bridge: Symbol): Boolean = {
+    def checkBridgeOverrides(member: Symbol, other: Symbol, bridge: Symbol): Seq[(Position, String)] = {
       def fulldef(sym: Symbol) =
         if (sym == NoSymbol) sym.toString
         else s"$sym: ${sym.tpe} in ${sym.owner}"
       var noclash = true
+      val clashErrors = mutable.Buffer[(Position, String)]()
       def clashError(what: String) = {
-        noclash = false
-        unit.error(
-          if (member.owner == root) member.pos else root.pos,
-          sm"""bridge generated for member ${fulldef(member)}
-              |which overrides ${fulldef(other)}
-              |clashes with definition of $what;
-              |both have erased type ${exitingPostErasure(bridge.tpe)}""")
+        val pos = if (member.owner == root) member.pos else root.pos
+        val msg = sm"""bridge generated for member ${fulldef(member)}
+                      |which overrides ${fulldef(other)}
+                      |clashes with definition of $what;
+                      |both have erased type ${exitingPostErasure(bridge.tpe)}"""
+        clashErrors += Tuple2(pos, msg)
       }
       for (bc <- root.baseClasses) {
         if (settings.debug)
@@ -440,7 +440,7 @@ abstract class Erasure extends AddInterfaces
           }
         }
       }
-      noclash
+      clashErrors
     }
 
     /** TODO - work through this logic with a fine-toothed comb, incorporating
@@ -478,8 +478,18 @@ abstract class Erasure extends AddInterfaces
       bridge setInfo (otpe cloneInfo bridge)
       bridgeTarget(bridge) = member
 
-      if (!(member.tpe exists (_.typeSymbol.isDerivedValueClass)) ||
-          checkBridgeOverrides(member, other, bridge)) {
+      def sigContainsValueClass = (member.tpe exists (_.typeSymbol.isDerivedValueClass))
+
+      val shouldAdd = (
+            !sigContainsValueClass
+        ||  (checkBridgeOverrides(member, other, bridge) match {
+              case Nil => true
+              case es if member.owner.isAnonymousClass => expandNameOfMethodThatClashesBridge(member); true
+              case es => for ((pos, msg) <- es) unit.error(pos, msg); false
+            })
+      )
+
+      if (shouldAdd) {
         exitingErasure(root.info.decls enter bridge)
         if (other.owner == root) {
           exitingErasure(root.info.decls.unlink(other))
@@ -1125,6 +1135,11 @@ abstract class Erasure extends AddInterfaces
         newTyper(rootContext(unit, tree, erasedTypes = true)).typed(tree2)
       }
     }
+  }
+
+  final def expandNameOfMethodThatClashesBridge(sym: Symbol) {
+    log(s"Expanding name of ${sym.debugLocationString} as it clashes with bridge. Renaming deemed safe because the owner is anonymous.")
+    sym.expandName(sym.owner)
   }
 
   private class TypeRefAttachment(val tpe: TypeRef)
