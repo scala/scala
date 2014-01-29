@@ -1053,9 +1053,9 @@ trait Types
       var seenFirstNonRefinementClass: Boolean = false
       var refinementParents: List[Symbol] = Nil
 
+      val bcs0 = baseClasses
       while (continue) {
         continue = false
-        val bcs0 = baseClasses
         var bcs = bcs0
         def admitPrivateLocal(owner: Symbol): Boolean = {
           val selectorClass = this match {
