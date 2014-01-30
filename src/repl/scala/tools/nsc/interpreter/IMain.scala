@@ -18,7 +18,7 @@ import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 import scala.tools.util.PathResolver
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
-import scala.tools.nsc.util.{ ScalaClassLoader, stringFromWriter, StackTraceOps }
+import scala.tools.nsc.util.{ ScalaClassLoader, stringFromReader, stringFromWriter, StackTraceOps }
 import scala.tools.nsc.util.Exceptional.unwrap
 import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
 
@@ -534,8 +534,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   var code = ""
   var bound = false
-  @throws[ScriptException]
-  def compile(script: String): CompiledScript = {
+  def compiled(script: String): CompiledScript = {
     if (!bound) {
       quietBind("engine" -> this.asInstanceOf[ScriptEngine])
       bound = true
@@ -560,18 +559,6 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
         new WrappedRequest(req)
       }
     }
-  }
-
-  @throws[ScriptException]
-  def compile(reader: java.io.Reader): CompiledScript = {
-    val writer = new java.io.StringWriter()
-    var c = reader.read()
-    while(c != -1) {
-      writer.write(c)
-      c = reader.read()
-    }
-    reader.close()
-    compile(writer.toString())
   }
 
   private class WrappedRequest(val req: Request) extends CompiledScript {
@@ -1014,10 +1001,16 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   }
 
   @throws[ScriptException]
-  def eval(script: String, context: ScriptContext): Object = compile(script).eval(context)
+  def compile(script: String): CompiledScript = eval("new javax.script.CompiledScript { def eval(context: javax.script.ScriptContext): Object = { " + script + " }.asInstanceOf[Object]; def getEngine: javax.script.ScriptEngine = engine }").asInstanceOf[CompiledScript]
 
   @throws[ScriptException]
-  def eval(reader: java.io.Reader, context: ScriptContext): Object = compile(reader).eval(context)
+  def compile(reader: java.io.Reader): CompiledScript = compile(stringFromReader(reader))
+
+  @throws[ScriptException]
+  def eval(script: String, context: ScriptContext): Object = compiled(script).eval(context)
+
+  @throws[ScriptException]
+  def eval(reader: java.io.Reader, context: ScriptContext): Object = eval(stringFromReader(reader), context)
 
   override def finalize = close
 

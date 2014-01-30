@@ -7,7 +7,7 @@ package scala
 package tools
 package nsc
 
-import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter }
+import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter, Reader }
 
 package object util {
   // forwarder for old code that builds against 2.9 and 2.10
@@ -44,6 +44,17 @@ package object util {
     val ts2    = sys.allThreads()
 
     (result, ts2 filterNot (ts1 contains _))
+  }
+
+  def stringFromReader(reader: Reader) = {
+    val writer = new StringWriter()
+    var c = reader.read()
+    while(c != -1) {
+      writer.write(c)
+      c = reader.read()
+    }
+    reader.close()
+    writer.toString()
   }
 
   /** Generate a string using a routine that wants to write on a stream. */
