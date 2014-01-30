@@ -1043,147 +1043,201 @@ trait Types
       if (this.isGround) findMemberSymbolInternal
       else suspendingTypeVars(typeVarsInType(this))(findMemberSymbolInternal)
     }
+
     private final class FindMemberInternal(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean) {
+      // Gathering the results into a hand rolled ListBuffer
+      // TODO Try just using a ListBuffer to see if this low-level-ness is worth it.
       private[this] var member: Symbol        = NoSymbol
       private[this] var members: List[Symbol] = null
       private[this] var lastM: ::[Symbol]     = null
 
-      private[this] val bcs0 = baseClasses
-      
+      private[this] val initBaseClasses = baseClasses
+
+      // Cache for the member type of the first member we find.
       private[this] var _membertpe: Type = null
       private[this] def membertpe: Type = {
+        assert(member != null)
         if (_membertpe eq null) _membertpe = self.memberType(member)
         _membertpe
       }
-      private[this] var _self: Type = null      
+
+      // Cache for the narrowed type of `tp` (in `tp.findMember`)
+      private[this] var _self: Type = null
       private[this] def self: Type = {
         if (_self eq null) _self = narrowForFindMember(Type.this)
         _self
       }
-      
+
+      // Has the current `walkBaseClasses` encountered a non-refinement class?
       private[this] var seenFirstNonRefinementClass: Boolean = false
+      // All direct parents of refinement classes in the base class sequence
+      // from the current `walkBaseClasses`
       private[this] var refinementParents: List[Symbol] = Nil
-      
-      private def isMember(sym: Symbol, baseClass: Symbol, excl: Long): Boolean = {
-        val flags = sym.flags 
-        (
-             excl == 0L
-          && (
-                  (flags & PRIVATE) != PRIVATE              // non-privates are always members
-               || (
-                       !seenFirstNonRefinementClass         // classes don't inherit privates
-                    || refinementParents.contains(baseClass) // refinements inherit privates of direct parents
-                  )
-               || (
-                       (flags & PrivateLocal) == PrivateLocal
-                    && admitPrivateLocal(baseClass)
-                  )
-             )
-        )
+
+      // Main entry point
+      def apply(): List[Symbol] = {
+        if (Statistics.canEnable) Statistics.incCounter(findMemberCount)
+        val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, findMemberNanos) else null
+        try searchConcreteThenDeferred
+        finally if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
+      }
+
+      // SLS 5.1.3 First, a concrete definition always overrides an abstract definition
+      private def searchConcreteThenDeferred: List[Symbol] = {
+        val deferredSeen = walkBaseClasses(requiredFlags, excludedFlags | DEFERRED)
+        if (deferredSeen)
+          walkBaseClasses(requiredFlags | DEFERRED, excludedFlags & ~(DEFERRED.toLong))
+        memberList
+      }
+
+      /**
+       * Walk up through the decls of each base class.
+       *
+       * Called in two passes: first excluding deferred, then mandating it.
+       *
+       * Side effects:
+       *    `member`, `memberList`, `lastM` : found members
+       *    `symtpe`                        : cache of the memberType of candidates
+       *
+       * @return true, if a potential deferred member was seen on the first pass that calls for a second pass.
+       */
+      private def walkBaseClasses(required: Long, excluded: Long): Boolean = {
+        var bcs = initBaseClasses
+        var deferredSeen = false
+        refinementParents = Nil
+        seenFirstNonRefinementClass = false
+        while (!bcs.isEmpty) {
+          val currentBaseClass = bcs.head
+          val decls = currentBaseClass.info.decls
+          var entry = decls.lookupEntry(name)
+          while (entry ne null) {
+            val sym = entry.sym
+            val flags = sym.flags
+            val meetsRequirements = (flags & required) == required
+            if (meetsRequirements) {
+              val excl: Long = flags & excluded
+              val isExcluded: Boolean = excl != 0
+              if (!isExcluded && isPotentialMember(sym, currentBaseClass)) {
+                val continue = addMemberIfNew(sym)
+                if (!continue) return false // found a stable non-volatile type member, we can break out of the search.
+              } else if (excl == DEFERRED) {
+                deferredSeen = true
+              }
+            }
+            entry = decls lookupNextEntry entry
+          }
+
+          // SLS 5.2 The private modifier can be used with any definition or declaration in a template.
+          //         They are not inherited by subclasses and they may not override definitions in parent classes.
+          if (currentBaseClass.isRefinementClass)
+            // SI-7475 keep track of direct parents of refinements, as we *do* include private members from them
+            refinementParents :::= currentBaseClass.parentSymbols
+          else if (currentBaseClass.isClass)
+            seenFirstNonRefinementClass = true
+
+          // Constructors are not inherited
+          bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
+        }
+        deferredSeen
       }
       
-      private def isNewMember(memberType: Type, other: Symbol): Boolean =
+      def addMemberIfNew(sym: Symbol): Boolean = {
+        if (name.isTypeName || (stableOnly && sym.isStable && !sym.hasVolatileType)) {
+          member = sym
+          return false
+        } else if (member eq NoSymbol) {
+          member = sym // The first found member
+        } else if (members eq null) {
+          // We've found exactly one member so far... 
+          if (isNewMember(member, membertpe, sym)) {
+            // ... make that two.
+            lastM = new ::(sym, null)
+            members = member :: lastM
+          }
+        } else {
+          // Already found 2 or more members
+          var members0: List[Symbol] = members
+
+          // Hand rolled version of:
+          // val isNew = memberList forall (member => isNewMember(member, self.memberType(member), sym))
+          var isNew = true
+          while ((members0 ne null) && isNew) {
+            val member = members0.head
+            val memberType = self.memberType(member)
+            if (!isNewMember(member, memberType, sym))
+              isNew = false
+            members0 = members0.tail
+          }
+          if (isNew) {
+            // no already-found member matches `sym`, (sneakily) append it to `members`.
+            val lastM1 = new ::(sym, null)
+            lastM.tl = lastM1
+            lastM = lastM1
+          }
+        }
+        true
+      }
+
+      // Is `sym` a potentially member of `baseClass`?
+      //
+      // Q. When does a potential member fail to be a an actual member?
+      // A. if it is subsumed by an member in a subclass.
+      private def isPotentialMember(sym: Symbol, baseClass: Symbol): Boolean = (
+           (sym.flags & PRIVATE) != PRIVATE           // non-privates are always members
+        || (
+                !seenFirstNonRefinementClass          // classes don't inherit privates
+             || refinementParents.contains(baseClass) // refinements inherit privates of direct parents
+           )
+        || (
+                (sym.flags & PrivateLocal) == PrivateLocal
+             && admitPrivateLocal(baseClass)
+           )
+      )
+
+      // TODO this cache is probably unnecessary, `tp.memberType(sym: MethodSymbol)` is already cached internally.
+      private[this] var _memberTypeCache: Type = null
+      private[this] var _memberTypeCacheSym: Symbol = null
+      private def memberTypeOf(sym: Symbol): Type = {
+        if (_memberTypeCacheSym ne sym) {
+          _memberTypeCache = self.memberType(sym)
+          _memberTypeCacheSym = sym
+        }
+        _memberTypeCache
+      }
+
+      // True unless the already-found member of type `memberType` matches the candidate symbol `other`.
+      private def isNewMember(member: Symbol, memberType: Type, other: Symbol): Boolean =
         (    (other ne member)
           && (     (member.owner eq other.owner)
                ||  (member.flags & PRIVATE) != 0
-               ||  !(memberType matches self.memberType(other))
+               ||  !(memberType matches memberTypeOf(other))
              )
         )
 
-      private[this] var symtpe: Type = null
-      private def isNewMember2(sym: Symbol, other: Symbol): Boolean =
-        (    (other ne sym)
-          && (    (other.owner eq sym.owner)
-               || (member.flags & PRIVATE) != 0
-               || { if (symtpe eq null) symtpe = self.memberType(sym); !(self.memberType(other) matches symtpe)}
-             )
-        )
-      
       private def admitPrivateLocal(owner: Symbol): Boolean = {
         val selectorClass = Type.this match {
           case tt: ThisType => tt.sym // SI-7507 the first base class is not necessarily the selector class.
-          case _            => bcs0.head
+          case _            => initBaseClasses.head
         }
         selectorClass == owner
       }
       
-      def apply(): List[Symbol] = {
-        if (Statistics.canEnable) Statistics.incCounter(findMemberCount)
-        val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, findMemberNanos) else null
-  
-        //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
-        var required = requiredFlags
-        var excluded: Long = excludedFlags | DEFERRED
-        var continue = true
-  
-        while (continue) {
-          continue = false
-          var bcs = bcs0
-          while (!bcs.isEmpty) {
-            val decls = bcs.head.info.decls
-            var entry = decls.lookupEntry(name)
-            while (entry ne null) {
-              val sym = entry.sym
-              val flags = sym.flags
-              if ((flags & required) == required) {
-                val excl = flags & excluded  
-                if (isMember(sym, bcs.head, excl)) {
-                  if (name.isTypeName || (stableOnly && sym.isStable && !sym.hasVolatileType)) {
-                    if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
-                    return sym :: Nil
-                  } else if (member eq NoSymbol) { // The first found member
-                    member = sym
-                  } else if (members eq null) { // Already found one member
-                    if (isNewMember(membertpe, sym)) {
-                      lastM = new ::(sym, null)
-                      members = member :: lastM
-                    }
-                  } else { // Already found 2 or more members
-                    var others: List[Symbol] = members
-                    symtpe = null
-                    while (    (others ne null)
-                            && isNewMember2(sym, others.head)
-                          ) others = others.tail
-                    if (others eq null) {
-                      val lastM1 = new ::(sym, null)
-                      lastM.tl = lastM1
-                      lastM = lastM1
-                    }
-                  }
-                } else if (excl == DEFERRED) {
-                  continue = true
-                }
-              }
-              entry = decls lookupNextEntry entry
-            } // while (entry ne null)
-  
-            val sym = bcs.head
-            if (sym.isRefinementClass)
-              refinementParents :::= bcs.head.parentSymbols // keep track of direct parents of refinements
-            else if (sym.isClass)
-              seenFirstNonRefinementClass = true
-  
-            bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
-          } // while (!bcs.isEmpty)
-          required |= DEFERRED
-          excluded &= ~(DEFERRED.toLong)
-        } // while (continue)
-        if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
-        if (members eq null) {
-          if (member == NoSymbol) {
-            if (Statistics.canEnable) Statistics.incCounter(noMemberCount)
-            Nil
-          } else member :: Nil
-        } else {
-          if (Statistics.canEnable) Statistics.incCounter(multMemberCount)
-          lastM.tl = Nil
-          members
-        }
+      // Assemble the result from the hand-rolled ListBuffer
+      private def memberList: List[Symbol] = if (members eq null) {
+        if (member == NoSymbol) {
+          if (Statistics.canEnable) Statistics.incCounter(noMemberCount)
+          Nil
+        } else member :: Nil
+      } else {
+        if (Statistics.canEnable) Statistics.incCounter(multMemberCount)
+        lastM.tl = Nil
+        members
       }
     }
 
-    private def findMemberInternal(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): List[Symbol] =
-      new FindMemberInternal(name, excludedFlags, requiredFlags, stableOnly)()
+    private def findMemberInternal(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): List[Symbol] = {
+      new FindMemberInternal(name, excludedFlags, requiredFlags, stableOnly).apply()
+    }
 
     /** The (existential or otherwise) skolems and existentially quantified variables which are free in this type */
     def skolemsExceptMethodTypeParams: List[Symbol] = {
