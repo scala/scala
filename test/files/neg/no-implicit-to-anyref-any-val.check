@@ -1,0 +1,34 @@
+no-implicit-to-anyref-any-val.scala:11: error: the result type of an implicit conversion must be more specific than AnyRef
+    1: AnyRef
+    ^
+no-implicit-to-anyref-any-val.scala:17: error: type mismatch;
+ found   : Any
+ required: AnyRef
+    (null: Any): AnyRef
+         ^
+no-implicit-to-anyref-any-val.scala:21: error: type mismatch;
+ found   : AnyVal
+ required: AnyRef
+    (0: AnyVal): AnyRef
+      ^
+no-implicit-to-anyref-any-val.scala:27: error: type mismatch;
+ found   : Test.AV
+ required: AnyRef
+Note that AV extends Any, not AnyRef.
+Such types can participate in value classes, but instances
+cannot appear in singleton types or in reference comparisons.
+    new AV(0): AnyRef
+    ^
+no-implicit-to-anyref-any-val.scala:30: error: the result type of an implicit conversion must be more specific than AnyVal
+  "": AnyVal
+  ^
+no-implicit-to-anyref-any-val.scala:32: error: type mismatch;
+ found   : Object
+ required: AnyVal
+Note that implicit conversions are not applicable because they are ambiguous:
+ both method ArrowAssoc in object Predef of type [A](self: A)ArrowAssoc[A]
+ and method Ensuring in object Predef of type [A](self: A)Ensuring[A]
+ are possible conversion functions from Object to AnyVal
+  new Object() : AnyVal
+  ^
+6 errors found
