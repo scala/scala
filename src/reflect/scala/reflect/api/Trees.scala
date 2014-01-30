@@ -237,7 +237,10 @@ trait Trees { self: Universe =>
   trait TypTreeApi extends TreeApi { this: TypTree =>
   }
 
-  /** A tree with a mutable symbol field, initialized to NoSymbol.
+  /** A tree that carries a symbol, e.g. by defining it (`DefTree`) or by referring to it (`RefTree`).
+   *  Such trees start their life naked, returning `NoSymbol`, but after being typechecked without errors
+   *  they hold non-empty symbols.
+   *
    *  @group Trees
    *  @template
    */
@@ -251,7 +254,7 @@ trait Trees { self: Universe =>
     def symbol: Symbol
   }
 
-  /** A tree with a name - effectively, a DefTree or RefTree.
+  /** A tree that carries a name, e.g. by defining it (`DefTree`) or by referring to it (`RefTree`).
    *  @group Trees
    *  @template
    */
@@ -262,7 +265,7 @@ trait Trees { self: Universe =>
    */
   trait NameTreeApi extends TreeApi { this: NameTree =>
     /** The underlying name.
-     *  For example, the `<List>` part of `Ident("List": TermName)`.
+     *  For example, the `List` part of `Ident(TermName("List"))`.
      */
     def name: Name
   }
@@ -280,7 +283,7 @@ trait Trees { self: Universe =>
    */
   trait RefTreeApi extends SymTreeApi with NameTreeApi { this: RefTree =>
     /** The qualifier of the reference.
-     *  For example, the `<scala>` part of `Select("scala": TermName, "List": TermName)`.
+     *  For example, the `Ident(TermName("scala"))` part of `Select(Ident(TermName("scala")), TermName("List"))`.
      *  `EmptyTree` for `Ident` instances.
      */
     def qualifier: Tree
@@ -303,7 +306,10 @@ trait Trees { self: Universe =>
     def unapply(refTree: RefTree): Option[(Tree, Name)]
   }
 
-  /** A tree which defines a symbol-carrying entity.
+  /** A tree representing a symbol-defining entity:
+   *    1) A declaration or a definition (type, class, object, package, val, var, or def)
+   *    2) `Bind` that is used to represent binding occurrences in pattern matches
+   *    3) `LabelDef` that is used internally to represent while loops
    *  @group Trees
    *  @template
    */
@@ -699,7 +705,7 @@ trait Trees { self: Universe =>
     def rhs: Tree
   }
 
-  /** Import selector
+  /** Import selector (not a tree, but a component of the `Import` tree)
    *
    *  Representation of an imported name its optional rename and their optional positions
    *
@@ -2489,6 +2495,11 @@ trait Trees { self: Universe =>
      */
     def Ident(tree: Tree, name: Name): Ident
 
+    /** Creates a `RefTree` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
+    def RefTree(tree: Tree, qualifier: Tree, selector: Name): RefTree
+
     /** Creates a `ReferenceToBoxed` node from the given components, having a given `tree` as a prototype.
      *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
      */
@@ -2698,7 +2709,7 @@ trait Trees { self: Universe =>
    */
   protected def xtransform(transformer: Transformer, tree: Tree): Tree = throw new MatchError(tree)
 
-  /** The type of tree modifiers.
+  /** The type of tree modifiers (not a tree, but rather part of DefTrees).
    *  @group Traversal
    */
   type Modifiers >: Null <: AnyRef with ModifiersApi

@@ -676,6 +676,8 @@ trait Trees extends api.Trees {
       new Select(qualifier, selector).copyAttrs(tree)
     def Ident(tree: Tree, name: Name) =
       new Ident(name) copyAttrs tree
+    def RefTree(tree: Tree, qualifier: Tree, selector: Name) =
+      self.RefTree(qualifier, selector) copyAttrs tree
     def ReferenceToBoxed(tree: Tree, idt: Ident) =
       new ReferenceToBoxed(idt).copyAttrs(tree)
     def Literal(tree: Tree, value: Constant) =
@@ -865,6 +867,11 @@ trait Trees extends api.Trees {
       case t @ Ident(name0)
       if name0 == name => t
       case _ => treeCopy.Ident(tree, name)
+    }
+    def RefTree(tree: Tree, qualifier: Tree, selector: Name) = tree match {
+      case t @ Select(qualifier0, selector0)
+      if (qualifier0 == qualifier) && (selector0 == selector) => t
+      case _ => treeCopy.RefTree(tree, qualifier, selector)
     }
     def ReferenceToBoxed(tree: Tree, idt: Ident) = tree match {
       case t @ ReferenceToBoxed(idt0)
