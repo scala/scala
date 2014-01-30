@@ -26,11 +26,12 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     TypeTag.Null.tpe
 
     this.settings
+    this.internal
     this.treeInfo
     this.rootMirror
-    this.treeBuild
     this.traceSymbols
     this.perRunCaches
+    this.treeBuild
     this.FreshNameExtractor
     this.FixedMirrorTreeCreator
     this.FixedMirrorTypeCreator
@@ -279,6 +280,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ReflectPackage
     definitions.ReflectApiPackage
     definitions.ReflectRuntimePackage
+    definitions.UniverseClass
     definitions.PartialManifestModule
     definitions.FullManifestClass
     definitions.FullManifestModule

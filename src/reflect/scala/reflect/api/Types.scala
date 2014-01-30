@@ -393,10 +393,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class ThisTypeExtractor {
-    /**
-     * Creates a ThisType from the given class symbol.
-     */
-    def apply(sym: Symbol): Type
     def unapply(tpe: ThisType): Option[Symbol]
   }
 
@@ -432,7 +428,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class SingleTypeExtractor {
-    def apply(pre: Type, sym: Symbol): Type // not SingleTypebecause of implementation details
     def unapply(tpe: SingleType): Option[(Type, Symbol)]
   }
 
@@ -469,7 +464,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class SuperTypeExtractor {
-    def apply(thistpe: Type, supertpe: Type): Type // not SuperTypebecause of implementation details
     def unapply(tpe: SuperType): Option[(Type, Type)]
   }
 
@@ -509,7 +503,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class ConstantTypeExtractor {
-    def apply(value: Constant): ConstantType
     def unapply(tpe: ConstantType): Option[Constant]
   }
 
@@ -549,7 +542,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class TypeRefExtractor {
-    def apply(pre: Type, sym: Symbol, args: List[Type]): Type // not TypeRefbecause of implementation details
     def unapply(tpe: TypeRef): Option[(Type, Symbol, List[Type])]
   }
 
@@ -606,12 +598,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class RefinedTypeExtractor {
-    def apply(parents: List[Type], decls: Scope): RefinedType
-
-    /** An alternative constructor that passes in the synthetic classs symbol
-     *  that backs the refined type. (Normally, a fresh class symbol is created automatically).
-     */
-    def apply(parents: List[Type], decls: Scope, clazz: Symbol): RefinedType
     def unapply(tpe: RefinedType): Option[(List[Type], Scope)]
   }
 
@@ -653,7 +639,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class ClassInfoTypeExtractor {
-    def apply(parents: List[Type], decls: Scope, typeSymbol: Symbol): ClassInfoType
     def unapply(tpe: ClassInfoType): Option[(List[Type], Scope, Symbol)]
   }
 
@@ -699,7 +684,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class MethodTypeExtractor {
-    def apply(params: List[Symbol], resultType: Type): MethodType
     def unapply(tpe: MethodType): Option[(List[Symbol], Type)]
   }
 
@@ -732,7 +716,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class NullaryMethodTypeExtractor {
-    def apply(resultType: Type): NullaryMethodType
     def unapply(tpe: NullaryMethodType): Option[(Type)]
   }
 
@@ -763,7 +746,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class PolyTypeExtractor {
-    def apply(typeParams: List[Symbol], resultType: Type): PolyType
     def unapply(tpe: PolyType): Option[(List[Symbol], Type)]
   }
 
@@ -798,7 +780,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class ExistentialTypeExtractor {
-    def apply(quantified: List[Symbol], underlying: Type): ExistentialType
     def unapply(tpe: ExistentialType): Option[(List[Symbol], Type)]
   }
 
@@ -833,7 +814,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class AnnotatedTypeExtractor {
-    def apply(annotations: List[Annotation], underlying: Type): AnnotatedType
     def unapply(tpe: AnnotatedType): Option[(List[Annotation], Type)]
   }
 
@@ -874,7 +854,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class TypeBoundsExtractor {
-    def apply(lo: Type, hi: Type): TypeBounds
     def unapply(tpe: TypeBounds): Option[(Type, Type)]
   }
 
@@ -924,7 +903,6 @@ trait Types {
    *  @group Extractors
    */
   abstract class BoundedWildcardTypeExtractor {
-    def apply(bounds: TypeBounds): BoundedWildcardType
     def unapply(tpe: BoundedWildcardType): Option[TypeBounds]
   }
 
@@ -947,74 +925,9 @@ trait Types {
    */
   def glb(ts: List[Type]): Type
 
-  // Creators ---------------------------------------------------------------
-  // too useful and too non-trivial to be left out of public API
-
-  /** The canonical creator for single-types
-   *  @group TypeCreators
-   */
-  def singleType(pre: Type, sym: Symbol): Type
-
-  /** the canonical creator for a refined type with a given scope
-   *  @group TypeCreators
-   */
-  def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos: Position): Type
-
-  /** The canonical creator for a refined type with an initially empty scope.
-   *  @group TypeCreators
-   */
-  def refinedType(parents: List[Type], owner: Symbol): Type
-
-  /** The canonical creator for typerefs
-   *  @group TypeCreators
-   */
-  def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type
-
-  /** A creator for intersection type where intersections of a single type are
-   *  replaced by the type itself.
-   *  @group TypeCreators
-   */
-  def intersectionType(tps: List[Type]): Type
-
-  /** A creator for intersection type where intersections of a single type are
-   *  replaced by the type itself, and repeated parent classes are merged.
-   *
-   *  !!! Repeated parent classes are not merged - is this a bug in the
-   *  comment or in the code?
-   *  @group TypeCreators
-   */
-  def intersectionType(tps: List[Type], owner: Symbol): Type
-
   /** A creator for type applications
-   *  @group Types
+   *  @group TypeOps
    */
+  // TODO: needs a more convenient type signature, because applying types right now is quite boilerplatey
   def appliedType(tycon: Type, args: List[Type]): Type
-
-  /** A creator for type parameterizations that strips empty type parameter lists.
-   *  Use this factory method to indicate the type has kind * (it's a polymorphic value)
-   *  until we start tracking explicit kinds equivalent to typeFun (except that the latter requires tparams nonEmpty).
-   *  @group Types
-   */
-  def polyType(tparams: List[Symbol], tpe: Type): Type
-
-  /** A creator for existential types. This generates:
-   *
-   *  {{{
-   *    tpe1 where { tparams }
-   *  }}}
-   *
-   *  where `tpe1` is the result of extrapolating `tpe` with regard to `tparams`.
-   *  Extrapolating means that type variables in `tparams` occurring
-   *  in covariant positions are replaced by upper bounds, (minus any
-   *  SingletonClass markers), type variables in `tparams` occurring in
-   *  contravariant positions are replaced by upper bounds, provided the
-   *  resulting type is legal with regard to stability, and does not contain
-   *  any type variable in `tparams`.
-   *
-   *  The abstraction drops all type parameters that are not directly or
-   *  indirectly referenced by type `tpe1`. If there are no remaining type
-   *  parameters, simply returns result type `tpe`.
-   *  @group TypeCreators
-   */
-  def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type
 }

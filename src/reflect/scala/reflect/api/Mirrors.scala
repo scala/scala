@@ -62,7 +62,7 @@ package api
  * The entry point to `Mirror`s for use at runtime is via `ru.runtimeMirror(<classloader>)`, where
  * `ru` is [[scala.reflect.runtime.universe]].
  *
- * The result of a [[scala.reflect.api.JavaMirrors#runtimeMirror]] call is a classloader mirror,
+ * The result of a [[scala.reflect.api.JavaUniverse#runtimeMirror]] call is a classloader mirror,
  * of type [[scala.reflect.api.Mirrors#ReflectiveMirror]], which can load symbols by names as
  * discussed above (in the “Compile-time” section).
  *

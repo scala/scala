@@ -5,10 +5,11 @@ package internal
 import Flags._
 import util._
 
-trait BuildUtils { self: SymbolTable =>
+trait ReificationSupport { self: SymbolTable =>
   import definitions.{TupleClass, FunctionClass, ScalaPackage, UnitClass}
+  import internal._
 
-  class BuildImpl extends BuildApi {
+  class ReificationSupportImpl extends ReificationSupportApi {
     def selectType(owner: Symbol, name: String): TypeSymbol =
       select(owner, newTypeName(name)).asType
 
@@ -41,6 +42,9 @@ trait BuildUtils { self: SymbolTable =>
     def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol =
       owner.newNestedSymbol(name, pos, flags, isClass).markFlagsCompleted(mask = AllFlags)
 
+    def newScopeWith(elems: Symbol*): Scope =
+      self.newScopeWith(elems: _*)
+
     def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S =
       sym.setAnnotations(annots)
 
@@ -54,6 +58,34 @@ trait BuildUtils { self: SymbolTable =>
     def Ident(sym: Symbol): Ident = self.Ident(sym)
 
     def TypeTree(tp: Type): TypeTree = self.TypeTree(tp)
+
+    def ThisType(sym: Symbol): Type = self.ThisType(sym)
+
+    def SingleType(pre: Type, sym: Symbol): Type = self.SingleType(pre, sym)
+
+    def SuperType(thistpe: Type, supertpe: Type): Type = self.SuperType(thistpe, supertpe)
+
+    def ConstantType(value: Constant): ConstantType = self.ConstantType(value)
+
+    def TypeRef(pre: Type, sym: Symbol, args: List[Type]): Type = self.TypeRef(pre, sym, args)
+
+    def RefinedType(parents: List[Type], decls: Scope, typeSymbol: Symbol): RefinedType = self.RefinedType(parents, decls, typeSymbol)
+
+    def ClassInfoType(parents: List[Type], decls: Scope, typeSymbol: Symbol): ClassInfoType = self.ClassInfoType(parents, decls, typeSymbol)
+
+    def MethodType(params: List[Symbol], resultType: Type): MethodType = self.MethodType(params, resultType)
+
+    def NullaryMethodType(resultType: Type): NullaryMethodType = self.NullaryMethodType(resultType)
+
+    def PolyType(typeParams: List[Symbol], resultType: Type): PolyType = self.PolyType(typeParams, resultType)
+
+    def ExistentialType(quantified: List[Symbol], underlying: Type): ExistentialType = self.ExistentialType(quantified, underlying)
+
+    def AnnotatedType(annotations: List[Annotation], underlying: Type): AnnotatedType = self.AnnotatedType(annotations, underlying)
+
+    def TypeBounds(lo: Type, hi: Type): TypeBounds = self.TypeBounds(lo, hi)
+
+    def BoundedWildcardType(bounds: TypeBounds): BoundedWildcardType = self.BoundedWildcardType(bounds)
 
     def thisPrefix(sym: Symbol): Type = sym.thisPrefix
 
@@ -911,5 +943,5 @@ trait BuildUtils { self: SymbolTable =>
     }
   }
 
-  val build: BuildImpl = new BuildImpl
+  val build = new ReificationSupportImpl
 }

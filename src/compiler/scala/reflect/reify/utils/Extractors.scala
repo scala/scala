@@ -183,12 +183,12 @@ trait Extractors {
       tree match {
         case
           ValDef(_, name, _, Apply(
-            Select(Select(uref1 @ Ident(_), build1), freeTermFactory),
+            Select(Select(Select(uref1 @ Ident(_), internal1), rs1), freeTermFactory),
             _ :+
-            ApplyCall(Select(Select(uref2 @ Ident(_), build2), flagsRepr), List(Literal(Constant(flags: Long)))) :+
+            ApplyCall(Select(Select(Select(uref2 @ Ident(_), internal2), rs2), flagsRepr), List(Literal(Constant(flags: Long)))) :+
             Literal(Constant(origin: String))))
-        if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && acceptFreeTermFactory(freeTermFactory) &&
-           uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsRepr == nme.FlagsRepr =>
+        if uref1.name == nme.UNIVERSE_SHORT && internal1 == nme.internal && rs1 == nme.reificationSupport && acceptFreeTermFactory(freeTermFactory) &&
+           uref2.name == nme.UNIVERSE_SHORT && internal2 == nme.internal && rs2 == nme.reificationSupport && flagsRepr == nme.FlagsRepr =>
           Some((uref1, name, reifyBinding(tree), flags, origin))
         case _ =>
           None
@@ -201,8 +201,8 @@ trait Extractors {
 
   object FreeRef {
     def unapply(tree: Tree): Option[(Tree, TermName)] = tree match {
-      case Apply(Select(Select(uref @ Ident(_), build), ident), List(Ident(name: TermName)))
-      if build == nme.build && ident == nme.Ident && name.startsWith(nme.REIFY_FREE_PREFIX) =>
+      case Apply(Select(Select(Select(uref @ Ident(_), internal), rs), ident), List(Ident(name: TermName)))
+      if internal == nme.internal && rs == nme.reificationSupport && ident == nme.Ident && name.startsWith(nme.REIFY_FREE_PREFIX) =>
         Some((uref, name))
       case _ =>
         None
@@ -213,15 +213,15 @@ trait Extractors {
     def unapply(tree: Tree): Option[(Tree, TermName, Long, Boolean)] = tree match {
       case
         ValDef(_, name, _, Apply(
-          Select(Select(uref1 @ Ident(_), build1), newNestedSymbol),
+          Select(Select(Select(uref1 @ Ident(_), internal1), rs1), newNestedSymbol),
           List(
             _,
             _,
             _,
-            ApplyCall(Select(Select(uref2 @ Ident(_), build2), flagsRepr), List(Literal(Constant(flags: Long)))),
+            ApplyCall(Select(Select(Select(uref2 @ Ident(_), internal2), rs2), flagsRepr), List(Literal(Constant(flags: Long)))),
             Literal(Constant(isClass: Boolean)))))
-      if uref1.name == nme.UNIVERSE_SHORT && build1 == nme.build && newNestedSymbol == nme.newNestedSymbol &&
-         uref2.name == nme.UNIVERSE_SHORT && build2 == nme.build && flagsRepr == nme.FlagsRepr =>
+      if uref1.name == nme.UNIVERSE_SHORT && internal1 == nme.internal && rs1 == nme.reificationSupport && newNestedSymbol == nme.newNestedSymbol &&
+         uref2.name == nme.UNIVERSE_SHORT && internal2 == nme.internal && rs2 == nme.reificationSupport && flagsRepr == nme.FlagsRepr =>
         Some((uref1, name, flags, isClass))
       case _ =>
         None

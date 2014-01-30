@@ -2,7 +2,8 @@ package scala.reflect
 package api
 
 trait StandardLiftables { self: Universe =>
-  import build.{SyntacticTuple, ScalaDot}
+  import internal._
+  import reificationSupport.{SyntacticTuple, ScalaDot}
 
   trait StandardLiftableInstances {
     private def lift[T: Liftable](value: T): Tree            = implicitly[Liftable[T]].apply(value)

@@ -168,29 +168,6 @@ trait Trees { self: Universe =>
      */
     def children: List[Tree]
 
-    /** Extracts free term symbols from a tree that is reified or contains reified subtrees.
-     */
-    def freeTerms: List[FreeTermSymbol]
-
-    /** Extracts free type symbols from a tree that is reified or contains reified subtrees.
-     */
-    def freeTypes: List[FreeTypeSymbol]
-
-    /** Substitute symbols in `to` for corresponding occurrences of references to
-     *  symbols `from` in this type.
-     */
-    def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree
-
-    /** Substitute types in `to` for corresponding occurrences of references to
-     *  symbols `from` in this tree.
-     */
-    def substituteTypes(from: List[Symbol], to: List[Type]): Tree
-
-    /** Substitute given tree `to` for occurrences of nodes that represent
-     *  `C.this`, where `C` referes to the given class `clazz`.
-     */
-    def substituteThis(clazz: Symbol, to: Tree): Tree
-
     /** Make a copy of this tree, keeping all attributes,
      *  except that all positions are focused (so nothing
      *  in this tree will be found when searching by position).
@@ -1745,58 +1722,11 @@ trait Trees { self: Universe =>
    *  @group API
    */
   trait IdentApi extends RefTreeApi { this: Ident =>
+    /** Was this ident created from a backquoted identifier? */
+    def isBackquoted: Boolean
+
     /** @inheritdoc */
     def name: Name
-  }
-
-  /** Marks underlying reference to id as boxed.
-   *
-   *  <b>Precondition:<\b> id must refer to a captured variable
-   *  A reference such marked will refer to the boxed entity, no dereferencing
-   *  with `.elem` is done on it.
-   *  This tree node can be emitted by macros such as reify that call referenceCapturedVariable.
-   *  It is eliminated in LambdaLift, where the boxing conversion takes place.
-   *  @group Trees
-   *  @template
-   */
-  type ReferenceToBoxed >: Null <: ReferenceToBoxedApi with TermTree
-
-  /** The constructor/extractor for `ReferenceToBoxed` instances.
-   *  @group Extractors
-   */
-  val ReferenceToBoxed: ReferenceToBoxedExtractor
-
-  /** An extractor class to create and pattern match with syntax `ReferenceToBoxed(ident)`.
-   *  This AST node does not have direct correspondence to Scala code,
-   *  and is emitted by macros to reference capture vars directly without going through `elem`.
-   *
-   *  For example:
-   *
-   *    var x = ...
-   *    fun { x }
-   *
-   *  Will emit:
-   *
-   *    Ident(x)
-   *
-   *  Which gets transformed to:
-   *
-   *    Select(Ident(x), "elem")
-   *
-   *  If `ReferenceToBoxed` were used instead of Ident, no transformation would be performed.
-   *  @group Extractors
-   */
-  abstract class ReferenceToBoxedExtractor {
-    def apply(ident: Ident): ReferenceToBoxed
-    def unapply(referenceToBoxed: ReferenceToBoxed): Option[Ident]
-  }
-
-  /** The API that all references support
-   *  @group API
-   */
-  trait ReferenceToBoxedApi extends TermTreeApi { this: ReferenceToBoxed =>
-    /** The underlying reference. */
-    def ident: Tree
   }
 
   /** Literal
@@ -2139,78 +2069,6 @@ trait Trees { self: Universe =>
   val pendingSuperCall: Apply
 
 // ---------------------- factories ----------------------------------------------
-
-  /** A factory method for `ClassDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical ClassDef constructor to create a class and then initialize its position and symbol manually", "2.10.1")
-  def ClassDef(sym: Symbol, impl: Template): ClassDef
-
-  /** A factory method for `ModuleDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical ModuleDef constructor to create an object and then initialize its position and symbol manually", "2.10.1")
-  def ModuleDef(sym: Symbol, impl: Template): ModuleDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical ValDef constructor to create a val and then initialize its position and symbol manually", "2.10.1")
-  def ValDef(sym: Symbol, rhs: Tree): ValDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical ValDef constructor to create a val with an empty right-hand side and then initialize its position and symbol manually", "2.10.1")
-  def ValDef(sym: Symbol): ValDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical DefDef constructor to create a method and then initialize its position and symbol manually", "2.10.1")
-  def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical DefDef constructor to create a method and then initialize its position and symbol manually", "2.10.1")
-  def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical DefDef constructor to create a method and then initialize its position and symbol manually", "2.10.1")
-  def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical DefDef constructor to create a method and then initialize its position and symbol manually", "2.10.1")
-  def DefDef(sym: Symbol, rhs: Tree): DefDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical DefDef constructor to create a method and then initialize its position and symbol manually", "2.10.1")
-  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef
-
-  /** A factory method for `TypeDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical TypeDef constructor to create a type alias and then initialize its position and symbol manually", "2.10.1")
-  def TypeDef(sym: Symbol, rhs: Tree): TypeDef
-
-  /** A factory method for `TypeDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical TypeDef constructor to create an abstract type or type parameter and then initialize its position and symbol manually", "2.10.1")
-  def TypeDef(sym: Symbol): TypeDef
-
-  /** A factory method for `LabelDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical LabelDef constructor to create a label and then initialize its position and symbol manually", "2.10.1")
-  def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef
 
   /** A factory method for `Block` nodes.
    *  Flattens directly nested blocks.

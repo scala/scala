@@ -18,8 +18,7 @@ trait StdTags {
       new TypeCreator {
         def apply[U <: ApiUniverse with Singleton](m: Mirror[U]): U # Type = {
           val u = m.universe
-          val pre = u.ThisType(m.staticPackage("scala.collection.immutable").moduleClass.asInstanceOf[u.Symbol])
-          u.TypeRef(pre, u.definitions.ListClass, List(u.definitions.StringClass.toTypeConstructor))
+          u.appliedType(u.definitions.ListClass.toType, List(u.definitions.StringClass.toType))
         }
       })
 

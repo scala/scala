@@ -2,6 +2,8 @@ package scala
 package reflect
 package macros
 
+import scala.language.implicitConversions
+
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
@@ -17,109 +19,63 @@ package macros
  */
 abstract class Universe extends scala.reflect.api.Universe {
 
-  /** A factory that encapsulates common tree-building functions.
-   *  @group Macros
-   */
-  @deprecated("Use quasiquotes instead", "2.11.0")
-  val treeBuild: TreeBuilder { val global: Universe.this.type }
+  /** @inheritdoc */
+  override type Internal <: MacroInternalApi
 
-  /** The API of reflection artifacts that support [[scala.reflect.macros.Attachments]].
-   *  These artifacts are trees and symbols.
-   *  @group Macros
-   */
-  trait AttachableApi {
-    /** The attachment of the reflection artifact. */
-    def attachments: Attachments { type Pos = Position }
+  /** @inheritdoc */
+  trait MacroInternalApi extends InternalApi {
+
+    /** Advanced tree factories */
+    val gen: TreeGen
+
+    /** The attachment of the symbol. */
+    def attachments(symbol: Symbol): Attachments { type Pos = Position }
 
     /** Updates the attachment with the payload slot of T added/updated with the provided value.
      *  Replaces an existing payload of the same type, if exists.
-     *  Returns the reflection artifact itself.
+     *  Returns the symbol itself.
      */
-    def updateAttachment[T: ClassTag](attachment: T): AttachableApi.this.type
+    def updateAttachment[T: ClassTag](symbol: Symbol, attachment: T): symbol.type
 
     /** Update the attachment with the payload of the given class type `T` removed.
-     *  Returns the reflection artifact itself.
+     *  Returns the symbol itself.
      */
-    def removeAttachment[T: ClassTag]: AttachableApi.this.type
-  }
-
-  // Symbol extensions ---------------------------------------------------------------
-
-  /**  The `Symbol` API is extended for macros: See [[SymbolContextApi]] for details.
-   *
-   *  @group Macros
-   */
-  override type Symbol >: Null <: SymbolContextApi
-
-  /** The extended API of symbols that's supported in macro context universes
-   *  @group API
-   */
-  trait SymbolContextApi extends SymbolApi with AttachableApi { self: Symbol =>
-
-    /** If this symbol is a skolem, its corresponding type parameter, otherwise the symbol itself.
-     *
-     *  [[https://groups.google.com/forum/#!msg/scala-internals/0j8laVNTQsI/kRXMF_c8bGsJ To quote Martin Odersky]],
-     *  skolems are synthetic type "constants" that are copies of existentially bound or universally
-     *  bound type variables. E.g. if one is inside the right-hand side of a method:
-     *
-     *  {{{
-     *  def foo[T](x: T) = ... foo[List[T]]....
-     *  }}}
-     *
-     *  the skolem named `T` refers to the unknown type instance of `T` when `foo` is called. It needs to be different
-     *  from the type parameter because in a recursive call as in the `foo[List[T]]` above the type parameter gets
-     *  substituted with `List[T]`, but the ''type skolem'' stays what it is.
-     *
-     *  The other form of skolem is an ''existential skolem''. Say one has a function
-     *
-     *  {{{
-     *  def bar(xs: List[T] forSome { type T }) = xs.head
-     *  }}}
-     *
-     *  then each occurrence of `xs` on the right will have type `List[T']` where `T'` is a fresh copy of `T`.
-     */
-    def deSkolemize: Symbol
+    def removeAttachment[T: ClassTag](symbol: Symbol): symbol.type
 
     /** The position of this symbol. */
-    def pos: Position
+    def pos(symbol: Symbol): Position
 
     /** Sets the `typeSignature` of the symbol. */
-    def setTypeSignature(tpe: Type): Symbol
+    def setTypeSignature(symbol: Symbol, tpe: Type): symbol.type
 
     /** Sets the `annotations` of the symbol. */
-    def setAnnotations(annots: Annotation*): Symbol
+    def setAnnotations(symbol: Symbol, annots: Annotation*): symbol.type
 
     /** Sets the `name` of the symbol. */
-    def setName(name: Name): Symbol
+    def setName(symbol: Symbol, name: Name): symbol.type
 
     /** Sets the `privateWithin` of the symbol. */
-    def setPrivateWithin(sym: Symbol): Symbol
-  }
+    def setPrivateWithin(symbol: Symbol, sym: Symbol): symbol.type
 
-  // Tree extensions ---------------------------------------------------------------
+    /** The attachment of the tree. */
+    def attachments(tree: Tree): Attachments { type Pos = Position }
 
-  /**  The `Tree` API is extended for macros: See [[TreeContextApi]] for details.
-   *
-   *  @group Macros
-   */
-  override type Tree >: Null <: TreeContextApi
+    /** Updates the attachment with the payload slot of T added/updated with the provided value.
+     *  Replaces an existing payload of the same type, if exists.
+     *  Returns the tree itself.
+     */
+    def updateAttachment[T: ClassTag](tree: Tree, attachment: T): tree.type
 
-  /** The extended API of trees that's supported in macro context universes
-   *  @group API
-   */
-  trait TreeContextApi extends TreeApi with AttachableApi { self: Tree =>
-
-    /** Sets the `pos` of the tree. Returns `Unit`. */
-    def pos_=(pos: Position): Unit
+    /** Update the attachment with the payload of the given class type `T` removed.
+     *  Returns the tree itself.
+     */
+    def removeAttachment[T: ClassTag](tree: Tree): tree.type
 
     /** Sets the `pos` of the tree. Returns the tree itself. */
-    def setPos(newpos: Position): Tree
-
-    /** Sets the `tpe` of the tree. Returns `Unit`. */
-    @deprecated("Use setType", "2.11.0") def tpe_=(t: Type): Unit
+    def setPos(tree: Tree, newpos: Position): tree.type
 
     /** Sets the `tpe` of the tree. Returns the tree itself. */
-    def setType(tp: Type): Tree
+    def setType(tree: Tree, tp: Type): tree.type
 
     /** Like `setType`, but if this is a previously empty TypeTree that
      *  fact is remembered so that `untypecheck` will snap back.
@@ -139,63 +95,96 @@ abstract class Universe extends scala.reflect.api.Universe {
      *  and therefore should be abandoned if the current line of type
      *  inquiry doesn't work out.
      */
-    def defineType(tp: Type): Tree
-
-    /** Sets the `symbol` of the tree. Returns `Unit`. */
-    def symbol_=(sym: Symbol): Unit
+    def defineType(tree: Tree, tp: Type): tree.type
 
     /** Sets the `symbol` of the tree. Returns the tree itself. */
-    def setSymbol(sym: Symbol): Tree
-  }
+    def setSymbol(tree: Tree, sym: Symbol): tree.type
 
-  /** @inheritdoc */
-  override type SymTree >: Null <: Tree with SymTreeContextApi
-
-  /** The extended API of sym trees that's supported in macro context universes
-   *  @group API
-   */
-  trait SymTreeContextApi extends SymTreeApi { this: SymTree =>
-    /** Sets the `symbol` field of the sym tree. */
-    var symbol: Symbol
-  }
-
-  /** @inheritdoc */
-  override type TypeTree >: Null <: TypTree with TypeTreeContextApi
-
-  /** The extended API of sym trees that's supported in macro context universes
-   *  @group API
-   */
-  trait TypeTreeContextApi extends TypeTreeApi { this: TypeTree =>
     /** Sets the `original` field of the type tree. */
-    def setOriginal(tree: Tree): this.type
+    def setOriginal(tt: TypeTree, original: Tree): TypeTree
+
+    /** Mark a variable as captured; i.e. force boxing in a *Ref type.
+     *  @group Macros
+     */
+    def captureVariable(vble: Symbol): Unit
+
+    /** Mark given identifier as a reference to a captured variable itself
+     *  suppressing dereferencing with the `elem` field.
+     *  @group Macros
+     */
+    def referenceCapturedVariable(vble: Symbol): Tree
+
+    /** Convert type of a captured variable to *Ref type.
+     *  @group Macros
+     */
+    def capturedVariableType(vble: Symbol): Type
   }
 
-  /** @inheritdoc */
-  override type Ident >: Null <: RefTree with IdentContextApi
+  /** @group Internal */
+  trait TreeGen {
+    /** Builds a reference to value whose type is given stable prefix.
+     *  The type must be suitable for this.  For example, it
+     *  must not be a TypeRef pointing to an abstract type variable.
+     */
+    def mkAttributedQualifier(tpe: Type): Tree
 
-  /** The extended API of idents that's supported in macro context universes
-   *  @group API
-   */
-  trait IdentContextApi extends IdentApi { this: Ident =>
-    /** Was this ident created from a backquoted identifier? */
-    def isBackquoted: Boolean
+    /** Builds a reference to value whose type is given stable prefix.
+     *  If the type is unsuitable, e.g. it is a TypeRef for an
+     *  abstract type variable, then an Ident will be made using
+     *  termSym as the Ident's symbol.  In that case, termSym must
+     *  not be NoSymbol.
+     */
+    def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree
+
+    /** Builds a typed reference to given symbol with given stable prefix. */
+    def mkAttributedRef(pre: Type, sym: Symbol): RefTree
+
+    /** Builds a typed reference to given symbol. */
+    def mkAttributedRef(sym: Symbol): RefTree
+
+    /** Builds an untyped reference to given symbol. Requires the symbol to be static. */
+    def mkUnattributedRef(sym: Symbol): RefTree
+
+    /** Builds an untyped reference to symbol with given name. Requires the symbol to be static. */
+    def mkUnattributedRef(fullName: Name): RefTree
+
+    /** Builds a typed This reference to given symbol. */
+    def mkAttributedThis(sym: Symbol): This
+
+    /** Builds a typed Ident with an underlying symbol. */
+    def mkAttributedIdent(sym: Symbol): RefTree
+
+    /** Builds a typed Select with an underlying symbol. */
+    def mkAttributedSelect(qual: Tree, sym: Symbol): RefTree
+
+    /** A creator for method calls, e.g. fn[T1, T2, ...](v1, v2, ...)
+     *  There are a number of variations.
+     *
+     *  @param    receiver    symbol of the method receiver
+     *  @param    methodName  name of the method to call
+     *  @param    targs       type arguments (if Nil, no TypeApply node will be generated)
+     *  @param    args        value arguments
+     *  @return               the newly created trees.
+     */
+    def mkMethodCall(receiver: Symbol, methodName: Name, targs: List[Type], args: List[Tree]): Tree
+
+    def mkMethodCall(method: Symbol, targs: List[Type], args: List[Tree]): Tree
+
+    def mkMethodCall(method: Symbol, args: List[Tree]): Tree
+
+    def mkMethodCall(target: Tree, args: List[Tree]): Tree
+
+    def mkMethodCall(receiver: Symbol, methodName: Name, args: List[Tree]): Tree
+
+    def mkMethodCall(receiver: Tree, method: Symbol, targs: List[Type], args: List[Tree]): Tree
+
+    def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree
+
+    def mkNullaryCall(method: Symbol, targs: List[Type]): Tree
+
+    /** A tree that refers to the runtime reflexive universe, `scala.reflect.runtime.universe`. */
+    def mkRuntimeUniverseRef: Tree
   }
-
-  /** Mark a variable as captured; i.e. force boxing in a *Ref type.
-   *  @group Macros
-   */
-  def captureVariable(vble: Symbol): Unit
-
-  /** Mark given identifier as a reference to a captured variable itself
-   *  suppressing dereferencing with the `elem` field.
-   *  @group Macros
-   */
-  def referenceCapturedVariable(vble: Symbol): Tree
-
-  /** Convert type of a captured variable to *Ref type.
-   *  @group Macros
-   */
-  def capturedVariableType(vble: Symbol): Type
 
   /** The type of compilation runs.
    *  @see [[scala.reflect.macros.Enclosures]]

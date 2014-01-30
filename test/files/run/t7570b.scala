@@ -6,8 +6,8 @@ import Flag._
 
 object Test extends App {
   val tb = cm.mkToolBox()
-  val msg = build.newFreeTerm("msg", "C")
-  build.setTypeSignature(msg, typeOf[String])
+  val msg = internal.reificationSupport.newFreeTerm("msg", "C")
+  internal.reificationSupport.setTypeSignature(msg, typeOf[String])
   try {
     val csym = tb.define(q"""class C { override def toString = $msg }""")
     println(tb.eval(q"new $csym"))

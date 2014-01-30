@@ -99,7 +99,7 @@ trait Trees extends api.Trees {
       (duplicator transform this).asInstanceOf[this.type]
   }
 
-  abstract class TreeContextApiImpl extends TreeContextApi { this: Tree =>
+  abstract class TreeContextApiImpl extends TreeApi { this: Tree =>
 
     override def orElse(alt: => Tree) = if (!isEmpty) this else alt
 
@@ -158,8 +158,8 @@ trait Trees extends api.Trees {
       productIterator.toList flatMap subtrees
     }
 
-    override def freeTerms: List[FreeTermSymbol] = freeSyms[FreeTermSymbol](_.isFreeTerm, _.termSymbol)
-    override def freeTypes: List[FreeTypeSymbol] = freeSyms[FreeTypeSymbol](_.isFreeType, _.typeSymbol)
+    def freeTerms: List[FreeTermSymbol] = freeSyms[FreeTermSymbol](_.isFreeTerm, _.termSymbol)
+    def freeTypes: List[FreeTypeSymbol] = freeSyms[FreeTypeSymbol](_.isFreeType, _.typeSymbol)
 
     private def freeSyms[S <: Symbol](isFree: Symbol => Boolean, symOfType: Type => Symbol): List[S] = {
       val s = mutable.LinkedHashSet[S]()
@@ -175,13 +175,13 @@ trait Trees extends api.Trees {
       s.toList
     }
 
-    override def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree =
+    def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree =
       new TreeSymSubstituter(from, to)(this)
 
-    override def substituteTypes(from: List[Symbol], to: List[Type]): Tree =
+    def substituteTypes(from: List[Symbol], to: List[Type]): Tree =
       new TreeTypeSubstituter(from, to)(this)
 
-    override def substituteThis(clazz: Symbol, to: Tree): Tree =
+    def substituteThis(clazz: Symbol, to: Tree): Tree =
       new ThisSubstituter(clazz, to) transform this
 
     def hasExistingSymbol = (symbol ne null) && (symbol ne NoSymbol)
@@ -235,7 +235,7 @@ trait Trees extends api.Trees {
 
   trait TypTree extends Tree with TypTreeApi
 
-  abstract class SymTree extends Tree with SymTreeContextApi {
+  abstract class SymTree extends Tree with SymTreeApi {
     override def hasSymbolField = true
     override var symbol: Symbol = NoSymbol
   }
@@ -488,7 +488,7 @@ trait Trees extends api.Trees {
   }
   object Select extends SelectExtractor
 
-  case class Ident(name: Name) extends RefTree with IdentContextApi {
+  case class Ident(name: Name) extends RefTree with IdentApi {
     def qualifier: Tree = EmptyTree
     def isBackquoted = this.hasAttachment[BackquotedIdentifierAttachment.type]
   }
@@ -545,7 +545,7 @@ trait Trees extends api.Trees {
        extends TypTree with ExistentialTypeTreeApi
   object ExistentialTypeTree extends ExistentialTypeTreeExtractor
 
-  case class TypeTree() extends TypTree with TypeTreeContextApi {
+  case class TypeTree() extends TypTree with TypeTreeApi {
     private var orig: Tree = null
     /** Was this type tree originally empty? That is, does it now contain
       * an inferred type that must be forgotten in `resetAttrs` to
@@ -1849,8 +1849,8 @@ trait Trees extends api.Trees {
   implicit val NameTreeTag            = ClassTag[NameTree](classOf[NameTree])
   implicit val NewTag                 = ClassTag[New](classOf[New])
   implicit val PackageDefTag          = ClassTag[PackageDef](classOf[PackageDef])
-  implicit val RefTreeTag             = ClassTag[RefTree](classOf[RefTree])
   implicit val ReferenceToBoxedTag    = ClassTag[ReferenceToBoxed](classOf[ReferenceToBoxed])
+  implicit val RefTreeTag             = ClassTag[RefTree](classOf[RefTree])
   implicit val ReturnTag              = ClassTag[Return](classOf[Return])
   implicit val SelectFromTypeTreeTag  = ClassTag[SelectFromTypeTree](classOf[SelectFromTypeTree])
   implicit val SelectTag              = ClassTag[Select](classOf[Select])

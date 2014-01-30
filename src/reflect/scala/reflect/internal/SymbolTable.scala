@@ -11,6 +11,7 @@ import scala.annotation.elidable
 import scala.collection.{ mutable, immutable }
 import util._
 import java.util.concurrent.TimeUnit
+import scala.reflect.internal.{TreeGen => InternalTreeGen}
 
 abstract class SymbolTable extends macros.Universe
                               with Collections
@@ -40,14 +41,14 @@ abstract class SymbolTable extends macros.Universe
                               with CapturedVariables
                               with StdAttachments
                               with StdCreators
-                              with BuildUtils
+                              with ReificationSupport
                               with PrivateWithin
                               with pickling.Translations
                               with FreshNames
+                              with Internals
 {
 
-  val gen = new TreeGen { val global: SymbolTable.this.type = SymbolTable.this }
-  lazy val treeBuild = gen
+  val gen = new InternalTreeGen { val global: SymbolTable.this.type = SymbolTable.this }
 
   def log(msg: => AnyRef): Unit
   def warning(msg: String): Unit     = Console.err.println(msg)

@@ -22,6 +22,16 @@ trait StdAttachments {
     def setPos(newpos: Position): this.type = { pos = newpos; this }
   }
 
+  /** Attachment that knows how to import itself into another universe. */
+  trait ImportableAttachment {
+    def importAttachment(importer: Importer): this.type
+  }
+
+  /** Attachment that doesn't contain any reflection artificats and can be imported as-is. */
+  trait PlainAttachment extends ImportableAttachment {
+    def importAttachment(importer: Importer): this.type = this
+  }
+
   /** Stores the trees that give rise to a refined type to be used in reification.
    *  Unfortunately typed `CompoundTypeTree` is lacking essential info, and the reifier cannot use `CompoundTypeTree.tpe`.
    *  Therefore we need this hack (see `Reshape.toPreTyperTypeTree` for a detailed explanation).

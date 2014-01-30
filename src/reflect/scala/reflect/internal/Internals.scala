@@ -1,0 +1,125 @@
+package scala
+package reflect
+package internal
+
+import scala.language.implicitConversions
+import scala.collection.mutable.WeakHashMap
+import scala.ref.WeakReference
+import scala.reflect.api.Universe
+import scala.reflect.macros.Attachments
+import scala.reflect.internal.util.FreshNameCreator
+import scala.reflect.internal.Flags._
+import scala.reflect.internal.util.ListOfNil
+
+trait Internals extends api.Internals {
+  self: SymbolTable =>
+
+  type Internal = MacroInternalApi
+  lazy val internal: Internal = new SymbolTableInternal {}
+
+  trait SymbolTableInternal extends MacroInternalApi {
+    lazy val reificationSupport: ReificationSupportApi = self.build
+
+    def createImporter(from0: Universe): Importer { val from: from0.type } = self.mkImporter(from0)
+
+    def newScopeWith(elems: Symbol*): Scope = self.newScopeWith(elems: _*)
+
+    def freeTerms(tree: Tree): List[FreeTermSymbol] = tree.freeTerms
+    def freeTypes(tree: Tree): List[FreeTypeSymbol] = tree.freeTypes
+    def substituteSymbols(tree: Tree, from: List[Symbol], to: List[Symbol]): Tree = tree.substituteSymbols(from, to)
+    def substituteTypes(tree: Tree, from: List[Symbol], to: List[Type]): Tree = tree.substituteTypes(from, to)
+    def substituteThis(tree: Tree, clazz: Symbol, to: Tree): Tree = tree.substituteThis(clazz, to)
+    def attachments(tree: Tree): Attachments { type Pos = Position } = tree.attachments
+    def updateAttachment[T: ClassTag](tree: Tree, attachment: T): tree.type = tree.updateAttachment(attachment)
+    def removeAttachment[T: ClassTag](tree: Tree): tree.type = tree.removeAttachment[T]
+    def setPos(tree: Tree, newpos: Position): tree.type = tree.setPos(newpos)
+    def setType(tree: Tree, tp: Type): tree.type = tree.setType(tp)
+    def defineType(tree: Tree, tp: Type): tree.type = tree.defineType(tp)
+    def setSymbol(tree: Tree, sym: Symbol): tree.type = tree.setSymbol(sym)
+    def setOriginal(tt: TypeTree, tree: Tree): TypeTree = tt.setOriginal(tree)
+
+    def captureVariable(vble: Symbol): Unit = self.captureVariable(vble)
+    def referenceCapturedVariable(vble: Symbol): Tree = self.referenceCapturedVariable(vble)
+    def capturedVariableType(vble: Symbol): Type = self.capturedVariableType(vble)
+
+    def classDef(sym: Symbol, impl: Template): ClassDef = self.ClassDef(sym, impl)
+    def moduleDef(sym: Symbol, impl: Template): ModuleDef = self.ModuleDef(sym, impl)
+    def valDef(sym: Symbol, rhs: Tree): ValDef = self.ValDef(sym, rhs)
+    def valDef(sym: Symbol): ValDef = self.ValDef(sym)
+    def defDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef = self.DefDef(sym, mods, vparamss, rhs)
+    def defDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef = self.DefDef(sym, vparamss, rhs)
+    def defDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef = self.DefDef(sym, mods, rhs)
+    def defDef(sym: Symbol, rhs: Tree): DefDef = self.DefDef(sym, rhs)
+    def defDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef = self.DefDef(sym, rhs)
+    def typeDef(sym: Symbol, rhs: Tree): TypeDef = self.TypeDef(sym, rhs)
+    def typeDef(sym: Symbol): TypeDef = self.TypeDef(sym)
+    def labelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef = self.LabelDef(sym, params, rhs)
+
+    lazy val gen = self.treeBuild
+
+    def isFreeTerm(symbol: Symbol): Boolean = symbol.isFreeTerm
+    def asFreeTerm(symbol: Symbol): FreeTermSymbol = symbol.asFreeTerm
+    def isFreeType(symbol: Symbol): Boolean = symbol.isFreeType
+    def asFreeType(symbol: Symbol): FreeTypeSymbol = symbol.asFreeType
+    def newTermSymbol(symbol: Symbol, name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol = symbol.newTermSymbol(name, pos, flags)
+    def newModuleAndClassSymbol(symbol: Symbol, name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol) = symbol.newModuleAndClassSymbol(name, pos, flags)
+    def newMethodSymbol(symbol: Symbol, name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): MethodSymbol = symbol.newMethodSymbol(name, pos, flags)
+    def newTypeSymbol(symbol: Symbol, name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TypeSymbol = symbol.newTypeSymbol(name, pos, flags)
+    def newClassSymbol(symbol: Symbol, name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): ClassSymbol = symbol.newClassSymbol(name, pos, flags)
+    def newFreeTerm(name: String, value: => Any, flags: FlagSet = NoFlags, origin: String = null): FreeTermSymbol = reificationSupport.newFreeTerm(name, value, flags, origin)
+    def newFreeType(name: String, flags: FlagSet = NoFlags, origin: String = null): FreeTypeSymbol = reificationSupport.newFreeType(name, flags, origin)
+    def isErroneous(symbol: Symbol): Boolean = symbol.isErroneous
+    def isSkolem(symbol: Symbol): Boolean = symbol.isSkolem
+    def deSkolemize(symbol: Symbol): Symbol = symbol.deSkolemize
+    def attachments(symbol: Symbol): Attachments { type Pos = Position } = symbol.attachments
+    def updateAttachment[T: ClassTag](symbol: Symbol, attachment: T): symbol.type = symbol.updateAttachment(attachment)
+    def removeAttachment[T: ClassTag](symbol: Symbol): symbol.type = symbol.removeAttachment[T]
+    def pos(symbol: Symbol): Position = symbol.pos
+    def setTypeSignature(symbol: Symbol, tpe: Type): symbol.type = symbol.setTypeSignature(tpe)
+    def setAnnotations(symbol: Symbol, annots: Annotation*): symbol.type = symbol.setAnnotations(annots: _*)
+    def setName(symbol: Symbol, name: Name): symbol.type = symbol.setName(name)
+    def setPrivateWithin(symbol: Symbol, sym: Symbol): symbol.type = symbol.setPrivateWithin(sym)
+
+    def thisType(sym: Symbol): Type = self.ThisType(sym)
+    def singleType(pre: Type, sym: Symbol): Type = self.SingleType(pre, sym)
+    def superType(thistpe: Type, supertpe: Type): Type = self.SuperType(thistpe, supertpe)
+    def constantType(value: Constant): ConstantType = self.ConstantType(value)
+    def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = self.TypeRef(pre, sym, args)
+    def refinedType(parents: List[Type], decls: Scope): RefinedType = self.RefinedType(parents, decls)
+    def refinedType(parents: List[Type], owner: Symbol): Type = self.refinedType(parents, owner)
+    def refinedType(parents: List[Type], owner: Symbol, decls: Scope): Type = self.RefinedType(parents, decls, owner)
+    def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos: Position): Type = self.refinedType(parents, owner, decls, pos)
+    def intersectionType(tps: List[Type]): Type = self.intersectionType(tps)
+    def intersectionType(tps: List[Type], owner: Symbol): Type = self.intersectionType(tps, owner)
+    def classInfoType(parents: List[Type], decls: Scope, typeSymbol: Symbol): ClassInfoType = self.ClassInfoType(parents, decls, typeSymbol)
+    def methodType(params: List[Symbol], resultType: Type): MethodType = self.MethodType(params, resultType)
+    def nullaryMethodType(resultType: Type): NullaryMethodType = self.NullaryMethodType(resultType)
+    def polyType(typeParams: List[Symbol], resultType: Type): PolyType = self.PolyType(typeParams, resultType)
+    def existentialType(quantified: List[Symbol], underlying: Type): ExistentialType = self.ExistentialType(quantified, underlying)
+    def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type = self.existentialAbstraction(tparams, tpe0)
+    def annotatedType(annotations: List[Annotation], underlying: Type): AnnotatedType = self.AnnotatedType(annotations, underlying)
+    def typeBounds(lo: Type, hi: Type): TypeBounds = self.TypeBounds(lo, hi)
+    def boundedWildcardType(bounds: TypeBounds): BoundedWildcardType = self.BoundedWildcardType(bounds)
+  }
+
+  lazy val treeBuild = new self.TreeGen {
+    def mkAttributedQualifier(tpe: Type): Tree = self.gen.mkAttributedQualifier(tpe)
+    def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = self.gen.mkAttributedQualifier(tpe, termSym)
+    def mkAttributedRef(pre: Type, sym: Symbol): RefTree = self.gen.mkAttributedRef(pre, sym)
+    def mkAttributedRef(sym: Symbol): RefTree = self.gen.mkAttributedRef(sym)
+    def mkUnattributedRef(sym: Symbol): RefTree = self.gen.mkUnattributedRef(sym)
+    def mkUnattributedRef(fullName: Name): RefTree = self.gen.mkUnattributedRef(fullName)
+    def mkAttributedThis(sym: Symbol): This = self.gen.mkAttributedThis(sym)
+    def mkAttributedIdent(sym: Symbol): RefTree = self.gen.mkAttributedIdent(sym)
+    def mkAttributedSelect(qual: Tree, sym: Symbol): RefTree = self.gen.mkAttributedSelect(qual, sym)
+    def mkMethodCall(receiver: Symbol, methodName: Name, targs: List[Type], args: List[Tree]): Tree = self.gen.mkMethodCall(receiver, methodName, targs, args)
+    def mkMethodCall(method: Symbol, targs: List[Type], args: List[Tree]): Tree = self.gen.mkMethodCall(method, targs, args)
+    def mkMethodCall(method: Symbol, args: List[Tree]): Tree = self.gen.mkMethodCall(method, args)
+    def mkMethodCall(target: Tree, args: List[Tree]): Tree = self.gen.mkMethodCall(target, args)
+    def mkMethodCall(receiver: Symbol, methodName: Name, args: List[Tree]): Tree = self.gen.mkMethodCall(receiver, methodName, args)
+    def mkMethodCall(receiver: Tree, method: Symbol, targs: List[Type], args: List[Tree]): Tree = self.gen.mkMethodCall(receiver, method, targs, args)
+    def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree = self.gen.mkMethodCall(target, targs, args)
+    def mkNullaryCall(method: Symbol, targs: List[Type]): Tree = self.gen.mkNullaryCall(method, targs)
+    def mkRuntimeUniverseRef: Tree = self.gen.mkRuntimeUniverseRef
+  }
+}

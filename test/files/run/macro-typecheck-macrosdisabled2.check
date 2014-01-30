@@ -10,7 +10,7 @@
       def apply[U <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.Mirror[U]): U#Tree = {
         val $u: U = $m$untyped.universe;
         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
-        $u.Apply.apply($u.Select.apply($u.build.Ident($m.staticModule("scala.Array")), $u.TermName.apply("apply")), scala.collection.immutable.List.apply[$u.Literal]($u.Literal.apply($u.Constant.apply(2))))
+        $u.Apply.apply($u.Select.apply($u.internal.reificationSupport.Ident($m.staticModule("scala.Array")), $u.TermName.apply("apply")), scala.collection.immutable.List.apply[$u.Literal]($u.Literal.apply($u.Constant.apply(2))))
       }
     };
     new $treecreator1()
@@ -23,7 +23,7 @@
       def apply[U <: scala.reflect.api.Universe with Singleton]($m$untyped: scala.reflect.api.Mirror[U]): U#Type = {
         val $u: U = $m$untyped.universe;
         val $m: $u.Mirror = $m$untyped.asInstanceOf[$u.Mirror];
-        $u.TypeRef.apply($u.ThisType.apply($m.staticPackage("scala").asModule.moduleClass), $m.staticClass("scala.Array"), scala.collection.immutable.List.apply[$u.Type]($m.staticClass("scala.Int").asType.toTypeConstructor))
+        $u.internal.reificationSupport.TypeRef($u.internal.reificationSupport.ThisType($m.staticPackage("scala").asModule.moduleClass), $m.staticClass("scala.Array"), scala.collection.immutable.List.apply[$u.Type]($m.staticClass("scala.Int").asType.toTypeConstructor))
       }
     };
     new $typecreator2()

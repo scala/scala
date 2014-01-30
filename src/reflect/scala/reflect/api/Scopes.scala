@@ -34,11 +34,6 @@ trait Scopes { self: Universe =>
    */
   trait ScopeApi extends Iterable[Symbol]
 
-  /** Create a new scope with the given initial elements.
-   *  @group Scopes
-   */
-  def newScopeWith(elems: Symbol*): Scope
-
   /** The type of member scopes, as in class definitions, for example.
    *  @template
    *  @group Scopes

@@ -120,8 +120,8 @@ trait Holes { self: Quasiquotes =>
     }
 
     private def toStats(tree: Tree): Tree =
-      // q"$u.build.toStats($tree)"
-      Apply(Select(Select(u, nme.build), nme.toStats), tree :: Nil)
+      // q"$u.internal.reificationSupport.toStats($tree)"
+      Apply(Select(Select(Select(u, nme.internal), nme.reificationSupport), nme.toStats), tree :: Nil)
 
     private def toList(tree: Tree, tpe: Type): Tree =
       if (isListType(tpe)) tree
@@ -234,10 +234,10 @@ trait Holes { self: Quasiquotes =>
         }
         val lifter = inferUnliftable(tpe)
         assert(helperName.isTermName)
-        // q"val $name: $u.build.${helperName.toTypeName} = $u.build.$helperName($lifter)"
+        // q"val $name: $u.internal.reificationSupport.${helperName.toTypeName} = $u.internal.reificationSupport.$helperName($lifter)"
         ValDef(NoMods, name,
-          AppliedTypeTree(Select(Select(u, nme.build), helperName.toTypeName), List(TypeTree(tpe))),
-          Apply(Select(Select(u, nme.build), helperName), lifter :: Nil))
+          AppliedTypeTree(Select(Select(Select(u, nme.internal), nme.reificationSupport), helperName.toTypeName), List(TypeTree(tpe))),
+          Apply(Select(Select(Select(u, nme.internal), nme.reificationSupport), helperName), lifter :: Nil))
       }
   }
 }

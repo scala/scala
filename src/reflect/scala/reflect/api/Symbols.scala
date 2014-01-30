@@ -94,18 +94,6 @@ trait Symbols { self: Universe =>
    */
   type ClassSymbol >: Null <: ClassSymbolApi with TypeSymbol
 
-  /** The type of free terms introduced by reification.
-   *  @group Symbols
-   *  @template
-   */
-  type FreeTermSymbol >: Null <: FreeTermSymbolApi with TermSymbol
-
-  /** The type of free types introduced by reification.
-   *  @group Symbols
-   *  @template
-   */
-  type FreeTypeSymbol >: Null <: FreeTypeSymbolApi with TypeSymbol
-
   /** A special "missing" symbol. Commonly used in the API to denote a default or empty value.
    *  @group Symbols
    *  @template
@@ -131,12 +119,8 @@ trait Symbols { self: Universe =>
    *  @groupdesc Helpers       These methods enable collections-like operations on symbols.
    *  @groupname Type          TypeSymbol Members
    *  @groupprio Type          -1
-   *  @groupname FreeType      FreeType Symbol Members
-   *  @groupprio FreeType      -2
    *  @groupname Term          TermSymbol Members
    *  @groupprio Term          -1
-   *  @groupname FreeTerm      FreeTerm Symbol Members
-   *  @groupprio FreeTerm      -2
    *  @groupname Class         Class Symbol Members
    *  @groupprio Class         -2
    *  @groupname Method        Method Symbol Members
@@ -274,45 +258,6 @@ trait Symbols { self: Universe =>
      *  @group Conversions
      */
     def asClass: ClassSymbol = throw new ScalaReflectionException(s"$this is not a class")
-
-    /** Does this symbol represent a free term captured by reification?
-     *  If yes, `isTerm` is also guaranteed to be true.
-     *
-     *  @group Tests
-     */
-    def isFreeTerm: Boolean = false
-
-    /** This symbol cast to a free term symbol.
-     *  @throws ScalaReflectionException if `isFreeTerm` is false.
-     *
-     *  @group Conversions
-     */
-    def asFreeTerm: FreeTermSymbol = throw new ScalaReflectionException(s"$this is not a free term")
-
-    /** Does this symbol represent a free type captured by reification?
-     *  If yes, `isType` is also guaranteed to be true.
-     *
-     *  @group Tests
-     */
-    def isFreeType: Boolean = false
-
-    /** This symbol cast to a free type symbol.
-     *  @throws ScalaReflectionException if `isFreeType` is false.
-     *
-     *  @group Conversions
-     */
-    def asFreeType: FreeTypeSymbol = throw new ScalaReflectionException(s"$this is not a free type")
-
-    /** @group Constructors */
-    def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol
-    /** @group Constructors */
-    def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol)
-    /** @group Constructors */
-    def newMethodSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): MethodSymbol
-    /** @group Constructors */
-    def newTypeSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TypeSymbol
-    /** @group Constructors */
-    def newClassSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): ClassSymbol
 
     /** Source file if this symbol is created during this compilation run,
      *  or a class file if this symbol is loaded from a *.class or *.jar.
@@ -469,12 +414,6 @@ trait Symbols { self: Universe =>
      *  @group Tests
      */
     def isPackageClass: Boolean
-
-    /** Does this symbol or its underlying type represent a typechecking error?
-     *
-     *  @group Tests
-     */
-    def isErroneous : Boolean
 
     /** Is this symbol static (i.e. with no outer instance)?
      *  Q: When exactly is a sym marked as STATIC?
@@ -743,13 +682,6 @@ trait Symbols { self: Universe =>
      */
     def isCovariant     : Boolean
 
-    /** Does this symbol represent the definition of a skolem?
-     *  Skolems are used during typechecking to represent type parameters viewed from inside their scopes.
-     *
-     *  @group Type
-     */
-    def isSkolem       : Boolean
-
     /** Does this symbol represent the definition of a type alias?
      *
      *  @group Type
@@ -952,6 +884,12 @@ trait Symbols { self: Universe =>
      */
     def thisPrefix: Type
 
+    /** The type `C.super[M]`, where `C` is the current class and `M` is supertpe.
+     *
+     *  @group Class
+     */
+    def superPrefix(supertpe: Type): Type
+
     /** For a polymorphic class/trait, its type parameters, the empty list for all other classes/trait
      *
      *  @group Class
@@ -970,45 +908,5 @@ trait Symbols { self: Universe =>
     // This, however, will require some refactoring in the compiler, so I'll leave it for later
     // as at the moment we don't have time or risk tolerance for that
     def primaryConstructor: Symbol
-  }
-
-  /** The API of free term symbols.
-   *  The main source of information about symbols is the [[Symbols]] page.
-   *
-   *  $SYMACCESSORS
-   *  @group API
-   */
-  trait FreeTermSymbolApi extends TermSymbolApi { this: FreeTermSymbol =>
-    final override def isFreeTerm = true
-    final override def asFreeTerm = this
-
-    /** The place where this symbol has been spawned
-     *
-     *  @group FreeTerm
-     */
-    def origin: String
-
-    /** The valus this symbol refers to
-     *
-     *  @group FreeTerm
-     */
-    def value: Any
-  }
-
-  /** The API of free type symbols.
-   *  The main source of information about symbols is the [[Symbols]] page.
-   *
-   *  $SYMACCESSORS
-   *  @group API
-   */
-  trait FreeTypeSymbolApi extends TypeSymbolApi { this: FreeTypeSymbol =>
-    final override def isFreeType = true
-    final override def asFreeType = this
-
-    /** The place where this symbol has been spawned
-     *
-     *  @group FreeType
-     */
-    def origin: String
   }
 }

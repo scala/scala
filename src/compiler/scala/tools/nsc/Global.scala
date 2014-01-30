@@ -34,6 +34,7 @@ import backend.jvm.GenASM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 import scala.language.postfixOps
+import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
@@ -105,13 +106,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // sub-components --------------------------------------------------
 
-  /** Generate ASTs */
-  type TreeGen = scala.tools.nsc.ast.TreeGen
-
   /** Tree generation, usually based on existing symbols. */
   override object gen extends {
     val global: Global.this.type = Global.this
-  } with TreeGen {
+  } with AstTreeGen {
     def mkAttributedCast(tree: Tree, pt: Type): Tree =
       typer.typed(mkCast(tree, pt))
   }

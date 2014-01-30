@@ -1,5 +1,5 @@
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
-import scala.reflect.runtime.universe._, Flag._, build.ScalaDot
+import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport.ScalaDot
 
 object DefinitionConstructionProps
     extends QuasiquoteProperties("definition construction")

@@ -15,7 +15,7 @@ trait Reifiers {
    *  For more information and examples see the documentation for `Universe.reify`.
    *
    *  The produced tree will be bound to the specified `universe` and `mirror`.
-   *  Possible values for `universe` include `universe.treeBuild.mkRuntimeUniverseRef`.
+   *  Possible values for `universe` include `universe.internal.gen.mkRuntimeUniverseRef`.
    *  Possible values for `mirror` include `EmptyTree` (in that case the reifier will automatically pick an appropriate mirror).
    *
    *  This function is deeply connected to `Universe.reify`, a macro that reifies arbitrary expressions into runtime trees.

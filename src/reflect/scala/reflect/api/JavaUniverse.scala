@@ -3,12 +3,14 @@ package reflect
 package api
 
 /**
- * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
+ *  <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *
- * A refinement of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
+ *  A refinement of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
  *
- *  The refinement consists of an upgrade to the mirror API, which gets extended from [[scala.reflect.api.Mirror]]
- *  to [[scala.reflect.api.JavaMirrors#JavaMirror]].
+ *  This refinement equips mirrors with reflection capabilities for the JVM. `JavaMirror` can
+ *  convert Scala reflection artifacts (symbols and types) into Java reflection artifacts (classes)
+ *  and vice versa. It can also perform reflective invocations (getting/setting field values,
+ *  calling methods, etc).
  *
  *  See the [[http://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]] for details on how to use runtime reflection.
  *
@@ -17,31 +19,41 @@ package api
  *
  *  @contentDiagram hideNodes "*Api"
  */
-trait JavaUniverse extends Universe with JavaMirrors { self =>
+trait JavaUniverse extends Universe { self =>
 
-  /*  @group JavaUniverse */
-  override def typeTagToManifest[T: ClassTag](mirror0: Any, tag: Universe # TypeTag[T]): Manifest[T] = {
-    // SI-6239: make this conversion more precise
-    val mirror = mirror0.asInstanceOf[Mirror]
-    val runtimeClass = mirror.runtimeClass(tag.in(mirror).tpe)
-    Manifest.classType(runtimeClass).asInstanceOf[Manifest[T]]
+  /** In runtime reflection universes, runtime representation of a class is `java.lang.Class`.
+   *  @group JavaMirrors
+   */
+  type RuntimeClass = java.lang.Class[_]
+  implicit val RuntimeClassTag: ClassTag[RuntimeClass] = ClassTag[RuntimeClass](classOf[RuntimeClass])
+
+  /** In runtime reflection universes, mirrors are `JavaMirrors`.
+   *  @group JavaMirrors
+   */
+  override type Mirror >: Null <: JavaMirror
+
+  /** A refinement of [[scala.reflect.api.Mirror]] for runtime reflection using JVM classloaders.
+   *
+   *  With this upgrade, mirrors become capable of converting Scala reflection artifacts (symbols and types)
+   *  into Java reflection artifacts (classes) and vice versa. Consequently, refined mirrors
+   *  become capable of performing reflective invocations (getting/setting field values, calling methods, etc).
+   *
+   *  For more information about `Mirrors`s, see [[scala.reflect.api.Mirrors]] or the
+   * [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Mirrors]]
+   *
+   *  @group JavaMirrors
+   */
+  trait JavaMirror extends scala.reflect.api.Mirror[self.type] with RuntimeMirror {
+    val classLoader: ClassLoader
+    override def toString = s"JavaMirror with ${runtime.ReflectionUtils.show(classLoader)}"
   }
 
-  /*  @group JavaUniverse */
-  override def manifestToTypeTag[T](mirror0: Any, manifest: Manifest[T]): Universe # TypeTag[T] =
-    TypeTag(mirror0.asInstanceOf[Mirror], new TypeCreator {
-      def apply[U <: Universe with Singleton](mirror: scala.reflect.api.Mirror[U]): U # Type = {
-        mirror.universe match {
-          case ju: JavaUniverse =>
-            val jm = mirror.asInstanceOf[ju.Mirror]
-            val sym = jm.classSymbol(manifest.runtimeClass)
-            val tpe =
-              if (manifest.typeArguments.isEmpty) sym.toType
-              else ju.appliedType(sym.toTypeConstructor, manifest.typeArguments map (targ => ju.manifestToTypeTag(jm, targ)) map (_.in(jm).tpe))
-            tpe.asInstanceOf[U # Type]
-          case u =>
-            u.manifestToTypeTag(mirror.asInstanceOf[u.Mirror], manifest).in(mirror).tpe
-        }
-      }
-    })
+  /** Creates a runtime reflection mirror from a JVM classloader.
+   *
+   *  For more information about `Mirrors`s, see [[scala.reflect.api.Mirrors]] or the
+   * [[http://docs.scala-lang.org/overviews/reflection/environment-universes-mirrors.html Reflection Guide: Mirrors]]
+   *
+   *  @group JavaMirrors
+   */
+  def runtimeMirror(cl: ClassLoader): Mirror
 }

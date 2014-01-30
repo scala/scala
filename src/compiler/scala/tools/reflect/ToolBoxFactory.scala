@@ -217,7 +217,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           val (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = true)
 
           val (obj, _) = rootMirror.EmptyPackageClass.newModuleAndClassSymbol(
-            nextWrapperModuleName())
+            nextWrapperModuleName(), NoPosition, NoFlags)
 
           val minfo = ClassInfoType(List(ObjectTpe), newScope, obj.moduleClass)
           obj.moduleClass setInfo minfo

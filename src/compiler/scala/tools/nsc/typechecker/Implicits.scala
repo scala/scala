@@ -1271,7 +1271,8 @@ trait Implicits {
             return SearchFailure
           }
           val cm = typed(Ident(ReflectRuntimeCurrentMirror))
-          val interop = gen.mkMethodCall(ReflectRuntimeUniverse, nme.typeTagToManifest, List(tp), List(cm, tagInScope))
+          val internal = gen.mkAttributedSelect(gen.mkAttributedRef(ReflectRuntimeUniverse), UniverseInternal)
+          val interop = gen.mkMethodCall(Select(internal, nme.typeTagToManifest), List(tp), List(cm, tagInScope))
           wrapResult(interop)
         }
       } else {

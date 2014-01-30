@@ -79,8 +79,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
   def symbolOf[T: WeakTypeTag]: TypeSymbol = weakTypeOf[T].typeSymbolDirect.asType
 
-  abstract class SymbolContextApiImpl extends SymbolContextApi {
+  abstract class SymbolContextApiImpl extends SymbolApi {
     this: Symbol =>
+
+    def isFreeTerm: Boolean = false
+    def asFreeTerm: FreeTermSymbol = throw new ScalaReflectionException(s"$this is not a free term")
+    def isFreeType: Boolean = false
+    def asFreeType: FreeTypeSymbol = throw new ScalaReflectionException(s"$this is not a free type")
 
     def isExistential: Boolean = this.isExistentiallyBound
     def isParamWithDefault: Boolean = this.hasDefault
@@ -115,6 +120,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def baseClasses                       = info.baseClasses
     def module                            = sourceModule
     def thisPrefix: Type                  = thisType
+    def superPrefix(supertpe: Type): Type = SuperType(thisType, supertpe)
 
     // automatic full initialization on access to info from reflection API is a double-edged sword
     // on the one hand, it's convenient so that the users don't have to deal with initialization themselves before printing out stuff
@@ -3366,11 +3372,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def origin: String
   }
   class FreeTermSymbol(name0: TermName, value0: => Any, val origin: String) extends TermSymbol(NoSymbol, NoPosition, name0) with FreeSymbol with FreeTermSymbolApi {
+    final override def isFreeTerm = true
+    final override def asFreeTerm = this
     def value = value0
   }
   implicit val FreeTermSymbolTag = ClassTag[FreeTermSymbol](classOf[FreeTermSymbol])
 
-  class FreeTypeSymbol(name0: TypeName, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) with FreeSymbol with FreeTypeSymbolApi
+  class FreeTypeSymbol(name0: TypeName, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) with FreeSymbol with FreeTypeSymbolApi {
+    final override def isFreeType = true
+    final override def asFreeType = this
+  }
   implicit val FreeTypeSymbolTag = ClassTag[FreeTypeSymbol](classOf[FreeTypeSymbol])
 
   /** An object representing a missing symbol */

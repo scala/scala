@@ -6,7 +6,7 @@ import Flags._
 import util._
 import scala.collection.mutable.ListBuffer
 
-abstract class TreeGen extends macros.TreeBuilder {
+abstract class TreeGen {
   val global: SymbolTable
 
   import global._

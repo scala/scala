@@ -64,9 +64,9 @@ trait Reifiers { self: Quasiquotes =>
             val FreshName(prefix) = origname
             val nameTypeName = if (origname.isTermName) tpnme.TermName else tpnme.TypeName
             val freshName = if (origname.isTermName) nme.freshTermName else nme.freshTypeName
-            // q"val ${names.head}: $u.$nameTypeName = $u.build.$freshName($prefix)"
+            // q"val ${names.head}: $u.$nameTypeName = $u.internal.reificationSupport.$freshName($prefix)"
             ValDef(NoMods, names.head, Select(u, nameTypeName),
-              Apply(Select(Select(u, nme.build), freshName), Literal(Constant(prefix)) :: Nil))
+              Apply(Select(Select(Select(u, nme.internal), nme.reificationSupport), freshName), Literal(Constant(prefix)) :: Nil))
         }.toList
         // q"..$freshdefs; $tree"
         SyntacticBlock(freshdefs :+ tree)
@@ -358,7 +358,7 @@ trait Reifiers { self: Quasiquotes =>
       Apply(Select(universe, name), args.toList)
 
     override def mirrorBuildCall(name: TermName, args: Tree*): Tree =
-      Apply(Select(Select(universe, nme.build), name), args.toList)
+      Apply(Select(Select(Select(universe, nme.internal), nme.reificationSupport), name), args.toList)
 
     override def scalaFactoryCall(name: String, args: Tree*): Tree =
       call("scala." + name, args: _*)

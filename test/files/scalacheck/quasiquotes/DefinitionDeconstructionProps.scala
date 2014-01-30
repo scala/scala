@@ -1,5 +1,5 @@
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
-import scala.reflect.runtime.universe._, Flag._
+import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport.SyntacticClassDef
 
 object DefinitionDeconstructionProps
   extends QuasiquoteProperties("definition deconstruction")
@@ -94,7 +94,7 @@ trait ClassDeconstruction { self: QuasiquoteProperties =>
   property("SI-7979") = test {
     val PARAMACCESSOR = (1 << 29).toLong.asInstanceOf[FlagSet]
     assertThrows[MatchError] {
-      val build.SyntacticClassDef(_, _, _, _, _, _, _, _, _) =
+      val SyntacticClassDef(_, _, _, _, _, _, _, _, _) =
         ClassDef(
           Modifiers(), TypeName("Foo"), List(),
           Template(
