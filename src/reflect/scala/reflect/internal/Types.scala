@@ -990,7 +990,7 @@ trait Types
      */
     def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
       val members: Scope = newFindMemberScope
-      val seen = mutable.HashSet[Name]()
+      val seen = mutable.HashSet[Name]() // intentionally shared between both calls to `addMembers`.
       def addMembers(deferred: Boolean) {
         for (b <- baseClasses) {
           val decls = b.info.decls
@@ -1009,6 +1009,13 @@ trait Types
           }
         }
       }
+      // look for concrete before deferred, again for backwards compatibility in the order of the results.
+      //
+      // Otherwise, we could have more simply gone for:
+      //
+      // val names = (for (b <- baseClasses; d <- b.info.decls) yield d.name).distinct
+      // newScopeWith(names.flatMap(findMemberInternal(_, excludedFlags, requiredFlags, stableOnly = false))
+      //
       addMembers(deferred = false)
       addMembers(deferred = true)
       members
