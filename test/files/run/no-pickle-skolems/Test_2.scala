@@ -32,7 +32,7 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-    val syms = collectSymbols[s.Bar]("to", "CC")
+    val syms = collectSymbols[s.Bar](TermName("to"), "CC")
     assert(syms.size == 1, syms)
     println("OK!")
   }

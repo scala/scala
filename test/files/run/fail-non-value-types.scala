@@ -18,8 +18,8 @@ object Test {
   def tcon[T: TypeTag](args: Type*) = appliedType(typeOf[T].typeConstructor, args.toList)
 
   def cil      = typeOf[CompletelyIndependentList[Int]]
-  def map      = cil.member("map": TermName).asMethod
-  def distinct = cil.member("distinct": TermName).asMethod
+  def map      = cil.member(TermName("map")).asMethod
+  def distinct = cil.member(TermName("distinct")).asMethod
 
   def main(args: Array[String]): Unit = {
     // Need the assert in there to fail.
