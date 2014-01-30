@@ -39,7 +39,7 @@ package test {
     if (bar > 8) ???       // use it to avoid extra warning
   }
   class Baz extends Bar {
-    def f = "$bar is private, shall we warn just in case?" // warn 5
+    def f = "$bar is private, shall we warn just in case?" // no longer a warning, private members aren't inherited!
   }
   class G {
     def g = "$greppo takes an arg"  // no warn

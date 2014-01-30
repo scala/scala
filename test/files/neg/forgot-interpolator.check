@@ -10,9 +10,6 @@ forgot-interpolator.scala:30: warning: `$beppo` looks like an interpolated ident
 forgot-interpolator.scala:34: warning: `$aleppo` looks like an interpolated identifier! Did you forget the interpolator?
     def f = "$aleppo is a pepper and a city."     // warn 4
             ^
-forgot-interpolator.scala:42: warning: `$bar` looks like an interpolated identifier! Did you forget the interpolator?
-    def f = "$bar is private, shall we warn just in case?" // warn 5
-            ^
 forgot-interpolator.scala:47: warning: `$hippo` looks like an interpolated identifier! Did you forget the interpolator?
     def h = "$hippo takes an implicit"  // warn 6
             ^
@@ -26,5 +23,5 @@ forgot-interpolator.scala:90: warning: `$calico` looks like an interpolated iden
     def f4 = "I also salute $calico" // warn 9
              ^
 error: No warnings can be incurred under -Xfatal-warnings.
-9 warnings found
+8 warnings found
 one error found
