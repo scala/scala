@@ -87,11 +87,13 @@ trait Names {
     /** Replaces all occurrences of \$op_names in this name by corresponding operator symbols.
      *  Example: `foo_\$plus\$eq` becomes `foo_+=`
      */
+    @deprecated("Use `decodedName.toString` instead", "2.11.0")
     def decoded: String
 
     /** Replaces all occurrences of operator symbols in this name by corresponding \$op_names.
      *  Example: `foo_+=` becomes `foo_\$plus\$eq`.
      */
+    @deprecated("Use `encodedName.toString` instead", "2.11.0")
     def encoded: String
 
     /** The decoded name, still represented as a name.
