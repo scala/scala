@@ -160,9 +160,20 @@ extends AbstractMap[Long, V]
       else minValue.asInstanceOf[V]
     }
     else {
-      val i = seekEntryOrOpen(key)
+      var i = seekEntryOrOpen(key)
       if (i < 0) {
-        val value = defaultValue
+        // It is possible that the default value computation was side-effecting
+        // Our hash table may have resized or even contain what we want now
+        // (but if it does, we'll replace it)
+        val value = {
+          val ok = _keys
+          val ans = defaultValue
+          if (ok ne _keys) {
+            i = seekEntryOrOpen(key)
+            if (i >= 0) _size -= 1
+          }
+          ans
+        }
         _size += 1
         val j = i & IndexMask
         _keys(j) = key
