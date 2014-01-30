@@ -2495,7 +2495,7 @@ self =>
       def mkDefs(p: Tree, tp: Tree, rhs: Tree): List[Tree] = {
         val trees = {
           val pat = if (tp.isEmpty) p else Typed(p, tp) setPos (p.pos union tp.pos)
-          gen.mkPatDef(newmods, pat, rhs)
+          makePatDef(newmods, pat, rhs)
         }
         if (newmods.isDeferred) {
           trees match {

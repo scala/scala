@@ -207,6 +207,10 @@ trait ValDefConstruction { self: QuasiquoteProperties =>
   property("splice term name into var") = forAll { (name: TermName, tpt: Tree, rhs: Tree) =>
     q"var $name: $tpt = $rhs" ≈ ValDef(Modifiers(MUTABLE), name, tpt, rhs)
   }
+
+  property("SI-8202") = test {
+    assertEqAst(q"val (x: Int) = 1", "val x: Int = 1")
+  }
 }
 
 trait MethodConstruction { self: QuasiquoteProperties =>

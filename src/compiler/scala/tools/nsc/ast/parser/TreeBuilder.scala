@@ -168,4 +168,6 @@ abstract class TreeBuilder {
         vparamss ::: List(evidenceParams)
     }
   }
+
+  def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree) = gen.mkPatDef(mods, pat, rhs)
 }
