@@ -476,15 +476,7 @@ trait UnanchoredRegex extends Regex {
 }
 
 /** This object defines inner classes that describe
- *  regex matches and helper objects. The class hierarchy
- *  is as follows:
- *
- *  {{{
- *            MatchData
- *            /      \
- *   MatchIterator  Match
- *  }}}
- *
+ *  regex matches and helper objects.
  */
 object Regex {
 
