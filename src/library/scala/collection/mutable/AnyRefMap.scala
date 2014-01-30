@@ -129,9 +129,20 @@ extends AbstractMap[K, V]
   
   override def getOrElseUpdate(key: K, defaultValue: => V): V = {
     val h = hashOf(key)
-    val i = seekEntryOrOpen(h, key)
+    var i = seekEntryOrOpen(h, key)
     if (i < 0) {
-      val value = defaultValue
+      // It is possible that the default value computation was side-effecting
+      // Our hash table may have resized or even contain what we want now
+      // (but if it does, we'll replace it)
+      val value = {
+        val oh = _hashes
+        val ans = defaultValue
+        if (oh ne _hashes) {
+          i = seekEntryOrOpen(h, key)
+          if (i >= 0) _size -= 1
+        }
+        ans
+      }
       _size += 1
       val j = i & IndexMask
       _hashes(j) = h
