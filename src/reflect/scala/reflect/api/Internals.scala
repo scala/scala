@@ -656,6 +656,9 @@ trait Internals { self: Universe =>
     }
   }
 
+  @deprecated("Use `internal.reificationSupport` instead", "2.11.0")
+  val build: ReificationSupportApi
+
   /** This trait provides support for importers, a facility to migrate reflection artifacts between universes.
    * ''Note: this trait should typically be used only rarely.''
    *
@@ -742,6 +745,9 @@ trait Internals { self: Universe =>
      */
     def importPosition(pos: from.Position): Position
   }
+
+  @deprecated("Use `internal.createImporter` instead", "2.11.0")
+  def mkImporter(from0: Universe): Importer { val from: from0.type } = internal.createImporter(from0)
 
   /** Marks underlying reference to id as boxed.
    *
@@ -856,4 +862,280 @@ trait Internals { self: Universe =>
    *  @group Internal
    */
   implicit val FreeTypeSymbolTag: ClassTag[FreeTypeSymbol]
+
+  /** Provides enrichments to ensure source compatibility between Scala 2.10 and Scala 2.11.
+   *  If in your reflective program for Scala 2.10 you've used something that's now become an internal API,
+   *  a single `compat._` import will fix things for you.
+   *  @group Internal
+   */
+  val compat: Compat
+
+  /** @see [[compat]]
+   *  @group Internal
+   */
+  type Compat <: CompatApi
+
+  /** @see [[compat]]
+   *  @group Internal
+   */
+  trait CompatApi {
+    /** @see [[InternalApi.typeTagToManifest]] */
+    @deprecated("Use `internal.typeTagToManifest` instead", "2.11.0")
+    def typeTagToManifest[T: ClassTag](mirror: Any, tag: Universe#TypeTag[T]): Manifest[T] =
+      internal.typeTagToManifest(mirror, tag)
+
+    /** @see [[InternalApi.manifestToTypeTag]] */
+    @deprecated("Use `internal.manifestToTypeTag` instead", "2.11.0")
+    def manifestToTypeTag[T](mirror: Any, manifest: Manifest[T]): Universe#TypeTag[T] =
+      internal.manifestToTypeTag(mirror, manifest)
+
+    /** @see [[InternalApi.newScopeWith]] */
+    @deprecated("Use `internal.newScopeWith` instead", "2.11.0")
+    def newScopeWith(elems: Symbol*): Scope =
+      internal.newScopeWith(elems: _*)
+
+    /** Scala 2.10 compatibility enrichments for Tree. */
+    implicit class CompatibleTree(tree: Tree) {
+      /** @see [[InternalApi.freeTerms]] */
+      @deprecated("Use `internal.freeTerms` instead", "2.11.0")
+      def freeTerms: List[FreeTermSymbol] = internal.freeTerms(tree)
+
+      /** @see [[InternalApi.freeTypes]] */
+      @deprecated("Use `internal.freeTerms` instead", "2.11.0")
+      def freeTypes: List[FreeTypeSymbol] = internal.freeTypes(tree)
+
+      /** @see [[InternalApi.substituteSymbols]] */
+      @deprecated("Use `internal.substituteSymbols` instead", "2.11.0")
+      def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree = internal.substituteSymbols(tree, from, to)
+
+      /** @see [[InternalApi.substituteTypes]] */
+      @deprecated("Use `internal.substituteTypes` instead", "2.11.0")
+      def substituteTypes(from: List[Symbol], to: List[Type]): Tree = internal.substituteTypes(tree, from, to)
+
+      /** @see [[InternalApi.substituteThis]] */
+      @deprecated("Use `internal.substituteThis` instead", "2.11.0")
+      def substituteThis(clazz: Symbol, to: Tree): Tree = internal.substituteThis(tree, clazz, to)
+    }
+
+    /** Scala 2.10 compatibility enrichments for ClassDef. */
+    class CompatibleClassDefExtractor(dex: ClassDefExtractor) {
+      /** @see [[InternalApi.classDef]] */
+      @deprecated("Use `internal.classDef` instead", "2.11.0")
+      def apply(sym: Symbol, impl: Template): ClassDef = internal.classDef(sym, impl)
+    }
+
+    /** Scala 2.10 compatibility enrichments for ModuleDef. */
+    class CompatibleModuleDefExtractor(dex: ModuleDefExtractor) {
+      /** @see [[InternalApi.moduleDef]] */
+      @deprecated("Use `internal.moduleDef` instead", "2.11.0")
+      def apply(sym: Symbol, impl: Template): ModuleDef = internal.moduleDef(sym, impl)
+    }
+
+    /** Scala 2.10 compatibility enrichments for ValDef. */
+    class CompatibleValDefExtractor(dex: ValDefExtractor) {
+      /** @see [[InternalApi.valDef]] */
+      @deprecated("Use `internal.valDef` instead", "2.11.0")
+      def apply(sym: Symbol, rhs: Tree): ValDef = internal.valDef(sym, rhs)
+
+      /** @see [[InternalApi.valDef]] */
+      @deprecated("Use `internal.valDef` instead", "2.11.0")
+      def apply(sym: Symbol): ValDef = internal.valDef(sym)
+    }
+
+    /** Scala 2.10 compatibility enrichments for ValDef. */
+    class CompatibleDefDefExtractor(dex: DefDefExtractor) {
+      /** @see [[InternalApi.defDef]] */
+      @deprecated("Use `internal.defDef` instead", "2.11.0")
+      def apply(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef = internal.defDef(sym, mods, vparamss, rhs)
+
+      /** @see [[InternalApi.defDef]] */
+      @deprecated("Use `internal.defDef` instead", "2.11.0")
+      def apply(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef = internal.defDef(sym, vparamss, rhs)
+
+      /** @see [[InternalApi.defDef]] */
+      @deprecated("Use `internal.defDef` instead", "2.11.0")
+      def apply(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef = internal.defDef(sym, mods, rhs)
+
+      /** @see [[InternalApi.defDef]] */
+      @deprecated("Use `internal.defDef` instead", "2.11.0")
+      def apply(sym: Symbol, rhs: Tree): DefDef = internal.defDef(sym, rhs)
+
+      /** @see [[InternalApi.defDef]] */
+      @deprecated("Use `internal.defDef` instead", "2.11.0")
+      def apply(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef = internal.defDef(sym, rhs)
+    }
+
+    /** Scala 2.10 compatibility enrichments for TypeDef. */
+    class CompatibleTypeDefExtractor(dex: TypeDefExtractor) {
+      /** @see [[InternalApi.typeDef]] */
+      @deprecated("Use `internal.typeDef` instead", "2.11.0")
+      def apply(sym: Symbol, rhs: Tree): TypeDef = internal.typeDef(sym, rhs)
+
+      /** @see [[InternalApi.typeDef]] */
+      @deprecated("Use `internal.typeDef` instead", "2.11.0")
+      def apply(sym: Symbol): TypeDef = internal.typeDef(sym)
+    }
+
+    /** Scala 2.10 compatibility enrichments for LabelDef. */
+    class CompatibleLabelDefExtractor(dex: LabelDefExtractor) {
+      /** @see [[InternalApi.labelDef]] */
+      @deprecated("Use `internal.labelDef` instead", "2.11.0")
+      def apply(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef = internal.labelDef(sym, params, rhs)
+    }
+
+    /** Scala 2.10 compatibility enrichments for Tree. */
+    implicit class CompatibleSymbol(symbol: Symbol) {
+      @deprecated("This API is unreliable. Use `isPrivateThis` or `isProtectedThis` instead", "2.11.0")
+      def isLocal: Boolean = symbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol].isLocal
+
+      @deprecated("This API is unreliable. Use `allOverriddenSymbols.nonEmpty` instead", "2.11.0")
+      def isOverride: Boolean = symbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol].isOverride
+
+      /** @see [[InternalApi.isFreeTerm]] */
+      @deprecated("Use `internal.isFreeTerm` instead", "2.11.0")
+      def isFreeTerm: Boolean = internal.isFreeTerm(symbol)
+
+      /** @see [[InternalApi.asFreeTerm]] */
+      @deprecated("Use `internal.asFreeTerm` instead", "2.11.0")
+      def asFreeTerm: FreeTermSymbol = internal.asFreeTerm(symbol)
+
+      /** @see [[InternalApi.isFreeType]] */
+      @deprecated("Use `internal.isFreeType` instead", "2.11.0")
+      def isFreeType: Boolean = internal.isFreeType(symbol)
+
+      /** @see [[InternalApi.asFreeType]] */
+      @deprecated("Use `internal.asFreeType` instead", "2.11.0")
+      def asFreeType: FreeTypeSymbol = internal.asFreeType(symbol)
+
+      /** @see [[InternalApi.asFreeType]] */
+      @deprecated("Use `internal.newTermSymbol` instead", "2.11.0")
+      def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol = internal.newTermSymbol(symbol, name, pos, flags)
+
+      /** @see [[InternalApi.asFreeType]] */
+      @deprecated("Use `internal.newModuleAndClassSymbol` instead", "2.11.0")
+      def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol) = internal.newModuleAndClassSymbol(symbol, name, pos, flags)
+
+      /** @see [[InternalApi.asFreeType]] */
+      @deprecated("Use `internal.newMethodSymbol` instead", "2.11.0")
+      def newMethodSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): MethodSymbol = internal.newMethodSymbol(symbol, name, pos, flags)
+
+      /** @see [[InternalApi.asFreeType]] */
+      @deprecated("Use `internal.newTypeSymbol` instead", "2.11.0")
+      def newTypeSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TypeSymbol = internal.newTypeSymbol(symbol, name, pos, flags)
+
+      /** @see [[InternalApi.asFreeType]] */
+      @deprecated("Use `internal.newClassSymbol` instead", "2.11.0")
+      def newClassSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): ClassSymbol = internal.newClassSymbol(symbol, name, pos, flags)
+
+      /** @see [[InternalApi.asFreeType]] */
+      @deprecated("Use `internal.isErroneous` instead", "2.11.0")
+      def isErroneous: Boolean = internal.isErroneous(symbol)
+
+      /** @see [[InternalApi.asFreeType]] */
+      @deprecated("Use `internal.isSkolem` instead", "2.11.0")
+      def isSkolem: Boolean = internal.isSkolem(symbol)
+
+      /** @see [[InternalApi.asFreeType]] */
+      @deprecated("Use `internal.deSkolemize` instead", "2.11.0")
+      def deSkolemize: Symbol = internal.deSkolemize(symbol)
+    }
+
+    /** Scala 2.10 compatibility enrichments for ThisType. */
+    implicit class CompatibleThisType(tex: ThisTypeExtractor) {
+      /** @see [[InternalApi.thisType]] */
+      @deprecated("Use `internal.thisType` instead")
+      def apply(sym: Symbol): Type = internal.thisType(sym)
+    }
+
+    /** Scala 2.10 compatibility enrichments for SingleType. */
+    implicit class CompatibleSingleType(tex: SingleTypeExtractor) {
+      /** @see [[InternalApi.singleType]] */
+      @deprecated("Use `ClassSymbol.thisPrefix` or `internal.singleType` instead")
+      def apply(pre: Type, sym: Symbol): Type = internal.singleType(pre, sym)
+    }
+
+    /** Scala 2.10 compatibility enrichments for SuperType. */
+    implicit class CompatibleSuperType(tex: SuperTypeExtractor) {
+      /** @see [[InternalApi.superType]] */
+      @deprecated("Use `ClassSymbol.superPrefix` or `internal.superType` instead")
+      def apply(thistpe: Type, supertpe: Type): Type = internal.superType(thistpe, supertpe)
+    }
+
+    /** Scala 2.10 compatibility enrichments for ConstantType. */
+    implicit class CompatibleConstantType(tex: ConstantTypeExtractor) {
+      /** @see [[InternalApi.constantType]] */
+      @deprecated("Use `value.tpe` or `internal.constantType` instead")
+      def apply(value: Constant): ConstantType = internal.constantType(value)
+    }
+
+    /** Scala 2.10 compatibility enrichments for TypeRef. */
+    implicit class CompatibleTypeRef(tex: TypeRefExtractor) {
+      /** @see [[InternalApi.typeRef]] */
+      @deprecated("Use `internal.typeRef` instead")
+      def apply(pre: Type, sym: Symbol, args: List[Type]): Type = internal.typeRef(pre, sym, args)
+    }
+
+    /** Scala 2.10 compatibility enrichments for RefinedType. */
+    implicit class CompatibleRefinedType(tex: RefinedTypeExtractor) {
+      /** @see [[InternalApi.refinedType]] */
+      @deprecated("Use `internal.refinedType` instead")
+      def apply(parents: List[Type], decls: Scope): RefinedType = internal.refinedType(parents, decls)
+    }
+
+    /** Scala 2.10 compatibility enrichments for ClassInfoType. */
+    implicit class CompatibleClassInfoType(tex: ClassInfoTypeExtractor) {
+      /** @see [[InternalApi.classInfoType]] */
+      @deprecated("Use `internal.classInfoType` instead")
+      def apply(parents: List[Type], decls: Scope, typeSymbol: Symbol): ClassInfoType = internal.classInfoType(parents, decls, typeSymbol)
+    }
+
+    /** Scala 2.10 compatibility enrichments for MethodType. */
+    implicit class CompatibleMethodType(tex: MethodTypeExtractor) {
+      /** @see [[InternalApi.methodType]] */
+      @deprecated("Use `internal.methodType` instead")
+      def apply(params: List[Symbol], resultType: Type): MethodType = internal.methodType(params, resultType)
+    }
+
+    /** Scala 2.10 compatibility enrichments for NullaryMethodType. */
+    implicit class CompatibleNullaryMethodType(tex: NullaryMethodTypeExtractor) {
+      /** @see [[InternalApi.nullaryMethodType]] */
+      @deprecated("Use `internal.nullaryMethodType` instead")
+      def apply(resultType: Type): NullaryMethodType = internal.nullaryMethodType(resultType)
+    }
+
+    /** Scala 2.10 compatibility enrichments for PolyType. */
+    implicit class CompatiblePolyType(tex: PolyTypeExtractor) {
+      /** @see [[InternalApi.polyType]] */
+      @deprecated("Use `internal.polyType` instead")
+      def apply(typeParams: List[Symbol], resultType: Type): PolyType = internal.polyType(typeParams, resultType)
+    }
+
+    /** Scala 2.10 compatibility enrichments for ExistentialType. */
+    implicit class CompatibleExistentialType(tex: ExistentialTypeExtractor) {
+      /** @see [[InternalApi.existentialType]] */
+      @deprecated("Use `internal.existentialType` instead")
+      def apply(quantified: List[Symbol], underlying: Type): ExistentialType = internal.existentialType(quantified, underlying)
+    }
+
+    /** Scala 2.10 compatibility enrichments for AnnotatedType. */
+    implicit class CompatibleAnnotatedType(tex: AnnotatedTypeExtractor) {
+      /** @see [[InternalApi.annotatedType]] */
+      @deprecated("Use `internal.annotatedType` instead")
+      def apply(annotations: List[Annotation], underlying: Type): AnnotatedType = internal.annotatedType(annotations, underlying)
+    }
+
+    /** Scala 2.10 compatibility enrichments for TypeBounds. */
+    implicit class CompatibleTypeBounds(tex: TypeBoundsExtractor) {
+      /** @see [[InternalApi.typeBounds]] */
+      @deprecated("Use `internal.typeBounds` instead")
+      def apply(lo: Type, hi: Type): TypeBounds = internal.typeBounds(lo, hi)
+    }
+
+    /** Scala 2.10 compatibility enrichments for BoundedWildcardType. */
+    implicit class CompatibleBoundedWildcardType(tex: BoundedWildcardTypeExtractor) {
+      /** @see [[InternalApi.boundedWildcardType]] */
+      @deprecated("Use `internal.boundedWildcardType` instead")
+      def apply(bounds: TypeBounds): BoundedWildcardType = internal.boundedWildcardType(bounds)
+    }
+  }
 }

@@ -17,6 +17,9 @@ trait Internals extends api.Internals {
   type Internal = MacroInternalApi
   lazy val internal: Internal = new SymbolTableInternal {}
 
+  type Compat = MacroCompatApi
+  lazy val compat: Compat = new Compat {}
+
   trait SymbolTableInternal extends MacroInternalApi {
     lazy val reificationSupport: ReificationSupportApi = self.build
 
