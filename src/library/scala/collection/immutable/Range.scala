@@ -203,12 +203,6 @@ extends scala.collection.AbstractSeq[Int]
     }
     counted
   }
-  // Tests whether a number is within the endpoints, without testing
-  // whether it is a member of the sequence (i.e. when step > 1.)
-  private def isWithinBoundaries(elem: Int) = !isEmpty && (
-    (step > 0 && start <= elem && elem <= last ) ||
-    (step < 0 &&  last <= elem && elem <= start)
-  )
   // Methods like apply throw exceptions on invalid n, but methods like take/drop
   // are forgiving: therefore the checks are with the methods.
   private def locationAfterN(n: Int) = start + (step * n)
@@ -256,7 +250,17 @@ extends scala.collection.AbstractSeq[Int]
     if (isInclusive) this
     else new Range.Inclusive(start, end, step)
 
-  final def contains(x: Int) = isWithinBoundaries(x) && ((x - start) % step == 0)
+  final def contains(x: Int) = {
+    if (x==end && !isInclusive) false
+    else if (step > 0) {
+      if (x < start || x > end) false
+      else (step == 1) || (((x - start) % step) == 0)
+    }
+    else {
+      if (x < end || x > start) false
+      else (step == -1) || (((x - start) % step) == 0)
+    }
+  }
 
   final override def sum[B >: Int](implicit num: Numeric[B]): Int = {
     if (num eq scala.math.Numeric.IntIsIntegral) {

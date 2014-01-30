@@ -6,7 +6,7 @@ import org.junit.Test
 import scala.math._
 import scala.util._
 
-/* Tests various maps by making sure they all agree on the same answers. */
+/* Tests various ranges by making sure they all agree on the same answers. */
 @RunWith(classOf[JUnit4])
 class RangeConsistencyTest {
   def r2nr[T: Integral](
@@ -120,4 +120,9 @@ class RangeConsistencyTest {
       case _ => false
     }
   }}
+  
+  @Test
+  def testSI6736() { assert{ 
+    (0 to Int.MaxValue).contains(4) && !((Int.MinValue to 0).contains(4))
+  } }
 }
