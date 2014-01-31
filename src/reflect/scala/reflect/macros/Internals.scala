@@ -14,5 +14,52 @@ trait Internals {
 
   /** @see [[scala.reflect.api.Internals]] */
   trait ContextInternalApi extends universe.MacroInternalApi {
+    /** Functions that are available during [[transform]].
+     *  @see [[transform]]
+     */
+    trait TransformApi {
+      /** Calls the current transformer on the given tree.
+       *  Current transformer = argument to the `transform` call.
+       */
+      def recur(tree: Tree): Tree
+
+      /** Calls the default transformer on the given tree.
+       *  Default transformer = recur into tree's children and assemble the results.
+       */
+      def default(tree: Tree): Tree
+    }
+
+    /** Transforms a given tree using the provided function.
+     *  @see [[TransformApi]]
+     */
+    // TODO: explore a more concise notation that Denys and I discussed today
+    // when transformer is PartialFunction[Tree, Tree]] and TransformApi is passed magically
+    // also cf. https://github.com/dsl-paradise/dsl-paradise
+    def transform(tree: Tree)(transformer: (Tree, TransformApi) => Tree): Tree
+
+    /** Functions that are available during [[typingTransform]].
+     *  @see [[typingTransform]]
+     */
+    trait TypingTransformApi extends TransformApi {
+      /** Temporarily pushes the given symbol onto the owner stack, creating a new local typer,
+       *  invoke the given operation and then rollback the changes to the owner stack.
+       */
+      def atOwner[T](owner: Symbol)(op: => T): T
+
+      /** Returns the symbol currently on the top of the owner stack.
+       *  If we're not inside any `atOwner` call, then macro application's context owner will be used.
+       */
+      def currentOwner: Symbol
+
+      /** Typechecks the given tree using the local typer currently on the top of the owner stack.
+       *  If we're not inside any `atOwner` call, then macro application's callsite typer will be used.
+       */
+      def typecheck(tree: Tree): Tree
+    }
+
+    /** Transforms a given tree using the provided function.
+     *  @see [[TypingTransformApi]]
+     */
+    def typingTransform(tree: Tree)(transformer: (Tree, TypingTransformApi) => Tree): Tree
   }
 }
