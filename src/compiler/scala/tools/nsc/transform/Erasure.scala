@@ -760,7 +760,7 @@ abstract class Erasure extends AddInterfaces
           || super.exclude(sym)
           || !sym.hasTypeAt(currentRun.refchecksPhase.id)
         )
-        override def matches(sym1: Symbol, sym2: Symbol) = true
+        override def matches(lo: Symbol, high: Symbol) = true
       }
       def isErasureDoubleDef(pair: SymbolPair) = {
         import pair._

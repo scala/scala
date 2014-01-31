@@ -186,7 +186,7 @@ trait Checkable {
      *  additional conditions holds:
      *   - either A or B is effectively final
      *   - neither A nor B is a trait (i.e. both are actual classes, not eligible for mixin)
-     *   - both A and B are sealed, and every possible pairing of their children is irreconcilable
+     *   - both A and B are sealed/final, and every possible pairing of their children is irreconcilable
      *
      *  TODO: the last two conditions of the last possibility (that the symbols are not of
      *  classes being compiled in the current run) are because this currently runs too early,
@@ -198,8 +198,9 @@ trait Checkable {
          isEffectivelyFinal(sym1) // initialization important
       || isEffectivelyFinal(sym2)
       || !sym1.isTrait && !sym2.isTrait
-      || sym1.isSealed && sym2.isSealed && allChildrenAreIrreconcilable(sym1, sym2) && !currentRun.compiles(sym1) && !currentRun.compiles(sym2)
+      || isSealedOrFinal(sym1) && isSealedOrFinal(sym2) && allChildrenAreIrreconcilable(sym1, sym2) && !currentRun.compiles(sym1) && !currentRun.compiles(sym2)
     )
+    private def isSealedOrFinal(sym: Symbol) = sym.isSealed || sym.isFinal
     private def isEffectivelyFinal(sym: Symbol): Boolean = (
       // initialization important
       sym.initialize.isEffectivelyFinal || (

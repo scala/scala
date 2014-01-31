@@ -125,7 +125,7 @@ abstract class SymbolPairs {
      *  considered as a (lo, high) pair? Types always match. Term symbols
      *  match if their member types relative to `self` match.
      */
-    protected def matches(sym1: Symbol, sym2: Symbol): Boolean
+    protected def matches(lo: Symbol, high: Symbol): Boolean
 
     /** The parents and base classes of `base`.  Can be refined in subclasses.
      */
