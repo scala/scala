@@ -1108,11 +1108,15 @@ object Stream extends SeqFactory[Stream] {
     override def isEmpty = false
     override def head = hd
     @volatile private[this] var tlVal: Stream[A] = _
-    def tailDefined: Boolean = tlVal ne null
+    @volatile private[this] var tlGen = tl _
+    def tailDefined: Boolean = tlGen eq null
     override def tail: Stream[A] = {
       if (!tailDefined)
         synchronized {
-          if (!tailDefined) tlVal = tl
+          if (!tailDefined) {
+            tlVal = tlGen()
+            tlGen = null
+          }
         }
 
       tlVal
