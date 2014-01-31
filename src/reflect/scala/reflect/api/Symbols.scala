@@ -319,6 +319,12 @@ trait Symbols { self: Universe =>
      */
     def allOverriddenSymbols: List[Symbol]
 
+    /** The overloaded alternatives of this symbol
+     *
+     *  @group Basics
+     */
+    def alternatives: List[Symbol]
+
     /******************* tests *******************/
 
     /** Does this symbol represent a synthetic (i.e. a compiler-generated) entity?
@@ -567,12 +573,6 @@ trait Symbols { self: Universe =>
      *  @group Term
      */
     def isLazy: Boolean
-
-    /** The overloaded alternatives of this symbol
-     *
-     *  @group Term
-     */
-    def alternatives: List[Symbol]
 
     /** Used to provide a better error message for `asMethod` */
     override protected def isOverloadedMethod = alternatives exists (_.isMethod)
