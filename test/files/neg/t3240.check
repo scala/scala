@@ -1,4 +1,0 @@
-t3240.scala:3: error: only classes can have declared but undefined members
-  type t
-       ^
-one error found
