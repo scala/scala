@@ -27,4 +27,8 @@ final class RichByte(val self: Byte) extends AnyVal with ScalaWholeNumberProxy[B
   override def max(that: Byte): Byte = math.max(self, that).toByte
   override def min(that: Byte): Byte = math.min(self, that).toByte
   override def signum: Int           = math.signum(self.toInt)
+
+  def round: Byte = self
+  def ceil:  Byte = self
+  def floor: Byte = self
 }
