@@ -351,6 +351,14 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       if (mbr.comment.isEmpty) NodeSeq.Empty
       else <div class="comment cmt">{ commentToHtml(mbr.comment) }</div>
 
+    val authorComment =
+      if (! s.docAuthor || mbr.comment.isEmpty ||
+        mbr.comment.isDefined && mbr.comment.get.authors.isEmpty) NodeSeq.Empty
+      else <div class="comment cmt">
+        {if (mbr.comment.get.authors.size > 1) <h6>Authors:</h6> else <h6>Author:</h6>}
+        { mbr.comment.get.authors map bodyToHtml}
+      </div>
+
     val paramComments = {
       val prs: List[ParameterEntity] = mbr match {
         case cls: Class => cls.typeParams ::: cls.valueParams.flatten
@@ -681,7 +689,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
     val typeHierarchy = createDiagram(_.inheritanceDiagram, "Type Hierarchy", "inheritance-diagram")
     val contentHierarchy = createDiagram(_.contentDiagram, "Content Hierarchy", "content-diagram")
 
-    memberComment ++ paramComments ++ attributesBlock ++ linearization ++ subclasses ++ typeHierarchy ++ contentHierarchy
+    memberComment ++ authorComment ++ paramComments ++ attributesBlock ++ linearization ++ subclasses ++ typeHierarchy ++ contentHierarchy
   }
 
   def boundsToHtml(hi: Option[TypeEntity], lo: Option[TypeEntity], hasLinks: Boolean): NodeSeq = {
