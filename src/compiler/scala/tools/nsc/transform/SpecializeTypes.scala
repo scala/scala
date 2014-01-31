@@ -306,6 +306,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Return the specialized name of 'sym' in the given environment. It
    *  guarantees the same result regardless of the map order by sorting
    *  type variables alphabetically.
+   *
+   *  !!! Is this safe in the face of the following?
+   *    scala> trait T { def foo[A] = 0}; object O extends T { override def foo[B] = 0 }
    */
   private def specializedName(sym: Symbol, env: TypeEnv): TermName = {
     val tvars = (
@@ -391,12 +394,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *      enclosing member with the annotation.
    */
   private def needsSpecialization(env: TypeEnv, sym: Symbol): Boolean = (
-    !sym.ownerChain.exists(_ hasAnnotation UnspecializedClass) && (
+    !hasUnspecializableAnnotation(sym) && (
          specializedTypeVars(sym).intersect(env.keySet).diff(wasSpecializedForTypeVars(sym)).nonEmpty
       || sym.isClassConstructor && (sym.enclClass.typeParams exists (_.isSpecialized))
       || isNormalizedMember(sym) && info(sym).typeBoundsIn(env)
     )
   )
+
+  private def hasUnspecializableAnnotation(sym: Symbol): Boolean =
+    sym.ownerChain.exists(_ hasAnnotation UnspecializedClass)
 
   def isNormalizedMember(m: Symbol) = m.isSpecialized && (info get m exists {
     case NormalizedMember(_)  => true
@@ -907,16 +913,20 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
 
     if (sym.isMethod) {
-      val stvars = specializedTypeVars(sym)
-      if (stvars.nonEmpty)
-        debuglog("specialized %s on %s".format(sym.fullLocationString, stvars.map(_.name).mkString(", ")))
+      if (hasUnspecializableAnnotation(sym)) {
+        List()
+      } else {
+        val stvars = specializedTypeVars(sym)
+        if (stvars.nonEmpty)
+          debuglog("specialized %s on %s".format(sym.fullLocationString, stvars.map(_.name).mkString(", ")))
 
-      val tps1 = if (sym.isConstructor) tps filter (sym.info.paramTypes contains _) else tps
-      val tps2 = tps1 filter stvars
-      if (!sym.isDeferred)
-        addConcreteSpecMethod(sym)
+        val tps1 = if (sym.isConstructor) tps filter (sym.info.paramTypes contains _) else tps
+        val tps2 = tps1 filter stvars
+        if (!sym.isDeferred)
+          addConcreteSpecMethod(sym)
 
-      specializeOn(tps2)
+        specializeOn(tps2)
+      }
     }
     else Nil
   }
