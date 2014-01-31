@@ -3,15 +3,21 @@ import scala.reflect.macros.blackbox.Context
 object Macros {
   def impl(c: Context) = {
     import c.universe._
-    reify {
-      println("enclosingPackage = " + c.Expr[String](Literal(Constant(c.enclosingPackage.toString))).splice)
-      println("enclosingClass = " + c.Expr[String](Literal(Constant(c.enclosingClass.toString))).splice)
-      println("enclosingImpl = " + c.Expr[String](Literal(Constant(c.enclosingImpl.toString))).splice)
-      println("enclosingTemplate = " + c.Expr[String](Literal(Constant(c.enclosingTemplate.toString))).splice)
-      println("enclosingMethod = " + c.Expr[String](Literal(Constant(c.enclosingMethod.toString))).splice)
-      println("enclosingDef = " + c.Expr[String](Literal(Constant(c.enclosingDef.toString))).splice)
+    def chain(sym: Symbol): List[Symbol] = sym.owner match {
+      case NoSymbol => sym :: Nil
+      case owner => sym :: chain(owner)
     }
+    q"""
+      println("enclosingPackage = " + ${c.enclosingPackage.toString})
+      println("enclosingClass = " + ${c.enclosingClass.toString})
+      println("enclosingImpl = " + ${c.enclosingImpl.toString})
+      println("enclosingTemplate = " + ${c.enclosingTemplate.toString})
+      println("enclosingMethod = " + ${c.enclosingMethod.toString})
+      println("enclosingDef = " + ${c.enclosingDef.toString})
+      println("enclosingOwner = " + ${c.enclosingOwner.toString})
+      println("enclosingOwnerChain = " + ${chain(c.enclosingOwner).toString})
+    """
   }
 
-  def foo = macro impl
+  def foo: Any = macro impl
 }

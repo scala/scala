@@ -18,6 +18,7 @@ trait Enclosures {
   // vals are eager to simplify debugging
   // after all we wouldn't save that much time by making them lazy
   val macroApplication: Tree                      = expandee
+  val enclosingOwner                              = site.owner
   def enclosingPackage: PackageDef                = strictEnclosure[PackageDef]
   val enclosingClass: Tree                        = lenientEnclosure[ImplDef]
   def enclosingImpl: ImplDef                      = strictEnclosure[ImplDef]

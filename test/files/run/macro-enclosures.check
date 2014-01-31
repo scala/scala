@@ -30,3 +30,5 @@ enclosingTemplate = scala.AnyRef {
 }
 enclosingMethod = def test = Macros.foo
 enclosingDef = def test = Macros.foo
+enclosingOwner = method test
+enclosingOwnerChain = List(method test, object Test, package test, package <root>)
