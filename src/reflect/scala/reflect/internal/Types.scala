@@ -82,6 +82,7 @@ trait Types
   with tpe.GlbLubs
   with tpe.TypeMaps
   with tpe.TypeConstraints
+  with tpe.FindMembers
   with util.Collections { self: SymbolTable =>
 
   import definitions._
@@ -248,7 +249,7 @@ trait Types
    *  type instead of the proxy. This gives buried existentials a
    *  chance to make peace with the other types. See SI-5330.
    */
-  private def narrowForFindMember(tp: Type): Type = {
+  private[internal] def narrowForFindMember(tp: Type): Type = {
     val w = tp.widen
     // Only narrow on widened type when we have to -- narrow is expensive unless the target is a singleton type.
     if ((tp ne w) && containsExistential(w)) w.narrow
@@ -989,6 +990,7 @@ trait Types
      *
      */
     def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
+      // TODO refactor to use `FindMemberBase`
       def findMembersInternal: Scope = {
         var members: Scope = null
         if (Statistics.canEnable) Statistics.incCounter(findMembersCount)
@@ -1055,14 +1057,25 @@ trait Types
      *  Find member(s) in this type. If several members matching criteria are found, they are
      *  returned in an OverloadedSymbol
      *
-     *  @param name           The member's name, where nme.ANYNAME means `unspecified`
+     *  @param name           The member's name
      *  @param excludedFlags  Returned members do not have these flags
      *  @param requiredFlags  Returned members do have these flags
      *  @param stableOnly     If set, return only members that are types or stable values
      */
-    //TODO: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
-      def findMemberInternal: Symbol = {
+      def findMemberInternal = {
+        // TODO delete `findMemberInternalOld`
+        val resultOld = findMemberInternalOld
+        val resultNew = findMemberInternalNew
+        if (resultOld.alternatives != resultNew.alternatives) {
+          findMemberInternalOld
+          findMemberInternalNew
+        }
+        assert(resultOld.alternatives == resultNew.alternatives, s"\nOLD:${resultOld.alternatives}\nNEW${resultNew.alternatives}")
+        resultNew
+      }
+      def findMemberInternalNew = new FindMember(this, name, excludedFlags, requiredFlags, stableOnly).apply()
+      def findMemberInternalOld: Symbol = {
         var member: Symbol        = NoSymbol
         var members: List[Symbol] = null
         var lastM: ::[Symbol]     = null
