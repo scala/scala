@@ -25,6 +25,22 @@ abstract class Universe extends scala.reflect.api.Universe {
   /** @inheritdoc */
   trait MacroInternalApi extends InternalApi {
 
+    /** Collects all the symbols defined by subtrees of `tree` that are owned by `prev`,
+     *  and then changes their owner to point to `next`.
+     *
+     *  This is an essential tool to battle owner chain corruption when moving trees
+     *  from one lexical context to another. Whenever you take an attributed tree that
+     *  has been typechecked under the Context owned by some symbol (let's call it `x`)
+     *  and splice it elsewhere, into the Context owned by another symbol (let's call it `y`),
+     *  it is imperative that you either call `untypecheck` or do `changeOwner(tree, x, y)`.
+     *
+     *  Since at the moment `untypecheck` has fundamental problem that can sometimes lead to tree corruption,
+     *  `changeOwner` becomes an indispensible tool in building 100% robust macros.
+     *  Future versions of the reflection API might obviate the need in taking care of
+     *  these low-level details, but at the moment this is what we've got.
+     */
+    def changeOwner(tree: Tree, prev: Symbol, next: Symbol): tree.type
+
     /** Advanced tree factories */
     val gen: TreeGen
 
