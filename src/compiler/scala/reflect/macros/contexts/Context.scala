@@ -15,7 +15,8 @@ abstract class Context extends scala.reflect.macros.blackbox.Context
                           with Parsers
                           with Evals
                           with ExprUtils
-                          with Traces {
+                          with Traces
+                          with Internals {
 
   val universe: Global
 
