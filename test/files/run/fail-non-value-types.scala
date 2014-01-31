@@ -32,9 +32,9 @@ object Test {
     // [B <: <?>, That <: <?>](f: <?>)(implicit cbf: <?>)That
     //
 
-    println(map.typeSignature)
-    println(map.typeSignatureIn(cil))
-    println(distinct.typeSignature)
+    println(map.info)
+    println(map.infoIn(cil))
+    println(distinct.info)
     if (failed) sys.exit(1)
   }
 }

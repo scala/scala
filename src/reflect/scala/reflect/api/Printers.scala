@@ -266,5 +266,5 @@ trait Printers { self: Universe =>
   /** Renders a string that represents a declaration of this symbol written in Scala.
    * @group Printers
    */
-  def showDeclaration(sym: Symbol): String
+  def showDecl(sym: Symbol): String
 }

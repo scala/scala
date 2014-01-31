@@ -17,7 +17,7 @@ object StaticReflect {
     clazz member nameName match {
       case NoSymbol => c.error(c.enclosingPosition, s"No member called $nameName in $clazz.") ; reify(ru.NoType)
       case member   =>
-        val mtpe  = member typeSignatureIn clazz
+        val mtpe  = member infoIn clazz
         val mtag  = c.reifyType(gen.mkRuntimeUniverseRef, Select(gen.mkRuntimeUniverseRef, TermName("rootMirror")), mtpe)
         val mtree = Select(mtag, TermName("tpe"))
 

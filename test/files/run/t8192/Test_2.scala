@@ -21,10 +21,10 @@ object Test extends App {
       if (sym == NoSymbol) "NoSymbol"
       else s"${defString(sym)} => ${sym.asMethod.isPrimaryConstructor}"
     }
-    sym.typeSignature
+    sym.info
     println(sym.toString)
     println(s"primary constructor: ${showCtor(sym.primaryConstructor)}")
-    val ctors = sym.typeSignature.members.filter(_.name == nme.CONSTRUCTOR).map(sym => showCtor(sym))
+    val ctors = sym.info.members.filter(_.name == termNames.CONSTRUCTOR).map(sym => showCtor(sym))
     ctors.toList.sorted.foreach(println)
   }
 

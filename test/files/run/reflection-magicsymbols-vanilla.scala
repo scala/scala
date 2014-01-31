@@ -14,9 +14,9 @@ class A {
 object Test extends App {
   import scala.reflect.runtime.universe._
   def test(n: Int): Unit = {
-    val sig = typeOf[A] member TermName("foo" + n) typeSignature
+    val sig = typeOf[A] member TermName("foo" + n) info
     val x = sig.asInstanceOf[MethodType].params.head
-    println(x.typeSignature)
+    println(x.info)
   }
   for (i <- 1 to 8) test(i)
 }

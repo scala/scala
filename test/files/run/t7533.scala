@@ -29,7 +29,7 @@ object Test extends App {
     println(s"=======$sym=======")
     def printAbstract(sym: Symbol) = println(s"$sym => ${sym.isAbstract}")
     printAbstract(sym)
-    sym.typeSignature.declarations.sorted.foreach(printAbstract)
+    sym.info.decls.sorted.foreach(printAbstract)
   }
   test[C]
   test[T]

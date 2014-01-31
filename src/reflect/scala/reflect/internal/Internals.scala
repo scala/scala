@@ -96,7 +96,7 @@ trait Internals extends api.Internals {
     def updateAttachment[T: ClassTag](symbol: Symbol, attachment: T): symbol.type = symbol.updateAttachment(attachment)
     def removeAttachment[T: ClassTag](symbol: Symbol): symbol.type = symbol.removeAttachment[T]
     def pos(symbol: Symbol): Position = symbol.pos
-    def setTypeSignature(symbol: Symbol, tpe: Type): symbol.type = symbol.setTypeSignature(tpe)
+    def setInfo(symbol: Symbol, tpe: Type): symbol.type = symbol.setInfo(tpe)
     def setAnnotations(symbol: Symbol, annots: Annotation*): symbol.type = symbol.setAnnotations(annots: _*)
     def setName(symbol: Symbol, name: Name): symbol.type = symbol.setName(name)
     def setPrivateWithin(symbol: Symbol, sym: Symbol): symbol.type = symbol.setPrivateWithin(sym)

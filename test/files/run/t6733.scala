@@ -31,5 +31,5 @@ trait Foo {
 }
 
 object Test extends App {
-  typeOf[Foo].declarations.sorted.foreach(m => println(s"$m: isPrivateThis = ${m.isPrivateThis}, isProtectedThis = ${m.isProtectedThis}"))
+  typeOf[Foo].decls.sorted.foreach(m => println(s"$m: isPrivateThis = ${m.isPrivateThis}, isProtectedThis = ${m.isProtectedThis}"))
 }

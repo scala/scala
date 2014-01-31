@@ -12,8 +12,8 @@ class Foo{
   val classTag = implicitly[ClassTag[R]]
   val cl = classTag.runtimeClass.getClassLoader
   val cm = runtimeMirror(cl)
-  val constructor = expectedType.tpe.member( nme.CONSTRUCTOR ).asMethod
-  val sig = constructor.typeSignature
+  val constructor = expectedType.tpe.member( termNames.CONSTRUCTOR ).asMethod
+  val sig = constructor.info
   val sym = cm.classSymbol( classTag.runtimeClass )
   val cls = cm.reflect( this ).reflectClass( sym )
   cls.reflectConstructor( constructor )( 5,"test" ).asInstanceOf[R]

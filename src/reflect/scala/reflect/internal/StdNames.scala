@@ -757,9 +757,9 @@ trait StdNames {
     val selectType: NameType           = "selectType"
     val self: NameType                 = "self"
     val setAnnotations: NameType       = "setAnnotations"
+    val setInfo: NameType              = "setInfo"
     val setSymbol: NameType            = "setSymbol"
     val setType: NameType              = "setType"
-    val setTypeSignature: NameType     = "setTypeSignature"
     val splice: NameType               = "splice"
     val staticClass : NameType         = "staticClass"
     val staticModule : NameType        = "staticModule"
@@ -1000,6 +1000,8 @@ trait StdNames {
     val BITMAP_CHECKINIT_TRANSIENT: NameType = BITMAP_PREFIX + "inittrans$" // initialization bitmap for transient checkinit values
   }
 
+  lazy val typeNames: tpnme.type = tpnme
+
   object tpnme extends TypeNames { }
 
   /** For fully qualified type names.
@@ -1019,6 +1021,8 @@ trait StdNames {
   }
 
   val javanme = nme.javaKeywords
+
+  lazy val termNames: nme.type = nme
 
   object nme extends TermNames {
     def moduleVarName(name: TermName): TermName =

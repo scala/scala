@@ -16,7 +16,7 @@ package context {
   def check(source: String, unit: global.CompilationUnit) = {
     val context: Context = global.analyzer.rootContext(unit)
     val importInfo: ImportInfo = context.imports.head // Predef._
-    val importedSym = importInfo.importedSymbol(nme.CONSTRUCTOR)
+    val importedSym = importInfo.importedSymbol(termNames.CONSTRUCTOR)
     assert(importedSym == NoSymbol, importedSym) // was "constructor Predef"
   }
 }

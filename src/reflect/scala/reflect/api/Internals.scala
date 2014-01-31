@@ -399,7 +399,7 @@ trait Internals { self: Universe =>
     /** Set symbol's type signature to given type.
      *  @return the symbol itself
      */
-    def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S
+    def setInfo[S <: Symbol](sym: S, tpe: Type): S
 
     /** Set symbol's annotations to given annotations `annots`.
      */
@@ -1005,7 +1005,7 @@ trait Internals { self: Universe =>
       @deprecated("This API is unreliable. Use `isPrivateThis` or `isProtectedThis` instead", "2.11.0")
       def isLocal: Boolean = symbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol].isLocal
 
-      @deprecated("This API is unreliable. Use `allOverriddenSymbols.nonEmpty` instead", "2.11.0")
+      @deprecated("This API is unreliable. Use `overrides.nonEmpty` instead", "2.11.0")
       def isOverride: Boolean = symbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol].isOverride
 
       /** @see [[InternalApi.isFreeTerm]] */

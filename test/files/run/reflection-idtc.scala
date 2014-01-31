@@ -5,7 +5,7 @@ import scala.tools.reflect.ToolBox
 object Test extends App {
   val tb = cm.mkToolBox()
   val idsym = tb.typecheck(q"type Id[X] = X").symbol.asType
-  val idTC1 = idsym.typeSignature
+  val idTC1 = idsym.info
   println(idTC1)
   println(appliedType(idTC1, List(typeOf[Int])))
   println("===")

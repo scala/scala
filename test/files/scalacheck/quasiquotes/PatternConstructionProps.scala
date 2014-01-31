@@ -7,7 +7,7 @@ object PatternConstructionProps extends QuasiquoteProperties("pattern constructi
   }
 
   property("splice name into bind") = forAll { (name: TermName) =>
-    pq"$name" ≈ Bind(name, Ident(nme.WILDCARD))
+    pq"$name" ≈ Bind(name, Ident(termNames.WILDCARD))
   }
 
   property("splice name and tree into bind") = forAll { (name: TermName, tree: Tree) =>
@@ -15,11 +15,11 @@ object PatternConstructionProps extends QuasiquoteProperties("pattern constructi
   }
 
   property("splice type name into typed") = forAll { (name: TypeName) =>
-    pq"_ : $name" ≈ Typed(Ident(nme.WILDCARD), Ident(name))
+    pq"_ : $name" ≈ Typed(Ident(termNames.WILDCARD), Ident(name))
   }
 
   property("splice tree into typed") = forAll { (typ: Tree) =>
-    pq"_ : $typ" ≈ Typed(Ident(nme.WILDCARD), typ)
+    pq"_ : $typ" ≈ Typed(Ident(termNames.WILDCARD), typ)
   }
 
   property("splice into apply") = forAll { (pat: Tree, subpat: Tree) =>

@@ -6,5 +6,5 @@ object Test extends App {
   val c = cm.classSymbol(classOf[C#A])
   println(c)
   println(c.fullName)
-  println(c.typeSignature)
+  println(c.info)
 }

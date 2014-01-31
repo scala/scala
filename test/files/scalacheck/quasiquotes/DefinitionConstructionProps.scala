@@ -27,7 +27,7 @@ object DefinitionConstructionProps
 trait ClassConstruction { self: QuasiquoteProperties =>
   val anyRef = ScalaDot(TypeName("AnyRef"))
   val emtpyConstructor =
-    DefDef(Modifiers(), nme.CONSTRUCTOR, List(),
+    DefDef(Modifiers(), termNames.CONSTRUCTOR, List(),
       List(List()), TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
   def classWith(name: TypeName, parents: List[Tree] = List(anyRef), body: List[DefDef] = Nil) =
     ClassDef(
@@ -173,7 +173,7 @@ trait TypeDefConstruction { self: QuasiquoteProperties =>
       TypeDef(
         Modifiers(), T, List(),
         CompoundTypeTree(
-          Template(List(Ident(A), Ident(B)), ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(), EmptyTree), List())))
+          Template(List(Ident(A), Ident(B)), ValDef(Modifiers(PRIVATE), termNames.WILDCARD, TypeTree(), EmptyTree), List())))
   }
 
   property("splice trees into existential type tree") = forAll {
@@ -242,7 +242,7 @@ trait MethodConstruction { self: QuasiquoteProperties =>
   property("splice idents into annotation") = test {
     val idents = List(Ident(TypeName("annot1")), Ident(TypeName("annot2")))
     assertSameAnnots(q"@..$idents def foo",
-      idents.map { ident => Apply(Select(New(ident), nme.CONSTRUCTOR), List()) })
+      idents.map { ident => Apply(Select(New(ident), termNames.CONSTRUCTOR), List()) })
   }
 
   property("splice constructor calls into annotation") = test {

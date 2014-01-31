@@ -16,7 +16,7 @@ package api
  * there is the `newScopeWith` function.
  *
  * Additional functionality is exposed in member scopes that are returned by
- * `members` and `declarations` defined in [[scala.reflect.api.Types#TypeApi]].
+ * `members` and `decls` defined in [[scala.reflect.api.Types#TypeApi]].
  * Such scopes support the `sorted` method, which sorts members in declaration order.
  *
  * @group ReflectionAPI

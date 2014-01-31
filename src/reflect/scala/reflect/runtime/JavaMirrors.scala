@@ -145,7 +145,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       object ConstantArg {
         def enumToSymbol(enum: Enum[_]): Symbol = {
           val staticPartOfEnum = classToScala(enum.getClass).companionSymbol
-          staticPartOfEnum.typeSignature.declaration(enum.name: TermName)
+          staticPartOfEnum.info.declaration(enum.name: TermName)
         }
 
         def unapply(schemaAndValue: (jClass[_], Any)): Option[Any] = schemaAndValue match {
@@ -269,7 +269,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val isDerivedValueClass = symbol.isDerivedValueClass
       lazy val boxer = runtimeClass(symbol.toType).getDeclaredConstructors().head
       lazy val unboxer = {
-        val fields @ (field :: _) = symbol.toType.declarations.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList
+        val fields @ (field :: _) = symbol.toType.decls.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList
         assert(fields.length == 1, s"$symbol: $fields")
         runtimeClass(symbol.asClass).getDeclaredMethod(field.name.toString)
       }
@@ -292,7 +292,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         jfield.set(receiver, if (isDerivedValueClass) unboxer.invoke(value) else value)
       }
 
-      override def toString = s"field mirror for ${showDeclaration(symbol)} (bound to $receiver)"
+      override def toString = s"field mirror for ${showDecl(symbol)} (bound to $receiver)"
     }
 
     // the "symbol == Any_getClass || symbol == Object_getClass" test doesn't cut it
@@ -347,7 +347,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
 
       override def toString = {
         val what = if (symbol.isConstructor) "constructor mirror" else "method mirror"
-        s"$what for ${showDeclaration(symbol)} (bound to $receiver)"
+        s"$what for ${showDecl(symbol)} (bound to $receiver)"
       }
     }
 
@@ -443,7 +443,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     private class BytecodelessMethodMirror[T: ClassTag](val receiver: T, val symbol: MethodSymbol)
             extends MethodMirror {
       def bind(newReceiver: Any) = new BytecodelessMethodMirror(newReceiver.asInstanceOf[T], symbol)
-      override def toString = s"bytecodeless method mirror for ${showDeclaration(symbol)} (bound to $receiver)"
+      override def toString = s"bytecodeless method mirror for ${showDecl(symbol)} (bound to $receiver)"
 
       def apply(args: Any*): Any = {
         // checking type conformance is too much of a hassle, so we don't do it here
@@ -457,7 +457,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         if (!perfectMatch && !varargMatch) {
           val n_arguments = if (isVarArgsList(params)) s"${params.length - 1} or more" else s"${params.length}"
           val s_arguments = if (params.length == 1 && !isVarArgsList(params)) "argument" else "arguments"
-          abort(s"${showDeclaration(symbol)} takes $n_arguments $s_arguments")
+          abort(s"${showDecl(symbol)} takes $n_arguments $s_arguments")
         }
 
         def objReceiver       = receiver.asInstanceOf[AnyRef]

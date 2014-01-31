@@ -4,7 +4,7 @@ object Test extends App {
   val foo = Macros.foo("T")
   val ttpe = scala.reflect.runtime.universe.weakTypeOf[foo.T]
   println(ttpe)
-  println(ttpe.typeSymbol.typeSignature)
+  println(ttpe.typeSymbol.info)
 
   val bar = Macros.bar("test")
   println(bar.test)

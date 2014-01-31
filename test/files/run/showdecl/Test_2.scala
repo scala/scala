@@ -3,9 +3,9 @@ import scala.reflect.runtime.{currentMirror => cm}
 
 object Test extends App {
   def test(sym: Symbol): Unit = {
-    println(s"autoinitialized ${sym.name}: ${showDeclaration(sym)}")
-    sym.typeSignature
-    println(s"autoinitialized ${sym.name}: ${showDeclaration(sym)}")
+    println(s"autoinitialized ${sym.name}: ${showDecl(sym)}")
+    sym.info
+    println(s"autoinitialized ${sym.name}: ${showDecl(sym)}")
   }
 
   Macros.foo

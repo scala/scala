@@ -7,7 +7,7 @@ object Test extends App {
   val c1 = cm.classSymbol(classOf[A1])
   println(c1)
   println(c1.fullName)
-  println(c1.typeSignature)
+  println(c1.info)
 
   new Test
 }
@@ -18,5 +18,5 @@ class Test {
   val c2 = cm.classSymbol(classOf[A2])
   println(c2)
   println(c2.fullName)
-  println(c2.typeSignature)
+  println(c2.info)
 }

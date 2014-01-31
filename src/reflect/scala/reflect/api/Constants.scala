@@ -69,7 +69,7 @@ package api
  *    val enumRef = jarg("enumRef").symbolValue
  *    println(enumRef)                       // value BAR
  *
- *    val siblings = enumRef.owner.typeSignature.declarations
+ *    val siblings = enumRef.owner.info.decls
  *    val enumValues = siblings.filter(sym => sym.isVal && sym.isPublic)
  *    println(enumValues)                    // Scope{
  *                                           //   final val FOO: JavaSimpleEnumeration;
@@ -165,7 +165,7 @@ trait Constants {
    *                                           // ideally one should match instead of casting
    *    println(enumRef)                       // value BAR
    *
-   *    val siblings = enumRef.owner.typeSignature.declarations
+   *    val siblings = enumRef.owner.info.decls
    *    val enumValues = siblings.filter(sym => sym.isVal && sym.isPublic)
    *    println(enumValues)                    // Scope{
    *                                           //   final val FOO: JavaSimpleEnumeration;

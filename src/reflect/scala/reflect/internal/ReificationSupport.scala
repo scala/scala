@@ -48,8 +48,8 @@ trait ReificationSupport { self: SymbolTable =>
     def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S =
       sym.setAnnotations(annots)
 
-    def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S =
-      sym.setTypeSignature(tpe).markAllCompleted()
+    def setInfo[S <: Symbol](sym: S, tpe: Type): S =
+      sym.setInfo(tpe).markAllCompleted()
 
     def This(sym: Symbol): Tree = self.This(sym)
 

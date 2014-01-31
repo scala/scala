@@ -7,6 +7,6 @@ class D { self: C => }
 object Test extends App {
   val d = cm.staticClass("D")
   println(d.selfType)
-  d.typeSignature
+  d.info
   println(d.selfType)
 }

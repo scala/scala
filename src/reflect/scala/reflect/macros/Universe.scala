@@ -61,8 +61,8 @@ abstract class Universe extends scala.reflect.api.Universe {
     /** The position of this symbol. */
     def pos(symbol: Symbol): Position
 
-    /** Sets the `typeSignature` of the symbol. */
-    def setTypeSignature(symbol: Symbol, tpe: Type): symbol.type
+    /** Sets the `info` of the symbol. */
+    def setInfo(symbol: Symbol, tpe: Type): symbol.type
 
     /** Sets the `annotations` of the symbol. */
     def setAnnotations(symbol: Symbol, annots: Annotation*): symbol.type
@@ -236,9 +236,9 @@ abstract class Universe extends scala.reflect.api.Universe {
       @deprecated("Use `internal.pos` instead", "2.11.0")
       def pos: Position = internal.pos(symbol)
 
-      /** @see [[InternalMacroApi.setTypeSignature]] */
-      @deprecated("Use `internal.setTypeSignature` instead", "2.11.0")
-      def setTypeSignature(tpe: Type): Symbol = internal.setTypeSignature(symbol, tpe)
+      /** @see [[InternalMacroApi.setInfo]] */
+      @deprecated("Use `internal.setInfo` instead", "2.11.0")
+      def setTypeSignature(tpe: Type): Symbol = internal.setInfo(symbol, tpe)
 
       /** @see [[InternalMacroApi.setAnnotations]] */
       @deprecated("Use `internal.setAnnotations` instead", "2.11.0")

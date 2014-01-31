@@ -1211,17 +1211,17 @@ trait Printers extends api.Printers { self: SymbolTable =>
   }
 
   def show(name: Name): String = name match {
-    case tpnme.WILDCARD => "tpnme.WILDCARD"
-    case tpnme.EMPTY => "tpnme.EMPTY"
-    case tpnme.ERROR => "tpnme.ERROR"
-    case tpnme.PACKAGE => "tpnme.PACKAGE"
-    case tpnme.WILDCARD_STAR => "tpnme.WILDCARD_STAR"
-    case nme.WILDCARD => "nme.WILDCARD"
-    case nme.EMPTY => "nme.EMPTY"
-    case nme.ERROR => "tpnme.ERROR"
-    case nme.PACKAGE => "nme.PACKAGE"
-    case nme.CONSTRUCTOR => "nme.CONSTRUCTOR"
-    case nme.ROOTPKG => "nme.ROOTPKG"
+    case tpnme.WILDCARD => "typeNames.WILDCARD"
+    case tpnme.EMPTY => "typeNames.EMPTY"
+    case tpnme.ERROR => "typeNames.ERROR"
+    case tpnme.PACKAGE => "typeNames.PACKAGE"
+    case tpnme.WILDCARD_STAR => "typeNames.WILDCARD_STAR"
+    case nme.WILDCARD => "termNames.WILDCARD"
+    case nme.EMPTY => "termNames.EMPTY"
+    case nme.ERROR => "termNames.ERROR"
+    case nme.PACKAGE => "termNames.PACKAGE"
+    case nme.CONSTRUCTOR => "termNames.CONSTRUCTOR"
+    case nme.ROOTPKG => "termNames.ROOTPKG"
     case _ =>
       val prefix = if (name.isTermName) "TermName(\"" else "TypeName(\""
       prefix + name.toString + "\")"
@@ -1242,7 +1242,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     position.show
   }
 
-  def showDeclaration(sym: Symbol): String = {
+  def showDecl(sym: Symbol): String = {
     if (!isCompilerUniverse) definitions.fullyInitializeSymbol(sym)
     sym.defString
   }

@@ -94,11 +94,19 @@ trait Types {
      */
     def typeSymbol: Symbol
 
+    /** @see [[decl]] */
+    @deprecated("Use `decl` instead", "2.11.0")
+    def declaration(name: Name): Symbol
+
     /** The defined or declared members with name `name` in this type;
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
      *  Alternatives of overloaded symbol appear in the order they are declared.
      */
-    def declaration(name: Name): Symbol
+    def decl(name: Name): Symbol
+
+    /** @see [[decls]] */
+    @deprecated("Use `decls` instead", "2.11.0")
+    def declarations: MemberScope
 
     /** A `Scope` containing directly declared members of this type.
      *  Unlike `members` this method doesn't returns inherited members.
@@ -106,7 +114,7 @@ trait Types {
      *  Members in the returned scope might appear in arbitrary order.
      *  Use `declarations.sorted` to get an ordered list of members.
      */
-    def declarations: MemberScope
+    def decls: MemberScope
 
     /** The member with given name, either directly declared or inherited,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist.
@@ -251,10 +259,14 @@ trait Types {
      */
     def typeArgs: List[Type]
 
+    /** @see [[paramLists]] */
+    @deprecated("Use `paramLists` instead", "2.11.0")
+    def paramss: List[List[Symbol]]
+
     /** For a method or poly type, a list of its value parameter sections,
      *  the empty list of lists for all other types.
      */
-    def paramss: List[List[Symbol]]
+    def paramLists: List[List[Symbol]]
 
     /** For a poly type, its type parameters,
      *  the empty list for all other types.
@@ -271,7 +283,7 @@ trait Types {
      *    scala> typeOf[C].member(TermName("foo")).asMethod
      *    res0: reflect.runtime.universe.MethodSymbol = method foo
      *
-     *    scala> res0.typeSignature // PolyType wrapping a MethodType
+     *    scala> res0.info // PolyType wrapping a MethodType
      *    res1: reflect.runtime.universe.Type = [T](x: T)(y: T)scala.Nothing
      *
      *    scala> res1.resultType // MethodType wrapping a MethodType
@@ -299,7 +311,7 @@ trait Types {
      *    scala> typeOf[C].member(TermName("foo")).asMethod
      *    res0: reflect.runtime.universe.MethodSymbol = method foo
      *
-     *    scala> res0.typeSignature // PolyType wrapping a MethodType
+     *    scala> res0.info // PolyType wrapping a MethodType
      *    res1: reflect.runtime.universe.Type = [T](x: T)(y: T)scala.Nothing
      *
      *    scala> res1.resultType // MethodType wrapping a MethodType
@@ -610,7 +622,7 @@ trait Types {
     def parents: List[Type]
 
     /** The scope that holds the definitions comprising the type. */
-    def decls: Scope
+    def decls: MemberScope
   }
 
   /** The `ClassInfo` type signature is used to define parents and declarations
@@ -651,7 +663,7 @@ trait Types {
     def parents: List[Type]
 
     /** The scope that holds the definitions comprising the class type. */
-    def decls: Scope
+    def decls: MemberScope
 
     /** The symbol underlying the class type. */
     def typeSymbol: Symbol

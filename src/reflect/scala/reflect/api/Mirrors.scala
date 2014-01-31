@@ -260,8 +260,8 @@ trait Mirrors { self: Universe =>
      *  Note also that only accessor MethodMirrors, but not FieldMirrors will accurately reflect overriding behavior.
      *
      *  To get a field symbol by the name of the field you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(TermName(<name of the field>)).asTerm.accessed`.
-     *  For further information about member lookup refer to `Symbol.typeSignature`.
+     *  use `<this mirror>.symbol.info.member(TermName(<name of the field>)).asTerm.accessed`.
+     *  For further information about member lookup refer to `Symbol.info`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be a member (declared or inherited) of the class of the instance underlying this mirror.
@@ -280,8 +280,8 @@ trait Mirrors { self: Universe =>
      *  that can be used to invoke the method provided.
      *
      *  To get a method symbol by the name of the method you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(TermName(<name of the method>)).asMethod`.
-     *  For further information about member lookup refer to `Symbol.typeSignature`.
+     *  use `<this mirror>.symbol.info.member(TermName(<name of the method>)).asMethod`.
+     *  For further information about member lookup refer to `Symbol.info`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be a member (declared or inherited) of the instance underlying this mirror.
@@ -292,8 +292,8 @@ trait Mirrors { self: Universe =>
      *  that can be used to create instances of the class, inspect its companion object or perform further reflections.
      *
      *  To get a class symbol by the name of the class you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(newTypeName(<name of the class>)).asClass`.
-     *  For further information about member lookup refer to `Symbol.typeSignature`.
+     *  use `<this mirror>.symbol.info.member(newTypeName(<name of the class>)).asClass`.
+     *  For further information about member lookup refer to `Symbol.info`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be a member (declared or inherited) of the instance underlying this mirror.
@@ -304,8 +304,8 @@ trait Mirrors { self: Universe =>
      *  that can be used to get the instance of the object or inspect its companion class.
      *
      *  To get a module symbol by the name of the object you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(TermName(<name of the object>)).asModule`.
-     *  For further information about member lookup refer to `Symbol.typeSignature`.
+     *  use `<this mirror>.symbol.info.member(TermName(<name of the object>)).asModule`.
+     *  For further information about member lookup refer to `Symbol.info`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be a member (declared or inherited) of the instance underlying this mirror.
@@ -437,8 +437,8 @@ trait Mirrors { self: Universe =>
      *  that can be used to invoke it and construct instances of this mirror's symbols.
      *
      *  To get a constructor symbol you would like to reflect,
-     *  use `<this mirror>.symbol.typeSignature.member(nme.CONSTRUCTOR).asMethod`.
-     *  For further information about member lookup refer to `Symbol.typeSignature`.
+     *  use `<this mirror>.symbol.info.member(termNames.CONSTRUCTOR).asMethod`.
+     *  For further information about member lookup refer to `Symbol.info`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).
      *  It must be a member (declared or inherited) of the class underlying this mirror.

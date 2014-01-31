@@ -28,15 +28,23 @@ package api
 trait StandardNames {
   self: Universe =>
 
+  /** @see [[termNames]] */
+  @deprecated("Use `termNames` instead", "2.11.0")
+  val nme: TermNamesApi
+
   /** A value containing all [[TermNamesApi standard term names]].
    *  @group StandardNames
    */
-  val nme: TermNamesApi
+  val termNames: TermNamesApi
+
+  /** @see [[typeNames]] */
+  @deprecated("Use `typeNames` instead", "2.11.0")
+  val tpnme: TypeNamesApi
 
   /** A value containing all [[TypeNamesApi standard type names]].
    *  @group StandardNames
    */
-  val tpnme: TypeNamesApi
+  val typeNames: TypeNamesApi
 
   /** Defines standard names, common for term and type names: These can be accessed via the [[nme]] and [[tpnme]] members.
    *  @group API

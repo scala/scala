@@ -15,12 +15,12 @@ object Iso {
 
     val sym = c.weakTypeOf[T].typeSymbol
     if (!sym.isClass || !sym.asClass.isCaseClass) c.abort(c.enclosingPosition, s"$sym is not a case class")
-    val fields = sym.typeSignature.declarations.toList.collect{ case x: TermSymbol if x.isVal && x.isCaseAccessor => x }
+    val fields = sym.info.decls.toList.collect{ case x: TermSymbol if x.isVal && x.isCaseAccessor => x }
 
     def mkTpt() = {
       val core = Ident(TupleClass(fields.length) orElse UnitClass)
       if (fields.length == 0) core
-      else AppliedTypeTree(core, fields map (f => TypeTree(f.typeSignature)))
+      else AppliedTypeTree(core, fields map (f => TypeTree(f.info)))
     }
 
     def mkFrom() = {
@@ -32,8 +32,8 @@ object Iso {
       List(AppliedTypeTree(Ident(newTypeName("Iso")), List(Ident(sym), mkTpt()))),
       emptyValDef,
       List(
-        DefDef(Modifiers(), nme.CONSTRUCTOR, List(), List(List()), TypeTree(), Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(())))),
+        DefDef(Modifiers(), termNames.CONSTRUCTOR, List(), List(List()), TypeTree(), Block(List(Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())), Literal(Constant(())))),
         DefDef(Modifiers(), newTermName("to"), List(), List(List(ValDef(Modifiers(PARAM), newTermName("f"), Ident(sym), EmptyTree))), TypeTree(), mkFrom()))))
-    c.Expr[Iso[T, U]](Block(List(evidenceClass), Apply(Select(New(Ident(newTypeName("$anon"))), nme.CONSTRUCTOR), List())))
+    c.Expr[Iso[T, U]](Block(List(evidenceClass), Apply(Select(New(Ident(newTypeName("$anon"))), termNames.CONSTRUCTOR), List())))
   }
 }

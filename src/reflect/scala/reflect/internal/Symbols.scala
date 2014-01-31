@@ -134,7 +134,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def toType: Type = tpe
     def toTypeIn(site: Type): Type = site.memberType(this)
     def toTypeConstructor: Type = typeConstructor
-    def setTypeSignature(tpe: Type): this.type = { setInfo(tpe); this }
     def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
 
     def getter: Symbol = getter(owner)
@@ -146,6 +145,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isClass && !isModuleClass && !isPackageClass) companionSymbol
       else NoSymbol
     }
+
+    def infoIn(site: Type): Type = typeSignatureIn(site)
+    def overrides: List[Symbol] = allOverriddenSymbols
+    def paramLists: List[List[Symbol]] = paramss
   }
 
   private[reflect] case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
@@ -645,7 +648,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  (i.e. the pickle not only contains info about directly nested classes/modules, but also about
      *  classes/modules nested into those and so on).
      *
-     *  Unpickling is triggered automatically whenever typeSignature (info in compiler parlance) is called.
+     *  Unpickling is triggered automatically whenever info (info in compiler parlance) is called.
      *  This happens because package symbols assign completer thunks to the dummies they create.
      *  Therefore metadata loading happens lazily and transparently.
      *
@@ -655,7 +658,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  produces incorrect results.
      *
      *  One might think that the solution is simple: automatically call the completer
-     *  whenever one needs flags, annotations and privateWithin - just like it's done for typeSignature.
+     *  whenever one needs flags, annotations and privateWithin - just like it's done for info.
      *  Unfortunately, this leads to weird crashes in scalac, and currently we can't attempt
      *  to fix the core of the compiler risk stability a few weeks before the final release.
      *  upd. Haha, "a few weeks before the final release". This surely sounds familiar :)
@@ -2526,6 +2529,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
      */
     override def toString: String = {
+      if (!isCompilerUniverse) fullyInitializeSymbol(this)
       if (isPackageObjectOrClass && !settings.debug)
         s"package object ${owner.decodedName}"
       else compose(

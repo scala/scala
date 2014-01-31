@@ -10,9 +10,9 @@ object Test extends ReplTest {
     |import scala.reflect.runtime.{ currentMirror => cm }
     |def im: InstanceMirror = cm.reflect(new X)
     |val cs: ClassSymbol = im.symbol
-    |val ts: Type = cs.typeSignature
-    |val ms: MethodSymbol = ts.declaration(TermName("methodIntIntInt")).asMethod
-    |val MethodType( _, t1 ) = ms.typeSignature
+    |val ts: Type = cs.info
+    |val ms: MethodSymbol = ts.decl(TermName("methodIntIntInt")).asMethod
+    |val MethodType( _, t1 ) = ms.info
     |val t2 = typeOf[scala.Int]
     |t1 == t2
     |t1 =:= t2

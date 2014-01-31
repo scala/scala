@@ -9,10 +9,10 @@ object Test extends App {
   typeMembers = typeMembers.filter(_.name != TypeName("Compat")) // internal
   val tags = typeOf[scala.reflect.api.Universe].members.filter(sym => sym.isImplicit).toList
 
-  typeMembers.foreach(_.typeSignature)
-  tags.foreach(_.typeSignature)
+  typeMembers.foreach(_.info)
+  tags.foreach(_.info)
 
-  val outliers = typeMembers.filter(tm => !tags.exists(tag => tag.typeSignature match {
+  val outliers = typeMembers.filter(tm => !tags.exists(tag => tag.info match {
     case NullaryMethodType(TypeRef(_, sym, targ :: Nil)) => sym == typeOf[ClassTag[_]].typeSymbol && targ.typeSymbol == tm
     case _ => false
   }))

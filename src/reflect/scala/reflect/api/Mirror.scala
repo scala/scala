@@ -58,7 +58,7 @@ abstract class Mirror[U <: Universe with Singleton] {
    *    scala> cm.staticPackage("scala")
    *    res2: scala.reflect.runtime.universe.ModuleSymbol = package scala
    *
-   *    scala> res2.moduleClass.typeSignature member newTypeName("List")
+   *    scala> res2.moduleClass.info member newTypeName("List")
    *    res3: scala.reflect.runtime.universe.Symbol = type List
    *
    *    scala> res3.fullName
@@ -83,7 +83,7 @@ abstract class Mirror[U <: Universe with Singleton] {
    *  fully qualified class name is written inside any package in a Scala program).
    *
    *  In the example above, to load a symbol that corresponds to the class B declared in the object foo,
-   *  use staticModule("foo") to load the module symbol and then navigate typeSignature.members of its moduleClass.
+   *  use staticModule("foo") to load the module symbol and then navigate info.members of its moduleClass.
    *  @group Mirror
    */
   def staticClass(fullName: String): U#ClassSymbol
@@ -110,7 +110,7 @@ abstract class Mirror[U <: Universe with Singleton] {
    *  fully qualified class name is written inside any package in a Scala program).
    *
    *  In the example above, to load a symbol that corresponds to the object B declared in the object foo,
-   *  use staticModule("foo") to load the module symbol and then navigate typeSignature.members of its moduleClass.
+   *  use staticModule("foo") to load the module symbol and then navigate info.members of its moduleClass.
    *  @group Mirror
    */
   def staticModule(fullName: String): U#ModuleSymbol

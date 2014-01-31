@@ -9,7 +9,7 @@ package scala {
 }
 
 object Test extends App {
-  def key(sym: Symbol) = sym + ": " + sym.typeSignature
+  def key(sym: Symbol) = sym + ": " + sym.info
   def test(tpe: Type, receiver: Any, method: String, args: Any*) {
     def wrap[T](op: => T) =
       try {
@@ -24,11 +24,11 @@ object Test extends App {
       }
     print(s"testing ${tpe.typeSymbol.name}.$method: ")
     wrap({
-      if (method == nme.CONSTRUCTOR.toString) {
-        val ctor = tpe.declaration(nme.CONSTRUCTOR).asMethod
+      if (method == termNames.CONSTRUCTOR.toString) {
+        val ctor = tpe.decl(termNames.CONSTRUCTOR).asMethod
         cm.reflectClass(ctor.owner.asClass).reflectConstructor(ctor)(args: _*)
       } else {
-        val meth = tpe.declaration(TermName(method).encodedName.toTermName).asMethod
+        val meth = tpe.decl(TermName(method).encodedName.toTermName).asMethod
         cm.reflect(receiver).reflectMethod(meth)(args: _*)
       }
     })
@@ -53,8 +53,8 @@ object Test extends App {
   println("============\nAnyVal")
   println("it's important to print the list of AnyVal's members")
   println("if some of them change (possibly, adding and/or removing magic symbols), we must update this test")
-  typeOf[AnyVal].declarations.toList.sortBy(key).foreach(sym => println(key(sym)))
-  test(typeOf[AnyVal], null, nme.CONSTRUCTOR.toString)
+  typeOf[AnyVal].decls.toList.sortBy(key).foreach(sym => println(key(sym)))
+  test(typeOf[AnyVal], null, termNames.CONSTRUCTOR.toString)
   test(typeOf[AnyVal], 2, "getClass")
 
   println("============\nAnyRef")
@@ -84,17 +84,17 @@ object Test extends App {
   println("============\nArray")
   println("it's important to print the list of Array's members")
   println("if some of them change (possibly, adding and/or removing magic symbols), we must update this test")
-  ArrayClass.typeSignature.members.toList.sortBy(key).foreach(sym => println(key(sym)))
-  test(ArrayClass.typeSignature, Array(1, 2), "length")
-  test(ArrayClass.typeSignature, Array(1, 2), "apply", 0)
-  test(ArrayClass.typeSignature, Array(1, 2), "update", 0, 0)
-  test(ArrayClass.typeSignature, Array(1, 2), "clone")
+  ArrayClass.info.members.toList.sortBy(key).foreach(sym => println(key(sym)))
+  test(ArrayClass.info, Array(1, 2), "length")
+  test(ArrayClass.info, Array(1, 2), "apply", 0)
+  test(ArrayClass.info, Array(1, 2), "update", 0, 0)
+  test(ArrayClass.info, Array(1, 2), "clone")
 
   println("============\nOther")
   test(typeOf[String], "2", "+", 3)
 
   println("============\nCTM")
-  test(PredefModule.moduleClass.typeSignature, Predef, "classOf")
-  test(PredefModule.moduleClass.typeSignature, Predef, "classOf", typeOf[String])
+  test(PredefModule.moduleClass.info, Predef, "classOf")
+  test(PredefModule.moduleClass.info, Predef, "classOf", typeOf[String])
   test(typeOf[scala.reflect.api.Universe], scala.reflect.runtime.universe, "reify", "2")
 }

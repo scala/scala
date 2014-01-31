@@ -16,8 +16,8 @@ object Test extends App {
         // println(expr.eval)
         freeTerms(expr.tree) foreach (ft => {
           // blocked by SI-7104, though it's not the focus of this test
-          // therefore I'm just commenting out the call to typeSignature
-          // println(s"name = ${ft.name}, sig = ${ft.typeSignature}, stable = ${ft.isStable}")
+          // therefore I'm just commenting out the call to info
+          // println(s"name = ${ft.name}, sig = ${ft.info}, stable = ${ft.isStable}")
           println(s"name = ${ft.name}, stable = ${ft.isStable}")
         })
       }

@@ -251,6 +251,8 @@ trait Types
       else if (sym.isClass && !sym.isModuleClass && !sym.isPackageClass) sym.companionSymbol.info
       else NoType
     }
+
+    def paramLists: List[List[Symbol]] = paramss
   }
 
   /** The base class for all types */
@@ -918,7 +920,10 @@ trait Types
      *  after `maxTostringRecursions` recursion levels. Uses `safeToString`
      *  to produce a string on each level.
      */
-    override final def toString: String = typeToString(this)
+    override final def toString: String = {
+      if (!isCompilerUniverse) fullyInitializeType(this)
+      typeToString(this)
+    }
 
     /** Method to be implemented in subclasses.
      *  Converts this type to a string in calling toString for its parts.

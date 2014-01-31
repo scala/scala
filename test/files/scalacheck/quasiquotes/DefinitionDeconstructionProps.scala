@@ -102,7 +102,7 @@ trait ClassDeconstruction { self: QuasiquoteProperties =>
             noSelfType,
             List(
               //ValDef(Modifiers(PRIVATE | LOCAL | PARAMACCESSOR), TermName("x"), Ident(TypeName("Int")), EmptyTree),
-              DefDef(Modifiers(), nme.CONSTRUCTOR, List(), List(List(ValDef(Modifiers(PARAM | PARAMACCESSOR), TermName("x"),
+              DefDef(Modifiers(), termNames.CONSTRUCTOR, List(), List(List(ValDef(Modifiers(PARAM | PARAMACCESSOR), TermName("x"),
                 Ident(TypeName("Int")), EmptyTree))), TypeTree(), Block(List(pendingSuperCall), Literal(Constant(())))))))
     }
   }
@@ -117,7 +117,7 @@ trait ModsDeconstruction { self: QuasiquoteProperties =>
 
   property("@$annot def foo") = forAll { (annotName: TypeName) =>
     val q"@$annot def foo" = q"@$annotName def foo"
-    annot ≈ Apply(Select(New(Ident(annotName)), nme.CONSTRUCTOR), List())
+    annot ≈ Apply(Select(New(Ident(annotName)), termNames.CONSTRUCTOR), List())
   }
 
   property("@$annot(..$args) def foo") = forAll { (annotName: TypeName, tree: Tree) =>
@@ -269,6 +269,6 @@ trait ImportDeconstruction { self: QuasiquoteProperties =>
         q"import $expr.{$plain, $oldname => $newname, $discard => _}"
 
     expr1 ≈ expr && plain11 == plain12 && plain12 == plain &&
-    oldname1 == oldname && newname1 == newname && discard1 == discard && wildcard == nme.WILDCARD
+    oldname1 == oldname && newname1 == newname && discard1 == discard && wildcard == termNames.WILDCARD
   }
 }

@@ -8,20 +8,20 @@ object Macros {
 
     import c.universe._
     def test(sym: Symbol): Unit = {
-      println(s"uninitialized ${sym.name}: ${showDeclaration(sym)}")
-      sym.typeSignature
-      println(s"initialized ${sym.name}: ${showDeclaration(sym)}")
+      println(s"uninitialized ${sym.name}: ${showDecl(sym)}")
+      sym.info
+      println(s"initialized ${sym.name}: ${showDecl(sym)}")
     }
 
     println("compile-time")
     test(c.mirror.staticClass("D"))
-    test(c.mirror.staticClass("D").typeSignature.member(TermName("x")))
-    test(c.mirror.staticClass("D").typeSignature.member(TermName("y")))
-    test(c.mirror.staticClass("D").typeSignature.member(TermName("z")))
-    test(c.mirror.staticClass("D").typeSignature.member(TermName("t")))
-    test(c.mirror.staticClass("D").typeSignature.member(TypeName("W")))
-    test(c.mirror.staticClass("D").typeSignature.member(TypeName("C")))
-    test(c.mirror.staticClass("D").typeSignature.member(TermName("O")))
+    test(c.mirror.staticClass("D").info.member(TermName("x")))
+    test(c.mirror.staticClass("D").info.member(TermName("y")))
+    test(c.mirror.staticClass("D").info.member(TermName("z")))
+    test(c.mirror.staticClass("D").info.member(TermName("t")))
+    test(c.mirror.staticClass("D").info.member(TypeName("W")))
+    test(c.mirror.staticClass("D").info.member(TypeName("C")))
+    test(c.mirror.staticClass("D").info.member(TermName("O")))
 
     q"..${messages.map(msg => q"println($msg)")}"
   }

@@ -30,7 +30,7 @@ package api
  *    scala> val test = typeOf[C[Int]].member(newTermName("test")).asMethod
  *    test: reflect.runtime.universe.MethodSymbol = method test
  *
- *    scala> test.typeSignature
+ *    scala> test.info
  *    res0: reflect.runtime.universe.Type = [U](x: T)(y: U)scala.Int
  *  }}}
  *
@@ -202,6 +202,15 @@ trait Symbols { self: Universe =>
      */
     def isMethod: Boolean = false
 
+    /** Does this method represent a constructor?
+     *
+     *  If `owner` is a class, then this is a vanilla JVM constructor.
+     *  If `owner` is a trait, then this is a mixin constructor.
+     *
+     *  @group Method
+     */
+    def isConstructor: Boolean
+
     /** This symbol cast to a MethodSymbol.
      *  @throws ScalaReflectionException if `isMethod` is false.
      *
@@ -295,11 +304,19 @@ trait Symbols { self: Universe =>
      */
     def companion: Symbol
 
+    /** @see [[infoIn]] */
+    @deprecated("Use `infoIn` instead", "2.11.0")
+    def typeSignatureIn(site: Type): Type
+
     /** The type signature of this symbol seen as a member of given type `site`.
      *
      *  @group Basics
      */
-    def typeSignatureIn(site: Type): Type
+    def infoIn(site: Type): Type
+
+    /** @see [[info]] */
+    @deprecated("Use `info` instead", "2.11.0")
+    def typeSignature: Type
 
     /** The type signature of this symbol.
      *
@@ -307,17 +324,21 @@ trait Symbols { self: Universe =>
      *  instantiation of a generic type. For example, signature
      *  of the method `def map[B](f: (A) ⇒ B): List[B]`, which refers to the type parameter `A` of the declaring class `List[A]`,
      *  will always feature `A`, regardless of whether `map` is loaded from the `List[_]` or from `List[Int]`. To get a signature
-     *  with type parameters appropriately instantiated, one should use `typeSignatureIn`.
+     *  with type parameters appropriately instantiated, one should use `infoIn`.
      *
      *  @group Basics
      */
-    def typeSignature: Type
+    def info: Type
+
+    /** @see [[overrides]] */
+    @deprecated("Use `overrides` instead", "2.11.0")
+    def allOverriddenSymbols: List[Symbol]
 
     /** Returns all symbols overriden by this symbol.
      *
      *  @group Basics
      */
-    def allOverriddenSymbols: List[Symbol]
+    def overrides: List[Symbol]
 
     /** The overloaded alternatives of this symbol
      *
@@ -659,7 +680,7 @@ trait Symbols { self: Universe =>
       *  Example: Given a class declaration `class C[T] { ... } `, that generates a symbol
       *  `C`. Then `C.toType` is the type `C[T]`.
       *
-      *  By contrast, `C.typeSignature` would be a type signature of form
+      *  By contrast, `C.info` would be a type signature of form
       *  `PolyType(ClassInfoType(...))` that describes type parameters, value
       *  parameters, parent types, and members of `C`.
      *
@@ -718,15 +739,6 @@ trait Symbols { self: Universe =>
     final override def isMethod = true
     final override def asMethod = this
 
-    /** Does this method represent a constructor?
-     *
-     *  If `owner` is a class, then this is a vanilla JVM constructor.
-     *  If `owner` is a trait, then this is a mixin constructor.
-     *
-     *  @group Method
-     */
-    def isConstructor: Boolean
-
     /** Does this symbol denote the primary constructor of its enclosing class?
      *
      *  @group Method
@@ -739,6 +751,10 @@ trait Symbols { self: Universe =>
      */
     def typeParams: List[Symbol]
 
+    /** @see [[paramLists]] */
+    @deprecated("Use `paramLists` instead", "2.11.0")
+    def paramss: List[List[Symbol]]
+
     /** All parameter lists of the method.
      *  The name ending with "ss" indicates that the result type is a list of lists.
      *
@@ -748,7 +764,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Method
      */
-    def paramss: List[List[Symbol]]
+    def paramLists: List[List[Symbol]]
 
     /** Does this method support variable length argument lists?
      *

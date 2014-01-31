@@ -12,9 +12,9 @@ object Test extends App {
   val toolbox = cm.mkToolBox()
   val rupkg = cm.staticModule("scala.reflect.runtime.package")
   val rusym = reificationSupport.selectTerm(rupkg, "universe")
-  val NullaryMethodType(rutpe) = rusym.typeSignature
+  val NullaryMethodType(rutpe) = rusym.info
   val ru = reificationSupport.newFreeTerm("ru", scala.reflect.runtime.universe)
-  reificationSupport.setTypeSignature(ru, rutpe)
+  reificationSupport.setInfo(ru, rutpe)
 
   val tree1 = Apply(Select(Ident(ru), TermName("reify")), List(Literal(Constant(2))))
   val ttree1 = toolbox.typecheck(tree1, withMacrosDisabled = false)

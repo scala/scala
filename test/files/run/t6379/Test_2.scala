@@ -10,13 +10,13 @@ class Reader(fname: String) {
 object Test extends App {
   def test(sym: MethodSymbol): Unit = {
     println(s"uninitialized ${sym.name}: ${sym.exceptions}")
-    sym.typeSignature
+    sym.info
     println(s"initialized ${sym.name}: ${sym.exceptions}")
   }
 
   Macros.foo
   println("runtime")
-  test(typeOf[Closeable].declaration(TermName("close")).asMethod)
-  test(typeOf[Product1[_]].declaration(TermName("productElement")).asMethod)
-  test(typeOf[Reader].declaration(TermName("read")).asMethod)
+  test(typeOf[Closeable].decl(TermName("close")).asMethod)
+  test(typeOf[Product1[_]].decl(TermName("productElement")).asMethod)
+  test(typeOf[Reader].decl(TermName("read")).asMethod)
 }
