@@ -3,7 +3,7 @@ reload: PingPong.scala
 askTypeCompletion at PingPong.scala(10,23)
 ================================================================================
 [response] askTypeCompletion at (10,23)
-retrieved 33 members
+retrieved 32 members
 [inaccessible] private[this] val ping: Ping
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit

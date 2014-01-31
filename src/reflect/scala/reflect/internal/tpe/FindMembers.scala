@@ -150,6 +150,31 @@ trait FindMembers {
     protected def memberTypeLow(sym: Symbol): Type = self.memberType(sym)
   }
 
+  private[reflect] final class FindMembers(tpe: Type, excludedFlags: Long, requiredFlags: Long)
+    extends FindMemberBase[Scope](tpe, nme.ANYname, excludedFlags, requiredFlags) {
+    private[this] var _membersScope: Scope   = null
+    private def membersScope: Scope = {
+      if (_membersScope eq null) _membersScope = newFindMemberScope
+      _membersScope
+    }
+
+    protected def shortCircuit(sym: Symbol): Boolean = false
+    protected def result: Scope = membersScope
+
+    protected def addMemberIfNew(sym: Symbol): Unit = {
+      val members = membersScope
+      var others = members.lookupEntry(sym.name)
+      var isNew = true
+      while (others ne null) {
+        val member = others.sym
+        if (!isNewMember(member, sym))
+          isNew = false
+        others = members lookupNextEntry others // next existing member with the same name.
+      }
+      if (isNew) members.enter(sym)
+    }
+  }
+
   private[reflect] final class FindMember(tpe: Type, name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean)
     extends FindMemberBase[Symbol](tpe, name, excludedFlags, requiredFlags) {
     // Gathering the results into a hand rolled ListBuffer
