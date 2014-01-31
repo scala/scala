@@ -121,6 +121,8 @@ trait Internals extends api.Internals {
     def annotatedType(annotations: List[Annotation], underlying: Type): AnnotatedType = self.AnnotatedType(annotations, underlying)
     def typeBounds(lo: Type, hi: Type): TypeBounds = self.TypeBounds(lo, hi)
     def boundedWildcardType(bounds: TypeBounds): BoundedWildcardType = self.BoundedWildcardType(bounds)
+
+    def subpatterns(tree: Tree): List[Tree] = tree.attachments.get[SubpatternsAttachment].get.patterns
   }
 
   lazy val treeBuild = new self.TreeGen {

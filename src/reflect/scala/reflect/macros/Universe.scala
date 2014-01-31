@@ -134,6 +134,11 @@ abstract class Universe extends scala.reflect.api.Universe {
      *  @group Macros
      */
     def capturedVariableType(vble: Symbol): Type
+
+    /** Retrieves the untyped list of subpatterns attached to selector dummy of an UnApply node.
+     *  Useful in writing quasiquoting macros that do pattern matching.
+     */
+    def subpatterns(tree: Tree): List[Tree]
   }
 
   /** @group Internal */
