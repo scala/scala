@@ -74,6 +74,10 @@ trait Internals extends api.Internals {
     def isErroneous(symbol: Symbol): Boolean = symbol.isErroneous
     def isSkolem(symbol: Symbol): Boolean = symbol.isSkolem
     def deSkolemize(symbol: Symbol): Symbol = symbol.deSkolemize
+    def initialize(symbol: Symbol): symbol.type = symbol.initialize
+    def fullyInitialize(symbol: Symbol): symbol.type = definitions.fullyInitializeSymbol(symbol).asInstanceOf[symbol.type]
+    def fullyInitialize(tp: Type): tp.type = definitions.fullyInitializeType(tp).asInstanceOf[tp.type]
+    def fullyInitialize(scope: Scope): scope.type = definitions.fullyInitializeScope(scope).asInstanceOf[scope.type]
     def attachments(symbol: Symbol): Attachments { type Pos = Position } = symbol.attachments
     def updateAttachment[T: ClassTag](symbol: Symbol, attachment: T): symbol.type = symbol.updateAttachment(attachment)
     def removeAttachment[T: ClassTag](symbol: Symbol): symbol.type = symbol.removeAttachment[T]

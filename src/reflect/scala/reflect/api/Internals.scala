@@ -233,6 +233,23 @@ trait Internals { self: Universe =>
      */
     def deSkolemize(symbol: Symbol): Symbol
 
+    /** Forces all outstanding completers associated with this symbol.
+     *  After this call returns, the symbol becomes immutable and thread-safe.
+     */
+    def initialize(symbol: Symbol): symbol.type
+
+    /** Calls [[initialize]] on the owner and all the value and type parameters of the symbol.
+     */
+    def fullyInitialize(symbol: Symbol): symbol.type
+
+    /** Calls [[initialize]] on all the value and type parameters of the type.
+     */
+    def fullyInitialize(tp: Type): tp.type
+
+    /** Calls [[initialize]] on all the symbols that the scope consists of.
+     */
+    def fullyInitialize(scope: Scope): scope.type
+
     /** A creator for `ThisType` types.
      */
     def thisType(sym: Symbol): Type
