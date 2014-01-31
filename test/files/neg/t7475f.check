@@ -1,0 +1,10 @@
+t7475f.scala:12: error: method c1 in class C cannot be accessed in C[T]
+  c1 // a member, but inaccessible.
+  ^
+t7475f.scala:13: error: not found: value c2
+  c2 // a member, but inaccessible.
+  ^
+t7475f.scala:26: error: value d2 is not a member of D[Any]
+    other.d2 // not a member
+          ^
+three errors found
