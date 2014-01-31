@@ -1617,6 +1617,7 @@ trait Namers extends MethodSynthesis {
         def symbolAllowsDeferred = (
              sym.isValueParameter
           || sym.isTypeParameterOrSkolem
+          || sym.isAbstractType
           || context.tree.isInstanceOf[ExistentialTypeTree]
         )
         // Does the symbol owner require no undefined members?
