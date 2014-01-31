@@ -3,19 +3,7 @@ reload: Completions.scala
 askScopeCompletion at Completions.scala(75,2)
 ================================================================================
 [response] askScopeCompletion at (75,2)
-retrieved 49 members
-[inaccessible] private class Cb2 extends AnyRef
-[inaccessible] private class Ct2 extends AnyRef
-[inaccessible] private def fb2: Int
-[inaccessible] private def ft2: Int
-[inaccessible] private object Ob2
-[inaccessible] private object Ot2
-[inaccessible] private type tb2 = Completion1.this.tb2
-[inaccessible] private type tt2 = Completion1.this.tt2
-[inaccessible] private[this] val vb2: Int
-[inaccessible] private[this] val vt2: Int
-[inaccessible] private[this] var rb2: Int
-[inaccessible] private[this] var rt2: Int
+retrieved 37 members
 abstract class Base1 extends AnyRef
 abstract trait Trait1 extends AnyRef
 class Cb1 extends AnyRef
@@ -58,19 +46,7 @@ type tt1 = Completion1.this.tt1
 askScopeCompletion at Completions.scala(104,2)
 ================================================================================
 [response] askScopeCompletion at (104,2)
-retrieved 49 members
-[inaccessible] private class Cb2 extends AnyRef
-[inaccessible] private class Ct2 extends AnyRef
-[inaccessible] private def fb2: Int
-[inaccessible] private def ft2: Int
-[inaccessible] private object Ob2
-[inaccessible] private object Ot2
-[inaccessible] private type tb2 = test.Completion2.tb2
-[inaccessible] private type tt2 = test.Completion2.tt2
-[inaccessible] private[this] val vb2: Int
-[inaccessible] private[this] val vt2: Int
-[inaccessible] private[this] var rb2: Int
-[inaccessible] private[this] var rt2: Int
+retrieved 37 members
 abstract class Base1 extends AnyRef
 abstract trait Trait1 extends AnyRef
 class Cb1 extends AnyRef

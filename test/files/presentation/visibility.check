@@ -83,8 +83,7 @@ protected[package lang] def finalize(): Unit
 askTypeCompletion at Completions.scala(22,11)
 ================================================================================
 [response] askTypeCompletion at (22,11)
-retrieved 37 members
-[inaccessible] private def secretPrivate(): Unit
+retrieved 36 members
 def +(other: String): String
 def ->[B](y: B): (accessibility.AccessibilityChecks, B)
 def ensuring(cond: Boolean): accessibility.AccessibilityChecks

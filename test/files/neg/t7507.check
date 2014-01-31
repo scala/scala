@@ -1,4 +1,4 @@
-t7507.scala:6: error: value bippy in trait Cake cannot be accessed in Cake
+t7507.scala:6: error: not found: value bippy
   locally(bippy)
           ^
 one error found

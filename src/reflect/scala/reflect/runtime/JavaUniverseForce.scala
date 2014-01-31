@@ -27,29 +27,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
 
     this.settings
     this.treeInfo
-    // inaccessible: this.scala$reflect$runtime$Gil$$gil
-    // inaccessible: this.uniqueLock
-    // inaccessible: this._skolemizationLevel
-    // inaccessible: this._undoLog
-    // inaccessible: this._intersectionWitness
-    // inaccessible: this._volatileRecursions
-    // inaccessible: this._pendingVolatiles
-    // inaccessible: this._subsametypeRecursions
-    // inaccessible: this._pendingSubTypes
-    // inaccessible: this._basetypeRecursions
-    // inaccessible: this._pendingBaseTypes
-    // inaccessible: this._lubResults
-    // inaccessible: this._glbResults
-    // inaccessible: this._indent
-    // inaccessible: this._toStringRecursions
-    // inaccessible: this._toStringSubjects
-    // inaccessible: this.atomicIds
-    // inaccessible: this.atomicExistentialIds
-    // inaccessible: this._recursionTable
-    // inaccessible: this.mirrors
     this.rootMirror
     this.treeBuild
-    // inaccessible: this.SimpleNameOrdering
     this.traceSymbols
     this.perRunCaches
     this.FreshNameExtractor
@@ -62,7 +41,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.SubpatternsAttachment
     this.noPrint
     this.typeDebug
-    // inaccessible: this.maxFree
     this.Range
     // inaccessible: this.posAssigner
     this.ConsoleWriter
@@ -118,7 +96,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.pendingSuperCall
     this.emptyValDef
     this.EmptyTreeTypeSubstituter
-    // inaccessible: this.duplicator
     this.UnmappableAnnotArg
     this.LiteralAnnotArg
     this.ArrayAnnotArg
@@ -129,7 +106,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.UnmappableAnnotation
     this.ErroneousAnnotation
     this.ThrownException
-    // inaccessible: this.compactify
     this.tpnme
     this.fulltpnme
     this.binarynme
@@ -149,7 +125,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ProperTypeKind
     this.TypeConKind
     this.inferKind
-    // inaccessible: this.substTypeMapCache
     this.UnmappableTree
     this.ErrorType
     this.WildcardType
@@ -186,9 +161,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.unwrapToStableClass
     this.unwrapWrapperTypes
     this.RecoverableCyclicReference
-    // inaccessible: this._undoLog
-    // inaccessible: this.numericLoBound
-    // inaccessible: this.numericHiBound
     this.TypeConstraint
     this.normalizeAliases
     this.dropSingletonType
@@ -200,18 +172,15 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.typeVarToOriginMap
     this.ErroneousCollector
     this.adaptToNewRunMap
-    // inaccessible: this.commonOwnerMapObj
     this.SubTypePair
     this.SymbolKind
     this.NoSymbol
     this.CyclicReference
-    // inaccessible: this.TypeHistory
     this.TermName
     this.TypeName
     this.Liftable
     this.Unliftable
     this.BooleanFlag
-    // inaccessible: this.CachedNames
     this.WeakTypeTag
     this.TypeTag
     this.Expr
@@ -428,14 +397,12 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.languageFeatureModule
     definitions.metaAnnotations
     definitions.AnnotationDefaultAttr
-    // inaccessible: definitions.erasurePhase
     definitions.isPhantomClass
     definitions.syntheticCoreClasses
     definitions.syntheticCoreMethods
     definitions.hijackedCoreClasses
     definitions.symbolsNotPresentInBytecode
     definitions.isPossibleSyntheticParent
-    // inaccessible: definitions.boxedValueClassesSet
     definitions.abbrvTag
     definitions.numericWeight
     definitions.boxedModule

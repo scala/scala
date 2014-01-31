@@ -244,18 +244,6 @@ trait Types
     }
   }
 
-  /** Same as a call to narrow unless existentials are visible
-   *  after widening the type. In that case, narrow from the widened
-   *  type instead of the proxy. This gives buried existentials a
-   *  chance to make peace with the other types. See SI-5330.
-   */
-  private[internal] def narrowForFindMember(tp: Type): Type = {
-    val w = tp.widen
-    // Only narrow on widened type when we have to -- narrow is expensive unless the target is a singleton type.
-    if ((tp ne w) && containsExistential(w)) w.narrow
-    else tp.narrow
-  }
-
   /** The base class for all types */
   abstract class Type extends TypeApiImpl with Annotatable[Type] {
     /** Types for which asSeenFrom always is the identity, no matter what

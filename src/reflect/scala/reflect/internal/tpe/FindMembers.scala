@@ -17,6 +17,10 @@ trait FindMembers {
     protected val initBaseClasses: List[Symbol] = tpe.baseClasses
 
     // The first base class, or the symbol of the ThisType
+    // e.g in:
+    // trait T { self: C => }
+    //
+    // The selector class of `T.this.type` is `T`, and *not* the first base class, `C`.
     private[this] var _selectorClass: Symbol = null
     private def selectorClass: Symbol = {
       if (_selectorClass eq null) {
@@ -68,6 +72,13 @@ trait FindMembers {
       // Has we seen a candidate deferred member?
       var deferredSeen = false
 
+      // All direct parents of refinement classes in the base class sequence
+      // from the current `walkBaseClasses`
+      var refinementParents: List[Symbol] = Nil
+
+      // Has the current `walkBaseClasses` encountered a non-refinement class?
+      var seenFirstNonRefinementClass = false
+
       while (!bcs.isEmpty) {
         val currentBaseClass = bcs.head
         val decls = currentBaseClass.info.decls
@@ -80,7 +91,7 @@ trait FindMembers {
           if (meetsRequirements) {
             val excl: Long = flags & excluded
             val isExcluded: Boolean = excl != 0L
-            if (!isExcluded && isPotentialMember(sym, flags, currentBaseClass)) {
+            if (!isExcluded && isPotentialMember(sym, flags, currentBaseClass, seenFirstNonRefinementClass, refinementParents)) {
               if (shortCircuit(sym)) return false
               else addMemberIfNew(sym)
             } else if (excl == DEFERRED) {
@@ -89,6 +100,17 @@ trait FindMembers {
           }
           entry = if (findAll) entry.next else decls lookupNextEntry entry
         }
+
+        // SLS 5.2 The private modifier can be used with any definition or declaration in a template.
+        //         They are not inherited by subclasses [...]
+        if (currentBaseClass.isRefinementClass)
+          // SLS 3.2.7 A compound type T1 with . . . with Tn {R } represents objects with members as given in
+          //           the component types T1, ..., Tn and the refinement {R }
+          //
+          //           => private members should be included from T1, ... Tn. (SI-7475)
+          refinementParents :::= currentBaseClass.parentSymbols
+        else if (currentBaseClass.isClass)
+          seenFirstNonRefinementClass = true // only inherit privates of refinement parents after this point
 
         bcs = bcs.tail
       }
@@ -105,28 +127,31 @@ trait FindMembers {
     //
     // Q. When does a potential member fail to be a an actual member?
     // A. if it is subsumed by an member in a subclass.
-    private def isPotentialMember(sym: Symbol, flags: Long, owner: Symbol): Boolean = {
+    private def isPotentialMember(sym: Symbol, flags: Long, owner: Symbol,
+                                  seenFirstNonRefinementClass: Boolean, refinementParents: List[Symbol]): Boolean = {
       // conservatively (performance wise) doing this with flags masks rather than `sym.isPrivate`
       // to avoid multiple calls to `Symbol#flags`.
+      val isPrivate      = (flags & PRIVATE) == PRIVATE
       val isPrivateLocal = (flags & PrivateLocal) == PrivateLocal
 
-      def admitPrivateLocal(sym: Symbol): Boolean =
-        (
-             (selectorClass == owner)
-          || !isPrivateLocal
-          || selectorClass.hasTransOwner(owner)     // private[this] only a member from within the class (incorrect!)
-       )
+      // TODO Is the special handling of `private[this]` vs `private` backed up by the spec?
+      def admitPrivate(sym: Symbol): Boolean =
+        (selectorClass == owner) || (
+             !isPrivateLocal // private[this] only a member from within the selector class. (Optimization only? Does the spec back this up?)
+          && (
+                  !seenFirstNonRefinementClass
+               || refinementParents.contains(owner)
+             )
+        )
 
-      // TODO first condition incorrect wrt self types! In neg/t7507, bippy should not be a member!
-      //      The condition, or a close variant thereof, will still be needed to prevent inheritance of constructors.
-      owner == initBaseClasses.head || admitPrivateLocal(sym) && sym.name != nme.CONSTRUCTOR
+      (!isPrivate || admitPrivate(sym)) && (sym.name != nme.CONSTRUCTOR || owner == initBaseClasses.head)
     }
 
     // True unless the already-found member of type `memberType` matches the candidate symbol `other`.
     protected def isNewMember(member: Symbol, other: Symbol): Boolean =
       (    (other ne member)
         && (    (member.owner eq other.owner)
-             || (other.flags & PRIVATE) != 0
+             || (member.flags & PRIVATE) != 0
              || !(memberTypeLow(member) matches memberTypeHi(other))
            )
       )
@@ -148,6 +173,18 @@ trait FindMembers {
     // member type of the LHS of `matches` call. This is an extension point to enable a cache in
     // FindMember.
     protected def memberTypeLow(sym: Symbol): Type = self.memberType(sym)
+
+    /** Same as a call to narrow unless existentials are visible
+     *  after widening the type. In that case, narrow from the widened
+     *  type instead of the proxy. This gives buried existentials a
+     *  chance to make peace with the other types. See SI-5330.
+     */
+    private def narrowForFindMember(tp: Type): Type = {
+      val w = tp.widen
+      // Only narrow on widened type when we have to -- narrow is expensive unless the target is a singleton type.
+      if ((tp ne w) && containsExistential(w)) w.narrow
+      else tp.narrow
+    }
   }
 
   private[reflect] final class FindMembers(tpe: Type, excludedFlags: Long, requiredFlags: Long)
