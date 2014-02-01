@@ -55,23 +55,26 @@ abstract class Pickler extends SubComponent {
           case _ =>
         }
       }
-      // If there are any erroneous types in the tree, then we will crash
-      // when we pickle it: so let's report an error instead.  We know next
-      // to nothing about what happened, but our supposition is a lot better
-      // than "bad type: <error>" in terms of explanatory power.
-      for (t <- unit.body) {
-        if (t.isErroneous) {
-          unit.error(t.pos, "erroneous or inaccessible type")
-          return
-        }
 
-        if (!t.isDef && t.hasSymbolField && t.symbol.isTermMacro) {
-          unit.error(t.pos, "macro has not been expanded")
-          return
-        }
+      try {
+        pickle(unit.body)
+      } catch {
+        case e: FatalError =>
+          for (t <- unit.body) {
+            // If there are any erroneous types in the tree, then we will crash
+            // when we pickle it: so let's report an error instead.  We know next
+            // to nothing about what happened, but our supposition is a lot better
+            // than "bad type: <error>" in terms of explanatory power.
+            //
+            // OPT: do this only as a recovery after fatal error. Checking in advance was expensive.
+            if (t.isErroneous) {
+              if (settings.debug) e.printStackTrace()
+              unit.error(t.pos, "erroneous or inaccessible type")
+              return
+            }
+          }
+          throw e
       }
-
-      pickle(unit.body)
     }
   }
 
