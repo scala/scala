@@ -49,10 +49,10 @@ abstract class TreeGen extends macros.TreeBuilder {
     mkMethodCall(Select(receiver, method), targs, args)
 
   def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree =
-    Apply(mkTypeApply(target, targs map TypeTree), args)
+    Apply(mkTypeApply(target, mapList(targs)(TypeTree)), args)
 
   def mkNullaryCall(method: Symbol, targs: List[Type]): Tree =
-    mkTypeApply(mkAttributedRef(method), targs map TypeTree)
+    mkTypeApply(mkAttributedRef(method), mapList(targs)(TypeTree))
 
   /** Builds a reference to value whose type is given stable prefix.
    *  The type must be suitable for this.  For example, it

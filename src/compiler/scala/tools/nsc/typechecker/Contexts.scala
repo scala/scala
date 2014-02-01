@@ -1303,7 +1303,7 @@ trait Contexts { self: Analyzer =>
       var renamed = false
       var selectors = tree.selectors
       def current = selectors.head
-      while (selectors.nonEmpty && result == NoSymbol) {
+      while ((selectors ne Nil) && result == NoSymbol) {
         if (current.rename == name.toTermName)
           result = qual.tpe.nonLocalMember( // new to address #2733: consider only non-local members for imports
             if (name.isTypeName) current.name.toTypeName else current.name)

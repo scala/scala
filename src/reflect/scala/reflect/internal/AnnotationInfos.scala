@@ -48,7 +48,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     /** Tests for, get, or remove an annotation */
     def hasAnnotation(cls: Symbol): Boolean =
       //OPT inlined from exists to save on #closures; was:  annotations exists (_ matches cls)
-      dropOtherAnnotations(annotations, cls).nonEmpty
+      dropOtherAnnotations(annotations, cls) ne Nil
 
     def getAnnotation(cls: Symbol): Option[AnnotationInfo] =
       //OPT inlined from exists to save on #closures; was:  annotations find (_ matches cls)
