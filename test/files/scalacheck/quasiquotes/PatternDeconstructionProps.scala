@@ -22,6 +22,16 @@ object PatternDeconstructionProps extends QuasiquoteProperties("pattern deconstr
     pat0 ≈ pat && subpat0 ≈ subpat
   }
 
+  property("extract apply many") = forAll { (pat: Tree, subpats: List[Tree]) =>
+    val pq"$pat0(..$subpats0)" = pq"$pat(..$subpats)"
+    pat0 ≈ pat && subpats0 ≈ subpats
+  }
+
+  property("extract apply last") = forAll { (pat: Tree, subpats: List[Tree], subpatlast: Tree) =>
+    val pq"$pat0(..$subpats0, $subpatlast0)" = pq"$pat(..$subpats, $subpatlast)"
+    pat0 ≈ pat && subpats0 ≈ subpats && subpatlast0 ≈ subpatlast
+  }
+
   property("extract casedef") = forAll { (pat: Tree, cond: Tree, body: Tree) =>
     val cq"$pat0 if $cond0 => $body0" = cq"$pat if $cond => $body"
     pat0 ≈ pat && cond0 ≈ cond && body0 ≈ body

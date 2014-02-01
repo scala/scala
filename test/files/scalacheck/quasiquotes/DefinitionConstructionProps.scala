@@ -229,13 +229,13 @@ trait MethodConstruction { self: QuasiquoteProperties =>
 
   property("splice type name into annotation") = test {
     val name = TypeName("annot")
-    assertSameAnnots(q"@$name def foo", List(annot(name)))
+    assertSameAnnots(q"@$name def foo", List(q"new $name"))
   }
 
   property("splice ident into annotation") = test {
     val name = TypeName("annot")
     val ident = Ident(name)
-    assertSameAnnots(q"@$ident def foo", List(annot(name)))
+    assertSameAnnots(q"@$ident def foo", List(q"new $name"))
   }
 
   property("splice idents into annotation") = test {
@@ -245,36 +245,36 @@ trait MethodConstruction { self: QuasiquoteProperties =>
   }
 
   property("splice constructor calls into annotation") = test {
-    val ctorcalls = List(annot("a1"), annot("a2"))
+    val ctorcalls = List(q"new a1", q"new a2")
     assertSameAnnots(q"@..$ctorcalls def foo", ctorcalls)
   }
 
   property("splice multiple annotations (1)") = test {
-    val annot1 = annot("a1")
-    val annot2 = annot("a2")
+    val annot1 = q"new a1"
+    val annot2 = q"new a2"
     val res = q"@$annot1 @$annot2 def foo"
     assertSameAnnots(res, List(annot1, annot2))
   }
 
   property("splice multiple annotations (2)") = test {
-    val annot1 = annot("a1")
-    val annots = List(annot("a2"), annot("a3"))
+    val annot1 = q"new a1"
+    val annots = List(q"new a2", q"new a3")
     val res = q"@$annot1 @..$annots def foo"
     assertSameAnnots(res, annot1 :: annots)
   }
 
   property("splice annotations with arguments (1)") = test {
-    val a = annot("a", List(q"x"))
+    val a = q"new a(x)"
     assertSameAnnots(q"@$a def foo", q"@a(x) def foo")
   }
 
   property("splice annotations with arguments (2)") = test {
-    val a = newTypeName("a")
+    val a = TypeName("a")
     assertSameAnnots(q"@$a(x) def foo", q"@a(x) def foo")
   }
 
   property("splice annotations with arguments (3") = test {
-    val a = Ident(newTypeName("a"))
+    val a = Ident(TypeName("a"))
     assertSameAnnots(q"@$a(x) def foo", q"@a(x) def foo")
   }
 
@@ -286,7 +286,7 @@ trait MethodConstruction { self: QuasiquoteProperties =>
   }
 
   property("can't splice annotations with arguments specificed twice") = test {
-    val a = annot("a", List(q"x"))
+    val a = q"new a(x)"
     assertThrows[IllegalArgumentException] {
       q"@$a(y) def foo"
     }
