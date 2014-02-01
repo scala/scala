@@ -10,6 +10,7 @@ import diagram._
 
 import scala.collection._
 import scala.util.matching.Regex
+import scala.reflect.macros.internal.macroImpl
 import symtab.Flags
 
 import io._
@@ -80,7 +81,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def inTemplate: TemplateImpl = inTpl
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
-    def annotations = sym.annotations.map(makeAnnotation)
+    def annotations = sym.annotations.filterNot(_.tpe =:= typeOf[macroImpl]).map(makeAnnotation)
     def inPackageObject: Boolean = sym.owner.isModuleClass && sym.owner.sourceModule.isPackageObject
     def isType = sym.name.isTypeName
   }
@@ -145,6 +146,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
        * any abstract terms, otherwise it would fail compilation. So we reset the DEFERRED flag. */
       if (!sym.isTrait && (sym hasFlag Flags.DEFERRED) && (!isImplicitlyInherited)) fgs += Paragraph(Text("abstract"))
       if (!sym.isModule && (sym hasFlag Flags.FINAL)) fgs += Paragraph(Text("final"))
+      if (sym.isMacro) fgs += Paragraph(Text("macro"))
       fgs.toList
     }
     def deprecation =
