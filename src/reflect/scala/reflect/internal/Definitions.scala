@@ -1056,6 +1056,14 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ClassfileAnnotationClass   = requiredClass[scala.annotation.ClassfileAnnotation]
     lazy val StaticAnnotationClass      = requiredClass[scala.annotation.StaticAnnotation]
 
+    lazy val AnnotationRetentionAttr               = requiredClass[java.lang.annotation.Retention]
+    lazy val AnnotationRetentionPolicyAttr         = requiredClass[java.lang.annotation.RetentionPolicy]
+    lazy val AnnotationRetentionPolicySourceValue  = AnnotationRetentionPolicyAttr.children.find(child => child.name == TermName("SOURCE")).get
+    lazy val AnnotationRetentionPolicyClassValue   = AnnotationRetentionPolicyAttr.children.find(child => child.name == TermName("CLASS")).get
+    lazy val AnnotationRetentionPolicyRuntimeValue = AnnotationRetentionPolicyAttr.children.find(child => child.name == TermName("RUNTIME")).get
+
+
+
     // Annotations
     lazy val BridgeClass                = requiredClass[scala.annotation.bridge]
     lazy val ElidableMethodClass        = requiredClass[scala.annotation.elidable]

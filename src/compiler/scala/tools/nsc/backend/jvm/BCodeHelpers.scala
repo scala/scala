@@ -702,8 +702,23 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
     private def shouldEmitAnnotation(annot: AnnotationInfo) =
       annot.symbol.initialize.isJavaDefined &&
       annot.matches(definitions.ClassfileAnnotationClass) &&
+      retentionPolicyOf(annot) != definitions.AnnotationRetentionPolicySourceValue &&
       annot.args.isEmpty &&
       !annot.matches(definitions.DeprecatedAttr)
+
+    private def isRuntimeVisible(annot: AnnotationInfo) = {
+      val runtimeValue = definitions.AnnotationRetentionPolicyRuntimeValue
+      annot.atp.typeSymbol.annotations
+        .find(annot => annot.matches(definitions.AnnotationRetentionAttr))
+        .exists(retAnnot => retAnnot.assocs.contains((TermName("value") -> LiteralAnnotArg(Constant(runtimeValue)))))
+    }
+
+    private def retentionPolicyOf(annot: AnnotationInfo): ClassfileAnnotArg = {
+      val runtimeValue = definitions.AnnotationRetentionPolicyRuntimeValue
+      annot.atp.typeSymbol.annotations
+        .find(annot => annot.matches(definitions.AnnotationRetentionAttr)).get
+        .assocs.find(assoc => assoc._1 == TermName("value")).get._2
+    }
 
     /*
      * In general,
@@ -724,7 +739,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = cw.visitAnnotation(descriptor(typ), true)
+        val av = cw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -736,7 +751,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = mw.visitAnnotation(descriptor(typ), true)
+        val av = mw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -748,7 +763,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
       for(annot <- annotations; if shouldEmitAnnotation(annot)) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val av = fw.visitAnnotation(descriptor(typ), true)
+        val av = fw.visitAnnotation(descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(av, assocs)
       }
     }
@@ -763,7 +778,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
            annot <- annots) {
         val AnnotationInfo(typ, args, assocs) = annot
         assert(args.isEmpty, args)
-        val pannVisitor: asm.AnnotationVisitor = jmethod.visitParameterAnnotation(idx, descriptor(typ), true)
+        val pannVisitor: asm.AnnotationVisitor = jmethod.visitParameterAnnotation(idx, descriptor(typ), isRuntimeVisible(annot))
         emitAssocs(pannVisitor, assocs)
       }
     }
@@ -864,7 +879,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
     // a plain class lacking companion module, for details see `isCandidateForForwarders`).
     // -----------------------------------------------------------------------------------------
 
-    val ExcludedForwarderFlags = genASM.ExcludedForwarderFlags
+    val ExcludedForwarderFlags = GenCommon.ExcludedForwarderFlags
 
     /* Adds a @remote annotation, actual use unknown.
      *

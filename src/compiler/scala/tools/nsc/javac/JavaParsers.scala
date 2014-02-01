@@ -737,7 +737,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def annotationParents = List(
       gen.scalaAnnotationDot(tpnme.Annotation),
       Select(javaLangDot(nme.annotation), tpnme.Annotation),
-      gen.scalaAnnotationDot(tpnme.ClassfileAnnotation)
+      gen.scalaAnnotationDot(tpnme.ClassfileAnnotation) // FIXME
     )
     def annotationDecl(mods: Modifiers): List[Tree] = {
       accept(AT)
