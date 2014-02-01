@@ -27,26 +27,20 @@ import generic.CanBuildFrom
  *  rapidly as 2^30 is approached.
  *
  */
-final class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
+class AnyRefMap[K <: AnyRef, V] private[collection] (initialBufferSize: Int, initBlank: Boolean)
 extends AbstractMap[K, V]
    with Map[K, V]
    with MapLike[K, V, AnyRefMap[K, V]]
 {
   import AnyRefMap._
-  def this() = this(AnyRefMap.exceptionDefault, 16, true)
+  def this() = this(16, true)
   
-  /** Creates a new `AnyRefMap` that returns default values according to a supplied key-value mapping. */
-  def this(defaultEntry: K => V) = this(defaultEntry, 16, true)
-
   /** Creates a new `AnyRefMap` with an initial buffer of specified size.
    * 
    *  An `AnyRefMap` can typically contain half as many elements as its buffer size
    *  before it requires resizing.
    */
-  def this(initialBufferSize: Int) = this(AnyRefMap.exceptionDefault, initialBufferSize, true)
-  
-  /** Creates a new `AnyRefMap` with specified default values and initial buffer size. */
-  def this(defaultEntry: K => V, initialBufferSize: Int) = this(defaultEntry, initialBufferSize, true)
+  def this(initialBufferSize: Int) = this(initialBufferSize, true)
   
   private[this] var mask = 0
   private[this] var _size = 0
@@ -66,14 +60,14 @@ extends AbstractMap[K, V]
     _values = new Array[AnyRef](mask+1)
   }
   
-  private[collection] def initializeTo(
+  protected[collection] def initializeTo(
     m: Int, sz: Int, vc: Int, hz: Array[Int], kz: Array[AnyRef], vz: Array[AnyRef]
   ) {
     mask = m; _size = sz; _vacant = vc; _hashes = hz; _keys = kz; _values = vz
   }
   
-  override def size: Int = _size
-  override def empty: AnyRefMap[K,V] = new AnyRefMap(defaultEntry)
+  override final def size: Int = _size
+  override def empty: AnyRefMap[K,V] = new AnyRefMap()
   
   private def imbalanced: Boolean = 
     (_size + _vacant) > 0.5*mask || _vacant > _size
@@ -115,19 +109,19 @@ extends AbstractMap[K, V]
     if (o >= 0) o | MissVacant else e | MissingBit
   }
   
-  override def contains(key: K): Boolean = seekEntry(hashOf(key), key) >= 0
+  override final def contains(key: K): Boolean = seekEntry(hashOf(key), key) >= 0
   
-  override def get(key: K): Option[V] = {
+  override final def get(key: K): Option[V] = {
     val i = seekEntry(hashOf(key), key)
     if (i < 0) None else Some(_values(i).asInstanceOf[V])
   }
   
-  override def getOrElse[V1 >: V](key: K, default: => V1): V1 = {
+  override final def getOrElse[V1 >: V](key: K, default: => V1): V1 = {
     val i = seekEntry(hashOf(key), key)
     if (i < 0) default else _values(i).asInstanceOf[V]
   }
   
-  override def getOrElseUpdate(key: K, defaultValue: => V): V = {
+  override final def getOrElseUpdate(key: K, defaultValue: => V): V = {
     val h = hashOf(key)
     var i = seekEntryOrOpen(h, key)
     if (i < 0) {
@@ -162,7 +156,7 @@ extends AbstractMap[K, V]
    *  may not exist, if the default null/zero is acceptable.  For key/value
    *  pairs that do exist, `apply` (i.e. `map(key)`) is equally fast.
    */
-  def getOrNull(key: K): V = {
+  final def getOrNull(key: K): V = {
     val i = seekEntry(hashOf(key), key)
     (if (i < 0) null else _values(i)).asInstanceOf[V]
   }
@@ -172,15 +166,15 @@ extends AbstractMap[K, V]
    *  will be returned instead; an exception will be thrown if no 
    *  `defaultEntry` was supplied.
    */
-  override def apply(key: K): V = {
+  override final def apply(key: K): V = {
     val i = seekEntry(hashOf(key), key)
-    if (i < 0) defaultEntry(key) else _values(i).asInstanceOf[V]
+    if (i < 0) default(key) else _values(i).asInstanceOf[V]
   }
   
-  /** Defers to defaultEntry to find a default value for the key.  Throws an
-   *  exception if no other default behavior was specified.
+  /** The default value returned when `apply` is used on a missing key.  Throws an exception
+   *  if not overridden to provide alternate behavior.
    */
-  override def default(key: K) = defaultEntry(key)
+  override def default(key: K): V = throw new NoSuchElementException(if (key == null) "(null)" else key.toString)
   
   private def repack(newMask: Int) {
     val oh = _hashes
@@ -214,14 +208,14 @@ extends AbstractMap[K, V]
    *  improved performance.  Repacking takes time proportional to the number
    *  of entries in the map.
    */
-  def repack() {
+  final def repack() {
     var m = mask
     if (_size + _vacant >= 0.5*mask && !(_vacant > 0.2*mask)) m = ((m << 1) + 1) & IndexMask
     while (m > 8 && 8*_size < m) m = m >>> 1
     repack(m)
   }
   
-  override def put(key: K, value: V): Option[V] = {
+  override final def put(key: K, value: V): Option[V] = {
     val h = hashOf(key)
     val k = key
     var i = seekEntryOrOpen(h, k)
@@ -248,7 +242,7 @@ extends AbstractMap[K, V]
    * 
    *  This is the fastest way to add an entry to an `AnyRefMap`.
    */
-  override def update(key: K, value: V): Unit = {
+  override final def update(key: K, value: V): Unit = {
     val h = hashOf(key)
     val k = key
     var i = seekEntryOrOpen(h, k)
@@ -269,11 +263,11 @@ extends AbstractMap[K, V]
   }
   
   /** Adds a new key/value pair to this map and returns the map. */
-  def +=(key: K, value: V): this.type = { update(key, value); this }
+  final def +=(key: K, value: V): this.type = { update(key, value); this }
 
-  def +=(kv: (K, V)): this.type = { update(kv._1, kv._2); this }
+  final def +=(kv: (K, V)): this.type = { update(kv._1, kv._2); this }
   
-  def -=(key: K): this.type = {
+  final def -=(key: K): this.type = {
     val i = seekEntry(hashOf(key), key)
     if (i >= 0) {
       _size -= 1
@@ -328,12 +322,15 @@ extends AbstractMap[K, V]
       else return
     }
   }
-    
+  
+  /** Creates a new copy of this map.  The new copy has standard default behavior
+   *  (throws an exception when accessing a missing key with `apply`).
+   */
   override def clone(): AnyRefMap[K, V] = {
     val hz = java.util.Arrays.copyOf(_hashes, _hashes.length)
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
     val vz = java.util.Arrays.copyOf(_values,  _values.length)
-    val arm = new AnyRefMap[K, V](defaultEntry, 1, false)
+    val arm = new AnyRefMap[K, V](1, false)
     arm.initializeTo(mask, _size, _vacant, hz, kz,  vz)
     arm
   }
@@ -361,7 +358,7 @@ extends AbstractMap[K, V]
    *  collection immediately.
    */
   def mapValuesNow[V1](f: V => V1): AnyRefMap[K, V1] = {
-    val arm = new AnyRefMap[K,V1](AnyRefMap.exceptionDefault,  1,  false)
+    val arm = new AnyRefMap[K,V1](1,  false)
     val hz = java.util.Arrays.copyOf(_hashes, _hashes.length)
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
     val vz = new Array[AnyRef](_values.length)
@@ -402,8 +399,6 @@ object AnyRefMap {
   private final val VacantBit  = 0x40000000
   private final val MissVacant = 0xC0000000
   
-  private val exceptionDefault = (k: Any) => throw new NoSuchElementException(if (k == null) "(null)" else k.toString)
-  
   implicit def canBuildFrom[K <: AnyRef, V, J <: AnyRef, U]: CanBuildFrom[AnyRefMap[K,V], (J, U), AnyRefMap[J,U]] =
     new CanBuildFrom[AnyRefMap[K,V], (J, U), AnyRefMap[J,U]] {
       def apply(from: AnyRefMap[K,V]): AnyRefMapBuilder[J, U] = apply()
@@ -433,7 +428,8 @@ object AnyRefMap {
   def empty[K <: AnyRef, V]: AnyRefMap[K, V] = new AnyRefMap[K, V]
   
   /** Creates a new empty `AnyRefMap` with the supplied default */
-  def withDefault[K <: AnyRef, V](default: K => V): AnyRefMap[K, V] = new AnyRefMap[K, V](default)
+  def withDefault[K <: AnyRef, V](defaultMap: K => V): AnyRefMap[K, V] =
+    new AnyRefMap[K, V]() { override def default(k: K): V = defaultMap(k) }
   
   /** Creates a new `AnyRefMap` from arrays of keys and values. 
    *  Equivalent to but more efficient than `AnyRefMap((keys zip values): _*)`.

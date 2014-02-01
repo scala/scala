@@ -67,14 +67,15 @@ class SetMapConsistencyTest {
   
   def boxMohm[A] = new BoxMutableMap[A, cm.OpenHashMap[A, Int]](new cm.OpenHashMap[A, Int], "mutable.OpenHashMap")
   
-  def boxMarm[A <: AnyRef] = new BoxMutableMap[A, cm.AnyRefMap[A, Int]](new cm.AnyRefMap[A, Int](_ => -1), "mutable.AnyRefMap") {
+  def boxMarm[A <: AnyRef] = new BoxMutableMap[A, cm.AnyRefMap[A, Int]](new cm.AnyRefMap[A, Int]{ override def default(k: A) = -1 }, "mutable.AnyRefMap") {
     private def arm: cm.AnyRefMap[A, Int] = m.asInstanceOf[cm.AnyRefMap[A, Int]]
+    private val orig = arm
     override def adders = 3
     override def subbers = 1
     override def getters: Int = 4
     override def get(n: Int, a: A) = n match {
       case 0 => m.get(a).getOrElse(-1)
-      case 1 => m(a)
+      case 1 => if ((m eq orig) || (m contains a)) m(a) else -1
       case 2 => m.getOrElse(a, -1)
       case 3 => val x = arm.getOrNull(a); if (x==0 && !(arm contains a)) -1 else x
       case _ => oor("get", n)
@@ -87,14 +88,15 @@ class SetMapConsistencyTest {
     }}
   }
   
-  def boxMjm = new BoxMutableMap[Long, cm.LongMap[Int]](new cm.LongMap[Int](_ => -1), "mutable.LongMap") {
+  def boxMjm = new BoxMutableMap[Long, cm.LongMap[Int]](new cm.LongMap[Int]{ override def default(k: Long) = -1 }, "mutable.LongMap") {
     private def lm: cm.LongMap[Int] = m.asInstanceOf[cm.LongMap[Int]]
+    private val orig = lm
     override def adders = 3
     override def subbers = 1
     override def getters: Int = 4
     override def get(n: Int, a: Long) = n match {
       case 0 => m.get(a).getOrElse(-1)
-      case 1 => m(a)
+      case 1 => if ((m eq orig) || (m contains a)) m(a) else -1
       case 2 => m.getOrElse(a, -1)
       case 3 => val x = lm.getOrNull(a); if (x==0 && !(lm contains a)) -1 else x
       case _ => oor("get", n)
@@ -392,7 +394,7 @@ class SetMapConsistencyTest {
     }
 
     assert {
-      val lm2 = new LongMap[String](_.toString)
+      val lm2 = new LongMap[String]{ override def default(k: Long) = k.toString }
       lm2 += (5L -> "fish", 0L -> "unicorn")
       val hm2 = (new HashMap[Long,String]) ++= lm2
       List(Long.MinValue, 0L, 1L, 5L).forall(i =>
@@ -439,7 +441,7 @@ class SetMapConsistencyTest {
     }
 
     assert {
-      val arm2 = new AnyRefMap[String, String](x => if (x==null) "null" else x)
+      val arm2 = new AnyRefMap[String, String]{ override def default(k: String) = if (k==null) "null" else k }
       arm2 += ("cod" -> "fish", "Rarity" -> "unicorn")
       val hm2 = (new HashMap[String,String]) ++= arm2
       List(null, "cod", "sparrow", "Rarity").forall(i =>
@@ -478,7 +480,7 @@ class SetMapConsistencyTest {
   }
   
   @Test
-  def si8213() {
+  def testSI8213() {
     val am = new scala.collection.mutable.AnyRefMap[String, Int]
     for (i <- 0 until 1024) am += i.toString -> i
     am.getOrElseUpdate("1024", { am.clear; -1 })
@@ -487,5 +489,13 @@ class SetMapConsistencyTest {
     for (i <- 0 until 1024) lm += i.toLong -> i
     lm.getOrElseUpdate(1024, { lm.clear; -1 })
     assert(lm == scala.collection.mutable.LongMap(1024L -> -1))
+  }
+  
+  @Test
+  def testSI8214() {
+    val am = new scala.collection.mutable.AnyRefMap[String, Int] { override def default(key: String) = 42 }
+    assert(am("fish") == 42) 
+    val lm = new scala.collection.mutable.LongMap[String] { override def default(key: Long) = "garden" }
+    assert(lm(42) == "garden")
   }
 }
