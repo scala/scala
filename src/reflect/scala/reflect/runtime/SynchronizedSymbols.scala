@@ -118,8 +118,10 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
     override def markAllCompleted(): this.type = { _initializationMask = 0L; _initialized = true; this }
 
     def gilSynchronizedIfNotThreadsafe[T](body: => T): T = {
-      if (isCompilerUniverse || isThreadsafe(purpose = AllOps)) body
-      else gilSynchronized { body }
+      // TODO: debug and fix the race that doesn't allow us uncomment this optimization
+      // if (isCompilerUniverse || isThreadsafe(purpose = AllOps)) body
+      // else gilSynchronized { body }
+      gilSynchronized { body }
     }
 
     override def validTo = gilSynchronizedIfNotThreadsafe { super.validTo }
