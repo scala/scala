@@ -37,6 +37,7 @@ abstract class MutableSettings extends AbsSettings {
   def XfullLubs: BooleanSetting
   def XnoPatmatAnalysis: BooleanSetting
   def Xprintpos: BooleanSetting
+  def strictInference: BooleanSetting
   def Yposdebug: BooleanSetting
   def Yrangepos: BooleanSetting
   def Yshowsymowners: BooleanSetting

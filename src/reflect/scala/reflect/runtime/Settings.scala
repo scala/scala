@@ -33,6 +33,7 @@ private[reflect] class Settings extends MutableSettings {
   val Xexperimental     = new BooleanSetting(false)
   val XfullLubs         = new BooleanSetting(false)
   val XnoPatmatAnalysis = new BooleanSetting(false)
+  val strictInference   = new BooleanSetting(false)
   val Xprintpos         = new BooleanSetting(false)
   val Yposdebug         = new BooleanSetting(false)
   val Yrangepos         = new BooleanSetting(false)
