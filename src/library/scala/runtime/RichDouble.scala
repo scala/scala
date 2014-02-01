@@ -43,6 +43,7 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
   override def min(that: Double): Double = math.min(self, that)
   override def signum: Int               = math.signum(self).toInt  // !!! NaN
 
+  @deprecated("This method returns a different numeric type, which can cause unexpected results. This method will be reintroduced with sane semantics in a future version. If the original behaviour is really intended here, use math.roundToLong instead.", "2.11.0")
   def round: Long   = math.round(self)
   def ceil: Double  = math.ceil(self)
   def floor: Double = math.floor(self)
