@@ -265,7 +265,8 @@ object TooLargeRange extends Properties("Too Large Range") {
   property("Too large range throws exception") = forAll(genTooLargeStart) { start =>
     try   {
       val r = Range.inclusive(start, Int.MaxValue, 1)
-      println("how here? r = " + r.toString)
+      val l = r.length
+      println("how here? length = " + l + ", r = " + r.toString)
       false
     }
     catch { case _: IllegalArgumentException => true }
