@@ -522,6 +522,8 @@ abstract class Erasure extends AddInterfaces
   class Eraser(_context: Context) extends Typer(_context) with TypeAdapter {
     val typer = this.asInstanceOf[analyzer.Typer]
 
+    override protected def stabilize(tree: Tree, pre: Type, mode: Mode, pt: Type): Tree = tree
+
     /**  Replace member references as follows:
      *
      *   - `x == y` for == in class Any becomes `x equals y` with equals in class Object.

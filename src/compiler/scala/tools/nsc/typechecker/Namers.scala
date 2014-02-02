@@ -1069,8 +1069,9 @@ trait Namers extends MethodSynthesis {
       }
 
       def overriddenSymbol(resTp: Type) = {
+        lazy val schema: Type = methodTypeSchema(resTp) // OPT create once. Must be lazy to avoid cycles in neg/t5093.scala
         intersectionType(methOwner.info.parents).nonPrivateMember(meth.name).filter { sym =>
-          sym != NoSymbol && (site.memberType(sym) matches methodTypeSchema(resTp))
+          sym != NoSymbol && (site.memberType(sym) matches schema)
         }
       }
       // TODO: see whether this or something similar would work instead:
