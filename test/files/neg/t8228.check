@@ -1,0 +1,4 @@
+t8228.scala:4: error: recursive value foo needs type
+    val foo = foo(null)
+                 ^
+one error found

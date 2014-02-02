@@ -595,6 +595,7 @@ trait Infer extends Checkable {
     }
 
     private[typechecker] def followApply(tp: Type): Type = tp match {
+      case _ if tp.isError => tp // SI-8228, `ErrorType nonPrivateMember nme.apply` returns an member with an erroneous type!
       case NullaryMethodType(restp) =>
         val restp1 = followApply(restp)
         if (restp1 eq restp) tp else restp1
