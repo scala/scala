@@ -27,9 +27,7 @@ abstract class Flatten extends InfoTransform {
   private def removeSymbolInCurrentScope(sym: Symbol): Unit = exitingFlatten {
     val scope = sym.owner.info.decls
     val old   = (scope lookupUnshadowedEntries sym.name).toList
-    old foreach {entry =>
-      scope unlink entry
-    }
+    old foreach (scope unlink _)
     def old_s = old map (_.sym) mkString ", "
     if (old.nonEmpty) debuglog(s"In scope of ${sym.owner}, unlinked $old_s")
   }
@@ -77,9 +75,9 @@ abstract class Flatten extends InfoTransform {
 
             for (sym <- decls) {
               if (sym.isTerm && !sym.isStaticModule) {
-                  decls1 enter sym
-                  if (sym.isModule)
-                    sym.moduleClass setFlag LIFTED
+                decls1 enter sym
+                if (sym.isModule)
+                  sym.moduleClass setFlag LIFTED
               } else if (sym.isClass)
                 liftSymbol(sym)
             }
