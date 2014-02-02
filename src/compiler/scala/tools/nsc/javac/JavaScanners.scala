@@ -155,7 +155,6 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       case AMP        => "`&'"
       case AMPAMP     => "`&&'"
       case AMPEQ      => "`&='"
-      case ASSIGN     => "`='"
       case ASTERISK   => "`*'"
       case ASTERISKEQ => "`*='"
       case AT         => "`@'"
@@ -169,6 +168,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       case DOT        => "`.'"
       case DOTDOTDOT  => "`...'"
       case EQEQ       => "`=='"
+      case EQUALS     => "`='"
       case GT         => "`>'"
       case GTEQ       => "`>='"
       case GTGT       => "`>>'"
@@ -337,7 +337,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
                 return
 
               case '=' =>
-                token = ASSIGN
+                token = EQUALS
                 in.next()
                 if (in.ch == '=') {
                   token = EQEQ
