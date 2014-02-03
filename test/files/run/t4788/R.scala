@@ -1,0 +1,2 @@
+@RAnnotation
+class R
