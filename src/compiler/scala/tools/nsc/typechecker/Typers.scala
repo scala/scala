@@ -191,7 +191,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
          !from.isError
       && !to.isError
       && context.implicitsEnabled
-      && (inferView(EmptyTree, from, to, reportAmbiguous = false) != EmptyTree)
+      && silent(_.inferView(EmptyTree, from, to, reportAmbiguous = false)).fold(false)(_ != EmptyTree) // SI-8219 silent mode avoids leaking ambiguous errors
     )
 
     def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean): Tree =
