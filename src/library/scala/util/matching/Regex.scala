@@ -67,7 +67,21 @@ import java.util.regex.{ Pattern, Matcher }
  *  Regex, such as `findFirstIn` or `findAllIn`, or using it as an extractor in a
  *  pattern match.
  *
- *  Note, however, that when Regex is used as an extractor in a pattern match, it
+ *  Note that, when calling `findAllIn`, the resulting [[scala.util.matching.Regex.MatchIterator]]
+ *  needs to be initialized (by calling `hasNext` or `next()`, or causing these to be
+ *  called) before information about a match can be retrieved:
+ *
+ *  {{{
+ *  val msg = "I love Scala"
+ *
+ *  // val start = " ".r.findAllIn(msg).start // throws an IllegalStateException
+ *
+ *  val matches = " ".r.findAllIn(msg)
+ *  matches.hasNext // initializes the matcher
+ *  val start = matches.start
+ *  }}}
+ *
+ *  When Regex is used as an extractor in a pattern match, note that it
  *  only succeeds if the whole text can be matched. For this reason, one usually
  *  calls a method to find the matching substrings, and then use it as an extractor
  *  to break match into subgroups.
@@ -266,6 +280,10 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  that returns objects of type [[scala.util.matching.Regex.Match]]
    *  that can be queried for data such as the text that precedes the
    *  match, subgroups, etc.
+   *
+   *  Attempting to retrieve information about a match before initializing
+   *  the iterator can result in [[java.lang.IllegalStateException]]s. See
+   *  [[scala.util.matching.Regex.MatchIterator]] for details.
    *
    *  @param source The text to match against.
    *  @return       A [[scala.util.matching.Regex.MatchIterator]] of all matches.
@@ -476,15 +494,7 @@ trait UnanchoredRegex extends Regex {
 }
 
 /** This object defines inner classes that describe
- *  regex matches and helper objects. The class hierarchy
- *  is as follows:
- *
- *  {{{
- *            MatchData
- *            /      \
- *   MatchIterator  Match
- *  }}}
- *
+ *  regex matches and helper objects.
  */
 object Regex {
 
@@ -634,7 +644,14 @@ object Regex {
     def unapplySeq(m: Match): Option[Seq[String]] = if (m.groupCount > 0) Some(1 to m.groupCount map m.group) else None
   }
 
-  /** A class to step through a sequence of regex matches
+  /** A class to step through a sequence of regex matches.
+   *
+   *  All methods inherited from [[scala.util.matching.Regex.MatchData]] will throw
+   *  an [[java.lang.IllegalStateException]] until the matcher is initialized by
+   *  calling `hasNext` or `next()` or causing these methods to be called, such as
+   *  by invoking `toString` or iterating through the iterator's elements.
+   *
+   *  @see [[java.util.regex.Matcher]]
    */
   class MatchIterator(val source: CharSequence, val regex: Regex, val groupNames: Seq[String])
   extends AbstractIterator[String] with Iterator[String] with MatchData { self =>
