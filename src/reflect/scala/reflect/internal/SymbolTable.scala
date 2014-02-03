@@ -56,7 +56,7 @@ abstract class SymbolTable extends macros.Universe
   def abort(msg: String): Nothing    = throw new FatalError(supplementErrorMessage(msg))
 
   protected def elapsedMessage(msg: String, start: Long) =
-    msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start) + "ms"
+    msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)) + "ms"
 
   def informProgress(msg: String)          = if (settings.verbose) inform("[" + msg + "]")
   def informTime(msg: String, start: Long) = informProgress(elapsedMessage(msg, start))

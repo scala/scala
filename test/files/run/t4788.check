@@ -1,0 +1,4 @@
+warning: there were 1 deprecation warning(s); re-run with -deprecation for details
+None
+Some(@Ljavax/jws/soap/InitParam;(name="", value="") // invisible)
+Some(@Ljavax/xml/ws/Action;())

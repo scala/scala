@@ -206,7 +206,7 @@ abstract class SymbolLoaders {
 
     override def complete(root: Symbol) {
       try {
-        val start = currentTime
+        val start = System.nanoTime()
         val currentphase = phase
         doComplete(root)
         phase = currentphase
