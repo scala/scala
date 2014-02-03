@@ -122,6 +122,11 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     "Hide the members inherited by the given comma separated, fully qualified implicit conversions. Add dot (.) to include default conversions."
   )
 
+  val docAuthor = BooleanSetting (
+    "-author",
+    "Include authors."
+  )
+
   val docDiagrams = BooleanSetting (
     "-diagrams",
     "Create inheritance diagrams for classes, traits and packages."
@@ -207,7 +212,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent, useStupidTypes,
-    docDiagrams, docDiagramsDebug, docDiagramsDotPath,
+    docAuthor, docDiagrams, docDiagramsDebug, docDiagramsDotPath,
     docDiagramsDotTimeout, docDiagramsDotRestart,
     docImplicits, docImplicitsDebug, docImplicitsShowAll, docImplicitsHide,
     docDiagramsMaxNormalClasses, docDiagramsMaxImplicitClasses,
