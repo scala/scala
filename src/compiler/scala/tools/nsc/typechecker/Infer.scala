@@ -174,7 +174,8 @@ trait Infer extends Checkable {
   private lazy val stdErrorValue = stdErrorClass.newErrorValue(nme.ERROR)
 
   /** The context-dependent inferencer part */
-  class Inferencer(context: Context) extends InferencerContextErrors with InferCheckable {
+  abstract class Inferencer extends InferencerContextErrors with InferCheckable {
+    def context: Context
     import InferErrorGen._
 
     /* -- Error Messages --------------------------------------------------- */
