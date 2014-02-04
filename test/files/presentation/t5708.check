@@ -3,7 +3,7 @@ reload: Completions.scala
 askTypeCompletion at Completions.scala(17,9)
 ================================================================================
 [response] askTypeCompletion at (17,9)
-retrieved 39 members
+retrieved 37 members
 [inaccessible] private def privateM: String
 [inaccessible] private[this] val privateV: String
 [inaccessible] private[this] val protectedV: String
@@ -22,10 +22,8 @@ def hashCode(): Int
 def toString(): String
 def →[B](y: B): (test.Compat.type, B)
 final def !=(x$1: Any): Boolean
-final def !=(x$1: AnyRef): Boolean
 final def ##(): Int
 final def ==(x$1: Any): Boolean
-final def ==(x$1: AnyRef): Boolean
 final def asInstanceOf[T0]: T0
 final def eq(x$1: AnyRef): Boolean
 final def isInstanceOf[T0]: Boolean

@@ -3,4 +3,6 @@ object Test {
   // A real class couldn't define such an overload, why do we allow AnyRef
   // to do so?
   "".==[Int]
+  ("": AnyRef).==[Int]
+  ("": Object).==[Int]
 }
