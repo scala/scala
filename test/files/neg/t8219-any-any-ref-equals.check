@@ -1,0 +1,10 @@
+t8219-any-any-ref-equals.scala:5: error: method ==: (x$1: Any)Boolean does not take type parameters.
+  "".==[Int]
+       ^
+t8219-any-any-ref-equals.scala:6: error: method ==: (x$1: Any)Boolean does not take type parameters.
+  ("": AnyRef).==[Int]
+                 ^
+t8219-any-any-ref-equals.scala:7: error: method ==: (x$1: Any)Boolean does not take type parameters.
+  ("": Object).==[Int]
+                 ^
+three errors found

@@ -3,7 +3,7 @@ reload: CrashOnLoad.scala
 askTypeCompletion at CrashOnLoad.scala(6,12)
 ================================================================================
 [response] askTypeCompletion at (6,12)
-retrieved 120 members
+retrieved 118 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 [inaccessible] protected[this] def reversed: List[B]
@@ -107,10 +107,8 @@ def zipWithIndex: Iterator[(B, Int)]
 def zip[B](that: Iterator[B]): Iterator[(B, B)]
 def →[B](y: B): (java.util.Iterator[B], B)
 final def !=(x$1: Any): Boolean
-final def !=(x$1: AnyRef): Boolean
 final def ##(): Int
 final def ==(x$1: Any): Boolean
-final def ==(x$1: AnyRef): Boolean
 final def asInstanceOf[T0]: T0
 final def eq(x$1: AnyRef): Boolean
 final def isInstanceOf[T0]: Boolean

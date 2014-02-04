@@ -76,8 +76,8 @@ trait AnyRef extends Any {
    *  @param    arg0  the object to compare against this object for equality.
    *  @return         `true` if the receiver object is equivalent to the argument; `false` otherwise.
    */
-  final def ==(that: AnyRef): Boolean =
-    if (this eq null) that eq null
+  final def ==(that: Any): Boolean =
+    if (this eq null) that.asInstanceOf[AnyRef] eq null
     else this equals that
 
   /** Create a copy of the receiver object.

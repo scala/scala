@@ -8,11 +8,11 @@ class Broken {
   def in(a: Any) = ()
   in {
     import scala.None // any import will do..
-    "" == ""
+    "" == "" // no longer a problem, see pos/t8129.scala
   }
 
-  // We fall into the errant code path above because `Any#==` and `AnyRef#==`
-  // are (currently) overloaded.
+  // We used to fall into the errant code path above when `Any#==` and `AnyRef#==`
+  // were overloaded.
   //
   // Real classes couldn't get away with that overloading; it would result in
   // a compiler error because the variants would collapse into an overriding
@@ -32,5 +32,18 @@ class Broken {
   in {
     import scala.None // any import will do..
     t.a("")
+  }
+
+  // Or, we can get here with ambiguous implicits from the formal parameter
+  // type of the less specific overload to that of the more specific.
+  object T {
+    def foo(a: Any) = true
+    def foo(a: String) = true
+  }
+  in {
+    import scala.None
+    implicit def any2str1(a: Any) = ""
+    implicit def any2str2(a: Any) = ""
+    T.foo("")
   }
 }
