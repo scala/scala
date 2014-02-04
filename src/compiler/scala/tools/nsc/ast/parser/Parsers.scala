@@ -1767,7 +1767,7 @@ self =>
         if (in.token != IF) Nil
         else {
           if (hasEq) deprecationWarning(in.offset,
-            "nested guard (missing semicolon before if) in for comprehension must follow a generator, not a value definition")
+            "guard (if expression) in for comprehension should follow a semicolon when it comes after a value definition")
           makeFilter(in.offset, guard()) :: loop()
         }
 
