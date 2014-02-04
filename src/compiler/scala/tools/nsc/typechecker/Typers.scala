@@ -109,7 +109,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     private val transformed: mutable.Map[Tree, Tree] = unit.transformed
 
-    val infer = new Inferencer(context0) {
+    val infer = new Inferencer {
+      def context = Typer.this.context
       // See SI-3281 re undoLog
       override def isCoercible(tp: Type, pt: Type) = undoLog undo viewExists(tp, pt)
     }
