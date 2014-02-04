@@ -1738,7 +1738,7 @@ self =>
 
     def enumerator(isFirst: Boolean, allowNestedIf: Boolean = true): List[Tree] =
       if (in.token == IF && !isFirst) makeFilter(in.offset, guard()) :: Nil
-      else generator(!isFirst, allowNestedIf)
+      else generator(eqOK = !isFirst, allowNestedIf)
 
     /** {{{
      *  Generator ::= Pattern1 (`<-' | `=') Expr [Guard]
@@ -1765,7 +1765,11 @@ self =>
 
       def loop(): List[Tree] =
         if (in.token != IF) Nil
-        else makeFilter(in.offset, guard()) :: loop()
+        else {
+          if (hasEq) deprecationWarning(in.offset,
+            "nested guard (missing semicolon before if) in for comprehension must follow a generator, not a value definition")
+          makeFilter(in.offset, guard()) :: loop()
+        }
 
       val tail =
         if (allowNestedIf) loop()
