@@ -647,9 +647,10 @@ object Regex {
   /** A class to step through a sequence of regex matches.
    *
    *  All methods inherited from [[scala.util.matching.Regex.MatchData]] will throw
-   *  an [[java.lang.IllegalStateException]] until the matcher is initialized by
-   *  calling `hasNext` or `next()` or causing these methods to be called, such as
-   *  by invoking `toString` or iterating through the iterator's elements.
+   *  a [[java.lang.IllegalStateException]] until the matcher is initialized. The
+   *  matcher can be initialized by calling `hasNext` or `next()` or causing these
+   *  methods to be called, such as by invoking `toString` or iterating through
+   *  the iterator's elements.
    *
    *  @see [[java.util.regex.Matcher]]
    */
