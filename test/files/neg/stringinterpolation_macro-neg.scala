@@ -70,4 +70,7 @@ object Test extends App {
   f"$t%tG"
   f"$t%t"
   f"$s%10.5"
+
+  // 8) other brain failures
+  f"${d}random-leading-junk%d"
 }

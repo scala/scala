@@ -20,8 +20,8 @@ trait FastTrack {
 
   private implicit def context2taggers(c0: MacroContext): Taggers { val c: c0.type } =
     new { val c: c0.type = c0 } with Taggers
-  private implicit def context2macroimplementations(c0: MacroContext): MacroImplementations { val c: c0.type } =
-    new { val c: c0.type = c0 } with MacroImplementations
+  private implicit def context2macroimplementations(c0: MacroContext): FormatInterpolator { val c: c0.type } =
+    new { val c: c0.type = c0 } with FormatInterpolator
   private implicit def context2quasiquote(c0: MacroContext): QuasiquoteImpls { val c: c0.type } =
     new { val c: c0.type = c0 } with QuasiquoteImpls
   private def makeBlackbox(sym: Symbol)(pf: PartialFunction[Applied, MacroContext => Tree]) =
@@ -48,7 +48,7 @@ trait FastTrack {
       makeBlackbox(     materializeWeakTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = false) },
       makeBlackbox(         materializeTypeTag) { case Applied(_, ttag :: Nil, (u :: _) :: _)     => _.materializeTypeTag(u, EmptyTree, ttag.tpe, concrete = true) },
       makeBlackbox(           ApiUniverseReify) { case Applied(_, ttag :: Nil, (expr :: _) :: _)  => c => c.materializeExpr(c.prefix.tree, EmptyTree, expr) },
-      makeBlackbox(            StringContext_f) { case Applied(Select(Apply(_, ps), _), _, args)  => c => c.macro_StringInterpolation_f(ps, args.flatten, c.expandee.pos) },
+      makeBlackbox(            StringContext_f) { case _                                          => _.interpolate },
       makeBlackbox(ReflectRuntimeCurrentMirror) { case _                                          => c => currentMirror(c).tree },
       makeWhitebox(  QuasiquoteClass_api_apply) { case _                                          => _.expandQuasiquote },
       makeWhitebox(QuasiquoteClass_api_unapply) { case _                                          => _.expandQuasiquote }

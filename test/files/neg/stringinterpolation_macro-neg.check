@@ -165,5 +165,8 @@ stringinterpolation_macro-neg.scala:71: error: Date/time conversion must have tw
 stringinterpolation_macro-neg.scala:72: error: Missing conversion operator in '%10.5'; use %% for literal %, %n for newline
   f"$s%10.5"
       ^
+stringinterpolation_macro-neg.scala:75: error: conversions must follow a splice; use %% for literal %, %n for newline
+  f"${d}random-leading-junk%d"
+                           ^
 three warnings found
-44 errors found
+45 errors found
