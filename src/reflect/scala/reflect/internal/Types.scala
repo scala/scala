@@ -1988,12 +1988,39 @@ trait Types
       // too little information is known to determine its kind, and
       // it later turns out not to have kind *. See SI-4070.  Only
       // logging it for now.
-      if (sym.typeParams.size != args.size)
+      val tparams = sym.typeParams
+      if (tparams.size != args.size)
         devWarning(s"$this.transform($tp), but tparams.isEmpty and args=$args")
-
-      val GenPolyType(tparams, result) = asSeenFromOwner(tp)
-      assert((tparams eq Nil) || tparams == sym.typeParams, (tparams, sym.typeParams))
-      result.instantiateTypeParams(sym.typeParams, args)
+      def asSeenFromInstantiated(tp: Type) =
+        asSeenFromOwner(tp).instantiateTypeParams(tparams, args)
+      // If we're called with a poly type, and we were to run the `asSeenFrom`, over the entire
+      // type, we can end up with new symbols for the type parameters (clones from TypeMap).
+      // The subsequent substitution of type arguments would fail. This problem showed up during
+      // the fix for SI-8046, however the solution taken there wasn't quite right, and led to
+      // SI-8170.
+      //
+      // Now, we detect the PolyType before both the ASF *and* the substitution, and just operate
+      // on the result type.
+      //
+      // TODO: Revisit this and explore the questions raised:
+      //
+      //  AM: I like this better than the old code, but is there any way the tparams would need the ASF treatment as well?
+      //  JZ: I think its largely irrelevant, as they are no longer referred to in the result type.
+      //      In fact, you can get away with returning a type of kind * here and the sky doesn't fall:
+      //        `case PolyType(`tparams`, result) => asSeenFromInstantiated(result)`
+      //      But I thought it was better to retain the kind.
+      //  AM: I've been experimenting with apply-type-args-then-ASF, but running into cycles.
+      //      In general, it seems iffy the tparams can never occur in the result
+      //      then we might as well represent the type as a no-arg typeref.
+      //  AM: I've also been trying to track down uses of transform (pretty generic name for something that
+      //      does not seem that widely applicable).
+      //      It's kind of a helper for computing baseType (since it tries to propagate our type args to some
+      //      other type, which has to be related to this type for that to make sense).
+      //
+      tp match {
+        case PolyType(`tparams`, result) => PolyType(tparams, asSeenFromInstantiated(result))
+        case _                           => asSeenFromInstantiated(tp)
+      }
     }
 
     // note: does not go through typeRef. There's no need to because
