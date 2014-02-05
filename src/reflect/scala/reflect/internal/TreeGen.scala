@@ -281,7 +281,7 @@ abstract class TreeGen extends macros.TreeBuilder {
     case tree :: Nil if flattenUnary =>
       tree
     case _ =>
-      Apply(scalaDot(TupleClass(elems.length).companionModule.name), elems)
+      Apply(scalaDot(TupleClass(elems.length).name.toTermName), elems)
   }
 
   def mkTupleType(elems: List[Tree], flattenUnary: Boolean = true): Tree = elems match {
