@@ -435,16 +435,13 @@ trait BuildUtils { self: SymbolTable =>
     }
 
     object SyntacticFunction extends SyntacticFunctionExtractor {
-      def apply(params: List[Tree], body: Tree): Tree = {
+      def apply(params: List[Tree], body: Tree): Function = {
         val params0 :: Nil = mkParam(params :: Nil, PARAM)
         require(params0.forall { _.rhs.isEmpty }, "anonymous functions don't support parameters with default values")
         Function(params0, body)
       }
 
-      def unapply(tree: Tree): Option[(List[ValDef], Tree)] = tree match {
-        case Function(params, body) => Some((params, body))
-        case _ => None
-      }
+      def unapply(tree: Function): Option[(List[ValDef], Tree)] = Function.unapply(tree)
     }
 
     object SyntacticNew extends SyntacticNewExtractor {

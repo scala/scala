@@ -198,9 +198,9 @@ private[reflect] trait BuildUtils { self: Universe =>
     val SyntacticFunction: SyntacticFunctionExtractor
 
     trait SyntacticFunctionExtractor {
-      def apply(params: List[Tree], body: Tree): Tree
+      def apply(params: List[Tree], body: Tree): Function
 
-      def unapply(tree: Tree): Option[(List[ValDef], Tree)]
+      def unapply(tree: Function): Option[(List[ValDef], Tree)]
     }
 
     val SyntacticDefDef: SyntacticDefDefExtractor
