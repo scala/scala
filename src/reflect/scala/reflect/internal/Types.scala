@@ -2001,6 +2001,22 @@ trait Types
       //
       // Now, we detect the PolyType before both the ASF *and* the substitution, and just operate
       // on the result type.
+      //
+      // TODO: Revisit this and explore the questions raised:
+      //
+      //  AM: I like this better than the old code, but is there any way the tparams would need the ASF treatment as well?
+      //  JZ: I think its largely irrelevant, as they are no longer referred to in the result type.
+      //      In fact, you can get away with returning a type of kind * here and the sky doesn't fall:
+      //        `case PolyType(`tparams`, result) => asSeenFromInstantiated(result)`
+      //      But I thought it was better to retain the kind.
+      //  AM: I've been experimenting with apply-type-args-then-ASF, but running into cycles.
+      //      In general, it seems iffy the tparams can never occur in the result
+      //      then we might as well represent the type as a no-arg typeref.
+      //  AM: I've also been trying to track down uses of transform (pretty generic name for something that
+      //      does not seem that widely applicable).
+      //      It's kind of a helper for computing baseType (since it tries to propagate our type args to some
+      //      other type, which has to be related to this type for that to make sense).
+      //
       tp match {
         case PolyType(`tparams`, result) => PolyType(tparams, asSeenFromInstantiated(result))
         case _                           => asSeenFromInstantiated(tp)
