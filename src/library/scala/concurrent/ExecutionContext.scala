@@ -14,9 +14,45 @@ import scala.annotation.implicitNotFound
 import scala.util.Try
 
 /**
- * An `ExecutionContext` is an abstraction over an entity that can execute program logic.
+ * An `ExecutionContext` can execute program logic, typically but not
+ * necessarily on a thread pool.
+ *
+ * APIs such as `Future.onComplete` require you to provide a callback
+ * and an implicit `ExecutionContext`. The implicit `ExecutionContext`
+ * will be used to execute the callback.
+ *
+ * It is possible to simply import
+ * `scala.concurrent.ExecutionContext.Implicits.global` to obtain an
+ * implicit `ExecutionContext`. This global context is a reasonable
+ * default thread pool.
+ *
+ * However, application developers should carefully consider where they
+ * want to set policy; ideally, one place per application (or per
+ * logically-related section of code) will make a decision about
+ * which `ExecutionContext` to use. That is, you might want to avoid
+ * hardcoding `scala.concurrent.ExecutionContext.Implicits.global` all
+ * over the place in your code.
+ * One approach is to add `(implicit ec: ExecutionContext)`
+ * to methods which need an `ExecutionContext`. Then import a specific
+ * context in one place for the entire application or module,
+ * passing it implicitly to individual methods.
+ *
+ * A custom `ExecutionContext` may be appropriate to execute code
+ * which blocks on IO or performs long-running computations.
+ * `ExecutionContext.fromExecutorService` and `ExecutionContext.fromExecutor`
+ * are good ways to create a custom `ExecutionContext`.
+ *
+ * The intent of `ExecutionContext` is to lexically scope code execution.
+ * That is, each method, class, file, package, or application determines
+ * how to run its own code. This avoids issues such as running
+ * application callbacks on a thread pool belonging to a networking library.
+ * The size of a networking library's thread pool can be safely configured,
+ * knowing that only that library's network operations will be affected.
+ * Application callback execution can be configured separately.
  */
-@implicitNotFound("Cannot find an implicit ExecutionContext, either import scala.concurrent.ExecutionContext.Implicits.global or use a custom one")
+@implicitNotFound("""Cannot find an implicit ExecutionContext. You might pass
+an (implicit ec: ExecutionContext) parameter to your method
+or import scala.concurrent.ExecutionContext.Implicits.global.""")
 trait ExecutionContext {
 
   /** Runs a block of code on this execution context.
