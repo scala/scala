@@ -899,7 +899,7 @@ trait Types
       -1
     }
 
-    /** If this is a poly- or methodtype, a copy with cloned type / value parameters
+    /** If this is a ExistentialType, PolyType or MethodType, a copy with cloned type / value parameters
      *  owned by `owner`. Identity for all other types.
      */
     def cloneInfo(owner: Symbol) = this
@@ -2656,8 +2656,49 @@ trait Types
     override def baseTypeSeq = underlying.baseTypeSeq map maybeRewrap
     override def isHigherKinded = false
 
-    override def skolemizeExistential(owner: Symbol, origin: AnyRef) =
+    /** [SI-6169, SI-8197 -- companion to SI-1786]
+     *
+     *   Approximation to improve the bounds of a Java-defined existential type,
+     *   based on the bounds of the type parameters of the quantified type
+     *   In Scala syntax, given a java-defined class C[T <: String], the existential type C[_]
+     *   is improved to C[_ <: String] before skolemization, which captures (get it?) what Java does:
+     *   enter the type paramers' bounds into the context when checking subtyping/type equality of existential types
+     *
+     *   (Also tried doing this once during class file parsing or when creating the existential type,
+     *   but that causes cyclic errors because it happens too early.)
+     */
+    private def sharpenQuantifierBounds(): Unit = {
+      if (underlying.typeSymbol.isJavaDefined && quantified == underlying.typeArgs.map(_.typeSymbol)) {
+        val tpars = underlying.typeSymbol.typeParams
+        debuglog(s"sharpen bounds: $this | ${underlying.typeArgs.map(_.typeSymbol)} <-- ${tpars.map(_.info)}")
+
+        foreach2(quantified, tpars) { (quant, tparam) =>
+          // TODO: check `tparam.info.substSym(tpars, quantified) <:< quant.info` instead (for some weird reason not working for test/t6169/ExistF)
+          // for now, crude approximation for the common case
+          if (quant.info.bounds.isEmptyBounds && !tparam.info.bounds.isEmptyBounds) {
+            // avoid creating cycles [pos/t2940] that consist of an existential quantifier's
+            // bounded by an existential type that unhygienically has that quantifier as its own quantifier
+            // (TODO: clone latter existential with fresh quantifiers -- not covering this case for now)
+            if ((existentialsInType(tparam.info) intersect quantified).isEmpty)
+              quant setInfo tparam.info.substSym(tpars, quantified)
+          }
+        }
+      }
+
+      _sharpenQuantifierBounds = false
+    }
+    private[this] var _sharpenQuantifierBounds = true
+
+    override def skolemizeExistential(owner: Symbol, origin: AnyRef) = {
+      // do this here because it's quite close to what Java does:
+      // when checking subtyping/type equality, enter constraints
+      // derived from the existentially quantified type into the typing environment
+      // (aka \Gamma, which tracks types for variables and constraints/kinds for types)
+      // as a nice bonus, delaying this until we need it avoids cyclic errors
+      if (_sharpenQuantifierBounds) sharpenQuantifierBounds
+
       deriveType(quantified, tparam => (owner orElse tparam.owner).newExistentialSkolem(tparam, origin))(underlying)
+    }
 
     private def wildcardArgsString(qset: Set[Symbol], args: List[Type]): List[String] = args map {
       case TypeRef(_, sym, _) if (qset contains sym) =>
