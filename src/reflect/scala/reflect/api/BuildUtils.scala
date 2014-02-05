@@ -290,5 +290,11 @@ private[reflect] trait BuildUtils { self: Universe =>
       def apply(name: Name, isBackquoted: Boolean = false): Ident
       def unapply(tree: Ident): Option[(Name, Boolean)]
     }
+
+    val SyntacticImport: SyntacticImportExtractor
+    trait SyntacticImportExtractor {
+      def apply(expr: Tree, selectors: List[Tree]): Import
+      def unapply(imp: Import): Some[(Tree, List[Tree])]
+    }
   }
 }

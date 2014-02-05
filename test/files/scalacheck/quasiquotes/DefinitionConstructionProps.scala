@@ -8,7 +8,8 @@ object DefinitionConstructionProps
     with TypeDefConstruction
     with ValDefConstruction
     with DefConstruction
-    with PackageConstruction {
+    with PackageConstruction
+    with ImportConstruction {
   property("SI-6842") = test {
     val x: Tree = q"val x: Int"
     assertEqAst(q"def f($x) = 0", "def f(x: Int) = 0")
@@ -361,5 +362,32 @@ trait DefConstruction { self: QuasiquoteProperties =>
   property("construct implicit args (2)") = test {
     val xs = q"val x1: Int" :: q"val x2: Long" :: Nil
     assertEqAst(q"def foo(implicit ..$xs) = x1 + x2", "def foo(implicit x1: Int, x2: Long) = x1 + x2")
+  }
+}
+
+trait ImportConstruction { self: QuasiquoteProperties =>
+  property("construct wildcard import") = test {
+    val sel = pq"_"
+    assert(q"import foo.$sel" ≈ q"import foo._")
+  }
+
+  property("construct named import") = test {
+    val sel = pq"bar"
+    assert(q"import foo.$sel" ≈ q"import foo.bar")
+  }
+
+  property("construct renaming import") = test {
+    val sel = pq"bar -> baz"
+    assert(q"import foo.$sel" ≈ q"import foo.{bar => baz}")
+  }
+
+  property("construct unimport import") = test {
+    val sels = pq"poison -> _" :: pq"_" :: Nil
+    assert(q"import foo.{..$sels}" ≈ q"import foo.{poison => _, _}")
+  }
+
+  property("construct mixed import") = test {
+    val sels = pq"a -> b" :: pq"c -> _" :: pq"_" :: Nil
+    assert(q"import foo.{..$sels}" ≈ q"import foo.{a => b, c => _, _}")
   }
 }

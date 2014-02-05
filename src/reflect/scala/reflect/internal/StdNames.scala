@@ -295,22 +295,23 @@ trait StdNames {
     protected implicit def createNameType(name: String): TermName = newTermNameCached(name)
 
     /** Base strings from which synthetic names are derived. */
-    val BITMAP_PREFIX                 = "bitmap$"
-    val CHECK_IF_REFUTABLE_STRING     = "check$ifrefutable$"
-    val DEFAULT_GETTER_STRING         = "$default$"
-    val DEFAULT_GETTER_INIT_STRING    = NameTransformer.encode("<init>") + DEFAULT_GETTER_STRING
-    val DO_WHILE_PREFIX               = "doWhile$"
-    val EVIDENCE_PARAM_PREFIX         = "evidence$"
-    val EXCEPTION_RESULT_PREFIX       = "exceptionResult"
-    val EXPAND_SEPARATOR_STRING       = "$$"
-    val INTERPRETER_IMPORT_WRAPPER    = "$iw"
-    val LOCALDUMMY_PREFIX             = "<local "       // owner of local blocks
-    val PROTECTED_PREFIX              = "protected$"
-    val PROTECTED_SET_PREFIX          = PROTECTED_PREFIX + "set"
-    val SUPER_PREFIX_STRING           = "super$"
-    val WHILE_PREFIX                  = "while$"
-    val FRESH_PREFIX                  = "fresh"
-    val FRESH_SUFFIX                  = "macro$" // uses a keyword to avoid collisions with mangled names
+    val BITMAP_PREFIX                  = "bitmap$"
+    val CHECK_IF_REFUTABLE_STRING      = "check$ifrefutable$"
+    val DEFAULT_GETTER_STRING          = "$default$"
+    val DEFAULT_GETTER_INIT_STRING     = NameTransformer.encode("<init>") + DEFAULT_GETTER_STRING
+    val DO_WHILE_PREFIX                = "doWhile$"
+    val EVIDENCE_PARAM_PREFIX          = "evidence$"
+    val EXCEPTION_RESULT_PREFIX        = "exceptionResult"
+    val EXPAND_SEPARATOR_STRING        = "$$"
+    val FRESH_TERM_NAME_PREFIX         = "x$"
+    val INTERPRETER_IMPORT_WRAPPER     = "$iw"
+    val LOCALDUMMY_PREFIX              = "<local "       // owner of local blocks
+    val PROTECTED_PREFIX               = "protected$"
+    val PROTECTED_SET_PREFIX           = PROTECTED_PREFIX + "set"
+    val SUPER_PREFIX_STRING            = "super$"
+    val WHILE_PREFIX                   = "while$"
+    val FRESH_PREFIX                   = "fresh"
+    val FRESH_SUFFIX                   = "macro$" // uses a keyword to avoid collisions with mangled names
 
     // Compiler internal names
     val ANYname: NameType                  = "<anyname>"
@@ -609,6 +610,7 @@ trait StdNames {
     val SyntacticFunction: NameType    = "SyntacticFunction"
     val SyntacticFunctionType: NameType = "SyntacticFunctionType"
     val SyntacticIdent: NameType       = "SyntacticIdent"
+    val SyntacticImport: NameType      = "SyntacticImport"
     val SyntacticMatch: NameType       = "SyntacticMatch"
     val SyntacticNew: NameType         = "SyntacticNew"
     val SyntacticObjectDef: NameType   = "SyntacticObjectDef"
@@ -839,6 +841,7 @@ trait StdNames {
     val LSR       = encode(">>>")
     val LT        = encode("<")
     val MINUS     = encode("-")
+    val MINGT     = encode("->")
     val MOD       = encode("%")
     val MUL       = encode("*")
     val NE        = encode("!=")

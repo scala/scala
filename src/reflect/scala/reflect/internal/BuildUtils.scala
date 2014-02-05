@@ -143,7 +143,7 @@ trait BuildUtils { self: SymbolTable =>
 
     def RefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
 
-    def freshTermName(prefix: String): TermName = self.freshTermName(prefix)
+    def freshTermName(prefix: String = nme.FRESH_TERM_NAME_PREFIX): TermName = self.freshTermName(prefix)
 
     def freshTypeName(prefix: String): TypeName = self.freshTypeName(prefix)
 
@@ -768,6 +768,146 @@ trait BuildUtils { self: SymbolTable =>
         id
       }
       def unapply(tree: Ident): Some[(Name, Boolean)] = Some((tree.name, tree.hasAttachment[BackquotedIdentifierAttachment.type]))
+    }
+
+    /** Facade over Imports and ImportSelectors that lets to structurally
+     *  deconstruct/reconstruct them.
+     *
+     *  Selectors are represented in the following way:
+     *  1. q"import foo._"            <==> q"import foo.${pq"_"}"
+     *  2. q"import foo.bar"          <==> q"import foo.${pq"bar"}"
+     *  3. q"import foo.{bar => baz}" <==> q"import foo.${pq"bar -> baz"}"
+     *  4. q"import foo.{bar => _}"   <==> q"import foo.${pq"bar -> _"}"
+     *
+     *  All names in selectors are TermNames despite the fact ImportSelector
+     *  can theoretically contain TypeNames too (but they never do in practice.)
+     */
+    object SyntacticImport extends SyntacticImportExtractor {
+      // construct/deconstruct {_} import selector
+      private object WildcardSelector {
+        def apply(offset: Int): ImportSelector = ImportSelector(nme.WILDCARD, offset, null, -1)
+        def unapply(sel: ImportSelector): Option[Int] = sel match {
+          case ImportSelector(nme.WILDCARD, offset, null, -1) => Some(offset)
+          case _                                              => None
+        }
+      }
+
+      // construct/deconstruct {foo} import selector
+      private object NameSelector {
+        def apply(name: TermName, offset: Int): ImportSelector = ImportSelector(name, offset, name, offset)
+        def unapply(sel: ImportSelector): Option[(TermName, Int)] = sel match {
+          case ImportSelector(name1, offset1, name2, offset2) if name1 == name2 && offset1 == offset2 =>
+            Some((name1.toTermName, offset1))
+          case _ =>
+            None
+        }
+      }
+
+      // construct/deconstruct {foo => bar} import selector
+      private object RenameSelector {
+        def apply(name1: TermName, offset1: Int, name2: TermName, offset2: Int): ImportSelector =
+          ImportSelector(name1, offset1, name2, offset2)
+        def unapply(sel: ImportSelector): Option[(TermName, Int, TermName, Int)] = sel match {
+          case ImportSelector(_, _, null | nme.WILDCARD, _) =>
+            None
+          case ImportSelector(name1, offset1, name2, offset2) if name1 != name2 =>
+            Some((name1.toTermName, offset1, name2.toTermName, offset2))
+          case _ =>
+            None
+        }
+      }
+
+      // construct/deconstruct {foo => _} import selector
+      private object UnimportSelector {
+        def apply(name: TermName, offset: Int): ImportSelector =
+          ImportSelector(name, offset, nme.WILDCARD, -1)
+        def unapply(sel: ImportSelector): Option[(TermName, Int)] = sel match {
+          case ImportSelector(name, offset, nme.WILDCARD, _) => Some((name.toTermName, offset))
+          case _                                             => None
+        }
+      }
+
+      // represent {_} import selector as pq"_"
+      private object WildcardSelectorRepr {
+        def apply(pos: Position): Tree = atPos(pos)(self.Ident(nme.WILDCARD))
+        def unapply(tree: Tree): Option[Position] = tree match {
+          case self.Ident(nme.WILDCARD) => Some(tree.pos)
+          case _                        => None
+        }
+      }
+
+      // represent {foo} import selector as pq"foo"
+      private object NameSelectorRepr {
+        def apply(name: TermName, pos: Position): Tree = atPos(pos)(Bind(name, WildcardSelectorRepr(pos)))
+        def unapply(tree: Tree): Option[(TermName, Position)] = tree match {
+          case Bind(name, WildcardSelectorRepr(_)) => Some((name.toTermName, tree.pos))
+          case _                                   => None
+        }
+      }
+
+      // pq"left -> right"
+      private object Arrow {
+        def apply(left: Tree, right: Tree): Apply =
+          Apply(self.Ident(nme.MINGT), left :: right :: Nil)
+        def unapply(tree: Apply): Option[(Tree, Tree)] = tree match {
+          case Apply(self.Ident(nme.MINGT), left :: right :: Nil) => Some((left, right))
+          case _ => None
+        }
+      }
+
+      // represent {foo => bar} import selector as pq"foo -> bar"
+      private object RenameSelectorRepr {
+        def apply(name1: TermName, pos1: Position, name2: TermName, pos2: Position): Tree = {
+          val left = NameSelectorRepr(name1, pos1)
+          val right = NameSelectorRepr(name2, pos2)
+          atPos(wrappingPos(left :: right :: Nil))(Arrow(left, right))
+        }
+        def unapply(tree: Tree): Option[(TermName, Position, TermName, Position)] = tree match {
+          case Arrow(NameSelectorRepr(name1, pos1), NameSelectorRepr(name2, pos2)) =>
+            Some((name1.toTermName, pos1, name2.toTermName, pos2))
+          case _ =>
+            None
+        }
+      }
+
+      // represent {foo => _} import selector as pq"foo -> _"
+      private object UnimportSelectorRepr {
+        def apply(name: TermName, pos: Position): Tree =
+          atPos(pos)(Arrow(NameSelectorRepr(name, pos), WildcardSelectorRepr(pos)))
+        def unapply(tree: Tree): Option[(TermName, Position)] = tree match {
+          case Arrow(NameSelectorRepr(name, pos), WildcardSelectorRepr(_)) =>
+            Some((name, pos))
+          case _ =>
+            None
+        }
+      }
+
+      private def derivedPos(t: Tree, offset: Int): Position =
+        if (t.pos == NoPosition) NoPosition else t.pos.withPoint(offset)
+
+      private def derivedOffset(pos: Position): Int =
+        if (pos == NoPosition) -1 else pos.point
+
+      def apply(expr: Tree, selectors: List[Tree]): Import = {
+        val importSelectors = selectors.map {
+          case WildcardSelectorRepr(pos)                    => WildcardSelector(derivedOffset(pos))
+          case NameSelectorRepr(name, pos)                  => NameSelector(name, derivedOffset(pos))
+          case RenameSelectorRepr(name1, pos1, name2, pos2) => RenameSelector(name1, derivedOffset(pos1), name2, derivedOffset(pos2))
+          case UnimportSelectorRepr(name, pos)              => UnimportSelector(name, derivedOffset(pos))
+          case tree                                         => throw new IllegalArgumentException(s"${showRaw(tree)} doesn't correspond to import selector")
+        }
+        Import(expr, importSelectors)
+      }
+
+      def unapply(imp: Import): Some[(Tree, List[Tree])] = {
+        val selectors = imp.selectors.map {
+          case WildcardSelector(offset)                       => WildcardSelectorRepr(derivedPos(imp, offset))
+          case NameSelector(name, offset)                     => NameSelectorRepr(name, derivedPos(imp, offset))
+          case RenameSelector(name1, offset1, name2, offset2) => RenameSelectorRepr(name1, derivedPos(imp, offset1), name2, derivedPos(imp, offset2))
+          case UnimportSelector(name, offset)                 => UnimportSelectorRepr(name, derivedPos(imp, offset))
+        }
+        Some((imp.expr, selectors))
+      }
     }
   }
 
