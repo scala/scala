@@ -2668,7 +2668,13 @@ trait Types
      *   but that causes cyclic errors because it happens too early.)
      */
     private def sharpenQuantifierBounds(): Unit = {
-      if (underlying.typeSymbol.isJavaDefined && quantified == underlying.typeArgs.map(_.typeSymbol)) {
+      /* Check that we're looking at rawToExistential's handiwork
+       * (`existentialAbstraction(eparams, typeRef(apply(pre), sym, eparams map (_.tpe)))`).
+       * We can't do this sharpening there because we'll run into cycles.
+       */
+      def rawToExistentialCreatedMe = (quantified corresponds underlying.typeArgs){ (q, a) => q.tpe =:= a }
+
+      if (underlying.typeSymbol.isJavaDefined && rawToExistentialCreatedMe) {
         val tpars = underlying.typeSymbol.typeParams
         debuglog(s"sharpen bounds: $this | ${underlying.typeArgs.map(_.typeSymbol)} <-- ${tpars.map(_.info)}")
 
