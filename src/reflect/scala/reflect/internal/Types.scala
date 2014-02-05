@@ -2905,6 +2905,8 @@ trait Types
 
     override def params: List[Symbol] = zippedArgs map (_._1)
     override def typeArgs: List[Type] = zippedArgs map (_._2)
+
+    override def safeToString: String = super.safeToString + typeArgs.map(_.safeToString).mkString("[", ", ", "]")
   }
 
   trait UntouchableTypeVar extends TypeVar {
@@ -3025,15 +3027,19 @@ trait Types
     def addLoBound(tp: Type, isNumericBound: Boolean = false) {
       assert(tp != this, tp) // implies there is a cycle somewhere (?)
       //println("addLoBound: "+(safeToString, debugString(tp))) //DEBUG
-      undoLog record this
-      constr.addLoBound(tp, isNumericBound)
+      if (!sharesConstraints(tp)) {
+        undoLog record this
+        constr.addLoBound(tp, isNumericBound)
+      }
     }
 
     def addHiBound(tp: Type, isNumericBound: Boolean = false) {
       // assert(tp != this)
       //println("addHiBound: "+(safeToString, debugString(tp))) //DEBUG
-      undoLog record this
-      constr.addHiBound(tp, isNumericBound)
+      if (!sharesConstraints(tp)) {
+        undoLog record this
+        constr.addHiBound(tp, isNumericBound)
+      }
     }
     // </region>
 
@@ -3044,6 +3050,16 @@ trait Types
       case ConstantFalse => false
       case ConstantTrue  => true
       case tv: TypeVar   => tv.suspended
+    }
+
+    /** `AppliedTypeVar`s share the same `TypeConstraint` with the `HKTypeVar` that it was spawned from.
+     *   A type inference session can also have more than one ATV.
+     *   If we don't detect that, we end up with "cyclic constraint" when we try to instantiate type parameters
+     *   after solving in, pos/t8237
+     */
+    protected final def sharesConstraints(other: Type): Boolean = other match {
+      case other: TypeVar => constr == other.constr // SI-8237 avoid cycles. Details in pos/t8237.scala
+      case _ => false
     }
     private[Types] def suspended_=(b: Boolean): Unit = _suspended = if (b) ConstantTrue else ConstantFalse
     // SI-7785 Link the suspended attribute of a TypeVar created in, say, a TypeMap (e.g. AsSeenFrom) to its originator
