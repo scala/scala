@@ -26,7 +26,7 @@ class SimpleHistory extends JLineHistory {
   }
 
   case class Entry(index: Int, value: CharSequence) extends JEntry {
-    override def toString = value
+    override def toString = value.toString()
   }
 
   def maxSize: Int = 2500
