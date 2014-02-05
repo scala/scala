@@ -2675,7 +2675,7 @@ trait Types
       def rawToExistentialCreatedMe = (quantified corresponds underlying.typeArgs){ (q, a) => q.tpe =:= a }
 
       if (underlying.typeSymbol.isJavaDefined && rawToExistentialCreatedMe) {
-        val tpars = underlying.typeSymbol.typeParams
+        val tpars = underlying.typeSymbol.initialize.typeParams // TODO: is initialize needed?
         debuglog(s"sharpen bounds: $this | ${underlying.typeArgs.map(_.typeSymbol)} <-- ${tpars.map(_.info)}")
 
         foreach2(quantified, tpars) { (quant, tparam) =>
