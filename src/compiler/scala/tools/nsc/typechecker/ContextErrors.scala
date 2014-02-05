@@ -418,7 +418,7 @@ trait ContextErrors {
                 case TypeRef(_, _, arg :: _) if arg.typeSymbol == TupleClass(funArity) && funArity > 1 =>
                   sm"""|
                        |Note: The expected type requires a one-argument function accepting a $funArity-Tuple.
-                       |      Consider a pattern matching anoynmous function, `{ case $example =>  ... }`"""
+                       |      Consider a pattern matching anonymous function, `{ case $example =>  ... }`"""
                 case _ => ""
               }
             case _ => ""
