@@ -325,36 +325,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
 
   // Create a proxy for Java serialization that allows us to avoid mutation
   // during de-serialization.  This is the Serialization Proxy Pattern.
-  protected final def writeReplace(): AnyRef = new SerializationProxy(this)
-}
-
-@SerialVersionUID(1L)
-private class SerializationProxy[B](@transient private var orig: List[B]) extends Serializable {
-
-  private def writeObject(out: ObjectOutputStream) {
-    var xs: List[B] = orig
-    while (!xs.isEmpty) {
-      out.writeObject(xs.head)
-      xs = xs.tail
-    }
-    out.writeObject(ListSerializeEnd)
-  }
-
-  // Java serialization calls this before readResolve during de-serialization.
-  // Read the whole list and store it in `orig`.
-  private def readObject(in: ObjectInputStream) {
-    val builder = List.newBuilder[B]
-    while (true) in.readObject match {
-      case ListSerializeEnd =>
-        orig = builder.result()
-        return
-      case a =>
-        builder += a.asInstanceOf[B]
-    }
-  }
-
-  // Provide the result stored in `orig` for Java serialization
-  private def readResolve(): AnyRef = orig
+  protected final def writeReplace(): AnyRef = new List.SerializationProxy(this)
 }
 
 /** The empty list.
@@ -385,8 +356,7 @@ case object Nil extends List[Nothing] {
  *  @version 1.0, 15/07/2003
  *  @since   2.8
  */
-final case class ::[B](private val hd: B, private[scala] var tl: List[B]) extends List[B] {
-  override def head : B = hd
+final case class ::[B](override val head: B, private[scala] var tl: List[B]) extends List[B] {
   override def tail : List[B] = tl
   override def isEmpty: Boolean = false
 }
@@ -405,6 +375,35 @@ object List extends SeqFactory[List] {
   override def empty[A]: List[A] = Nil
 
   override def apply[A](xs: A*): List[A] = xs.toList
+
+  @SerialVersionUID(1L)
+  private class SerializationProxy[A](@transient private var orig: List[A]) extends Serializable {
+
+    private def writeObject(out: ObjectOutputStream) {
+      var xs: List[A] = orig
+      while (!xs.isEmpty) {
+        out.writeObject(xs.head)
+        xs = xs.tail
+      }
+      out.writeObject(ListSerializeEnd)
+    }
+
+    // Java serialization calls this before readResolve during de-serialization.
+    // Read the whole list and store it in `orig`.
+    private def readObject(in: ObjectInputStream) {
+      val builder = List.newBuilder[A]
+      while (true) in.readObject match {
+        case ListSerializeEnd =>
+          orig = builder.result()
+          return
+        case a =>
+          builder += a.asInstanceOf[A]
+      }
+    }
+
+    // Provide the result stored in `orig` for Java serialization
+    private def readResolve(): AnyRef = orig
+  }
 }
 
 /** Only used for list serialization */

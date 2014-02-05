@@ -6,6 +6,6 @@ class SameBytecode {
   }
 
   def b(xs: List[Int]) = xs match {
-    case xs: ::[Int] => xs.hd$1
+    case xs: ::[Int] => xs.head
   }
 }
