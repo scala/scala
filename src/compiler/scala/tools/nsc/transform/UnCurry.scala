@@ -105,11 +105,10 @@ abstract class UnCurry extends InfoTransform
      */
     def isByNameRef(tree: Tree) = (
          tree.isTerm
-      && !byNameArgs(tree)
       && (tree.symbol ne null)
       && (isByName(tree.symbol))
+      && !byNameArgs(tree)
     )
-
 
 // ------- Handling non-local returns -------------------------------------------------
 

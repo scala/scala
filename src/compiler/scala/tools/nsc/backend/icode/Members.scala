@@ -21,7 +21,7 @@ trait Members {
 
   import global._
 
-  object NoCode extends Code(null, "NoCode") {
+  object NoCode extends Code(null, TermName("NoCode")) {
     override def blocksList: List[BasicBlock] = Nil
   }
 
@@ -29,8 +29,8 @@ trait Members {
    * This class represents the intermediate code of a method or
    * other multi-block piece of code, like exception handlers.
    */
-  class Code(method: IMethod, name: String) {
-    def this(method: IMethod) = this(method, method.symbol.decodedName.toString.intern)
+  class Code(method: IMethod, name: Name) {
+    def this(method: IMethod) = this(method, method.symbol.name)
     /** The set of all blocks */
     val blocks = mutable.ListBuffer[BasicBlock]()
 
@@ -82,7 +82,7 @@ trait Members {
     }
 
     /** This methods returns a string representation of the ICode */
-    override def toString = "ICode '" + name + "'"
+    override def toString = "ICode '" + name.decoded + "'"
 
     /* Compute a unique new label */
     def nextLabel: Int = {

@@ -1102,7 +1102,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     private def fullNameInternal(separator: Char): Name = (
       if (isRoot || isRootPackage || this == NoSymbol) name
       else if (owner.isEffectiveRoot) name
-      else ((effectiveOwner.enclClass.fullNameAsName(separator) append separator): Name) append name
+      else effectiveOwner.enclClass.fullNameAsName(separator) append (separator, name)
     )
 
     def fullNameAsName(separator: Char): Name = fullNameInternal(separator).dropLocal

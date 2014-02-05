@@ -92,11 +92,22 @@ abstract class Erasure extends AddInterfaces
   // more rigorous way up front rather than catching it after the fact,
   // but that will be more involved.
   private def dotCleanup(sig: String): String = {
+    // OPT 50% of time in generic signatures (~1% of compile time) was in this method, hence the imperative rewrite.
     var last: Char = '\u0000'
-    sig map {
-      case '.' if last != '>' => last = '.' ; '$'
-      case ch                 => last = ch ; ch
+    var i = 0
+    val len = sig.length
+    val copy: Array[Char] = sig.toCharArray
+    var changed = false
+    while (i < sig.length) {
+      val ch = copy(i)
+      if (ch == '.' && last != '>') {
+         copy(i) = '$'
+         changed = true
+      }
+      last = ch
+      i += 1
     }
+    if (changed) new String(copy) else sig
   }
 
   /** This object is only used for sanity testing when -check:genjvm is set.

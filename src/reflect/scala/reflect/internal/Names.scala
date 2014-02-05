@@ -345,6 +345,13 @@ trait Names extends api.Names {
         i += 1
       i == prefix.length
     }
+    final def startsWith(prefix: String, start: Int): Boolean = {
+      var i = 0
+      while (i < prefix.length && start + i < len &&
+             chrs(index + start + i) == prefix.charAt(i))
+        i += 1
+      i == prefix.length
+    }
 
     /** Does this name end with suffix? */
     final def endsWith(suffix: Name): Boolean = endsWith(suffix, len)
@@ -354,6 +361,13 @@ trait Names extends api.Names {
       var i = 1
       while (i <= suffix.length && i <= end &&
              chrs(index + end - i) == chrs(suffix.start + suffix.length - i))
+        i += 1
+      i > suffix.length
+    }
+    final def endsWith(suffix: String, end: Int): Boolean = {
+      var i = 1
+      while (i <= suffix.length && i <= end &&
+             chrs(index + end - i) == suffix.charAt(suffix.length - i))
         i += 1
       i > suffix.length
     }
@@ -382,9 +396,9 @@ trait Names extends api.Names {
     final def startChar: Char                   = this charAt 0
     final def endChar: Char                     = this charAt len - 1
     final def startsWith(char: Char): Boolean   = len > 0 && startChar == char
-    final def startsWith(name: String): Boolean = startsWith(newTermName(name))
+    final def startsWith(name: String): Boolean = startsWith(name, 0)
     final def endsWith(char: Char): Boolean     = len > 0 && endChar == char
-    final def endsWith(name: String): Boolean   = endsWith(newTermName(name))
+    final def endsWith(name: String): Boolean   = endsWith(name, len)
 
     /** Rewrite the confusing failure indication via result == length to
      *  the normal failure indication via result == -1.
@@ -443,9 +457,10 @@ trait Names extends api.Names {
     }
 
     /** TODO - find some efficiency. */
-    def append(ch: Char)        = newName("" + this + ch)
-    def append(suffix: String)  = newName("" + this + suffix)
-    def append(suffix: Name)    = newName("" + this + suffix)
+    def append(ch: Char)        = newName(toString + ch)
+    def append(suffix: String)  = newName(toString + suffix)
+    def append(suffix: Name)    = newName(toString + suffix)
+    def append(separator: Char, suffix: Name) = newName(toString + separator + suffix)
     def prepend(prefix: String) = newName("" + prefix + this)
 
     def decodedName: ThisNameType = newName(decode)
@@ -463,7 +478,7 @@ trait Names extends api.Names {
    */
   final class NameOps[T <: Name](name: T) {
     import NameTransformer._
-    def stripSuffix(suffix: String): T = stripSuffix(suffix: TermName)
+    def stripSuffix(suffix: String): T = if (name endsWith suffix) dropRight(suffix.length) else name // OPT avoid creating a Name with `suffix`
     def stripSuffix(suffix: Name): T   = if (name endsWith suffix) dropRight(suffix.length) else name
     def take(n: Int): T                = name.subName(0, n).asInstanceOf[T]
     def drop(n: Int): T                = name.subName(n, name.length).asInstanceOf[T]
@@ -500,21 +515,21 @@ trait Names extends api.Names {
   /** TermName_S and TypeName_S have fields containing the string version of the name.
    *  TermName_R and TypeName_R recreate it each time toString is called.
    */
-  private class TermName_S(index0: Int, len0: Int, hash: Int, override val toString: String) extends TermName(index0, len0, hash) {
+  private final class TermName_S(index0: Int, len0: Int, hash: Int, override val toString: String) extends TermName(index0, len0, hash) {
     protected def createCompanionName(h: Int): TypeName = new TypeName_S(index, len, h, toString)
     override def newName(str: String): TermName = newTermNameCached(str)
   }
-  private class TypeName_S(index0: Int, len0: Int, hash: Int, override val toString: String) extends TypeName(index0, len0, hash) {
+  private final class TypeName_S(index0: Int, len0: Int, hash: Int, override val toString: String) extends TypeName(index0, len0, hash) {
     protected def createCompanionName(h: Int): TermName = new TermName_S(index, len, h, toString)
     override def newName(str: String): TypeName = newTypeNameCached(str)
   }
 
-  private class TermName_R(index0: Int, len0: Int, hash: Int) extends TermName(index0, len0, hash) {
+  private final class TermName_R(index0: Int, len0: Int, hash: Int) extends TermName(index0, len0, hash) {
     protected def createCompanionName(h: Int): TypeName = new TypeName_R(index, len, h)
     override def toString = new String(chrs, index, len)
   }
 
-  private class TypeName_R(index0: Int, len0: Int, hash: Int) extends TypeName(index0, len0, hash) {
+  private final class TypeName_R(index0: Int, len0: Int, hash: Int) extends TypeName(index0, len0, hash) {
     protected def createCompanionName(h: Int): TermName = new TermName_R(index, len, h)
     override def toString = new String(chrs, index, len)
   }
