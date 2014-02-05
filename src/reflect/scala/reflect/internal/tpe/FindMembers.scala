@@ -64,12 +64,13 @@ trait FindMembers {
      *
      * Called in two passes: first excluding deferred, then mandating it.
      *
-     * @return true, if a potential deferred member was seen on the first pass that calls for a second pass.
+     * @return if a potential deferred member was seen on the first pass that calls for a second pass,
+               and `excluded & DEFERRED != 0L`
      */
     private def walkBaseClasses(required: Long, excluded: Long): Boolean = {
       var bcs = initBaseClasses
 
-      // Has we seen a candidate deferred member?
+      // Have we seen a candidate deferred member?
       var deferredSeen = false
 
       // All direct parents of refinement classes in the base class sequence
@@ -79,10 +80,11 @@ trait FindMembers {
       // Has the current `walkBaseClasses` encountered a non-refinement class?
       var seenFirstNonRefinementClass = false
 
+      val findAll = name == nme.ANYname
+
       while (!bcs.isEmpty) {
         val currentBaseClass = bcs.head
         val decls = currentBaseClass.info.decls
-        val findAll = name == nme.ANYname
         var entry = if (findAll) decls.elems else decls.lookupEntry(name)
         while (entry ne null) {
           val sym = entry.sym
@@ -150,9 +152,10 @@ trait FindMembers {
     // True unless the already-found member of type `memberType` matches the candidate symbol `other`.
     protected def isNewMember(member: Symbol, other: Symbol): Boolean =
       (    (other ne member)
-        && (    (member.owner eq other.owner)
-             || (member.flags & PRIVATE) != 0
-             || !(memberTypeLow(member) matches memberTypeHi(other))
+        && (    (member.owner eq other.owner)                         // same owner, therefore overload
+             || (member.flags & PRIVATE) != 0                         // (unqualified) private members never participate in overriding
+             || (other.flags & PRIVATE) != 0                          // ... as overrider or overridee.
+             || !(memberTypeLow(member) matches memberTypeHi(other))  // do the member types match? If so, its an override. Otherwise it's an overload.
            )
       )
 
@@ -202,7 +205,7 @@ trait FindMembers {
       val members = membersScope
       var others = members.lookupEntry(sym.name)
       var isNew = true
-      while (others ne null) {
+      while ((others ne null) && isNew) {
         val member = others.sym
         if (!isNewMember(member, sym))
           isNew = false
