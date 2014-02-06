@@ -248,6 +248,13 @@ private[reflect] trait BuildUtils { self: Universe =>
       def unapply(tree: Tree): Option[(Tree)]
     }
 
+    val SyntacticEmptyTypeTree: SyntacticEmptyTypeTreeExtractor
+
+    trait SyntacticEmptyTypeTreeExtractor {
+      def apply(): TypeTree
+      def unapply(tt: TypeTree): Boolean
+    }
+
     val SyntacticFor: SyntacticForExtractor
     val SyntacticForYield: SyntacticForExtractor
 

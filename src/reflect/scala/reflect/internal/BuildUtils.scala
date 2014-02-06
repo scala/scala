@@ -537,8 +537,11 @@ trait BuildUtils { self: SymbolTable =>
       def unapply(tree: Tree): Option[Tree] = gen.Filter.unapply(tree)
     }
 
-    // a type tree which wasn't specified by the user but might have been inferred by compiler
-    object SyntacticEmptyTypeTree {
+    // TypeTree without original is used to signal that no type was provided
+    // by the user and compiler should infer it instead. (Note: EmptyTree is
+    // not appropriate in such role, it's only used for terms, not types.)
+    object SyntacticEmptyTypeTree extends SyntacticEmptyTypeTreeExtractor {
+      def apply(): TypeTree = self.TypeTree()
       def unapply(tt: TypeTree): Boolean = tt.original == null || tt.original.isEmpty
     }
 
