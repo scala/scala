@@ -29,7 +29,7 @@ trait Reifiers { self: Quasiquotes =>
     /** Map that stores freshly generated names linked to the corresponding names in the reified tree.
      *  This information is used to reify names created by calls to freshTermName and freshTypeName.
      */
-    var nameMap = collection.mutable.HashMap.empty[Name, Set[TermName]].withDefault { _ => Set() }
+    val nameMap = collection.mutable.HashMap.empty[Name, Set[TermName]].withDefault { _ => Set() }
 
     /** Wraps expressions into:
      *    a block which starts with a sequence of vals that correspond
@@ -71,7 +71,7 @@ trait Reifiers { self: Quasiquotes =>
         // q"..$freshdefs; $tree"
         SyntacticBlock(freshdefs :+ tree)
       } else {
-        val freevars = holeMap.toList.map { case (name, _) => Ident(name) }
+        val freevars = holeMap.keysIterator.map(Ident(_)).toList
         val isVarPattern = tree match { case Bind(name, Ident(nme.WILDCARD)) => true case _ => false }
         val cases =
           if(isVarPattern) {
