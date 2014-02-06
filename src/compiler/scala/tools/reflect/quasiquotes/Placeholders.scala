@@ -17,7 +17,6 @@ trait Placeholders { self: Quasiquotes =>
 
   // Step 1: Transform Scala source with holes into vanilla Scala source
 
-  lazy val holeMap = new HoleMap()
   lazy val posMap = mutable.ListMap[Position, (Int, Int)]()
   lazy val code = {
     val sb = new StringBuilder()
@@ -58,25 +57,27 @@ trait Placeholders { self: Quasiquotes =>
     sb.toString
   }
 
-  class HoleMap {
-    private var underlying = immutable.SortedMap[String, Hole]()
-    private val accessed = mutable.Set[String]()
+  object holeMap {
+    private val underlying = mutable.LinkedHashMap.empty[String, Hole]
+    private val accessed   = mutable.Set.empty[String]
     def unused: Set[Name] = (underlying.keys.toSet -- accessed).map(TermName(_))
-    def contains(key: Name) = underlying.contains(key.toString)
-    def apply(key: Name) = {
-      val s = key.toString
-      accessed += s
-      underlying(s)
+    def contains(key: Name): Boolean = underlying.contains(key.toString)
+    def apply(key: Name): Hole = {
+      val skey = key.toString
+      val value = underlying(skey)
+      accessed += skey
+      value
     }
-    def update(key: Name, hole: Hole) = {
+    def update(key: Name, hole: Hole) =
       underlying += key.toString -> hole
+    def get(key: Name): Option[Hole] = {
+      val skey = key.toString
+      underlying.get(skey).map { v =>
+        accessed += skey
+        v
+      }
     }
-    def get(key: Name) = {
-      val s = key.toString
-      accessed += s
-      underlying.get(s)
-    }
-    def toList = underlying.toList
+    def keysIterator: Iterator[TermName] = underlying.keysIterator.map(TermName(_))
   }
 
   // Step 2: Transform vanilla Scala AST into an AST with holes

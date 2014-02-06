@@ -291,4 +291,9 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     val stats2 = List.empty[Tree]
     assert(q"{ ..$stats2 }" ≈ q"")
   }
+
+  property("consistent variable order") = test {
+    val q"$a = $b = $c = $d = $e = $f = $g = $h = $k = $l" = q"a = b = c = d = e = f = g = h = k = l"
+    assert(a ≈ q"a" && b ≈ q"b" && c ≈ q"c" && d ≈ q"d" && e ≈ q"e" && g ≈ q"g" && h ≈ q"h" && k ≈ q"k" && l ≈ q"l")
+  }
 }
