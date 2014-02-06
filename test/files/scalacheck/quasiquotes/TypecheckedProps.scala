@@ -65,7 +65,7 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked") {
   }
 
   property("extract UnApply (2)") = test {
-    val q"object $_ { $_; $_; $m }" = typecheck(q"""
+    val q"object $_ { $_; $m }" = typecheck(q"""
       object Test {
         case class Cell(val x: Int)
         new Cell(0) match { case Cell(v) => v }
@@ -81,5 +81,32 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked") {
     val q"val x = 42" = typechecked
     val q"val x: ${tq""} = 42" = typechecked
     val q"val x: ${t: Type} = 42" = typechecked
+  }
+
+  property("class with param (1)") = test {
+    val paramName = TermName("x")
+    val q"class $_($param)" = typecheck(q"class Test(val $paramName: Int)")
+
+    assert(param.name == paramName)
+  }
+
+  property("class with param (2)") = test {
+    val paramName = TermName("y")
+    val q"{ class $_($param); $_}" = typecheck(q"{ class Test(val $paramName: Int = 3) }")
+
+    assert(param.name == paramName)
+    assert(param.rhs ≈ q"3")
+  }
+
+  property("class with params") = test {
+    val pName1 = TermName("x1")
+    val pName2 = TermName("x2")
+    val q"{ class $_($param1)(..$params2); $_}" = typecheck(q"{ class Test(val x0: Float)(val $pName1: Int = 3, $pName2: String) }")
+
+    val List(p1, p2, _*) = params2
+
+    assert(p1.name == pName1)
+    assert(p2.name == pName2)
+    assert(params2.size == 2)
   }
 }
