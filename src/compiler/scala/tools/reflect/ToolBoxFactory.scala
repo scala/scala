@@ -365,6 +365,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
     val TypecheckMode = scala.reflect.internal.Mode
     val TERMmode = TypecheckMode.EXPRmode
     val TYPEmode = TypecheckMode.TYPEmode | TypecheckMode.FUNmode
+    val PATTERNmode = TypecheckMode.PATTERNmode
 
     def typecheck(tree: u.Tree, mode: TypecheckMode = TERMmode, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = withCompilerApi { compilerApi =>
       import compilerApi._

@@ -12,6 +12,7 @@ trait Typers {
   val TypecheckMode = scala.reflect.internal.Mode
   val TERMmode = TypecheckMode.EXPRmode
   val TYPEmode = TypecheckMode.TYPEmode | TypecheckMode.FUNmode
+  val PATTERNmode = TypecheckMode.PATTERNmode
 
   /**
    * @see [[scala.tools.reflect.ToolBox.typeCheck]]

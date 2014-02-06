@@ -27,7 +27,7 @@ trait Typers {
 
   /** Represents mode of operations of the typechecker underlying `c.typecheck` calls.
    *  Is necessary since the shape of the typechecked tree alone is not enough to guess how it should be typechecked.
-   *  Can be EXPRmode (typecheck as a term) or TYPEmode (typecheck as a type).
+   *  Can be EXPRmode (typecheck as a term), TYPEmode (typecheck as a type) or PATTERNmode (typecheck as a pattern).
    */
   // I'd very much like to make use of https://github.com/dsl-paradise/dsl-paradise here!
   type TypecheckMode
@@ -40,6 +40,10 @@ trait Typers {
   /** Indicates that an argument to `c.typecheck` should be typechecked as a type.
    */
   val TYPEmode: TypecheckMode
+
+  /** Indicates that an argument to `c.typecheck` should be typechecked as a pattern.
+   */
+  val PATTERNmode: TypecheckMode
 
   /** @see `scala.reflect.macros.TypecheckException`
    */

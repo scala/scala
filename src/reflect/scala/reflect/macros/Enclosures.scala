@@ -20,7 +20,7 @@ import scala.language.existentials // SI-6541
  *  This is somewhat aligned with the overall evolution of macros during the 2.11 development cycle, where we played with
  *  `c.introduceTopLevel` and `c.introduceMember`, but at the end of the day decided to reject them.
  *
- *  If you're relying on the now deprecated APIs, consider using the new [[c.enclosingOwner]] method that can be used to obtain
+ *  If you're relying on the now deprecated APIs, consider using the new [[c.internal.enclosingOwner]] method that can be used to obtain
  *  the names of enclosing definitions. Alternatively try reformulating your macros in terms of completely local expansion
  *  and/or joining a discussion of a somewhat related potential language feature at [[https://groups.google.com/forum/#!topic/scala-debate/f4CLmYShX6Q]].
  *  We also welcome questions and suggestions on our mailing lists, where we would be happy to further discuss this matter.
@@ -51,11 +51,6 @@ trait Enclosures {
    *  Surprisingly, quite often we can do this by navigation the `enclosingMacros` stack.
    */
   def enclosingPosition: Position
-
-  /** Symbol associated with the innermost enclosing lexical context.
-   *  Walking the owner chain of this symbol will reveal information about more and more enclosing contexts.
-   */
-  def enclosingOwner: Symbol
 
   /** Tree that corresponds to the enclosing method, or EmptyTree if not applicable.
    *  @see [[scala.reflect.macros.Enclosures]]

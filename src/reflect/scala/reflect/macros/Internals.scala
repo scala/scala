@@ -14,6 +14,11 @@ trait Internals {
 
   /** @see [[scala.reflect.api.Internals]] */
   trait ContextInternalApi extends universe.MacroInternalApi {
+    /** Symbol associated with the innermost enclosing lexical context.
+     *  Walking the owner chain of this symbol will reveal information about more and more enclosing contexts.
+     */
+    def enclosingOwner: Symbol
+
     /** Functions that are available during [[transform]].
      *  @see [[transform]]
      */

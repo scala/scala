@@ -14,8 +14,8 @@ object Macros {
       println("enclosingTemplate = " + ${c.enclosingTemplate.toString})
       println("enclosingMethod = " + ${c.enclosingMethod.toString})
       println("enclosingDef = " + ${c.enclosingDef.toString})
-      println("enclosingOwner = " + ${c.enclosingOwner.toString})
-      println("enclosingOwnerChain = " + ${chain(c.enclosingOwner).toString})
+      println("enclosingOwner = " + ${c.internal.enclosingOwner.toString})
+      println("enclosingOwnerChain = " + ${chain(c.internal.enclosingOwner).toString})
     """
   }
 

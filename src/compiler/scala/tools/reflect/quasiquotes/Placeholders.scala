@@ -42,7 +42,7 @@ trait Placeholders { self: Quasiquotes =>
       case nme.apply   => args
       case nme.unapply =>
         val (dummy @ Ident(nme.SELECTOR_DUMMY)) :: Nil = args
-        internal.subpatterns(dummy)
+        internal.subpatterns(dummy).get
       case _           => global.abort("unreachable")
     }
 
