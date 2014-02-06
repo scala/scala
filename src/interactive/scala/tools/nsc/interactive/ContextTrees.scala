@@ -64,9 +64,12 @@ trait ContextTrees { self: Global =>
   def locateContextTree(contexts: Contexts, pos: Position): Option[ContextTree] = {
     if (contexts.isEmpty) None
     else {
+      // binary search on contexts, loop invar: lo <= hi, recursion metric: `hi - lo`
       @tailrec
       def loop(lo: Int, hi: Int, previousSibling: Option[ContextTree]): Option[ContextTree] = {
-        if (pos properlyPrecedes contexts(lo).pos)
+        // [SI-8239] enforce loop invariant & ensure recursion metric decreases monotonically on every recursion
+        if (lo > hi) previousSibling
+        else if (pos properlyPrecedes contexts(lo).pos)
           previousSibling
         else if (contexts(hi).pos properlyPrecedes pos)
           Some(contexts(hi))
@@ -76,9 +79,18 @@ trait ContextTrees { self: Global =>
           if (midpos includes pos)
             Some(contexts(mid))
           else if (midpos properlyPrecedes pos)
+            // recursion metric: (hi - ((lo + hi)/2 + 1)) < (hi - lo)
+            // since (hi - ((lo + hi)/2 + 1)) - (hi - lo) = lo - ((lo + hi)/2 + 1) < 0
+            // since 2*lo - lo - hi - 2 = lo - hi - 2 < 0
+            // since lo < hi + 2
+            // can violate lo <= hi, hence the lo > hi check at the top [SI-8239]
             loop(mid + 1, hi, Some(contexts(mid)))
-          else
+          else if (lo != hi) // avoid looping forever (lo == hi violates the recursion metric) [SI-8239]
+            // recursion metric: ((lo + hi)/2) - lo < (hi - lo)
+            // since ((lo + hi)/2) - lo - (hi - lo) = ((lo + hi)/2) - hi < 0
+            // since 2 * (((lo + hi)/2) - hi) = lo - hi < 0 since lo < hi
             loop(lo, mid, previousSibling)
+          else previousSibling
         }
       }
       loop(0, contexts.length - 1, None)
