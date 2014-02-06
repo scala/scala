@@ -56,4 +56,4 @@ object Map extends MapFactory[Map] {
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
-private[scala] abstract class AbstractMap[A, +B] extends AbstractIterable[(A, B)] with Map[A, B]
+abstract class AbstractMap[A, +B] extends AbstractIterable[(A, B)] with Map[A, B]

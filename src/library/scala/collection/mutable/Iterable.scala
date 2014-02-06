@@ -38,4 +38,4 @@ object Iterable extends TraversableFactory[Iterable] {
 }
 
 /** Explicit instantiation of the `Iterable` trait to reduce class file size in subclasses. */
-private[scala] abstract class AbstractIterable[A] extends scala.collection.AbstractIterable[A] with Iterable[A]
+abstract class AbstractIterable[A] extends scala.collection.AbstractIterable[A] with Iterable[A]

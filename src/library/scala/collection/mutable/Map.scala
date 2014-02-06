@@ -89,4 +89,4 @@ object Map extends MutableMapFactory[Map] {
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
-private[scala] abstract class AbstractMap[A, B] extends scala.collection.AbstractMap[A, B] with Map[A, B]
+abstract class AbstractMap[A, B] extends scala.collection.AbstractMap[A, B] with Map[A, B]

@@ -46,4 +46,4 @@ object Buffer extends SeqFactory[Buffer] {
 }
 
 /** Explicit instantiation of the `Buffer` trait to reduce class file size in subclasses. */
-private[scala] abstract class AbstractBuffer[A] extends AbstractSeq[A] with Buffer[A]
+abstract class AbstractBuffer[A] extends AbstractSeq[A] with Buffer[A]
