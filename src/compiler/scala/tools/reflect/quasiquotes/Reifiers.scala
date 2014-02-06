@@ -162,7 +162,7 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticNew, earlyDefs, parents, selfdef, body)
       case SyntacticDefDef(mods, name, tparams, build.ImplicitParams(vparamss, implparams), tpt, rhs) =>
         if (implparams.nonEmpty)
-          mirrorBuildCall(nme.SyntacticDefDef, reify(mods), reify(name), reify(tparams), 
+          mirrorBuildCall(nme.SyntacticDefDef, reify(mods), reify(name), reify(tparams),
                           reifyBuildCall(nme.ImplicitParams, vparamss, implparams), reify(tpt), reify(rhs))
         else
           reifyBuildCall(nme.SyntacticDefDef, mods, name, tparams, vparamss, tpt, rhs)
@@ -305,7 +305,7 @@ trait Reifiers { self: Quasiquotes =>
      *    > reifyMultiCardinalityList(lst) { ... } { ... }
      *    q"List($foo, $bar) ++ ${holeMap(qq$f3948f9s$1).tree}"
      */
-    def reifyMultiCardinalityList[T](xs: List[T])(fill: PartialFunction[T, Tree])(fallback: T => Tree): Tree
+    def reifyMultiCardinalityList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree
 
     /** Reifies arbitrary list filling ..$x and ...$y holeMap when they are put
      *  in the correct position. Fallbacks to regular reification for non-high cardinality
@@ -361,10 +361,10 @@ trait Reifiers { self: Quasiquotes =>
   }
 
   class ApplyReifier extends Reifier(isReifyingExpressions = true) {
-    def reifyMultiCardinalityList[T](xs: List[T])(fill: PartialFunction[T, Tree])(fallback: T => Tree): Tree =
+    def reifyMultiCardinalityList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree =
       if (xs.isEmpty) mkList(Nil)
       else {
-        def reifyGroup(group: List[T]): Tree = group match {
+        def reifyGroup(group: List[Any]): Tree = group match {
           case List(elem) if fill.isDefinedAt(elem) => fill(elem)
           case elems => mkList(elems.map(fallback))
         }
@@ -403,14 +403,26 @@ trait Reifiers { self: Quasiquotes =>
 
   }
   class UnapplyReifier extends Reifier(isReifyingExpressions = false) {
-    def reifyMultiCardinalityList[T](xs: List[T])(fill: PartialFunction[T, Tree])(fallback: T => Tree): Tree = xs match {
-      case init :+ last if fill.isDefinedAt(last) =>
-        init.foldRight[Tree](fill(last)) { (el, rest) =>
-          val cons = Select(Select(Select(Ident(nme.scala_), nme.collection), nme.immutable), nme.CONS)
-          Apply(cons, List(fallback(el), rest))
-        }
-      case _ =>
-        mkList(xs.map(fallback))
+    private def collection = ScalaDot(nme.collection)
+    private def collectionColonPlus = Select(collection, nme.COLONPLUS)
+    private def collectionCons = Select(Select(collection, nme.immutable), nme.CONS)
+    private def collectionNil = Select(Select(collection, nme.immutable), nme.Nil)
+    // pq"$lhs :+ $rhs"
+    private def append(lhs: Tree, rhs: Tree) = Apply(collectionColonPlus, lhs :: rhs :: Nil)
+    // pq"$lhs :: $rhs"
+    private def cons(lhs: Tree, rhs: Tree) = Apply(collectionCons, lhs :: rhs :: Nil)
+
+    def reifyMultiCardinalityList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree = {
+      val grouped = group(xs) { (a, b) => !fill.isDefinedAt(a) && !fill.isDefinedAt(b) }
+      def appended(lst: List[Any], init: Tree)  = lst.foldLeft(init)  { (l, r) => append(l, fallback(r)) }
+      def prepended(lst: List[Any], init: Tree) = lst.foldRight(init) { (l, r) => cons(fallback(l), r)   }
+      grouped match {
+        case init :: List(hole) :: last :: Nil if fill.isDefinedAt(hole) => appended(last, prepended(init, fill(hole)))
+        case init :: List(hole) :: Nil         if fill.isDefinedAt(hole) => prepended(init, fill(hole))
+        case         List(hole) :: last :: Nil if fill.isDefinedAt(hole) => appended(last, fill(hole))
+        case         List(hole) :: Nil         if fill.isDefinedAt(hole) => fill(hole)
+        case _                                                           => prepended(xs, collectionNil)
+      }
     }
 
     override def reifyModifiers(m: Modifiers) =

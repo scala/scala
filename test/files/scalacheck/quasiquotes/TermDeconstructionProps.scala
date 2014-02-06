@@ -29,14 +29,34 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     y1 ≈ x1 && y2 ≈ x2 && ys ≈ List(x3)
   }
 
+  property("f(y1, ..ys, yn)") = forAll { (x1: Tree, x2: Tree, x3: Tree, x4: Tree) =>
+    val q"f($y1, ..$ys, $yn)" = q"f($x1, $x2, $x3, $x4)"
+    y1 ≈ x1 && ys ≈ List(x2, x3) && yn ≈ x4
+  }
+
+  property("f(..ys, y_{n-1}, y_n)") = forAll { (x1: Tree, x2: Tree, x3: Tree, x4: Tree) =>
+    val q"f(..$ys, $yn1, $yn)" = q"f($x1, $x2, $x3, $x4)"
+    ys ≈ List(x1, x2) && yn1 ≈ x3 && yn ≈ x4
+  }
+
   property("f(...xss)") = forAll { (x1: Tree, x2: Tree) =>
-    val q"f(...$argss)" = q"f($x1)($x2)"
-    argss ≈ List(List(x1), List(x2))
+    val q"f(...$xss)" = q"f($x1)($x2)"
+    xss ≈ List(List(x1), List(x2))
+  }
+
+  property("f(...$xss)(..$last)") = forAll { (x1: Tree, x2: Tree, x3: Tree) =>
+    val q"f(...$xss)(..$last)" = q"f($x1)($x2)($x3)"
+    xss ≈ List(List(x1), List(x2)) && last ≈ List(x3)
+  }
+
+  property("f(...$xss)(..$lastinit, $lastlast)") = forAll { (x1: Tree, x2: Tree, x3: Tree, x4: Tree) =>
+    val q"f(...$xss)(..$lastinit, $lastlast)" = q"f($x1)($x2, $x3, $x4)"
+    xss ≈ List(List(x1)) && lastinit ≈ List(x2, x3) && lastlast ≈ x4
   }
 
   property("f(...xss) = f") = forAll { (x1: Tree, x2: Tree) =>
-    val q"f(...$argss)" = q"f"
-    argss ≈ List()
+    val q"f(...$xss)" = q"f"
+    xss ≈ List()
   }
 
   property("deconstruct unit as tuple") = test {
@@ -51,17 +71,38 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
 
   property("deconstruct tuple mixed") = test {
     val q"($first, ..$rest)" = q"(a, b, c)"
-    assert(first ≈ q"a" && rest ≈ List(q"b", q"c"))
+    assert(first ≈ q"a")
+    assert(rest ≈ List(q"b", q"c"))
+  }
+
+  property("deconstruct tuple last element") = test {
+    val q"($first, ..$rest, $last)" = q"(a, b, c, d)"
+    assert(first ≈ q"a")
+    assert(rest ≈ List(q"b", q"c"))
+    assert(last ≈ q"d")
   }
 
   property("deconstruct cases") = test {
     val q"$x match { case ..$cases }" = q"x match { case 1 => case 2 => }"
-    x ≈ q"x" && cases ≈ List(cq"1 =>", cq"2 =>")
+    assert(x ≈ q"x")
+    assert(cases ≈ List(cq"1 =>", cq"2 =>"))
+  }
+
+  property("deconstruct splitting last case") = test {
+    val q"$_ match { case ..$cases case $last }" = q"x match { case 1 => case 2 => case 3 => }"
+    assert(cases ≈ List(cq"1 =>", cq"2 =>"))
+    assert(last ≈ cq"3 =>")
   }
 
   property("deconstruct block") = test {
     val q"{ ..$xs }" = q"{ x1; x2; x3 }"
     assert(xs ≈ List(q"x1", q"x2", q"x3"))
+  }
+
+  property("deconstruct last element of a block") = test {
+    val q"{ ..$xs; $x }" = q"x1; x2; x3; x4"
+    assert(xs ≈ List(q"x1", q"x2", q"x3"))
+    assert(x ≈ q"x4")
   }
 
   property("exhaustive function matcher") = test {

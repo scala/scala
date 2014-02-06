@@ -125,18 +125,28 @@ trait ModsDeconstruction { self: QuasiquoteProperties =>
   }
 
   property("@..$annots def foo") = test {
-    val a = annot("a")
-    val b = annot("b")
+    val a = q"new a"
+    val b = q"new b"
     val q"@..$annots def foo" = q"@$a @$b def foo"
     annots ≈ List(a, b)
   }
 
   property("@$annot @..$annots def foo") = test {
-    val a = annot("a")
-    val b = annot("b")
-    val c = annot("c")
+    val a = q"new a"
+    val b = q"new b"
+    val c = q"new c"
     val q"@$first @..$rest def foo" = q"@$a @$b @$c def foo"
-    first ≈ a && rest ≈ List(b, c)
+    assert(first ≈ a)
+    assert(rest ≈ List(b, c))
+  }
+
+  property("@..$anots @$annot def foo") = test {
+    val a = q"new a"
+    val b = q"new b"
+    val c = q"new c"
+    val q"@..$init @$last def foo" = q"@$a @$b @$c def foo"
+    assert(init ≈ List(a, b))
+    assert(last ≈ c)
   }
 }
 

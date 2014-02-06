@@ -32,12 +32,6 @@ object ErrorProps extends QuasiquoteProperties("errors") {
       q"@...$annots def foo"
     """)
 
-  property("@..$first @$rest def foo") = fails(
-    "Can't extract with .. here",
-    """
-      q"@a @b @c def foo" match { case q"@..$first @$rest def foo" => }
-    """)
-
   property("only literal string arguments") = fails(
     "Quasiquotes can only be used with literal strings",
     """
@@ -138,12 +132,6 @@ object ErrorProps extends QuasiquoteProperties("errors") {
     """
       val m1 = NoMods; val m2 = NoMods
       q"$m1 $m2 def foo"
-    """)
-
-  property("can't extract with .. card here") = fails(
-    "Can't extract with .. here",
-    """
-      val q"f(..$xs, $y)" = EmptyTree
     """)
 
   property("can't extract mods with annots") = fails(

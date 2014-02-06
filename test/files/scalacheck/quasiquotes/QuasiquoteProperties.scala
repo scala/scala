@@ -116,10 +116,5 @@ trait Helpers {
     }
   }
 
-  def annot(name: String): Tree = annot(TypeName(name), Nil)
-  def annot(name: TypeName): Tree = annot(name, Nil)
-  def annot(name: String, args: List[Tree]): Tree = annot(TypeName(name), args)
-  def annot(name: TypeName, args: List[Tree]): Tree = q"new $name(..$args)"
-
   val scalapkg = build.setSymbol(Ident(TermName("scala")), definitions.ScalaPackage)
 }
