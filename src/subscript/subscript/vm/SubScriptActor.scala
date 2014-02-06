@@ -17,17 +17,16 @@ trait SubScriptActor extends Actor {
   }
   
   // Handlers to handle messages
-  private def callHandlers = ListBuffer[Actor.Receive]()
+  private val callHandlers = ListBuffer[Actor.Receive]()
   
   
   // Callbacks
   
   override def aroundPreStart() {
-    def script lifecycle = live / terminate
+    def script lifecycle = live || terminate
     SubScriptActor.executeScript(_lifecycle())
     super.aroundPreStart()
-  }
-  
+  } 
   
   override def aroundReceive(receive: Actor.Receive, msg: Any) {
     val messageWasHandled = callHandlers.synchronized {
@@ -39,7 +38,7 @@ trait SubScriptActor extends Actor {
       callHandlers.foldLeft(false) {(flag, handler) =>
         if (handler.isDefinedAt(msg)) {
           handler(msg)
-          handler.notify()  // Kick the receiver, so that blocked registerReceiver() can proceed
+          handler.synchronized {handler.notify()}  // Kick the receiver, so that blocked registerReceiver() can proceed
           true
         } else flag
       }
@@ -57,20 +56,29 @@ trait SubScriptActor extends Actor {
     super.aroundPostStop()
   }
   
-  def registerReceiver(receiver: PartialFunction[Any, Unit]) {
+ 
+  def registerReceiver(receiver: PartialFunction[Any, Unit]) {    
+    var receiverFired = false
+    lazy val spyedReceiver: PartialFunction[Any, Unit] = receiver andThen {_ =>
+      spyedReceiver.synchronized {receiverFired = true}
+    }
+    
     callHandlers.synchronized {
-      receiver +=: callHandlers
+      spyedReceiver +=: callHandlers
       callHandlers.notify()  // Now aroundReceive can proceed in case it waited on the empty collection
     }
     
     // registerReceiver is the only place where VM will interact with the actor
     // before it's "<<>>" fragment will be executed. It's natural to block here, so that
     // the "<<>>" fragment will terminate only when the desired message is actually handled
-    receiver.synchronized {receiver.wait()}
+    spyedReceiver.synchronized {if (!receiverFired) spyedReceiver.wait()}
     
-    callHandlers.synchronized {callHandlers -= receiver}  // remove receiver once it was used
+    callHandlers.synchronized {callHandlers -= spyedReceiver}  // remove receiver once it was used
   }
   
+  
+  // Make `receive` final - it doesn't needed anyway
+  final def receive: Actor.Receive = {case _ =>}
 }
 
 object SubScriptActor {
