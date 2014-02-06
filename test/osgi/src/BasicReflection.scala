@@ -2,6 +2,8 @@ package tools.test.osgi
 package reflection
 package basic
 
+import scala.language.higherKinds
+
 import org.junit.Assert._
 import org.ops4j.pax.exam.CoreOptions._
 
