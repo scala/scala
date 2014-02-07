@@ -895,11 +895,14 @@ trait Definitions extends api.StandardDefinitions {
      *
      *    C[E1, ..., En] forSome { E1 >: LB1 <: UB1 ... en >: LBn <: UBn }.
      */
+    // TODO Review the way this is used. I see two potential problems:
+    //  1. `existentialAbstraction` here doesn't create fresh existential type symbols, it just
+    //     uses the class type parameter symbols directly as the list of quantified symbols.
+    //     See SI-8244 for the trouble that this can cause.
+    //     Compare with callers of `typeParamsToExistentials` (used in Java raw type handling)
+    //  2. Why don't we require a prefix? Could its omission lead to wrong results in CheckabilityChecker?
     def classExistentialType(clazz: Symbol): Type =
       existentialAbstraction(clazz.typeParams, clazz.tpe_*)
-
-    def unsafeClassExistentialType(clazz: Symbol): Type =
-      existentialAbstraction(clazz.unsafeTypeParams, clazz.tpe_*)
 
     // members of class scala.Any
     lazy val Any_==       = enterNewMethod(AnyClass, nme.EQ, AnyTpe :: Nil, BooleanTpe, FINAL)
