@@ -534,7 +534,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     threadId += 1
     compileRunner = new PresentationCompilerThread(this, projectName)
     compileRunner.setDaemon(true)
-    compileRunner.start()
     compileRunner
   }
 
@@ -1252,11 +1251,21 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   forceSymbolsUsedByParser()
 
+  /** Start the compiler background thread and turn on thread confinement checks */
+  private def finishInitialization(): Unit = {
+    // this flag turns on `assertCorrectThread checks`
+    initializing = false
+
+    // Only start the thread if initialization was successful. A crash while forcing symbols (for example
+    // if the Scala library is not on the classpath) can leave running threads behind. See Scala IDE #1002016
+    compileRunner.start()
+  }
+
   /** The compiler has been initialized. Constructors are evaluated in textual order,
-   *  so this is set to true only after all super constructors and the primary constructor
+   *  if we reached here, all super constructors and the primary constructor
    *  have been executed.
    */
-  initializing = false
+  finishInitialization()
 }
 
 object CancelException extends Exception
