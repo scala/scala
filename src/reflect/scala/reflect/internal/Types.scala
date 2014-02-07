@@ -2017,20 +2017,43 @@ trait Types
     // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
     override def betaReduce = transform(sym.info.resultType)
 
-    // #3731: return sym1 for which holds: pre bound sym.name to sym and
-    // pre1 now binds sym.name to sym1, conceptually exactly the same
-    // symbol as sym.  The selection of sym on pre must be updated to the
-    // selection of sym1 on pre1, since sym's info was probably updated
-    // by the TypeMap to yield a new symbol, sym1 with transformed info.
-    // @returns sym1
-    override def coevolveSym(pre1: Type): Symbol =
-      if (pre eq pre1) sym else (pre, pre1) match {
-        // don't look at parents -- it would be an error to override alias types anyway
-        case (RefinedType(_, _), RefinedType(_, decls1)) => decls1 lookup sym.name
-        // TODO: is there another way a typeref's symbol can refer to a symbol defined in its pre?
-        case _                                           => sym
-      }
+    /** SI-3731, SI-8177: when prefix is changed to `newPre`, maintain consistency of prefix and sym
+     *  (where the symbol refers to a declaration "embedded" in the prefix).
+     *
+     *  @returns newSym so that `newPre` binds `sym.name` to `newSym`,
+     *                  to remain consistent with `pre` previously binding `sym.name` to `sym`.
+     *
+     *  `newSym` and `sym` are conceptually the same symbols, but some change to our `prefix`
+     *  got them out of whack. (Usually triggered by substitution or `asSeenFrom`.)
+     *  The only kind of "binds" we consider is where `prefix` (or its underlying type)
+     *  is a refined type that declares `sym` (since the old prefix was discarded,
+     *  the old symbol is now stale and we should update it, like in `def rebind`,
+     *  except this is not for overriding symbols -- a vertical move -- but a "lateral" change.)
+     *
+     *  The reason for this hack is that substitution and asSeenFrom clone RefinedTypes and
+     *  their members, without updating the potential references to those members -- here, we aim to patch
+     *  this up, so that: when changing a TypeRef(pre, sym, args) to a TypeRef(pre', sym', args'), and pre
+     *  embeds a symbol sym (pre is a RefinedType(_, Scope(..., sym,...)) or a SingleType with such an
+     *  underlying type), make sure that we update sym' to compensate for the change of pre -> pre' (which may
+     *  have created a new symbol for the one the original sym referred to)
+     */
+    override def coevolveSym(newPre: Type): Symbol =
+      if ((pre ne newPre) && embeddedSymbol(pre, sym.name) == sym) {
+        val newSym = embeddedSymbol(newPre, sym.name)
+        debuglog(s"co-evolve: ${pre} -> ${newPre}, $sym : ${sym.info} -> $newSym : ${newSym.info}")
+        // To deal with erroneous `preNew`, fallback via `orElse sym`, in case `preNew` does not have a decl named `sym.name`.
+        newSym orElse sym
+      } else sym
+
     override def kind = "AliasTypeRef"
+  }
+
+  // Return the symbol named `name` that's "embedded" in tp
+  // This is the case if `tp` is a `T{...; type/val $name ; ...}`,
+  // or a singleton type with such an underlying type.
+  private def embeddedSymbol(tp: Type, name: Name): Symbol = tp.widen match {
+    case RefinedType(_, decls) => decls lookup name
+    case _ => NoSymbol
   }
 
   trait AbstractTypeRef extends NonClassTypeRef {
