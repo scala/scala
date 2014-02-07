@@ -178,9 +178,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
   /** resets symbol and tpe fields in a tree, @see ResetAttrs
    */
-//  def resetAllAttrs[A<:Tree](x:A): A = { new ResetAttrsTraverser().traverse(x); x }
-//  def resetLocalAttrs[A<:Tree](x:A): A = { new ResetLocalAttrsTraverser().traverse(x); x }
-
+  @deprecated("resetAllAttrs comes with very dangerous side effects. Use resetLocalAttrs instead", "2.11.0")
   def resetAllAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(false, leaveAlone).transform(x)
   def resetLocalAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(true, leaveAlone).transform(x)
 

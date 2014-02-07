@@ -385,14 +385,6 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       uitree
     }
 
-    def resetAllAttrs(tree: u.Tree): u.Tree = withCompilerApi { compilerApi =>
-      import compilerApi._
-      val ctree: compiler.Tree = importer.importTree(tree)
-      val ttree: compiler.Tree = compiler.resetAllAttrs(ctree)
-      val uttree = exporter.importTree(ttree)
-      uttree
-    }
-
     def resetLocalAttrs(tree: u.Tree): u.Tree = withCompilerApi { compilerApi =>
       import compilerApi._
       val ctree: compiler.Tree = importer.importTree(tree)

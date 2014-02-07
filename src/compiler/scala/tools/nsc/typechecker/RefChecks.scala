@@ -1414,7 +1414,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       case TypeRef(pre, sym, args) =>
         tree match {
           case tt: TypeTree if tt.original == null => // SI-7783 don't warn about inferred types
-                                                      // FIXME: reconcile this check with one in resetAllAttrs
+                                                      // FIXME: reconcile this check with one in resetAttrs
           case _ => checkUndesiredProperties(sym, tree.pos)
         }
         if(sym.isJavaDefined)

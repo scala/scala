@@ -86,7 +86,7 @@ abstract class Reifier extends States
           throw new Error("reifee %s of type %s is not supported".format(reifee, if (reifee == null) "null" else reifee.getClass.toString))
       }
 
-      // todo. why do we resetAllAttrs?
+      // todo. why do we reset attrs?
       //
       // typically we do some preprocessing before reification and
       // the code emitted/moved around during preprocessing is very hard to typecheck, so we leave it as it is
