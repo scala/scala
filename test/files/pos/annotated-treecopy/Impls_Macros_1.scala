@@ -44,7 +44,7 @@ object Macros {
             val typeOut = c.Expr[String](q"${ttag.tpe.toString}").splice
             def apply(_arg: T): U = c.Expr[U](b1)(ttag.asInstanceOf[c.WeakTypeTag[U]]).splice
           })
-        val untyped = c.resetLocalAttrs(template.tree)
+        val untyped = c.untypecheck(template.tree)
 
         c.Expr[T => U](untyped)
       case _ => sys.error("Bad function type")

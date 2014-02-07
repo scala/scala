@@ -193,7 +193,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   // def resetAllAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(localOnly = false, leaveAlone).transform(x)
 
   /** @see ResetAttrs */
-  def resetLocalAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(leaveAlone).transform(x)
+  def resetAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(leaveAlone).transform(x)
 
   /** A transformer which resets symbol and tpe fields of all nodes in a given tree,
    *  with special treatment of:

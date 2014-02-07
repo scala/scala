@@ -52,13 +52,13 @@ trait Unapplies extends ast.TreeDSL {
   }
 
   private def constrParamss(cdef: ClassDef): List[List[ValDef]] = {
-    val ClassDef(_, _, _, Template(_, _, body)) = resetLocalAttrs(cdef.duplicate)
+    val ClassDef(_, _, _, Template(_, _, body)) = resetAttrs(cdef.duplicate)
     val DefDef(_, _, _, vparamss, _, _) = treeInfo firstConstructor body
     vparamss
   }
 
   private def constrTparamsInvariant(cdef: ClassDef): List[TypeDef] = {
-    val ClassDef(_, _, tparams, _) = resetLocalAttrs(cdef.duplicate)
+    val ClassDef(_, _, tparams, _) = resetAttrs(cdef.duplicate)
     val tparamsInvariant = tparams.map(tparam => copyTypeDef(tparam)(mods = tparam.mods &~ (COVARIANT | CONTRAVARIANT)))
     tparamsInvariant
   }

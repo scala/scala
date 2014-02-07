@@ -110,7 +110,7 @@ abstract class Reifier extends States
       // todo. this is a common problem with non-trivial macros in our current macro system
       // needs to be solved some day
       // upd. a new hope: https://groups.google.com/forum/#!topic/scala-internals/TtCTPlj_qcQ
-      val untyped = resetLocalAttrs(result, leaveAlone = {
+      val untyped = resetAttrs(result, leaveAlone = {
         case ValDef(_, u, _, _) if u == nme.UNIVERSE_SHORT => true
         case ValDef(_, m, _, _) if m == nme.MIRROR_SHORT => true
         case tree if symtab.syms contains tree.symbol => true

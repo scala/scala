@@ -173,7 +173,7 @@ trait NamesDefaults { self: Analyzer =>
           // setSymbol below is important because the 'selected' function might be overloaded. by
           // assigning the correct method symbol, typedSelect will just assign the type. the reason
           // to still call 'typed' is to correctly infer singleton types, SI-5259.
-          val selectPos = 
+          val selectPos =
             if(qual.pos.isRange && baseFun.pos.isRange) qual.pos.union(baseFun.pos).withStart(Math.min(qual.pos.end, baseFun.pos.end))
             else baseFun.pos
           val f = blockTyper.typedOperator(Select(newQual, selected).setSymbol(baseFun1.symbol).setPos(selectPos))
@@ -287,7 +287,7 @@ trait NamesDefaults { self: Analyzer =>
             }
             else {
               // TODO In 83c9c764b, we tried to a stable type here to fix SI-7234. But the resulting TypeTree over a
-              //      singleton type without an original TypeTree fails to retypecheck after a resetLocalAttrs (SI-7516),
+              //      singleton type without an original TypeTree fails to retypecheck after a resetAttrs (SI-7516),
               //      which is important for (at least) macros.
               arg.tpe
             }
@@ -310,7 +310,7 @@ trait NamesDefaults { self: Analyzer =>
               new ChangeOwnerTraverser(context.owner, sym) traverse arg // fixes #4502
               if (repeated) arg match {
                 case WildcardStarArg(expr) => expr
-                case _                     => blockTyper typed gen.mkSeqApply(resetLocalAttrs(arg))
+                case _                     => blockTyper typed gen.mkSeqApply(resetAttrs(arg))
               } else arg
             }
           Some(atPos(body.pos)(ValDef(sym, body).setType(NoType)))

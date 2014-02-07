@@ -130,7 +130,7 @@ abstract class Universe extends scala.reflect.api.Universe {
      *  ResetAttrsTraverser, which nulls out the type field of TypeTrees
      *  for which wasEmpty is true, leaving the others alone.
      *
-     *  `untypecheck` (or `resetLocalAttrs` in compiler parlance) is used
+     *  `untypecheck` (or `resetAttrs` in compiler parlance) is used
      *  in situations where some speculative
      *  typing of a tree takes place, fails, and the tree needs to be
      *  returned to its former state to try again. So according to me:
