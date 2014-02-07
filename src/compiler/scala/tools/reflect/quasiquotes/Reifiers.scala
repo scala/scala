@@ -190,6 +190,8 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticFunction, args, body)
       case SyntacticIdent(name, isBackquoted) =>
         reifyBuildCall(nme.SyntacticIdent, name, isBackquoted)
+      case SyntacticEmptyTypeTree() =>
+        reifyBuildCall(nme.SyntacticEmptyTypeTree)
       case Q(Placeholder(Hole(tree, DotDot))) =>
         mirrorBuildCall(nme.SyntacticBlock, tree)
       case Q(other) =>

@@ -52,4 +52,10 @@ object TypeDeconstructionProps extends QuasiquoteProperties("type deconstruction
     assert(arglast ≈ tq"C")
     assert(restpe ≈ tq"D")
   }
+
+  property("match empty type tree") = test {
+    val tq"" = TypeTree()
+    // matches because type tree isn't syntactic without original
+    val tq"" = tq"${typeOf[Int]}"
+  }
 }

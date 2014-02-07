@@ -30,7 +30,7 @@ object TypeConstructionProps extends QuasiquoteProperties("type construction")  
   }
 
   property("empty tq") = test {
-    val tt: TypeTree = tq" "
+    val tt: TypeTree = tq""
     assert(tt.tpe == null)
     assert(tt.original == null)
   }
