@@ -1,6 +1,6 @@
 package scala.tools.reflect
 
-import scala.reflect.macros.contexts.Context
+import scala.reflect.macros.runtime.Context
 import scala.collection.mutable.{ ListBuffer, Stack }
 import scala.reflect.internal.util.Position
 import scala.PartialFunction.cond
@@ -10,17 +10,22 @@ import java.util.{ Formatter, Formattable, IllegalFormatException }
 
 abstract class FormatInterpolator {
   val c: Context
+  val global: c.universe.type = c.universe
 
   import c.universe.{ Match => _, _ }
   import definitions._
+  import treeInfo.Applied
 
   @inline private def truly(body: => Unit): Boolean = { body ; true }
   @inline private def falsely(body: => Unit): Boolean = { body ; false }
 
   private def fail(msg: String) = c.abort(c.enclosingPosition, msg)
+  private def bail(msg: String) = global.abort(msg)
 
   def interpolate: Tree = c.macroApplication match {
-    case q"$_(..$parts).f(..$args)" =>
+    //case q"$_(..$parts).f(..$args)" =>
+    case Applied(Select(Apply(_, parts), _), _, argss) =>
+      val args = argss.flatten
       def badlyInvoked = (parts.length != args.length + 1) && truly {
         def because(s: String) = s"too $s arguments for interpolated string"
         val (p, msg) =
@@ -32,7 +37,7 @@ abstract class FormatInterpolator {
       }
       if (badlyInvoked) c.macroApplication else interpolated(parts, args)
     case other =>
-      fail(s"Unexpected application ${showRaw(other)}")
+      bail(s"Unexpected application ${showRaw(other)}")
       other
   }
 
@@ -127,7 +132,18 @@ abstract class FormatInterpolator {
       case (part, n) => copyPart(part, n)
     }
 
-    q"{..$evals; ${fstring.toString}.format(..$ids)}"
+    //q"{..$evals; ${fstring.toString}.format(..$ids)}"
+    locally {
+      val expr =
+        Apply(
+          Select(
+            Literal(Constant(fstring.toString)),
+            newTermName("format")),
+          ids.toList
+        )
+      val p = c.macroApplication.pos
+      Block(evals.toList, atPos(p.focus)(expr)) setPos p.makeTransparent
+    }
   }
 
   val fpat = """%(?:(\d+)\$)?([-#+ 0,(\<]+)?(\d+)?(\.\d+)?([tT]?[%a-zA-Z])?""".r
