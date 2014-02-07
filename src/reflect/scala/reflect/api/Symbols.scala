@@ -163,6 +163,9 @@ trait Symbols { self: Universe =>
      */
     def fullName: String
 
+    /** Position of the tree. */
+    def pos: Position
+
     /** Does this symbol represent the definition of a type?
      *  Note that every symbol is either a term or a type.
      *  So for every symbol `sym` (except for `NoSymbol`),

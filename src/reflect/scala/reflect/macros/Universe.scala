@@ -58,9 +58,6 @@ abstract class Universe extends scala.reflect.api.Universe {
      */
     def removeAttachment[T: ClassTag](symbol: Symbol): symbol.type
 
-    /** The position of this symbol. */
-    def pos(symbol: Symbol): Position
-
     /** Sets the `info` of the symbol. */
     def setInfo(symbol: Symbol, tpe: Type): symbol.type
 
@@ -231,10 +228,6 @@ abstract class Universe extends scala.reflect.api.Universe {
       /** @see [[InternalMacroApi.removeAttachment]] */
       @deprecated("Use `internal.removeAttachment` instead", "2.11.0")
       def removeAttachment[T: ClassTag]: Symbol = internal.removeAttachment[T](symbol)
-
-      /** @see [[InternalMacroApi.pos]] */
-      @deprecated("Use `internal.pos` instead", "2.11.0")
-      def pos: Position = internal.pos(symbol)
 
       /** @see [[InternalMacroApi.setInfo]] */
       @deprecated("Use `internal.setInfo` instead", "2.11.0")
