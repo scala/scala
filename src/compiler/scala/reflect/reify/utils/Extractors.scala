@@ -201,8 +201,8 @@ trait Extractors {
 
   object FreeRef {
     def unapply(tree: Tree): Option[(Tree, TermName)] = tree match {
-      case Apply(Select(Select(Select(uref @ Ident(_), internal), rs), ident), List(Ident(name: TermName)))
-      if internal == nme.internal && rs == nme.reificationSupport && ident == nme.Ident && name.startsWith(nme.REIFY_FREE_PREFIX) =>
+      case Apply(Select(Select(Select(uref @ Ident(_), internal), rs), mkIdent), List(Ident(name: TermName)))
+      if internal == nme.internal && rs == nme.reificationSupport && mkIdent == nme.mkIdent && name.startsWith(nme.REIFY_FREE_PREFIX) =>
         Some((uref, name))
       case _ =>
         None

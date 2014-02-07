@@ -1,5 +1,5 @@
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
-import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport.{Ident => _, _}
+import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport._
 
 object TypecheckedProps extends QuasiquoteProperties("typechecked") {
   def original(tree: Tree) = tree match {

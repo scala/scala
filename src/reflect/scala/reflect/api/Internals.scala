@@ -405,13 +405,13 @@ trait Internals { self: Universe =>
      */
     def setAnnotations[S <: Symbol](sym: S, annots: List[Annotation]): S
 
-    def This(sym: Symbol): Tree
+    def mkThis(sym: Symbol): Tree
 
-    def Select(qualifier: Tree, sym: Symbol): Select
+    def mkSelect(qualifier: Tree, sym: Symbol): Select
 
-    def Ident(sym: Symbol): Ident
+    def mkIdent(sym: Symbol): Ident
 
-    def TypeTree(tp: Type): TypeTree
+    def mkTypeTree(tp: Type): TypeTree
 
     def ThisType(sym: Symbol): Type
 
@@ -465,7 +465,7 @@ trait Internals { self: Universe =>
 
     def mkEarlyDef(defns: List[Tree]): List[Tree]
 
-    def RefTree(qual: Tree, sym: Symbol): Tree
+    def mkRefTree(qual: Tree, sym: Symbol): Tree
 
     def freshTermName(prefix: String): TermName
 

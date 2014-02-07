@@ -129,11 +129,11 @@ trait GenTrees {
         else if (sym.isClass && !sym.isModuleClass) {
           if (reifyDebug) println("This for %s, reified as freeVar".format(sym))
           if (reifyDebug) println("Free: " + sym)
-          mirrorBuildCall(nme.Ident, reifyFreeTerm(This(sym)))
+          mirrorBuildCall(nme.mkIdent, reifyFreeTerm(This(sym)))
         }
         else {
           if (reifyDebug) println("This for %s, reified as This".format(sym))
-          mirrorBuildCall(nme.This, reify(sym))
+          mirrorBuildCall(nme.mkThis, reify(sym))
         }
 
       case Ident(name) =>
@@ -146,15 +146,15 @@ trait GenTrees {
         else if (!sym.isLocalToReifee) {
           if (sym.isVariable && sym.owner.isTerm) {
             captureVariable(sym) // Note order dependency: captureVariable needs to come before reification here.
-            mirrorCall(nme.Select, mirrorBuildCall(nme.Ident, reify(sym)), reify(nme.elem))
+            mirrorCall(nme.Select, mirrorBuildCall(nme.mkIdent, reify(sym)), reify(nme.elem))
           }
-          else mirrorBuildCall(nme.Ident, reify(sym))
+          else mirrorBuildCall(nme.mkIdent, reify(sym))
         }
         else mirrorCall(nme.Ident, reify(name))
 
       case Select(qual, name) =>
         if (qual.symbol != null && qual.symbol.isPackage) {
-          mirrorBuildCall(nme.Ident, reify(sym))
+          mirrorBuildCall(nme.mkIdent, reify(sym))
         } else {
           val effectiveName = if (sym != null && sym != NoSymbol) sym.name else name
           reifyProduct(Select(qual, effectiveName))
@@ -187,7 +187,7 @@ trait GenTrees {
 
           if (spliced == EmptyTree) {
             if (reifyDebug) println("splicing failed: reify as is")
-            mirrorBuildCall(nme.TypeTree, reify(tpe))
+            mirrorBuildCall(nme.mkTypeTree, reify(tpe))
           }
           else spliced match {
             case TypeRefToFreeType(freeType) =>
@@ -195,7 +195,7 @@ trait GenTrees {
               Ident(freeType)
             case _ =>
               if (reifyDebug) println("splicing succeeded: " + spliced)
-              mirrorBuildCall(nme.TypeTree, spliced)
+              mirrorBuildCall(nme.mkTypeTree, spliced)
           }
         }
         else tree match {
@@ -207,10 +207,10 @@ trait GenTrees {
             mirrorCall(nme.SelectFromTypeTree, reify(qual), reify(name))
           case _ if sym.isLocatable =>
             if (reifyDebug) println(s"tpe is locatable: reify as Ident($sym)")
-            mirrorBuildCall(nme.Ident, reify(sym))
+            mirrorBuildCall(nme.mkIdent, reify(sym))
           case _ =>
             if (reifyDebug) println(s"tpe is not locatable: reify as TypeTree($tpe)")
-            mirrorBuildCall(nme.TypeTree, reify(tpe))
+            mirrorBuildCall(nme.mkTypeTree, reify(tpe))
         }
       }
     }

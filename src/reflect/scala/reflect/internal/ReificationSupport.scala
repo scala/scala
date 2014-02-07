@@ -51,13 +51,13 @@ trait ReificationSupport { self: SymbolTable =>
     def setInfo[S <: Symbol](sym: S, tpe: Type): S =
       sym.setInfo(tpe).markAllCompleted()
 
-    def This(sym: Symbol): Tree = self.This(sym)
+    def mkThis(sym: Symbol): Tree = self.This(sym)
 
-    def Select(qualifier: Tree, sym: Symbol): Select = self.Select(qualifier, sym)
+    def mkSelect(qualifier: Tree, sym: Symbol): Select = self.Select(qualifier, sym)
 
-    def Ident(sym: Symbol): Ident = self.Ident(sym)
+    def mkIdent(sym: Symbol): Ident = self.Ident(sym)
 
-    def TypeTree(tp: Type): TypeTree = self.TypeTree(tp)
+    def mkTypeTree(tp: Type): TypeTree = self.TypeTree(tp)
 
     def ThisType(sym: Symbol): Type = self.ThisType(sym)
 
@@ -173,7 +173,7 @@ trait ReificationSupport { self: SymbolTable =>
 
     def mkEarlyDef(defns: List[Tree]): List[Tree] = defns.map(mkEarlyDef)
 
-    def RefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
+    def mkRefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
 
     def freshTermName(prefix: String = nme.FRESH_TERM_NAME_PREFIX): TermName = self.freshTermName(prefix)
 

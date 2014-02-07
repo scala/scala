@@ -7,7 +7,7 @@ import scala.reflect.internal.Flags._
 
 trait Reifiers { self: Quasiquotes =>
   import global._
-  import global.build.{Select => _, Ident => _, TypeTree => _, _}
+  import global.build._
   import global.treeInfo._
   import global.definitions._
   import Cardinality._
@@ -146,7 +146,7 @@ trait Reifiers { self: Quasiquotes =>
 
     override def reifyTreeSyntactically(tree: Tree) = tree match {
       case RefTree(qual, SymbolPlaceholder(Hole(tree, _))) if isReifyingExpressions =>
-        mirrorBuildCall(nme.RefTree, reify(qual), tree)
+        mirrorBuildCall(nme.mkRefTree, reify(qual), tree)
       case This(SymbolPlaceholder(Hole(tree, _))) if isReifyingExpressions =>
         mirrorCall(nme.This, tree)
       case SyntacticTraitDef(mods, name, tparams, earlyDefs, parents, selfdef, body) =>
