@@ -537,9 +537,12 @@ trait BuildUtils { self: SymbolTable =>
       def unapply(tree: Tree): Option[Tree] = gen.Filter.unapply(tree)
     }
 
-    // TypeTree without original is used to signal that no type was provided
-    // by the user and compiler should infer it instead. (Note: EmptyTree is
-    // not appropriate in such role, it's only used for terms, not types.)
+    // If a tree in type position isn't provided by the user (e.g. `tpt` fields of
+    // `ValDef` and `DefDef`, function params etc), then it's going to be parsed as
+    // TypeTree with empty original and empty tpe. This extractor matches such trees
+    // so that one can write q"val x = 2" to match typecheck(q"val x = 2"). Note that
+    // TypeTree() is the only possible representation for empty trees in type positions.
+    // We used to sometimes receive EmptyTree in such cases, but not anymore.
     object SyntacticEmptyTypeTree extends SyntacticEmptyTypeTreeExtractor {
       def apply(): TypeTree = self.TypeTree()
       def unapply(tt: TypeTree): Boolean = tt.original == null || tt.original.isEmpty
