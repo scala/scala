@@ -457,7 +457,9 @@ trait Contexts { self: Analyzer =>
       c.prefix             = prefixInChild
       c.enclClass          = if (isTemplateOrPackage) c else enclClass
       c(ConstructorSuffix) = !isTemplateOrPackage && c(ConstructorSuffix)
-      c.enclMethod         = if (isDefDef) c else enclMethod
+
+      // SI-8245 `isLazy` need to skip lazy getters to ensure `return` binds to the right place
+      c.enclMethod         = if (isDefDef && !owner.isLazy) c else enclMethod
 
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
