@@ -13,6 +13,7 @@ package mutable
 import generic._
 import immutable.{List, Nil, ::}
 import java.io._
+import scala.annotation.migration
 
 /** A `Buffer` implementation back up by a list. It provides constant time
  *  prepend and append. Most other operations are linear.
@@ -262,7 +263,7 @@ final class ListBuffer[A]
    *  @param n         the index which refers to the first element to remove.
    *  @param count     the number of elements to remove.
    */
-  @scala.annotation.migration("Invalid input values will be rejected in future releases.", "2.11")
+  @migration("Invalid input values will be rejected in future releases.", "2.11")
   override def remove(n: Int, count: Int) {
     if (n >= len)
       return
@@ -407,7 +408,7 @@ final class ListBuffer[A]
       }
   }
 
-  /** expose the underlying list but do not mark it as exported */
+  @deprecated("The result of this method will change along with this buffer, which is often not what's expected.", "2.11.0")
   override def readOnly: List[A] = start
 
   // Private methods
