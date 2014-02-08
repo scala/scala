@@ -82,6 +82,7 @@ trait Types
   with tpe.GlbLubs
   with tpe.TypeMaps
   with tpe.TypeConstraints
+  with tpe.FindMembers
   with util.Collections { self: SymbolTable =>
 
   import definitions._
@@ -241,18 +242,6 @@ trait Types
     def isSpliceable = {
       this.isInstanceOf[TypeRef] && typeSymbol.isAbstractType && !typeSymbol.isExistential
     }
-  }
-
-  /** Same as a call to narrow unless existentials are visible
-   *  after widening the type. In that case, narrow from the widened
-   *  type instead of the proxy. This gives buried existentials a
-   *  chance to make peace with the other types. See SI-5330.
-   */
-  private def narrowForFindMember(tp: Type): Type = {
-    val w = tp.widen
-    // Only narrow on widened type when we have to -- narrow is expensive unless the target is a singleton type.
-    if ((tp ne w) && containsExistential(w)) w.narrow
-    else tp.narrow
   }
 
   /** The base class for all types */
@@ -989,64 +978,7 @@ trait Types
      *
      */
     def findMembers(excludedFlags: Long, requiredFlags: Long): Scope = {
-      def findMembersInternal: Scope = {
-        var members: Scope = null
-        if (Statistics.canEnable) Statistics.incCounter(findMembersCount)
-        val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, findMembersNanos) else null
-
-        //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
-        var required = requiredFlags
-        var excluded = excludedFlags | DEFERRED
-        var retryForDeferred = true
-        var self: Type = null
-        while (retryForDeferred) {
-          retryForDeferred = false
-          val bcs0 = baseClasses
-          var bcs = bcs0
-          while (!bcs.isEmpty) {
-            val decls = bcs.head.info.decls
-            var entry = decls.elems
-            while (entry ne null) {
-              val sym = entry.sym
-              val flags = sym.flags
-              if ((flags & required) == required) {
-                val excl = flags & excluded
-                if (excl == 0L &&
-                    (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
-                     (bcs eq bcs0) ||
-                     (flags & PrivateLocal) != PrivateLocal ||
-                     (bcs0.head.hasTransOwner(bcs.head)))) {
-                  if (members eq null) members = newFindMemberScope
-                  var others: ScopeEntry = members.lookupEntry(sym.name)
-                  var symtpe: Type = null
-                  while ((others ne null) && {
-                           val other = others.sym
-                           (other ne sym) &&
-                           ((other.owner eq sym.owner) ||
-                            (flags & PRIVATE) != 0 || {
-                               if (self eq null) self = narrowForFindMember(this)
-                               if (symtpe eq null) symtpe = self.memberType(sym)
-                               !(self.memberType(other) matches symtpe)
-                            })}) {
-                    others = members lookupNextEntry others
-                  }
-                  if (others eq null) members enter sym
-                } else if (excl == DEFERRED) {
-                  retryForDeferred = (excludedFlags & DEFERRED) == 0
-                }
-              }
-              entry = entry.next
-            } // while (entry ne null)
-            // excluded = excluded | LOCAL
-            bcs = bcs.tail
-          } // while (!bcs.isEmpty)
-          required |= DEFERRED
-          excluded &= ~(DEFERRED.toLong)
-        } // while (retryForDeferred)
-        if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
-        if (members eq null) EmptyScope else members
-      }
-
+      def findMembersInternal = new FindMembers(this, excludedFlags, requiredFlags).apply()
       if (this.isGround) findMembersInternal
       else suspendingTypeVars(typeVarsInType(this))(findMembersInternal)
     }
@@ -1055,110 +987,13 @@ trait Types
      *  Find member(s) in this type. If several members matching criteria are found, they are
      *  returned in an OverloadedSymbol
      *
-     *  @param name           The member's name, where nme.ANYNAME means `unspecified`
+     *  @param name           The member's name
      *  @param excludedFlags  Returned members do not have these flags
      *  @param requiredFlags  Returned members do have these flags
      *  @param stableOnly     If set, return only members that are types or stable values
      */
-    //TODO: use narrow only for modules? (correct? efficiency gain?)
     def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
-      def findMemberInternal: Symbol = {
-        var member: Symbol        = NoSymbol
-        var members: List[Symbol] = null
-        var lastM: ::[Symbol]     = null
-        if (Statistics.canEnable) Statistics.incCounter(findMemberCount)
-        val start = if (Statistics.canEnable) Statistics.pushTimer(typeOpsStack, findMemberNanos) else null
-
-        //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
-        var membertpe: Type = null
-        var required = requiredFlags
-        var excluded = excludedFlags | DEFERRED
-        var continue = true
-        var self: Type = null
-
-        while (continue) {
-          continue = false
-          val bcs0 = baseClasses
-          var bcs = bcs0
-          // omit PRIVATE LOCALS unless selector class is contained in class owning the def.
-          def admitPrivateLocal(owner: Symbol): Boolean = {
-            val selectorClass = this match {
-              case tt: ThisType => tt.sym // SI-7507 the first base class is not necessarily the selector class.
-              case _            => bcs0.head
-            }
-            selectorClass.hasTransOwner(owner)
-          }
-          while (!bcs.isEmpty) {
-            val decls = bcs.head.info.decls
-            var entry = decls.lookupEntry(name)
-            while (entry ne null) {
-              val sym = entry.sym
-              val flags = sym.flags
-              if ((flags & required) == required) {
-                val excl = flags & excluded
-                if (excl == 0L &&
-                      (
-                    (bcs eq bcs0) ||
-                    (flags & PrivateLocal) != PrivateLocal ||
-                    admitPrivateLocal(bcs.head))) {
-                  if (name.isTypeName || (stableOnly && sym.isStable && !sym.hasVolatileType)) {
-                    if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
-                    return sym
-                  } else if (member eq NoSymbol) {
-                    member = sym
-                  } else if (members eq null) {
-                    if ((member ne sym) &&
-                      ((member.owner eq sym.owner) ||
-                        (flags & PRIVATE) != 0 || {
-                          if (self eq null) self = narrowForFindMember(this)
-                          if (membertpe eq null) membertpe = self.memberType(member)
-                          !(membertpe matches self.memberType(sym))
-                        })) {
-                      lastM = new ::(sym, null)
-                      members = member :: lastM
-                    }
-                  } else {
-                    var others: List[Symbol] = members
-                    var symtpe: Type = null
-                    while ((others ne null) && {
-                      val other = others.head
-                      (other ne sym) &&
-                        ((other.owner eq sym.owner) ||
-                          (flags & PRIVATE) != 0 || {
-                            if (self eq null) self = narrowForFindMember(this)
-                            if (symtpe eq null) symtpe = self.memberType(sym)
-                            !(self.memberType(other) matches symtpe)
-                               })}) {
-                      others = others.tail
-                    }
-                    if (others eq null) {
-                      val lastM1 = new ::(sym, null)
-                      lastM.tl = lastM1
-                      lastM = lastM1
-                    }
-                  }
-                } else if (excl == DEFERRED) {
-                  continue = true
-                }
-              }
-              entry = decls lookupNextEntry entry
-            } // while (entry ne null)
-            // excluded = excluded | LOCAL
-            bcs = if (name == nme.CONSTRUCTOR) Nil else bcs.tail
-          } // while (!bcs.isEmpty)
-          required |= DEFERRED
-          excluded &= ~(DEFERRED.toLong)
-        } // while (continue)
-        if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
-        if (members eq null) {
-          if (member == NoSymbol) if (Statistics.canEnable) Statistics.incCounter(noMemberCount)
-          member
-        } else {
-          if (Statistics.canEnable) Statistics.incCounter(multMemberCount)
-          lastM.tl = Nil
-          baseClasses.head.newOverloaded(this, members)
-        }
-      }
+      def findMemberInternal = new FindMember(this, name, excludedFlags, requiredFlags, stableOnly).apply()
 
       if (this.isGround) findMemberInternal
       else suspendingTypeVars(typeVarsInType(this))(findMemberInternal)

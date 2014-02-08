@@ -1,0 +1,7 @@
+t7475d.scala:4: error: value priv is not a member of T.this.TT
+  (??? : TT).priv
+             ^
+t7475d.scala:10: error: value priv is not a member of U.this.UU
+  (??? : UU).priv
+             ^
+two errors found

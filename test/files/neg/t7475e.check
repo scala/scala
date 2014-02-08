@@ -1,0 +1,4 @@
+t7475e.scala:8: error: value priv is not a member of Base.this.TT
+  (??? : TT).priv
+             ^
+one error found
