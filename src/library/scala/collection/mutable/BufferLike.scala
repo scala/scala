@@ -211,9 +211,10 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    */
   override def stringPrefix: String = "Buffer"
 
-  /** Provide a read-only view of this buffer as a sequence
+  /** Provide a read-only view over changing state of this buffer as a sequence
    *  @return  A sequence which refers to this buffer for all its operations.
    */
+  @deprecated("Result of this method will mutate when the buffer is mutated. Use toList (or whatever's appropriate) instead.", "2.11.0")
   def readOnly: scala.collection.Seq[A] = toSeq
 
   /** Creates a new collection containing both the elements of this collection and the provided

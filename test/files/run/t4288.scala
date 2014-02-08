@@ -1,6 +1,6 @@
 object Test {
   def f1 = scala.collection.mutable.ListBuffer(1 to 9: _*).slice(-5, -1)
-  def f2 = scala.collection.mutable.ListBuffer(1 to 9: _*).readOnly.slice(-5, -1)
+  def f2 = List(1 to 9: _*).slice(-5, -1)
   def f3 = Vector(1 to 9: _*).slice(-5, -1)
   def f4 = Traversable(1 to 9: _*).slice(-5, -1)
   def f5 = (1 to 9).toArray.slice(-5, -1)

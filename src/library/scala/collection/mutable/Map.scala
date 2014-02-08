@@ -47,18 +47,6 @@ trait Map[A, B]
    *  @return      a wrapper of the map with a default value
    */
   def withDefaultValue(d: B): mutable.Map[A, B] = new Map.WithDefault[A, B](this, x => d)
-
-  /*  Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy?
-  def readOnly : scala.collection.Map[A, B] = new scala.collection.Map[A, B] {
-    override def size = self.size
-    override def update(key: A, value: B) = self.update(key, value)
-    override def - (elem: A) = self - elem
-    override def iterator = self.iterator
-    override def foreach[U](f: ((A, B)) =>  U) = self.foreach(f)
-    override def empty[C] = self.empty[C]
-    def get(key: A) = self.get(key)
-  }
-  */
 }
 
 /** $factoryInfo
