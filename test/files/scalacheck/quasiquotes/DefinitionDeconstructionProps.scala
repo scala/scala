@@ -10,6 +10,7 @@ object DefinitionDeconstructionProps
   with ValVarDeconstruction
   with DefDeconstruction
   with PackageDeconstruction
+  with ImportDeconstruction
 
 trait TraitDeconstruction { self: QuasiquoteProperties =>
   property("exhaustive trait matcher") = test {
@@ -217,5 +218,57 @@ trait DefDeconstruction { self: QuasiquoteProperties =>
   property("extract implicit arg list (2)") = test {
     val q"def foo(...$argss)(implicit ..$impl)" = q"def foo(x: Int)"
     assert(impl.isEmpty)
+  }
+}
+
+trait ImportDeconstruction { self: QuasiquoteProperties =>
+  property("exhaustive import matcher") = test {
+    def matches(line: String) = {
+      val q"import $ref.{..$sels}" = parse(line)
+    }
+    matches("import foo.bar")
+    matches("import foo.{bar, baz}")
+    matches("import foo.{a => b, c => d}")
+    matches("import foo.{poision => _, _}")
+    matches("import foo.bar.baz._")
+  }
+
+  property("extract import binding") = test {
+    val q"import $_.$sel" = q"import foo.bar"
+    val pq"bar" = sel
+  }
+
+  property("extract import wildcard") = test {
+    val q"import $_.$sel" = q"import foo._"
+    val pq"_" = sel
+  }
+
+  property("extract import rename") = test {
+    val q"import $_.$sel" = q"import foo.{bar => baz}"
+    val pq"bar -> baz" = sel
+    val pq"$left -> $right" = sel
+    val pq"bar" = left
+    val pq"baz" = right
+  }
+
+  property("extract import unimport") = test {
+    val q"import $_.$sel" = q"import foo.{bar => _}"
+    val pq"bar -> _" = sel
+    val pq"$left -> $right" = sel
+    val pq"bar" = left
+    val pq"_" = right
+  }
+
+  property("splice names into import selector") = forAll {
+    (expr: Tree, plain: TermName, oldname: TermName, newname: TermName, discard: TermName) =>
+
+    val Import(expr1, List(
+      ImportSelector(plain11, _, plain12, _),
+      ImportSelector(oldname1, _, newname1, _),
+      ImportSelector(discard1, _, wildcard, _))) =
+        q"import $expr.{$plain, $oldname => $newname, $discard => _}"
+
+    expr1 ≈ expr && plain11 == plain12 && plain12 == plain &&
+    oldname1 == oldname && newname1 == newname && discard1 == discard && wildcard == nme.WILDCARD
   }
 }

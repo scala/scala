@@ -198,9 +198,9 @@ private[reflect] trait BuildUtils { self: Universe =>
     val SyntacticFunction: SyntacticFunctionExtractor
 
     trait SyntacticFunctionExtractor {
-      def apply(params: List[Tree], body: Tree): Tree
+      def apply(params: List[Tree], body: Tree): Function
 
-      def unapply(tree: Tree): Option[(List[ValDef], Tree)]
+      def unapply(tree: Function): Option[(List[ValDef], Tree)]
     }
 
     val SyntacticDefDef: SyntacticDefDefExtractor
@@ -289,6 +289,12 @@ private[reflect] trait BuildUtils { self: Universe =>
     trait SyntacticIdentExtractor {
       def apply(name: Name, isBackquoted: Boolean = false): Ident
       def unapply(tree: Ident): Option[(Name, Boolean)]
+    }
+
+    val SyntacticImport: SyntacticImportExtractor
+    trait SyntacticImportExtractor {
+      def apply(expr: Tree, selectors: List[Tree]): Import
+      def unapply(imp: Import): Some[(Tree, List[Tree])]
     }
   }
 }
