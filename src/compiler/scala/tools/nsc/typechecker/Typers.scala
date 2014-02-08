@@ -108,7 +108,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     val runDefinitions = currentRun.runDefinitions
     import runDefinitions._
 
-    val infer = new Inferencer(context0) {
+    val infer = new Inferencer {
+      def context = Typer.this.context
       // See SI-3281 re undoLog
       override def isCoercible(tp: Type, pt: Type) = undoLog undo viewExists(tp, pt)
     }

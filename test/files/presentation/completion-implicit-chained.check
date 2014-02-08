@@ -3,7 +3,7 @@ reload: Completions.scala
 askTypeCompletion at Completions.scala(11,16)
 ================================================================================
 [response] askTypeCompletion at (11,16)
-retrieved 24 members
+retrieved 22 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 def equals(x$1: Any): Boolean
@@ -11,10 +11,8 @@ def hashCode(): Int
 def map(x: Int => Int)(implicit a: DummyImplicit): test.O.type
 def toString(): String
 final def !=(x$1: Any): Boolean
-final def !=(x$1: AnyRef): Boolean
 final def ##(): Int
 final def ==(x$1: Any): Boolean
-final def ==(x$1: AnyRef): Boolean
 final def asInstanceOf[T0]: T0
 final def eq(x$1: AnyRef): Boolean
 final def isInstanceOf[T0]: Boolean
