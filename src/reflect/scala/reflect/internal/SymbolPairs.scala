@@ -65,6 +65,7 @@ abstract class SymbolPairs {
     def rootType: Type      = base.thisType
 
     def lowType: Type       = self memberType low
+    def lowInfo: Type       = self memberInfo low
     def lowErased: Type     = erasure.specialErasure(base)(low.tpe)
     def lowClassBound: Type = classBoundAsSeen(low.tpe.typeSymbol)
 

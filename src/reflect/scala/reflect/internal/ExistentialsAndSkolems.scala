@@ -43,31 +43,6 @@ trait ExistentialsAndSkolems {
   def isRawParameter(sym: Symbol) = // is it a type parameter leaked by a raw type?
     sym.isTypeParameter && sym.owner.isJavaDefined
 
-  /** If we map a set of hidden symbols to their existential bounds, we
-   *  have a problem: the bounds may themselves contain references to the
-   *  hidden symbols.  So this recursively calls existentialBound until
-   *  the typeSymbol is not amongst the symbols being hidden.
-   */
-  private def existentialBoundsExcludingHidden(hidden: List[Symbol]): Map[Symbol, Type] = {
-    def safeBound(t: Type): Type =
-      if (hidden contains t.typeSymbol) safeBound(t.typeSymbol.existentialBound.bounds.hi) else t
-
-    def hiBound(s: Symbol): Type = safeBound(s.existentialBound.bounds.hi) match {
-      case tp @ RefinedType(parents, decls) =>
-        val parents1 = parents mapConserve safeBound
-        if (parents eq parents1) tp
-        else copyRefinedType(tp, parents1, decls)
-      case tp => tp
-    }
-
-    // Hanging onto lower bound in case anything interesting
-    // happens with it.
-    mapFrom(hidden)(s => s.existentialBound match {
-      case TypeBounds(lo, hi) => TypeBounds(lo, hiBound(s))
-      case _                  => hiBound(s)
-    })
-  }
-
   /** Given a set `rawSyms` of term- and type-symbols, and a type
    *  `tp`, produce a set of fresh type parameters and a type so that
    *  it can be abstracted to an existential type. Every type symbol
@@ -85,26 +60,76 @@ trait ExistentialsAndSkolems {
    *  only the type of the Ident is changed.
    */
   final def existentialTransform[T](rawSyms: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol)(creator: (List[Symbol], Type) => T): T = {
-    val allBounds = existentialBoundsExcludingHidden(rawSyms)
-    val typeParams: List[Symbol] = rawSyms map { sym =>
+    /** If we map a set of hidden symbols to their existential bounds, we
+     *  have a problem: the bounds may themselves contain references to the
+     *  hidden symbols.  So this recursively calls existentialBound until
+     *  the typeSymbol is not amongst the symbols being hidden.
+     */
+    object deepBound extends TypeMap {
+      def safeExistentialBound(tp: Type): Type = {
+        val sym = tp.typeSymbol
+        if (rawSyms contains sym) safeExistentialBound(sym.existentialBound.bounds.hi)
+        else tp
+      }
+
+      def apply(tp: Type) = mapOver(safeExistentialBound(tp))
+    }
+
+    val quantifiers = rawSyms map { sym =>
       val name = sym.name match {
         case x: TypeName  => x
         case x            => tpnme.singletonName(x)
       }
-      def rawOwner0  = rawOwner orElse abort(s"no owner provided for existential transform over raw parameter: $sym")
-      val bound      = allBounds(sym)
-      val sowner     = if (isRawParameter(sym)) rawOwner0 else sym.owner
-      val quantified = sowner.newExistential(name, sym.pos)
+      def rawOwner0 = rawOwner orElse abort(s"no owner provided for existential transform over raw parameter: $sym")
+      val sowner    = if (isRawParameter(sym)) rawOwner0 else sym.owner
+      val quant     = sowner.newExistential(name, sym.pos)
+      val bound     = sym.existentialBound match {
+        // Hanging onto lower bound in case anything interesting happens with it.
+        case TypeBounds(lo, hi) => TypeBounds(lo, deepBound(hi))
+        case tp                 => deepBound(tp.bounds.hi)
+      }
 
-      quantified setInfo bound.cloneInfo(quantified)
+      quant setInfo bound.cloneInfo(quant)
     }
+
     // Higher-kinded existentials are not yet supported, but this is
     // tpeHK for when they are: "if a type constructor is expected/allowed,
     // tpeHK must be called instead of tpe."
-    val typeParamTypes = typeParams map (_.tpeHK)
-    def doSubst(info: Type) = info.subst(rawSyms, typeParamTypes)
+    val quantifierTypes = quantifiers map (_.tpeHK)
 
-    creator(typeParams map (_ modifyInfo doSubst), doSubst(tp))
+    // TODO: fuse the substitutions? both are needed!
+    // the first one replaces types, the second one is motivated by the example below
+    def doSubst(info: Type) = info.subst(rawSyms, quantifierTypes).substSym(rawSyms, quantifiers)
+
+    /* Abandon all hope for symbol consistency, ye who enter here:
+     * For example, from SI-6493, let's compute a result type for
+     *   `def foo = { class Foo { class Bar { val b = 2 }}; val f = new Foo; new f.Bar }`:
+     *
+     * Note the inconsistent symbol ids in:
+     *
+     * rawSyms     = List(value f#49740, class Foo#49739, class Bar#49742)
+     * quantifiers + their infos =
+     *       type f.type#49774 <: AnyRef{type Bar#49762 <: AnyRef{val b#49764: Int}} with Singleton,
+     *       type Foo#49775    <: AnyRef{type Bar#49770 <: AnyRef{val b#49772: Int}},
+     *                                   type Bar#49773 <: AnyRef{val b#49758: Int}
+     *
+     *
+     * It makes sense to subst the symbols in tp, but the modifyInfo will have little effect on quantifiers.
+     * Luckily, coevolveSym will fix up some of the inconsistencies, so that we get
+     * `f.type#49774.Bar#49762`, which is extrapolated to `AnyRef{type Bar#49868 <: AnyRef{val b: Int}}#Bar#49868`.
+     *
+     * The intermediate type `f.type#49774.Bar#49762` motivates the need for the `.substSym` above,
+     * as `.subst` does not touch the `Bar#49742` in the `f#49740.Bar#49742` that we start out with.
+     *
+     * The remaining problem is that ExistentialExtrapolation will not consider type Bar#49868 as existentially bound.
+     * Instead, it's looking for the stale version in quantifiers, Bar#49773.
+     * If it was looking for Bar#49868, the result type would simply be `AnyRef{val b: Int}`
+     *
+     * TODO: figure out how to compute the full set of quantifiers for extrapolation
+     *       the `doSubst(tp)` will clone more symbols, so we'll probably need to traverse its result and
+     *       somehow correlate the contained symbols to those in `quantifiers`...
+     */
+    creator(quantifiers map (_ modifyInfo doSubst), doSubst(tp))
   }
 
   /**

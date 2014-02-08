@@ -2203,6 +2203,8 @@ trait Types
      *  have created a new symbol for the one the original sym referred to)
      */
     override def coevolveSym(newPre: Type): Symbol =
+      // the `embeddedSymbol(pre, sym.name) == sym` condition isn't strictly needed,
+      // but I prefer to keep this hack as conservative as possible
       if ((pre ne newPre) && embeddedSymbol(pre, sym.name) == sym) {
         val newSym = embeddedSymbol(newPre, sym.name)
         debuglog(s"co-evolve: ${pre} -> ${newPre}, $sym : ${sym.info} -> $newSym : ${newSym.info}")
