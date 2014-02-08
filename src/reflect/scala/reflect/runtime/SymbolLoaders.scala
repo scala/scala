@@ -6,6 +6,7 @@ import internal.Flags
 import java.lang.{Class => jClass, Package => jPackage}
 import scala.collection.mutable
 import scala.reflect.runtime.ReflectionUtils.scalacShouldntLoadClass
+import scala.reflect.internal.Flags._
 
 private[reflect] trait SymbolLoaders { self: SymbolTable =>
 
@@ -17,6 +18,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
    *  is found, a package is created instead.
    */
   class TopClassCompleter(clazz: Symbol, module: Symbol) extends SymLoader with FlagAssigningCompleter {
+    markFlagsCompleted(clazz, module)(mask = ~TopLevelPickledFlags)
     override def complete(sym: Symbol) = {
       debugInfo("completing "+sym+"/"+clazz.fullName)
       assert(sym == clazz || sym == module || sym == module.moduleClass)
@@ -24,6 +26,8 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
         val loadingMirror = mirrorThatLoaded(sym)
         val javaClass = loadingMirror.javaClass(clazz.javaClassName)
         loadingMirror.unpickleClass(clazz, module, javaClass)
+        // NOTE: can't mark as thread-safe here, because unpickleClass might decide to delegate to FromJavaClassCompleter
+        // if (!isCompilerUniverse) markAllCompleted(clazz, module)
       }
     }
     override def load(sym: Symbol) = complete(sym)
@@ -64,6 +68,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
       sym setInfo new ClassInfoType(List(), new PackageScope(sym), sym)
         // override def safeToString = pkgClass.toString
       openPackageModule(sym)
+      markAllCompleted(sym)
     }
   }
 

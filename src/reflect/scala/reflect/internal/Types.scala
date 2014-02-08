@@ -1969,12 +1969,12 @@ trait Types
     def apply(value: Constant) = unique(new UniqueConstantType(value))
   }
 
-  private var _volatileRecursions: Int = 0
-  def volatileRecursions = _volatileRecursions
-  def volatileRecursions_=(value: Int) = _volatileRecursions = value
-
-  private val _pendingVolatiles = new mutable.HashSet[Symbol]
-  def pendingVolatiles = _pendingVolatiles
+  /* Syncnote: The `volatile` var and `pendingVolatiles` mutable set need not be protected
+   * with synchronized, because they are accessed only from isVolatile, which is called only from
+   * Typer.
+   */
+  private var volatileRecursions: Int = 0
+  private val pendingVolatiles = new mutable.HashSet[Symbol]
 
   class ArgsTypeRef(pre0: Type, sym0: Symbol, args0: List[Type]) extends TypeRef(pre0, sym0, args0) {
     require(args0 ne Nil, this)

@@ -33,19 +33,19 @@ trait BuildUtils { self: SymbolTable =>
     }
 
     def newFreeTerm(name: String, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
-      newFreeTermSymbol(newTermName(name), value, flags, origin)
+      newFreeTermSymbol(newTermName(name), value, flags, origin).markFlagsCompleted(mask = AllFlags)
 
     def newFreeType(name: String, flags: Long = 0L, origin: String = null): FreeTypeSymbol =
-      newFreeTypeSymbol(newTypeName(name), flags, origin)
+      newFreeTypeSymbol(newTypeName(name), flags, origin).markFlagsCompleted(mask = AllFlags)
 
     def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol =
-      owner.newNestedSymbol(name, pos, flags, isClass)
+      owner.newNestedSymbol(name, pos, flags, isClass).markFlagsCompleted(mask = AllFlags)
 
     def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S =
       sym.setAnnotations(annots)
 
     def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S =
-      sym.setTypeSignature(tpe)
+      sym.setTypeSignature(tpe).markAllCompleted()
 
     def This(sym: Symbol): Tree = self.This(sym)
 
