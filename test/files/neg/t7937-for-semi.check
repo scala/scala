@@ -1,0 +1,9 @@
+t7937-for-semi.scala:7: warning: guard (if expression) in for comprehension should follow a semicolon when it comes after a value definition
+  def f2() = for (i <- 1 to 5 ; j = 2 * i if j > 4) yield j    // no, that's confusing
+                                          ^
+t7937-for-semi.scala:12: warning: guard (if expression) in for comprehension should follow a semicolon when it comes after a value definition
+    k = 2 * j if k > 4      // no, that's super confusing
+              ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found
