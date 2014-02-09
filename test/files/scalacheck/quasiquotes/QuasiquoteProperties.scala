@@ -28,7 +28,7 @@ trait Helpers {
 
     override def transform(tree: Tree): Tree = tree match {
       case Ident(SimplifiedName(name))                  => Ident(name)
-      case ValDef(mods, SimplifiedName(name), tpt, rhs) => ValDef(mods, name, tpt, rhs)
+      case ValDef(mods, SimplifiedName(name), tpt, rhs) => ValDef(mods, name, transform(tpt), transform(rhs))
       case Bind(SimplifiedName(name), rhs)              => Bind(name, rhs)
       case _ =>
         super.transform(tree)

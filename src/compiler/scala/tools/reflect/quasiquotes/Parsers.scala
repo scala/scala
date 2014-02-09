@@ -14,6 +14,7 @@ import scala.util.Try
  */
 trait Parsers { self: Quasiquotes =>
   import global.{Try => _, _}
+  import build.implodePatDefs
 
   abstract class Parser extends {
     val global: self.global.type = self.global
@@ -182,7 +183,7 @@ trait Parsers { self: Quasiquotes =>
   }
 
   object TermParser extends Parser {
-    def entryPoint = parser => Q(gen.mkTreeOrBlock(parser.templateOrTopStatSeq()))
+    def entryPoint = parser => Q(implodePatDefs(gen.mkTreeOrBlock(parser.templateOrTopStatSeq())))
   }
 
   object TypeParser extends Parser {
@@ -195,7 +196,7 @@ trait Parsers { self: Quasiquotes =>
   }
 
   object CaseParser extends Parser {
-    def entryPoint = _.caseClause()
+    def entryPoint = parser => implodePatDefs(parser.caseClause())
   }
 
   object PatternParser extends Parser {
@@ -209,7 +210,7 @@ trait Parsers { self: Quasiquotes =>
     def entryPoint = { parser =>
       val enums = parser.enumerator(isFirst = false, allowNestedIf = false)
       assert(enums.length == 1)
-      enums.head
+      implodePatDefs(enums.head)
     }
   }
 

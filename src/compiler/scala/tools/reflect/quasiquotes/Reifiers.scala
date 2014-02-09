@@ -194,8 +194,8 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticEmptyTypeTree)
       case SyntacticImport(expr, selectors) =>
         reifyBuildCall(nme.SyntacticImport, expr, selectors)
-      case Q(Placeholder(Hole(tree, DotDot))) =>
-        mirrorBuildCall(nme.SyntacticBlock, tree)
+      case Q(tree) if fillListHole.isDefinedAt(tree) =>
+        mirrorBuildCall(nme.SyntacticBlock, fillListHole(tree))
       case Q(other) =>
         reifyTree(other)
       // Syntactic block always matches so we have to be careful
@@ -311,11 +311,7 @@ trait Reifiers { self: Quasiquotes =>
      */
     def reifyMultiCardinalityList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree
 
-    /** Reifies arbitrary list filling ..$x and ...$y holeMap when they are put
-     *  in the correct position. Fallbacks to regular reification for non-high cardinality
-     *  elements.
-     */
-    override def reifyList(xs: List[Any]): Tree = reifyMultiCardinalityList(xs) {
+    val fillListHole: PartialFunction[Any, Tree] = {
       case Placeholder(Hole(tree, DotDot)) => tree
       case CasePlaceholder(Hole(tree, DotDot)) => tree
       case RefineStatPlaceholder(h @ Hole(_, DotDot)) => reifyRefineStat(h)
@@ -323,11 +319,22 @@ trait Reifiers { self: Quasiquotes =>
       case PackageStatPlaceholder(h @ Hole(_, DotDot)) => reifyPackageStat(h)
       case ForEnumPlaceholder(Hole(tree, DotDot)) => tree
       case ParamPlaceholder(Hole(tree, DotDot)) => tree
+      case SyntacticPatDef(mods, pat, tpt, rhs) =>
+        reifyBuildCall(nme.SyntacticPatDef, mods, pat, tpt, rhs)
+      case SyntacticValDef(mods, p @ Placeholder(h: ApplyHole), tpt, rhs) if h.tpe <:< treeType =>
+        mirrorBuildCall(nme.SyntacticPatDef, reify(mods), h.tree, reify(tpt), reify(rhs))
+    }
+
+    val fillListOfListsHole: PartialFunction[Any, Tree] = {
       case List(ParamPlaceholder(Hole(tree, DotDotDot))) => tree
       case List(Placeholder(Hole(tree, DotDotDot))) => tree
-    } {
-      reify(_)
     }
+
+    /** Reifies arbitrary list filling ..$x and ...$y holeMap when they are put
+     *  in the correct position. Fallbacks to regular reification for non-high cardinality
+     *  elements.
+     */
+    override def reifyList(xs: List[Any]): Tree = reifyMultiCardinalityList(xs)(fillListHole.orElse(fillListOfListsHole))(reify)
 
     def reifyAnnotList(annots: List[Tree]): Tree = reifyMultiCardinalityList(annots) {
       case AnnotPlaceholder(h @ Hole(_, DotDot)) => reifyAnnotation(h)
