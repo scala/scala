@@ -24,7 +24,7 @@ import generic.CanBuildFrom
  *  rapidly as 2^30 is approached.
  *
  */
-final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBufferSize: Int, initBlank: Boolean)
+class LongMap[V] private[collection] (initialBufferSize: Int, initBlank: Boolean)
 extends AbstractMap[Long, V]
    with Map[Long, V]
    with MapLike[Long, V, LongMap[V]]
@@ -32,20 +32,14 @@ extends AbstractMap[Long, V]
 {
   import LongMap._
 
-  def this() = this(LongMap.exceptionDefault, 16, true)
-  
-  /** Creates a new `LongMap` that returns default values according to a supplied key-value mapping. */
-  def this(defaultEntry: Long => V) = this(defaultEntry, 16, true)
+  def this() = this(16, true)
   
   /** Creates a new `LongMap` with an initial buffer of specified size.
    * 
    *  A LongMap can typically contain half as many elements as its buffer size
    *  before it requires resizing.
    */
-  def this(initialBufferSize: Int) = this(LongMap.exceptionDefault, initialBufferSize, true)
-  
-  /** Creates a new `LongMap` with specified default values and initial buffer size. */
-  def this(defaultEntry: Long => V,  initialBufferSize: Int) = this(defaultEntry,  initialBufferSize,  true)
+  def this(initialBufferSize: Int) = this(initialBufferSize, true)
   
   private[this] var mask = 0
   private[this] var extraKeys: Int = 0
@@ -72,7 +66,7 @@ extends AbstractMap[Long, V]
     mask = m; extraKeys = ek; zeroValue = zv; minValue = mv; _size = sz; _vacant = vc; _keys = kz; _values = vz
   }
   
-  override def size: Int = _size + (extraKeys+1)/2
+  override final def size: Int = _size + (extraKeys+1)/2
   override def empty: LongMap[V] = new LongMap()
   
   private def imbalanced: Boolean = 
@@ -117,12 +111,12 @@ extends AbstractMap[Long, V]
     o
   }
   
-  override def contains(key: Long): Boolean = {
+  override final def contains(key: Long): Boolean = {
     if (key == -key) (((key>>>63).toInt+1) & extraKeys) != 0
     else seekEntry(key) >= 0
   }
   
-  override def get(key: Long): Option[V] = {
+  override final def get(key: Long): Option[V] = {
     if (key == -key) {
       if ((((key>>>63).toInt+1) & extraKeys) == 0) None
       else if (key == 0) Some(zeroValue.asInstanceOf[V])
@@ -134,7 +128,7 @@ extends AbstractMap[Long, V]
     }
   }
   
-  override def getOrElse[V1 >: V](key: Long, default: => V1): V1 = {
+  override final def getOrElse[V1 >: V](key: Long, default: => V1): V1 = {
     if (key == -key) {
       if ((((key>>>63).toInt+1) & extraKeys) == 0) default
       else if (key == 0) zeroValue.asInstanceOf[V1]
@@ -146,7 +140,7 @@ extends AbstractMap[Long, V]
     }
   }
   
-  override def getOrElseUpdate(key: Long, defaultValue: => V): V = {
+  override final def getOrElseUpdate(key: Long, defaultValue: => V): V = {
     if (key == -key) {
       val kbits = (key>>>63).toInt + 1
       if ((kbits & extraKeys) == 0) {
@@ -193,7 +187,7 @@ extends AbstractMap[Long, V]
    *  may not exist, if the default null/zero is acceptable.  For key/value
    *  pairs that do exist,  `apply` (i.e. `map(key)`) is equally fast.
    */
-  def getOrNull(key: Long): V = {
+  final def getOrNull(key: Long): V = {
     if (key == -key) {
       if ((((key>>>63).toInt+1) & extraKeys) == 0) null.asInstanceOf[V]
       else if (key == 0) zeroValue.asInstanceOf[V]
@@ -209,22 +203,22 @@ extends AbstractMap[Long, V]
    *  If the key does not exist in the map, the `defaultEntry` for that key
    *  will be returned instead.
    */
-  override def apply(key: Long): V = {
+  override final def apply(key: Long): V = {
     if (key == -key) {
-      if ((((key>>>63).toInt+1) & extraKeys) == 0) defaultEntry(key)
+      if ((((key>>>63).toInt+1) & extraKeys) == 0) default(key)
       else if (key == 0) zeroValue.asInstanceOf[V]
       else minValue.asInstanceOf[V]
     }
     else {
       val i = seekEntry(key)
-      if (i < 0) defaultEntry(key) else _values(i).asInstanceOf[V]
+      if (i < 0) default(key) else _values(i).asInstanceOf[V]
     }
   }
   
-  /** The user-supplied default value for the key.  Throws an exception
-   *  if no other default behavior was specified.
+  /** The default value returned when `apply` is used on a missing key.  Throws an exception
+   *  if not overridden to provide alternate behavior.
    */
-  override def default(key: Long) = defaultEntry(key)
+  override def default(key: Long): V = throw new NoSuchElementException(key.toString)
   
   private def repack(newMask: Int) {
     val ok = _keys
@@ -253,14 +247,14 @@ extends AbstractMap[Long, V]
    *  improved performance.  Repacking takes time proportional to the number
    *  of entries in the map.
    */
-  def repack() {
+  final def repack() {
     var m = mask
     if (_size + _vacant >= 0.5*mask && !(_vacant > 0.2*mask)) m = ((m << 1) + 1) & IndexMask
     while (m > 8 && 8*_size < m) m = m >>> 1
     repack(m)
   }
   
-  override def put(key: Long, value: V): Option[V] = {
+  override final def put(key: Long, value: V): Option[V] = {
     if (key == -key) {
       if (key == 0) {
         val ans = if ((extraKeys&1) == 1) Some(zeroValue.asInstanceOf[V]) else None
@@ -299,7 +293,7 @@ extends AbstractMap[Long, V]
    * 
    *  This is the fastest way to add an entry to a `LongMap`.
    */
-  override def update(key: Long, value: V): Unit = {
+  override final def update(key: Long, value: V): Unit = {
     if (key == -key) {
       if (key == 0) {
         zeroValue = value.asInstanceOf[AnyRef]
@@ -328,11 +322,11 @@ extends AbstractMap[Long, V]
   }
   
   /** Adds a new key/value pair to this map and returns the map. */
-  def +=(key: Long, value: V): this.type = { update(key, value); this }
+  final def +=(key: Long, value: V): this.type = { update(key, value); this }
   
-  def +=(kv: (Long, V)): this.type = { update(kv._1, kv._2); this }
+  final def +=(kv: (Long, V)): this.type = { update(kv._1, kv._2); this }
   
-  def -=(key: Long): this.type = {
+  final def -=(key: Long): this.type = {
     if (key == -key) {
       if (key == 0L) {
         extraKeys &= 0x2
@@ -407,10 +401,13 @@ extends AbstractMap[Long, V]
     if ((extraKeys & 2) == 2) f((Long.MinValue, minValue.asInstanceOf[V]))
   }
   
+  /** Creates a new copy of this map.  The new copy has standard default behavior
+   *  (throws an exception when accessing a missing key with `apply`).
+   */
   override def clone(): LongMap[V] = {
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
     val vz = java.util.Arrays.copyOf(_values,  _values.length)
-    val lm = new LongMap[V](defaultEntry, 1, false)
+    val lm = new LongMap[V](1, false)
     lm.initializeTo(mask, extraKeys, zeroValue, minValue, _size, _vacant, kz,  vz)
     lm
   }
@@ -450,7 +447,7 @@ extends AbstractMap[Long, V]
    *  collection immediately.
    */
   def mapValuesNow[V1](f: V => V1): LongMap[V1] = {
-    val lm = new LongMap[V1](LongMap.exceptionDefault,  1,  false)
+    val lm = new LongMap[V1](1,  false)
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
     val vz = new Array[AnyRef](_values.length)
     var i,j = 0
@@ -509,8 +506,6 @@ object LongMap {
   private final val VacantBit  = 0x40000000
   private final val MissVacant = 0xC0000000
   
-  private val exceptionDefault: Long => Nothing = (k: Long) => throw new NoSuchElementException(k.toString)
-  
   implicit def canBuildFrom[V, U]: CanBuildFrom[LongMap[V], (Long, U), LongMap[U]] = 
     new CanBuildFrom[LongMap[V], (Long, U), LongMap[U]] {
       def apply(from: LongMap[V]): LongMapBuilder[U] = apply()
@@ -540,7 +535,8 @@ object LongMap {
   def empty[V]: LongMap[V] = new LongMap[V]
   
   /** Creates a new empty `LongMap` with the supplied default */
-  def withDefault[V](default: Long => V): LongMap[V] = new LongMap[V](default)
+  def withDefault[V](defaultMap: Long => V): LongMap[V] =
+    new LongMap[V]() { override def default(key: Long) = defaultMap(key) }
   
   /** Creates a new `LongMap` from arrays of keys and values. 
    *  Equivalent to but more efficient than `LongMap((keys zip values): _*)`.
