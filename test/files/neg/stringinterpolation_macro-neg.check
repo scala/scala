@@ -1,61 +1,61 @@
-stringinterpolation_macro-neg.scala:8: error: too few parts
+stringinterpolation_macro-neg.scala:13: error: there are no parts
   new StringContext().f()
   ^
-stringinterpolation_macro-neg.scala:9: error: too few arguments for interpolated string
+stringinterpolation_macro-neg.scala:14: error: too few arguments for interpolated string
   new StringContext("", " is ", "%2d years old").f(s)
                                                    ^
-stringinterpolation_macro-neg.scala:10: error: too many arguments for interpolated string
+stringinterpolation_macro-neg.scala:15: error: too many arguments for interpolated string
   new StringContext("", " is ", "%2d years old").f(s, d, d)
                                                          ^
-stringinterpolation_macro-neg.scala:11: error: too few arguments for interpolated string
+stringinterpolation_macro-neg.scala:16: error: too few arguments for interpolated string
   new StringContext("", "").f()
                              ^
-stringinterpolation_macro-neg.scala:14: error: type mismatch;
+stringinterpolation_macro-neg.scala:19: error: type mismatch;
  found   : String
  required: Boolean
   f"$s%b"
      ^
-stringinterpolation_macro-neg.scala:15: error: type mismatch;
+stringinterpolation_macro-neg.scala:20: error: type mismatch;
  found   : String
  required: Char
   f"$s%c"
      ^
-stringinterpolation_macro-neg.scala:16: error: type mismatch;
+stringinterpolation_macro-neg.scala:21: error: type mismatch;
  found   : Double
  required: Char
   f"$f%c"
      ^
-stringinterpolation_macro-neg.scala:17: error: type mismatch;
+stringinterpolation_macro-neg.scala:22: error: type mismatch;
  found   : String
  required: Int
   f"$s%x"
      ^
-stringinterpolation_macro-neg.scala:18: error: type mismatch;
+stringinterpolation_macro-neg.scala:23: error: type mismatch;
  found   : Boolean
  required: Int
   f"$b%d"
      ^
-stringinterpolation_macro-neg.scala:19: error: type mismatch;
+stringinterpolation_macro-neg.scala:24: error: type mismatch;
  found   : String
  required: Int
   f"$s%d"
      ^
-stringinterpolation_macro-neg.scala:20: error: type mismatch;
+stringinterpolation_macro-neg.scala:25: error: type mismatch;
  found   : Double
  required: Int
   f"$f%o"
      ^
-stringinterpolation_macro-neg.scala:21: error: type mismatch;
+stringinterpolation_macro-neg.scala:26: error: type mismatch;
  found   : String
  required: Double
   f"$s%e"
      ^
-stringinterpolation_macro-neg.scala:22: error: type mismatch;
+stringinterpolation_macro-neg.scala:27: error: type mismatch;
  found   : Boolean
  required: Double
   f"$b%f"
      ^
-stringinterpolation_macro-neg.scala:27: error: type mismatch;
+stringinterpolation_macro-neg.scala:32: error: type mismatch;
  found   : String
  required: Int
 Note that implicit conversions are not applicable because they are ambiguous:
@@ -64,7 +64,109 @@ Note that implicit conversions are not applicable because they are ambiguous:
  are possible conversion functions from String to Int
     f"$s%d"
        ^
-stringinterpolation_macro-neg.scala:30: error: illegal conversion character
+stringinterpolation_macro-neg.scala:35: error: illegal conversion character 'i'
   f"$s%i"
        ^
-15 errors found
+stringinterpolation_macro-neg.scala:38: error: Illegal flag '+'
+  f"$s%+ 0,(s"
+       ^
+stringinterpolation_macro-neg.scala:38: error: Illegal flag ' '
+  f"$s%+ 0,(s"
+        ^
+stringinterpolation_macro-neg.scala:38: error: Illegal flag '0'
+  f"$s%+ 0,(s"
+         ^
+stringinterpolation_macro-neg.scala:38: error: Illegal flag ','
+  f"$s%+ 0,(s"
+          ^
+stringinterpolation_macro-neg.scala:38: error: Illegal flag '('
+  f"$s%+ 0,(s"
+           ^
+stringinterpolation_macro-neg.scala:39: error: Only '-' allowed for c conversion
+  f"$c%#+ 0,(c"
+       ^
+stringinterpolation_macro-neg.scala:40: error: # not allowed for d conversion
+  f"$d%#d"
+       ^
+stringinterpolation_macro-neg.scala:41: error: ',' only allowed for d conversion of integral types
+  f"$d%,x"
+       ^
+stringinterpolation_macro-neg.scala:42: error: only use '+' for BigInt conversions to o, x, X
+  f"$d%+ (x"
+       ^
+stringinterpolation_macro-neg.scala:42: error: only use ' ' for BigInt conversions to o, x, X
+  f"$d%+ (x"
+        ^
+stringinterpolation_macro-neg.scala:42: error: only use '(' for BigInt conversions to o, x, X
+  f"$d%+ (x"
+         ^
+stringinterpolation_macro-neg.scala:43: error: ',' not allowed for a, A
+  f"$f%,(a"
+       ^
+stringinterpolation_macro-neg.scala:43: error: '(' not allowed for a, A
+  f"$f%,(a"
+        ^
+stringinterpolation_macro-neg.scala:44: error: Only '-' allowed for date/time conversions
+  f"$t%#+ 0,(tT"
+       ^
+stringinterpolation_macro-neg.scala:47: error: precision not allowed
+  f"$c%.2c"
+       ^
+stringinterpolation_macro-neg.scala:48: error: precision not allowed
+  f"$d%.2d"
+       ^
+stringinterpolation_macro-neg.scala:49: error: precision not allowed
+  f"%.2%"
+     ^
+stringinterpolation_macro-neg.scala:50: error: precision not allowed
+  f"%.2n"
+     ^
+stringinterpolation_macro-neg.scala:51: error: precision not allowed
+  f"$f%.2a"
+       ^
+stringinterpolation_macro-neg.scala:52: error: precision not allowed
+  f"$t%.2tT"
+       ^
+stringinterpolation_macro-neg.scala:55: error: No last arg
+  f"%<s"
+     ^
+stringinterpolation_macro-neg.scala:56: error: No last arg
+  f"%<c"
+     ^
+stringinterpolation_macro-neg.scala:57: error: No last arg
+  f"%<tT"
+     ^
+stringinterpolation_macro-neg.scala:58: error: Argument index out of range
+  f"${8}%d ${9}%d%3$$d"
+                  ^
+stringinterpolation_macro-neg.scala:59: error: Argument index out of range
+  f"${8}%d ${9}%d%0$$d"
+                  ^
+stringinterpolation_macro-neg.scala:62: warning: Index is not this arg
+  f"${8}%d ${9}%1$$d"
+                ^
+stringinterpolation_macro-neg.scala:63: warning: Argument index ignored if '<' flag is present
+  f"$s%s $s%s %1$$<s"
+               ^
+stringinterpolation_macro-neg.scala:64: warning: Index is not this arg
+  f"$s%s $s%1$$s"
+            ^
+stringinterpolation_macro-neg.scala:67: error: type mismatch;
+ found   : String
+ required: java.util.Formattable
+  f"$s%#s"
+     ^
+stringinterpolation_macro-neg.scala:70: error: 'G' doesn't seem to be a date or time conversion
+  f"$t%tG"
+        ^
+stringinterpolation_macro-neg.scala:71: error: Date/time conversion must have two characters
+  f"$t%t"
+       ^
+stringinterpolation_macro-neg.scala:72: error: Missing conversion operator in '%10.5'; use %% for literal %, %n for newline
+  f"$s%10.5"
+      ^
+stringinterpolation_macro-neg.scala:75: error: conversions must follow a splice; use %% for literal %, %n for newline
+  f"${d}random-leading-junk%d"
+                           ^
+three warnings found
+45 errors found
