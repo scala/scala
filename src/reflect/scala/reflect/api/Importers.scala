@@ -52,7 +52,7 @@ package api
  *    val imported = importer.importTree(tree)
  *
  *    // after the tree is imported, it can be evaluated as usual
- *    val tree = toolBox.resetAllAttrs(imported.duplicate)
+ *    val tree = toolBox.untypecheck(imported.duplicate)
  *    val valueOfX = toolBox.eval(imported).asInstanceOf[T]
  *    ...
  *  }

@@ -68,12 +68,6 @@ trait Typers {
    */
   def inferImplicitView(tree: Tree, from: Type, to: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree
 
-  /** Recursively resets symbols and types in a given tree.
-   *  WARNING: Don't use this API, go for [[untypecheck]] instead.
-   */
-  @deprecated("Use `c.untypecheck` instead", "2.11.0")
-  def resetAllAttrs(tree: Tree): Tree
-
   /** Recursively resets locally defined symbols and types in a given tree.
    *  WARNING: Don't use this API, go for [[untypecheck]] instead.
    */

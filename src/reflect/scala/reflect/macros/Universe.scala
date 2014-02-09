@@ -122,7 +122,7 @@ abstract class Universe extends scala.reflect.api.Universe {
     def setType(tp: Type): Tree
 
     /** Like `setType`, but if this is a previously empty TypeTree that
-     *  fact is remembered so that resetAllAttrs will snap back.
+     *  fact is remembered so that `untypecheck` will snap back.
      *
      *  \@PP: Attempting to elaborate on the above, I find: If defineType
      *  is called on a TypeTree whose type field is null or NoType,
@@ -130,7 +130,8 @@ abstract class Universe extends scala.reflect.api.Universe {
      *  ResetAttrsTraverser, which nulls out the type field of TypeTrees
      *  for which wasEmpty is true, leaving the others alone.
      *
-     *  resetAllAttrs is used in situations where some speculative
+     *  `untypecheck` (or `resetAttrs` in compiler parlance) is used
+     *  in situations where some speculative
      *  typing of a tree takes place, fails, and the tree needs to be
      *  returned to its former state to try again. So according to me:
      *  using `defineType` instead of `setType` is how you communicate

@@ -140,7 +140,7 @@ trait GenTrees {
         if (sym == NoSymbol) {
           // this sometimes happens, e.g. for binds that don't have a body
           // or for untyped code generated during previous phases
-          // (see a comment in Reifiers about the latter, starting with "why do we resetAllAttrs?")
+          // (see a comment in Reifiers about the latter, starting with "why do we reset attrs?")
           mirrorCall(nme.Ident, reify(name))
         }
         else if (!sym.isLocalToReifee) {

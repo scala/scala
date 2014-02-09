@@ -236,7 +236,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
                   NoPosition))
           trace("wrapped: ")(showAttributed(moduledef, true, true, settings.Yshowsymkinds.value))
 
-          val cleanedUp = resetLocalAttrs(moduledef)
+          val cleanedUp = resetAttrs(moduledef)
           trace("cleaned up: ")(showAttributed(cleanedUp, true, true, settings.Yshowsymkinds.value))
           cleanedUp.asInstanceOf[ModuleDef]
         }
@@ -385,18 +385,10 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       uitree
     }
 
-    def resetAllAttrs(tree: u.Tree): u.Tree = withCompilerApi { compilerApi =>
-      import compilerApi._
-      val ctree: compiler.Tree = importer.importTree(tree)
-      val ttree: compiler.Tree = compiler.resetAllAttrs(ctree)
-      val uttree = exporter.importTree(ttree)
-      uttree
-    }
-
     def resetLocalAttrs(tree: u.Tree): u.Tree = withCompilerApi { compilerApi =>
       import compilerApi._
       val ctree: compiler.Tree = importer.importTree(tree)
-      val ttree: compiler.Tree = compiler.resetLocalAttrs(ctree)
+      val ttree: compiler.Tree = compiler.resetAttrs(ctree)
       val uttree = exporter.importTree(ttree)
       uttree
     }

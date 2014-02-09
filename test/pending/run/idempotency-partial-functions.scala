@@ -22,7 +22,7 @@ object Test extends App {
   val tb = cm.mkToolBox()
   val tpartials = tb.typecheck(partials.tree)
   println(tpartials)
-  val rtpartials = tb.resetAllAttrs(tpartials)
+  val rtpartials = tb.untypecheck(tpartials)
   println(tb.eval(rtpartials))
 }
 Test.main(null)

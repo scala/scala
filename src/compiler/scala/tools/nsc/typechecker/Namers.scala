@@ -1205,7 +1205,7 @@ trait Namers extends MethodSynthesis {
      * flag.
      */
     private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef], overriddenSymbol: => Symbol) {
-      val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetLocalAttrs(ddef.duplicate)
+      val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(ddef.duplicate)
       // having defs here is important to make sure that there's no sneaky tree sharing
       // in methods with multiple default parameters
       def rtparams = rtparams0.map(_.duplicate)
@@ -1292,7 +1292,7 @@ trait Namers extends MethodSynthesis {
                     return // fix #3649 (prevent crash in erroneous source code)
                 }
               }
-              val ClassDef(_, _, rtparams, _) = resetLocalAttrs(cdef.duplicate)
+              val ClassDef(_, _, rtparams, _) = resetAttrs(cdef.duplicate)
               defTparams = rtparams.map(rt => copyTypeDef(rt)(mods = rt.mods &~ (COVARIANT | CONTRAVARIANT)))
               nmr
             }

@@ -176,13 +176,24 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     }
   }
 
-  /** resets symbol and tpe fields in a tree, @see ResetAttrs
-   */
-//  def resetAllAttrs[A<:Tree](x:A): A = { new ResetAttrsTraverser().traverse(x); x }
-//  def resetLocalAttrs[A<:Tree](x:A): A = { new ResetLocalAttrsTraverser().traverse(x); x }
+  // Finally, noone resetAllAttrs it anymore, so I'm removing it from the compiler.
+  // Even though it's with great pleasure I'm doing that, I'll leave its body here to warn future generations about what happened in the past.
+  //
+  // So what actually happened in the past is that we used to have two flavors of resetAttrs: resetAllAttrs and resetLocalAttrs.
+  // resetAllAttrs destroyed all symbols and types in the tree in order to reset its state to something suitable for retypechecking
+  // and/or embedding into bigger trees / different lexical scopes. (Btw here's some background on why people would want to use
+  // reset attrs in the first place: https://groups.google.com/forum/#!topic/scala-internals/TtCTPlj_qcQ).
+  //
+  // However resetAllAttrs was more of a poison than of a treatment, because along with locally defined symbols that are the cause
+  // for almost every or maybe even every case of tree corruption, it erased external bindings that sometimes could not be restored.
+  // This is how we came up with resetLocalAttrs that left external bindings alone, and that was a big step forward.
+  // Then slowly but steadily we've evicted all usages of resetAllAttrs from our codebase in favor of resetLocalAttrs
+  // and have been living happily ever after.
+  //
+  // def resetAllAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(localOnly = false, leaveAlone).transform(x)
 
-  def resetAllAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(false, leaveAlone).transform(x)
-  def resetLocalAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(true, leaveAlone).transform(x)
+  /** @see ResetAttrs */
+  def resetAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(leaveAlone).transform(x)
 
   /** A transformer which resets symbol and tpe fields of all nodes in a given tree,
    *  with special treatment of:
@@ -193,7 +204,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
    *
    *  (bq:) This transformer has mutable state and should be discarded after use
    */
-  private class ResetAttrs(localOnly: Boolean, leaveAlone: Tree => Boolean = null, keepLabels: Boolean = false) {
+  private class ResetAttrs(leaveAlone: Tree => Boolean = null) {
     // this used to be based on -Ydebug, but the need for logging in this code is so situational
     // that I've reverted to a hard-coded constant here.
     val debug = false
@@ -277,29 +288,18 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 // vetoXXX local variables declared below describe the conditions under which we cannot erase symbols.
                 //
                 // The first reason to not erase symbols is the threat of non-idempotency (SI-5464).
-                // Here we take care of labels (SI-5562) and references to package classes (SI-5705).
+                // Here we take care of references to package classes (SI-5705).
                 // There are other non-idempotencies, but they are not worked around yet.
                 //
-                // The second reason has to do with the fact that resetAttrs itself has limited usefulness.
-                //
-                // First of all, why do we need resetAttrs? Gor one, it's absolutely required to move trees around.
-                // One cannot just take a typed tree from one lexical context and transplant it somewhere else.
-                // Most likely symbols defined by those trees will become borked and the compiler will blow up (SI-5797).
-                // To work around we just erase all symbols and types and then hope that we'll be able to correctly retypecheck.
-                // For ones who're not affected by scalac Stockholm syndrome, this might seem to be an extremely naive fix, but well...
-                //
-                // Of course, sometimes erasing everything won't work, because if a given identifier got resolved to something
-                // in one lexical scope, it can get resolved to something else.
-                //
-                // What do we do in these cases? Enter the workaround for the workaround: resetLocalAttrs, which only destroys
-                // locally defined symbols, but doesn't touch references to stuff declared outside of a given tree.
-                // That's what localOnly and vetoScope are for.
+                // The second reason has to do with the fact that resetAttrs needs to be less destructive.
+                // Erasing locally-defined symbols is useful to prevent tree corruption, but erasing external bindings is not,
+                // therefore we want to retain those bindings, especially given that restoring them can be impossible
+                // if we move these trees into lexical contexts different from their original locations.
                 if (dupl.hasSymbol) {
                   val sym = dupl.symbol
-                  val vetoScope = localOnly && !(locals contains sym)
-                  val vetoLabel = keepLabels && sym.isLabel
+                  val vetoScope = !(locals contains sym)
                   val vetoThis = dupl.isInstanceOf[This] && sym.isPackageClass
-                  if (!(vetoScope || vetoLabel || vetoThis)) dupl.symbol = NoSymbol
+                  if (!(vetoScope || vetoThis)) dupl.symbol = NoSymbol
                 }
                 dupl.clearType()
             }
@@ -308,10 +308,9 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     }
 
     def transform(x: Tree): Tree = {
-      if (localOnly)
       new MarkLocals().traverse(x)
 
-      if (localOnly && debug) {
+      if (debug) {
         assert(locals.size == orderedLocals.size)
         val msg = orderedLocals.toList filter {_ != NoSymbol} map {"  " + _} mkString EOL
         trace("locals (%d total): %n".format(orderedLocals.size))(msg)

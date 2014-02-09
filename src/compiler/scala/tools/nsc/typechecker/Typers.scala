@@ -832,7 +832,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 else tpr.typed(withImplicitArgs, mode, pt)
               }
               orElse { _ =>
-                val resetTree = resetLocalAttrs(original)
+                val resetTree = resetAttrs(original)
                 debuglog(s"fallback on implicits: ${tree}/$resetTree")
                 val tree1 = typed(resetTree, mode)
                 // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
@@ -2307,7 +2307,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           context.scope.unlink(ldef.symbol)
           val sym2 = namer.enterInScope(
             context.owner.newLabel(ldef.name, ldef.pos) setInfo MethodType(List(), restpe))
-          val rhs2 = typed(resetAllAttrs(ldef.rhs), restpe)
+          val LabelDef(_, _, rhs1) = resetAttrs(ldef)
+          val rhs2 = typed(rhs1, restpe)
           ldef.params foreach (param => param setType param.symbol.tpe)
           deriveLabelDef(ldef)(_ => rhs2) setSymbol sym2 setType restpe
         }
@@ -2589,7 +2590,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         //
         //         Well behaved trees satisfy the property:
         //
-        //         typed(tree) == typed(resetLocalAttrs(typed(tree))
+        //         typed(tree) == typed(resetAttrs(typed(tree))
         //
         //         Trees constructed without low-level symbol manipulation get this for free;
         //         references to local symbols are cleared by `ResetAttrs`, but bind to the

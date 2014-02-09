@@ -41,7 +41,7 @@ object Bakery {
     def constructor = Apply(Select(New(Ident(newTypeName("eval"))), nme.CONSTRUCTOR), List())
 
     c.eval(c.Expr[Any](
-      c.resetAllAttrs(Block(composeDSL(Literal(Constant(1))), constructor))))
+      c.untypecheck(Block(composeDSL(Literal(Constant(1))), constructor))))
 
     c.Expr[Any](Literal(Constant(1)))
   }
