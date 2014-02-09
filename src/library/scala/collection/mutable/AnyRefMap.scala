@@ -22,9 +22,9 @@ import generic.CanBuildFrom
  *  on a map that will no longer have elements removed but will be
  *  used heavily may save both time and storage space.
  * 
- *  This map is not indended to contain more than 2^29 entries (approximately
- *  500 million).  The maximum capacity is 2^30, but performance will degrade
- *  rapidly as 2^30 is approached.
+ *  This map is not intended to contain more than 2^29^ entries (approximately
+ *  500 million).  The maximum capacity is 2^30^, but performance will degrade
+ *  rapidly as 2^30^ is approached.
  *
  */
 final class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initialBufferSize: Int, initBlank: Boolean)
@@ -291,24 +291,21 @@ extends AbstractMap[K, V]
     private[this] val vz = _values
     
     private[this] var index = 0
-    private[this] var found = false
     
-    def hasNext = found || (index<hz.length && {
+    def hasNext: Boolean = index<hz.length && {
       var h = hz(index)
-      if (h+h != 0) found = true
-      else {
+      while (h+h == 0) {
         index += 1
-        while (index < hz.length && { h = hz(index); h+h == 0 }) index += 1
-        found = (index < hz.length)
+        if (index >= hz.length) return false
+        h = hz(index)
       }
-      found
-    })
+      true
+    }
     
-    def next = {
-      if (found || hasNext) {
-        val ans = (_keys(index).asInstanceOf[K], _values(index).asInstanceOf[V])
+    def next: (K, V) = {
+      if (hasNext) {
+        val ans = (kz(index).asInstanceOf[K], vz(index).asInstanceOf[V])
         index += 1
-        found = false
         ans
       }
       else throw new NoSuchElementException("next")
