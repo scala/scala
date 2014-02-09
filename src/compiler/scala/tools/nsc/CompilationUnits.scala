@@ -98,6 +98,11 @@ trait CompilationUnits { global: Global =>
       override def toString = map.toString
     }
 
+    // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
+    // is cached here and re-used in typedDefDef / typedValDef
+    // Also used to cache imports type-checked by namer.
+    val transformed = new mutable.AnyRefMap[Tree, Tree]
+
     /** things to check at end of compilation unit */
     val toCheck = new ListBuffer[() => Unit]
 
