@@ -620,9 +620,11 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         val expanded1 = atPos(enclosingMacroPosition.makeTransparent)(Typed(expanded0, TypeTree(innerPt)))
         typecheck("blackbox typecheck", expanded1, outerPt)
       } else {
-        val expanded1 = expanded0
-        val expanded2 = typecheck("whitebox typecheck #1", expanded1, outerPt)
-        typecheck("whitebox typecheck #2", expanded2, innerPt)
+        // whitebox expansions need to be typechecked against WildcardType first in order to avoid SI-6992 and SI-8048
+        // then we typecheck against innerPt, not against outerPt in order to prevent SI-8209
+        val expanded1 = typecheck("whitebox typecheck #0", expanded0, WildcardType)
+        val expanded2 = typecheck("whitebox typecheck #1", expanded1, innerPt)
+        typecheck("whitebox typecheck #2", expanded2, outerPt)
       }
     }
     override def onDelayed(delayed: Tree) = {
