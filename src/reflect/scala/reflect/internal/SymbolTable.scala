@@ -371,6 +371,8 @@ abstract class SymbolTable extends macros.Universe
     def newMap[K, V]()            = recordCache(mutable.HashMap[K, V]())
     def newSet[K]()               = recordCache(mutable.HashSet[K]())
     def newWeakSet[K <: AnyRef]() = recordCache(new WeakHashSet[K]())
+
+    def newAnyRefMap[K <: AnyRef, V]() = recordCache(mutable.AnyRefMap[K, V]())
     def newGeneric[T](f: => T): () => T = {
       val NoCached: T = null.asInstanceOf[T]
       var cached: T = NoCached
