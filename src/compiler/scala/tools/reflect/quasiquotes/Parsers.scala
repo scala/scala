@@ -61,12 +61,10 @@ trait Parsers { self: Quasiquotes =>
         override implicit def fresh: FreshNameCreator = parser.fresh
 
         // q"(..$xs)"
-        override def makeTupleTerm(trees: List[Tree]): Tree =
-          Apply(Ident(nme.QUASIQUOTE_TUPLE), trees)
+        override def makeTupleTerm(trees: List[Tree]): Tree = TuplePlaceholder(trees)
 
         // tq"(..$xs)"
-        override def makeTupleType(trees: List[Tree]): Tree =
-          AppliedTypeTree(Ident(tpnme.QUASIQUOTE_TUPLE), trees)
+        override def makeTupleType(trees: List[Tree]): Tree = TupleTypePlaceholder(trees)
 
         // q"{ $x }"
         override def makeBlock(stats: List[Tree]): Tree = stats match {
@@ -75,36 +73,32 @@ trait Parsers { self: Quasiquotes =>
         }
 
         // tq"$a => $b"
-        override def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree =
-          AppliedTypeTree(Ident(tpnme.QUASIQUOTE_FUNCTION), argtpes :+ restpe)
+        override def makeFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = FunctionTypePlaceholder(argtpes, restpe)
 
         // make q"val (x: T) = rhs" be equivalent to q"val x: T = rhs" for sake of bug compatibility (SI-8211)
         override def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree) = pat match {
-          case Apply(Ident(nme.QUASIQUOTE_TUPLE), inParensPat :: Nil) => super.makePatDef(mods, inParensPat, rhs)
+          case TuplePlaceholder(inParensPat :: Nil) => super.makePatDef(mods, inParensPat, rhs)
           case _ => super.makePatDef(mods, pat, rhs)
         }
       }
       import treeBuilder.{global => _, unit => _, _}
 
-      def quasiquoteParam(name: Name, flags: FlagSet = NoFlags) =
-        ValDef(Modifiers(flags), name.toTermName, Ident(tpnme.QUASIQUOTE_PARAM), EmptyTree)
-
       // q"def foo($x)"
       override def param(owner: Name, implicitmod: Int, caseParam: Boolean): ValDef =
         if (isHole && lookingAhead { in.token == COMMA || in.token == RPAREN }) {
-          quasiquoteParam(ident(), implicitmod)
+          ParamPlaceholder(implicitmod, ident())
         } else super.param(owner, implicitmod, caseParam)
 
       // q"($x) => ..." && q"class X { selfie => }
       override def convertToParam(tree: Tree): ValDef = tree match {
-        case Ident(name) if isHole(name) => quasiquoteParam(name)
+        case Ident(name) if isHole(name) => ParamPlaceholder(NoFlags, name)
         case _ => super.convertToParam(tree)
       }
 
       // q"foo match { case $x }"
       override def caseClause(): CaseDef =
         if (isHole && lookingAhead { in.token == CASE || in.token == RBRACE || in.token == SEMI }) {
-          val c = makeCaseDef(Apply(Ident(nme.QUASIQUOTE_CASE), List(Ident(ident()))), EmptyTree, EmptyTree)
+          val c = CasePlaceholder(ident())
           while (in.token == SEMI) in.nextToken()
           c
         } else
@@ -138,7 +132,7 @@ trait Parsers { self: Quasiquotes =>
           in.nextToken()
           annot :: readAnnots(annot)
         case _ if isHole && lookingAhead { isAnnotation || isModifier || isDefIntro || isIdent || isStatSep || in.token == LPAREN } =>
-          val ann = Apply(Select(New(Ident(tpnme.QUASIQUOTE_MODS)), nme.CONSTRUCTOR), List(Literal(Constant(in.name.toString))))
+          val ann = ModsPlaceholder(in.name)
           in.nextToken()
           ann :: readAnnots(annot)
         case _ =>
@@ -147,13 +141,13 @@ trait Parsers { self: Quasiquotes =>
 
       override def refineStat(): List[Tree] =
         if (isHole && !isDclIntro) {
-          val result = ValDef(NoMods, in.name, Ident(tpnme.QUASIQUOTE_REFINE_STAT), EmptyTree) :: Nil
+          val result = RefineStatPlaceholder(in.name) :: Nil
           in.nextToken()
           result
         } else super.refineStat()
 
       override def ensureEarlyDef(tree: Tree) = tree match {
-        case Ident(name: TermName) if isHole(name) => ValDef(NoMods | Flag.PRESUPER, name, Ident(tpnme.QUASIQUOTE_EARLY_DEF), EmptyTree)
+        case Ident(name: TermName) if isHole(name) => EarlyDefPlaceholder(name)
         case _ => super.ensureEarlyDef(tree)
       }
 
@@ -164,14 +158,14 @@ trait Parsers { self: Quasiquotes =>
 
       override def topStat = super.topStat.orElse {
         case _ if isHole =>
-          val stats = ValDef(NoMods, in.name, Ident(tpnme.QUASIQUOTE_PACKAGE_STAT), EmptyTree) :: Nil
+          val stats = PackageStatPlaceholder(in.name) :: Nil
           in.nextToken()
           stats
       }
 
       override def enumerator(isFirst: Boolean, allowNestedIf: Boolean = true) =
         if (isHole && lookingAhead { in.token == EOF || in.token == RPAREN || isStatSep }) {
-          val res = build.SyntacticValFrom(Bind(in.name, Ident(nme.WILDCARD)), Ident(nme.QUASIQUOTE_FOR_ENUM)) :: Nil
+          val res = ForEnumPlaceholder(in.name) :: Nil
           in.nextToken()
           res
         } else super.enumerator(isFirst, allowNestedIf)
