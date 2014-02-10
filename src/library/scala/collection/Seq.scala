@@ -38,4 +38,4 @@ object Seq extends SeqFactory[Seq] {
 }
 
 /** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
-private[scala] abstract class AbstractSeq[+A] extends AbstractIterable[A] with Seq[A]
+abstract class AbstractSeq[+A] extends AbstractIterable[A] with Seq[A]

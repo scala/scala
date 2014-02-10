@@ -13,7 +13,7 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{mutable, immutable}
 import scala.reflect.internal.util.{ BatchSourceFile, Statistics, shortClassOfInstance }
 import mutable.ListBuffer
 import symtab.Flags._
@@ -39,7 +39,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
   // is cached here and re-used in typedDefDef / typedValDef
   // Also used to cache imports type-checked by namer.
-  val transformed = new mutable.HashMap[Tree, Tree]
+  val transformed = new mutable.AnyRefMap[Tree, Tree]
 
   final val shortenImports = false
 
@@ -52,7 +52,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     //println("resetTyper called")
     resetContexts()
     resetImplicits()
-    transformed.clear()
     resetDocComments()
   }
 
@@ -107,6 +106,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     import TyperErrorGen._
     val runDefinitions = currentRun.runDefinitions
     import runDefinitions._
+
+    private val transformed: mutable.Map[Tree, Tree] = unit.transformed
 
     val infer = new Inferencer(context0) {
       // See SI-3281 re undoLog
@@ -4901,6 +4902,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 )
                 arg match {
                   case Bind(_, _)                     => enhanceBounds()
+                  // TODO: consolidate fixes for SI-6169 and SI-1786 by dropping the Ident case,
+                  // in favor of doing sharpenQuantifierBounds for all ExistentialTypes, not just java-defined ones
+                  // (need to figure out how to sharpen the bounds on creation without running into cycles)
                   case Ident(name) if canEnhanceIdent => enhanceBounds()
                   case _                              =>
                 }

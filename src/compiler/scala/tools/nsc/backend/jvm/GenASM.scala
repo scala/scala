@@ -171,10 +171,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
   var pickledBytes = 0 // statistics
 
-  val javaNameCache = perRunCaches.newMap[Symbol, Name]()
+  val javaNameCache = perRunCaches.newAnyRefMap[Symbol, Name]()
 
   // unlike javaNameCache, reverseJavaName contains entries only for class symbols and their internal names.
-  val reverseJavaName = perRunCaches.newMap[String, Symbol]()
+  val reverseJavaName = perRunCaches.newAnyRefMap[String, Symbol]()
 
   private def mkFlags(args: Int*)         = args.foldLeft(0)(_ | _)
   private def hasPublicBitSet(flags: Int) = (flags & asm.Opcodes.ACC_PUBLIC) != 0
