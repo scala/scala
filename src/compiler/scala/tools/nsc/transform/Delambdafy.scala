@@ -232,6 +232,10 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val parents = addSerializable(abstractFunctionErasedType)
         val funOwner = originalFunction.symbol.owner
 
+        // TODO harmonize the naming of delamdafy anon-fun classes with those spun up by Uncurry
+        //      - make `anonClass.isAnonymousClass` true.
+        //      - use `newAnonymousClassSymbol` or push the required variations into a similar factory method
+        //      - reinstate the assertion in `Erasure.resolveAnonymousBridgeClash`
         val suffix = "$lambda$" + (
           if (funOwner.isPrimaryConstructor) ""
           else "$" + funOwner.name
@@ -283,8 +287,10 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         else s"$sym: ${sym.tpe} in ${sym.owner}"
 
         bridgeMethod foreach (bm =>
+          // TODO SI-6260 maybe just create the apply method with the signature (Object => Object) in all cases
+          //      rather than the method+bridge pair.
           if (bm.symbol.tpe =:= applyMethodDef.symbol.tpe)
-            erasure.expandNameOfMethodThatClashesBridge(applyMethodDef.symbol)
+            erasure.resolveAnonymousBridgeClash(applyMethodDef.symbol, bm.symbol)
         )
 
         val body = members ++ List(constr, applyMethodDef) ++ bridgeMethod

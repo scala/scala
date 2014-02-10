@@ -484,7 +484,7 @@ abstract class Erasure extends AddInterfaces
             !sigContainsValueClass
         ||  (checkBridgeOverrides(member, other, bridge) match {
               case Nil => true
-              case es if member.owner.isAnonymousClass => expandNameOfMethodThatClashesBridge(member); true
+              case es if member.owner.isAnonymousClass => resolveAnonymousBridgeClash(member, bridge); true
               case es => for ((pos, msg) <- es) unit.error(pos, msg); false
             })
       )
@@ -1137,9 +1137,12 @@ abstract class Erasure extends AddInterfaces
     }
   }
 
-  final def expandNameOfMethodThatClashesBridge(sym: Symbol) {
+  final def resolveAnonymousBridgeClash(sym: Symbol, bridge: Symbol) {
+    // TODO reinstate this after Delambdafy generates anonymous classes that meet this requirement.
+    // require(sym.owner.isAnonymousClass, sym.owner)
     log(s"Expanding name of ${sym.debugLocationString} as it clashes with bridge. Renaming deemed safe because the owner is anonymous.")
     sym.expandName(sym.owner)
+    bridge.resetFlag(BRIDGE)
   }
 
   private class TypeRefAttachment(val tpe: TypeRef)
