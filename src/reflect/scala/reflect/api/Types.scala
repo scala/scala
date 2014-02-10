@@ -248,14 +248,17 @@ trait Types {
 
     /** List of type arguments ingrained in this type reference.
      *  Depending on your use case you might or might not want to call `dealias` first.
-     *    scala> type T = List[Int]
-     *    defined type alias T
      *
-     *    scala> typeOf[T].typeArgs
-     *    res0: List[reflect.runtime.universe.Type] = List()
+     *  {{{
+     *  scala> type T = List[Int]
+     *  defined type alias T
      *
-     *    scala> typeOf[T].dealias.typeArgs
-     *    res1: List[reflect.runtime.universe.Type] = List(scala.Int)
+     *  scala> typeOf[T].typeArgs
+     *  res0: List[reflect.runtime.universe.Type] = List()
+     *
+     *  scala> typeOf[T].dealias.typeArgs
+     *  res1: List[reflect.runtime.universe.Type] = List(scala.Int)
+     *  }}}
      */
     def typeArgs: List[Type]
 
@@ -277,26 +280,28 @@ trait Types {
      *  (can be a MethodType if the method has multiple argument lists),
      *  the type itself for all other types.
      *
-     *    scala> class C { def foo[T](x: T)(y: T) = ??? }
-     *    defined class C
+     *  {{{
+     *  scala> class C { def foo[T](x: T)(y: T) = ??? }
+     *  defined class C
      *
-     *    scala> typeOf[C].member(TermName("foo")).asMethod
-     *    res0: reflect.runtime.universe.MethodSymbol = method foo
+     *  scala> typeOf[C].member(TermName("foo")).asMethod
+     *  res0: reflect.runtime.universe.MethodSymbol = method foo
      *
-     *    scala> res0.info // PolyType wrapping a MethodType
-     *    res1: reflect.runtime.universe.Type = [T](x: T)(y: T)scala.Nothing
+     *  scala> res0.info // PolyType wrapping a MethodType
+     *  res1: reflect.runtime.universe.Type = [T](x: T)(y: T)scala.Nothing
      *
-     *    scala> res1.resultType // MethodType wrapping a MethodType
-     *    res2: reflect.runtime.universe.Type = (x: T)(y: T)scala.Nothing
+     *  scala> res1.resultType // MethodType wrapping a MethodType
+     *  res2: reflect.runtime.universe.Type = (x: T)(y: T)scala.Nothing
      *
-     *    scala> res1.resultType.resultType // vanilla MethodType
-     *    res3: reflect.runtime.universe.Type = (y: T)scala.Nothing
+     *  scala> res1.resultType.resultType // vanilla MethodType
+     *  res3: reflect.runtime.universe.Type = (y: T)scala.Nothing
      *
-     *    scala> res1.resultType.resultType.resultType
-     *    res4: reflect.runtime.universe.Type = scala.Nothing
+     *  scala> res1.resultType.resultType.resultType
+     *  res4: reflect.runtime.universe.Type = scala.Nothing
      *
-     *    scala> res1.finalResultType
-     *    res5: reflect.runtime.universe.Type = scala.Nothing
+     *  scala> res1.finalResultType
+     *  res5: reflect.runtime.universe.Type = scala.Nothing
+     *  }}}
      *
      *  @see finalResultType
      */
@@ -305,26 +310,43 @@ trait Types {
     /** For a curried/nullary method or poly type its non-method result type,
      *  the type itself for all other types.
      *
-     *    scala> class C { def foo[T](x: T)(y: T) = ??? }
-     *    defined class C
+     *  {{{
+     *  scala> class C {
+     *       | def foo[T](x: T)(y: T) = ???
+     *       | def bar: Int = ???
+     *       | }
+     *  defined class C
      *
-     *    scala> typeOf[C].member(TermName("foo")).asMethod
-     *    res0: reflect.runtime.universe.MethodSymbol = method foo
+     *  scala> typeOf[C].member(TermName("foo")).asMethod
+     *  res0: reflect.runtime.universe.MethodSymbol = method foo
      *
-     *    scala> res0.info // PolyType wrapping a MethodType
-     *    res1: reflect.runtime.universe.Type = [T](x: T)(y: T)scala.Nothing
+     *  scala> res0.info // PolyType wrapping a MethodType
+     *  res1: reflect.runtime.universe.Type = [T](x: T)(y: T)scala.Nothing
      *
-     *    scala> res1.resultType // MethodType wrapping a MethodType
-     *    res2: reflect.runtime.universe.Type = (x: T)(y: T)scala.Nothing
+     *  scala> res1.resultType // MethodType wrapping a MethodType
+     *  res2: reflect.runtime.universe.Type = (x: T)(y: T)scala.Nothing
      *
-     *    scala> res1.resultType.resultType // vanilla MethodType
-     *    res3: reflect.runtime.universe.Type = (y: T)scala.Nothing
+     *  scala> res1.resultType.resultType // vanilla MethodType
+     *  res3: reflect.runtime.universe.Type = (y: T)scala.Nothing
      *
-     *    scala> res1.resultType.resultType.resultType
-     *    res4: reflect.runtime.universe.Type = scala.Nothing
+     *  scala> res1.resultType.resultType.resultType
+     *  res4: reflect.runtime.universe.Type = scala.Nothing
      *
-     *    scala> res1.finalResultType
-     *    res5: reflect.runtime.universe.Type = scala.Nothing
+     *  scala> res1.finalResultType
+     *  res5: reflect.runtime.universe.Type = scala.Nothing
+     *
+     *  scala> typeOf[C].member(TermName("bar")).asMethod
+     *  res6: reflect.runtime.universe.MethodSymbol = method bar
+     *
+     *  scala> res6.info
+     *  res7: reflect.runtime.universe.Type = => scala.Int
+     *
+     *  scala> res6.info.resultType
+     *  res8: reflect.runtime.universe.Type = scala.Int
+     *
+     *  scala> res6.info.finalResultType
+     *  res9: reflect.runtime.universe.Type = scala.Int
+     *  }}}
      *
      *  @see resultType
      */

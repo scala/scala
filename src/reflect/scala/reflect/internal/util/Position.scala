@@ -8,6 +8,7 @@ package reflect
 package internal
 package util
 
+/** @inheritdoc */
 class Position extends scala.reflect.api.Position with InternalPositionImpl with DeprecatedPosition {
   type Pos = Position
   def pos: Position = this
