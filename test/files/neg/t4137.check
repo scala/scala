@@ -1,9 +1,16 @@
-t4137.scala:9: error: overriding type EPC in trait A, which equals [X1]C[X1];
+t4137.scala:14: error: overriding type EPC in trait A, which equals [X1]C[X1];
  type EPC has incompatible type
   override type EPC = C[T]
                 ^
-t4137.scala:10: error: overriding type EPC2 in trait A, which equals [X1]C[X1];
+t4137.scala:15: error: overriding type EPC2 in trait A, which equals [X1 <: String]C[X1];
  type EPC2 has incompatible type
-  override type EPC2[X1 <: String] = C[X1]
+  override type EPC2[X1 <: AnyRef] = C[X1]
                 ^
-two errors found
+t4137.scala:16: error: overriding type EPC3 in trait A, which equals [X1 <: AnyRef]C[X1];
+ type EPC3 has incompatible type
+  override type EPC3[X1 <: String] = C[X1]
+                ^
+t4137.scala:19: error: type arguments [X1] do not conform to trait Trait2's type parameter bounds [X1 <: String]
+  trait Trait2[X1 <: AnyRef] extends super.Trait2[X1]
+                                           ^
+four errors found

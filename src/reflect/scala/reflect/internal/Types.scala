@@ -2182,19 +2182,61 @@ trait Types
     // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
     override def betaReduce = transform(sym.info.resultType)
 
-    // #3731: return sym1 for which holds: pre bound sym.name to sym and
-    // pre1 now binds sym.name to sym1, conceptually exactly the same
-    // symbol as sym.  The selection of sym on pre must be updated to the
-    // selection of sym1 on pre1, since sym's info was probably updated
-    // by the TypeMap to yield a new symbol, sym1 with transformed info.
-    // @returns sym1
-    override def coevolveSym(pre1: Type): Symbol =
-      if (pre eq pre1) sym else (pre, pre1) match {
-        // don't look at parents -- it would be an error to override alias types anyway
-        case (RefinedType(_, _), RefinedType(_, decls1)) => decls1 lookup sym.name
-        // TODO: is there another way a typeref's symbol can refer to a symbol defined in its pre?
-        case _                                           => sym
+    /** SI-3731, SI-8177: when prefix is changed to `newPre`, maintain consistency of prefix and sym
+     *  (where the symbol refers to a declaration "embedded" in the prefix).
+     *
+     *  @returns newSym so that `newPre` binds `sym.name` to `newSym`,
+     *                  to remain consistent with `pre` previously binding `sym.name` to `sym`.
+     *
+     *  `newSym` and `sym` are conceptually the same symbols, but some change to our `prefix`
+     *  got them out of whack. (Usually triggered by substitution or `asSeenFrom`.)
+     *  The only kind of "binds" we consider is where `prefix` (or its underlying type)
+     *  is a refined type that declares `sym` (since the old prefix was discarded,
+     *  the old symbol is now stale and we should update it, like in `def rebind`,
+     *  except this is not for overriding symbols -- a vertical move -- but a "lateral" change.)
+     *
+     *  The reason for this hack is that substitution and asSeenFrom clone RefinedTypes and
+     *  their members, without updating the potential references to those members -- here, we aim to patch
+     *  this up, so that: when changing a TypeRef(pre, sym, args) to a TypeRef(pre', sym', args'), and pre
+     *  embeds a symbol sym (pre is a RefinedType(_, Scope(..., sym,...)) or a SingleType with such an
+     *  underlying type), make sure that we update sym' to compensate for the change of pre -> pre' (which may
+     *  have created a new symbol for the one the original sym referred to)
+     */
+    override def coevolveSym(newPre: Type): Symbol = {
+      import sym.name
+      def newSym = newPre member name
+
+      def tp_s(tp: Type): String = tp.widen match {
+        case tp if tp ne tp.dealias                      => "%s(%s)".format("" + tp, tp_s(tp.dealias))
+        case TypeRef(_, sym, _) if sym.isRefinementClass => "" + sym.info
+        case TypeRef(_, sym, _) if sym.isAnonymousClass  => "" + sym.info
+        case tp                                          => "" + tp
       }
+      def symMatches(sym: Symbol) = sym.name == name && typeContainsTypeVar(sym.info)
+      def maybeEquate(tp: Type): Boolean = tp.widen match {
+        case TypeRef(_, sym, _) if sym.isRefinementClass            => maybeEquate(sym.info)
+        case RefinedType(parents, decls) if decls exists symMatches => true
+        case _                                                      => false
+      }
+      def equate() {
+        val msg = s"Evaluating (${tp_s(pre)} memberType $sym) =:= (${tp_s(newPre)} memberType $newSym)"
+        val mem1 = pre memberType sym
+        val mem2 = newPre memberType newSym
+        logResult(msg)(mem1 =:= mem2)
+      }
+
+      if ((pre eq newPre) || (sym eq newSym)) sym
+      else newSym.overrideChain find sym.allOverriddenSymbols.contains match {
+        case Some(both) =>
+          // Necessity to call =:= to update typevars revealed by:
+          //   pos/depmet_implicit_oopsla_session_simpler.scala
+          if (maybeEquate(pre) || maybeEquate(newPre)) equate()
+
+          logResult(s"${both.owner.name}#$name is refined in both ${tp_s(pre)} and ${tp_s(newPre)}, substituting $name#${sym.id} ==> $name#${newSym.id}")(newSym)
+        case _ => sym
+      }
+    }
+
     override def kind = "AliasTypeRef"
   }
 
