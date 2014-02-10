@@ -1,6 +1,0 @@
-t608.scala:16: error: type mismatch;
- found   : hs{type a = ha}
- required: hs{type s = hs; type a = ha}
-       = g(f(x).bimap(id))
-                     ^
-one error found

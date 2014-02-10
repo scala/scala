@@ -2202,23 +2202,42 @@ trait Types
      *  underlying type), make sure that we update sym' to compensate for the change of pre -> pre' (which may
      *  have created a new symbol for the one the original sym referred to)
      */
-    override def coevolveSym(newPre: Type): Symbol =
-      if ((pre ne newPre) && embeddedSymbol(pre, sym.name) == sym) {
-        val newSym = embeddedSymbol(newPre, sym.name)
-        debuglog(s"co-evolve: ${pre} -> ${newPre}, $sym : ${sym.info} -> $newSym : ${newSym.info}")
-        // To deal with erroneous `preNew`, fallback via `orElse sym`, in case `preNew` does not have a decl named `sym.name`.
-        newSym orElse sym
-      } else sym
+    override def coevolveSym(newPre: Type): Symbol = {
+      import sym.name
+      def newSym = newPre member name
+
+      def tp_s(tp: Type): String = tp.widen match {
+        case tp if tp ne tp.dealias                      => "%s(%s)".format("" + tp, tp_s(tp.dealias))
+        case TypeRef(_, sym, _) if sym.isRefinementClass => "" + sym.info
+        case TypeRef(_, sym, _) if sym.isAnonymousClass  => "" + sym.info
+        case tp                                          => "" + tp
+      }
+      def symMatches(sym: Symbol) = sym.name == name && typeContainsTypeVar(sym.info)
+      def maybeEquate(tp: Type): Boolean = tp.widen match {
+        case TypeRef(_, sym, _) if sym.isRefinementClass            => maybeEquate(sym.info)
+        case RefinedType(parents, decls) if decls exists symMatches => true
+        case _                                                      => false
+      }
+      def equate() {
+        val msg = s"Evaluating (${tp_s(pre)} memberType $sym) =:= (${tp_s(newPre)} memberType $newSym)"
+        val mem1 = pre memberType sym
+        val mem2 = newPre memberType newSym
+        logResult(msg)(mem1 =:= mem2)
+      }
+
+      if ((pre eq newPre) || (sym eq newSym)) sym
+      else newSym.overrideChain find sym.allOverriddenSymbols.contains match {
+        case Some(both) =>
+          // Necessity to call =:= to update typevars revealed by:
+          //   pos/depmet_implicit_oopsla_session_simpler.scala
+          if (maybeEquate(pre) || maybeEquate(newPre)) equate()
+
+          logResult(s"${both.owner.name}#$name is refined in both ${tp_s(pre)} and ${tp_s(newPre)}, substituting $name#${sym.id} ==> $name#${newSym.id}")(newSym)
+        case _ => sym
+      }
+    }
 
     override def kind = "AliasTypeRef"
-  }
-
-  // Return the symbol named `name` that's "embedded" in tp
-  // This is the case if `tp` is a `T{...; type/val $name ; ...}`,
-  // or a singleton type with such an underlying type.
-  private def embeddedSymbol(tp: Type, name: Name): Symbol = tp.widen match {
-    case RefinedType(_, decls) => decls lookup name
-    case _ => NoSymbol
   }
 
   trait AbstractTypeRef extends NonClassTypeRef {
