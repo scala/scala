@@ -872,18 +872,22 @@ private[internal] trait TypeMaps {
       def unapply(param: Symbol) = Some(params indexOf param) filter (_ >= 0)
     }
 
-    def apply(tp: Type): Type = mapOver(tp) match {
+    def apply(tp: Type): Type = tp match {
       // unsound to replace args by unstable actual #3873
-      case SingleType(NoPrefix, StableArg(arg)) => arg
+      case SingleType(NoPrefix, StableArg(arg)) =>
+        arg
+      case SingleType(NoPrefix, Arg(pid)) =>
+        val arg = actuals(pid)
+        if (tp <:< arg) tp
+        else refinedType(tp :: arg :: Nil, params.head.owner)
       // (soundly) expand type alias selections on implicit arguments,
       // see depmet_implicit_oopsla* test cases -- typically, `param.isImplicit`
       case tp1 @ TypeRef(SingleType(NoPrefix, Arg(pid)), sym, targs) =>
         val arg = actuals(pid)
-        val res = typeRef(arg, sym, targs)
-        if (res.typeSymbolDirect.isAliasType) res.dealias else tp1
-      // don't return the original `tp`, which may be different from `tp1`,
-      // due to dropping annotations
-      case tp1 => tp1
+        val targs1 = targs map (t => mapOver(t))
+        val res = typeRef(arg, sym, targs1)
+        if (res.typeSymbolDirect.isAliasType) res.dealias else mapOver(tp1)
+      case tp1 => mapOver(tp1)
     }
 
     /* Return the type symbol for referencing a parameter inside the existential quantifier.
