@@ -467,6 +467,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         //  overrideError("may not override parameterized type");
         // @M: substSym
         def checkOverrideAlias() {
+          // Important: first check the pair has the same kind, since the substitution
+          // carries high's type parameter's bounds over to low, so that
+          // type equality doesn't consider potentially different bounds on low/high's type params.
           if (pair.sameKind && lowType.substSym(low.typeParams, high.typeParams) =:= highType) ()
           else overrideTypeError() // (1.6)
         }
