@@ -735,6 +735,17 @@ abstract class TreeInfo {
       unapply(dissectApplied(tree))
   }
 
+  /** Does list of trees start with a definition of
+   *  a class of module with given name (ignoring imports)
+   */
+  def firstDefinesClassOrObject(trees: List[Tree], name: Name): Boolean = trees match {
+    case Import(_, _) :: xs             => firstDefinesClassOrObject(xs, name)
+    case Annotated(_, tree1) :: _       => firstDefinesClassOrObject(List(tree1), name)
+    case ModuleDef(_, `name`, _) :: _   => true
+    case ClassDef(_, `name`, _, _) :: _ => true
+    case _                              => false
+  }
+
   /** Locates the synthetic Apply node corresponding to an extractor's call to
    *  unapply (unwrapping nested Applies) and returns the fun part of that Apply.
    */
@@ -750,8 +761,7 @@ abstract class TreeInfo {
   }
 
   /** Is this file the body of a compilation unit which should not
-   *  have Predef imported? This is the case iff the first import in the
-   *  unit explicitly refers to Predef.
+   *  have Predef imported?
    */
   def noPredefImportForUnit(body: Tree) = {
     // Top-level definition whose leading imports include Predef.
@@ -760,7 +770,13 @@ abstract class TreeInfo {
       case Import(expr, _)      => isReferenceToPredef(expr)
       case _                    => false
     }
-    isLeadingPredefImport(body)
+    // Compilation unit is class or object 'name' in package 'scala'
+    def isUnitInScala(tree: Tree, name: Name) = tree match {
+      case PackageDef(Ident(nme.scala_), defs) => firstDefinesClassOrObject(defs, name)
+      case _                                   => false
+    }
+
+    isUnitInScala(body, nme.Predef) || isLeadingPredefImport(body)
   }
 
   def isAbsTypeDef(tree: Tree) = tree match {

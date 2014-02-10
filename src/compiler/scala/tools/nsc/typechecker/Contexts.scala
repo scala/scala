@@ -89,6 +89,8 @@ trait Contexts { self: Analyzer =>
     if (settings.noimports) Nil
     else if (unit.isJava) RootImports.javaList
     else if (settings.nopredef || treeInfo.noPredefImportForUnit(unit.body)) {
+      // SI-8258 Needed for the presentation compiler using -sourcepath, otherwise cycles can occur. See the commit
+      //         message for this ticket for an example.
       debuglog("Omitted import of Predef._ for " + unit)
       RootImports.javaAndScalaList
     }
