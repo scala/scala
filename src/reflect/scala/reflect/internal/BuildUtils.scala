@@ -350,7 +350,7 @@ trait BuildUtils { self: SymbolTable =>
     object SyntacticTuple extends SyntacticTupleExtractor {
       def apply(args: List[Tree]): Tree = {
         require(args.isEmpty || TupleClass(args.length).exists, s"Tuples with ${args.length} arity aren't supported")
-        gen.mkTuple(args, flattenUnary = false)
+        gen.mkTuple(args)
       }
 
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
@@ -360,6 +360,8 @@ trait BuildUtils { self: SymbolTable =>
           if sym == TupleClass(args.length).companionModule
           && (targs.isEmpty || targs.length == args.length) =>
           Some(args)
+        case _ if tree.isTerm =>
+          Some(tree :: Nil)
         case _ =>
           None
       }
@@ -368,7 +370,7 @@ trait BuildUtils { self: SymbolTable =>
     object SyntacticTupleType extends SyntacticTupleExtractor {
       def apply(args: List[Tree]): Tree = {
         require(args.isEmpty || TupleClass(args.length).exists, s"Tuples with ${args.length} arity aren't supported")
-        gen.mkTupleType(args, flattenUnary = false)
+        gen.mkTupleType(args)
       }
 
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
@@ -377,6 +379,8 @@ trait BuildUtils { self: SymbolTable =>
         case MaybeTypeTreeOriginal(AppliedTypeTree(TupleClassRef(sym), args))
           if sym == TupleClass(args.length) =>
           Some(args)
+        case _ if tree.isType =>
+          Some(tree :: Nil)
         case _ =>
           None
       }

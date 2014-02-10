@@ -53,9 +53,6 @@ trait StandardLiftables { self: Universe =>
       case right: Right[L, R] => lift(right)
     }
 
-    implicit def liftTuple1[T1](implicit liftT1: Liftable[T1]): Liftable[Tuple1[T1]] = Liftable { t =>
-      SyntacticTuple(liftT1(t._1) :: Nil)
-    }
     implicit def liftTuple2[T1, T2](implicit liftT1: Liftable[T1], liftT2: Liftable[T2]): Liftable[Tuple2[T1, T2]] = Liftable { t =>
       SyntacticTuple(liftT1(t._1) :: liftT2(t._2) :: Nil)
     }
@@ -147,9 +144,6 @@ trait StandardLiftables { self: Universe =>
     implicit def unliftType: Unliftable[Type]                    = Unliftable[Type] { case tt: TypeTree if tt.tpe != null => tt.tpe }
     implicit def unliftConstant: Unliftable[Constant]            = Unliftable[Constant] { case Literal(const) => const }
 
-    implicit def unliftTuple1[T1](implicit UnliftT1: Unliftable[T1]): Unliftable[Tuple1[T1]] = Unliftable {
-      case SyntacticTuple(UnliftT1(v1) :: Nil) => Tuple1(v1)
-    }
     implicit def unliftTuple2[T1, T2](implicit UnliftT1: Unliftable[T1], UnliftT2: Unliftable[T2]): Unliftable[Tuple2[T1, T2]] = Unliftable {
       case SyntacticTuple(UnliftT1(v1) :: UnliftT2(v2) :: Nil) => Tuple2(v1, v2)
     }

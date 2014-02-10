@@ -35,6 +35,11 @@ object TypeDeconstructionProps extends QuasiquoteProperties("type deconstruction
     assert(last ≈ tq"t2")
   }
 
+  property("tuple type (5)") = test {
+    val tq"(..$ts)" = tq"T"
+    assert(ts ≈ List(tq"T"))
+  }
+
   property("refined type") = test {
     val tq"T { ..$stats }" = tq"T { def foo; val x: Int; type Y = String }"
     assert(stats ≈ List(q"def foo", q"val x: Int", q"type Y = String"))
