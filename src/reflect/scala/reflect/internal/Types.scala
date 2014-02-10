@@ -2051,10 +2051,16 @@ trait Types
   // Return the symbol named `name` that's "embedded" in tp
   // This is the case if `tp` is a `T{...; type/val $name ; ...}`,
   // or a singleton type with such an underlying type.
-  private def embeddedSymbol(tp: Type, name: Name): Symbol = tp.widen match {
-    case RefinedType(_, decls) => decls lookup name
-    case _ => NoSymbol
-  }
+  private def embeddedSymbol(tp: Type, name: Name): Symbol =
+    // normalize to flatten nested RefinedTypes
+    // don't check whether tp is a RefinedType -- it may be a ThisType of one, for example
+    // TODO: check the resulting symbol is owned by the refinement class? likely an invariant...
+    if (tp.typeSymbol.isRefinementClass) tp.normalize.decls lookup name
+    else {
+      debuglog(s"no embedded symbol $name found in ${showRaw(tp)} --> ${tp.normalize.decls lookup name}")
+      NoSymbol
+    }
+
 
   trait AbstractTypeRef extends NonClassTypeRef {
     require(sym.isAbstractType, sym)
