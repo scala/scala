@@ -134,7 +134,7 @@ import scala.language.implicitConversions
  * reflection APIs provided by Java (for classes) and Scala (for types).</li>
  *
  * <li>'''Certain manifest operations(i.e., <:<, >:> and typeArguments) are not
- * supported.''' <br/>Instead, one culd use the reflection APIs provided by Java (for
+ * supported.''' <br/>Instead, one could use the reflection APIs provided by Java (for
  * classes) and Scala (for types).</li>
  *</ul>
  *
