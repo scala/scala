@@ -470,6 +470,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           // Important: first check the pair has the same kind, since the substitution
           // carries high's type parameter's bounds over to low, so that
           // type equality doesn't consider potentially different bounds on low/high's type params.
+          // In b781e25afe this went from using memberInfo to memberType (now lowType/highType), tested by neg/override.scala.
+          // TODO: was that the right fix? it seems type alias's RHS should be checked by looking at the symbol's info
           if (pair.sameKind && lowType.substSym(low.typeParams, high.typeParams) =:= highType) ()
           else overrideTypeError() // (1.6)
         }
