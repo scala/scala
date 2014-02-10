@@ -1,0 +1,7 @@
+t8207.scala:1: error: '.' expected but '}' found.
+class C { import C.this.toString }
+                                 ^
+t8207.scala:3: error: '.' expected but '}' found.
+class D { import D.this.toString }
+                                 ^
+two errors found

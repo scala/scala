@@ -1408,8 +1408,14 @@ trait Namers extends MethodSynthesis {
       if (expr1.isErrorTyped)
         ErrorType
       else {
-        if (!treeInfo.isStableIdentifierPattern(expr1))
-          typer.TyperErrorGen.UnstableTreeError(expr1)
+        expr1 match {
+          case This(_) =>
+            // SI-8207 okay, typedIdent expands Ident(self) to C.this which doesn't satisfy the next case
+            // TODO should we change `typedIdent` not to expand to the `Ident` to a `This`?
+          case _ if treeInfo.isStableIdentifierPattern(expr1) =>
+          case _ =>
+            typer.TyperErrorGen.UnstableTreeError(expr1)
+        }
 
         val newImport = treeCopy.Import(imp, expr1, selectors).asInstanceOf[Import]
         checkSelectors(newImport)
