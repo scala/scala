@@ -1171,4 +1171,4 @@ trait Iterator[+A] extends TraversableOnce[A] {
 }
 
 /** Explicit instantiation of the `Iterator` trait to reduce class file size in subclasses. */
-private[scala] abstract class AbstractIterator[+A] extends Iterator[A]
+abstract class AbstractIterator[+A] extends Iterator[A]

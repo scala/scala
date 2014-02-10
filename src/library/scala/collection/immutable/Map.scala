@@ -32,9 +32,9 @@ trait Map[A, +B] extends Iterable[(A, B)]
                     with MapLike[A, B, Map[A, B]] { self =>
 
   override def empty: Map[A, B] = Map.empty
-  
+
   /** Returns this $coll as an immutable map.
-   *  
+   *
    *  A new map will not be built; lazy collections will stay lazy.
    */
   @deprecatedOverriding("Immutable maps should do nothing on toMap except return themselves cast as a map.",  "2.11.0")
@@ -191,4 +191,4 @@ object Map extends ImmutableMapFactory[Map] {
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
-private[scala] abstract class AbstractMap[A, +B] extends scala.collection.AbstractMap[A, B] with Map[A, B]
+abstract class AbstractMap[A, +B] extends scala.collection.AbstractMap[A, B] with Map[A, B]
