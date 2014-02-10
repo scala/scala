@@ -1,0 +1,96 @@
+meth = method yg_1
+as seen by Scala reflection: def yg_1[T](y: Y[T]): T
+as seen by Java reflection: public java.lang.Object a$.yg_1(java.lang.Object)
+result = 1
+meth = method yg_1
+as seen by Scala reflection: def yg_1[T](y: Y[T]): T
+as seen by Java reflection: public java.lang.Object a$.yg_1(java.lang.Object)
+result = 1
+meth = method yi_2
+as seen by Scala reflection: def yi_2(y: Y[Int]): Int
+as seen by Java reflection: public int a$.yi_2(java.lang.Integer)
+result = 2
+meth = method yi_2
+as seen by Scala reflection: def yi_2(y: Y[Int]): Int
+as seen by Java reflection: public int a$.yi_2(java.lang.Integer)
+result = class java.lang.IllegalArgumentException: argument type mismatch
+meth = method ys_3
+as seen by Scala reflection: def ys_3(y: Y[String]): String
+as seen by Java reflection: public java.lang.String a$.ys_3(java.lang.String)
+result = class java.lang.IllegalArgumentException: argument type mismatch
+meth = method ys_3
+as seen by Scala reflection: def ys_3(y: Y[String]): String
+as seen by Java reflection: public java.lang.String a$.ys_3(java.lang.String)
+result = 3
+meth = method ya_4
+as seen by Scala reflection: def ya_4(ys: Array[Y[String]]): List[String]
+as seen by Java reflection: public scala.collection.immutable.List a$.ya_4(Y[])
+result = class java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.String
+meth = method ya_4
+as seen by Scala reflection: def ya_4(ys: Array[Y[String]]): List[String]
+as seen by Java reflection: public scala.collection.immutable.List a$.ya_4(Y[])
+result = List(4)
+meth = method yl_5
+as seen by Scala reflection: def yl_5(ys: List[Y[String]]): List[String]
+as seen by Java reflection: public scala.collection.immutable.List a$.yl_5(scala.collection.immutable.List)
+result = class java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.String
+meth = method yl_5
+as seen by Scala reflection: def yl_5(ys: List[Y[String]]): List[String]
+as seen by Java reflection: public scala.collection.immutable.List a$.yl_5(scala.collection.immutable.List)
+result = List(5)
+meth = method yni_7
+as seen by Scala reflection: def yni_7(y: => Y[Int]): Int
+as seen by Java reflection: public int a$.yni_7(scala.Function0)
+result = 7
+meth = method yns_8
+as seen by Scala reflection: def yns_8(y: => Y[String]): String
+as seen by Java reflection: public java.lang.String a$.yns_8(scala.Function0)
+result = 8
+meth = method zg_1
+as seen by Scala reflection: def zg_1[T](z: Z[T]): T
+as seen by Java reflection: public java.lang.Object a$.zg_1(Z)
+result = 1
+meth = method zg_1
+as seen by Scala reflection: def zg_1[T](z: Z[T]): T
+as seen by Java reflection: public java.lang.Object a$.zg_1(Z)
+result = 1
+meth = method zi_2
+as seen by Scala reflection: def zi_2(z: Z[Int]): Int
+as seen by Java reflection: public int a$.zi_2(Z)
+result = 2
+meth = method zi_2
+as seen by Scala reflection: def zi_2(z: Z[Int]): Int
+as seen by Java reflection: public int a$.zi_2(Z)
+result = class java.lang.ClassCastException: java.lang.String cannot be cast to java.lang.Integer
+meth = method zs_3
+as seen by Scala reflection: def zs_3(z: Z[String]): String
+as seen by Java reflection: public java.lang.String a$.zs_3(Z)
+result = class java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.String
+meth = method zs_3
+as seen by Scala reflection: def zs_3(z: Z[String]): String
+as seen by Java reflection: public java.lang.String a$.zs_3(Z)
+result = 3
+meth = method za_4
+as seen by Scala reflection: def za_4(zs: Array[Z[String]]): List[String]
+as seen by Java reflection: public scala.collection.immutable.List a$.za_4(Z[])
+result = class java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.String
+meth = method za_4
+as seen by Scala reflection: def za_4(zs: Array[Z[String]]): List[String]
+as seen by Java reflection: public scala.collection.immutable.List a$.za_4(Z[])
+result = List(4)
+meth = method zl_5
+as seen by Scala reflection: def zl_5(zs: List[Z[String]]): List[String]
+as seen by Java reflection: public scala.collection.immutable.List a$.zl_5(scala.collection.immutable.List)
+result = class java.lang.ClassCastException: java.lang.Integer cannot be cast to java.lang.String
+meth = method zl_5
+as seen by Scala reflection: def zl_5(zs: List[Z[String]]): List[String]
+as seen by Java reflection: public scala.collection.immutable.List a$.zl_5(scala.collection.immutable.List)
+result = List(5)
+meth = method zni_7
+as seen by Scala reflection: def zni_7(z: => Z[Int]): Int
+as seen by Java reflection: public int a$.zni_7(scala.Function0)
+result = 7
+meth = method zns_8
+as seen by Scala reflection: def zns_8(z: => Z[String]): String
+as seen by Java reflection: public java.lang.String a$.zns_8(scala.Function0)
+result = 8

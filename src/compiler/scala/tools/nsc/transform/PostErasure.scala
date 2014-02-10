@@ -8,7 +8,7 @@ package transform
 /** This phase maps ErasedValueTypes to the underlying unboxed representation and
  *  performs peephole optimizations.
  */
-trait PostErasure extends InfoTransform with TypingTransformers {
+trait PostErasure extends InfoTransform with TypingTransformers with scala.reflect.internal.transform.PostErasure {
   val global: Global
 
   import global._
@@ -18,16 +18,6 @@ trait PostErasure extends InfoTransform with TypingTransformers {
 
   def newTransformer(unit: CompilationUnit): Transformer = new PostErasureTransformer(unit)
   override def changesBaseClasses = false
-
-  object elimErasedValueType extends TypeMap {
-    def apply(tp: Type) = tp match {
-      case ConstantType(Constant(tp: Type)) => ConstantType(Constant(apply(tp)))
-      case ErasedValueType(_, underlying)   => underlying
-      case _                                => mapOver(tp)
-    }
-  }
-
-  def transformInfo(sym: Symbol, tp: Type) = elimErasedValueType(tp)
 
   class PostErasureTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     override def transform(tree: Tree) = {
