@@ -1,0 +1,13 @@
+t6260-named.scala:12: error: bridge generated for member method apply: (a: C[Any])C[Any] in object O
+which overrides method apply: (v1: T1)R in trait Function1
+clashes with definition of the member itself;
+both have erased type (v1: Object)Object
+    def apply(a: C[Any]) = a
+        ^
+t6260-named.scala:14: error: bridge generated for member method apply: (a: C[Any])C[Any] in class X
+which overrides method apply: (a: A)A in trait T
+clashes with definition of the member itself;
+both have erased type (a: Object)Object
+  class X extends T[C[Any]] { def apply(a: C[Any]) = a }
+                                  ^
+two errors found
