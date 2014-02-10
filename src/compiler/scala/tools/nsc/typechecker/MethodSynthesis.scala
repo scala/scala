@@ -427,7 +427,7 @@ trait MethodSynthesis {
       override def derivedSym = basisSym.lazyAccessor
       override def derivedTree: DefDef = {
         val ValDef(_, _, tpt0, rhs0) = tree
-        val rhs1 = transformed.getOrElse(rhs0, rhs0)
+        val rhs1 = context.unit.transformed.getOrElse(rhs0, rhs0)
         val body = (
           if (tree.symbol.owner.isTrait || hasUnitType(basisSym)) rhs1
           else gen.mkAssignAndReturn(basisSym, rhs1)

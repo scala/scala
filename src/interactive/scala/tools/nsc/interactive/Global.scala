@@ -638,6 +638,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     unit.problems.clear()
     unit.body = EmptyTree
     unit.status = NotLoaded
+    unit.transformed.clear()
   }
 
   /** Parse unit and create a name index, unless this has already been done before */
