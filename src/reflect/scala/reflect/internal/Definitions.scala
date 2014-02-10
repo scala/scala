@@ -35,7 +35,8 @@ trait Definitions extends api.StandardDefinitions {
   private def newMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long): MethodSymbol = {
     val msym   = owner.newMethod(name.encode, NoPosition, flags)
     val params = msym.newSyntheticValueParams(formals)
-    msym setInfo MethodType(params, restpe) markAllCompleted
+    val info = if (owner.isJavaDefined) JavaMethodType(params, restpe) else MethodType(params, restpe)
+    msym setInfo info markAllCompleted
   }
   private def enterNewMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long = 0L): MethodSymbol =
     owner.info.decls enter newMethod(owner, name, formals, restpe, flags)
@@ -904,8 +905,14 @@ trait Definitions extends api.StandardDefinitions {
       existentialAbstraction(clazz.unsafeTypeParams, clazz.tpe_*)
 
     // members of class scala.Any
+
+    // TODO these aren't final! They are now overriden in AnyRef/Object. Prior to the fix
+    //      for SI-8129, they were actually *overloaded* by the members in AnyRef/Object.
+    //      We should unfinalize these, override in AnyValClass, and make the overrides final.
+    //      Refchecks never actually looks at these, so its just for consistency.
     lazy val Any_==       = enterNewMethod(AnyClass, nme.EQ, AnyTpe :: Nil, BooleanTpe, FINAL)
     lazy val Any_!=       = enterNewMethod(AnyClass, nme.NE, AnyTpe :: Nil, BooleanTpe, FINAL)
+
     lazy val Any_equals   = enterNewMethod(AnyClass, nme.equals_, AnyTpe :: Nil, BooleanTpe)
     lazy val Any_hashCode = enterNewMethod(AnyClass, nme.hashCode_, Nil, IntTpe)
     lazy val Any_toString = enterNewMethod(AnyClass, nme.toString_, Nil, StringTpe)
@@ -1012,8 +1019,8 @@ trait Definitions extends api.StandardDefinitions {
 
     // members of class java.lang.{ Object, String }
     lazy val Object_## = enterNewMethod(ObjectClass, nme.HASHHASH, Nil, IntTpe, FINAL)
-    lazy val Object_== = enterNewMethod(ObjectClass, nme.EQ, AnyRefTpe :: Nil, BooleanTpe, FINAL)
-    lazy val Object_!= = enterNewMethod(ObjectClass, nme.NE, AnyRefTpe :: Nil, BooleanTpe, FINAL)
+    lazy val Object_== = enterNewMethod(ObjectClass, nme.EQ, AnyTpe :: Nil, BooleanTpe, FINAL)
+    lazy val Object_!= = enterNewMethod(ObjectClass, nme.NE, AnyTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_eq = enterNewMethod(ObjectClass, nme.eq, AnyRefTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_ne = enterNewMethod(ObjectClass, nme.ne, AnyRefTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_ => BooleanTpe)

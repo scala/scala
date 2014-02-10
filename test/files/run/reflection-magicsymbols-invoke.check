@@ -36,12 +36,10 @@ it's important to print the list of AnyRef's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
 constructor Object: ()java.lang.Object
 method !=: (x$1: Any)Boolean
-method !=: (x$1: AnyRef)Boolean
 method ##: ()Int
 method $asInstanceOf: [T0]()T0
 method $isInstanceOf: [T0]()Boolean
 method ==: (x$1: Any)Boolean
-method ==: (x$1: AnyRef)Boolean
 method asInstanceOf: [T0]=> T0
 method clone: ()java.lang.Object
 method eq: (x$1: AnyRef)Boolean
@@ -84,12 +82,10 @@ if some of them change (possibly, adding and/or removing magic symbols), we must
 constructor Array: (_length: Int)Array[T]
 constructor Cloneable: ()java.lang.Cloneable
 method !=: (x$1: Any)Boolean
-method !=: (x$1: AnyRef)Boolean
 method ##: ()Int
 method $asInstanceOf: [T0]()T0
 method $isInstanceOf: [T0]()Boolean
 method ==: (x$1: Any)Boolean
-method ==: (x$1: AnyRef)Boolean
 method apply: (i: Int)T
 method asInstanceOf: [T0]=> T0
 method clone: ()Array[T]

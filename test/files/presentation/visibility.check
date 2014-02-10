@@ -3,7 +3,7 @@ reload: Completions.scala
 askTypeCompletion at Completions.scala(14,12)
 ================================================================================
 [response] askTypeCompletion at (14,12)
-retrieved 37 members
+retrieved 35 members
 [inaccessible] private[this] def secretPrivateThis(): Unit
 def +(other: String): String
 def ->[B](y: B): (accessibility.Foo, B)
@@ -19,10 +19,8 @@ def someTests(other: accessibility.Foo): Unit
 def toString(): String
 def →[B](y: B): (accessibility.Foo, B)
 final def !=(x$1: Any): Boolean
-final def !=(x$1: AnyRef): Boolean
 final def ##(): Int
 final def ==(x$1: Any): Boolean
-final def ==(x$1: AnyRef): Boolean
 final def asInstanceOf[T0]: T0
 final def eq(x$1: AnyRef): Boolean
 final def isInstanceOf[T0]: Boolean
@@ -43,7 +41,7 @@ protected[package lang] def finalize(): Unit
 askTypeCompletion at Completions.scala(16,11)
 ================================================================================
 [response] askTypeCompletion at (16,11)
-retrieved 37 members
+retrieved 35 members
 def +(other: String): String
 def ->[B](y: B): (accessibility.Foo, B)
 def ensuring(cond: Boolean): accessibility.Foo
@@ -58,10 +56,8 @@ def someTests(other: accessibility.Foo): Unit
 def toString(): String
 def →[B](y: B): (accessibility.Foo, B)
 final def !=(x$1: Any): Boolean
-final def !=(x$1: AnyRef): Boolean
 final def ##(): Int
 final def ==(x$1: Any): Boolean
-final def ==(x$1: AnyRef): Boolean
 final def asInstanceOf[T0]: T0
 final def eq(x$1: AnyRef): Boolean
 final def isInstanceOf[T0]: Boolean
@@ -83,7 +79,7 @@ protected[package lang] def finalize(): Unit
 askTypeCompletion at Completions.scala(22,11)
 ================================================================================
 [response] askTypeCompletion at (22,11)
-retrieved 37 members
+retrieved 35 members
 [inaccessible] private def secretPrivate(): Unit
 def +(other: String): String
 def ->[B](y: B): (accessibility.AccessibilityChecks, B)
@@ -100,10 +96,8 @@ def someTests: Unit
 def toString(): String
 def →[B](y: B): (accessibility.AccessibilityChecks, B)
 final def !=(x$1: Any): Boolean
-final def !=(x$1: AnyRef): Boolean
 final def ##(): Int
 final def ==(x$1: Any): Boolean
-final def ==(x$1: AnyRef): Boolean
 final def asInstanceOf[T0]: T0
 final def eq(x$1: AnyRef): Boolean
 final def isInstanceOf[T0]: Boolean
@@ -123,7 +117,7 @@ protected[package lang] def finalize(): Unit
 askTypeCompletion at Completions.scala(28,10)
 ================================================================================
 [response] askTypeCompletion at (28,10)
-retrieved 37 members
+retrieved 35 members
 [inaccessible] private def secretPrivate(): Unit
 [inaccessible] private[this] def secretPrivateThis(): Unit
 [inaccessible] protected def secretProtected(): Unit
@@ -143,10 +137,8 @@ def someTests(other: accessibility.Foo): Unit
 def toString(): String
 def →[B](y: B): (accessibility.Foo, B)
 final def !=(x$1: Any): Boolean
-final def !=(x$1: AnyRef): Boolean
 final def ##(): Int
 final def ==(x$1: Any): Boolean
-final def ==(x$1: AnyRef): Boolean
 final def asInstanceOf[T0]: T0
 final def eq(x$1: AnyRef): Boolean
 final def isInstanceOf[T0]: Boolean
@@ -163,7 +155,7 @@ protected[package accessibility] def secretProtectedInPackage(): Unit
 askTypeCompletion at Completions.scala(37,8)
 ================================================================================
 [response] askTypeCompletion at (37,8)
-retrieved 37 members
+retrieved 35 members
 [inaccessible] private def secretPrivate(): Unit
 [inaccessible] private[this] def secretPrivateThis(): Unit
 [inaccessible] protected def secretProtected(): Unit
@@ -184,10 +176,8 @@ def someTests(other: accessibility.Foo): Unit
 def toString(): String
 def →[B](y: B): (accessibility.Foo, B)
 final def !=(x$1: Any): Boolean
-final def !=(x$1: AnyRef): Boolean
 final def ##(): Int
 final def ==(x$1: Any): Boolean
-final def ==(x$1: AnyRef): Boolean
 final def asInstanceOf[T0]: T0
 final def eq(x$1: AnyRef): Boolean
 final def isInstanceOf[T0]: Boolean
