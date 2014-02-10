@@ -21,7 +21,7 @@ scala> convert(Some[Int](0))
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : Some[Int]
- required: ?F forSome { type _$1 <: ?F forSome { type _$2 } }
+ required: ?F[_$1] forSome { type _$1 <: ?F[_$2] forSome { type _$2 } }
               convert(Some[Int](0))
               ^
 <console>:12: error: type mismatch;
