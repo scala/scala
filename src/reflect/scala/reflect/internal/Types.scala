@@ -2693,6 +2693,8 @@ trait Types
      *
      *   (Also tried doing this once during class file parsing or when creating the existential type,
      *   but that causes cyclic errors because it happens too early.)
+     *
+     * TODO: figure out how to do this earlier without running into cycles, so this can subsume the fix for SI-1786
      */
     private def sharpenQuantifierBounds(): Unit = {
       /* Check that we're looking at rawToExistential's handiwork

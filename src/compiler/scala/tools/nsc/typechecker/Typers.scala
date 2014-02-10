@@ -4902,6 +4902,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 )
                 arg match {
                   case Bind(_, _)                     => enhanceBounds()
+                  // TODO: consolidate fixes for SI-6169 and SI-1786 by dropping the Ident case,
+                  // in favor of doing sharpenQuantifierBounds for all ExistentialTypes, not just java-defined ones
+                  // (need to figure out how to sharpen the bounds on creation without running into cycles)
                   case Ident(name) if canEnhanceIdent => enhanceBounds()
                   case _                              =>
                 }
