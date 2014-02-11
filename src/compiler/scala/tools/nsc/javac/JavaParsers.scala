@@ -190,7 +190,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         case GTGTGT   => GTGT
         case GTGTEQ   => GTEQ
         case GTGT     => GT
-        case GTEQ     => ASSIGN
+        case GTEQ     => EQUALS
       }
       if (closers isDefinedAt in.token) in.token = closers(in.token)
       else accept(GT)
@@ -538,7 +538,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         in.nextToken()
         if (in.token == IDENTIFIER) { // if there's an ident after the comma ...
           val name = ident()
-          if (in.token == ASSIGN || in.token == SEMI) { // ... followed by a `=` or `;`, we know it's a real variable definition
+          if (in.token == EQUALS || in.token == SEMI) { // ... followed by a `=` or `;`, we know it's a real variable definition
             buf ++= maybe
             buf += varDecl(in.currentPos, mods, tpt.duplicate, name.toTermName)
             maybe.clear()
@@ -563,7 +563,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
 
     def varDecl(pos: Position, mods: Modifiers, tpt: Tree, name: TermName): ValDef = {
       val tpt1 = optArrayBrackets(tpt)
-      if (in.token == ASSIGN && !mods.isParameter) skipTo(COMMA, SEMI)
+      if (in.token == EQUALS && !mods.isParameter) skipTo(COMMA, SEMI)
       val mods1 = if (mods.isFinal) mods &~ Flags.FINAL else mods | Flags.MUTABLE
       atPos(pos) {
         ValDef(mods1, name, tpt1, blankExpr)
