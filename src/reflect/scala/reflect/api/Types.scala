@@ -132,7 +132,7 @@ trait Types {
     /** Type signature of the companion of the underlying class symbol.
      *  NoType if the underlying symbol is not a class symbol, or if it doesn't have a companion.
      */
-    def companionType: Type
+    def companion: Type
 
     /** Is this type a type constructor that is missing its type arguments?
      */

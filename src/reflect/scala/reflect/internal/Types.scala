@@ -244,7 +244,7 @@ trait Types
       this.isInstanceOf[TypeRef] && typeSymbol.isAbstractType && !typeSymbol.isExistential
     }
 
-    def companionType = {
+    def companion = {
       val sym = typeSymbolDirect
       if (sym.isModule && !sym.isPackage) sym.companionSymbol.tpe
       else if (sym.isModuleClass && !sym.isPackageClass) sym.sourceModule.companionSymbol.tpe
