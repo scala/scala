@@ -81,7 +81,56 @@ abstract class FormatInterpolator {
         case Literal(Constant(x: String)) => x
         case _ => throw new IllegalArgumentException("internal error: argument parts must be a list of string literals")
       }
-      val s  = StringContext.treatEscapes(s0)
+      def escapeHatch: PartialFunction[Throwable, String] = {
+        // trailing backslash, octal escape, or other
+        case e: StringContext.InvalidEscapeException =>
+          def errPoint = part.pos withPoint (part.pos.point + e.index)
+          def octalOf(c: Char) = Character.digit(c, 8)
+          def alt = {
+            def altOf(i: Int) = i match {
+              case '\b' => "\\b"
+              case '\t' => "\\t"
+              case '\n' => "\\n"
+              case '\f' => "\\f"
+              case '\r' => "\\r"
+              case '\"' => "\\u0022"  // $" in future
+              case '\'' => "'"
+              case '\\' => """\\"""
+              case x    => "\\u%04x" format x
+            }
+            val suggest = {
+              val r = "([0-7]{1,3}).*".r
+              (s0 drop e.index + 1) match {
+                case r(n) => altOf { (0 /: n) { case (a, o) => (8 * a) + (o - '0') } }
+                case _    => ""
+              }
+            }
+            val txt =
+              if ("" == suggest) ""
+              else s", use $suggest instead"
+            txt
+          }
+          def badOctal = {
+            def msg(what: String) = s"Octal escape literals are $what$alt."
+            if (settings.future) {
+              c.error(errPoint, msg("unsupported"))
+              s0
+            } else {
+              c.enclosingUnit.deprecationWarning(errPoint, msg("deprecated"))
+              try StringContext.treatEscapes(s0) catch escapeHatch
+            }
+          }
+          if (e.index == s0.length - 1) {
+            c.error(errPoint, """Trailing '\' escapes nothing.""")
+            s0
+          } else if (octalOf(s0(e.index + 1)) >= 0) {
+            badOctal
+          } else {
+            c.error(errPoint, e.getMessage)
+            s0
+          }
+      }
+      val s  = try StringContext.processEscapes(s0) catch escapeHatch
       val ms = fpat findAllMatchIn s
 
       def errorLeading(op: Conversion) = op.errorAt(Spec, s"conversions must follow a splice; ${Conversion.literalHelp}")
