@@ -36,4 +36,9 @@ object PatternDeconstructionProps extends QuasiquoteProperties("pattern deconstr
     val cq"$pat0 if $cond0 => $body0" = cq"$pat if $cond => $body"
     pat0 ≈ pat && cond0 ≈ cond && body0 ≈ body
   }
+
+  property("extract alternative") = forAll { (first: Tree, rest: List[Tree]) =>
+    val pq"$first1 | ..$rest1" = pq"$first | ..$rest"
+    first1 ≈ first && rest1 ≈ rest
+  }
 }
