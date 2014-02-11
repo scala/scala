@@ -305,8 +305,6 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         import pair._
         val member   = low
         val other    = high
-        def memberTp = lowType
-        def otherTp  = highType
 
         debuglog("Checking validity of %s overriding %s".format(member.fullLocationString, other.fullLocationString))
 
@@ -467,6 +465,13 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         //  overrideError("may not override parameterized type");
         // @M: substSym
         def checkOverrideAlias() {
+          // Important: first check the pair has the same kind, since the substitution
+          // carries high's type parameter's bounds over to low, so that
+          // type equality doesn't consider potentially different bounds on low/high's type params.
+          // In b781e25afe this went from using memberInfo to memberType (now lowType/highType), tested by neg/override.scala.
+          // It seems type alias's RHS should be checked by looking at the symbol's info...
+          // TODO: think this through some more and s/lowType/lowInfo/, s/highType/highInfo/
+          // a more liberal coevolveSym will probably break neg/t4137, unless this is fixed
           if (pair.sameKind && lowType.substSym(low.typeParams, high.typeParams) =:= highType) ()
           else overrideTypeError() // (1.6)
         }
