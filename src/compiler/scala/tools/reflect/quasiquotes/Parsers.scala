@@ -200,7 +200,7 @@ trait Parsers { self: Quasiquotes =>
 
   object PatternParser extends Parser {
     def entryPoint = { parser =>
-      val pat = parser.noSeq.pattern1()
+      val pat = parser.noSeq.pattern()
       gen.patvarTransformer.transform(pat)
     }
   }
