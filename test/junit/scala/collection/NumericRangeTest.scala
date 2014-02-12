@@ -6,7 +6,7 @@ import org.junit.Test
 import scala.math._
 import scala.util._
 
-/* Tests various maps by making sure they all agree on the same answers. */
+/* Tests various ranges by making sure they all agree on the same answers. */
 @RunWith(classOf[JUnit4])
 class RangeConsistencyTest {
   def r2nr[T: Integral](
@@ -120,4 +120,21 @@ class RangeConsistencyTest {
       case _ => false
     }
   }}
+  
+  @Test
+  def testSI6736() {
+    // These operations on overfull ranges should all succeed.
+    assert( (0 to Int.MaxValue).contains(4) )
+    assert( !((Int.MinValue to 0).contains(4)) )
+    assert( (Int.MinValue to 0).last == 0 )
+    assert( (Int.MinValue until 5).last == 4 )
+    assert( (-7 to -99 by -4).last == -99 && (-7 until -99 by -4).last == -95 )
+    assert( (Int.MinValue to 5) == (Int.MinValue until 6) )
+    assert( (-3 to Int.MaxValue).drop(4).length == Int.MaxValue )
+    assert( (-3 to Int.MaxValue).take(1234) == (-3 to 1230) )
+    assert( (-3 to Int.MaxValue).dropRight(4).length == Int.MaxValue )
+    assert( (-3 to Int.MaxValue).takeRight(1234).length == 1234 )
+    assert( (-3 to Int.MaxValue).dropWhile(_ <= 0).length == Int.MaxValue )
+    assert( (-3 to Int.MaxValue).span(_ <= 0) match { case (a,b) => a.length == 4 && b.length == Int.MaxValue } )
+  }
 }
