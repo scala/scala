@@ -1,0 +1,11 @@
+name-lookup-stable.scala:15: error: reference to PrimaryKey is ambiguous;
+it is both defined in class A and imported subsequently by
+import ColumnOption._
+    (null: Any) match { case PrimaryKey => }
+                             ^
+name-lookup-stable.scala:17: error: reference to PrimaryKey is ambiguous;
+it is both defined in class A and imported subsequently by
+import ColumnOption._
+    PrimaryKey // was already ambigious in 2.10.3
+    ^
+two errors found
