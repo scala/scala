@@ -24,9 +24,7 @@ tree: reflect.runtime.universe.Apply =
 scala> {val tb = reflect.runtime.currentMirror.mkToolBox(); tb.typecheck(tree): Any}
 res0: Any =
 {
-  {
-    $read.O.apply()
-  }
+  $read.O.apply()
 }
 
 scala> 
