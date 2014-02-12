@@ -23,7 +23,7 @@ object PrinterHelper {
   private def normalizeEOL(resultCode: String) =
     resultCode.lines mkString s"$LF"
   
-  def assertResultCode(code: String)(parsedCode: String = "", typedCode: String = "", wrap: Boolean = false) = {
+  def assertResultCode(code: String)(parsedCode: String = "", typedCode: String = "", wrap: Boolean = false, printRoot: Boolean = false) = {
     def toolboxTree(tree: => Tree) = try{
         tree
       } catch {
@@ -50,7 +50,7 @@ object PrinterHelper {
       assertEquals("using toolbox parser" + LF, wrapCode(parsedCode), normalizeEOL(showCode(parsedTree)))
     if (!typedCode.isEmpty()) {
       val typedTree = toolboxTree(toolbox.typecheck(parsedTree))
-      assertEquals("using toolbox typechecker" + LF, wrapCode(typedCode), normalizeEOL(showCode(typedTree)))
+      assertEquals("using toolbox typechecker" + LF, wrapCode(typedCode), normalizeEOL(showCode(typedTree, printRootPkg = printRoot)))
     }
   }
   
@@ -323,6 +323,11 @@ trait BasePrintTests {
     code = "List(1, 2, 3) map (_ - 1)")(
     parsedCode = "List(1, 2, 3).map(((x$1) => x$1.-(1))) ",
     typedCode = "scala.collection.immutable.List.apply(1, 2, 3).map(((x$1) => x$1.-(1)))(scala.collection.immutable.List.canBuildFrom)")
+    
+  @Test def testFunc4 = assertResultCode(
+    code = "val x: String => Int = ((str: String) => 1)")(
+    parsedCode = "val x: _root_.scala.Function1[String, Int] = ((str: String) => 1)",
+    typedCode = " val x: _root_.scala.Function1[_root_.scala.Predef.String, _root_.scala.Int] = ((str: _root_.scala.Predef.String) => 1)", printRoot = true)
   
   @Test def testImport1 = assertPrintedCode("import scala.collection.mutable")
   

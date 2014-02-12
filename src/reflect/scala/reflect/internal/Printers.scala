@@ -73,11 +73,14 @@ trait Printers extends api.Printers { self: SymbolTable =>
     def indent() = indentMargin += indentStep
     def undent() = indentMargin -= indentStep
 
-    def printPosition(tree: Tree) = if (printPositions) print(tree.pos.show)
+    def printPosition(tree: Tree) =
+      if (printPositions) comment(print(tree.pos.show))
 
     protected def printTypesInfo(tree: Tree) =
       if (printTypes && tree.isTerm && tree.canHaveAttrs)
-        print("{", if (tree.tpe eq null) "<null>" else tree.tpe.toString, "}")
+        comment{
+          print("{", if (tree.tpe eq null) "<null>" else tree.tpe.toString, "}")
+        }
 
     def println() = {
       out.println()
@@ -128,11 +131,16 @@ trait Printers extends api.Printers { self: SymbolTable =>
       print(symName(p, p.name)); printOpt(": ", TypeTree() setType p.tpe)
     }
 
-    protected def parenthesize(condition: Boolean = true)(body: => Unit) = {
-      if (condition) print("(")
+    protected def parenthesize(condition: Boolean = true, open: String = "(", close: String = ")")(body: => Unit) = {
+      if (condition) print(open)
       body
-      if (condition) print(")")
+      if (condition) print(close)
     }
+
+    protected val commentsRequired = false
+
+    protected def comment(body: => Unit) =
+      parenthesize(commentsRequired, "/*", "*/")(body)
 
     protected def printImplicitInParamsList(vds: List[ValDef]) =
       if (vds.nonEmpty) printFlags(vds.head.mods.flags & IMPLICIT, "")
@@ -279,8 +287,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
       print("(");
       printValueParams
       print(" => ", body, ")")
-      if (printIds && tree.symbol != null) print("#" + tree.symbol.id)
-      if (printOwners && tree.symbol != null) print("@" + tree.symbol.owner.id)
+      if (printIds && tree.symbol != null) comment(print("#" + tree.symbol.id))
+      if (printOwners && tree.symbol != null) comment(print("@" + tree.symbol.owner.id))
     }
 
     protected def printSuper(tree: Super, resultName: => String, checkSymbol: Boolean = true) = {
@@ -546,6 +554,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
       }
       qualIsIntLit && name.isOperatorName
     }
+
+    override protected val commentsRequired = true
 
     protected def needsParentheses(parent: Tree)(insideIf: Boolean = true, insideMatch: Boolean = true,
       insideTry: Boolean = true, insideAnnotated: Boolean = true, insideBlock: Boolean = true, insideLabelDef: Boolean = true) = {
@@ -1040,11 +1050,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case _ if syntheticToRemove(tree) =>
 
         case tt: TypeTree =>
-          if (printPositions) {
-            if (tt.original != null)
-              print("<type: ", tt.original.toString(), ">")
-            else print("<type ?>")
-          } else if (!emptyTree(tt)) print(tt.original)
+          if (!emptyTree(tt)) print(tt.original)
 
         // print only fun when targs are TypeTrees with empty original
         case TypeApply(fun, targs) =>
@@ -1076,7 +1082,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
             }) && (tr match { // check that Select contains package
               case Select(q, _) => checkRootPackage(q)
               case _: Ident | _: This => val sym = tr.symbol
-                tr.hasExistingSymbol && sym.isPackage && !sym.isRootPackage
+                tr.hasExistingSymbol && sym.isPackage && sym.name != nme.ROOTPKG
               case _ => false
             })
 
@@ -1093,6 +1099,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           }
 
         case This(qual) =>
+          // todo: add symbol checking for common printer
           if (tree.symbol.isPackage) print(tree.symbol.fullName)
           else super.processTreePrinting(tree)
 
