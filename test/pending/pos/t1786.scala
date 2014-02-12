@@ -1,3 +1,11 @@
+/** This a consequence of the current type checking algorithm, where bounds are checked only after variables are instantiated.
+ * I believe this will change once we go to contraint-based type inference.
+ * Alternatively, we can pursue a more extensive fix to SI-6169
+ *
+ * The below code shows a compiler flaw in that the wildcard "_" as value for a bounded type parameter either
+ * breaks the boundary - as it result in Any - or doesn't evaluate to the boundary (as I'd hoped it to be).
+*/
+
 class SomeClass(val intValue:Int)
 class MyClass[T <: SomeClass](val myValue:T)
 class Flooz[A >: Null <: SomeClass, T >: Null <: A](var value: T)

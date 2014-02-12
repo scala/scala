@@ -4891,23 +4891,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   asym setInfo logResult(s"Updating bounds of ${asym.fullLocationString} in $tree from '$abounds' to")(TypeBounds(lo, hi))
               }
               if (asym != null && asym.isAbstractType) {
-                // See pos/t1786 to follow what's happening here.
-                def canEnhanceIdent = (
-                     asym.hasCompleteInfo
-                  && tparam.exists          /* sometimes it is NoSymbol */
-                  && tparam.hasCompleteInfo /* SI-2940 */
-                  && !tparam.isFBounded     /* SI-2251 */
-                  && !tparam.isHigherOrderTypeParameter
-                  && !(abounds.hi <:< tbounds.hi)
-                  && asym.isSynthetic     /* this limits us to placeholder tparams, excluding named ones */
-                )
                 arg match {
-                  case Bind(_, _)                     => enhanceBounds()
-                  // TODO: consolidate fixes for SI-6169 and SI-1786 by dropping the Ident case,
-                  // in favor of doing sharpenQuantifierBounds for all ExistentialTypes, not just java-defined ones
-                  // (need to figure out how to sharpen the bounds on creation without running into cycles)
-                  case Ident(name) if canEnhanceIdent => enhanceBounds()
-                  case _                              =>
+                  // I removed the Ident() case that partially fixed SI-1786,
+                  // because the stricter bounds being inferred broke e.g., slick
+                  // worse, the fix was compilation order-dependent
+                  // sharpenQuantifierBounds (used in skolemizeExistential) has an alternative fix (SI-6169) that's less invasive
+                  case Bind(_, _) => enhanceBounds()
+                  case _          =>
                 }
               }
             }
