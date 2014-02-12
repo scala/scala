@@ -221,10 +221,12 @@ trait PatternTypers {
      * see test/files/../t5189*.scala
      */
     private def convertToCaseConstructor(tree: Tree, caseClass: Symbol, ptIn: Type): Tree = {
-      def untrustworthyPt = (
+      // TODO SI-7886 / SI-5900 This is well intentioned but doesn't quite hit the nail on the head.
+      //      For now, I've put it completely behind -Xstrict-inference.
+      val untrustworthyPt = settings.strictInference && (
            ptIn =:= AnyTpe
         || ptIn =:= NothingTpe
-        || settings.strictInference && ptIn.typeSymbol != caseClass
+        || ptIn.typeSymbol != caseClass
       )
       val variantToSkolem     = new VariantToSkolemMap
       val caseClassType       = tree.tpe.prefix memberType caseClass
