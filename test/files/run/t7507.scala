@@ -4,6 +4,10 @@ trait Cake extends Slice
 trait Slice { self: Cake =>    // must have self type that extends `Slice`
   private[this] val bippy = () // must be private[this]
   locally(bippy)
+  class C1 {
+    locally(bippy)
+    locally(self.bippy)
+  }
 }
 
 // Originally reported bug:

@@ -1,0 +1,7 @@
+t7475c.scala:6: error: value a is not a member of A.this.B
+    println(this.a)     // wait, what?
+                 ^
+t7475c.scala:7: error: value b is not a member of A.this.B
+    println(this.b)     // wait, what?
+                 ^
+two errors found

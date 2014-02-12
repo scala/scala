@@ -80,7 +80,6 @@ Array
 it's important to print the list of Array's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
 constructor Array: (_length: Int)Array[T]
-constructor Cloneable: ()java.lang.Cloneable
 method !=: (x$1: Any)Boolean
 method ##: ()Int
 method $asInstanceOf: [T0]()T0

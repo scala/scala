@@ -3,7 +3,7 @@ reload: CrashOnLoad.scala
 askTypeCompletion at CrashOnLoad.scala(6,12)
 ================================================================================
 [response] askTypeCompletion at (6,12)
-retrieved 118 members
+retrieved 117 members
 [inaccessible] protected[package lang] def clone(): Object
 [inaccessible] protected[package lang] def finalize(): Unit
 [inaccessible] protected[this] def reversed: List[B]
