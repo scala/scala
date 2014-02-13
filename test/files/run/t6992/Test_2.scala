@@ -2,7 +2,7 @@ import scala.language.reflectiveCalls
 
 object Test extends App {
   val foo = Macros.foo("T")
-  println(scala.reflect.runtime.universe.weakTypeOf[foo.T].typeSymbol.typeSignature)
+  println(scala.reflect.runtime.universe.weakTypeOf[foo.T])
 
   val bar = Macros.bar("test")
   println(bar.test)

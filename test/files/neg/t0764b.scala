@@ -1,3 +1,5 @@
+// see neg/t0764 why this should probably be a pos/ test -- alas something's wrong with existential subtyping (?)
+
 // In all cases when calling "prepend" the receiver 'v'
 // has static type NodeAlias[A] or (equivalently) Node { type T = A }.
 // Since prepend explicitly returns the singleton type of the receiver,

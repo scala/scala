@@ -1,0 +1,6 @@
+t8177a.scala:5: error: type mismatch;
+ found   : A{type Result = Int}
+ required: A{type Result = String}
+             : A { type Result = String} = x
+                                           ^
+one error found

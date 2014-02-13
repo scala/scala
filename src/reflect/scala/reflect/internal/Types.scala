@@ -4100,24 +4100,44 @@ trait Types
     )
   }
 
-  /** Does member `sym1` of `tp1` have a stronger type
-   *  than member `sym2` of `tp2`?
+  /** Does member `symLo` of `tpLo` have a stronger type
+   *  than member `symHi` of `tpHi`?
    */
-  protected[internal] def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol, depth: Depth): Boolean = {
-    require((sym1 ne NoSymbol) && (sym2 ne NoSymbol), ((tp1, sym1, tp2, sym2, depth)))
-    val info1 = tp1.memberInfo(sym1)
-    val info2 = tp2.memberInfo(sym2).substThis(tp2.typeSymbol, tp1)
-    //System.out.println("specializes "+tp1+"."+sym1+":"+info1+sym1.locationString+" AND "+tp2+"."+sym2+":"+info2)//DEBUG
-    (    sym2.isTerm && isSubType(info1, info2, depth) && (!sym2.isStable || sym1.isStable) && (!sym1.hasVolatileType || sym2.hasVolatileType)
-      || sym2.isAbstractType && {
-            val memberTp1 = tp1.memberType(sym1)
-            // println("kinds conform? "+(memberTp1, tp1, sym2, kindsConform(List(sym2), List(memberTp1), tp2, sym2.owner)))
-            info2.bounds.containsType(memberTp1) &&
-            kindsConform(List(sym2), List(memberTp1), tp1, sym1.owner)
-        }
-      || sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.typeSymbol, tp1) =:= tp1.memberType(sym1) //@MAT ok
-    )
-  }
+  protected[internal] def specializesSym(preLo: Type, symLo: Symbol, preHi: Type, symHi: Symbol, depth: Depth): Boolean =
+    (symHi.isAliasType || symHi.isTerm || symHi.isAbstractType) && {
+      // only now that we know symHi is a viable candidate ^^^^^^^, do the expensive checks: ----V
+      require((symLo ne NoSymbol) && (symHi ne NoSymbol), ((preLo, symLo, preHi, symHi, depth)))
+
+      val tpHi = preHi.memberInfo(symHi).substThis(preHi.typeSymbol, preLo)
+
+      // Should we use memberType or memberInfo?
+      // memberType transforms (using `asSeenFrom`) `sym.tpe`,
+      // whereas memberInfo performs the same transform on `sym.info`.
+      // For term symbols, this ends up being the same thing (`sym.tpe == sym.info`).
+      // For type symbols, however, the `.info` of an abstract type member
+      // is defined by its bounds, whereas its `.tpe` is a `TypeRef` to that type symbol,
+      // so that `sym.tpe <:< sym.info`, but not the other way around.
+      //
+      // Thus, for the strongest (correct) result,
+      // we should use `memberType` on the low side.
+      //
+      // On the high side, we should use the result appropriate
+      // for the right side of the `<:<` above (`memberInfo`).
+      val tpLo = preLo.memberType(symLo)
+
+      debuglog(s"specializesSymHi: $preHi . $symHi : $tpHi")
+      debuglog(s"specializesSymLo: $preLo . $symLo : $tpLo")
+
+      if (symHi.isTerm)
+        (isSubType(tpLo, tpHi, depth)        &&
+         (!symHi.isStable || symLo.isStable) &&                // sub-member must remain stable
+         (!symLo.hasVolatileType || symHi.hasVolatileType))    // sub-member must not introduce volatility
+      else if (symHi.isAbstractType)
+        ((tpHi.bounds containsType tpLo) &&
+         kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
+      else // we know `symHi.isAliasType` (see above)
+        tpLo =:= tpHi
+    }
 
   /** A function implementing `tp1` matches `tp2`. */
   final def matchesType(tp1: Type, tp2: Type, alwaysMatchSimple: Boolean): Boolean = {

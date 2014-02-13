@@ -55,7 +55,9 @@ trait GenTypes {
       case tpe @ ConstantType(value) =>
         mirrorFactoryCall(nme.ConstantType, reifyProduct(value))
       case tpe @ TypeRef(pre, sym, args) =>
-        reifyProduct(tpe)
+        // TODO: remove special case!!! for now, as we can't reify these symbols, let's hope dealias gets us out of this bind...
+        if (pre.typeSymbol.isAnonOrRefinementClass && (tpe ne tpe.dealias)) reifyType(tpe.dealias)
+        else reifyProduct(tpe)
       case tpe @ TypeBounds(lo, hi) =>
         reifyProduct(tpe)
       case tpe @ NullaryMethodType(restpe) =>
