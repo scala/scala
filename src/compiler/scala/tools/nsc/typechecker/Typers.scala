@@ -2419,7 +2419,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       val guard1: Tree = if (cdef.guard == EmptyTree) EmptyTree
                          else typed(cdef.guard, BooleanTpe)
-      var body1: Tree = typed(cdef.body, pt)
+      var body1: Tree = typed(cdef.body orElse Literal(Constant(())), pt)
 
       if (context.enclosingCaseDef.savedTypeBounds.nonEmpty) {
         body1 modifyType context.enclosingCaseDef.restoreTypeBounds
