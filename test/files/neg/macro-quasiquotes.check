@@ -1,4 +1,4 @@
-Macros_1.scala:14: error: macro implementation has incompatible shape:
+Macros_1.scala:14: error: bundle implementation has incompatible shape:
  required: (x: Impls.this.c.Expr[Int]): Impls.this.c.Expr[Unit]
  or      : (x: Impls.this.c.Tree): Impls.this.c.Tree
  found   : (x: Impls.this.c.universe.Block): Impls.this.c.Tree

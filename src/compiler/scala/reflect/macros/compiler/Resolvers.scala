@@ -12,61 +12,35 @@ trait Resolvers {
   import definitions._
   import treeInfo._
   import gen._
-  private val runDefinitions = currentRun.runDefinitions
-  import runDefinitions.{Predef_???, _}
+  import runDefinitions._
 
-  /** Resolves a macro impl reference provided in the right-hand side of the given macro definition.
-   *
-   *  Acceptable shapes of the right-hand side:
-   *    1) [<static object>].<method name>[[<type args>]] // vanilla macro def
-   *    2) [<macro bundle>].<method name>[[<type args>]]  // shiny new macro bundle
-   *
-   *  Produces a tree, which represents a reference to a macro implementation if everything goes well,
-   *  otherwise reports found errors and returns EmptyTree. The resulting tree should have the following format:
-   *
-   *    qualifier.method[targs]
-   *
-   *  Qualifier here might be omitted (local macro defs), be a static object (vanilla macro defs)
-   *  or be a dummy instance of a macro bundle (e.g. new MyMacro(???).expand).
-   */
-  lazy val macroImplRef: Tree = {
-    val (maybeBundleRef, methName, targs) = macroDdef.rhs match {
-      case Applied(Select(Applied(RefTree(qual, bundleName), _, Nil), methName), targs, Nil) =>
-        (RefTree(qual, bundleName.toTypeName), methName, targs)
-      case Applied(Ident(methName), targs, Nil) =>
-        (Ident(context.owner.enclClass), methName, targs)
-      case _ =>
-        (EmptyTree, TermName(""), Nil)
+  trait Resolver {
+    self: MacroImplRefCompiler =>
+
+    val isImplBundle: Boolean
+    val isImplMethod = !isImplBundle
+
+    lazy val looksCredible: Boolean = {
+      val Applied(core, _, _) = untypedMacroImplRef
+      typer.silent(_.typed(markMacroImplRef(core)), reportAmbiguousErrors = false).nonEmpty
     }
 
-    val untypedImplRef = typer.silent(_.typedTypeConstructor(maybeBundleRef)) match {
-      case SilentResultValue(result) if looksLikeMacroBundleType(result.tpe) =>
-        val bundle = result.tpe.typeSymbol
-        if (!isMacroBundleType(bundle.tpe)) MacroBundleWrongShapeError()
-        if (!bundle.owner.isStaticOwner) MacroBundleNonStaticError()
-        atPos(macroDdef.rhs.pos)(gen.mkTypeApply(Select(New(bundle, Ident(Predef_???)), methName), targs))
-      case _ =>
-        macroDdef.rhs
-    }
+    lazy val macroImplRef: Tree =
+      typer.silent(_.typed(markMacroImplRef(untypedMacroImplRef)), reportAmbiguousErrors = false) match {
+        case SilentResultValue(success) => success
+        case SilentTypeError(err) => abort(err.errPos, err.errMsg)
+      }
 
-    val typedImplRef = typer.silent(_.typed(markMacroImplRef(untypedImplRef)), reportAmbiguousErrors = false)
-    typedImplRef match {
-      case SilentResultValue(success) => success
-      case SilentTypeError(err) => abort(err.errPos, err.errMsg)
-    }
+    // FIXME: cannot write this concisely because of SI-7507
+    // lazy val (_, macroImplOwner, macroImpl, macroImplTargs) =
+    private lazy val dissectedMacroImplRef =
+      macroImplRef match {
+        case MacroImplReference(isBundle, isBlackbox, owner, meth, targs) => (isBlackbox, owner, meth, targs)
+        case _ => MacroImplReferenceWrongShapeError()
+      }
+    lazy val isImplBlackbox = dissectedMacroImplRef._1
+    lazy val macroImplOwner = dissectedMacroImplRef._2
+    lazy val macroImpl = dissectedMacroImplRef._3
+    lazy val targs = dissectedMacroImplRef._4
   }
-
-  // FIXME: cannot write this concisely because of SI-7507
-  // lazy val (isImplBundle, macroImplOwner, macroImpl, macroImplTargs) =
-  private lazy val dissectedMacroImplRef =
-    macroImplRef match {
-      case MacroImplReference(isBundle, isBlackbox, owner, meth, targs) => (isBundle, isBlackbox, owner, meth, targs)
-      case _ => MacroImplReferenceWrongShapeError()
-    }
-  lazy val isImplBundle = dissectedMacroImplRef._1
-  lazy val isImplMethod = !isImplBundle
-  lazy val isImplBlackbox = dissectedMacroImplRef._2
-  lazy val macroImplOwner = dissectedMacroImplRef._3
-  lazy val macroImpl = dissectedMacroImplRef._4
-  lazy val targs = dissectedMacroImplRef._5
 }
