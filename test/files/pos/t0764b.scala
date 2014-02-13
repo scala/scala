@@ -1,8 +1,3 @@
-/** Note that this should compile! It's a neg test to track the
-behavior. If you have broken this test by making it compile, that
-means you have fixed it and it should be moved to pos.
-**/
-
 // In all cases when calling "prepend" the receiver 'v'
 // has static type NodeAlias[A] or (equivalently) Node { type T = A }.
 // Since prepend explicitly returns the singleton type of the receiver,
@@ -14,6 +9,8 @@ means you have fixed it and it should be moved to pos.
 //   new Main[NodeAlias[A]](v.prepend)
 //   new Main[Node { type T = A }](v.prepend)
 //   new Main(v.prepend)
+
+// the `fail` comments below denote what didn't compile before SI-8177 fixed all of them
 
 package p1 {
   object t0764 {
