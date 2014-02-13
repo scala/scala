@@ -1,0 +1,5 @@
+Test.scala:9: error: value exxx is not a member of ?0
+    raw.t.exxx // java.lang.Claone error found
+ java.lang.String cannot be cast to X
+          ^
+one error found
