@@ -863,31 +863,24 @@ private[internal] trait TypeMaps {
     private val existentials = new Array[Symbol](actuals.size)
     def existentialsNeeded: List[Symbol] = existentials.iterator.filter(_ ne null).toList
 
-    private object StableArg {
-      def unapply(param: Symbol) = Arg unapply param map actuals filter (tp =>
-        tp.isStable && (tp.typeSymbol != NothingClass)
-        )
-    }
-    private object Arg {
-      def unapply(param: Symbol) = Some(params indexOf param) filter (_ >= 0)
-    }
-
-    def apply(tp: Type): Type = mapOver(tp) match {
-      // unsound to replace args by unstable actual #3873
-      case SingleType(NoPrefix, StableArg(arg)) => arg
-      // (soundly) expand type alias selections on implicit arguments,
-      // see depmet_implicit_oopsla* test cases -- typically, `param.isImplicit`
-      case tp1 @ TypeRef(SingleType(NoPrefix, Arg(pid)), sym, targs) =>
-        val arg = actuals(pid)
-        val res = typeRef(arg, sym, targs)
-        if (res.typeSymbolDirect.isAliasType) res.dealias else tp1
-      // don't return the original `tp`, which may be different from `tp1`,
-      // due to dropping annotations
-      case tp1 => tp1
+    private object StableArgTp {
+      // type of actual arg corresponding to param -- if the type is stable
+      def unapply(param: Symbol): Option[Type] = (params indexOf param) match {
+        case -1  => None
+        case pid =>
+          val tp = actuals(pid)
+          if (tp.isStable && (tp.typeSymbol != NothingClass)) Some(tp)
+          else None
+      }
     }
 
-    /* Return the type symbol for referencing a parameter inside the existential quantifier.
-     * (Only needed if the actual is unstable.)
+    /** Return the type symbol for referencing a parameter that's instantiated to an unstable actual argument.
+     *
+     * To soundly abstract over an unstable value (x: T) while retaining the most type information,
+     * use `x.type forSome { type x.type <: T with Singleton}`
+     * `typeOf[T].narrowExistentially(symbolOf[x])`.
+     *
+     * See also: captureThis in AsSeenFromMap.
      */
     private def existentialFor(pid: Int) = {
       if (existentials(pid) eq null) {
@@ -898,6 +891,38 @@ private[internal] trait TypeMaps {
           )
       }
       existentials(pid)
+    }
+
+    private object UnstableArgTp {
+      // existential quantifier and type of corresponding actual arg with unstable type
+      def unapply(param: Symbol): Option[(Symbol, Type)] = (params indexOf param) match {
+        case -1  => None
+        case pid =>
+          val sym = existentialFor(pid)
+          Some((sym, sym.tpe_*)) // refers to an actual value, must be kind-*
+      }
+    }
+
+    private object StabilizedArgTp {
+      def unapply(param: Symbol): Option[Type] =
+        param match {
+          case StableArgTp(tp)      => Some(tp)  // (1)
+          case UnstableArgTp(_, tp) => Some(tp)  // (2)
+          case _ => None
+        }
+    }
+
+    /** instantiate `param.type` to the (sound approximation of the) type `T`
+     * of the actual argument `arg` that was passed in for `param`
+     *
+     * (1) If `T` is stable, we can just use that.
+     *
+     * (2) SI-3873: it'd be unsound to instantiate `param.type` to an unstable `T`,
+     * so we approximate to `X forSome {type X <: T with Singleton}` -- we can't soundly say more.
+     */
+    def apply(tp: Type): Type = tp match {
+      case SingleType(NoPrefix, StabilizedArgTp(tp)) => tp
+      case _                                         => mapOver(tp)
     }
 
     //AM propagate more info to annotations -- this seems a bit ad-hoc... (based on code by spoon)
@@ -922,13 +947,9 @@ private[internal] trait TypeMaps {
       // Both examples are from run/constrained-types.scala.
       object treeTrans extends Transformer {
         override def transform(tree: Tree): Tree = tree.symbol match {
-          case StableArg(actual) =>
-            gen.mkAttributedQualifier(actual, tree.symbol)
-          case Arg(pid) =>
-            val sym = existentialFor(pid)
-            Ident(sym) copyAttrs tree setType typeRef(NoPrefix, sym, Nil)
-          case _ =>
-            super.transform(tree)
+          case StableArgTp(tp)          => gen.mkAttributedQualifier(tp, tree.symbol)
+          case UnstableArgTp(quant, tp) => Ident(quant) copyAttrs tree setType tp
+          case _                        => super.transform(tree)
         }
       }
       treeTrans transform arg
