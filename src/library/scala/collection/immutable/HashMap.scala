@@ -350,6 +350,8 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
             Array.copy(elems, 0, elemsNew, 0, offset)
             Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
             val sizeNew = size - sub.size
+            // if we have only one child, which is not a HashTrieSet but a self-contained set like
+            // HashSet1 or HashSetCollision1, return the child instead
             if (elemsNew.length == 1 && !elemsNew(0).isInstanceOf[HashTrieMap[_,_]])
               elemsNew(0)
             else
