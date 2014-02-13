@@ -1,6 +1,0 @@
-t7886.scala:10: error: type mismatch;
- found   : Contra[A]
- required: Contra[Any]
-    case Unravel(m, msg) => g(m)
-                              ^
-one error found
