@@ -2103,6 +2103,10 @@ trait Types
         trivial = fromBoolean(!sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args))
       toBoolean(trivial)
     }
+    private[scala] def invalidateCaches(): Unit = {
+      parentsPeriod = NoPeriod
+      baseTypeSeqPeriod = NoPeriod
+    }
     private[reflect] var parentsCache: List[Type]      = _
     private[reflect] var parentsPeriod                 = NoPeriod
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _

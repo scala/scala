@@ -20,12 +20,16 @@ abstract class Flatten extends InfoTransform {
   /** Updates the owning scope with the given symbol, unlinking any others.
    */
   private def replaceSymbolInCurrentScope(sym: Symbol): Unit = exitingFlatten {
+    removeSymbolInCurrentScope(sym)
+    sym.owner.info.decls enter sym
+  }
+
+  private def removeSymbolInCurrentScope(sym: Symbol): Unit = exitingFlatten {
     val scope = sym.owner.info.decls
     val old   = (scope lookupUnshadowedEntries sym.name).toList
     old foreach (scope unlink _)
-    scope enter sym
     def old_s = old map (_.sym) mkString ", "
-    debuglog(s"In scope of ${sym.owner}, unlinked $old_s and entered $sym")
+    if (old.nonEmpty) debuglog(s"In scope of ${sym.owner}, unlinked $old_s")
   }
 
   private def liftClass(sym: Symbol) {
@@ -121,6 +125,8 @@ abstract class Flatten extends InfoTransform {
           val liftedBuffer = liftedDefs(tree.symbol.enclosingTopLevelClass.owner)
           val index = liftedBuffer.length
           liftedBuffer.insert(index, super.transform(tree))
+          if (tree.symbol.sourceModule.isStaticModule)
+            removeSymbolInCurrentScope(tree.symbol.sourceModule)
           EmptyTree
         case _ =>
           super.transform(tree)

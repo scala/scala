@@ -858,7 +858,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         val baseClass = clazz.info.baseTypeSeq(i).typeSymbol
         seenTypes(i) match {
           case Nil =>
-            println("??? base "+baseClass+" not found in basetypes of "+clazz)
+            devWarning(s"base $baseClass not found in basetypes of $clazz. This might indicate incorrect caching of TypeRef#parents.")
           case _ :: Nil =>
             ;// OK
           case tp1 :: tp2 :: _ =>
