@@ -665,8 +665,11 @@ abstract class ClassfileParser {
               // so have to check unsafeTypeParams.isEmpty before worrying about raw type case below,
               // or we'll create a boatload of needless existentials.
               else if (classSym.isMonomorphicType || classSym.unsafeTypeParams.isEmpty) tp
-              // raw type - existentially quantify all type parameters
-              else debuglogResult(s"raw type from $classSym")(unsafeClassExistentialType(classSym))
+              else debuglogResult(s"raw type from $classSym"){
+                // raw type - existentially quantify all type parameters
+                val eparams = typeParamsToExistentials(classSym, classSym.unsafeTypeParams)
+                newExistentialType(eparams, typeRef(pre, classSym, eparams.map(_.tpeHK)))
+              }
             case tp =>
               assert(sig.charAt(index) != '<', s"sig=$sig, index=$index, tp=$tp")
               tp
