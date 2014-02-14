@@ -655,8 +655,8 @@ extends scala.collection.concurrent.Map[K, V]
   /* internal methods */
 
   private def writeObject(out: java.io.ObjectOutputStream) {
-    out.writeObject(hashf)
-    out.writeObject(ef)
+    out.writeObject(hashingobj)
+    out.writeObject(equalityobj)
 
     val it = iterator
     while (it.hasNext) {
