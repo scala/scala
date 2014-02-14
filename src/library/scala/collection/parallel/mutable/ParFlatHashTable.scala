@@ -44,7 +44,7 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
     def remaining = totalsize - traversed
     def hasNext = traversed < totalsize
     def next() = if (hasNext) {
-      val r = itertable(idx).asInstanceOf[T]
+      val r = entryToElem(itertable(idx))
       traversed += 1
       idx += 1
       if (hasNext) scan()
