@@ -384,9 +384,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Create a new existential type skolem with this symbol its owner,
      *  based on the given symbol and origin.
      */
-    def newExistentialSkolem(basis: Symbol, origin: AnyRef): TypeSkolem = {
-      val skolem = newTypeSkolemSymbol(basis.name.toTypeName, origin, basis.pos, (basis.flags | EXISTENTIAL) & ~PARAM)
-      skolem setInfo (basis.info cloneInfo skolem)
+    def newExistentialSkolem(basis: Symbol, origin: AnyRef): TypeSkolem =
+      newExistentialSkolem(basis.name.toTypeName, basis.info, basis.flags, basis.pos, origin)
+
+    /** Create a new existential type skolem with this symbol its owner, and the given other properties.
+     */
+    def newExistentialSkolem(name: TypeName, info: Type, flags: Long, pos: Position, origin: AnyRef): TypeSkolem = {
+      val skolem = newTypeSkolemSymbol(name.toTypeName, origin, pos, (flags | EXISTENTIAL) & ~PARAM)
+      skolem setInfo (info cloneInfo skolem)
     }
 
     // don't test directly -- use isGADTSkolem
@@ -3419,6 +3424,21 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     mapList(syms1)(_ substInfo (syms, syms1))
   }
 
+  /** Derives a new list of symbols from the given list by mapping the given
+   *  list of `syms` and `as` across the given function.
+   *  Then fixes the info of all the new symbols
+   *  by substituting the new symbols for the original symbols.
+   *
+   *  @param    syms    the prototypical symbols
+   *  @param    as      arguments to be passed to symFn together with symbols from syms (must be same length)
+   *  @param    symFn   the function to create new symbols
+   *  @return           the new list of info-adjusted symbols
+   */
+  def deriveSymbols2[A](syms: List[Symbol], as: List[A], symFn: (Symbol, A) => Symbol): List[Symbol] = {
+    val syms1 = map2(syms, as)(symFn)
+    mapList(syms1)(_ substInfo (syms, syms1))
+  }
+
   /** Derives a new Type by first deriving new symbols as in deriveSymbols,
    *  then performing the same oldSyms => newSyms substitution on `tpe` as is
    *  performed on the symbol infos in deriveSymbols.
@@ -3432,6 +3452,22 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     val syms1 = deriveSymbols(syms, symFn)
     tpe.substSym(syms, syms1)
   }
+
+  /** Derives a new Type by first deriving new symbols as in deriveSymbols2,
+   *  then performing the same oldSyms => newSyms substitution on `tpe` as is
+   *  performed on the symbol infos in deriveSymbols.
+   *
+   *  @param    syms    the prototypical symbols
+   *  @param    as      arguments to be passed to symFn together with symbols from syms (must be same length)
+   *  @param    symFn   the function to create new symbols based on `as`
+   *  @param    tpe     the prototypical type
+   *  @return           the new symbol-subsituted type
+   */
+  def deriveType2[A](syms: List[Symbol], as: List[A], symFn: (Symbol, A) => Symbol)(tpe: Type): Type = {
+    val syms1 = deriveSymbols2(syms, as, symFn)
+    tpe.substSym(syms, syms1)
+  }
+
   /** Derives a new Type by instantiating the given list of symbols as
    *  WildcardTypes.
    *
