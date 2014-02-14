@@ -976,6 +976,29 @@ trait ValAndDefPrintTests {
   
   @Test def testDef9 = assertPrintedCode("def a(x: scala.Int)(implicit z: scala.Double, y: scala.Float): scala.Unit = ()")
   
+  @Test def testDefWithLazyVal1 = assertResultCode(
+    code = "def a = { lazy val test: Int = 42 }")(
+    parsedCode = sm"""
+    |def a = {
+    |  lazy val test: Int = 42;
+    |  ()
+    |}
+    """,
+    typedCode = sm"""
+    |def a = {
+    |  lazy val test: scala.Int = 42;
+    |  ()
+    |}""")
+    
+  @Test def testDefWithLazyVal2 = assertPrintedCode(sm"""
+    |def a = {
+    |  lazy val test = {
+    |    scala.Predef.println();
+    |    scala.Predef.println()
+    |  };
+    |  ()
+    |}""")
+  
   @Test def testDefWithParams1 = assertPrintedCode("def foo(x: scala.Int*) = ()")
   
   @Test def testDefWithParams2 = assertPrintedCode(sm"""

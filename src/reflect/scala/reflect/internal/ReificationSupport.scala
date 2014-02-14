@@ -241,10 +241,14 @@ trait ReificationSupport { self: SymbolTable =>
         case _ => false
       }
     
-    // recover template body to parsed state
-    private[internal] def unattributedTemplBody(templ: Template) = {
-      val tbody = templ.body
+    private[internal] def unattributedTemplBody(templ: Template) = 
+      unattributedTreeBody(templ, templ.body)
+    
+    private[internal] def unattributedBlockBody(block: Block) = 
+      unattributedTreeBody(block, block.stats)
       
+    // recover template body to parsed state
+    private[internal] def unattributedTreeBody(tree: Tree, tbody: List[Tree]) = {
       def filterBody(body: List[Tree]) = body filter {
         case _: ValDef | _: TypeDef => true
         // keep valdef or getter for val/var
@@ -283,7 +287,7 @@ trait ReificationSupport { self: SymbolTable =>
         case tree => tree
       }
       
-      if (detectAttributedTree(templ)) { 
+      if (detectAttributedTree(tree)) { 
         recoverBody(filterBody(tbody))
       } else tbody
     }
