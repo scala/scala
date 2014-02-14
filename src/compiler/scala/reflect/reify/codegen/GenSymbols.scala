@@ -93,7 +93,7 @@ trait GenSymbols {
       // todo. make sure that free methods and free local defs work correctly
       if (sym.isExistential) reifySymDef(sym)
       else if (sym.isTerm) reifyFreeTerm(Ident(sym))
-      else reifyFreeType(Ident(sym))
+      else reifyFreeType(Ident(sym)) // TODO: reify refinement classes
     }
   }
 

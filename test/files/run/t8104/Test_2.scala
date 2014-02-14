@@ -9,7 +9,10 @@ object Test extends App {
   case class C(x: Int, y: Int)
 
   import scala.reflect.runtime.universe._
-  def reprify[T, Repr](x: T)(implicit generic: Generic.Aux[T, Repr], tag: TypeTag[Repr]) = println(tag)
+  def reprify[T, Repr](x: T)(implicit generic: Generic.Aux[T, Repr], tag: WeakTypeTag[Repr]) = {
+    println(tag)
+    println(tag.tpe.typeSymbol.typeSignature)
+  }
   reprify(C(40, 2))
 
   implicitly[Generic.Aux[C, (Int, Int)]]

@@ -1,0 +1,47 @@
+t0764b.scala:27: error: type mismatch;
+ found   : p1.t0764.Node{type T = p1.t0764.<refinement>.type}
+ required: p1.t0764.NodeAlias[p1.t0764.NodeAlias[A]]
+    (which expands to)  p1.t0764.Node{type T = p1.t0764.Node{type T = A}}
+      private[this] def f2 = new Main1[NodeAlias[A]](v.prepend)          // fail
+                                                       ^
+t0764b.scala:28: error: type mismatch;
+ found   : p1.t0764.Node{type T = p1.t0764.<refinement>.type}
+ required: p1.t0764.NodeAlias[p1.t0764.Node{type T = A}]
+    (which expands to)  p1.t0764.Node{type T = p1.t0764.Node{type T = A}}
+      private[this] def f3 = new Main1[Node { type T = A }](v.prepend)   // fail
+                                                              ^
+t0764b.scala:34: error: type mismatch;
+ found   : p1.t0764.Node{type T = p1.t0764.<refinement>.type}
+ required: p1.t0764.Node{type T = p1.t0764.NodeAlias[A]}
+    (which expands to)  p1.t0764.Node{type T = p1.t0764.Node{type T = A}}
+      private[this] def f2 = new Main2[NodeAlias[A]](v.prepend)          // fail
+                                                       ^
+t0764b.scala:35: error: type mismatch;
+ found   : p1.t0764.Node{type T = p1.t0764.<refinement>.type}
+ required: p1.t0764.Node{type T = p1.t0764.Node{type T = A}}
+      private[this] def f3 = new Main2[Node { type T = A }](v.prepend)   // fail
+                                                              ^
+t0764b.scala:51: error: type mismatch;
+ found   : p2.t0764.Node{type T = p2.t0764.<refinement>.type}
+ required: p2.t0764.NodeAlias[p2.t0764.NodeAlias[A]]
+    (which expands to)  p2.t0764.Node{type T = p2.t0764.Node{type T = A}}
+      private[this] def f2 = new Main1[NodeAlias[A]](v.prepend)          // fail
+                                                       ^
+t0764b.scala:52: error: type mismatch;
+ found   : p2.t0764.Node{type T = p2.t0764.<refinement>.type}
+ required: p2.t0764.NodeAlias[p2.t0764.Node{type T = A}]
+    (which expands to)  p2.t0764.Node{type T = p2.t0764.Node{type T = A}}
+      private[this] def f3 = new Main1[Node { type T = A }](v.prepend)   // fail
+                                                              ^
+t0764b.scala:58: error: type mismatch;
+ found   : p2.t0764.Node{type T = p2.t0764.<refinement>.type}
+ required: p2.t0764.Node{type T = p2.t0764.NodeAlias[A]}
+    (which expands to)  p2.t0764.Node{type T = p2.t0764.Node{type T = A}}
+      private[this] def f2 = new Main2[NodeAlias[A]](v.prepend)          // fail
+                                                       ^
+t0764b.scala:59: error: type mismatch;
+ found   : p2.t0764.Node{type T = p2.t0764.<refinement>.type}
+ required: p2.t0764.Node{type T = p2.t0764.Node{type T = A}}
+      private[this] def f3 = new Main2[Node { type T = A }](v.prepend)   // fail
+                                                              ^
+8 errors found
