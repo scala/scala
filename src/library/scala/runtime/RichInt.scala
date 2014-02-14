@@ -37,6 +37,10 @@ final class RichInt(val self: Int) extends AnyVal with ScalaNumberProxy[Int] wit
   override def min(that: Int): Int = math.min(self, that)
   override def signum: Int         = math.signum(self)
 
+  def round: Int = self
+  def ceil:  Int = self
+  def floor: Int = self
+
   def toBinaryString: String = java.lang.Integer.toBinaryString(self)
   def toHexString: String    = java.lang.Integer.toHexString(self)
   def toOctalString: String  = java.lang.Integer.toOctalString(self)

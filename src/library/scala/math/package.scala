@@ -93,13 +93,35 @@ package object math {
    */
   def pow(x: Double, y: Double): Double = java.lang.Math.pow(x, y)
 
-  /** Returns the closest `long` to the argument.
-   *
-   *  @param  x a floating-point value to be rounded to a `long`.
-   *  @return the value of the argument rounded to the nearest`long` value.
-   */
+  @deprecated("This method returns a different numeric type, which can cause unexpected results. This method will be reintroduced with sane semantics in a future version. If the original behaviour is really intended here, use math.roundToInt instead.", "2.11.0")
   def round(x: Float): Int = java.lang.Math.round(x)
+  @deprecated("This method returns a different numeric type, which can cause unexpected results. This method will be reintroduced with sane semantics in a future version. If the original behaviour is really intended here, use math.roundToLong instead.", "2.11.0")
   def round(x: Double): Long = java.lang.Math.round(x)
+
+
+  /** Returns the closest `Int` to the argument.
+   *
+   *  Please note that due to the conversion of Float to Int,
+   *  the resulting value can sometimes be substantially
+   *  different from the floating-point value passed in.
+   *
+   *  {{{
+   *  assert(11111111.111f.round == 11111111) // java.lang.AssertionError: assertion failed
+   *  }}}
+   *
+   *  Floating-point values of NaN, +Inf and -Inf result in
+   *  0, Int.MaxValue and Int.MinValue respectively.
+   *
+   *  @param  x a floating-point value to be rounded to a `Long`.
+   *  @return the value of the argument rounded to the nearest`Long` value.
+   */
+  def roundToInt(x: Float): Int    = java.lang.Math.round(x)
+  /** Returns the closest `Long` to the argument.
+   *
+   *  @param  x a floating-point value to be rounded to a `Long`.
+   *  @return the value of the argument rounded to the nearest`Long` value.
+   */
+  def roundToLong(x: Double): Long = java.lang.Math.round(x)
 
   def abs(x: Int): Int       = java.lang.Math.abs(x)
   def abs(x: Long): Long     = java.lang.Math.abs(x)

@@ -33,6 +33,10 @@ final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
   override def min(that: Long): Long = math.min(self, that)
   override def signum: Int           = math.signum(self).toInt
 
+  def round: Long = self
+  def ceil:  Long = self
+  def floor: Long = self
+
   def toBinaryString: String = java.lang.Long.toBinaryString(self)
   def toHexString: String    = java.lang.Long.toHexString(self)
   def toOctalString: String  = java.lang.Long.toOctalString(self)

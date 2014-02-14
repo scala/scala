@@ -43,6 +43,7 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
   override def min(that: Float): Float = math.min(self, that)
   override def signum: Int             = math.signum(self).toInt  // !!! NaN
 
+  @deprecated("This method returns a different numeric type, which can cause unexpected results. This method will be reintroduced with sane semantics in a future version. If the original behaviour is really intended here, use math.roundToInt instead.", "2.11.0")
   def round: Int   = math.round(self)
   def ceil: Float  = math.ceil(self.toDouble).toFloat
   def floor: Float = math.floor(self.toDouble).toFloat
