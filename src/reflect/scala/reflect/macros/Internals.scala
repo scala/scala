@@ -51,6 +51,10 @@ trait Internals {
        */
       def atOwner[T](owner: Symbol)(op: => T): T
 
+      /** Temporarily pushes the given tree onto the recursion stack, and then calls `atOwner(symbol)(trans)`.
+       */
+      def atOwner[T](tree: Tree, owner: Symbol)(op: => T): T
+
       /** Returns the symbol currently on the top of the owner stack.
        *  If we're not inside any `atOwner` call, then macro application's context owner will be used.
        */
@@ -66,5 +70,10 @@ trait Internals {
      *  @see [[TypingTransformApi]]
      */
     def typingTransform(tree: Tree)(transformer: (Tree, TypingTransformApi) => Tree): Tree
+
+    /** Transforms a given tree at a given owner using the provided function.
+     *  @see [[TypingTransformApi]]
+     */
+    def typingTransform(tree: Tree, owner: Symbol)(transformer: (Tree, TypingTransformApi) => Tree): Tree
   }
 }

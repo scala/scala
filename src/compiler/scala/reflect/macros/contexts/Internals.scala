@@ -29,6 +29,7 @@ trait Internals extends scala.tools.nsc.transform.TypingTransformers {
         def recur(tree: Tree): Tree = hof(tree, this)
         def default(tree: Tree): Tree = superTransform(tree)
         def atOwner[T](owner: Symbol)(op: => T): T = self.atOwner(owner)(op)
+        def atOwner[T](tree: Tree, owner: Symbol)(op: => T): T = self.atOwner(tree, owner)(op)
         def currentOwner: Symbol = self.currentOwner
         def typecheck(tree: Tree): Tree = localTyper.typed(tree)
       }
@@ -37,5 +38,10 @@ trait Internals extends scala.tools.nsc.transform.TypingTransformers {
     }
 
     def typingTransform(tree: Tree)(transformer: (Tree, TypingTransformApi) => Tree): Tree = new HofTypingTransformer(transformer).transform(tree)
+
+    def typingTransform(tree: Tree, owner: Symbol)(transformer: (Tree, TypingTransformApi) => Tree): Tree = {
+      val trans = new HofTypingTransformer(transformer)
+      trans.atOwner(owner)(trans.transform(tree))
+    }
   }
 }
