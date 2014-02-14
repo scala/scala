@@ -80,10 +80,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     // the same thing is done by the `missingHook` below
     override def staticPackage(fullname: String): ModuleSymbol =
       try super.staticPackage(fullname)
-      catch {
-        case _: MissingRequirementError =>
-          makeScalaPackage(fullname)
-      }
+      catch { case _: ScalaReflectionException => makeScalaPackage(fullname) }
 
 // ----------- Caching ------------------------------------------------------------------
 

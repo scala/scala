@@ -117,7 +117,8 @@ trait Mirrors extends api.Mirrors {
      *  Compiler might ignore them, but they should be loadable with macros.
      */
     override def staticClass(fullname: String): ClassSymbol =
-      ensureClassSymbol(fullname, staticModuleOrClass(newTypeNameCached(fullname)))
+      try ensureClassSymbol(fullname, staticModuleOrClass(newTypeNameCached(fullname)))
+      catch { case mre: MissingRequirementError => throw new ScalaReflectionException(mre.msg) }
 
     /************************ loaders of module symbols ************************/
 
@@ -155,7 +156,8 @@ trait Mirrors extends api.Mirrors {
      *  Compiler might ignore them, but they should be loadable with macros.
      */
     override def staticModule(fullname: String): ModuleSymbol =
-      ensureModuleSymbol(fullname, staticModuleOrClass(newTermNameCached(fullname)), allowPackages = false)
+      try ensureModuleSymbol(fullname, staticModuleOrClass(newTermNameCached(fullname)), allowPackages = false)
+      catch { case mre: MissingRequirementError => throw new ScalaReflectionException(mre.msg) }
 
     /************************ loaders of package symbols ************************/
 
@@ -197,7 +199,8 @@ trait Mirrors extends api.Mirrors {
     }
 
     override def staticPackage(fullname: String): ModuleSymbol =
-      ensurePackageSymbol(fullname.toString, getModuleOrClass(newTermNameCached(fullname)), allowModules = false)
+      try ensurePackageSymbol(fullname.toString, getModuleOrClass(newTermNameCached(fullname)), allowModules = false)
+      catch { case mre: MissingRequirementError => throw new ScalaReflectionException(mre.msg) }
 
     /************************ helpers ************************/
 

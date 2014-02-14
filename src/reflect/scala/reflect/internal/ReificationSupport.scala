@@ -23,14 +23,15 @@ trait ReificationSupport { self: SymbolTable =>
       val result = owner.info decl name
       if (result ne NoSymbol) result
       else
-        mirrorThatLoaded(owner).missingHook(owner, name) orElse
-        MissingRequirementError.notFound("%s %s in %s".format(if (name.isTermName) "term" else "type", name, owner.fullName))
+        mirrorThatLoaded(owner).missingHook(owner, name) orElse {
+          throw new ScalaReflectionException("%s %s in %s not found".format(if (name.isTermName) "term" else "type", name, owner.fullName))
+        }
     }
 
     def selectOverloadedMethod(owner: Symbol, name: String, index: Int): MethodSymbol = {
       val result = owner.info.decl(newTermName(name)).alternatives(index)
       if (result ne NoSymbol) result.asMethod
-      else MissingRequirementError.notFound("overloaded method %s #%d in %s".format(name, index, owner.fullName))
+      else throw new ScalaReflectionException("overloaded method %s #%d in %s not found".format(name, index, owner.fullName))
     }
 
     def newFreeTerm(name: String, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =

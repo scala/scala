@@ -504,7 +504,7 @@ trait Mirrors { self: Universe =>
     /** A class symbol for the specified runtime class.
      *  @return The class symbol for the runtime class in the current class loader.
      *  @throws java.lang.ClassNotFoundException if no class with that name exists
-     *  @throws scala.reflect.internal.MissingRequirementError if no corresponding symbol exists
+     *  @throws scala.reflect.ScalaReflectionException if no corresponding symbol exists
      *  to do: throws anything else?
      */
     def classSymbol(rtcls: RuntimeClass): ClassSymbol
@@ -512,7 +512,7 @@ trait Mirrors { self: Universe =>
     /** A module symbol for the specified runtime class.
      *  @return The module symbol for the runtime class in the current class loader.
      *  @throws java.lang.ClassNotFoundException if no class with that name exists
-     *  @throws scala.reflect.internal.MissingRequirementError if no corresponding symbol exists
+     *  @throws scala.reflect.ScalaReflectionException if no corresponding symbol exists
      *  to do: throws anything else?
      */
     def moduleSymbol(rtcls: RuntimeClass): ModuleSymbol
