@@ -893,4 +893,7 @@ abstract class TreeGen {
 
   def mkSyntheticParam(pname: TermName) =
     ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
+
+  def mkCast(tree: Tree, pt: Type): Tree =
+    atPos(tree.pos)(mkAsInstanceOf(tree, pt, any = true, wrapInApply = false))
 }

@@ -139,6 +139,9 @@ trait Internals extends api.Internals {
     def mkAttributedQualifier(tpe: Type, termSym: Symbol): Tree = self.gen.mkAttributedQualifier(tpe, termSym)
     def mkAttributedRef(pre: Type, sym: Symbol): RefTree = self.gen.mkAttributedRef(pre, sym)
     def mkAttributedRef(sym: Symbol): RefTree = self.gen.mkAttributedRef(sym)
+    def stabilize(tree: Tree): Tree = self.gen.stabilize(tree)
+    def mkAttributedStableRef(pre: Type, sym: Symbol): Tree = self.gen.mkAttributedStableRef(pre, sym)
+    def mkAttributedStableRef(sym: Symbol): Tree = self.gen.mkAttributedStableRef(sym)
     def mkUnattributedRef(sym: Symbol): RefTree = self.gen.mkUnattributedRef(sym)
     def mkUnattributedRef(fullName: Name): RefTree = self.gen.mkUnattributedRef(fullName)
     def mkAttributedThis(sym: Symbol): This = self.gen.mkAttributedThis(sym)
@@ -153,5 +156,7 @@ trait Internals extends api.Internals {
     def mkMethodCall(target: Tree, targs: List[Type], args: List[Tree]): Tree = self.gen.mkMethodCall(target, targs, args)
     def mkNullaryCall(method: Symbol, targs: List[Type]): Tree = self.gen.mkNullaryCall(method, targs)
     def mkRuntimeUniverseRef: Tree = self.gen.mkRuntimeUniverseRef
+    def mkZero(tp: Type): Tree = self.gen.mkZero(tp)
+    def mkCast(tree: Tree, pt: Type): Tree = self.gen.mkCast(tree, pt)
   }
 }

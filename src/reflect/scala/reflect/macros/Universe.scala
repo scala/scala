@@ -223,6 +223,12 @@ abstract class Universe extends scala.reflect.api.Universe {
     /** Builds a typed reference to given symbol. */
     def mkAttributedRef(sym: Symbol): RefTree
 
+    def stabilize(tree: Tree): Tree
+
+    def mkAttributedStableRef(pre: Type, sym: Symbol): Tree
+
+    def mkAttributedStableRef(sym: Symbol): Tree
+
     /** Builds an untyped reference to given symbol. Requires the symbol to be static. */
     def mkUnattributedRef(sym: Symbol): RefTree
 
@@ -265,6 +271,10 @@ abstract class Universe extends scala.reflect.api.Universe {
 
     /** A tree that refers to the runtime reflexive universe, `scala.reflect.runtime.universe`. */
     def mkRuntimeUniverseRef: Tree
+
+    def mkZero(tp: Type): Tree
+
+    def mkCast(tree: Tree, pt: Type): Tree
   }
 
   /** @see [[internal.gen]] */
