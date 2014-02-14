@@ -1,3 +1,5 @@
 java.lang.IndexOutOfBoundsException: -1
 java.lang.IndexOutOfBoundsException: -2
 java.lang.IndexOutOfBoundsException: -3
+java.lang.IndexOutOfBoundsException: -1
+java.lang.IndexOutOfBoundsException: 5
