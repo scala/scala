@@ -306,7 +306,10 @@ trait Implicits {
    */
   object Function1 {
     val Sym = FunctionClass(1)
-    def unapply(tp: Type) = tp baseType Sym match {
+    // It is tempting to think that this should be inspecting "tp baseType Sym"
+    // rather than tp. See test case run/t8280 and the commit message which
+    // accompanies it for explanation why that isn't done.
+    def unapply(tp: Type) = tp match {
       case TypeRef(_, Sym, arg1 :: arg2 :: _) => Some((arg1, arg2))
       case _                                  => None
     }
