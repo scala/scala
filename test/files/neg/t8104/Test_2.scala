@@ -9,7 +9,7 @@ object Test extends App {
   case class C(x: Int, y: Int)
 
   import scala.reflect.runtime.universe._
-  def reprify[T, Repr](x: T)(implicit generic: Generic.Aux[T, Repr], tag: TypeTag[Repr]) = println(tag)
+  def reprify[T, Repr](x: T)(implicit generic: Generic.Aux[T, Repr], tag: WeakTypeTag[Repr]) = println(tag)
   reprify(C(40, 2))
 
   // this is a compilation error at the moment as explained in SI-8104

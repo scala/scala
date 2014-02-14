@@ -1,0 +1,4 @@
+t8244c.scala:15: error: value exxx is not a member of _$1
+    raw.t.exxx
+          ^
+one error found

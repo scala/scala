@@ -1,1 +1,2 @@
-TypeTag[(Int, Int)]
+WeakTypeTag[<refinement>.this.Repr]
+(Int, Int)

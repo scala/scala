@@ -1154,7 +1154,7 @@ trait Types
   /** A class for this-types of the form <sym>.this.type
    */
   abstract case class ThisType(sym: Symbol) extends SingletonType with ThisTypeApi {
-    if (!sym.isClass) {
+    if (!sym.isClass && !sym.isFreeType) {
       // SI-6640 allow StubSymbols to reveal what's missing from the classpath before we trip the assertion.
       sym.failIfStub()
       abort(s"ThisType($sym) for sym which is not a class")
@@ -2035,21 +2035,50 @@ trait Types
     // appliedType(sym.info, typeArgs).asSeenFrom(pre, sym.owner)
     override def betaReduce = transform(sym.info.resultType)
 
-    // #3731: return sym1 for which holds: pre bound sym.name to sym and
-    // pre1 now binds sym.name to sym1, conceptually exactly the same
-    // symbol as sym.  The selection of sym on pre must be updated to the
-    // selection of sym1 on pre1, since sym's info was probably updated
-    // by the TypeMap to yield a new symbol, sym1 with transformed info.
-    // @returns sym1
-    override def coevolveSym(pre1: Type): Symbol =
-      if (pre eq pre1) sym else (pre, pre1) match {
-        // don't look at parents -- it would be an error to override alias types anyway
-        case (RefinedType(_, _), RefinedType(_, decls1)) => decls1 lookup sym.name
-        // TODO: is there another way a typeref's symbol can refer to a symbol defined in its pre?
-        case _                                           => sym
-      }
+    /** SI-3731, SI-8177: when prefix is changed to `newPre`, maintain consistency of prefix and sym
+     *  (where the symbol refers to a declaration "embedded" in the prefix).
+     *
+     *  @returns newSym so that `newPre` binds `sym.name` to `newSym`,
+     *                  to remain consistent with `pre` previously binding `sym.name` to `sym`.
+     *
+     *  `newSym` and `sym` are conceptually the same symbols, but some change to our `prefix`
+     *  got them out of whack. (Usually triggered by substitution or `asSeenFrom`.)
+     *  The only kind of "binds" we consider is where `prefix` (or its underlying type)
+     *  is a refined type that declares `sym` (since the old prefix was discarded,
+     *  the old symbol is now stale and we should update it, like in `def rebind`,
+     *  except this is not for overriding symbols -- a vertical move -- but a "lateral" change.)
+     *
+     *  The reason for this hack is that substitution and asSeenFrom clone RefinedTypes and
+     *  their members, without updating the potential references to those members -- here, we aim to patch
+     *  this up, so that: when changing a TypeRef(pre, sym, args) to a TypeRef(pre', sym', args'), and pre
+     *  embeds a symbol sym (pre is a RefinedType(_, Scope(..., sym,...)) or a SingleType with such an
+     *  underlying type), make sure that we update sym' to compensate for the change of pre -> pre' (which may
+     *  have created a new symbol for the one the original sym referred to)
+     */
+    override def coevolveSym(newPre: Type): Symbol =
+      if ((pre ne newPre) && embeddedSymbol(pre, sym.name) == sym) {
+        val newSym = embeddedSymbol(newPre, sym.name)
+        debuglog(s"co-evolve: ${pre} -> ${newPre}, $sym : ${sym.info} -> $newSym : ${newSym.info}")
+        // To deal with erroneous `preNew`, fallback via `orElse sym`, in case `preNew` does not have a decl named `sym.name`.
+        newSym orElse sym
+      } else sym
+
     override def kind = "AliasTypeRef"
   }
+
+  // Return the symbol named `name` that's "embedded" in tp
+  // This is the case if `tp` is a `T{...; type/val $name ; ...}`,
+  // or a singleton type with such an underlying type.
+  private def embeddedSymbol(tp: Type, name: Name): Symbol =
+    // normalize to flatten nested RefinedTypes
+    // don't check whether tp is a RefinedType -- it may be a ThisType of one, for example
+    // TODO: check the resulting symbol is owned by the refinement class? likely an invariant...
+    if (tp.typeSymbol.isRefinementClass) tp.normalize.decls lookup name
+    else {
+      debuglog(s"no embedded symbol $name found in ${showRaw(tp)} --> ${tp.normalize.decls lookup name}")
+      NoSymbol
+    }
+
 
   trait AbstractTypeRef extends NonClassTypeRef {
     require(sym.isAbstractType, sym)
@@ -2091,6 +2120,10 @@ trait Types
       if (trivial == UNKNOWN)
         trivial = fromBoolean(!sym.isTypeParameter && pre.isTrivial && areTrivialTypes(args))
       toBoolean(trivial)
+    }
+    private[scala] def invalidateCaches(): Unit = {
+      parentsPeriod = NoPeriod
+      baseTypeSeqPeriod = NoPeriod
     }
     private[reflect] var parentsCache: List[Type]      = _
     private[reflect] var parentsPeriod                 = NoPeriod
@@ -4089,24 +4122,44 @@ trait Types
     )
   }
 
-  /** Does member `sym1` of `tp1` have a stronger type
-   *  than member `sym2` of `tp2`?
+  /** Does member `symLo` of `tpLo` have a stronger type
+   *  than member `symHi` of `tpHi`?
    */
-  protected[internal] def specializesSym(tp1: Type, sym1: Symbol, tp2: Type, sym2: Symbol, depth: Depth): Boolean = {
-    require((sym1 ne NoSymbol) && (sym2 ne NoSymbol), ((tp1, sym1, tp2, sym2, depth)))
-    val info1 = tp1.memberInfo(sym1)
-    val info2 = tp2.memberInfo(sym2).substThis(tp2.typeSymbol, tp1)
-    //System.out.println("specializes "+tp1+"."+sym1+":"+info1+sym1.locationString+" AND "+tp2+"."+sym2+":"+info2)//DEBUG
-    (    sym2.isTerm && isSubType(info1, info2, depth) && (!sym2.isStable || sym1.isStable) && (!sym1.hasVolatileType || sym2.hasVolatileType)
-      || sym2.isAbstractType && {
-            val memberTp1 = tp1.memberType(sym1)
-            // println("kinds conform? "+(memberTp1, tp1, sym2, kindsConform(List(sym2), List(memberTp1), tp2, sym2.owner)))
-            info2.bounds.containsType(memberTp1) &&
-            kindsConform(List(sym2), List(memberTp1), tp1, sym1.owner)
-        }
-      || sym2.isAliasType && tp2.memberType(sym2).substThis(tp2.typeSymbol, tp1) =:= tp1.memberType(sym1) //@MAT ok
-    )
-  }
+  protected[internal] def specializesSym(preLo: Type, symLo: Symbol, preHi: Type, symHi: Symbol, depth: Depth): Boolean =
+    (symHi.isAliasType || symHi.isTerm || symHi.isAbstractType) && {
+      // only now that we know symHi is a viable candidate ^^^^^^^, do the expensive checks: ----V
+      require((symLo ne NoSymbol) && (symHi ne NoSymbol), ((preLo, symLo, preHi, symHi, depth)))
+
+      val tpHi = preHi.memberInfo(symHi).substThis(preHi.typeSymbol, preLo)
+
+      // Should we use memberType or memberInfo?
+      // memberType transforms (using `asSeenFrom`) `sym.tpe`,
+      // whereas memberInfo performs the same transform on `sym.info`.
+      // For term symbols, this ends up being the same thing (`sym.tpe == sym.info`).
+      // For type symbols, however, the `.info` of an abstract type member
+      // is defined by its bounds, whereas its `.tpe` is a `TypeRef` to that type symbol,
+      // so that `sym.tpe <:< sym.info`, but not the other way around.
+      //
+      // Thus, for the strongest (correct) result,
+      // we should use `memberType` on the low side.
+      //
+      // On the high side, we should use the result appropriate
+      // for the right side of the `<:<` above (`memberInfo`).
+      val tpLo = preLo.memberType(symLo)
+
+      debuglog(s"specializesSymHi: $preHi . $symHi : $tpHi")
+      debuglog(s"specializesSymLo: $preLo . $symLo : $tpLo")
+
+      if (symHi.isTerm)
+        (isSubType(tpLo, tpHi, depth)        &&
+         (!symHi.isStable || symLo.isStable) &&                // sub-member must remain stable
+         (!symLo.hasVolatileType || symHi.hasVolatileType))    // sub-member must not introduce volatility
+      else if (symHi.isAbstractType)
+        ((tpHi.bounds containsType tpLo) &&
+         kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
+      else // we know `symHi.isAliasType` (see above)
+        tpLo =:= tpHi
+    }
 
   /** A function implementing `tp1` matches `tp2`. */
   final def matchesType(tp1: Type, tp2: Type, alwaysMatchSimple: Boolean): Boolean = {
