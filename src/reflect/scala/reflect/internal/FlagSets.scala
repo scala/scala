@@ -47,5 +47,6 @@ trait FlagSets extends api.FlagSets { self: SymbolTable =>
     val CASEACCESSOR  : FlagSet = Flags.CASEACCESSOR
     val SYNTHETIC     : FlagSet = Flags.SYNTHETIC
     val ARTIFACT      : FlagSet = Flags.ARTIFACT
+    val STABLE        : FlagSet = Flags.STABLE
   }
 }

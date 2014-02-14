@@ -245,6 +245,11 @@ trait FlagSets { self: Universe =>
      *  @see SYNTHETIC
      */
     val ARTIFACT: FlagSet
+
+    /** Flag that indicates methods that are supposed to be stable
+     *  (e.g. synthetic getters of valdefs).
+     */
+    val STABLE: FlagSet
   }
 
   /** The empty set of flags
