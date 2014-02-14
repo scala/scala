@@ -1143,7 +1143,7 @@ trait Types
   /** A class for this-types of the form <sym>.this.type
    */
   abstract case class ThisType(sym: Symbol) extends SingletonType with ThisTypeApi {
-    if (!sym.isClass) {
+    if (!sym.isClass && !sym.isFreeType) {
       // SI-6640 allow StubSymbols to reveal what's missing from the classpath before we trip the assertion.
       sym.failIfStub()
       abort(s"ThisType($sym) for sym which is not a class")
