@@ -51,7 +51,7 @@ trait Internals { self: Universe =>
    *
    *  @group Internal
    */
-  trait InternalApi {
+  trait InternalApi { internal =>
     /** This is an internal implementation module.
      */
     val reificationSupport: ReificationSupportApi
@@ -353,6 +353,102 @@ trait Internals { self: Universe =>
     /** A creator for `BoundedWildcardType` types.
      */
     def boundedWildcardType(bounds: TypeBounds): BoundedWildcardType
+
+    /** Syntactic conveniences for additional internal APIs for trees, symbols and types */
+    type Decorators <: DecoratorApi
+
+    /** @see [[Decorators]] */
+    val decorators: Decorators
+
+    /** @see [[Decorators]] */
+    trait DecoratorApi {
+      /** Extension methods for trees */
+      type TreeDecorator <: TreeDecoratorApi
+
+      /** @see [[TreeDecorator]] */
+      implicit def treeDecorator(tree: Tree): TreeDecorator
+
+      /** @see [[TreeDecorator]] */
+      class TreeDecoratorApi(val tree: Tree) {
+        /** @see [[internal.freeTerms]] */
+        def freeTerms: List[FreeTermSymbol] = internal.freeTerms(tree)
+
+        /** @see [[internal.freeTypes]] */
+        def freeTypes: List[FreeTypeSymbol] = internal.freeTypes(tree)
+
+        /** @see [[internal.substituteSymbols]] */
+        def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree = internal.substituteSymbols(tree, from, to)
+
+        /** @see [[internal.substituteTypes]] */
+        def substituteTypes(from: List[Symbol], to: List[Type]): Tree = internal.substituteTypes(tree, from, to)
+
+        /** @see [[internal.substituteThis]] */
+        def substituteThis(clazz: Symbol, to: Tree): Tree = internal.substituteThis(tree, clazz, to)
+      }
+
+      /** Extension methods for symbols */
+      type SymbolDecorator <: SymbolDecoratorApi
+
+      /** @see [[SymbolDecorator]] */
+      implicit def symbolDecorator(symbol: Symbol): SymbolDecorator
+
+      /** @see [[SymbolDecorator]] */
+      class SymbolDecoratorApi(val symbol: Symbol) {
+        /** @see [[internal.isFreeTerm]] */
+        def isFreeTerm: Boolean = internal.isFreeTerm(symbol)
+
+        /** @see [[internal.asFreeTerm]] */
+        def asFreeTerm: FreeTermSymbol = internal.asFreeTerm(symbol)
+
+        /** @see [[internal.isFreeType]] */
+        def isFreeType: Boolean = internal.isFreeType(symbol)
+
+        /** @see [[internal.asFreeType]] */
+        def asFreeType: FreeTypeSymbol = internal.asFreeType(symbol)
+
+        /** @see [[internal.newTermSymbol]] */
+        def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol = internal.newTermSymbol(symbol, name, pos, flags)
+
+        /** @see [[internal.newModuleAndClassSymbol]] */
+        def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol) = internal.newModuleAndClassSymbol(symbol, name, pos, flags)
+
+        /** @see [[internal.newMethodSymbol]] */
+        def newMethodSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): MethodSymbol = internal.newMethodSymbol(symbol, name, pos, flags)
+
+        /** @see [[internal.newTypeSymbol]] */
+        def newTypeSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TypeSymbol = internal.newTypeSymbol(symbol, name, pos, flags)
+
+        /** @see [[internal.newClassSymbol]] */
+        def newClassSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): ClassSymbol = internal.newClassSymbol(symbol, name, pos, flags)
+
+        /** @see [[internal.isErroneous]] */
+        def isErroneous: Boolean = internal.isErroneous(symbol)
+
+        /** @see [[internal.isSkolem]] */
+        def isSkolem: Boolean = internal.isSkolem(symbol)
+
+        /** @see [[internal.deSkolemize]] */
+        def deSkolemize: Symbol = internal.deSkolemize(symbol)
+
+        /** @see [[internal.initialize]] */
+        def initialize: symbol.type = internal.initialize(symbol)
+
+        /** @see [[internal.fullyInitialize]] */
+        def fullyInitialize: symbol.type = internal.fullyInitialize(symbol)
+      }
+
+      /** Extension methods for types */
+      type TypeDecorator <: TypeDecoratorApi
+
+      /** @see [[TypeDecorator]] */
+      implicit def typeDecorator(tp: Type): TypeDecorator
+
+      /** @see [[TypeDecorator]] */
+      implicit class TypeDecoratorApi(val tp: Type) {
+        /** @see [[internal.fullyInitialize]] */
+        def fullyInitialize: tp.type = internal.fullyInitialize(tp)
+      }
+    }
   }
 
   /** This is an internal implementation class.

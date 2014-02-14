@@ -23,7 +23,7 @@ abstract class Universe extends scala.reflect.api.Universe {
   override type Internal <: MacroInternalApi
 
   /** @inheritdoc */
-  trait MacroInternalApi extends InternalApi {
+  trait MacroInternalApi extends InternalApi { internal =>
 
     /** Collects all the symbols defined by subtrees of `tree` that are owned by `prev`,
      *  and then changes their owner to point to `next`.
@@ -136,6 +136,69 @@ abstract class Universe extends scala.reflect.api.Universe {
      *  Useful in writing quasiquoting macros that do pattern matching.
      */
     def subpatterns(tree: Tree): Option[List[Tree]]
+
+    /** @inheritdoc */
+    override type Decorators <: MacroDecoratorApi
+
+    /** @inheritdoc */
+    trait MacroDecoratorApi extends DecoratorApi {
+      /** @inheritdoc */
+      type TreeDecorator <: MacroTreeDecoratorApi
+
+      /** @see [[TreeDecorator]] */
+      class MacroTreeDecoratorApi(override val tree: Tree) extends TreeDecoratorApi(tree) {
+        /** @see [[internal.changeOwner]] */
+        def changeOwner(prev: Symbol, next: Symbol): tree.type = internal.changeOwner(tree, prev, next)
+
+        /** @see [[internal.attachments]] */
+        def attachments: Attachments { type Pos = Position } = internal.attachments(tree)
+
+        /** @see [[internal.updateAttachment]] */
+        def updateAttachment[T: ClassTag](attachment: T): tree.type = internal.updateAttachment(tree, attachment)
+
+        /** @see [[internal.removeAttachment]] */
+        def removeAttachment[T: ClassTag]: tree.type = internal.removeAttachment[T](tree)
+
+        /** @see [[internal.setPos]] */
+        def setPos(newpos: Position): tree.type = internal.setPos(tree, newpos)
+
+        /** @see [[internal.setType]] */
+        def setType(tp: Type): tree.type = internal.setType(tree, tp)
+
+        /** @see [[internal.defineType]] */
+        def defineType(tp: Type): tree.type = internal.defineType(tree, tp)
+
+        /** @see [[internal.setSymbol]] */
+        def setSymbol(sym: Symbol): tree.type = internal.setSymbol(tree, sym)
+      }
+
+      /** @inheritdoc */
+      type SymbolDecorator <: MacroSymbolDecoratorApi
+
+      /** @see [[TreeDecorator]] */
+      class MacroSymbolDecoratorApi(override val symbol: Symbol) extends SymbolDecoratorApi(symbol) {
+        /** @see [[internal.attachments]] */
+        def attachments: Attachments { type Pos = Position } = internal.attachments(symbol)
+
+        /** @see [[internal.updateAttachment]] */
+        def updateAttachment[T: ClassTag](attachment: T): symbol.type = internal.updateAttachment(symbol, attachment)
+
+        /** @see [[internal.removeAttachment]] */
+        def removeAttachment[T: ClassTag]: symbol.type = internal.removeAttachment[T](symbol)
+
+        /** @see [[internal.setInfo]] */
+        def setInfo(tpe: Type): symbol.type = internal.setInfo(symbol, tpe)
+
+        /** @see [[internal.setAnnotations]] */
+        def setAnnotations(annots: Annotation*): symbol.type = internal.setAnnotations(symbol, annots: _*)
+
+        /** @see [[internal.setName]] */
+        def setName(name: Name): symbol.type = internal.setName(symbol, name)
+
+        /** @see [[internal.setPrivateWithin]] */
+        def setPrivateWithin(sym: Symbol): symbol.type = internal.setPrivateWithin(symbol, sym)
+      }
+    }
   }
 
   /** @group Internal */

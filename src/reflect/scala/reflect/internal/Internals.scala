@@ -122,6 +122,16 @@ trait Internals extends api.Internals {
     def boundedWildcardType(bounds: TypeBounds): BoundedWildcardType = self.BoundedWildcardType(bounds)
 
     def subpatterns(tree: Tree): Option[List[Tree]] = tree.attachments.get[SubpatternsAttachment].map(_.patterns.map(_.duplicate))
+
+    type Decorators = MacroDecoratorApi
+    lazy val decorators: Decorators = new MacroDecoratorApi {
+      override type TreeDecorator = MacroTreeDecoratorApi
+      override implicit def treeDecorator(tree: Tree): TreeDecorator = new MacroTreeDecoratorApi(tree)
+      override type SymbolDecorator = MacroSymbolDecoratorApi
+      override implicit def symbolDecorator(symbol: Symbol): SymbolDecorator = new MacroSymbolDecoratorApi(symbol)
+      override type TypeDecorator = TypeDecoratorApi
+      override implicit def typeDecorator(tp: Type): TypeDecorator = new TypeDecoratorApi(tp)
+    }
   }
 
   lazy val treeBuild = new self.TreeGen {
