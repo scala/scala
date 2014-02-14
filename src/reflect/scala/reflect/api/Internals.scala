@@ -935,21 +935,21 @@ trait Internals { self: Universe =>
     }
 
     /** Scala 2.10 compatibility enrichments for ClassDef. */
-    class CompatibleClassDefExtractor(dex: ClassDefExtractor) {
+    implicit class CompatibleClassDefExtractor(dex: ClassDefExtractor) {
       /** @see [[InternalApi.classDef]] */
       @deprecated("Use `internal.classDef` instead", "2.11.0")
       def apply(sym: Symbol, impl: Template): ClassDef = internal.classDef(sym, impl)
     }
 
     /** Scala 2.10 compatibility enrichments for ModuleDef. */
-    class CompatibleModuleDefExtractor(dex: ModuleDefExtractor) {
+    implicit class CompatibleModuleDefExtractor(dex: ModuleDefExtractor) {
       /** @see [[InternalApi.moduleDef]] */
       @deprecated("Use `internal.moduleDef` instead", "2.11.0")
       def apply(sym: Symbol, impl: Template): ModuleDef = internal.moduleDef(sym, impl)
     }
 
     /** Scala 2.10 compatibility enrichments for ValDef. */
-    class CompatibleValDefExtractor(dex: ValDefExtractor) {
+    implicit class CompatibleValDefExtractor(dex: ValDefExtractor) {
       /** @see [[InternalApi.valDef]] */
       @deprecated("Use `internal.valDef` instead", "2.11.0")
       def apply(sym: Symbol, rhs: Tree): ValDef = internal.valDef(sym, rhs)
@@ -960,7 +960,7 @@ trait Internals { self: Universe =>
     }
 
     /** Scala 2.10 compatibility enrichments for ValDef. */
-    class CompatibleDefDefExtractor(dex: DefDefExtractor) {
+    implicit class CompatibleDefDefExtractor(dex: DefDefExtractor) {
       /** @see [[InternalApi.defDef]] */
       @deprecated("Use `internal.defDef` instead", "2.11.0")
       def apply(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef = internal.defDef(sym, mods, vparamss, rhs)
@@ -983,7 +983,7 @@ trait Internals { self: Universe =>
     }
 
     /** Scala 2.10 compatibility enrichments for TypeDef. */
-    class CompatibleTypeDefExtractor(dex: TypeDefExtractor) {
+    implicit class CompatibleTypeDefExtractor(dex: TypeDefExtractor) {
       /** @see [[InternalApi.typeDef]] */
       @deprecated("Use `internal.typeDef` instead", "2.11.0")
       def apply(sym: Symbol, rhs: Tree): TypeDef = internal.typeDef(sym, rhs)
@@ -994,7 +994,7 @@ trait Internals { self: Universe =>
     }
 
     /** Scala 2.10 compatibility enrichments for LabelDef. */
-    class CompatibleLabelDefExtractor(dex: LabelDefExtractor) {
+    implicit class CompatibleLabelDefExtractor(dex: LabelDefExtractor) {
       /** @see [[InternalApi.labelDef]] */
       @deprecated("Use `internal.labelDef` instead", "2.11.0")
       def apply(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef = internal.labelDef(sym, params, rhs)
