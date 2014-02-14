@@ -308,6 +308,9 @@ trait Printers extends api.Printers { self: SymbolTable =>
       print("this")
     }
 
+    protected def printBlock(stats: List[Tree], expr: Tree) =
+      printColumn(stats ::: List(expr), "{", ";", "}")
+    
     def printTree(tree: Tree) = {
       tree match {
         case EmptyTree =>
@@ -367,7 +370,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           currentOwner = currentOwner1
 
         case Block(stats, expr) =>
-          printColumn(stats ::: List(expr), "{", ";", "}")
+          printBlock(stats, expr)
 
         case Match(selector, cases) =>
           val selectorType1 = selectorType
@@ -867,7 +870,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
             printColumn(modBody, "", ";", "}")
           }
 
-        case Block(stats, expr) => super.printTree(tree)
+        case bl @ Block(stats, expr) =>
+          printBlock(build.unattributedBlockBody(bl), expr)
 
         case Match(selector, cases) =>
           /* Insert braces if match is inner
@@ -1097,14 +1101,16 @@ trait Printers extends api.Printers { self: SymbolTable =>
           def printTp = print("(", tp, ")")
           
           tp match {
-            case EmptyTree | build.SyntacticEmptyTypeTree() | _: Annotated => printTp
+            case EmptyTree | build.SyntacticEmptyTypeTree() => printTp
+            // case for untypechecked trees
+            case Annotated(annot, arg) if (expr ne null) && (arg ne null) && expr.equalsStructure(arg) => printTp //to remove double arg - 5: 5: @unchecked
             case tt: TypeTree if tt.original.isInstanceOf[Annotated] => printTp
             case _ => super.processTreePrinting(tree)
           }
           
         case This(qual) =>
           // todo: add symbol checking for common printer
-          if (tree.symbol.isPackage) print(tree.symbol.fullName)
+          if (tree.hasExistingSymbol && tree.symbol.isPackage) print(tree.symbol.fullName)
           else super.processTreePrinting(tree)
           
         case st @ Super(th @ This(qual), mix) =>
@@ -1119,12 +1125,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
   def xprintTree(treePrinter: TreePrinter, tree: Tree) =
     treePrinter.print(tree.productPrefix+tree.productIterator.mkString("(", ", ", ")"))
 
-  def newCodePrinter(writer: PrintWriter, tree: Tree, printRootPkg: Boolean): TreePrinter = {
-    if (build.detectAttributedTree(tree))
-      new TypedTreePrinter(writer, printRootPkg)
-    else
-      new ParsedTreePrinter(writer)
-  }
+  def newCodePrinter(writer: PrintWriter, tree: Tree, printRootPkg: Boolean): TreePrinter =
+    new TypedTreePrinter(writer, printRootPkg)
   
   def newTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
   def newTreePrinter(stream: OutputStream): TreePrinter = newTreePrinter(new PrintWriter(stream))
