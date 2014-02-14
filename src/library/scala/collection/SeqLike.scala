@@ -509,11 +509,14 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
   }
 
   def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    if (index < 0) throw new IndexOutOfBoundsException(index.toString)
     val b = bf(repr)
     val (prefix, rest) = this.splitAt(index)
+    val restColl = toCollection(rest)
+    if (restColl.isEmpty) throw new IndexOutOfBoundsException(index.toString)
     b ++= toCollection(prefix)
     b += elem
-    b ++= toCollection(rest).view.tail
+    b ++= restColl.view.tail
     b.result()
   }
 
