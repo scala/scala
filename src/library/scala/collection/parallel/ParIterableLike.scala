@@ -29,6 +29,8 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.unchecked.uncheckedStable
 import scala.language.{ higherKinds, implicitConversions }
 
+import scala.collection.parallel.ParallelCollectionImplicits._
+
 
 /** A template trait for parallel collections of type `ParIterable[T]`.
  *

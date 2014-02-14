@@ -53,43 +53,52 @@ package object parallel {
     c
   }
 
-  /* implicit conversions */
-
-  implicit def factory2ops[From, Elem, To](bf: CanBuildFrom[From, Elem, To]) = new FactoryOps[From, Elem, To] {
-    def isParallel = bf.isInstanceOf[Parallel]
-    def asParallel = bf.asInstanceOf[CanCombineFrom[From, Elem, To]]
-    def ifParallel[R](isbody: CanCombineFrom[From, Elem, To] => R) = new Otherwise[R] {
-      def otherwise(notbody: => R) = if (isParallel) isbody(asParallel) else notbody
-    }
-  }
-  implicit def traversable2ops[T](t: scala.collection.GenTraversableOnce[T]) = new TraversableOps[T] {
-    def isParallel = t.isInstanceOf[Parallel]
-    def isParIterable = t.isInstanceOf[ParIterable[_]]
-    def asParIterable = t.asInstanceOf[ParIterable[T]]
-    def isParSeq = t.isInstanceOf[ParSeq[_]]
-    def asParSeq = t.asInstanceOf[ParSeq[T]]
-    def ifParSeq[R](isbody: ParSeq[T] => R) = new Otherwise[R] {
-      def otherwise(notbody: => R) = if (isParallel) isbody(asParSeq) else notbody
-    }
-    def toParArray = if (t.isInstanceOf[ParArray[_]]) t.asInstanceOf[ParArray[T]] else {
-      val it = t.toIterator
-      val cb = mutable.ParArrayCombiner[T]()
-      while (it.hasNext) cb += it.next
-      cb.result
-    }
-  }
-  implicit def throwable2ops(self: Throwable) = new ThrowableOps {
-    def alongWith(that: Throwable) = (self, that) match {
-      case (self: CompositeThrowable, that: CompositeThrowable) => new CompositeThrowable(self.throwables ++ that.throwables)
-      case (self: CompositeThrowable, _) => new CompositeThrowable(self.throwables + that)
-      case (_, that: CompositeThrowable) => new CompositeThrowable(that.throwables + self)
-      case _ => new CompositeThrowable(Set(self, that))
+  /** Adds toParArray method to collection classes. */
+  implicit class CollectionsHaveToParArray[C, T](c: C)(implicit asGto: C => scala.collection.GenTraversableOnce[T]) {
+    def toParArray = {
+      val t = asGto(c)
+      if (t.isInstanceOf[ParArray[_]]) t.asInstanceOf[ParArray[T]]
+      else {
+        val it = t.toIterator
+        val cb = mutable.ParArrayCombiner[T]()
+        while (it.hasNext) cb += it.next
+        cb.result
+      }
     }
   }
 }
 
 
 package parallel {
+  /** Implicit conversions used in the implementation of parallel collections. */
+  private[collection] object ParallelCollectionImplicits {
+    implicit def factory2ops[From, Elem, To](bf: CanBuildFrom[From, Elem, To]) = new FactoryOps[From, Elem, To] {
+      def isParallel = bf.isInstanceOf[Parallel]
+      def asParallel = bf.asInstanceOf[CanCombineFrom[From, Elem, To]]
+      def ifParallel[R](isbody: CanCombineFrom[From, Elem, To] => R) = new Otherwise[R] {
+        def otherwise(notbody: => R) = if (isParallel) isbody(asParallel) else notbody
+      }
+    }
+    implicit def traversable2ops[T](t: scala.collection.GenTraversableOnce[T]) = new TraversableOps[T] {
+      def isParallel = t.isInstanceOf[Parallel]
+      def isParIterable = t.isInstanceOf[ParIterable[_]]
+      def asParIterable = t.asInstanceOf[ParIterable[T]]
+      def isParSeq = t.isInstanceOf[ParSeq[_]]
+      def asParSeq = t.asInstanceOf[ParSeq[T]]
+      def ifParSeq[R](isbody: ParSeq[T] => R) = new Otherwise[R] {
+        def otherwise(notbody: => R) = if (isParallel) isbody(asParSeq) else notbody
+      }
+    }
+    implicit def throwable2ops(self: Throwable) = new ThrowableOps {
+      def alongWith(that: Throwable) = (self, that) match {
+        case (self: CompositeThrowable, that: CompositeThrowable) => new CompositeThrowable(self.throwables ++ that.throwables)
+        case (self: CompositeThrowable, _) => new CompositeThrowable(self.throwables + that)
+        case (_, that: CompositeThrowable) => new CompositeThrowable(that.throwables + self)
+        case _ => new CompositeThrowable(Set(self, that))
+      }
+    }
+  }
+  
   trait FactoryOps[From, Elem, To] {
     trait Otherwise[R] {
       def otherwise(notbody: => R): R
@@ -111,7 +120,6 @@ package parallel {
     def isParSeq: Boolean
     def asParSeq: ParSeq[T]
     def ifParSeq[R](isbody: ParSeq[T] => R): Otherwise[R]
-    def toParArray: ParArray[T]
   }
 
   @deprecated("This trait will be removed.", "2.11.0")
