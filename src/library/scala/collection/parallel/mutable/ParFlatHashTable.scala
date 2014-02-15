@@ -28,12 +28,12 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
   extends IterableSplitter[T] with SizeMapUtils {
     import scala.collection.DebugUtils._
 
-    private var traversed = 0
-    private val itertable = table
+    private[this] var traversed = 0
+    private[this] val itertable = table
 
     if (hasNext) scan()
 
-    private def scan() {
+    private[this] def scan() {
       while (itertable(idx) eq null) {
         idx += 1
       }
@@ -44,7 +44,7 @@ trait ParFlatHashTable[T] extends scala.collection.mutable.FlatHashTable[T] {
     def remaining = totalsize - traversed
     def hasNext = traversed < totalsize
     def next() = if (hasNext) {
-      val r = itertable(idx).asInstanceOf[T]
+      val r = entryToElem(itertable(idx))
       traversed += 1
       idx += 1
       if (hasNext) scan()
