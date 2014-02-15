@@ -1027,23 +1027,23 @@ trait Internals { self: Universe =>
     /** Scala 2.10 compatibility enrichments for Tree. */
     implicit class CompatibleTree(tree: Tree) {
       /** @see [[InternalApi.freeTerms]] */
-      @deprecated("Use `internal.freeTerms` instead", "2.11.0")
+      @deprecated("Use `internal.freeTerms` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def freeTerms: List[FreeTermSymbol] = internal.freeTerms(tree)
 
       /** @see [[InternalApi.freeTypes]] */
-      @deprecated("Use `internal.freeTerms` instead", "2.11.0")
+      @deprecated("Use `internal.freeTerms` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def freeTypes: List[FreeTypeSymbol] = internal.freeTypes(tree)
 
       /** @see [[InternalApi.substituteSymbols]] */
-      @deprecated("Use `internal.substituteSymbols` instead", "2.11.0")
+      @deprecated("Use `internal.substituteSymbols` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree = internal.substituteSymbols(tree, from, to)
 
       /** @see [[InternalApi.substituteTypes]] */
-      @deprecated("Use `internal.substituteTypes` instead", "2.11.0")
+      @deprecated("Use `internal.substituteTypes` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def substituteTypes(from: List[Symbol], to: List[Type]): Tree = internal.substituteTypes(tree, from, to)
 
       /** @see [[InternalApi.substituteThis]] */
-      @deprecated("Use `internal.substituteThis` instead", "2.11.0")
+      @deprecated("Use `internal.substituteThis` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def substituteThis(clazz: Symbol, to: Tree): Tree = internal.substituteThis(tree, clazz, to)
     }
 
@@ -1056,51 +1056,51 @@ trait Internals { self: Universe =>
       def isOverride: Boolean = symbol.asInstanceOf[scala.reflect.internal.Symbols#Symbol].isOverride
 
       /** @see [[InternalApi.isFreeTerm]] */
-      @deprecated("Use `internal.isFreeTerm` instead", "2.11.0")
+      @deprecated("Use `internal.isFreeTerm` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def isFreeTerm: Boolean = internal.isFreeTerm(symbol)
 
       /** @see [[InternalApi.asFreeTerm]] */
-      @deprecated("Use `internal.asFreeTerm` instead", "2.11.0")
+      @deprecated("Use `internal.asFreeTerm` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def asFreeTerm: FreeTermSymbol = internal.asFreeTerm(symbol)
 
       /** @see [[InternalApi.isFreeType]] */
-      @deprecated("Use `internal.isFreeType` instead", "2.11.0")
+      @deprecated("Use `internal.isFreeType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def isFreeType: Boolean = internal.isFreeType(symbol)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.asFreeType` instead", "2.11.0")
+      @deprecated("Use `internal.asFreeType` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def asFreeType: FreeTypeSymbol = internal.asFreeType(symbol)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.newTermSymbol` instead", "2.11.0")
+      @deprecated("Use `internal.newTermSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol = internal.newTermSymbol(symbol, name, pos, flags)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.newModuleAndClassSymbol` instead", "2.11.0")
+      @deprecated("Use `internal.newModuleAndClassSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol) = internal.newModuleAndClassSymbol(symbol, name, pos, flags)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.newMethodSymbol` instead", "2.11.0")
+      @deprecated("Use `internal.newMethodSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def newMethodSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): MethodSymbol = internal.newMethodSymbol(symbol, name, pos, flags)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.newTypeSymbol` instead", "2.11.0")
+      @deprecated("Use `internal.newTypeSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def newTypeSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TypeSymbol = internal.newTypeSymbol(symbol, name, pos, flags)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.newClassSymbol` instead", "2.11.0")
+      @deprecated("Use `internal.newClassSymbol` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def newClassSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): ClassSymbol = internal.newClassSymbol(symbol, name, pos, flags)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.isErroneous` instead", "2.11.0")
+      @deprecated("Use `internal.isErroneous` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def isErroneous: Boolean = internal.isErroneous(symbol)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.isSkolem` instead", "2.11.0")
+      @deprecated("Use `internal.isSkolem` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def isSkolem: Boolean = internal.isSkolem(symbol)
 
       /** @see [[InternalApi.asFreeType]] */
-      @deprecated("Use `internal.deSkolemize` instead", "2.11.0")
+      @deprecated("Use `internal.deSkolemize` instead or import `internal.decorators._` for infix syntax", "2.11.0")
       def deSkolemize: Symbol = internal.deSkolemize(symbol)
     }
 
