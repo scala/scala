@@ -1024,5 +1024,8 @@ trait Types {
   def appliedType(tycon: Type, args: Type*): Type
 
   /** @see [[appliedType]] */
+  def appliedType(sym: Symbol, args: List[Type]): Type
+
+  /** @see [[appliedType]] */
   def appliedType(sym: Symbol, args: Type*): Type
 }
