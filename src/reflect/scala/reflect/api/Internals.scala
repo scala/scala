@@ -3,6 +3,7 @@ package reflect
 package api
 
 import scala.language.implicitConversions
+import scala.language.higherKinds
 
 /**
  *  <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
@@ -363,13 +364,13 @@ trait Internals { self: Universe =>
     /** @see [[Decorators]] */
     trait DecoratorApi {
       /** Extension methods for trees */
-      type TreeDecorator <: TreeDecoratorApi
+      type TreeDecorator[T <: Tree] <: TreeDecoratorApi[T]
 
       /** @see [[TreeDecorator]] */
-      implicit def treeDecorator(tree: Tree): TreeDecorator
+      implicit def treeDecorator[T <: Tree](tree: T): TreeDecorator[T]
 
       /** @see [[TreeDecorator]] */
-      class TreeDecoratorApi(val tree: Tree) {
+      class TreeDecoratorApi[T <: Tree](val tree: T) {
         /** @see [[internal.freeTerms]] */
         def freeTerms: List[FreeTermSymbol] = internal.freeTerms(tree)
 
@@ -387,13 +388,13 @@ trait Internals { self: Universe =>
       }
 
       /** Extension methods for symbols */
-      type SymbolDecorator <: SymbolDecoratorApi
+      type SymbolDecorator[T <: Symbol] <: SymbolDecoratorApi[T]
 
       /** @see [[SymbolDecorator]] */
-      implicit def symbolDecorator(symbol: Symbol): SymbolDecorator
+      implicit def symbolDecorator[T <: Symbol](symbol: T): SymbolDecorator[T]
 
       /** @see [[SymbolDecorator]] */
-      class SymbolDecoratorApi(val symbol: Symbol) {
+      class SymbolDecoratorApi[T <: Symbol](val symbol: T) {
         /** @see [[internal.isFreeTerm]] */
         def isFreeTerm: Boolean = internal.isFreeTerm(symbol)
 
@@ -431,22 +432,22 @@ trait Internals { self: Universe =>
         def deSkolemize: Symbol = internal.deSkolemize(symbol)
 
         /** @see [[internal.initialize]] */
-        def initialize: symbol.type = internal.initialize(symbol)
+        def initialize: T = internal.initialize(symbol)
 
         /** @see [[internal.fullyInitialize]] */
-        def fullyInitialize: symbol.type = internal.fullyInitialize(symbol)
+        def fullyInitialize: T = internal.fullyInitialize(symbol)
       }
 
       /** Extension methods for types */
-      type TypeDecorator <: TypeDecoratorApi
+      type TypeDecorator[T <: Type] <: TypeDecoratorApi[T]
 
       /** @see [[TypeDecorator]] */
-      implicit def typeDecorator(tp: Type): TypeDecorator
+      implicit def typeDecorator[T <: Type](tp: T): TypeDecorator[T]
 
       /** @see [[TypeDecorator]] */
-      implicit class TypeDecoratorApi(val tp: Type) {
+      implicit class TypeDecoratorApi[T <: Type](val tp: T) {
         /** @see [[internal.fullyInitialize]] */
-        def fullyInitialize: tp.type = internal.fullyInitialize(tp)
+        def fullyInitialize: T = internal.fullyInitialize(tp)
       }
     }
   }

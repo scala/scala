@@ -3,6 +3,7 @@ package reflect
 package internal
 
 import scala.language.implicitConversions
+import scala.language.higherKinds
 import scala.collection.mutable.WeakHashMap
 import scala.ref.WeakReference
 import scala.reflect.api.Universe
@@ -125,12 +126,12 @@ trait Internals extends api.Internals {
 
     type Decorators = MacroDecoratorApi
     lazy val decorators: Decorators = new MacroDecoratorApi {
-      override type TreeDecorator = MacroTreeDecoratorApi
-      override implicit def treeDecorator(tree: Tree): TreeDecorator = new MacroTreeDecoratorApi(tree)
-      override type SymbolDecorator = MacroSymbolDecoratorApi
-      override implicit def symbolDecorator(symbol: Symbol): SymbolDecorator = new MacroSymbolDecoratorApi(symbol)
-      override type TypeDecorator = TypeDecoratorApi
-      override implicit def typeDecorator(tp: Type): TypeDecorator = new TypeDecoratorApi(tp)
+      override type TreeDecorator[T <: Tree] = MacroTreeDecoratorApi[T]
+      override implicit def treeDecorator[T <: Tree](tree: T): TreeDecorator[T] = new MacroTreeDecoratorApi[T](tree)
+      override type SymbolDecorator[T <: Symbol] = MacroSymbolDecoratorApi[T]
+      override implicit def symbolDecorator[T <: Symbol](symbol: T): SymbolDecorator[T] = new MacroSymbolDecoratorApi[T](symbol)
+      override type TypeDecorator[T <: Type] = TypeDecoratorApi[T]
+      override implicit def typeDecorator[T <: Type](tp: T): TypeDecorator[T] = new TypeDecoratorApi[T](tp)
     }
   }
 

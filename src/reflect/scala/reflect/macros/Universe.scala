@@ -3,6 +3,7 @@ package reflect
 package macros
 
 import scala.language.implicitConversions
+import scala.language.higherKinds
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
@@ -143,10 +144,10 @@ abstract class Universe extends scala.reflect.api.Universe {
     /** @inheritdoc */
     trait MacroDecoratorApi extends DecoratorApi {
       /** @inheritdoc */
-      type TreeDecorator <: MacroTreeDecoratorApi
+      override type TreeDecorator[T <: Tree] <: MacroTreeDecoratorApi[T]
 
       /** @see [[TreeDecorator]] */
-      class MacroTreeDecoratorApi(override val tree: Tree) extends TreeDecoratorApi(tree) {
+      class MacroTreeDecoratorApi[T <: Tree](override val tree: T) extends TreeDecoratorApi[T](tree) {
         /** @see [[internal.changeOwner]] */
         def changeOwner(prev: Symbol, next: Symbol): tree.type = internal.changeOwner(tree, prev, next)
 
@@ -154,49 +155,49 @@ abstract class Universe extends scala.reflect.api.Universe {
         def attachments: Attachments { type Pos = Position } = internal.attachments(tree)
 
         /** @see [[internal.updateAttachment]] */
-        def updateAttachment[T: ClassTag](attachment: T): tree.type = internal.updateAttachment(tree, attachment)
+        def updateAttachment[A: ClassTag](attachment: A): tree.type = internal.updateAttachment(tree, attachment)
 
         /** @see [[internal.removeAttachment]] */
-        def removeAttachment[T: ClassTag]: tree.type = internal.removeAttachment[T](tree)
+        def removeAttachment[A: ClassTag]: T = internal.removeAttachment[A](tree)
 
         /** @see [[internal.setPos]] */
-        def setPos(newpos: Position): tree.type = internal.setPos(tree, newpos)
+        def setPos(newpos: Position): T = internal.setPos(tree, newpos)
 
         /** @see [[internal.setType]] */
-        def setType(tp: Type): tree.type = internal.setType(tree, tp)
+        def setType(tp: Type): T = internal.setType(tree, tp)
 
         /** @see [[internal.defineType]] */
-        def defineType(tp: Type): tree.type = internal.defineType(tree, tp)
+        def defineType(tp: Type): T = internal.defineType(tree, tp)
 
         /** @see [[internal.setSymbol]] */
-        def setSymbol(sym: Symbol): tree.type = internal.setSymbol(tree, sym)
+        def setSymbol(sym: Symbol): T = internal.setSymbol(tree, sym)
       }
 
       /** @inheritdoc */
-      type SymbolDecorator <: MacroSymbolDecoratorApi
+      override type SymbolDecorator[T <: Symbol] <: MacroSymbolDecoratorApi[T]
 
       /** @see [[TreeDecorator]] */
-      class MacroSymbolDecoratorApi(override val symbol: Symbol) extends SymbolDecoratorApi(symbol) {
+      class MacroSymbolDecoratorApi[T <: Symbol](override val symbol: T) extends SymbolDecoratorApi[T](symbol) {
         /** @see [[internal.attachments]] */
         def attachments: Attachments { type Pos = Position } = internal.attachments(symbol)
 
         /** @see [[internal.updateAttachment]] */
-        def updateAttachment[T: ClassTag](attachment: T): symbol.type = internal.updateAttachment(symbol, attachment)
+        def updateAttachment[A: ClassTag](attachment: A): T = internal.updateAttachment(symbol, attachment)
 
         /** @see [[internal.removeAttachment]] */
-        def removeAttachment[T: ClassTag]: symbol.type = internal.removeAttachment[T](symbol)
+        def removeAttachment[A: ClassTag]: T = internal.removeAttachment[A](symbol)
 
         /** @see [[internal.setInfo]] */
-        def setInfo(tpe: Type): symbol.type = internal.setInfo(symbol, tpe)
+        def setInfo(tpe: Type): T = internal.setInfo(symbol, tpe)
 
         /** @see [[internal.setAnnotations]] */
-        def setAnnotations(annots: Annotation*): symbol.type = internal.setAnnotations(symbol, annots: _*)
+        def setAnnotations(annots: Annotation*): T = internal.setAnnotations(symbol, annots: _*)
 
         /** @see [[internal.setName]] */
-        def setName(name: Name): symbol.type = internal.setName(symbol, name)
+        def setName(name: Name): T = internal.setName(symbol, name)
 
         /** @see [[internal.setPrivateWithin]] */
-        def setPrivateWithin(sym: Symbol): symbol.type = internal.setPrivateWithin(symbol, sym)
+        def setPrivateWithin(sym: Symbol): T = internal.setPrivateWithin(symbol, sym)
       }
     }
   }
