@@ -3284,7 +3284,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     ca
   }
 
-  private def arrEncode(sb: ScalaSigBytes): Array[String] = {
+  final def arrEncode(sb: ScalaSigBytes): Array[String] = {
     var strs: List[String]  = Nil
     val bSeven: Array[Byte] = sb.sevenBitsMayBeZero
     // chop into slices of at most 65535 bytes, counting 0x00 as taking two bytes (as per JVMS 4.4.7 The CONSTANT_Utf8_info Structure)

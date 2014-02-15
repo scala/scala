@@ -583,53 +583,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
   trait BCAnnotGen extends BCInnerClassGen {
 
-    /*
-     *  can-multi-thread
-     */
-    def ubytesToCharArray(bytes: Array[Byte]): Array[Char] = {
-      val ca = new Array[Char](bytes.length)
-      var idx = 0
-      while (idx < bytes.length) {
-        val b: Byte = bytes(idx)
-        assert((b & ~0x7f) == 0)
-        ca(idx) = b.asInstanceOf[Char]
-        idx += 1
-      }
-
-      ca
-    }
-
-    /*
-     *  can-multi-thread
-     */
-    private def arrEncode(sb: ScalaSigBytes): Array[String] = {
-      var strs: List[String]  = Nil
-      val bSeven: Array[Byte] = sb.sevenBitsMayBeZero
-      // chop into slices of at most 65535 bytes, counting 0x00 as taking two bytes (as per JVMS 4.4.7 The CONSTANT_Utf8_info Structure)
-      var prevOffset = 0
-      var offset     = 0
-      var encLength  = 0
-      while (offset < bSeven.size) {
-        val deltaEncLength = (if (bSeven(offset) == 0) 2 else 1)
-        val newEncLength = encLength.toLong + deltaEncLength
-        if (newEncLength >= 65535) {
-          val ba     = bSeven.slice(prevOffset, offset)
-          strs     ::= new java.lang.String(ubytesToCharArray(ba))
-          encLength  = 0
-          prevOffset = offset
-        } else {
-          encLength += deltaEncLength
-          offset    += 1
-        }
-      }
-      if (prevOffset < offset) {
-        assert(offset == bSeven.length)
-        val ba = bSeven.slice(prevOffset, offset)
-        strs ::= new java.lang.String(ubytesToCharArray(ba))
-      }
-      assert(strs.size > 1, "encode instead as one String via strEncode()") // TODO too strict?
-      mkArrayReverse(strs)
-    }
+    import genASM.{ubytesToCharArray, arrEncode}
 
     /*
      *  can-multi-thread
@@ -676,7 +630,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
             av.visit(name, strEncode(sb))
           } else {
             val arrAnnotV: asm.AnnotationVisitor = av.visitArray(name)
-            for(arg <- arrEncode(sb)) { arrAnnotV.visit(name, arg) }
+            for(arg <- genASM.arrEncode(sb)) { arrAnnotV.visit(name, arg) }
             arrAnnotV.visitEnd()
           }          // for the lazy val in ScalaSigBytes to be GC'ed, the invoker of emitAnnotations() should hold the ScalaSigBytes in a method-local var that doesn't escape.
 
@@ -772,25 +726,6 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
   trait BCJGenSigGen {
 
-    // @M don't generate java generics sigs for (members of) implementation
-    // classes, as they are monomorphic (TODO: ok?)
-    /*
-     * must-single-thread
-     */
-    private def needsGenericSignature(sym: Symbol) = !(
-      // PP: This condition used to include sym.hasExpandedName, but this leads
-      // to the total loss of generic information if a private member is
-      // accessed from a closure: both the field and the accessor were generated
-      // without it.  This is particularly bad because the availability of
-      // generic information could disappear as a consequence of a seemingly
-      // unrelated change.
-         settings.Ynogenericsig
-      || sym.isArtifact
-      || sym.isLiftedMethod
-      || sym.isBridge
-      || (sym.ownerChain exists (_.isImplClass))
-    )
-
     def getCurrentCUnit(): CompilationUnit
 
     /* @return
@@ -799,61 +734,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
      *
      * must-single-thread
      */
-    def getGenericSignature(sym: Symbol, owner: Symbol): String = {
-
-      if (!needsGenericSignature(sym)) { return null }
-
-      val memberTpe = enteringErasure(owner.thisType.memberInfo(sym))
-
-      val jsOpt: Option[String] = erasure.javaSig(sym, memberTpe)
-      if (jsOpt.isEmpty) { return null }
-
-      val sig = jsOpt.get
-      log(sig) // This seems useful enough in the general case.
-
-          def wrap(op: => Unit) = {
-            try   { op; true }
-            catch { case _: Throwable => false }
-          }
-
-      if (settings.Xverify) {
-        // Run the signature parser to catch bogus signatures.
-        val isValidSignature = wrap {
-          // Alternative: scala.tools.reflect.SigParser (frontend to sun.reflect.generics.parser.SignatureParser)
-          import scala.tools.asm.util.CheckClassAdapter
-          if (sym.isMethod)    { CheckClassAdapter checkMethodSignature sig }
-          else if (sym.isTerm) { CheckClassAdapter checkFieldSignature  sig }
-          else                 { CheckClassAdapter checkClassSignature  sig }
-        }
-
-        if (!isValidSignature) {
-          getCurrentCUnit().warning(sym.pos,
-              """|compiler bug: created invalid generic signature for %s in %s
-                 |signature: %s
-                 |if this is reproducible, please report bug at https://issues.scala-lang.org/
-              """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig))
-          return null
-        }
-      }
-
-      if ((settings.check containsName phaseName)) {
-        val normalizedTpe = enteringErasure(erasure.prepareSigMap(memberTpe))
-        val bytecodeTpe = owner.thisType.memberInfo(sym)
-        if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
-          getCurrentCUnit().warning(sym.pos,
-              """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
-                 |signature: %s
-                 |original type: %s
-                 |normalized type: %s
-                 |erasure type: %s
-                 |if this is reproducible, please report bug at http://issues.scala-lang.org/
-              """.trim.stripMargin.format(sym, sym.owner.skipPackageObject.fullName, sig, memberTpe, normalizedTpe, bytecodeTpe))
-           return null
-        }
-      }
-
-      sig
-    }
+    def getGenericSignature(sym: Symbol, owner: Symbol): String = genASM.getGenericSignature(sym, owner, getCurrentCUnit())
 
   } // end of trait BCJGenSigGen
 
