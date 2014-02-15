@@ -14,8 +14,9 @@ abstract class ScriptTest extends DirectTest {
   override def extraSettings = s"-usejavacp -Xscript $testmain"
   def scriptPath = testPath changeExtension "script"
   def code = scriptPath.toFile.slurp
+  def argv = Seq.empty[String]
   def show() = {
     compile()
-    ScalaClassLoader(getClass.getClassLoader).run(testmain, Seq.empty[String])
+    ScalaClassLoader(getClass.getClassLoader).run(testmain, argv)
   }
 }

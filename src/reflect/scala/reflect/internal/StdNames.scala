@@ -640,7 +640,6 @@ trait StdNames {
     val applyDynamicNamed: NameType    = "applyDynamicNamed"
     val applyOrElse: NameType          = "applyOrElse"
     val args : NameType                = "args"
-    val argv : NameType                = "argv"
     val arrayClass: NameType           = "arrayClass"
     val array_apply : NameType         = "array_apply"
     val array_clone : NameType         = "array_clone"

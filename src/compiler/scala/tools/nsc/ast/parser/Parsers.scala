@@ -413,12 +413,10 @@ self =>
        *
        *  {{{
        *  object moduleName {
-       *    def main(argv: Array[String]): Unit = {
-       *      val args = argv
+       *    def main(args: Array[String]): Unit =
        *      new AnyRef {
        *        stmts
        *      }
-       *    }
        *  }
        *  }}}
        */
@@ -433,9 +431,8 @@ self =>
 
       // def main
       def mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
-      def mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.argv, mainParamType, EmptyTree))
-      def mainSetArgv   = List(ValDef(NoMods, nme.args, TypeTree(), Ident(nme.argv)))
-      def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), Block(mainSetArgv, gen.mkAnonymousNew(stmts)))
+      def mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.args, mainParamType, EmptyTree))
+      def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), gen.mkAnonymousNew(stmts))
 
       // object Main
       def moduleName  = newTermName(ScriptRunner scriptMain settings)
