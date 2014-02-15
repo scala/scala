@@ -220,8 +220,10 @@ abstract class TailCalls extends Transform {
           case Select(qual, _)  => qual
           case _                => EmptyTree
         }
-        def receiverIsSame    = ctx.enclosingType.widen =:= receiver.tpe.widen
-        def receiverIsSuper   = ctx.enclosingType.widen <:< receiver.tpe.widen
+        // since we're trying to reason about run-time behavior, we should only consider erased types
+        import global.{transformedType => erase} // "transformedType" is a bit (drumroll) generic
+        def receiverIsSame    = exitingErasure {erase(ctx.enclosingType.widen) =:= erase(receiver.tpe.widen)}
+        def receiverIsSuper   = exitingErasure {erase(ctx.enclosingType.widen) <:< erase(receiver.tpe.widen)}
         def isRecursiveCall   = (ctx.method eq fun.symbol) && ctx.tailPos
         def transformArgs     = noTailTransforms(args)
         def matchesTypeArgs   = ctx.tparams sameElements (targs map (_.tpe.typeSymbol))
@@ -251,12 +253,12 @@ abstract class TailCalls extends Transform {
         if (!ctx.isEligible)            fail("it is neither private nor final so can be overridden")
         else if (!isRecursiveCall) {
           if (ctx.isMandatory && receiverIsSuper) // OPT expensive check, avoid unless we will actually report the error
-                                        failHere("it contains a recursive call targeting a supertype")
+                                        failHere(s"it contains a recursive call targeting a supertype (from ${erase(ctx.enclosingType.widen)} to ${erase(receiver.tpe.widen)})")
           else                          failHere(defaultReason)
         }
-        else if (!matchesTypeArgs)      failHere("it is called recursively with different type arguments")
+        else if (!matchesTypeArgs)      failHere(s"it is called recursively with different type arguments (${ctx.tparams} <-> ${(targs map (_.tpe.typeSymbol))})")
         else if (receiver == EmptyTree) rewriteTailCall(This(currentClass))
-        else if (!receiverIsSame)       failHere("it changes type of 'this' on a polymorphic recursive call")
+        else if (!receiverIsSame)       failHere(s"it changes type of 'this' on a polymorphic recursive call (from ${erase(ctx.enclosingType.widen)} to ${erase(receiver.tpe.widen)})")
         else                            rewriteTailCall(receiver)
       }
       

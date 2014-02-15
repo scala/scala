@@ -60,7 +60,9 @@ trait Erasure {
    */
   protected def unboundedGenericArrayLevel(tp: Type): Int = tp match {
     case GenericArray(level, core) if !(core <:< AnyRefTpe) => level
-    case RefinedType(ps, _) if ps.nonEmpty                  => logResult(s"Unbounded generic level for $tp is")((ps map unboundedGenericArrayLevel).max)
+    case RefinedType(ps, _) if ps.nonEmpty                  => unboundedGenericArrayLevel(intersectionDominator(ps))
+    // used to be `(ps map unboundedGenericArrayLevel).max`, but that's inconsistent with what happens during erasure
+    // consider e.g., `isInstanceOf[Array[Int] with Array[_]]` -- its outcome is decided by intersectionDominator
     case _                                                  => 0
   }
 
