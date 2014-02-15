@@ -26,6 +26,14 @@ abstract class Universe extends scala.reflect.api.Universe {
   /** @inheritdoc */
   trait MacroInternalApi extends InternalApi { internal =>
 
+    /** Adds a given symbol to the given scope.
+     */
+    def enter(scope: Scope, sym: Symbol): scope.type
+
+    /** Removes a given symbol to the given scope.
+     */
+    def unlink(scope: Scope, sym: Symbol): scope.type
+
     /** Collects all the symbols defined by subtrees of `tree` that are owned by `prev`,
      *  and then changes their owner to point to `next`.
      *
@@ -152,6 +160,21 @@ abstract class Universe extends scala.reflect.api.Universe {
 
     /** @inheritdoc */
     trait MacroDecoratorApi extends DecoratorApi {
+      /** Extension methods for scopes */
+      type ScopeDecorator[T <: Scope] <: MacroScopeDecoratorApi[T]
+
+      /** @see [[ScopeDecorator]] */
+      implicit def scopeDecorator[T <: Scope](tree: T): ScopeDecorator[T]
+
+      /** @see [[ScopeDecorator]] */
+      class MacroScopeDecoratorApi[T <: Scope](val scope: T) {
+        /** @see [[internal.enter]] */
+        def enter(sym: Symbol): T = internal.enter(scope, sym)
+
+        /** @see [[internal.unlink]] */
+        def unlink(sym: Symbol): T = internal.unlink(scope, sym)
+      }
+
       /** @inheritdoc */
       override type TreeDecorator[T <: Tree] <: MacroTreeDecoratorApi[T]
 

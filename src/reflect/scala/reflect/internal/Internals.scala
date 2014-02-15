@@ -27,6 +27,8 @@ trait Internals extends api.Internals {
     def createImporter(from0: Universe): Importer { val from: from0.type } = self.mkImporter(from0)
 
     def newScopeWith(elems: Symbol*): Scope = self.newScopeWith(elems: _*)
+    def enter(scope: Scope, sym: Symbol): scope.type = { scope.enter(sym); scope }
+    def unlink(scope: Scope, sym: Symbol): scope.type = { scope.unlink(sym); scope }
 
     def freeTerms(tree: Tree): List[FreeTermSymbol] = tree.freeTerms
     def freeTypes(tree: Tree): List[FreeTypeSymbol] = tree.freeTypes
@@ -130,6 +132,8 @@ trait Internals extends api.Internals {
 
     type Decorators = MacroDecoratorApi
     lazy val decorators: Decorators = new MacroDecoratorApi {
+      override type ScopeDecorator[T <: Scope] = MacroScopeDecoratorApi[T]
+      override implicit def scopeDecorator[T <: Scope](scope: T): ScopeDecorator[T] = new MacroScopeDecoratorApi[T](scope)
       override type TreeDecorator[T <: Tree] = MacroTreeDecoratorApi[T]
       override implicit def treeDecorator[T <: Tree](tree: T): TreeDecorator[T] = new MacroTreeDecoratorApi[T](tree)
       override type SymbolDecorator[T <: Symbol] = MacroSymbolDecoratorApi[T]

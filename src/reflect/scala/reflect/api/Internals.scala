@@ -92,7 +92,6 @@ trait Internals { self: Universe =>
       throw new UnsupportedOperationException("This universe does not support manifest -> tag conversions. Use a JavaUniverse, e.g. the scala.reflect.runtime.universe.")
 
     /** Create a new scope with the given initial elements.
-     *  @group Scopes
      */
     def newScopeWith(elems: Symbol*): Scope
 
