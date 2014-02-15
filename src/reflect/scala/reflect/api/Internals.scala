@@ -251,6 +251,10 @@ trait Internals { self: Universe =>
      */
     def fullyInitialize(scope: Scope): scope.type
 
+    /** Returns internal flags associated with the symbol.
+     */
+    def flags(symbol: Symbol): FlagSet
+
     /** A creator for `ThisType` types.
      */
     def thisType(sym: Symbol): Type
@@ -436,6 +440,9 @@ trait Internals { self: Universe =>
 
         /** @see [[internal.fullyInitialize]] */
         def fullyInitialize: T = internal.fullyInitialize(symbol)
+
+        /** @see [[internal.flags]] */
+        def flags: FlagSet = internal.flags(symbol)
       }
 
       /** Extension methods for types */

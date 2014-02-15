@@ -74,6 +74,12 @@ abstract class Universe extends scala.reflect.api.Universe {
     /** Sets the `privateWithin` of the symbol. */
     def setPrivateWithin(symbol: Symbol, sym: Symbol): symbol.type
 
+    /** Enables `flags` on the symbol. */
+    def setFlag(symbol: Symbol, flags: FlagSet): symbol.type
+
+    /** Disables `flags` on the symbol. */
+    def resetFlag(symbol: Symbol, flags: FlagSet): symbol.type
+
     /** The attachment of the tree. */
     def attachments(tree: Tree): Attachments { type Pos = Position }
 
@@ -204,6 +210,12 @@ abstract class Universe extends scala.reflect.api.Universe {
 
         /** @see [[internal.setPrivateWithin]] */
         def setPrivateWithin(sym: Symbol): T = internal.setPrivateWithin(symbol, sym)
+
+        /** @see [[internal.setFlag]] */
+        def setFlag(flags: FlagSet): T = internal.setFlag(symbol, flags)
+
+        /** @see [[internal.setFlag]] */
+        def resetFlag(flags: FlagSet): T = internal.resetFlag(symbol, flags)
       }
     }
   }
