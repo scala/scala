@@ -3556,6 +3556,9 @@ trait Types
     }
   }
 
+  def appliedType(tycon: Type, args: Type*): Type =
+    appliedType(tycon, args.toList)
+
   /** Very convenient. */
   def appliedType(tyconSym: Symbol, args: Type*): Type =
     appliedType(tyconSym.typeConstructor, args.toList)

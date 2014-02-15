@@ -962,6 +962,11 @@ trait Types {
   /** A creator for type applications
    *  @group TypeOps
    */
-  // TODO: needs a more convenient type signature, because applying types right now is quite boilerplatey
   def appliedType(tycon: Type, args: List[Type]): Type
+
+  /** @see [[appliedType]] */
+  def appliedType(tycon: Type, args: Type*): Type
+
+  /** @see [[appliedType]] */
+  def appliedType(sym: Symbol, args: Type*): Type
 }
