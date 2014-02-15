@@ -1652,7 +1652,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             case SpecialOverload(original, env) =>
               debuglog("completing specialized " + symbol.fullName + " calling " + original)
               debuglog("special overload " + original + " -> " + env)
-              val t = DefDef(symbol, { vparamss =>
+              val t = DefDef(symbol, { vparamss: List[List[Symbol]] =>
                 val fun = Apply(Select(This(symbol.owner), original),
                                 makeArguments(original, vparamss.head))
 
@@ -1750,7 +1750,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           // flag. nobody has to see this anyway :)
           sym.setFlag(SPECIALIZED)
           // create empty bodies for specializations
-          localTyper.typed(Block(norm.tail.map(sym => DefDef(sym, { vparamss => EmptyTree })), ddef))
+          localTyper.typed(Block(norm.tail.map(sym => DefDef(sym, { vparamss: List[List[Symbol]] => EmptyTree })), ddef))
         } else
           tree
       case _ =>
@@ -1815,7 +1815,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       val newBody = symSubstituter(body(source).duplicate)
       tpt modifyType (_.substSym(oldtparams, newtparams))
-      copyDefDef(tree)(vparamss = List(newSyms map ValDef), rhs = newBody)
+      copyDefDef(tree)(vparamss = List(newSyms map ValDef.apply), rhs = newBody)
     }
 
     /** Create trees for specialized members of 'sClass', based on the
@@ -1852,9 +1852,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
 
             // ctor
-            mbrs += DefDef(m, Modifiers(m.flags), mmap(List(vparams))(ValDef), EmptyTree)
+            mbrs += DefDef(m, Modifiers(m.flags), mmap(List(vparams))(ValDef.apply), EmptyTree)
           } else {
-            mbrs += DefDef(m, { paramss => EmptyTree })
+            mbrs += DefDef(m, { paramss: List[List[Symbol]] => EmptyTree })
           }
         } else if (m.isValue) {
           mbrs += ValDef(m).setType(NoType)

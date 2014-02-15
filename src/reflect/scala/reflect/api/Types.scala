@@ -428,6 +428,10 @@ trait Types {
    */
   abstract class ThisTypeExtractor {
     def unapply(tpe: ThisType): Option[Symbol]
+
+    /** @see [[InternalApi.thisType]] */
+    @deprecated("Use `internal.thisType` instead", "2.11.0")
+    def apply(sym: Symbol)(implicit token: CompatToken): Type = internal.thisType(sym)
   }
 
   /** The API that all this types support.
@@ -463,6 +467,10 @@ trait Types {
    */
   abstract class SingleTypeExtractor {
     def unapply(tpe: SingleType): Option[(Type, Symbol)]
+
+    /** @see [[InternalApi.singleType]] */
+    @deprecated("Use `ClassSymbol.thisPrefix` or `internal.singleType` instead")
+    def apply(pre: Type, sym: Symbol)(implicit token: CompatToken): Type = internal.singleType(pre, sym)
   }
 
   /** The API that all single types support.
@@ -499,6 +507,10 @@ trait Types {
    */
   abstract class SuperTypeExtractor {
     def unapply(tpe: SuperType): Option[(Type, Type)]
+
+    /** @see [[InternalApi.superType]] */
+    @deprecated("Use `ClassSymbol.superPrefix` or `internal.superType` instead", "2.11.0")
+    def apply(thistpe: Type, supertpe: Type)(implicit token: CompatToken): Type = internal.superType(thistpe, supertpe)
   }
 
   /** The API that all super types support.
@@ -538,6 +550,10 @@ trait Types {
    */
   abstract class ConstantTypeExtractor {
     def unapply(tpe: ConstantType): Option[Constant]
+
+    /** @see [[InternalApi.constantType]] */
+    @deprecated("Use `value.tpe` or `internal.constantType` instead", "2.11.0")
+    def apply(value: Constant)(implicit token: CompatToken): ConstantType = internal.constantType(value)
   }
 
   /** The API that all constant types support.
@@ -577,6 +593,10 @@ trait Types {
    */
   abstract class TypeRefExtractor {
     def unapply(tpe: TypeRef): Option[(Type, Symbol, List[Type])]
+
+    /** @see [[InternalApi.typeRef]] */
+    @deprecated("Use `internal.typeRef` instead", "2.11.0")
+    def apply(pre: Type, sym: Symbol, args: List[Type])(implicit token: CompatToken): Type = internal.typeRef(pre, sym, args)
   }
 
   /** The API that all type refs support.
@@ -633,6 +653,10 @@ trait Types {
    */
   abstract class RefinedTypeExtractor {
     def unapply(tpe: RefinedType): Option[(List[Type], Scope)]
+
+    /** @see [[InternalApi.refinedType]] */
+    @deprecated("Use `internal.refinedType` instead", "2.11.0")
+    def apply(parents: List[Type], decls: Scope)(implicit token: CompatToken): RefinedType = internal.refinedType(parents, decls)
   }
 
   /** The API that all refined types support.
@@ -674,6 +698,10 @@ trait Types {
    */
   abstract class ClassInfoTypeExtractor {
     def unapply(tpe: ClassInfoType): Option[(List[Type], Scope, Symbol)]
+
+    /** @see [[InternalApi.classInfoType]] */
+    @deprecated("Use `internal.classInfoType` instead", "2.11.0")
+    def apply(parents: List[Type], decls: Scope, typeSymbol: Symbol)(implicit token: CompatToken): ClassInfoType = internal.classInfoType(parents, decls, typeSymbol)
   }
 
   /** The API that all class info types support.
@@ -719,6 +747,10 @@ trait Types {
    */
   abstract class MethodTypeExtractor {
     def unapply(tpe: MethodType): Option[(List[Symbol], Type)]
+
+    /** @see [[InternalApi.methodType]] */
+    @deprecated("Use `internal.methodType` instead", "2.11.0")
+    def apply(params: List[Symbol], resultType: Type)(implicit token: CompatToken): MethodType = internal.methodType(params, resultType)
   }
 
   /** The API that all method types support.
@@ -751,6 +783,10 @@ trait Types {
    */
   abstract class NullaryMethodTypeExtractor {
     def unapply(tpe: NullaryMethodType): Option[(Type)]
+
+    /** @see [[InternalApi.nullaryMethodType]] */
+    @deprecated("Use `internal.nullaryMethodType` instead", "2.11.0")
+    def apply(resultType: Type)(implicit token: CompatToken): NullaryMethodType = internal.nullaryMethodType(resultType)
   }
 
   /** The API that all nullary method types support.
@@ -781,6 +817,10 @@ trait Types {
    */
   abstract class PolyTypeExtractor {
     def unapply(tpe: PolyType): Option[(List[Symbol], Type)]
+
+    /** @see [[InternalApi.polyType]] */
+    @deprecated("Use `internal.polyType` instead", "2.11.0")
+    def apply(typeParams: List[Symbol], resultType: Type)(implicit token: CompatToken): PolyType = internal.polyType(typeParams, resultType)
   }
 
   /** The API that all polymorphic types support.
@@ -815,6 +855,10 @@ trait Types {
    */
   abstract class ExistentialTypeExtractor {
     def unapply(tpe: ExistentialType): Option[(List[Symbol], Type)]
+
+    /** @see [[InternalApi.existentialType]] */
+    @deprecated("Use `internal.existentialType` instead", "2.11.0")
+    def apply(quantified: List[Symbol], underlying: Type)(implicit token: CompatToken): ExistentialType = internal.existentialType(quantified, underlying)
   }
 
   /** The API that all existential types support.
@@ -849,6 +893,10 @@ trait Types {
    */
   abstract class AnnotatedTypeExtractor {
     def unapply(tpe: AnnotatedType): Option[(List[Annotation], Type)]
+
+    /** @see [[InternalApi.annotatedType]] */
+    @deprecated("Use `internal.annotatedType` instead", "2.11.0")
+    def apply(annotations: List[Annotation], underlying: Type)(implicit token: CompatToken): AnnotatedType = internal.annotatedType(annotations, underlying)
   }
 
   /** The API that all annotated types support.
@@ -889,6 +937,10 @@ trait Types {
    */
   abstract class TypeBoundsExtractor {
     def unapply(tpe: TypeBounds): Option[(Type, Type)]
+
+    /** @see [[InternalApi.typeBounds]] */
+    @deprecated("Use `internal.typeBounds` instead", "2.11.0")
+    def apply(lo: Type, hi: Type)(implicit token: CompatToken): TypeBounds = internal.typeBounds(lo, hi)
   }
 
   /** The API that all type bounds support.
@@ -938,6 +990,10 @@ trait Types {
    */
   abstract class BoundedWildcardTypeExtractor {
     def unapply(tpe: BoundedWildcardType): Option[TypeBounds]
+
+    /** @see [[InternalApi.boundedWildcardType]] */
+    @deprecated("Use `internal.boundedWildcardType` instead", "2.11.0")
+    def apply(bounds: TypeBounds)(implicit token: CompatToken): BoundedWildcardType = internal.boundedWildcardType(bounds)
   }
 
   /** The API that all this types support.

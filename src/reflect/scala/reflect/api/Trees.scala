@@ -386,6 +386,10 @@ trait Trees { self: Universe =>
   abstract class ClassDefExtractor {
     def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef], impl: Template): ClassDef
     def unapply(classDef: ClassDef): Option[(Modifiers, TypeName, List[TypeDef], Template)]
+
+    /** @see [[InternalApi.classDef]] */
+    @deprecated("Use `internal.classDef` instead", "2.11.0")
+    def apply(sym: Symbol, impl: Template)(implicit token: CompatToken): ClassDef = internal.classDef(sym, impl)
   }
 
   /** The API that all class defs support
@@ -431,6 +435,10 @@ trait Trees { self: Universe =>
   abstract class ModuleDefExtractor {
     def apply(mods: Modifiers, name: TermName, impl: Template): ModuleDef
     def unapply(moduleDef: ModuleDef): Option[(Modifiers, TermName, Template)]
+
+    /** @see [[InternalApi.moduleDef]] */
+    @deprecated("Use `internal.moduleDef` instead", "2.11.0")
+    def apply(sym: Symbol, impl: Template)(implicit token: CompatToken): ModuleDef = internal.moduleDef(sym, impl)
   }
 
   /** The API that all module defs support
@@ -507,6 +515,14 @@ trait Trees { self: Universe =>
   abstract class ValDefExtractor {
     def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree): ValDef
     def unapply(valDef: ValDef): Option[(Modifiers, TermName, Tree, Tree)]
+
+    /** @see [[InternalApi.valDef]] */
+    @deprecated("Use `internal.valDef` instead", "2.11.0")
+    def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): ValDef = internal.valDef(sym, rhs)
+
+    /** @see [[InternalApi.valDef]] */
+    @deprecated("Use `internal.valDef` instead", "2.11.0")
+    def apply(sym: Symbol)(implicit token: CompatToken): ValDef = internal.valDef(sym)
   }
 
   /** The API that all val defs support
@@ -550,6 +566,26 @@ trait Trees { self: Universe =>
   abstract class DefDefExtractor {
     def apply(mods: Modifiers, name: TermName, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
     def unapply(defDef: DefDef): Option[(Modifiers, TermName, List[TypeDef], List[List[ValDef]], Tree, Tree)]
+
+    /** @see [[InternalApi.defDef]] */
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
+    def apply(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, mods, vparamss, rhs)
+
+    /** @see [[InternalApi.defDef]] */
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
+    def apply(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, vparamss, rhs)
+
+    /** @see [[InternalApi.defDef]] */
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
+    def apply(sym: Symbol, mods: Modifiers, rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, mods, rhs)
+
+    /** @see [[InternalApi.defDef]] */
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
+    def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, rhs)
+
+    /** @see [[InternalApi.defDef]] */
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
+    def apply(sym: Symbol, rhs: List[List[Symbol]] => Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, rhs)
   }
 
   /** The API that all def defs support
@@ -602,6 +638,14 @@ trait Trees { self: Universe =>
   abstract class TypeDefExtractor {
     def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef], rhs: Tree): TypeDef
     def unapply(typeDef: TypeDef): Option[(Modifiers, TypeName, List[TypeDef], Tree)]
+
+    /** @see [[InternalApi.typeDef]] */
+    @deprecated("Use `internal.typeDef` instead", "2.11.0")
+    def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): TypeDef = internal.typeDef(sym, rhs)
+
+    /** @see [[InternalApi.typeDef]] */
+    @deprecated("Use `internal.typeDef` instead", "2.11.0")
+    def apply(sym: Symbol)(implicit token: CompatToken): TypeDef = internal.typeDef(sym)
   }
 
   /** The API that all type defs support
@@ -662,6 +706,10 @@ trait Trees { self: Universe =>
   abstract class LabelDefExtractor {
     def apply(name: TermName, params: List[Ident], rhs: Tree): LabelDef
     def unapply(labelDef: LabelDef): Option[(TermName, List[Ident], Tree)]
+
+    /** @see [[InternalApi.labelDef]] */
+    @deprecated("Use `internal.labelDef` instead", "2.11.0")
+    def apply(sym: Symbol, params: List[Symbol], rhs: Tree)(implicit token: CompatToken): LabelDef = internal.labelDef(sym, params, rhs)
   }
 
   /** The API that all label defs support
