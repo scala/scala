@@ -1,0 +1,4 @@
+literate_existentials.scala:189: error: Cannot prove that Int <:< M forSome { type M <: String }.
+  implicitly[Int <:< (M forSome { type M >: Nothing <: String })] // fails
+            ^
+one error found
