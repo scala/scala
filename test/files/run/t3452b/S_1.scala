@@ -5,6 +5,13 @@ trait Search[M] {
   }
 }
 
-object StringSearch extends Search[String]
+class SearchC[M] {
+  def searchC(input: M): C[Int] = {
+    println("SearchC received: " + input)
+    null
+  }
+}
+
+object StringSearch extends SearchC[String] with Search[String]
 
 trait C[T]

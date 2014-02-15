@@ -821,15 +821,32 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
     def getCurrentCUnit(): CompilationUnit
 
+    final def staticForwarderGenericSignature(sym: Symbol, moduleClass: Symbol): String = {
+      if (sym.isDeferred) null // only add generic signature if method concrete; bug #1745
+      else {
+        // SI-3452 Static forwarder generation uses the same erased signature as the method if forwards to.
+        // By rights, it should use the signature as-seen-from the module class, and add suitable
+        // primitive and value-class boxing/unboxing.
+        // But for now, just like we did in mixin, we just avoid writing a wrong generic signature
+        // (one that doesn't erase to the actual signature). See run/t3452b for a test case.
+        val memberTpe = enteringErasure(moduleClass.thisType.memberInfo(sym))
+        val erasedMemberType = erasure.erasure(sym)(memberTpe)
+        if (erasedMemberType =:= sym.info)
+          getGenericSignature(sym, moduleClass, memberTpe)
+        else null
+      }
+    }
+
     /** @return
      *   - `null` if no Java signature is to be added (`null` is what ASM expects in these cases).
      *   - otherwise the signature in question
      */
     def getGenericSignature(sym: Symbol, owner: Symbol): String = {
-
-      if (!needsGenericSignature(sym)) { return null }
-
       val memberTpe = enteringErasure(owner.thisType.memberInfo(sym))
+      getGenericSignature(sym, owner, memberTpe)
+    }
+    def getGenericSignature(sym: Symbol, owner: Symbol, memberTpe: Type): String = {
+      if (!needsGenericSignature(sym)) { return null }
 
       val jsOpt: Option[String] = erasure.javaSig(sym, memberTpe)
       if (jsOpt.isEmpty) { return null }
@@ -1064,18 +1081,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       )
 
       // TODO needed? for(ann <- m.annotations) { ann.symbol.initialize }
-      val jgensig = (
-        // only add generic signature if method concrete; bug #1745
-        if (m.isDeferred) null else {
-          val clazz = module.linkedClassOfClass
-          val m1 = (
-            if ((clazz.info member m.name) eq NoSymbol)
-              enteringErasure(m.cloneSymbol(clazz, Flags.METHOD | Flags.STATIC))
-            else m
-          )
-          getGenericSignature(m1, clazz)
-        }
-      )
+      val jgensig = staticForwarderGenericSignature(m, module)
       addRemoteExceptionAnnot(isRemoteClass, hasPublicBitSet(flags), m)
       val (throws, others) = m.annotations partition (_.symbol == ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(throws)
