@@ -59,6 +59,9 @@ abstract class Universe extends scala.reflect.api.Universe {
      */
     def removeAttachment[T: ClassTag](symbol: Symbol): symbol.type
 
+    /** Sets the `owner` of the symbol. */
+    def setOwner(symbol: Symbol, newowner: Symbol): symbol.type
+
     /** Sets the `info` of the symbol. */
     def setInfo(symbol: Symbol, tpe: Type): symbol.type
 
@@ -186,6 +189,9 @@ abstract class Universe extends scala.reflect.api.Universe {
 
         /** @see [[internal.removeAttachment]] */
         def removeAttachment[A: ClassTag]: T = internal.removeAttachment[A](symbol)
+
+        /** @see [[internal.setOwner]] */
+        def setOwner(newowner: Symbol): T = internal.setOwner(symbol, newowner)
 
         /** @see [[internal.setInfo]] */
         def setInfo(tpe: Type): T = internal.setInfo(symbol, tpe)
