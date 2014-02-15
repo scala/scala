@@ -1103,5 +1103,37 @@ trait Internals { self: Universe =>
       @deprecated("Use `internal.deSkolemize` instead", "2.11.0")
       def deSkolemize: Symbol = internal.deSkolemize(symbol)
     }
+
+    /** @see [[InternalApi.singleType]] */
+    @deprecated("Use `internal.singleType` instead", "2.11.0")
+    def singleType(pre: Type, sym: Symbol): Type = internal.singleType(pre, sym)
+
+    /** @see [[InternalApi.refinedType]] */
+    @deprecated("Use `internal.refinedType` instead", "2.11.0")
+    def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos: Position): Type = internal.refinedType(parents, owner, decls, pos)
+
+    /** @see [[InternalApi.refinedType]] */
+    @deprecated("Use `internal.refinedType` instead", "2.11.0")
+    def refinedType(parents: List[Type], owner: Symbol): Type = internal.refinedType(parents, owner)
+
+    /** @see [[InternalApi.typeRef]] */
+    @deprecated("Use `internal.typeRef` instead", "2.11.0")
+    def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = internal.typeRef(pre, sym, args)
+
+    /** @see [[InternalApi.intersectionType]] */
+    @deprecated("Use `internal.intersectionType` instead", "2.11.0")
+    def intersectionType(tps: List[Type]): Type = internal.intersectionType(tps)
+
+    /** @see [[InternalApi.intersectionType]] */
+    @deprecated("Use `internal.intersectionType` instead", "2.11.0")
+    def intersectionType(tps: List[Type], owner: Symbol): Type = internal.intersectionType(tps, owner)
+
+    /** @see [[InternalApi.polyType]] */
+    @deprecated("Use `internal.polyType` instead", "2.11.0")
+    def polyType(tparams: List[Symbol], tpe: Type): Type = internal.polyType(tparams, tpe)
+
+    /** @see [[InternalApi.existentialAbstraction]] */
+    @deprecated("Use `internal.existentialAbstraction` instead", "2.11.0")
+    def existentialAbstraction(tparams: List[Symbol], tpe0: Type): Type = internal.existentialAbstraction(tparams, tpe0)
   }
 }

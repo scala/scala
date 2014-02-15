@@ -205,6 +205,18 @@ abstract class Universe extends scala.reflect.api.Universe {
         def setSymbol(sym: Symbol): T = internal.setSymbol(tree, sym)
       }
 
+      /** Extension methods for typetrees */
+      type TypeTreeDecorator[T <: TypeTree] <: MacroTypeTreeDecoratorApi[T]
+
+      /** @see [[TypeTreeDecorator]] */
+      implicit def typeTreeDecorator[T <: TypeTree](tt: T): TypeTreeDecorator[T]
+
+      /** @see [[TypeTreeDecorator]] */
+      class MacroTypeTreeDecoratorApi[T <: TypeTree](val tt: T) {
+        /** @see [[internal.setOriginal]] */
+        def setOriginal(tree: Tree): TypeTree = internal.setOriginal(tt, tree)
+      }
+
       /** @inheritdoc */
       override type SymbolDecorator[T <: Symbol] <: MacroSymbolDecoratorApi[T]
 

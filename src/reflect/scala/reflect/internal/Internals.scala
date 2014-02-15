@@ -136,6 +136,8 @@ trait Internals extends api.Internals {
       override implicit def scopeDecorator[T <: Scope](scope: T): ScopeDecorator[T] = new MacroScopeDecoratorApi[T](scope)
       override type TreeDecorator[T <: Tree] = MacroTreeDecoratorApi[T]
       override implicit def treeDecorator[T <: Tree](tree: T): TreeDecorator[T] = new MacroTreeDecoratorApi[T](tree)
+      override type TypeTreeDecorator[T <: TypeTree] = MacroTypeTreeDecoratorApi[T]
+      override implicit def typeTreeDecorator[T <: TypeTree](tt: T): TypeTreeDecorator[T] = new MacroTypeTreeDecoratorApi[T](tt)
       override type SymbolDecorator[T <: Symbol] = MacroSymbolDecoratorApi[T]
       override implicit def symbolDecorator[T <: Symbol](symbol: T): SymbolDecorator[T] = new MacroSymbolDecoratorApi[T](symbol)
       override type TypeDecorator[T <: Type] = TypeDecoratorApi[T]
