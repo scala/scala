@@ -1127,23 +1127,6 @@ trait Infer extends Checkable {
       else log(s"inconsistent bounds: discarding TypeBounds($lo1, $hi1)")
     }
 
-    /** Type intersection of simple type tp1 with general type tp2.
-     *  The result eliminates some redundancies.
-     */
-    def intersect(tp1: Type, tp2: Type): Type = {
-      if (tp1 <:< tp2) tp1
-      else if (tp2 <:< tp1) tp2
-      else {
-        val reduced2 = tp2 match {
-          case rtp @ RefinedType(parents2, decls2) =>
-            copyRefinedType(rtp, parents2 filterNot (tp1 <:< _), decls2)
-          case _ =>
-            tp2
-        }
-        intersectionType(List(tp1, reduced2))
-      }
-    }
-
     def inferTypedPattern(tree0: Tree, pattp: Type, pt0: Type, canRemedy: Boolean): Type = {
       val pt        = abstractTypesToBounds(pt0)
       val ptparams  = freeTypeParamsOfTerms(pt)
@@ -1192,10 +1175,9 @@ trait Infer extends Checkable {
       }
       /* If the scrutinee has free type parameters but the pattern does not,
        * we have to flip the arguments so the expected type is treated as more
-       * general when calculating the intersection.  See run/bug2755.scala.
+       * general when calculating the intersection.  See run/t2755.scala.
        */
-      if (tpparams.isEmpty && ptparams.nonEmpty) intersect(pattp, pt)
-      else intersect(pt, pattp)
+      intersectionType(ensureFullyDefined(pt) :: pattp :: Nil, context.owner)
     }
 
     def inferModulePattern(pat: Tree, pt: Type) =
