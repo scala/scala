@@ -691,11 +691,11 @@ abstract class TreeGen {
   }
 
   /** Create tree for pattern definition <val pat0 = rhs> */
-  def mkPatDef(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[Tree] =
+  def mkPatDef(pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] =
     mkPatDef(Modifiers(0), pat, rhs)
 
   /** Create tree for pattern definition <mods val pat0 = rhs> */
-  def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[Tree] = matchVarPattern(pat) match {
+  def mkPatDef(mods: Modifiers, pat: Tree, rhs: Tree)(implicit fresh: FreshNameCreator): List[ValDef] = matchVarPattern(pat) match {
     case Some((name, tpt)) =>
       List(atPos(pat.pos union rhs.pos) {
         ValDef(mods, name.toTermName, tpt, rhs)

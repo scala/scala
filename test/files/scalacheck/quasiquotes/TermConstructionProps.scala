@@ -139,6 +139,11 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     assert(q"(..$empty)" ≈ q"()")
   }
 
+  property("splice single element list into tuple") = test {
+    val xs = q"x" :: Nil
+    assert(q"(..$xs)" ≈ xs.head)
+  }
+
   property("function param flags are the same") = test {
     val xy = q"val x: A" :: q"val y: B" :: Nil
     assertEqAst(q"(..$xy) => x + y", "(x: A, y: B) => x + y")

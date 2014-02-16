@@ -82,6 +82,11 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     assert(last ≈ q"d")
   }
 
+  property("deconstruct expr as tuple") = test {
+    val q"(..$elems)" = q"foo"
+    assert(elems ≈ List(q"foo"))
+  }
+
   property("deconstruct cases") = test {
     val q"$x match { case ..$cases }" = q"x match { case 1 => case 2 => }"
     assert(x ≈ q"x")

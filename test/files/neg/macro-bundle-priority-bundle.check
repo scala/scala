@@ -1,0 +1,8 @@
+macro-bundle-priority-bundle.scala:13: error: bundle implementation has incompatible shape:
+ required: : Macros.this.c.Expr[Unit]
+ or      : : Macros.this.c.Tree
+ found   : (x: Macros.this.c.Tree): Nothing
+number of parameter sections differ
+  def foo: Unit = macro Macros.impl
+                               ^
+one error found

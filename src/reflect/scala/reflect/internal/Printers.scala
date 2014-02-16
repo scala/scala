@@ -33,10 +33,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
     def qowner  = quotedName(sym.owner.name.dropLocal, decoded)
     def qsymbol = quotedName(sym.nameString)
 
-    if (sym.name.toTermName == nme.ERROR)
-      s"<$qname: error>"
-    else if (sym == null || sym == NoSymbol)
+    if (sym == null || sym == NoSymbol)
       qname
+    else if (sym.isErroneous)
+      s"<$qname: error>"
     else if (sym.isMixinConstructor)
       s"/*$qowner*/$qsymbol"
     else
@@ -65,6 +65,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
     printTypes = settings.printtypes.value
     printIds = settings.uniqid.value
+    printOwners = settings.Yshowsymowners.value
     printKinds = settings.Yshowsymkinds.value
     printMirrors = false // typically there's no point to print mirrors inside the compiler, as there is only one mirror there
     printPositions = settings.Xprintpos.value
@@ -275,6 +276,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
       printValueParams
       print(" => ", body, ")")
       if (printIds && tree.symbol != null) print("#" + tree.symbol.id)
+      if (printOwners && tree.symbol != null) print("@" + tree.symbol.owner.id)
     }
 
     protected def printSuper(tree: Super, resultName: => String) = {
@@ -1093,7 +1095,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case self.pendingSuperCall =>
           print("pendingSuperCall")
         case tree: Tree =>
-          val hasSymbolField = tree.hasSymbolField && tree.symbol != NoSymbol
+          def hasSymbolField = tree.hasSymbolField && tree.symbol != NoSymbol
           val isError = hasSymbolField && (tree.symbol.name string_== nme.ERROR)
           printProduct(
             tree,
@@ -1139,6 +1141,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           else if (sym.isStatic && (sym.isClass || sym.isModule)) print(sym.fullName)
           else print(sym.name)
           if (printIds) print("#", sym.id)
+          if (printOwners) print("@", sym.owner.id)
           if (printKinds) print("#", sym.abbreviatedKindString)
           if (printMirrors) print("%M", footnotes.put[scala.reflect.api.Mirror[_]](mirrorThatLoaded(sym)))
         case tag: TypeTag[_] =>

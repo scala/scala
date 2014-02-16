@@ -99,7 +99,6 @@ object LiftableProps extends QuasiquoteProperties("liftable") {
   }
 
   property("lift tuple") = test {
-    assert(q"${Tuple1(1)}" ≈ q"scala.Tuple1(1)")
     assert(q"${(1, 2)}" ≈ q"(1, 2)")
     assert(q"${(1, 2, 3)}" ≈ q"(1, 2, 3)")
     assert(q"${(1, 2, 3, 4)}" ≈ q"(1, 2, 3, 4)")

@@ -431,15 +431,12 @@ object HashSet extends ImmutableSetFactory[HashSet] {
           case 0 =>
             // the empty set
             null
-          case size if size == ks.size =>
-            // We do this check first since even if the result is of size 1 since
-            // it is preferable to return the existing set for better structural sharing
-            // we can not rely on ks.- returning the same instance if we subtract an element that is not in it
-            // so we need to do the size check
-            this
           case 1 =>
             // create a new HashSet1 with the hash we already know
             new HashSet1(ks1.head, hash)
+          case size if size == ks.size =>
+            // Should only have HSC1 if size > 1
+            this
           case _ =>
             // create a new HashSetCollison with the hash we already know and the new keys
             new HashSetCollision1(hash, ks1)
@@ -861,6 +858,8 @@ object HashSet extends ImmutableSetFactory[HashSet] {
               new HashTrieSet(bitmapNew, elemsNew, sizeNew)
           } else
             null
+        } else if(elems.length == 1 && !subNew.isInstanceOf[HashTrieSet[_]]) {
+          subNew
         } else {
           val elemsNew = new Array[HashSet[A]](elems.length)
           Array.copy(elems, 0, elemsNew, 0, elems.length)

@@ -1,0 +1,10 @@
+t8266-invalid-interp.scala:4: error: Trailing '\' escapes nothing.
+    f"a\",
+       ^
+t8266-invalid-interp.scala:5: error: invalid escape character at index 1 in "a\xc"
+    f"a\xc",
+       ^
+t8266-invalid-interp.scala:7: error: invalid escape character at index 1 in "a\vc"
+    f"a\vc"
+       ^
+three errors found

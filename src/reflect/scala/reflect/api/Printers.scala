@@ -142,6 +142,7 @@ trait Printers { self: Universe =>
     def print(args: Any*)
     protected var printTypes = false
     protected var printIds = false
+    protected var printOwners = false
     protected var printKinds = false
     protected var printMirrors = false
     protected var printPositions = false
@@ -149,6 +150,8 @@ trait Printers { self: Universe =>
     def withoutTypes: this.type = { printTypes = false; this }
     def withIds: this.type = { printIds = true; this }
     def withoutIds: this.type = { printIds = false; this }
+    def withOwners: this.type = { printOwners = true; this }
+    def withoutOwners: this.type = { printOwners = false; this }
     def withKinds: this.type = { printKinds = true; this }
     def withoutKinds: this.type = { printKinds = false; this }
     def withMirrors: this.type = { printMirrors = true; this }
@@ -169,12 +172,13 @@ trait Printers { self: Universe =>
   }
 
   /** @group Printers */
-  protected def render(what: Any, mkPrinter: PrintWriter => TreePrinter, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None, printPositions: BooleanFlag = None): String = {
+  protected def render(what: Any, mkPrinter: PrintWriter => TreePrinter, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printOwners: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None, printPositions: BooleanFlag = None): String = {
     val buffer = new StringWriter()
     val writer = new PrintWriter(buffer)
     val printer = mkPrinter(writer)
     printTypes.value.map(printTypes => if (printTypes) printer.withTypes else printer.withoutTypes)
     printIds.value.map(printIds => if (printIds) printer.withIds else printer.withoutIds)
+    printOwners.value.map(printOwners => if (printOwners) printer.withOwners else printer.withoutOwners)
     printKinds.value.map(printKinds => if (printKinds) printer.withKinds else printer.withoutKinds)
     printMirrors.value.map(printMirrors => if (printMirrors) printer.withMirrors else printer.withoutMirrors)
     printPositions.value.map(printPositions => if (printPositions) printer.withPositions else printer.withoutPositions)
@@ -193,8 +197,8 @@ trait Printers { self: Universe =>
    *
    *  @group Printers
    */
-  def show(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None, printPositions: BooleanFlag = None): String =
-    render(any, newTreePrinter(_), printTypes, printIds, printKinds, printMirrors, printPositions)
+  def show(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printOwners: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None, printPositions: BooleanFlag = None): String =
+    render(any, newTreePrinter(_), printTypes, printIds, printOwners, printKinds, printMirrors, printPositions)
 
   /** Hook to define what `show(...)` means.
    * @group Printers
@@ -225,8 +229,8 @@ trait Printers { self: Universe =>
    *
    *  @group Printers
    */
-  def showRaw(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None, printPositions: BooleanFlag = None): String =
-    render(any, newRawTreePrinter(_), printTypes, printIds, printKinds, printMirrors, printPositions)
+  def showRaw(any: Any, printTypes: BooleanFlag = None, printIds: BooleanFlag = None, printOwners: BooleanFlag = None, printKinds: BooleanFlag = None, printMirrors: BooleanFlag = None, printPositions: BooleanFlag = None): String =
+    render(any, newRawTreePrinter(_), printTypes, printIds, printOwners, printKinds, printMirrors, printPositions)
 
   /** Hook to define what `showRaw(...)` means.
    * @group Printers

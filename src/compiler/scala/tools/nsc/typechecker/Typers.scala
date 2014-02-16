@@ -56,6 +56,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   }
 
   sealed abstract class SilentResult[+T] {
+    def isEmpty: Boolean
+    def nonEmpty = !isEmpty
+
     @inline final def fold[U](none: => U)(f: T => U): U = this match {
       case SilentResultValue(value) => f(value)
       case _                        => none
@@ -74,6 +77,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
   }
   class SilentTypeError private(val errors: List[AbsTypeError]) extends SilentResult[Nothing] {
+    override def isEmpty = true
     def err: AbsTypeError = errors.head
     def reportableErrors = errors match {
       case (e1: AmbiguousImplicitTypeError) +: _ =>
@@ -87,7 +91,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def unapply(error: SilentTypeError): Option[AbsTypeError] = error.errors.headOption
   }
 
-  case class SilentResultValue[+T](value: T) extends SilentResult[T] { }
+  case class SilentResultValue[+T](value: T) extends SilentResult[T] { override def isEmpty = false }
 
   def newTyper(context: Context): Typer = new NormalTyper(context)
 
@@ -1157,7 +1161,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         case mt: MethodType if mode.typingExprNotFunNotLhs && mt.isImplicit => // (4.1)
           adaptToImplicitMethod(mt)
-        case mt: MethodType if mode.typingExprNotFunNotLhs && !hasUndetsInMonoMode && !treeInfo.isMacroApplicationOrBlock(tree) =>
+        case mt: MethodType if mode.typingExprNotFunNotLhs && !hasUndetsInMonoMode =>
           instantiateToMethodType(mt)
         case _ =>
           vanillaAdapt(tree)
@@ -3268,12 +3272,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
            */
           def tryNamesDefaults: Tree = {
             val lencmp = compareLengths(args, formals)
-
-            def checkNotMacro() = {
-              if (treeInfo.isMacroApplication(fun))
-                tryTupleApply orElse duplErrorTree(NamedAndDefaultArgumentsNotSupportedForMacros(tree, fun))
-            }
-
             if (mt.isErroneous) duplErrTree
             else if (mode.inPatternMode) {
               // #2064
@@ -3292,18 +3290,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               else if (allArgsArePositional(argPos) && !isNamedApplyBlock(fun)) {
                 // if there's no re-ordering, and fun is not transformed, no need to transform
                 // more than an optimization, e.g. important in "synchronized { x = update-x }"
-                checkNotMacro()
                 doTypedApply(tree, fun, namelessArgs, mode, pt)
               } else {
-                checkNotMacro()
-                transformNamedApplication(Typer.this, mode, pt)(
-                                          treeCopy.Apply(tree, fun, namelessArgs), argPos)
+                unsuppressMacroExpansion(transformNamedApplication(Typer.this, mode, pt)(
+                                         treeCopy.Apply(tree, suppressMacroExpansion(fun), namelessArgs), argPos))
               }
             } else {
               // defaults are needed. they are added to the argument list in named style as
               // calls to the default getters. Example:
               //  foo[Int](a)()  ==>  foo[Int](a)(b = foo$qual.foo$default$2[Int](a))
-              checkNotMacro()
 
               // SI-8111 transformNamedApplication eagerly shuffles around the application to preserve
               //         evaluation order. During this process, it calls `changeOwner` on symbols that
@@ -3326,7 +3321,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 symsOwnedByContextOwner foreach (_.owner = context.owner)
               }
 
-              val fun1 = transformNamedApplication(Typer.this, mode, pt)(fun, x => x)
+              val fun1 = transformNamedApplication(Typer.this, mode, pt)(suppressMacroExpansion(fun), x => x)
               if (fun1.isErroneous) duplErrTree
               else {
                 assert(isNamedApplyBlock(fun1), fun1)
@@ -3352,7 +3347,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
                   val note = "Error occurred in an application involving default arguments."
                   if (!(context.diagnostic contains note)) context.diagnostic = note :: context.diagnostic
-                  doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
+                  unsuppressMacroExpansion(doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt))
                 } else {
                   rollbackNamesDefaultsOwnerChanges()
                   tryTupleApply orElse duplErrorTree(NotEnoughArgsError(tree, fun, missing))

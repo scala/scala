@@ -1,0 +1,59 @@
+class Test$bar1$ {
+  public java.lang.String Test$bar1$.f(java.lang.Object)
+  public java.lang.Object Test$bar1$.f(java.lang.Object) <bridge> <synthetic>
+  public java.lang.String Test$bar1$.g(java.lang.String)
+  public java.lang.Object Test$bar1$.g(java.lang.Object) <bridge> <synthetic>
+  public java.lang.String Test$bar1$.g(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Test$bar1$.h(java.lang.Object)
+}
+
+class Test$bar2$ {
+  public java.lang.Object Test$bar2$.f(java.lang.String)
+  public java.lang.Object Test$bar2$.f(java.lang.Object) <bridge> <synthetic>
+  public java.lang.String Test$bar2$.g(java.lang.String)
+  public java.lang.Object Test$bar2$.g(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Test$bar2$.g(java.lang.String) <bridge> <synthetic>
+  public java.lang.Object Test$bar2$.h(java.lang.Object)
+}
+
+class Test$bar3$ {
+  public java.lang.String Foo3.f(java.lang.Object)
+    generic: public java.lang.String Foo3.f(T)
+  public java.lang.Object Foo3.f(java.lang.Object) <bridge> <synthetic>
+  public java.lang.String Test$bar3$.g(java.lang.String)
+  public java.lang.Object Test$bar3$.g(java.lang.Object) <bridge> <synthetic>
+  public java.lang.String Test$bar3$.g(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Foo3.h(java.lang.Object)
+}
+
+class Test$bar4$ {
+  public java.lang.Object Foo4.f(java.lang.String)
+    generic: public R Foo4.f(java.lang.String)
+  public java.lang.Object Foo4.f(java.lang.Object) <bridge> <synthetic>
+  public java.lang.String Test$bar4$.g(java.lang.String)
+  public java.lang.Object Test$bar4$.g(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Test$bar4$.g(java.lang.String) <bridge> <synthetic>
+  public java.lang.Object Foo4.h(java.lang.Object)
+}
+
+class Test$bar5$ {
+  public java.lang.String Test$bar5$.f(java.lang.String)
+  public java.lang.Object Test$bar5$.f(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Test$bar5$.f(java.lang.String) <bridge> <synthetic>
+  public java.lang.String Test$bar5$.f(java.lang.Object) <bridge> <synthetic>
+  public java.lang.String Test$bar5$.g(java.lang.String)
+  public java.lang.Object Test$bar5$.g(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Test$bar5$.g(java.lang.String) <bridge> <synthetic>
+  public java.lang.String Test$bar5$.g(java.lang.Object) <bridge> <synthetic>
+  public java.lang.Object Test$bar5$.h(java.lang.Object)
+}
+
+class Foo1$class {
+  public static java.lang.String Foo1$class.f(Foo1,java.lang.Object)
+}
+
+class Foo2$class {
+  public static java.lang.Object Foo2$class.f(Foo2,java.lang.String)
+}
+
+000000000000000000000000000000000000

@@ -215,7 +215,7 @@ object scala extends Command {
       "exec scala \"$0\" \"$@\"\n" +
       "!#\n" +
       "Console.println(\"Hello, world!\")\n" +
-      "argv.toList foreach Console.println"),
+      "args.toList foreach Console.println"),
 
     "Here is a complete Scala script for MS Windows: ",
 
@@ -226,7 +226,7 @@ object scala extends Command {
       "goto :eof\n" +
       "::!#\n" +
       "Console.println(\"Hello, world!\")\n" +
-      "argv.toList foreach Console.println"),
+      "args.toList foreach Console.println"),
 
     "If you want to use the compilation cache to speed up multiple executions " +
     "of the script, then add " & Mono("-savecompiled") & " to the scala " +
@@ -237,7 +237,7 @@ object scala extends Command {
       "exec scala -savecompiled \"$0\" \"$@\"\n" +
       "!#\n" +
       "Console.println(\"Hello, world!\")\n" +
-      "argv.toList foreach Console.println"))
+      "args.toList foreach Console.println"))
 
   val exitStatus = Section("EXIT STATUS",
 

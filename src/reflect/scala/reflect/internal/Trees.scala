@@ -1683,6 +1683,15 @@ trait Trees extends api.Trees {
 
   def duplicateAndKeepPositions(tree: Tree) = new Duplicator(focusPositions = false) transform tree
 
+  // this is necessary to avoid crashes like https://github.com/scalamacros/paradise/issues/1
+  // when someone tries to c.typecheck a naked MemberDef
+  def wrappingIntoTerm(tree: Tree)(op: Tree => Tree): Tree = {
+    op(build.SyntacticBlock(tree :: Nil)) match {
+      case build.SyntacticBlock(tree :: Nil) => tree
+      case tree => tree
+    }
+  }
+
   // ------ copiers -------------------------------------------
 
   def copyDefDef(tree: Tree)(

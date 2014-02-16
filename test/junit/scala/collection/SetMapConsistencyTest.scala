@@ -507,4 +507,11 @@ class SetMapConsistencyTest {
       case _ => true
     })
   }
+  
+  @Test
+  def testSI8264() {
+    val hs = Set(-2147483648, 1, -45023380, -1, 1971207058, -54312241, -234243394) - -1
+    assert( hs.toList.toSet == hs )
+    assert( hs == hs.toList.toSet )
+  }
 }

@@ -1,0 +1,8 @@
+macro-bundle-priority-nonbundle.scala:13: error: macro implementation has incompatible shape:
+ required: (c: scala.reflect.macros.whitebox.Context): c.Expr[Unit]
+ or      : (c: scala.reflect.macros.whitebox.Context): c.Tree
+ found   : (c: scala.reflect.macros.whitebox.Context)(x: c.Tree): Nothing
+number of parameter sections differ
+  def foo: Unit = macro Macros.impl
+                               ^
+one error found

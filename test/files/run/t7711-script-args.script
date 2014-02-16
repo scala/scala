@@ -1,0 +1,12 @@
+#!/bin/bash
+exec ${SCALA_HOME}/bin/scala "$0" "$@" 2>&1
+!#
+
+Console println s"Hello, scripted test!"
+Console println s"What ${args mkString " "} have you for me today?"
+
+//def unused = 88
+//newSource1.scala:8: warning: private method in <$anon: AnyRef> is never used
+//Console println s"Hello, $argv, are you still here?"
+//newSource1.scala:9: error: not found: value argv
+

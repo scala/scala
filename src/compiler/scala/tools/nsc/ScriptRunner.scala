@@ -19,7 +19,7 @@ import util.Exceptional.unwrap
  *    exec scala "$0" "$@"
  *    !#
  *    Console.println("Hello, world!")
- *    argv.toList foreach Console.println
+ *    args.toList foreach Console.println
  *  </pre>
  *  <p>And here is a batch file example on Windows XP:</p>
  *  <pre>
@@ -29,7 +29,7 @@ import util.Exceptional.unwrap
  *    goto :eof
  *    ::!#
  *    Console.println("Hello, world!")
- *    argv.toList foreach Console.println
+ *    args.toList foreach Console.println
  *  </pre>
  *
  *  @author  Lex Spoon

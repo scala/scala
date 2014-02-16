@@ -698,6 +698,12 @@ trait Internals { self: Universe =>
       def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree)]
     }
 
+    val SyntacticPatDef: SyntacticPatDefExtractor
+
+    trait SyntacticPatDefExtractor {
+      def apply(mods: Modifiers, pat: Tree, tpt: Tree, rhs: Tree): List[ValDef]
+    }
+
     val SyntacticAssign: SyntacticAssignExtractor
 
     trait SyntacticAssignExtractor {
