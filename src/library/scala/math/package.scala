@@ -26,7 +26,7 @@ package object math {
   /** Returns a `double` value with a positive sign, greater than or equal
    *  to `0.0` and less than `1.0`.
    */
-  def random: Double = java.lang.Math.random()
+  def random(): Double = java.lang.Math.random()
 
   def sin(x: Double): Double = java.lang.Math.sin(x)
   def cos(x: Double): Double = java.lang.Math.cos(x)
