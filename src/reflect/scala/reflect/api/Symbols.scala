@@ -298,7 +298,7 @@ trait Symbols { self: Universe =>
      *
      *  @group Basics
      */
-    @deprecated("Use `companion` instead", "2.11.0")
+    @deprecated("Use `companion` instead, but beware of possible changes in behavior", "2.11.0")
     def companionSymbol: Symbol
 
     /** For a class: its companion object if exists.
