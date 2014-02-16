@@ -1,7 +1,7 @@
 macro-qmarkqmarkqmark.scala:5: error: macro implementation is missing
   foo1
   ^
-macro-qmarkqmarkqmark.scala:8: error: too few argument lists for macro invocation
+macro-qmarkqmarkqmark.scala:8: error: missing arguments for macro method foo2 in object Macros
   foo2
   ^
 macro-qmarkqmarkqmark.scala:9: error: macro implementation is missing

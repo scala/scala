@@ -308,6 +308,8 @@ trait StdNames {
     val WHILE_PREFIX                   = "while$"
     val FRESH_PREFIX                   = "fresh"
     val FRESH_SUFFIX                   = "macro$" // uses a keyword to avoid collisions with mangled names
+    val QUAL_PREFIX                    = "qual$"
+    val NAMEDARG_PREFIX                = "x$"
 
     // Compiler internal names
     val ANYname: NameType                  = "<anyname>"

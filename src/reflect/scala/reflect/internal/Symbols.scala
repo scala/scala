@@ -561,6 +561,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isConstructor       = false
     def isEarlyInitialized  = false
     def isGetter            = false
+    def isDefaultGetter     = false
     def isLocalDummy        = false
     def isMixinConstructor  = false
     def isOverloaded        = false
@@ -2477,14 +2478,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If !settings.debug translates expansions of operators back to operator symbol.
      *  E.g. $eq => =.
      *  If settings.uniqid, adds id.
+     *  If settings.Yshowsymowners, adds owner's id
      *  If settings.Yshowsymkinds, adds abbreviated symbol kind.
      */
     def nameString: String = {
       val name_s = if (settings.debug.value) "" + unexpandedName else unexpandedName.dropLocal.decode
-      val id_s   = if (settings.uniqid.value) "#" + id else ""
       val kind_s = if (settings.Yshowsymkinds.value) "#" + abbreviatedKindString else ""
 
-      name_s + id_s + kind_s
+      name_s + idString + kind_s
     }
 
     def fullNameString: String = {
@@ -2498,7 +2499,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     /** If settings.uniqid is set, the symbol's id, else "" */
-    final def idString = if (settings.uniqid.value) "#"+id else ""
+    final def idString = {
+      val id_s = if (settings.uniqid.value) "#"+id else ""
+      val owner_s = if (settings.Yshowsymowners.value) "@"+owner.id else ""
+      id_s + owner_s
+    }
 
     /** String representation, including symbol's kind e.g., "class Foo", "method Bar".
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
@@ -2650,6 +2655,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isSetterParameter  = isValueParameter && owner.isSetter
     override def isAccessor         = this hasFlag ACCESSOR
     override def isGetter           = isAccessor && !isSetter
+    override def isDefaultGetter    = name containsName nme.DEFAULT_GETTER_STRING
     override def isSetter           = isAccessor && nme.isSetterName(name)  // todo: make independent of name, as this can be forged.
     override def isLocalDummy       = nme.isLocalDummyName(name)
     override def isClassConstructor = name == nme.CONSTRUCTOR

@@ -39,6 +39,7 @@ abstract class MutableSettings extends AbsSettings {
   def Xprintpos: BooleanSetting
   def Yposdebug: BooleanSetting
   def Yrangepos: BooleanSetting
+  def Yshowsymowners: BooleanSetting
   def Yshowsymkinds: BooleanSetting
   def breakCycles: BooleanSetting
   def debug: BooleanSetting

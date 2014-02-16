@@ -65,6 +65,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
     printTypes = settings.printtypes.value
     printIds = settings.uniqid.value
+    printOwners = settings.Yshowsymowners.value
     printKinds = settings.Yshowsymkinds.value
     printMirrors = false // typically there's no point to print mirrors inside the compiler, as there is only one mirror there
     printPositions = settings.Xprintpos.value
@@ -275,6 +276,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
       printValueParams
       print(" => ", body, ")")
       if (printIds && tree.symbol != null) print("#" + tree.symbol.id)
+      if (printOwners && tree.symbol != null) print("@" + tree.symbol.owner.id)
     }
 
     protected def printSuper(tree: Super, resultName: => String) = {
@@ -1139,6 +1141,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           else if (sym.isStatic && (sym.isClass || sym.isModule)) print(sym.fullName)
           else print(sym.name)
           if (printIds) print("#", sym.id)
+          if (printOwners) print("@", sym.owner.id)
           if (printKinds) print("#", sym.abbreviatedKindString)
           if (printMirrors) print("%M", footnotes.put[scala.reflect.api.Mirror[_]](mirrorThatLoaded(sym)))
         case tag: TypeTag[_] =>
