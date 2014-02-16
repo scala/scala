@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# Compare javac -Xprint (i.e. see signatures from java point of view)
+# for the given classes.
+#
+# Sample:
+#
+# % SCALA_HOME=/scala/inst/29 SCALA_BUILD=/scala/inst/3 tools/compare-java-sigs 'scala.Predef$'
+#
+# Comparing javac -Xprint for scala.Predef$ based on '/scala/inst/29' and '/scala/inst/3'
+# 3c3
+# < public final class Predef$ extends scala.LowPriorityImplicits implements scala.ScalaObject {
+# ---
+# > public final class Predef$ extends scala.LowPriorityImplicits {
+# 7d6
+# <   private final scala.SpecializableCompanion AnyRef;
+# 21,22d19
+# <   public scala.SpecializableCompanion AnyRef();
+# <
+# 68a66,67
+# >   public scala.runtime.Nothing$ $qmark$qmark$qmark();
+# >
+# 225c224,226
+# <   public scala.collection.immutable.StringOps augmentString(java.lang.String x);
+# ---
+# >   public scala.runtime.StringFormat any2stringfmt(java.lang.Object x);
+# >
+# >   public java.lang.String augmentString(java.lang.String x);
+# 227c228
+# <   public java.lang.String unaugmentString(scala.collection.immutable.StringOps x);
+# ---
+# >   public java.lang.String unaugmentString(java.lang.String x);
+#
+
+set -e
+
+[[ $# -gt 0 ]] || {
+  echo "Usage: $(basename $0) <class> <class> ..."
+  echo ""
+  echo "# Example usage"
+  echo "SCALA_HOME=/scala/inst/29 SCALA_BUILD=/scala/inst/3 \\"
+  echo "  $(basename $0) scala.Function1 scala.runtime.AbstractFunction1"
+  exit 0
+}
+
+home1=$(cd ${SCALA_HOME:-/scala/inst/3} && pwd)
+home2=$(cd ${SCALA_BUILD:-$(dirname $BASH_SOURCE)/../build/pack} && pwd)
+
+echo "Comparing javac -Xprint for $@ based on '$home1' and '$home2'"
+tmpdir=$(mktemp -dt $(basename $BASH_SOURCE))
+
+cd $tmpdir
+javac -Xprint -cp $home1:$home1/lib/'*' "$@" > before.txt
+javac -Xprint -cp $home2:$home2/lib/'*' "$@" > after.txt
+
+diff before.txt after.txt && echo "No differences in javac -Xprint output."

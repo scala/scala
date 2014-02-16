@@ -172,18 +172,23 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       // info) as they are seen from the class.  We can't use the member that we get from the
       // implementation class, as it's a clone that was made after erasure, and thus it does not
       // know its info at the beginning of erasure anymore.
-      //   Optimize: no need if mixinClass has no typeparams.
-      mixinMember cloneSymbol clazz modifyInfo (info =>
-        if (mixinClass.typeParams.isEmpty) info
-        else (clazz.thisType baseType mixinClass) memberInfo mixinMember
-      )
+      val sym = mixinMember cloneSymbol clazz
+
+      val erasureMap = erasure.erasure(mixinMember)
+      val erasedInterfaceInfo: Type = erasureMap(mixinMember.info)
+      val specificForwardInfo       = (clazz.thisType baseType mixinClass) memberInfo mixinMember
+      val forwarderInfo =
+        if (erasureMap(specificForwardInfo) =:= erasedInterfaceInfo)
+          specificForwardInfo
+        else {
+          erasedInterfaceInfo
+        }
+      // Optimize: no need if mixinClass has no typeparams.
+      // !!! JZ Really? What about the effect of abstract types, prefix?
+      if (mixinClass.typeParams.isEmpty) sym
+      else sym modifyInfo (_ => forwarderInfo)
     }
-    // clone before erasure got rid of type info we'll need to generate a javaSig
-    // now we'll have the type info at (the beginning of) erasure in our history,
-    // and now newSym has the info that's been transformed to fit this period
-    // (no need for asSeenFrom as phase.erasedTypes)
-    // TODO: verify we need the updateInfo and document why
-    newSym updateInfo (mixinMember.info cloneInfo newSym)
+    newSym
   }
 
   /** Add getters and setters for all non-module fields of an implementation
