@@ -7,21 +7,22 @@ object DefinitionConstructionProps
     with TraitConstruction
     with TypeDefConstruction
     with ValDefConstruction
+    with PatDefConstruction
     with DefConstruction
-    with PackageConstruction
+    with PackageConstruction 
     with ImportConstruction {
-  property("SI-6842") = test {
-    val x: Tree = q"val x: Int"
-    assertEqAst(q"def f($x) = 0", "def f(x: Int) = 0")
-    assertEqAst(q"class C($x)", "class C(val x: Int)")
-    assertEqAst(q"class C { $x => }", "class C { x: Int => }")
-    assertEqAst(q"trait B { $x => }", "trait B { x: Int => }")
-    assertEqAst(q"object A { $x => }", "object A { x: Int => }")
-    val t: Tree = q"type T"
-    assertEqAst(q"def f[$t] = 0", "def f[T] = 0")
-    assertEqAst(q"class C[$t]", "class C[T]")
-    assertEqAst(q"trait B[$t]", "trait B[T]")
-  }
+
+  val x: Tree = q"val x: Int"
+  property("SI-6842 a1") = test { assertEqAst(q"def f($x) = 0", "def f(x: Int) = 0") }
+  property("SI-6842 a2") = test { assertEqAst(q"class C($x)", "class C(val x: Int)") }
+  property("SI-6842 a3") = test { assertEqAst(q"class C { $x => }", "class C { x: Int => }") }
+  property("SI-6842 a4") = test { assertEqAst(q"trait B { $x => }", "trait B { x: Int => }") }
+  property("SI-6842 a5") = test { assertEqAst(q"object A { $x => }", "object A { x: Int => }") }
+
+  val t: Tree = q"type T"
+  property("SI-6842 b1") = test { assertEqAst(q"def f[$t] = 0", "def f[T] = 0") }
+  property("SI-6842 b2") = test { assertEqAst(q"class C[$t]", "class C[T]") }
+  property("SI-6842 b3") = test { assertEqAst(q"trait B[$t]", "trait B[T]") }
 }
 
 trait ClassConstruction { self: QuasiquoteProperties =>
@@ -200,12 +201,53 @@ trait TypeDefConstruction { self: QuasiquoteProperties =>
 }
 
 trait ValDefConstruction { self: QuasiquoteProperties =>
-  property("splice term name into val") = forAll { (name: TermName, tpt: Tree, rhs: Tree) =>
+  property("splice into val") = forAll { (name: TermName, tpt: Tree, rhs: Tree) =>
     q"val $name: $tpt = $rhs" ≈ ValDef(Modifiers(), name, tpt, rhs)
   }
 
-  property("splice term name into var") = forAll { (name: TermName, tpt: Tree, rhs: Tree) =>
+  property("splice into var") = forAll { (name: TermName, tpt: Tree, rhs: Tree) =>
     q"var $name: $tpt = $rhs" ≈ ValDef(Modifiers(MUTABLE), name, tpt, rhs)
+  }
+
+  // left tree is not a pattern due to Si-8211
+  property("SI-8202") = test {
+    assertEqAst(q"val (x: Int) = 1", "val x: Int = 1")
+  }
+}
+
+trait PatDefConstruction { self: QuasiquoteProperties =>
+  property("splice pattern into pat def") = test {
+    val pat = pq"(a, b)"
+    assertEqAst(q"val $pat = (1, 2)", "val (a, b) = (1, 2)")
+    val tpt = tq"(Int, Int)"
+    assertEqAst(q"val $pat: $tpt = (1, 2)", "val (a, b): (Int, Int) = (1, 2)")
+  }
+
+  property("splice pattern into pat def within other pattern (1)") = test {
+    val pat = pq"(a, b)"
+    assertEqAst(q"val Foo($pat) = Foo((1, 2))", "val Foo((a, b)) = Foo((1, 2))")
+    val tpt = tq"Foo"
+    assertEqAst(q"val Foo($pat): $tpt = Foo((1, 2))", "val Foo((a, b)): Foo = Foo((1, 2))")
+  }
+
+  property("splice patterns into pat def within other pattern (2)") = test {
+    val pat1 = pq"(a, b)"; val pat2 = pq"(c, d)"
+    assertEqAst(q"val ($pat1, $pat2) = ((1, 2), (3, 4))", "val ((a, b), (c, d)) = ((1, 2), (3, 4))")
+    val tpt = tq"((Int, Int), (Int, Int))"
+    assertEqAst(q"val ($pat1, $pat2): $tpt = ((1, 2), (3, 4))", "val ((a, b), (c, d)): ((Int, Int), (Int, Int)) = ((1, 2), (3, 4))")
+  }
+
+  property("splice pattern without free vars into pat def") = test {
+    val pat = pq"((1, 2), 3)"
+    assertEqAst(q"val $pat = ((1, 2), 3)", "{ val ((1, 2), 3) = ((1, 2), 3) }")
+    val tpt = tq"((Int, Int), Int)"
+    assertEqAst(q"val $pat: $tpt = ((1, 2), 3)","{ val ((1, 2), 3): ((Int, Int), Int) = ((1, 2), 3) }")
+  }
+
+  // won't result into pattern match due to SI-8211
+  property("splice typed pat into pat def") = test {
+    val pat = pq"x: Int"
+    assertEqAst(q"val $pat = 2", "{ val x: Int = 2 }")
   }
 }
 
