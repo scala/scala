@@ -1,0 +1,5 @@
+macro-bundle-ambiguous.scala:13: error: macro implementation reference is ambiguous: makes sense both as
+a macro bundle method reference and a vanilla object method reference
+  def foo: Unit = macro Macros.impl
+                               ^
+one error found

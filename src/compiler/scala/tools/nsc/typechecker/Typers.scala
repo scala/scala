@@ -56,6 +56,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   }
 
   sealed abstract class SilentResult[+T] {
+    def isEmpty: Boolean
+    def nonEmpty = !isEmpty
+
     @inline final def fold[U](none: => U)(f: T => U): U = this match {
       case SilentResultValue(value) => f(value)
       case _                        => none
@@ -74,6 +77,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
   }
   class SilentTypeError private(val errors: List[AbsTypeError]) extends SilentResult[Nothing] {
+    override def isEmpty = true
     def err: AbsTypeError = errors.head
     def reportableErrors = errors match {
       case (e1: AmbiguousImplicitTypeError) +: _ =>
@@ -87,7 +91,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def unapply(error: SilentTypeError): Option[AbsTypeError] = error.errors.headOption
   }
 
-  case class SilentResultValue[+T](value: T) extends SilentResult[T] { }
+  case class SilentResultValue[+T](value: T) extends SilentResult[T] { override def isEmpty = false }
 
   def newTyper(context: Context): Typer = new NormalTyper(context)
 
