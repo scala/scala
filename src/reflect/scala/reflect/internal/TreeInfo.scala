@@ -453,7 +453,7 @@ abstract class TreeInfo {
           val vdRhs = if (vmods.isLazy) lazyValDefRhs(drhs) else vrhs
           copyValDef(vd)(mods = vdMods, name = dname, rhs = vdRhs)
         } getOrElse (vd)
-      // for abstract and some lazy val/vars  
+      // for abstract and some lazy val/vars
       case dd @ DefDef(mods, name, _, _, tpt, rhs) if mods.hasAccessorFlag =>
         // transform getter mods to field
         val vdMods = (if (!mods.hasStableFlag) mods | Flags.MUTABLE else mods &~ Flags.STABLE) &~ Flags.ACCESSOR
@@ -465,7 +465,7 @@ abstract class TreeInfo {
       recoverBody(filterBody(tbody))
     } else tbody
   }
-  
+
   /** The first constructor definitions in `stats` */
   def firstConstructor(stats: List[Tree]): Tree = stats find {
     case x: DefDef  => nme.isConstructorName(x.name)
