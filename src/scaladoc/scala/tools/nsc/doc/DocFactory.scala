@@ -95,11 +95,11 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
   val documentError: PartialFunction[Throwable, Unit] = {
     case NoCompilerRunException =>
       reporter.info(null, "No documentation generated with unsuccessful compiler run", force = false)
-    case _: ClassNotFoundException =>
-      ()
+    case e @ (_:ClassNotFoundException | _:IllegalAccessException | _:InstantiationException | _:SecurityException | _:ClassCastException) =>
+      reporter.error(null, s"Cannot load the doclet class ${settings.docgenerator.value} (specified with ${settings.docgenerator.name}): $e. Leaving the default settings will generate the html version of scaladoc.")
   }
 
-  /** Generate document(s) for all `files` containing scaladoc documenataion.
+  /** Generate document(s) for all `files` containing scaladoc documentation.
     * @param files The list of paths (relative to the compiler's source path, or absolute) of files to document. */
   def document(files: List[String]) {
     def generate() = {
