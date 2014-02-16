@@ -192,6 +192,9 @@ class CommonScriptExecutor extends ScriptExecutor {
       case maa@AAToBeReexecuted(n: CallGraphNodeTrait) => n.asInstanceOf[N_atomic_action].msgAAToBeExecuted = maa
       case _ =>
     }
+    
+    // Notify this
+    synchronized {notify()}
   }
   // remove a message from the queue
   def remove(m: CallGraphMessage[_ <: CallGraphNodeTrait]) = {

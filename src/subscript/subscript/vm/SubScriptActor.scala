@@ -23,7 +23,7 @@ trait SubScriptActor extends Actor {
   // Callbacks
   
   override def aroundPreStart() {
-    def script lifecycle = live || terminate
+    def script lifecycle = live || terminate  // TBD: (live || terminate) ; killActor
     SubScriptActor.executeScript(_lifecycle())
     super.aroundPreStart()
   } 
@@ -39,6 +39,7 @@ trait SubScriptActor extends Actor {
         if (handler.isDefinedAt(msg)) {
           handler(msg)
           handler.synchronized {handler.notify()}  // Kick the receiver, so that blocked registerReceiver() can proceed
+          callHandlers -= handler
           true
         } else flag
       }
@@ -72,8 +73,6 @@ trait SubScriptActor extends Actor {
     // before it's "<<>>" fragment will be executed. It's natural to block here, so that
     // the "<<>>" fragment will terminate only when the desired message is actually handled
     spyedReceiver.synchronized {if (!receiverFired) spyedReceiver.wait()}
-    
-    callHandlers.synchronized {callHandlers -= spyedReceiver}  // remove receiver once it was used
   }
   
   
@@ -92,7 +91,7 @@ object SubScriptActor {
   }
   private def script parallelScript = {*Stopper.block*} & (+)
   
-  def executeScript(script: _scriptType) {
+  def executeScript(script: _scriptType) = synchronized {
     // If VM is null, spawn it and call normal code
     if (vm == null) prepareVm()
     val template = extractTemplate(script)
