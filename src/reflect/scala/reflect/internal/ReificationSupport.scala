@@ -233,7 +233,7 @@ trait ReificationSupport { self: SymbolTable =>
         case _ => None
       }
     }
-    
+
     // undo gen.mkTemplate
     protected object UnMkTemplate {
       def unapply(templ: Template): Option[(List[Tree], ValDef, Modifiers, List[List[ValDef]], List[Tree], List[Tree])] = {
