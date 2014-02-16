@@ -1628,7 +1628,7 @@ trait Namers extends MethodSynthesis {
         )
         if (sym hasAnnotation NativeAttr)
           sym resetFlag DEFERRED
-        else if (!symbolAllowsDeferred && ownerRequiresConcrete)
+        else if (!symbolAllowsDeferred && ownerRequiresConcrete || sym.isAbstractType && !sym.owner.isClass)
           fail(AbstractVar)
 
         checkWithDeferred(PRIVATE)
