@@ -18,6 +18,11 @@ object TypeConstructionProps extends QuasiquoteProperties("type construction")  
     assert(tq"(t0, ..$ts)" ≈ tq"scala.Tuple3[t0, t1, t2]")
   }
 
+  property("single-element tuple type") = test {
+    val ts = q"T" :: Nil
+    assert(tq"(..$ts)" ≈ ts.head)
+  }
+
   property("refined type") = test {
     val stats = q"def foo" :: q"val x: Int" :: q"type Y = String" :: Nil
     assert(tq"T { ..$stats }" ≈ tq"T { def foo; val x: Int; type Y = String }")

@@ -111,8 +111,6 @@ object UnliftableProps extends QuasiquoteProperties("unliftable") {
   }
 
   property("unlift tuple") = test {
-    // fails due to SI-8045
-    // val q"${t1: Tuple1[Int]}" = q"_root_.scala.Tuple1(1)"
     val q"${t2: (Int, Int)}" = q"(1, 2)"
     val q"${t3: (Int, Int, Int)}" = q"(1, 2, 3)"
     val q"${t4: (Int, Int, Int, Int)}" = q"(1, 2, 3, 4)"
