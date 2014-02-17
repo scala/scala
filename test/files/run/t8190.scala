@@ -113,6 +113,7 @@ object Test extends App with Overloads {
     types = types.filter(_ != "Importer") // deprecated
     types = types.filter(_ != "Internal") // internal
     types = types.filter(_ != "Compat") // internal
+    types = types.filter(_ != "BuildApi") // deprecated
     val diff = types.toList diff buf.toList
     println("uncovered type members: " + diff)
   }

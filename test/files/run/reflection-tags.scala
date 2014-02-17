@@ -7,6 +7,7 @@ object Test extends App {
   typeMembers = typeMembers.filter(_.name != TypeName("Importer")) // deprecated
   typeMembers = typeMembers.filter(_.name != TypeName("Internal")) // internal
   typeMembers = typeMembers.filter(_.name != TypeName("Compat")) // internal
+  typeMembers = typeMembers.filter(_.name != TypeName("BuildApi")) // deprecated
   val tags = typeOf[scala.reflect.api.Universe].members.filter(sym => sym.isImplicit).toList
 
   typeMembers.foreach(_.info)

@@ -280,6 +280,10 @@ trait Internals { self: Universe =>
 
     /** A creator for `RefinedType` types.
      */
+    def refinedType(parents: List[Type], decls: Scope, clazz: Symbol): RefinedType
+
+    /** A creator for `RefinedType` types.
+     */
     def refinedType(parents: List[Type], owner: Symbol): Type
 
     /** A creator for `RefinedType` types.
@@ -785,6 +789,9 @@ trait Internals { self: Universe =>
   @deprecated("Use `internal.reificationSupport` instead", "2.11.0")
   val build: ReificationSupportApi
 
+  @deprecated("Use `internal.ReificationSupportApi` instead", "2.11.0")
+  type BuildApi = ReificationSupportApi
+
   /** This trait provides support for importers, a facility to migrate reflection artifacts between universes.
    * ''Note: this trait should typically be used only rarely.''
    *
@@ -1029,6 +1036,37 @@ trait Internals { self: Universe =>
     @deprecated("Use `internal.newScopeWith` instead", "2.11.0")
     def newScopeWith(elems: Symbol*): Scope =
       internal.newScopeWith(elems: _*)
+
+    /** Scala 2.10 compatibility enrichments for BuildApi. */
+    implicit class CompatibleBuildApi(api: BuildApi) {
+      /** @see [[BuildApi.setInfo]] */
+      @deprecated("Use `internal.reificationSupport.setInfo` instead", "2.11.0")
+      def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S = internal.reificationSupport.setInfo(sym, tpe)
+
+      /** @see [[BuildApi.FlagsRepr]] */
+      @deprecated("Use `internal.reificationSupport.FlagsRepr` instead", "2.11.0")
+      def flagsFromBits(bits: Long): FlagSet = internal.reificationSupport.FlagsRepr(bits)
+
+      /** @see [[BuildApi.noSelfType]] */
+      @deprecated("Use `noSelfType` instead", "2.11.0")
+      def emptyValDef: ValDef = noSelfType
+
+      /** @see [[BuildApi.mkThis]] */
+      @deprecated("Use `internal.reificationSupport.mkThis` instead", "2.11.0")
+      def This(sym: Symbol): Tree = internal.reificationSupport.mkThis(sym)
+
+      /** @see [[BuildApi.mkSelect]] */
+      @deprecated("Use `internal.reificationSupport.mkSelect` instead", "2.11.0")
+      def Select(qualifier: Tree, sym: Symbol): Select = internal.reificationSupport.mkSelect(qualifier, sym)
+
+      /** @see [[BuildApi.mkIdent]] */
+      @deprecated("Use `internal.reificationSupport.mkIdent` instead", "2.11.0")
+      def Ident(sym: Symbol): Ident = internal.reificationSupport.mkIdent(sym)
+
+      /** @see [[BuildApi.mkTypeTree]] */
+      @deprecated("Use `internal.reificationSupport.mkTypeTree` instead", "2.11.0")
+      def TypeTree(tp: Type): TypeTree = internal.reificationSupport.mkTypeTree(tp)
+    }
 
     /** Scala 2.10 compatibility enrichments for Tree. */
     implicit class CompatibleTree(tree: Tree) {

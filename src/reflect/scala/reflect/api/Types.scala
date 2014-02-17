@@ -657,6 +657,10 @@ trait Types {
     /** @see [[InternalApi.refinedType]] */
     @deprecated("Use `internal.refinedType` instead", "2.11.0")
     def apply(parents: List[Type], decls: Scope)(implicit token: CompatToken): RefinedType = internal.refinedType(parents, decls)
+
+    /** @see [[InternalApi.refinedType]] */
+    @deprecated("Use `internal.refinedType` instead", "2.11.0")
+    def apply(parents: List[Type], decls: Scope, clazz: Symbol)(implicit token: CompatToken): RefinedType = internal.refinedType(parents, decls, clazz)
   }
 
   /** The API that all refined types support.

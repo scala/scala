@@ -113,6 +113,7 @@ trait Internals extends api.Internals {
     def constantType(value: Constant): ConstantType = self.ConstantType(value)
     def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = self.TypeRef(pre, sym, args)
     def refinedType(parents: List[Type], decls: Scope): RefinedType = self.RefinedType(parents, decls)
+    def refinedType(parents: List[Type], decls: Scope, clazz: Symbol): RefinedType = self.RefinedType(parents, decls, clazz)
     def refinedType(parents: List[Type], owner: Symbol): Type = self.refinedType(parents, owner)
     def refinedType(parents: List[Type], owner: Symbol, decls: Scope): Type = self.RefinedType(parents, decls, owner)
     def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos: Position): Type = self.refinedType(parents, owner, decls, pos)
