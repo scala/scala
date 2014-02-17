@@ -438,6 +438,17 @@ class MutableSettings(val errorFn: String => Unit)
     override def tryToSetFromPropertyValue(s : String) { // used from ide
       value = s.equalsIgnoreCase("true")
     }
+    override def tryToSetColon(args: List[String]) = args match {
+      case Nil => tryToSet(Nil)
+      case List(x) =>
+        if (x.equalsIgnoreCase("true")) {
+          value = true
+          Some(Nil)
+        } else if (x.equalsIgnoreCase("false")) {
+          value = false
+          Some(Nil)
+        } else errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
+    }
   }
 
   /** A special setting for accumulating arguments like -Dfoo=bar. */

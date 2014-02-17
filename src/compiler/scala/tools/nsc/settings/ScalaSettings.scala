@@ -20,7 +20,7 @@ trait ScalaSettings extends AbsScalaSettings
   self: MutableSettings =>
 
   /** Set of settings */
-  protected lazy val allSettings = mutable.HashSet[Setting]()
+  protected[scala] lazy val allSettings = mutable.HashSet[Setting]()
 
   /** Against my better judgment, giving in to martin here and allowing
    *  CLASSPATH to be used automatically.  So for the user-specified part
