@@ -553,7 +553,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
     protected def expand(desugared: Tree): Tree = {
       def showDetailed(tree: Tree) = showRaw(tree, printIds = true, printTypes = true)
-      def summary() = s"expander = $this, expandee = ${showDetailed(expandee)}, desugared = ${if (expandee == desugared) () else showDetailed(desugared)}"
+      def summary() = s"expander = $this, expandee (brief): $expandee, expandee (full) = ${showDetailed(expandee)}, desugared = ${if (expandee == desugared) () else showDetailed(desugared)}"
       if (macroDebugVerbose) println(s"macroExpand: ${summary()}")
       linkExpandeeAndDesugared(expandee, desugared)
 
