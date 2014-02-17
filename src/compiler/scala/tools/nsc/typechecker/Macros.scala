@@ -607,9 +607,17 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       //         but currently that is flat out impossible because of the difference in scopes
       //         anyway this is already an improvement over the former status quo when named/default invocations were outright prohibited
       def undoNamesDefaults(tree: Tree): Tree = {
+        def isNameDefaultQual(tree: Tree) = tree match {
+          case ValDef(_, name, _, _) => name.startsWith(nme.QUAL_PREFIX)
+          case _ => false
+        }
+        def isNameDefaultTemp(tree: Tree) = tree match {
+          case vdef: ValDef => vdef.symbol.isArtifact
+          case _ => false
+        }
         val (qualsym, qual, vdefs0, app @ Applied(_, _, argss)) = tree match {
-          case Block((qualdef @ ValDef(_, name, _, qual)) +: vdefs, app) if name.startsWith(nme.QUAL_PREFIX) => (qualdef.symbol, qual, vdefs, app)
-          case Block(vdefs, app) => (NoSymbol, EmptyTree, vdefs, app)
+          case Block((qualdef @ ValDef(_, _, _, qual)) +: vdefs, app) if isNameDefaultQual(qualdef) => (qualdef.symbol, qual, vdefs, app)
+          case Block(vdefs, app) if vdefs.forall(isNameDefaultTemp) => (NoSymbol, EmptyTree, vdefs, app)
           case tree => (NoSymbol, EmptyTree, Nil, tree)
         }
         val vdefs = vdefs0.map{ case vdef: ValDef => vdef }
