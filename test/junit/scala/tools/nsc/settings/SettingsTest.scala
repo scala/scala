@@ -25,4 +25,28 @@ class SettingsTest {
     assertFalse(check("-Ytest-setting:FALSE").value)
     assertThrows[IllegalArgumentException](check("-Ytest-setting:rubbish"))
   }
+
+  @Test def userSettingsHavePredecenceOverOptimize() {
+    def check(args: String*): MutableSettings#BooleanSetting = {
+      val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
+      val (ok, residual) = s.processArguments(args.toList, processAll = true)
+      assert(residual.isEmpty)
+      s.inline // among -optimize
+    }
+    assertTrue(check("-optimise").value)
+    assertFalse(check("-optimise", "-Yinline:false").value)
+    assertFalse(check("-Yinline:false", "-optimise").value)
+  }
+
+  @Test def userSettingsHavePredecenceOverLint() {
+    def check(args: String*): MutableSettings#BooleanSetting = {
+      val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
+      val (ok, residual) = s.processArguments(args.toList, processAll = true)
+      assert(residual.isEmpty)
+      s.warnAdaptedArgs // among Xlint
+    }
+    assertTrue(check("-Xlint").value)
+    assertFalse(check("-Xlint", "-Ywarn-adapted-args:false").value)
+    assertFalse(check("-Ywarn-adapted-args:false", "-Xlint").value)
+  }
 }

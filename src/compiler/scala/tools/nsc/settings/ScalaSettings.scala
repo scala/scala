@@ -47,14 +47,6 @@ trait ScalaSettings extends AbsScalaSettings
   /** Is an info setting set? */
   def isInfo = infoSettings exists (_.isSetByUser)
 
-  /** Internal use - syntax enhancements. */
-  private class EnableSettings[T <: BooleanSetting](val s: T) {
-    def enabling(toEnable: List[BooleanSetting]): s.type = s withPostSetHook (_ => toEnable foreach (_.value = s.value))
-    def disabling(toDisable: List[BooleanSetting]): s.type = s withPostSetHook (_ => toDisable foreach (_.value = !s.value))
-    def andThen(f: s.T => Unit): s.type                  = s withPostSetHook (setting => f(setting.value))
-  }
-  private implicit def installEnableSettings[T <: BooleanSetting](s: T) = new EnableSettings(s)
-
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
 
@@ -216,10 +208,10 @@ trait ScalaSettings extends AbsScalaSettings
 
   /** Groups of Settings.
    */
-  val future        = BooleanSetting("-Xfuture", "Turn on future language features.") enabling futureSettings
-  val optimise      = BooleanSetting("-optimise", "Generates faster bytecode by applying optimisations to the program") withAbbreviation "-optimize" enabling optimiseSettings
+  val future        = BooleanSetting("-Xfuture", "Turn on future language features.") enablingIfNotSetByUser futureSettings
+  val optimise      = BooleanSetting("-optimise", "Generates faster bytecode by applying optimisations to the program") withAbbreviation "-optimize" enablingIfNotSetByUser optimiseSettings
   val nooptimise    = BooleanSetting("-Ynooptimise", "Clears all the flags set by -optimise. Useful for testing optimizations in isolation.") withAbbreviation "-Ynooptimize" disabling optimise::optimiseSettings
-  val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions.") enabling experimentalSettings
+  val Xexperimental = BooleanSetting("-Xexperimental", "Enable experimental extensions.") enablingIfNotSetByUser experimentalSettings
 
   /**
    * Settings motivated by GenBCode

@@ -679,4 +679,14 @@ class MutableSettings(val errorFn: String => Unit)
       else name + "[:phases]"
     )
   }
+
+  /** Internal use - syntax enhancements. */
+  protected class EnableSettings[T <: BooleanSetting](val s: T) {
+    def enablingIfNotSetByUser(toEnable: List[BooleanSetting]): s.type = s withPostSetHook (_ => toEnable foreach (sett => if (!sett.isSetByUser) sett.value = s.value))
+    def enabling(toEnable: List[BooleanSetting]): s.type = s withPostSetHook (_ => toEnable foreach (_.value = s.value))
+    def disabling(toDisable: List[BooleanSetting]): s.type = s withPostSetHook (_ => toDisable foreach (_.value = !s.value))
+    def andThen(f: s.T => Unit): s.type = s withPostSetHook (setting => f(setting.value))
+  }
+  import scala.language.implicitConversions
+  protected implicit def installEnableSettings[T <: BooleanSetting](s: T): EnableSettings[T] = new EnableSettings(s)
 }
