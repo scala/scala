@@ -1,11 +1,3 @@
-warn-unused-imports.scala:7: warning: it is not recommended to define classes/objects inside of package objects.
-If possible, define class A in package p1 instead.
-  class A
-        ^
-warn-unused-imports.scala:13: warning: it is not recommended to define classes/objects inside of package objects.
-If possible, define class A in package p2 instead.
-  class A
-        ^
 warn-unused-imports.scala:57: warning: Unused import
     import p1.A // warn
               ^
@@ -36,9 +28,6 @@ warn-unused-imports.scala:98: warning: Unused import
 warn-unused-imports.scala:118: warning: Unused import
     import p1.A   // warn
               ^
-warn-unused-imports.scala:99: warning: local trait Warn is never used
-    trait Warn {  // warn about unused local trait for good measure
-          ^
 error: No warnings can be incurred under -Xfatal-warnings.
-13 warnings found
+10 warnings found
 one error found

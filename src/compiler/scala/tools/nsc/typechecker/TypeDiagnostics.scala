@@ -518,8 +518,6 @@ trait TypeDiagnostics {
       }
 
       def apply(unit: CompilationUnit) = {
-        warnUnusedImports(unit)
-
         val p = new UnusedPrivates
         p traverse unit.body
         val unused = p.unusedTerms

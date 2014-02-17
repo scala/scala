@@ -1210,7 +1210,7 @@ trait Contexts { self: Analyzer =>
   trait ImportContext extends Context {
     private val impInfo: ImportInfo = {
       val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth)
-      if (settings.lint && !isRootImport) // excludes java.lang/scala/Predef imports
+      if (settings.warnUnusedImport && !isRootImport) // excludes java.lang/scala/Predef imports
         allImportInfos(unit) ::= info
       info
     }
@@ -1319,7 +1319,7 @@ trait Contexts { self: Analyzer =>
         if (result == NoSymbol)
           selectors = selectors.tail
       }
-      if (settings.lint && selectors.nonEmpty && result != NoSymbol && pos != NoPosition)
+      if (settings.warnUnusedImport && selectors.nonEmpty && result != NoSymbol && pos != NoPosition)
         recordUsage(current, result)
 
       // Harden against the fallout from bugs like SI-6745

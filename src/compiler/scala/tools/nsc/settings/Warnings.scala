@@ -30,6 +30,8 @@ trait Warnings {
     warnNullaryUnit,
     warnAdaptedArgs,
     warnInferAny
+    // warnUnused       SI-7712, SI-7707 warnUnused not quite ready for prime-time
+    // warnUnusedImport currently considered too noisy for general use
   )
 
   // Warning groups.
@@ -56,6 +58,8 @@ trait Warnings {
   val warnInaccessible     = BooleanSetting   ("-Ywarn-inaccessible", "Warn about inaccessible types in method signatures.")
   val warnNullaryOverride  = BooleanSetting   ("-Ywarn-nullary-override", "Warn when non-nullary overrides nullary, e.g. `def foo()` over `def foo`.")
   val warnInferAny         = BooleanSetting   ("-Ywarn-infer-any", "Warn when a type argument is inferred to be `Any`.")
+  val warnUnused           = BooleanSetting   ("-Ywarn-unused", "Warn when local and private vals, vars, defs, and types are are unused")
+  val warnUnusedImport     = BooleanSetting   ("-Ywarn-unused-import", "Warn when imports are unused")
 
   // Backward compatibility.
   @deprecated("Use fatalWarnings", "2.11.0") def Xwarnfatal            = fatalWarnings      // used by sbt
