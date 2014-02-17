@@ -501,10 +501,6 @@ trait ContextErrors {
       }
 
       // doTypeApply
-      //tryNamesDefaults
-      def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
-        NormalTypeError(tree, "macro applications do not support named and/or default arguments")
-
       def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "too many arguments for "+treeSymTypeMsg(fun))
 
@@ -603,12 +599,11 @@ trait ContextErrors {
 
       //adapt
       def MissingArgsForMethodTpeError(tree: Tree, meth: Symbol) = {
+        val errorExplanation = "missing arguments for " + meth.fullLocationString
+        val suggestPartialApplication = ";\nfollow this method with `_' if you want to treat it as a partially applied function"
         val message =
-          if (meth.isMacro) MacroTooFewArgumentListsMessage
-          else "missing arguments for " + meth.fullLocationString + (
-            if (meth.isConstructor) ""
-            else ";\nfollow this method with `_' if you want to treat it as a partially applied function"
-          )
+          if (meth.isMacro || meth.isConstructor) errorExplanation
+          else errorExplanation + suggestPartialApplication
         issueNormalTypeError(tree, message)
         setError(tree)
       }
@@ -748,15 +743,12 @@ trait ContextErrors {
         throw MacroExpansionException
       }
 
-      private def MacroTooFewArgumentListsMessage = "too few argument lists for macro invocation"
-      def MacroTooFewArgumentListsError(expandee: Tree) = macroExpansionError2(expandee, MacroTooFewArgumentListsMessage)
-
-      private def MacroTooManyArgumentListsMessage = "too many argument lists for macro invocation"
-      def MacroTooManyArgumentListsError(expandee: Tree) = macroExpansionError2(expandee, MacroTooManyArgumentListsMessage)
-
-      def MacroTooFewArgumentsError(expandee: Tree) = macroExpansionError2(expandee, "too few arguments for macro invocation")
-
-      def MacroTooManyArgumentsError(expandee: Tree) = macroExpansionError2(expandee, "too many arguments for macro invocation")
+      def MacroFastTrackFailed(expandee: Tree) = {
+        // here we speculate that the reason why FastTrackEntry.validate failed is the lack arguments for a given method
+        // that's not ideal, but on the other hand this allows us to keep FastTrack simple without hooking errorgen into it
+        MissingArgsForMethodTpeError(expandee, expandee.symbol)
+        throw MacroExpansionException
+      }
 
       def MacroGeneratedAbort(expandee: Tree, ex: AbortMacroException) = {
         // errors have been reported by the macro itself, so we do nothing here
