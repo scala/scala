@@ -717,7 +717,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   def macroExpandWithRuntime(typer: Typer, expandee: Tree, runtime: MacroRuntime): MacroStatus = {
     val wasDelayed  = isDelayed(expandee)
     val undetparams = calculateUndetparams(expandee)
-    val nowDelayed  = !typer.context.macrosEnabled || undetparams.nonEmpty
+    val nowDelayed  = undetparams.nonEmpty
 
     (wasDelayed, nowDelayed) match {
       case (true, true) =>
