@@ -1108,7 +1108,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         if (tree.isType)
           adaptType()
-        else if (mode.typingExprNotFun && treeInfo.isMacroApplication(tree) && !isMacroExpansionSuppressed(tree))
+        else if (mode.typingExprNotFun && treeInfo.isMacroApplication(tree) && !isMacroExpansionSuppressed(tree) && context.macrosEnabled)
           macroExpand(this, tree, mode, pt)
         else if (mode.typingConstructorPattern)
           typedConstructorPattern(tree, pt)
