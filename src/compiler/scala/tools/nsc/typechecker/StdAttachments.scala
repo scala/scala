@@ -85,7 +85,6 @@ trait StdAttachments {
     tree match {
       // see the comment to `isMacroExpansionSuppressed` to learn why we need
       // a special traversal strategy here
-      case Block(_, expr) => unsuppressMacroExpansion(expr)
       case Apply(fn, _) => unsuppressMacroExpansion(fn)
       case TypeApply(fn, _) => unsuppressMacroExpansion(fn)
       case _ => // do nothing
@@ -102,8 +101,6 @@ trait StdAttachments {
         // we have to account for the fact that during typechecking an expandee might become wrapped,
         // i.e. surrounded by an inferred implicit argument application or by an inferred type argument application.
         // in that case the expandee itself will no longer be suppressed and we need to look at the core
-        // upd. we also need to allow for blocks, because that's what names and defaults are often desugared to
-        case Block(_, expr)   => isMacroExpansionSuppressed(expr)
         case Apply(fn, _)     => isMacroExpansionSuppressed(fn)
         case TypeApply(fn, _) => isMacroExpansionSuppressed(fn)
         case _                => false

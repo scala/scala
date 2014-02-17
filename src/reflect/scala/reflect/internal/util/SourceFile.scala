@@ -107,7 +107,7 @@ class ScriptSourceFile(underlying: BatchSourceFile, content: Array[Char], overri
 }
 
 /** a file whose contents do not change over time */
-class BatchSourceFile(val file : AbstractFile, val content0: Array[Char]) extends SourceFile {
+class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends SourceFile {
   def this(_file: AbstractFile)                 = this(_file, _file.toCharArray)
   def this(sourceName: String, cs: Seq[Char])   = this(new VirtualFile(sourceName), cs.toArray)
   def this(file: AbstractFile, cs: Seq[Char])   = this(file, cs.toArray)
