@@ -540,7 +540,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
 
     protected def expand(desugared: Tree): Tree = {
       def showDetailed(tree: Tree) = showRaw(tree, printIds = true, printTypes = true)
-      def summary() = s"expander = $this, expandee = ${showDetailed(expandee)}, desugared = ${if (expandee == desugared) () else showDetailed(desugared)}"
+      def summary() = s"expander = $this, expandee (brief): $expandee, expandee (full) = ${showDetailed(expandee)}, desugared = ${if (expandee == desugared) () else showDetailed(desugared)}"
       if (macroDebugVerbose) println(s"macroExpand: ${summary()}")
       linkExpandeeAndDesugared(expandee, desugared)
 
@@ -607,9 +607,17 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       //         but currently that is flat out impossible because of the difference in scopes
       //         anyway this is already an improvement over the former status quo when named/default invocations were outright prohibited
       def undoNamesDefaults(tree: Tree): Tree = {
+        def isNameDefaultQual(tree: Tree) = tree match {
+          case ValDef(_, name, _, _) => name.startsWith(nme.QUAL_PREFIX)
+          case _ => false
+        }
+        def isNameDefaultTemp(tree: Tree) = tree match {
+          case vdef: ValDef => vdef.symbol.isArtifact
+          case _ => false
+        }
         val (qualsym, qual, vdefs0, app @ Applied(_, _, argss)) = tree match {
-          case Block((qualdef @ ValDef(_, name, _, qual)) +: vdefs, app) if name.startsWith(nme.QUAL_PREFIX) => (qualdef.symbol, qual, vdefs, app)
-          case Block(vdefs, app) => (NoSymbol, EmptyTree, vdefs, app)
+          case Block((qualdef @ ValDef(_, _, _, qual)) +: vdefs, app) if isNameDefaultQual(qualdef) => (qualdef.symbol, qual, vdefs, app)
+          case Block(vdefs, app) if vdefs.forall(isNameDefaultTemp) => (NoSymbol, EmptyTree, vdefs, app)
           case tree => (NoSymbol, EmptyTree, Nil, tree)
         }
         val vdefs = vdefs0.map{ case vdef: ValDef => vdef }
@@ -758,7 +766,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
   def macroExpandWithRuntime(typer: Typer, expandee: Tree, runtime: MacroRuntime): MacroStatus = {
     val wasDelayed  = isDelayed(expandee)
     val undetparams = calculateUndetparams(expandee)
-    val nowDelayed  = !typer.context.macrosEnabled || undetparams.nonEmpty
+    val nowDelayed  = undetparams.nonEmpty
 
     (wasDelayed, nowDelayed) match {
       case (true, true) =>
