@@ -78,7 +78,7 @@ trait Reshape {
       super.transform(preTyper)
     }
 
-    private def undoMacroExpansion(tree: Tree): Tree = {
+    private def undoMacroExpansion(tree: Tree): Tree =
       tree.attachments.get[analyzer.MacroExpansionAttachment] match {
         case Some(analyzer.MacroExpansionAttachment(original, _)) =>
           def mkImplicitly(tp: Type) = atPos(tree.pos)(
@@ -96,30 +96,8 @@ trait Reshape {
             case Apply(TypeApply(_, List(tt)), List(pre)) if sym == materializeTypeTag     => mkImplicitly(typeRef(pre.tpe, TypeTagClass, List(tt.tpe)))
             case _                                                                         => original
           }
-        case None =>
-          // `typeOf[T]` calls get translated into `typeOf[T](Predef.implicitly)` by Reshape
-          // unfortunately, this doesn't work well with the recently introduced `def typeOf[T: TypeTag](x: T)` overload
-          // somehow the typechecker is now longer able to make sense of targless implicitly failing with:
-          //   ambiguous implicit values:
-          //    both value StringCanBuildFrom in object Predef of type => scala.collection.generic.CanBuildFrom[String,Char,String]
-          //    and method conforms in object Predef of type [A]=> <:<[A,A]
-          //    match expected type T
-          //   could not find implicit value for parameter e: T
-          //   overloaded method value typeOf with alternatives:
-          //     (x: => List[Int])(implicit evidence$2: ru.TypeTag[List[Int]])ru.Type <and>
-          //     (implicit ttag: ru.TypeTag[List[Int]])ru.Type
-          //    cannot be applied to (Unit)
-          // therefore here we give the calls to `weakTypeOf` and `typeOf` a bit of extra helping
-          // erasing synthetic implicit arguments altogether, so that this weird tree shape doesn't appear in the reifee in the first place
-          def isTypeOf(sym: Symbol): Boolean = {
-            sym != null && (sym.name == nme.typeOf || sym.name == nme.weakTypeOf) && sym.owner == TypeTagsClass
-          }
-          tree match {
-            case Apply(fun, args) if !tree.tpe.isInstanceOf[MethodType] && isTypeOf(fun.symbol) => fun
-            case _ => tree
-          }
+        case _ => tree
       }
-    }
 
     override def transformModifiers(mods: Modifiers) = {
       val mods1 = toPreTyperModifiers(mods, currentSymbol)

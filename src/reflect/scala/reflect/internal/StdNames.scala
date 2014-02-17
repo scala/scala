@@ -787,7 +787,6 @@ trait StdNames {
     val tree : NameType                = "tree"
     val true_ : NameType               = "true"
     val typedProductIterator: NameType = "typedProductIterator"
-    val typeOf: NameType               = "typeOf"
     val TypeName: NameType             = "TypeName"
     val typeTagToManifest: NameType    = "typeTagToManifest"
     val unapply: NameType              = "unapply"
@@ -802,7 +801,6 @@ trait StdNames {
     val valueOf : NameType             = "valueOf"
     val values : NameType              = "values"
     val wait_ : NameType               = "wait"
-    val weakTypeOf: NameType           = "weakTypeOf"
     val withFilter: NameType           = "withFilter"
     val zero: NameType                 = "zero"
 
