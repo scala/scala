@@ -458,7 +458,7 @@ abstract class TreeInfo {
         // transform getter mods to field
         val vdMods = (if (!mods.hasStableFlag) mods | Flags.MUTABLE else mods &~ Flags.STABLE) &~ Flags.ACCESSOR
         ValDef(vdMods, name, tpt, rhs)
-      case tree => tree
+      case tr => tr
     }
 
     if (detectTypecheckedTree(tree)) {

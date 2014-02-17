@@ -1687,7 +1687,8 @@ trait Trees extends api.Trees {
   // when someone tries to c.typecheck a naked MemberDef
   def wrappingIntoTerm(tree: Tree)(op: Tree => Tree): Tree = {
     op(build.SyntacticBlock(tree :: Nil)) match {
-      case build.SyntacticBlock(tree :: Nil) => tree
+      case Block(tree :: Nil, build.SyntheticUnit()) => tree
+      case Block(Nil, tree) => tree
       case tree => tree
     }
   }

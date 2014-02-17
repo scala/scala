@@ -465,8 +465,8 @@ trait ReificationSupport { self: SymbolTable =>
         else gen.mkBlock(stats)
 
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
-        case self.Block(stats, SyntheticUnit()) => Some(stats)
-        case self.Block(stats, expr)            => Some(stats :+ expr)
+        case bl @ self.Block(stats, SyntheticUnit()) => Some(treeInfo.untypecheckedBlockBody(bl))
+        case bl @ self.Block(stats, expr)            => Some(treeInfo.untypecheckedBlockBody(bl) :+ expr)
         case EmptyTree                          => Some(Nil)
         case _ if tree.isTerm                   => Some(tree :: Nil)
         case _                                  => None
