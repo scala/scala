@@ -857,7 +857,7 @@ trait Implicits {
         }
 
         // most frequent one first
-        matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
+        matches
       }
       if (eligible.nonEmpty)
         printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
