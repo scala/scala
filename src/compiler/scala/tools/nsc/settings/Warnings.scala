@@ -7,6 +7,8 @@ package scala.tools
 package nsc
 package settings
 
+import language.existentials
+
 /** Settings influencing the printing of warnings.
  */
 trait Warnings {
@@ -30,21 +32,10 @@ trait Warnings {
     warnNullaryUnit,
     warnAdaptedArgs,
     warnInferAny
+    // warnUnused       SI-7712, SI-7707 warnUnused not quite ready for prime-time
+    // warnUnusedImport currently considered too noisy for general use
   )
 
-  // Warning groups.
-  val lint = (
-    BooleanSetting("-Xlint", "Enable recommended additional warnings.")
-    withPostSetHook (_ => lintWarnings foreach (_.value = true))
-  )
-
-  /*val warnEverything = */ (
-    BooleanSetting("-Ywarn-all", "Enable all -Y warnings.")
-    withPostSetHook { _ =>
-      lint.value = true
-      allWarnings foreach (_.value = true)
-    }
-  )
   private lazy val warnSelectNullable = BooleanSetting("-Xcheck-null", "This option is obsolete and does nothing.")
 
   // Individual warnings.
@@ -56,6 +47,11 @@ trait Warnings {
   val warnInaccessible     = BooleanSetting   ("-Ywarn-inaccessible", "Warn about inaccessible types in method signatures.")
   val warnNullaryOverride  = BooleanSetting   ("-Ywarn-nullary-override", "Warn when non-nullary overrides nullary, e.g. `def foo()` over `def foo`.")
   val warnInferAny         = BooleanSetting   ("-Ywarn-infer-any", "Warn when a type argument is inferred to be `Any`.")
+  val warnUnused           = BooleanSetting   ("-Ywarn-unused", "Warn when local and private vals, vars, defs, and types are are unused")
+  val warnUnusedImport     = BooleanSetting   ("-Ywarn-unused-import", "Warn when imports are unused")
+
+   // Warning groups.
+  val lint = BooleanSetting("-Xlint", "Enable recommended additional warnings.") enablingIfNotSetByUser lintWarnings
 
   // Backward compatibility.
   @deprecated("Use fatalWarnings", "2.11.0") def Xwarnfatal            = fatalWarnings      // used by sbt
