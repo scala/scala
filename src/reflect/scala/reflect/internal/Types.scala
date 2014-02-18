@@ -922,6 +922,7 @@ trait Types
      *  to produce a string on each level.
      */
     override final def toString: String = {
+      // see comments to internal#Symbol.typeSignature for an explanation why this initializes
       if (!isCompilerUniverse) fullyInitializeType(this)
       typeToString(this)
     }

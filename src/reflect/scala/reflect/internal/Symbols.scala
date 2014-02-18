@@ -122,14 +122,31 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def thisPrefix: Type                  = thisType
     def superPrefix(supertpe: Type): Type = SuperType(thisType, supertpe)
 
-    // automatic full initialization on access to info from reflection API is a double-edged sword
-    // on the one hand, it's convenient so that the users don't have to deal with initialization themselves before printing out stuff
-    // (e.g. printing out a method's signature without fully initializing it would result in <_>'s for parameters
-    // on the other hand, this strategy can potentially cause unexpected effects due to being inconsistent with compiler's behavior
-    // so far I think user convenience outweighs the scariness, but we need to keep the tradeoff in mind
-    // NOTE: if you end up removing the call to fullyInitializeSymbol, consider that it would affect both runtime reflection and macros
-    def typeSignature: Type               = { fullyInitializeSymbol(this); info }
-    def typeSignatureIn(site: Type): Type = { fullyInitializeSymbol(this); site memberInfo this }
+    // These two methods used to call fullyInitializeSymbol on `this`.
+    //
+    // The only positive effect of that is, to the best of my knowledge, convenient printing
+    // (if you print a signature of the symbol that's not fully initialized,
+    // you might end up with weird <?>'s in value/type params)
+    //
+    // Another effect is obviously full initialization of that symbol,
+    // but that one shouldn't be necessary from the public API standpoint,
+    // because everything that matters auto-initializes at runtime,
+    // and auto-initialization at compile-time is anyway dubious
+    // (I've had spurious cyclic refs caused by calling typeSignature
+    // that initialized parent, which was in the middle of initialization).
+    //
+    // Given that and also given the pressure of being uniform with info and infoIn,
+    // I've removed calls to fullyInitializeSymbol from typeSignature and typeSignatureIn,
+    // injected fullyInitializeSymbol in showDecl, and injected fullyInitializeType in runtime Type.toString
+    // (the latter will make things a bit harder to debug in runtime universe, because
+    // toString might now very rarely cause cyclic references, but we also have showRaw that doesn't do initialization).
+    //
+    // Auto-initialization in runtime Type.toString is one of the examples of why a cake-based design
+    // isn't a very good idea for reflection API. Sometimes we want to same pretty name for both a compiler-facing
+    // and a user-facing API that should have different behaviors (other examples here include isPackage, isCaseClass, etc).
+    // Within a cake it's fundamentally impossible to achieve that.
+    def typeSignature: Type               = info
+    def typeSignatureIn(site: Type): Type = site memberInfo this
 
     def toType: Type = tpe
     def toTypeIn(site: Type): Type = site.memberType(this)
@@ -2539,7 +2556,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If hasMeaninglessName is true, uses the owner's name to disambiguate identity.
      */
     override def toString: String = {
-      if (!isCompilerUniverse) fullyInitializeSymbol(this)
       if (isPackageObjectOrClass && !settings.debug)
         s"package object ${owner.decodedName}"
       else compose(
