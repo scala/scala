@@ -309,7 +309,6 @@ trait Symbols { self: Universe =>
     def companion: Symbol
 
     /** @see [[infoIn]] */
-    @deprecated("Use `infoIn` instead", "2.11.0")
     def typeSignatureIn(site: Type): Type
 
     /** The type signature of this symbol seen as a member of given type `site`.
@@ -319,7 +318,6 @@ trait Symbols { self: Universe =>
     def infoIn(site: Type): Type
 
     /** @see [[info]] */
-    @deprecated("Use `info` instead", "2.11.0")
     def typeSignature: Type
 
     /** The type signature of this symbol.
