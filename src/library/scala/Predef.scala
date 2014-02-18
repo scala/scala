@@ -382,9 +382,13 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
   sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
   private[this] final val singleton_<:< = new <:<[Any,Any] { def apply(x: Any): Any = x }
-  // not in the <:< companion object because it is also
-  // intended to subsume identity (which is no longer implicit)
-  implicit def conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
+  // The dollar prefix is to dodge accidental shadowing of this method
+  // by a user-defined method of the same name (SI-7788).
+  // The collections rely on this method.
+  implicit def $conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
+
+  @deprecated("Use `implicitly[T <:< U]` or `identity` instead.", "2.11.0")
+  def conforms[A]: A <:< A = $conforms[A]
 
   /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal.
    *
