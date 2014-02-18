@@ -238,8 +238,11 @@ abstract class Erasure extends AddInterfaces
               if (!(AnyRefTpe <:< bounds.hi)) "+" + boxedSig(bounds.hi)
               else if (!(bounds.lo <:< NullTpe)) "-" + boxedSig(bounds.lo)
               else "*"
-            } else {
-              boxedSig(tp)
+            } else tp match {
+              case PolyType(_, res) =>
+                "*" // SI-7932
+              case _ =>
+                boxedSig(tp)
             }
           def classSig = {
             val preRebound = pre.baseType(sym.owner) // #2585
