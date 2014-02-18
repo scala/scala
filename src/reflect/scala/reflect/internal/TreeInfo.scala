@@ -98,7 +98,7 @@ abstract class TreeInfo {
    */
   def isStableIdentifier(tree: Tree, allowVolatile: Boolean): Boolean =
     tree match {
-      case i @ Ident(_)    => isStableIdent(i)
+      case i @ Ident(_)    => isStableIdent(i, allowVolatile)
       case Select(qual, _) => isStableMemberOf(tree.symbol, qual, allowVolatile) && isPath(qual, allowVolatile)
       case Apply(Select(free @ Ident(_), nme.apply), _) if free.symbol.name endsWith nme.REIFY_FREE_VALUE_SUFFIX =>
         // see a detailed explanation of this trick in `GenSymbols.reifyFreeTerm`
@@ -119,11 +119,11 @@ abstract class TreeInfo {
     typeOk(tree.tpe) && (allowVolatile || !hasVolatileType(tree)) && !definitions.isByNameParamType(tree.tpe)
   )
 
-  private def isStableIdent(tree: Ident): Boolean = (
+  private def isStableIdent(tree: Ident, allowVolatile: Boolean): Boolean = (
        symOk(tree.symbol)
     && tree.symbol.isStable
     && !definitions.isByNameParamType(tree.tpe)
-    && !tree.symbol.hasVolatileType // TODO SPEC: not required by spec
+    && (allowVolatile || !tree.symbol.hasVolatileType) // TODO SPEC: not required by spec
   )
 
   /** Is `tree`'s type volatile? (Ignored if its symbol has the @uncheckedStable annotation.)

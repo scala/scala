@@ -4133,8 +4133,8 @@ trait Types
 
       if (symHi.isTerm)
         (isSubType(tpLo, tpHi, depth)        &&
-         (!symHi.isStable || symLo.isStable) &&                // sub-member must remain stable
-         (!symLo.hasVolatileType || symHi.hasVolatileType))    // sub-member must not introduce volatility
+         (!symHi.isStable || symLo.isStable) &&                                // sub-member must remain stable
+         (!symLo.hasVolatileType || symHi.hasVolatileType || tpHi.isWildcard)) // sub-member must not introduce volatility
       else if (symHi.isAbstractType)
         ((tpHi.bounds containsType tpLo) &&
          kindsConform(symHi :: Nil, tpLo :: Nil, preLo, symLo.owner))
