@@ -1685,11 +1685,13 @@ trait Trees extends api.Trees {
 
   // this is necessary to avoid crashes like https://github.com/scalamacros/paradise/issues/1
   // when someone tries to c.typecheck a naked MemberDef
-  def wrappingIntoTerm(tree: Tree)(op: Tree => Tree): Tree = {
-    op(build.SyntacticBlock(tree :: Nil)) match {
-      case Block(tree :: Nil, build.SyntheticUnit()) => tree
-      case Block(Nil, tree) => tree
-      case tree => tree
+  def wrappingIntoTerm(tree0: Tree)(op: Tree => Tree): Tree = {
+    val neededWrapping = !tree0.isTerm
+    val tree1 = build.SyntacticBlock(tree0 :: Nil)
+    op(tree1) match {
+      case Block(tree2 :: Nil, Literal(Constant(()))) if neededWrapping => tree2
+      case Block(Nil, tree2) => tree2
+      case tree2 => tree2
     }
   }
 

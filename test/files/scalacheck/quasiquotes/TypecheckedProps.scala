@@ -109,4 +109,47 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked") {
     assert(p2.name == pName2)
     assert(params2.size == 2)
   }
+
+  property("implicit class") = test {
+    val clName = TypeName("Test")
+    val paramName = TermName("x")
+    val q"{implicit class $name($param)}" = typecheck(q"implicit class $clName(val $paramName: String)")
+
+    assert(name == clName)
+    assert(param.name == paramName)
+  }
+
+  property("block with lazy") = test {
+    val lazyName = TermName("x")
+    val lazyRhsVal = 42
+    val lazyRhs = Literal(Constant(lazyRhsVal))
+    val q"{lazy val $pname = $rhs}" = typecheck(q"{lazy val $lazyName = $lazyRhsVal}")
+
+    assert(pname == lazyName)
+    assert(rhs ≈ lazyRhs)
+  }
+
+  property("class with lazy") = test {
+    val clName = TypeName("Test")
+    val paramName = TermName("x")
+    val q"class $name{lazy val $pname = $_}" = typecheck(q"class $clName {lazy val $paramName = 42}")
+
+    assert(name == clName)
+    assert(pname == paramName)
+  }
+
+  property("case class with object") = test {
+    val defName = TermName("z")
+    val defRhsVal = 42
+    val defRhs = Literal(Constant(defRhsVal))
+    val q"object $_{ $_; object $_ extends ..$_ {def $name = $rhs} }" =
+      typecheck(q"""
+        object Test{
+          case class C(x: Int) { def y = x };
+          object C { def $defName = $defRhsVal }
+        }""")
+
+    assert(name == defName)
+    assert(rhs ≈ defRhs)
+  }
 }
