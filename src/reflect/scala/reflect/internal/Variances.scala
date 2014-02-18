@@ -65,10 +65,11 @@ trait Variances {
        *  The search proceeds from `base` to the owner of `tvar`.
        *  Initially the state is covariant, but it might change along the search.
        *
-       *  An alias which does not override anything is treated as Bivariant;
+       *  A local alias type is treated as Bivariant;
        *  this is OK because we always expand aliases for variance checking.
-       *  However if it does override a type in a base class, we must assume Invariant
-       *  because there may be references to the type parameter that are not checked.
+       *  However, for an alias which might be externally visible, we must assume Invariant,
+       *  because there may be references to the type parameter that are not checked,
+       *  leading to unsoundness (see SI-6566).
        */
       def relativeVariance(tvar: Symbol): Variance = {
         def nextVariance(sym: Symbol, v: Variance): Variance = (
