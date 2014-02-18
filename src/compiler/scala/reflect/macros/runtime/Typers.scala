@@ -14,15 +14,11 @@ trait Typers {
   def typeCheck(tree: Tree, pt: Type = universe.WildcardType, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): Tree = {
     macroLogVerbose("typechecking %s with expected type %s, implicit views = %s, macros = %s".format(tree, pt, !withImplicitViewsDisabled, !withMacrosDisabled))
     val context = callsiteTyper.context
-    val wrapper1 = if (!withImplicitViewsDisabled) (context.withImplicitsEnabled[Tree] _) else (context.withImplicitsDisabled[Tree] _)
-    val wrapper2 = if (!withMacrosDisabled) (context.withMacrosEnabled[Tree] _) else (context.withMacrosDisabled[Tree] _)
-    def wrapper (tree: => Tree) = wrapper1(wrapper2(tree))
-    // if you get a "silent mode is not available past typer" here
-    // don't rush to change the typecheck not to use the silent method when the silent parameter is false
-    // typechecking uses silent anyways (e.g. in typedSelect), so you'll only waste your time
-    // I'd advise fixing the root cause: finding why the context is not set to report errors
-    // (also see reflect.runtime.ToolBoxes.typeCheckExpr for a workaround that might work for you)
-    wrapper(callsiteTyper.silent(_.typed(tree, universe.analyzer.EXPRmode, pt), reportAmbiguousErrors = false) match {
+    val withImplicitFlag = if (!withImplicitViewsDisabled) (context.withImplicitsEnabled[Tree] _) else (context.withImplicitsDisabled[Tree] _)
+    val withMacroFlag = if (!withMacrosDisabled) (context.withMacrosEnabled[Tree] _) else (context.withMacrosDisabled[Tree] _)
+    def withContext(tree: => Tree) = withImplicitFlag(withMacroFlag(tree))
+    def typecheckInternal(tree: Tree) = callsiteTyper.silent(_.typed(tree, universe.analyzer.EXPRmode, pt), reportAmbiguousErrors = false)
+    universe.wrappingIntoTerm(tree)(wrappedTree => withContext(typecheckInternal(wrappedTree) match {
       case universe.analyzer.SilentResultValue(result) =>
         macroLogVerbose(result)
         result
@@ -30,7 +26,7 @@ trait Typers {
         macroLogVerbose(error.err.errMsg)
         if (!silent) throw new TypecheckException(error.err.errPos, error.err.errMsg)
         universe.EmptyTree
-    })
+    }))
   }
 
   def inferImplicitValue(pt: Type, silent: Boolean = true, withMacrosDisabled: Boolean = false, pos: Position = enclosingPosition): Tree = {
