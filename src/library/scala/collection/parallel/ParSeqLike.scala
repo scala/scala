@@ -16,6 +16,7 @@ import scala.collection.generic.CanBuildFrom
 import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.VolatileAbort
 
+import scala.collection.parallel.ParallelCollectionImplicits._
 
 /** A template trait for sequences of type `ParSeq[T]`, representing
  *  parallel sequences with element type `T`.
