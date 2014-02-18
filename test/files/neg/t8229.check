@@ -1,0 +1,4 @@
+t8229.scala:5: error: value + is not a member of Object
+  o + ""
+    ^
+one error found

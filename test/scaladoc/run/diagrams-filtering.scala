@@ -57,7 +57,7 @@ object Test extends ScaladocModelTest {
     // Assert we have just 3 nodes and 2 edges
     val A = base._trait("A")
     val ADiag = A.inheritanceDiagram.get
-    assert(ADiag.nodes.length == 3)
+    assert(ADiag.nodes.length == 3, s"${ADiag.nodes} has length ${ADiag.nodes.length}, expected 3")
     assert(ADiag.edges.map(_._2.length).sum == 2)
 
     // trait C
