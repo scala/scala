@@ -33,6 +33,22 @@ final class RichLong(val self: Long) extends AnyVal with IntegralProxy[Long] {
   override def min(that: Long): Long = math.min(self, that)
   override def signum: Int           = math.signum(self).toInt
 
+  /** Utility method to warn when a floating-point operation is applied that has no use on an integer value. */
+  @deprecated("Long integers are already rounded.  Did you mean to convert to a floating-point type in an earlier step?  Also consider using .rint.toLong instead of .round to make the desired return type explicit.", "2.11.0")
+  def round: Long = self
+  
+  /** Utility method to warn when a floating-point operation is applied that has no use on an integer value. */
+  @deprecated("Long integers are already rounded to the nearest integer.  Did you mean to convert to a floating-point type earlier?", "2.11.0")
+  def rint: Long = self
+  
+  /** Utility method to warn when a floating-point operation is applied that has no use on an integer value. */
+  @deprecated("Long integers are already rounded up to an integer.  Did you mean to convert to a floating-point type earlier?", "2.11.0")
+  def ceil: Long = self
+  
+  /** Utility method to warn when a floating-point operation is applied that has no use on an integer value. */
+  @deprecated("Long integers are already rounded down to an integer.  Did you mean to convert to a floating-point type earlier?", "2.11.0")
+  def floor: Long = self
+  
   def toBinaryString: String = java.lang.Long.toBinaryString(self)
   def toHexString: String    = java.lang.Long.toHexString(self)
   def toOctalString: String  = java.lang.Long.toOctalString(self)

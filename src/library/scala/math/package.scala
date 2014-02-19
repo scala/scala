@@ -64,11 +64,11 @@ package object math {
 
   def ceil(x: Double): Double  = java.lang.Math.ceil(x)
   def floor(x: Double): Double = java.lang.Math.floor(x)
-
-  /** Returns the `double` value that is closest in value to the
+  
+  /** Returns the `Double` value that is closest in value to the
    *  argument and is equal to a mathematical integer.
    *
-   *  @param  x a `double` value
+   *  @param  x a `Double` value
    *  @return the closest floating-point value to a that is equal to a
    *          mathematical integer.
    */
@@ -93,12 +93,34 @@ package object math {
    */
   def pow(x: Double, y: Double): Double = java.lang.Math.pow(x, y)
 
-  /** Returns the closest `long` to the argument.
+  /** Returns the closest `Int` to the argument, which is just the argument.
+   *  This method exists primarily to help catch errors where a floating-point number is expected but
+   *  the type is `Int` instead.
+   */
+  @deprecated("An Int is already rounded.  Convert to a floating-point type in an earlier step.", "2.11.0")
+  def round(x: Int): Int = x
+
+  /** Returns the closest `Long` to the argument, which is just the argument.
+   *  This method exists primarily to help catch errors where a floating-point number is expected but
+   *  the type is `Int` instead.
+   */
+  @deprecated("A Long is already rounded.  Convert to a floating-point type in an earlier step.", "2.11.0")
+  def round(x: Long): Long = x
+
+  /** Returns the closest `Int` to the argument.  Consider using `rint(x).toInt` instead to make
+   *  explicit the desired return type; `round` can also return a `Long` if applied to a `Double`.
    *
-   *  @param  x a floating-point value to be rounded to a `long`.
-   *  @return the value of the argument rounded to the nearest`long` value.
+   *  @param  x a `Float` floating-point value to be rounded to an `Int`.
+   *  @return the value of the argument rounded to the nearest `Int` value.
    */
   def round(x: Float): Int = java.lang.Math.round(x)
+  
+  /** Returns the closest `Long` to the argument.  Consider using `rint(x).toLong` instead to make
+   *  explicit the desired return type; `round` can also return an `Int` if applied to a `Float`.
+   *
+   *  @param  x a `Double` floating-point value to be rounded to a `Long`.
+   *  @return the value of the argument rounded to the nearest `Long` value.
+   */
   def round(x: Double): Long = java.lang.Math.round(x)
 
   def abs(x: Int): Int       = java.lang.Math.abs(x)
