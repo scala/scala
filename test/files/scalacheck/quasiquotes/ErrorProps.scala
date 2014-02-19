@@ -1,21 +1,21 @@
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
 
 object ErrorProps extends QuasiquoteProperties("errors") {
-  property("can't extract two .. cardinalities in a row") = fails(
+  property("can't extract two .. rankinalities in a row") = fails(
     "Can't extract with .. here",
     """
       val xs = List(q"x1", q"x2")
       val q"f(..$xs1, ..$xs2)" = xs
     """)
 
-  property("can't splice with given cardinality") = fails(
-    "Can't splice List[reflect.runtime.universe.Ident], consider using ..",
+  property("can't unquote with given rank") = fails(
+    "Can't unquote List[reflect.runtime.universe.Ident], consider using ..",
     """
       val xs = List(q"x", q"x")
       q"$xs"
     """)
 
-  property("splice typename into typedef with default bounds") = fails(
+  property("unquote typename into typedef with default bounds") = fails(
     "reflect.runtime.universe.Name expected but reflect.runtime.universe.TypeDef found",
     """
       val T1 = TypeName("T1")
@@ -25,8 +25,8 @@ object ErrorProps extends QuasiquoteProperties("errors") {
         TypeDef(Modifiers(), T1, List(T2), t)
     """)
 
-  property("can't splice annotations with ... cardinality") = fails(
-    "Can't splice with ... here",
+  property("can't unquote annotations with ... rank") = fails(
+    "Can't unquote with ... here",
     """
       val annots = List(List(q"Foo"))
       q"@...$annots def foo"
@@ -39,15 +39,15 @@ object ErrorProps extends QuasiquoteProperties("errors") {
       StringContext(s).q()
     """)
 
-  property("don't know how to splice inside of strings") = fails(
-    "Don't know how to splice here",
+  property("don't know how to unquote inside of strings") = fails(
+    "Don't know how to unquote here",
     """
       val x: Tree = EmptyTree
       StringContext("\"", "\"").q(x)
     """)
 
   property("non-liftable type ..") = fails(
-    "Can't splice List[StringBuilder] with .., consider omitting the dots or providing an implicit instance of Liftable[StringBuilder]",
+    "Can't unquote List[StringBuilder] with .., consider omitting the dots or providing an implicit instance of Liftable[StringBuilder]",
     """
       import java.lang.StringBuilder
       val bazs = List(new StringBuilder)
@@ -55,38 +55,38 @@ object ErrorProps extends QuasiquoteProperties("errors") {
     """)
 
   property("non-liftable type ...") = fails(
-    "Can't splice List[List[StringBuilder]] with .., consider using ... or providing an implicit instance of Liftable[StringBuilder]",
+    "Can't unquote List[List[StringBuilder]] with .., consider using ... or providing an implicit instance of Liftable[StringBuilder]",
     """
       import java.lang.StringBuilder
       val bazs = List(List(new StringBuilder))
       q"f(..$bazs)"
     """)
 
-  property("use .. card or provide liftable") = fails(
-    "Can't splice List[StringBuilder], consider using .. or providing an implicit instance of Liftable[List[StringBuilder]]",
+  property("use .. rank or provide liftable") = fails(
+    "Can't unquote List[StringBuilder], consider using .. or providing an implicit instance of Liftable[List[StringBuilder]]",
     """
       import java.lang.StringBuilder
       val lst: List[StringBuilder] = Nil
       q"f($lst)"
     """)
 
-  property("use ... card or provide liftable") = fails(
-    "Can't splice List[List[reflect.runtime.universe.Ident]], consider using ...",
+  property("use ... rank or provide liftable") = fails(
+    "Can't unquote List[List[reflect.runtime.universe.Ident]], consider using ...",
     """
       val xs = List(List(q"x", q"x"))
       q"$xs"
     """)
 
   property("not liftable or natively supported") = fails(
-    "Can't splice StringBuilder, consider providing an implicit instance of Liftable[StringBuilder]",
+    "Can't unquote StringBuilder, consider providing an implicit instance of Liftable[StringBuilder]",
     """
       import java.lang.StringBuilder
       val sb = new StringBuilder
       q"f($sb)"
     """)
 
-  property("can't splice with ... card here") = fails(
-    "Can't splice with ... here",
+  property("can't unquote with ... rank here") = fails(
+    "Can't unquote with ... here",
     """
       val lst: List[List[Tree]] = Nil; val t = EmptyTree
       q"f(...$lst, $t)"
@@ -106,29 +106,29 @@ object ErrorProps extends QuasiquoteProperties("errors") {
       q"$t def foo"
     """)
 
-  property("cant splice flags together with mods") = fails(
-    "Can't splice flags together with modifiers, consider merging flags into modifiers",
+  property("cant unquote flags together with mods") = fails(
+    "Can't unquote flags together with modifiers, consider merging flags into modifiers",
     """
       val f = Flag.IMPLICIT; val m = NoMods
       q"$f $m def foo"
     """)
 
-  property("can't splice mods with annots") = fails(
-    "Can't splice modifiers together with annotations, consider merging annotations into modifiers",
+  property("can't unquote mods with annots") = fails(
+    "Can't unquote modifiers together with annotations, consider merging annotations into modifiers",
     """
       val m = NoMods
       q"@annot $m def foo"
     """)
 
-  property("can't splice modifiers with inline flags") = fails(
-    "Can't splice modifiers together with flags, consider merging flags into modifiers",
+  property("can't unquote modifiers with inline flags") = fails(
+    "Can't unquote modifiers together with flags, consider merging flags into modifiers",
     """
       val m = NoMods
       q"$m implicit def foo"
     """)
 
-  property("can't splice multiple mods") = fails(
-    "Can't splice multiple modifiers, consider merging them into a single modifiers instance",
+  property("can't unquote multiple mods") = fails(
+    "Can't unquote multiple modifiers, consider merging them into a single modifiers instance",
     """
       val m1 = NoMods; val m2 = NoMods
       q"$m1 $m2 def foo"
@@ -146,15 +146,15 @@ object ErrorProps extends QuasiquoteProperties("errors") {
       val q"$m1 $m2 def foo" = EmptyTree
     """)
 
-  property("can't splice values of Null") = fails(
-    "Can't splice Null, bottom type values often indicate programmer mistake",
+  property("can't unquote values of Null") = fails(
+    "Can't unquote Null, bottom type values often indicate programmer mistake",
     """
       val n = null
       q"$n"
     """)
 
-  property("can't splice values of Nothing") = fails(
-    "Can't splice Nothing, bottom type values often indicate programmer mistake",
+  property("can't unquote values of Nothing") = fails(
+    "Can't unquote Nothing, bottom type values often indicate programmer mistake",
     """
       def n = ???
       q"$n"

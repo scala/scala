@@ -12,7 +12,7 @@ import scala.collection.{immutable, mutable}
  */
 trait Placeholders { self: Quasiquotes =>
   import global._
-  import Cardinality._
+  import Rank._
   import universeTypes._
 
   // Step 1: Transform Scala source with holes into vanilla Scala source
@@ -29,13 +29,13 @@ trait Placeholders { self: Quasiquotes =>
       posMap += pos -> ((start, end))
     }
 
-    def appendHole(tree: Tree, cardinality: Cardinality) = {
+    def appendHole(tree: Tree, rank: Rank) = {
       val placeholderName = c.freshName(TermName(nme.QUASIQUOTE_PREFIX + sessionSuffix))
       sb.append(placeholderName)
       val holeTree =
         if (method != nme.unapply) tree
         else Bind(placeholderName, tree)
-      holeMap(placeholderName) = Hole(cardinality, holeTree)
+      holeMap(placeholderName) = Hole(rank, holeTree)
     }
 
     val iargs = method match {
@@ -47,9 +47,9 @@ trait Placeholders { self: Quasiquotes =>
     }
 
     foreach2(iargs, parts.init) { case (tree, (p, pos)) =>
-      val (part, cardinality) = parseDots(p)
+      val (part, rank) = parseDots(p)
       appendPart(part, pos)
-      appendHole(tree, cardinality)
+      appendHole(tree, rank)
     }
     val (p, pos) = parts.last
     appendPart(p, pos)

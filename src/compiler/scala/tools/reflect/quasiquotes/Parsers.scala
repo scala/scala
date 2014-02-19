@@ -123,7 +123,7 @@ trait Parsers { self: Quasiquotes =>
       override def isStatSep(token: Int) = token == EOF || super.isStatSep(token)
 
       override def expectedMsg(token: Int): String =
-        if (isHole) expectedMsgTemplate(token2string(token), "splicee")
+        if (isHole) expectedMsgTemplate(token2string(token), "unquotee")
         else super.expectedMsg(token)
 
       // $mods def foo

@@ -10,7 +10,7 @@ trait Reifiers { self: Quasiquotes =>
   import global.build._
   import global.treeInfo._
   import global.definitions._
-  import Cardinality._
+  import Rank._
   import universeTypes._
 
   abstract class Reifier(val isReifyingExpressions: Boolean) extends {
@@ -23,7 +23,7 @@ trait Reifiers { self: Quasiquotes =>
     lazy val typer = throw new UnsupportedOperationException
 
     def isReifyingPatterns: Boolean = !isReifyingExpressions
-    def action = if (isReifyingExpressions) "splice" else "extract"
+    def action = if (isReifyingExpressions) "unquote" else "extract"
     def holesHaveTypes = isReifyingExpressions
 
     /** Map that stores freshly generated names linked to the corresponding names in the reified tree.
@@ -129,7 +129,7 @@ trait Reifiers { self: Quasiquotes =>
     def reifyTreePlaceholder(tree: Tree): Tree = tree match {
       case Placeholder(hole: ApplyHole) if hole.tpe <:< treeType => hole.tree
       case Placeholder(Hole(tree, NoDot)) if isReifyingPatterns => tree
-      case Placeholder(hole @ Hole(_, card @ Dot())) => c.abort(hole.pos, s"Can't $action with $card here")
+      case Placeholder(hole @ Hole(_, rank @ Dot())) => c.abort(hole.pos, s"Can't $action with $rank here")
       case TuplePlaceholder(args) => reifyTuple(args)
       case TupleTypePlaceholder(args) => reifyTupleType(args)
       case FunctionTypePlaceholder(argtpes, restpe) => reifyFunctionType(argtpes, restpe)
@@ -236,7 +236,7 @@ trait Reifiers { self: Quasiquotes =>
       case List(hole @ Placeholder(Hole(_, NoDot))) => reify(hole)
       case List(Placeholder(_)) => reifyBuildCall(nme.SyntacticTuple, args)
       // in a case we only have one element tuple without
-      // any cardinality annotations this means that this is
+      // any rank annotations this means that this is
       // just an expression wrapped in parentheses
       case List(other) => reify(other)
       case _ => reifyBuildCall(nme.SyntacticTuple, args)
@@ -295,8 +295,8 @@ trait Reifiers { self: Quasiquotes =>
      *
      *  Example:
      *
-     *    reifyMultiCardinalityList(lst) {
-     *      // first we define patterns that extract high-cardinality holeMap (currently ..)
+     *    reifyHighRankList(lst) {
+     *      // first we define patterns that extract high-rank holeMap (currently ..)
      *      case Placeholder(IterableType(_, _)) => tree
      *    } {
      *      // in the end we define how single elements are reified, typically with default reify call
@@ -306,10 +306,10 @@ trait Reifiers { self: Quasiquotes =>
      *  Sample execution of previous concrete list reifier:
      *
      *    > val lst = List(foo, bar, qq$f3948f9s$1)
-     *    > reifyMultiCardinalityList(lst) { ... } { ... }
+     *    > reifyHighRankList(lst) { ... } { ... }
      *    q"List($foo, $bar) ++ ${holeMap(qq$f3948f9s$1).tree}"
      */
-    def reifyMultiCardinalityList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree
+    def reifyHighRankList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree
 
     val fillListHole: PartialFunction[Any, Tree] = {
       case Placeholder(Hole(tree, DotDot)) => tree
@@ -331,16 +331,16 @@ trait Reifiers { self: Quasiquotes =>
     }
 
     /** Reifies arbitrary list filling ..$x and ...$y holeMap when they are put
-     *  in the correct position. Fallbacks to regular reification for non-high cardinality
+     *  in the correct position. Fallbacks to regular reification for zero rank
      *  elements.
      */
-    override def reifyList(xs: List[Any]): Tree = reifyMultiCardinalityList(xs)(fillListHole.orElse(fillListOfListsHole))(reify)
+    override def reifyList(xs: List[Any]): Tree = reifyHighRankList(xs)(fillListHole.orElse(fillListOfListsHole))(reify)
 
-    def reifyAnnotList(annots: List[Tree]): Tree = reifyMultiCardinalityList(annots) {
+    def reifyAnnotList(annots: List[Tree]): Tree = reifyHighRankList(annots) {
       case AnnotPlaceholder(h @ Hole(_, DotDot)) => reifyAnnotation(h)
     } {
       case AnnotPlaceholder(h: ApplyHole) if h.tpe <:< treeType => reifyAnnotation(h)
-      case AnnotPlaceholder(h: UnapplyHole) if h.cardinality == NoDot => reifyAnnotation(h)
+      case AnnotPlaceholder(h: UnapplyHole) if h.rank == NoDot => reifyAnnotation(h)
       case other => reify(other)
     }
 
@@ -372,7 +372,7 @@ trait Reifiers { self: Quasiquotes =>
   }
 
   class ApplyReifier extends Reifier(isReifyingExpressions = true) {
-    def reifyMultiCardinalityList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree =
+    def reifyHighRankList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree =
       if (xs.isEmpty) mkList(Nil)
       else {
         def reifyGroup(group: List[Any]): Tree = group match {
@@ -399,12 +399,12 @@ trait Reifiers { self: Quasiquotes =>
         }
         mods match {
           case hole :: Nil =>
-            if (flags.nonEmpty) c.abort(flags(0).pos, "Can't splice flags together with modifiers, consider merging flags into modifiers")
-            if (annots.nonEmpty) c.abort(hole.pos, "Can't splice modifiers together with annotations, consider merging annotations into modifiers")
+            if (flags.nonEmpty) c.abort(flags(0).pos, "Can't unquote flags together with modifiers, consider merging flags into modifiers")
+            if (annots.nonEmpty) c.abort(hole.pos, "Can't unquote modifiers together with annotations, consider merging annotations into modifiers")
             ensureNoExplicitFlags(m, hole.pos)
             hole.tree
           case _ :: hole :: Nil =>
-            c.abort(hole.pos, "Can't splice multiple modifiers, consider merging them into a single modifiers instance")
+            c.abort(hole.pos, "Can't unquote multiple modifiers, consider merging them into a single modifiers instance")
           case _ =>
             val baseFlags = reifyFlags(m.flags)
             val reifiedFlags = flags.foldLeft[Tree](baseFlags) { case (flag, hole) => Apply(Select(flag, nme.OR), List(hole.tree)) }
@@ -423,7 +423,7 @@ trait Reifiers { self: Quasiquotes =>
     // pq"$lhs :: $rhs"
     private def cons(lhs: Tree, rhs: Tree) = Apply(collectionCons, lhs :: rhs :: Nil)
 
-    def reifyMultiCardinalityList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree = {
+    def reifyHighRankList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree = {
       val grouped = group(xs) { (a, b) => !fill.isDefinedAt(a) && !fill.isDefinedAt(b) }
       def appended(lst: List[Any], init: Tree)  = lst.foldLeft(init)  { (l, r) => append(l, fallback(r)) }
       def prepended(lst: List[Any], init: Tree) = lst.foldRight(init) { (l, r) => cons(fallback(l), r)   }

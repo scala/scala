@@ -2,62 +2,62 @@ import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.reflect.runtime.universe._, Flag._
 
 object LiftableProps extends QuasiquoteProperties("liftable") {
-  property("splice byte") = test {
+  property("unquote byte") = test {
     val c: Byte = 0
     assert(q"$c" ≈ Literal(Constant(c)))
     assert(q"${0: Byte}" ≈ Literal(Constant(c)))
   }
 
-  property("splice short") = test {
+  property("unquote short") = test {
     val c: Short = 0
     assert(q"$c" ≈ Literal(Constant(c)))
     assert(q"${0: Short}" ≈ Literal(Constant(c)))
   }
 
-  property("splice char") = test {
+  property("unquote char") = test {
     val c: Char = 'c'
     assert(q"$c" ≈ Literal(Constant(c)))
     assert(q"${'c'}" ≈ Literal(Constant(c)))
   }
 
-  property("splice int") = test {
+  property("unquote int") = test {
     val c: Int = 0
     assert(q"$c" ≈ Literal(Constant(c)))
     assert(q"${0: Int}" ≈ Literal(Constant(c)))
   }
 
-  property("splice long") = test {
+  property("unquote long") = test {
     val c: Long = 0
     assert(q"$c" ≈ Literal(Constant(c)))
     assert(q"${0: Long}" ≈ Literal(Constant(c)))
   }
 
-  property("splice float") = test {
+  property("unquote float") = test {
     val c: Float = 0.0f
     assert(q"$c" ≈ Literal(Constant(c)))
     assert(q"${0.0f: Float}" ≈ Literal(Constant(c)))
   }
 
-  property("splice double") = test {
+  property("unquote double") = test {
     val c: Double = 0.0
     assert(q"$c" ≈ Literal(Constant(c)))
     assert(q"${0.0: Double}" ≈ Literal(Constant(c)))
   }
 
-  property("splice boolean") = test {
+  property("unquote boolean") = test {
     val c: Boolean = false
     assert(q"$c" ≈ Literal(Constant(c)))
     assert(q"${true}" ≈ Literal(Constant(true)))
     assert(q"${false}" ≈ Literal(Constant(false)))
   }
 
-  property("splice string") = test {
+  property("unquote string") = test {
     val c: String = "s"
     assert(q"$c" ≈ Literal(Constant(c)))
     assert(q"${"s"}" ≈ Literal(Constant(c)))
   }
 
-  property("splice unit") = test {
+  property("unquote unit") = test {
     val c: Unit = ()
     assert(q"$c" ≈ Literal(Constant(c)))
     assert(q"${()}" ≈ Literal(Constant(c)))
