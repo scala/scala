@@ -9,5 +9,5 @@ object Test extends App {
   val c = cm.classSymbol(mutant.getClass)
   println(c)
   println(c.fullName)
-  println(c.typeSignature)
+  println(c.info)
 }

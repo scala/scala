@@ -1,0 +1,10 @@
+Expr[Unit]({
+  val ru = `package`.universe;
+  val tpe1: ru.Type = ru.typeOf[`package`.List[Int]];
+  Predef.println(tpe1);
+  val tpe2: ru.Type = ru.typeOf(List.apply(1, 2, 3));
+  Predef.println(tpe2)
+})
+scala.List[Int]
+List[Int]
+()

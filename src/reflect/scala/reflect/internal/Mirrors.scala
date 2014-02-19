@@ -117,14 +117,15 @@ trait Mirrors extends api.Mirrors {
      *  Compiler might ignore them, but they should be loadable with macros.
      */
     override def staticClass(fullname: String): ClassSymbol =
-      ensureClassSymbol(fullname, staticModuleOrClass(newTypeNameCached(fullname)))
+      try ensureClassSymbol(fullname, staticModuleOrClass(newTypeNameCached(fullname)))
+      catch { case mre: MissingRequirementError => throw new ScalaReflectionException(mre.msg) }
 
     /************************ loaders of module symbols ************************/
 
     private def ensureModuleSymbol(fullname: String, sym: Symbol, allowPackages: Boolean): ModuleSymbol =
       sym match {
-        case x: ModuleSymbol if allowPackages || !x.isPackage => x
-        case _                                                => MissingRequirementError.notFound("object " + fullname)
+        case x: ModuleSymbol if allowPackages || !x.hasPackageFlag => x
+        case _                                                     => MissingRequirementError.notFound("object " + fullname)
       }
 
     def getModuleByName(fullname: Name): ModuleSymbol =
@@ -155,14 +156,15 @@ trait Mirrors extends api.Mirrors {
      *  Compiler might ignore them, but they should be loadable with macros.
      */
     override def staticModule(fullname: String): ModuleSymbol =
-      ensureModuleSymbol(fullname, staticModuleOrClass(newTermNameCached(fullname)), allowPackages = false)
+      try ensureModuleSymbol(fullname, staticModuleOrClass(newTermNameCached(fullname)), allowPackages = false)
+      catch { case mre: MissingRequirementError => throw new ScalaReflectionException(mre.msg) }
 
     /************************ loaders of package symbols ************************/
 
     private def ensurePackageSymbol(fullname: String, sym: Symbol, allowModules: Boolean): ModuleSymbol =
       sym match {
-        case x: ModuleSymbol if allowModules || x.isPackage => x
-        case _                                              => MissingRequirementError.notFound("package " + fullname)
+        case x: ModuleSymbol if allowModules || x.hasPackageFlag => x
+        case _                                                   => MissingRequirementError.notFound("package " + fullname)
       }
 
     def getPackage(fullname: TermName): ModuleSymbol =
@@ -186,18 +188,19 @@ trait Mirrors extends api.Mirrors {
 
     def getPackageObjectIfDefined(fullname: TermName): Symbol =
       wrapMissing(getPackageObject(fullname))
-    
+
     final def getPackageObjectWithMember(pre: Type, sym: Symbol): Symbol = {
       // The owner of a symbol which requires package qualification may be the
       // package object iself, but it also could be any superclass of the package
       // object.  In the latter case, we must go through the qualifier's info
       // to obtain the right symbol.
-      if (sym.owner.isModuleClass) sym.owner.sourceModule // fast path, if the member is owned by a module class, that must be linked to the package object 
+      if (sym.owner.isModuleClass) sym.owner.sourceModule // fast path, if the member is owned by a module class, that must be linked to the package object
       else pre member nme.PACKAGE                         // otherwise we have to findMember
     }
 
     override def staticPackage(fullname: String): ModuleSymbol =
-      ensurePackageSymbol(fullname.toString, getModuleOrClass(newTermNameCached(fullname)), allowModules = false)
+      try ensurePackageSymbol(fullname.toString, getModuleOrClass(newTermNameCached(fullname)), allowModules = false)
+      catch { case mre: MissingRequirementError => throw new ScalaReflectionException(mre.msg) }
 
     /************************ helpers ************************/
 

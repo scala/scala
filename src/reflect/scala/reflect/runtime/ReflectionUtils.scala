@@ -9,6 +9,8 @@ package reflect.runtime
 import java.lang.{Class => jClass}
 import java.lang.reflect.{ Method, InvocationTargetException, UndeclaredThrowableException }
 import scala.reflect.internal.util.AbstractFileClassLoader
+import scala.reflect.io._
+import java.io.{File => JFile}
 
 /** A few java-reflection oriented utility functions useful during reflection bootstrapping.
  */
@@ -97,5 +99,74 @@ object ReflectionUtils {
   object EnclosedInConstructor extends EnclosedIn(_.getEnclosingConstructor)
   object EnclosedInClass extends EnclosedIn(_.getEnclosingClass)
   object EnclosedInPackage extends EnclosedIn(_.getPackage)
+
+  def associatedFile(clazz: Class[_]): AbstractFile = {
+    // TODO: I agree with Jason - this implementation isn't something that we'd like to support
+    // therefore I'm having it commented out and this function will now return NoAbstractFile
+    // I think we can keep the source code though, because it can be useful to the others
+    //
+    // def inferAssociatedFile(clazz: Class[_]): AbstractFile = {
+    //   // http://stackoverflow.com/questions/227486/find-where-java-class-is-loaded-from
+    //   try {
+    //     var cl = clazz.getClassLoader()
+    //     if (cl == null) {
+    //       cl = ClassLoader.getSystemClassLoader()
+    //       while (cl != null && cl.getParent != null) cl = cl.getParent
+    //     }
+    //     var result: AbstractFile = null
+    //     if (cl != null) {
+    //       val name = clazz.getCanonicalName()
+    //       val resource = cl.getResource(name.replace(".", "/") + ".class")
+    //       if (resource != null) {
+    //         def fromFile(file: String) = AbstractFile.getFile(file)
+    //         def fromJarEntry(jarfile: String, entrypath: String) = {
+    //           val jar = fromFile(jarfile)
+    //           new VirtualFile(clazz.getName, entrypath) {
+    //             lazy val impl: AbstractFile = {
+    //               def loop(root: AbstractFile, path: List[String]): AbstractFile = {
+    //                 def find(name: String) = root.iterator.find(_.name == name).getOrElse(NoAbstractFile)
+    //                 path match {
+    //                   case step :: Nil => find(step)
+    //                   case step :: rest => loop(find(step), rest)
+    //                   case Nil => NoAbstractFile
+    //                 }
+    //               }
+    //               loop(ZipArchive.fromFile(new JFile(jarfile)), entrypath.split("/").toList)
+    //             }
+    //             override def container        = impl.container
+    //             override def lastModified     = impl.lastModified
+    //             override def input            = impl.input
+    //             override def sizeOption       = impl.sizeOption
+    //             override def underlyingSource = Some(jar)
+    //             override def toString         = jarfile + "(" + entrypath + ")"
+    //           }
+    //         }
+    //         def fallback() = new VirtualFile(clazz.getName, resource.toString)
+    //         result = resource.getProtocol match {
+    //           case "file" =>
+    //             fromFile(resource.getFile)
+    //           case "jar" =>
+    //             val intrajarUrl = new java.net.URL(resource.getFile)
+    //             intrajarUrl.getProtocol match {
+    //               case "file" =>
+    //                 val file = intrajarUrl.getFile()
+    //                 val expectedSuffix = "!/" + name.replace(".", "/") + ".class"
+    //                 if (file.endsWith(expectedSuffix)) fromJarEntry(file.stripSuffix(expectedSuffix), expectedSuffix.substring(2))
+    //                 else fallback()
+    //               case _ => fallback()
+    //             }
+    //           case _ =>
+    //             fallback()
+    //         }
+    //       }
+    //     }
+    //     if (result != null) result else NoAbstractFile
+    //   } catch {
+    //     case _: Exception => NoAbstractFile
+    //   }
+    // }
+    // inferAssociatedFile(clazz)
+    NoAbstractFile
+  }
 }
 

@@ -600,7 +600,7 @@ abstract class Erasure extends AddInterfaces
           if (tree.symbol == NoSymbol) {
             tree
           } else if (name == nme.CONSTRUCTOR) {
-            if (tree.symbol.owner == AnyValClass) tree.symbol = ObjectClass.primaryConstructor
+            if (tree.symbol.owner == AnyValClass) tree.symbol = ObjectClass.info.decl(nme.CONSTRUCTOR)
             tree
           } else if (tree.symbol == Any_asInstanceOf)
             adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))
@@ -740,7 +740,7 @@ abstract class Erasure extends AddInterfaces
     /** TODO - adapt SymbolPairs so it can be used here. */
     private def checkNoDeclaredDoubleDefs(base: Symbol) {
       val decls = base.info.decls
-      
+
       // SI-8010 force infos, otherwise makeNotPrivate in ExplicitOuter info transformer can trigger
       //         a scope rehash while were iterating and we can see the same entry twice!
       //         Inspection of SymbolPairs (the basis of OverridingPairs), suggests that it is immune
@@ -751,13 +751,13 @@ abstract class Erasure extends AddInterfaces
       //         we do these checks, so that we're comparing same-named methods based on the expanded names that actually
       //         end up in the bytecode.
       exitingPostErasure(decls.foreach(_.info))
-      
+
       var e = decls.elems
       while (e ne null) {
         if (e.sym.isTerm) {
           var e1 = decls lookupNextEntry e
           while (e1 ne null) {
-            assert(e.sym ne e1.sym, s"Internal error: encountered ${e.sym.debugLocationString} twice during scope traversal. This might be related to SI-8010.")            
+            assert(e.sym ne e1.sym, s"Internal error: encountered ${e.sym.debugLocationString} twice during scope traversal. This might be related to SI-8010.")
             if (sameTypeAfterErasure(e.sym, e1.sym))
               doubleDefError(new SymbolPair(base, e.sym, e1.sym))
 

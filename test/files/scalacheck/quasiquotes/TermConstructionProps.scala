@@ -46,7 +46,7 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
 
 
   property("splice tree into new") = forAll { (tree: Tree) =>
-    q"new $tree" ≈ Apply(Select(New(tree), nme.CONSTRUCTOR), List())
+    q"new $tree" ≈ Apply(Select(New(tree), termNames.CONSTRUCTOR), List())
   }
 
   property("splice tree into return") = forAll { (tree: Tree) =>

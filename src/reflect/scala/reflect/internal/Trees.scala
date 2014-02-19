@@ -99,7 +99,7 @@ trait Trees extends api.Trees {
       (duplicator transform this).asInstanceOf[this.type]
   }
 
-  abstract class TreeContextApiImpl extends TreeContextApi { this: Tree =>
+  abstract class TreeContextApiImpl extends TreeApi { this: Tree =>
 
     override def orElse(alt: => Tree) = if (!isEmpty) this else alt
 
@@ -158,8 +158,8 @@ trait Trees extends api.Trees {
       productIterator.toList flatMap subtrees
     }
 
-    override def freeTerms: List[FreeTermSymbol] = freeSyms[FreeTermSymbol](_.isFreeTerm, _.termSymbol)
-    override def freeTypes: List[FreeTypeSymbol] = freeSyms[FreeTypeSymbol](_.isFreeType, _.typeSymbol)
+    def freeTerms: List[FreeTermSymbol] = freeSyms[FreeTermSymbol](_.isFreeTerm, _.termSymbol)
+    def freeTypes: List[FreeTypeSymbol] = freeSyms[FreeTypeSymbol](_.isFreeType, _.typeSymbol)
 
     private def freeSyms[S <: Symbol](isFree: Symbol => Boolean, symOfType: Type => Symbol): List[S] = {
       val s = mutable.LinkedHashSet[S]()
@@ -175,13 +175,13 @@ trait Trees extends api.Trees {
       s.toList
     }
 
-    override def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree =
+    def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree =
       new TreeSymSubstituter(from, to)(this)
 
-    override def substituteTypes(from: List[Symbol], to: List[Type]): Tree =
+    def substituteTypes(from: List[Symbol], to: List[Type]): Tree =
       new TreeTypeSubstituter(from, to)(this)
 
-    override def substituteThis(clazz: Symbol, to: Tree): Tree =
+    def substituteThis(clazz: Symbol, to: Tree): Tree =
       new ThisSubstituter(clazz, to) transform this
 
     def hasExistingSymbol = (symbol ne null) && (symbol ne NoSymbol)
@@ -235,7 +235,7 @@ trait Trees extends api.Trees {
 
   trait TypTree extends Tree with TypTreeApi
 
-  abstract class SymTree extends Tree with SymTreeContextApi {
+  abstract class SymTree extends Tree with SymTreeApi {
     override def hasSymbolField = true
     override var symbol: Symbol = NoSymbol
   }
@@ -296,14 +296,42 @@ trait Trees extends api.Trees {
 
   case class ClassDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], impl: Template)
        extends ImplDef with ClassDefApi
-  object ClassDef extends ClassDefExtractor
+  object ClassDef extends ClassDefExtractor {
+    /** @param sym       the class symbol
+     *  @param impl      the implementation template
+     *  @return          the class definition
+     */
+    def apply(sym: Symbol, impl: Template): ClassDef =
+      atPos(sym.pos) {
+        ClassDef(Modifiers(sym.flags),
+                 sym.name.toTypeName,
+                 sym.typeParams map TypeDef.apply,
+                 impl) setSymbol sym
+      }
+
+    /** @param sym       the class symbol
+     *  @param body      trees that constitute the body of the class
+     *  @return          the class definition
+     */
+    def apply(sym: Symbol, body: List[Tree]): ClassDef =
+      ClassDef(sym, Template(sym, body))
+  }
 
   case class ModuleDef(mods: Modifiers, name: TermName, impl: Template)
         extends ImplDef with ModuleDefApi
-  object ModuleDef extends ModuleDefExtractor
+  object ModuleDef extends ModuleDefExtractor {
+    /**
+     *  @param sym       the class symbol
+     *  @param impl      the implementation template
+     */
+    def apply(sym: Symbol, impl: Template): ModuleDef =
+      atPos(sym.pos) {
+        ModuleDef(Modifiers(sym.flags), sym.name.toTermName, impl) setSymbol sym
+      }
+  }
 
   abstract class ValOrDefDef extends MemberDef with ValOrDefDefApi {
-    def name: Name
+    def name: TermName
     def tpt: Tree
     def rhs: Tree
   }
@@ -317,19 +345,37 @@ trait Trees extends api.Trees {
   }
 
   case class ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) extends ValOrDefDef with ValDefApi
-  object ValDef extends ValDefExtractor
+  object ValDef extends ValDefExtractor {
+    def apply(sym: Symbol): ValDef            = newValDef(sym, EmptyTree)()
+    def apply(sym: Symbol, rhs: Tree): ValDef = newValDef(sym, rhs)()
+  }
 
   case class DefDef(mods: Modifiers, name: TermName, tparams: List[TypeDef],
                     vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) extends ValOrDefDef with DefDefApi
-  object DefDef extends DefDefExtractor
+  object DefDef extends DefDefExtractor {
+    def apply(sym: Symbol, rhs: Tree): DefDef                                                = newDefDef(sym, rhs)()
+    def apply(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef                  = newDefDef(sym, rhs)(vparamss = vparamss)
+    def apply(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef                               = newDefDef(sym, rhs)(mods = mods)
+    def apply(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef = newDefDef(sym, rhs)(mods = mods, vparamss = vparamss)
+    def apply(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef                          = newDefDef(sym, rhs(sym.info.paramss))()
+  }
 
   case class TypeDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], rhs: Tree)
        extends MemberDef with TypeDefApi
-  object TypeDef extends TypeDefExtractor
+  object TypeDef extends TypeDefExtractor {
+    /** A TypeDef node which defines abstract type or type parameter for given `sym` */
+    def apply(sym: Symbol): TypeDef            = newTypeDef(sym, TypeBoundsTree(sym))()
+    def apply(sym: Symbol, rhs: Tree): TypeDef = newTypeDef(sym, rhs)()
+  }
 
   case class LabelDef(name: TermName, params: List[Ident], rhs: Tree)
        extends DefTree with TermTree with LabelDefApi
-  object LabelDef extends LabelDefExtractor
+  object LabelDef extends LabelDefExtractor {
+    def apply(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
+      atPos(sym.pos) {
+        LabelDef(sym.name.toTermName, params map Ident, rhs) setSymbol sym
+      }
+  }
 
   case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int) extends ImportSelectorApi
   object ImportSelector extends ImportSelectorExtractor {
@@ -488,7 +534,7 @@ trait Trees extends api.Trees {
   }
   object Select extends SelectExtractor
 
-  case class Ident(name: Name) extends RefTree with IdentContextApi {
+  case class Ident(name: Name) extends RefTree with IdentApi {
     def qualifier: Tree = EmptyTree
     def isBackquoted = this.hasAttachment[BackquotedIdentifierAttachment.type]
   }
@@ -545,7 +591,7 @@ trait Trees extends api.Trees {
        extends TypTree with ExistentialTypeTreeApi
   object ExistentialTypeTree extends ExistentialTypeTreeExtractor
 
-  case class TypeTree() extends TypTree with TypeTreeContextApi {
+  case class TypeTree() extends TypTree with TypeTreeApi {
     private var orig: Tree = null
     /** Was this type tree originally empty? That is, does it now contain
       * an inferred type that must be forgotten in `resetAttrs` to
@@ -590,14 +636,14 @@ trait Trees extends api.Trees {
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
   private def TypeTreeMemberType(sym: Symbol): TypeTree = {
     // Needed for pos/t4970*.scala. See SI-7853
-    val resType = (if (sym.isLocal) sym.tpe else (sym.owner.thisType memberType sym)).finalResultType
+    val resType = (if (sym.isLocalToBlock) sym.tpe else (sym.owner.thisType memberType sym)).finalResultType
     atPos(sym.pos.focus)(TypeTree(resType))
   }
 
   def TypeBoundsTree(bounds: TypeBounds): TypeBoundsTree = TypeBoundsTree(TypeTree(bounds.lo), TypeTree(bounds.hi))
   def TypeBoundsTree(sym: Symbol): TypeBoundsTree        = atPos(sym.pos)(TypeBoundsTree(sym.info.bounds))
 
-  override type TreeCopier <: InternalTreeCopierOps
+  override type TreeCopier >: Null <: InternalTreeCopierOps
   abstract class InternalTreeCopierOps extends TreeCopierOps {
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]): ApplyDynamic
     def ArrayValue(tree: Tree, elemtpt: Tree, trees: List[Tree]): ArrayValue
@@ -676,6 +722,8 @@ trait Trees extends api.Trees {
       new Select(qualifier, selector).copyAttrs(tree)
     def Ident(tree: Tree, name: Name) =
       new Ident(name) copyAttrs tree
+    def RefTree(tree: Tree, qualifier: Tree, selector: Name) =
+      self.RefTree(qualifier, selector) copyAttrs tree
     def ReferenceToBoxed(tree: Tree, idt: Ident) =
       new ReferenceToBoxed(idt).copyAttrs(tree)
     def Literal(tree: Tree, value: Constant) =
@@ -866,6 +914,11 @@ trait Trees extends api.Trees {
       if name0 == name => t
       case _ => treeCopy.Ident(tree, name)
     }
+    def RefTree(tree: Tree, qualifier: Tree, selector: Name) = tree match {
+      case t @ Select(qualifier0, selector0)
+      if (qualifier0 == qualifier) && (selector0 == selector) => t
+      case _ => treeCopy.RefTree(tree, qualifier, selector)
+    }
     def ReferenceToBoxed(tree: Tree, idt: Ident) = tree match {
       case t @ ReferenceToBoxed(idt0)
       if (idt0 == idt) => t
@@ -1000,25 +1053,6 @@ trait Trees extends api.Trees {
 
   // ---- values and creators ---------------------------------------
 
-  /** @param sym       the class symbol
-   *  @param impl      the implementation template
-   *  @return          the class definition
-   */
-  def ClassDef(sym: Symbol, impl: Template): ClassDef =
-    atPos(sym.pos) {
-      ClassDef(Modifiers(sym.flags),
-               sym.name.toTypeName,
-               sym.typeParams map TypeDef,
-               impl) setSymbol sym
-    }
-
-  /** @param sym       the class symbol
-   *  @param body      trees that constitute the body of the class
-   *  @return          the class definition
-   */
-  def ClassDef(sym: Symbol, body: List[Tree]): ClassDef =
-    ClassDef(sym, Template(sym, body))
-
   /** @param sym       the template's symbol
    *  @param body      trees that constitute the body of the template
    *  @return          the template
@@ -1030,15 +1064,6 @@ trait Trees extends api.Trees {
                body)
     }
   }
-
-  /**
-   *  @param sym       the class symbol
-   *  @param impl      the implementation template
-   */
-  def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
-    atPos(sym.pos) {
-      ModuleDef(Modifiers(sym.flags), sym.name.toTermName, impl) setSymbol sym
-    }
 
   trait CannotHaveAttrs extends Tree {
     super.setPos(NoPosition)
@@ -1076,8 +1101,8 @@ trait Trees extends api.Trees {
   def newDefDef(sym: Symbol, rhs: Tree)(
     mods: Modifiers              = Modifiers(sym.flags),
     name: TermName               = sym.name.toTermName,
-    tparams: List[TypeDef]       = sym.typeParams map TypeDef,
-    vparamss: List[List[ValDef]] = mapParamss(sym)(ValDef),
+    tparams: List[TypeDef]       = sym.typeParams map TypeDef.apply,
+    vparamss: List[List[ValDef]] = mapParamss(sym)(ValDef.apply),
     tpt: Tree                    = TypeTreeMemberType(sym)
   ): DefDef = (
     atPos(sym.pos)(DefDef(mods, name, tparams, vparamss, tpt, rhs)) setSymbol sym
@@ -1086,28 +1111,10 @@ trait Trees extends api.Trees {
   def newTypeDef(sym: Symbol, rhs: Tree)(
     mods: Modifiers        = Modifiers(sym.flags),
     name: TypeName         = sym.name.toTypeName,
-    tparams: List[TypeDef] = sym.typeParams map TypeDef
+    tparams: List[TypeDef] = sym.typeParams map TypeDef.apply
   ): TypeDef = (
     atPos(sym.pos)(TypeDef(mods, name, tparams, rhs)) setSymbol sym
   )
-
-  def DefDef(sym: Symbol, rhs: Tree): DefDef                                                = newDefDef(sym, rhs)()
-  def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef                  = newDefDef(sym, rhs)(vparamss = vparamss)
-  def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef                               = newDefDef(sym, rhs)(mods = mods)
-  def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef = newDefDef(sym, rhs)(mods = mods, vparamss = vparamss)
-  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef                          = newDefDef(sym, rhs(sym.info.paramss))()
-
-  def ValDef(sym: Symbol): ValDef            = newValDef(sym, EmptyTree)()
-  def ValDef(sym: Symbol, rhs: Tree): ValDef = newValDef(sym, rhs)()
-
-  /** A TypeDef node which defines abstract type or type parameter for given `sym` */
-  def TypeDef(sym: Symbol): TypeDef            = newTypeDef(sym, TypeBoundsTree(sym))()
-  def TypeDef(sym: Symbol, rhs: Tree): TypeDef = newTypeDef(sym, rhs)()
-
-  def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
-    atPos(sym.pos) {
-      LabelDef(sym.name.toTermName, params map Ident, rhs) setSymbol sym
-    }
 
   /** casedef shorthand */
   def CaseDef(pat: Tree, body: Tree): CaseDef =
@@ -1851,8 +1858,8 @@ trait Trees extends api.Trees {
   implicit val NameTreeTag            = ClassTag[NameTree](classOf[NameTree])
   implicit val NewTag                 = ClassTag[New](classOf[New])
   implicit val PackageDefTag          = ClassTag[PackageDef](classOf[PackageDef])
-  implicit val RefTreeTag             = ClassTag[RefTree](classOf[RefTree])
   implicit val ReferenceToBoxedTag    = ClassTag[ReferenceToBoxed](classOf[ReferenceToBoxed])
+  implicit val RefTreeTag             = ClassTag[RefTree](classOf[RefTree])
   implicit val ReturnTag              = ClassTag[Return](classOf[Return])
   implicit val SelectFromTypeTreeTag  = ClassTag[SelectFromTypeTree](classOf[SelectFromTypeTree])
   implicit val SelectTag              = ClassTag[Select](classOf[Select])

@@ -18,7 +18,7 @@ object Perverse {
   def pImpl(c: Context)(args: c.Expr[Any]*): c.Expr[String] = {
     import c.universe._
     val macroPos = c.macroApplication.pos
-    val text = macroPos.lineContent substring macroPos.column
+    val text = macroPos.source.lineToString(macroPos.line - 1) substring macroPos.column
     val tt = Literal(Constant(text))
     val tree = q"t8013.Perverse.pervert($tt)"
     c.Expr[String](tree)

@@ -77,8 +77,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
   }
 
-  abstract class SymbolContextApiImpl extends SymbolContextApi {
+  def symbolOf[T: WeakTypeTag]: TypeSymbol = weakTypeOf[T].typeSymbolDirect.asType
+
+  abstract class SymbolContextApiImpl extends SymbolApi {
     this: Symbol =>
+
+    def isFreeTerm: Boolean = false
+    def asFreeTerm: FreeTermSymbol = throw new ScalaReflectionException(s"$this is not a free term")
+    def isFreeType: Boolean = false
+    def asFreeType: FreeTypeSymbol = throw new ScalaReflectionException(s"$this is not a free type")
 
     def isExistential: Boolean = this.isExistentiallyBound
     def isParamWithDefault: Boolean = this.hasDefault
@@ -89,6 +96,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isJava: Boolean = isJavaDefined
     def isVal: Boolean = isTerm && !isModule && !isMethod && !isMutable
     def isVar: Boolean = isTerm && !isModule && !isMethod && !isLazy && isMutable
+    def isAbstract: Boolean = isAbstractClass || isDeferred || isAbstractType
+    def isPrivateThis = (this hasFlag PRIVATE) && (this hasFlag LOCAL)
+    def isProtectedThis = (this hasFlag PROTECTED) && (this hasFlag LOCAL)
 
     def newNestedSymbol(name: Name, pos: Position, newFlags: Long, isClass: Boolean): Symbol = name match {
       case n: TermName => newTermSymbol(n, pos, newFlags)
@@ -110,24 +120,52 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def baseClasses                       = info.baseClasses
     def module                            = sourceModule
     def thisPrefix: Type                  = thisType
+    def superPrefix(supertpe: Type): Type = SuperType(thisType, supertpe)
 
-    // automatic full initialization on access to info from reflection API is a double-edged sword
-    // on the one hand, it's convenient so that the users don't have to deal with initialization themselves before printing out stuff
-    // (e.g. printing out a method's signature without fully initializing it would result in <_>'s for parameters
-    // on the other hand, this strategy can potentially cause unexpected effects due to being inconsistent with compiler's behavior
-    // so far I think user convenience outweighs the scariness, but we need to keep the tradeoff in mind
-    // NOTE: if you end up removing the call to fullyInitializeSymbol, consider that it would affect both runtime reflection and macros
-    def typeSignature: Type               = { fullyInitializeSymbol(this); info }
-    def typeSignatureIn(site: Type): Type = { fullyInitializeSymbol(this); site memberInfo this }
+    // These two methods used to call fullyInitializeSymbol on `this`.
+    //
+    // The only positive effect of that is, to the best of my knowledge, convenient printing
+    // (if you print a signature of the symbol that's not fully initialized,
+    // you might end up with weird <?>'s in value/type params)
+    //
+    // Another effect is obviously full initialization of that symbol,
+    // but that one shouldn't be necessary from the public API standpoint,
+    // because everything that matters auto-initializes at runtime,
+    // and auto-initialization at compile-time is anyway dubious
+    // (I've had spurious cyclic refs caused by calling typeSignature
+    // that initialized parent, which was in the middle of initialization).
+    //
+    // Given that and also given the pressure of being uniform with info and infoIn,
+    // I've removed calls to fullyInitializeSymbol from typeSignature and typeSignatureIn,
+    // injected fullyInitializeSymbol in showDecl, and injected fullyInitializeType in runtime Type.toString
+    // (the latter will make things a bit harder to debug in runtime universe, because
+    // toString might now very rarely cause cyclic references, but we also have showRaw that doesn't do initialization).
+    //
+    // Auto-initialization in runtime Type.toString is one of the examples of why a cake-based design
+    // isn't a very good idea for reflection API. Sometimes we want to same pretty name for both a compiler-facing
+    // and a user-facing API that should have different behaviors (other examples here include isPackage, isCaseClass, etc).
+    // Within a cake it's fundamentally impossible to achieve that.
+    def typeSignature: Type               = info
+    def typeSignatureIn(site: Type): Type = site memberInfo this
 
     def toType: Type = tpe
     def toTypeIn(site: Type): Type = site.memberType(this)
     def toTypeConstructor: Type = typeConstructor
-    def setTypeSignature(tpe: Type): this.type = { setInfo(tpe); this }
     def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
 
     def getter: Symbol = getter(owner)
     def setter: Symbol = setter(owner)
+
+    def companion: Symbol = {
+      if (isModule && !isPackage) companionSymbol
+      else if (isModuleClass && !isPackageClass) sourceModule.companionSymbol
+      else if (isClass && !isModuleClass && !isPackageClass) companionSymbol
+      else NoSymbol
+    }
+
+    def infoIn(site: Type): Type = typeSignatureIn(site)
+    def overrides: List[Symbol] = allOverriddenSymbols
+    def paramLists: List[List[Symbol]] = paramss
   }
 
   private[reflect] case class SymbolKind(accurate: String, sanitized: String, abbreviation: String)
@@ -633,7 +671,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  (i.e. the pickle not only contains info about directly nested classes/modules, but also about
      *  classes/modules nested into those and so on).
      *
-     *  Unpickling is triggered automatically whenever typeSignature (info in compiler parlance) is called.
+     *  Unpickling is triggered automatically whenever info (info in compiler parlance) is called.
      *  This happens because package symbols assign completer thunks to the dummies they create.
      *  Therefore metadata loading happens lazily and transparently.
      *
@@ -643,7 +681,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  produces incorrect results.
      *
      *  One might think that the solution is simple: automatically call the completer
-     *  whenever one needs flags, annotations and privateWithin - just like it's done for typeSignature.
+     *  whenever one needs flags, annotations and privateWithin - just like it's done for info.
      *  Unfortunately, this leads to weird crashes in scalac, and currently we can't attempt
      *  to fix the core of the compiler risk stability a few weeks before the final release.
      *  upd. Haha, "a few weeks before the final release". This surely sounds familiar :)
@@ -904,7 +942,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || isModuleOrModuleClass && (isTopLevel || !settings.overrideObjects)
       || isTerm && (
              isPrivate
-          || isLocal
+          || isLocalToBlock
           || isNotOverridden
          )
     )
@@ -912,8 +950,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Is this symbol owned by a package? */
     final def isTopLevel = owner.isPackageClass
 
-    /** Is this symbol locally defined? I.e. not accessed from outside `this` instance */
+    /** Is this symbol defined in a block? */
+    @deprecated("Use isLocalToBlock instead", "2.11.0")
     final def isLocal: Boolean = owner.isTerm
+
+    /** Is this symbol defined in a block? */
+    final def isLocalToBlock: Boolean = owner.isTerm
 
     /** Is this symbol a constant? */
     final def isConstant: Boolean = isStable && isConstantType(tpe.resultType)
@@ -1257,7 +1299,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  as public.
      */
     def accessBoundary(base: Symbol): Symbol = {
-      if (hasFlag(PRIVATE) || isLocal) owner
+      if (hasFlag(PRIVATE) || isLocalToBlock) owner
       else if (hasAllFlags(PROTECTED | STATIC | JAVA)) enclosingRootClass
       else if (hasAccessBoundary && !phase.erasedTypes) privateWithin
       else if (hasFlag(PROTECTED)) base
@@ -1861,7 +1903,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The next enclosing method. */
     def enclMethod: Symbol = if (isSourceMethod) this else owner.enclMethod
 
-    /** The primary constructor of a class. */
     def primaryConstructor: Symbol = NoSymbol
 
     /** The self symbol (a TermSymbol) of a class with explicit self type, or else the
@@ -2272,7 +2313,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  seen from class `base`. This symbol is always concrete.
      *  pre: `this.owner` is in the base class sequence of `base`.
      */
-    final def superSymbol(base: Symbol): Symbol = {
+    @deprecated("Use `superSymbolIn` instead", "2.11.0")
+    final def superSymbol(base: Symbol): Symbol = superSymbolIn(base)
+
+    final def superSymbolIn(base: Symbol): Symbol = {
       var bcs = base.info.baseClasses dropWhile (owner != _) drop 1
       var sym: Symbol = NoSymbol
       while (!bcs.isEmpty && sym == NoSymbol) {
@@ -2286,7 +2330,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The getter of this value or setter definition in class `base`, or NoSymbol if
      *  none exists.
      */
-    final def getter(base: Symbol): Symbol =
+    @deprecated("Use `getterIn` instead", "2.11.0")
+    final def getter(base: Symbol): Symbol = getterIn(base)
+
+    final def getterIn(base: Symbol): Symbol =
       base.info decl getterName filter (_.hasAccessorFlag)
 
     def getterName: TermName = name.getterName
@@ -2409,7 +2456,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isClass) "class"
       else if (isType && !isParameter) "type"
       else if (isVariable) "var"
-      else if (isPackage) "package"
+      else if (hasPackageFlag) "package"
       else if (isModule) "object"
       else if (isSourceMethod) "def"
       else if (isTerm && (!isParameter || isParamAccessor)) "val"
@@ -2420,8 +2467,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         if (isTermMacro) ("term macro", "macro method", "MACM")
         else if (isInstanceOf[FreeTermSymbol]) ("free term", "free term", "FTE")
         else if (isInstanceOf[FreeTypeSymbol]) ("free type", "free type", "FTY")
-        else if (isPackage) ("package", "package", "PK")
         else if (isPackageClass) ("package class", "package", "PKC")
+        else if (isPackage) ("package", "package", "PK")
         else if (isPackageObject) ("package object", "package", "PKO")
         else if (isPackageObjectClass) ("package object class", "package", "PKOC")
         else if (isAnonymousClass) ("anonymous class", "anonymous class", "AC")
@@ -2649,7 +2696,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         (infos ne null) && infos.info.isInstanceOf[OverloadedType]
     )
     ***/
-    override def isPackage          = this hasFlag PACKAGE
     override def isValueParameter   = this hasFlag PARAM
 
     override def isSetterParameter  = isValueParameter && owner.isSetter
@@ -2822,13 +2868,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         }
       loop(info)
     }
+
+    override def exceptions = annotations flatMap ThrownException.unapply
   }
   implicit val MethodSymbolTag = ClassTag[MethodSymbol](classOf[MethodSymbol])
 
   class AliasTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
     type TypeOfClonedSymbol = TypeSymbol
-    override def variance = if (hasLocalFlag) Bivariant else info.typeSymbol.variance
+    override def variance = if (isLocalToThis) Bivariant else info.typeSymbol.variance
     override def isContravariant = variance.isContravariant
     override def isCovariant     = variance.isCovariant
     final override def isAliasType = true
@@ -3114,7 +3162,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     override def isLocalClass = (
          isAnonOrRefinementClass
-      || isLocal
+      || isLocalToBlock
       || !isTopLevel && owner.isLocalClass
     )
 
@@ -3139,13 +3187,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def primaryConstructor = {
       val c = info decl primaryConstructorName
-      if (c.isOverloaded) c.alternatives.head else c
+      if (isJavaDefined) NoSymbol // need to force info before checking the flag
+      else if (c.isOverloaded) c.alternatives.head else c
     }
 
     override def associatedFile = (
       if (!isTopLevel) super.associatedFile
-      else if (_associatedFile eq null) NoAbstractFile // guarantee not null, but save cost of initializing the var
-      else _associatedFile
+      else {
+        if (_associatedFile eq null) NoAbstractFile // guarantee not null, but save cost of initializing the var
+        else _associatedFile
+      }
     )
     override def associatedFile_=(f: AbstractFile) { _associatedFile = f }
 
@@ -3354,11 +3405,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def origin: String
   }
   class FreeTermSymbol(name0: TermName, value0: => Any, val origin: String) extends TermSymbol(NoSymbol, NoPosition, name0) with FreeSymbol with FreeTermSymbolApi {
+    final override def isFreeTerm = true
+    final override def asFreeTerm = this
     def value = value0
   }
   implicit val FreeTermSymbolTag = ClassTag[FreeTermSymbol](classOf[FreeTermSymbol])
 
-  class FreeTypeSymbol(name0: TypeName, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) with FreeSymbol with FreeTypeSymbolApi
+  class FreeTypeSymbol(name0: TypeName, val origin: String) extends TypeSkolem(NoSymbol, NoPosition, name0, NoSymbol) with FreeSymbol with FreeTypeSymbolApi {
+    final override def isFreeType = true
+    final override def asFreeType = this
+  }
   implicit val FreeTypeSymbolTag = ClassTag[FreeTypeSymbol](classOf[FreeTypeSymbol])
 
   /** An object representing a missing symbol */

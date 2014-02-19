@@ -10,8 +10,8 @@ object Macros {
   def selFieldImpl(c: Context) = {
     import c.universe._
     val field = c.macroApplication.symbol
-    val bodyAnn = field.annotations.filter(_.tpe <:< typeOf[body]).head
-    c.Expr[Any](bodyAnn.scalaArgs.head)
+    val bodyAnn = field.annotations.filter(_.tree.tpe <:< typeOf[body]).head
+    c.Expr[Any](bodyAnn.tree.children(1))
   }
 
   def mkObjectImpl(c: Context)(xs: c.Expr[Any]*) = {
@@ -21,7 +21,7 @@ object Macros {
     val kvps = xs.map(_.tree).toList map { case Apply(TypeApply(Select(Apply(_, List(Literal(Constant(name: String)))), _), _), List(value)) => name -> value }
     // val fields = kvps map { case (k, v) => q"@body($v) def ${TermName(k)} = macro Macros.selFieldImpl" }
     val fields = kvps map { case (k, v) => DefDef(
-      Modifiers(MACRO, tpnme.EMPTY, List(Apply(Select(New(Ident(TypeName("body"))), nme.CONSTRUCTOR), List(v)))),
+      Modifiers(MACRO, typeNames.EMPTY, List(Apply(Select(New(Ident(TypeName("body"))), termNames.CONSTRUCTOR), List(v)))),
       TermName(k), Nil, Nil, Ident(TypeName("Any")), Select(Ident(TermName("Macros")), TermName("selFieldImpl"))) }
     // q"import scala.language.experimental.macros; class Workaround { ..$fields }; new Workaround{}"
     c.Expr[Any](Block(
@@ -32,8 +32,8 @@ object Macros {
           Template(
             List(Select(Ident(TermName("scala")), TypeName("AnyRef"))), noSelfType,
             DefDef(
-              NoMods, nme.CONSTRUCTOR, Nil, List(Nil), TypeTree(),
-              Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(()))))
+              NoMods, termNames.CONSTRUCTOR, Nil, List(Nil), TypeTree(),
+              Block(List(Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())), Literal(Constant(()))))
             +: fields)),
         ClassDef(
           Modifiers(FINAL), TypeName("$anon"), Nil,
@@ -41,9 +41,9 @@ object Macros {
             List(Ident(TypeName("Workaround"))), noSelfType,
             List(
               DefDef(
-                NoMods, nme.CONSTRUCTOR, Nil, List(Nil), TypeTree(),
-                Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(())))))))),
-      Apply(Select(New(Ident(TypeName("$anon"))), nme.CONSTRUCTOR), List())))
+                NoMods, termNames.CONSTRUCTOR, Nil, List(Nil), TypeTree(),
+                Block(List(Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())), Literal(Constant(())))))))),
+      Apply(Select(New(Ident(TypeName("$anon"))), termNames.CONSTRUCTOR), List())))
   }
 }
 

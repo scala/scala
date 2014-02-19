@@ -26,11 +26,13 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     TypeTag.Null.tpe
 
     this.settings
+    this.internal
     this.treeInfo
     this.rootMirror
-    this.treeBuild
     this.traceSymbols
     this.perRunCaches
+    this.compat
+    this.treeBuild
     this.FreshNameExtractor
     this.FixedMirrorTreeCreator
     this.FixedMirrorTypeCreator
@@ -106,9 +108,11 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.UnmappableAnnotation
     this.ErroneousAnnotation
     this.ThrownException
+    this.typeNames
     this.tpnme
     this.fulltpnme
     this.binarynme
+    this.termNames
     this.nme
     this.sn
     this.Constant
@@ -279,6 +283,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ReflectPackage
     definitions.ReflectApiPackage
     definitions.ReflectRuntimePackage
+    definitions.UniverseClass
     definitions.PartialManifestModule
     definitions.FullManifestClass
     definitions.FullManifestModule

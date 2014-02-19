@@ -6,10 +6,10 @@ object Macros {
   object Impls {
     def foo(c: Context)(s: c.Expr[String]) = {
       import c.universe._
-      import treeBuild._
+      import internal._
 
-      val world = c.reifyTree(mkRuntimeUniverseRef, EmptyTree, s.tree)
-      val greeting = c.reifyTree(mkRuntimeUniverseRef, EmptyTree, c.typecheck(Apply(Select(Literal(Constant("hello ")), TermName("$plus")), List(c.unreifyTree(world)))))
+      val world = c.reifyTree(gen.mkRuntimeUniverseRef, EmptyTree, s.tree)
+      val greeting = c.reifyTree(gen.mkRuntimeUniverseRef, EmptyTree, c.typecheck(Apply(Select(Literal(Constant("hello ")), TermName("$plus")), List(c.unreifyTree(world)))))
       val typedGreeting = c.Expr[String](greeting)
 
       c.universe.reify {

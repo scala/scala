@@ -374,7 +374,7 @@ trait Namers extends MethodSynthesis {
       }
       val existing = pkgOwner.info.decls.lookup(pid.name)
 
-      if (existing.isPackage && pkgOwner == existing.owner)
+      if (existing.hasPackageFlag && pkgOwner == existing.owner)
         existing
       else {
         val pkg          = pkgOwner.newPackage(pid.name.toTermName, pos)

@@ -6,6 +6,7 @@
 package scala.tools.nsc
 package ast
 
+import scala.reflect.ClassTag
 import scala.reflect.internal.Flags.BYNAMEPARAM
 import scala.reflect.internal.Flags.DEFAULTPARAM
 import scala.reflect.internal.Flags.IMPLICIT
@@ -102,6 +103,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     def InjectDerivedValue(tree: Tree, arg: Tree): InjectDerivedValue
     def TypeTreeWithDeferredRefCheck(tree: Tree): TypeTreeWithDeferredRefCheck
   }
+  implicit val TreeCopierTag: ClassTag[TreeCopier] = ClassTag[TreeCopier](classOf[TreeCopier])
 
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
   def newLazyTreeCopier: TreeCopier = new LazyTreeCopier

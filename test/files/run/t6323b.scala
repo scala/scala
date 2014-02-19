@@ -10,7 +10,7 @@ object Test extends App {
       val lookAtMe = m.reflect(Test("a",List(5)))
       val value = u.weakTypeOf[Test]
       val members = value.members
-      val member = value.members.filter(_.name.encoded == "a")
+      val member = value.members.filter(_.name.encodedName == TermName("a"))
       val aAccessor = lookAtMe.reflectMethod(member.head.asMethod)
       val thisShouldBeA = aAccessor.apply()
       println(thisShouldBeA)

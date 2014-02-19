@@ -1,0 +1,34 @@
+compile-time
+uninitialized D: class D extends 
+initialized D: class D extends C
+uninitialized x: val x: <?>
+initialized x: val x: Int
+uninitialized y: lazy val y: <?>
+initialized y: lazy val y: Int
+uninitialized z: def z: <?>
+initialized z: def z: Int
+uninitialized t: def t: <?>
+initialized t: def t[T <: Int](x: D)(y: x.W): Int
+uninitialized W: type W = String
+initialized W: type W = String
+uninitialized C: class C extends 
+initialized C: class C extends D
+uninitialized O: object O
+initialized O: object O
+runtime
+autoinitialized D: class D extends C
+autoinitialized D: class D extends C
+autoinitialized x: val x: Int
+autoinitialized x: val x: Int
+autoinitialized y: lazy val y: Int
+autoinitialized y: lazy val y: Int
+autoinitialized z: def z: Int
+autoinitialized z: def z: Int
+autoinitialized t: def t[T <: Int](x: D)(y: x.W): Int
+autoinitialized t: def t[T <: Int](x: D)(y: x.W): Int
+autoinitialized W: type W = String
+autoinitialized W: type W = String
+autoinitialized C: class C extends D
+autoinitialized C: class C extends D
+autoinitialized O: object O
+autoinitialized O: object O

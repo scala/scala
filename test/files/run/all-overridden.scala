@@ -6,6 +6,6 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     // We should see g, but not f or $init$.
-    typeOf[Bar].declarations.toList.flatMap(_.allOverriddenSymbols) foreach println
+    typeOf[Bar].decls.toList.flatMap(_.overrides) foreach println
   }
 }

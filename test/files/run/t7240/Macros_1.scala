@@ -34,11 +34,11 @@ object Bakery {
         List(dslTrait("bakery.FailureCake")),
         emptyValDef,
         List(
-          DefDef(Modifiers(), nme.CONSTRUCTOR, List(), List(List()), TypeTree(),
-            Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(())))),
+          DefDef(Modifiers(), termNames.CONSTRUCTOR, List(), List(List()), TypeTree(),
+            Block(List(Apply(Select(Super(This(typeNames.EMPTY), typeNames.EMPTY), termNames.CONSTRUCTOR), List())), Literal(Constant(())))),
           DefDef(Modifiers(), newTermName("main"), List(), List(List()), Ident(newTypeName("Any")), transformedBody))))
 
-    def constructor = Apply(Select(New(Ident(newTypeName("eval"))), nme.CONSTRUCTOR), List())
+    def constructor = Apply(Select(New(Ident(newTypeName("eval"))), termNames.CONSTRUCTOR), List())
 
     c.eval(c.Expr[Any](
       c.untypecheck(Block(composeDSL(Literal(Constant(1))), constructor))))

@@ -1,5 +1,6 @@
 import scala.language.existentials
 import scala.reflect.runtime.universe._
+import internal._
 
 object Test {
   trait ToS { final override def toString = getClass.getName }
@@ -35,7 +36,7 @@ object Test {
   val g12 = { abstract class A extends Seq[U forSome { type U <: Int }] ; List[A]() }
 
   def printTpe(t: Type) = {
-    val s = if (t.typeSymbol.isFreeType) t.typeSymbol.typeSignature.toString else t.typeSymbol.toString
+    val s = if (isFreeType(t.typeSymbol)) t.typeSymbol.info.toString else t.typeSymbol.toString
     println("%s, t=%s, s=%s".format(t, t.asInstanceOf[Product].productPrefix, s))
   }
   def m[T: TypeTag](x: T) = printTpe(typeOf[T])

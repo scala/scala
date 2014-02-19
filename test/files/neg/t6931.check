@@ -1,0 +1,10 @@
+Test_2.scala:3: error: 1
+  err"123"
+      ^
+Test_2.scala:3: error: 2
+  err"123"
+       ^
+Test_2.scala:3: error: 3
+  err"123"
+        ^
+three errors found

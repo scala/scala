@@ -2231,7 +2231,7 @@ self =>
         } else { // XX-METHOD-INFER
           accept(COLON)
           if (in.token == ARROW) {
-            if (owner.isTypeName && !mods.hasLocalFlag)
+            if (owner.isTypeName && !mods.isLocalToThis)
               syntaxError(
                 in.offset,
                 (if (mods.isMutable) "`var'" else "`val'") +

@@ -1,0 +1,44 @@
+compile-time
+class File
+primary constructor: NoSymbol
+def <init>(x$1: String): java.io.File => false
+def <init>(x$1: String,x$2: String): java.io.File => false
+def <init>(x$1: java.io.File,x$2: String): java.io.File => false
+def <init>(x$1: java.net.URI): java.io.File => false
+package scala
+primary constructor: NoSymbol
+object List
+primary constructor: def <init>(): scala.collection.immutable.List.type => true
+def <init>(): scala.collection.immutable.List.type => true
+trait Product1
+primary constructor: def $init$(): Unit => true
+class UninitializedFieldError
+primary constructor: def <init>(msg: String): UninitializedFieldError => true
+def <init>(msg: String): UninitializedFieldError => true
+def <init>(obj: Any): UninitializedFieldError => false
+class C
+primary constructor: def <init>(x: Int): C => true
+def <init>(x: Int): C => true
+def <init>(x: String): C => false
+runtime
+class File
+primary constructor: NoSymbol
+def <init>(x$1: java.io.File,x$2: java.lang.String): java.io.File => false
+def <init>(x$1: java.lang.String): java.io.File => false
+def <init>(x$1: java.lang.String,x$2: java.lang.String): java.io.File => false
+def <init>(x$1: java.net.URI): java.io.File => false
+package scala
+primary constructor: NoSymbol
+object List
+primary constructor: def <init>(): scala.collection.immutable.List.type => true
+def <init>(): scala.collection.immutable.List.type => true
+trait Product1
+primary constructor: def $init$(): Unit => true
+class UninitializedFieldError
+primary constructor: def <init>(msg: String): UninitializedFieldError => true
+def <init>(msg: String): UninitializedFieldError => true
+def <init>(obj: Any): UninitializedFieldError => false
+class C
+primary constructor: def <init>(x: Int): C => true
+def <init>(x: Int): C => true
+def <init>(x: String): C => false

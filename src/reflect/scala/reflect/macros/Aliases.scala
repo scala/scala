@@ -116,4 +116,9 @@ trait Aliases {
    * Shortcut for `implicitly[TypeTag[T]].tpe`
    */
   def typeOf[T](implicit ttag: TypeTag[T]): Type = ttag.tpe
+
+  /**
+   * Type symbol of `x` as derived from a type tag.
+   */
+  def symbolOf[T: WeakTypeTag]: universe.TypeSymbol = universe.symbolOf[T]
 }

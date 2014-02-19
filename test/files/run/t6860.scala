@@ -12,8 +12,8 @@ object Test {
   import scala.reflect.runtime.universe._
 
   def main(args: Array[String]): Unit = {
-    val members = typeOf[A].declarations.toList
-    val tpes = members flatMap (_.annotations) map (_.tpe)
+    val members = typeOf[A].decls.toList
+    val tpes = members flatMap (_.annotations) map (_.tree.tpe)
 
     tpes.map(_.toString).sorted foreach println
   }

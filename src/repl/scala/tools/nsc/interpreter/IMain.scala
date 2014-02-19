@@ -1031,7 +1031,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def lastWarnings = mostRecentWarnings
 
   private lazy val importToGlobal  = global mkImporter ru
-  private lazy val importToRuntime = ru mkImporter global
+  private lazy val importToRuntime = ru.internal createImporter global
   private lazy val javaMirror = ru.rootMirror match {
     case x: ru.JavaMirror => x
     case _                => null

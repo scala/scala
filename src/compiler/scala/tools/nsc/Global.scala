@@ -15,6 +15,7 @@ import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
 import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString }
+import scala.reflect.ClassTag
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import scala.reflect.io.VirtualFile
@@ -33,6 +34,7 @@ import backend.jvm.GenASM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 import scala.language.postfixOps
+import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
@@ -49,11 +51,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   override def isCompilerUniverse = true
   override val useOffsetPositions = !currentSettings.Yrangepos
 
+  type RuntimeClass = java.lang.Class[_]
+  implicit val RuntimeClassTag: ClassTag[RuntimeClass] = ClassTag[RuntimeClass](classOf[RuntimeClass])
+
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
     def rootLoader: LazyType = new loaders.PackageLoader(classPath)
     override def toString = "compiler mirror"
   }
+  implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[GlobalMirror])
 
   lazy val rootMirror: Mirror = {
     val rm = new GlobalMirror
@@ -100,13 +106,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   // sub-components --------------------------------------------------
 
-  /** Generate ASTs */
-  type TreeGen = scala.tools.nsc.ast.TreeGen
-
   /** Tree generation, usually based on existing symbols. */
   override object gen extends {
     val global: Global.this.type = Global.this
-  } with TreeGen {
+  } with AstTreeGen {
     def mkAttributedCast(tree: Tree, pt: Type): Tree =
       typer.typed(mkCast(tree, pt))
   }
@@ -1348,7 +1351,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       val toReload = mutable.Set[String]()
       for (sym <- root.info.decls) {
         if (sym.isInitialized && clearOnNextRun(sym))
-          if (sym.isPackage) {
+          if (sym.hasPackageFlag) {
             resetProjectClasses(sym.moduleClass)
             openPackageModule(sym.moduleClass)
           } else {

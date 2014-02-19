@@ -7,7 +7,7 @@ object Test {
    *  named CC.
    */
   def collectSymbols[T: TypeTag](inMethod: TermName, name: String): List[String] = {
-    val m = typeOf[T] member inMethod typeSignatureIn typeOf[T]
+    val m = typeOf[T] member inMethod infoIn typeOf[T]
     var buf: List[Symbol] = Nil
     var seen: Set[Symbol] = Set()
     def id(s: Symbol): Int = s.asInstanceOf[{ def id: Int }].id
@@ -21,8 +21,8 @@ object Test {
     def loop(t: Type) {
       t match {
         case TypeRef(pre, sym, args)    => loop(pre) ; check(sym) ; args foreach loop
-        case PolyType(tparams, restpe)  => tparams foreach { tp => check(tp) ; check(tp.owner) ; loop(tp.typeSignature) } ; loop(restpe)
-        case MethodType(params, restpe) => params foreach { p => check(p) ; loop(p.typeSignature) } ; loop(restpe)
+        case PolyType(tparams, restpe)  => tparams foreach { tp => check(tp) ; check(tp.owner) ; loop(tp.info) } ; loop(restpe)
+        case MethodType(params, restpe) => params foreach { p => check(p) ; loop(p.info) } ; loop(restpe)
         case _                          =>
       }
     }
@@ -32,7 +32,7 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-    val syms = collectSymbols[s.Bar]("to", "CC")
+    val syms = collectSymbols[s.Bar](TermName("to"), "CC")
     assert(syms.size == 1, syms)
     println("OK!")
   }

@@ -99,7 +99,7 @@ abstract class Pickler extends SubComponent {
      *  added to fix that bug, but there may be a better way.
      */
     private def localizedOwner(sym: Symbol) =
-      if (isLocal(sym) && !isRootSym(sym) && !isLocal(sym.owner))
+      if (isLocalToPickle(sym) && !isRootSym(sym) && !isLocalToPickle(sym.owner))
         // don't use a class as the localized owner for type parameters that are not owned by a class: those are not instantiated by asSeenFrom
         // however, they would suddenly be considered by asSeenFrom if their localized owner became a class (causing the crashes of #4079, #2741)
         (if ((sym.isTypeParameter || sym.isValueParameter) && !sym.owner.isClass) nonClassRoot
@@ -110,14 +110,14 @@ abstract class Pickler extends SubComponent {
      *  anyway? This is the case if symbol is a refinement class,
      *  an existentially bound variable, or a higher-order type parameter.
      */
-    private def isLocal(sym: Symbol): Boolean = (sym != NoSymbol) && !sym.isPackageClass && (
+    private def isLocalToPickle(sym: Symbol): Boolean = (sym != NoSymbol) && !sym.isPackageClass && (
          isRootSym(sym)
       || sym.isRefinementClass
       || sym.isAbstractType && sym.hasFlag(EXISTENTIAL) // existential param
       || sym.isParameter
-      || isLocal(sym.owner)
+      || isLocalToPickle(sym.owner)
     )
-    private def isExternalSymbol(sym: Symbol): Boolean = (sym != NoSymbol) && !isLocal(sym)
+    private def isExternalSymbol(sym: Symbol): Boolean = (sym != NoSymbol) && !isLocalToPickle(sym)
 
     // Phase 1 methods: Populate entries/index ------------------------------------
 
@@ -174,7 +174,7 @@ abstract class Pickler extends SubComponent {
       val sym = deskolemize(sym0)
 
       if (putEntry(sym)) {
-        if (isLocal(sym)) {
+        if (isLocalToPickle(sym)) {
           putEntry(sym.name)
           putSymbol(sym.owner)
           putSymbol(sym.privateWithin)
@@ -428,7 +428,7 @@ abstract class Pickler extends SubComponent {
       }
       def writeSymbolBody(sym: Symbol) {
         if (sym ne NoSymbol) {
-          if (isLocal(sym))
+          if (isLocalToPickle(sym))
             writeLocalSymbolBody(sym)
           else
             writeExtSymbolBody(sym)

@@ -16,7 +16,7 @@ object Test extends App {
     () => typeOf[scala.io.Codec])
   val perms = types.permutations.toList
   def force(lazytpe: () => Type): String = {
-    lazytpe().typeSymbol.typeSignature
+    lazytpe().typeSymbol.info
     lazytpe().toString
   }
   val diceRolls = List.fill(n)(rng.nextInt(perms.length))

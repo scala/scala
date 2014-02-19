@@ -461,6 +461,9 @@ trait Definitions extends api.StandardDefinitions {
          def ReflectRuntimeUniverse      = ReflectRuntimePackage.map(sym => getMemberValue(sym, nme.universe))
          def ReflectRuntimeCurrentMirror = ReflectRuntimePackage.map(sym => getMemberMethod(sym, nme.currentMirror))
 
+    lazy val UniverseClass    = getClassIfDefined("scala.reflect.api.Universe") // defined in scala-reflect.jar, so we need to be careful
+         def UniverseInternal = getMemberValue(UniverseClass, nme.internal)
+
     lazy val PartialManifestModule = requiredModule[scala.reflect.ClassManifestFactory.type]
     lazy val FullManifestClass     = requiredClass[scala.reflect.Manifest[_]]
     lazy val FullManifestModule    = requiredModule[scala.reflect.ManifestFactory.type]

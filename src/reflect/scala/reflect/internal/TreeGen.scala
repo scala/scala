@@ -6,7 +6,7 @@ import Flags._
 import util._
 import scala.collection.mutable.ListBuffer
 
-abstract class TreeGen extends macros.TreeBuilder {
+abstract class TreeGen {
   val global: SymbolTable
 
   import global._
@@ -186,7 +186,7 @@ abstract class TreeGen extends macros.TreeBuilder {
       )
       val needsPackageQualifier = (
            (sym ne null)
-        && qualsym.isPackage
+        && qualsym.hasPackageFlag
         && !(sym.isDefinedInPackage || sym.moduleClass.isDefinedInPackage) // SI-7817 work around strangeness in post-flatten `Symbol#owner`
       )
       val pkgQualifier =
@@ -893,4 +893,7 @@ abstract class TreeGen extends macros.TreeBuilder {
 
   def mkSyntheticParam(pname: TermName) =
     ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
+
+  def mkCast(tree: Tree, pt: Type): Tree =
+    atPos(tree.pos)(mkAsInstanceOf(tree, pt, any = true, wrapInApply = false))
 }

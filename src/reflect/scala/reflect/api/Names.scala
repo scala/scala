@@ -33,28 +33,40 @@ trait Names {
    *  Enables an alternative notation `"map": TermName` as opposed to `newTermName("map")`.
    *  @group Names
    */
+  @deprecated("Use explicit `TermName(s)` instead", "2.11.0")
   implicit def stringToTermName(s: String): TermName = TermName(s)
 
   /** An implicit conversion from String to TypeName.
    *  Enables an alternative notation `"List": TypeName` as opposed to `newTypeName("List")`.
    *  @group Names
    */
+  @deprecated("Use explicit `TypeName(s)` instead", "2.11.0")
   implicit def stringToTypeName(s: String): TypeName = TypeName(s)
 
   /** The abstract type of names.
    *  @group Names
    */
-  type Name >: Null <: NameApi
+  type Name >: Null <: AnyRef with NameApi
 
   /** The abstract type of names representing terms.
    *  @group Names
    */
-  type TypeName >: Null <: Name
+  type TypeName >: Null <: TypeNameApi with Name
+
+  /** Has no special methods. Is here to provides erased identity for `TypeName`.
+   *  @group API
+   */
+  trait TypeNameApi
 
   /** The abstract type of names representing types.
    *  @group Names
    */
-  type TermName >: Null <: Name
+  type TermName >: Null <: TermNameApi with Name
+
+  /** Has no special methods. Is here to provides erased identity for `TermName`.
+   *  @group API
+   */
+  trait TermNameApi
 
   /** The API of Name instances.
    *  @group API
@@ -75,11 +87,13 @@ trait Names {
     /** Replaces all occurrences of \$op_names in this name by corresponding operator symbols.
      *  Example: `foo_\$plus\$eq` becomes `foo_+=`
      */
+    @deprecated("Use `decodedName.toString` instead", "2.11.0")
     def decoded: String
 
     /** Replaces all occurrences of operator symbols in this name by corresponding \$op_names.
      *  Example: `foo_+=` becomes `foo_\$plus\$eq`.
      */
+    @deprecated("Use `encodedName.toString` instead", "2.11.0")
     def encoded: String
 
     /** The decoded name, still represented as a name.

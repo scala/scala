@@ -16,19 +16,19 @@ class B {
 object Test extends App {
   val b = cm.classSymbol(classTag[B#BB].runtimeClass)
   println(b)
-  println(b.typeSignature.declarations.toList)
+  println(b.info.decls.toList)
 
   def testMethodInvocation(instance: Any) = {
     val instanceMirror = cm.reflect(instance)
-    val method = instanceMirror.symbol.typeSignature.declaration(TermName("foo")).asMethod
+    val method = instanceMirror.symbol.info.decl(TermName("foo")).asMethod
     val methodMirror = instanceMirror.reflectMethod(method)
     println(methodMirror())
   }
 
   def testInnerClass(name: String) = {
-    val sym = b.typeSignature.declaration(TypeName(name)).asClass
+    val sym = b.info.decl(TypeName(name)).asClass
     println(sym)
-    val ctor = sym.typeSignature.declaration(nme.CONSTRUCTOR).asMethod
+    val ctor = sym.info.decl(termNames.CONSTRUCTOR).asMethod
     val outer1 = new B
     val outer2 = new outer1.BB
     val ctorMirror = cm.reflect(outer2).reflectClass(sym).reflectConstructor(ctor)
@@ -41,7 +41,7 @@ object Test extends App {
   testInnerClass("B2")
 
   def testInnerModule(name: String) = {
-    val sym = b.typeSignature.declaration(TermName(name)).asModule
+    val sym = b.info.decl(TermName(name)).asModule
     println(sym)
     val outer1 = new B
     val outer2 = new outer1.BB

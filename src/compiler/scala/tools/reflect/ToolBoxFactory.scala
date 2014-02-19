@@ -116,8 +116,9 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         (expr, freeTermNames)
       }
 
-      def transformDuringTyper(expr: Tree, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean)(transform: (analyzer.Typer, Tree) => Tree): Tree = {
-        wrappingIntoTerm(verify(expr))(expr1 => {
+      def transformDuringTyper(expr: Tree, mode: scala.reflect.internal.Mode, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean)(transform: (analyzer.Typer, Tree) => Tree): Tree = {
+        def withWrapping(tree: Tree)(op: Tree => Tree) = if (mode == TERMmode) wrappingIntoTerm(tree)(op) else op(tree)
+        withWrapping(verify(expr))(expr1 => {
           // need to extract free terms, because otherwise you won't be able to typecheck macros against something that contains them
           val exprAndFreeTerms = extractFreeTerms(expr1, wrapFreeTermRefs = false)
           var expr2 = exprAndFreeTerms._1
@@ -130,7 +131,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           // rather than polluting the empty package with synthetics.
           // [Eugene] how can we implement that?
           val ownerClass       = rootMirror.EmptyPackageClass.newClassSymbol(newTypeName("<expression-owner>"))
-          build.setTypeSignature(ownerClass, ClassInfoType(List(ObjectTpe), newScope, ownerClass))
+          build.setInfo(ownerClass, ClassInfoType(List(ObjectTpe), newScope, ownerClass))
           val owner            = ownerClass.newLocalDummy(expr2.pos)
           val currentTyper     = analyzer.newTyper(analyzer.rootContext(NoCompilationUnit, EmptyTree).make(expr2, owner))
           val withImplicitFlag = if (!withImplicitViewsDisabled) (currentTyper.context.withImplicitsEnabled[Tree] _) else (currentTyper.context.withImplicitsDisabled[Tree] _)
@@ -163,11 +164,11 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         })
       }
 
-      def typecheck(expr: Tree, pt: Type, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =
-        transformDuringTyper(expr, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)(
+      def typecheck(expr: Tree, pt: Type, mode: scala.reflect.internal.Mode, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =
+        transformDuringTyper(expr, mode, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, expr) => {
             trace("typing (implicit views = %s, macros = %s): ".format(!withImplicitViewsDisabled, !withMacrosDisabled))(showAttributed(expr, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
-            currentTyper.silent(_.typed(expr, pt), reportAmbiguousErrors = false) match {
+            currentTyper.silent(_.typed(expr, mode, pt), reportAmbiguousErrors = false) match {
               case analyzer.SilentResultValue(result) =>
                 trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
                 result
@@ -179,7 +180,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           })
 
       def inferImplicit(tree: Tree, pt: Type, isView: Boolean, silent: Boolean, withMacrosDisabled: Boolean, pos: Position): Tree =
-        transformDuringTyper(tree, withImplicitViewsDisabled = false, withMacrosDisabled = withMacrosDisabled)(
+        transformDuringTyper(tree, TERMmode, withImplicitViewsDisabled = false, withMacrosDisabled = withMacrosDisabled)(
           (currentTyper, tree) => {
             trace("inferring implicit %s (macros = %s): ".format(if (isView) "view" else "value", !withMacrosDisabled))(showAttributed(pt, true, true, settings.Yshowsymowners.value, settings.Yshowsymkinds.value))
             analyzer.inferImplicit(tree, pt, isView, currentTyper.context, silent, withMacrosDisabled, pos, (pos, msg) => throw ToolBoxError(msg))
@@ -209,7 +210,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           val (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = true)
 
           val (obj, _) = rootMirror.EmptyPackageClass.newModuleAndClassSymbol(
-            nextWrapperModuleName())
+            nextWrapperModuleName(), NoPosition, NoFlags)
 
           val minfo = ClassInfoType(List(ObjectTpe), newScope, obj.moduleClass)
           obj.moduleClass setInfo minfo
@@ -356,7 +357,13 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       }
     }
 
-    def typecheck(tree: u.Tree, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = withCompilerApi { compilerApi =>
+    type TypecheckMode = scala.reflect.internal.Mode
+    val TypecheckMode = scala.reflect.internal.Mode
+    val TERMmode = TypecheckMode.EXPRmode
+    val TYPEmode = TypecheckMode.TYPEmode | TypecheckMode.FUNmode
+    val PATTERNmode = TypecheckMode.PATTERNmode
+
+    def typecheck(tree: u.Tree, mode: TypecheckMode = TERMmode, expectedType: u.Type, silent: Boolean = false, withImplicitViewsDisabled: Boolean = false, withMacrosDisabled: Boolean = false): u.Tree = withCompilerApi { compilerApi =>
       import compilerApi._
 
       if (compiler.settings.verbose) println("importing "+tree+", expectedType = "+expectedType)
@@ -364,7 +371,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       val cexpectedType: compiler.Type = importer.importType(expectedType)
 
       if (compiler.settings.verbose) println("typing "+ctree+", expectedType = "+expectedType)
-      val ttree: compiler.Tree = compiler.typecheck(ctree, cexpectedType, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
+      val ttree: compiler.Tree = compiler.typecheck(ctree, cexpectedType, mode, silent = silent, withImplicitViewsDisabled = withImplicitViewsDisabled, withMacrosDisabled = withMacrosDisabled)
       val uttree = exporter.importTree(ttree)
       uttree
     }

@@ -1,0 +1,4 @@
+scala#PK: true, false, true, false
+scala#PKC: false, true, true, true
+scala.collection.immutable.List#MOD: true, false, false, false
+scala.collection.immutable.List#MODC: false, true, false, false

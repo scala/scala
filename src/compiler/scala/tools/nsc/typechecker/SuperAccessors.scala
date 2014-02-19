@@ -71,7 +71,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         acc setInfoAndEnter (tpe cloneInfo acc)
         // Diagnostic for SI-7091
         if (!accDefs.contains(clazz))
-          reporter.error(sel.pos, s"Internal error: unable to store accessor definition in ${clazz}. clazz.isPackage=${clazz.isPackage}. Accessor required for ${sel} (${showRaw(sel)})")
+          reporter.error(sel.pos, s"Internal error: unable to store accessor definition in ${clazz}. clazz.hasPackageFlag=${clazz.hasPackageFlag}. Accessor required for ${sel} (${showRaw(sel)})")
         else storeAccessorDefinition(clazz, DefDef(acc, EmptyTree))
         acc
       }
@@ -224,7 +224,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               if (settings.lint) {
                 if (sym.isPrivateLocal && sym.paramss.isEmpty) {
                   qual.symbol.ancestors foreach { parent =>
-                    parent.info.decls filterNot (x => x.isPrivate || x.hasLocalFlag) foreach { m2 =>
+                    parent.info.decls filterNot (x => x.isPrivate || x.isLocalToThis) foreach { m2 =>
                       if (sym.name == m2.name && m2.isGetter && m2.accessed.isMutable) {
                         unit.warning(sel.pos,
                           sym.accessString + " " + sym.fullLocationString + " shadows mutable " + m2.name

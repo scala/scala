@@ -1,0 +1,14 @@
+compile-time
+uninitialized close: List(class IOException)
+initialized close: List(class IOException)
+uninitialized productElement: List(class IndexOutOfBoundsException)
+initialized productElement: List(class IndexOutOfBoundsException)
+uninitialized read: List(class IOException)
+initialized read: List(class IOException)
+runtime
+uninitialized close: List(class IOException)
+initialized close: List(class IOException)
+uninitialized productElement: List(class IndexOutOfBoundsException)
+initialized productElement: List(class IndexOutOfBoundsException)
+uninitialized read: List(class IOException)
+initialized read: List(class IOException)

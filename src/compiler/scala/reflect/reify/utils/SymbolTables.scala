@@ -162,7 +162,7 @@ trait SymbolTables {
               else if (isFreeTerm) sym.tpe
               else sym.info
             } else NoType
-          val rset = reifier.mirrorBuildCall(nme.setTypeSignature, currtab.symRef(sym), reifier.reify(signature))
+          val rset = reifier.mirrorBuildCall(nme.setInfo, currtab.symRef(sym), reifier.reify(signature))
           // `Symbol.annotations` doesn't initialize the symbol, so we don't need to do anything special here
           // also since we call `sym.info` a few lines above, by now the symbol will be initialized (if possible)
           // so the annotations will be filled in and will be waiting to be reified (unless symbol initialization is prohibited as described above)

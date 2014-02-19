@@ -869,7 +869,7 @@ abstract class GenICode extends SubComponent  {
         case Ident(name) =>
           def genLoadIdent = {
             val sym = tree.symbol
-            if (!sym.isPackage) {
+            if (!sym.hasPackageFlag) {
               if (sym.isModule) {
                 genLoadModule(ctx, tree)
                 generatedType = toTypeKind(sym.info)

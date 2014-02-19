@@ -59,7 +59,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Tree >: Null <: TreeApi
+  type Tree >: Null <: AnyRef with TreeApi
 
   /** The API that all trees support.
    *  The main source of information about trees is the [[scala.reflect.api.Trees]] page.
@@ -168,29 +168,6 @@ trait Trees { self: Universe =>
      */
     def children: List[Tree]
 
-    /** Extracts free term symbols from a tree that is reified or contains reified subtrees.
-     */
-    def freeTerms: List[FreeTermSymbol]
-
-    /** Extracts free type symbols from a tree that is reified or contains reified subtrees.
-     */
-    def freeTypes: List[FreeTypeSymbol]
-
-    /** Substitute symbols in `to` for corresponding occurrences of references to
-     *  symbols `from` in this type.
-     */
-    def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree
-
-    /** Substitute types in `to` for corresponding occurrences of references to
-     *  symbols `from` in this tree.
-     */
-    def substituteTypes(from: List[Symbol], to: List[Type]): Tree
-
-    /** Substitute given tree `to` for occurrences of nodes that represent
-     *  `C.this`, where `C` referes to the given class `clazz`.
-     */
-    def substituteThis(clazz: Symbol, to: Tree): Tree
-
     /** Make a copy of this tree, keeping all attributes,
      *  except that all positions are focused (so nothing
      *  in this tree will be found when searching by position).
@@ -216,7 +193,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TermTree >: Null <: AnyRef with Tree with TermTreeApi
+  type TermTree >: Null <: TermTreeApi with Tree
 
   /** The API that all term trees support
    *  @group API
@@ -229,7 +206,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TypTree >: Null <: AnyRef with Tree with TypTreeApi
+  type TypTree >: Null <: TypTreeApi with Tree
 
   /** The API that all typ trees support
    *  @group API
@@ -237,11 +214,14 @@ trait Trees { self: Universe =>
   trait TypTreeApi extends TreeApi { this: TypTree =>
   }
 
-  /** A tree with a mutable symbol field, initialized to NoSymbol.
+  /** A tree that carries a symbol, e.g. by defining it (`DefTree`) or by referring to it (`RefTree`).
+   *  Such trees start their life naked, returning `NoSymbol`, but after being typechecked without errors
+   *  they hold non-empty symbols.
+   *
    *  @group Trees
    *  @template
    */
-  type SymTree >: Null <: AnyRef with Tree with SymTreeApi
+  type SymTree >: Null <: SymTreeApi with Tree
 
   /** The API that all sym trees support
    *  @group API
@@ -251,18 +231,18 @@ trait Trees { self: Universe =>
     def symbol: Symbol
   }
 
-  /** A tree with a name - effectively, a DefTree or RefTree.
+  /** A tree that carries a name, e.g. by defining it (`DefTree`) or by referring to it (`RefTree`).
    *  @group Trees
    *  @template
    */
-  type NameTree >: Null <: AnyRef with Tree with NameTreeApi
+  type NameTree >: Null <: NameTreeApi with Tree
 
   /** The API that all name trees support
    *  @group API
    */
   trait NameTreeApi extends TreeApi { this: NameTree =>
     /** The underlying name.
-     *  For example, the `<List>` part of `Ident("List": TermName)`.
+     *  For example, the `List` part of `Ident(TermName("List"))`.
      */
     def name: Name
   }
@@ -273,14 +253,14 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type RefTree >: Null <: SymTree with NameTree with RefTreeApi
+  type RefTree >: Null <: RefTreeApi with SymTree with NameTree
 
   /** The API that all ref trees support
    *  @group API
    */
   trait RefTreeApi extends SymTreeApi with NameTreeApi { this: RefTree =>
     /** The qualifier of the reference.
-     *  For example, the `<scala>` part of `Select("scala": TermName, "List": TermName)`.
+     *  For example, the `Ident(TermName("scala"))` part of `Select(Ident(TermName("scala")), TermName("List"))`.
      *  `EmptyTree` for `Ident` instances.
      */
     def qualifier: Tree
@@ -303,11 +283,14 @@ trait Trees { self: Universe =>
     def unapply(refTree: RefTree): Option[(Tree, Name)]
   }
 
-  /** A tree which defines a symbol-carrying entity.
+  /** A tree representing a symbol-defining entity:
+   *    1) A declaration or a definition (type, class, object, package, val, var, or def)
+   *    2) `Bind` that is used to represent binding occurrences in pattern matches
+   *    3) `LabelDef` that is used internally to represent while loops
    *  @group Trees
    *  @template
    */
-  type DefTree >: Null <: SymTree with NameTree with DefTreeApi
+  type DefTree >: Null <: DefTreeApi with SymTree with NameTree
 
   /** The API that all def trees support
    *  @group API
@@ -322,7 +305,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type MemberDef >: Null <: DefTree with MemberDefApi
+  type MemberDef >: Null <: MemberDefApi with DefTree
 
   /** The API that all member defs support
    *  @group API
@@ -336,7 +319,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type PackageDef >: Null <: MemberDef with PackageDefApi
+  type PackageDef >: Null <: PackageDefApi with MemberDef
 
   /** The constructor/extractor for `PackageDef` instances.
    *  @group Extractors
@@ -369,7 +352,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ImplDef >: Null <: MemberDef with ImplDefApi
+  type ImplDef >: Null <: ImplDefApi with MemberDef
 
   /** The API that all impl defs support
    *  @group API
@@ -383,7 +366,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ClassDef >: Null <: ImplDef with ClassDefApi
+  type ClassDef >: Null <: ClassDefApi with ImplDef
 
   /** The constructor/extractor for `ClassDef` instances.
    *  @group Extractors
@@ -403,6 +386,10 @@ trait Trees { self: Universe =>
   abstract class ClassDefExtractor {
     def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef], impl: Template): ClassDef
     def unapply(classDef: ClassDef): Option[(Modifiers, TypeName, List[TypeDef], Template)]
+
+    /** @see [[InternalApi.classDef]] */
+    @deprecated("Use `internal.classDef` instead", "2.11.0")
+    def apply(sym: Symbol, impl: Template)(implicit token: CompatToken): ClassDef = internal.classDef(sym, impl)
   }
 
   /** The API that all class defs support
@@ -428,7 +415,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ModuleDef >: Null <: ImplDef with ModuleDefApi
+  type ModuleDef >: Null <: ModuleDefApi with ImplDef
 
   /** The constructor/extractor for `ModuleDef` instances.
    *  @group Extractors
@@ -448,6 +435,10 @@ trait Trees { self: Universe =>
   abstract class ModuleDefExtractor {
     def apply(mods: Modifiers, name: TermName, impl: Template): ModuleDef
     def unapply(moduleDef: ModuleDef): Option[(Modifiers, TermName, Template)]
+
+    /** @see [[InternalApi.moduleDef]] */
+    @deprecated("Use `internal.moduleDef` instead", "2.11.0")
+    def apply(sym: Symbol, impl: Template)(implicit token: CompatToken): ModuleDef = internal.moduleDef(sym, impl)
   }
 
   /** The API that all module defs support
@@ -468,14 +459,14 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ValOrDefDef >: Null <: MemberDef with ValOrDefDefApi
+  type ValOrDefDef >: Null <: ValOrDefDefApi with MemberDef
 
   /** The API that all val defs and def defs support
    *  @group API
    */
   trait ValOrDefDefApi extends MemberDefApi { this: ValOrDefDef =>
     /** @inheritdoc */
-    def name: Name // can't be a TermName because macros can be type names.
+    def name: TermName
 
     /** The type ascribed to the definition.
      *  An empty `TypeTree` if the type hasn't been specified explicitly
@@ -499,7 +490,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ValDef >: Null <: ValOrDefDef with ValDefApi
+  type ValDef >: Null <: ValDefApi with ValOrDefDef
 
   /** The constructor/extractor for `ValDef` instances.
    *  @group Extractors
@@ -524,6 +515,14 @@ trait Trees { self: Universe =>
   abstract class ValDefExtractor {
     def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree): ValDef
     def unapply(valDef: ValDef): Option[(Modifiers, TermName, Tree, Tree)]
+
+    /** @see [[InternalApi.valDef]] */
+    @deprecated("Use `internal.valDef` instead", "2.11.0")
+    def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): ValDef = internal.valDef(sym, rhs)
+
+    /** @see [[InternalApi.valDef]] */
+    @deprecated("Use `internal.valDef` instead", "2.11.0")
+    def apply(sym: Symbol)(implicit token: CompatToken): ValDef = internal.valDef(sym)
   }
 
   /** The API that all val defs support
@@ -548,7 +547,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type DefDef >: Null <: ValOrDefDef with DefDefApi
+  type DefDef >: Null <: DefDefApi with ValOrDefDef
 
   /** The constructor/extractor for `DefDef` instances.
    *  @group Extractors
@@ -567,6 +566,26 @@ trait Trees { self: Universe =>
   abstract class DefDefExtractor {
     def apply(mods: Modifiers, name: TermName, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
     def unapply(defDef: DefDef): Option[(Modifiers, TermName, List[TypeDef], List[List[ValDef]], Tree, Tree)]
+
+    /** @see [[InternalApi.defDef]] */
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
+    def apply(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, mods, vparamss, rhs)
+
+    /** @see [[InternalApi.defDef]] */
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
+    def apply(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, vparamss, rhs)
+
+    /** @see [[InternalApi.defDef]] */
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
+    def apply(sym: Symbol, mods: Modifiers, rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, mods, rhs)
+
+    /** @see [[InternalApi.defDef]] */
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
+    def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, rhs)
+
+    /** @see [[InternalApi.defDef]] */
+    @deprecated("Use `internal.defDef` instead", "2.11.0")
+    def apply(sym: Symbol, rhs: List[List[Symbol]] => Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, rhs)
   }
 
   /** The API that all def defs support
@@ -597,7 +616,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TypeDef >: Null <: MemberDef with TypeDefApi
+  type TypeDef >: Null <: TypeDefApi with MemberDef
 
   /** The constructor/extractor for `TypeDef` instances.
    *  @group Extractors
@@ -619,6 +638,14 @@ trait Trees { self: Universe =>
   abstract class TypeDefExtractor {
     def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef], rhs: Tree): TypeDef
     def unapply(typeDef: TypeDef): Option[(Modifiers, TypeName, List[TypeDef], Tree)]
+
+    /** @see [[InternalApi.typeDef]] */
+    @deprecated("Use `internal.typeDef` instead", "2.11.0")
+    def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): TypeDef = internal.typeDef(sym, rhs)
+
+    /** @see [[InternalApi.typeDef]] */
+    @deprecated("Use `internal.typeDef` instead", "2.11.0")
+    def apply(sym: Symbol)(implicit token: CompatToken): TypeDef = internal.typeDef(sym)
   }
 
   /** The API that all type defs support
@@ -656,7 +683,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type LabelDef >: Null <: DefTree with TermTree with LabelDefApi
+  type LabelDef >: Null <: LabelDefApi with DefTree with TermTree
 
   /** The constructor/extractor for `LabelDef` instances.
    *  @group Extractors
@@ -679,6 +706,10 @@ trait Trees { self: Universe =>
   abstract class LabelDefExtractor {
     def apply(name: TermName, params: List[Ident], rhs: Tree): LabelDef
     def unapply(labelDef: LabelDef): Option[(TermName, List[Ident], Tree)]
+
+    /** @see [[InternalApi.labelDef]] */
+    @deprecated("Use `internal.labelDef` instead", "2.11.0")
+    def apply(sym: Symbol, params: List[Symbol], rhs: Tree)(implicit token: CompatToken): LabelDef = internal.labelDef(sym, params, rhs)
   }
 
   /** The API that all label defs support
@@ -699,7 +730,7 @@ trait Trees { self: Universe =>
     def rhs: Tree
   }
 
-  /** Import selector
+  /** Import selector (not a tree, but a component of the `Import` tree)
    *
    *  Representation of an imported name its optional rename and their optional positions
    *
@@ -758,7 +789,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Import >: Null <: SymTree with ImportApi
+  type Import >: Null <: ImportApi with SymTree
 
   /** The constructor/extractor for `Import` instances.
    *  @group Extractors
@@ -810,7 +841,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Template >: Null <: SymTree with TemplateApi
+  type Template >: Null <: TemplateApi with SymTree
 
   /** The constructor/extractor for `Template` instances.
    *  @group Extractors
@@ -862,7 +893,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Block >: Null <: TermTree with BlockApi
+  type Block >: Null <: BlockApi with TermTree
 
   /** The constructor/extractor for `Block` instances.
    *  @group Extractors
@@ -901,7 +932,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type CaseDef >: Null <: AnyRef with Tree with CaseDefApi
+  type CaseDef >: Null <: CaseDefApi with Tree
 
   /** The constructor/extractor for `CaseDef` instances.
    *  @group Extractors
@@ -948,7 +979,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Alternative >: Null <: TermTree with AlternativeApi
+  type Alternative >: Null <: AlternativeApi with TermTree
 
   /** The constructor/extractor for `Alternative` instances.
    *  @group Extractors
@@ -980,7 +1011,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Star >: Null <: TermTree with StarApi
+  type Star >: Null <: StarApi with TermTree
 
   /** The constructor/extractor for `Star` instances.
    *  @group Extractors
@@ -1015,7 +1046,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Bind >: Null <: DefTree with BindApi
+  type Bind >: Null <: BindApi with DefTree
 
   /** The constructor/extractor for `Bind` instances.
    *  @group Extractors
@@ -1078,7 +1109,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type UnApply >: Null <: TermTree with UnApplyApi
+  type UnApply >: Null <: UnApplyApi with TermTree
 
   /** The constructor/extractor for `UnApply` instances.
    *  @group Extractors
@@ -1114,7 +1145,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Function >: Null <: TermTree with SymTree with FunctionApi
+  type Function >: Null <: FunctionApi with TermTree with SymTree
 
   /** The constructor/extractor for `Function` instances.
    *  @group Extractors
@@ -1152,7 +1183,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Assign >: Null <: TermTree with AssignApi
+  type Assign >: Null <: AssignApi with TermTree
 
   /** The constructor/extractor for `Assign` instances.
    *  @group Extractors
@@ -1188,7 +1219,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type AssignOrNamedArg >: Null <: TermTree with AssignOrNamedArgApi
+  type AssignOrNamedArg >: Null <: AssignOrNamedArgApi with TermTree
 
   /** The constructor/extractor for `AssignOrNamedArg` instances.
    *  @group Extractors
@@ -1229,7 +1260,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type If >: Null <: TermTree with IfApi
+  type If >: Null <: IfApi with TermTree
 
   /** The constructor/extractor for `If` instances.
    *  @group Extractors
@@ -1280,7 +1311,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Match >: Null <: TermTree with MatchApi
+  type Match >: Null <: MatchApi with TermTree
 
   /** The constructor/extractor for `Match` instances.
    *  @group Extractors
@@ -1315,7 +1346,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Return >: Null <: TermTree with SymTree with ReturnApi
+  type Return >: Null <: ReturnApi with SymTree with TermTree
 
   /** The constructor/extractor for `Return` instances.
    *  @group Extractors
@@ -1347,7 +1378,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Try >: Null <: TermTree with TryApi
+  type Try >: Null <: TryApi with TermTree
 
   /** The constructor/extractor for `Try` instances.
    *  @group Extractors
@@ -1385,7 +1416,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Throw >: Null <: TermTree with ThrowApi
+  type Throw >: Null <: ThrowApi with TermTree
 
   /** The constructor/extractor for `Throw` instances.
    *  @group Extractors
@@ -1415,7 +1446,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type New >: Null <: TermTree with NewApi
+  type New >: Null <: NewApi with TermTree
 
   /** The constructor/extractor for `New` instances.
    *  @group Extractors
@@ -1465,7 +1496,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Typed >: Null <: TermTree with TypedApi
+  type Typed >: Null <: TypedApi with TermTree
 
   /** The constructor/extractor for `Typed` instances.
    *  @group Extractors
@@ -1498,7 +1529,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type GenericApply >: Null <: TermTree with GenericApplyApi
+  type GenericApply >: Null <: GenericApplyApi with TermTree
 
   /** The API that all applies support
    *  @group API
@@ -1519,7 +1550,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TypeApply >: Null <: GenericApply with TypeApplyApi
+  type TypeApply >: Null <: TypeApplyApi with GenericApply
 
   /** The constructor/extractor for `TypeApply` instances.
    *  @group Extractors
@@ -1557,7 +1588,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Apply >: Null <: GenericApply with ApplyApi
+  type Apply >: Null <: ApplyApi with GenericApply
 
   /** The constructor/extractor for `Apply` instances.
    *  @group Extractors
@@ -1594,7 +1625,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Super >: Null <: TermTree with SuperApi
+  type Super >: Null <: SuperApi with TermTree
 
   /** The constructor/extractor for `Super` instances.
    *  @group Extractors
@@ -1640,7 +1671,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type This >: Null <: TermTree with SymTree with ThisApi
+  type This >: Null <: ThisApi with TermTree with SymTree
 
   /** The constructor/extractor for `This` instances.
    *  @group Extractors
@@ -1675,7 +1706,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Select >: Null <: RefTree with SelectApi
+  type Select >: Null <: SelectApi with RefTree
 
   /** The constructor/extractor for `Select` instances.
    *  @group Extractors
@@ -1714,7 +1745,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Ident >: Null <: RefTree with IdentApi
+  type Ident >: Null <: IdentApi with RefTree
 
   /** The constructor/extractor for `Ident` instances.
    *  @group Extractors
@@ -1739,65 +1770,18 @@ trait Trees { self: Universe =>
    *  @group API
    */
   trait IdentApi extends RefTreeApi { this: Ident =>
+    /** Was this ident created from a backquoted identifier? */
+    def isBackquoted: Boolean
+
     /** @inheritdoc */
     def name: Name
-  }
-
-  /** Marks underlying reference to id as boxed.
-   *
-   *  <b>Precondition:<\b> id must refer to a captured variable
-   *  A reference such marked will refer to the boxed entity, no dereferencing
-   *  with `.elem` is done on it.
-   *  This tree node can be emitted by macros such as reify that call referenceCapturedVariable.
-   *  It is eliminated in LambdaLift, where the boxing conversion takes place.
-   *  @group Trees
-   *  @template
-   */
-  type ReferenceToBoxed >: Null <: TermTree with ReferenceToBoxedApi
-
-  /** The constructor/extractor for `ReferenceToBoxed` instances.
-   *  @group Extractors
-   */
-  val ReferenceToBoxed: ReferenceToBoxedExtractor
-
-  /** An extractor class to create and pattern match with syntax `ReferenceToBoxed(ident)`.
-   *  This AST node does not have direct correspondence to Scala code,
-   *  and is emitted by macros to reference capture vars directly without going through `elem`.
-   *
-   *  For example:
-   *
-   *    var x = ...
-   *    fun { x }
-   *
-   *  Will emit:
-   *
-   *    Ident(x)
-   *
-   *  Which gets transformed to:
-   *
-   *    Select(Ident(x), "elem")
-   *
-   *  If `ReferenceToBoxed` were used instead of Ident, no transformation would be performed.
-   *  @group Extractors
-   */
-  abstract class ReferenceToBoxedExtractor {
-    def apply(ident: Ident): ReferenceToBoxed
-    def unapply(referenceToBoxed: ReferenceToBoxed): Option[Ident]
-  }
-
-  /** The API that all references support
-   *  @group API
-   */
-  trait ReferenceToBoxedApi extends TermTreeApi { this: ReferenceToBoxed =>
-    /** The underlying reference. */
-    def ident: Tree
   }
 
   /** Literal
    *  @group Trees
    *  @template
    */
-  type Literal >: Null <: TermTree with LiteralApi
+  type Literal >: Null <: LiteralApi with TermTree
 
   /** The constructor/extractor for `Literal` instances.
    *  @group Extractors
@@ -1830,7 +1814,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type Annotated >: Null <: AnyRef with Tree with AnnotatedApi
+  type Annotated >: Null <: AnnotatedApi with Tree
 
   /** The constructor/extractor for `Annotated` instances.
    *  @group Extractors
@@ -1864,7 +1848,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type SingletonTypeTree >: Null <: TypTree with SingletonTypeTreeApi
+  type SingletonTypeTree >: Null <: SingletonTypeTreeApi with TypTree
 
   /** The constructor/extractor for `SingletonTypeTree` instances.
    *  @group Extractors
@@ -1894,7 +1878,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type SelectFromTypeTree >: Null <: TypTree with RefTree with SelectFromTypeTreeApi
+  type SelectFromTypeTree >: Null <: SelectFromTypeTreeApi with TypTree with RefTree
 
   /** The constructor/extractor for `SelectFromTypeTree` instances.
    *  @group Extractors
@@ -1935,7 +1919,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type CompoundTypeTree >: Null <: TypTree with CompoundTypeTreeApi
+  type CompoundTypeTree >: Null <: CompoundTypeTreeApi with TypTree
 
   /** The constructor/extractor for `CompoundTypeTree` instances.
    *  @group Extractors
@@ -1965,7 +1949,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type AppliedTypeTree >: Null <: TypTree with AppliedTypeTreeApi
+  type AppliedTypeTree >: Null <: AppliedTypeTreeApi with TypTree
 
   /** The constructor/extractor for `AppliedTypeTree` instances.
    *  @group Extractors
@@ -2007,7 +1991,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TypeBoundsTree >: Null <: TypTree with TypeBoundsTreeApi
+  type TypeBoundsTree >: Null <: TypeBoundsTreeApi with TypTree
 
   /** The constructor/extractor for `TypeBoundsTree` instances.
    *  @group Extractors
@@ -2044,7 +2028,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type ExistentialTypeTree >: Null <: TypTree with ExistentialTypeTreeApi
+  type ExistentialTypeTree >: Null <: ExistentialTypeTreeApi with TypTree
 
   /** The constructor/extractor for `ExistentialTypeTree` instances.
    *  @group Extractors
@@ -2085,7 +2069,7 @@ trait Trees { self: Universe =>
    *  @group Trees
    *  @template
    */
-  type TypeTree >: Null <: TypTree with TypeTreeApi
+  type TypeTree >: Null <: TypeTreeApi with TypTree
 
   /** The constructor/extractor for `TypeTree` instances.
    *  @group Extractors
@@ -2133,78 +2117,6 @@ trait Trees { self: Universe =>
   val pendingSuperCall: Apply
 
 // ---------------------- factories ----------------------------------------------
-
-  /** A factory method for `ClassDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical ClassDef constructor to create a class and then initialize its position and symbol manually", "2.10.1")
-  def ClassDef(sym: Symbol, impl: Template): ClassDef
-
-  /** A factory method for `ModuleDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical ModuleDef constructor to create an object and then initialize its position and symbol manually", "2.10.1")
-  def ModuleDef(sym: Symbol, impl: Template): ModuleDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical ValDef constructor to create a val and then initialize its position and symbol manually", "2.10.1")
-  def ValDef(sym: Symbol, rhs: Tree): ValDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical ValDef constructor to create a val with an empty right-hand side and then initialize its position and symbol manually", "2.10.1")
-  def ValDef(sym: Symbol): ValDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical DefDef constructor to create a method and then initialize its position and symbol manually", "2.10.1")
-  def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical DefDef constructor to create a method and then initialize its position and symbol manually", "2.10.1")
-  def DefDef(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree): DefDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical DefDef constructor to create a method and then initialize its position and symbol manually", "2.10.1")
-  def DefDef(sym: Symbol, mods: Modifiers, rhs: Tree): DefDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical DefDef constructor to create a method and then initialize its position and symbol manually", "2.10.1")
-  def DefDef(sym: Symbol, rhs: Tree): DefDef
-
-  /** A factory method for `ValDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical DefDef constructor to create a method and then initialize its position and symbol manually", "2.10.1")
-  def DefDef(sym: Symbol, rhs: List[List[Symbol]] => Tree): DefDef
-
-  /** A factory method for `TypeDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical TypeDef constructor to create a type alias and then initialize its position and symbol manually", "2.10.1")
-  def TypeDef(sym: Symbol, rhs: Tree): TypeDef
-
-  /** A factory method for `TypeDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical TypeDef constructor to create an abstract type or type parameter and then initialize its position and symbol manually", "2.10.1")
-  def TypeDef(sym: Symbol): TypeDef
-
-  /** A factory method for `LabelDef` nodes.
-   *  @group Factories
-   */
-  @deprecated("Use the canonical LabelDef constructor to create a label and then initialize its position and symbol manually", "2.10.1")
-  def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef
 
   /** A factory method for `Block` nodes.
    *  Flattens directly nested blocks.
@@ -2313,7 +2225,7 @@ trait Trees { self: Universe =>
    *  @template
    *  @group Copying
    */
-  type TreeCopier <: TreeCopierOps
+  type TreeCopier >: Null <: AnyRef with TreeCopierOps
 
   /** The standard (lazy) tree copier.
    *  @group Copying
@@ -2488,6 +2400,11 @@ trait Trees { self: Universe =>
      *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
      */
     def Ident(tree: Tree, name: Name): Ident
+
+    /** Creates a `RefTree` node from the given components, having a given `tree` as a prototype.
+     *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
+     */
+    def RefTree(tree: Tree, qualifier: Tree, selector: Name): RefTree
 
     /** Creates a `ReferenceToBoxed` node from the given components, having a given `tree` as a prototype.
      *  Having a tree as a prototype means that the tree's attachments, type and symbol will be copied into the result.
@@ -2698,7 +2615,7 @@ trait Trees { self: Universe =>
    */
   protected def xtransform(transformer: Transformer, tree: Tree): Tree = throw new MatchError(tree)
 
-  /** The type of tree modifiers.
+  /** The type of tree modifiers (not a tree, but rather part of DefTrees).
    *  @group Traversal
    */
   type Modifiers >: Null <: AnyRef with ModifiersApi

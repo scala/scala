@@ -12,7 +12,7 @@ object Test extends ReplTest {
     |  val cm = reflect.runtime.currentMirror
     |  val u = cm.universe
     |  val im = cm.reflect(new B)
-    |  val method = im.symbol.typeSignature.member(u.TermName("foo")).asMethod
+    |  val method = im.symbol.info.member(u.TermName("foo")).asMethod
     |  val mm = im.reflectMethod(method)
     |}
     |import defs._

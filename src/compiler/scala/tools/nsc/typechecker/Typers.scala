@@ -393,7 +393,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (sym.isPrivate && !sym.hasFlag(SYNTHETIC_PRIVATE)) {
             var o = owner
             while (o != NoSymbol && o != sym.owner && o != sym.owner.linkedClassOfClass &&
-                   !o.isLocal && !o.isPrivate &&
+                   !o.isLocalToBlock && !o.isPrivate &&
                    !o.privateWithin.hasTransOwner(sym.owner))
               o = o.owner
             if (o == sym.owner || o == sym.owner.linkedClassOfClass)
@@ -3015,7 +3015,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       /* 'accessor' and 'accessed' are so similar it becomes very difficult to
        * follow the logic, so I renamed one to something distinct.
        */
-      def accesses(looker: Symbol, accessed: Symbol) = accessed.hasLocalFlag && (
+      def accesses(looker: Symbol, accessed: Symbol) = accessed.isLocalToThis && (
            (accessed.isParamAccessor)
         || (looker.hasAccessorFlag && !accessed.hasAccessorFlag && accessed.isPrivate)
       )

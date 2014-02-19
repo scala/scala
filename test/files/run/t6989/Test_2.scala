@@ -11,20 +11,20 @@ import scala.reflect.runtime.universe._
 package object foo {
   def testAll(): Unit = {
     test(typeOf[foo.PackagePrivateJavaClass].typeSymbol)
-    test(typeOf[foo.PackagePrivateJavaClass].typeSymbol.companionSymbol)
+    test(typeOf[foo.PackagePrivateJavaClass].typeSymbol.companion)
     test(typeOf[foo.JavaClass_1].typeSymbol)
-    test(typeOf[foo.JavaClass_1].typeSymbol.companionSymbol)
+    test(typeOf[foo.JavaClass_1].typeSymbol.companion)
   }
 
   def test(sym: Symbol): Unit = {
     printSymbolDetails(sym)
     if (sym.isClass || sym.isModule) {
-      sym.typeSignature.declarations.toList.sortBy(_.name.toString) foreach test
+      sym.info.decls.toList.sortBy(_.name.toString) foreach test
     }
   }
 
   def printSymbolDetails(sym: Symbol): Unit = {
-    def stableSignature(sym: Symbol) = sym.typeSignature match {
+    def stableSignature(sym: Symbol) = sym.info match {
       case ClassInfoType(_, _, _) => "ClassInfoType(...)"
       case tpe => tpe.toString
     }

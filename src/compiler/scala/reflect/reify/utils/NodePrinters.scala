@@ -32,7 +32,7 @@ trait NodePrinters {
         s = "List\\[List\\[.*?\\].*?\\]".r.replaceAllIn(s, "List")
         s = "List\\[.*?\\]".r.replaceAllIn(s, "List")
         s = s.replace("immutable.this.Nil", "List()")
-        s = """build\.FlagsRepr\((\d+)[lL]\)""".r.replaceAllIn(s, m => {
+        s = """internal\.reificationSupport\.FlagsRepr\((\d+)[lL]\)""".r.replaceAllIn(s, m => {
           flagsAreUsed = true
           show(m.group(1).toLong)
         })
@@ -76,7 +76,6 @@ trait NodePrinters {
       if (mirrorIsUsed) printout += mirror.replace("Mirror[", "scala.reflect.api.Mirror[").trim
       val imports = scala.collection.mutable.ListBuffer[String]()
       imports += nme.UNIVERSE_SHORT.toString
-      // if (buildIsUsed) imports += nme.build
       if (mirrorIsUsed) imports += nme.MIRROR_SHORT.toString
       if (flagsAreUsed) imports += nme.Flag.toString
       printout += s"""import ${imports map (_ + "._") mkString ", "}"""

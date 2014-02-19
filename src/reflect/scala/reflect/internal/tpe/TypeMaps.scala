@@ -1100,7 +1100,7 @@ private[internal] trait TypeMaps {
             tp
         }
       case SingleType(pre, sym) =>
-        if (sym.isPackage) tp
+        if (sym.hasPackageFlag) tp
         else {
           val pre1 = this(pre)
           try {

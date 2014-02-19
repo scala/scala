@@ -45,21 +45,21 @@ trait GenTypes {
       case tpe @ ThisType(clazz) if clazz.isModuleClass && clazz.isStatic =>
         val module = reify(clazz.sourceModule)
         val moduleClass = Select(Select(module, nme.asModule), nme.moduleClass)
-        mirrorFactoryCall(nme.ThisType, moduleClass)
-      case tpe @ ThisType(_) =>
-        reifyProduct(tpe)
+        mirrorBuildCall(nme.ThisType, moduleClass)
+      case tpe @ ThisType(sym) =>
+        reifyBuildCall(nme.ThisType, sym)
       case tpe @ SuperType(thistpe, supertpe) =>
-        reifyProduct(tpe)
+        reifyBuildCall(nme.SuperType, thistpe, supertpe)
       case tpe @ SingleType(pre, sym) =>
-        reifyProduct(tpe)
+        reifyBuildCall(nme.SingleType, pre, sym)
       case tpe @ ConstantType(value) =>
-        mirrorFactoryCall(nme.ConstantType, reifyProduct(value))
+        mirrorBuildCall(nme.ConstantType, reifyProduct(value))
       case tpe @ TypeRef(pre, sym, args) =>
-        reifyProduct(tpe)
+        reifyBuildCall(nme.TypeRef, pre, sym, args)
       case tpe @ TypeBounds(lo, hi) =>
-        reifyProduct(tpe)
+        reifyBuildCall(nme.TypeBounds, lo, hi)
       case tpe @ NullaryMethodType(restpe) =>
-        reifyProduct(tpe)
+        reifyBuildCall(nme.NullaryMethodType, restpe)
       case tpe @ AnnotatedType(anns, underlying) =>
         reifyAnnotatedType(tpe)
       case _ =>
@@ -119,7 +119,8 @@ trait GenTypes {
             // todo. write a test for this
             if (ReflectRuntimeUniverse == NoSymbol) CannotConvertManifestToTagWithoutScalaReflect(tpe, manifestInScope)
             val cm = typer.typed(Ident(ReflectRuntimeCurrentMirror))
-            val tagTree = gen.mkMethodCall(ReflectRuntimeUniverse, nme.manifestToTypeTag, List(tpe), List(cm, manifestInScope))
+            val internal = gen.mkAttributedSelect(gen.mkAttributedRef(ReflectRuntimeUniverse), UniverseInternal)
+            val tagTree = gen.mkMethodCall(Select(internal, nme.manifestToTypeTag), List(tpe), List(cm, manifestInScope))
             Select(Apply(Select(tagTree, nme.in), List(Ident(nme.MIRROR_SHORT))), nme.tpe)
           case _ =>
             EmptyTree
@@ -157,13 +158,13 @@ trait GenTypes {
    */
   private def reifySemiConcreteTypeMember(tpe: Type): Tree = tpe match {
     case tpe @ TypeRef(pre @ SingleType(prepre, presym), sym, args) if sym.isAbstractType && !sym.isExistential =>
-      mirrorFactoryCall(nme.TypeRef, reify(pre), mirrorBuildCall(nme.selectType, reify(sym.owner), reify(sym.name.toString)), reify(args))
+      mirrorBuildCall(nme.TypeRef, reify(pre), mirrorBuildCall(nme.selectType, reify(sym.owner), reify(sym.name.toString)), reify(args))
   }
 
   /** Reify an annotated type, i.e. the one that makes us deal with AnnotationInfos */
   private def reifyAnnotatedType(tpe: AnnotatedType): Tree = {
     val AnnotatedType(anns, underlying) = tpe
-    mirrorFactoryCall(nme.AnnotatedType, mkList(anns map reifyAnnotationInfo), reify(underlying))
+    mirrorBuildCall(nme.AnnotatedType, mkList(anns map reifyAnnotationInfo), reify(underlying))
   }
 
   /** Reify a tough type, i.e. the one that leads to creation of auxiliary symbols */
@@ -172,25 +173,25 @@ trait GenTypes {
 
     def reifyScope(scope: Scope): Tree = {
       scope foreach reifySymDef
-      mirrorCall(nme.newScopeWith, scope.toList map reify: _*)
+      mirrorBuildCall(nme.newScopeWith, scope.toList map reify: _*)
     }
 
     tpe match {
       case tpe @ RefinedType(parents, decls) =>
         reifySymDef(tpe.typeSymbol)
-        mirrorFactoryCall(tpe, reify(parents), reifyScope(decls), reify(tpe.typeSymbol))
+        mirrorBuildCall(nme.RefinedType, reify(parents), reifyScope(decls), reify(tpe.typeSymbol))
       case tpe @ ExistentialType(tparams, underlying) =>
         tparams foreach reifySymDef
-        mirrorFactoryCall(tpe, reify(tparams), reify(underlying))
+        reifyBuildCall(nme.ExistentialType, tparams, underlying)
       case tpe @ ClassInfoType(parents, decls, clazz) =>
         reifySymDef(clazz)
-        mirrorFactoryCall(tpe, reify(parents), reifyScope(decls), reify(tpe.typeSymbol))
+        mirrorBuildCall(nme.ClassInfoType, reify(parents), reifyScope(decls), reify(tpe.typeSymbol))
       case tpe @ MethodType(params, restpe) =>
         params foreach reifySymDef
-        mirrorFactoryCall(tpe, reify(params), reify(restpe))
+        reifyBuildCall(nme.MethodType, params, restpe)
       case tpe @ PolyType(tparams, underlying) =>
         tparams foreach reifySymDef
-        mirrorFactoryCall(tpe, reify(tparams), reify(underlying))
+        reifyBuildCall(nme.PolyType, tparams, underlying)
       case _ =>
         throw new Error("internal error: %s (%s) is not supported".format(tpe, tpe.kind))
     }

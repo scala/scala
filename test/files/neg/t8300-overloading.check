@@ -1,0 +1,7 @@
+t8300-overloading.scala:15: error: double definition:
+def foo(name: Test.u.Name): Nothing at line 14 and
+def foo(name: Test.u.TermName): Nothing at line 15
+have same type after erasure: (name: Universe#NameApi)Nothing
+  def foo(name: TermName) = ???
+      ^
+one error found

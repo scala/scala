@@ -83,7 +83,9 @@ trait HasFlags {
   def hasAccessorFlag    = hasFlag(ACCESSOR)
   def hasDefault         = hasFlag(DEFAULTPARAM) && hasFlag(METHOD | PARAM) // Second condition disambiguates with TRAIT
   def hasEnumFlag        = hasFlag(ENUM)
+  @deprecated("Use isLocalToThis instead", "2.11.0")
   def hasLocalFlag       = hasFlag(LOCAL)
+  def isLocalToThis      = hasFlag(LOCAL)
   def hasModuleFlag      = hasFlag(MODULE)
   def hasPackageFlag     = hasFlag(PACKAGE)
   def hasStableFlag      = hasFlag(STABLE)
@@ -106,6 +108,7 @@ trait HasFlags {
   def isOverride         = hasFlag(OVERRIDE)
   def isParamAccessor    = hasFlag(PARAMACCESSOR)
   def isPrivate          = hasFlag(PRIVATE)
+  @deprecated ("Use `hasPackageFlag` instead", "2.11.0")
   def isPackage          = hasFlag(PACKAGE)
   def isPrivateLocal     = hasAllFlags(PrivateLocal)
   def isProtected        = hasFlag(PROTECTED)

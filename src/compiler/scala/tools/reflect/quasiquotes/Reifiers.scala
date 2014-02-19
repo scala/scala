@@ -7,7 +7,7 @@ import scala.reflect.internal.Flags._
 
 trait Reifiers { self: Quasiquotes =>
   import global._
-  import global.build.{Select => _, Ident => _, TypeTree => _, _}
+  import global.build._
   import global.treeInfo._
   import global.definitions._
   import Cardinality._
@@ -64,9 +64,9 @@ trait Reifiers { self: Quasiquotes =>
             val FreshName(prefix) = origname
             val nameTypeName = if (origname.isTermName) tpnme.TermName else tpnme.TypeName
             val freshName = if (origname.isTermName) nme.freshTermName else nme.freshTypeName
-            // q"val ${names.head}: $u.$nameTypeName = $u.build.$freshName($prefix)"
+            // q"val ${names.head}: $u.$nameTypeName = $u.internal.reificationSupport.$freshName($prefix)"
             ValDef(NoMods, names.head, Select(u, nameTypeName),
-              Apply(Select(Select(u, nme.build), freshName), Literal(Constant(prefix)) :: Nil))
+              Apply(Select(Select(Select(u, nme.internal), nme.reificationSupport), freshName), Literal(Constant(prefix)) :: Nil))
         }.toList
         // q"..$freshdefs; $tree"
         SyntacticBlock(freshdefs :+ tree)
@@ -146,7 +146,7 @@ trait Reifiers { self: Quasiquotes =>
 
     override def reifyTreeSyntactically(tree: Tree) = tree match {
       case RefTree(qual, SymbolPlaceholder(Hole(tree, _))) if isReifyingExpressions =>
-        mirrorBuildCall(nme.RefTree, reify(qual), tree)
+        mirrorBuildCall(nme.mkRefTree, reify(qual), tree)
       case This(SymbolPlaceholder(Hole(tree, _))) if isReifyingExpressions =>
         mirrorCall(nme.This, tree)
       case SyntacticTraitDef(mods, name, tparams, earlyDefs, parents, selfdef, body) =>
@@ -365,7 +365,7 @@ trait Reifiers { self: Quasiquotes =>
       Apply(Select(universe, name), args.toList)
 
     override def mirrorBuildCall(name: TermName, args: Tree*): Tree =
-      Apply(Select(Select(universe, nme.build), name), args.toList)
+      Apply(Select(Select(Select(universe, nme.internal), nme.reificationSupport), name), args.toList)
 
     override def scalaFactoryCall(name: String, args: Tree*): Tree =
       call("scala." + name, args: _*)

@@ -1,7 +1,7 @@
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.tools.reflect.{ToolBox, ToolBoxError}
 import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe._, Flag._
+import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport.setSymbol
 
 class QuasiquoteProperties(name: String) extends Properties(name) with ArbitraryTreesAndNames with Helpers
 
@@ -116,5 +116,5 @@ trait Helpers {
     }
   }
 
-  val scalapkg = build.setSymbol(Ident(TermName("scala")), definitions.ScalaPackage)
+  val scalapkg = setSymbol(Ident(TermName("scala")), definitions.ScalaPackage)
 }

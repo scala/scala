@@ -5,7 +5,7 @@ case class Foo(x: Int) extends AnyVal
 case class Bar(foo: Foo)
 
 object Test extends App {
-  val foo = typeOf[Bar].declaration(TermName("foo")).asMethod
+  val foo = typeOf[Bar].decl(TermName("foo")).asMethod
   println(foo.returnType) // Foo
 
   val bar = Bar(Foo(3))

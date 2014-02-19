@@ -319,7 +319,7 @@ trait StdNames {
     val FAKE_LOCAL_THIS: NameType          = "this$"
     val LAZY_LOCAL: NameType               = "$lzy"
     val LAZY_SLOW_SUFFIX: NameType         = "$lzycompute"
-    val UNIVERSE_BUILD_PREFIX: NameType    = "$u.build."
+    val UNIVERSE_BUILD_PREFIX: NameType    = "$u.internal.reificationSupport."
     val UNIVERSE_PREFIX: NameType          = "$u."
     val UNIVERSE_SHORT: NameType           = "$u"
     val MIRROR_PREFIX: NameType            = "$m."
@@ -578,10 +578,13 @@ trait StdNames {
     val Annotation: NameType           = "Annotation"
     val Any: NameType                  = "Any"
     val AnyVal: NameType               = "AnyVal"
+    val Apply: NameType                = "Apply"
     val ArrayAnnotArg: NameType        = "ArrayAnnotArg"
+    val ClassInfoType: NameType        = "ClassInfoType"
     val ConstantType: NameType         = "ConstantType"
     val EmptyPackage: NameType         = "EmptyPackage"
     val EmptyPackageClass: NameType    = "EmptyPackageClass"
+    val ExistentialType: NameType      = "ExistentialType"
     val Flag : NameType                = "Flag"
     val FlagsRepr: NameType            = "FlagsRepr"
     val Ident: NameType                = "Ident"
@@ -589,18 +592,25 @@ trait StdNames {
     val Import: NameType               = "Import"
     val Literal: NameType              = "Literal"
     val LiteralAnnotArg: NameType      = "LiteralAnnotArg"
+    val MethodType: NameType           = "MethodType"
     val Modifiers: NameType            = "Modifiers"
     val NestedAnnotArg: NameType       = "NestedAnnotArg"
+    val New: NameType                  = "New"
     val NoFlags: NameType              = "NoFlags"
     val NoSymbol: NameType             = "NoSymbol"
     val NoMods: NameType               = "NoMods"
     val Nothing: NameType              = "Nothing"
     val Null: NameType                 = "Null"
+    val NullaryMethodType: NameType    = "NullaryMethodType"
     val Object: NameType               = "Object"
+    val PolyType: NameType             = "PolyType"
+    val RefinedType: NameType          = "RefinedType"
     val RootPackage: NameType          = "RootPackage"
     val RootClass: NameType            = "RootClass"
     val Select: NameType               = "Select"
     val SelectFromTypeTree: NameType   = "SelectFromTypeTree"
+    val SingleType: NameType           = "SingleType"
+    val SuperType: NameType            = "SuperType"
     val SyntacticApplied: NameType     = "SyntacticApplied"
     val SyntacticAssign: NameType      = "SyntacticAssign"
     val SyntacticBlock: NameType       = "SyntacticBlock"
@@ -632,6 +642,7 @@ trait StdNames {
     val ThisType: NameType             = "ThisType"
     val Tuple2: NameType               = "Tuple2"
     val TYPE_ : NameType               = "TYPE"
+    val TypeBounds: NameType           = "TypeBounds"
     val TypeRef: NameType              = "TypeRef"
     val TypeTree: NameType             = "TypeTree"
     val UNIT : NameType                = "UNIT"
@@ -654,7 +665,6 @@ trait StdNames {
     val asInstanceOf_ : NameType       = "asInstanceOf"
     val asInstanceOf_Ob : NameType     = "$asInstanceOf"
     val box: NameType                  = "box"
-    val build : NameType               = "build"
     val bytes: NameType                = "bytes"
     val c: NameType                    = "c"
     val canEqual_ : NameType           = "canEqual"
@@ -696,6 +706,7 @@ trait StdNames {
     val immutable: NameType            = "immutable"
     val implicitly: NameType           = "implicitly"
     val in: NameType                   = "in"
+    val internal: NameType             = "internal"
     val inlinedEquals: NameType        = "inlinedEquals"
     val isArray: NameType              = "isArray"
     val isDefinedAt: NameType          = "isDefinedAt"
@@ -717,8 +728,13 @@ trait StdNames {
     val moduleClass : NameType         = "moduleClass"
     val mkAnnotation: NameType         = "mkAnnotation"
     val mkEarlyDef: NameType           = "mkEarlyDef"
+    val mkIdent: NameType              = "mkIdent"
     val mkPackageStat: NameType        = "mkPackageStat"
     val mkRefineStat: NameType         = "mkRefineStat"
+    val mkRefTree: NameType            = "mkRefTree"
+    val mkSelect: NameType             = "mkSelect"
+    val mkThis: NameType               = "mkThis"
+    val mkTypeTree: NameType           = "mkTypeTree"
     val ne: NameType                   = "ne"
     val newArray: NameType             = "newArray"
     val newFreeTerm: NameType          = "newFreeTerm"
@@ -736,11 +752,11 @@ trait StdNames {
     val productPrefix: NameType        = "productPrefix"
     val readResolve: NameType          = "readResolve"
     val reify : NameType               = "reify"
+    val reificationSupport : NameType  = "reificationSupport"
     val rootMirror : NameType          = "rootMirror"
     val runtime: NameType              = "runtime"
     val runtimeClass: NameType         = "runtimeClass"
     val runtimeMirror: NameType        = "runtimeMirror"
-    val RefTree: NameType              = "RefTree"
     val scala_ : NameType              = "scala"
     val selectDynamic: NameType        = "selectDynamic"
     val selectOverloadedMethod: NameType = "selectOverloadedMethod"
@@ -748,9 +764,9 @@ trait StdNames {
     val selectType: NameType           = "selectType"
     val self: NameType                 = "self"
     val setAnnotations: NameType       = "setAnnotations"
+    val setInfo: NameType              = "setInfo"
     val setSymbol: NameType            = "setSymbol"
     val setType: NameType              = "setType"
-    val setTypeSignature: NameType     = "setTypeSignature"
     val splice: NameType               = "splice"
     val staticClass : NameType         = "staticClass"
     val staticModule : NameType        = "staticModule"
@@ -989,6 +1005,8 @@ trait StdNames {
     val BITMAP_CHECKINIT_TRANSIENT: NameType = BITMAP_PREFIX + "inittrans$" // initialization bitmap for transient checkinit values
   }
 
+  lazy val typeNames: tpnme.type = tpnme
+
   object tpnme extends TypeNames { }
 
   /** For fully qualified type names.
@@ -1008,6 +1026,8 @@ trait StdNames {
   }
 
   val javanme = nme.javaKeywords
+
+  lazy val termNames: nme.type = nme
 
   object nme extends TermNames {
     def moduleVarName(name: TermName): TermName =

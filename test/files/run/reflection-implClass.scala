@@ -10,19 +10,19 @@ object Test extends App with Outer {
   import scala.reflect.runtime.universe._
   import scala.reflect.runtime.{currentMirror => cm}
 
-  assert(cm.classSymbol(classTag[Foo].runtimeClass).typeSignature.declaration(TermName("bar")).typeSignature ==
-    cm.classSymbol(classTag[Bar].runtimeClass).typeSignature.declaration(TermName("foo")).typeSignature)
+  assert(cm.classSymbol(classTag[Foo].runtimeClass).info.decl(TermName("bar")).info ==
+    cm.classSymbol(classTag[Bar].runtimeClass).info.decl(TermName("foo")).info)
 
   val s1 = implClass(classTag[Foo].runtimeClass)
   assert(s1 != NoSymbol)
-  assert(s1.typeSignature != NoType)
-  assert(s1.companionSymbol.typeSignature != NoType)
-  assert(s1.companionSymbol.typeSignature.declaration(TermName("bar")) != NoSymbol)
+  assert(s1.info != NoType)
+  assert(s1.companion.info != NoType)
+  assert(s1.companion.info.decl(TermName("bar")) != NoSymbol)
   val s2 = implClass(classTag[Bar].runtimeClass)
   assert(s2 != NoSymbol)
-  assert(s2.typeSignature != NoType)
-  assert(s2.companionSymbol.typeSignature != NoType)
-  assert(s2.companionSymbol.typeSignature.declaration(TermName("foo")) != NoSymbol)
+  assert(s2.info != NoType)
+  assert(s2.companion.info != NoType)
+  assert(s2.companion.info.decl(TermName("foo")) != NoSymbol)
   def implClass(clazz: Class[_]) = {
     val implClass = Class.forName(clazz.getName + "$class")
     cm.classSymbol(implClass)

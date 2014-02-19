@@ -5,10 +5,11 @@ package internal
 import Flags._
 import util._
 
-trait BuildUtils { self: SymbolTable =>
+trait ReificationSupport { self: SymbolTable =>
   import definitions.{TupleClass, FunctionClass, ScalaPackage, UnitClass}
+  import internal._
 
-  class BuildImpl extends BuildApi {
+  class ReificationSupportImpl extends ReificationSupportApi {
     def selectType(owner: Symbol, name: String): TypeSymbol =
       select(owner, newTypeName(name)).asType
 
@@ -22,14 +23,15 @@ trait BuildUtils { self: SymbolTable =>
       val result = owner.info decl name
       if (result ne NoSymbol) result
       else
-        mirrorThatLoaded(owner).missingHook(owner, name) orElse
-        MissingRequirementError.notFound("%s %s in %s".format(if (name.isTermName) "term" else "type", name, owner.fullName))
+        mirrorThatLoaded(owner).missingHook(owner, name) orElse {
+          throw new ScalaReflectionException("%s %s in %s not found".format(if (name.isTermName) "term" else "type", name, owner.fullName))
+        }
     }
 
     def selectOverloadedMethod(owner: Symbol, name: String, index: Int): MethodSymbol = {
       val result = owner.info.decl(newTermName(name)).alternatives(index)
       if (result ne NoSymbol) result.asMethod
-      else MissingRequirementError.notFound("overloaded method %s #%d in %s".format(name, index, owner.fullName))
+      else throw new ScalaReflectionException("overloaded method %s #%d in %s not found".format(name, index, owner.fullName))
     }
 
     def newFreeTerm(name: String, value: => Any, flags: Long = 0L, origin: String = null): FreeTermSymbol =
@@ -41,19 +43,50 @@ trait BuildUtils { self: SymbolTable =>
     def newNestedSymbol(owner: Symbol, name: Name, pos: Position, flags: Long, isClass: Boolean): Symbol =
       owner.newNestedSymbol(name, pos, flags, isClass).markFlagsCompleted(mask = AllFlags)
 
+    def newScopeWith(elems: Symbol*): Scope =
+      self.newScopeWith(elems: _*)
+
     def setAnnotations[S <: Symbol](sym: S, annots: List[AnnotationInfo]): S =
       sym.setAnnotations(annots)
 
-    def setTypeSignature[S <: Symbol](sym: S, tpe: Type): S =
-      sym.setTypeSignature(tpe).markAllCompleted()
+    def setInfo[S <: Symbol](sym: S, tpe: Type): S =
+      sym.setInfo(tpe).markAllCompleted()
 
-    def This(sym: Symbol): Tree = self.This(sym)
+    def mkThis(sym: Symbol): Tree = self.This(sym)
 
-    def Select(qualifier: Tree, sym: Symbol): Select = self.Select(qualifier, sym)
+    def mkSelect(qualifier: Tree, sym: Symbol): Select = self.Select(qualifier, sym)
 
-    def Ident(sym: Symbol): Ident = self.Ident(sym)
+    def mkIdent(sym: Symbol): Ident = self.Ident(sym)
 
-    def TypeTree(tp: Type): TypeTree = self.TypeTree(tp)
+    def mkTypeTree(tp: Type): TypeTree = self.TypeTree(tp)
+
+    def ThisType(sym: Symbol): Type = self.ThisType(sym)
+
+    def SingleType(pre: Type, sym: Symbol): Type = self.SingleType(pre, sym)
+
+    def SuperType(thistpe: Type, supertpe: Type): Type = self.SuperType(thistpe, supertpe)
+
+    def ConstantType(value: Constant): ConstantType = self.ConstantType(value)
+
+    def TypeRef(pre: Type, sym: Symbol, args: List[Type]): Type = self.TypeRef(pre, sym, args)
+
+    def RefinedType(parents: List[Type], decls: Scope, typeSymbol: Symbol): RefinedType = self.RefinedType(parents, decls, typeSymbol)
+
+    def ClassInfoType(parents: List[Type], decls: Scope, typeSymbol: Symbol): ClassInfoType = self.ClassInfoType(parents, decls, typeSymbol)
+
+    def MethodType(params: List[Symbol], resultType: Type): MethodType = self.MethodType(params, resultType)
+
+    def NullaryMethodType(resultType: Type): NullaryMethodType = self.NullaryMethodType(resultType)
+
+    def PolyType(typeParams: List[Symbol], resultType: Type): PolyType = self.PolyType(typeParams, resultType)
+
+    def ExistentialType(quantified: List[Symbol], underlying: Type): ExistentialType = self.ExistentialType(quantified, underlying)
+
+    def AnnotatedType(annotations: List[Annotation], underlying: Type): AnnotatedType = self.AnnotatedType(annotations, underlying)
+
+    def TypeBounds(lo: Type, hi: Type): TypeBounds = self.TypeBounds(lo, hi)
+
+    def BoundedWildcardType(bounds: TypeBounds): BoundedWildcardType = self.BoundedWildcardType(bounds)
 
     def thisPrefix(sym: Symbol): Type = sym.thisPrefix
 
@@ -141,7 +174,7 @@ trait BuildUtils { self: SymbolTable =>
 
     def mkEarlyDef(defns: List[Tree]): List[Tree] = defns.map(mkEarlyDef)
 
-    def RefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
+    def mkRefTree(qual: Tree, sym: Symbol) = self.RefTree(qual, sym.name) setSymbol sym
 
     def freshTermName(prefix: String = nme.FRESH_TERM_NAME_PREFIX): TermName = self.freshTermName(prefix)
 
@@ -953,5 +986,5 @@ trait BuildUtils { self: SymbolTable =>
     }
   }
 
-  val build: BuildImpl = new BuildImpl
+  val build = new ReificationSupportImpl
 }

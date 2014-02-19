@@ -51,8 +51,6 @@ trait ImplicitTags {
   implicit val TypeSymbolTag: ClassTag[TypeSymbol]
   implicit val ModuleSymbolTag: ClassTag[ModuleSymbol]
   implicit val ClassSymbolTag: ClassTag[ClassSymbol]
-  implicit val FreeTermSymbolTag: ClassTag[FreeTermSymbol]
-  implicit val FreeTypeSymbolTag: ClassTag[FreeTypeSymbol]
 
   // Tags for misc Tree relatives.
   implicit val PositionTag: ClassTag[Position]
@@ -91,7 +89,6 @@ trait ImplicitTags {
   implicit val NewTag: ClassTag[New]
   implicit val PackageDefTag: ClassTag[PackageDef]
   implicit val RefTreeTag: ClassTag[RefTree]
-  implicit val ReferenceToBoxedTag: ClassTag[ReferenceToBoxed]
   implicit val ReturnTag: ClassTag[Return]
   implicit val SelectFromTypeTreeTag: ClassTag[SelectFromTypeTree]
   implicit val SelectTag: ClassTag[Select]
@@ -114,4 +111,9 @@ trait ImplicitTags {
   implicit val UnApplyTag: ClassTag[UnApply]
   implicit val ValDefTag: ClassTag[ValDef]
   implicit val ValOrDefDefTag: ClassTag[ValOrDefDef]
+
+  // Miscellaneous
+  implicit val TreeCopierTag: ClassTag[TreeCopier]
+  implicit val RuntimeClassTag: ClassTag[RuntimeClass]
+  implicit val MirrorTag: ClassTag[Mirror]
 }

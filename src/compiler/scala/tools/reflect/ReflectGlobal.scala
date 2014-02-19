@@ -37,5 +37,13 @@ class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val 
   // (each mirror has its own set package symbols, because of the peculiarities of symbol loading in scala),
   // that `Predef` symbol only has a single owner, and this messes up visibility, which is calculated based on owners, not scopes.
   override def runtimeMirror(cl: ClassLoader): Mirror = rootMirror
+
+  // Mirror and RuntimeClass come from both Global and reflect.runtime.SymbolTable
+  // so here the compiler needs an extra push to help decide between those (in favor of the latter)
+  import scala.reflect.ClassTag
+  override type Mirror = JavaMirror
+  override implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[Mirror])
+  override type RuntimeClass = java.lang.Class[_]
+  override implicit val RuntimeClassTag: ClassTag[RuntimeClass] = ClassTag[RuntimeClass](classOf[RuntimeClass])
 }
 

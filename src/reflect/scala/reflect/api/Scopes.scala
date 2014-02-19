@@ -16,7 +16,7 @@ package api
  * there is the `newScopeWith` function.
  *
  * Additional functionality is exposed in member scopes that are returned by
- * `members` and `declarations` defined in [[scala.reflect.api.Types#TypeApi]].
+ * `members` and `decls` defined in [[scala.reflect.api.Types#TypeApi]].
  * Such scopes support the `sorted` method, which sorts members in declaration order.
  *
  * @group ReflectionAPI
@@ -27,23 +27,18 @@ trait Scopes { self: Universe =>
    *  @template
    *  @group Scopes
    */
-  type Scope >: Null <: ScopeApi
+  type Scope >: Null <: AnyRef with ScopeApi
 
   /** The API that all scopes support
    *  @group API
    */
   trait ScopeApi extends Iterable[Symbol]
 
-  /** Create a new scope with the given initial elements.
-   *  @group Scopes
-   */
-  def newScopeWith(elems: Symbol*): Scope
-
   /** The type of member scopes, as in class definitions, for example.
    *  @template
    *  @group Scopes
    */
-  type MemberScope >: Null <: Scope with MemberScopeApi
+  type MemberScope >: Null <: AnyRef with MemberScopeApi with Scope
 
   /** The API that all member scopes support
    *  @group API

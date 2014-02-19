@@ -13,9 +13,9 @@ object Test extends App {
   def key(sym: Symbol) = {
     sym match {
       // initialize parameter symbols
-      case meth: MethodSymbol => meth.paramss.flatten.map(_.typeSignature)
+      case meth: MethodSymbol => meth.paramLists.flatten.map(_.info)
     }
-    sym + ": " + sym.typeSignature
+    sym + ": " + sym.info
   }
 
   def convert(value: Any, tpe: Type) = {
@@ -44,11 +44,11 @@ object Test extends App {
           val realex = scala.ExceptionUtils.unwrapThrowable(ex)
           println(realex.getClass + ": " + realex.getMessage)
       }
-    val meth = tpe.declaration(TermName(method).encodedName.toTermName)
+    val meth = tpe.decl(TermName(method).encodedName.toTermName)
     val testees = if (meth.isMethod) List(meth.asMethod) else meth.asTerm.alternatives.map(_.asMethod)
     testees foreach (testee => {
-      val convertedArgs = args.zipWithIndex.map { case (arg, i) => convert(arg, testee.paramss.flatten.apply(i).typeSignature) }
-      print(s"testing ${tpe.typeSymbol.name}.$method(${testee.paramss.flatten.map(_.typeSignature).mkString(','.toString)}) with receiver = $receiver and args = ${convertedArgs.map(arg => arg + ' '.toString + arg.getClass).toList}: ")
+      val convertedArgs = args.zipWithIndex.map { case (arg, i) => convert(arg, testee.paramLists.flatten.apply(i).info) }
+      print(s"testing ${tpe.typeSymbol.name}.$method(${testee.paramLists.flatten.map(_.info).mkString(','.toString)}) with receiver = $receiver and args = ${convertedArgs.map(arg => arg + ' '.toString + arg.getClass).toList}: ")
       wrap(cm.reflect(receiver).reflectMethod(testee)(convertedArgs: _*))
     })
   }

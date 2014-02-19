@@ -1,0 +1,14 @@
+compile-time
+uninitialized File: <no file>
+initialized File: <no file>
+uninitialized BitSet: <no file>
+initialized BitSet: <no file>
+uninitialized C: Test_2.scala
+initialized C: Test_2.scala
+runtime
+autoinitialized File: <no file> true
+autoinitialized File: <no file> true
+autoinitialized BitSet: <no file> true
+autoinitialized BitSet: <no file> true
+autoinitialized C: <no file> true
+autoinitialized C: <no file> true

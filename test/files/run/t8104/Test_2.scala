@@ -11,7 +11,7 @@ object Test extends App {
   import scala.reflect.runtime.universe._
   def reprify[T, Repr](x: T)(implicit generic: Generic.Aux[T, Repr], tag: WeakTypeTag[Repr]) = {
     println(tag)
-    println(tag.tpe.typeSymbol.typeSignature)
+    println(tag.tpe.typeSymbol.info)
   }
   reprify(C(40, 2))
 

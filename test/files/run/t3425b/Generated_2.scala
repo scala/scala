@@ -881,6 +881,6 @@ object Test {
     sshow("Reflective Calls", fcalls collect { case (true, n) => n })
     // For a good time try printing this - have to fix bugs in
     // reflection before that's going to be a good idea
-    // println(typeOf[Test.type].typeSymbol.asClass.typeSignature)
+    // println(typeOf[Test.type].typeSymbol.asClass.info)
   }
 }

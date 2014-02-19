@@ -195,6 +195,7 @@ trait Types
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = underlying.instantiateTypeParams(formals, actuals)
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) = underlying.skolemizeExistential(owner, origin)
     override def normalize = maybeRewrap(underlying.normalize)
+    override def etaExpand = maybeRewrap(underlying.etaExpand)
     override def dealias = maybeRewrap(underlying.dealias)
     override def cloneInfo(owner: Symbol) = maybeRewrap(underlying.cloneInfo(owner))
     override def atOwner(owner: Symbol) = maybeRewrap(underlying.atOwner(owner))
@@ -243,6 +244,16 @@ trait Types
     def isSpliceable = {
       this.isInstanceOf[TypeRef] && typeSymbol.isAbstractType && !typeSymbol.isExistential
     }
+
+    def companion = {
+      val sym = typeSymbolDirect
+      if (sym.isModule && !sym.isPackage) sym.companionSymbol.tpe
+      else if (sym.isModuleClass && !sym.isPackageClass) sym.sourceModule.companionSymbol.tpe
+      else if (sym.isClass && !sym.isModuleClass && !sym.isPackageClass) sym.companionSymbol.info
+      else NoType
+    }
+
+    def paramLists: List[List[Symbol]] = paramss
   }
 
   /** The base class for all types */
@@ -498,6 +509,8 @@ trait Types
      *  your heart with fear.
      */
     def normalize = this // @MAT
+
+    def etaExpand = this
 
     /** Expands type aliases. */
     def dealias = this
@@ -908,7 +921,11 @@ trait Types
      *  after `maxTostringRecursions` recursion levels. Uses `safeToString`
      *  to produce a string on each level.
      */
-    override final def toString: String = typeToString(this)
+    override final def toString: String = {
+      // see comments to internal#Symbol.typeSignature for an explanation why this initializes
+      if (!isCompilerUniverse) fullyInitializeType(this)
+      typeToString(this)
+    }
 
     /** Method to be implemented in subclasses.
      *  Converts this type to a string in calling toString for its parts.
@@ -1056,7 +1073,7 @@ trait Types
   /** A base class for types that represent a single value
    *  (single-types and this-types).
    */
-  abstract class SingletonType extends SubType with SimpleTypeProxy {
+  abstract class SingletonType extends SubType with SimpleTypeProxy with SingletonTypeApi {
     def supertype = underlying
     override def isTrivial = false
     override def widen: Type = underlying.widen
@@ -1324,7 +1341,7 @@ trait Types
 
   /** A common base class for intersection types and class types
    */
-  abstract class CompoundType extends Type {
+  abstract class CompoundType extends Type with CompoundTypeApi {
 
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _
     private[reflect] var baseTypeSeqPeriod = NoPeriod
@@ -1590,20 +1607,27 @@ trait Types
       } else if (flattened != parents) {
         refinedType(flattened, if (typeSymbol eq NoSymbol) NoSymbol else typeSymbol.owner, decls, NoPosition)
       } else if (isHigherKinded) {
-        // MO to AM: This is probably not correct
-        // If they are several higher-kinded parents with different bounds we need
-        // to take the intersection of their bounds
-        typeFun(
-          typeParams,
-          RefinedType(
-            parents map {
-              case TypeRef(pre, sym, List()) => TypeRef(pre, sym, dummyArgs)
-              case p => p
-            },
-            decls,
-            typeSymbol))
+        etaExpand
       } else super.normalize
     }
+
+    final override def etaExpand: Type = {
+      // MO to AM: This is probably not correct
+      // If they are several higher-kinded parents with different bounds we need
+      // to take the intersection of their bounds
+      // !!! inconsistent with TypeRef.etaExpand that uses initializedTypeParams
+      if (!isHigherKinded) this
+      else typeFun(
+        typeParams,
+        RefinedType(
+          parents map {
+            case TypeRef(pre, sym, List()) => TypeRef(pre, sym, dummyArgs)
+            case p => p
+          },
+          decls,
+          typeSymbol))
+    }
+
     override def kind = "RefinedType"
   }
 
@@ -2153,7 +2177,7 @@ trait Types
       || pre.isGround && args.forall(_.isGround)
     )
 
-    def etaExpand: Type = {
+    final override def etaExpand: Type = {
       // must initialise symbol, see test/files/pos/ticket0137.scala
       val tpars = initializedTypeParams
       if (tpars.isEmpty) this
@@ -3155,8 +3179,12 @@ trait Types
       if (instValid) inst
       // get here when checking higher-order subtyping of the typevar by itself
       // TODO: check whether this ever happens?
-      else if (isHigherKinded) logResult("Normalizing HK $this")(typeFun(params, applyArgs(params map (_.typeConstructor))))
+      else if (isHigherKinded) etaExpand
       else super.normalize
+    )
+    override def etaExpand: Type = (
+      if (!isHigherKinded) this
+      else logResult("Normalizing HK $this")(typeFun(params, applyArgs(params map (_.typeConstructor))))
     )
     override def typeSymbol = origin.typeSymbol
 
@@ -3531,6 +3559,12 @@ trait Types
       case _                                              => abort(debugString(tycon))
     }
   }
+
+  def appliedType(tycon: Type, args: Type*): Type =
+    appliedType(tycon, args.toList)
+
+  def appliedType(tyconSym: Symbol, args: List[Type]): Type =
+    appliedType(tyconSym.typeConstructor, args)
 
   /** Very convenient. */
   def appliedType(tyconSym: Symbol, args: Type*): Type =

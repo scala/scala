@@ -14,7 +14,8 @@ object ReflectiveClosure {
 object Macros {
   def reflectiveClosureImpl[A, B](c: Context)(f: c.Expr[A => B]): c.Expr[ReflectiveClosure[A, B]] = {
     import c.universe._
-    val u = treeBuild.mkRuntimeUniverseRef
+    import internal._
+    val u = gen.mkRuntimeUniverseRef
     val m = EmptyTree
     val tree = c.Expr[scala.reflect.runtime.universe.Tree](Select(c.reifyTree(u, m, f.tree), newTermName("tree")))
     c.universe.reify(new ReflectiveClosure(tree.splice, f.splice))

@@ -32,7 +32,7 @@ object a {
 object Test extends App {
   def test(methName: String, arg: Any) = {
     val moduleA = cm.reflect(a)
-    val msym = moduleA.symbol.typeSignature.declaration(TermName(methName)).asMethod
+    val msym = moduleA.symbol.info.decl(TermName(methName)).asMethod
     println(s"meth = $msym")
     val mmirror = moduleA.reflectMethod(msym)
     val mresult =

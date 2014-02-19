@@ -69,17 +69,15 @@ abstract class Universe extends Symbols
                            with Positions
                            with Exprs
                            with TypeTags
-                           with TagInterop
                            with ImplicitTags
                            with StandardDefinitions
                            with StandardNames
                            with StandardLiftables
-                           with BuildUtils
                            with Mirrors
                            with Printers
-                           with Importers
                            with Liftables
                            with Quasiquotes
+                           with Internals
 {
   /** Use `reify` to produce the abstract syntax tree representing a given Scala expression.
    *

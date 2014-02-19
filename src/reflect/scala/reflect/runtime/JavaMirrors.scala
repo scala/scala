@@ -22,7 +22,7 @@ import ReflectionUtils._
 import scala.language.existentials
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 
-private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
+private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
 
   private lazy val mirrors = new WeakHashMap[ClassLoader, WeakReference[JavaMirror]]()
 
@@ -33,9 +33,8 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     jm
   }
 
-  override type RuntimeClass = java.lang.Class[_]
-
   override type Mirror = JavaMirror
+  implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[JavaMirror])
 
   override lazy val rootMirror: Mirror = createMirror(NoSymbol, rootClassLoader)
 
@@ -81,10 +80,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     // the same thing is done by the `missingHook` below
     override def staticPackage(fullname: String): ModuleSymbol =
       try super.staticPackage(fullname)
-      catch {
-        case _: MissingRequirementError =>
-          makeScalaPackage(fullname)
-      }
+      catch { case _: ScalaReflectionException => makeScalaPackage(fullname) }
 
 // ----------- Caching ------------------------------------------------------------------
 
@@ -146,7 +142,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       object ConstantArg {
         def enumToSymbol(enum: Enum[_]): Symbol = {
           val staticPartOfEnum = classToScala(enum.getClass).companionSymbol
-          staticPartOfEnum.typeSignature.declaration(enum.name: TermName)
+          staticPartOfEnum.info.declaration(enum.name: TermName)
         }
 
         def unapply(schemaAndValue: (jClass[_], Any)): Option[Any] = schemaAndValue match {
@@ -270,7 +266,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       val isDerivedValueClass = symbol.isDerivedValueClass
       lazy val boxer = runtimeClass(symbol.toType).getDeclaredConstructors().head
       lazy val unboxer = {
-        val fields @ (field :: _) = symbol.toType.declarations.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList
+        val fields @ (field :: _) = symbol.toType.decls.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList
         assert(fields.length == 1, s"$symbol: $fields")
         runtimeClass(symbol.asClass).getDeclaredMethod(field.name.toString)
       }
@@ -293,32 +289,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         jfield.set(receiver, if (isDerivedValueClass) unboxer.invoke(value) else value)
       }
 
-      override def toString = s"field mirror for ${symbol.fullName} (bound to $receiver)"
-    }
-
-    private def showMethodSig(symbol: MethodSymbol): String = {
-      var sig = s"${symbol.fullName}"
-      if (symbol.typeParams.nonEmpty) {
-        def showTparam(tparam: Symbol) =
-          tparam.typeSignature match {
-            case tpe @ TypeBounds(_, _) => s"${tparam.name}$tpe"
-            case _ => tparam.name
-          }
-        def showTparams(tparams: List[Symbol]) = "[" + (tparams map showTparam mkString ", ") + "]"
-        sig += showTparams(symbol.typeParams)
-      }
-      if (symbol.paramss.nonEmpty) {
-        def showParam(param: Symbol) = s"${param.name}: ${param.typeSignature}"
-        def showParams(params: List[Symbol]) = {
-          val s_mods = if (params.nonEmpty && params(0).hasFlag(IMPLICIT)) "implicit " else ""
-          val s_params = params map showParam mkString ", "
-          "(" + s_mods + s_params + ")"
-        }
-        def showParamss(paramss: List[List[Symbol]]) = paramss map showParams mkString ""
-        sig += showParamss(symbol.paramss)
-      }
-      sig += s": ${symbol.returnType}"
-      sig
+      override def toString = s"field mirror for ${showDecl(symbol)} (bound to $receiver)"
     }
 
     // the "symbol == Any_getClass || symbol == Object_getClass" test doesn't cut it
@@ -373,7 +344,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
 
       override def toString = {
         val what = if (symbol.isConstructor) "constructor mirror" else "method mirror"
-        s"$what for ${showMethodSig(symbol)} (bound to $receiver)"
+        s"$what for ${showDecl(symbol)} (bound to $receiver)"
       }
     }
 
@@ -469,7 +440,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
     private class BytecodelessMethodMirror[T: ClassTag](val receiver: T, val symbol: MethodSymbol)
             extends MethodMirror {
       def bind(newReceiver: Any) = new BytecodelessMethodMirror(newReceiver.asInstanceOf[T], symbol)
-      override def toString = s"bytecodeless method mirror for ${showMethodSig(symbol)} (bound to $receiver)"
+      override def toString = s"bytecodeless method mirror for ${showDecl(symbol)} (bound to $receiver)"
 
       def apply(args: Any*): Any = {
         // checking type conformance is too much of a hassle, so we don't do it here
@@ -483,7 +454,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         if (!perfectMatch && !varargMatch) {
           val n_arguments = if (isVarArgsList(params)) s"${params.length - 1} or more" else s"${params.length}"
           val s_arguments = if (params.length == 1 && !isVarArgsList(params)) "argument" else "arguments"
-          abort(s"${showMethodSig(symbol)} takes $n_arguments $s_arguments")
+          abort(s"${showDecl(symbol)} takes $n_arguments $s_arguments")
         }
 
         def objReceiver       = receiver.asInstanceOf[AnyRef]
@@ -640,6 +611,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
             info(s"unpickling Scala $clazz and $module, owner = ${clazz.owner}")
             val bytes = ssig.getBytes
             val len = ByteCodecs.decode(bytes)
+            assignAssociatedFile(clazz, module, jclazz)
             unpickler.unpickle(bytes take len, 0, clazz, module, jclazz.getName)
             markAllCompleted(clazz, module)
           case None =>
@@ -649,6 +621,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
                 val encoded = slsig flatMap (_.getBytes)
                 val len = ByteCodecs.decode(encoded)
                 val decoded = encoded.take(len)
+                assignAssociatedFile(clazz, module, jclazz)
                 unpickler.unpickle(decoded, 0, clazz, module, jclazz.getName)
                 markAllCompleted(clazz, module)
               case None =>
@@ -688,6 +661,12 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         sym setInfo TypeBounds.upper(glb(jtvar.getBounds.toList map typeToScala map objToAny))
         markAllCompleted(sym)
       }
+    }
+
+    private def assignAssociatedFile(clazz: Symbol, module: Symbol, jclazz: jClass[_]): Unit = {
+      val associatedFile = ReflectionUtils.associatedFile(jclazz)
+      clazz.associatedFile = associatedFile
+      if (module != NoSymbol) module.associatedFile = associatedFile
     }
 
     /**
@@ -745,6 +724,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
         debugInfo("completing from Java " + sym + "/" + clazz.fullName)//debug
         assert(sym == clazz || (module != NoSymbol && (sym == module || sym == module.moduleClass)), sym)
 
+        assignAssociatedFile(clazz, module, jclazz)
         propagatePackageBoundary(jclazz, relatedSymbols: _*)
         copyAnnotations(clazz, jclazz)
         // to do: annotations to set also for module?
@@ -961,7 +941,7 @@ private[reflect] trait JavaMirrors extends internal.SymbolTable with api.JavaUni
       val owner = ownerModule.moduleClass
       val name = (fullname: TermName) drop split + 1
       val opkg = owner.info decl name
-      if (opkg.isPackage)
+      if (opkg.hasPackageFlag)
         opkg.asModule
       else if (opkg == NoSymbol) {
         val pkg = owner.newPackage(name)

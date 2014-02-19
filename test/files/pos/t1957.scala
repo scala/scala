@@ -23,7 +23,7 @@ object Test {
         final type commonModuleType = Module {type settingsType = self.settingsType}
         type selfType >: self.type <: commonModuleType
 
-        // BTW: if we use the commented out type declarations, the code compiles successfully
+        // BTW: if we use the commented out type decls, the code compiles successfully
         // type gristType = Grist {type settingsType <: self.settingsType; type moduleType <: commonModuleType }
 
         val tools: List[Tool {type settingsType = self.settingsType}]

@@ -561,14 +561,14 @@ abstract class ClassfileParser {
               // if this is a non-static inner class, remove the explicit outer parameter
               val paramsNoOuter = innerClasses getEntry currentClass match {
                 case Some(entry) if !isScalaRaw && !entry.jflags.isStatic =>
-                  /* About `clazz.owner.isPackage` below: SI-5957
+                  /* About `clazz.owner.hasPackageFlag` below: SI-5957
                    * For every nested java class A$B, there are two symbols in the scala compiler.
                    *  1. created by SymbolLoader, because of the existence of the A$B.class file, owner: package
                    *  2. created by ClassfileParser of A when reading the inner classes, owner: A
                    * If symbol 1 gets completed (e.g. because the compiled source mentions `A$B`, not `A#B`), the
                    * ClassfileParser for 1 executes, and clazz.owner is the package.
                    */
-                  assert(params.head.tpe.typeSymbol == clazz.owner || clazz.owner.isPackage, params.head.tpe.typeSymbol + ": " + clazz.owner)
+                  assert(params.head.tpe.typeSymbol == clazz.owner || clazz.owner.hasPackageFlag, params.head.tpe.typeSymbol + ": " + clazz.owner)
                   params.tail
                 case _ =>
                   params
