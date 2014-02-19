@@ -492,7 +492,10 @@ abstract class ConstantOptimization extends SubComponent {
         case SWITCH(tags, labels) =>
           val in1 = in peek 0
           val reachableNormalLabels = tags zip labels collect { case (tagSet, label) if canSwitch(in1, tagSet) => label }
-          val reachableLabels = if (labels.lengthCompare(tags.length) > 0) {
+          val reachableLabels = if (tags.isEmpty) {
+            assert(labels.size == 1, s"When SWITCH node has empty array of tags it should have just one (default) label: $labels")
+            labels
+          } else if (labels.lengthCompare(tags.length) > 0) {
             // if we've got an extra label then it's the default
             val defaultLabel = labels.last
             // see if the default is reachable by seeing if the input might be out of the set
