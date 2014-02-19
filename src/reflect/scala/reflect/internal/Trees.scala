@@ -1690,7 +1690,6 @@ trait Trees extends api.Trees {
     val tree1 = build.SyntacticBlock(tree0 :: Nil)
     op(tree1) match {
       case Block(tree2 :: Nil, Literal(Constant(()))) if neededWrapping => tree2
-      case Block(Nil, tree2) => tree2
       case tree2 => tree2
     }
   }
