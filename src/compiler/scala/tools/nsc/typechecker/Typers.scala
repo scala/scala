@@ -4714,7 +4714,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               UnstableTreeError(qualTyped)
           )
           val tree1 = name match {
-            case nme.withFilter => tryWithFilterAndFilter(tree, qualStableOrError)
+            case nme.withFilter if !settings.future => tryWithFilterAndFilter(tree, qualStableOrError)
             case _              => typedSelect(tree, qualStableOrError, name)
           }
           def sym = tree1.symbol

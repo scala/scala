@@ -1,0 +1,4 @@
+t6455.scala:5: error: value withFilter is not a member of object O
+  O.withFilter(f => true)
+    ^
+one error found
