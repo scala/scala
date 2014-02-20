@@ -2,35 +2,35 @@ import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.reflect.runtime.universe._, Flag._
 
 object PatternConstructionProps extends QuasiquoteProperties("pattern construction") {
-  property("splice bind") = forAll { (bind: Bind) =>
+  property("unquote bind") = forAll { (bind: Bind) =>
     pq"$bind" ≈ bind
   }
 
-  property("splice name into bind") = forAll { (name: TermName) =>
+  property("unquote name into bind") = forAll { (name: TermName) =>
     pq"$name" ≈ Bind(name, Ident(termNames.WILDCARD))
   }
 
-  property("splice name and tree into bind") = forAll { (name: TermName, tree: Tree) =>
+  property("unquote name and tree into bind") = forAll { (name: TermName, tree: Tree) =>
     pq"$name @ $tree" ≈ Bind(name, tree)
   }
 
-  property("splice type name into typed") = forAll { (name: TypeName) =>
+  property("unquote type name into typed") = forAll { (name: TypeName) =>
     pq"_ : $name" ≈ Typed(Ident(termNames.WILDCARD), Ident(name))
   }
 
-  property("splice tree into typed") = forAll { (typ: Tree) =>
+  property("unquote tree into typed") = forAll { (typ: Tree) =>
     pq"_ : $typ" ≈ Typed(Ident(termNames.WILDCARD), typ)
   }
 
-  property("splice into apply") = forAll { (pat: Tree, subpat: Tree) =>
+  property("unquote into apply") = forAll { (pat: Tree, subpat: Tree) =>
     pq"$pat($subpat)" ≈ Apply(pat, List(subpat))
   }
 
-  property("splice into casedef") = forAll { (pat: Tree, cond: Tree, body: Tree) =>
+  property("unquote into casedef") = forAll { (pat: Tree, cond: Tree, body: Tree) =>
     cq"$pat if $cond => $body" ≈ CaseDef(pat, cond, body)
   }
 
-  property("splice into alternative") = forAll { (first: Tree, rest: List[Tree]) =>
+  property("unquote into alternative") = forAll { (first: Tree, rest: List[Tree]) =>
     pq"$first | ..$rest" ≈ Alternative(first :: rest)
   }
 }

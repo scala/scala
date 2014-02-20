@@ -99,13 +99,13 @@ object UnliftableProps extends QuasiquoteProperties("unliftable") {
     assert(l5 == orig2)
   }
 
-  property("don't unlift non-tree splicee (1)") = test {
+  property("don't unlift non-tree unquotee (1)") = test {
     val q"${a: TermName}.${b: TermName}" = q"a.b"
     assert(a == TermName("a"))
     assert(b == TermName("b"))
   }
 
-  property("don't unlift non-tree splicee (2)") = test {
+  property("don't unlift non-tree unquotee (2)") = test {
     val q"${mods: Modifiers} def foo" = q"def foo"
     assert(mods == Modifiers(DEFERRED))
   }

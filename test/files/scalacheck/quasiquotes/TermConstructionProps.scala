@@ -2,41 +2,41 @@ import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.reflect.runtime.universe._, Flag._
 
 object TermConstructionProps extends QuasiquoteProperties("term construction") {
-  property("splice single tree return tree itself") = forAll { (t: Tree) =>
+  property("unquote single tree return tree itself") = forAll { (t: Tree) =>
     q"$t" ≈ t
   }
 
-  property("splice trees into if expression") = forAll { (t1: Tree, t2: Tree, t3: Tree) =>
+  property("unquote trees into if expression") = forAll { (t1: Tree, t2: Tree, t3: Tree) =>
     q"if($t1) $t2 else $t3" ≈ If(t1, t2, t3)
   }
 
-  property("splice trees into ascriptiopn") = forAll { (t1: Tree, t2: Tree) =>
+  property("unquote trees into ascriptiopn") = forAll { (t1: Tree, t2: Tree) =>
     q"$t1 : $t2" ≈ Typed(t1, t2)
   }
 
-  property("splice trees into apply") = forAll { (t1: Tree, t2: Tree, t3: Tree) =>
+  property("unquote trees into apply") = forAll { (t1: Tree, t2: Tree, t3: Tree) =>
     q"$t1($t2, $t3)" ≈ Apply(t1, List(t2, t3))
   }
 
-  property("splice trees with .. cardinality into apply") = forAll { (ts: List[Tree]) =>
+  property("unquote trees with .. rank into apply") = forAll { (ts: List[Tree]) =>
     q"f(..$ts)" ≈ Apply(q"f", ts)
   }
 
-  property("splice iterable into apply") = forAll { (trees: List[Tree]) =>
+  property("unquote iterable into apply") = forAll { (trees: List[Tree]) =>
     val itrees: Iterable[Tree] = trees
     q"f(..$itrees)" ≈ Apply(q"f", trees)
   }
 
-  property("splice trees with ... cardinality into apply") = forAll { (ts1: List[Tree], ts2: List[Tree]) =>
+  property("unquote trees with ... rank into apply") = forAll { (ts1: List[Tree], ts2: List[Tree]) =>
     val argss = List(ts1, ts2)
     q"f(...$argss)" ≈ Apply(Apply(q"f", ts1), ts2)
   }
 
-  property("splice term name into assign") = forAll { (name: TermName, t: Tree) =>
+  property("unquote term name into assign") = forAll { (name: TermName, t: Tree) =>
     q"$name = $t" ≈ Assign(Ident(name), t)
   }
 
-  property("splice trees into block") = forAll { (t1: Tree, t2: Tree, t3: Tree) =>
+  property("unquote trees into block") = forAll { (t1: Tree, t2: Tree, t3: Tree) =>
     blockInvariant(q"""{
       $t1
       $t2
@@ -45,25 +45,25 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
   }
 
 
-  property("splice tree into new") = forAll { (tree: Tree) =>
+  property("unquote tree into new") = forAll { (tree: Tree) =>
     q"new $tree" ≈ Apply(Select(New(tree), termNames.CONSTRUCTOR), List())
   }
 
-  property("splice tree into return") = forAll { (tree: Tree) =>
+  property("unquote tree into return") = forAll { (tree: Tree) =>
     q"return $tree" ≈ Return(tree)
   }
 
-  property("splice a list of arguments") = forAll { (fun: Tree, args: List[Tree]) =>
+  property("unquote a list of arguments") = forAll { (fun: Tree, args: List[Tree]) =>
     q"$fun(..$args)" ≈ Apply(fun, args)
   }
 
-  property("splice list and non-list fun arguments") = forAll { (fun: Tree, arg1: Tree, arg2: Tree, args: List[Tree]) =>
+  property("unquote list and non-list fun arguments") = forAll { (fun: Tree, arg1: Tree, arg2: Tree, args: List[Tree]) =>
     q"$fun(..$args, $arg1, $arg2)" ≈ Apply(fun, args ++ List(arg1) ++ List(arg2)) &&
     q"$fun($arg1, ..$args, $arg2)" ≈ Apply(fun, List(arg1) ++ args ++ List(arg2)) &&
     q"$fun($arg1, $arg2, ..$args)" ≈ Apply(fun, List(arg1) ++ List(arg2) ++ args)
   }
 
-  property("splice into new") = forAll { (name: TypeName, body: List[Tree]) =>
+  property("unquote into new") = forAll { (name: TypeName, body: List[Tree]) =>
     q"new $name { ..$body }" ≈
       q"""{
         final class $$anon extends $name {
@@ -73,29 +73,29 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
       }"""
   }
 
-  property("splice type name into this") = forAll { (T: TypeName) =>
+  property("unquote type name into this") = forAll { (T: TypeName) =>
     q"$T.this" ≈ This(T)
   }
 
-  property("splice tree into throw") = forAll { (t: Tree) =>
+  property("unquote tree into throw") = forAll { (t: Tree) =>
     q"throw $t" ≈ Throw(t)
   }
 
-  property("splice trees into type apply") = forAll { (fun: TreeIsTerm, types: List[Tree]) =>
+  property("unquote trees into type apply") = forAll { (fun: TreeIsTerm, types: List[Tree]) =>
     q"$fun[..$types]" ≈ (if (types.nonEmpty) TypeApply(fun, types) else fun)
   }
 
-  property("splice trees into while loop") = forAll { (cond: Tree, body: Tree) =>
+  property("unquote trees into while loop") = forAll { (cond: Tree, body: Tree) =>
     val LabelDef(_, List(), If(cond1, Block(List(body1), Apply(_, List())), Literal(Constant(())))) = q"while($cond) $body"
     body1 ≈ body && cond1 ≈ cond
   }
 
-  property("splice trees into do while loop") = forAll { (cond: Tree, body: Tree) =>
+  property("unquote trees into do while loop") = forAll { (cond: Tree, body: Tree) =>
     val LabelDef(_, List(), Block(List(body1), If(cond1, Apply(_, List()), Literal(Constant(()))))) = q"do $body while($cond)"
     body1 ≈ body && cond1 ≈ cond
   }
 
-  property("splice trees into alternative") = forAll { (c: Tree, A: Tree, B: Tree) =>
+  property("unquote trees into alternative") = forAll { (c: Tree, A: Tree, B: Tree) =>
     q"$c match { case $A | $B => }" ≈
       Match(c, List(
         CaseDef(Alternative(List(A, B)), EmptyTree, Literal(Constant(())))))
@@ -109,24 +109,24 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
       case init :+ last => Block(init, last)
     })
 
-  property("splice list of trees into block (1)") = forAll { (trees: List[Tree]) =>
+  property("unquote list of trees into block (1)") = forAll { (trees: List[Tree]) =>
     blockInvariant(q"{ ..$trees }", trees)
   }
 
-  property("splice list of trees into block (2)") = forAll { (trees1: List[Tree], trees2: List[Tree]) =>
+  property("unquote list of trees into block (2)") = forAll { (trees1: List[Tree], trees2: List[Tree]) =>
     blockInvariant(q"{ ..$trees1 ; ..$trees2 }", trees1 ++ trees2)
   }
 
-  property("splice list of trees into block (3)") = forAll { (trees: List[Tree], tree: Tree) =>
+  property("unquote list of trees into block (3)") = forAll { (trees: List[Tree], tree: Tree) =>
     blockInvariant(q"{ ..$trees; $tree }", trees :+ tree)
   }
 
-  property("splice term into brackets") = test {
+  property("unquote term into brackets") = test {
     val a = q"a"
     assert(q"($a)" ≈ a)
   }
 
-  property("splice terms into tuple") = test {
+  property("unquote terms into tuple") = test {
     val a1 = q"a1"
     val a2 = q"a2"
     val as = List(a1, a2)
@@ -134,12 +134,12 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     assert(q"(a0, ..$as)" ≈ q"scala.Tuple3(a0, $a1, $a2)")
   }
 
-  property("splice empty list into tuple") = test {
+  property("unquote empty list into tuple") = test {
     val empty = List[Tree]()
     assert(q"(..$empty)" ≈ q"()")
   }
 
-  property("splice single element list into tuple") = test {
+  property("unquote single element list into tuple") = test {
     val xs = q"x" :: Nil
     assert(q"(..$xs)" ≈ xs.head)
   }
@@ -196,7 +196,7 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     assert(q"f(${if (true) q"a" else q"b"})" ≈ q"f(a)")
   }
 
-  property("splice iterable of non-parametric type") = test {
+  property("unquote iterable of non-parametric type") = test {
     object O extends Iterable[Tree] { def iterator = List(q"foo").iterator }
     q"f(..$O)"
   }

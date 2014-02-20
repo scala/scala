@@ -7,7 +7,7 @@ quasiquotes-syntax-error-position.scala:6: error: illegal start of simple expres
 quasiquotes-syntax-error-position.scala:7: error: '}' expected but end of quote found.
   q"class $t { def foo = $a"
                            ^
-quasiquotes-syntax-error-position.scala:8: error: '.' expected but splicee found.
+quasiquotes-syntax-error-position.scala:8: error: '.' expected but unquotee found.
   q"import $t $t"
               ^
 quasiquotes-syntax-error-position.scala:9: error: '{' expected but end of quote found.

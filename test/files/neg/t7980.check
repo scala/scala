@@ -1,0 +1,4 @@
+t7980.scala:7: error: Can't unquote Nothing, bottom type values often indicate programmer mistake
+  println(q"class ${Name(X)} { }")
+                        ^
+one error found
