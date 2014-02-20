@@ -148,6 +148,7 @@ trait ScriptExecutor {
 
 class CommonScriptExecutor extends ScriptExecutor {
   
+  var waitsForMessage = false
  
   // send out a success when in an And-like context
   def doNeutral(n: CallGraphNodeTrait) =
@@ -194,7 +195,7 @@ class CommonScriptExecutor extends ScriptExecutor {
     }
     
     // Notify this
-    synchronized {notify()}
+    if (waitsForMessage) synchronized {notify()}
   }
   // remove a message from the queue
   def remove(m: CallGraphMessage[_ <: CallGraphNodeTrait]) = {
@@ -1071,12 +1072,14 @@ class CommonScriptExecutor extends ScriptExecutor {
     }
     else if (!rootNode.children.isEmpty) {
       messageAwaiting
+      waitsForMessage = true
       synchronized { // TBD: there should also be a synchronized call in the CodeExecutors
         if (callGraphMessageCount==0) // looks stupid, but event may have happened&notify() may have been called during tracing
           synchronized {
             wait() // for an event to happen 
           }
       }
+      waitsForMessage = false
       // note: there may also be deadlock because of unmatching communications
       // so there should preferably be a check for the existence of waiting event handling actions
     }
