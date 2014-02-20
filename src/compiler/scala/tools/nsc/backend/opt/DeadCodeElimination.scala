@@ -95,8 +95,10 @@ abstract class DeadCodeElimination extends SubComponent {
         localStores.clear()
         clobbers.clear()
         m.code.blocks.clear()
+        m.code.touched = true
         accessedLocals = m.params.reverse
         m.code.blocks ++= linearizer.linearize(m)
+        m.code.touched = true
         collectRDef(m)
         mark()
         sweep(m)
