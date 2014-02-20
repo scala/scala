@@ -1153,9 +1153,14 @@ self =>
 
       val pkg = qualId()
       newLineOptWhenFollowedBy(LBRACE)
+      val pkgString = pkg.toString
 
-      if (currentPackage == "") currentPackage = pkg.toString
+      if (currentPackage == "") currentPackage = pkgString
       else currentPackage = currentPackage + "." + pkg
+
+      // optimize: first check string, then walk tree
+      if (pkgString.contains("_root_") && pkg.collect{case RefTree(_, nme.ROOTPKG) =>}.nonEmpty)
+        deprecationWarning(in.offset, s"Invalid package name: '$pkg'. '${nme.ROOTPKG}' is a reserved name that refers to the root of the package structure.")
 
       pkg
     }
