@@ -194,8 +194,18 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   //
   // def resetAllAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(localOnly = false, leaveAlone).transform(x)
 
+  // upd. Unfortunately this didn't work out quite as we expected. The last two users of resetAllAttrs:
+  // reification and typedLabelDef broke in very weird ways when we replaced resetAllAttrs with resetLocalAttrs
+  // (see SI-8316 change from resetAllAttrs to resetLocalAttrs in reifiers broke Slick and
+  // SI-8318 NPE in mixin in scala-continuations for more information).
+  // Given that we're supposed to release 2.11.0-RC1 in less than a week, I'm temporarily reinstating resetAllAttrs
+  // until we have time to better understand what's going on. In order to dissuade people from using it,
+  // it now comes with a new, ridiculous name.
   /** @see ResetAttrs */
-  def resetAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(leaveAlone).transform(x)
+  def brutallyResetAttrs(x: Tree, leaveAlone: Tree => Boolean = null): Tree = new ResetAttrs(brutally = true, leaveAlone).transform(x)
+
+  /** @see ResetAttrs */
+  def resetAttrs(x: Tree): Tree = new ResetAttrs(brutally = false, leaveAlone = null).transform(x)
 
   /** A transformer which resets symbol and tpe fields of all nodes in a given tree,
    *  with special treatment of:
@@ -206,7 +216,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
    *
    *  (bq:) This transformer has mutable state and should be discarded after use
    */
-  private class ResetAttrs(leaveAlone: Tree => Boolean = null) {
+  private class ResetAttrs(brutally: Boolean, leaveAlone: Tree => Boolean) {
     // this used to be based on -Ydebug, but the need for logging in this code is so situational
     // that I've reverted to a hard-coded constant here.
     val debug = false
@@ -299,7 +309,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 // if we move these trees into lexical contexts different from their original locations.
                 if (dupl.hasSymbol) {
                   val sym = dupl.symbol
-                  val vetoScope = !(locals contains sym)
+                  val vetoScope = !brutally && !(locals contains sym)
                   val vetoThis = dupl.isInstanceOf[This] && sym.isPackageClass
                   if (!(vetoScope || vetoThis)) dupl.symbol = NoSymbol
                 }

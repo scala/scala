@@ -1,6 +1,7 @@
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.macros.blackbox.Context
+import scala.language.experimental.macros
 
 case class Utils[C <: Context]( c:C ) {
   import c.universe._
@@ -34,7 +35,7 @@ object QueryableMacros{
     c.universe.reify{ Queryable.factory[S]( foo.splice )}
   }
   def map[T:c.WeakTypeTag, S:c.WeakTypeTag]
-               (c: scala.reflect.macros.blackbox.Context)
+               (c: Context)
                (projection: c.Expr[T => S]): c.Expr[Queryable[S]] = _helper[c.type,S]( c )( "_map", projection )
 }
 class Queryable[T]{

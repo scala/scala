@@ -2288,7 +2288,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val sym2 = namer.enterInScope(
             context.owner.newLabel(ldef.name, ldef.pos) setInfo MethodType(List(), restpe))
           val LabelDef(_, _, rhs1) = resetAttrs(ldef)
-          val rhs2 = typed(rhs1, restpe)
+          val rhs2 = typed(brutallyResetAttrs(rhs1), restpe)
           ldef.params foreach (param => param setType param.symbol.tpe)
           deriveLabelDef(ldef)(_ => rhs2) setSymbol sym2 setType restpe
         }
