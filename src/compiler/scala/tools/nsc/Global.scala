@@ -1795,10 +1795,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   private def writeICode() {
     val printer = new icodes.TextPrinter(null, icodes.linearizer)
     icodes.classes.values.foreach((cls) => {
-      val suffix = if (cls.symbol.hasModuleFlag) "$.icode" else ".icode"
+      val suffix = s"${if (cls.symbol.hasModuleFlag) "$" else ""}_${phase}.icode"
       val file = getFile(cls.symbol, suffix)
-//      if (file.exists())
-//        file = new File(file.getParentFile(), file.getName() + "1")
       try {
         val stream = new FileOutputStream(file)
         printer.setWriter(new PrintWriter(stream, true))
