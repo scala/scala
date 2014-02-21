@@ -147,7 +147,7 @@ trait Validators {
       // had to move method's body to an object because of the recursive dependencies between sigma and param
       object SigGenerator {
         val cache = scala.collection.mutable.Map[Symbol, Symbol]()
-        val ctxTpe = if (isImplBlackbox) BlackboxContextClass.tpe else WhiteboxContextClass.tpe
+        val ctxTpe = if (isBlackbox) BlackboxContextClass.tpe else WhiteboxContextClass.tpe
         val ctxPrefix =
           if (isImplMethod) singleType(NoPrefix, makeParam(nme.macroContext, macroDdef.pos, ctxTpe, SYNTHETIC))
           else singleType(ThisType(macroImpl.owner), macroImpl.owner.tpe.member(nme.c))

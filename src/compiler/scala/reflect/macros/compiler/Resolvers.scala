@@ -35,10 +35,10 @@ trait Resolvers {
     // lazy val (_, macroImplOwner, macroImpl, macroImplTargs) =
     private lazy val dissectedMacroImplRef =
       macroImplRef match {
-        case MacroImplReference(isBundle, isBlackbox, owner, meth, targs) => (isBlackbox, owner, meth, targs)
+        case MacroImplReference(_, isBlackbox, owner, meth, targs) => (isBlackbox, owner, meth, targs)
         case _ => MacroImplReferenceWrongShapeError()
       }
-    lazy val isImplBlackbox = dissectedMacroImplRef._1
+    lazy val isBlackbox = dissectedMacroImplRef._1
     lazy val macroImplOwner = dissectedMacroImplRef._2
     lazy val macroImpl = dissectedMacroImplRef._3
     lazy val targs = dissectedMacroImplRef._4
