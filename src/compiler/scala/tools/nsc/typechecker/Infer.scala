@@ -1328,7 +1328,8 @@ trait Infer extends Checkable {
         eligible
       else
         eligible filter (alt =>
-          !mexists(alt.info.paramss)(_.hasDefault) && isApplicableBasedOnArity(alt.tpe, argtpes.length, varargsStar, tuplingAllowed = true)
+             !alt.info.params.exists(_.hasDefault) // run/t8197b first parameter list only!
+          && isApplicableBasedOnArity(alt.tpe, argtpes.length, varargsStar, tuplingAllowed = true)
       )
     }
 
