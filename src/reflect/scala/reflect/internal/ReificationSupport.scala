@@ -237,7 +237,9 @@ trait ReificationSupport { self: SymbolTable =>
     // undo gen.mkTemplate
     protected object UnMkTemplate {
       def unapply(templ: Template): Option[(List[Tree], ValDef, Modifiers, List[List[ValDef]], List[Tree], List[Tree])] = {
-        val Template(parents, selfType, tbody) = templ
+        val Template(parents, selfType, _) = templ
+        val tbody = treeInfo.untypecheckedTemplBody(templ)
+        
         def result(ctorMods: Modifiers, vparamss: List[List[ValDef]], edefs: List[Tree], body: List[Tree]) =
           Some((parents, selfType, ctorMods, vparamss, edefs, body))
         def indexOfCtor(trees: List[Tree]) =
@@ -463,8 +465,8 @@ trait ReificationSupport { self: SymbolTable =>
         else gen.mkBlock(stats)
 
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
-        case self.Block(stats, SyntheticUnit()) => Some(stats)
-        case self.Block(stats, expr)            => Some(stats :+ expr)
+        case bl @ self.Block(stats, SyntheticUnit()) => Some(treeInfo.untypecheckedBlockBody(bl))
+        case bl @ self.Block(stats, expr)            => Some(treeInfo.untypecheckedBlockBody(bl) :+ expr)
         case EmptyTree                          => Some(Nil)
         case _ if tree.isTerm                   => Some(tree :: Nil)
         case _                                  => None

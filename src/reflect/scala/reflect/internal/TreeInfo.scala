@@ -405,6 +405,67 @@ abstract class TreeInfo {
     case _                  => false
   }
 
+  /** Does the tree have a structure similar to typechecked trees? */
+  private[internal] def detectTypecheckedTree(tree: Tree) =
+    tree.hasExistingSymbol || tree.exists {
+      case dd: DefDef => dd.mods.hasAccessorFlag || dd.mods.isSynthetic // for untypechecked trees
+      case md: MemberDef => md.hasExistingSymbol
+      case _ => false
+    }
+
+  /** Recover template body to parsed state */
+  private[internal] def untypecheckedTemplBody(templ: Template) =
+    untypecheckedTreeBody(templ, templ.body)
+
+  /** Recover block body to parsed state */
+  private[internal] def untypecheckedBlockBody(block: Block) =
+    untypecheckedTreeBody(block, block.stats)
+
+  /** Recover tree body to parsed state */
+  private[internal] def untypecheckedTreeBody(tree: Tree, tbody: List[Tree]) = {
+    def filterBody(body: List[Tree]) = body filter {
+      case _: ValDef | _: TypeDef => true
+      // keep valdef or getter for val/var
+      case dd: DefDef if dd.mods.hasAccessorFlag => !nme.isSetterName(dd.name) && !tbody.exists {
+        case vd: ValDef => dd.name == vd.name.dropLocal
+        case _ => false
+      }
+      case md: MemberDef => !md.mods.isSynthetic
+      case tree => true
+    }
+
+    def lazyValDefRhs(body: Tree) =
+      body match {
+        case Block(List(Assign(_, rhs)), _) => rhs
+        case _ => body
+      }
+
+    def recoverBody(body: List[Tree]) = body map {
+      case vd @ ValDef(vmods, vname, _, vrhs) if nme.isLocalName(vname) =>
+        tbody find {
+          case dd: DefDef => dd.name == vname.dropLocal
+          case _ => false
+        } map { dd =>
+          val DefDef(dmods, dname, _, _, _, drhs) = dd
+          // get access flags from DefDef
+          val vdMods = (vmods &~ Flags.AccessFlags) | (dmods & Flags.AccessFlags).flags
+          // for most cases lazy body should be taken from accessor DefDef
+          val vdRhs = if (vmods.isLazy) lazyValDefRhs(drhs) else vrhs
+          copyValDef(vd)(mods = vdMods, name = dname, rhs = vdRhs)
+        } getOrElse (vd)
+      // for abstract and some lazy val/vars
+      case dd @ DefDef(mods, name, _, _, tpt, rhs) if mods.hasAccessorFlag =>
+        // transform getter mods to field
+        val vdMods = (if (!mods.hasStableFlag) mods | Flags.MUTABLE else mods &~ Flags.STABLE) &~ Flags.ACCESSOR
+        ValDef(vdMods, name, tpt, rhs)
+      case tr => tr
+    }
+
+    if (detectTypecheckedTree(tree)) {
+      recoverBody(filterBody(tbody))
+    } else tbody
+  }
+
   /** The first constructor definitions in `stats` */
   def firstConstructor(stats: List[Tree]): Tree = stats find {
     case x: DefDef  => nme.isConstructorName(x.name)
