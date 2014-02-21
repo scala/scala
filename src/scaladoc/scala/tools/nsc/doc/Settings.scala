@@ -298,7 +298,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     /** Common conversion targets that affect any class in Scala */
     val commonConversionTargets = Set(
       "scala.Predef.StringFormat",
-      "scala.Predef.StringAdd",
+      "scala.Predef.any2stringadd",
       "scala.Predef.ArrowAssoc",
       "scala.Predef.Ensuring",
       "scala.collection.TraversableOnce.alternateImplicit")

@@ -1432,7 +1432,8 @@ trait Definitions extends api.StandardDefinitions {
         TypeTagClass     -> materializeTypeTag
       )
       lazy val TagSymbols = TagMaterializers.keySet
-      lazy val Predef_conforms     = getMemberMethod(PredefModule, nme.conforms)
+      lazy val Predef_conforms     = (getMemberIfDefined(PredefModule, nme.conforms)
+                               orElse getMemberMethod(PredefModule, "conforms": TermName)) // TODO: predicate on -Xsource:2.10 (for now, needed for transition from M8 -> RC1)
       lazy val Predef_classOf      = getMemberMethod(PredefModule, nme.classOf)
       lazy val Predef_implicitly   = getMemberMethod(PredefModule, nme.implicitly)
       lazy val Predef_wrapRefArray = getMemberMethod(PredefModule, nme.wrapRefArray)

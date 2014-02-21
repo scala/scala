@@ -264,8 +264,16 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
     @inline def formatted(fmtstr: String): String = fmtstr format self
   }
 
-  implicit final class StringAdd[A](private val self: A) extends AnyVal {
-    def +(other: String) = String.valueOf(self) + other
+  // TODO: remove, only needed for binary compatibility of 2.11.0-RC1 with 2.11.0-M8
+  // note that `private[scala]` becomes `public` in bytecode
+  private[scala] final class StringAdd[A](private val self: A) extends AnyVal {
+    def +(other: String): String = String.valueOf(self) + other
+  }
+  private[scala] def StringAdd(x: Any): Any = new StringAdd(x)
+
+  // SI-8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
+  implicit final class any2stringadd[A](private val self: A) extends AnyVal {
+    def +(other: String): String = String.valueOf(self) + other
   }
 
   implicit final class RichException(private val self: Throwable) extends AnyVal {
@@ -374,9 +382,13 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
   sealed abstract class <:<[-From, +To] extends (From => To) with Serializable
   private[this] final val singleton_<:< = new <:<[Any,Any] { def apply(x: Any): Any = x }
-  // not in the <:< companion object because it is also
-  // intended to subsume identity (which is no longer implicit)
-  implicit def conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
+  // The dollar prefix is to dodge accidental shadowing of this method
+  // by a user-defined method of the same name (SI-7788).
+  // The collections rely on this method.
+  implicit def $conforms[A]: A <:< A = singleton_<:<.asInstanceOf[A <:< A]
+
+  @deprecated("Use `implicitly[T <:< U]` or `identity` instead.", "2.11.0")
+  def conforms[A]: A <:< A = $conforms[A]
 
   /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal.
    *
@@ -410,7 +422,6 @@ private[scala] trait DeprecatedPredef {
   @deprecated("Use `ArrowAssoc`", "2.11.0") def any2ArrowAssoc[A](x: A): ArrowAssoc[A]                                      = new ArrowAssoc(x)
   @deprecated("Use `Ensuring`", "2.11.0") def any2Ensuring[A](x: A): Ensuring[A]                                            = new Ensuring(x)
   @deprecated("Use `StringFormat`", "2.11.0") def any2stringfmt(x: Any): StringFormat[Any]                                  = new StringFormat(x)
-  @deprecated("Use String interpolation", "2.11.0") def any2stringadd(x: Any): StringAdd[Any]                               = new StringAdd(x)
   @deprecated("Use `Throwable` directly", "2.11.0") def exceptionWrapper(exc: Throwable)                                    = new RichException(exc)
   @deprecated("Use `SeqCharSequence`", "2.11.0") def seqToCharSequence(xs: scala.collection.IndexedSeq[Char]): CharSequence = new SeqCharSequence(xs)
   @deprecated("Use `ArrayCharSequence`", "2.11.0") def arrayToCharSequence(xs: Array[Char]): CharSequence                   = new ArrayCharSequence(xs)

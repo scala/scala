@@ -671,7 +671,7 @@ trait StdNames {
     val classOf: NameType              = "classOf"
     val clone_ : NameType              = "clone"
     val collection: NameType           = "collection"
-    val conforms: NameType             = "conforms"
+    val conforms: NameType             = "$conforms" // dollar prefix to avoid accidental shadowing
     val copy: NameType                 = "copy"
     val create: NameType               = "create"
     val currentMirror: NameType        = "currentMirror"
