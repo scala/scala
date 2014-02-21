@@ -609,12 +609,8 @@ trait Definitions extends api.StandardDefinitions {
     private def macroBundleParamInfo(tp: Type) = {
       val ctor = tp.erasure.typeSymbol.primaryConstructor
       ctor.paramss match {
-        case List(List(c)) =>
-          val sym = c.info.typeSymbol
-          val isContextCompatible = sym.isNonBottomSubClass(BlackboxContextClass) || sym.isNonBottomSubClass(WhiteboxContextClass)
-          if (isContextCompatible) c.info else NoType
-        case _ =>
-          NoType
+        case List(List(c)) => if (isMacroContextType(c.info)) c.info else NoType
+        case _ => NoType
       }
     }
 
@@ -630,9 +626,9 @@ trait Definitions extends api.StandardDefinitions {
 
     def isBlackboxMacroBundleType(tp: Type) = {
       val isBundle = isMacroBundleType(tp)
-      val isBlackbox = (macroBundleParamInfo(tp) <:< BlackboxContextClass.tpe)
-      val notWhitebox = !(macroBundleParamInfo(tp) <:< WhiteboxContextClass.tpe)
-      isBundle && isBlackbox && notWhitebox
+      val unwrappedContext = MacroContextType.unapply(macroBundleParamInfo(tp)).getOrElse(NoType)
+      val isBlackbox = unwrappedContext =:= BlackboxContextClass.tpe
+      isBundle && isBlackbox
     }
 
     def isListType(tp: Type)     = tp <:< classExistentialType(ListClass)

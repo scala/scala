@@ -1,0 +1,4 @@
+macro-bundle-wrongcontext-a.scala:12: error: not found: value Bundle
+  def foo: Any = macro Bundle.impl
+                       ^
+one error found
