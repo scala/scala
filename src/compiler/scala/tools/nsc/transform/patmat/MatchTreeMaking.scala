@@ -447,8 +447,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         //  - Scala's arrays are invariant (so we don't drop type tests unsoundly)
         if (extractorArgTypeTest) mkDefault
         else expectedTp match {
-          // TODO: [SPEC] the spec requires `eq` instead of `==` for singleton types - this implies sym.isStable
-          case SingleType(_, sym)                       => and(mkEqualsTest(gen.mkAttributedQualifier(expectedTp)), mkTypeTest)
+          case SingleType(_, sym)                       => mkEqTest(gen.mkAttributedQualifier(expectedTp)) // SI-4577, SI-4897
           case ThisType(sym) if sym.isModule            => and(mkEqualsTest(CODE.REF(sym)), mkTypeTest) // must use == to support e.g. List() == Nil
           case ConstantType(Constant(null)) if isAnyRef => mkEqTest(expTp(CODE.NULL))
           case ConstantType(const)                      => mkEqualsTest(expTp(Literal(const)))

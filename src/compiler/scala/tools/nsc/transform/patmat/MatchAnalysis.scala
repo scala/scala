@@ -261,7 +261,8 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
                 }
                 def nonNullTest(testedBinder: Symbol)                 = uniqueNonNullProp(binderToUniqueTree(testedBinder))
                 def equalsTest(pat: Tree, testedBinder: Symbol)       = uniqueEqualityProp(binderToUniqueTree(testedBinder), unique(pat))
-                def eqTest(pat: Tree, testedBinder: Symbol)           = uniqueEqualityProp(binderToUniqueTree(testedBinder), unique(pat)) // TODO: eq, not ==
+                // rewrite eq test to type test against the singleton type `pat.tpe`; unrelated to == (uniqueEqualityProp), could be null
+                def eqTest(pat: Tree, testedBinder: Symbol)           = uniqueTypeProp(binderToUniqueTree(testedBinder), uniqueTp(pat.tpe))
                 def tru                                               = True
               }
               ttm.renderCondition(condStrategy)
