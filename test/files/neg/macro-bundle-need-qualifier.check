@@ -1,0 +1,4 @@
+macro-bundle-need-qualifier.scala:10: error: not found: value impl
+  def foo: Any = macro impl
+                       ^
+one error found

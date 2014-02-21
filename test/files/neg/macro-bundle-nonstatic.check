@@ -1,0 +1,13 @@
+macro-bundle-nonstatic.scala:12: error: value Bundle is not a member of object Module
+  def foo1 = macro Module.Bundle.impl
+                          ^
+macro-bundle-nonstatic.scala:13: error: value Bundle is not a member of Module
+  def foo2 = macro new Module().Bundle.impl
+                                ^
+macro-bundle-nonstatic.scala:17: error: macro bundles must be static
+  def foo = macro Bundle.impl
+                  ^
+macro-bundle-nonstatic.scala:23: error: macro bundles must be static
+  def foo = macro Bundle.impl
+                  ^
+four errors found
