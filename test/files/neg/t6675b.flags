@@ -1,1 +1,1 @@
--Xlint
+-deprecation -Xlint
