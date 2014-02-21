@@ -7,6 +7,8 @@ trait GenSymbols {
   self: Reifier =>
 
   import global._
+  private val runDefinitions = currentRun.runDefinitions
+  import runDefinitions._
 
   /** Symbol table of the reifee.
    *
@@ -97,7 +99,35 @@ trait GenSymbols {
     }
   }
 
-  def reifyFreeTerm(binding: Tree): Tree =
+  def reifyFreeTerm(binding: Tree): Tree = {
+    // if we're reifying a non-locatable owner of an existential that comes from a different lexical scope (e.g. see pos/t8271.scala)
+    // then we have to avoid capturing its value in the corresponding free term that's about to be created
+    // otherwise we might emit code that won't compile, because we'll be referring to something that we can't see
+    // TODO: ideally, when reifying a type we should recreate all external existentials (probably by skolemizing and then packing)
+    // however that's going to be 2.12+ material in order to avoid potential breakages in RC1
+    def safeBinding(binding: Tree) = {
+      def isTypeableFromReificationSite = {
+        typer.silent(_.typed(binding.duplicate, WildcardType), reportAmbiguousErrors = false) match {
+          case analyzer.SilentResultValue(result) => true
+          case error @ analyzer.SilentTypeError(_) => false
+        }
+      }
+      def isVisibleFromReificationSite = {
+        // this is a gross over-approximation, but at least it plugs a regression
+        // without us having to risk stability of already working reifications
+        // here's what we want to detect. given:
+        //
+        //   def foo(c: Context) = bar[List](c)
+        //   def bar[M[X]](d: Context)(implicit tcon: d.WeakTypeTag[M[_]]) = ???
+        //
+        // we want to say that `d` isn't visible from `bar[List](c)`
+        val sym = binding.symbol
+        def isParamOfUnrelatedMethod = sym.isValueParameter && !typer.context.owner.ownerChain.contains(sym.owner)
+        !isParamOfUnrelatedMethod
+      }
+      val isUnsafe = !isTypeableFromReificationSite || !isVisibleFromReificationSite
+      if (isUnsafe) Literal(Constant(null)) else binding
+    }
     reifyIntoSymtab(binding.symbol) { sym =>
       if (reifyDebug) println("Free term" + (if (sym.isCapturedVariable) " (captured)" else "") + ": " + sym + "(" + sym.accurateKindString + ")")
       val name = newTermName("" + nme.REIFY_FREE_PREFIX + sym.name + (if (sym.isType) nme.REIFY_FREE_THIS_SUFFIX else ""))
@@ -131,11 +161,12 @@ trait GenSymbols {
       if (sym.isCapturedVariable) {
         assert(binding.isInstanceOf[Ident], showRaw(binding))
         val capturedBinding = referenceCapturedVariable(sym)
-        Reification(name, capturedBinding, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), capturedBinding, mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(origin(sym))))
+        Reification(name, capturedBinding, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), safeBinding(capturedBinding), mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(origin(sym))))
       } else {
-        Reification(name, binding, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), binding, mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(origin(sym))))
+        Reification(name, binding, mirrorBuildCall(nme.newFreeTerm, reify(sym.name.toString), safeBinding(binding), mirrorBuildCall(nme.FlagsRepr, reify(sym.flags)), reify(origin(sym))))
       }
     }
+  }
 
   def reifyFreeType(binding: Tree): Tree =
     reifyIntoSymtab(binding.symbol) { sym =>
