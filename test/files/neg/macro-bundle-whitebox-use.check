@@ -1,0 +1,17 @@
+Test_2.scala:2: error: value x is not a member of Any
+  println(ReturnTypeRefinement.foo.x)
+                                   ^
+Test_2.scala:7: error: type mismatch;
+ found   : FundepMaterialization[Test.Foo,(Int, String, Boolean)]
+ required: FundepMaterialization[Test.Foo,Nothing]
+Note: (Int, String, Boolean) >: Nothing, but trait FundepMaterialization is invariant in type U.
+You may wish to define U as -U instead. (SLS 4.5)
+    val equiv = foo(Foo(23, "foo", true))
+                   ^
+Test_2.scala:13: error: I don't like classes that contain integers
+  println(implicitly[DynamicMaterialization[C1]])
+                    ^
+Test_2.scala:17: error: extractor macros can only be whitebox
+    case ExtractorMacro(x) => println(x)
+                       ^
+four errors found

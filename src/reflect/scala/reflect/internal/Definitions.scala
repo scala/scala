@@ -628,8 +628,12 @@ trait Definitions extends api.StandardDefinitions {
       isContextCompatible && hasSingleConstructor && nonAbstract
     }
 
-    def isBlackboxMacroBundleType(tp: Type) =
-      isMacroBundleType(tp) && (macroBundleParamInfo(tp) <:< BlackboxContextClass.tpe)
+    def isBlackboxMacroBundleType(tp: Type) = {
+      val isBundle = isMacroBundleType(tp)
+      val isBlackbox = (macroBundleParamInfo(tp) <:< BlackboxContextClass.tpe)
+      val notWhitebox = !(macroBundleParamInfo(tp) <:< WhiteboxContextClass.tpe)
+      isBundle && isBlackbox && notWhitebox
+    }
 
     def isListType(tp: Type)     = tp <:< classExistentialType(ListClass)
     def isIterableType(tp: Type) = tp <:< classExistentialType(IterableClass)
