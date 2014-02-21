@@ -25,22 +25,11 @@ trait Resolvers {
       typer.silent(_.typed(markMacroImplRef(core)), reportAmbiguousErrors = false).nonEmpty
     }
 
-    lazy val macroImplRef: Tree =
+    lazy val (macroImplRef, isBlackbox, macroImplOwner, macroImpl, targs) =
       typer.silent(_.typed(markMacroImplRef(untypedMacroImplRef)), reportAmbiguousErrors = false) match {
-        case SilentResultValue(success) => success
+        case SilentResultValue(macroImplRef @ MacroImplReference(_, isBlackbox, owner, meth, targs)) => (macroImplRef, isBlackbox, owner, meth, targs)
+        case SilentResultValue(macroImplRef) => MacroImplReferenceWrongShapeError()
         case SilentTypeError(err) => abort(err.errPos, err.errMsg)
       }
-
-    // FIXME: cannot write this concisely because of SI-7507
-    // lazy val (_, macroImplOwner, macroImpl, macroImplTargs) =
-    private lazy val dissectedMacroImplRef =
-      macroImplRef match {
-        case MacroImplReference(_, isBlackbox, owner, meth, targs) => (isBlackbox, owner, meth, targs)
-        case _ => MacroImplReferenceWrongShapeError()
-      }
-    lazy val isBlackbox = dissectedMacroImplRef._1
-    lazy val macroImplOwner = dissectedMacroImplRef._2
-    lazy val macroImpl = dissectedMacroImplRef._3
-    lazy val targs = dissectedMacroImplRef._4
   }
 }
