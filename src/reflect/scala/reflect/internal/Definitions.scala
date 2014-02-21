@@ -618,10 +618,11 @@ trait Definitions extends api.StandardDefinitions {
       macroBundleParamInfo(tp) != NoType
 
     def isMacroBundleType(tp: Type) = {
+      val isMonomorphic = tp.typeSymbol.typeParams.isEmpty
       val isContextCompatible = macroBundleParamInfo(tp) != NoType
       val hasSingleConstructor = !tp.declaration(nme.CONSTRUCTOR).isOverloaded
       val nonAbstract = !tp.erasure.typeSymbol.isAbstractClass
-      isContextCompatible && hasSingleConstructor && nonAbstract
+      isMonomorphic && isContextCompatible && hasSingleConstructor && nonAbstract
     }
 
     def isBlackboxMacroBundleType(tp: Type) = {
