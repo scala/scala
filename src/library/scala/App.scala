@@ -31,6 +31,8 @@ import scala.collection.mutable.ListBuffer
  *  It should also be noted that the `main` method should not be overridden:
  *  the whole class body becomes the “main method”.
  *
+ *  Future versions of this trait will no longer extend `DelayedInit`.
+ *
  *  @author  Martin Odersky
  *  @version 2.1, 15/02/2011
  */
@@ -38,10 +40,12 @@ trait App extends DelayedInit {
 
   /** The time when the execution of this program started, in milliseconds since 1
     * January 1970 UTC. */
+  @deprecatedOverriding("executionStart should not be overridden", "2.11.0")
   val executionStart: Long = currentTime
 
   /** The command line arguments passed to the application's `main` method.
    */
+  @deprecatedOverriding("args should not be overridden", "2.11.0")
   protected def args: Array[String] = _args
 
   private var _args: Array[String] = _
@@ -55,6 +59,7 @@ trait App extends DelayedInit {
    *  themselves define a `delayedInit` method.
    *  @param body the initialization code to be stored for later execution
    */
+  @deprecated("The delayedInit mechanism will disappear.", "2.11.0")
   override def delayedInit(body: => Unit) {
     initCode += (() => body)
   }
