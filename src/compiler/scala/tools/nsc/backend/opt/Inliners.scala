@@ -72,8 +72,8 @@ abstract class Inliners extends SubComponent {
     def needsLookup = (
          (clazz != NoSymbol)
       && (clazz != sym.owner)
-      && !sym.isEffectivelyFinal
-      && clazz.isEffectivelyFinal
+      && !sym.isEffectivelyFinalOrNotOverridden
+      && clazz.isEffectivelyFinalOrNotOverridden
     )
     def lookup(clazz: Symbol): Symbol = {
       // println("\t\tlooking up " + meth + " in " + clazz.fullName + " meth.owner = " + meth.owner)
@@ -362,7 +362,7 @@ abstract class Inliners extends SubComponent {
         for(x <- inputBlocks; easyCake = callsites(x); if easyCake.nonEmpty) {
           breakable {
             for(ocm <- easyCake) {
-              assert(ocm.method.isEffectivelyFinal && ocm.method.owner.isEffectivelyFinal)
+              assert(ocm.method.isEffectivelyFinalOrNotOverridden && ocm.method.owner.isEffectivelyFinalOrNotOverridden)
               if(analyzeInc(ocm, x, ocm.method.owner, -1, ocm.method)) {
                 inlineCount += 1
                 break()
@@ -409,8 +409,8 @@ abstract class Inliners extends SubComponent {
 
         def isCandidate = (
              isClosureClass(receiver)
-          || concreteMethod.isEffectivelyFinal
-          || receiver.isEffectivelyFinal
+          || concreteMethod.isEffectivelyFinalOrNotOverridden
+          || receiver.isEffectivelyFinalOrNotOverridden
         )
 
         def isApply     = concreteMethod.name == nme.apply
@@ -425,7 +425,7 @@ abstract class Inliners extends SubComponent {
         debuglog("Treating " + i
               + "\n\treceiver: " + receiver
               + "\n\ticodes.available: " + isAvailable
-              + "\n\tconcreteMethod.isEffectivelyFinal: " + concreteMethod.isEffectivelyFinal)
+              + "\n\tconcreteMethod.isEffectivelyFinalOrNotOverridden: " + concreteMethod.isEffectivelyFinalOrNotOverridden)
 
         if (!isCandidate) warnNoInline("it can be overridden")
         else if (!isAvailable) warnNoInline("bytecode unavailable")
@@ -592,7 +592,7 @@ abstract class Inliners extends SubComponent {
     /** Should method 'sym' being called in 'receiver' be loaded from disk? */
     def shouldLoadImplFor(sym: Symbol, receiver: Symbol): Boolean = {
       def alwaysLoad    = (receiver.enclosingPackage == RuntimePackage) || (receiver == PredefModule.moduleClass)
-      def loadCondition = sym.isEffectivelyFinal && isMonadicMethod(sym) && isHigherOrderMethod(sym)
+      def loadCondition = sym.isEffectivelyFinalOrNotOverridden && isMonadicMethod(sym) && isHigherOrderMethod(sym)
 
       val res = hasInline(sym) || alwaysLoad || loadCondition
       debuglog("shouldLoadImplFor: " + receiver + "." + sym + ": " + res)
