@@ -943,9 +943,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       || isTerm && (
              isPrivate
           || isLocalToBlock
-          || isNotOverridden
          )
     )
+    /** Is this symbol effectively final or a concrete term member of sealed class whose childred do not override it */
+    final def isEffectivelyFinalOrNotOverridden: Boolean = isEffectivelyFinal || (isTerm && !isDeferred && isNotOverridden)
 
     /** Is this symbol owned by a package? */
     final def isTopLevel = owner.isPackageClass

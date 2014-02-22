@@ -116,7 +116,7 @@ abstract class TailCalls extends Transform {
       def tailLabels: Set[Symbol]
 
       def enclosingType = method.enclClass.typeOfThis
-      def isEligible    = method.isEffectivelyFinal
+      def isEligible    = method.isEffectivelyFinalOrNotOverridden
       def isMandatory   = method.hasAnnotation(TailrecClass)
       def isTransformed = isEligible && accessed(label)
 

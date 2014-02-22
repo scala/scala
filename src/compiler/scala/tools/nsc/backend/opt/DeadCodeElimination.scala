@@ -433,7 +433,7 @@ abstract class DeadCodeElimination extends SubComponent {
     }
 
     private def isPure(sym: Symbol) = (
-         (sym.isGetter && sym.isEffectivelyFinal && !sym.isLazy)
+         (sym.isGetter && sym.isEffectivelyFinalOrNotOverridden && !sym.isLazy)
       || (sym.isPrimaryConstructor && (sym.enclosingPackage == RuntimePackage || inliner.isClosureClass(sym.owner)))
     )
     /** Is 'sym' a side-effecting method? TODO: proper analysis.  */
