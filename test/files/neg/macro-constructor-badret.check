@@ -1,0 +1,8 @@
+Test_2.scala:4: error: macro implementation has incompatible shape:
+ required: (c: scala.reflect.macros.whitebox.Context)(x: c.Expr[Int]): c.Expr[C]
+ or      : (c: scala.reflect.macros.whitebox.Context)(x: c.Tree): c.Tree
+ found   : (c: reflect.macros.Context)(x: c.Tree): c.Expr[X]
+type mismatch for return type: c.Expr[X] does not conform to c.Expr[C]
+  def this(x: Int) = macro Macros.ctor
+                                  ^
+one error found

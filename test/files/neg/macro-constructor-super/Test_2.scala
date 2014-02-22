@@ -1,0 +1,1 @@
+class D extends C(42)
