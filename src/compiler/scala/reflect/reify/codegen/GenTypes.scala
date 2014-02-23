@@ -34,9 +34,9 @@ trait GenTypes {
     if (tsym.isClass && tpe == tsym.typeConstructor && tsym.isStatic)
       Select(Select(reify(tsym), nme.asType), nme.toTypeConstructor)
     else tpe match {
-      case tpe @ NoType =>
+      case tpe : NoType.type =>
         reifyMirrorObject(tpe)
-      case tpe @ NoPrefix =>
+      case tpe : NoPrefix.type =>
         reifyMirrorObject(tpe)
       case tpe @ ThisType(root) if root.isRoot =>
         mirrorBuildCall(nme.thisPrefix, mirrorMirrorSelect(nme.RootClass))
