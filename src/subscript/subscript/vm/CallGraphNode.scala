@@ -66,6 +66,9 @@ trait CallGraphNodeTrait {
   def isExecuting  = false
   var numberOfBusyActions = 0
   def isActionBusy = numberOfBusyActions>0
+  
+  // User-defined data
+  var tag: Any = null
 
   var index = -1
   var stamp = 0

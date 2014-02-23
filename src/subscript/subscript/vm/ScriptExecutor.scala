@@ -26,6 +26,7 @@
 
 package subscript.vm
 import scala.collection.mutable._
+import scala.collection.mutable.ListBuffer
 
 /*
  * Factory for script executors. Produces a CommonScriptExecutor
@@ -195,7 +196,7 @@ class CommonScriptExecutor extends ScriptExecutor {
     }
     
     // Notify this
-    if (waitsForMessage) synchronized {notify()}
+    synchronized { notify() }
   }
   // remove a message from the queue
   def remove(m: CallGraphMessage[_ <: CallGraphNodeTrait]) = {
@@ -1019,12 +1020,11 @@ class CommonScriptExecutor extends ScriptExecutor {
     // decide on deactivation of n
     
   }
-
-  /*
-   * message dispatcher; not really OO, but all real activity should be at the executors; other things should be passive
-   */
-  def handle(message: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait]):Unit = {
-    message match {
+  
+  
+  type MessageHandler = PartialFunction[CallGraphMessage[_ <: CallGraphNodeTrait], Unit]
+  
+  val defaultHandler: MessageHandler = {
       case a@ Activation        (_) => handleActivation   (a)
       case a@Continuation       (_) => handleContinuation (a)
       case a@Continuation1      (_) => handleContinuation1(a)
@@ -1044,7 +1044,22 @@ class CommonScriptExecutor extends ScriptExecutor {
       case a@AAToBeExecuted     (_) => handleAAToBeExecuted     (a)
       case CommunicationMatchingMessage => handleCommunicationMatchingMessage
     }
+  val communicationHandler: MessageHandler = {
+    case InvokeFromET(_, payload) => payload()
   }
+  
+  private val messageHandlers = ListBuffer[MessageHandler](defaultHandler, communicationHandler)
+  def addHandler(h: MessageHandler)    = messageHandlers.synchronized { messageHandlers += h }
+  def removeHandler(h: MessageHandler) = messageHandlers.synchronized { messageHandlers -= h }
+  
+  def invokeFromET(f: => Unit) = insert(InvokeFromET(rootNode, () => f))
+  
+  /*
+   * message dispatcher; not really OO, but all real activity should be at the executors; other things should be passive
+   */
+  def handle(message: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait]):Unit =
+    for (h <- messageHandlers if h isDefinedAt message) h(message)
+  
   
   /*
    * Main method of BasicExecutioner
@@ -1072,14 +1087,12 @@ class CommonScriptExecutor extends ScriptExecutor {
     }
     else if (!rootNode.children.isEmpty) {
       messageAwaiting
-      waitsForMessage = true
       synchronized { // TBD: there should also be a synchronized call in the CodeExecutors
+        waitsForMessage = true
         if (callGraphMessageCount==0) // looks stupid, but event may have happened&notify() may have been called during tracing
-          synchronized {
             wait() // for an event to happen 
-          }
+        waitsForMessage = false
       }
-      waitsForMessage = false
       // note: there may also be deadlock because of unmatching communications
       // so there should preferably be a check for the existence of waiting event handling actions
     }

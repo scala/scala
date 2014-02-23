@@ -6,42 +6,40 @@ import scala.collection.mutable.ListBuffer
 
 trait SubScriptActor extends Actor {
 
-  // Live script
-  def _live(): N_call => Unit
-  
-  // Termination script
-  private def script terminate = {*Terminator.block*}
   private object Terminator {
     def block = synchronized(wait())
     def release = synchronized(notify())
   }
   
-  // Handlers to handle messages
-  private val callHandlers = ListBuffer[Actor.Receive]()
+  private val callHandlers = ListBuffer[PartialFunction[Any, Unit]]()
+
+  
+  
+  // Scripts
+  def _live(): N_call => Unit
+  private def script terminate = {*Terminator.block*}
+  private def script die       = {if (context ne null) context stop self}
+  
   
   
   // Callbacks
-  
   override def aroundPreStart() {
-    def script lifecycle = live || terminate  // TBD: (live || terminate) ; killActor
+    def script lifecycle = (live || terminate) ; die
     SubScriptActor.executeScript(_lifecycle())
     super.aroundPreStart()
   } 
   
-  override def aroundReceive(receive: Actor.Receive, msg: Any) {
-    val messageWasHandled = callHandlers.synchronized {
-      // Wait for handlers
-      if (callHandlers.isEmpty) callHandlers.wait()
-      
-      // If at least for one time the message was handled, the result of synchronized block will be true
-      // Else - false
-      callHandlers.foldLeft(false) {(flag, handler) =>
-        if (handler.isDefinedAt(msg)) {
-          handler(msg)
-          handler.synchronized {handler.notify()}  // Kick the receiver, so that blocked registerReceiver() can proceed
-          callHandlers -= handler
-          true
-        } else flag
+  override def aroundReceive(receive: Actor.Receive, msg: Any) {    
+    synchronized {
+      sendSynchronizationMessage(this)
+      wait()
+    }
+    
+    var messageWasHandled = false
+    callHandlers.synchronized {
+      for (h <- callHandlers if h isDefinedAt msg) {
+        h(msg)
+        messageWasHandled = true
       }
     }
     
@@ -57,69 +55,73 @@ trait SubScriptActor extends Actor {
     super.aroundPostStop()
   }
   
- 
-  def registerReceiver(receiver: PartialFunction[Any, Unit]) {    
-    var receiverFired = false
-    lazy val spyedReceiver: PartialFunction[Any, Unit] = receiver andThen {_ =>
-      spyedReceiver.synchronized {receiverFired = true}
-    }
-    
-    callHandlers.synchronized {
-      spyedReceiver +=: callHandlers
-      callHandlers.notify()  // Now aroundReceive can proceed in case it waited on the empty collection
-    }
-    
-    // registerReceiver is the only place where VM will interact with the actor
-    // before it's "<<>>" fragment will be executed. It's natural to block here, so that
-    // the "<<>>" fragment will terminate only when the desired message is actually handled
-    spyedReceiver.synchronized {if (!receiverFired) spyedReceiver.wait()}
-  }
-  
-  
-  // Make `receive` final - it doesn't needed anyway
   final def receive: Actor.Receive = {case _ =>}
+ 
+  
+  
+  // SubScript actor convenience methods
+  def initActor(node: N_code_eventhandling, _handler: PartialFunction[Any, Unit]) {
+    node.codeExecutor = EventHandlingCodeFragmentExecutor(node, node.scriptExecutor)
+    val handler = _handler andThen {_ => node.codeExecutor.executeAA}
+    synchronized {callHandlers += handler}
+    node.onDeactivate {
+      synchronized {callHandlers -= handler}
+    }
+  }
+    
+  def sendSynchronizationMessage(lock: AnyRef) {
+    val vm = SubScriptActor.vm
+    vm insert SynchronizationMessage(vm.rootNode, lock)    
+  }
+
 }
+
 
 object SubScriptActor {
   
-  private var vm: CommonScriptExecutor = null
+  private lazy val vm: CommonScriptExecutor = {
+    val _vm = ScriptExecutorFactory.createScriptExecutor(true);
+    
+    _parallelScript()(_vm.anchorNode)
+    _vm addHandler synchMsgHandler
+    
+    new Thread {override def run = {_vm.run}}.start()
+    while (parallelOp == null) wait()
+    
+    _vm
+  }
   private var parallelOp: CallGraphParentNodeTrait = null
   
   private object Stopper {
     def block   = synchronized(wait())
     def release = synchronized(notify())
   }
-  private def script parallelScript = {*Stopper.block*} & (+)
+  private def script parallelScript = {*Stopper.block*} & {captureParallelOp(here)}
+  private def captureParallelOp(here: CallGraphTreeNode) = synchronized {
+    parallelOp = here.parent.asInstanceOf[CallGraphParentNodeTrait]
+    notify()
+  }
   
+  val synchMsgHandler: PartialFunction[CallGraphMessage[_ <: CallGraphNodeTrait], Unit] = {
+    case SynchronizationMessage(_, lock) => lock.synchronized(lock.notify())
+  }
+    
   def executeScript(script: _scriptType) = synchronized {
-    // If VM is null, spawn it and call normal code
-    if (vm == null) prepareVm()
     val template = extractTemplate(script)
-    vm.activateFrom(parallelOp, template)
+    vm.invokeFromET { vm.activateFrom(parallelOp, template) }
   }
   
-  def prepareVm() {
-    vm = ScriptExecutorFactory.createScriptExecutor(true);
-    _parallelScript()(vm.anchorNode)
-    new Thread {override def run = {vm.run}}.start()
-    
-    // While the dynamic call graph is not initialized to the point that
-    // parallel operator is available
-    // TBD add synchronization
-    while (vm.anchorNode.children.isEmpty || vm.anchorNode.children.head.asInstanceOf[CallGraphParentNodeTrait].children.isEmpty)
-      Thread.sleep(10)
-    
-    parallelOp =
-      vm.anchorNode.children.head.asInstanceOf[CallGraphParentNodeTrait].children.head.asInstanceOf[CallGraphParentNodeTrait]
-  }
   
   def extractTemplate(script: _scriptType) = {
     val extractor = N_call(T_call(null))
     script(extractor)
-    
-    // TBD: parallelize code in the extracted template
     extractor.t_callee
   }
   
   def releaseVm() = Stopper.release
+  
+}
+
+case class SynchronizationMessage(node: CallGraphNodeTrait, lock: AnyRef) extends CallGraphMessage[CallGraphNodeTrait] {
+  priority = -1
 }
