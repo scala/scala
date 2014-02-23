@@ -1,0 +1,15 @@
+t8325.scala:5: error: *-parameter must come last
+  def f(is: Int*, s: String) = ???
+        ^
+t8325.scala:7: error: *-parameter must come last
+  def h(is: Int * String *, s: String) = ???
+        ^
+t8325.scala:10: error: type mismatch;
+ found   : Int(5)
+ required: Int*
+  def j(is: Int* = 5) = ???
+                   ^
+t8325.scala:10: error: a parameter section with a `*'-parameter is not allowed to have default arguments
+  def j(is: Int* = 5) = ???
+      ^
+four errors found

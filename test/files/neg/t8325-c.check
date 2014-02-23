@@ -1,0 +1,7 @@
+t8325-c.scala:3: error: identifier expected but ')' found.
+  def k(xx: Int`*`) = ???
+                  ^
+t8325-c.scala:4: error: ')' expected but '}' found.
+}
+^
+two errors found
