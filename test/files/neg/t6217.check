@@ -1,0 +1,9 @@
+t6217.scala:6: warning: Invalid package name: '_root_'. '_root_' is a reserved name that refers to the root of the package structure.
+package b._root_.c
+^
+t6217.scala:6: warning: Invalid package name: 'b._root_.c'. '_root_' is a reserved name that refers to the root of the package structure.
+package b._root_.c
+                  ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found
