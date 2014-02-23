@@ -43,8 +43,11 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
   override def min(that: Float): Float = math.min(self, that)
   override def signum: Int             = math.signum(self).toInt  // !!! NaN
 
+  @deprecated("This method is dangerous to use due to lossy implicit widening conversions and the fact that the return type is unable to reliably represent the rounded value.", "2.11.0")
   def round: Int   = math.round(self)
+  @deprecated("This method is dangerous to use due to lossy implicit widening conversions.", "2.11.0")
   def ceil: Float  = math.ceil(self.toDouble).toFloat
+  @deprecated("This method is dangerous to use due to lossy implicit widening conversions.", "2.11.0")
   def floor: Float = math.floor(self.toDouble).toFloat
 
   /** Converts an angle measured in degrees to an approximately equivalent

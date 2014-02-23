@@ -43,8 +43,11 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
   override def min(that: Double): Double = math.min(self, that)
   override def signum: Int               = math.signum(self).toInt  // !!! NaN
 
+  @deprecated("This method is dangerous to use due to lossy implicit widening conversions and the fact that the return type is unable to reliably represent the rounded value.", "2.11.0")
   def round: Long   = math.round(self)
+  @deprecated("This method is dangerous to use due to lossy implicit widening conversions.", "2.11.0")
   def ceil: Double  = math.ceil(self)
+  @deprecated("This method is dangerous to use due to lossy implicit widening conversions.", "2.11.0")
   def floor: Double = math.floor(self)
 
   /** Converts an angle measured in degrees to an approximately equivalent
