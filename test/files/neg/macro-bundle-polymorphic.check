@@ -1,0 +1,19 @@
+macro-bundle-polymorphic.scala:36: error: macro bundles must be concrete monomorphic classes having a single constructor with a `val c: Context` parameter
+  def black1: Any = macro BlackboxBundle1.impl
+                          ^
+macro-bundle-polymorphic.scala:37: error: macro bundles must be concrete monomorphic classes having a single constructor with a `val c: Context` parameter
+  def black2: Any = macro BlackboxBundle2.impl
+                          ^
+macro-bundle-polymorphic.scala:38: error: macro bundles must be concrete monomorphic classes having a single constructor with a `val c: Context` parameter
+  def black3: Any = macro BlackboxBundle3.impl
+                          ^
+macro-bundle-polymorphic.scala:40: error: macro bundles must be concrete monomorphic classes having a single constructor with a `val c: Context` parameter
+  def white1: Any = macro WhiteboxBundle1.impl
+                          ^
+macro-bundle-polymorphic.scala:41: error: macro bundles must be concrete monomorphic classes having a single constructor with a `val c: Context` parameter
+  def white2: Any = macro WhiteboxBundle2.impl
+                          ^
+macro-bundle-polymorphic.scala:42: error: macro bundles must be concrete monomorphic classes having a single constructor with a `val c: Context` parameter
+  def white3: Any = macro WhiteboxBundle3.impl
+                          ^
+6 errors found

@@ -622,14 +622,19 @@ trait Definitions extends api.StandardDefinitions {
       macroBundleParamInfo(tp) != NoType
 
     def isMacroBundleType(tp: Type) = {
-      val isContextCompatible = macroBundleParamInfo(tp) != NoType
+      val isMonomorphic = tp.typeSymbol.typeParams.isEmpty
+      val isContextCompatible = isMacroContextType(macroBundleParamInfo(tp))
       val hasSingleConstructor = !tp.declaration(nme.CONSTRUCTOR).isOverloaded
       val nonAbstract = !tp.erasure.typeSymbol.isAbstractClass
-      isContextCompatible && hasSingleConstructor && nonAbstract
+      isMonomorphic && isContextCompatible && hasSingleConstructor && nonAbstract
     }
 
-    def isBlackboxMacroBundleType(tp: Type) =
-      isMacroBundleType(tp) && (macroBundleParamInfo(tp) <:< BlackboxContextClass.tpe)
+    def isBlackboxMacroBundleType(tp: Type) = {
+      val isBundle = isMacroBundleType(tp)
+      val unwrappedContext = MacroContextType.unapply(macroBundleParamInfo(tp)).getOrElse(NoType)
+      val isBlackbox = unwrappedContext =:= BlackboxContextClass.tpe
+      isBundle && isBlackbox
+    }
 
     def isListType(tp: Type)     = tp <:< classExistentialType(ListClass)
     def isIterableType(tp: Type) = tp <:< classExistentialType(IterableClass)

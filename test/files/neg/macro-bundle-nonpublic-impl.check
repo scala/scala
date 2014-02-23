@@ -1,0 +1,4 @@
+macro-bundle-nonpublic-impl.scala:10: error: bundle implementation must be public
+  def foo: Any = macro Macros.impl
+                              ^
+one error found

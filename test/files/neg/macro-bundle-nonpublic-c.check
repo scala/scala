@@ -1,0 +1,4 @@
+macro-bundle-nonpublic-c.scala:6: error: private value c escapes its defining scope as part of type Macros.this.c.universe.Literal
+  def impl = q"()"
+      ^
+one error found

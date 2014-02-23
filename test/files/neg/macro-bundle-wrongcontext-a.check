@@ -1,0 +1,4 @@
+macro-bundle-wrongcontext-a.scala:12: error: macro bundles must be concrete monomorphic classes having a single constructor with a `val c: Context` parameter
+  def foo: Any = macro Bundle.impl
+                       ^
+one error found
