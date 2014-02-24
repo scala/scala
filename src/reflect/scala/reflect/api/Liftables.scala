@@ -28,8 +28,8 @@ trait Liftables { self: Universe =>
      *
      *  scala> implicit val liftO = Liftable[O.type] { _ => q"$Oref" }
      *
-     *  scala> q"$O"
-     *  res16: universe.Tree = O
+     *  scala> val lifted = q"$O"
+     *  lifted: universe.Tree = O
      *  }}}
      *
      *  @see [[http://docs.scala-lang.org/overviews/macros/quasiquotes.html#lifting]]
