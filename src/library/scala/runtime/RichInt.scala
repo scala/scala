@@ -36,7 +36,11 @@ final class RichInt(val self: Int) extends AnyVal with ScalaNumberProxy[Int] wit
   override def max(that: Int): Int = math.max(self, that)
   override def min(that: Int): Int = math.min(self, that)
   override def signum: Int         = math.signum(self)
-
+  
+  /** Utility method to warn when a floating-point operation is applied that has no use on an integer value. */
+  @deprecated("Integers are already rounded.  Did you mean to convert to a floating-point type in an earlier step?  Also consider using .rint.toInt instead of .round to make the desired return type explicit.", "2.11.0")
+  def round: Int = self
+  
   def toBinaryString: String = java.lang.Integer.toBinaryString(self)
   def toHexString: String    = java.lang.Integer.toHexString(self)
   def toOctalString: String  = java.lang.Integer.toOctalString(self)

@@ -43,7 +43,12 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
   override def min(that: Double): Double = math.min(self, that)
   override def signum: Int               = math.signum(self).toInt  // !!! NaN
 
+  /** Rounds to the nearest Long.  Consider using `.rint.toLong` instead to make the desired return type explicit. */
   def round: Long   = math.round(self)
+  
+  /** Rounds to the nearest whole number that can still be represented as a `Double`. */
+  def rint: Double  = math.rint(self)
+
   def ceil: Double  = math.ceil(self)
   def floor: Double = math.floor(self)
 
