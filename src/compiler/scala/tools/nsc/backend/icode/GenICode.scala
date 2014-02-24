@@ -1011,9 +1011,10 @@ abstract class GenICode extends SubComponent  {
       // emit conversion
       if (generatedType != expectedType) {
         tree match {
-          case Literal(Constant(null)) if generatedType == NullReference =>
+          case Literal(Constant(null)) if generatedType == NullReference && expectedType != UNIT =>
             // literal null on the stack (as opposed to a boxed null, see SI-8233),
             // we can bypass `adapt` which would otherwise emitt a redundant [DROP, CONSTANT(null)]
+            // except one case: when expected type is UNIT (unboxed) where we need to emit just a DROP
           case _ =>
             adapt(generatedType, expectedType, resCtx, tree.pos)
         }
