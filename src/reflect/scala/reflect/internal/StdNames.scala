@@ -580,6 +580,7 @@ trait StdNames {
     val AnyVal: NameType               = "AnyVal"
     val Apply: NameType                = "Apply"
     val ArrayAnnotArg: NameType        = "ArrayAnnotArg"
+    val CaseDef: NameType              = "CaseDef"
     val ClassInfoType: NameType        = "ClassInfoType"
     val ConstantType: NameType         = "ConstantType"
     val EmptyPackage: NameType         = "EmptyPackage"
