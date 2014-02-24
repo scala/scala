@@ -151,21 +151,20 @@ trait Reifiers { self: Quasiquotes =>
         mirrorCall(nme.This, tree)
       case SyntacticTraitDef(mods, name, tparams, earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticTraitDef, mods, name, tparams, earlyDefs, parents, selfdef, body)
-      case SyntacticClassDef(mods, name, tparams, constrmods, vparamss, earlyDefs, parents, selfdef, body) =>
-        reifyBuildCall(nme.SyntacticClassDef, mods, name, tparams, constrmods, vparamss,
-                                              earlyDefs, parents, selfdef, body)
+      case SyntacticClassDef(mods, name, tparams, constrmods, vparamss,
+                             earlyDefs, parents, selfdef, body) =>
+        mirrorBuildCall(nme.SyntacticClassDef, reify(mods), reify(name), reify(tparams), reify(constrmods),
+                                               reifyVparamss(vparamss), reify(earlyDefs), reify(parents),
+                                               reify(selfdef), reify(body))
       case SyntacticPackageObjectDef(name, earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticPackageObjectDef, name, earlyDefs, parents, selfdef, body)
       case SyntacticObjectDef(mods, name, earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticObjectDef, mods, name, earlyDefs, parents, selfdef, body)
       case SyntacticNew(earlyDefs, parents, selfdef, body) =>
         reifyBuildCall(nme.SyntacticNew, earlyDefs, parents, selfdef, body)
-      case SyntacticDefDef(mods, name, tparams, build.ImplicitParams(vparamss, implparams), tpt, rhs) =>
-        if (implparams.nonEmpty)
-          mirrorBuildCall(nme.SyntacticDefDef, reify(mods), reify(name), reify(tparams),
-                          reifyBuildCall(nme.ImplicitParams, vparamss, implparams), reify(tpt), reify(rhs))
-        else
-          reifyBuildCall(nme.SyntacticDefDef, mods, name, tparams, vparamss, tpt, rhs)
+      case SyntacticDefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        mirrorBuildCall(nme.SyntacticDefDef, reify(mods), reify(name), reify(tparams),
+                                             reifyVparamss(vparamss), reify(tpt), reify(rhs))
       case SyntacticValDef(mods, name, tpt, rhs) if tree != noSelfType =>
         reifyBuildCall(nme.SyntacticValDef, mods, name, tpt, rhs)
       case SyntacticVarDef(mods, name, tpt, rhs) =>
@@ -269,6 +268,12 @@ trait Reifiers { self: Quasiquotes =>
     def reifyAnnotation(hole: Hole) = reifyConstructionCheck(nme.mkAnnotation, hole)
 
     def reifyPackageStat(hole: Hole) = reifyConstructionCheck(nme.mkPackageStat, hole)
+
+    def reifyVparamss(vparamss: List[List[ValDef]]) = {
+      val build.ImplicitParams(paramss, implparams) = vparamss
+      if (implparams.isEmpty) reify(paramss)
+      else reifyBuildCall(nme.ImplicitParams, paramss, implparams)
+    }
 
     /** Splits list into a list of groups where subsequent elements are considered
      *  similar by the corresponding function.
