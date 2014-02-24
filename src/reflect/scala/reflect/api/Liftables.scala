@@ -2,27 +2,72 @@ package scala
 package reflect
 package api
 
-// TODO: needs a Scaladoc
 trait Liftables { self: Universe =>
 
-  // TODO: needs a Scaladoc
+  /** A type class that defines a representation of `T` as a `Tree`.
+   *
+   *  @see [[http://docs.scala-lang.org/overviews/macros/quasiquotes.html#lifting]]
+   */
   trait Liftable[T] {
     def apply(value: T): Tree
   }
 
-  // TODO: needs a Scaladoc
+  /** Companion to `Liftable` type class that contains standard instances
+   *  and provides a helper `apply` method to simplify creation of new ones.
+   */
   object Liftable extends StandardLiftableInstances {
+    /** A helper method that simplifies creation of `Liftable` instances.
+     *  Takes a type and a function that maps that type to a tree representation.
+     *
+     *  For example to write Liftable for object one might use it like:
+     *
+     *  {{{
+     *  scala> object O
+     *
+     *  scala> val Oref = symbolOf[O.type].asClass.module
+     *
+     *  scala> implicit val liftO = Liftable[O.type] { _ => q"$Oref" }
+     *
+     *  scala> q"$O"
+     *  res16: universe.Tree = O
+     *  }}}
+     *
+     *  @see [[http://docs.scala-lang.org/overviews/macros/quasiquotes.html#lifting]]
+     */
     def apply[T](f: T => Tree): Liftable[T] =
       new Liftable[T] { def apply(value: T): Tree = f(value) }
   }
 
-  // TODO: needs a Scaladoc
+  /** A type class that defines a way to extract instance of `T` from a `Tree`.
+   *
+   *  @see [[http://docs.scala-lang.org/overviews/macros/quasiquotes.html#unlifting]]
+   */
   trait Unliftable[T] {
     def unapply(tree: Tree): Option[T]
   }
 
-  // TODO: needs a Scaladoc
+  /** Companion to `Unliftable` type class that contains standard instances
+   *  and provides a helper `apply` method to simplify creation of new ones.
+   */
   object Unliftable extends StandardUnliftableInstances {
+    /** A helper method that simplifies creation of `Unliftable` instances.
+     *  Takes a partial function which is defined on correct representations of `T`
+     *  and returns corresponing instances.
+     *
+     *  For example to extract a reference to an object as object itself:
+     *
+     *  {{{
+     *  scala> object O
+     *
+     *  scala> val Oref = symbolOf[O.type].asClass.module
+     *
+     *  scala> implicit val unliftO = Unliftable[O.type] { case t if t.symbol == Oref => O }
+     *
+     *  scala> val q"${_: O.type}" = q"$Oref"
+     *  }}}
+     *
+     *  @see [[http://docs.scala-lang.org/overviews/macros/quasiquotes.html#unlifting]]
+     */
     def apply[T](pf: PartialFunction[Tree, T]): Unliftable[T] = new Unliftable[T] {
       def unapply(value: Tree): Option[T] = pf.lift(value)
     }
