@@ -3214,10 +3214,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               args.map {
                 case arg @ AssignOrNamedArg(Ident(name), rhs) =>
                   // named args: only type the righthand sides ("unknown identifier" errors otherwise)
-                  val rhs1 = typedArg0(rhs)
                   // the assign is untyped; that's ok because we call doTypedApply
-                  val arg1 = treeCopy.AssignOrNamedArg(arg, arg.lhs, rhs1)
-                  (arg1, NamedType(name, rhs1.tpe.deconst))
+                  val typedRhs        = typedArg0(rhs)
+                  val argWithTypedRhs = treeCopy.AssignOrNamedArg(arg, arg.lhs, typedRhs)
+
+                  // TODO: SI-8197/SI-4592: check whether this named argument could be interpreted as an assign
+                  // infer.checkNames must not use UnitType: it may not be a valid assignment, or the setter may return another type from Unit
+                  //
+                  // var typedAsAssign = true
+                  // val argTyped = silent(_.typedArg(argWithTypedRhs, amode, BYVALmode, WildcardType)) orElse { errors =>
+                  //   typedAsAssign = false
+                  //   argWithTypedRhs
+                  // }
+                  //
+                  // TODO: add an assignmentType field to NamedType, equal to:
+                  // assignmentType = if (typedAsAssign) argTyped.tpe else NoType
+
+                  (argWithTypedRhs, NamedType(name, typedRhs.tpe.deconst))
                 case arg @ treeInfo.WildcardStarArg(repeated) =>
                   val arg1 = typedArg0(arg)
                   (arg1, RepeatedType(arg1.tpe.deconst))
