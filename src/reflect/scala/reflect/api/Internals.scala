@@ -600,10 +600,11 @@ trait Internals { self: Universe =>
     }
 
     val SyntacticTypeApplied: SyntacticTypeAppliedExtractor
+    val SyntacticAppliedType: SyntacticTypeAppliedExtractor
 
     trait SyntacticTypeAppliedExtractor {
       def apply(tree: Tree, targs: List[Tree]): Tree
-      def unapply(tree: Tree): Some[(Tree, List[Tree])]
+      def unapply(tree: Tree): Option[(Tree, List[Tree])]
     }
 
     val SyntacticApplied: SyntacticAppliedExtractor
@@ -783,6 +784,18 @@ trait Internals { self: Universe =>
     trait SyntacticImportExtractor {
       def apply(expr: Tree, selectors: List[Tree]): Import
       def unapply(imp: Import): Some[(Tree, List[Tree])]
+    }
+
+    val SyntacticSelectType: SyntacticSelectTypeExtractor
+    trait SyntacticSelectTypeExtractor {
+      def apply(qual: Tree, name: TypeName): Select
+      def unapply(tree: Tree): Option[(Tree, TypeName)]
+    }
+
+    val SyntacticSelectTerm: SyntacticSelectTermExtractor
+    trait SyntacticSelectTermExtractor {
+      def apply(qual: Tree, name: TermName): Select
+      def unapply(tree: Tree): Option[(Tree, TermName)]
     }
   }
 

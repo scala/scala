@@ -101,7 +101,7 @@ trait ReificationSupport { self: SymbolTable =>
     }
 
     def mkAnnotation(tree: Tree): Tree = tree match {
-      case SyntacticNew(Nil, SyntacticApplied(SyntacticTypeApplied(_, _), _) :: Nil, noSelfType, Nil) =>
+      case SyntacticNew(Nil, SyntacticApplied(SyntacticAppliedType(_, _), _) :: Nil, noSelfType, Nil) =>
         tree
       case _ =>
         throw new IllegalArgumentException(s"Tree ${showRaw(tree)} isn't a correct representation of annotation." +
@@ -205,13 +205,25 @@ trait ReificationSupport { self: SymbolTable =>
       def apply(tree: Tree, targs: List[Tree]): Tree =
         if (targs.isEmpty) tree
         else if (tree.isTerm) TypeApply(tree, targs)
-        else if (tree.isType) AppliedTypeTree(tree, targs)
-        else throw new IllegalArgumentException(s"can't apply types to $tree")
+        else throw new IllegalArgumentException(s"can't apply type arguments to $tree")
 
-      def unapply(tree: Tree): Some[(Tree, List[Tree])] = tree match {
+      def unapply(tree: Tree): Option[(Tree, List[Tree])] = tree match {
         case TypeApply(fun, targs) => Some((fun, targs))
+        case _ if tree.isTerm      => Some((tree, Nil))
+        case _                     => None
+      }
+    }
+
+    object SyntacticAppliedType extends SyntacticTypeAppliedExtractor {
+      def apply(tree: Tree, targs: List[Tree]): Tree =
+        if (targs.isEmpty) tree
+        else if (tree.isType) AppliedTypeTree(tree, targs)
+        else throw new IllegalArgumentException(s"can't create applied type from non-type $tree")
+
+      def unapply(tree: Tree): Option[(Tree, List[Tree])] = tree match {
         case AppliedTypeTree(tpe, targs) => Some((tpe, targs))
-        case _ => Some((tree, Nil))
+        case _ if tree.isType            => Some((tree, Nil))
+        case _                           => None
       }
     }
 
@@ -223,7 +235,10 @@ trait ReificationSupport { self: SymbolTable =>
         case UnApply(treeInfo.Unapplied(Select(fun, nme.unapply)), pats) =>
           Some((fun, pats :: Nil))
         case treeInfo.Applied(fun, targs, argss) =>
-          Some((SyntacticTypeApplied(fun, targs), argss))
+          if (fun.isTerm)
+            Some((SyntacticTypeApplied(fun, targs), argss))
+          else
+            Some((SyntacticAppliedType(fun, targs), argss))
       }
     }
 
@@ -489,8 +504,8 @@ trait ReificationSupport { self: SymbolTable =>
         gen.mkNew(parents, mkSelfType(selfType), earlyDefs ::: body, NoPosition, NoPosition)
 
       def unapply(tree: Tree): Option[(List[Tree], List[Tree], ValDef, List[Tree])] = tree match {
-        case SyntacticApplied(Select(New(SyntacticTypeApplied(ident, targs)), nme.CONSTRUCTOR), argss) =>
-          Some((Nil, SyntacticApplied(SyntacticTypeApplied(ident, targs), argss) :: Nil, noSelfType, Nil))
+        case SyntacticApplied(Select(New(SyntacticAppliedType(ident, targs)), nme.CONSTRUCTOR), argss) =>
+          Some((Nil, SyntacticApplied(SyntacticAppliedType(ident, targs), argss) :: Nil, noSelfType, Nil))
         case SyntacticBlock(SyntacticClassDef(_, tpnme.ANON_CLASS_NAME, Nil, _, ListOfNil, earlyDefs, parents, selfType, body) ::
                             Apply(Select(New(Ident(tpnme.ANON_CLASS_NAME)), nme.CONSTRUCTOR), Nil) :: Nil) =>
           Some((earlyDefs, parents, selfType, body))
@@ -985,6 +1000,22 @@ trait ReificationSupport { self: SymbolTable =>
           case UnimportSelector(name, offset)                 => UnimportSelectorRepr(name, derivedPos(imp, offset))
         }
         Some((imp.expr, selectors))
+      }
+    }
+
+    object SyntacticSelectType extends SyntacticSelectTypeExtractor {
+      def apply(qual: Tree, name: TypeName): Select = Select(qual, name)
+      def unapply(tree: Tree): Option[(Tree, TypeName)] = tree match {
+        case Select(qual, name: TypeName) => Some((qual, name))
+        case _                            => None
+      }
+    }
+
+    object SyntacticSelectTerm extends SyntacticSelectTermExtractor {
+      def apply(qual: Tree, name: TermName): Select = Select(qual, name)
+      def unapply(tree: Tree): Option[(Tree, TermName)] = tree match {
+        case Select(qual, name: TermName) => Some((qual, name))
+        case _                            => None
       }
     }
   }
