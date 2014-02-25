@@ -93,12 +93,22 @@ package object math {
    */
   def pow(x: Double, y: Double): Double = java.lang.Math.pow(x, y)
 
-  /** Returns the closest `long` to the argument.
+  /** There is no reason to round a `Long`, but this method prevents unintended conversion to `Float` followed by rounding to `Int`. */
+  @deprecated("This is an integer type; there is no reason to round it.  Perhaps you meant to call this with a floating-point value?", "2.11.0")
+  def round(x: Long): Long = x
+
+  /** Returns the closest `Int` to the argument.
    *
-   *  @param  x a floating-point value to be rounded to a `long`.
-   *  @return the value of the argument rounded to the nearest`long` value.
+   *  @param  x a floating-point value to be rounded to a `Int`.
+   *  @return the value of the argument rounded to the nearest `Int` value.
    */
   def round(x: Float): Int = java.lang.Math.round(x)
+  
+  /** Returns the closest `Long` to the argument.
+   *
+   *  @param  x a floating-point value to be rounded to a `Long`.
+   *  @return the value of the argument rounded to the nearest`long` value.
+   */
   def round(x: Double): Long = java.lang.Math.round(x)
 
   def abs(x: Int): Int       = java.lang.Math.abs(x)
