@@ -1,7 +1,7 @@
-// NOTE: according to SI-4728, this shouldn't even compile...
+// SI-8197, see also SI-4592 and SI-4728
 class A
 class B
-// default arguments do not participate in overload resolution
+
 class Foo(val x: A = null) {
   def this(bla: B*) {
     this(new A)
@@ -9,5 +9,8 @@ class Foo(val x: A = null) {
 }
 
 object Test extends App {
+  // both constructors of `Foo` are applicable. Overloading resolution
+  // will eliminate the alternative that uses a default argument, therefore
+  // the vararg constructor is chosen.
   assert((new Foo).x != null)
 }

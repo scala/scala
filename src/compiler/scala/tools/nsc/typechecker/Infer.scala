@@ -578,13 +578,21 @@ trait Infer extends Checkable {
      */
     private[typechecker] def isApplicableBasedOnArity(tpe: Type, argsCount: Int, varargsStar: Boolean, tuplingAllowed: Boolean): Boolean = followApply(tpe) match {
       case OverloadedType(pre, alts) =>
+        // followApply may return an OverloadedType (tpe is a value type with multiple `apply` methods)
         alts exists (alt => isApplicableBasedOnArity(pre memberType alt, argsCount, varargsStar, tuplingAllowed))
       case _ =>
         val paramsCount   = tpe.params.length
+        // simpleMatch implies we're not using defaults
         val simpleMatch   = paramsCount == argsCount
         val varargsTarget = isVarArgsList(tpe.params)
+
+        // varargsMatch implies we're not using defaults, as varargs and defaults are mutually exclusive
         def varargsMatch  = varargsTarget && (paramsCount - 1) <= argsCount
+        // another reason why auto-tupling is a bad idea: it can hide the use of defaults, so must rule those out explicitly
         def tuplingMatch  = tuplingAllowed && eligibleForTupleConversion(paramsCount, argsCount, varargsTarget)
+        // varargs and defaults are mutually exclusive, so not using defaults if `varargsTarget`
+        // we're not using defaults if there are (at least as many) arguments as parameters (not using exact match to allow for tupling)
+        def notUsingDefaults = varargsTarget || paramsCount <= argsCount
 
         // A varargs star call, e.g. (x, y:_*) can only match a varargs method
         // with the same number of parameters.  See SI-5859 for an example of what
@@ -592,7 +600,7 @@ trait Infer extends Checkable {
         if (varargsStar)
           varargsTarget && simpleMatch
         else
-          simpleMatch || varargsMatch || tuplingMatch
+          simpleMatch || varargsMatch || (tuplingMatch && notUsingDefaults)
     }
 
     private[typechecker] def followApply(tp: Type): Type = tp match {
@@ -633,7 +641,7 @@ trait Infer extends Checkable {
           if (pos == -1) {
             if (positionalAllowed) { // treat assignment as positional argument
               argPos(index) = index
-              res = UnitTpe
+              res = UnitTpe // TODO: this is a bit optimistic, the name may not refer to a mutable variable...
             } else                   // unknown parameter name
               namesOK = false
           } else if (argPos.contains(pos)) { // parameter specified twice
@@ -1316,21 +1324,33 @@ trait Infer extends Checkable {
      *  @param  varargsStar  true if the call site has a `: _*` attached to the last argument
      */
     private def overloadsToConsiderBySpecificity(eligible: List[Symbol], argtpes: List[Type], varargsStar: Boolean): List[Symbol] = {
+      // TODO spec: this namesMatch business is not spec'ed, and is the wrong fix for SI-4592
+      // we should instead clarify what the spec means by "typing each argument with an undefined expected type".
+      // What does typing a named argument entail when we don't know what the valid parameter names are?
+      // (Since we're doing overload resolution, there are multiple alternatives that can define different names.)
+      // Luckily, the next step checks applicability to the individual alternatives, so it knows whether an assignment is:
+      // 1) a valid named argument
+      // 2) a well-typed assignment
+      // 3) an error (e.g., rhs does not refer to a variable)
+      //
+      // For now, the logic is:
       // If there are any foo=bar style arguments, and any of the overloaded
-      // methods has a parameter named `foo`, then only those methods are considered.
-      val namesMatch = namesOfNamedArguments(argtpes) match {
+      // methods has a parameter named `foo`, then only those methods are considered when we must disambiguate.
+      def namesMatch = namesOfNamedArguments(argtpes) match {
         case Nil   => Nil
         case names => eligible filter (m => names forall (name => m.info.params exists (p => paramMatchesName(p, name))))
       }
-      if (namesMatch.nonEmpty)
-        namesMatch
-      else if (eligible.isEmpty || eligible.tail.isEmpty)
-        eligible
+      if (eligible.isEmpty || eligible.tail.isEmpty) eligible
       else
-        eligible filter (alt =>
-             !alt.info.params.exists(_.hasDefault) // run/t8197b first parameter list only!
-          && isApplicableBasedOnArity(alt.tpe, argtpes.length, varargsStar, tuplingAllowed = true)
-      )
+        namesMatch match {
+          case namesMatch if namesMatch.nonEmpty => namesMatch // TODO: this has no basis in the spec, remove!
+          case _ =>
+            // If there are multiple applicable alternatives, drop those using default arguments.
+            // This is done indirectly by checking applicability based on arity in `isApplicableBasedOnArity`.
+            // If defaults are required in the application, the arities won't match up exactly.
+            // TODO: should we really allow tupling here?? (If we don't, this is the only call-site with `tuplingAllowed = true`)
+            eligible filter (alt => isApplicableBasedOnArity(alt.tpe, argtpes.length, varargsStar, tuplingAllowed = true))
+        }
     }
 
     /** Assign `tree` the type of an alternative which is applicable
