@@ -118,6 +118,8 @@ trait Parsers { self: Quasiquotes =>
 
       override def isTemplateIntro: Boolean = super.isTemplateIntro || (isHole && lookingAhead { isTemplateIntro })
 
+      override def isDefIntro: Boolean = super.isDefIntro || (isHole && lookingAhead { isDefIntro })
+
       override def isDclIntro: Boolean = super.isDclIntro || (isHole && lookingAhead { isDclIntro })
 
       override def isStatSep(token: Int) = token == EOF || super.isStatSep(token)
