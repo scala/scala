@@ -9,7 +9,8 @@
 package scala.tools.scalap
 
 /** Loads decoder.properties from the jar. */
-object Properties extends scala.util.PropertiesTrait {
+object Properties extends scala.util.PropertiesTrait
+{
   protected def propCategory    = "decoder"
   protected def pickJarBasedOn  = classOf[Classfile]
 }

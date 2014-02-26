@@ -10,7 +10,11 @@
 //
 // -----------------------------------------------------------------------------
 
-package scala.tools.scalap.rules
+package scala.tools.scalap
+package scalax
+package rules
+
+import language.postfixOps
 
 /**
  * A workaround for the difficulties of dealing with
@@ -47,7 +51,7 @@ class SeqRule[S, +A, +X](rule: Rule[S, S, A, X]) {
 
   /** Creates a rule that always succeeds with a Boolean value.
    *  Value is 'true' if this rule succeeds, 'false' otherwise */
-  def -? = ? map { _.isDefined }
+  def -? = ? map { _ isDefined }
 
   def * = from[S] {
     // tail-recursive function with reverse list accumulator
@@ -96,3 +100,4 @@ class SeqRule[S, +A, +X](rule: Rule[S, S, A, X]) {
     in => rep(0, in)
   }
 }
+
