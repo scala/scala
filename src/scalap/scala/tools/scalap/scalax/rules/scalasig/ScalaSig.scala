@@ -5,25 +5,27 @@
 **
 */
 
-package scala.tools.scalap.scalasig
 
+package scala.tools.scalap
+package scalax
+package rules
+package scalasig
+
+import scala.language.postfixOps
 import scala.language.implicitConversions
 
+import ClassFileParser.{ ConstValueIndex, Annotation }
 import scala.reflect.internal.pickling.ByteCodecs
 
-import scala.tools.scalap.Main
-import scala.tools.scalap.rules._
-
-import ClassFileParser.{ ConstValueIndex, Annotation }
-
 object ScalaSigParser {
+  import Main.{ SCALA_SIG, SCALA_SIG_ANNOTATION, BYTES_VALUE }
 
   def scalaSigFromAnnotation(classFile: ClassFile): Option[ScalaSig] = {
     import classFile._
 
-    classFile.annotation(Main.SCALA_SIG_ANNOTATION) map {
+    classFile.annotation(SCALA_SIG_ANNOTATION) map {
       case Annotation(_, elements) =>
-        val bytesElem = elements.find(elem => constant(elem.elementNameIndex) == Main.BYTES_VALUE).get
+        val bytesElem = elements.find(elem => constant(elem.elementNameIndex) == BYTES_VALUE).get
         val bytes = ((bytesElem.elementValue match {case ConstValueIndex(index) => constantWrapped(index)})
                 .asInstanceOf[StringBytesPair].bytes)
         val length = ByteCodecs.decode(bytes)
@@ -33,7 +35,7 @@ object ScalaSigParser {
   }
 
   def scalaSigFromAttribute(classFile: ClassFile): Option[ScalaSig] =
-    classFile.attribute(Main.SCALA_SIG).map(_.byteCode).map(ScalaSigAttributeParsers.parse)
+    classFile.attribute(SCALA_SIG).map(_.byteCode).map(ScalaSigAttributeParsers.parse)
 
   def parse(classFile: ClassFile): Option[ScalaSig] = {
     val scalaSig  = scalaSigFromAttribute(classFile)

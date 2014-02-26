@@ -5,14 +5,19 @@
 **
 */
 
-package scala.tools.scalap.scalasig
 
-import scala.language.implicitConversions
+package scala.tools.scalap
+package scalax
+package rules
+package scalasig
+
+import language.postfixOps
 
 import java.io.{PrintStream, ByteArrayOutputStream}
 import java.util.regex.Pattern
-
-import scala.tools.scalap.rules.~
+import scala.tools.scalap.scalax.util.StringUtil
+import scala.reflect.NameTransformer
+import java.lang.String
 
 class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   import stream._
@@ -343,8 +348,8 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         }
         case "scala.<byname>" => "=> " + toString(typeArgs.head)
         case _ => {
-          val path = cutSubstring(symbol.path)(".package") //remove package object reference
-          trimStart(processName(path) + typeArgString(typeArgs), "<empty>.")
+          val path = StringUtil.cutSubstring(symbol.path)(".package") //remove package object reference
+          StringUtil.trimStart(processName(path) + typeArgString(typeArgs), "<empty>.")
         }
       })
       case TypeBoundsType(lower, upper) => {
@@ -389,7 +394,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   def typeArgString(typeArgs: Seq[Type]): String =
     if (typeArgs.isEmpty) ""
-    else typeArgs.map(toString).map(trimStart(_, "=> ")).mkString("[", ", ", "]")
+    else typeArgs.map(toString).map(StringUtil.trimStart(_, "=> ")).mkString("[", ", ", "]")
 
   def typeParamString(params: Seq[Symbol]): String =
     if (params.isEmpty) ""
@@ -410,7 +415,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     if (i > 0) name.substring(i + 2) else name
   }
 
-  private def processName(name: String) = {
+  def processName(name: String) = {
     val stripped = stripPrivatePrefix(name)
     val m = pattern.matcher(stripped)
     var temp = stripped
@@ -420,15 +425,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       temp = temp.replaceAll(re, _syms(re))
     }
     val result = temp.replaceAll(placeholderPattern, "_")
-    scala.reflect.NameTransformer.decode(result)
+    NameTransformer.decode(result)
   }
 
-  private def trimStart(s: String, prefix: String) =
-    if (s != null && s.startsWith(prefix)) s.substring(prefix.length) else s
-
-  private def decapitalize(s: String) =
-    java.beans.Introspector.decapitalize(s)
-
-  private def cutSubstring(dom: String)(s: String) =
-    if (dom != null && s != null) dom.replace(s, "") else dom
 }
