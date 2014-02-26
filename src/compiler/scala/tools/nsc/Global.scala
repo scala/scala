@@ -1798,8 +1798,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   private def writeICode() {
     val printer = new icodes.TextPrinter(null, icodes.linearizer)
     icodes.classes.values.foreach((cls) => {
-      val suffix = s"${if (cls.symbol.hasModuleFlag) "$" else ""}_${phase}.icode"
-      val file = getFile(cls.symbol, suffix)
+      val moduleSfx = if (cls.symbol.hasModuleFlag) "$" else ""
+      val phaseSfx  = if (settings.debug) phase else "" // only for debugging, appending the full phasename breaks windows build
+      val file      = getFile(cls.symbol, s"$moduleSfx$phaseSfx.icode")
+
       try {
         val stream = new FileOutputStream(file)
         printer.setWriter(new PrintWriter(stream, true))
