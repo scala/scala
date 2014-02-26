@@ -1,0 +1,7 @@
+t4728.scala:10: error: ambiguous reference to overloaded definition,
+both method f in object Ambiguous of type (ys: Y*)Int
+and  method f in object Ambiguous of type (x: X)Int
+match argument types (Y) and expected result type Any
+  println(Ambiguous.f(new Y))
+                    ^
+one error found
