@@ -11,7 +11,10 @@
 // -----------------------------------------------------------------------------
 
 package scala.tools.scalap
+package scalax
 package rules
+
+import language.postfixOps
 
 trait Name {
   def name: String

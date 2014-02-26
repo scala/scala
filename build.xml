@@ -274,6 +274,7 @@ TODO:
       </artifact:dependencies>
 
 
+      <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
       <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
 
       <!-- prepare, for each of the names below, the property "@{name}.cross", set to the
@@ -293,6 +294,7 @@ TODO:
         <!-- so we don't have to wait for artifacts to synch to maven central
             (we don't distribute partest with Scala, so the risk of sonatype and maven being out of synch is irrelevant):
           -->
+        <artifact:remoteRepository refid="sonatype-release"/>
         <artifact:remoteRepository refid="extra-repo"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-partest${partest.cross}" version="${partest.version.number}" />
       </artifact:dependencies>

@@ -5,7 +5,9 @@
 **
 */
 
+
 package scala.tools.scalap
+
 
 object Classfiles {
   final val JAVA_MAGIC = 0xCAFEBABE
