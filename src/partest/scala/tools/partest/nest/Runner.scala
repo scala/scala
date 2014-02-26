@@ -21,8 +21,6 @@ import scala.tools.nsc.{ Settings, CompilerCommand, Global }
 import scala.tools.nsc.io.{ AbstractFile }
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.{ Exceptional, stackTraceString }
-import scala.tools.scalap.Main.decompileScala
-import scala.tools.scalap.scalasig.ByteCode
 import scala.util.{ Try, Success, Failure }
 import ClassPath.{ join, split }
 import TestState.{ Pass, Fail, Crash, Uninitialized, Updated }
@@ -683,16 +681,40 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     lastState
   }
 
+  private def decompileClass(clazz: Class[_], isPackageObject: Boolean): String = {
+    import scala.tools.scalap
+
+    // TODO: remove use of reflection once Scala 2.11.0-RC1 is out
+    // have to use reflection to work on both 2.11.0-M8 and 2.11.0-RC1.
+    // Once we require only 2.11.0-RC1, replace the following block by:
+    // import scalap.scalax.rules.scalasig.ByteCode
+    // ByteCode forClass clazz bytes
+    val bytes = {
+      import scala.language.{reflectiveCalls, existentials}
+      type ByteCode       = { def bytes: Array[Byte] }
+      type ByteCodeModule = { def forClass(clazz: Class[_]): ByteCode }
+      val ByteCode        = {
+        val ByteCodeModuleCls =
+          // RC1 package structure -- see: scala/scala#3588 and https://issues.scala-lang.org/browse/SI-8345
+          (util.Try { Class.forName("scala.tools.scalap.scalax.rules.scalasig.ByteCode$") }
+          // M8 package structure
+           getOrElse  Class.forName("scala.tools.scalap.scalasig.ByteCode$"))
+        ByteCodeModuleCls.getDeclaredFields()(0).get(null).asInstanceOf[ByteCodeModule]
+      }
+      ByteCode forClass clazz bytes
+    }
+
+    scalap.Main.decompileScala(bytes, isPackageObject)
+  }
+
   def runScalapTest() = runTestCommon {
     val isPackageObject = testFile.getName startsWith "package"
     val className       = testFile.getName.stripSuffix(".scala").capitalize + (if (!isPackageObject) "" else ".package")
     val loader          = ScalaClassLoader.fromURLs(List(outDir.toURI.toURL), this.getClass.getClassLoader)
-    val byteCode        = ByteCode forClass (loader loadClass className)
-    val result          = decompileScala(byteCode.bytes, isPackageObject)
-
-    logFile writeAll result
+    logFile writeAll decompileClass(loader loadClass className, isPackageObject)
     diffIsOk
   }
+
   def runScriptTest() = {
     import scala.sys.process._
     val (swr, wr) = newTestWriters()
