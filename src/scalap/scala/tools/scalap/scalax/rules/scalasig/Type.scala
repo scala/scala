@@ -1,4 +1,7 @@
-package scala.tools.scalap.scalasig
+package scala.tools.scalap
+package scalax
+package rules
+package scalasig
 
 abstract class Type
 

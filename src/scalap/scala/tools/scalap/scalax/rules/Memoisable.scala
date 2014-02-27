@@ -10,7 +10,9 @@
 //
 // -----------------------------------------------------------------------------
 
-package scala.tools.scalap.rules
+package scala.tools.scalap
+package scalax
+package rules
 
 import scala.collection.mutable
 
@@ -20,7 +22,7 @@ trait MemoisableRules extends Rules {
     from[In] { in => in.memo(key, rule(in)) }
   }
 
-  override def ruleWithName[In, Out, A, X](name: String, f: In => Result[Out, A, X]) = super.ruleWithName(name, (in: In) => in match {
+  override def ruleWithName[In, Out, A, X](name: String, f: In => rules.Result[Out, A, X]) = super.ruleWithName(name, (in: In) => in match {
       case s: Memoisable => s.memo(name, f(in))
       case _ => f(in)
     })
@@ -54,3 +56,6 @@ trait DefaultMemoisable extends Memoisable {
     if(DefaultMemoisable.debug) println(key + " -> " + t + " (" + out + ")")
   }
 }
+
+
+

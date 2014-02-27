@@ -10,7 +10,9 @@
 //
 // -----------------------------------------------------------------------------
 
-package scala.tools.scalap.rules
+package scala.tools.scalap
+package scalax
+package rules
 
 /** A Rule is a function from some input to a Result.  The result may be:
   * <ul>
@@ -170,3 +172,6 @@ trait Choice[-In, +Out, +A, +X] extends Rule[In, Out, A, X] {
     lazy val choices = Choice.this.choices ::: other :: Nil
   }
 }
+
+
+
