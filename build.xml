@@ -529,20 +529,30 @@ TODO:
     <!-- used during releases to bump versions in versions.properties -->
     <if><isset property="update.versions"/><then>
       <echo message="Updating `versions.properties`:"/>
-      <echo message="  starr.version                           = ${starr.version}"/>
-      <echo message="  scala.binary.version                    = ${scala.binary.version}"/>
-      <echo message="  partest.version.number                  = ${partest.version.number}"/>
-      <echo message="  scala-xml.version.number                = ${scala-xml.version.number}"/>
-      <echo message="  scala-parser-combinators.version.number = ${scala-parser-combinators.version.number}"/>
-      <echo message="  scalacheck.version.number               = ${scalacheck.version.number}"/>
+      <echo message="starr.version                              = ${starr.version}"/>
+      <echo message="scala.binary.version                       = ${scala.binary.version}"/>
+      <echo message="scala-xml.version.number                   = ${scala-xml.version.number}"/>
+      <echo message="scala-parser-combinators.version.number    = ${scala-parser-combinators.version.number}"/>
+      <echo message="scala-continuations-plugin.version.number  = ${scala-continuations-plugin.version.number}"/>
+      <echo message="scala-continuations-library.version.number = ${scala-continuations-library.version.number}"/>
+      <echo message="scala-swing.version.number                 = ${scala-swing.version.number}"/>
+      <echo message="akka-actor.version.number                  = ${akka-actor.version.number}"/>
+      <echo message="actors-migration.version.number            = ${actors-migration.version.number}"/>
+      <echo message="partest.version.number                     = ${partest.version.number}"/>
+      <echo message="scalacheck.version.number                  = ${scalacheck.version.number}"/>
 
       <propertyfile file="versions.properties">
-        <entry key="starr.version"                           value="${starr.version}"/>
-        <entry key="scala.binary.version"                    value="${scala.binary.version}"/>
-        <entry key="partest.version.number"                  value="${partest.version.number}"/>
-        <entry key="scala-xml.version.number"                value="${scala-xml.version.number}"/>
-        <entry key="scala-parser-combinators.version.number" value="${scala-parser-combinators.version.number}"/>
-        <entry key="scalacheck.version.number"               value="${scalacheck.version.number}"/>
+        <entry key="starr.version"                              value="${starr.version}"/>
+        <entry key="scala.binary.version"                       value="${scala.binary.version}"/>
+        <entry key="scala-xml.version.number"                   value="${scala-xml.version.number}"/>
+        <entry key="scala-parser-combinators.version.number"    value="${scala-parser-combinators.version.number}"/>
+        <entry key="scala-continuations-plugin.version.number"  value="${scala-continuations-plugin.version.number}"/>
+        <entry key="scala-continuations-library.version.number" value="${scala-continuations-library.version.number}"/>
+        <entry key="scala-swing.version.number"                 value="${scala-swing.version.number}"/>
+        <entry key="akka-actor.version.number"                  value="${akka-actor.version.number}"/>
+        <entry key="actors-migration.version.number"            value="${actors-migration.version.number}"/>
+        <entry key="partest.version.number"                     value="${partest.version.number}"/>
+        <entry key="scalacheck.version.number"                  value="${scalacheck.version.number}"/>
       </propertyfile>
     </then></if>
 
