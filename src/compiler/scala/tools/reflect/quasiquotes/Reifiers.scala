@@ -218,10 +218,8 @@ trait Reifiers { self: Quasiquotes =>
       case Select(id @ Ident(nme.scala_), name) if id.symbol == ScalaPackage =>
         reifyBuildCall(nme.ScalaDot, name)
       case Select(qual, name) =>
-        if (name.isTypeName)
-          reifyBuildCall(nme.SyntacticSelectType, qual, name)
-        else
-          reifyBuildCall(nme.SyntacticSelectTerm, qual, name)
+        val ctor = if (name.isTypeName) nme.SyntacticSelectType else nme.SyntacticSelectTerm
+        reifyBuildCall(ctor, qual, name)
       case _ =>
         super.reifyTreeSyntactically(tree)
     }

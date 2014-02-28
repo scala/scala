@@ -201,6 +201,9 @@ trait ReificationSupport { self: SymbolTable =>
       def unapply(flags: Long): Some[Long] = Some(flags)
     }
 
+    /** Construct/deconstruct type application term trees.
+     *  Treats other term trees as zero-argument type applications.
+     */
     object SyntacticTypeApplied extends SyntacticTypeAppliedExtractor {
       def apply(tree: Tree, targs: List[Tree]): Tree =
         if (targs.isEmpty) tree
@@ -214,6 +217,9 @@ trait ReificationSupport { self: SymbolTable =>
       }
     }
 
+    /** Construct/deconstruct applied type trees.
+     *  Treats other types as zero-arity applied types.
+     */
     object SyntacticAppliedType extends SyntacticTypeAppliedExtractor {
       def apply(tree: Tree, targs: List[Tree]): Tree =
         if (targs.isEmpty) tree
@@ -235,10 +241,10 @@ trait ReificationSupport { self: SymbolTable =>
         case UnApply(treeInfo.Unapplied(Select(fun, nme.unapply)), pats) =>
           Some((fun, pats :: Nil))
         case treeInfo.Applied(fun, targs, argss) =>
-          if (fun.isTerm)
-            Some((SyntacticTypeApplied(fun, targs), argss))
-          else
-            Some((SyntacticAppliedType(fun, targs), argss))
+          val callee =
+            if (fun.isTerm) SyntacticTypeApplied(fun, targs)
+            else SyntacticAppliedType(fun, targs)
+          Some((callee, argss))
       }
     }
 
