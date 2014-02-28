@@ -94,7 +94,11 @@ trait ReificationSupport { self: SymbolTable =>
 
     def setSymbol[T <: Tree](tree: T, sym: Symbol): T = { tree.setSymbol(sym); tree }
 
-    def toStats(tree: Tree): List[Tree] = SyntacticBlock.unapply(tree).get
+    def toStats(tree: Tree): List[Tree] = tree match {
+      case EmptyTree             => Nil
+      case SyntacticBlock(stats) => stats
+      case _                     => throw new IllegalArgumentException(s"can't flatten $tree")
+    }
 
     def mkAnnotation(tree: Tree): Tree = tree match {
       case SyntacticNew(Nil, SyntacticApplied(SyntacticTypeApplied(_, _), _) :: Nil, noSelfType, Nil) =>
@@ -239,7 +243,7 @@ trait ReificationSupport { self: SymbolTable =>
       def unapply(templ: Template): Option[(List[Tree], ValDef, Modifiers, List[List[ValDef]], List[Tree], List[Tree])] = {
         val Template(parents, selfType, _) = templ
         val tbody = treeInfo.untypecheckedTemplBody(templ)
-        
+
         def result(ctorMods: Modifiers, vparamss: List[List[ValDef]], edefs: List[Tree], body: List[Tree]) =
           Some((parents, selfType, ctorMods, vparamss, edefs, body))
         def indexOfCtor(trees: List[Tree]) =
@@ -448,28 +452,25 @@ trait ReificationSupport { self: SymbolTable =>
      *  block as a list of elements rather than (stats, expr) pair
      *  it also:
      *
-     *  1. Treats of q"" (empty tree) as zero-element block.
-     *
-     *  2. Strips trailing synthetic units which are inserted by the
+     *  1. Strips trailing synthetic units which are inserted by the
      *     compiler if the block ends with a definition rather
-     *     than an expression.
+     *     than an expression or is empty.
      *
-     *  3. Matches non-block term trees and recognizes them as
+     *  2. Matches non-block term trees and recognizes them as
      *     single-element blocks for sake of consistency with
      *     compiler's default to treat single-element blocks with
-     *     expressions as just expressions.
+     *     expressions as just expressions. The only exception is q""
+     *     which is not considered to be a block.
      */
     object SyntacticBlock extends SyntacticBlockExtractor {
-      def apply(stats: List[Tree]): Tree =
-        if (stats.isEmpty) EmptyTree
-        else gen.mkBlock(stats)
+      def apply(stats: List[Tree]): Tree = gen.mkBlock(stats)
 
       def unapply(tree: Tree): Option[List[Tree]] = tree match {
         case bl @ self.Block(stats, SyntheticUnit()) => Some(treeInfo.untypecheckedBlockBody(bl))
         case bl @ self.Block(stats, expr)            => Some(treeInfo.untypecheckedBlockBody(bl) :+ expr)
-        case EmptyTree                          => Some(Nil)
-        case _ if tree.isTerm                   => Some(tree :: Nil)
-        case _                                  => None
+        case SyntheticUnit()                         => Some(Nil)
+        case _ if tree.isTerm && tree.nonEmpty       => Some(tree :: Nil)
+        case _                                       => None
       }
     }
 

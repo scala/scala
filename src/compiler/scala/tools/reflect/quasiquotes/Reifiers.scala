@@ -202,6 +202,8 @@ trait Reifiers { self: Quasiquotes =>
       // not to cause infinite recursion.
       case block @ SyntacticBlock(stats) if block.isInstanceOf[Block] =>
         reifyBuildCall(nme.SyntacticBlock, stats)
+      case SyntheticUnit() =>
+        reifyBuildCall(nme.SyntacticBlock, Nil)
       case Try(block, catches, finalizer) =>
         reifyBuildCall(nme.SyntacticTry, block, catches, finalizer)
       case Match(selector, cases) =>

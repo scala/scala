@@ -103,7 +103,7 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
 
   def blockInvariant(quote: Tree, trees: List[Tree]) =
     quote ≈ (trees match {
-      case Nil => q""
+      case Nil => q"{}"
       case _ :+ last if !last.isTerm => Block(trees, q"()")
       case head :: Nil => head
       case init :+ last => Block(init, last)
@@ -277,11 +277,18 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     assert(stats ≈ List(q"def x = 2", q"()"))
   }
 
-  property("empty-tree as block") = test {
-    val q"{ ..$stats1 }" = q" "
-    assert(stats1.isEmpty)
-    val stats2 = List.empty[Tree]
-    assert(q"{ ..$stats2 }" ≈ q"")
+  property("empty-tree is not a block") = test {
+    assertThrows[MatchError] {
+      val q"{ ..$stats1 }" = q" "
+    }
+  }
+
+  property("empty block is synthetic unit") = test {
+    val q"()" = q"{}"
+    val q"{..$stats}" = q"{}"
+    assert(stats.isEmpty)
+    assertEqAst(q"{..$stats}", "{}")
+    assertEqAst(q"{..$stats}", "()")
   }
 
   property("consistent variable order") = test {
