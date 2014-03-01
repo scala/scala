@@ -32,4 +32,16 @@ quasiquotes-syntax-error-position.scala:14: error: ')' expected but end of quote
 quasiquotes-syntax-error-position.scala:15: error: ':' expected but ')' found.
   q"def foo(x)"
              ^
-11 errors found
+quasiquotes-syntax-error-position.scala:16: error: illegal start of simple expression
+  q"$a(])"
+       ^
+quasiquotes-syntax-error-position.scala:17: error: in XML literal: '>' expected instead of '$'
+  q"foo bar <xml$a>"
+                ^
+quasiquotes-syntax-error-position.scala:19: error: ';' expected but '<:' found.
+  q"val $x: $x <: $x"
+               ^
+quasiquotes-syntax-error-position.scala:20: error: '=' expected but '.' found.
+  q"def f ( $x  ) . $x"
+                  ^
+15 errors found

@@ -13,4 +13,9 @@ object test extends App {
   cq"pattern => body ; case pattern2 =>"
   pq"$a(bar"
   q"def foo(x)"
+  q"$a(])"
+  q"foo bar <xml$a>"
+  val x = q"x"
+  q"val $x: $x <: $x"
+  q"def f ( $x  ) . $x"
 }

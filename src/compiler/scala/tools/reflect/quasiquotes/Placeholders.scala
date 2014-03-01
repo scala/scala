@@ -17,7 +17,7 @@ trait Placeholders { self: Quasiquotes =>
 
   // Step 1: Transform Scala source with holes into vanilla Scala source
 
-  lazy val posMap = mutable.ListMap[Position, (Int, Int)]()
+  lazy val posMap = mutable.LinkedHashMap[Position, (Int, Int)]()
   lazy val code = {
     val sb = new StringBuilder()
     val sessionSuffix = randomUUID().toString.replace("-", "").substring(0, 8) + "$"
@@ -40,9 +40,7 @@ trait Placeholders { self: Quasiquotes =>
 
     val iargs = method match {
       case nme.apply   => args
-      case nme.unapply =>
-        val (dummy @ Ident(nme.SELECTOR_DUMMY)) :: Nil = args
-        internal.subpatterns(dummy).get
+      case nme.unapply => internal.subpatterns(args.head).get
       case _           => global.abort("unreachable")
     }
 
