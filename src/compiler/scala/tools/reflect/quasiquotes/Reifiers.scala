@@ -202,10 +202,14 @@ trait Reifiers { self: Quasiquotes =>
       // not to cause infinite recursion.
       case block @ SyntacticBlock(stats) if block.isInstanceOf[Block] =>
         reifyBuildCall(nme.SyntacticBlock, stats)
+      case SyntheticUnit() =>
+        reifyBuildCall(nme.SyntacticBlock, Nil)
       case Try(block, catches, finalizer) =>
         reifyBuildCall(nme.SyntacticTry, block, catches, finalizer)
       case Match(selector, cases) =>
         reifyBuildCall(nme.SyntacticMatch, selector, cases)
+      case CaseDef(pat, guard, body) if fillListHole.isDefinedAt(body) =>
+        mirrorCall(nme.CaseDef, reify(pat), reify(guard), mirrorBuildCall(nme.SyntacticBlock, fillListHole(body)))
       // parser emits trees with scala package symbol to ensure
       // that some names hygienically point to various scala package
       // members; we need to preserve this symbol to preserve

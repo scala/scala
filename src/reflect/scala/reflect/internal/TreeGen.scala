@@ -452,7 +452,7 @@ abstract class TreeGen {
 
   /** Create block of statements `stats`  */
   def mkBlock(stats: List[Tree]): Tree =
-    if (stats.isEmpty) Literal(Constant(()))
+    if (stats.isEmpty) mkSyntheticUnit()
     else if (!stats.last.isTerm) Block(stats, mkSyntheticUnit())
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)

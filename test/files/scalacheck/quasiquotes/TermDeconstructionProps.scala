@@ -175,4 +175,28 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     assert(x ≈ q"x")
     val q"{ _ * _ }" = q"{ _ * _ }"
   }
+
+  property("si-8275 a") = test {
+    val cq"_ => ..$stats" = cq"_ => foo; bar"
+    assert(stats ≈ List(q"foo", q"bar"))
+  }
+
+  property("si-8275 b") = test {
+    val cq"_ => ..$init; $last" = cq"_ => a; b; c"
+    assert(init ≈ List(q"a", q"b"))
+    assert(last ≈ q"c")
+  }
+
+  property("si-8275 c") = test {
+    val cq"_ => ..$stats" = cq"_ =>"
+    assert(stats.isEmpty)
+    assertEqAst(q"{ case _ => ..$stats }", "{ case _ => }")
+  }
+
+  property("can't flatten type into block") = test {
+    assertThrows[IllegalArgumentException] {
+      val tpt = tq"List[Int]"
+      q"..$tpt; ()"
+    }
+  }
 }
