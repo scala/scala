@@ -738,7 +738,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val featureName = (nestedOwners map (_.name + ".")).mkString + featureTrait.name
         def action(): Boolean = {
           def hasImport = inferImplicit(EmptyTree: Tree, featureTrait.tpe, reportAmbiguous = true, isView = false, context).isSuccess
-          def hasOption = settings.language.value exists (s => s == featureName || s == "_")
+          def hasOption = settings.language contains featureName
           val OK = hasImport || hasOption
           if (!OK) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =

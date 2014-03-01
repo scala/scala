@@ -576,6 +576,7 @@ class MutableSettings(val errorFn: String => Unit)
     def tryToSet(args: List[String]) = {
       val (strings, rest) = args span (x => !x.startsWith("-"))
       strings foreach {
+        case "_" if choices.nonEmpty => choices foreach appendToValue
         case s if choices.isEmpty || (choices contains s) => appendToValue(s)
         case s => badChoice(s, name)
       }
@@ -585,6 +586,8 @@ class MutableSettings(val errorFn: String => Unit)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
     def clear(): Unit = (v = Nil)
     def unparse: List[String] = value map (name + ":" + _)
+
+    def contains(s: String) = value contains s
 
     withHelpSyntax(name + ":<" + arg + ">")
   }
