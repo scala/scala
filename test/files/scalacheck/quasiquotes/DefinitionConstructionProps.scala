@@ -9,7 +9,7 @@ object DefinitionConstructionProps
     with ValDefConstruction
     with PatDefConstruction
     with DefConstruction
-    with PackageConstruction 
+    with PackageConstruction
     with ImportConstruction {
 
   val x: Tree = q"val x: Int"
@@ -80,6 +80,10 @@ trait ClassConstruction { self: QuasiquoteProperties =>
     assertEqAst(q"case class C($pubx) ", "case class C(x: Int)                  ")
     assertEqAst(q"     class C($privx)", "     class C(x: Int)                  ")
     assertEqAst(q"case class C($privx)", "case class C(private[this] val x: Int)")
+  }
+
+  property("SI-8333") = test {
+    assertEqAst(q"{ $NoMods class C }", "{ class C }")
   }
 }
 

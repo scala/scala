@@ -3096,10 +3096,6 @@ self =>
           stats ++= importClause()
           acceptStatSepOpt()
         }
-        else if (isExprIntro) {
-          stats += statement(InBlock)
-          if (!isCaseDefEnd) acceptStatSep()
-        }
         else if (isDefIntro || isLocalModifier || isAnnotation) {
           if (in.token == IMPLICIT) {
             val start = in.skipToken()
@@ -3109,6 +3105,10 @@ self =>
             stats ++= localDef(0)
           }
           acceptStatSepOpt()
+        }
+        else if (isExprIntro) {
+          stats += statement(InBlock)
+          if (!isCaseDefEnd) acceptStatSep()
         }
         else if (isStatSep) {
           in.nextToken()
