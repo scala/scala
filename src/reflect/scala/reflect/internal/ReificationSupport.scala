@@ -110,14 +110,14 @@ trait ReificationSupport { self: SymbolTable =>
 
     def mkAnnotation(trees: List[Tree]): List[Tree] = trees.map(mkAnnotation)
 
-    def mkParam(argss: List[List[Tree]], extraFlags: FlagSet = NoFlags): List[List[ValDef]] =
-      argss.map { args => args.map { mkParam(_, extraFlags) } }
+    def mkParam(argss: List[List[Tree]], extraFlags: FlagSet = NoFlags, excludeFlags: FlagSet = DEFERRED): List[List[ValDef]] =
+      argss.map { args => args.map { mkParam(_, extraFlags, excludeFlags) } }
 
-    def mkParam(tree: Tree, extraFlags: FlagSet): ValDef = tree match {
+    def mkParam(tree: Tree, extraFlags: FlagSet, excludeFlags: FlagSet): ValDef = tree match {
       case Typed(Ident(name: TermName), tpt) =>
-        mkParam(ValDef(NoMods, name, tpt, EmptyTree), extraFlags)
+        mkParam(ValDef(NoMods, name, tpt, EmptyTree), extraFlags, excludeFlags)
       case vd: ValDef =>
-        var newmods = vd.mods & (~DEFERRED)
+        var newmods = vd.mods & (~excludeFlags)
         if (vd.rhs.nonEmpty) newmods |= DEFAULTPARAM
         copyValDef(vd)(mods = newmods | extraFlags)
       case _ =>
@@ -127,7 +127,7 @@ trait ReificationSupport { self: SymbolTable =>
 
     def mkImplicitParam(args: List[Tree]): List[ValDef] = args.map(mkImplicitParam)
 
-    def mkImplicitParam(tree: Tree): ValDef = mkParam(tree, IMPLICIT | PARAM)
+    def mkImplicitParam(tree: Tree): ValDef = mkParam(tree, IMPLICIT | PARAM, NoFlags)
 
     def mkTparams(tparams: List[Tree]): List[TypeDef] =
       tparams.map {
@@ -187,7 +187,7 @@ trait ReificationSupport { self: SymbolTable =>
     protected implicit def fresh: FreshNameCreator = self.currentFreshNameCreator
 
     object ImplicitParams extends ImplicitParamsExtractor {
-      def apply(paramss: List[List[ValDef]], implparams: List[ValDef]): List[List[ValDef]] =
+      def apply(paramss: List[List[Tree]], implparams: List[Tree]): List[List[Tree]] =
         if (implparams.nonEmpty) paramss :+ mkImplicitParam(implparams) else paramss
 
       def unapply(vparamss: List[List[ValDef]]): Some[(List[List[ValDef]], List[ValDef])] = vparamss match {
@@ -300,7 +300,7 @@ trait ReificationSupport { self: SymbolTable =>
                 constrMods: Modifiers, vparamss: List[List[Tree]],
                 earlyDefs: List[Tree], parents: List[Tree], selfType: Tree, body: List[Tree]): ClassDef = {
         val extraFlags = PARAMACCESSOR | (if (mods.isCase) CASEACCESSOR else 0L)
-        val vparamss0 = mkParam(vparamss, extraFlags)
+        val vparamss0 = mkParam(vparamss, extraFlags, excludeFlags = DEFERRED | PARAM)
         val tparams0 = mkTparams(tparams)
         val parents0 = gen.mkParents(mods,
           if (mods.isCase) parents.filter {

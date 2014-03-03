@@ -73,8 +73,11 @@ trait ClassDeconstruction { self: QuasiquoteProperties =>
 
   property("exhaustive class matcher") = test {
     def matches(line: String) {
-      val q"""$classMods class $name[..$targs] $ctorMods(...$argss)
-              extends { ..$early } with ..$parents { $self => ..$body }""" = parse(line)
+      val tree = parse(line)
+      val q"""$classMods0 class $name0[..$targs0] $ctorMods0(...$argss0)
+              extends { ..$early0 } with ..$parents0 { $self0 => ..$body0 }""" = tree
+      val q"""$classMods1 class $name1[..$targs1] $ctorMods1(...$argss1)(implicit ..$impl)
+              extends { ..$early1 } with ..$parents1 { $self1 => ..$body1 }""" = tree
     }
     matches("class Foo")
     matches("class Foo[T]")
@@ -105,6 +108,13 @@ trait ClassDeconstruction { self: QuasiquoteProperties =>
               DefDef(Modifiers(), termNames.CONSTRUCTOR, List(), List(List(ValDef(Modifiers(PARAM | PARAMACCESSOR), TermName("x"),
                 Ident(TypeName("Int")), EmptyTree))), TypeTree(), Block(List(pendingSuperCall), Literal(Constant(())))))))
     }
+  }
+
+  property("SI-8332") = test {
+    val q"class C(implicit ..$args)" = q"class C(implicit i: I, j: J)"
+    val q"$imods val i: I" :: q"$jmods val j: J" :: Nil = args
+    assert(imods.hasFlag(IMPLICIT))
+    assert(jmods.hasFlag(IMPLICIT))
   }
 }
 

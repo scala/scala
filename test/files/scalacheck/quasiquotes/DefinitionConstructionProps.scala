@@ -85,6 +85,11 @@ trait ClassConstruction { self: QuasiquoteProperties =>
   property("SI-8333") = test {
     assertEqAst(q"{ $NoMods class C }", "{ class C }")
   }
+
+  property("SI-8332") = test {
+    val args = q"val a: Int; val b: Int"
+    assertEqAst(q"class C(implicit ..$args)", "class C(implicit val a: Int, val b: Int)")
+  }
 }
 
 trait TraitConstruction { self: QuasiquoteProperties =>

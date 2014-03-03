@@ -581,7 +581,7 @@ trait Internals { self: Universe =>
     val ImplicitParams: ImplicitParamsExtractor
 
     trait ImplicitParamsExtractor {
-      def apply(paramss: List[List[ValDef]], implparams: List[ValDef]): List[List[ValDef]]
+      def apply(paramss: List[List[Tree]], implparams: List[Tree]): List[List[Tree]]
       def unapply(vparamss: List[List[ValDef]]): Some[(List[List[ValDef]], List[ValDef])]
     }
 
