@@ -534,8 +534,8 @@
   <macrodef name="bc.check">
     <attribute name="project"/>
     <sequential>
-      <bc.run-mima jar-name="scala-@{project}" prev="${org.scala-lang:scala-@{project}:jar}" curr="${@{name}.jar}" direction="backward"/>
-      <bc.run-mima jar-name="scala-@{project}" prev="${@{name}.jar}" curr="${org.scala-lang:scala-@{project}:jar}" direction="forward"/>
+      <bc.run-mima jar-name="scala-@{project}" prev="${org.scala-lang:scala-@{project}:jar}" curr="${@{project}.jar}" direction="backward"/>
+      <bc.run-mima jar-name="scala-@{project}" prev="${@{project}.jar}" curr="${org.scala-lang:scala-@{project}:jar}" direction="forward"/>
     </sequential>
   </macrodef>
 

@@ -1483,14 +1483,14 @@ TODO:
                                   BINARY COMPATIBILITY TESTING
 ============================================================================ -->
   <target name="bc.init" depends="init" unless="maven-deps-done-mima">
-    <property name="bc-reference-version" value="2.11.0"/>
+    <property name="bc-reference-version" value="2.11.0-RC1"/>
 
     <property name="bc-build.dir" value="${build.dir}/bc"/>
     <!-- Obtain mima -->
     <mkdir dir="${bc-build.dir}"/>
     <!-- Pull down MIMA -->
     <artifact:dependencies pathId="mima.classpath">
-      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.9.2" version="0.1.5"/>
+      <dependency groupId="com.typesafe" artifactId="mima-reporter_2.10" version="0.1.6"/>
     </artifact:dependencies>
     <artifact:dependencies pathId="old.bc.classpath">
       <dependency groupId="org.scala-lang" artifactId="scala-library" version="${bc-reference-version}"/>
@@ -1499,13 +1499,8 @@ TODO:
     <property name="maven-deps-done-mima" value="true"/>
   </target>
 
-
-
   <target name="test.bc-opt" description="Optimized version of test.bc."> <optimized name="test.bc"/></target>
-
-  <!-- Enable after the release of the 2.11.0 or a prior RC that estabilishes the new baseline. -->
-  <target name="test.bc"></target>
-  <target name="test.bc.disabled" depends="bc.init, pack.lib, pack.reflect">
+  <target name="test.bc" depends="bc.init, pack.lib, pack.reflect">
     <bc.check project="library"/>
     <bc.check project="reflect"/>
   </target>
