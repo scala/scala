@@ -160,6 +160,18 @@ object ErrorProps extends QuasiquoteProperties("errors") {
       q"$n"
     """)
 
+  property("SI-8211: check unbound placeholder paremeters") = fails(
+    "unbound placeholder parameter",
+    """
+      q"_"
+    """)
+
+  property("SI-8211: check unbound wildcard types") = fails(
+    "unbound wildcard type",
+    """
+      tq"_"
+    """)
+
   // // Make sure a nice error is reported in this case
   // { import Flag._; val mods = NoMods; q"lazy $mods val x: Int" }
 }

@@ -22,7 +22,8 @@ trait Parsers { self: Quasiquotes =>
     def parse(code: String): Tree = {
       try {
         val file = new BatchSourceFile(nme.QUASIQUOTE_FILE, code)
-        new QuasiquoteParser(file).parseRule(entryPoint)
+        val parser = new QuasiquoteParser(file)
+        parser.checkNoEscapingPlaceholders { parser.parseRule(entryPoint) }
       } catch {
         case mi: MalformedInput => c.abort(correspondingPosition(mi.offset), mi.msg)
       }
