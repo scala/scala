@@ -267,15 +267,33 @@ TODO:
          on repeated use of artifact:dependencies
     -->
     <if><not><isset property="maven-deps-done"></isset></not><then>
-      <mkdir dir="${user.home}/.m2/repository"/>
+
+      <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
+      <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
+      <if>
+        <isset property="maven.repo.local"/>
+        <then>
+          <echo level="verbose" message="maven.repo.local=${maven.repo.local}"/>
+          <property name="local.m2repo" value="${maven.repo.local}"/>
+        </then>
+        <else>
+          <property name="local.m2repo" value="${user.home}/.m2/repository"/>
+        </else>
+      </if>
+      <artifact:localRepository id="local-repo" path="${local.m2repo}"/>
+
       <!-- This task has an issue where if the user directory does not exist, so we create it above. UGH. -->
+      <mkdir dir="${local.m2repo}"/>
+
       <artifact:dependencies pathId="extra.tasks.classpath" filesetId="extra.tasks.fileset">
+        <artifact:localRepository refid="local-repo"/>
         <dependency groupId="biz.aQute" artifactId="bnd" version="1.50.0"/>
       </artifact:dependencies>
 
       <!-- JUnit -->
       <property name="junit.version" value="4.10"/>
       <artifact:dependencies pathId="junit.classpath" filesetId="junit.fileset">
+        <artifact:localRepository refid="local-repo"/>
         <dependency groupId="junit" artifactId="junit" version="${junit.version}"/>
       </artifact:dependencies>
       <copy-deps project="junit"/>
@@ -283,6 +301,7 @@ TODO:
       <!-- Pax runner -->
       <property name="pax.exam.version" value="2.6.0"/>
       <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset">
+        <artifact:localRepository refid="local-repo"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-junit4" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-link-assembly" version="${pax.exam.version}"/>
@@ -296,10 +315,6 @@ TODO:
         <dependency groupId="org.apache.felix" artifactId="org.apache.felix.framework" version="3.2.2"/>
       </artifact:dependencies>
 
-
-      <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
-      <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
-
       <!-- prepare, for each of the names below, the property "@{name}.cross", set to the
            necessary cross suffix (usually something like "_2.11.0-M6". -->
       <prepareCross name="scala-xml" />
@@ -312,23 +327,21 @@ TODO:
 
       <!-- TODO: delay until absolutely necessary to allow minimal build, also move out partest dependency from scaladoc -->
       <artifact:dependencies pathId="partest.classpath" filesetId="partest.fileset" versionsId="partest.versions">
-        <!-- uncomment the following if you're deploying your own partest locally -->
-        <!-- <localRepository path="${user.home}/.m2/repository"/> -->
-        <!-- so we don't have to wait for artifacts to synch to maven central
-            (we don't distribute partest with Scala, so the risk of sonatype and maven being out of synch is irrelevant):
-          -->
         <artifact:remoteRepository refid="sonatype-release"/>
         <artifact:remoteRepository refid="extra-repo"/>
+        <artifact:localRepository refid="local-repo"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-partest${partest.cross}" version="${partest.version.number}" />
       </artifact:dependencies>
       <copy-deps project="partest"/>
 
       <artifact:dependencies pathId="scalacheck.classpath" filesetId="scalacheck.fileset" versionsId="scalacheck.versions">
         <artifact:remoteRepository refid="extra-repo"/>
+        <artifact:localRepository refid="local-repo"/>
         <dependency groupId="org.scalacheck"         artifactId="scalacheck${scalacheck.cross}"    version="${scalacheck.version.number}" />
       </artifact:dependencies>
 
       <artifact:dependencies pathId="repl.deps.classpath" filesetId="repl.fileset" versionsId="repl.deps.versions">
+        <artifact:localRepository refid="local-repo"/>
         <dependency groupId="jline" artifactId="jline" version="${jline.version}"/>
       </artifact:dependencies>
       <copy-deps project="repl"/>
@@ -337,6 +350,7 @@ TODO:
            must specify sourcesFilesetId, javadocFilesetId to download these types of artifacts -->
       <artifact:dependencies pathId="external-modules.deps.classpath" sourcesFilesetId="external-modules.sources.fileset" javadocFilesetId="external-modules.javadoc.fileset">
         <artifact:remoteRepository refid="extra-repo"/>
+        <artifact:localRepository refid="local-repo"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-xml${scala-xml.cross}" version="${scala-xml.version.number}"/>
         <dependency groupId="org.scala-lang.modules" artifactId="scala-parser-combinators${scala-parser-combinators.cross}" version="${scala-parser-combinators.version.number}"/>
         <dependency groupId="org.scala-lang.plugins" artifactId="scala-continuations-plugin${scala-continuations-plugin.cross}"  version="${scala-continuations-plugin.version.number}"/>
@@ -369,6 +383,7 @@ TODO:
       <echo message="Using Scala ${starr.version} for STARR."/>
       <artifact:dependencies pathId="starr.compiler.path">
         <artifact:remoteRepository refid="extra-repo"/>
+        <artifact:localRepository refid="local-repo"/>
         <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
         <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
         <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
@@ -1508,9 +1523,11 @@ TODO:
     <mkdir dir="${bc-build.dir}"/>
     <!-- Pull down MIMA -->
     <artifact:dependencies pathId="mima.classpath">
+      <artifact:localRepository refid="local-repo"/>
       <dependency groupId="com.typesafe" artifactId="mima-reporter_2.10" version="0.1.6"/>
     </artifact:dependencies>
     <artifact:dependencies pathId="old.bc.classpath">
+      <artifact:localRepository refid="local-repo"/>
       <dependency groupId="org.scala-lang" artifactId="scala-library" version="${bc-reference-version}"/>
       <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${bc-reference-version}"/>
     </artifact:dependencies>
@@ -1705,6 +1722,8 @@ MAIN DISTRIBUTION PACKAGING
     <property name="local.release.repository"  value="${user.home}/.m2/repository" />
 
     <property name="repository.credentials.id" value="sonatype-nexus" />
+
+    <!-- used in "deploy-remote" (build-ant-macros.xml) -->
     <property name="settings.file" value="${user.home}/.m2/settings.xml" />
 
     <if><contains string="${maven.version.number}" substring="-SNAPSHOT"/><then>
