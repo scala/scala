@@ -146,6 +146,8 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile
 					deps.foreach(addDependency)
 				case Template(parents, self, body) =>
 					traverseTrees(body)
+				case MacroExpansionOf(original) =>
+					this.traverse(original)
 				case other => ()
 			}
 			super.traverse(tree)

@@ -91,4 +91,42 @@ abstract class Compat
 	private[this] def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
 
 	private[this] final implicit def miscCompat(n: AnyRef): MiscCompat = new MiscCompat
+
+	object MacroExpansionOf {
+		def unapply(tree: Tree): Option[Tree] = {
+
+			// MacroExpansionAttachment (MEA) compatibility for 2.8.x and 2.9.x
+			object Compat {
+				class MacroExpansionAttachment(val original: Tree)
+
+				// Trees have no attachments in 2.8.x and 2.9.x
+				implicit def withAttachments(tree: Tree): WithAttachments = new WithAttachments(tree)
+				class WithAttachments(val tree: Tree) {
+					object EmptyAttachments {
+						def all = Set.empty[Any]
+					}
+					val attachments = EmptyAttachments
+				}
+			}
+			import Compat._
+
+			locally {
+				// Wildcard imports are necessary since 2.8.x and 2.9.x don't have `MacroExpansionAttachment` at all
+				import global._ // this is where MEA lives in 2.10.x
+
+				// `original` has been renamed to `expandee` in 2.11.x
+				implicit def withExpandee(att: MacroExpansionAttachment): WithExpandee = new WithExpandee(att)
+				class WithExpandee(att: MacroExpansionAttachment) {
+					def expandee: Tree = att.original
+				}
+
+				locally {
+					import analyzer._ // this is where MEA lives in 2.11.x
+					tree.attachments.all.collect {
+						case att: MacroExpansionAttachment => att.expandee
+					} headOption
+				}
+			}
+		}
+	}
 }
