@@ -31,7 +31,6 @@ supported/exercised targets
 
 DO NOT RELY ON ANY OTHER TARGETS (ok, you're probably ok assuming the ones defined in the first 100 lines of this file)
 
-NOTE: dists/maven/latest/build.xml will soon disappear; call `publish` in this build instead
 -->
 
 <!-- To use Zinc with the ant build:
@@ -1794,7 +1793,7 @@ MAIN DISTRIBUTION PACKAGING
     </jar>
   </target>
 
-  <target name="pack-maven.base" depends="pack-maven.core, osgi.done, docs.done, pack-maven.dist">
+  <target name="pack-maven.done" depends="pack-maven.core, osgi.done, docs.done, pack-maven.dist">
     <!-- TODO modularize compiler
     <mvn-package project="interactive"/>
     <mvn-package project="scaladoc"/>
@@ -1812,30 +1811,9 @@ MAIN DISTRIBUTION PACKAGING
     </then></if>
   </target>
 
-  <!-- TODO: remove this target and delete src/build/maven-deploy.xml -->
-  <target name="pack-maven.done" depends="pack-maven.base">
-    <!-- Create dists/maven/latest alias and copy maven-deploy ant build there. -->
-    <if><isset property="os.win"/><then>
-      <copy todir="${dists.dir}/maven/latest" overwrite="true">
-        <fileset dir="${dist.maven}"/>
-      </copy>
-    </then><else>
-      <symlink link="${dists.dir}/maven/latest"
-               resource="${version.number}"
-               overwrite="true"/>
-    </else></if>
-    <!-- copy build file and its dependencies -->
-    <copy todir="${dist.maven}"
-          file="${lib-ant.dir}/ant-contrib.jar" overwrite="true"/>
-    <copy todir="${dist.maven}"
-          file="${lib-ant.dir}/maven-ant-tasks-2.1.1.jar" overwrite="true"/>
-    <copy tofile="${dist.maven}/build.xml"
-          file="${src.dir}/build/maven/maven-deploy.xml"/>
-    <!-- export properties for use when deploying -->
-    <echoproperties destfile="${dist.maven}/build.properties"/>
-  </target>
-
-  <!-- keep these properties out of ${dist.maven}/build.properties, dumped in pack-maven.done -->
+<!-- ===========================================================================
+                                  MAVEN PUBLISHING
+============================================================================ -->
   <target name="init.maven" depends="init">
     <property name="remote.snapshot.repository" value="https://oss.sonatype.org/content/repositories/snapshots" />
     <property name="remote.release.repository"  value="https://oss.sonatype.org/service/local/staging/deploy/maven2" />
@@ -1855,23 +1833,19 @@ MAIN DISTRIBUTION PACKAGING
     </else></if>
   </target>
 
-
-<!-- ===========================================================================
-                                  MAVEN PUBLISHING
-============================================================================ -->
-  <target name="publish"        depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the maven repo.">
+  <target name="publish"        depends="pack-maven.done, init.maven" description="Publishes unsigned artifacts to the maven repo.">
     <deploy />
     <deploy-pom name="scala-library-all"/>
     <deploy-jar name="scala-dist"/>
   </target>
 
-  <target name="publish.local"  depends="pack-maven.base, init.maven" description="Publishes unsigned artifacts to the local maven repo.">
+  <target name="publish.local"  depends="pack-maven.done, init.maven" description="Publishes unsigned artifacts to the local maven repo.">
     <deploy local="true"/>
     <deploy-pom name="scala-library-all" local="true"/>
     <deploy-jar name="scala-dist" local="true"/>
   </target>
 
-  <target name="publish.signed" depends="pack-maven.base, init.maven" description="Publishes signed artifacts to the remote maven repo.">
+  <target name="publish.signed" depends="pack-maven.done, init.maven" description="Publishes signed artifacts to the remote maven repo.">
     <deploy signed="true"/>
     <deploy-pom name="scala-library-all" signed="true"/>
     <deploy-jar name="scala-dist" signed="true"/>
