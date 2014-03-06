@@ -217,4 +217,9 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
       val q"$_ match { case ..$_ }" = q"{ case _ => }"
     }
   }
+
+  property("deconstruct partial function") = test {
+    val q"{ case ..$cases }" = q"{ case a => b case c => d }"
+    val List(cq"a => b", cq"c => d") = cases
+  }
 }

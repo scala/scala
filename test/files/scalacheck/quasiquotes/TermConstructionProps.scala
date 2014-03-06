@@ -305,4 +305,9 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
       q"$scrutinee match { case ..$cases }"
     }
   }
+
+  property("construct partial function") = test {
+    val cases = List(cq"a => b", cq"c => d")
+    assertEqAst(q"{ case ..$cases }", "{ case a => b case c => d }")
+  }
 }
