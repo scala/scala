@@ -652,6 +652,13 @@ trait Contexts { self: Analyzer =>
       c
     }
 
+    def enclosingNonImportContext: Context = {
+      var c = this
+      while (c != NoContext && c.tree.isInstanceOf[Import])
+        c = c.outer
+      c
+    }
+
     /** Is `sym` accessible as a member of `pre` in current context? */
     def isAccessible(sym: Symbol, pre: Type, superAccess: Boolean = false): Boolean = {
       lastAccessCheckDetails = ""
