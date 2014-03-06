@@ -600,7 +600,7 @@ abstract class Erasure extends AddInterfaces
           if (tree.symbol == NoSymbol) {
             tree
           } else if (name == nme.CONSTRUCTOR) {
-            if (tree.symbol.owner == AnyValClass) tree.symbol = ObjectClass.info.decl(nme.CONSTRUCTOR)
+            if (tree.symbol.owner == AnyValClass) tree.symbol = ObjectClass.primaryConstructor
             tree
           } else if (tree.symbol == Any_asInstanceOf)
             adaptMember(atPos(tree.pos)(Select(qual, Object_asInstanceOf)))

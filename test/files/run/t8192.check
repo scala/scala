@@ -1,10 +1,4 @@
 compile-time
-class File
-primary constructor: NoSymbol
-def <init>(x$1: String): java.io.File => false
-def <init>(x$1: String,x$2: String): java.io.File => false
-def <init>(x$1: java.io.File,x$2: String): java.io.File => false
-def <init>(x$1: java.net.URI): java.io.File => false
 package scala
 primary constructor: NoSymbol
 object List
@@ -21,12 +15,6 @@ primary constructor: def <init>(x: Int): C => true
 def <init>(x: Int): C => true
 def <init>(x: String): C => false
 runtime
-class File
-primary constructor: NoSymbol
-def <init>(x$1: java.io.File,x$2: java.lang.String): java.io.File => false
-def <init>(x$1: java.lang.String): java.io.File => false
-def <init>(x$1: java.lang.String,x$2: java.lang.String): java.io.File => false
-def <init>(x$1: java.net.URI): java.io.File => false
 package scala
 primary constructor: NoSymbol
 object List
