@@ -95,12 +95,6 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     body1 ≈ body && cond1 ≈ cond
   }
 
-  property("unquote trees into alternative") = forAll { (c: Tree, A: Tree, B: Tree) =>
-    q"$c match { case $A | $B => }" ≈
-      Match(c, List(
-        CaseDef(Alternative(List(A, B)), EmptyTree, Literal(Constant(())))))
-  }
-
   def blockInvariant(quote: Tree, trees: List[Tree]) =
     quote ≈ (trees match {
       case Nil => q"{}"
@@ -302,5 +296,13 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
 
   property("SI-8385 b") = test {
     assertEqAst(q"(() => ())()", "(() => ())()")
+  }
+
+  property("match scrutinee may not be empty") = test {
+    assertThrows[IllegalArgumentException] {
+      val scrutinee = q""
+      val cases = List(cq"_ =>")
+      q"$scrutinee match { case ..$cases }"
+    }
   }
 }

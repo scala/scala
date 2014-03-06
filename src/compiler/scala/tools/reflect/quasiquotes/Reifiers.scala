@@ -199,6 +199,10 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticEmptyTypeTree)
       case SyntacticImport(expr, selectors) =>
         reifyBuildCall(nme.SyntacticImport, expr, selectors)
+      case SyntacticPartialFunction(cases) =>
+        reifyBuildCall(nme.SyntacticPartialFunction, cases)
+      case SyntacticMatch(scrutinee, cases) =>
+        reifyBuildCall(nme.SyntacticMatch, scrutinee, cases)
       case Q(tree) if fillListHole.isDefinedAt(tree) =>
         mirrorBuildCall(nme.SyntacticBlock, fillListHole(tree))
       case Q(other) =>
@@ -211,8 +215,6 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticBlock, Nil)
       case Try(block, catches, finalizer) =>
         reifyBuildCall(nme.SyntacticTry, block, catches, finalizer)
-      case Match(selector, cases) =>
-        reifyBuildCall(nme.SyntacticMatch, selector, cases)
       case CaseDef(pat, guard, body) if fillListHole.isDefinedAt(body) =>
         mirrorCall(nme.CaseDef, reify(pat), reify(guard), mirrorBuildCall(nme.SyntacticBlock, fillListHole(body)))
       // parser emits trees with scala package symbol to ensure
