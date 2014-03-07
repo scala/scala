@@ -1,0 +1,7 @@
+Test_3.scala:2: error: macro cannot be expanded, because it was compiled by an incompatible macro engine (internal diagnostic: expected = v7.0 (implemented in Scala 2.11.0-M8), actual = vxxx (implemented in the incompatibleMacroEngine plugin))
+  Macros.foo
+  ^
+Test_3.scala:3: error: macro cannot be expanded, because it was compiled by an incompatible macro engine (internal diagnostic: expected = v7.0 (implemented in Scala 2.11.0-M8), actual = vxxx (implemented in the incompatibleMacroEngine plugin))
+  Macros.foo
+  ^
+two errors found

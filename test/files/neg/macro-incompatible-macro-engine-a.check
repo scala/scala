@@ -1,0 +1,7 @@
+Test_3.scala:2: error: macro cannot be expanded, because it was compiled by an incompatible macro engine
+  Macros.foo
+  ^
+Test_3.scala:3: error: macro cannot be expanded, because it was compiled by an incompatible macro engine
+  Macros.foo
+  ^
+two errors found

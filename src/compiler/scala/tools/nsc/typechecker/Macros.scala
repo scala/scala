@@ -224,7 +224,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       val Apply(_, pickledPayload) = wrapped
       val payload = pickledPayload.map{ case Assign(k, v) => (unpickleAtom(k), unpickleAtom(v)) }.toMap
 
-      def fail(msg: String) = abort(s"bad macro impl binding: $msg")
+      def fail(msg: String) = typer.TyperErrorGen.MacroIncompatibleEngineError(msg)
       def unpickle[T](field: String, clazz: Class[T]): T = {
         def failField(msg: String) = fail(s"$field $msg")
         if (!payload.contains(field)) failField("is supposed to be there")
@@ -237,7 +237,7 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       }
 
       val macroEngine = unpickle("macroEngine", classOf[String])
-      if (self.macroEngine != macroEngine) typer.TyperErrorGen.MacroIncompatibleEngineError(macroEngine)
+      if (self.macroEngine != macroEngine) typer.TyperErrorGen.MacroIncompatibleEngineError(s"expected = ${self.macroEngine}, actual = $macroEngine")
 
       val isBundle = unpickle("isBundle", classOf[Boolean])
       val isBlackbox = unpickle("isBlackbox", classOf[Boolean])

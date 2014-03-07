@@ -725,8 +725,9 @@ trait ContextErrors {
         NormalTypeError(expandee, "too many argument lists for " + fun)
       }
 
-      def MacroIncompatibleEngineError(macroEngine: String) = {
-        val message = s"macro cannot be expanded, because it was compiled by an incompatible macro engine $macroEngine"
+      def MacroIncompatibleEngineError(diagnostic: String) = {
+        var message = s"macro cannot be expanded, because it was compiled by an incompatible macro engine"
+        if (macroDebugLite || macroDebugVerbose) message += s" (internal diagnostic: $diagnostic)"
         issueNormalTypeError(lastTreeToTyper, message)
       }
 

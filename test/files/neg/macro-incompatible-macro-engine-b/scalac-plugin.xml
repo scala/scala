@@ -1,0 +1,4 @@
+<plugin>
+  <name>incompatible-macro-engine</name>
+  <classname>incompatibleMacroEngine.Plugin</classname>
+</plugin>

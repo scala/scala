@@ -1,0 +1,4 @@
+macro-incompatible-macro-engine-c.scala:2: error: macro cannot be expanded, because it was compiled by an incompatible macro engine
+  MacroLibCompiledByScala210x.foo
+  ^
+one error found
