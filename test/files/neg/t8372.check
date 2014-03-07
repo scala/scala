@@ -1,0 +1,7 @@
+t8372.scala:7: error: No ClassTag available for T1
+  def unzip[T1, T2](a: Array[(T1, T2)]) = a.unzip
+                                            ^
+t8372.scala:9: error: No ClassTag available for T1
+  def unzip3[T1, T2, T3](a: Array[(T1, T2, T3)]): (Array[T1], Array[T2], Array[T3]) = a.unzip3
+                                                                                        ^
+two errors found
