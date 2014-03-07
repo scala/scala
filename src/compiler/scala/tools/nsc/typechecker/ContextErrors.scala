@@ -725,11 +725,17 @@ trait ContextErrors {
         NormalTypeError(expandee, "too many argument lists for " + fun)
       }
 
-      def MacroIncompatibleEngineError(diagnostic: String) = {
-        var message = s"macro cannot be expanded, because it was compiled by an incompatible macro engine"
-        if (macroDebugLite || macroDebugVerbose) message += s" (internal diagnostic: $diagnostic)"
+      private def MacroIncompatibleEngineError(friendlyMessage: String, internalMessage: String) = {
+        def debugDiagnostic = s"(internal diagnostic: $internalMessage)"
+        val message = if (macroDebugLite || macroDebugVerbose) s"$friendlyMessage $debugDiagnostic" else friendlyMessage
         issueNormalTypeError(lastTreeToTyper, message)
       }
+
+      def MacroCantExpand210xMacrosError(internalMessage: String) =
+        MacroIncompatibleEngineError("can't expand macros compiled by previous versions of Scala", internalMessage)
+
+      def MacroCantExpandIncompatibleMacrosError(internalMessage: String) =
+        MacroIncompatibleEngineError("macro cannot be expanded, because it was compiled by an incompatible macro engine", internalMessage)
 
       case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
 
