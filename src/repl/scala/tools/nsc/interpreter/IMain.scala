@@ -306,7 +306,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
      */
     override protected def findAbstractFile(name: String): AbstractFile =
       super.findAbstractFile(name) match {
-        case null => translatePath(name) map (super.findAbstractFile(_)) orNull
+        case null if _initializeComplete => translatePath(name) map (super.findAbstractFile(_)) orNull
         case file => file
       }
   }
