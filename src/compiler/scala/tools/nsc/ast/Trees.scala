@@ -240,6 +240,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
           registerLocal(sym.moduleClass)
           registerLocal(sym.companionClass)
           registerLocal(sym.companionModule)
+          registerLocal(sym.deSkolemize)
           sym match {
             case sym: TermSymbol => registerLocal(sym.referenced)
             case _ => ;
@@ -309,7 +310,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
                 // if we move these trees into lexical contexts different from their original locations.
                 if (dupl.hasSymbol) {
                   val sym = dupl.symbol
-                  val vetoScope = !brutally && !(locals contains sym)
+                  val vetoScope = !brutally && !(locals contains sym) && !(locals contains sym.deSkolemize)
                   val vetoThis = dupl.isInstanceOf[This] && sym.isPackageClass
                   if (!(vetoScope || vetoThis)) dupl.symbol = NoSymbol
                 }
