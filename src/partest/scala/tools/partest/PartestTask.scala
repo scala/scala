@@ -9,7 +9,7 @@
 package scala.tools
 package partest
 
-import scala.util.Properties.setProp
+import scala.tools.nsc.Properties.propOrFalse
 import scala.tools.ant.sabbus.CompilationPathProperty
 import java.lang.reflect.Method
 import org.apache.tools.ant.Task
@@ -112,7 +112,7 @@ class PartestTask extends Task with CompilationPathProperty with ScalaTask {
   }
 
   override def execute() {
-    if (debug || sys.props.contains("partest.debug")) {
+    if (debug || propOrFalse("partest.debug")) {
       NestUI.setDebug()
     }
 

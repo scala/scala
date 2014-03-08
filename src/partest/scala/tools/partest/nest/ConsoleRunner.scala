@@ -8,7 +8,7 @@ package partest
 package nest
 
 import utils.Properties._
-import scala.tools.nsc.Properties.{ versionMsg, setProp }
+import scala.tools.nsc.Properties.{ versionMsg, propOrFalse, setProp }
 import scala.collection.{ mutable, immutable }
 import TestKinds._
 import scala.reflect.internal.util.Collections.distinctBy
@@ -93,9 +93,9 @@ class ConsoleRunner(argstr: String) extends {
   }
 
   def run(): Unit = {
-    if (optDebug) NestUI.setDebug()
-    if (optVerbose) NestUI.setVerbose()
-    if (optTerse) NestUI.setTerse()
+    if (optDebug || propOrFalse("partest.debug")) NestUI.setDebug()
+    if (optVerbose)  NestUI.setVerbose()
+    if (optTerse)    NestUI.setTerse()
     if (optShowDiff) NestUI.setDiffOnFail()
 
     // Early return on no args, version, or invalid args
