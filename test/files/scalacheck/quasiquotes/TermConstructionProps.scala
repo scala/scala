@@ -295,4 +295,12 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     val q"$a = $b = $c = $d = $e = $f = $g = $h = $k = $l" = q"a = b = c = d = e = f = g = h = k = l"
     assert(a ≈ q"a" && b ≈ q"b" && c ≈ q"c" && d ≈ q"d" && e ≈ q"e" && g ≈ q"g" && h ≈ q"h" && k ≈ q"k" && l ≈ q"l")
   }
+
+  property("SI-8385 a") = test {
+    assertEqAst(q"(foo.x = 1)(2)", "(foo.x = 1)(2)")
+  }
+
+  property("SI-8385 b") = test {
+    assertEqAst(q"(() => ())()", "(() => ())()")
+  }
 }
