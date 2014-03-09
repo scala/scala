@@ -51,7 +51,7 @@ abstract class Quasiquotes extends Parsers
     def sreified =
       reified
         .toString
-        .replace("scala.reflect.runtime.`package`.universe.build.", "")
+        .replace("scala.reflect.runtime.`package`.universe.internal.reificationSupport.", "")
         .replace("scala.reflect.runtime.`package`.universe.", "")
         .replace("scala.collection.immutable.", "")
     debug(s"reified tree:\n$sreified\n")
