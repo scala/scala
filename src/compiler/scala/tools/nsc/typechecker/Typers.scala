@@ -3946,7 +3946,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        *  - simplest solution: have two method calls
        *
        */
-      def mkInvoke(cxTree: Tree, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
+      def mkInvoke(context: Context, tree: Tree, qual: Tree, name: Name): Option[Tree] = {
+        val cxTree = context.enclosingNonImportContext.tree // SI-8364
         debuglog(s"dyna.mkInvoke($cxTree, $tree, $qual, $name)")
         val treeInfo.Applied(treeSelection, _, _) = tree
         def isDesugaredApply = {
@@ -4608,7 +4609,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         t
       }
       def typedSelectInternal(tree: Tree, qual: Tree, name: Name): Tree = {
-        def asDynamicCall = dyna.mkInvoke(context.tree, tree, qual, name) map { t =>
+        def asDynamicCall = dyna.mkInvoke(context, tree, qual, name) map { t =>
           dyna.wrapErrors(t, (_.typed1(t, mode, pt)))
         }
 
