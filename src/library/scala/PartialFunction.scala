@@ -94,7 +94,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    *  Note that expression `pf.applyOrElse(x, default)` is equivalent to
    *  {{{ if(pf isDefinedAt x) pf(x) else default(x) }}}
    *  except that `applyOrElse` method can be implemented more efficiently.
-   *  For all partial function literals compiler generates `applyOrElse` implementation which
+   *  For all partial function literals the compiler generates an `applyOrElse` implementation which
    *  avoids double evaluation of pattern matchers and guards.
    *  This makes `applyOrElse` the basis for the efficient implementation for many operations and scenarios, such as:
    *
