@@ -1,7 +1,7 @@
 # Basic Declarations and Definitions
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Dcl         ::=  ‘val’ ValDcl
               |  ‘var’ VarDcl
               |  ‘def’ FunDcl
@@ -12,7 +12,7 @@ Def         ::=  PatVarDef
               |  ‘def’ FunDef
               |  ‘type’ {nl} TypeDef
               |  TmplDef
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A _declaration_ introduces names and assigns them types. It can
 form part of a [class definition](#templates) or of a
@@ -37,13 +37,13 @@ between and including $s_i$ and $s_j$,
 
 ## Value Declarations and Definitions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Dcl          ::=  ‘val’ ValDcl
 ValDcl       ::=  ids ‘:’ Type
 PatVarDef    ::=  ‘val’ PatDef 
 PatDef       ::=  Pattern2 {‘,’ Pattern2} [‘:’ Type] ‘=’ Expr
 ids          ::=  id {‘,’ id}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A value declaration `val $x$: $T$` introduces $x$ as a name of a value of
 type $T$.  
@@ -63,9 +63,9 @@ its right hand side $e$ the first time the value is accessed.
 
 A _constant value definition_ is of the form
 
-~~~~~~~~~~~~~~~~ 
+``` 
 final val x = e
-~~~~~~~~~~~~~~~~
+```
 
 where `e` is a [constant expression](#constant-expressions). 
 The `final` modifier must be
@@ -80,45 +80,45 @@ value definition `val $p$ = $e$` is expanded as follows:
 
 1. If the pattern $p$ has bound variables $x_1 , \ldots , x_n$, where $n > 1$:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 val $\$ x$ = $e$ match {case $p$ => ($x_1 , \ldots , x_n$)}
 val $x_1$ = $\$ x$._1
 $\ldots$
 val $x_n$ = $\$ x$._n  .
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Here, $\$ x$ is a fresh name.  
 
 2. If $p$ has a unique bound variable $x$:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 val $x$ = $e$ match { case $p$ => $x$ }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 3. If $p$ has no bound variables:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 $e$ match { case $p$ => ()}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 (@) The following are examples of value definitions
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val pi = 3.1415 
     val pi: Double = 3.1415   // equivalent to first definition
     val Some(x) = f()         // a pattern definition
     val x :: xs = mylist      // an infix pattern definition
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The last two definitions have the following expansions.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val x = f() match { case Some(x) => x }
 
     val x$\$$ = mylist match { case x :: xs => (x, xs) }
     val x = x$\$$._1 
     val xs = x$\$$._2 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 The name of any declared or defined value may not end in `_=`.
@@ -133,22 +133,22 @@ sequence of value definitions `val $p_1: T$ = $e$; ...; val $p_n: T$ = $e$`.
 
 ## Variable Declarations and Definitions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Dcl            ::=  ‘var’ VarDcl
 PatVarDef      ::=  ‘var’ VarDef
 VarDcl         ::=  ids ‘:’ Type
 VarDef         ::=  PatDef
                  |  ids ‘:’ Type ‘=’ ‘_’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A variable declaration `var $x$: $T$` is equivalent to declarations
 of a _getter function_ $x$ and a _setter function_
 `$x$_=`, defined as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def $x$: $T$ 
 def $x$_= ($y$: $T$): Unit
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An implementation of a class containing variable declarations
 may define these variables using variable definitions, or it may
@@ -201,7 +201,7 @@ a template member.
     values to be assigned to these fields. The user code, on the other
     hand, accesses these fields just like normal variables.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class TimeOfDayVar {
       private var h: Int = 0 
       private var m: Int = 0 
@@ -222,7 +222,7 @@ a template member.
     val d = new TimeOfDayVar 
     d.hours = 8; d.minutes = 30; d.seconds = 0 
     d.hours = 25                  // throws a DateError exception
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 A variable declaration `var $x_1 , \ldots , x_n$: $T$` is a shorthand for the 
@@ -237,12 +237,12 @@ the sequence of variable definitions
 
 <!-- TODO: Higher-kinded tdecls should have a separate section -->
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Dcl        ::=  ‘type’ {nl} TypeDcl
 TypeDcl    ::=  id [TypeParamClause] [‘>:’ Type] [‘<:’ Type]
 Def        ::=  type {nl} TypeDef
 TypeDef    ::=  id [TypeParamClause] ‘=’ Type
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A _type declaration_ `type $t$[$\mathit{tps}\,$] >: $L$ <: $U$` declares
 $t$ to be an abstract type with lower bound type $L$ and upper bound
@@ -285,16 +285,16 @@ an abstract type is directly or indirectly its own upper or lower bound.
 
 (@) The following are legal type declarations and definitions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     type IntList = List[Integer]
     type T <: Comparable[T]
     type Two[A] = Tuple2[A, A]
     type MyCollection[+X] <: Iterable[X]
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The following are illegal:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     type Abs = Comparable[Abs]      // recursive type alias
 
     type S <: T                     // S, T are bounded by themselves.
@@ -304,7 +304,7 @@ an abstract type is directly or indirectly its own upper or lower bound.
                                     // T is a type, not a value
     type MyCollection <: Iterable   // Type constructor members must explicitly 
                                     // state their type parameters.
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 If a type alias `type $t$[$\mathit{tps}\,$] = $S$` refers to a class type
 $S$, the name $t$ can also be used as a constructor for
@@ -313,30 +313,30 @@ objects of type $S$.
 (@) The `Predef` object contains a definition which establishes `Pair` 
     as an alias of the parameterized class `Tuple2`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     type Pair[+A, +B] = Tuple2[A, B] 
     object Pair {
       def apply[A, B](x: A, y: B) = Tuple2(x, y)
       def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     As a consequence, for any two types $S$ and $T$, the type
     `Pair[$S$, $T\,$]` is equivalent to the type `Tuple2[$S$, $T\,$]`.
     `Pair` can also be used as a constructor instead of `Tuple2`, as in:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val x: Pair[Int, String] = new Pair(1, "abc")
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ## Type Parameters
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 TypeParamClause  ::= ‘[’ VariantTypeParam {‘,’ VariantTypeParam} ‘]’
 VariantTypeParam ::= {Annotation} [‘+’ | ‘-’] TypeParam
 TypeParam        ::= (id | ‘_’) [TypeParamClause] [‘>:’ Type] [‘<:’ Type] [‘:’ Type]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Type parameters appear in type definitions, class definitions, and
 function definitions.  In this section we consider only type parameter
@@ -371,7 +371,7 @@ The above scoping restrictions are generalized to the case of nested type parame
 
 (@) Here are some well-formed type parameter clauses:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     [S, T]
     [@specialized T, U]
     [Ex <: Throwable]
@@ -381,16 +381,16 @@ The above scoping restrictions are generalized to the case of nested type parame
     [M[_], N[_]] // equivalent to previous clause
     [M[X <: Bound[X]], Bound[_]]
     [M[+X] <: Iterable[X]]
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The following type parameter clauses are illegal:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     [A >: A]                  // illegal, `A' has itself as bound
     [A <: B, B <: C, C <: A]  // illegal, `A' has itself as bound
     [A, B, C >: A <: B]       // illegal lower bound `A' of `C' does
                               // not conform to upper bound `B'.
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ## Variance Annotations
@@ -444,67 +444,67 @@ appear anywhere without restricting its legal variance annotations.
 
 (@) The following variance annotation is legal. 
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class P[+A, +B] {
       def fst: A; def snd: B
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     With this variance annotation, type instances
     of $P$ subtype covariantly with respect to their arguments. 
     For instance, 
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     P[IOException, String] <: P[Throwable, AnyRef]
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     If the members of $P$ are mutable variables, 
     the same variance annotation becomes illegal.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class Q[+A, +B](x: A, y: B) { 
       var fst: A = x           // **** error: illegal variance:
       var snd: B = y           // `A', `B' occur in invariant position.
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     If the mutable variables are object-private, the class definition
     becomes legal again:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class R[+A, +B](x: A, y: B) { 
       private[this] var fst: A = x        // OK
       private[this] var snd: B = y        // OK
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) The following variance annotation is illegal, since $a$ appears
     in contravariant position in the parameter of `append`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class Sequence[+A] {
       def append(x: Sequence[A]): Sequence[A]  
                       // **** error: illegal variance: 
                       // `A' occurs in contravariant position.
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The problem can be avoided by generalizing the type of `append`
     by means of a lower bound:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class Sequence[+A] {
       def append[B >: A](x: Sequence[B]): Sequence[B] 
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) Here is a case where a contravariant type parameter is useful.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class OutputChannel[-A] {
       def write(x: A): Unit
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     With that annotation, we have that
     `OutputChannel[AnyRef]` conforms to `OutputChannel[String]`.  
@@ -515,7 +515,7 @@ appear anywhere without restricting its legal variance annotations.
 
 ## Function Declarations and Definitions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Dcl                ::=  ‘def’ FunDcl
 FunDcl             ::=  FunSig ‘:’ Type
 Def                ::=  ‘def’ FunDef
@@ -529,7 +529,7 @@ Param              ::=  {Annotation} id [‘:’ ParamType] [‘=’ Expr]
 ParamType          ::=  Type 
                      |  ‘=>’ Type 
                      |  Type ‘*’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A function declaration has the form `def $f\,\mathit{psig}$: $T$`, where
 $f$ is the function's name, $\mathit{psig}$ is its parameter
@@ -581,27 +581,27 @@ be pairwise distinct.
 
 (@) In the method
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def compare[T](a: T = 0)(b: T = a) = (a == b)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     the default expression `0` is type-checked with an undefined expected
     type. When applying `compare()`, the default value `0` is inserted
     and `T` is instantiated to `Int`. The methods computing the default
     arguments have the form:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def compare$\$$default$\$$1[T]: Int = 0
     def compare$\$$default$\$$2[T](a: T): T = a
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ### By-Name Parameters
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 ParamType          ::=  ‘=>’ Type
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The type of a value parameter may be prefixed by `=>`, e.g.\
 `$x$: => $T$`. The type of such a parameter is then the
@@ -618,9 +618,9 @@ by-name modifier is also disallowed for
 
 (@) The declaration
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def whileLoop (cond: => Boolean) (stat: => Unit): Unit
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     indicates that both parameters of `whileLoop` are evaluated using
     call-by-name.
@@ -628,9 +628,9 @@ by-name modifier is also disallowed for
 
 ### Repeated Parameters
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 ParamType          ::=  Type ‘*’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The last value parameter of a parameter section may be suffixed by
 “*”, e.g. `(..., $x$:$T$*)`.  The type of such a
@@ -656,49 +656,49 @@ with a repeated parameter.
 (@) The following method definition computes the sum of the squares of a 
     variable number of integer arguments.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def sum(args: Int*) = {
       var result = 0
       for (arg <- args) result += arg * arg
       result
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The following applications of this method yield `0`, `1`,
     `6`, in that order.
 
-    ~~~~~~~~~~~~~~~~~ 
+    ``` 
     sum()
     sum(1)
     sum(1, 2, 3)
-    ~~~~~~~~~~~~~~~~~
+    ```
 
     Furthermore, assume the definition:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val xs = List(1, 2, 3)
-    ~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The following application of method `sum` is ill-formed:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     sum(xs)       // ***** error: expected: Int, found: List[Int]
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     By contrast, the following application is well formed and yields again
     the result `6`:
 
-    ~~~~~~~~~~~~ 
+    ``` 
     sum(xs: _*) 
-    ~~~~~~~~~~~~
+    ```
 
 
 ### Procedures
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 FunDcl   ::=  FunSig
 FunDef   ::=  FunSig [nl] ‘{’ Block ‘}’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Special syntax exists for procedures, i.e.\ functions that return the
 `Unit` value `()`. 
@@ -714,25 +714,25 @@ E.g., `def $f$($\mathit{ps}$) {$\mathit{stats}$}` is equivalent to
 
 (@) Here is a declaration and a definition of a procedure named `write`: 
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     trait Writer { 
       def write(str: String)
     }
     object Terminal extends Writer {
       def write(str: String) { System.out.println(str) }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The code above is implicitly completed to the following code:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     trait Writer { 
       def write(str: String): Unit
     }
     object Terminal extends Writer {
       def write(str: String): Unit = { System.out.println(str) }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ### Method Return Type Inference
@@ -748,14 +748,14 @@ as $R$ conforms to $R'$.
 
 (@) Assume the following definitions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     trait I {
       def factorial(x: Int): Int
     }
     class C extends I {
       def factorial(x: Int) = if (x == 0) 1 else x * factorial(x - 1)
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Here, it is OK to leave out the result type of `factorial`
     in `C`, even though the method is recursive.
@@ -763,13 +763,13 @@ as $R$ conforms to $R'$.
 
 ## Import Clauses
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Import          ::= ‘import’ ImportExpr {‘,’ ImportExpr}
 ImportExpr      ::= StableId ‘.’ (id | ‘_’ | ImportSelectors)
 ImportSelectors ::= ‘{’ {ImportSelector ‘,’} 
                     (ImportSelector | ‘_’) ‘}’
 ImportSelector  ::= id [‘=>’ id | ‘=>’ ‘_’]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An import clause has the form `import $p$.$I$` where $p$ is a 
 [stable identifier](#paths) and $I$ is an import expression.
@@ -779,9 +779,9 @@ _importable_ if it is not [object-private](#modifiers).
 The most general form of an import expression is a list of {\em import
 selectors}
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 { $x_1$ => $y_1 , \ldots , x_n$ => $y_n$, _ } 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 for $n \geq 0$, where the final wildcard ‘_’ may be absent.  It
 makes available each importable member `$p$.$x_i$` under the unqualified name
@@ -829,21 +829,21 @@ sequence of import clauses
 
 (@) Consider the object definition:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     object M { 
       def z = 0, one = 1  
       def add(x: Int, y: Int): Int = x + y 
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     Then the block
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     { import M.{one, z => zero, _}; add(zero, one) }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     is equivalent to the block 
 
-    ~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     { M.add(M.z, M.one) } 
-    ~~~~~~~~~~~~~~~~~~~~~~
+    ```
 

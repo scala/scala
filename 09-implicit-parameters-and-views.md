@@ -2,10 +2,10 @@
 
 ## The Implicit Modifier
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 LocalModifier  ::= ‘implicit’
 ParamClauses   ::= {ParamClause} [nl] ‘(’ ‘implicit’ Params ‘)’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Template members and parameters labeled with an `implicit`
 modifier can be passed to [implicit parameters](#implicit-parameters)
@@ -17,7 +17,7 @@ type members, as well as for [top-level objects](#packagings).
     two concrete implementations, `StringMonoid` and
     `IntMonoid`. The two implementations are marked implicit.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class Monoid[A] extends SemiGroup[A] {
       def unit: A
       def add(x: A, y: A): A
@@ -32,7 +32,7 @@ type members, as well as for [top-level objects](#packagings).
         def unit: Int = 0
       }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ## Implicit Parameters
@@ -89,11 +89,11 @@ be found the default argument is used.
     method which computes the sum of a list of elements using the
     monoid's `add` and `unit` operations.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def sum[A](xs: List[A])(implicit m: Monoid[A]): A = 
       if (xs.isEmpty) m.unit
       else m.add(xs.head, sum(xs.tail))
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The monoid in question is marked as an implicit parameter, and can therefore
     be inferred based on the type of the list.
@@ -114,57 +114,57 @@ is the following method from module `scala.List`, which injects
 lists into the `scala.Ordered` class, provided the element
 type of the list is also convertible to this type.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 implicit def list2ordered[A](x: List[A])
   (implicit elem2ordered: A => Ordered[A]): Ordered[List[A]] = 
   ...
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Assume in addition a method
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 implicit def int2ordered(x: Int): Ordered[Int]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 that injects integers into the `Ordered` class.  We can now
 define a `sort` method over ordered lists:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def sort[A](xs: List[A])(implicit a2ordered: A => Ordered[A]) = ...
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 We can apply `sort` to a list of lists of integers 
 `yss: List[List[Int]]` 
 as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 sort(yss)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The call above will be completed by passing two nested implicit arguments:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 sort(yss)(xs: List[Int] => list2ordered[Int](xs)(int2ordered)) .
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The possibility of passing implicit arguments to implicit arguments
 raises the possibility of an infinite recursion.  For instance, one
 might try to define the following method, which injects _every_ type into the 
 `Ordered` class:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 implicit def magic[A](x: A)(implicit a2ordered: A => Ordered[A]): Ordered[A] = 
   a2ordered(x)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Now, if one tried to apply
 `sort` to an argument `arg` of a type that did not have
 another injection into the `Ordered` class, one would obtain an infinite
 expansion:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 sort(arg)(x => magic(x)(x => magic(x)(x => ... )))
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 To prevent such infinite expansions, the compiler keeps track of 
 a stack of “open implicit types” for which implicit arguments are currently being
@@ -214,11 +214,11 @@ the type:
     the sequence of types for 
     which implicit arguments are searched is 
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     List[List[Int]] => Ordered[List[List[Int]]], 
     List[Int] => Ordered[List[Int]]
     Int => Ordered[Int]
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     All types share the common type constructor `scala.Function1`, 
     but the complexity of the each new type is lower than the complexity of the previous types. 
@@ -228,18 +228,18 @@ the type:
 (@) Let `ys` be a list of some type which cannot be converted
     to `Ordered`. For instance:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val ys = List(new IllegalArgumentException, new ClassCastException, new Error)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Assume that the definition of `magic` above is in scope. Then the sequence
     of types for which implicit arguments are searched is 
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     Throwable => Ordered[Throwable],
     Throwable => Ordered[Throwable],
     ...
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Since the second type in the sequence is equal to the first, the compiler
     will issue an error signalling a divergent implicit expansion.
@@ -288,26 +288,26 @@ or the call-by-name category).
 
 (@impl-ordered) Class `scala.Ordered[A]` contains a method
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
       def <= [B >: A](that: B)(implicit b2ordered: B => Ordered[B]): Boolean .
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Assume two lists `xs` and `ys` of type `List[Int]`
     and assume that the `list2ordered` and `int2ordered`
     methods defined [here](#implicit-parameters) are in scope.
     Then the operation
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
       xs <= ys
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     is legal, and is expanded to:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
       list2ordered(xs)(int2ordered).<=
         (ys)
         (xs => list2ordered(xs)(int2ordered))
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The first application of `list2ordered` converts the list
     `xs` to an instance of class `Ordered`, whereas the second 
@@ -317,10 +317,10 @@ or the call-by-name category).
 
 ## Context Bounds and View Bounds
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   TypeParam ::= (id | ‘_’) [TypeParamClause] [‘>:’ Type] [‘<:’ Type] 
                 {‘<%’ Type} {‘:’ Type}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A type parameter $A$ of a method or non-trait class may have one or more view
 bounds `$A$ <% $T$`. In this case the type parameter may be
@@ -337,16 +337,16 @@ A method or class containing type parameters with view or context bounds is trea
 equivalent to a method with implicit parameters. Consider first the case of a
 single parameter with view and/or context bounds such as:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def $f$[$A$ <% $T_1$ ... <% $T_m$ : $U_1$ : $U_n$]($\mathit{ps}$): $R$ = ...
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Then the method definition above is expanded to
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def $f$[$A$]($\mathit{ps}$)(implicit $v_1$: $A$ => $T_1$, ..., $v_m$: $A$ => $T_m$,
                        $w_1$: $U_1$[$A$], ..., $w_n$: $U_n$[$A$]): $R$ = ...
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 where the $v_i$ and $w_j$ are fresh names for the newly introduced implicit parameters. These
 parameters are called _evidence parameters_.
@@ -363,9 +363,9 @@ additional implicit parameters.
 (@) The `<=` method mentioned in \ref{ex:impl-ordered} can be declared
     more concisely as follows:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
       def <= [B >: A <% Ordered[B]](that: B): Boolean
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 ## Manifests
 
@@ -376,12 +376,12 @@ standard library contains a hierarchy of four manifest classes,
 with `OptManifest`
 at the top. Their signatures follow the outline below.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 trait OptManifest[+T]
 object NoManifest extends OptManifest[Nothing]
 trait ClassManifest[T] extends OptManifest[T]
 trait Manifest[T] extends ClassManifest[T]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 If an implicit parameter of a method or constructor is of a subtype $M[T]$ of
 class `OptManifest[T]`, _a manifest is determined for $M[S]$_,

@@ -133,11 +133,11 @@ Code blocks using the listings package of form
 
 can be replaced with pandoc code blocks of form
 
-    ~~~~~~~~~~~~~~{#ref-identifier .scala .numberLines}
+    ```{#ref-identifier .scala .numberLines}
     val x = 1
     val y = x + 1
     x + y
-    ~~~~~~~~~~~~~~
+    ```
 
 Where `#ref-identifier` is an identifier that can be used for producing links
 to the code block, while `.scala` and `.numberLines` are classes that get 

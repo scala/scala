@@ -2,7 +2,7 @@
 
 ## Patterns
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   Pattern         ::=  Pattern1 { ‘|’ Pattern1 }
   Pattern1        ::=  varid ‘:’ TypePat
                     |  ‘_’ ‘:’ TypePat
@@ -20,7 +20,7 @@
                     |  ‘(’ [Patterns] ‘)’
                     |  XmlPattern
   Patterns        ::=  Pattern {‘,’ Patterns}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A pattern is built from constants, constructors, variables and type
 tests. Pattern matching tests whether a given value (or sequence of values)
@@ -49,10 +49,10 @@ than once in a pattern.
 
 ### Variable Patterns
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   SimplePattern   ::=  `_'
                     |  varid
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A variable pattern $x$ is a simple identifier which starts with a
 lower case letter.  It matches any value, and binds the variable name
@@ -63,10 +63,10 @@ which is treated as if it was a fresh variable on each occurrence.
 ### Typed Patterns
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   Pattern1        ::=  varid `:' TypePat
                     |  `_' `:' TypePat
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A typed pattern $x: T$ consists of a pattern variable $x$ and a
 type pattern $T$.  The type of $x$ is the type pattern $T$, where 
@@ -77,9 +77,9 @@ that value.
 
 ### Pattern Binders
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   Pattern2        ::=  varid `@' Pattern3
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A pattern binder `$x$@$p$` consists of a pattern variable $x$ and a 
 pattern $p$. The type of the variable $x$ is the static type $T$ of the pattern $p$.
@@ -89,9 +89,9 @@ and it binds the variable name to that value.
 
 ### Literal Patterns
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   SimplePattern   ::=  Literal
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A literal pattern $L$ matches any value that is equal (in terms of
 $==$) to the literal $L$. The type of $L$ must conform to the
@@ -99,9 +99,9 @@ expected type of the pattern.
 
 ### Stable Identifier Patterns
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   SimplePattern   ::=  StableId
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A stable identifier pattern is a [stable identifier](#paths) $r$. 
 The type of $r$ must conform to the expected
@@ -115,21 +115,21 @@ backquotes; then it is treated as a stable identifier pattern.
 
 (@) Consider the following function definition:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def f(x: Int, y: Int) = x match {
       case y => ...
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Here, `y` is a variable pattern, which matches any value.
     If we wanted to turn the pattern into a stable identifier pattern, this
     can be achieved as follows:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def f(x: Int, y: Int) = x match {
       case `y` => ...
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Now, the pattern matches the `y` parameter of the enclosing function `f`.
     That is, the match succeeds only if the `x` argument and the `y`
@@ -137,9 +137,9 @@ backquotes; then it is treated as a stable identifier pattern.
 
 ### Constructor Patterns
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   SimplePattern   ::=  StableId `(' [Patterns] `)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A constructor pattern is of the form $c(p_1 , \ldots , p_n)$ where $n
 \geq 0$. It consists of a stable identifier $c$, followed by element
@@ -163,9 +163,9 @@ repeated parameter. This is further discussed [here](#pattern-sequences).
 
 ### Tuple Patterns
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   SimplePattern   ::=  `(' [Patterns] `)'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A tuple pattern `($p_1 , \ldots , p_n$)` is an alias
 for the constructor pattern `scala.Tuple$n$($p_1 , \ldots , p_n$)`, 
@@ -174,9 +174,9 @@ where $n \geq 2$. The empty tuple
 
 ### Extractor Patterns
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   SimplePattern   ::=  StableId `(' [Patterns] `)'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An extractor pattern $x(p_1 , \ldots , p_n)$ where $n \geq 0$ is of
 the same syntactic form as a constructor pattern. However, instead of
@@ -214,29 +214,29 @@ This case is further discussed [here](#pattern-seqs).
 (@) The `Predef` object contains a definition of an
     extractor object `Pair`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     object Pair {
       def apply[A, B](x: A, y: B) = Tuple2(x, y)
       def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     This means that the name `Pair` can be used in place of `Tuple2` for tuple 
     formation as well as for deconstruction of tuples in patterns.
     Hence, the following is possible:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val x = (1, 2)
     val y = x match {
       case Pair(i, s) => Pair(s + i, i * i)
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 ### Pattern Sequences
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   SimplePattern ::= StableId `(' [Patterns `,'] [varid `@'] `_' `*' `)'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A pattern sequence $p_1 , \ldots , p_n$ appears in two
 contexts. First, in a constructor pattern
@@ -262,9 +262,9 @@ p_n$.
 
 ### Infix Operation Patterns
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   Pattern3  ::=  SimplePattern {id [nl] SimplePattern}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An infix operation pattern $p;\mathit{op};q$ is a shorthand for the
 constructor or extractor pattern $\mathit{op}(p, q)$.  The precedence and
@@ -277,9 +277,9 @@ shorthand for the constructor or extractor pattern $\mathit{op}(p, q_1
 
 ### Pattern Alternatives
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   Pattern   ::=  Pattern1 { `|' Pattern1 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A pattern alternative `$p_1$ | $\ldots$ | $p_n$`
 consists of a number of alternative patterns $p_i$. All alternative
@@ -320,9 +320,9 @@ A pattern $p$ is _irrefutable_ for a type $T$, if one of the following applies:
 
 ## Type Patterns
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   TypePat           ::=  Type
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Type patterns consist of types, type variables, and wildcards. 
 A type pattern $T$ is of one of the following  forms:
@@ -457,12 +457,12 @@ are inferred in the same way as for the typed pattern
 
 (@) Consider the program fragment:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val x: Any
     x match {
       case y: List[a] => ...
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Here, the type pattern `List[a]` is matched against the
     expected type `Any`. The pattern binds the type variable
@@ -473,9 +473,9 @@ are inferred in the same way as for the typed pattern
 
     On the other hand, if `x` is declared as
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val x: List[List[String]],
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     this generates the constraint 
     `List[a] <: List[List[String]]`, which simplifies to 
@@ -485,12 +485,12 @@ are inferred in the same way as for the typed pattern
 
 (@) Consider the program fragment: 
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val x: Any
     x match {
       case y: List[String] => ...
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Scala does not maintain information about type arguments at run-time,
     so there is no way to check that `x` is a list of strings.
@@ -506,13 +506,13 @@ are inferred in the same way as for the typed pattern
 
 (@) Consider the program fragment
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class Term[A]
     class Number(val n: Int) extends Term[Int]
     def f[B](t: Term[B]): B = t match {
       case y: Number => y.n
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The expected type of the pattern `y: Number` is
     `Term[B]`.  The type `Number` does not conform to
@@ -529,17 +529,17 @@ are inferred in the same way as for the typed pattern
 
 ## Pattern Matching Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   Expr            ::=  PostfixExpr `match' `{' CaseClauses `}'
   CaseClauses     ::=  CaseClause {CaseClause}
   CaseClause      ::=  `case' Pattern [Guard] `=>' Block
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A pattern matching expression
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 e match { case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 consists of a selector expression $e$ and a number $n > 0$ of
 cases. Each case consists of a (possibly guarded) pattern $p_i$ and a
@@ -607,7 +607,7 @@ possibility of a `MatchError` being raised at run-time.
 
 (@eval) Consider the following definitions of arithmetic terms:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class Term[T]
     case class Lit(x: Int) extends Term[Int]
     case class Succ(t: Term[Int]) extends Term[Int]
@@ -615,7 +615,7 @@ possibility of a `MatchError` being raised at run-time.
     case class If[T](c: Term[Boolean],
                      t1: Term[T],
                      t2: Term[T]) extends Term[T]
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     There are terms to represent numeric literals, incrementation, a zero
     test, and a conditional. Every term carries as a type parameter the
@@ -623,14 +623,14 @@ possibility of a `MatchError` being raised at run-time.
 
     A type-safe evaluator for such terms can be written as follows.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def eval[T](t: Term[T]): T = t match {
       case Lit(n)        => n
       case Succ(u)       => eval(u) + 1
       case IsZero(u)     => eval(u) == 0
       case If(c, u1, u2) => eval(if (eval(c)) u1 else u2)
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Note that the evaluator makes crucial use of the fact that type
     parameters of enclosing methods can acquire new bounds through pattern
@@ -646,15 +646,15 @@ possibility of a `MatchError` being raised at run-time.
 
 ## Pattern Matching Anonymous Functions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   BlockExpr ::= `{' CaseClauses `}'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An anonymous function can be defined by a sequence of cases 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 { case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 which appear as an expression without a prior `match`.  The
 expected type of such an expression must in part be defined. It must
@@ -666,29 +666,29 @@ $R$ may be undetermined.
 If the expected type is `scala.Function$k$[$S_1 , \ldots , S_k$, $R$]`,
 the expression is taken to be equivalent to the anonymous function:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 ($x_1: S_1 , \ldots , x_k: S_k$) => ($x_1 , \ldots , x_k$) match { 
   case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ 
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Here, each $x_i$ is a fresh name.
 As was shown [here](#anonymous-functions), this anonymous function is in turn
 equivalent to the following instance creation expression, where
  $T$ is the weak least upper bound of the types of all $b_i$.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 new scala.Function$k$[$S_1 , \ldots , S_k$, $T$] {
   def apply($x_1: S_1 , \ldots , x_k: S_k$): $T$ = ($x_1 , \ldots , x_k$) match {
     case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$
   }
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 If the expected type is `scala.PartialFunction[$S$, $R$]`,
 the expression is taken to be equivalent to the following instance creation expression:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 new scala.PartialFunction[$S$, $T$] {
   def apply($x$: $S$): $T$ = x match {
     case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$
@@ -698,7 +698,7 @@ new scala.PartialFunction[$S$, $T$] {
     case _ => false
   }
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Here, $x$ is a fresh name and $T$ is the weak least upper bound of the
 types of all $b_i$. The final default case in the `isDefinedAt`
@@ -709,19 +709,19 @@ already a variable or wildcard pattern.
     `/:` to compute the scalar product of 
     two vectors:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def scalarProduct(xs: Array[Double], ys: Array[Double]) = 
       (0.0 /: (xs zip ys)) {
         case (a, (b, c)) => a + b * c
       }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The case clauses in this code are equivalent to the following
     anonymous function:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
       (x, y) => (x, y) match {
         case (a, (b, c)) => a + b * c
       }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 

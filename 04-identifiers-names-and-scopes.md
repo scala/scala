@@ -31,11 +31,11 @@ scopes.
 
 Note that shadowing is only a partial order. In a situation like
 
-~~~~~~~~~~~~~~ 
+``` 
 val x = 1;
 { import p.x; 
   x }
-~~~~~~~~~~~~~~
+```
 
 neither binding of `x` shadows the other. Consequently, the
 reference to `x` in the third line above would be ambiguous.
@@ -57,7 +57,7 @@ of the referenced entity.
 (@) Assume the following two definitions of a objects named 
 `X` in packages `P` and `Q`.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     package P {
       object X { val x = 1; val y = 2 }
     }
@@ -65,12 +65,12 @@ of the referenced entity.
     package Q {
       object X { val x = true; val y = "" }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The following program illustrates different kinds of bindings and
     precedences between them.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     package P {                  // `X' bound by package clause
     import Console._             // `println' bound by wildcard import
     object A {                   
@@ -92,7 +92,7 @@ of the referenced entity.
     //        println("L19: "+y) // reference to `y' is ambiguous here
               println("L20: "+x) // `x' refers to string ``abc'' here
     }}}}}}
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 A reference to a qualified (type- or term-) identifier $e.x$ refers to
 the member of the type $T$ of $e$ which has the name $x$ in the same

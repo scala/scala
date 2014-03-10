@@ -37,7 +37,7 @@ class for objects).
 The signatures of these root classes are described by the following
 definitions.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package scala 
 /** The universal root class */
 abstract class Any {
@@ -86,17 +86,17 @@ class AnyRef extends Any {
 
 /** A mixin class for every user-defined Scala class */
 trait ScalaObject extends AnyRef 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The type test `$x$.isInstanceOf[$T$]` is equivalent to a typed
 pattern match
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 $x$ match {
   case _: $T'$ => true
   case _ => false
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 where the type $T'$ is the same as $T$ except if $T$ is
 of the form $D$ or $D[\mathit{tps}]$ where $D$ is a type member of some outer
@@ -132,13 +132,13 @@ Subrange types, as well as `Int` and `Long` are called _integer types_, whereas 
 
 Numeric value types are ranked in the following partial order:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 Byte - Short 
              \
                Int - Long - Float - Double
              / 
         Char 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 `Byte` and `Short` are the lowest-ranked types in this order, 
 whereas `Double` is the highest-ranked.  Ranking does _not_
@@ -216,7 +216,7 @@ type. If this is true, it will perform the `==` operation which
 is appropriate for that type. That is, the `equals` method of a
 numeric value type can be thought of being defined as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def equals(other: Any): Boolean = other match {
   case that: Byte   => this == that
   case that: Short  => this == that
@@ -227,7 +227,7 @@ def equals(other: Any): Boolean = other match {
   case that: Double => this == that
   case _ => false
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The `hashCode` method returns an integer hashcode that maps equal
 numeric values to equal results. It is guaranteed to be the identity for 
@@ -238,7 +238,7 @@ floating point number.
 
 (@) As an example, here is the signature of the numeric value type `Int`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     package scala 
     abstract sealed class Int extends AnyVal {
       def == (that: Double): Boolean  // double equality
@@ -282,7 +282,7 @@ floating point number.
       def toFloat: Float              // convert to Float
       def toDouble: Double            // convert to Double
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ### Class `Boolean`
@@ -291,7 +291,7 @@ Class `Boolean` has only two values: `true` and
 `false`. It implements operations as given in the following
 class definition.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package scala 
 abstract sealed class Boolean extends AnyVal {
   def && (p: => Boolean): Boolean = // boolean and
@@ -309,7 +309,7 @@ abstract sealed class Boolean extends AnyVal {
   def unary_!: Boolean =            // boolean negation
     if (this) false else true
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The class also implements operations `equals`, `hashCode`,
 and `toString` from class `Any`.
@@ -347,9 +347,9 @@ class of the underlying host system (and may be identified with
 it). For Scala clients the class is taken to support in each case a
 method
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def + (that: Any): String 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 which concatenates its left operand with the textual representation of its
 right operand.
@@ -359,12 +359,12 @@ right operand.
 Scala defines tuple classes `Tuple$n$` for $n = 2 , \ldots , 9$.
 These are defined as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package scala 
 case class Tuple$n$[+A_1, ..., +A_n](_1: A_1, ..., _$n$: A_$n$) {
   def toString = "(" ++ _1 ++ "," ++ $\ldots$ ++ "," ++ _$n$ ++ ")"
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The implicitly imported [`Predef`](#the-predef-object) object defines
 the names `Pair` as an alias of `Tuple2` and `Triple`
@@ -375,13 +375,13 @@ as an alias for `Tuple3`.
 Scala defines function classes `Function$n$` for $n = 1 , \ldots , 9$.
 These are defined as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package scala 
 trait Function$n$[-A_1, ..., -A_$n$, +B] {
   def apply(x_1: A_1, ..., x_$n$: A_$n$): B 
   def toString = "<function>" 
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A subclass of `Function1` represents partial functions,
 which are undefined on some points in their domain. In addition to the
@@ -389,11 +389,11 @@ which are undefined on some points in their domain. In addition to the
 `isDefined` method, which tells whether the function is defined
 at the given argument:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 class PartialFunction[-A, +B] extends Function1[A, B] {
   def isDefinedAt(x: A): Boolean
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The implicitly imported [`Predef`](#the-predef-object) object defines the name 
 `Function` as an alias of `Function1`.
@@ -402,7 +402,7 @@ The implicitly imported [`Predef`](#the-predef-object) object defines the name
 
 The class of generic arrays is given as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 final class Array[A](len: Int) extends Seq[A] {
   def length: Int = len
   def apply(i: Int): A = $\ldots$
@@ -413,7 +413,7 @@ final class Array[A](len: Int) extends Seq[A] {
   def map[B](f: A => B): Array[B] = $\ldots$
   def flatMap[B](f: A => Array[B]): Array[B] = $\ldots$
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 If $T$ is not a type parameter or abstract type, the type Array[$T$]
 is represented as the native array type `[]$T$` in the
@@ -454,11 +454,11 @@ However, it is possible to cast an expression of type
 `Array[String]` to `Array[Object]`, and this
 cast will succeed without raising a `ClassCastException`. Example:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 val xs = new Array[String](2)
 // val ys: Array[Object] = xs   // **** error: incompatible types
 val ys: Array[Object] = xs.asInstanceOf[Array[Object]] // OK
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Second, for _polymorphic arrays_, that have a type parameter or
 abstract type $T$ as their element type, a representation different
@@ -467,7 +467,7 @@ from
 `isInstanceOf` and `asInstanceOf` still work as if the array 
 used the standard representation of monomorphic arrays:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 val ss = new Array[String](2)
 
 def f[T](xs: Array[T]): Array[String] = 
@@ -475,7 +475,7 @@ def f[T](xs: Array[T]): Array[String] =
   else throw new Error("not an instance")
 
 f(ss)                                     // returns ss
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The representation chosen for polymorphic arrays also guarantees that
 polymorphic array creations work as expected. An example is the
@@ -483,7 +483,7 @@ following implementation of method `mkArray`, which creates
 an array of an arbitrary type $T$, given a sequence of $T$'s which
 defines its elements.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def mkArray[T](elems: Seq[T]): Array[T] = {
   val result = new Array[T](elems.length)
   var i = 0
@@ -492,7 +492,7 @@ def mkArray[T](elems: Seq[T]): Array[T] = {
     i += 1
   }
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Note that under Java's erasure model of arrays the method above would
 not work as expected -- in fact it would always return an array of
@@ -510,7 +510,7 @@ constructor methods for arrays, as well as
 the [extractor method](#extractor-patterns) `unapplySeq`
 which enables pattern matching over arrays.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package scala
 object Array { 
   /** copies array elements from `src' to `dest'. */
@@ -543,23 +543,23 @@ object Array {
   /** Enables pattern matching over arrays */
   def unapplySeq[A](x: Array[A]): Option[Seq[A]] = Some(x)
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 (@) The following method duplicates a given argument array and returns a pair
     consisting of the original and the duplicate:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def duplicate[T](xs: Array[T]) = {
       val ys = new Array[T](xs.length)
       Array.copy(xs, 0, ys, 0, xs.length)
       (xs, ys)
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ## Class Node
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package scala.xml 
 
 trait Node {
@@ -628,7 +628,7 @@ trait Node {
   override def toString = Utility.toXML(this) 
 
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 
 ## The `Predef` Object
@@ -638,7 +638,7 @@ for Scala programs. It is always implicitly imported, so that all its
 defined members are available without qualification. Its definition
 for the JVM environment conforms to the following signature:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package scala
 object Predef {
 
@@ -712,10 +712,10 @@ object Predef {
     if (!requirement)
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 
   // tupling ---------------------------------------------------------
 
@@ -757,7 +757,7 @@ object Predef {
 
   ...
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 
 ### Predefined Implicit Definitions
@@ -787,19 +787,19 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit wrapper that adds `ensuring` methods 
     with the following overloaded variants to type `Any`.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def ensuring(cond: Boolean): A = { assert(cond); x }
     def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
     def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
     def ensuring(cond: A => Boolean, msg: Any): A = { assert(cond(x), msg); x }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
   * An implicit wrapper that adds a `->` method with the following implementation
     to type `Any`.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def -> [B](y: B): (A, B) = (x, y)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
   * For every array type with elements of primitive type, a wrapper that
     takes the arrays of that type to instances of a `runtime.ArrayOps`
@@ -811,27 +811,27 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit wrapper that adds `+` and `formatted` method with the following
     implementations to type `Any`.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def +(other: String) = String.valueOf(self) + other
     def formatted(fmtstr: String): String = fmtstr format self
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
   * Numeric primitive conversions that implement the transitive closure of the 
     following mappings:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     Byte  -> Short
     Short -> Int
     Char  -> Int
     Int   -> Long
     Long  -> Float
     Float -> Double
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
   * Boxing and unboxing conversions between primitive types and their boxed 
     versions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     Byte    <-> java.lang.Byte
     Short   <-> java.lang.Short
     Char    <-> java.lang.Character
@@ -840,14 +840,14 @@ The available high-priority implicits include definitions falling into the follo
     Float   <-> java.lang.Float
     Double  <-> java.lang.Double
     Boolean <-> java.lang.Boolean
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
   * An implicit definition that generates instances of type `T <:< T`, for
     any type `T`. Here, `<:<` is a class defined as follows.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     sealed abstract class <:<[-From, +To] extends (From => To)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Implicit parameters of `<:<` types are typically used to implement type constraints.
 

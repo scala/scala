@@ -1,6 +1,6 @@
 # Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   Expr              ::=  (Bindings | id | `_') `=>' Expr
                       |  Expr1
   Expr1             ::=  `if' `(' Expr `)' {nl} Expr [[semi] else Expr]
@@ -41,7 +41,7 @@
   Ascription        ::=  `:' InfixType
                       |  `:' Annotation {Annotation} 
                       |  `:' `_' `*'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Expressions are composed of operators and operands. Expression forms are
 discussed subsequently in decreasing order of precedence. 
@@ -65,16 +65,16 @@ type $T$ and let $t_1[\mathit{tps}_1] >: L_1 <: U_1 , \ldots , t_n[\mathit{tps}_
 all the type variables created by skolemization of some part of $e$ which are free in $T$.
 Then the _packed type_ of $e$ is
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 $T$ forSome { type $t_1[\mathit{tps}_1] >: L_1 <: U_1$; $\ldots$; type $t_n[\mathit{tps}_n] >: L_n <: U_n$ }.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 
 ## Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleExpr    ::=  Literal
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Typing of literals is as described [here](#literals); their
 evaluation is immediate.
@@ -102,10 +102,10 @@ A reference to any other member of the ``null'' object causes a
 
 ## Designators
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleExpr  ::=  Path
               |  SimpleExpr `.' id
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A designator refers to a named term. It can be a _simple name_ or
 a _selection_. 
@@ -156,10 +156,10 @@ is thrown.
 
 ## This and Super
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleExpr  ::=  [id `.'] `this'
               |  [id '.'] `super' [ClassQualifier] `.' id
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The expression `this` can appear in the statement part of a
 template or compound type. It stands for the object being defined by
@@ -208,7 +208,7 @@ it must be concrete.
 
 (@super) Consider the following class definitions
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class Root { def x = "Root" }
     class A extends Root { override def x = "A" ; def superA = super.x }
     trait B extends Root { override def x = "B" ; def superB = super.x }
@@ -218,17 +218,17 @@ it must be concrete.
     class D extends A with B {
       override def x = "D" ; def superD = super.x
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The linearization of class `C` is `{C, B, Root}` and
     the linearization of class `D` is `{D, B, A, Root}`.
     Then we have:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     (new A).superA == "Root", 
                               (new C).superB = "Root", (new C).superC = "B",
     (new D).superA == "Root", (new D).superB = "A",    (new D).superD = "B",
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Note that the `superB` function returns different results
     depending on whether `B` is mixed in with class `Root` or `A`.
@@ -236,13 +236,13 @@ it must be concrete.
 
 ## Function Applications
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleExpr    ::=  SimpleExpr1 ArgumentExprs
 ArgumentExprs ::=  `(' [Exprs] `)'
                 |  `(' [Exprs `,'] PostfixExpr `:' `_' `*' ')'
                 |  [nl] BlockExpr
 Exprs         ::=  Expr {`,' Expr}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An application `$f$($e_1 , \ldots , e_m$)` applies the
 function $f$ to the argument expressions $e_1 , \ldots , e_m$. If $f$
@@ -320,22 +320,22 @@ of the caller.
 (@) Assume the following function which computes the sum of a
     variable number of arguments:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def sum(xs: Int*) = (0 /: xs) ((x, y) => x + y)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Then
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     sum(1, 2, 3, 4)
     sum(List(1, 2, 3, 4): _*)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     both yield `10` as result. On the other hand, 
 
-    ~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     sum(List(1, 2, 3, 4))
-    ~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     would not typecheck.
 
@@ -362,24 +362,24 @@ If the function $f$
 has the form `$p.m$[$\mathit{targs}$]` it is transformed into the
 block
 
-~~~~~~~~~~~~~~~~~~ 
+``` 
 { val q = $p$
   q.$m$[$\mathit{targs}$]
 }
-~~~~~~~~~~~~~~~~~~
+```
 
 If the function $f$ is itself an application expression the transformation
 is applied recursively on $f$. The result of transforming $f$ is a block of
 the form
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 { val q = $p$
   val $x_1$ = expr$_1$
   $\ldots$
   val $x_k$ = expr$_k$
   q.$m$[$\mathit{targs}$]($\mathit{args}_1$)$, \ldots ,$($\mathit{args}_l$)
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 where every argument in $(\mathit{args}_1) , \ldots , (\mathit{args}_l)$ is a reference to
 one of the values $x_1 , \ldots , x_k$. To integrate the current application
@@ -397,7 +397,7 @@ that the position of each name matches the position of its corresponding
 parameter in the method type `($p_1:T_1 , \ldots , p_n:T_n$)$U$`.
 The final result of the transformation is a block of the form
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 { val q = $p$
   val $x_1$ = expr$_1$
   $\ldots$
@@ -410,14 +410,14 @@ The final result of the transformation is a block of the form
   val $z_d$ = q.$m$\$default\$j[$\mathit{targs}$]($\mathit{args}_1$)$, \ldots ,$($\mathit{args}_l$)
   q.$m$[$\mathit{targs}$]($\mathit{args}_1$)$, \ldots ,$($\mathit{args}_l$)($\mathit{args}$)
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 
 ## Method Values
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleExpr    ::=  SimpleExpr1 `_'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The expression ~`$e$ _`~ is well-formed if $e$ is of method
 type or if $e$ is a call-by-name parameter.  If $e$ is a method with
@@ -444,9 +444,9 @@ parameterlist `()`.
 
 ## Type Applications
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleExpr    ::=  SimpleExpr TypeArgs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A type application `$e$[$T_1 , \ldots , T_n$]` instantiates
 a polymorphic value $e$ of type 
@@ -471,9 +471,9 @@ and the expected result type.
 
 ## Tuples
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleExpr   ::=  `(' [Exprs] `)'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A tuple expression `($e_1 , \ldots , e_n$)` is an alias
 for the class instance creation 
@@ -484,9 +484,9 @@ The empty tuple
 
 ## Instance Creation Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleExpr     ::=  `new' (ClassTemplate | TemplateBody)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A simple instance creation expression is of the form 
 `new $c$` 
@@ -499,9 +499,9 @@ $T$. The concrete self type is normally
 $T$, except if the expression `new $c$` appears as the
 right hand side of a value definition
 
-~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 val $x$: $S$ = new $c$
-~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 (where the type annotation `: $S$` may be missing).
 In the latter case, the concrete self type of the expression is the
@@ -515,9 +515,9 @@ A general instance creation expression is of the form
 `new $t$` for some [class template](#templates) $t$.
 Such an expression is equivalent to the block
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 { class $a$ extends $t$; new $a$ }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 where $a$ is a fresh name of an _anonymous class_ which is
 inaccessible to user programs.
@@ -529,31 +529,31 @@ types: If `{$D$}` is a class body, then
 
 (@) Consider the following structural instance creation expression:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     new { def getName() = "aaron" }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     This is a shorthand for the general instance creation expression
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     new AnyRef{ def getName() = "aaron" }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The latter is in turn a shorthand for the block
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     { class anon\$X extends AnyRef{ def getName() = "aaron" }; new anon\$X }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     where `anon\$X` is some freshly created name.
 
 
 ## Blocks
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 BlockExpr   ::=  `{' Block `}'
 Block       ::=  {BlockStat semi} [ResultExpr]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A block expression `{$s_1$; $\ldots$; $s_n$; $e\,$}` is
 constructed from a sequence of block statements $s_1 , \ldots , s_n$
@@ -595,16 +595,16 @@ $e$, which defines the result of the block.
 
 (@) Assuming a class `Ref[T](x: T)`, the block
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     { class C extends B {$\ldots$} ; new Ref(new C) }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     has the type `Ref[_1] forSome { type _1 <: B }`.
     The block
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     { class C extends B {$\ldots$} ; new C }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     simply has type `B`, because with the rules [here](#simplification-rules)
     the existentially quantified type 
@@ -613,12 +613,12 @@ $e$, which defines the result of the block.
 
 ## Prefix, Infix, and Postfix Operations
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 PostfixExpr     ::=  InfixExpr [id [nl]]
 InfixExpr       ::=  PrefixExpr
                   |  InfixExpr id [nl] InfixExpr
 PrefixExpr      ::=  [`-' | `+' | `!' | `~'] SimpleExpr 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Expressions can be constructed from operands and operators. 
 
@@ -654,7 +654,7 @@ The _precedence_ of an infix operator is determined by the operator's first
 character. Characters are listed below in increasing order of
 precedence, with characters on the same line having the same precedence.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 $\mbox{\rm\sl(all letters)}$
 |
 ^
@@ -665,7 +665,7 @@ $\mbox{\rm\sl(all letters)}$
 + -
 * / %
 $\mbox{\rm\sl(all other special characters)}$
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 That is, operators starting with a letter have lowest precedence,
 followed by operators starting with ``|`', etc.
@@ -728,9 +728,9 @@ operation `$l$ += $r$`, where $l$, $r$ are expressions.
 This operation can be re-interpreted as an operation which corresponds 
 to the assignment
 
-~~~~~~~~~~~~~~~~ 
+``` 
 $l$ = $l$ + $r$
-~~~~~~~~~~~~~~~~
+```
 
 except that the operation's left-hand-side $l$ is evaluated only once.
 
@@ -748,9 +748,9 @@ The re-interpretation occurs if the following two conditions are fulfilled.
 
 ## Typed Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr1              ::=  PostfixExpr `:' CompoundType
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The typed expression $e: T$ has type $T$. The type of
 expression $e$ is expected to conform to $T$. The result of
@@ -758,18 +758,18 @@ the expression is the value of $e$ converted to type $T$.
 
 (@) Here are examples of well-typed and illegally typed expressions.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     1: Int               // legal, of type Int
     1: Long              // legal, of type Long
     // 1: string         // ***** illegal
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ## Annotated Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr1              ::=  PostfixExpr `:' Annotation {Annotation} 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An annotated expression `$e$: @$a_1$ $\ldots$ @$a_n$`
 attaches [annotations](#user-defined-annotations) $a_1 , \ldots , a_n$ to the 
@@ -778,10 +778,10 @@ expression $e$.
 
 ## Assignments
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr1        ::=  [SimpleExpr `.'] id `=' Expr
                |  SimpleExpr1 ArgumentExprs `=' Expr
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The interpretation of an assignment to a simple variable `$x$ = $e$`
 depends on the definition of $x$. If $x$ denotes a mutable
@@ -811,7 +811,7 @@ the invocation of an `update` function defined by $f$.
 
 (@imp-mat-mul) Here is the usual imperative code for matrix multiplication.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
       val zss: Array[Array[Double]] = new Array(xss.length, yss(0).length) 
       var i = 0 
@@ -831,12 +831,12 @@ the invocation of an `update` function defined by $f$.
       }
       zss
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Desugaring the array accesses and assignments yields the following
     expanded version:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
       val zss: Array[Array[Double]] = new Array(xss.length, yss.apply(0).length) 
       var i = 0 
@@ -856,14 +856,14 @@ the invocation of an `update` function defined by $f$.
       }
       zss
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ## Conditional Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr1          ::=  `if' `(' Expr `)' {nl} Expr [[semi] `else' Expr]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The conditional expression `if ($e_1$) $e_2$ else $e_3$` chooses
 one of the values of $e_2$ and $e_3$, depending on the
@@ -887,25 +887,25 @@ evaluated as if it was `if ($e_1$) $e_2$ else ()`.
 
 ## While Loop Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr1          ::=  `while' `(' Expr ')' {nl} Expr
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The while loop expression `while ($e_1$) $e_2$` is typed and
 evaluated as if it was an application of `whileLoop ($e_1$) ($e_2$)` where
 the hypothetical function `whileLoop` is defined as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def whileLoop(cond: => Boolean)(body: => Unit): Unit  =
   if (cond) { body ; whileLoop(cond)(body) } else {}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 
 ## Do Loop Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr1          ::=  `do' Expr [semi] `while' `(' Expr ')'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The do loop expression `do $e_1$ while ($e_2$)` is typed and
 evaluated as if it was the expression `($e_1$ ; while ($e_2$) $e_1$)`.
@@ -914,7 +914,7 @@ A semicolon preceding the `while` symbol of a do loop expression is ignored.
 
 ## For Comprehensions and For Loops
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr1          ::=  `for' (`(' Enumerators `)' | `{' Enumerators `}') 
                        {nl} [`yield'] Expr
 Enumerators    ::=  Generator {semi Enumerator}
@@ -923,7 +923,7 @@ Enumerator     ::=  Generator
                  |  `val' Pattern1 `=' Expr
 Generator      ::=  Pattern1 `<-' Expr [Guard]
 Guard          ::=  `if' PostfixExpr
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A for loop `for ($\mathit{enums}\,$) $e$` executes expression $e$
 for each binding generated by the enumerators $\mathit{enums}$.  A for
@@ -946,9 +946,9 @@ The translation scheme is as follows.  In a first step, every
 generator `$p$ <- $e$`, where $p$ is not [irrefutable](#patterns)
 for the type of $e$ is replaced by
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 $p$ <- $e$.withFilter { case $p$ => true; case _ => false }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Then, the following rules are applied repeatedly until all
 comprehensions have been eliminated.
@@ -963,31 +963,31 @@ comprehensions have been eliminated.
     `$e$.foreach { case $p$ => $e'$ }`.
   - A for comprehension
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     for ($p$ <- $e$; $p'$ <- $e'; \ldots$) yield $e''$
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     where `$\ldots$` is a (possibly empty)
     sequence of generators, definitions, or guards,
     is translated to
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     $e$.flatMap { case $p$ => for ($p'$ <- $e'; \ldots$) yield $e''$ }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
   - A for loop
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     for ($p$ <- $e$; $p'$ <- $e'; \ldots$) $e''$
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     where `$\ldots$` is a (possibly empty)
     sequence of generators, definitions, or guards,
     is translated to
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     $e$.foreach { case $p$ => for ($p'$ <- $e'; \ldots$) $e''$ }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
   - A generator `$p$ <- $e$` followed by a guard
     `if $g$` is translated to a single generator 
@@ -998,30 +998,30 @@ comprehensions have been eliminated.
     `$p'$ = $e'$` is translated to the following generator of pairs of values, where
     $x$ and $x'$ are fresh names:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     ($p$, $p'$) <- for ($x @ p$ <- $e$) yield { val $x' @ p'$ = $e'$; ($x$, $x'$) }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 (@) The following code produces all pairs of numbers between $1$ and $n-1$ 
     whose sums are prime.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     for  { i <- 1 until n 
            j <- 1 until i 
            if isPrime(i+j)
     } yield (i, j)
-    ~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The for comprehension is translated to:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     (1 until n)
       .flatMap {
          case i => (1 until i)
            .withFilter { j => isPrime(i+j) }
            .map { case j => (i, j) } }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) For comprehensions can be used to express vector 
     and matrix algorithms concisely. 
@@ -1029,34 +1029,34 @@ comprehensions have been eliminated.
 
     <!-- see test/files/run/t0421.scala -->
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def transpose[A](xss: Array[Array[A]]) = {
       for (i <- Array.range(0, xss(0).length)) yield
         for (xs <- xss) yield xs(i)
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Here is a function to compute the scalar product of two vectors:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def scalprod(xs: Array[Double], ys: Array[Double]) = {
       var acc = 0.0 
       for ((x, y) <- xs zip ys) acc = acc + x * y  
       acc
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Finally, here is a function to compute the product of two matrices. 
     Compare with the imperative version of \ref{ex:imp-mat-mul}.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
       val ysst = transpose(yss) 
       for (xs <- xss) yield
         for (yst <- ysst) yield 
           scalprod(xs, yst)
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The code above makes use of the fact that `map`, `flatMap`,
     `withFilter`, and `foreach` are defined for instances of class
@@ -1065,9 +1065,9 @@ comprehensions have been eliminated.
 
 ## Return Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr1      ::=  `return' [Expr]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A return expression `return $e$` must occur inside the body of some
 enclosing named method or function. The innermost enclosing named
@@ -1103,9 +1103,9 @@ and will propagate up the call stack.
 
 ## Throw Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr1      ::=  `throw' Expr
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A throw expression `throw $e$` evaluates the expression
 $e$. The type of this expression must conform to
@@ -1121,18 +1121,18 @@ is `scala.Nothing`.
 
 ## Try Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr1 ::=  `try' `{' Block `}' [`catch' `{' CaseClauses `}'] 
            [`finally' Expr]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A try expression is of the form `try { $b$ } catch $h$`
 where the handler $h$ is a 
 [pattern matching anonymous function](#pattern-matching-anonymous-functions)
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 { case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 This expression is evaluated by evaluating the block
 $b$.  If evaluation of $b$ does not cause an exception to be
@@ -1176,12 +1176,12 @@ for  `try { try { $b$ } catch $e_1$ } finally $e_2$`.
 
 ## Anonymous Functions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Expr            ::=  (Bindings | [`implicit'] id | `_') `=>' Expr
 ResultExpr      ::=  (Bindings | ([`implicit'] id | `_') `:' CompoundType) `=>' Block
 Bindings        ::=  `(' Binding {`,' Binding} `)'
 Binding         ::=  (id | `_') [`:' Type]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The anonymous function `($x_1$: $T_1 , \ldots , x_n$: $T_n$) => e` 
 maps parameters $x_i$ of types $T_i$ to a result given
@@ -1204,11 +1204,11 @@ type which does not refer to any of the formal parameters $x_i$.
 
 The anonymous function is evaluated as the instance creation expression
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 new scala.Function$n$[$T_1 , \ldots , T_n$, $T$] {
   def apply($x_1$: $T_1 , \ldots , x_n$: $T_n$): $T$ = $e$
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 In the case of a single untyped formal parameter, 
 `($x\,$) => $e$` 
@@ -1229,7 +1229,7 @@ anonymous functions always have to be given explicitly.
 
 (@) Examples of anonymous functions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     x => x                             // The identity function
 
     f => g => x => f(g(x))             // Curried function composition
@@ -1243,14 +1243,14 @@ anonymous functions always have to be given explicitly.
 
     _ => 5                             // The function that ignores its argument
                                        // and always returns 5.
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ### Placeholder Syntax for Anonymous Functions
 
-~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleExpr1  ::=  `_'
-~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An expression (of syntactic category `Expr`)
 may contain embedded underscore symbols `_` at places where identifiers
@@ -1304,7 +1304,7 @@ include at least the expressions of the following forms:
 
 ## Statements
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 BlockStat    ::=  Import
                |  {Annotation} [`implicit'] Def
                |  {Annotation} {LocalModifier} TmplDef
@@ -1315,7 +1315,7 @@ TemplateStat ::=  Import
                |  {Annotation} {Modifier} Dcl
                |  Expr
                | 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Statements occur as parts of blocks and templates.  A statement can be
 an import, a definition or an expression, or it can be empty.
@@ -1361,9 +1361,9 @@ is applied to pick a unique member.
 _Type Instantiation_ \
 An expression $e$ of polymorphic type
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 [$a_1$ >: $L_1$ <: $U_1 , \ldots , a_n$ >: $L_n$ <: $U_n$]$T$
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 which does not appear as the function part of
 a type application is converted to a type instance of $T$
@@ -1526,21 +1526,21 @@ alternatives in $\mathscr{B}$.
 
 (@) Consider the following definitions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class A extends B {}
     def f(x: B, y: B) = $\ldots$
     def f(x: A, y: B) = $\ldots$
     val a: A 
     val b: B
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Then the application `f(b, b)` refers to the first
     definition of $f$ whereas the application `f(a, a)`
     refers to the second.  Assume now we add a third overloaded definition
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def f(x: B, y: A) = $\ldots$
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Then the application `f(a, a)` is rejected for being ambiguous, since
     no most specific applicable signature exists.
@@ -1640,16 +1640,16 @@ any one of them.
 
 (@) Consider the two methods:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def cons[A](x: A, xs: List[A]): List[A] = x :: xs
     def nil[B]: List[B] = Nil
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     and the definition
 
-    ~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val xs = cons(1, nil)
-    ~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The application of `cons` is typed with an undefined expected
     type. This application is completed by local type inference to 
@@ -1663,42 +1663,42 @@ any one of them.
     itself polymorphic. One tries to type-check `nil` with an
     expected type `List[a]`. This leads to the constraint system
 
-    ~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     List[b?] <: List[a]
-    ~~~~~~~~~~~~~~~~~~~~
+    ```
 
     where we have labeled `b?` with a question mark to indicate
     that it is a variable in the constraint system.
     Because class `List` is covariant, the optimal
     solution of this constraint is
 
-    ~~~~~~~~~~~~~~~~~~ 
+    ``` 
     b = scala.Nothing
-    ~~~~~~~~~~~~~~~~~~
+    ```
 
     In a second step, one solves the following constraint system for
     the type parameter `a` of `cons`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     Int <: a?
     List[scala.Nothing] <: List[a?]
     List[a?] <: $\mbox{\sl undefined}$
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The optimal solution of this constraint system is
 
-    ~~~~~~~~ 
+    ``` 
     a = Int
-    ~~~~~~~~
+    ```
 
     so `Int` is the type inferred for `a`.
 
 
 (@) Consider now the definition  
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val ys = cons("abc", xs)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     where `xs` is defined of type `List[Int]` as before.
     In this case local type inference proceeds as follows.
@@ -1714,17 +1714,17 @@ any one of them.
     In a second step, one solves the following constraint system for
     the type parameter `a` of `cons`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     String <: a?
     List[Int] <: List[a?]
     List[a?] <: $\mbox{\sl undefined}$
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The optimal solution of this constraint system is
 
-    ~~~~~~~~~~~~~~ 
+    ``` 
     a = scala.Any 
-    ~~~~~~~~~~~~~~
+    ```
 
     so `scala.Any` is the type inferred for `a`.
 
@@ -1742,38 +1742,38 @@ corresponding fresh name $x_i$. Second, one creates a fresh name $y_i$
 for every argument type $T_i$ of the method ($i = 1 , \ldots ,
 n$). The result of eta-conversion is then:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 { val $x_1$ = $e_1$; 
   $\ldots$ 
   val $x_m$ = $e_m$; 
   ($y_1: T_1 , \ldots , y_n: T_n$) => $e'$($y_1 , \ldots , y_n$) 
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 ### Dynamic Member Selection
 
 The standard Scala library defines a trait `scala.Dynamic` which defines a member
 \@invokeDynamic@ as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package scala
 trait Dynamic {
   def applyDynamic (name: String, args: Any*): Any
   ...
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Assume a selection of the form $e.x$ where the type of $e$ conforms to `scala.Dynamic`.
 Further assuming the selection is not followed by any function arguments, such an expression can be rewitten under the conditions given [here](#implicit-conversions) to:
 
-~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 $e$.applyDynamic("$x$")
-~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 If the selection is followed by some arguments, e.g.\ $e.x(\mathit{args})$, then that expression
 is rewritten to
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 $e$.applyDynamic("$x$", $\mathit{args}$)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 

@@ -1,10 +1,10 @@
 # Classes and Objects
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 TmplDef          ::= [`case'] `class' ClassDef
                   |  [`case'] `object' ObjectDef
                   |  `trait' TraitDef
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 [Classes](#class-definitions) and [objects](#object-definitions)
 are both defined in terms of _templates_.
@@ -12,7 +12,7 @@ are both defined in terms of _templates_.
 
 ## Templates
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 ClassTemplate   ::=  [EarlyDefs] ClassParents [TemplateBody]
 TraitTemplate   ::=  [EarlyDefs] TraitParents [TemplateBody]
 ClassParents    ::=  Constr {`with' AnnotType}
@@ -20,7 +20,7 @@ TraitParents    ::=  AnnotType {`with' AnnotType}
 TemplateBody    ::=  [nl] `{' [SelfType] TemplateStat {semi TemplateStat} `}'
 SelfType        ::=  id [`:' Type] `=>'
                  |   this `:' Type `=>'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A template defines the type signature, behavior and initial state of a
 trait or class of objects or of a single object. Templates form part of
@@ -50,15 +50,15 @@ The list of parents of every class is also always implicitly extended
 by a reference to the `scala.ScalaObject` trait as last
 mixin. E.g.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\mathit{stats}$ }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 becomes
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 $mt_1$ with $\ldots$ with $mt_n$ with ScalaObject { $\mathit{stats}$ }.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The list of parents of a template must be well-formed. This means that
 the class denoted by the superclass constructor $sc$ must be a
@@ -103,17 +103,17 @@ without introducing an alias name for it.
 
 (@) Consider the following class definitions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class Base extends Object {}
     trait Mixin extends Base {}
     object O extends Mixin {}
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     In this case, the definition of `O` is expanded to:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     object O extends Base with Mixin {}
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 <!-- TODO: Make all references to Java generic -->
@@ -150,16 +150,16 @@ it. But templates inheriting the `scala.DelayedInit` trait
 can override the hook by re-implementing the `delayedInit`
 method, which is defined as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def delayedInit(body: => Unit)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 
 ### Constructor Invocations
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Constr  ::=  AnnotType {`(' [Exprs] `)'}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Constructor invocations define the type, members, and initial state of
 objects created by an instance creation expression, or of parts of an
@@ -207,30 +207,30 @@ linearization of this graph is defined as follows.
 > Here $\vec{+}$ denotes concatenation where elements of the right operand
 > replace identical elements of the left operand:
 >
-> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+> ``` 
 > \[
 > \begin{array}{lcll}
 > \{a, A\} \;\vec{+}\; B &=& a, (A \;\vec{+}\; B)  &{\bf if} \; a \not\in B \\
 >                        &=& A \;\vec{+}\; B       &{\bf if} \; a \in B
 > \end{array}
 > \]
-> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> ```
 
 
 (@) Consider the following class definitions.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class AbsIterator extends AnyRef { ... }
     trait RichIterator extends AbsIterator { ... }
     class StringIterator extends AbsIterator { ... }
     class Iter extends StringIterator with RichIterator { ... }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Then the linearization of class `Iter` is
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     { Iter, RichIterator, StringIterator, AbsIterator, ScalaObject, AnyRef, Any }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Trait `ScalaObject` appears in this list because it 
     is added as last mixin to every Scala class ( [see here](#templates) ).
@@ -243,17 +243,17 @@ linearization of this graph is defined as follows.
     as a suffix.  For instance, the linearization of
     `StringIterator` is
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     { StringIterator, AbsIterator, ScalaObject, AnyRef, Any }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     which is a suffix of the linearization of its subclass `Iter`.
     The same is not true for the linearization of mixins.
     For instance, the linearization of `RichIterator` is
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     { RichIterator, AbsIterator, ScalaObject, AnyRef, Any }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     which is not a suffix of the linearization of `Iter`.
 
@@ -322,12 +322,12 @@ defined or inherited) with the same name which both define default arguments.
 
 (@) Consider the trait definitions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     trait A { def f: Int }
     trait B extends A { def f: Int = 1 ; def g: Int = 2 ; def h: Int = 3 }
     trait C extends A { override def f: Int = 4 ; def g: Int }
     trait D extends B with C { def h: Int }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Then trait `D` has a directly defined abstract member `h`. It
     inherits member `f` from trait `C` and member `g` from
@@ -382,12 +382,12 @@ superclass (otherwise).
 
 (@compounda) Consider the definitions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     trait Root { type T <: Root }
     trait A extends Root { type T <: A }
     trait B extends Root { type T <: B }
     trait C extends A with B 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Then the class definition `C` is not well-formed because the
     binding of `T` in `C` is
@@ -396,9 +396,9 @@ superclass (otherwise).
     in type `A`. The problem can be solved by adding an overriding 
     definition of type `T` in class `C`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class C extends A with B { type T <: C }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ### Inheritance Closure
@@ -418,21 +418,21 @@ necessary to make subtyping decidable [@kennedy-pierce:decidable]).
 
 ### Early Definitions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 EarlyDefs         ::= `{' [EarlyDef {semi EarlyDef}] `}' `with'
 EarlyDef          ::=  {Annotation} {Modifier} PatVarDef
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A template may start with an _early field definition_ clause,
 which serves to define certain field values before the supertype
 constructor is called. In a template
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 { val $p_1$: $T_1$ = $e_1$
   ...
   val $p_n$: $T_n$ = $e_n$
 } with $sc$ with $mt_1$ with $mt_n$ { $\mathit{stats}$ }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The initial pattern definitions of $p_1 , \ldots , p_n$ are called
 _early definitions_. They define fields 
@@ -461,7 +461,7 @@ before the superclass constructor of the template is called.
 (@) Early definitions are particularly useful for
     traits, which do not have normal constructor parameters. Example:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     trait Greeting {
       val name: String
       val msg = "How are you, "+name
@@ -471,7 +471,7 @@ before the superclass constructor of the template is called.
     } with Greeting {
       println(msg)
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     In the code above, the field `name` is initialized before the
     constructor of `Greeting` is called. Therefore, field `msg` in
@@ -485,7 +485,7 @@ before the superclass constructor of the template is called.
  
 ## Modifiers
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Modifier          ::=  LocalModifier 
                     |  AccessModifier
                     |  `override'
@@ -496,7 +496,7 @@ LocalModifier     ::=  `abstract'
                     |  `lazy'
 AccessModifier    ::=  (`private' | `protected') [AccessQualifier]
 AccessQualifier   ::=  `[' (id | `this') `]'
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Member definitions may be preceded by modifiers which affect the
 accessibility and usage of the identifiers bound by them.  If several
@@ -626,7 +626,7 @@ the validity and meaning of a modifier are as follows.
 
 (@) The following code illustrates the use of qualified private:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     package outerpkg.innerpkg
     class Outer {
       class Inner {
@@ -635,7 +635,7 @@ the validity and meaning of a modifier are as follows.
         private[outerpkg] def h()
       }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Here, accesses to the method `f` can appear anywhere within
     `OuterClass`, but not outside it. Accesses to method
@@ -650,24 +650,24 @@ the validity and meaning of a modifier are as follows.
     constructing new instances of that class is to declare the class
     `abstract` and `sealed`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     object m {
       abstract sealed class C (x: Int) {
         def nextC = new C(x + 1) {}
       }
       val empty = new C(0) {}
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     For instance, in the code above clients can create instances of class
     `m.C` only by calling the `nextC` method of an existing `m.C`
     object; it is not possible for clients to create objects of class
     `m.C` directly. Indeed the following two lines are both in error:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     new m.C(0)    // **** error: C is abstract, so it cannot be instantiated.
     new m.C(0) {} // **** error: illegal inheritance from sealed class.
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     A similar access restriction can be achieved by marking the primary
     constructor `private` (see \ref{ex:private-constr}).
@@ -675,7 +675,7 @@ the validity and meaning of a modifier are as follows.
 
 ## Class Definitions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 TmplDef           ::=  `class' ClassDef 
 ClassDef          ::=  id [TypeParamClause] {Annotation} 
                        [AccessModifier] ClassParamClauses ClassTemplateOpt 
@@ -686,13 +686,13 @@ ClassParams       ::=  ClassParam {`,' ClassParam}
 ClassParam        ::=  {Annotation} [{Modifier} (`val' | `var')] 
                        id [`:' ParamType] [`=' Expr]
 ClassTemplateOpt  ::=  `extends' ClassTemplate | [[`extends'] TemplateBody]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The most general form of class definition is 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 class $c$[$\mathit{tps}\,$] $as$ $m$($\mathit{ps}_1$)$\ldots$($\mathit{ps}_n$) extends $t$    $\gap(n \geq 0)$.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Here,
 
@@ -738,9 +738,9 @@ Here,
     [call-by-name parameter](#by-name-parameters).
   - $t$ is a [template](#templates) of the form
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     $sc$ with $mt_1$ with $\ldots$ with $mt_m$ { $\mathit{stats}$ } // $m \geq 0$
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     which defines the base classes, behavior and initial state of objects of
     the class. The extends clause 
@@ -759,16 +759,16 @@ $t$.
 (@) The following example illustrates `val` and `var`
     parameters of a class `C`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class C(x: Int, val y: String, var z: List[String])
     val c = new C(1, "abc", List())
     c.z = c.y :: c.z
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@privateconstr) The following class can be created only from its companion
     module.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     object Sensitive {
       def makeSensitive(credentials: Certificate): Sensitive = 
         if (credentials == Admin) new Sensitive() 
@@ -777,19 +777,19 @@ $t$.
     class Sensitive private () {
       ...
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ### Constructor Definitions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 FunDef         ::= `this' ParamClause ParamClauses 
                    (`=' ConstrExpr | [nl] ConstrBlock)
 ConstrExpr     ::= SelfInvocation
                 |  ConstrBlock
 ConstrBlock    ::= `{' SelfInvocation {semi BlockStat} `}'
 SelfInvocation ::= `this' ArgumentExprs {ArgumentExprs}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A class may have additional constructors besides the primary
 constructor.  These are defined by constructor definitions of the form
@@ -834,7 +834,7 @@ primary constructor of the class).
 
 (@) Consider the class definition
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class LinkedList[A]() {
       var head = _ 
       var tail = null 
@@ -842,7 +842,7 @@ primary constructor of the class).
       def this(head: A) = { this(); this.head = head }
       def this(head: A, tail: List[A]) = { this(head); this.tail = tail }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     This defines a class `LinkedList` with three constructors.  The
     second constructor constructs an singleton list, while the
@@ -851,9 +851,9 @@ primary constructor of the class).
 
 ## Case Classes
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 TmplDef  ::=  `case' `class' ClassDef
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 If a class definition is prefixed with `case`, the class is said
 to be a _case class_.  
@@ -871,14 +871,14 @@ parameters $\mathit{tps}$ and value parameters $\mathit{ps}$ implicitly
 generates an [extractor object](#extractor-patterns) which is
 defined as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 object $c$ {
   def apply[$\mathit{tps}\,$]($\mathit{ps}_1\,$)$\ldots$($\mathit{ps}_n$): $c$[$\mathit{tps}\,$] = new $c$[$\mathit{Ts}\,$]($\mathit{xs}_1\,$)$\ldots$($\mathit{xs}_n$)
   def unapply[$\mathit{tps}\,$]($x$: $c$[$\mathit{tps}\,$]) =
     if (x eq null) scala.None
     else scala.Some($x.\mathit{xs}_{11}, \ldots , x.\mathit{xs}_{1k}$)
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Here, $\mathit{Ts}$ stands for the vector of types defined in the type
 parameter section $\mathit{tps}$,
@@ -896,9 +896,9 @@ If the case class definition contains an empty value parameter list, the
 `unapply` method returns a `Boolean` instead of an `Option` type and
 is defined as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def unapply[$\mathit{tps}\,$]($x$: $c$[$\mathit{tps}\,$]) = x ne null
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The name of the `unapply` method is changed to `unapplySeq` if the first
 parameter section $\mathit{ps}_1$ of $c$ ends in a 
@@ -911,9 +911,9 @@ A method named `copy` is implicitly added to every case class unless the
 class already has a member (directly defined or inherited) with that name. The
 method is defined as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 def copy[$\mathit{tps}\,$]($\mathit{ps}'_1\,$)$\ldots$($\mathit{ps}'_n$): $c$[$\mathit{tps}\,$] = new $c$[$\mathit{Ts}\,$]($\mathit{xs}_1\,$)$\ldots$($\mathit{xs}_n$)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Again, $\mathit{Ts}$ stands for the vector of types defined in the type parameter section $\mathit{tps}$
 and each $\mathit{xs}_i$ denotes the parameter names of the parameter section $\mathit{ps}'_i$. Every value
@@ -940,18 +940,18 @@ class different from `AnyRef`. In particular:
 
 (@) Here is the definition of abstract syntax for lambda calculus:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class Expr 
     case class Var   (x: String)          extends Expr
     case class Apply (f: Expr, e: Expr)   extends Expr
     case class Lambda(x: String, e: Expr) extends Expr 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     This defines a class `Expr` with case classes
     `Var`, `Apply` and `Lambda`. A call-by-value evaluator 
     for lambda expressions could then be written as follows.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     type Env = String => Value 
     case class Value(e: Expr, env: Env) 
 
@@ -965,14 +965,14 @@ class different from `AnyRef`. In particular:
       case Lambda(_, _) =>
         Value(e, env)
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     It is possible to define further case classes that extend type
     `Expr` in other parts of the program, for instance
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     case class Number(x: Int) extends Expr 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     This form of extensibility can be excluded by declaring the base class
     `Expr` `sealed`; in this case, all classes that
@@ -982,11 +982,11 @@ class different from `AnyRef`. In particular:
 
 ### Traits
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 TmplDef          ::=  `trait' TraitDef
 TraitDef         ::=  id [TypeParamClause] TraitTemplateOpt
 TraitTemplateOpt ::=  `extends' TraitTemplate | [[`extends'] TemplateBody]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A trait is a class that is meant to be added to some other class
 as a mixin. Unlike normal classes, traits cannot have
@@ -1012,14 +1012,14 @@ least proper supertype (which is statically known).
     comparison operators `<=`, `>`, and
     `>=`. 
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     trait Comparable[T <: Comparable[T]] { self: T =>
       def < (that: T): Boolean
       def <=(that: T): Boolean = this < that || this == that
       def > (that: T): Boolean = that < this 
       def >=(that: T): Boolean = that <= this
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) Consider an abstract class `Table` that implements maps
     from a type of keys `A` to a type of values `B`. The class
@@ -1029,7 +1029,7 @@ least proper supertype (which is statically known).
     `get`, except that it returns a given default value if the table
     is undefined for the given key. This class is implemented as follows.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class Table[A, B](defaultValue: B) {
       def get(key: A): Option[B]
       def set(key: A, value: B)
@@ -1038,29 +1038,29 @@ least proper supertype (which is statically known).
         case None => defaultValue
       }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Here is a concrete implementation of the `Table` class.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class ListTable[A, B](defaultValue: B) extends Table[A, B](defaultValue) {
       private var elems: List[(A, B)]
       def get(key: A) = elems.find(._1.==(key)).map(._2)
       def set(key: A, value: B) = { elems = (key, value) :: elems }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Here is a trait that prevents concurrent access to the
     `get` and `set` operations of its parent class:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     trait SynchronizedTable[A, B] extends Table[A, B] {
       abstract override def get(key: A): B = 
         synchronized { super.get(key) }
       abstract override def set((key: A, value: B) = 
         synchronized { super.set(key, value) }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Note that `SynchronizedTable` does not pass an argument to
     its superclass, `Table`, even  though `Table` is defined with a
@@ -1074,9 +1074,9 @@ least proper supertype (which is statically known).
     table with strings as keys and integers as values and with a default 
     value `0`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     object MyTable extends ListTable[String, Int](0) with SynchronizedTable
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The object `MyTable` inherits its `get` and `set`
     method from `SynchronizedTable`.  The `super` calls in these
@@ -1087,9 +1087,9 @@ least proper supertype (which is statically known).
 
 ## Object Definitions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 ObjectDef       ::=  id ClassTemplate
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An object definition defines a single object of a new class. Its 
 most general form is
@@ -1097,9 +1097,9 @@ most general form is
 $m$ is the name of the object to be defined, and 
 $t$ is a [template](#templates) of the form
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\mathit{stats}$ }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 which defines the base classes, behavior and initial state of $m$.
 The extends clause `extends $sc$ with $mt_1$ with $\ldots$ with $mt_n$` 
@@ -1112,9 +1112,9 @@ The object definition defines a single object (or: _module_)
 conforming to the template $t$.  It is roughly equivalent to the
 following definition of a lazy value:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 lazy val $m$ = new $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { this: $m.type$ => $\mathit{stats}$ }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Note that the value defined by an object definition is instantiated
 lazily.  The `new $m$\$cls` constructor is evaluated
@@ -1135,7 +1135,7 @@ top-level objects are translated to static fields.
     effect can be achieved by an accompanying object definition
     E.g.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     abstract class Point {
       val x: Double 
       val y: Double 
@@ -1144,7 +1144,7 @@ top-level objects are translated to static fields.
     object Point {
       val origin = new Point() { val x = 0.0; val y = 0.0 }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     This defines a class `Point` and an object `Point` which
     contains `origin` as a member.  Note that the double use of the

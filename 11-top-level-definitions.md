@@ -2,7 +2,7 @@
 
 ## Compilation Units
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 CompilationUnit  ::=  {‘package’ QualId semi} TopStatSeq
 TopStatSeq       ::=  TopStat {semi TopStat}
 TopStat          ::=  {Annotation} {Modifier} TmplDef
@@ -11,7 +11,7 @@ TopStat          ::=  {Annotation} {Modifier} TmplDef
                    |  PackageObject
                    |
 QualId           ::=  id {‘.’ id}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A compilation unit consists of a sequence of packagings, import
 clauses, and class and object definitions, which may be preceded by a
@@ -19,24 +19,24 @@ package clause.
 
 A compilation unit 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package $p_1$;
 $\ldots$
 package $p_n$;
 $\mathit{stats}$
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 starting with one or more package
 clauses is equivalent to a compilation unit consisting of the
 packaging 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package $p_1$ { $\ldots$
   package $p_n$ {
     $\mathit{stats}$
   } $\ldots$
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Implicitly imported into every compilation unit are, in that order :
 the package `java.lang`, the package `scala`, and the object
@@ -46,9 +46,9 @@ that order hide members of an earlier import.
 
 ## Packagings
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Packaging       ::=  ‘package’ QualId [nl] ‘{’ TopStatSeq ‘}’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A package is a special object which defines a set of member classes,
 objects and packages.  Unlike other objects, packages are not introduced
@@ -65,11 +65,11 @@ Inside the packaging, all members of package $p$ are visible under their
 simple names. However this rule does not extend to members of enclosing
 packages of $p$ that are designated by a prefix of the path $p$.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package org.net.prj {
   ...
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 all members of package `org.net.prj` are visible under their
 simple names, but members of packages `org` or `org.net` require
@@ -88,9 +88,9 @@ are visible to each other without qualification.
 
 ## Package Objects
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 PackageObject   ::=  ‘package’ ‘object’ ObjectDef
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A package object `package object $p$ extends $t$` adds the
 members of template $t$ to the package $p$. There can be only one
@@ -107,9 +107,9 @@ future version of Scala.
 
 ## Package References
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 QualId           ::=  id {‘.’ id}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A reference to a package takes the form of a qualified identifier.
 Like all other references, package references are relative. That is, 
@@ -121,7 +121,7 @@ outermost root package which contains all top-level packages.
 
 (@package-ids) Consider the following program:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     package b {
       class B 
     }
@@ -131,7 +131,7 @@ outermost root package which contains all top-level packages.
         val x = new _root_.b.B
       }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Here, the reference `_root_.b.B` refers to class `B` in the
     toplevel package `b`. If the `_root_` prefix had been
@@ -157,34 +157,34 @@ which executes the initializaton code of the object $m$.
 (@) The following example will create a hello world program by defining
     a method `main` in module `test.HelloWorld`.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     package test
     object HelloWorld {
       def main(args: Array[String]) { println("Hello World") }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     This program can be started by the command
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     scala test.HelloWorld
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     In a Java environment, the command
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     java test.HelloWorld
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     would work as well. 
 
     `HelloWorld` can also be defined without a `main` method 
     by inheriting from `App` instead:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     package test 
     object HelloWorld extends App {
       println("Hello World")
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 

@@ -1,6 +1,6 @@
 # Types
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
   Type              ::=  FunctionArgTypes ‘=>’ Type
                       |  InfixType [ExistentialClause]
   FunctionArgTypes  ::=  InfixType
@@ -20,7 +20,7 @@
                       |  ‘(’ Types ‘)’
   TypeArgs          ::=  ‘[’ Types ‘]’
   Types             ::=  Type {‘,’ Type}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 We distinguish between first-order types and type constructors, which
 take type parameters and yield types. A subset of first-order types
@@ -60,14 +60,14 @@ the corresponding anonymous type function directly.
 
 ## Paths
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Path            ::=  StableId
                   |  [id ‘.’] this
 StableId        ::=  id
                   |  Path ‘.’ id
                   |  [id ‘.’] ‘super’ [ClassQualifier] ‘.’ id
 ClassQualifier  ::= ‘[’ id ‘]’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Paths are not types themselves, but they can be a part of named types
 and in that function form a central role in Scala's type system.
@@ -97,9 +97,9 @@ forms.
 
 ### Singleton Types
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleType  ::=  Path ‘.’ type
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A singleton type is of the form `$p$.type`, where $p$ is a
 path pointing to a value expected to [conform](#expression-typing)
@@ -111,9 +111,9 @@ declared to be a subtype of trait `scala.Singleton`.
 
 ### Type Projection
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleType  ::=  SimpleType ‘#’ id
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A type projection `$T$#$x$` references the type member named
 $x$ of type $T$. 
@@ -126,9 +126,9 @@ If $x$ references an abstract type member, then $T$ must be a
 
 ### Type Designators
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleType  ::=  StableId
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A type designator refers to a named value type. It can be simple or
 qualified. All such type designators are shorthands for type projections.
@@ -157,10 +157,10 @@ equivalent to the type projection `p.type#t`.
 
 ### Parameterized Types
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleType      ::=  SimpleType TypeArgs
 TypeArgs        ::=  ‘[’ Types ‘]’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A parameterized type $T[ U_1 , \ldots , U_n ]$ consists of a type
 designator $T$ and type parameters $U_1 , \ldots , U_n$ where 
@@ -175,7 +175,7 @@ substitution $[ a_1 := T_1 , \ldots , a_n := T_n ]$.
 
 (@param-types) Given the partial type definitions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class TreeMap[A <: Comparable[A], B] { … }
     class List[A] { … }
     class I extends Comparable[I] { … }
@@ -183,23 +183,23 @@ substitution $[ a_1 := T_1 , \ldots , a_n := T_n ]$.
     class F[M[_], X] { … }
     class S[K <: String] { … }
     class G[M[ Z <: I ], I] { … }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     the following parameterized types are well formed:
 
-    ~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
       TreeMap[I, String]
       List[I]
       List[List[Boolean]]
       
       F[List, Int]
       G[S, String]
-    ~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) Given the type definitions of (@param-types),
     the following types are ill-formed:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     TreeMap[I]            // illegal: wrong number of parameters
     TreeMap[List[I], Int] // illegal: type parameter not within bound
     
@@ -210,13 +210,13 @@ substitution $[ a_1 := T_1 , \ldots , a_n := T_n ]$.
                           //   conform to String,
                           // G expects type constructor with a parameter
                           //   that conforms to Int
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 ### Tuple Types
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 SimpleType    ::=   ‘(’ Types ‘)’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A tuple type $(T_1 , \ldots , T_n)$ is an alias for the
 class `scala.Tuple$_n$[$T_1$, … , $T_n$]`, where $n \geq 2$.
@@ -228,7 +228,7 @@ class and product trait are defined at least as follows in the
 standard Scala library (they might also add other methods and
 implement other traits).
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 case class Tuple$n$[+T1, … , +$T_n$](_1: T1, … , _n: $T_n$) 
 extends Product_n[T1, … , $T_n$]
 
@@ -238,13 +238,13 @@ trait Product_n[+T1, … , +$T_n$] {
   …
   def _n: $T_n$
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 ### Annotated Types
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 AnnotType  ::=  SimpleType {Annotation}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An annotated type $T$ `$a_1 , \ldots , a_n$`
 attaches [annotations](#user-defined-annotations) 
@@ -253,21 +253,21 @@ $a_1 , \ldots , a_n$ to the type $T$.
 (@) The following type adds the `@suspendable` annotation to the type
     `String`:
 
-    ~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     String @suspendable
-    ~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ### Compound Types
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 CompoundType    ::=  AnnotType {‘with’ AnnotType} [Refinement]
                   |  Refinement
 Refinement      ::=  [nl] ‘{’ RefineStat {semi RefineStat} ‘}’
 RefineStat      ::=  Dcl
                   |  ‘type’ TypeDef
                   |
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A compound type `$T_1$ with … with $T_n$ { $R$ }`
 represents objects with members as given in the component types 
@@ -300,7 +300,7 @@ equivalent to `AnyRef{ R }`.
 (@) The following example shows how to declare and use a function which 
     parameter's type contains a refinement with structural declarations.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     case class Bird (val name: String) extends Object {
     	def fly(height: Int) = …
   	…
@@ -320,7 +320,7 @@ equivalent to `AnyRef{ R }`.
     val a380 = new Plane("TZ-987")
     takeoff(42, bird)
     takeoff(89, a380)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Although `Bird` and `Plane` do not share any parent class other than 
     `Object`, the parameter _r_ of function `takeoff` is defined using a 
@@ -330,9 +330,9 @@ equivalent to `AnyRef{ R }`.
  
 ### Infix Types
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 InfixType     ::=  CompoundType {id [nl] CompoundType}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An infix type `$T_1$ \mathit{op} $T_2$` consists of an infix
 operator $\mathit{op}$ which gets applied to two type operands $T_1$ and
@@ -359,11 +359,11 @@ $t_0 \mathit{op_1} (t_1 \mathit{op_2} ( \ldots \mathit{op_n} t_n) \ldots)$.
 
 ### Function Types
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Type              ::=  FunctionArgs ‘=>’ Type
 FunctionArgs      ::=  InfixType
                     |  ‘(’ [ ParamType {‘,’ ParamType } ] ‘)’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The type $(T_1 , \ldots , T_n) \Rightarrow U$ represents the set of function
 values that take arguments of types $T1 , \ldots , Tn$ and yield
@@ -382,26 +382,26 @@ $(T_1 , \ldots , T_n) \Rightarrow U$ is a shorthand for the class type
 `Function$_n$[T1 , … , $T_n$, U]`. Such class
 types are defined in the Scala library for $n$ between 0 and 9 as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package scala 
 trait Function_n[-T1 , … , -T$_n$, +R] {
   def apply(x1: T1 , … , x$_n$: T$_n$): R 
   override def toString = "<function>" 
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Hence, function types are [covariant](#variance-annotations) in their
 result type and contravariant in their argument types.
 
 ### Existential Types
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Type               ::= InfixType ExistentialClauses
 ExistentialClauses ::= ‘forSome’ ‘{’ ExistentialDcl 
                        {semi ExistentialDcl} ‘}’
 ExistentialDcl     ::= ‘type’ TypeDcl 
                     |  ‘val’ ValDcl
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 An existential type has the form `$T$ forSome { $Q$ }`
 where $Q$ is a sequence of 
@@ -464,9 +464,9 @@ fresh type name and $T'$ results from $T$ by replacing every occurrence of
 
 #### Placeholder Syntax for Existential Types
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 WildcardType   ::=  ‘_’ TypeBounds
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Scala supports a placeholder syntax for existential types.
 A _wildcard type_ is of the form `_$\;$>:$\,L\,$<:$\,U$`. Both bound
@@ -484,9 +484,9 @@ $T$ is a wildcard type `_$\;$>:$\,L\,$<:$\,U$`. Then $T$ is equivalent to the
 existential
 type
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 $p.c[\mathit{targs},t,\mathit{targs}']$ forSome { type $t$ >: $L$ <: $U$ }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 where $t$ is some fresh type variable. 
 Wildcard types may also appear as parts of [infix types](#infix-types)
@@ -497,49 +497,49 @@ type.
 
 (@) Assume the class definitions
     
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     class Ref[T]
     abstract class Outer { type T } .
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Here are some examples of existential types:
     
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     Ref[T] forSome { type T <: java.lang.Number }
     Ref[x.T] forSome { val x: Outer }
     Ref[x_type # T] forSome { type x_type <: Outer with Singleton }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     The last two types in this list are equivalent.
     An alternative formulation of the first type above using wildcard syntax is:
     
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     Ref[_ <: java.lang.Number]
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) The type `List[List[_]]` is equivalent to the existential type
     
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     List[List[t] forSome { type t }] . 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) Assume a covariant type
     
-    ~~~~~~~~~~~~~~~ 
+    ``` 
     class List[+T]
-    ~~~~~~~~~~~~~~~
+    ```
 
     The type
     
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     List[T] forSome { type T <: java.lang.Number }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     is equivalent (by simplification rule 4 above) to
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     List[java.lang.Number] forSome { type T <: java.lang.Number }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     which is in turn equivalent (by simplification rules 2 and 3 above) to
     `List[java.lang.Number]`.
@@ -575,19 +575,19 @@ corresponding function type.
 
 (@) The declarations
     
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def a: Int
     def b (x: Int): Boolean
     def c (x: Int) (y: String, z: String): String
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     produce the typings
     
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     a: => Int
     b: (Int) Boolean
     c: (Int) (String, String) String
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 ### Polymorphic Method Types
 
@@ -603,17 +603,17 @@ take type arguments `$S_1 , \ldots , S_n$` which
 
 (@) The declarations
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def empty[A]: List[A]
     def union[A <: Comparable[A]] (x: Set[A], xs: Set[A]): Set[A]
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     produce the typings
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     empty : [A >: Nothing <: Any] List[A]
     union : [A >: Nothing <: Comparable[A]] (x: Set[A], xs: Set[A]) Set[A]  .
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 ### Type Constructors
 
@@ -626,11 +626,11 @@ the corresponding type parameter clause.
 
 (@) Consider this fragment of the `Iterable[+X]` class:
     
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     trait Iterable[+X] {
       def flatMap[newType[+X] <: Iterable[X], S](f: X => newType[S]): newType[S]
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     Conceptually, the type constructor `Iterable` is a name for the 
     anonymous type `[+X] Iterable[X]`, which may be passed to the 
@@ -884,11 +884,11 @@ are understood to be relative to that order.
 > of a set of types does not always exist. For instance, consider
 > the class definitions
 
-~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 class A[+T] {}
 class B extends A[B]
 class C extends A[C]
-~~~~~~~~~~~~~~~~~~~~~
+```
 
 > Then the types `A[Any], A[A[Any]], A[A[A[Any]]], ...` form
 > a descending sequence of upper bounds for `B` and `C`. The
@@ -920,14 +920,14 @@ to a type $T$, written $S <:_w
 T$, if $S <: T$ or both $S$ and $T$ are primitive number types
 and $S$ precedes $T$ in the following ordering.
 
-~~~~~~~~~~~~~~~~~~~~
+```
 Byte  $<:_w$ Short 
 Short $<:_w$ Int
 Char  $<:_w$ Int
 Int   $<:_w$ Long
 Long  $<:_w$ Float
 Float $<:_w$ Double
-~~~~~~~~~~~~~~~~~~~~
+```
 
 A _weak least upper bound_ is a least upper bound with respect to
 weak conformance.

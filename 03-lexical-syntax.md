@@ -11,10 +11,10 @@ to Scala mode, and literal characters ‘c’ refer to the ASCII fragment
 In Scala mode, _Unicode escapes_ are replaced by the corresponding
 Unicode character with the given hexadecimal code.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 UnicodeEscape ::= \{\\}u{u} hexDigit hexDigit hexDigit hexDigit
 hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 To construct tokens, characters are distinguished according to the following 
 classes (Unicode general category given in parentheses):
@@ -35,7 +35,7 @@ classes (Unicode general category given in parentheses):
 
 ## Identifiers
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 op       ::=  opchar {opchar} 
 varid    ::=  lower idrest
 plainid  ::=  upper idrest
@@ -44,7 +44,7 @@ plainid  ::=  upper idrest
 id       ::=  plainid
            |  ‘`’ stringLit ‘`’
 idrest   ::=  {letter | digit} [‘_’ op]
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 There are three ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
@@ -60,9 +60,9 @@ of all characters excluding the backquotes themselves.
  
 As usual, a longest match rule applies. For instance, the string
 
-~~~~~~~~~~~~~~~~ 
+``` 
 big_bob++=`def`
-~~~~~~~~~~~~~~~~
+```
 
 decomposes into the three identifiers `big_bob`, `++=`, and
 `def`. The rules for pattern matching further distinguish between
@@ -76,7 +76,7 @@ identifiers which contain ‘\$’ characters.
 The following names are reserved words instead of being members of the
 syntactic class `id` of lexical identifiers.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 abstract    case        catch       class       def
 do          else        extends     false       final
 finally     for         forSome     if          implicit
@@ -86,18 +86,18 @@ return      sealed      super       this        throw
 trait       try         true        type        val         
 var         while       with        yield
 _    :    =    =>    <-    <:    <%     >:    #    @
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The Unicode operators \\u21D2 ‘$\Rightarrow$’ and \\u2190 ‘$\leftarrow$’, which have the ASCII 
 equivalents ‘=>’ and ‘<-’, are also reserved.
 
 (@) Here are examples of identifiers:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
         x         Object        maxIndex   p2p      empty_?
         +         `yield`       αρετη     _y       dot_product_*
         __system  _MAX_LEN_     
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) Backquote-enclosed strings are a solution when one needs to
     access Java identifiers that are reserved words in Scala. For
@@ -108,9 +108,9 @@ equivalents ‘=>’ and ‘<-’, are also reserved.
 
 ## Newline Characters
 
-~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 semi ::= ‘;’ |  nl {nl}
-~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Scala is a line-oriented language where statements may be terminated by
 semi-colons or newlines. A newline in a Scala source text is treated
@@ -123,19 +123,19 @@ as the special token “nl” if the three following criteria are satisfied:
 The tokens that can terminate a statement are: literals, identifiers
 and the following delimiters and reserved words:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 this    null    true    false    return    type    <xml-start>    
 _       )       ]       }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The tokens that can begin a statement are all Scala tokens _except_
 the following delimiters and reserved words:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 catch    else    extends    finally    forSome    match        
 with    yield    ,    .    ;    :    =    =>    <-    <:    <%    
 >:    #    [    )    ]    }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A `case` token can begin a statement only if followed by a
 `class` or `object` token.
@@ -202,7 +202,7 @@ A single new line token is accepted
     on two lines. The newline tokens between the two lines are not
     treated as statement separators.
 
-    ~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     if (x > 0)
       x = x - 1
 
@@ -214,23 +214,23 @@ A single new line token is accepted
 
     type
       IntList = List[Int]
-    ~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) The following code designates an anonymous class:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     new Iterator[Int]
     {
       private var x = 0
       def hasNext = true
       def next = { x += 1; x }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     With an additional newline character, the same code is interpreted as
     an object creation followed by a local block:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     new Iterator[Int] 
 
     {
@@ -238,56 +238,56 @@ A single new line token is accepted
       def hasNext = true
       def next = { x += 1; x }
     }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) The following code designates a single expression:
 
-    ~~~~~~~~~~~~ 
+    ``` 
       x < 0 ||
       x > 10
-    ~~~~~~~~~~~~
+    ```
 
     With an additional newline character, the same code is interpreted as
     two expressions:
 
-    ~~~~~~~~~~~ 
+    ``` 
       x < 0 ||
 
       x > 10
-    ~~~~~~~~~~~
+    ```
 
 (@) The following code designates a single, curried function definition:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def func(x: Int)
             (y: Int) = x + y
-    ~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     With an additional newline character, the same code is interpreted as
     an abstract function definition and a syntactically illegal statement:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     def func(x: Int)
 
             (y: Int) = x + y
-    ~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) The following code designates an attributed definition:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     @serializable
     protected class Data { ... }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     With an additional newline character, the same code is interpreted as
     an attribute and a separate statement (which is syntactically
     illegal).
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     @serializable
 
     protected class Data { ... }
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ## Literals
@@ -301,7 +301,7 @@ each case as in Java.
   particular float and double. 
 -->
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 Literal  ::=  [‘-’] integerLiteral
            |  [‘-’] floatingPointLiteral
            |  booleanLiteral
@@ -309,12 +309,12 @@ Literal  ::=  [‘-’] integerLiteral
            |  stringLiteral
            |  symbolLiteral
            |  ‘null’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 
 ### Integer Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 integerLiteral  ::=  (decimalNumeral | hexNumeral | octalNumeral) 
                        [‘L’ | ‘l’]
 decimalNumeral  ::=  ‘0’ | nonZeroDigit {digit}
@@ -323,7 +323,7 @@ octalNumeral    ::=  ‘0’ octalDigit {octalDigit}
 digit           ::=  ‘0’ | nonZeroDigit
 nonZeroDigit    ::=  ‘1’ | … | ‘9’
 octalDigit      ::=  ‘0’ | … | ‘7’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Integer literals are usually of type `Int`, or of type
 `Long` when followed by a `L` or
@@ -347,21 +347,21 @@ is _pt_. The numeric ranges given by these types are:
 
 (@) Here are some integer literals:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     0          21          0xFFFFFFFF       0777L
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 
 ### Floating Point Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 floatingPointLiteral  ::=  digit {digit} ‘.’ {digit} [exponentPart] [floatType]
                         |  ‘.’ digit {digit} [exponentPart] [floatType]
                         |  digit {digit} exponentPart [floatType]
                         |  digit {digit} [exponentPart] floatType
 exponentPart          ::=  (‘E’ | ‘e’) [‘+’ | ‘-’] digit {digit}
 floatType             ::=  ‘F’ | ‘f’ | ‘D’ | ‘d’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 Floating point literals are of type `Float` when followed by
 a floating point type suffix `F` or `f`, and are
@@ -376,9 +376,9 @@ whitespace character between the two tokens.
 
 (@) Here are some floating point literals:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     0.0        1e30f      3.14159f      1.0e-100      .1
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 (@) The phrase `1.toString` parses as three different tokens:
     `1`, `.`, and `toString`. On the
@@ -389,9 +389,9 @@ whitespace character between the two tokens.
 
 ### Boolean Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 booleanLiteral  ::=  ‘true’ | ‘false’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The boolean literals `true` and `false` are
 members of type `Boolean`.
@@ -399,10 +399,10 @@ members of type `Boolean`.
 
 ### Character Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 characterLiteral  ::=  ‘'’ printableChar ‘'’
                     |  ‘'’ charEscapeSeq ‘'’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A character literal is a single character enclosed in quotes.
 The character is either a printable unicode character or is described
@@ -410,9 +410,9 @@ by an [escape sequence](#escape-sequences).
 
 (@) Here are some character literals:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
     'a'    '\u0041'    '\n'    '\t'
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 Note that `'\u000A'` is _not_ a valid character literal because
 Unicode conversion is done before literal parsing and the Unicode
@@ -423,10 +423,10 @@ the octal escape `'\12'` ([see here](#escape-sequences)).
 
 ### String Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 stringLiteral  ::=  ‘\"’ {stringElement} ‘\"’
 stringElement  ::=  printableCharNoDoubleQuote  |  charEscapeSeq
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A string literal is a sequence of characters in double quotes.  The
 characters are either printable unicode character or are described by
@@ -437,17 +437,17 @@ class `String`.
 
 (@) Here are some string literals:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     "Hello,\nWorld!"       
     "This string contains a \" character."
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
 #### Multi-Line String Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 stringLiteral   ::=  ‘"""’ multiLineChars ‘"""’
 multiLineChars  ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A multi-line string literal is a sequence of characters enclosed in
 triple quotes `""" ... """`. The sequence of characters is
@@ -459,37 +459,37 @@ of the escape sequences [here](#escape-sequences) are interpreted.
 
 (@) Here is a multi-line string literal:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
       """the present string
          spans three 
          lines."""
-    ~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
     This would produce the string:
 
-    ~~~~~~~~~~~~~~~~~~~
+    ```
     the present string
          spans three 
          lines.
-    ~~~~~~~~~~~~~~~~~~~
+    ```
 
 The Scala library contains a utility method `stripMargin`
 which can be used to strip leading whitespace from multi-line strings.
 The expression
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
  """the present string
     spans three 
     lines.""".stripMargin
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 evaluates to
 
-~~~~~~~~~~~~~~~~~~~~ 
+``` 
 the present string
 spans three 
 lines.
-~~~~~~~~~~~~~~~~~~~~
+```
 
 Method `stripMargin` is defined in class
 [scala.collection.immutable.StringLike](http://www.scala-lang.org/api/current/index.html#scala.collection.immutable.StringLike). 
@@ -524,20 +524,20 @@ string literal does not start a valid escape sequence.
 
 ### Symbol literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 symbolLiteral  ::=  ‘'’ plainid
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 A symbol literal `'x` is a shorthand for the expression
 `scala.Symbol("x")`. `Symbol` is a [case class](#case-classes), 
 which is defined as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
 package scala
 final case class Symbol private (name: String) {
   override def toString: String = "'" + name
 }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The `apply` method of `Symbol`'s companion object
 caches weak references to `Symbol`s, thus ensuring that
@@ -568,11 +568,11 @@ angle bracket '<' in the following circumstance: The '<' must be
 preceded either by whitespace, an opening parenthesis or an opening
 brace and immediately followed by a character starting an XML name.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+``` 
  ( whitespace | ‘(’ | ‘{’ ) ‘<’ (XNameStart | ‘!’ | ‘?’)
 
   XNameStart ::= ‘_’ | BaseChar | Ideographic // as in W3C XML, but without ‘:’
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 The scanner switches from XML mode to Scala mode if either
 
@@ -591,11 +591,11 @@ as text.
 (@) The following value definition uses an XML literal with two embedded
 Scala expressions
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    ``` 
     val b = <book>
               <title>The Scala Language Specification</title>
               <version>{scalaBook.version}</version>
               <authors>{scalaBook.authors.mkList("", ", ", "")}</authors>
             </book>
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ```
 
