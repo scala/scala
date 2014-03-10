@@ -14,8 +14,13 @@ import scala.annotation.implicitNotFound
 import scala.util.Try
 
 /**
- * An `ExecutionContext` can execute program logic, typically but not
- * necessarily on a thread pool.
+ * An `ExecutionContext` can execute program logic asynchronously,
+ * typically but not necessarily on a thread pool.
+ *
+ * A general purpose `ExecutionContext` must be asynchronous in executing
+ * any `Runnable` that is passed into its `execute`-method. A special purpose
+ * `ExecutionContext` may be synchronous but must only be passed to code that
+ * is explicitly safe to be run using a synchronously executing `ExecutionContext`.
  *
  * APIs such as `Future.onComplete` require you to provide a callback
  * and an implicit `ExecutionContext`. The implicit `ExecutionContext`
