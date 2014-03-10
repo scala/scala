@@ -144,6 +144,10 @@ classpathArgs () {
   fi
 }
 
+# SI-8358, SI-8368 -- the default should really be false,
+# but I don't want to flip the default during 2.11's RC cycle
+OVERRIDE_USEJAVACP="-Dscala.usejavacp=true"
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -D*)
@@ -151,6 +155,8 @@ while [[ $# -gt 0 ]]; do
       # need it, e.g. communicating with a server compiler.
       java_args=("${java_args[@@]}" "$1")
       scala_args=("${scala_args[@@]}" "$1")
+      # respect user-supplied -Dscala.usejavacp
+      case "$1" in -Dscala.usejavacp) OVERRIDE_USEJAVACP="" esac
       shift
       ;;
     -J*)
@@ -199,7 +205,7 @@ execCommand \
   "${java_args[@@]}" \
   $(classpathArgs) \
   -Dscala.home="$SCALA_HOME" \
-  -Dscala.usejavacp=true \
+  $OVERRIDE_USEJAVACP \
   "$EMACS_OPT" \
   $WINDOWS_OPT \
   @properties@ @class@ @toolflags@ "$@@"
