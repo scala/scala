@@ -1,7 +1,8 @@
+import scala.reflect.runtime.{ universe => ru }
+
 object Test extends App {
  
   trait FormTrait {
-    import scala.reflect.runtime.{ universe => ru }
 
     val runtimeMirror = ru.runtimeMirror(this.getClass.getClassLoader)
     val instanceMirror = runtimeMirror.reflect(this)
@@ -26,5 +27,25 @@ object Test extends App {
     ()
   }
 
-  f()  
+  val g = () => {
+    // Reported as SI-8195, same root cause
+    trait Form {
+ 
+      private val runtimeMirror = ru.runtimeMirror(this.getClass.getClassLoader)
+      private val instanceMirror = runtimeMirror.reflect(this)
+      private val members = instanceMirror.symbol.typeSignature.members
+ 
+    }
+ 
+    val f1 = new Form {
+      val a = 1
+    }
+ 
+    val f2 = new Form {
+      val b = f1.a
+    }
+  }
+
+  f() 
+  g() 
 }
