@@ -776,16 +776,16 @@ prefers high-priority implicits over low-priority ones.
 
 The available low-priority implicits include definitions falling into the following categories.
 
-#.  For every primitive type, a wrapper that takes values of that type
+1.  For every primitive type, a wrapper that takes values of that type
     to instances of a `runtime.Rich*` class. For instance, values of type `Int`
     can be implicitly converted to instances of class `runtime.RichInt`.
 
-#.  For every array type with elements of primitive type, a wrapper that
+1.  For every array type with elements of primitive type, a wrapper that
     takes the arrays of that type to instances of a `runtime.WrappedArray` class. For instance, values of type `Array[Float]` can be implicitly converted to instances of class `runtime.WrappedArray[Float]`.
     There are also generic array wrappers that take elements
     of type `Array[T]` for arbitrary `T` to `WrappedArray`s.
 
-#.  An implicit conversion from `String` to `WrappedString`.
+1.  An implicit conversion from `String` to `WrappedString`.
 
 
 The available high-priority implicits include definitions falling into the following categories.

@@ -225,7 +225,7 @@ reasonable compromise I found was to treat definitions like quotations:
 Latex enumerations can be replaced with markdown ordered lists, which have
 syntax
 
-    #. first entry
-    #. ...
-    #. last entry
+ 1. first entry
+ 1. ...
+ 1. last entry
 

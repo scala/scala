@@ -11,12 +11,12 @@ which are collectively called _bindings_.
 
 Bindings of different kinds have a precedence defined on them:
 
-#. Definitions and declarations that are local, inherited, or made 
+1. Definitions and declarations that are local, inherited, or made
    available by a package clause in the same compilation unit where the 
    definition occurs have highest precedence. 
-#. Explicit imports have next highest precedence.
-#. Wildcard imports  have next highest precedence.
-#. Definitions made available by a package clause not in the 
+1. Explicit imports have next highest precedence.
+1. Wildcard imports  have next highest precedence.
+1. Definitions made available by a package clause not in the
    compilation unit where the definition occurs have lowest precedence.
 
 

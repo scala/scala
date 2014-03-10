@@ -33,17 +33,17 @@ than once in a pattern.
 
 (@) Some examples of patterns are:
 
-    #.  The pattern `ex: IOException` matches all instances of class
+ 1.  The pattern `ex: IOException` matches all instances of class
         `IOException`, binding variable \verb@ex@ to the instance.
-    #.  The pattern `Some(x)` matches values of the form `Some($v$)`,
+ 1.  The pattern `Some(x)` matches values of the form `Some($v$)`,
         binding `x` to the argument value $v$ of the `Some` constructor.
-    #.  The pattern `(x, _)` matches pairs of values, binding `x` to
+ 1.  The pattern `(x, _)` matches pairs of values, binding `x` to
         the first component of the pair. The second component is matched
         with a wildcard pattern.
-    #.  The pattern `x :: y :: xs`{.scala} matches lists of length $\geq 2$,
+ 1.  The pattern `x :: y :: xs`{.scala} matches lists of length $\geq 2$,
         binding `x` to the list's first element, `y` to the list's
         second element, and `xs` to the remainder.
-    #.  The pattern `1 | 2 | 3` matches the integers between 1 and 3.
+ 1.  The pattern `1 | 2 | 3` matches the integers between 1 and 3.
 
     Pattern matching is always done in a context which supplies an
     expected type of the pattern. We distinguish the following kinds of
@@ -313,9 +313,9 @@ type `Seq[A]`.
 
 A pattern $p$ is _irrefutable_ for a type $T$, if one of the following applies:
 
-#.  $p$ is a variable pattern,
-#.  $p$ is a typed pattern $x: T'$, and $T <: T'$,
-#.  $p$ is a constructor pattern $c(p_1 , \ldots , p_n)$, the type $T$
+1.  $p$ is a variable pattern,
+1.  $p$ is a typed pattern $x: T'$, and $T <: T'$,
+1.  $p$ is a constructor pattern $c(p_1 , \ldots , p_n)$, the type $T$
     is an instance of class $c$, the [primary constructor](#class-definitions)
     of type $T$ has argument types $T_1 , \ldots , T_n$, and each $p_i$ is 
     irrefutable for $T_i$.

@@ -436,18 +436,18 @@ with lower bound $\sigma L_i$ and upper bound $\sigma U_i$.
 
 Existential types obey the following four equivalences:
 
-#. Multiple for-clauses in an existential type can be merged. E.g.,
+1. Multiple for-clauses in an existential type can be merged. E.g.,
 `$T$ forSome { $Q$ } forSome { $Q'$ }`
 is equivalent to
 `$T$ forSome { $Q$ ; $Q'$}`.
-#. Unused quantifications can be dropped. E.g.,
+1. Unused quantifications can be dropped. E.g.,
 `$T$ forSome { $Q$ ; $Q'$}`
 where none of the types defined in $Q'$ are referred to by $T$ or $Q$,
 is equivalent to
 `$T$ forSome {$ Q $}`.
-#. An empty quantification can be dropped. E.g.,
+1. An empty quantification can be dropped. E.g.,
 `$T$ forSome { }` is equivalent to $T$.
-#. An existential type `$T$ forSome { $Q$ }` where $Q$ contains
+1. An existential type `$T$ forSome { $Q$ }` where $Q$ contains
 a clause `type $t[\mathit{tps}] >: L <: U$` is equivalent 
 to the type `$T'$ forSome { $Q$ }` where $T'$ results from $T$ by replacing 
 every [covariant occurrence](#variance-annotations) of $t$ in $T$ by $U$ and by 
@@ -646,15 +646,15 @@ Base Types and Member Definitions
 
 Types of class members depend on the way the members are referenced.
 Central here are three notions, namely:
-#. the notion of the set of base types of a type $T$,
-#. the notion of a type $T$ in some class $C$ seen from some 
+1. the notion of the set of base types of a type $T$,
+1. the notion of a type $T$ in some class $C$ seen from some
    prefix type $S$,
-#. the notion of the set of member bindings of some type $T$.
+1. the notion of the set of member bindings of some type $T$.
 
 
 These notions are defined mutually recursively as follows.
 
-#. The set of _base types_ of a type is a set of class types, 
+1. The set of _base types_ of a type is a set of class types,
    given as follows.
 
     - The base types of a class type $C$ with parents $T_1 , \ldots , T_n$ are
@@ -691,7 +691,7 @@ These notions are defined mutually recursively as follows.
     - The base types of an existential type `$T$ forSome { $Q$ }` are
       all types `$S$ forSome { $Q$ }` where $S$ is a base type of $T$.
 
-#. The notion of a type $T$ _in class $C$ seen from some prefix type $S$_ 
+1. The notion of a type $T$ _in class $C$ seen from some prefix type $S$_
    makes sense only if the prefix type $S$
    has a type instance of class $C$ as a base type, say
    `$S'$#$C$[$T_1 , \ldots , T_n$]`. Then we define as follows.
@@ -724,7 +724,7 @@ These notions are defined mutually recursively as follows.
     then we use ``$T$ seen from $S$'' as a shorthand for
     ``$T$ in $D$ seen from $S$''.
 
-#. The _member bindings_ of a type $T$ are (1) all bindings $d$ such that
+1. The _member bindings_ of a type $T$ are (1) all bindings $d$ such that
    there exists a type instance of some class $C$ among the base types of $T$
    and there exists a definition or declaration $d'$ in $C$
    such that $d$ results from $d'$ by replacing every
@@ -810,11 +810,11 @@ transitive relation that satisfies the following conditions.
 - A parameterized type `$T$[$T_1$ , … , $T_n$]` conforms to 
   `$T$[$U_1$ , … , $U_n$]` if
   the following three conditions hold for $i \in \{ 1 , \ldots , n \}$:
-    #. If the $i$'th type parameter of $T$ is declared covariant, then 
+ 1. If the $i$'th type parameter of $T$ is declared covariant, then
        $T_i <: U_i$.
-    #. If the $i$'th type parameter of $T$ is declared contravariant, then 
+ 1. If the $i$'th type parameter of $T$ is declared contravariant, then
        $U_i <: T_i$.
-    #. If the $i$'th type parameter of $T$ is declared neither covariant 
+ 1. If the $i$'th type parameter of $T$ is declared neither covariant
        nor contravariant, then $U_i \equiv T_i$.
 - A compound type `$T_1$ with $\ldots$ with $T_n$ {$R\,$}` conforms to
   each of its component types $T_i$.
@@ -952,11 +952,11 @@ A type is _volatile_ if it falls into one of four categories:
 A compound type `$T_1$ with … with $T_n$ {$R\,$}`
 is volatile if one of the following two conditions hold.
 
-#. One of $T_2 , \ldots , T_n$ is a type parameter or abstract type, or
-#. $T_1$ is an abstract type and and either the refinement $R$ 
+1. One of $T_2 , \ldots , T_n$ is a type parameter or abstract type, or
+1. $T_1$ is an abstract type and and either the refinement $R$
    or a type $T_j$ for $j > 1$ contributes an abstract member
    to the compound type, or
-#. one of $T_1 , \ldots , T_n$ is a singleton type.
+1. one of $T_1 , \ldots , T_n$ is a singleton type.
 
 
 Here, a type $S$ _contributes an abstract member_ to a type $T$ if

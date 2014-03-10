@@ -20,15 +20,15 @@ hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | 
 To construct tokens, characters are distinguished according to the following 
 classes (Unicode general category given in parentheses):
 
-#. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`{.grammar}
-#. Letters, which include lower case letters(Ll), upper case letters(Lu), 
+1. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`
+1. Letters, which include lower case letters(Ll), upper case letters(Lu),
    titlecase letters(Lt), other letters(Lo), letter numerals(Nl) and the 
    two characters \\u0024 ‘\\$’ and \\u005F ‘_’, which both count as upper case 
    letters
-#. Digits ` ‘0’ | … | ‘9’ `{.grammar}
-#. Parentheses ` ‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `{.grammar}
-#. Delimiter characters `` ‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’ ``{.grammar}
-#. Operator characters. These consist of all printable ASCII characters 
+1. Digits `‘0’ | … | ‘9’`
+1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `
+1. Delimiter characters ``‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’ ``
+1. Operator characters. These consist of all printable ASCII characters
    \\u0020-\\u007F which are in none of the sets above, mathematical symbols(Sm) 
    and other symbols(So).
 
@@ -119,9 +119,9 @@ Scala is a line-oriented language where statements may be terminated by
 semi-colons or newlines. A newline in a Scala source text is treated
 as the special token “nl” if the three following criteria are satisfied:
 
-#. The token immediately preceding the newline can terminate a statement.
-#. The token immediately following the newline can begin a statement.
-#. The token appears in a region where newlines are enabled.
+1. The token immediately preceding the newline can terminate a statement.
+1. The token immediately following the newline can begin a statement.
+1. The token appears in a region where newlines are enabled.
 
 The tokens that can terminate a statement are: literals, identifiers
 and the following delimiters and reserved words:
@@ -145,21 +145,21 @@ A `case`{.scala} token can begin a statement only if followed by a
 
 Newlines are enabled in:
 
-#. all of a Scala source file, except for nested regions where newlines
+1. all of a Scala source file, except for nested regions where newlines
    are disabled, and
-#. the interval between matching `{` and `}` brace tokens,
+1. the interval between matching `{` and `}` brace tokens,
    except for nested regions where newlines are disabled.
 
 Newlines are disabled in:
 
-#. the interval between matching `(` and `)` parenthesis tokens, except for 
+1. the interval between matching `(` and `)` parenthesis tokens, except for
    nested regions where newlines are enabled, and
-#. the interval between matching `[` and `]` bracket tokens, except for nested 
+1. the interval between matching `[` and `]` bracket tokens, except for nested
    regions where newlines are enabled.
-#. The interval between a `case`{.scala} token and its matching
+1. The interval between a `case`{.scala} token and its matching
    `=>`{.scala} token, except for nested regions where newlines are
    enabled.
-#. Any regions analyzed in [XML mode](#xml-mode).
+1. Any regions analyzed in [XML mode](#xml-mode).
 
 Note that the brace characters of `{...}` escapes in XML and
 string literals are not tokens, 

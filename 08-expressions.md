@@ -140,13 +140,13 @@ is required is the singleton type `$p$.type`.
 The contexts where a stable type is required are those that satisfy
 one of the following conditions:
 
-#. The path $p$ occurs as the prefix of a selection and it does not
+1. The path $p$ occurs as the prefix of a selection and it does not
 designate a constant, or
-#. The expected type $\mathit{pt}$ is a stable type, or
-#. The expected type $\mathit{pt}$ is an abstract type with a stable type as lower
+1. The expected type $\mathit{pt}$ is a stable type, or
+1. The expected type $\mathit{pt}$ is an abstract type with a stable type as lower
    bound, and the type $T$ of the entity referred to by $p$ does not
    conform to $\mathit{pt}$, or
-#. The path $p$ designates a module.
+1. The path $p$ designates a module.
 
 
 The selection $e.x$ is evaluated by first evaluating the qualifier
@@ -730,8 +730,8 @@ An assignment operator is an operator symbol (syntax category
 “`=`”, with the exception of operators for which one of 
 the following conditions holds:
 
-#. the operator also starts with an equals character, or
-#. the operator is one of `(<=)`, `(>=)`, `(!=)`.
+1. the operator also starts with an equals character, or
+1. the operator is one of `(<=)`, `(>=)`, `(!=)`.
 
 Assignment operators are treated specially in that they
 can be expanded to assignments if no other interpretation is valid.
@@ -749,11 +749,11 @@ except that the operation's left-hand-side $l$ is evaluated only once.
 
 The re-interpretation occurs if the following two conditions are fulfilled.
 
-#. The left-hand-side $l$ does not have a member named
+1. The left-hand-side $l$ does not have a member named
    `+=`, and also cannot be converted by an 
    [implicit conversion](#implicit-conversions)
    to a value with a member named `+=`.
-#. The assignment `$l$ = $l$ + $r$` is type-correct. 
+1. The assignment `$l$ = $l$ + $r$` is type-correct.
    In particular this implies that $l$ refers to a variable or object 
    that can be assigned to, and that is convertible to a value with a member 
    named `+`.
