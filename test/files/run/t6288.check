@@ -1,9 +1,9 @@
 [[syntax trees at end of                    patmat]] // newSource1.scala
 [7]package [7]<empty> {
-  [7]object Case3 extends [13][106]scala.AnyRef {
-    [106]def <init>(): [13]Case3.type = [106]{
+  [7]object Case3 extends [12][106]scala.AnyRef {
+    [106]def <init>(): [12]Case3.type = [106]{
       [106][106][106]Case3.super.<init>();
-      [13]()
+      [12]()
     };
     [21]def unapply([29]z: [32]<type: [32]scala.Any>): [21]Option[Int] = [56][52][52]scala.Some.apply[[52]Int]([58]-1);
     [64]{
@@ -23,10 +23,10 @@
       }
     }
   };
-  [113]object Case4 extends [119][217]scala.AnyRef {
-    [217]def <init>(): [119]Case4.type = [217]{
+  [113]object Case4 extends [118][217]scala.AnyRef {
+    [217]def <init>(): [118]Case4.type = [217]{
       [217][217][217]Case4.super.<init>();
-      [119]()
+      [118]()
     };
     [127]def unapplySeq([138]z: [141]<type: [141]scala.Any>): [127]Option[List[Int]] = [167]scala.None;
     [175]{
@@ -49,10 +49,10 @@
       }
     }
   };
-  [224]object Case5 extends [230][312]scala.AnyRef {
-    [312]def <init>(): [230]Case5.type = [312]{
+  [224]object Case5 extends [229][312]scala.AnyRef {
+    [312]def <init>(): [229]Case5.type = [312]{
       [312][312][312]Case5.super.<init>();
-      [230]()
+      [229]()
     };
     [238]def unapply([246]z: [249]<type: [249]scala.Any>): [238]Boolean = [265]true;
     [273]{

@@ -2722,7 +2722,7 @@ self =>
           val contextBoundBuf = new ListBuffer[Tree]
           val tparams = typeParamClauseOpt(name, contextBoundBuf)
           classContextBounds = contextBoundBuf.toList
-          val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
+          val tstart = (in.lastOffset :: classContextBounds.map(_.pos.start)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
             val viewBoundsExist = if (settings.future) "" else " nor view bounds `<% ...'"
               syntaxError(s"traits cannot have type parameters with context bounds `: ...'$viewBoundsExist", skipIt = false)
@@ -2757,7 +2757,7 @@ self =>
       in.nextToken()
       val nameOffset = in.offset
       val name = ident()
-      val tstart = in.offset
+      val tstart = in.lastOffset
       atPos(start, if (name == nme.ERROR) start else nameOffset) {
         val mods1 = if (in.token == SUBTYPE) mods | Flags.DEFERRED else mods
         val template = templateOpt(mods1, name, NoMods, Nil, tstart)
@@ -2885,9 +2885,8 @@ self =>
         DefDef(NoMods, nme.CONSTRUCTOR, Nil, ListOfNil, TypeTree(), Block(Nil, literalUnit))
       )
       val parentPos = o2p(in.offset)
-      val tstart1 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
 
-      atPos(tstart1) {
+      atPos(tstart) {
         // Exclude only the 9 primitives plus AnyVal.
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
           Template(parents, self, anyvalConstructor :: body)
