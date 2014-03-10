@@ -397,6 +397,37 @@ div.members > ol > li:last-child {
   margin-bottom: 5px;
 }
 
+#template .members li .permalink {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+
+#definition .permalink {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+}
+
+#definition .permalink a {
+  color: #EBEBEB;
+}
+
+#template .members li .permalink,
+#definition .permalink a {
+  display: none;
+}
+
+#template .members li:hover .permalink,
+#definition:hover .permalink a {
+  display: block;
+}
+
+#template .members li .permalink a,
+#definition .permalink a {
+  text-decoration: none;
+  font-weight: bold;
+}
 
 /* Comments text formating */
 

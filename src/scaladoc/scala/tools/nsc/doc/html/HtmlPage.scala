@@ -14,6 +14,7 @@ import base.comment._
 import model._
 
 import scala.xml.NodeSeq
+import scala.xml.Elem
 import scala.xml.dtd.{DocType, PublicID}
 import scala.collection._
 import java.io.Writer
@@ -219,4 +220,28 @@ abstract class HtmlPage extends Page { thisPage =>
     else if (ety.isObject) "object_big.png"
     else if (ety.isPackage) "package_big.png"
     else "class_big.png"  // FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
+
+  def permalink(template: Entity, isSelf: Boolean = true): Elem =
+    <span class="permalink">
+      <a href={ memberToUrl(template, isSelf) } title="Permalink" target="_top">
+        <img src={ relativeLinkTo(List("permalink.png", "lib")) } />
+      </a>
+    </span>
+
+  def memberToUrl(template: Entity, isSelf: Boolean = true): String = {
+    val (signature: Option[String], containingTemplate: TemplateEntity) = template match {
+      case dte: DocTemplateEntity if (!isSelf) => (Some(dte.signature), dte.inTemplate)
+      case dte: DocTemplateEntity => (None, dte)
+      case me: MemberEntity => (Some(me.signature), me.inTemplate)
+      case tpl => (None, tpl)
+    }
+
+    def hashFromPath(templatePath: List[String]): String =
+      ((templatePath.head.replace(".html", "") :: templatePath.tail).reverse).mkString(".")
+
+    val containingTemplatePath = templateToPath(containingTemplate)
+    val url = "../" * (containingTemplatePath.size - 1) + "index.html"
+    val hash = hashFromPath(containingTemplatePath)
+    s"$url#$hash" + signature.map("@" + _).getOrElse("")
+  }
 }
