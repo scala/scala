@@ -131,6 +131,10 @@ trait Reifiers { self: Quasiquotes =>
       case Placeholder(Hole(tree, NoDot)) if isReifyingPatterns => tree
       case Placeholder(hole @ Hole(_, rank @ Dot())) => c.abort(hole.pos, s"Can't $action with $rank here")
       case TuplePlaceholder(args) => reifyTuple(args)
+      // Due to greediness of syntactic applied we need to pre-emptively peek inside.
+      // `rest` will always be non-empty due to the rule on top of this one.
+      case SyntacticApplied(id @ Ident(nme.QUASIQUOTE_TUPLE), first :: rest) =>
+        mirrorBuildCall(nme.SyntacticApplied, reifyTreePlaceholder(Apply(id, first)), reify(rest))
       case TupleTypePlaceholder(args) => reifyTupleType(args)
       case FunctionTypePlaceholder(argtpes, restpe) => reifyFunctionType(argtpes, restpe)
       case CasePlaceholder(hole) => hole.tree
@@ -181,10 +185,6 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticForYield, enums, body)
       case SyntacticAssign(lhs, rhs) =>
         reifyBuildCall(nme.SyntacticAssign, lhs, rhs)
-      // rest will always be non-empty due to the fact that every single-parens
-      // application will be reified by reifyTreePlaceholder before it gets here.
-      case SyntacticApplied(id @ Ident(nme.QUASIQUOTE_TUPLE), first :: rest) =>
-        mirrorBuildCall(nme.SyntacticApplied, reifyTreePlaceholder(Apply(id, first)), reify(rest))
       case SyntacticApplied(fun, argss) if argss.nonEmpty =>
         reifyBuildCall(nme.SyntacticApplied, fun, argss)
       case SyntacticTypeApplied(fun, targs) if targs.nonEmpty =>
