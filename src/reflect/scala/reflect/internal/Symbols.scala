@@ -1904,6 +1904,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The next enclosing method. */
     def enclMethod: Symbol = if (isSourceMethod) this else owner.enclMethod
 
+    /** The primary constructor of a class. */
     def primaryConstructor: Symbol = NoSymbol
 
     /** The self symbol (a TermSymbol) of a class with explicit self type, or else the
@@ -3188,8 +3189,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def primaryConstructor = {
       val c = info decl primaryConstructorName
-      if (isJavaDefined) NoSymbol // need to force info before checking the flag
-      else if (c.isOverloaded) c.alternatives.head else c
+      if (c.isOverloaded) c.alternatives.head else c
     }
 
     override def associatedFile = (

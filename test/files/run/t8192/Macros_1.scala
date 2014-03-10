@@ -30,7 +30,8 @@ object Macros {
     }
 
     println("compile-time")
-    test(typeOf[File].typeSymbol.asClass)
+    // SI-8367 primaryConstructor for Java-defined classes is unstable, so I'm commenting this out
+    // test(typeOf[File].typeSymbol.asClass)
     test(definitions.ScalaPackageClass)
     test(definitions.ListModule.moduleClass.asClass)
     test(typeOf[Product1[_]].typeSymbol.asClass)
