@@ -1,0 +1,17 @@
+[[syntax trees at end of                    parser]] // newSource1.scala
+[6]package [6]<empty> {
+  [6]class C extends [7][23]scala.AnyRef {
+    [7]def <init>() = [7]{
+      [NoPosition][NoPosition][NoPosition]super.<init>();
+      [7]()
+    }
+  };
+  [30]object O extends [31][46]scala.AnyRef {
+    [31]def <init>() = [31]{
+      [NoPosition][NoPosition][NoPosition]super.<init>();
+      [31]()
+    }
+  };
+  [52]abstract trait T extends [53][67]scala.AnyRef
+}
+

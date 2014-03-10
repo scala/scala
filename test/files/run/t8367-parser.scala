@@ -10,6 +10,17 @@ object Test extends DirectTest {
                         |
                         |
                         |// comment
+                        |
+                        |object O
+                        |
+                        |
+                        |
+                        |// comment
+                        |trait T
+                        |
+                        |
+                        |
+                        |// comment
                         |""".stripMargin.trim
 
   override def show(): Unit = {

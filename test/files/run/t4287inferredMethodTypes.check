@@ -7,19 +7,19 @@
       <8:20>()
     }
   };
-  [23:47]object A extends [32:47][49]scala.AnyRef {
-    [49]def <init>(): [32]A.type = [49]{
+  [23:47]object A extends [31:47][49]scala.AnyRef {
+    [49]def <init>(): [31]A.type = [49]{
       [49][49][49]A.super.<init>();
-      [32]()
+      [31]()
     };
     [36:45]private[this] val a: [40]Int = [44:45]2;
     [40]<stable> <accessor> def a: [40]Int = [40][40]A.this.a;
     [8]<synthetic> def <init>$default$1: [8]Int = [19]A.a
   };
-  [49:92]class B extends [57:92][65:66]A {
-    [65]def <init>(): [57]B = [65]{
+  [49:92]class B extends [56:92][65:66]A {
+    [65]def <init>(): [56]B = [65]{
       [65][65][65]B.super.<init>([65]A.<init>$default$1);
-      [57]()
+      [56]()
     };
     [70:90]def <init>([79:80]a: [79]Int): [74]B = [84:90]{
       [84:90][84:90][84]B.this.<init>();
