@@ -221,7 +221,9 @@ abstract class UnCurry extends InfoTransform
           def mkMethod(owner: Symbol, name: TermName, additionalFlags: FlagSet = NoFlags): DefDef =
             gen.mkMethodFromFunction(localTyper)(fun, owner, name, additionalFlags)
 
-          if (inlineFunctionExpansion) {
+          val canUseDelamdafyMethod = (inConstructorFlag == 0) // Avoiding synthesizing code prone to SI-6666, SI-8363 by using old-style lambda translation
+
+          if (inlineFunctionExpansion || !canUseDelamdafyMethod) {
             val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
             val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation
             anonClass setInfo ClassInfoType(parents, newScope, anonClass)
