@@ -1,6 +1,6 @@
 # Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   Expr              ::=  (Bindings | id | `_') `=>' Expr
                       |  Expr1
   Expr1             ::=  `if' `(' Expr `)' {nl} Expr [[semi] else Expr]
@@ -65,14 +65,14 @@ type $T$ and let $t_1[\mathit{tps}_1] >: L_1 <: U_1 , \ldots , t_n[\mathit{tps}_
 all the type variables created by skolemization of some part of $e$ which are free in $T$.
 Then the _packed type_ of $e$ is
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 $T$ forSome { type $t_1[\mathit{tps}_1] >: L_1 <: U_1$; $\ldots$; type $t_n[\mathit{tps}_n] >: L_n <: U_n$ }.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 ## Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 SimpleExpr    ::=  Literal
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -102,7 +102,7 @@ A reference to any other member of the ``null'' object causes a
 
 ## Designators
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 SimpleExpr  ::=  Path
               |  SimpleExpr `.' id
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -156,7 +156,7 @@ is thrown.
 
 ## This and Super
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 SimpleExpr  ::=  [id `.'] `this'
               |  [id '.'] `super' [ClassQualifier] `.' id
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -208,7 +208,7 @@ it must be concrete.
 
 (@super) Consider the following class definitions
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     class Root { def x = "Root" }
     class A extends Root { override def x = "A" ; def superA = super.x }
     trait B extends Root { override def x = "B" ; def superB = super.x }
@@ -224,7 +224,7 @@ it must be concrete.
     the linearization of class `D` is `{D, B, A, Root}`.
     Then we have:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     (new A).superA == "Root", 
                               (new C).superB = "Root", (new C).superC = "B",
     (new D).superA == "Root", (new D).superB = "A",    (new D).superD = "B",
@@ -236,7 +236,7 @@ it must be concrete.
 
 ## Function Applications
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 SimpleExpr    ::=  SimpleExpr1 ArgumentExprs
 ArgumentExprs ::=  `(' [Exprs] `)'
                 |  `(' [Exprs `,'] PostfixExpr `:' `_' `*' ')'
@@ -320,20 +320,20 @@ of the caller.
 (@) Assume the following function which computes the sum of a
     variable number of arguments:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def sum(xs: Int*) = (0 /: xs) ((x, y) => x + y)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     Then
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     sum(1, 2, 3, 4)
     sum(List(1, 2, 3, 4): _*)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     both yield `10` as result. On the other hand, 
 
-    ~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~ 
     sum(List(1, 2, 3, 4))
     ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -362,7 +362,7 @@ If the function $f$
 has the form `$p.m$[$\mathit{targs}$]` it is transformed into the
 block
 
-~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~ 
 { val q = $p$
   q.$m$[$\mathit{targs}$]
 }
@@ -372,7 +372,7 @@ If the function $f$ is itself an application expression the transformation
 is applied recursively on $f$. The result of transforming $f$ is a block of
 the form
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 { val q = $p$
   val $x_1$ = expr$_1$
   $\ldots$
@@ -397,7 +397,7 @@ that the position of each name matches the position of its corresponding
 parameter in the method type `($p_1:T_1 , \ldots , p_n:T_n$)$U$`.
 The final result of the transformation is a block of the form
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 { val q = $p$
   val $x_1$ = expr$_1$
   $\ldots$
@@ -415,7 +415,7 @@ The final result of the transformation is a block of the form
 
 ## Method Values
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 SimpleExpr    ::=  SimpleExpr1 `_'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -432,10 +432,10 @@ parameterlist `()`.
     [anonymous functions](#anonymous-functions) on their right.
 
     ------------------------------    -----------------------------------------------------
-    `Math.sin _`{.scala}              `x => Math.sin(x)`{.scala}
-    `Array.range _`{.scala}           `(x1, x2) => Array.range(x1, x2)`{.scala}
-    `List.map2 _`{.scala}             `(x1, x2) => (x3) => List.map2(x1, x2)(x3)`{.scala}
-    `List.map2(xs, ys)_`{.scala}      `x => List.map2(xs, ys)(x)`{.scala}
+    `Math.sin _`              `x => Math.sin(x)`
+    `Array.range _`           `(x1, x2) => Array.range(x1, x2)`
+    `List.map2 _`             `(x1, x2) => (x3) => List.map2(x1, x2)(x3)`
+    `List.map2(xs, ys)_`      `x => List.map2(xs, ys)(x)`
     ------------------------------    -----------------------------------------------------
 
     Note that a space is necessary between a method name and the trailing underscore
@@ -444,7 +444,7 @@ parameterlist `()`.
 
 ## Type Applications
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 SimpleExpr    ::=  SimpleExpr TypeArgs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -471,7 +471,7 @@ and the expected result type.
 
 ## Tuples
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 SimpleExpr   ::=  `(' [Exprs] `)'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -484,7 +484,7 @@ The empty tuple
 
 ## Instance Creation Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 SimpleExpr     ::=  `new' (ClassTemplate | TemplateBody)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -499,7 +499,7 @@ $T$. The concrete self type is normally
 $T$, except if the expression `new $c$` appears as the
 right hand side of a value definition
 
-~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~ 
 val $x$: $S$ = new $c$
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -515,7 +515,7 @@ A general instance creation expression is of the form
 `new $t$` for some [class template](#templates) $t$.
 Such an expression is equivalent to the block
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 { class $a$ extends $t$; new $a$ }
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -529,19 +529,19 @@ types: If `{$D$}` is a class body, then
 
 (@) Consider the following structural instance creation expression:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     new { def getName() = "aaron" }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     This is a shorthand for the general instance creation expression
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     new AnyRef{ def getName() = "aaron" }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     The latter is in turn a shorthand for the block
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     { class anon\$X extends AnyRef{ def getName() = "aaron" }; new anon\$X }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -550,7 +550,7 @@ types: If `{$D$}` is a class body, then
 
 ## Blocks
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 BlockExpr   ::=  `{' Block `}'
 Block       ::=  {BlockStat semi} [ResultExpr]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -595,14 +595,14 @@ $e$, which defines the result of the block.
 
 (@) Assuming a class `Ref[T](x: T)`, the block
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     { class C extends B {$\ldots$} ; new Ref(new C) }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     has the type `Ref[_1] forSome { type _1 <: B }`.
     The block
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     { class C extends B {$\ldots$} ; new C }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -613,7 +613,7 @@ $e$, which defines the result of the block.
 
 ## Prefix, Infix, and Postfix Operations
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 PostfixExpr     ::=  InfixExpr [id [nl]]
 InfixExpr       ::=  PrefixExpr
                   |  InfixExpr id [nl] InfixExpr
@@ -728,7 +728,7 @@ operation `$l$ += $r$`, where $l$, $r$ are expressions.
 This operation can be re-interpreted as an operation which corresponds 
 to the assignment
 
-~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~ 
 $l$ = $l$ + $r$
 ~~~~~~~~~~~~~~~~
 
@@ -748,7 +748,7 @@ The re-interpretation occurs if the following two conditions are fulfilled.
 
 ## Typed Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr1              ::=  PostfixExpr `:' CompoundType
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -758,7 +758,7 @@ the expression is the value of $e$ converted to type $T$.
 
 (@) Here are examples of well-typed and illegally typed expressions.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     1: Int               // legal, of type Int
     1: Long              // legal, of type Long
     // 1: string         // ***** illegal
@@ -767,7 +767,7 @@ the expression is the value of $e$ converted to type $T$.
 
 ## Annotated Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr1              ::=  PostfixExpr `:' Annotation {Annotation} 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -778,7 +778,7 @@ expression $e$.
 
 ## Assignments
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr1        ::=  [SimpleExpr `.'] id `=' Expr
                |  SimpleExpr1 ArgumentExprs `=' Expr
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -803,15 +803,15 @@ the invocation of an `update` function defined by $f$.
 (@) Here are some assignment expressions and their equivalent expansions.
 
     --------------------------    ---------------------
-    `x.f = e`{.scala}             x.f_=(e)
-    `x.f() = e`{.scala}           x.f.update(e)
-    `x.f(i) = e`{.scala}          x.f.update(i, e)
-    `x.f(i, j) = e`{.scala}       x.f.update(i, j, e)
+    `x.f = e`             x.f_=(e)
+    `x.f() = e`           x.f.update(e)
+    `x.f(i) = e`          x.f.update(i, e)
+    `x.f(i, j) = e`       x.f.update(i, j, e)
     --------------------------    ---------------------
 
 (@imp-mat-mul) Here is the usual imperative code for matrix multiplication.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
       val zss: Array[Array[Double]] = new Array(xss.length, yss(0).length) 
       var i = 0 
@@ -836,7 +836,7 @@ the invocation of an `update` function defined by $f$.
     Desugaring the array accesses and assignments yields the following
     expanded version:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
       val zss: Array[Array[Double]] = new Array(xss.length, yss.apply(0).length) 
       var i = 0 
@@ -861,7 +861,7 @@ the invocation of an `update` function defined by $f$.
 
 ## Conditional Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr1          ::=  `if' `(' Expr `)' {nl} Expr [[semi] `else' Expr]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -887,7 +887,7 @@ evaluated as if it was `if ($e_1$) $e_2$ else ()`.
 
 ## While Loop Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr1          ::=  `while' `(' Expr ')' {nl} Expr
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -895,7 +895,7 @@ The while loop expression `while ($e_1$) $e_2$` is typed and
 evaluated as if it was an application of `whileLoop ($e_1$) ($e_2$)` where
 the hypothetical function `whileLoop` is defined as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 def whileLoop(cond: => Boolean)(body: => Unit): Unit  =
   if (cond) { body ; whileLoop(cond)(body) } else {}
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -903,7 +903,7 @@ def whileLoop(cond: => Boolean)(body: => Unit): Unit  =
 
 ## Do Loop Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr1          ::=  `do' Expr [semi] `while' `(' Expr ')'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -914,7 +914,7 @@ A semicolon preceding the `while` symbol of a do loop expression is ignored.
 
 ## For Comprehensions and For Loops
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr1          ::=  `for' (`(' Enumerators `)' | `{' Enumerators `}') 
                        {nl} [`yield'] Expr
 Enumerators    ::=  Generator {semi Enumerator}
@@ -946,7 +946,7 @@ The translation scheme is as follows.  In a first step, every
 generator `$p$ <- $e$`, where $p$ is not [irrefutable](#patterns)
 for the type of $e$ is replaced by
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 $p$ <- $e$.withFilter { case $p$ => true; case _ => false }
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -963,7 +963,7 @@ comprehensions have been eliminated.
     `$e$.foreach { case $p$ => $e'$ }`.
   - A for comprehension
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     for ($p$ <- $e$; $p'$ <- $e'; \ldots$) yield $e''$
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -971,13 +971,13 @@ comprehensions have been eliminated.
     sequence of generators, definitions, or guards,
     is translated to
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     $e$.flatMap { case $p$ => for ($p'$ <- $e'; \ldots$) yield $e''$ }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   - A for loop
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     for ($p$ <- $e$; $p'$ <- $e'; \ldots$) $e''$
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -985,7 +985,7 @@ comprehensions have been eliminated.
     sequence of generators, definitions, or guards,
     is translated to
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     $e$.foreach { case $p$ => for ($p'$ <- $e'; \ldots$) $e''$ }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -998,7 +998,7 @@ comprehensions have been eliminated.
     `$p'$ = $e'$` is translated to the following generator of pairs of values, where
     $x$ and $x'$ are fresh names:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     ($p$, $p'$) <- for ($x @ p$ <- $e$) yield { val $x' @ p'$ = $e'$; ($x$, $x'$) }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1006,7 +1006,7 @@ comprehensions have been eliminated.
 (@) The following code produces all pairs of numbers between $1$ and $n-1$ 
     whose sums are prime.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~ 
     for  { i <- 1 until n 
            j <- 1 until i 
            if isPrime(i+j)
@@ -1015,7 +1015,7 @@ comprehensions have been eliminated.
 
     The for comprehension is translated to:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     (1 until n)
       .flatMap {
          case i => (1 until i)
@@ -1029,7 +1029,7 @@ comprehensions have been eliminated.
 
     <!-- see test/files/run/t0421.scala -->
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def transpose[A](xss: Array[Array[A]]) = {
       for (i <- Array.range(0, xss(0).length)) yield
         for (xs <- xss) yield xs(i)
@@ -1038,7 +1038,7 @@ comprehensions have been eliminated.
 
     Here is a function to compute the scalar product of two vectors:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def scalprod(xs: Array[Double], ys: Array[Double]) = {
       var acc = 0.0 
       for ((x, y) <- xs zip ys) acc = acc + x * y  
@@ -1049,7 +1049,7 @@ comprehensions have been eliminated.
     Finally, here is a function to compute the product of two matrices. 
     Compare with the imperative version of \ref{ex:imp-mat-mul}.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
       val ysst = transpose(yss) 
       for (xs <- xss) yield
@@ -1065,7 +1065,7 @@ comprehensions have been eliminated.
 
 ## Return Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr1      ::=  `return' [Expr]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1103,7 +1103,7 @@ and will propagate up the call stack.
 
 ## Throw Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr1      ::=  `throw' Expr
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1121,7 +1121,7 @@ is `scala.Nothing`.
 
 ## Try Expressions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr1 ::=  `try' `{' Block `}' [`catch' `{' CaseClauses `}'] 
            [`finally' Expr]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1130,7 +1130,7 @@ A try expression is of the form `try { $b$ } catch $h$`
 where the handler $h$ is a 
 [pattern matching anonymous function](#pattern-matching-anonymous-functions)
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 { case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ }
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1176,7 +1176,7 @@ for  `try { try { $b$ } catch $e_1$ } finally $e_2$`.
 
 ## Anonymous Functions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Expr            ::=  (Bindings | [`implicit'] id | `_') `=>' Expr
 ResultExpr      ::=  (Bindings | ([`implicit'] id | `_') `:' CompoundType) `=>' Block
 Bindings        ::=  `(' Binding {`,' Binding} `)'
@@ -1204,7 +1204,7 @@ type which does not refer to any of the formal parameters $x_i$.
 
 The anonymous function is evaluated as the instance creation expression
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 new scala.Function$n$[$T_1 , \ldots , T_n$, $T$] {
   def apply($x_1$: $T_1 , \ldots , x_n$: $T_n$): $T$ = $e$
 }
@@ -1229,7 +1229,7 @@ anonymous functions always have to be given explicitly.
 
 (@) Examples of anonymous functions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     x => x                             // The identity function
 
     f => g => x => f(g(x))             // Curried function composition
@@ -1248,7 +1248,7 @@ anonymous functions always have to be given explicitly.
 
 ### Placeholder Syntax for Anonymous Functions
 
-~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~ 
 SimpleExpr1  ::=  `_'
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1276,12 +1276,12 @@ $e'$ results from $e$ by replacing each underscore section $u_i$ by $u_i'$.
     syntax. Each of these is equivalent to the anonymous function on its right.
 
     ---------------------------      ------------------------------------
-    `_ + 1`{.scala}                  `x => x + 1`{.scala}
-    `_ * _`{.scala}                  `(x1, x2) => x1 * x2`{.scala}
-    `(_: Int) * 2`{.scala}           `(x: Int) => (x: Int) * 2`{.scala}
-    `if (_) x else y`{.scala}        `z => if (z) x else y`{.scala}
-    `_.map(f)`{.scala}               `x => x.map(f)`{.scala}
-    `_.map(_ + 1)`{.scala}           `x => x.map(y => y + 1)`{.scala}
+    `_ + 1`                  `x => x + 1`
+    `_ * _`                  `(x1, x2) => x1 * x2`
+    `(_: Int) * 2`           `(x: Int) => (x: Int) * 2`
+    `if (_) x else y`        `z => if (z) x else y`
+    `_.map(f)`               `x => x.map(f)`
+    `_.map(_ + 1)`           `x => x.map(y => y + 1)`
     ---------------------------      ------------------------------------
 
 
@@ -1304,7 +1304,7 @@ include at least the expressions of the following forms:
 
 ## Statements
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 BlockStat    ::=  Import
                |  {Annotation} [`implicit'] Def
                |  {Annotation} {LocalModifier} TmplDef
@@ -1361,7 +1361,7 @@ is applied to pick a unique member.
 _Type Instantiation_ \
 An expression $e$ of polymorphic type
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 [$a_1$ >: $L_1$ <: $U_1 , \ldots , a_n$ >: $L_n$ <: $U_n$]$T$
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1526,7 +1526,7 @@ alternatives in $\mathscr{B}$.
 
 (@) Consider the following definitions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     class A extends B {}
     def f(x: B, y: B) = $\ldots$
     def f(x: A, y: B) = $\ldots$
@@ -1538,7 +1538,7 @@ alternatives in $\mathscr{B}$.
     definition of $f$ whereas the application `f(a, a)`
     refers to the second.  Assume now we add a third overloaded definition
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def f(x: B, y: A) = $\ldots$
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1640,14 +1640,14 @@ any one of them.
 
 (@) Consider the two methods:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def cons[A](x: A, xs: List[A]): List[A] = x :: xs
     def nil[B]: List[B] = Nil
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     and the definition
 
-    ~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~ 
     val xs = cons(1, nil)
     ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1663,7 +1663,7 @@ any one of them.
     itself polymorphic. One tries to type-check `nil` with an
     expected type `List[a]`. This leads to the constraint system
 
-    ~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~ 
     List[b?] <: List[a]
     ~~~~~~~~~~~~~~~~~~~~
 
@@ -1672,14 +1672,14 @@ any one of them.
     Because class `List` is covariant, the optimal
     solution of this constraint is
 
-    ~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~ 
     b = scala.Nothing
     ~~~~~~~~~~~~~~~~~~
 
     In a second step, one solves the following constraint system for
     the type parameter `a` of `cons`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     Int <: a?
     List[scala.Nothing] <: List[a?]
     List[a?] <: $\mbox{\sl undefined}$
@@ -1687,7 +1687,7 @@ any one of them.
 
     The optimal solution of this constraint system is
 
-    ~~~~~~~~ {.scala}
+    ~~~~~~~~ 
     a = Int
     ~~~~~~~~
 
@@ -1696,7 +1696,7 @@ any one of them.
 
 (@) Consider now the definition  
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~ 
     val ys = cons("abc", xs)
     ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1714,7 +1714,7 @@ any one of them.
     In a second step, one solves the following constraint system for
     the type parameter `a` of `cons`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     String <: a?
     List[Int] <: List[a?]
     List[a?] <: $\mbox{\sl undefined}$
@@ -1722,7 +1722,7 @@ any one of them.
 
     The optimal solution of this constraint system is
 
-    ~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~ 
     a = scala.Any 
     ~~~~~~~~~~~~~~
 
@@ -1742,7 +1742,7 @@ corresponding fresh name $x_i$. Second, one creates a fresh name $y_i$
 for every argument type $T_i$ of the method ($i = 1 , \ldots ,
 n$). The result of eta-conversion is then:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 { val $x_1$ = $e_1$; 
   $\ldots$ 
   val $x_m$ = $e_m$; 
@@ -1755,7 +1755,7 @@ n$). The result of eta-conversion is then:
 The standard Scala library defines a trait `scala.Dynamic` which defines a member
 \@invokeDynamic@ as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package scala
 trait Dynamic {
   def applyDynamic (name: String, args: Any*): Any
@@ -1766,14 +1766,14 @@ trait Dynamic {
 Assume a selection of the form $e.x$ where the type of $e$ conforms to `scala.Dynamic`.
 Further assuming the selection is not followed by any function arguments, such an expression can be rewitten under the conditions given [here](#implicit-conversions) to:
 
-~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~ 
 $e$.applyDynamic("$x$")
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 If the selection is followed by some arguments, e.g.\ $e.x(\mathit{args})$, then that expression
 is rewritten to
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 $e$.applyDynamic("$x$", $\mathit{args}$)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

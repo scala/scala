@@ -37,7 +37,7 @@ class for objects).
 The signatures of these root classes are described by the following
 definitions.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package scala 
 /** The universal root class */
 abstract class Any {
@@ -91,7 +91,7 @@ trait ScalaObject extends AnyRef
 The type test `$x$.isInstanceOf[$T$]` is equivalent to a typed
 pattern match
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 $x$ match {
   case _: $T'$ => true
   case _ => false
@@ -216,7 +216,7 @@ type. If this is true, it will perform the `==` operation which
 is appropriate for that type. That is, the `equals` method of a
 numeric value type can be thought of being defined as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 def equals(other: Any): Boolean = other match {
   case that: Byte   => this == that
   case that: Short  => this == that
@@ -238,7 +238,7 @@ floating point number.
 
 (@) As an example, here is the signature of the numeric value type `Int`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     package scala 
     abstract sealed class Int extends AnyVal {
       def == (that: Double): Boolean  // double equality
@@ -291,7 +291,7 @@ Class `Boolean` has only two values: `true` and
 `false`. It implements operations as given in the following
 class definition.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package scala 
 abstract sealed class Boolean extends AnyVal {
   def && (p: => Boolean): Boolean = // boolean and
@@ -347,7 +347,7 @@ class of the underlying host system (and may be identified with
 it). For Scala clients the class is taken to support in each case a
 method
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 def + (that: Any): String 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -359,7 +359,7 @@ right operand.
 Scala defines tuple classes `Tuple$n$` for $n = 2 , \ldots , 9$.
 These are defined as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package scala 
 case class Tuple$n$[+A_1, ..., +A_n](_1: A_1, ..., _$n$: A_$n$) {
   def toString = "(" ++ _1 ++ "," ++ $\ldots$ ++ "," ++ _$n$ ++ ")"
@@ -375,7 +375,7 @@ as an alias for `Tuple3`.
 Scala defines function classes `Function$n$` for $n = 1 , \ldots , 9$.
 These are defined as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package scala 
 trait Function$n$[-A_1, ..., -A_$n$, +B] {
   def apply(x_1: A_1, ..., x_$n$: A_$n$): B 
@@ -389,7 +389,7 @@ which are undefined on some points in their domain. In addition to the
 `isDefined` method, which tells whether the function is defined
 at the given argument:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 class PartialFunction[-A, +B] extends Function1[A, B] {
   def isDefinedAt(x: A): Boolean
 }
@@ -402,7 +402,7 @@ The implicitly imported [`Predef`](#the-predef-object) object defines the name
 
 The class of generic arrays is given as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 final class Array[A](len: Int) extends Seq[A] {
   def length: Int = len
   def apply(i: Int): A = $\ldots$
@@ -454,7 +454,7 @@ However, it is possible to cast an expression of type
 `Array[String]` to `Array[Object]`, and this
 cast will succeed without raising a `ClassCastException`. Example:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 val xs = new Array[String](2)
 // val ys: Array[Object] = xs   // **** error: incompatible types
 val ys: Array[Object] = xs.asInstanceOf[Array[Object]] // OK
@@ -467,7 +467,7 @@ from
 `isInstanceOf` and `asInstanceOf` still work as if the array 
 used the standard representation of monomorphic arrays:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 val ss = new Array[String](2)
 
 def f[T](xs: Array[T]): Array[String] = 
@@ -483,7 +483,7 @@ following implementation of method `mkArray`, which creates
 an array of an arbitrary type $T$, given a sequence of $T$'s which
 defines its elements.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 def mkArray[T](elems: Seq[T]): Array[T] = {
   val result = new Array[T](elems.length)
   var i = 0
@@ -510,7 +510,7 @@ constructor methods for arrays, as well as
 the [extractor method](#extractor-patterns) `unapplySeq`
 which enables pattern matching over arrays.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package scala
 object Array { 
   /** copies array elements from `src' to `dest'. */
@@ -548,7 +548,7 @@ object Array {
 (@) The following method duplicates a given argument array and returns a pair
     consisting of the original and the duplicate:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def duplicate[T](xs: Array[T]) = {
       val ys = new Array[T](xs.length)
       Array.copy(xs, 0, ys, 0, xs.length)
@@ -559,7 +559,7 @@ object Array {
 
 ## Class Node
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package scala.xml 
 
 trait Node {
@@ -638,7 +638,7 @@ for Scala programs. It is always implicitly imported, so that all its
 defined members are available without qualification. Its definition
 for the JVM environment conforms to the following signature:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package scala
 object Predef {
 
@@ -715,7 +715,7 @@ object Predef {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 
   // tupling ---------------------------------------------------------
 
@@ -787,7 +787,7 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit wrapper that adds `ensuring` methods 
     with the following overloaded variants to type `Any`.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def ensuring(cond: Boolean): A = { assert(cond); x }
     def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
     def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
@@ -797,7 +797,7 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit wrapper that adds a `->` method with the following implementation
     to type `Any`.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def -> [B](y: B): (A, B) = (x, y)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -811,7 +811,7 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit wrapper that adds `+` and `formatted` method with the following
     implementations to type `Any`.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def +(other: String) = String.valueOf(self) + other
     def formatted(fmtstr: String): String = fmtstr format self
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -845,7 +845,7 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit definition that generates instances of type `T <:< T`, for
     any type `T`. Here, `<:<` is a class defined as follows.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     sealed abstract class <:<[-From, +To] extends (From => To)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

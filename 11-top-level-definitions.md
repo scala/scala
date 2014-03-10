@@ -2,7 +2,7 @@
 
 ## Compilation Units
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 CompilationUnit  ::=  {‘package’ QualId semi} TopStatSeq
 TopStatSeq       ::=  TopStat {semi TopStat}
 TopStat          ::=  {Annotation} {Modifier} TmplDef
@@ -19,7 +19,7 @@ package clause.
 
 A compilation unit 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package $p_1$;
 $\ldots$
 package $p_n$;
@@ -30,7 +30,7 @@ starting with one or more package
 clauses is equivalent to a compilation unit consisting of the
 packaging 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package $p_1$ { $\ldots$
   package $p_n$ {
     $\mathit{stats}$
@@ -46,7 +46,7 @@ that order hide members of an earlier import.
 
 ## Packagings
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Packaging       ::=  ‘package’ QualId [nl] ‘{’ TopStatSeq ‘}’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -55,17 +55,17 @@ objects and packages.  Unlike other objects, packages are not introduced
 by a definition.  Instead, the set of members of a package is determined by
 packagings.
 
-A packaging `package $p$ { $\mathit{ds}$ }`{.scala} injects all
+A packaging `package $p$ { $\mathit{ds}$ }` injects all
 definitions in $\mathit{ds}$ as members into the package whose qualified name
 is $p$. Members of a package are called _top-level_ definitions.
-If a definition in $\mathit{ds}$ is labeled `private`{.scala}, it is
+If a definition in $\mathit{ds}$ is labeled `private`, it is
 visible only for other members in the package.
 
 Inside the packaging, all members of package $p$ are visible under their
 simple names. However this rule does not extend to members of enclosing
 packages of $p$ that are designated by a prefix of the path $p$.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package org.net.prj {
   ...
 }
@@ -88,7 +88,7 @@ are visible to each other without qualification.
 
 ## Package Objects
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 PackageObject   ::=  ‘package’ ‘object’ ObjectDef
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -107,7 +107,7 @@ future version of Scala.
 
 ## Package References
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 QualId           ::=  id {‘.’ id}
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -121,7 +121,7 @@ outermost root package which contains all top-level packages.
 
 (@package-ids) Consider the following program:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     package b {
       class B 
     }
@@ -157,7 +157,7 @@ which executes the initializaton code of the object $m$.
 (@) The following example will create a hello world program by defining
     a method `main` in module `test.HelloWorld`.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     package test
     object HelloWorld {
       def main(args: Array[String]) { println("Hello World") }
@@ -181,7 +181,7 @@ which executes the initializaton code of the object $m$.
     `HelloWorld` can also be defined without a `main` method 
     by inheriting from `App` instead:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     package test 
     object HelloWorld extends App {
       println("Hello World")

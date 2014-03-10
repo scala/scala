@@ -11,7 +11,7 @@ to Scala mode, and literal characters ‘c’ refer to the ASCII fragment
 In Scala mode, _Unicode escapes_ are replaced by the corresponding
 Unicode character with the given hexadecimal code.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 UnicodeEscape ::= \{\\}u{u} hexDigit hexDigit hexDigit hexDigit
 hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,7 +35,7 @@ classes (Unicode general category given in parentheses):
 
 ## Identifiers
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 op       ::=  opchar {opchar} 
 varid    ::=  lower idrest
 plainid  ::=  upper idrest
@@ -60,7 +60,7 @@ of all characters excluding the backquotes themselves.
  
 As usual, a longest match rule applies. For instance, the string
 
-~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~ 
 big_bob++=`def`
 ~~~~~~~~~~~~~~~~
 
@@ -103,12 +103,12 @@ equivalents ‘=>’ and ‘<-’, are also reserved.
     access Java identifiers that are reserved words in Scala. For
     instance, the statement `Thread.yield()` is illegal, since
     `yield` is a reserved word in Scala. However, here's a
-    work-around: `` Thread.`yield`() ``{.scala}
+    work-around: `` Thread.`yield`() ``
 
 
 ## Newline Characters
 
-~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~ 
 semi ::= ‘;’ |  nl {nl}
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -137,8 +137,8 @@ with    yield    ,    .    ;    :    =    =>    <-    <:    <%
 >:    #    [    )    ]    }
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A `case`{.scala} token can begin a statement only if followed by a
-`class`{.scala} or `object`{.scala} token.
+A `case` token can begin a statement only if followed by a
+`class` or `object` token.
 
 Newlines are enabled in:
 
@@ -153,8 +153,8 @@ Newlines are disabled in:
    nested regions where newlines are enabled, and
 1. the interval between matching `[` and `]` bracket tokens, except for nested
    regions where newlines are enabled.
-1. The interval between a `case`{.scala} token and its matching
-   `=>`{.scala} token, except for nested regions where newlines are
+1. The interval between a `case` token and its matching
+   `=>` token, except for nested regions where newlines are
    enabled.
 1. Any regions analyzed in [XML mode](#xml-mode).
 
@@ -186,7 +186,7 @@ of these cases):
 - between the enumerators of a 
   [for-comprehension](#for-comprehensions-and-for-loops)
   and the next following expression, and
-- after the initial `type`{.scala} keyword in a 
+- after the initial `type` keyword in a 
   [type definition or declaration](#type-declarations-and-type-aliases).
 
 A single new line token is accepted
@@ -202,7 +202,7 @@ A single new line token is accepted
     on two lines. The newline tokens between the two lines are not
     treated as statement separators.
 
-    ~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~ 
     if (x > 0)
       x = x - 1
 
@@ -218,7 +218,7 @@ A single new line token is accepted
 
 (@) The following code designates an anonymous class:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     new Iterator[Int]
     {
       private var x = 0
@@ -230,7 +230,7 @@ A single new line token is accepted
     With an additional newline character, the same code is interpreted as
     an object creation followed by a local block:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     new Iterator[Int] 
 
     {
@@ -242,7 +242,7 @@ A single new line token is accepted
 
 (@) The following code designates a single expression:
 
-    ~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~ 
       x < 0 ||
       x > 10
     ~~~~~~~~~~~~
@@ -250,7 +250,7 @@ A single new line token is accepted
     With an additional newline character, the same code is interpreted as
     two expressions:
 
-    ~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~ 
       x < 0 ||
 
       x > 10
@@ -258,7 +258,7 @@ A single new line token is accepted
 
 (@) The following code designates a single, curried function definition:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def func(x: Int)
             (y: Int) = x + y
     ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -266,7 +266,7 @@ A single new line token is accepted
     With an additional newline character, the same code is interpreted as
     an abstract function definition and a syntactically illegal statement:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def func(x: Int)
 
             (y: Int) = x + y
@@ -274,7 +274,7 @@ A single new line token is accepted
 
 (@) The following code designates an attributed definition:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     @serializable
     protected class Data { ... }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -283,7 +283,7 @@ A single new line token is accepted
     an attribute and a separate statement (which is syntactically
     illegal).
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     @serializable
 
     protected class Data { ... }
@@ -301,7 +301,7 @@ each case as in Java.
   particular float and double. 
 -->
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Literal  ::=  [‘-’] integerLiteral
            |  [‘-’] floatingPointLiteral
            |  booleanLiteral
@@ -314,7 +314,7 @@ Literal  ::=  [‘-’] integerLiteral
 
 ### Integer Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 integerLiteral  ::=  (decimalNumeral | hexNumeral | octalNumeral) 
                        [‘L’ | ‘l’]
 decimalNumeral  ::=  ‘0’ | nonZeroDigit {digit}
@@ -325,24 +325,24 @@ nonZeroDigit    ::=  ‘1’ | … | ‘9’
 octalDigit      ::=  ‘0’ | … | ‘7’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Integer literals are usually of type `Int`{.scala}, or of type
-`Long`{.scala} when followed by a `L` or
-`l` suffix. Values of type `Int`{.scala} are all integer
+Integer literals are usually of type `Int`, or of type
+`Long` when followed by a `L` or
+`l` suffix. Values of type `Int` are all integer
 numbers between $-2^{31}$ and $2^{31}-1$, inclusive.  Values of
-type `Long`{.scala} are all integer numbers between $-2^{63}$ and
+type `Long` are all integer numbers between $-2^{63}$ and
 $2^{63}-1$, inclusive. A compile-time error occurs if an integer literal
 denotes a number outside these ranges.
 
 However, if the expected type [_pt_](#expression-typing) of a literal
-in an expression is either `Byte`{.scala}, `Short`{.scala}, or `Char`{.scala}
+in an expression is either `Byte`, `Short`, or `Char`
 and the integer number fits in the numeric range defined by the type,
 then the number is converted to type _pt_ and the literal's type
 is _pt_. The numeric ranges given by these types are:
 
 ---------------  -----------------------
-`Byte`{.scala}   $-2^7$ to $2^7-1$
-`Short`{.scala}  $-2^{15}$ to $2^{15}-1$
-`Char`{.scala}   $0$ to $2^{16}-1$
+`Byte`   $-2^7$ to $2^7-1$
+`Short`  $-2^{15}$ to $2^{15}-1$
+`Char`   $0$ to $2^{16}-1$
 ---------------  -----------------------
 
 (@) Here are some integer literals:
@@ -354,7 +354,7 @@ is _pt_. The numeric ranges given by these types are:
 
 ### Floating Point Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 floatingPointLiteral  ::=  digit {digit} ‘.’ {digit} [exponentPart] [floatType]
                         |  ‘.’ digit {digit} [exponentPart] [floatType]
                         |  digit {digit} exponentPart [floatType]
@@ -363,11 +363,11 @@ exponentPart          ::=  (‘E’ | ‘e’) [‘+’ | ‘-’] digit {digit}
 floatType             ::=  ‘F’ | ‘f’ | ‘D’ | ‘d’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Floating point literals are of type `Float`{.scala} when followed by
+Floating point literals are of type `Float` when followed by
 a floating point type suffix `F` or `f`, and are
-of type `Double`{.scala} otherwise.  The type `Float`{.scala}
+of type `Double` otherwise.  The type `Float`
 consists of all IEEE 754 32-bit single-precision binary floating point
-values, whereas the type `Double`{.scala} consists of all IEEE 754
+values, whereas the type `Double` consists of all IEEE 754
 64-bit double-precision binary floating point values.
 
 If a floating point literal in a program is followed by a token
@@ -380,26 +380,26 @@ whitespace character between the two tokens.
     0.0        1e30f      3.14159f      1.0e-100      .1
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-(@) The phrase `1.toString`{.scala} parses as three different tokens:
-    `1`{.scala}, `.`{.scala}, and `toString`{.scala}. On the
+(@) The phrase `1.toString` parses as three different tokens:
+    `1`, `.`, and `toString`. On the
     other hand, if a space is inserted after the period, the phrase
-    `1. toString`{.scala} parses as the floating point literal
-    `1.`{.scala} followed by the identifier `toString`{.scala}.
+    `1. toString` parses as the floating point literal
+    `1.` followed by the identifier `toString`.
 
 
 ### Boolean Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 booleanLiteral  ::=  ‘true’ | ‘false’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The boolean literals `true`{.scala} and `false`{.scala} are
-members of type `Boolean`{.scala}.
+The boolean literals `true` and `false` are
+members of type `Boolean`.
 
 
 ### Character Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 characterLiteral  ::=  ‘'’ printableChar ‘'’
                     |  ‘'’ charEscapeSeq ‘'’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -423,7 +423,7 @@ the octal escape `'\12'` ([see here](#escape-sequences)).
 
 ### String Literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 stringLiteral  ::=  ‘\"’ {stringElement} ‘\"’
 stringElement  ::=  printableCharNoDoubleQuote  |  charEscapeSeq
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -433,11 +433,11 @@ characters are either printable unicode character or are described by
 [escape sequences](#escape-sequences). If the string literal
 contains a double quote character, it must be escaped,
 i.e. `"\""`. The value of a string literal is an instance of
-class `String`{.scala}. 
+class `String`. 
 
 (@) Here are some string literals:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     "Hello,\nWorld!"       
     "This string contains a \" character."
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -450,7 +450,7 @@ multiLineChars  ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A multi-line string literal is a sequence of characters enclosed in
-triple quotes `""" ... """`{.scala}. The sequence of characters is
+triple quotes `""" ... """`. The sequence of characters is
 arbitrary, except that it may contain three or more consuctive quote characters
 only at the very end. Characters
 must not necessarily be printable; newlines or other
@@ -459,7 +459,7 @@ of the escape sequences [here](#escape-sequences) are interpreted.
 
 (@) Here is a multi-line string literal:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~ 
       """the present string
          spans three 
          lines."""
@@ -477,7 +477,7 @@ The Scala library contains a utility method `stripMargin`
 which can be used to strip leading whitespace from multi-line strings.
 The expression
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~ 
  """the present string
     spans three 
     lines.""".stripMargin
@@ -485,7 +485,7 @@ The expression
 
 evaluates to
 
-~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~ 
 the present string
 spans three 
 lines.
@@ -494,8 +494,8 @@ lines.
 Method `stripMargin` is defined in class
 [scala.collection.immutable.StringLike](http://www.scala-lang.org/api/current/index.html#scala.collection.immutable.StringLike). 
 Because there is a predefined
-[implicit conversion](#implicit-conversions) from `String`{.scala} to
-`StringLike`{.scala}, the method is applicable to all strings.
+[implicit conversion](#implicit-conversions) from `String` to
+`StringLike`, the method is applicable to all strings.
 
 
 ### Escape Sequences
@@ -524,23 +524,23 @@ string literal does not start a valid escape sequence.
 
 ### Symbol literals
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 symbolLiteral  ::=  ‘'’ plainid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A symbol literal `'x`{.scala} is a shorthand for the expression
-`scala.Symbol("x")`{.scala}. `Symbol` is a [case class](#case-classes), 
+A symbol literal `'x` is a shorthand for the expression
+`scala.Symbol("x")`. `Symbol` is a [case class](#case-classes), 
 which is defined as follows.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 package scala
 final case class Symbol private (name: String) {
   override def toString: String = "'" + name
 }
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The `apply`{.scala} method of `Symbol`{.scala}'s companion object
-caches weak references to `Symbol`{.scala}s, thus ensuring that
+The `apply` method of `Symbol`'s companion object
+caches weak references to `Symbol`s, thus ensuring that
 identical symbol literals are equivalent with respect to reference
 equality.
 
@@ -568,7 +568,7 @@ angle bracket '<' in the following circumstance: The '<' must be
 preceded either by whitespace, an opening parenthesis or an opening
 brace and immediately followed by a character starting an XML name.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
  ( whitespace | ‘(’ | ‘{’ ) ‘<’ (XNameStart | ‘!’ | ‘?’)
 
   XNameStart ::= ‘_’ | BaseChar | Ideographic // as in W3C XML, but without ‘:’
@@ -591,7 +591,7 @@ as text.
 (@) The following value definition uses an XML literal with two embedded
 Scala expressions
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     val b = <book>
               <title>The Scala Language Specification</title>
               <version>{scalaBook.version}</version>

@@ -5,7 +5,7 @@
 The lexical syntax of Scala is given by the following grammar in EBNF
 form.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 upper            ::=  ‘A’ | … | ‘Z’ | ‘\$’ | ‘_’  // and Unicode category Lu
 lower            ::=  ‘a’ | … | ‘z’ // and Unicode category Ll
 letter           ::=  upper | lower // and Unicode categories Lo, Lt, Nl
@@ -61,7 +61,7 @@ semi             ::=  ‘;’ |  nl {nl}
 The context-free syntax of Scala is given by the following EBNF
 grammar.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
   Literal           ::=  [‘-’] integerLiteral
                       |  [‘-’] floatingPointLiteral
                       |  booleanLiteral

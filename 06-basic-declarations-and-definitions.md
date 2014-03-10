@@ -1,7 +1,7 @@
 # Basic Declarations and Definitions
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Dcl         ::=  ‘val’ ValDcl
               |  ‘var’ VarDcl
               |  ‘def’ FunDcl
@@ -37,7 +37,7 @@ between and including $s_i$ and $s_j$,
 
 ## Value Declarations and Definitions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Dcl          ::=  ‘val’ ValDcl
 ValDcl       ::=  ids ‘:’ Type
 PatVarDef    ::=  ‘val’ PatDef 
@@ -63,7 +63,7 @@ its right hand side $e$ the first time the value is accessed.
 
 A _constant value definition_ is of the form
 
-~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~ 
 final val x = e
 ~~~~~~~~~~~~~~~~
 
@@ -80,7 +80,7 @@ value definition `val $p$ = $e$` is expanded as follows:
 
 1. If the pattern $p$ has bound variables $x_1 , \ldots , x_n$, where $n > 1$:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 val $\$ x$ = $e$ match {case $p$ => ($x_1 , \ldots , x_n$)}
 val $x_1$ = $\$ x$._1
 $\ldots$
@@ -91,19 +91,19 @@ Here, $\$ x$ is a fresh name.
 
 2. If $p$ has a unique bound variable $x$:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 val $x$ = $e$ match { case $p$ => $x$ }
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 3. If $p$ has no bound variables:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 $e$ match { case $p$ => ()}
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (@) The following are examples of value definitions
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     val pi = 3.1415 
     val pi: Double = 3.1415   // equivalent to first definition
     val Some(x) = f()         // a pattern definition
@@ -112,7 +112,7 @@ $e$ match { case $p$ => ()}
 
     The last two definitions have the following expansions.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     val x = f() match { case Some(x) => x }
 
     val x$\$$ = mylist match { case x :: xs => (x, xs) }
@@ -133,7 +133,7 @@ sequence of value definitions `val $p_1: T$ = $e$; ...; val $p_n: T$ = $e$`.
 
 ## Variable Declarations and Definitions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Dcl            ::=  ‘var’ VarDcl
 PatVarDef      ::=  ‘var’ VarDef
 VarDcl         ::=  ids ‘:’ Type
@@ -145,7 +145,7 @@ A variable declaration `var $x$: $T$` is equivalent to declarations
 of a _getter function_ $x$ and a _setter function_
 `$x$_=`, defined as follows:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 def $x$: $T$ 
 def $x$_= ($y$: $T$): Unit
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -201,7 +201,7 @@ a template member.
     values to be assigned to these fields. The user code, on the other
     hand, accesses these fields just like normal variables.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     class TimeOfDayVar {
       private var h: Int = 0 
       private var m: Int = 0 
@@ -237,7 +237,7 @@ the sequence of variable definitions
 
 <!-- TODO: Higher-kinded tdecls should have a separate section -->
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Dcl        ::=  ‘type’ {nl} TypeDcl
 TypeDcl    ::=  id [TypeParamClause] [‘>:’ Type] [‘<:’ Type]
 Def        ::=  type {nl} TypeDef
@@ -285,7 +285,7 @@ an abstract type is directly or indirectly its own upper or lower bound.
 
 (@) The following are legal type declarations and definitions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     type IntList = List[Integer]
     type T <: Comparable[T]
     type Two[A] = Tuple2[A, A]
@@ -294,7 +294,7 @@ an abstract type is directly or indirectly its own upper or lower bound.
 
     The following are illegal:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     type Abs = Comparable[Abs]      // recursive type alias
 
     type S <: T                     // S, T are bounded by themselves.
@@ -313,7 +313,7 @@ objects of type $S$.
 (@) The `Predef` object contains a definition which establishes `Pair` 
     as an alias of the parameterized class `Tuple2`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     type Pair[+A, +B] = Tuple2[A, B] 
     object Pair {
       def apply[A, B](x: A, y: B) = Tuple2(x, y)
@@ -325,14 +325,14 @@ objects of type $S$.
     `Pair[$S$, $T\,$]` is equivalent to the type `Tuple2[$S$, $T\,$]`.
     `Pair` can also be used as a constructor instead of `Tuple2`, as in:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     val x: Pair[Int, String] = new Pair(1, "abc")
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 ## Type Parameters
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 TypeParamClause  ::= ‘[’ VariantTypeParam {‘,’ VariantTypeParam} ‘]’
 VariantTypeParam ::= {Annotation} [‘+’ | ‘-’] TypeParam
 TypeParam        ::= (id | ‘_’) [TypeParamClause] [‘>:’ Type] [‘<:’ Type] [‘:’ Type]
@@ -371,7 +371,7 @@ The above scoping restrictions are generalized to the case of nested type parame
 
 (@) Here are some well-formed type parameter clauses:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     [S, T]
     [@specialized T, U]
     [Ex <: Throwable]
@@ -385,7 +385,7 @@ The above scoping restrictions are generalized to the case of nested type parame
 
     The following type parameter clauses are illegal:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     [A >: A]                  // illegal, `A' has itself as bound
     [A <: B, B <: C, C <: A]  // illegal, `A' has itself as bound
     [A, B, C >: A <: B]       // illegal lower bound `A' of `C' does
@@ -444,7 +444,7 @@ appear anywhere without restricting its legal variance annotations.
 
 (@) The following variance annotation is legal. 
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     abstract class P[+A, +B] {
       def fst: A; def snd: B
     }
@@ -454,14 +454,14 @@ appear anywhere without restricting its legal variance annotations.
     of $P$ subtype covariantly with respect to their arguments. 
     For instance, 
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     P[IOException, String] <: P[Throwable, AnyRef]
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     If the members of $P$ are mutable variables, 
     the same variance annotation becomes illegal.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     abstract class Q[+A, +B](x: A, y: B) { 
       var fst: A = x           // **** error: illegal variance:
       var snd: B = y           // `A', `B' occur in invariant position.
@@ -471,7 +471,7 @@ appear anywhere without restricting its legal variance annotations.
     If the mutable variables are object-private, the class definition
     becomes legal again:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     abstract class R[+A, +B](x: A, y: B) { 
       private[this] var fst: A = x        // OK
       private[this] var snd: B = y        // OK
@@ -481,7 +481,7 @@ appear anywhere without restricting its legal variance annotations.
 (@) The following variance annotation is illegal, since $a$ appears
     in contravariant position in the parameter of `append`:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     abstract class Sequence[+A] {
       def append(x: Sequence[A]): Sequence[A]  
                       // **** error: illegal variance: 
@@ -492,7 +492,7 @@ appear anywhere without restricting its legal variance annotations.
     The problem can be avoided by generalizing the type of `append`
     by means of a lower bound:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     abstract class Sequence[+A] {
       def append[B >: A](x: Sequence[B]): Sequence[B] 
     }
@@ -500,7 +500,7 @@ appear anywhere without restricting its legal variance annotations.
 
 (@) Here is a case where a contravariant type parameter is useful.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     abstract class OutputChannel[-A] {
       def write(x: A): Unit
     }
@@ -515,7 +515,7 @@ appear anywhere without restricting its legal variance annotations.
 
 ## Function Declarations and Definitions
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Dcl                ::=  ‘def’ FunDcl
 FunDcl             ::=  FunSig ‘:’ Type
 Def                ::=  ‘def’ FunDef
@@ -581,7 +581,7 @@ be pairwise distinct.
 
 (@) In the method
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def compare[T](a: T = 0)(b: T = a) = (a == b)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -590,7 +590,7 @@ be pairwise distinct.
     and `T` is instantiated to `Int`. The methods computing the default
     arguments have the form:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def compare$\$$default$\$$1[T]: Int = 0
     def compare$\$$default$\$$2[T](a: T): T = a
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -599,7 +599,7 @@ be pairwise distinct.
 ### By-Name Parameters
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 ParamType          ::=  ‘=>’ Type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -618,7 +618,7 @@ by-name modifier is also disallowed for
 
 (@) The declaration
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def whileLoop (cond: => Boolean) (stat: => Unit): Unit
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -628,7 +628,7 @@ by-name modifier is also disallowed for
 
 ### Repeated Parameters
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 ParamType          ::=  Type ‘*’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -656,7 +656,7 @@ with a repeated parameter.
 (@) The following method definition computes the sum of the squares of a 
     variable number of integer arguments.
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     def sum(args: Int*) = {
       var result = 0
       for (arg <- args) result += arg * arg
@@ -667,7 +667,7 @@ with a repeated parameter.
     The following applications of this method yield `0`, `1`,
     `6`, in that order.
 
-    ~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~ 
     sum()
     sum(1)
     sum(1, 2, 3)
@@ -675,27 +675,27 @@ with a repeated parameter.
 
     Furthermore, assume the definition:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~ 
     val xs = List(1, 2, 3)
     ~~~~~~~~~~~~~~~~~~~~~~~
 
     The following application of method `sum` is ill-formed:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     sum(xs)       // ***** error: expected: Int, found: List[Int]
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     By contrast, the following application is well formed and yields again
     the result `6`:
 
-    ~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~ 
     sum(xs: _*) 
     ~~~~~~~~~~~~
 
 
 ### Procedures
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 FunDcl   ::=  FunSig
 FunDef   ::=  FunSig [nl] ‘{’ Block ‘}’
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -714,7 +714,7 @@ E.g., `def $f$($\mathit{ps}$) {$\mathit{stats}$}` is equivalent to
 
 (@) Here is a declaration and a definition of a procedure named `write`: 
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     trait Writer { 
       def write(str: String)
     }
@@ -725,7 +725,7 @@ E.g., `def $f$($\mathit{ps}$) {$\mathit{stats}$}` is equivalent to
 
     The code above is implicitly completed to the following code:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     trait Writer { 
       def write(str: String): Unit
     }
@@ -748,7 +748,7 @@ as $R$ conforms to $R'$.
 
 (@) Assume the following definitions:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     trait I {
       def factorial(x: Int): Int
     }
@@ -763,7 +763,7 @@ as $R$ conforms to $R'$.
 
 ## Import Clauses
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 Import          ::= ‘import’ ImportExpr {‘,’ ImportExpr}
 ImportExpr      ::= StableId ‘.’ (id | ‘_’ | ImportSelectors)
 ImportSelectors ::= ‘{’ {ImportSelector ‘,’} 
@@ -779,7 +779,7 @@ _importable_ if it is not [object-private](#modifiers).
 The most general form of an import expression is a list of {\em import
 selectors}
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 { $x_1$ => $y_1 , \ldots , x_n$ => $y_n$, _ } 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -829,7 +829,7 @@ sequence of import clauses
 
 (@) Consider the object definition:
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     object M { 
       def z = 0, one = 1  
       def add(x: Int, y: Int): Int = x + y 
@@ -837,13 +837,13 @@ sequence of import clauses
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Then the block
 
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     { import M.{one, z => zero, _}; add(zero, one) }
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     is equivalent to the block 
 
-    ~~~~~~~~~~~~~~~~~~~~~~ {.scala}
+    ~~~~~~~~~~~~~~~~~~~~~~ 
     { M.add(M.z, M.one) } 
     ~~~~~~~~~~~~~~~~~~~~~~
 
