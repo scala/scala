@@ -1,5 +1,4 @@
-Lexical Syntax
-==============
+# Lexical Syntax
 
 Scala programs are written using the Unicode Basic Multilingual Plane
 (_BMP_) character set; Unicode supplementary characters are not
@@ -34,8 +33,7 @@ classes (Unicode general category given in parentheses):
 
 \pagebreak[1]
 
-Identifiers
------------
+## Identifiers
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 op       ::=  opchar {opchar} 
@@ -108,8 +106,7 @@ equivalents ‘=>’ and ‘<-’, are also reserved.
     work-around: `` Thread.`yield`() ``{.scala}
 
 
-Newline Characters
-------------------
+## Newline Characters
 
 ~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 semi ::= ‘;’ |  nl {nl}
@@ -293,8 +290,7 @@ A single new line token is accepted
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Literals
-----------
+## Literals
 
 There are literals for integer numbers, floating point numbers,
 characters, booleans, symbols, strings.  The syntax of these literals is in
@@ -549,8 +545,7 @@ identical symbol literals are equivalent with respect to reference
 equality.
 
 
-Whitespace and Comments
------------------------
+## Whitespace and Comments
 
 Tokens may be separated by whitespace characters
 and/or comments. Comments come in two forms:
@@ -565,8 +560,7 @@ but are required to be properly nested.  Therefore, a comment like
 comment.
 
 
-XML mode
---------
+## XML mode
 
 In order to allow literal inclusion of XML fragments, lexical analysis
 switches from Scala mode to XML mode when encountering an opening

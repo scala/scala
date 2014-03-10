@@ -1,8 +1,6 @@
-Top-Level Definitions
-=====================
+# Top-Level Definitions
 
-Compilation Units
------------------
+## Compilation Units
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 CompilationUnit  ::=  {‘package’ QualId semi} TopStatSeq
@@ -46,8 +44,7 @@ the package `java.lang`, the package `scala`, and the object
 that order hide members of an earlier import.
 
 
-Packagings
-----------
+## Packagings
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Packaging       ::=  ‘package’ QualId [nl] ‘{’ TopStatSeq ‘}’
@@ -89,8 +86,7 @@ therefore cannot be imported. However, members of the empty package
 are visible to each other without qualification.
 
 
-Package Objects
----------------
+## Package Objects
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 PackageObject   ::=  ‘package’ ‘object’ ObjectDef
@@ -109,8 +105,7 @@ undefined. It is expected that this restriction will be lifted in a
 future version of Scala.
 
 
-Package References
-------------------
+## Package References
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 QualId           ::=  id {‘.’ id}
@@ -145,8 +140,7 @@ outermost root package which contains all top-level packages.
     contain a class `B`, a compiler-time error would result.
 
 
-Programs
---------
+## Programs
 
 A _program_ is a top-level object that has a member method
 _main_ of type `(Array[String])Unit`. Programs can be

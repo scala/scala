@@ -1,5 +1,4 @@
-User-Defined Annotations
-========================
+# User-Defined Annotations
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
   Annotation       ::=  ‘@’ SimpleType {ArgumentExprs}

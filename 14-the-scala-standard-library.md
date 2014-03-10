@@ -1,5 +1,4 @@
-The Scala Standard Library
-==========================
+# The Scala Standard Library
 
 The Scala standard library consists of the package `scala` with a
 number of classes and modules. Some of these classes are described in
@@ -8,8 +7,7 @@ the following.
 ![Class hierarchy of Scala](resources/classhierarchy.pdf)
 
 
-Root Classes
-------------
+## Root Classes
 
 Figure~\ref{fig:class-hierarchy} illustrates Scala's class
 hierarchy.
@@ -114,8 +112,7 @@ be translated to an application of a [conversion method](#numeric-value-types)
 `x.to$T$`. For non-numeric values $x$ the operation will raise a
 `ClassCastException`.
 
-Value Classes
--------------
+## Value Classes
 
 Value classes are classes whose instances are not represented as
 objects by the underlying host system.  All value classes inherit from
@@ -335,8 +332,7 @@ unit value `()`, `false` otherwise.  The
 `hashCode` method returns a fixed, implementation-specific hash-code, 
 The `toString` method returns `"()"`.
 
-Standard Reference Classes
---------------------------
+## Standard Reference Classes
 
 This section presents some standard Scala reference classes which are
 treated in a special way in Scala compiler -- either Scala provides
@@ -561,8 +557,7 @@ object Array {
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Class Node
-----------
+## Class Node
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 package scala.xml 
@@ -636,8 +631,7 @@ trait Node {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-The `Predef` Object
--------------------
+## The `Predef` Object
 
 The `Predef` object defines standard functions and type aliases
 for Scala programs. It is always implicitly imported, so that all its

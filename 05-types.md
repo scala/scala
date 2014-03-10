@@ -1,5 +1,4 @@
-Types
-=====
+# Types
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
   Type              ::=  FunctionArgTypes ‘=>’ Type
@@ -59,8 +58,7 @@ Type constructors are another example, as one can write
 the corresponding anonymous type function directly.
 
 
-Paths
------
+## Paths
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Path            ::=  StableId
@@ -92,8 +90,7 @@ A path is one of the following.
 A _stable identifier_ is a path which ends in an identifier.
 
 
-Value Types
------------
+## Value Types
 
 Every value in Scala has a type which is of one of the following
 forms.
@@ -548,8 +545,7 @@ type.
     `List[java.lang.Number]`.
 
 
-Non-Value Types
----------------
+## Non-Value Types
 
 The types explained in the following do not denote sets of values, nor
 do they appear explicitly in programs. They are introduced in this
@@ -641,8 +637,7 @@ the corresponding type parameter clause.
     `newType` type constructor parameter in `flatMap`.
 
 
-Base Types and Member Definitions
----------------------------------
+## Base Types and Member Definitions
 
 Types of class members depend on the way the members are referenced.
 Central here are three notions, namely:
@@ -737,8 +732,7 @@ These notions are defined mutually recursively as follows.
    share a to
 
 
-Relations between types
------------------------
+## Relations between types
 
 We define two relations between types.
 
@@ -939,8 +933,7 @@ A _weak least upper bound_ is a least upper bound with respect to
 weak conformance.
 
 
-Volatile Types
---------------
+## Volatile Types
 
 Type volatility approximates the possibility that a type parameter or abstract 
 type instance
@@ -975,8 +968,7 @@ An existential type `$T$ forSome {$\,Q\,$}` is volatile if
 $T$ is volatile.
 
 
-Type Erasure
-------------
+## Type Erasure
 
 A type is called _generic_ if it contains type arguments or type variables.
 _Type erasure_ is a mapping from (possibly generic) types to

@@ -1,5 +1,4 @@
-Expressions
-===========
+# Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
   Expr              ::=  (Bindings | id | `_') `=>' Expr
@@ -47,8 +46,7 @@ Expressions
 Expressions are composed of operators and operands. Expression forms are
 discussed subsequently in decreasing order of precedence. 
 
-Expression Typing
------------------
+## Expression Typing
 
 The typing of expressions is often relative to some _expected type_ 
 (which might be undefined).
@@ -72,8 +70,7 @@ $T$ forSome { type $t_1[\mathit{tps}_1] >: L_1 <: U_1$; $\ldots$; type $t_n[\mat
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Literals
---------
+## Literals
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 SimpleExpr    ::=  Literal
@@ -83,8 +80,7 @@ Typing of literals is as described [here](#literals); their
 evaluation is immediate.
 
 
-The _Null_ Value
---------------------
+## The _Null_ Value
 
 The `null` value is of type `scala.Null`, and is thus
 compatible with every reference type.  It denotes a reference value
@@ -104,8 +100,7 @@ A reference to any other member of the ``null'' object causes a
 `NullPointerException` to be thrown. 
 
 
-Designators
------------
+## Designators
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 SimpleExpr  ::=  Path
@@ -159,8 +154,7 @@ to a value different from `null`, otherwise a `scala.UnitializedError`
 is thrown.
  
 
-This and Super
---------------
+## This and Super
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 SimpleExpr  ::=  [id `.'] `this'
@@ -240,8 +234,7 @@ it must be concrete.
     depending on whether `B` is mixed in with class `Root` or `A`.
 
 
-Function Applications
----------------------
+## Function Applications
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 SimpleExpr    ::=  SimpleExpr1 ArgumentExprs
@@ -420,8 +413,7 @@ The final result of the transformation is a block of the form
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Method Values
--------------
+## Method Values
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 SimpleExpr    ::=  SimpleExpr1 `_'
@@ -450,8 +442,7 @@ parameterlist `()`.
     because otherwise the underscore would be considered part of the name.  
 
 
-Type Applications
------------------
+## Type Applications
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 SimpleExpr    ::=  SimpleExpr TypeArgs
@@ -478,8 +469,7 @@ for a polymorphic functions from the types of the actual function arguments
 and the expected result type.
 
 
-Tuples
-------
+## Tuples
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 SimpleExpr   ::=  `(' [Exprs] `)'
@@ -492,8 +482,7 @@ The empty tuple
 `()` is the unique value of type `scala.Unit`.
 
 
-Instance Creation Expressions
------------------------------
+## Instance Creation Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 SimpleExpr     ::=  `new' (ClassTemplate | TemplateBody)
@@ -559,8 +548,7 @@ types: If `{$D$}` is a class body, then
     where `anon\$X` is some freshly created name.
 
 
-Blocks
-------
+## Blocks
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 BlockExpr   ::=  `{' Block `}'
@@ -623,8 +611,7 @@ $e$, which defines the result of the block.
     `_1 forSome { type _1 <: B }` can be simplified to `B`.
 
 
-Prefix, Infix, and Postfix Operations
--------------------------------------
+## Prefix, Infix, and Postfix Operations
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 PostfixExpr     ::=  InfixExpr [id [nl]]
@@ -759,8 +746,7 @@ The re-interpretation occurs if the following two conditions are fulfilled.
    named `+`.
 
 
-Typed Expressions
------------------
+## Typed Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr1              ::=  PostfixExpr `:' CompoundType
@@ -779,8 +765,7 @@ the expression is the value of $e$ converted to type $T$.
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Annotated Expressions
----------------------
+## Annotated Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr1              ::=  PostfixExpr `:' Annotation {Annotation} 
@@ -791,8 +776,7 @@ attaches [annotations](#user-defined-annotations) $a_1 , \ldots , a_n$ to the
 expression $e$.
 
 
-Assignments
------------
+## Assignments
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr1        ::=  [SimpleExpr `.'] id `=' Expr
@@ -875,8 +859,7 @@ the invocation of an `update` function defined by $f$.
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Conditional Expressions
------------------------
+## Conditional Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr1          ::=  `if' `(' Expr `)' {nl} Expr [[semi] `else' Expr]
@@ -902,8 +885,7 @@ A short form of the conditional expression eliminates the
 else-part. The conditional expression `if ($e_1$) $e_2$` is
 evaluated as if it was `if ($e_1$) $e_2$ else ()`.  
 
-While Loop Expressions
-----------------------
+## While Loop Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr1          ::=  `while' `(' Expr ')' {nl} Expr
@@ -919,8 +901,7 @@ def whileLoop(cond: => Boolean)(body: => Unit): Unit  =
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Do Loop Expressions
--------------------
+## Do Loop Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr1          ::=  `do' Expr [semi] `while' `(' Expr ')'
@@ -931,8 +912,7 @@ evaluated as if it was the expression `($e_1$ ; while ($e_2$) $e_1$)`.
 A semicolon preceding the `while` symbol of a do loop expression is ignored.
 
 
-For Comprehensions and For Loops
---------------------------------
+## For Comprehensions and For Loops
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr1          ::=  `for' (`(' Enumerators `)' | `{' Enumerators `}') 
@@ -1083,8 +1063,7 @@ comprehensions have been eliminated.
     `scala.Array`.
 
 
-Return Expressions
-------------------
+## Return Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr1      ::=  `return' [Expr]
@@ -1122,8 +1101,7 @@ before the return expression is executed. In that case, the thrown
 and will propagate up the call stack.
 
 
-Throw Expressions
------------------
+## Throw Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr1      ::=  `throw' Expr
@@ -1141,8 +1119,7 @@ executing the `throw` is aborted.  The type of a throw expression
 is `scala.Nothing`.
 
 
-Try Expressions
----------------
+## Try Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr1 ::=  `try' `{' Block `}' [`catch' `{' CaseClauses `}'] 
@@ -1197,8 +1174,7 @@ is a shorthand
 for  `try { try { $b$ } catch $e_1$ } finally $e_2$`.
 
 
-Anonymous Functions
--------------------
+## Anonymous Functions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Expr            ::=  (Bindings | [`implicit'] id | `_') `=>' Expr
@@ -1309,8 +1285,7 @@ $e'$ results from $e$ by replacing each underscore section $u_i$ by $u_i'$.
     ---------------------------      ------------------------------------
 
 
-Constant Expressions
---------------------
+## Constant Expressions
 
 Constant expressions are expressions that the Scala compiler can evaluate to a constant.
 The definition of ``constant expression'' depends on the platform, but they
@@ -1327,8 +1302,7 @@ include at least the expressions of the following forms:
   [constant value definition](#value-declarations-and-definitions).
 
 
-Statements
-----------
+## Statements
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 BlockStat    ::=  Import
@@ -1362,8 +1336,7 @@ Evaluation of a statement sequence entails evaluation of the
 statements in the order they are written.
 
 
-Implicit Conversions
---------------------
+## Implicit Conversions
 
 Implicit conversions can be applied to expressions whose type does not
 match their expected type, to qualifiers in selections, and to unapplied methods. The

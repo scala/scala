@@ -1,5 +1,4 @@
-Classes and Objects
-===================
+# Classes and Objects
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 TmplDef          ::= [`case'] `class' ClassDef
@@ -11,8 +10,7 @@ TmplDef          ::= [`case'] `class' ClassDef
 are both defined in terms of _templates_.
 
 
-Templates
----------
+## Templates
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 ClassTemplate   ::=  [EarlyDefs] ClassParents [TemplateBody]
@@ -485,8 +483,7 @@ before the superclass constructor of the template is called.
     `"How are you, <null>"`.
   
  
-Modifiers
----------
+## Modifiers
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Modifier          ::=  LocalModifier 
@@ -676,8 +673,7 @@ the validity and meaning of a modifier are as follows.
     constructor `private` (see \ref{ex:private-constr}).
 
 
-Class Definitions
------------------
+## Class Definitions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 TmplDef           ::=  `class' ClassDef 
@@ -853,8 +849,7 @@ primary constructor of the class).
     third one constructs a list with a given head and tail.
 
 
-Case Classes
-------------
+## Case Classes
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 TmplDef  ::=  `case' `class' ClassDef
@@ -1090,8 +1085,7 @@ least proper supertype (which is statically known).
     in `MyTable`. 
 
 
-Object Definitions
-------------------
+## Object Definitions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 ObjectDef       ::=  id ClassTemplate

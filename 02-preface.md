@@ -1,5 +1,4 @@
-Preface
--------
+## Preface
 
 Scala is a Java-like programming language which unifies
 object-oriented and functional programming.  It is a pure

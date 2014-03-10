@@ -1,5 +1,4 @@
-Scala Syntax Summary
-====================
+# Scala Syntax Summary
 
 <!-- TODO: introduce SeqPattern syntax -->
 

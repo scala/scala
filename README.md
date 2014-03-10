@@ -1,8 +1,6 @@
-Scala Language Reference as Pandoc Markdown - Notes
-===================================================
+# Scala Language Reference as Pandoc Markdown - Notes
 
-Prerequisites
--------------
+## Prerequisites
 
 In order to build the scala reference, you will require the following
 software packages:
@@ -30,8 +28,7 @@ version of the specification.
   here: <https://code.google.com/p/evristika/>
 
 
-General Advice for editors
---------------------------
+## General Advice for editors
 
 - All files must be saved as UTF-8: ensure your editors are configured
   appropriately.
@@ -46,8 +43,7 @@ General Advice for editors
   you don't know how to type them directly.
 
 
-Useful tools
-------------
+## Useful tools
 
 I have found the following tools to be useful for viewing and testing the
 output of the various builds:
@@ -68,14 +64,12 @@ the [Package Control](http://wbond.net/sublime_packages/package_control)
 Sublime Text plugin.
 
 
-Known issues and outstanding tasks
-----------------------------------
+## Known issues and outstanding tasks
 
 Please see the issue tracker at <https://github.com/iainmcgin/scala-ref-markdown/issues>.
 
 
-Fixing known build errors / warnings
-------------------------------------
+## Fixing known build errors / warnings
 
 ### I am seeing `process\_defaultadd: n=-1 tag.data='NGENRE' level=0` every time I build the spec
 
@@ -90,8 +84,7 @@ run:
     ```
 
 
-Fixing rendering errors
-------------------------
+## Fixing rendering errors
 
 MathJAX errors will appear within the rendered DOM as span elements with
 class `mtext` and style attribute `color: red` applied. It is possible to
@@ -100,8 +93,7 @@ choice. In chrome, CTRL+F / CMD+F within the inspect element panel allows you
 to do this.
 
 
-Conversion from LaTeX - Guidelines
-----------------------------------
+## Conversion from LaTeX - Guidelines
 
 
 ### Chapter conversion Checklist

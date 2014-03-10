@@ -1,8 +1,6 @@
-Pattern Matching
-================
+# Pattern Matching
 
-Patterns
---------
+## Patterns
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
   Pattern         ::=  Pattern1 { ‘|’ Pattern1 }
@@ -320,8 +318,7 @@ A pattern $p$ is _irrefutable_ for a type $T$, if one of the following applies:
     of type $T$ has argument types $T_1 , \ldots , T_n$, and each $p_i$ is 
     irrefutable for $T_i$.
 
-Type Patterns
--------------
+## Type Patterns
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
   TypePat           ::=  Type
@@ -373,8 +370,7 @@ a lower case letter. However, the predefined primitive type aliases
 `long`, `float`, and `double` are not
 classified as type variable patterns.
 
-Type Parameter Inference in Patterns
-------------------------------------
+## Type Parameter Inference in Patterns
 
 Type parameter inference is the process of finding bounds for the
 bound type variables in a typed pattern or constructor
@@ -531,8 +527,7 @@ are inferred in the same way as for the typed pattern
     function's declared result type, `Number`.
 
 
-Pattern Matching Expressions
-----------------------------
+## Pattern Matching Expressions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
   Expr            ::=  PostfixExpr `match' `{' CaseClauses `}'
@@ -649,8 +644,7 @@ possibility of a `MatchError` being raised at run-time.
     conforms to its expected type, `T`.
 
 
-Pattern Matching Anonymous Functions
-------------------------------------
+## Pattern Matching Anonymous Functions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
   BlockExpr ::= `{' CaseClauses `}'

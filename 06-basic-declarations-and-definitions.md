@@ -1,5 +1,4 @@
-Basic Declarations and Definitions
-==================================
+# Basic Declarations and Definitions
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
@@ -36,8 +35,7 @@ between and including $s_i$ and $s_j$,
 - If $s_k$ is a value definition, it must be lazy.
 
 
-Value Declarations and Definitions
-----------------------------------
+## Value Declarations and Definitions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Dcl          ::=  ‘val’ ValDcl
@@ -133,8 +131,7 @@ A value definition `val $p_1 , \ldots , p_n: T$ = $e$` is a shorthand for the
 sequence of value definitions `val $p_1: T$ = $e$; ...; val $p_n: T$ = $e$`.
 
 
-Variable Declarations and Definitions
--------------------------------------
+## Variable Declarations and Definitions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 Dcl            ::=  ‘var’ VarDcl
@@ -236,8 +233,7 @@ A variable definition `var $x_1 , \ldots , x_n: T$ = $e$` is a shorthand for
 the sequence of variable definitions 
 `var $x_1: T$ = $e$; ...; var $x_n: T$ = $e$`.
 
-Type Declarations and Type Aliases
-----------------------------------
+## Type Declarations and Type Aliases
 
 <!-- TODO: Higher-kinded tdecls should have a separate section -->
 
@@ -334,8 +330,7 @@ objects of type $S$.
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Type Parameters
----------------
+## Type Parameters
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 TypeParamClause  ::= ‘[’ VariantTypeParam {‘,’ VariantTypeParam} ‘]’
@@ -398,8 +393,7 @@ The above scoping restrictions are generalized to the case of nested type parame
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Variance Annotations
---------------------
+## Variance Annotations
 
 Variance annotations indicate how instances of parameterized types
 vary with respect to [subtyping](#conformance).  A
@@ -519,8 +513,7 @@ appear anywhere without restricting its legal variance annotations.
     on which one can write only strings.
 
 
-Function Declarations and Definitions
--------------------------------------
+## Function Declarations and Definitions
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.grammar}
 Dcl                ::=  ‘def’ FunDcl
@@ -768,8 +761,7 @@ as $R$ conforms to $R'$.
     in `C`, even though the method is recursive.
 
 
-Import Clauses
---------------
+## Import Clauses
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ {.scala}
 Import          ::= ‘import’ ImportExpr {‘,’ ImportExpr}
