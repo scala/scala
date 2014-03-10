@@ -63,4 +63,16 @@ object TypeDeconstructionProps extends QuasiquoteProperties("type deconstruction
     // matches because type tree isn't syntactic without original
     val tq"" = tq"${typeOf[Int]}"
   }
+
+  property("type select doesn't match term select") = test {
+    assertThrows[MatchError] {
+      val tq"$qual.$name" = q"foo.bar"
+    }
+  }
+
+  property("applied type doesn't match type appliction") = test {
+    assertThrows[MatchError] {
+      val tq"$tpt[..$tpts]" = q"foo[bar]"
+    }
+  }
 }

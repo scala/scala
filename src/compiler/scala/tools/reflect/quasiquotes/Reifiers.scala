@@ -185,6 +185,8 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticApplied, fun, argss)
       case SyntacticTypeApplied(fun, targs) if targs.nonEmpty =>
         reifyBuildCall(nme.SyntacticTypeApplied, fun, targs)
+      case SyntacticAppliedType(tpt, targs) if targs.nonEmpty =>
+        reifyBuildCall(nme.SyntacticAppliedType, tpt, targs)
       case SyntacticFunction(args, body) =>
         reifyBuildCall(nme.SyntacticFunction, args, body)
       case SyntacticIdent(name, isBackquoted) =>
@@ -215,6 +217,9 @@ trait Reifiers { self: Quasiquotes =>
       // correctness of the trees produced by quasiquotes
       case Select(id @ Ident(nme.scala_), name) if id.symbol == ScalaPackage =>
         reifyBuildCall(nme.ScalaDot, name)
+      case Select(qual, name) =>
+        val ctor = if (name.isTypeName) nme.SyntacticSelectType else nme.SyntacticSelectTerm
+        reifyBuildCall(ctor, qual, name)
       case _ =>
         super.reifyTreeSyntactically(tree)
     }
