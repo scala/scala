@@ -224,7 +224,8 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
       val Apply(_, pickledPayload) = wrapped
       val payload = pickledPayload.map{ case Assign(k, v) => (unpickleAtom(k), unpickleAtom(v)) }.toMap
 
-      def fail(msg: String) = abort(s"bad macro impl binding: $msg")
+      import typer.TyperErrorGen._
+      def fail(msg: String) = MacroCantExpandIncompatibleMacrosError(msg)
       def unpickle[T](field: String, clazz: Class[T]): T = {
         def failField(msg: String) = fail(s"$field $msg")
         if (!payload.contains(field)) failField("is supposed to be there")
@@ -236,8 +237,9 @@ trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
         raw.asInstanceOf[T]
       }
 
+      if (!payload.contains("macroEngine")) MacroCantExpand210xMacrosError("macroEngine field not found")
       val macroEngine = unpickle("macroEngine", classOf[String])
-      if (self.macroEngine != macroEngine) typer.TyperErrorGen.MacroIncompatibleEngineError(macroEngine)
+      if (self.macroEngine != macroEngine) MacroCantExpandIncompatibleMacrosError(s"expected = ${self.macroEngine}, actual = $macroEngine")
 
       val isBundle = unpickle("isBundle", classOf[Boolean])
       val isBlackbox = unpickle("isBlackbox", classOf[Boolean])
