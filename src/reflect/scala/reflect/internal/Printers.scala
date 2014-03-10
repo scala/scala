@@ -567,8 +567,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
     override protected val commentsRequired = true
 
-    protected def needsParentheses(parent: Tree)(insideIf: Boolean = true, insideMatch: Boolean = true,
-      insideTry: Boolean = true, insideAnnotated: Boolean = true, insideBlock: Boolean = true, insideLabelDef: Boolean = true) = {
+    protected def needsParentheses(parent: Tree)(insideIf: Boolean = true, insideMatch: Boolean = true, insideTry: Boolean = true,
+        insideAnnotated: Boolean = true, insideBlock: Boolean = true, insideLabelDef: Boolean = true, insideAssign: Boolean = true) = {
       parent match {
         case _: If => insideIf
         case _: Match => insideMatch
@@ -576,6 +576,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case _: Annotated => insideAnnotated
         case _: Block => insideBlock
         case _: LabelDef => insideLabelDef
+        case _: Assign => insideAssign
         case _ => false
       }
     }
