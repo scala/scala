@@ -521,7 +521,7 @@ the validity and meaning of a modifier are as follows.
   from templates inside $C$.
 
   An different form of qualification is `private[this]`. A member
-  $M$ marked with this modifier is called {\em object-protected}; it can be accessed only from within
+  $M$ marked with this modifier is called _object-protected_; it can be accessed only from within
   the object in which it is defined. That is, a selection $p.M$ is only
   legal if the prefix is `this` or `$O$.this`, for some
   class $O$ enclosing the reference. In addition, the restrictions for
@@ -713,8 +713,8 @@ Here,
     such an access modifier is given it applies to the primary constructor
     to the class.
   - $(\mathit{ps}_1)\ldots(\mathit{ps}_n)$ are formal value parameter clauses for
-    the {\em primary
-    constructor} of the class. The scope of a formal value parameter includes
+    the _primary
+    constructor_ of the class. The scope of a formal value parameter includes
     all subsequent parameter sections and the template $t$. However, a formal 
     value parameter may not form
     part of the types of any of the parent classes or members of the class
@@ -995,8 +995,8 @@ passed to the superclass of the trait. This is not necessary as traits are
 initialized after the superclass is initialized.
 
 Assume a trait $D$ defines some aspect of an instance $x$ of
-type $C$ (i.e.\ $D$ is a base class of $C$). Then the {\em actual
-supertype} of $D$ in $x$ is the compound type consisting of all the
+type $C$ (i.e.\ $D$ is a base class of $C$). Then the _actual
+supertype_ of $D$ in $x$ is the compound type consisting of all the
 base classes in $\mathcal{L}(C)$ that succeed $D$.  The actual supertype gives
 the context for resolving a [`super` reference](#this-and-super) in a trait. 
 Note that the actual supertype depends 
