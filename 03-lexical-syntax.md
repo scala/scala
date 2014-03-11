@@ -42,7 +42,7 @@ plainid  ::=  upper idrest
            |  varid
            |  op
 id       ::=  plainid
-           |  ‘`’ stringLit ‘`’
+           |  ‘`’ stringLiteral ‘`’
 idrest   ::=  {letter | digit} [‘_’ op]
 ```
 
@@ -347,15 +347,15 @@ is _pt_. The numeric ranges given by these types are:
 
 (@) Here are some integer literals:
 
-    ```
-    0          21          0xFFFFFFFF       0777L
-    ```
+```
+0          21          0xFFFFFFFF       -42L
+```
 
 
 ### Floating Point Literals
 
 ``` 
-floatingPointLiteral  ::=  digit {digit} ‘.’ {digit} [exponentPart] [floatType]
+floatingPointLiteral  ::=  digit {digit} ‘.’ digit {digit} [exponentPart] [floatType]
                         |  ‘.’ digit {digit} [exponentPart] [floatType]
                         |  digit {digit} exponentPart [floatType]
                         |  digit {digit} [exponentPart] floatType
@@ -381,11 +381,10 @@ whitespace character between the two tokens.
     ```
 
 (@) The phrase `1.toString` parses as three different tokens:
-    `1`, `.`, and `toString`. On the
-    other hand, if a space is inserted after the period, the phrase
-    `1. toString` parses as the floating point literal
-    `1.` followed by the identifier `toString`.
+    the integer literal `1`, a `.`, and the identifier `toString`.
 
+(@) `1.` is not a valid floating point literal, because the
+    mandatory digit after the `.` is missing.
 
 ### Boolean Literals
 
@@ -479,8 +478,8 @@ The expression
 
 ``` 
  """the present string
-    spans three 
-    lines.""".stripMargin
+   |spans three
+   |lines.""".stripMargin
 ```
 
 evaluates to

@@ -46,20 +46,6 @@ always assume that this implicit extension has been performed, so that
 the first parent class of a template is a regular superclass
 constructor, not a trait reference.
 
-The list of parents of every class is also always implicitly extended
-by a reference to the `scala.ScalaObject` trait as last
-mixin. E.g.
-
-``` 
-$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\mathit{stats}$ }
-```
-
-becomes
-
-``` 
-$mt_1$ with $\ldots$ with $mt_n$ with ScalaObject { $\mathit{stats}$ }.
-```
-
 The list of parents of a template must be well-formed. This means that
 the class denoted by the superclass constructor $sc$ must be a
 subclass of the superclasses of all the traits $mt_1 , \ldots , mt_n$.
@@ -229,11 +215,8 @@ linearization of this graph is defined as follows.
     Then the linearization of class `Iter` is
 
     ```
-    { Iter, RichIterator, StringIterator, AbsIterator, ScalaObject, AnyRef, Any }
+    { Iter, RichIterator, StringIterator, AbsIterator, AnyRef, Any }
     ```
-
-    Trait `ScalaObject` appears in this list because it 
-    is added as last mixin to every Scala class ( [see here](#templates) ).
 
     Note that the linearization of a class refines the inheritance
     relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any
@@ -244,7 +227,7 @@ linearization of this graph is defined as follows.
     `StringIterator` is
 
     ```
-    { StringIterator, AbsIterator, ScalaObject, AnyRef, Any }
+    { StringIterator, AbsIterator, AnyRef, Any }
     ```
 
     which is a suffix of the linearization of its subclass `Iter`.
@@ -252,7 +235,7 @@ linearization of this graph is defined as follows.
     For instance, the linearization of `RichIterator` is
 
     ```
-    { RichIterator, AbsIterator, ScalaObject, AnyRef, Any }
+    { RichIterator, AbsIterator, AnyRef, Any }
     ```
 
     which is not a suffix of the linearization of `Iter`.
@@ -284,10 +267,13 @@ following definition of _matching_ on members:
 > 4. $M$ and $M'$ define both polymorphic methods with
 >    equal number of argument types $\overline T$, $\overline T'$
 >    and equal numbers of type parameters
->    $\overline t$, $\overline t'$, say, and 
->    $\overline T' = [\overline t'/\overline t]\overline T$.
->    by the corresponding type parameter $t$ of $M$.
+>    $\overline t$, $\overline t'$, say, and  $\overline T' = [\overline t'/\overline t]\overline T$.
 
+<!--
+every argument type
+$T_i$ of $M$ is equal to the corresponding argument type $T`_i$ of
+$M`$ where every occurrence of a type parameter $t`$ of $M`$ has been replaced by the corresponding type parameter $t$ of $M$.
+-->
 
 Member definitions fall into two categories: concrete and abstract.
 Members of class $C$ are either _directly defined_ (i.e.\ they appear in
@@ -517,8 +503,7 @@ the validity and meaning of a modifier are as follows.
   enclosing the definition.  Members labeled with such a modifier are
   accessible respectively only from code inside the package $C$ or only
   from code inside the class $C$ and its 
-  [companion module](#object-definitions). Such members are also inherited only
-  from templates inside $C$.
+  [companion module](#object-definitions).
 
   An different form of qualification is `private[this]`. A member
   $M$ marked with this modifier is called _object-protected_; it can be accessed only from within
@@ -560,7 +545,7 @@ the validity and meaning of a modifier are as follows.
       class which contains the access.
 
   A different form of qualification is `protected[this]`. A member
-  $M$ marked with this modifier can be accessed only from within
+  $M$ marked with this modifier is called _object-protected_; it can be accessed only from within
   the object in which it is defined. That is, a selection $p.M$ is only
   legal if the prefix is `this` or `$O$.this`, for some
   class $O$ enclosing the reference. In addition, the restrictions for
@@ -908,18 +893,19 @@ but the `apply` and `unapply` methods are added to the existing
 object instead.
 
 A method named `copy` is implicitly added to every case class unless the
-class already has a member (directly defined or inherited) with that name. The
-method is defined as follows:
+class already has a member (directly defined or inherited) with that name, or the
+class has a repeated parameter. The method is defined as follows:
 
 ``` 
 def copy[$\mathit{tps}\,$]($\mathit{ps}'_1\,$)$\ldots$($\mathit{ps}'_n$): $c$[$\mathit{tps}\,$] = new $c$[$\mathit{Ts}\,$]($\mathit{xs}_1\,$)$\ldots$($\mathit{xs}_n$)
 ```
 
-Again, $\mathit{Ts}$ stands for the vector of types defined in the type parameter section $\mathit{tps}$
-and each $\mathit{xs}_i$ denotes the parameter names of the parameter section $\mathit{ps}'_i$. Every value
-parameter $\mathit{ps}'_{i,j}$ of the `copy` method has the form `$x_{i,j}$:$T_{i,j}$=this.$x_{i,j}$`,
-where $x_{i,j}$ and $T_{i,j}$ refer to the name and type of the corresponding class parameter
-$\mathit{ps}_{i,j}$.
+Again, `$\mathit{Ts}$` stands for the vector of types defined in the type parameter section `$\mathit{tps}$`
+and each `$\xs_i$` denotes the parameter names of the parameter section `$\ps'_i$`. The value
+parameters `$\ps'_{1,j}$` of first parameter list have the form `$x_{1,j}$:$T_{1,j}$=this.$x_{1,j}$`,
+the other parameters `$\ps'_{i,j}$` of the `copy` method are defined as `$x_{i,j}$:$T_{i,j}$`.
+In all cases `$x_{i,j}$` and `$T_{i,j}$` refer to the name and type of the corresponding class parameter
+`$\mathit{ps}_{i,j}$`.
 
 Every case class implicitly overrides some method definitions of class
 [`scala.AnyRef`](#root-classes) unless a definition of the same
@@ -1157,8 +1143,11 @@ top-level objects are translated to static fields.
     as a pair of a Scala class that contains all instance members of $C$
     and a Scala object that contains all static members of $C$.
 
-    Generally, a _companion module_ of a class is an object which has
-    the same name as the class and is defined in the same scope and
-    compilation unit. Conversely, the class is called the _companion class_
-    of the module.
+Generally, a _companion module_ of a class is an object which has
+the same name as the class and is defined in the same scope and
+compilation unit. Conversely, the class is called the _companion class_
+of the module.
 
+Very much like a concrete class definition, an object definition may
+still contain declarations of abstract type members, but not of
+abstract term members.

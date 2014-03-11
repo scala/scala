@@ -21,130 +21,132 @@ does not matter.
 Examples:
 
 ``` 
-@serializable class C { ... }         // A class annotation.
-@transient @volatile var m: Int       // A variable annotation
-String @local                         // A type annotation
-(e: @unchecked) match { ... }         // An expression annotation
+@deprecated("Use D", "1.0") class C { ... } // Class annotation
+@transient @volatile var m: Int             // Variable annotation
+String @local                               // Type annotation
+(e: @unchecked) match { ... }               // Expression annotation
 ```
 
 The meaning of annotation clauses is implementation-dependent. On the
 Java platform, the following annotations have a standard meaning.
 
   * `@transient` \
-  	Marks a field to be non-persistent; this is
-	equivalent to the `transient`
-	modifier in Java.
-
+    Marks a field to be non-persistent; this is
+    equivalent to the `transient`
+    modifier in Java.
 
   * `@volatile` \
-	Marks a field which can change its value
-	outside the control of the program; this
-	is equivalent to the `volatile`
-	modifier in Java.
-
-  * `@serializable` \
-    Marks a class to be serializable; this is
-    equivalent to inheriting from the 
-    `java.io.Serializable` interface
-    in Java.
-
+    Marks a field which can change its value
+    outside the control of the program; this
+    is equivalent to the `volatile`
+    modifier in Java.
 
   * `@SerialVersionUID(<longlit>)` \
-	Attaches a serial version identifier (a
-	`long` constant) to a class.
-	This is equivalent to a the following field
-	definition in Java:
+    Attaches a serial version identifier (a
+    `long` constant) to a class.
+    This is equivalent to a the following field
+    definition in Java:
 
-	``` 
-	private final static SerialVersionUID = <longlit> 
-	```
+    ```
+    private final static SerialVersionUID = <longlit>
+    ```
 
   * `@throws(<classlit>)` \
-	A Java compiler checks that a program contains handlers for checked exceptions
-	by analyzing which checked exceptions can result from execution of a method or
-	constructor. For each checked exception which is a possible result, the 
-	`throws`
-	clause for the method or constructor must mention the class of that exception
-	or one of the superclasses of the class of that exception.
+    A Java compiler checks that a program contains handlers for checked exceptions
+    by analyzing which checked exceptions can result from execution of a method or
+    constructor. For each checked exception which is a possible result, the
+    `throws`
+    clause for the method or constructor must mention the class of that exception
+    or one of the superclasses of the class of that exception.
+
+## Java Beans Annotations
+
+  * `@scala.beans.BeanProperty` \
+    When prefixed to a definition of some variable `X`, this
+    annotation causes getter and setter methods `getX`, `setX`
+    in the Java bean style to be added in the class containing the
+    variable. The first letter of the variable appears capitalized after
+    the `get` or `set`. When the annotation is added to the
+    definition of an immutable value definition `X`, only a getter is
+    generated. The construction of these methods is part of
+    code-generation; therefore, these methods become visible only once a
+    classfile for the containing class is generated.
+
+  * `@scala.beans.BooleanBeanProperty` \
+    This annotation is equivalent to `scala.reflect.BeanProperty`, but
+    the generated getter method is named `isX` instead of `getX`.
+
+## Deprecation Annotations
 
   * `@deprecated(<stringlit>)` \
-	Marks a definition as deprecated. Accesses to the
-	defined entity will then cause a deprecated warning mentioning the
-	message `<stringlit>` to be issued from the compiler.  Deprecated
-	warnings are suppressed in code that belongs itself to a definition
-	that is labeled deprecated.
+    Marks a definition as deprecated. Accesses to the
+    defined entity will then cause a deprecated warning mentioning the
+    message `<stringlit>` to be issued from the compiler.  Deprecated
+    warnings are suppressed in code that belongs itself to a definition
+    that is labeled deprecated.
 
-  * `@scala.reflect.BeanProperty` \
-	When prefixed to a definition of some variable `X`, this
-	annotation causes getter and setter methods `getX`, `setX`
-	in the Java bean style to be added in the class containing the
-	variable. The first letter of the variable appears capitalized after
-	the `get` or `set`. When the annotation is added to the
-	definition of an immutable value definition `X`, only a getter is
-	generated. The construction of these methods is part of
-	code-generation; therefore, these methods become visible only once a
-	classfile for the containing class is generated.
+  * `@deprecatedName(name: <symbollit>)` \
+    Marks a formal parameter name as deprecated. Invocations of this entity
+    using named parameter syntax refering to the deprecated parameter name cause a deprecation warning.
 
-  * `@scala.reflect.BooleanBeanProperty` \
-	This annotation is equivalent to `scala.reflect.BeanProperty`, but
-	the generated getter method is named `isX` instead of `getX`.
+## Scala Compiler Annotations
 
   * `@unchecked` \
-	When applied to the selector of a `match` expression,
-	this attribute suppresses any warnings about non-exhaustive pattern
-	matches which would otherwise be emitted. For instance, no warnings
-	would be produced for the method definition below.
+    When applied to the selector of a `match` expression,
+    this attribute suppresses any warnings about non-exhaustive pattern
+    matches which would otherwise be emitted. For instance, no warnings
+    would be produced for the method definition below.
 
-	``` 
-	def f(x: Option[Int]) = (x: @unchecked) match {
-	  case Some(y) => y
-	}
-	```
+    ```
+    def f(x: Option[Int]) = (x: @unchecked) match {
+    case Some(y) => y
+    }
+    ```
 
-	Without the `@unchecked` annotation, a Scala compiler could
-	infer that the pattern match is non-exhaustive, and could produce a
-	warning because `Option` is a `sealed` class.
+    Without the `@unchecked` annotation, a Scala compiler could
+    infer that the pattern match is non-exhaustive, and could produce a
+    warning because `Option` is a `sealed` class.
 
   * `@uncheckedStable` \
-	When applied a value declaration or definition, it allows the defined
-	value to appear in a path, even if its type is [volatile](#volatile-types).
-	For instance, the following member definitions are legal:
+    When applied a value declaration or definition, it allows the defined
+    value to appear in a path, even if its type is [volatile](#volatile-types).
+    For instance, the following member definitions are legal:
 
-	``` 
-	type A { type T }
-	type B 
-	@uncheckedStable val x: A with B // volatile type 
-	val y: x.T                       // OK since `x' is still a path
-	```
+    ```
+    type A { type T }
+    type B
+    @uncheckedStable val x: A with B // volatile type
+    val y: x.T                       // OK since `x' is still a path
+    ```
 
-	Without the `@uncheckedStable` annotation, the designator `x`
-	would not be a path since its type `A with B` is volatile. Hence,
-	the reference `x.T` would be malformed. 
+    Without the `@uncheckedStable` annotation, the designator `x`
+    would not be a path since its type `A with B` is volatile. Hence,
+    the reference `x.T` would be malformed.
 
-	When applied to value declarations or definitions that have non-volatile 
-	types, the annotation has no effect. 
+    When applied to value declarations or definitions that have non-volatile
+    types, the annotation has no effect.
 
 
   * `@specialized` \
-	When applied to the definition of a type parameter, this annotation causes 
-	the compiler
-	to generate specialized definitions for primitive types. An optional list of
-	primitive
-	types may be given, in which case specialization takes into account only 
-	those types.
-	For instance, the following code would generate specialized traits for
-	`Unit`, `Int` and `Double`
+    When applied to the definition of a type parameter, this annotation causes
+    the compiler
+    to generate specialized definitions for primitive types. An optional list of
+    primitive
+    types may be given, in which case specialization takes into account only
+    those types.
+    For instance, the following code would generate specialized traits for
+    `Unit`, `Int` and `Double`
 
-	``` 
-	trait Function0[@specialized(Unit, Int, Double) T] {
-	  def apply: T
-	}
-	```
+    ```
+    trait Function0[@specialized(Unit, Int, Double) T] {
+      def apply: T
+    }
+    ```
 
-	Whenever the static type of an expression matches a specialized variant of 
-	a definition,
-	the compiler will instead use the specialized version. See \cite{spec-sid} 
-	for more details of the implementation.
+    Whenever the static type of an expression matches a specialized variant of
+    a definition,
+    the compiler will instead use the specialized version. See \cite{spec-sid}
+    for more details of the implementation.
 
 
 Other annotations may be interpreted by platform- or

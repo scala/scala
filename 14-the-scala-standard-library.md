@@ -17,16 +17,16 @@ indirectly from this class.  Class `Any` has two direct
 subclasses: `AnyRef` and AnyVal`.
 
 The subclass `AnyRef` represents all values which are represented
-as objects in the underlying host system. Every user-defined Scala
-class inherits directly or indirectly from this class. Furthermore,
-every user-defined Scala class also inherits the trait
-`scala.ScalaObject`.  Classes written in other languages still
-inherit from `scala.AnyRef`, but not from
-`scala.ScalaObject`.
+as objects in the underlying host system. Classes written in other languages
+inherit from `scala.AnyRef`.
 
-The class `AnyVal` has a fixed number of subclasses, which describe
+The predefined subclasses of class `AnyVal` describe
 values which are not implemented as objects in the underlying host
 system.
+
+User-defined Scala classes which do not explicitly inherit from
+`AnyVal` inherit directly or indirectly from `AnyRef`. They can
+not inherit from both `AnyRef` and `AnyVal`.
 
 Classes `AnyRef` and `AnyVal` are required to provide only
 the members declared in class `Any`, but implementations may add
@@ -84,8 +84,6 @@ class AnyRef extends Any {
   def synchronized[T](body: => T): T // execute `body` in while locking `this`.
 }                           
 
-/** A mixin class for every user-defined Scala class */
-trait ScalaObject extends AnyRef 
 ```
 
 The type test `$x$.isInstanceOf[$T$]` is equivalent to a typed
@@ -356,12 +354,12 @@ right operand.
 
 ### The `Tuple` classes
 
-Scala defines tuple classes `Tuple$n$` for $n = 2 , \ldots , 9$.
+Scala defines tuple classes `Tuple$n$` for $n = 2 , \ldots , 22$.
 These are defined as follows.
 
 ``` 
 package scala 
-case class Tuple$n$[+A_1, ..., +A_n](_1: A_1, ..., _$n$: A_$n$) {
+case class Tuple$n$[+T_1, ..., +T_n](_1: T_1, ..., _$n$: T_$n$) {
   def toString = "(" ++ _1 ++ "," ++ $\ldots$ ++ "," ++ _$n$ ++ ")"
 }
 ```
@@ -372,13 +370,13 @@ as an alias for `Tuple3`.
 
 ### The `Function` Classes
 
-Scala defines function classes `Function$n$` for $n = 1 , \ldots , 9$.
+Scala defines function classes `Function$n$` for $n = 1 , \ldots , 22$.
 These are defined as follows.
 
 ``` 
 package scala 
-trait Function$n$[-A_1, ..., -A_$n$, +B] {
-  def apply(x_1: A_1, ..., x_$n$: A_$n$): B 
+trait Function$n$[-T_1, ..., -T_$n$, +R] {
+  def apply(x_1: T_1, ..., x_$n$: T_$n$): R
   def toString = "<function>" 
 }
 ```
@@ -400,29 +398,33 @@ The implicitly imported [`Predef`](#the-predef-object) object defines the name
 
 ### Class `Array`
 
-The class of generic arrays is given as follows.
+All operations on arrays desugar to the corresponding operations of the
+underlying platform. Therefore, the following class definition is given for
+informational purposes only:
 
-``` 
-final class Array[A](len: Int) extends Seq[A] {
-  def length: Int = len
-  def apply(i: Int): A = $\ldots$
-  def update(i: Int, x: A): Unit = $\ldots$
-  def elements: Iterator[A] = $\ldots$
-  def subArray(from: Int, end: Int): Array[A] = $\ldots$
-  def filter(p: A => Boolean): Array[A] = $\ldots$
-  def map[B](f: A => B): Array[B] = $\ldots$
-  def flatMap[B](f: A => Array[B]): Array[B] = $\ldots$
+```
+final class Array[T](_length: Int)
+extends java.io.Serializable with java.lang.Cloneable {
+  def length: Int = $\ldots$
+  def apply(i: Int): T = $\ldots$
+  def update(i: Int, x: T): Unit = $\ldots$
+  override def clone(): Array[T] = $\ldots$
 }
 ```
 
-If $T$ is not a type parameter or abstract type, the type Array[$T$]
-is represented as the native array type `[]$T$` in the
-underlying host system. In that case `length` returns
-the length of the array, `apply` means subscripting, and
-`update` means element update. Because of the syntactic sugar for
-`apply` and
-`update` [operations](#implicit-conversions),
-we have the following correspondences between Scala and Java/C\# code for
+If $T$ is not a type parameter or abstract type, the type `Array[T]`
+is represented as the array type `|T|[]` in the
+underlying host system, where `|T|` is the erasure of `T`.
+If $T$ is a type parameter or abstract type, a different representation might be
+used (it is `Object` on the Java platform).
+
+#### Operations
+
+`length` returns the length of the array, `apply` means subscripting,
+and `update` means element update.
+
+Because of the syntactic sugar for `apply` and `update` operations,
+we have the following correspondences between Scala and Java/C# code for
 operations on an array `xs`:
 
 ------------------   ----------------------
@@ -432,16 +434,24 @@ _Scala_              _Java/C#_
 `xs(i) = e`          `xs[i] = e`
 ------------------   ----------------------
 
-Arrays also implement the sequence trait `scala.Seq`
-by defining an `elements` method which returns
-all elements of the array in an `Iterator`.
+Two implicit conversions exist in `Predef` that are frequently applied to arrays:
+a conversion to `scala.collection.mutable.ArrayOps` and a conversion to
+`scala.collection.mutable.WrappedArray` (a subtype of `scala.collection.Seq`).
+
+Both types make many of the standard operations found in the Scala
+collections API available. The conversion to `ArrayOps` is temporary, as all operations
+defined on `ArrayOps` return a value of type `Array`, while the conversion to `WrappedArray`
+is permanent as all operations return a value of type `WrappedArray`.
+The conversion to `ArrayOps` takes priority over the conversion to `WrappedArray`.
 
 Because of the tension between parametrized types in Scala and the ad-hoc
 implementation of arrays in the host-languages, some subtle points
 need to be taken into account when dealing with arrays. These are
 explained in the following.
 
-First, unlike arrays in Java or C\#, arrays in Scala are _not_
+#### Variance
+
+Unlike arrays in Java or C#, arrays in Scala are _not_
 co-variant; That is, $S <: T$ does not imply 
 `Array[$S$] $<:$ Array[$T$]` in Scala.  
 However, it is possible to cast an array
@@ -460,102 +470,94 @@ val xs = new Array[String](2)
 val ys: Array[Object] = xs.asInstanceOf[Array[Object]] // OK
 ```
 
-Second, for _polymorphic arrays_, that have a type parameter or
-abstract type $T$ as their element type, a representation different
-from
-`[]T` might be used. However, it is guaranteed that 
-`isInstanceOf` and `asInstanceOf` still work as if the array 
-used the standard representation of monomorphic arrays:
-
-``` 
-val ss = new Array[String](2)
-
-def f[T](xs: Array[T]): Array[String] = 
-  if (xs.isInstanceOf[Array[String]]) xs.asInstanceOf[Array[String])
-  else throw new Error("not an instance")
-
-f(ss)                                     // returns ss
-```
-
-The representation chosen for polymorphic arrays also guarantees that
-polymorphic array creations work as expected. An example is the
+The instantiation of an array with a polymorphic element type $T$ requires
+information about type $T$ at runtime.
+This information is synthesized by adding a [context bound](#context-bounds-and-view-bounds)
+of `scala.reflect.ClassTag` to type $T$.
+An example is the
 following implementation of method `mkArray`, which creates
-an array of an arbitrary type $T$, given a sequence of $T$'s which
-defines its elements.
+an array of an arbitrary type $T$, given a sequence of $T$`s which
+defines its elements:
 
-``` 
-def mkArray[T](elems: Seq[T]): Array[T] = {
+```
+import reflect.ClassTag
+def mkArray[T : ClassTag](elems: Seq[T]): Array[T] = {
   val result = new Array[T](elems.length)
   var i = 0
   for (elem <- elems) {
     result(i) = elem
     i += 1
   }
+  result
 }
 ```
 
-Note that under Java's erasure model of arrays the method above would
-not work as expected -- in fact it would always return an array of
-`Object`.
+If type $T$ is a type for which the host platform offers a specialized array
+representation, this representation is used.
 
-Third, in a Java environment there is a method `System.arraycopy`
-which takes two objects as parameters together with start indices and
-a length argument, and copies elements from one object to the other,
-provided the objects are arrays of compatible element
-types. `System.arraycopy` will not work for Scala's polymorphic
-arrays because of their different representation. One should instead
-use method `Array.copy` which is defined in the companion object
-of class `Array`. This companion object also defines various
-constructor methods for arrays, as well as 
-the [extractor method](#extractor-patterns) `unapplySeq`
-which enables pattern matching over arrays.
+(@) On the Java Virtual Machine, an invocation of
+    ```
+    mkArray(List(1,2,3))
+    ```
+    will return a primitive array of `int`s, written as `int[]` in Java.
 
-``` 
+#### Companion object
+
+`Array`'s companion object provides various factory methods for the
+instantiation of single- and multi-dimensional arrays, an extractor method
+[`unapplySeq`](#extractor-patterns) which enables pattern matching
+over arrays and additional utility methods:
+
+```
 package scala
 object Array { 
-  /** copies array elements from `src' to `dest'. */
-  def copy(src: AnyRef, srcPos: Int, 
+  /** copies array elements from `src` to `dest`. */
+  def copy(src: AnyRef, srcPos: Int,
            dest: AnyRef, destPos: Int, length: Int): Unit = $\ldots$
 
-  /** Concatenate all argument arrays into a single array. */
-  def concat[T](xs: Array[T]*): Array[T] = $\ldots$
-
-  /** Create a an array of successive integers. */
-  def range(start: Int, end: Int): Array[Int] = $\ldots$
+  /** Returns an array of length 0 */
+  def empty[T: ClassTag]: Array[T] =
 
   /** Create an array with given elements. */
-  def apply[A <: AnyRef](xs: A*): Array[A] = $\ldots$
+  def apply[T: ClassTag](xs: T*): Array[T] = $\ldots$
 
-  /** Analogous to above. */
-  def apply(xs: Boolean*): Array[Boolean] = $\ldots$
-  def apply(xs: Byte*)   : Array[Byte]    = $\ldots$
-  def apply(xs: Short*)  : Array[Short]   = $\ldots$
-  def apply(xs: Char*)   : Array[Char]    = $\ldots$
-  def apply(xs: Int*)    : Array[Int]     = $\ldots$
-  def apply(xs: Long*)   : Array[Long]    = $\ldots$
-  def apply(xs: Float*)  : Array[Float]   = $\ldots$
-  def apply(xs: Double*) : Array[Double]  = $\ldots$
-  def apply(xs: Unit*)   : Array[Unit]    = $\ldots$
+  /** Creates array with given dimensions */
+  def ofDim[T: ClassTag](n1: Int): Array[T] = $\ldots$
+  /** Creates a 2-dimensional array */
+  def ofDim[T: ClassTag](n1: Int, n2: Int): Array[Array[T]] = $\ldots$
+  $\ldots$
 
-  /** Create an array containing several copies of an element. */
-  def make[A](n: Int, elem: A): Array[A] = {
+  /** Concatenate all argument arrays into a single array. */
+  def concat[T: ClassTag](xss: Array[T]*): Array[T] = $\ldots$
+
+  /** Returns an array that contains the results of some element computation a number
+    * of times. */
+  def fill[T: ClassTag](n: Int)(elem: => T): Array[T] = $\ldots$
+  /** Returns a two-dimensional array that contains the results of some element
+    * computation a number of times. */
+  def fill[T: ClassTag](n1: Int, n2: Int)(elem: => T): Array[Array[T]] = $\ldots$
+  $\ldots$
+
+  /** Returns an array containing values of a given function over a range of integer
+    * values starting from 0. */
+  def tabulate[T: ClassTag](n: Int)(f: Int => T): Array[T] = $\ldots$
+  /** Returns a two-dimensional array containing values of a given function
+    * over ranges of integer values starting from `0`. */
+  def tabulate[T: ClassTag](n1: Int, n2: Int)(f: (Int, Int) => T): Array[Array[T]] = $\ldots$
+  $\ldots$
+
+  /** Returns an array containing a sequence of increasing integers in a range. */
+  def range(start: Int, end: Int): Array[Int] = $\ldots$
+  /** Returns an array containing equally spaced values in some integer interval. */
+  def range(start: Int, end: Int, step: Int): Array[Int] = $\ldots$
+
+  /** Returns an array containing repeated applications of a function to a start value. */
+  def iterate[T: ClassTag](start: T, len: Int)(f: T => T): Array[T] = $\ldots$
 
   /** Enables pattern matching over arrays */
-  def unapplySeq[A](x: Array[A]): Option[Seq[A]] = Some(x)
+  def unapplySeq[A](x: Array[A]): Option[IndexedSeq[A]] = Some(x)
 }
 ```
-
-(@) The following method duplicates a given argument array and returns a pair
-    consisting of the original and the duplicate:
-
-    ``` 
-    def duplicate[T](xs: Array[T]) = {
-      val ys = new Array[T](xs.length)
-      Array.copy(xs, 0, ys, 0, xs.length)
-      (xs, ys)
-    }
-    ```
-
 
 ## Class Node
 

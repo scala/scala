@@ -364,11 +364,7 @@ compiler will issue an ``unchecked'' warning for these patterns to
 flag the possible loss of type-safety.
 
 A _type variable pattern_ is a simple identifier which starts with
-a lower case letter. However, the predefined primitive type aliases
-`unit`, `boolean`, `byte`,
-`short`, `char`, `int`,
-`long`, `float`, and `double` are not
-classified as type variable patterns.
+a lower case letter.
 
 ## Type Parameter Inference in Patterns
 

@@ -35,6 +35,65 @@ between and including $s_i$ and $s_j$,
 - If $s_k$ is a value definition, it must be lazy.
 
 
+<!--
+Every basic definition may introduce several defined names, separated
+by commas. These are expanded according to the following scheme:
+\bda{lcl}
+\VAL;x, y: T = e && \VAL; x: T = e \\
+                 && \VAL; y: T = x \\[0.5em]
+
+\LET;x, y: T = e && \LET; x: T = e \\
+                 && \VAL; y: T = x \\[0.5em]
+
+\DEF;x, y (ps): T = e &\tab\mbox{expands to}\tab& \DEF; x(ps): T = e \\
+                      && \DEF; y(ps): T = x(ps)\\[0.5em]
+
+\VAR;x, y: T := e && \VAR;x: T := e\\
+                  && \VAR;y: T := x\\[0.5em]
+
+\TYPE;t,u = T && \TYPE; t = T\\
+              && \TYPE; u = t\\[0.5em]
+\eda
+
+All definitions have a ``repeated form`` where the initial
+definition keyword is followed by several constituent definitions
+which are separated by commas.  A repeated definition is
+always interpreted as a sequence formed from the
+constituent definitions. E.g.\ the function definition
+`def f(x) = x, g(y) = y` expands to
+`def f(x) = x; def g(y) = y` and
+the type definition
+`type T, U <: B` expands to
+`type T; type U <: B`.
+}
+\comment{
+If an element in such a sequence introduces only the defined name,
+possibly with some type or value parameters, but leaves out any
+additional parts in the definition, then those parts are implicitly
+copied from the next subsequent sequence element which consists of
+more than just a defined name and parameters. Examples:
+
+
+- []
+The variable declaration `var x, y: Int`
+expands to `var x: Int; var y: Int`.
+- []
+The value definition `val x, y: Int = 1`
+expands to `val x: Int = 1; val y: Int = 1`.
+- []
+The class definition `case class X(), Y(n: Int) extends Z` expands to
+`case class X extends Z; case class Y(n: Int) extends Z`.
+- The object definition `case object Red, Green, Blue extends Color`~
+expands to
+```
+case object Red extends Color
+case object Green extends Color
+case object Blue extends Color .
+```
+-->
+
+
+
 ## Value Declarations and Definitions
 
 ``` 
@@ -428,6 +487,7 @@ changes at the following constructs.
 - The variance position of the lower bound of a type declaration or type parameter 
   is the opposite of the variance position of the type declaration or parameter.  
 - The type of a mutable variable is always in invariant position.
+- The right-hand side of a type alias is always in invariant position.
 - The prefix $S$ of a type selection `$S$#$T$` is always in invariant position.
 - For a type argument $T$ of a type `$S$[$\ldots T \ldots$ ]`: If the
   corresponding type parameter is invariant, then $T$ is in
@@ -438,7 +498,7 @@ changes at the following constructs.
 <!-- TODO: handle type aliases --> 
 
 References to the type parameters in 
-[object-private or object-protected values, variables, or methods](#modifiers) of the class are not 
+[object-private or object-protected values, types, variables, or methods](#modifiers) of the class are not
 checked for their variance position. In these members the type parameter may 
 appear anywhere without restricting its legal variance annotations.
 
@@ -573,11 +633,8 @@ user programs.
 
 The scope of a formal value parameter name $x$ comprises all subsequent 
 parameter clauses, as well as the method return type and the function body, if
-they are given [^5]. Both type parameter names and value parameter names must 
+they are given. Both type parameter names and value parameter names must
 be pairwise distinct.
-
-[^5]: However, at present singleton types of method parameters may only appear 
-      in the method body; so _dependent method types_ are not supported.
 
 (@) In the method
 
@@ -700,7 +757,7 @@ FunDcl   ::=  FunSig
 FunDef   ::=  FunSig [nl] ‘{’ Block ‘}’
 ```
 
-Special syntax exists for procedures, i.e.\ functions that return the
+Special syntax exists for procedures, i.e. functions that return the
 `Unit` value `()`. 
 A procedure declaration is a function declaration where the result type
 is omitted. The result type is then implicitly completed to the
@@ -761,6 +818,24 @@ as $R$ conforms to $R'$.
     in `C`, even though the method is recursive.
 
 
+
+<!-- ## Overloaded Definitions
+\label{sec:overloaded-defs}
+\todo{change}
+
+An overloaded definition is a set of $n > 1$ value or function
+definitions in the same statement sequence that define the same name,
+binding it to types `$T_1 \commadots T_n$`, respectively.
+The individual definitions are called _alternatives_.  Overloaded
+definitions may only appear in the statement sequence of a template.
+Alternatives always need to specify the type of the defined entity
+completely.  It is an error if the types of two alternatives $T_i$ and
+$T_j$ have the same erasure (\sref{sec:erasure}).
+
+\todo{Say something about bridge methods.}
+%This must be a well-formed
+%overloaded type -->
+
 ## Import Clauses
 
 ``` 
@@ -776,8 +851,7 @@ An import clause has the form `import $p$.$I$` where $p$ is a
 The import expression determines a set of names of importable members of $p$
 which are made available without qualification.  A member $m$ of $p$ is
 _importable_ if it is not [object-private](#modifiers).
-The most general form of an import expression is a list of {\em import
-selectors}
+The most general form of an import expression is a list of _import selectors_
 
 ``` 
 { $x_1$ => $y_1 , \ldots , x_n$ => $y_n$, _ } 

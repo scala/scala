@@ -19,19 +19,17 @@ plainid          ::=  upper idrest
                  |  varid
                  |  op
 id               ::=  plainid
-                 |  ‘\`’ stringLit ‘\`’
+                 |  ‘\`’ stringLiteral ‘\`’
 idrest           ::=  {letter | digit} [‘_’ op]
 
-integerLiteral   ::=  (decimalNumeral | hexNumeral | octalNumeral) [‘L’ | ‘l’]
+integerLiteral   ::=  (decimalNumeral | hexNumeral) [‘L’ | ‘l’]
 decimalNumeral   ::=  ‘0’ | nonZeroDigit {digit}
 hexNumeral       ::=  ‘0’ ‘x’ hexDigit {hexDigit}
-octalNumeral     ::=  ‘0’ octalDigit {octalDigit}
 digit            ::=  ‘0’ | nonZeroDigit
 nonZeroDigit     ::=  ‘1’ | … | ‘9’
-octalDigit       ::=  ‘0’ | … | ‘7’
 
 floatingPointLiteral 
-               ::=  digit {digit} ‘.’ {digit} [exponentPart] [floatType]
+                 ::=  digit {digit} ‘.’ digit {digit} [exponentPart] [floatType]
                  |  ‘.’ digit {digit} [exponentPart] [floatType]
                  |  digit {digit} exponentPart [floatType]
                  |  digit {digit} [exponentPart] floatType
@@ -157,7 +155,7 @@ grammar.
   Enumerators       ::=  Generator {semi Enumerator}
   Enumerator        ::=  Generator
                       |  Guard
-                      |  ‘val’ Pattern1 ‘=’ Expr
+                      |  Pattern1 ‘=’ Expr
   Generator         ::=  Pattern1 ‘<-’ Expr [Guard]
 
   CaseClauses       ::=  CaseClause { CaseClause }
@@ -198,7 +196,7 @@ grammar.
   ClassParamClauses ::=  {ClassParamClause} 
                          [[nl] ‘(’ ‘implicit’ ClassParams ‘)’]
   ClassParamClause  ::=  [nl] ‘(’ [ClassParams] ‘)’
-  ClassParams       ::=  ClassParam {‘’ ClassParam}
+  ClassParams       ::=  ClassParam {‘,’ ClassParam}
   ClassParam        ::=  {Annotation} [{Modifier} (‘val’ | ‘var’)] 
                          id ‘:’ ParamType [‘=’ Expr]
   Bindings          ::=  ‘(’ Binding {‘,’ Binding ‘)’

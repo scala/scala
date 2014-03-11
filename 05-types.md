@@ -637,6 +637,40 @@ the corresponding type parameter clause.
     `newType` type constructor parameter in `flatMap`.
 
 
+<!-- ### Overloaded Types
+
+More than one values or methods are defined in the same scope with the
+same name, we model
+
+An overloaded type consisting of type alternatives $T_1 \commadots T_n (n \geq 2)$ is denoted internally $T_1 \overload \ldots \overload T_n$.
+
+(@) The definitions
+```
+def println: Unit
+def println(s: String): Unit = $\ldots$
+def println(x: Float): Unit = $\ldots$
+def println(x: Float, width: Int): Unit = $\ldots$
+def println[A](x: A)(tostring: A => String): Unit = $\ldots$
+```
+define a single function `println` which has an overloaded
+type.
+```
+println:  => Unit $\overload$
+          (String) Unit $\overload$
+          (Float) Unit $\overload$
+          (Float, Int) Unit $\overload$
+          [A] (A) (A => String) Unit
+```
+
+(@) The definitions
+```
+def f(x: T): T = $\ldots$
+val f = 0
+```
+define a function `f} which has type `(x: T)T $\overload$ Int`.
+-->
+
+
 ## Base Types and Member Definitions
 
 Types of class members depend on the way the members are referenced.

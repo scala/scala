@@ -92,9 +92,8 @@ implements methods in class `scala.AnyRef` as follows:
 - `ne($x\,$)` and `!=($x\,$)` return true iff the 
   argument x is not also the ``null'' object.
 - `isInstanceOf[$T\,$]` always returns `false`.
-- `asInstanceOf[$T\,$]` returns the ``null'' object itself if
-  $T$ conforms to `scala.AnyRef`, and throws a
-  `NullPointerException` otherwise.
+- `asInstanceOf[$T\,$]` returns the [default value](#value-declarations-and-definitions) of type $T$.
+- `##` returns ``0``.
 
 A reference to any other member of the ``null'' object causes a
 `NullPointerException` to be thrown. 
@@ -121,6 +120,10 @@ occurrence of $x$.
 If $r$ is a [stable identifier](#paths) of type $T$, the selection $r.x$ refers
 statically to a term member $m$ of $r$ that is identified in $T$ by
 the name $x$. 
+
+<!-- There might be several such members, in which
+case overloading resolution (\sref{overloading-resolution}) is applied
+to pick a unique one.}  -->
 
 For other expressions $e$, $e.x$ is typed as
 if it was `{ val $y$ = $e$; $y$.$x$ }`, for some fresh name
@@ -181,7 +184,7 @@ in the least proper supertype of the innermost template containing the
 reference.  It evaluates to the member $m'$ in the actual supertype of
 that template which is equal to $m$ or which overrides $m$.  The
 statically referenced member $m$ must be a type or a
-method. 
+method.  <!-- explanation: so that we need not create several fields for overriding vals -->
 
 If it is
 a method, it must be concrete, or the template
@@ -345,8 +348,9 @@ of the caller.
 If an application might uses named arguments $p = e$ or default
 arguments, the following conditions must hold.
 
-- The named arguments form a suffix of the argument list $e_1 , \ldots , e_m$,
-  i.e.\ no positional argument follows a named one.
+- For every named argument $p_i = e_i$ which appears left of a positional argument
+  in the argument list $e_1 \ldots e_m$, the argument position $i$ coincides with
+  the position of parameter $p_i$ in the parameter list of the applied function.
 - The names $x_i$ of all named arguments are pairwise distinct and no named
   argument defines a parameter which is already specified by a
   positional argument.
@@ -920,7 +924,7 @@ Expr1          ::=  `for' (`(' Enumerators `)' | `{' Enumerators `}')
 Enumerators    ::=  Generator {semi Enumerator}
 Enumerator     ::=  Generator 
                  |  Guard
-                 |  `val' Pattern1 `=' Expr
+                 |  Pattern1 `=' Expr
 Generator      ::=  Pattern1 `<-' Expr [Guard]
 Guard          ::=  `if' PostfixExpr
 ```
@@ -1342,7 +1346,7 @@ Implicit conversions can be applied to expressions whose type does not
 match their expected type, to qualifiers in selections, and to unapplied methods. The
 available implicit conversions are given in the next two sub-sections.
 
-We say, a type $T$ is _compatible_ to a type $U$ if $T$ conforms
+We say, a type $T$ is _compatible_ to a type $U$ if $T$ weakly conforms
 to $U$ after applying [eta-expansion](#eta-expansion) and 
 [view applications](#views).
 
@@ -1465,6 +1469,17 @@ in the application to $e_1 , \ldots , e_m$. It is again an error if $\mathscr{CC
 Otherwise, one chooses the _most specific_ alternative among the alternatives
 in $\mathscr{CC}$, according to the following definition of being ``as specific as'', and
 ``more specific than'':
+
+<!--
+question: given
+  def f(x: Int)
+  val f: { def apply(x: Int) }
+  f(1) // the value is chosen in our current implementation
+ why?
+  - method is as specific as value, because value is applicable to method`s argument types (item 1)
+  - value is as specific as method (item 3, any other type is always as specific..)
+ so the method is not more specific than the value.
+-->
 
 - A parameterized method $m$ of type `($p_1:T_1, \ldots , p_n:T_n$)$U$` is _as specific as_ some other
   member $m'$ of type $S$ if $m'$ is applicable to arguments

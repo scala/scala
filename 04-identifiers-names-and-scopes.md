@@ -54,8 +54,7 @@ is bound by a definition or declaration, then $x$ refers to the entity
 introduced by that binding. In that case, the type of $x$ is the type
 of the referenced entity.
 
-(@) Assume the following two definitions of a objects named 
-`X` in packages `P` and `Q`.
+(@) Assume the following two definitions of a objects named `X` in packages `P` and `Q`.
 
     ``` 
     package P {

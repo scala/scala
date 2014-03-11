@@ -264,7 +264,7 @@ Views are applied in three situations.
     such a view is found, the expression $e$ is converted to
     `$v$($e$)`. 
 1.  In a selection $e.m$ with $e$ of type $T$, if the selector $m$ does
-    not denote a member of $T$.  In this case, a view $v$ is searched
+    not denote an accessible member of $T$.  In this case, a view $v$ is searched
     which is applicable to $e$ and whose result contains a member named
     $m$.  The search proceeds as in the case of implicit parameters, where
     the implicit scope is the one of $T$.  If such a view is found, the
