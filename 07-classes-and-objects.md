@@ -272,16 +272,16 @@ member of a class $C$ overrides a member of a parent class, or whether
 the two co-exist as overloaded variants in $C$, Scala uses the
 following definition of _matching_ on members:
 
-> **Definition** \
+> **Definition**
 > A member definition $M$ _matches_ a member definition $M'$, if $M$
 > and $M'$ bind the same name, and one of following holds.
 > 
-> #. Neither $M$ nor $M'$ is a method definition.
-> #. $M$ and $M'$ define both monomorphic methods with equivalent argument
+> 1. Neither $M$ nor $M'$ is a method definition.
+> 2. $M$ and $M'$ define both monomorphic methods with equivalent argument
 >    types.
-> #. $M$ defines a parameterless method and $M'$ defines a method
+> 3. $M$ defines a parameterless method and $M'$ defines a method
 >    with an empty parameter list `()` or _vice versa_. 
-> #. $M$ and $M'$ define both polymorphic methods with 
+> 4. $M$ and $M'$ define both polymorphic methods with
 >    equal number of argument types $\overline T$, $\overline T'$
 >    and equal numbers of type parameters
 >    $\overline t$, $\overline t'$, say, and 
