@@ -501,7 +501,9 @@ trait Definitions extends api.StandardDefinitions {
 
     lazy val StringContextClass           = requiredClass[scala.StringContext]
 
-    lazy val QuasiquoteClass             = if (ApiUniverseClass != NoSymbol) getMember(ApiUniverseClass, tpnme.Quasiquote) else NoSymbol
+    // SI-8392 a reflection universe on classpath may not have
+    // quasiquotes, if e.g. crosstyping with -Xsource on
+    lazy val QuasiquoteClass             = if (ApiUniverseClass != NoSymbol) getMemberIfDefined(ApiUniverseClass, tpnme.Quasiquote) else NoSymbol
     lazy val QuasiquoteClass_api         = if (QuasiquoteClass != NoSymbol) getMember(QuasiquoteClass, tpnme.api) else NoSymbol
     lazy val QuasiquoteClass_api_apply   = if (QuasiquoteClass_api != NoSymbol) getMember(QuasiquoteClass_api, nme.apply) else NoSymbol
     lazy val QuasiquoteClass_api_unapply = if (QuasiquoteClass_api != NoSymbol) getMember(QuasiquoteClass_api, nme.unapply) else NoSymbol
