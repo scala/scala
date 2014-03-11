@@ -1,4 +1,19 @@
-# Scala Language Reference as Pandoc Markdown - Notes
+# Scala Language Reference as Markdown
+
+I'm working towards making this the official Scala Reference.
+I'm migrating the pandoc setup to something that can easily be maintained and viewed as-is on github.
+
+I'd like a lightweight setup that produces an html + mathjax version of the markdown in this repo on every commit. Should be easy with Travis CI. Eventually, we should also generate a pdf, but the main priority is ease of maintenance, readability on github. 
+
+This spec should now also be up to date with the latex one at scala/scala-dist, which will be decommissioned.
+
+Notes to self:
+- http://docs.mathjax.org/en/latest/start.html
+- http://doswa.com/2011/07/20/mathjax-in-markdown.html
+
+# Scala Language Reference as Pandoc Markdown - Original Notes
+
+TODO: this needs to be updated
 
 ## Prerequisites
 
