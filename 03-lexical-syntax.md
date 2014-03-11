@@ -19,19 +19,17 @@ hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | 
 To construct tokens, characters are distinguished according to the following 
 classes (Unicode general category given in parentheses):
 
-1. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`
-1. Letters, which include lower case letters(Ll), upper case letters(Lu),
-   titlecase letters(Lt), other letters(Lo), letter numerals(Nl) and the 
-   two characters \\u0024 ‘\\$’ and \\u005F ‘_’, which both count as upper case 
-   letters
-1. Digits `‘0’ | … | ‘9’`
-1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `
-1. Delimiter characters ``‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’ ``
+1. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`.
+1. Letters, which include lower case letters (`Ll`), upper case letters (`Lu`),
+   titlecase letters (`Lt`), other letters (`Lo`), letter numerals (`Nl`) and the
+   two characters `\u0024` `‘$’` and `\u005F` `‘_’`, which both count as upper case
+   letters.
+1. Digits `‘0’ | … | ‘9’`.
+1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `.
+1. Delimiter characters ``‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’ ``.
 1. Operator characters. These consist of all printable ASCII characters
-   \\u0020-\\u007F which are in none of the sets above, mathematical symbols(Sm) 
-   and other symbols(So).
-
-\pagebreak[1]
+   `\u0020 - \u007F` which are in none of the sets above, mathematical symbols (`Sm`)
+   and other symbols (`So`).
 
 ## Identifiers
 
@@ -48,7 +46,7 @@ idrest   ::=  {letter | digit} [‘_’ op]
 
 There are three ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
-letters and digits. This may be followed by underscore ‘_’
+letters and digits. This may be followed by underscore `‘_’`
 characters and another string composed of either letters and digits or
 of operator characters.  Second, an identifier can start with an operator 
 character followed by an arbitrary sequence of operator characters.
@@ -69,9 +67,8 @@ decomposes into the three identifiers `big_bob`, `++=`, and
 _variable identifiers_, which start with a lower case letter, and
 _constant identifiers_, which do not.
 
-The ‘\$’ character is reserved
-for compiler-synthesized identifiers.  User programs should not define
-identifiers which contain ‘\$’ characters.
+The `‘$’` character is reserved for compiler-synthesized identifiers.
+User programs should not define identifiers which contain `‘$’` characters.
 
 The following names are reserved words instead of being members of the
 syntactic class `id` of lexical identifiers.
