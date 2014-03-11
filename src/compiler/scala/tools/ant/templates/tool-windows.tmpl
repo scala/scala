@@ -25,6 +25,10 @@ shift
 
 :notoolcp
 
+rem SI-8358, SI-8368 -- the default should really be false,
+rem but I don't want to flip the default during 2.11's RC cycle
+set _OVERRIDE_USEJAVACP="-Dscala.usejavacp=true"
+
 rem We keep in _JAVA_PARAMS all -J-prefixed and -D-prefixed arguments
 set _JAVA_PARAMS=
 
@@ -45,6 +49,9 @@ if "%_TEST_PARAM:~0,2%"=="-J" (
 )
 
 if "%_TEST_PARAM:~0,2%"=="-D" (
+  if "%_TEST_PARAM%"=="-Dscala.usejavacp" (
+    set _OVERRIDE_USEJAVACP=
+  )
   rem test if this was double-quoted property "-Dprop=42"
   for /F "delims== tokens=1-2" %%G in ("%_TEST_PARAM%") DO (
     if not "%%G" == "%_TEST_PARAM%" (
@@ -126,7 +133,7 @@ if "%_TOOL_CLASSPATH%"=="" (
 
 if not "%_LINE_TOOLCP%"=="" call :add_cpath "%_LINE_TOOLCP%"
 
-set _PROPS=-Dscala.home="!_SCALA_HOME!" -Denv.emacs="%EMACS%" -Dscala.usejavacp=true @properties@
+set _PROPS=-Dscala.home="!_SCALA_HOME!" -Denv.emacs="%EMACS%" %_OVERRIDE_USEJAVACP% @properties@
 
 rem echo "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
 "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
