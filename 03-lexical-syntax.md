@@ -11,10 +11,17 @@ to Scala mode, and literal characters ‘c’ refer to the ASCII fragment
 In Scala mode, _Unicode escapes_ are replaced by the corresponding
 Unicode character with the given hexadecimal code.
 
-``` 
-UnicodeEscape ::= \{\\}u{u} hexDigit hexDigit hexDigit hexDigit
+```
+UnicodeEscape ::= ‘\‘‘u‘{‘u‘} hexDigit hexDigit hexDigit hexDigit
 hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
 ```
+
+<!--
+TODO SI-4583: UnicodeEscape used to allow additional backslashes,
+and there is something in the code `evenSlashPrefix` that alludes to it,
+but I can't make it work nor can I imagine how this would make sense,
+so I removed it for now.
+-->
 
 To construct tokens, characters are distinguished according to the following 
 classes (Unicode general category given in parentheses):
