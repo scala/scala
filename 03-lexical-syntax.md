@@ -6,7 +6,7 @@ presently supported.  This chapter defines the two modes of Scala's
 lexical syntax, the Scala mode and the _XML_ mode. If not
 otherwise mentioned, the following descriptions of Scala tokens refer
 to Scala mode, and literal characters `‘c’` refer to the ASCII fragment
-`\u0000-\u007F`.
+`\u0000` – `\u007F`.
 
 In Scala mode, _Unicode escapes_ are replaced by the corresponding
 Unicode character with the given hexadecimal code.
@@ -29,7 +29,7 @@ classes (Unicode general category given in parentheses):
 1. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`.
 1. Letters, which include lower case letters (`Ll`), upper case letters (`Lu`),
    titlecase letters (`Lt`), other letters (`Lo`), letter numerals (`Nl`) and the
-   two characters `\u0024` `‘$’` and `\u005F` `‘_’`, which both count as upper case
+   two characters `\u0024 ‘$’` and `\u005F ‘_’`, which both count as upper case
    letters.
 1. Digits `‘0’ | … | ‘9’`.
 1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `.
