@@ -152,11 +152,8 @@ grammar.
   ResultExpr        ::=  Expr1
                       |  (Bindings | ([‘implicit’] id | ‘_’) ‘:’ CompoundType) ‘=>’ Block
 
-  Enumerators       ::=  Generator {semi Enumerator}
-  Enumerator        ::=  Generator
-                      |  Guard
-                      |  Pattern1 ‘=’ Expr
-  Generator         ::=  Pattern1 ‘<-’ Expr [Guard]
+  Enumerators       ::=  Generator {semi Generator}
+  Generator         ::=  Pattern1 ‘<-’ Expr {[semi] Guard | semi Pattern1 ‘=’ Expr}
 
   CaseClauses       ::=  CaseClause { CaseClause }
   CaseClause        ::=  ‘case’ Pattern [Guard] ‘=>’ Block 
