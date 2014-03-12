@@ -202,18 +202,16 @@ VarDef         ::=  PatDef
                  |  ids ‘:’ Type ‘=’ ‘_’
 ```
 
-A variable declaration `var $x$: $T$` is equivalent to declarations
-of a _getter function_ $x$ and a _setter function_
-`$x$_=`, defined as follows:
+A variable declaration `var $x$: $T$` is equivalent to the declarations
+of both a _getter function_ $x$ *and* a _setter function_ `$x$_=`:
 
 ``` 
 def $x$: $T$ 
 def $x$_= ($y$: $T$): Unit
 ```
 
-An implementation of a class containing variable declarations
-may define these variables using variable definitions, or it may
-define setter and getter functions directly.
+An implementation of a class may _define_ a declared variable
+using a variable definition, or by defining the corresponding setter and getter methods.
 
 A variable definition `var $x$: $T$ = $e$` introduces a
 mutable variable with type $T$ and initial value as given by the
@@ -231,20 +229,20 @@ the free names in $p$ are introduced as mutable variables, not values.
 
 The name of any declared or defined variable may not end in `_=`.
 
-A variable definition `var $x$: $T$ = _` can appear only
-as a member of a template. It introduces a mutable field with type
-\ $T$ and a default initial value.  The default value depends on the
-type $T$ as follows:
+A variable definition `var $x$: $T$ = _` can appear only as a member of a template.
+It introduces a mutable field with type $T$ and a default initial value.
+The default value depends on the type $T$ as follows:
 
-----------  --------------------------------------------------
-`0`         if $T$ is `Int` or one of its subrange types
-`0L`        if $T$ is `Long`
-`0.0f`      if $T$ is `Float`
-`0.0d`      if $T$ is `Double`
-`false`     if $T$ is `Boolean`
-`()`        if $T$ is `Unit`
-`null`      for all other types $T$
-----------  --------------------------------------------------
+| default  | type $T$                           |
+|----------|------------------------------------|
+|`0`       | `Int` or one of its subrange types |
+|`0L`      | `Long`                             |
+|`0.0f`    | `Float`                            |
+|`0.0d`    | `Double`                           |
+|`false`   | `Boolean`                          |
+|`()`      | `Unit`                             |
+|`null`    | all other types                    |
+
 
 When they occur as members of a template, both forms of variable
 definition also introduce a getter function $x$ which returns the
