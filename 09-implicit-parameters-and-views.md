@@ -188,28 +188,19 @@ common element and $T$ is more complex than $U$.
 The set of _top-level type constructors_ $\mathit{ttcs}(T)$ of a type $T$ depends on the form of
 the type:
 
-> For a type designator, \
-> $\mathit{ttcs}(p.c) ~=~ \{c\}$; \
-> For a parameterized type, \
-> $\mathit{ttcs}(p.c[\mathit{targs}]) ~=~ \{c\}$; \
-> For a singleton type, \
-> $\mathit{ttcs}(p.type) ~=~ \mathit{ttcs}(T)$, provided $p$ has type $T$;\
-> For a compound type, \
-> `$\mathit{ttcs}(T_1$ with $\ldots$ with $T_n)$` $~=~ \mathit{ttcs}(T_1) \cup \ldots \cup \mathit{ttcs}(T_n)$.
+- For a type designator,  $\mathit{ttcs}(p.c) ~=~ \{c\}$;
+- For a parameterized type,  $\mathit{ttcs}(p.c[\mathit{targs}]) ~=~ \{c\}$;
+- For a singleton type,  $\mathit{ttcs}(p.type) ~=~ \mathit{ttcs}(T)$, provided $p$ has type $T$;
+- For a compound type, `$\mathit{ttcs}(T_1$ with $\ldots$ with $T_n)$` $~=~ \mathit{ttcs}(T_1) \cup \ldots \cup \mathit{ttcs}(T_n)$.
 
 The _complexity_ $\mathit{complexity}(T)$ of a core type is an integer which also depends on the form of
 the type:
 
-> For a type designator, \
-> $\mathit{complexity}(p.c) ~=~ 1 + \mathit{complexity}(p)$ \
-> For a parameterized type, \
-> $\mathit{complexity}(p.c[\mathit{targs}]) ~=~ 1 + \Sigma \mathit{complexity}(\mathit{targs})$ \
-> For a singleton type denoting a package $p$, \
-> $\mathit{complexity}(p.type) ~=~ 0$ \
-> For any other singleton type, \
-> $\mathit{complexity}(p.type) ~=~ 1 + \mathit{complexity}(T)$, provided $p$ has type $T$; \
-> For a compound type, \
-> `$\mathit{complexity}(T_1$ with $\ldots$ with $T_n)$` $= \Sigma\mathit{complexity}(T_i)$
+- For a type designator, $\mathit{complexity}(p.c) ~=~ 1 + \mathit{complexity}(p)$
+- For a parameterized type, $\mathit{complexity}(p.c[\mathit{targs}]) ~=~ 1 + \Sigma \mathit{complexity}(\mathit{targs})$
+- For a singleton type denoting a package $p$, $\mathit{complexity}(p.type) ~=~ 0$
+- For any other singleton type, $\mathit{complexity}(p.type) ~=~ 1 + \mathit{complexity}(T)$, provided $p$ has type $T$;
+- For a compound type, `$\mathit{complexity}(T_1$ with $\ldots$ with $T_n)$` $= \Sigma\mathit{complexity}(T_i)$
 
 
 ###### Example
@@ -257,8 +248,7 @@ defined by an implicit value which has function type
 `$S$=>$T$` or `(=>$S$)=>$T$` or by a method convertible to a value of that
 type.
 
-Views are applied in three situations.
-
+Views are applied in three situations:
 
 1.  If an expression $e$ is of type $T$, and $T$ does not conform to the
     expression's expected type $\mathit{pt}$. In this case an implicit $v$ is

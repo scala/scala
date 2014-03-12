@@ -185,23 +185,24 @@ on base classes forms in general a directed acyclic graph. A
 linearization of this graph is defined as follows.
 
 
-> Let $C$ be a class with template
-> `$C_1$ with ... with $C_n$ { $\mathit{stats}$ }`.
-> The _linearization_ of $C$, $\mathcal{L}(C)$ is defined as follows:
-> 
-> $\mathcal{L}(C) = C, \mathcal{L}(C_n) \; \vec{+} \; \ldots \; \vec{+} \; \mathcal{L}(C_1)$
->
-> Here $\vec{+}$ denotes concatenation where elements of the right operand
-> replace identical elements of the left operand:
->
-> ``` 
-> \[
-> \begin{array}{lcll}
-> \{a, A\} \;\vec{+}\; B &=& a, (A \;\vec{+}\; B)  &{\bf if} \; a \not\in B \\
->                        &=& A \;\vec{+}\; B       &{\bf if} \; a \in B
-> \end{array}
-> \]
-> ```
+###### Definition: linearization
+Let $C$ be a class with template
+`$C_1$ with ... with $C_n$ { $\mathit{stats}$ }`.
+The _linearization_ of $C$, $\mathcal{L}(C)$ is defined as follows:
+
+$\mathcal{L}(C) = C, \mathcal{L}(C_n) \; \vec{+} \; \ldots \; \vec{+} \; \mathcal{L}(C_1)$
+
+Here $\vec{+}$ denotes concatenation where elements of the right operand
+replace identical elements of the left operand:
+
+```
+\[
+\begin{array}{lcll}
+\{a, A\} \;\vec{+}\; B &=& a, (A \;\vec{+}\; B)  &{\bf if} \; a \not\in B \\
+                       &=& A \;\vec{+}\; B       &{\bf if} \; a \in B
+\end{array}
+\]
+```
 
 
 ###### Example
@@ -223,10 +224,10 @@ Then the linearization of class `Iter` is
 Note that the linearization of a class refines the inheritance
 relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any
 linearization where both $C$ and $D$ occur.
-\ref{def:lin} also satisfies the property that a linearization
-of a class always contains the linearization of its direct superclass
-as a suffix.  For instance, the linearization of
-`StringIterator` is
+[Linearization](#definition-linearization) also satisfies the property that
+a linearization of a class always contains the linearization of its direct superclass as a suffix.
+
+For instance, the linearization of `StringIterator` is
 
 ```
 { StringIterator, AbsIterator, AnyRef, Any }
@@ -245,9 +246,7 @@ which is not a suffix of the linearization of `Iter`.
 
 ### Class Members
 
-
-A class $C$ defined by a template 
-`$C_1$ with $\ldots$ with $C_n$ { $\mathit{stats}$ }` 
+A class $C$ defined by a template `$C_1$ with $\ldots$ with $C_n$ { $\mathit{stats}$ }`
 can define members in its statement sequence
 $\mathit{stats}$ and can inherit members from all parent classes.  Scala
 adopts Java and C\#'s conventions for static overloading of
@@ -257,19 +256,18 @@ member of a class $C$ overrides a member of a parent class, or whether
 the two co-exist as overloaded variants in $C$, Scala uses the
 following definition of _matching_ on members:
 
-> **Definition**
-> A member definition $M$ _matches_ a member definition $M'$, if $M$
-> and $M'$ bind the same name, and one of following holds.
-> 
-> 1. Neither $M$ nor $M'$ is a method definition.
-> 2. $M$ and $M'$ define both monomorphic methods with equivalent argument
->    types.
-> 3. $M$ defines a parameterless method and $M'$ defines a method
->    with an empty parameter list `()` or _vice versa_. 
-> 4. $M$ and $M'$ define both polymorphic methods with
->    equal number of argument types $\overline T$, $\overline T'$
->    and equal numbers of type parameters
->    $\overline t$, $\overline t'$, say, and  $\overline T' = [\overline t'/\overline t]\overline T$.
+###### Definition: matching
+A member definition $M$ _matches_ a member definition $M'$, if $M$
+and $M'$ bind the same name, and one of following holds.
+
+1. Neither $M$ nor $M'$ is a method definition.
+2. $M$ and $M'$ define both monomorphic methods with equivalent argument types.
+3. $M$ defines a parameterless method and $M'$ defines a method
+   with an empty parameter list `()` or _vice versa_.
+4. $M$ and $M'$ define both polymorphic methods with
+   equal number of argument types $\overline T$, $\overline T'$
+   and equal numbers of type parameters
+   $\overline t$, $\overline t'$, say, and  $\overline T' = [\overline t'/\overline t]\overline T$.
 
 <!--
 every argument type
@@ -282,23 +280,22 @@ Members of class $C$ are either _directly defined_ (i.e.\ they appear in
 $C$'s statement sequence $\mathit{stats}$) or they are _inherited_.  There are two rules
 that determine the set of members of a class, one for each category:
 
-> A _concrete member_ of a class $C$ is any concrete definition $M$ in
-> some class $C_i \in \mathcal{L}(C)$, except if there is a preceding class 
-> $C_j \in \mathcal{L}(C)$ where $j < i$ which directly defines a concrete 
-> member $M'$ matching $M$.  
->
-> An _abstract member_ of a class $C$ is any abstract definition $M$
-> in some class $C_i \in \mathcal{L}(C)$, except if $C$ contains already a
-> concrete member $M'$ matching $M$, or if there is a preceding class
-> $C_j \in \mathcal{L}(C)$ where $j < i$ which directly defines an abstract 
-> member $M'$ matching $M$.
+A _concrete member_ of a class $C$ is any concrete definition $M$ in
+some class $C_i \in \mathcal{L}(C)$, except if there is a preceding class
+$C_j \in \mathcal{L}(C)$ where $j < i$ which directly defines a concrete
+member $M'$ matching $M$.
+
+An _abstract member_ of a class $C$ is any abstract definition $M$
+in some class $C_i \in \mathcal{L}(C)$, except if $C$ contains already a
+concrete member $M'$ matching $M$, or if there is a preceding class
+$C_j \in \mathcal{L}(C)$ where $j < i$ which directly defines an abstract
+member $M'$ matching $M$.
 
 This definition also determines the [overriding](#overriding) relationships
 between matching members of a class $C$ and its parents.  
 First, a concrete definition always overrides an abstract definition. 
-Second, for
-definitions $M$ and $M$' which are both concrete or both abstract, $M$
-overrides $M'$ if $M$ appears in a class that precedes (in the
+Second, for definitions $M$ and $M$' which are both concrete or both abstract,
+$M$ overrides $M'$ if $M$ appears in a class that precedes (in the
 linearization of $C$) the class in which $M'$ is defined.
 
 It is an error if a template directly defines two matching members. It
@@ -663,7 +660,7 @@ new m.C(0) {} // **** error: illegal inheritance from sealed class.
 ```
 
 A similar access restriction can be achieved by marking the primary
-constructor `private` (see \ref{ex:private-constr}).
+constructor `private` ((example)[#example-private-constructor]).
 
 
 ## Class Definitions
@@ -749,7 +746,7 @@ which when applied to parameters conforming to types $\mathit{ps}$
 initializes instances of type `$c$[$\mathit{tps}\,$]` by evaluating the template
 $t$.
 
-###### Example
+###### Example: private constructor
 The following example illustrates `val` and `var` parameters of a class `C`:
 
 ```

@@ -6,11 +6,8 @@ the following.
 
 ![Class hierarchy of Scala](resources/classhierarchy.pdf)
 
-
 ## Root Classes
 
-Figure~\ref{fig:class-hierarchy} illustrates Scala's class
-hierarchy.
 The root of this hierarchy is formed by class `Any`.
 Every class in a Scala execution environment inherits directly or
 indirectly from this class.  Class `Any` has two direct

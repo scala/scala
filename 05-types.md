@@ -933,10 +933,10 @@ i.e.\ it is transitive and reflexive. _least upper bounds_ and
 _greatest lower bounds_ of a set of types
 are understood to be relative to that order.
 
-
-> **Note**: The least upper bound or greatest lower bound 
-> of a set of types does not always exist. For instance, consider
-> the class definitions
+###### Note
+The least upper bound or greatest lower bound
+of a set of types does not always exist. For instance, consider
+the class definitions
 
 ``` 
 class A[+T] {}
@@ -944,20 +944,20 @@ class B extends A[B]
 class C extends A[C]
 ```
 
-> Then the types `A[Any], A[A[Any]], A[A[A[Any]]], ...` form
-> a descending sequence of upper bounds for `B` and `C`. The
-> least upper bound would be the infinite limit of that sequence, which
-> does not exist as a Scala type. Since cases like this are in general
-> impossible to detect, a Scala compiler is free to reject a term
-> which has a type specified as a least upper or greatest lower bound,
-> and that bound would be more complex than some compiler-set
-> limit [^4].
->
-> The least upper bound or greatest lower bound might also not be
-> unique. For instance `A with B` and `B with A` are both
-> greatest lower of `A` and `B`. If there are several
-> least upper bounds or greatest lower bounds, the Scala compiler is
-> free to pick any one of them.
+Then the types `A[Any], A[A[Any]], A[A[A[Any]]], ...` form
+a descending sequence of upper bounds for `B` and `C`. The
+least upper bound would be the infinite limit of that sequence, which
+does not exist as a Scala type. Since cases like this are in general
+impossible to detect, a Scala compiler is free to reject a term
+which has a type specified as a least upper or greatest lower bound,
+and that bound would be more complex than some compiler-set
+limit [^4].
+
+The least upper bound or greatest lower bound might also not be
+unique. For instance `A with B` and `B with A` are both
+greatest lower of `A` and `B`. If there are several
+least upper bounds or greatest lower bounds, the Scala compiler is
+free to pick any one of them.
 
 
 [^4]: The current Scala compiler limits the nesting level
