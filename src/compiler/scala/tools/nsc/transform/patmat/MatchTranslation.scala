@@ -81,14 +81,14 @@ trait MatchTranslation {
 
       object SymbolAndTypeBound {
         def unapply(tree: Tree): Option[(Symbol, Type)] = tree match {
-          case SymbolBound(sym, SymbolAndTypeBound(_, tpe)) => Some(sym -> tpe)
-          case TypeBound(tpe)                               => Some(binder -> tpe)
-          case _                                            => None
+          case SymbolBound(sym, TypeBound(tpe)) => Some(sym -> tpe)
+          case TypeBound(tpe)                   => Some(binder -> tpe)
+          case _                                => None
         }
       }
 
       object TypeBound {
-        def unapply(tree: Tree): Option[Type] = unbind(tree) match {
+        def unapply(tree: Tree): Option[Type] = tree match {
           case Typed(Ident(_), _) if tree.tpe != null => Some(tree.tpe)
           case _                                      => None
         }
