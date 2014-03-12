@@ -5,14 +5,14 @@ Scala programs are written using the Unicode Basic Multilingual Plane
 presently supported.  This chapter defines the two modes of Scala's
 lexical syntax, the Scala mode and the _XML_ mode. If not
 otherwise mentioned, the following descriptions of Scala tokens refer
-to Scala mode, and literal characters ‘c’ refer to the ASCII fragment
-\\u0000-\\u007F
+to Scala mode, and literal characters `‘c’` refer to the ASCII fragment
+`\u0000-\u007F`.
 
 In Scala mode, _Unicode escapes_ are replaced by the corresponding
 Unicode character with the given hexadecimal code.
 
 ```
-UnicodeEscape ::= ‘\‘‘u‘{‘u‘} hexDigit hexDigit hexDigit hexDigit
+UnicodeEscape ::= ‘\‘ ‘u‘ {‘u‘} hexDigit hexDigit hexDigit hexDigit
 hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
 ```
 
