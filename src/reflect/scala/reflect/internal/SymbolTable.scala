@@ -51,6 +51,7 @@ abstract class SymbolTable extends macros.Universe
   val gen = new InternalTreeGen { val global: SymbolTable.this.type = SymbolTable.this }
 
   def log(msg: => AnyRef): Unit
+  def deprecationWarning(pos: Position, msg: String): Unit = warning(msg)
   def warning(msg: String): Unit     = Console.err.println(msg)
   def inform(msg: String): Unit      = Console.err.println(msg)
   def globalError(msg: String): Unit = abort(msg)
