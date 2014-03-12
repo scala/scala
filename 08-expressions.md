@@ -1,44 +1,44 @@
 # Expressions
 
 ``` 
-  Expr              ::=  (Bindings | id | `_') `=>' Expr
-                      |  Expr1
-  Expr1             ::=  `if' `(' Expr `)' {nl} Expr [[semi] `else' Expr]
-                      |  `while' `(' Expr `)' {nl} Expr
-                      |  `try' (`{' Block `}' | Expr) [`catch' `{' CaseClauses `}'] [`finally' Expr]
-                      |  `do' Expr [semi] `while' `(' Expr ')'
-                      |  `for' (`(' Enumerators `)' | `{' Enumerators `}') {nl} [`yield'] Expr
-                      |  `throw' Expr
-                      |  `return' [Expr]
-                      |  [SimpleExpr `.'] id `=' Expr
-                      |  SimpleExpr1 ArgumentExprs `=' Expr
-                      |  PostfixExpr
-                      |  PostfixExpr Ascription
-                      |  PostfixExpr `match' `{' CaseClauses `}'
-  PostfixExpr       ::=  InfixExpr [id [nl]]
-  InfixExpr         ::=  PrefixExpr
-                      |  InfixExpr id [nl] InfixExpr
-  PrefixExpr        ::=  [`-' | `+' | `~' | `!'] SimpleExpr 
-  SimpleExpr        ::=  `new' (ClassTemplate | TemplateBody)
-                      |  BlockExpr
-                      |  SimpleExpr1 [`_']
-  SimpleExpr1       ::=  Literal
-                      |  Path
-                      |  `_'
-                      |  `(' [Exprs] `)'
-                      |  SimpleExpr `.' id s
-                      |  SimpleExpr TypeArgs
-                      |  SimpleExpr1 ArgumentExprs
-                      |  XmlExpr
-  Exprs             ::=  Expr {`,' Expr}
-  BlockExpr         ::=  `{' CaseClauses `}'
-                      |  `{' Block `}'
-  Block             ::=  {BlockStat semi} [ResultExpr]
-  ResultExpr        ::=  Expr1
-                      |  (Bindings | ([`implicit'] id | `_') `:' CompoundType) `=>' Block
-  Ascription        ::=  `:' InfixType
-                      |  `:' Annotation {Annotation} 
-                      |  `:' `_' `*'
+Expr         ::=  (Bindings | id | `_') `=>' Expr
+               |  Expr1
+Expr1        ::=  `if' `(' Expr `)' {nl} Expr [[semi] `else' Expr]
+               |  `while' `(' Expr `)' {nl} Expr
+               |  `try' (`{' Block `}' | Expr) [`catch' `{' CaseClauses `}'] [`finally' Expr]
+               |  `do' Expr [semi] `while' `(' Expr ')'
+               |  `for' (`(' Enumerators `)' | `{' Enumerators `}') {nl} [`yield'] Expr
+               |  `throw' Expr
+               |  `return' [Expr]
+               |  [SimpleExpr `.'] id `=' Expr
+               |  SimpleExpr1 ArgumentExprs `=' Expr
+               |  PostfixExpr
+               |  PostfixExpr Ascription
+               |  PostfixExpr `match' `{' CaseClauses `}'
+PostfixExpr  ::=  InfixExpr [id [nl]]
+InfixExpr    ::=  PrefixExpr
+               |  InfixExpr id [nl] InfixExpr
+PrefixExpr   ::=  [`-' | `+' | `~' | `!'] SimpleExpr
+SimpleExpr   ::=  `new' (ClassTemplate | TemplateBody)
+               |  BlockExpr
+               |  SimpleExpr1 [`_']
+SimpleExpr1  ::=  Literal
+               |  Path
+               |  `_'
+               |  `(' [Exprs] `)'
+               |  SimpleExpr `.' id s
+               |  SimpleExpr TypeArgs
+               |  SimpleExpr1 ArgumentExprs
+               |  XmlExpr
+Exprs        ::=  Expr {`,' Expr}
+BlockExpr    ::=  ‘{’ CaseClauses ‘}’
+               |  ‘{’ Block ‘}’
+Block        ::=  BlockStat {semi BlockStat} [ResultExpr]
+ResultExpr   ::=  Expr1
+               |  (Bindings | ([`implicit'] id | `_') `:' CompoundType) `=>' Block
+Ascription   ::=  `:' InfixType
+               |  `:' Annotation {Annotation}
+               |  `:' `_' `*'
 ```
 
 Expressions are composed of operators and operands. Expression forms are
@@ -558,8 +558,9 @@ where `anon\$X` is some freshly created name.
 ## Blocks
 
 ``` 
-BlockExpr   ::=  `{' Block `}'
-Block       ::=  {BlockStat semi} [ResultExpr]
+BlockExpr  ::=  ‘{’ CaseClauses ‘}’
+             |  ‘{’ Block ‘}’
+Block      ::=  BlockStat {semi BlockStat} [ResultExpr]
 ```
 
 A block expression `{$s_1$; $\ldots$; $s_n$; $e\,$}` is
@@ -1319,10 +1320,10 @@ include at least the expressions of the following forms:
 
 ``` 
 BlockStat    ::=  Import
-               |  {Annotation} [`implicit'] Def
+               |  {Annotation} [‘implicit’ | ‘lazy’] Def
                |  {Annotation} {LocalModifier} TmplDef
                |  Expr1
-               | 
+               |
 TemplateStat ::=  Import
                |  {Annotation} {Modifier} Def
                |  {Annotation} {Modifier} Dcl

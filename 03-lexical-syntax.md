@@ -408,8 +408,7 @@ members of type `Boolean`.
 ### Character Literals
 
 ``` 
-characterLiteral  ::=  ‘'’ printableChar ‘'’
-                    |  ‘'’ charEscapeSeq ‘'’
+characterLiteral  ::=  ‘'’ (printableChar | charEscapeSeq) ‘'’
 ```
 
 A character literal is a single character enclosed in quotes.
@@ -432,7 +431,7 @@ the octal escape `'\12'` ([see here](#escape-sequences)).
 ### String Literals
 
 ``` 
-stringLiteral  ::=  ‘\"’ {stringElement} ‘\"’
+stringLiteral  ::=  ‘"’ {stringElement} ‘"’
 stringElement  ::=  printableCharNoDoubleQuote  |  charEscapeSeq
 ```
 
@@ -510,16 +509,16 @@ Because there is a predefined
 
 The following escape sequences are recognized in character and string literals.
 
-|       |          |                 |      |
-|-------|----------|-----------------|------|
-| `\b`  | `\u0008` | backspace       |  BS  |
-| `\t`  | `\u0009` | horizontal tab  |  HT  |
-| `\n`  | `\u000a` | linefeed        |  LF  |
-| `\f`  | `\u000c` | form feed       |  FF  |
-| `\r`  | `\u000d` | carriage return |  CR  |
-| `\"`  | `\u0022` | double quote    |  "   |
-| `\'`  | `\u0027` | single quote    |  '   |
-| `\\`  | `\u005c` | backslash       |  `\` |
+| charEscapeSeq | unicode  | name            | char   |
+|---------------|----------|-----------------|--------|
+| `‘\‘ ‘b‘`     | `\u0008` | backspace       |  `BS`  |
+| `‘\‘ ‘t‘`     | `\u0009` | horizontal tab  |  `HT`  |
+| `‘\‘ ‘n‘`     | `\u000a` | linefeed        |  `LF`  |
+| `‘\‘ ‘f‘`     | `\u000c` | form feed       |  `FF`  |
+| `‘\‘ ‘r‘`     | `\u000d` | carriage return |  `CR`  |
+| `‘\‘ ‘"‘`     | `\u0022` | double quote    |  `"`   |
+| `‘\‘ ‘'‘`     | `\u0027` | single quote    |  `'`   |
+| `‘\‘ ‘\‘`     | `\u005c` | backslash       |  `\`   |
 
 
 A character with Unicode between 0 and 255 may also be represented by
