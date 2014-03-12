@@ -94,11 +94,9 @@ $x$ match {
 ```
 
 where the type $T'$ is the same as $T$ except if $T$ is
-of the form $D$ or $D[\mathit{tps}]$ where $D$ is a type member of some outer
-class $C$. In this case $T'$ is `$C$#$D$` (or
-`$C$#$D[tps]$`, respectively), whereas $T$ itself would
-expand to `$C$.this.$D[tps]$`. In other words, an
-`isInstanceOf` test does not check for the   
+of the form $D$ or $D[\mathit{tps}]$ where $D$ is a type member of some outer class $C$.
+In this case $T'$ is `$C$#$D$` (or `$C$#$D[tps]$`, respectively), whereas $T$ itself would expand to `$C$.this.$D[tps]$`.
+In other words, an `isInstanceOf` test does not check that types have the same enclosing instance.
 
 
 The test `$x$.asInstanceOf[$T$]` is treated specially if $T$ is a
