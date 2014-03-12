@@ -3,13 +3,11 @@
 ``` 
   Expr              ::=  (Bindings | id | `_') `=>' Expr
                       |  Expr1
-  Expr1             ::=  `if' `(' Expr `)' {nl} Expr [[semi] else Expr]
+  Expr1             ::=  `if' `(' Expr `)' {nl} Expr [[semi] `else' Expr]
                       |  `while' `(' Expr `)' {nl} Expr
-                      |  `try' `{' Block `}' [`catch'  `{' CaseClauses `}'] 
-                         [`finally' Expr]
+                      |  `try' (`{' Block `}' | Expr) [`catch' `{' CaseClauses `}'] [`finally' Expr]
                       |  `do' Expr [semi] `while' `(' Expr ')'
-                      |  `for' (`(' Enumerators `)' | `{' Enumerators `}') 
-                         {nl} [`yield'] Expr
+                      |  `for' (`(' Enumerators `)' | `{' Enumerators `}') {nl} [`yield'] Expr
                       |  `throw' Expr
                       |  `return' [Expr]
                       |  [SimpleExpr `.'] id `=' Expr
