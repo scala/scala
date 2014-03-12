@@ -38,11 +38,14 @@ package $p_1$ { $\ldots$
 }
 ```
 
-Implicitly imported into every compilation unit are, in that order :
-the package `java.lang`, the package `scala`, and the object
-[`scala.Predef`](#the-predef-object). Members of a later import in
-that order hide members of an earlier import.
+Every compilation unit implicitly imports the following packages, in the given order:
+ 1. the package `java.lang`,
+ 2. the package `scala`, and
+ 3. the object [`scala.Predef`](#the-predef-object), unless there is an explicit top-level import that references `scala.Predef`.
 
+Members of a later import in that order hide members of an earlier import.
+
+The exception to the implicit import of `scala.Predef` can be useful to hide, e.g., predefined implicit conversions.
 
 ## Packagings
 
