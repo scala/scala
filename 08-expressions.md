@@ -438,12 +438,13 @@ parameterlist `()`.
 The method values in the left column are each equivalent to the
 [anonymous functions](#anonymous-functions) on their right.
 
+| | |
 |------------------------------ | --------------------------------------------|
 |`Math.sin _`                   | `x => Math.sin(x)`                          |
 |`Array.range _`                | `(x1, x2) => Array.range(x1, x2)`           |
 |`List.map2 _`                  | `(x1, x2) => (x3) => List.map2(x1, x2)(x3)` |
 |`List.map2(xs, ys)_`           | `x => List.map2(xs, ys)(x)`                 |
-|------------------------------ | --------------------------------------------|
+
 
 Note that a space is necessary between a method name and the trailing underscore
 because otherwise the underscore would be considered part of the name.
@@ -1292,6 +1293,7 @@ $e'$ results from $e$ by replacing each underscore section $u_i$ by $u_i'$.
 The anonymous functions in the left column use placeholder
 syntax. Each of these is equivalent to the anonymous function on its right.
 
+| | |
 |---------------------------|----------------------------|
 |`_ + 1`                    | `x => x + 1`               |
 |`_ * _`                    | `(x1, x2) => x1 * x2`      |
@@ -1299,7 +1301,6 @@ syntax. Each of these is equivalent to the anonymous function on its right.
 |`if (_) x else y`          | `z => if (z) x else y`     |
 |`_.map(f)`                 | `x => x.map(f)`            |
 |`_.map(_ + 1)`             | `x => x.map(y => y + 1)`   |
-|---------------------------|----------------------------|
 
 
 ## Constant Expressions

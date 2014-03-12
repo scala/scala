@@ -344,11 +344,12 @@ and the integer number fits in the numeric range defined by the type,
 then the number is converted to type _pt_ and the literal's type
 is _pt_. The numeric ranges given by these types are:
 
----------------  -----------------------
-`Byte`   $-2^7$ to $2^7-1$
-`Short`  $-2^{15}$ to $2^{15}-1$
-`Char`   $0$ to $2^{16}-1$
----------------  -----------------------
+| | |
+|----------------|------------------------|
+|`Byte`          | $-2^7$ to $2^7-1$      |
+|`Short`         | $-2^{15}$ to $2^{15}-1$|
+|`Char`          | $0$ to $2^{16}-1$      |
+|                                         |
 
 ###### Example: some integer literals
 
@@ -507,19 +508,19 @@ Because there is a predefined
 
 ### Escape Sequences
 
-The following escape sequences are recognized in character and string
-literals.
+The following escape sequences are recognized in character and string literals.
 
-------  ------------------------------
-`\b`    `\u0008`: backspace BS
-`\t`    `\u0009`: horizontal tab HT
-`\n`    `\u000a`: linefeed LF
-`\f`    `\u000c`: form feed FF
-`\r`    `\u000d`: carriage return CR
-`\"`    `\u0022`: double quote "
-`\'`    `\u0027`: single quote '
-`\\`    `\u005c`: backslash `\`
-------  -------------------------------
+|       |          |                 |      |
+|-------|----------|-----------------|------|
+| `\b`  | `\u0008` | backspace       |  BS  |
+| `\t`  | `\u0009` | horizontal tab  |  HT  |
+| `\n`  | `\u000a` | linefeed        |  LF  |
+| `\f`  | `\u000c` | form feed       |  FF  |
+| `\r`  | `\u000d` | carriage return |  CR  |
+| `\"`  | `\u0022` | double quote    |  "   |
+| `\'`  | `\u0027` | single quote    |  '   |
+| `\\`  | `\u005c` | backslash       |  `\` |
+
 
 A character with Unicode between 0 and 255 may also be represented by
 an octal escape, i.e. a backslash ‘\’ followed by a

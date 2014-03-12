@@ -426,12 +426,12 @@ Because of the syntactic sugar for `apply` and `update` operations,
 we have the following correspondences between Scala and Java/C# code for
 operations on an array `xs`:
 
+| | |
 |------------------|------------|
 |_Scala_           |_Java/C#_   |
 |`xs.length`       |`xs.length` |
 |`xs(i)`           |`xs[i]`     |
 |`xs(i) = e`       |`xs[i] = e` |
-|------------------|------------|
 
 Two implicit conversions exist in `Predef` that are frequently applied to arrays:
 a conversion to `scala.collection.mutable.ArrayOps` and a conversion to

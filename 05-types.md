@@ -149,12 +149,13 @@ Some type designators and their expansions are listed below. We assume
 a local type parameter $t$, a value `maintable`
 with a type member `Node` and the standard class `scala.Int`,
 
+| | |
 |-------------------- | --------------------------|
 |t                    | ε.type#t                  |
 |Int                  | scala.type#Int            |
 |scala.Int            | scala.type#Int            |
 |data.maintable.Node  | data.maintable.type#Node  |
-|-------------------- | --------------------------|
+
 
 
 ### Parameterized Types
