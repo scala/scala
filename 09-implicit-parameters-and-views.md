@@ -13,26 +13,27 @@ and can be used as implicit conversions called [views](#views).
 The `implicit` modifier is illegal for all
 type members, as well as for [top-level objects](#packagings).
 
-(@impl-monoid) The following code defines an abstract class of monoids and
-    two concrete implementations, `StringMonoid` and
-    `IntMonoid`. The two implementations are marked implicit.
+###### Example: `Monoid`
+The following code defines an abstract class of monoids and
+two concrete implementations, `StringMonoid` and
+`IntMonoid`. The two implementations are marked implicit.
 
-    ``` 
-    abstract class Monoid[A] extends SemiGroup[A] {
-      def unit: A
-      def add(x: A, y: A): A
-    }
-    object Monoids {
-      implicit object stringMonoid extends Monoid[String] {
-        def add(x: String, y: String): String = x.concat(y)
-        def unit: String = ""
-      }
-      implicit object intMonoid extends Monoid[Int] {
-        def add(x: Int, y: Int): Int = x + y
-        def unit: Int = 0
-      }
-    }
-    ```
+```
+abstract class Monoid[A] extends SemiGroup[A] {
+  def unit: A
+  def add(x: A, y: A): A
+}
+object Monoids {
+  implicit object stringMonoid extends Monoid[String] {
+    def add(x: String, y: String): String = x.concat(y)
+    def unit: String = ""
+  }
+  implicit object intMonoid extends Monoid[Int] {
+    def add(x: Int, y: Int): Int = x + y
+    def unit: Int = 0
+  }
+}
+```
 
 
 ## Implicit Parameters
@@ -85,25 +86,26 @@ of static [overloading resolution](#overloading-resolution).
 If the parameter has a default argument and no implicit argument can
 be found the default argument is used.
 
-(@) Assuming the classes from \ref{ex:impl-monoid}, here is a 
-    method which computes the sum of a list of elements using the
-    monoid's `add` and `unit` operations.
+###### Example
+Assuming the classes from the [`Monoid` example](#example-monoid), here is a
+method which computes the sum of a list of elements using the
+monoid's `add` and `unit` operations.
 
-    ``` 
-    def sum[A](xs: List[A])(implicit m: Monoid[A]): A = 
-      if (xs.isEmpty) m.unit
-      else m.add(xs.head, sum(xs.tail))
-    ```
+```
+def sum[A](xs: List[A])(implicit m: Monoid[A]): A =
+  if (xs.isEmpty) m.unit
+  else m.add(xs.head, sum(xs.tail))
+```
 
-    The monoid in question is marked as an implicit parameter, and can therefore
-    be inferred based on the type of the list.
-    Consider for instance the call `sum(List(1, 2, 3))`
-    in a context where `stringMonoid` and `intMonoid`
-    are visible.  We know that the formal type parameter `a` of
-    `sum` needs to be instantiated to `Int`. The only
-    eligible object which matches the implicit formal parameter type
-    `Monoid[Int]` is `intMonoid` so this object will
-    be passed as implicit parameter.
+The monoid in question is marked as an implicit parameter, and can therefore
+be inferred based on the type of the list.
+Consider for instance the call `sum(List(1, 2, 3))`
+in a context where `stringMonoid` and `intMonoid`
+are visible.  We know that the formal type parameter `a` of
+`sum` needs to be instantiated to `Int`. The only
+eligible object which matches the implicit formal parameter type
+`Monoid[Int]` is `intMonoid` so this object will
+be passed as implicit parameter.
 
 
 This discussion also shows that implicit parameters are inferred after
@@ -210,39 +212,41 @@ the type:
 > `$\mathit{complexity}(T_1$ with $\ldots$ with $T_n)$` $= \Sigma\mathit{complexity}(T_i)$
 
 
-(@) When typing `sort(xs)` for some list `xs` of type `List[List[List[Int]]]`, 
-    the sequence of types for 
-    which implicit arguments are searched is 
+###### Example
+When typing `sort(xs)` for some list `xs` of type `List[List[List[Int]]]`,
+the sequence of types for
+which implicit arguments are searched is
 
-    ``` 
-    List[List[Int]] => Ordered[List[List[Int]]], 
-    List[Int] => Ordered[List[Int]]
-    Int => Ordered[Int]
-    ```
+```
+List[List[Int]] => Ordered[List[List[Int]]],
+List[Int] => Ordered[List[Int]]
+Int => Ordered[Int]
+```
 
-    All types share the common type constructor `scala.Function1`, 
-    but the complexity of the each new type is lower than the complexity of the previous types. 
-    Hence, the code typechecks.
+All types share the common type constructor `scala.Function1`,
+but the complexity of the each new type is lower than the complexity of the previous types.
+Hence, the code typechecks.
 
 
-(@) Let `ys` be a list of some type which cannot be converted
-    to `Ordered`. For instance:
+###### Example
+Let `ys` be a list of some type which cannot be converted
+to `Ordered`. For instance:
 
-    ``` 
-    val ys = List(new IllegalArgumentException, new ClassCastException, new Error)
-    ```
+```
+val ys = List(new IllegalArgumentException, new ClassCastException, new Error)
+```
 
-    Assume that the definition of `magic` above is in scope. Then the sequence
-    of types for which implicit arguments are searched is 
+Assume that the definition of `magic` above is in scope. Then the sequence
+of types for which implicit arguments are searched is
 
-    ```
-    Throwable => Ordered[Throwable],
-    Throwable => Ordered[Throwable],
-    ...
-    ```
+```
+Throwable => Ordered[Throwable],
+Throwable => Ordered[Throwable],
+...
+```
 
-    Since the second type in the sequence is equal to the first, the compiler
-    will issue an error signalling a divergent implicit expansion.
+Since the second type in the sequence is equal to the first, the compiler
+will issue an error signalling a divergent implicit expansion.
 
 
 ## Views
@@ -286,33 +290,34 @@ As for implicit parameters, overloading resolution is applied
 if there are several possible candidates (of either the call-by-value
 or the call-by-name category).
 
-(@impl-ordered) Class `scala.Ordered[A]` contains a method
+###### Example: `Ordered`
+Class `scala.Ordered[A]` contains a method
 
-    ``` 
-      def <= [B >: A](that: B)(implicit b2ordered: B => Ordered[B]): Boolean .
-    ```
+```
+  def <= [B >: A](that: B)(implicit b2ordered: B => Ordered[B]): Boolean .
+```
 
-    Assume two lists `xs` and `ys` of type `List[Int]`
-    and assume that the `list2ordered` and `int2ordered`
-    methods defined [here](#implicit-parameters) are in scope.
-    Then the operation
+Assume two lists `xs` and `ys` of type `List[Int]`
+and assume that the `list2ordered` and `int2ordered`
+methods defined [here](#implicit-parameters) are in scope.
+Then the operation
 
-    ```
-      xs <= ys
-    ```
+```
+  xs <= ys
+```
 
-    is legal, and is expanded to:
+is legal, and is expanded to:
 
-    ``` 
-      list2ordered(xs)(int2ordered).<=
-        (ys)
-        (xs => list2ordered(xs)(int2ordered))
-    ```
+```
+  list2ordered(xs)(int2ordered).<=
+    (ys)
+    (xs => list2ordered(xs)(int2ordered))
+```
 
-    The first application of `list2ordered` converts the list
-    `xs` to an instance of class `Ordered`, whereas the second 
-    occurrence is part of an implicit parameter passed to the `<=`
-    method.
+The first application of `list2ordered` converts the list
+`xs` to an instance of class `Ordered`, whereas the second
+occurrence is part of an implicit parameter passed to the `<=`
+method.
 
 
 ## Context Bounds and View Bounds
@@ -360,12 +365,13 @@ Consequently, type-parameters in traits may not be view- or context-bounded.
 Also, a method or class with view- or context bounds may not define any
 additional implicit parameters.
 
-(@) The `<=` method mentioned in \ref{ex:impl-ordered} can be declared
-    more concisely as follows:
+###### Example
+The `<=` method from the [`Ordered` example](#example-ordered) can be declared
+more concisely as follows:
 
-    ``` 
-      def <= [B >: A <% Ordered[B]](that: B): Boolean
-    ```
+```
+def <= [B >: A <% Ordered[B]](that: B): Boolean
+```
 
 ## Manifests
 

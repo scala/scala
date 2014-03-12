@@ -143,16 +143,18 @@ A qualified type designator has the form `p.t` where `p` is
 a [path](#paths) and _t_ is a type name. Such a type designator is
 equivalent to the type projection `p.type#t`.
 
-(@) Some type designators and their expansions are listed below. We assume
-    a local type parameter $t$, a value `maintable`
-    with a type member `Node` and the standard class `scala.Int`, 
+###### Example: fully qualified type designators
 
-    --------------------  --------------------------
-    t                     ε.type#t
-    Int                   scala.type#Int
-    scala.Int             scala.type#Int
-    data.maintable.Node   data.maintable.type#Node
-    --------------------  --------------------------
+Some type designators and their expansions are listed below. We assume
+a local type parameter $t$, a value `maintable`
+with a type member `Node` and the standard class `scala.Int`,
+
+|-------------------- | --------------------------|
+|t                    | ε.type#t                  |
+|Int                  | scala.type#Int            |
+|scala.Int            | scala.type#Int            |
+|data.maintable.Node  | data.maintable.type#Node  |
+|-------------------- | --------------------------|
 
 
 ### Parameterized Types
@@ -173,44 +175,47 @@ well-formed if each actual type parameter
 _conforms to its bounds_, i.e. $\sigma L_i <: T_i <: \sigma U_i$ where $\sigma$ is the
 substitution $[ a_1 := T_1 , \ldots , a_n := T_n ]$.
 
-(@param-types) Given the partial type definitions:
+###### Example: parameterized types
+Given the partial type definitions:
 
-    ``` 
-    class TreeMap[A <: Comparable[A], B] { … }
-    class List[A] { … }
-    class I extends Comparable[I] { … }
-    
-    class F[M[_], X] { … }
-    class S[K <: String] { … }
-    class G[M[ Z <: I ], I] { … }
-    ```
+```
+class TreeMap[A <: Comparable[A], B] { … }
+class List[A] { … }
+class I extends Comparable[I] { … }
 
-    the following parameterized types are well formed:
+class F[M[_], X] { … }
+class S[K <: String] { … }
+class G[M[ Z <: I ], I] { … }
+```
 
-    ``` 
-      TreeMap[I, String]
-      List[I]
-      List[List[Boolean]]
-      
-      F[List, Int]
-      G[S, String]
-    ```
+the following parameterized types are well formed:
 
-(@) Given the type definitions of (@param-types),
-    the following types are ill-formed:
+```
+TreeMap[I, String]
+List[I]
+List[List[Boolean]]
 
-    ``` 
-    TreeMap[I]            // illegal: wrong number of parameters
-    TreeMap[List[I], Int] // illegal: type parameter not within bound
-    
-    F[Int, Boolean]       // illegal: Int is not a type constructor
-    F[TreeMap, Int]       // illegal: TreeMap takes two parameters,
-                          //   F expects a constructor taking one
-    G[S, Int]             // illegal: S constrains its parameter to
-                          //   conform to String,
-                          // G expects type constructor with a parameter
-                          //   that conforms to Int
-    ```
+F[List, Int]
+G[S, String]
+```
+
+###### Example: ill-formed types
+
+Given the [above type definitions](example-parameterized-types),
+the following types are ill-formed:
+
+```
+TreeMap[I]            // illegal: wrong number of parameters
+TreeMap[List[I], Int] // illegal: type parameter not within bound
+
+F[Int, Boolean]       // illegal: Int is not a type constructor
+F[TreeMap, Int]       // illegal: TreeMap takes two parameters,
+                      //   F expects a constructor taking one
+G[S, Int]             // illegal: S constrains its parameter to
+                      //   conform to String,
+                      // G expects type constructor with a parameter
+                      //   that conforms to Int
+```
 
 ### Tuple Types
 
@@ -250,12 +255,13 @@ An annotated type $T$ `$a_1 , \ldots , a_n$`
 attaches [annotations](#user-defined-annotations) 
 $a_1 , \ldots , a_n$ to the type $T$.
 
-(@) The following type adds the `@suspendable` annotation to the type
-    `String`:
+###### Example: annotated type
 
-    ``` 
-    String @suspendable
-    ```
+The following type adds the `@suspendable` annotation to the type `String`:
+
+```
+String @suspendable
+```
 
 
 ### Compound Types
@@ -287,7 +293,7 @@ any value parameter may only refer to type parameters or abstract
 types that are contained inside the refinement. That is, it must refer
 either to a type parameter of the method itself, or to a type
 definition within the refinement. This restriction does not apply to
-the function's result type.
+the method's result type.
 
 If no refinement is given, the empty refinement is implicitly added,
 i.e.\  `$T_1$ with … with $T_n$` is a shorthand for
@@ -297,35 +303,37 @@ A compound type may also consist of just a refinement
 `{ $R$ }` with no preceding component types. Such a type is
 equivalent to `AnyRef{ R }`.
 
-(@) The following example shows how to declare and use a function which 
-    parameter's type contains a refinement with structural declarations.
+###### Example: structural refinement in a method's parameter type
 
-    ``` 
-    case class Bird (val name: String) extends Object {
-    	def fly(height: Int) = …
-  	…
-    }
-    case class Plane (val callsign: String) extends Object {
-    	def fly(height: Int) = …
-  	…
-    }
-    def takeoff(
-    	    runway: Int,
-          r: { val callsign: String; def fly(height: Int) }) = {
-      tower.print(r.callsign + " requests take-off on runway " + runway)
-      tower.read(r.callsign + " is clear for take-off")
-      r.fly(1000)
-    }
-    val bird = new Bird("Polly the parrot"){ val callsign = name }
-    val a380 = new Plane("TZ-987")
-    takeoff(42, bird)
-    takeoff(89, a380)
-    ```
+The following example shows how to declare and use a method which
+a parameter type that contains a refinement with structural declarations.
 
-    Although `Bird` and `Plane` do not share any parent class other than 
-    `Object`, the parameter _r_ of function `takeoff` is defined using a 
-    refinement with structural declarations to accept any object that declares 
-    a value `callsign` and a `fly` function.
+```
+case class Bird (val name: String) extends Object {
+        def fly(height: Int) = …
+…
+}
+case class Plane (val callsign: String) extends Object {
+        def fly(height: Int) = …
+…
+}
+def takeoff(
+            runway: Int,
+      r: { val callsign: String; def fly(height: Int) }) = {
+  tower.print(r.callsign + " requests take-off on runway " + runway)
+  tower.read(r.callsign + " is clear for take-off")
+  r.fly(1000)
+}
+val bird = new Bird("Polly the parrot"){ val callsign = name }
+val a380 = new Plane("TZ-987")
+takeoff(42, bird)
+takeoff(89, a380)
+```
+
+Although `Bird` and `Plane` do not share any parent class other than
+`Object`, the parameter _r_ of method `takeoff` is defined using a
+refinement with structural declarations to accept any object that declares
+a value `callsign` and a `fly` method.
 
  
 ### Infix Types
@@ -495,54 +503,60 @@ or [tuple types](#tuple-types).
 Their expansion is then the expansion in the equivalent parameterized
 type.
 
-(@) Assume the class definitions
-    
-    ``` 
-    class Ref[T]
-    abstract class Outer { type T } .
-    ```
+###### Example: existential types
 
-    Here are some examples of existential types:
-    
-    ``` 
-    Ref[T] forSome { type T <: java.lang.Number }
-    Ref[x.T] forSome { val x: Outer }
-    Ref[x_type # T] forSome { type x_type <: Outer with Singleton }
-    ```
+Assume the class definitions
 
-    The last two types in this list are equivalent.
-    An alternative formulation of the first type above using wildcard syntax is:
-    
-    ``` 
-    Ref[_ <: java.lang.Number]
-    ```
+```
+class Ref[T]
+abstract class Outer { type T } .
+```
 
-(@) The type `List[List[_]]` is equivalent to the existential type
-    
-    ``` 
-    List[List[t] forSome { type t }] . 
-    ```
+Here are some examples of existential types:
 
-(@) Assume a covariant type
-    
-    ``` 
-    class List[+T]
-    ```
+```
+Ref[T] forSome { type T <: java.lang.Number }
+Ref[x.T] forSome { val x: Outer }
+Ref[x_type # T] forSome { type x_type <: Outer with Singleton }
+```
 
-    The type
-    
-    ``` 
-    List[T] forSome { type T <: java.lang.Number }
-    ```
+The last two types in this list are equivalent.
+An alternative formulation of the first type above using wildcard syntax is:
 
-    is equivalent (by simplification rule 4 above) to
+```
+Ref[_ <: java.lang.Number]
+```
 
-    ``` 
-    List[java.lang.Number] forSome { type T <: java.lang.Number }
-    ```
+###### Example: abbreviating an existential type with the underscore
 
-    which is in turn equivalent (by simplification rules 2 and 3 above) to
-    `List[java.lang.Number]`.
+The type `List[List[_]]` is equivalent to the existential type
+
+```
+List[List[t] forSome { type t }] .
+```
+
+###### Example: existential type equivalence
+
+Assume a covariant type
+
+```
+class List[+T]
+```
+
+The type
+
+```
+List[T] forSome { type T <: java.lang.Number }
+```
+
+is equivalent (by simplification rule 4 above) to
+
+```
+List[java.lang.Number] forSome { type T <: java.lang.Number }
+```
+
+which is in turn equivalent (by simplification rules 2 and 3 above) to
+`List[java.lang.Number]`.
 
 
 ## Non-Value Types
@@ -573,21 +587,23 @@ Method types do not exist as types of values. If a method name is used
 as a value, its type is [implicitly converted](#implicit-conversions) to a 
 corresponding function type.
 
-(@) The declarations
-    
-    ``` 
-    def a: Int
-    def b (x: Int): Boolean
-    def c (x: Int) (y: String, z: String): String
-    ```
+###### Example
 
-    produce the typings
+The declarations
     
-    ``` 
-    a: => Int
-    b: (Int) Boolean
-    c: (Int) (String, String) String
-    ```
+```
+def a: Int
+def b (x: Int): Boolean
+def c (x: Int) (y: String, z: String): String
+```
+
+produce the typings
+
+```
+a: => Int
+b: (Int) Boolean
+c: (Int) (String, String) String
+```
 
 ### Polymorphic Method Types
 
@@ -601,19 +617,21 @@ take type arguments `$S_1 , \ldots , S_n$` which
 `$L_1 , \ldots , L_n$` and the upper bounds
 `$U_1 , \ldots , U_n$` and that yield results of type $T$.
 
-(@) The declarations
+###### Example
 
-    ``` 
-    def empty[A]: List[A]
-    def union[A <: Comparable[A]] (x: Set[A], xs: Set[A]): Set[A]
-    ```
+The declarations
 
-    produce the typings
+```
+def empty[A]: List[A]
+def union[A <: Comparable[A]] (x: Set[A], xs: Set[A]): Set[A]
+```
 
-    ``` 
-    empty : [A >: Nothing <: Any] List[A]
-    union : [A >: Nothing <: Comparable[A]] (x: Set[A], xs: Set[A]) Set[A]  .
-    ```
+produce the typings
+
+```
+empty : [A >: Nothing <: Any] List[A]
+union : [A >: Nothing <: Comparable[A]] (x: Set[A], xs: Set[A]) Set[A]  .
+```
 
 ### Type Constructors
 
@@ -624,17 +642,19 @@ represents a type that is expected by a
 [abstract type constructor binding](#type-declarations-and-type-aliases) with 
 the corresponding type parameter clause.
 
-(@) Consider this fragment of the `Iterable[+X]` class:
-    
-    ``` 
-    trait Iterable[+X] {
-      def flatMap[newType[+X] <: Iterable[X], S](f: X => newType[S]): newType[S]
-    }
-    ```
+###### Example
 
-    Conceptually, the type constructor `Iterable` is a name for the 
-    anonymous type `[+X] Iterable[X]`, which may be passed to the 
-    `newType` type constructor parameter in `flatMap`.
+Consider this fragment of the `Iterable[+X]` class:
+    
+```
+trait Iterable[+X] {
+  def flatMap[newType[+X] <: Iterable[X], S](f: X => newType[S]): newType[S]
+}
+```
+
+Conceptually, the type constructor `Iterable` is a name for the
+anonymous type `[+X] Iterable[X]`, which may be passed to the
+`newType` type constructor parameter in `flatMap`.
 
 
 <!-- ### Overloaded Types
@@ -644,7 +664,7 @@ same name, we model
 
 An overloaded type consisting of type alternatives $T_1 \commadots T_n (n \geq 2)$ is denoted internally $T_1 \overload \ldots \overload T_n$.
 
-(@) The definitions
+###### Example: The definitions
 ```
 def println: Unit
 def println(s: String): Unit = $\ldots$
@@ -662,7 +682,7 @@ println:  => Unit $\overload$
           [A] (A) (A => String) Unit
 ```
 
-(@) The definitions
+###### Example: The definitions
 ```
 def f(x: T): T = $\ldots$
 val f = 0

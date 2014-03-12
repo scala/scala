@@ -119,25 +119,26 @@ closest enclosing scope that defines a member named $p$.
 The special predefined name `_root_` refers to the
 outermost root package which contains all top-level packages.  
 
-(@package-ids) Consider the following program:
+###### Example
+Consider the following program:
 
-    ``` 
-    package b {
-      class B 
-    }
+```
+package b {
+  class B
+}
 
-    package a.b {
-      class A {
-        val x = new _root_.b.B
-      }
-    }
-    ```
+package a.b {
+  class A {
+    val x = new _root_.b.B
+  }
+}
+```
 
-    Here, the reference `_root_.b.B` refers to class `B` in the
-    toplevel package `b`. If the `_root_` prefix had been
-    omitted, the name `b` would instead resolve to the package
-    `a.b`, and, provided that package does not also
-    contain a class `B`, a compiler-time error would result.
+Here, the reference `_root_.b.B` refers to class `B` in the
+toplevel package `b`. If the `_root_` prefix had been
+omitted, the name `b` would instead resolve to the package
+`a.b`, and, provided that package does not also
+contain a class `B`, a compiler-time error would result.
 
 
 ## Programs
@@ -154,37 +155,38 @@ object, or it can be inherited. The scala library defines a special class
 An objects $m$ inheriting from this class is thus a program, 
 which executes the initializaton code of the object $m$.
 
-(@) The following example will create a hello world program by defining
-    a method `main` in module `test.HelloWorld`.
+###### Example
+The following example will create a hello world program by defining
+a method `main` in module `test.HelloWorld`.
 
-    ``` 
-    package test
-    object HelloWorld {
-      def main(args: Array[String]) { println("Hello World") }
-    }
-    ```
+```
+package test
+object HelloWorld {
+  def main(args: Array[String]) { println("Hello World") }
+}
+```
 
-    This program can be started by the command
+This program can be started by the command
 
-    ```
-    scala test.HelloWorld
-    ```
+```
+scala test.HelloWorld
+```
 
-    In a Java environment, the command
+In a Java environment, the command
 
-    ```
-    java test.HelloWorld
-    ```
+```
+java test.HelloWorld
+```
 
-    would work as well. 
+would work as well.
 
-    `HelloWorld` can also be defined without a `main` method 
-    by inheriting from `App` instead:
+`HelloWorld` can also be defined without a `main` method
+by inheriting from `App` instead:
 
-    ``` 
-    package test 
-    object HelloWorld extends App {
-      println("Hello World")
-    }
-    ```
+```
+package test
+object HelloWorld extends App {
+  println("Hello World")
+}
+```
 

@@ -87,19 +87,20 @@ A second form of self type annotation reads just
 `this: $S$ =>`. It prescribes the type $S$ for `this`
 without introducing an alias name for it. 
 
-(@) Consider the following class definitions:
+###### Example
+Consider the following class definitions:
 
-    ``` 
-    class Base extends Object {}
-    trait Mixin extends Base {}
-    object O extends Mixin {}
-    ```
+```
+class Base extends Object {}
+trait Mixin extends Base {}
+object O extends Mixin {}
+```
 
-    In this case, the definition of `O` is expanded to:
+In this case, the definition of `O` is expanded to:
 
-    ``` 
-    object O extends Base with Mixin {}
-    ```
+```
+object O extends Base with Mixin {}
+```
 
 
 <!-- TODO: Make all references to Java generic -->
@@ -203,42 +204,43 @@ linearization of this graph is defined as follows.
 > ```
 
 
-(@) Consider the following class definitions.
+###### Example
+Consider the following class definitions.
 
-    ``` 
-    abstract class AbsIterator extends AnyRef { ... }
-    trait RichIterator extends AbsIterator { ... }
-    class StringIterator extends AbsIterator { ... }
-    class Iter extends StringIterator with RichIterator { ... }
-    ```
+```
+abstract class AbsIterator extends AnyRef { ... }
+trait RichIterator extends AbsIterator { ... }
+class StringIterator extends AbsIterator { ... }
+class Iter extends StringIterator with RichIterator { ... }
+```
 
-    Then the linearization of class `Iter` is
+Then the linearization of class `Iter` is
 
-    ```
-    { Iter, RichIterator, StringIterator, AbsIterator, AnyRef, Any }
-    ```
+```
+{ Iter, RichIterator, StringIterator, AbsIterator, AnyRef, Any }
+```
 
-    Note that the linearization of a class refines the inheritance
-    relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any
-    linearization where both $C$ and $D$ occur.
-    \ref{def:lin} also satisfies the property that a linearization
-    of a class always contains the linearization of its direct superclass
-    as a suffix.  For instance, the linearization of
-    `StringIterator` is
+Note that the linearization of a class refines the inheritance
+relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any
+linearization where both $C$ and $D$ occur.
+\ref{def:lin} also satisfies the property that a linearization
+of a class always contains the linearization of its direct superclass
+as a suffix.  For instance, the linearization of
+`StringIterator` is
 
-    ```
-    { StringIterator, AbsIterator, AnyRef, Any }
-    ```
+```
+{ StringIterator, AbsIterator, AnyRef, Any }
+```
 
-    which is a suffix of the linearization of its subclass `Iter`.
-    The same is not true for the linearization of mixins.
-    For instance, the linearization of `RichIterator` is
+which is a suffix of the linearization of its subclass `Iter`.
+The same is not true for the linearization of mixins.
+For instance, the linearization of `RichIterator` is
 
-    ```
-    { RichIterator, AbsIterator, AnyRef, Any }
-    ```
+```
+{ RichIterator, AbsIterator, AnyRef, Any }
+```
 
-    which is not a suffix of the linearization of `Iter`.
+which is not a suffix of the linearization of `Iter`.
 
 
 ### Class Members
@@ -306,18 +308,19 @@ Finally, a template is not allowed to contain two methods (directly
 defined or inherited) with the same name which both define default arguments.
 
 
-(@) Consider the trait definitions:
+###### Example
+Consider the trait definitions:
 
-    ``` 
-    trait A { def f: Int }
-    trait B extends A { def f: Int = 1 ; def g: Int = 2 ; def h: Int = 3 }
-    trait C extends A { override def f: Int = 4 ; def g: Int }
-    trait D extends B with C { def h: Int }
-    ```
+```
+trait A { def f: Int }
+trait B extends A { def f: Int = 1 ; def g: Int = 2 ; def h: Int = 3 }
+trait C extends A { override def f: Int = 4 ; def g: Int }
+trait D extends B with C { def h: Int }
+```
 
-    Then trait `D` has a directly defined abstract member `h`. It
-    inherits member `f` from trait `C` and member `g` from
-    trait `B`.
+Then trait `D` has a directly defined abstract member `h`. It
+inherits member `f` from trait `C` and member `g` from
+trait `B`.
 
 
 ### Overriding
@@ -366,25 +369,27 @@ it is possible to add new defaults (if the corresponding parameter in the
 superclass does not have a default) or to override the defaults of the
 superclass (otherwise).
 
-(@compounda) Consider the definitions:
+###### Example: compound types
 
-    ``` 
-    trait Root { type T <: Root }
-    trait A extends Root { type T <: A }
-    trait B extends Root { type T <: B }
-    trait C extends A with B 
-    ```
+Consider the definitions:
 
-    Then the class definition `C` is not well-formed because the
-    binding of `T` in `C` is
-    `type T <: B`,
-    which fails to subsume the binding `type T <: A` of `T`
-    in type `A`. The problem can be solved by adding an overriding 
-    definition of type `T` in class `C`:
+```
+trait Root { type T <: Root }
+trait A extends Root { type T <: A }
+trait B extends Root { type T <: B }
+trait C extends A with B
+```
 
-    ``` 
-    class C extends A with B { type T <: C }
-    ```
+Then the class definition `C` is not well-formed because the
+binding of `T` in `C` is
+`type T <: B`,
+which fails to subsume the binding `type T <: A` of `T`
+in type `A`. The problem can be solved by adding an overriding
+definition of type `T` in class `C`:
+
+```
+class C extends A with B { type T <: C }
+```
 
 
 ### Inheritance Closure
@@ -444,31 +449,32 @@ definitions.
 Early definitions are evaluated in the order they are being defined
 before the superclass constructor of the template is called.
 
-(@) Early definitions are particularly useful for
-    traits, which do not have normal constructor parameters. Example:
+###### Example
+Early definitions are particularly useful for
+traits, which do not have normal constructor parameters. Example:
 
-    ``` 
-    trait Greeting {
-      val name: String
-      val msg = "How are you, "+name
-    }
-    class C extends {
-      val name = "Bob"
-    } with Greeting {
-      println(msg)
-    }
-    ```
+```
+trait Greeting {
+  val name: String
+  val msg = "How are you, "+name
+}
+class C extends {
+  val name = "Bob"
+} with Greeting {
+  println(msg)
+}
+```
 
-    In the code above, the field `name` is initialized before the
-    constructor of `Greeting` is called. Therefore, field `msg` in
-    class `Greeting` is properly initialized to `"How are you, Bob"`.
+In the code above, the field `name` is initialized before the
+constructor of `Greeting` is called. Therefore, field `msg` in
+class `Greeting` is properly initialized to `"How are you, Bob"`.
 
-    If `name` had been initialized instead in `C`'s normal class
-    body, it would be initialized after the constructor of
-    `Greeting`. In that case, `msg` would be initialized to
-    `"How are you, <null>"`.
-  
- 
+If `name` had been initialized instead in `C`'s normal class
+body, it would be initialized after the constructor of
+`Greeting`. In that case, `msg` would be initialized to
+`"How are you, <null>"`.
+
+
 ## Modifiers
 
 ``` 
@@ -609,53 +615,55 @@ the validity and meaning of a modifier are as follows.
   and a later access will retry to evaluate its right hand side.
 
 
-(@) The following code illustrates the use of qualified private:
+###### Example
+The following code illustrates the use of qualified private:
 
-    ``` 
-    package outerpkg.innerpkg
-    class Outer {
-      class Inner {
-        private[Outer] def f()
-        private[innerpkg] def g()
-        private[outerpkg] def h()
-      }
-    }
-    ```
+```
+package outerpkg.innerpkg
+class Outer {
+  class Inner {
+    private[Outer] def f()
+    private[innerpkg] def g()
+    private[outerpkg] def h()
+  }
+}
+```
 
-    Here, accesses to the method `f` can appear anywhere within
-    `OuterClass`, but not outside it. Accesses to method
-    `g` can appear anywhere within the package
-    `outerpkg.innerpkg`, as would be the case for
-    package-private methods in Java. Finally, accesses to method
-    `h` can appear anywhere within package `outerpkg`,
-    including packages contained in it. 
+Here, accesses to the method `f` can appear anywhere within
+`OuterClass`, but not outside it. Accesses to method
+`g` can appear anywhere within the package
+`outerpkg.innerpkg`, as would be the case for
+package-private methods in Java. Finally, accesses to method
+`h` can appear anywhere within package `outerpkg`,
+including packages contained in it.
 
 
-(@) A useful idiom to prevent clients of a class from
-    constructing new instances of that class is to declare the class
-    `abstract` and `sealed`:
+###### Example
+A useful idiom to prevent clients of a class from
+constructing new instances of that class is to declare the class
+`abstract` and `sealed`:
 
-    ``` 
-    object m {
-      abstract sealed class C (x: Int) {
-        def nextC = new C(x + 1) {}
-      }
-      val empty = new C(0) {}
-    }
-    ```
+```
+object m {
+  abstract sealed class C (x: Int) {
+    def nextC = new C(x + 1) {}
+  }
+  val empty = new C(0) {}
+}
+```
 
-    For instance, in the code above clients can create instances of class
-    `m.C` only by calling the `nextC` method of an existing `m.C`
-    object; it is not possible for clients to create objects of class
-    `m.C` directly. Indeed the following two lines are both in error:
+For instance, in the code above clients can create instances of class
+`m.C` only by calling the `nextC` method of an existing `m.C`
+object; it is not possible for clients to create objects of class
+`m.C` directly. Indeed the following two lines are both in error:
 
-    ``` 
-    new m.C(0)    // **** error: C is abstract, so it cannot be instantiated.
-    new m.C(0) {} // **** error: illegal inheritance from sealed class.
-    ```
+```
+new m.C(0)    // **** error: C is abstract, so it cannot be instantiated.
+new m.C(0) {} // **** error: illegal inheritance from sealed class.
+```
 
-    A similar access restriction can be achieved by marking the primary
-    constructor `private` (see \ref{ex:private-constr}).
+A similar access restriction can be achieved by marking the primary
+constructor `private` (see \ref{ex:private-constr}).
 
 
 ## Class Definitions
@@ -741,28 +749,27 @@ which when applied to parameters conforming to types $\mathit{ps}$
 initializes instances of type `$c$[$\mathit{tps}\,$]` by evaluating the template
 $t$.
 
-(@) The following example illustrates `val` and `var`
-    parameters of a class `C`:
+###### Example
+The following example illustrates `val` and `var` parameters of a class `C`:
 
-    ``` 
-    class C(x: Int, val y: String, var z: List[String])
-    val c = new C(1, "abc", List())
-    c.z = c.y :: c.z
-    ```
+```
+class C(x: Int, val y: String, var z: List[String])
+val c = new C(1, "abc", List())
+c.z = c.y :: c.z
+```
 
-(@privateconstr) The following class can be created only from its companion
-    module.
+The following class can be created only from its companion module.
 
-    ``` 
-    object Sensitive {
-      def makeSensitive(credentials: Certificate): Sensitive = 
-        if (credentials == Admin) new Sensitive() 
-        else throw new SecurityViolationException
-    }
-    class Sensitive private () {
-      ...
-    }
-    ```
+```
+object Sensitive {
+  def makeSensitive(credentials: Certificate): Sensitive =
+    if (credentials == Admin) new Sensitive()
+    else throw new SecurityViolationException
+}
+class Sensitive private () {
+  ...
+}
+```
 
 
 ### Constructor Definitions
@@ -817,21 +824,22 @@ invocation must refer to a constructor definition which precedes it
 primary constructor of the class).  
 
 
-(@) Consider the class definition
+###### Example
+Consider the class definition
 
-    ``` 
-    class LinkedList[A]() {
-      var head = _ 
-      var tail = null 
-      def isEmpty = tail != null   
-      def this(head: A) = { this(); this.head = head }
-      def this(head: A, tail: List[A]) = { this(head); this.tail = tail }
-    }
-    ```
+```
+class LinkedList[A]() {
+  var head = _
+  var tail = null
+  def isEmpty = tail != null
+  def this(head: A) = { this(); this.head = head }
+  def this(head: A, tail: List[A]) = { this(head); this.tail = tail }
+}
+```
 
-    This defines a class `LinkedList` with three constructors.  The
-    second constructor constructs an singleton list, while the
-    third one constructs a list with a given head and tail.
+This defines a class `LinkedList` with three constructors.  The
+second constructor constructs an singleton list, while the
+third one constructs a list with a given head and tail.
 
 
 ## Case Classes
@@ -924,46 +932,47 @@ class different from `AnyRef`. In particular:
   contains the name of the class and its elements.
 
 
-(@) Here is the definition of abstract syntax for lambda calculus:
+###### Example
+Here is the definition of abstract syntax for lambda calculus:
 
-    ``` 
-    class Expr 
-    case class Var   (x: String)          extends Expr
-    case class Apply (f: Expr, e: Expr)   extends Expr
-    case class Lambda(x: String, e: Expr) extends Expr 
-    ```
+```
+class Expr
+case class Var   (x: String)          extends Expr
+case class Apply (f: Expr, e: Expr)   extends Expr
+case class Lambda(x: String, e: Expr) extends Expr
+```
 
-    This defines a class `Expr` with case classes
-    `Var`, `Apply` and `Lambda`. A call-by-value evaluator 
-    for lambda expressions could then be written as follows.
+This defines a class `Expr` with case classes
+`Var`, `Apply` and `Lambda`. A call-by-value evaluator
+for lambda expressions could then be written as follows.
 
-    ``` 
-    type Env = String => Value 
-    case class Value(e: Expr, env: Env) 
+```
+type Env = String => Value
+case class Value(e: Expr, env: Env)
 
-    def eval(e: Expr, env: Env): Value = e match {
-      case Var (x) =>
-        env(x)
-      case Apply(f, g) =>
-        val Value(Lambda (x, e1), env1) = eval(f, env) 
-        val v = eval(g, env) 
-        eval (e1, (y => if (y == x) v else env1(y)))
-      case Lambda(_, _) =>
-        Value(e, env)
-    }
-    ```
+def eval(e: Expr, env: Env): Value = e match {
+  case Var (x) =>
+    env(x)
+  case Apply(f, g) =>
+    val Value(Lambda (x, e1), env1) = eval(f, env)
+    val v = eval(g, env)
+    eval (e1, (y => if (y == x) v else env1(y)))
+  case Lambda(_, _) =>
+    Value(e, env)
+}
+```
 
-    It is possible to define further case classes that extend type
-    `Expr` in other parts of the program, for instance
+It is possible to define further case classes that extend type
+`Expr` in other parts of the program, for instance
 
-    ``` 
-    case class Number(x: Int) extends Expr 
-    ```
+```
+case class Number(x: Int) extends Expr
+```
 
-    This form of extensibility can be excluded by declaring the base class
-    `Expr` `sealed`; in this case, all classes that
-    directly extend `Expr` must be in the same source file as
-    `Expr`.
+This form of extensibility can be excluded by declaring the base class
+`Expr` `sealed`; in this case, all classes that
+directly extend `Expr` must be in the same source file as
+`Expr`.
 
 
 ### Traits
@@ -992,83 +1001,85 @@ statically known at the time the trait is defined.
 If $D$ is not a trait, then its actual supertype is simply its
 least proper supertype (which is statically known).
 
-(@comparable) The following trait defines the property
-    of being comparable to objects of some type. It contains an abstract
-    method `<` and default implementations of the other
-    comparison operators `<=`, `>`, and
-    `>=`. 
+###### Example: `Comparable`
+The following trait defines the property
+of being comparable to objects of some type. It contains an abstract
+method `<` and default implementations of the other
+comparison operators `<=`, `>`, and
+`>=`.
 
-    ``` 
-    trait Comparable[T <: Comparable[T]] { self: T =>
-      def < (that: T): Boolean
-      def <=(that: T): Boolean = this < that || this == that
-      def > (that: T): Boolean = that < this 
-      def >=(that: T): Boolean = that <= this
-    }
-    ```
+```
+trait Comparable[T <: Comparable[T]] { self: T =>
+  def < (that: T): Boolean
+  def <=(that: T): Boolean = this < that || this == that
+  def > (that: T): Boolean = that < this
+  def >=(that: T): Boolean = that <= this
+}
+```
 
-(@) Consider an abstract class `Table` that implements maps
-    from a type of keys `A` to a type of values `B`. The class
-    has a method `set` to enter a new key / value pair into the table,
-    and a method `get` that returns an optional value matching a
-    given key. Finally, there is a method `apply` which is like
-    `get`, except that it returns a given default value if the table
-    is undefined for the given key. This class is implemented as follows.
+###### Example
+Consider an abstract class `Table` that implements maps
+from a type of keys `A` to a type of values `B`. The class
+has a method `set` to enter a new key / value pair into the table,
+and a method `get` that returns an optional value matching a
+given key. Finally, there is a method `apply` which is like
+`get`, except that it returns a given default value if the table
+is undefined for the given key. This class is implemented as follows.
 
-    ``` 
-    abstract class Table[A, B](defaultValue: B) {
-      def get(key: A): Option[B]
-      def set(key: A, value: B)
-      def apply(key: A) = get(key) match {
-        case Some(value) => value
-        case None => defaultValue
-      }
-    }
-    ```
+```
+abstract class Table[A, B](defaultValue: B) {
+  def get(key: A): Option[B]
+  def set(key: A, value: B)
+  def apply(key: A) = get(key) match {
+    case Some(value) => value
+    case None => defaultValue
+  }
+}
+```
 
-    Here is a concrete implementation of the `Table` class.
+Here is a concrete implementation of the `Table` class.
 
-    ``` 
-    class ListTable[A, B](defaultValue: B) extends Table[A, B](defaultValue) {
-      private var elems: List[(A, B)]
-      def get(key: A) = elems.find(._1.==(key)).map(._2)
-      def set(key: A, value: B) = { elems = (key, value) :: elems }
-    }
-    ```
+```
+class ListTable[A, B](defaultValue: B) extends Table[A, B](defaultValue) {
+  private var elems: List[(A, B)]
+  def get(key: A) = elems.find(._1.==(key)).map(._2)
+  def set(key: A, value: B) = { elems = (key, value) :: elems }
+}
+```
 
-    Here is a trait that prevents concurrent access to the
-    `get` and `set` operations of its parent class:
+Here is a trait that prevents concurrent access to the
+`get` and `set` operations of its parent class:
 
-    ``` 
-    trait SynchronizedTable[A, B] extends Table[A, B] {
-      abstract override def get(key: A): B = 
-        synchronized { super.get(key) }
-      abstract override def set((key: A, value: B) = 
-        synchronized { super.set(key, value) }
-    }
-    ```
+```
+trait SynchronizedTable[A, B] extends Table[A, B] {
+  abstract override def get(key: A): B =
+    synchronized { super.get(key) }
+  abstract override def set((key: A, value: B) =
+    synchronized { super.set(key, value) }
+}
+```
 
-    Note that `SynchronizedTable` does not pass an argument to
-    its superclass, `Table`, even  though `Table` is defined with a
-    formal parameter. Note also that the `super` calls
-    in `SynchronizedTable`'s `get` and `set` methods
-    statically refer to abstract methods in class `Table`. This is
-    legal, as long as the calling method is labeled 
-    [`abstract override`](#modifiers).
+Note that `SynchronizedTable` does not pass an argument to
+its superclass, `Table`, even  though `Table` is defined with a
+formal parameter. Note also that the `super` calls
+in `SynchronizedTable`'s `get` and `set` methods
+statically refer to abstract methods in class `Table`. This is
+legal, as long as the calling method is labeled
+[`abstract override`](#modifiers).
 
-    Finally, the following mixin composition creates a synchronized list 
-    table with strings as keys and integers as values and with a default 
-    value `0`:
+Finally, the following mixin composition creates a synchronized list
+table with strings as keys and integers as values and with a default
+value `0`:
 
-    ``` 
-    object MyTable extends ListTable[String, Int](0) with SynchronizedTable
-    ```
+```
+object MyTable extends ListTable[String, Int](0) with SynchronizedTable
+```
 
-    The object `MyTable` inherits its `get` and `set`
-    method from `SynchronizedTable`.  The `super` calls in these
-    methods are re-bound to refer to the corresponding implementations in
-    `ListTable`, which is the actual supertype of `SynchronizedTable` 
-    in `MyTable`. 
+The object `MyTable` inherits its `get` and `set`
+method from `SynchronizedTable`.  The `super` calls in these
+methods are re-bound to refer to the corresponding implementations in
+`ListTable`, which is the actual supertype of `SynchronizedTable`
+in `MyTable`.
 
 
 ## Object Definitions
@@ -1117,31 +1128,32 @@ cannot be because variable and method definition cannot appear on the
 top-level outside of a [package object](#package-objects). Instead,
 top-level objects are translated to static fields.
 
-(@) Classes in Scala do not have static members; however, an equivalent
-    effect can be achieved by an accompanying object definition
-    E.g.
+###### Example
+Classes in Scala do not have static members; however, an equivalent
+effect can be achieved by an accompanying object definition
+E.g.
 
-    ``` 
-    abstract class Point {
-      val x: Double 
-      val y: Double 
-      def isOrigin = (x == 0.0 && y == 0.0) 
-    }
-    object Point {
-      val origin = new Point() { val x = 0.0; val y = 0.0 }
-    }
-    ```
+```
+abstract class Point {
+  val x: Double
+  val y: Double
+  def isOrigin = (x == 0.0 && y == 0.0)
+}
+object Point {
+  val origin = new Point() { val x = 0.0; val y = 0.0 }
+}
+```
 
-    This defines a class `Point` and an object `Point` which
-    contains `origin` as a member.  Note that the double use of the
-    name `Point` is legal, since the class definition defines the
-    name `Point` in the type name space, whereas the object
-    definition defines a name in the term namespace. 
+This defines a class `Point` and an object `Point` which
+contains `origin` as a member.  Note that the double use of the
+name `Point` is legal, since the class definition defines the
+name `Point` in the type name space, whereas the object
+definition defines a name in the term namespace.
 
-    This technique is applied by the Scala compiler when interpreting a
-    Java class with static members. Such a class $C$ is conceptually seen
-    as a pair of a Scala class that contains all instance members of $C$
-    and a Scala object that contains all static members of $C$.
+This technique is applied by the Scala compiler when interpreting a
+Java class with static members. Such a class $C$ is conceptually seen
+as a pair of a Scala class that contains all instance members of $C$
+and a Scala object that contains all static members of $C$.
 
 Generally, a _companion module_ of a class is an object which has
 the same name as the class and is defined in the same scope and

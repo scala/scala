@@ -160,24 +160,26 @@ val $x$ = $e$ match { case $p$ => $x$ }
 $e$ match { case $p$ => ()}
 ```
 
-(@) The following are examples of value definitions
+###### Example
 
-    ``` 
-    val pi = 3.1415 
-    val pi: Double = 3.1415   // equivalent to first definition
-    val Some(x) = f()         // a pattern definition
-    val x :: xs = mylist      // an infix pattern definition
-    ```
+The following are examples of value definitions
 
-    The last two definitions have the following expansions.
+```
+val pi = 3.1415
+val pi: Double = 3.1415   // equivalent to first definition
+val Some(x) = f()         // a pattern definition
+val x :: xs = mylist      // an infix pattern definition
+```
 
-    ``` 
-    val x = f() match { case Some(x) => x }
+The last two definitions have the following expansions.
 
-    val x$\$$ = mylist match { case x :: xs => (x, xs) }
-    val x = x$\$$._1 
-    val xs = x$\$$._2 
-    ```
+```
+val x = f() match { case Some(x) => x }
+
+val x$\$$ = mylist match { case x :: xs => (x, xs) }
+val x = x$\$$._1
+val xs = x$\$$._2
+```
 
 
 The name of any declared or defined value may not end in `_=`.
@@ -253,35 +255,37 @@ The template then has these getter and setter functions as
 members, whereas the original variable cannot be accessed directly as
 a template member.
 
-(@) The following example shows how _properties_ can be
-    simulated in Scala. It defines a class `TimeOfDayVar` of time
-    values with updatable integer fields representing hours, minutes, and
-    seconds. Its implementation contains tests that allow only legal
-    values to be assigned to these fields. The user code, on the other
-    hand, accesses these fields just like normal variables.
+###### Example
 
-    ``` 
-    class TimeOfDayVar {
-      private var h: Int = 0 
-      private var m: Int = 0 
-      private var s: Int = 0 
-    
-      def hours              =  h 
-      def hours_= (h: Int)   =  if (0 <= h && h < 24) this.h = h 
-                                else throw new DateError() 
-    
-      def minutes            =  m 
-      def minutes_= (m: Int) =  if (0 <= m && m < 60) this.m = m
-                                else throw new DateError() 
-    
-      def seconds            =  s 
-      def seconds_= (s: Int) =  if (0 <= s && s < 60) this.s = s
-                                else throw new DateError() 
-    }
-    val d = new TimeOfDayVar 
-    d.hours = 8; d.minutes = 30; d.seconds = 0 
-    d.hours = 25                  // throws a DateError exception
-    ```
+The following example shows how _properties_ can be
+simulated in Scala. It defines a class `TimeOfDayVar` of time
+values with updatable integer fields representing hours, minutes, and
+seconds. Its implementation contains tests that allow only legal
+values to be assigned to these fields. The user code, on the other
+hand, accesses these fields just like normal variables.
+
+```
+class TimeOfDayVar {
+  private var h: Int = 0
+  private var m: Int = 0
+  private var s: Int = 0
+
+  def hours              =  h
+  def hours_= (h: Int)   =  if (0 <= h && h < 24) this.h = h
+                            else throw new DateError()
+
+  def minutes            =  m
+  def minutes_= (m: Int) =  if (0 <= m && m < 60) this.m = m
+                            else throw new DateError()
+
+  def seconds            =  s
+  def seconds_= (s: Int) =  if (0 <= s && s < 60) this.s = s
+                            else throw new DateError()
+}
+val d = new TimeOfDayVar
+d.hours = 8; d.minutes = 30; d.seconds = 0
+d.hours = 25                  // throws a DateError exception
+```
 
 
 A variable declaration `var $x_1 , \ldots , x_n$: $T$` is a shorthand for the 
@@ -342,51 +346,55 @@ That is, the type $T$ in a type alias `type $t$[$\mathit{tps}\,$] = $T$` may not
 refer directly or indirectly to the name $t$.  It is also an error if
 an abstract type is directly or indirectly its own upper or lower bound.
 
-(@) The following are legal type declarations and definitions:
+###### Example
 
-    ``` 
-    type IntList = List[Integer]
-    type T <: Comparable[T]
-    type Two[A] = Tuple2[A, A]
-    type MyCollection[+X] <: Iterable[X]
-    ```
+The following are legal type declarations and definitions:
 
-    The following are illegal:
+```
+type IntList = List[Integer]
+type T <: Comparable[T]
+type Two[A] = Tuple2[A, A]
+type MyCollection[+X] <: Iterable[X]
+```
 
-    ```
-    type Abs = Comparable[Abs]      // recursive type alias
+The following are illegal:
 
-    type S <: T                     // S, T are bounded by themselves.
-    type T <: S
+```
+type Abs = Comparable[Abs]      // recursive type alias
 
-    type T >: Comparable[T.That]    // Cannot select from T.
-                                    // T is a type, not a value
-    type MyCollection <: Iterable   // Type constructor members must explicitly 
-                                    // state their type parameters.
-    ```
+type S <: T                     // S, T are bounded by themselves.
+type T <: S
+
+type T >: Comparable[T.That]    // Cannot select from T.
+                                // T is a type, not a value
+type MyCollection <: Iterable   // Type constructor members must explicitly
+                                // state their type parameters.
+```
 
 If a type alias `type $t$[$\mathit{tps}\,$] = $S$` refers to a class type
 $S$, the name $t$ can also be used as a constructor for
 objects of type $S$.
 
-(@) The `Predef` object contains a definition which establishes `Pair` 
-    as an alias of the parameterized class `Tuple2`:
+###### Example
 
-    ``` 
-    type Pair[+A, +B] = Tuple2[A, B] 
-    object Pair {
-      def apply[A, B](x: A, y: B) = Tuple2(x, y)
-      def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
-    }
-    ```
+The `Predef` object contains a definition which establishes `Pair`
+as an alias of the parameterized class `Tuple2`:
 
-    As a consequence, for any two types $S$ and $T$, the type
-    `Pair[$S$, $T\,$]` is equivalent to the type `Tuple2[$S$, $T\,$]`.
-    `Pair` can also be used as a constructor instead of `Tuple2`, as in:
+```
+type Pair[+A, +B] = Tuple2[A, B]
+object Pair {
+  def apply[A, B](x: A, y: B) = Tuple2(x, y)
+  def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
+}
+```
 
-    ``` 
-    val x: Pair[Int, String] = new Pair(1, "abc")
-    ```
+As a consequence, for any two types $S$ and $T$, the type
+`Pair[$S$, $T\,$]` is equivalent to the type `Tuple2[$S$, $T\,$]`.
+`Pair` can also be used as a constructor instead of `Tuple2`, as in:
+
+```
+val x: Pair[Int, String] = new Pair(1, "abc")
+```
 
 
 ## Type Parameters
@@ -428,28 +436,29 @@ A type constructor parameter adds a nested type parameter clause to the type par
 
 The above scoping restrictions are generalized to the case of nested type parameter clauses, which declare higher-order type parameters. Higher-order type parameters (the type parameters of a type parameter $t$) are only visible in their immediately surrounding parameter clause (possibly including clauses at a deeper nesting level) and in the bounds of $t$. Therefore, their names must only be pairwise different from the names of other visible parameters. Since the names of higher-order type parameters are thus often irrelevant, they may be denoted with a ‘_’, which is nowhere visible.
 
-(@) Here are some well-formed type parameter clauses:
+###### Example
+Here are some well-formed type parameter clauses:
 
-    ``` 
-    [S, T]
-    [@specialized T, U]
-    [Ex <: Throwable]
-    [A <: Comparable[B], B <: A]
-    [A, B >: A, C >: A <: B]
-    [M[X], N[X]]
-    [M[_], N[_]] // equivalent to previous clause
-    [M[X <: Bound[X]], Bound[_]]
-    [M[+X] <: Iterable[X]]
-    ```
+```
+[S, T]
+[@specialized T, U]
+[Ex <: Throwable]
+[A <: Comparable[B], B <: A]
+[A, B >: A, C >: A <: B]
+[M[X], N[X]]
+[M[_], N[_]] // equivalent to previous clause
+[M[X <: Bound[X]], Bound[_]]
+[M[+X] <: Iterable[X]]
+```
 
-    The following type parameter clauses are illegal:
+The following type parameter clauses are illegal:
 
-    ``` 
-    [A >: A]                  // illegal, `A' has itself as bound
-    [A <: B, B <: C, C <: A]  // illegal, `A' has itself as bound
-    [A, B, C >: A <: B]       // illegal lower bound `A' of `C' does
-                              // not conform to upper bound `B'.
-    ```
+```
+[A >: A]                  // illegal, `A' has itself as bound
+[A <: B, B <: C, C <: A]  // illegal, `A' has itself as bound
+[A, B, C >: A <: B]       // illegal lower bound `A' of `C' does
+                          // not conform to upper bound `B'.
+```
 
 
 ## Variance Annotations
@@ -502,75 +511,78 @@ References to the type parameters in
 checked for their variance position. In these members the type parameter may 
 appear anywhere without restricting its legal variance annotations.
 
-(@) The following variance annotation is legal. 
+###### Example
+The following variance annotation is legal.
 
-    ``` 
-    abstract class P[+A, +B] {
-      def fst: A; def snd: B
-    }
-    ```
+```
+abstract class P[+A, +B] {
+  def fst: A; def snd: B
+}
+```
 
-    With this variance annotation, type instances
-    of $P$ subtype covariantly with respect to their arguments. 
-    For instance, 
+With this variance annotation, type instances
+of $P$ subtype covariantly with respect to their arguments.
+For instance,
 
-    ``` 
-    P[IOException, String] <: P[Throwable, AnyRef]
-    ```
+```
+P[IOException, String] <: P[Throwable, AnyRef]
+```
 
-    If the members of $P$ are mutable variables, 
-    the same variance annotation becomes illegal.
+If the members of $P$ are mutable variables,
+the same variance annotation becomes illegal.
 
-    ``` 
-    abstract class Q[+A, +B](x: A, y: B) { 
-      var fst: A = x           // **** error: illegal variance:
-      var snd: B = y           // `A', `B' occur in invariant position.
-    }
-    ```
+```
+abstract class Q[+A, +B](x: A, y: B) {
+  var fst: A = x           // **** error: illegal variance:
+  var snd: B = y           // `A', `B' occur in invariant position.
+}
+```
 
-    If the mutable variables are object-private, the class definition
-    becomes legal again:
+If the mutable variables are object-private, the class definition
+becomes legal again:
 
-    ``` 
-    abstract class R[+A, +B](x: A, y: B) { 
-      private[this] var fst: A = x        // OK
-      private[this] var snd: B = y        // OK
-    }
-    ```
+```
+abstract class R[+A, +B](x: A, y: B) {
+  private[this] var fst: A = x        // OK
+  private[this] var snd: B = y        // OK
+}
+```
 
-(@) The following variance annotation is illegal, since $a$ appears
-    in contravariant position in the parameter of `append`:
+###### Example
 
-    ``` 
-    abstract class Sequence[+A] {
-      def append(x: Sequence[A]): Sequence[A]  
-                      // **** error: illegal variance: 
-                      // `A' occurs in contravariant position.
-    }
-    ```
+The following variance annotation is illegal, since $a$ appears
+in contravariant position in the parameter of `append`:
 
-    The problem can be avoided by generalizing the type of `append`
-    by means of a lower bound:
+```
+abstract class Sequence[+A] {
+  def append(x: Sequence[A]): Sequence[A]
+                  // **** error: illegal variance:
+                  // `A' occurs in contravariant position.
+}
+```
 
-    ``` 
-    abstract class Sequence[+A] {
-      def append[B >: A](x: Sequence[B]): Sequence[B] 
-    }
-    ```
+The problem can be avoided by generalizing the type of `append`
+by means of a lower bound:
 
-(@) Here is a case where a contravariant type parameter is useful.
+```
+abstract class Sequence[+A] {
+  def append[B >: A](x: Sequence[B]): Sequence[B]
+}
+```
 
-    ``` 
-    abstract class OutputChannel[-A] {
-      def write(x: A): Unit
-    }
-    ```
+###### Example: Here is a case where a contravariant type parameter is useful.
 
-    With that annotation, we have that
-    `OutputChannel[AnyRef]` conforms to `OutputChannel[String]`.  
-    That is, a
-    channel on which one can write any object can substitute for a channel
-    on which one can write only strings.
+```
+abstract class OutputChannel[-A] {
+  def write(x: A): Unit
+}
+```
+
+With that annotation, we have that
+`OutputChannel[AnyRef]` conforms to `OutputChannel[String]`.
+That is, a
+channel on which one can write any object can substitute for a channel
+on which one can write only strings.
 
 
 ## Function Declarations and Definitions
@@ -636,21 +648,22 @@ parameter clauses, as well as the method return type and the function body, if
 they are given. Both type parameter names and value parameter names must
 be pairwise distinct.
 
-(@) In the method
+###### Example
+In the method
 
-    ``` 
-    def compare[T](a: T = 0)(b: T = a) = (a == b)
-    ```
+```
+def compare[T](a: T = 0)(b: T = a) = (a == b)
+```
 
-    the default expression `0` is type-checked with an undefined expected
-    type. When applying `compare()`, the default value `0` is inserted
-    and `T` is instantiated to `Int`. The methods computing the default
-    arguments have the form:
+the default expression `0` is type-checked with an undefined expected
+type. When applying `compare()`, the default value `0` is inserted
+and `T` is instantiated to `Int`. The methods computing the default
+arguments have the form:
 
-    ``` 
-    def compare$\$$default$\$$1[T]: Int = 0
-    def compare$\$$default$\$$2[T](a: T): T = a
-    ```
+```
+def compare$\$$default$\$$1[T]: Int = 0
+def compare$\$$default$\$$2[T](a: T): T = a
+```
 
 
 ### By-Name Parameters
@@ -673,14 +686,15 @@ classes for which a `val` prefix is implicitly generated. The
 by-name modifier is also disallowed for 
 [implicit parameters](#implicit-parameters).
 
-(@) The declaration
+###### Example
+The declaration
 
-    ``` 
-    def whileLoop (cond: => Boolean) (stat: => Unit): Unit
-    ```
+```
+def whileLoop (cond: => Boolean) (stat: => Unit): Unit
+```
 
-    indicates that both parameters of `whileLoop` are evaluated using
-    call-by-name.
+indicates that both parameters of `whileLoop` are evaluated using
+call-by-name.
 
 
 ### Repeated Parameters
@@ -710,44 +724,45 @@ that application is taken to be
 It is not allowed to define any default arguments in a parameter section
 with a repeated parameter.
 
-(@) The following method definition computes the sum of the squares of a 
-    variable number of integer arguments.
+###### Example
+The following method definition computes the sum of the squares of a
+variable number of integer arguments.
 
-    ``` 
-    def sum(args: Int*) = {
-      var result = 0
-      for (arg <- args) result += arg * arg
-      result
-    }
-    ```
+```
+def sum(args: Int*) = {
+  var result = 0
+  for (arg <- args) result += arg * arg
+  result
+}
+```
 
-    The following applications of this method yield `0`, `1`,
-    `6`, in that order.
+The following applications of this method yield `0`, `1`,
+`6`, in that order.
 
-    ``` 
-    sum()
-    sum(1)
-    sum(1, 2, 3)
-    ```
+```
+sum()
+sum(1)
+sum(1, 2, 3)
+```
 
-    Furthermore, assume the definition:
+Furthermore, assume the definition:
 
-    ``` 
-    val xs = List(1, 2, 3)
-    ```
+```
+val xs = List(1, 2, 3)
+```
 
-    The following application of method `sum` is ill-formed:
+The following application of method `sum` is ill-formed:
 
-    ``` 
-    sum(xs)       // ***** error: expected: Int, found: List[Int]
-    ```
+```
+sum(xs)       // ***** error: expected: Int, found: List[Int]
+```
 
-    By contrast, the following application is well formed and yields again
-    the result `6`:
+By contrast, the following application is well formed and yields again
+the result `6`:
 
-    ``` 
-    sum(xs: _*) 
-    ```
+```
+sum(xs: _*)
+```
 
 
 ### Procedures
@@ -769,27 +784,28 @@ and the equals sign are omitted; its defining expression must be a block.
 E.g., `def $f$($\mathit{ps}$) {$\mathit{stats}$}` is equivalent to
 `def $f$($\mathit{ps}$): Unit = {$\mathit{stats}$}`.
 
-(@) Here is a declaration and a definition of a procedure named `write`: 
+###### Example
+Here is a declaration and a definition of a procedure named `write`:
 
-    ``` 
-    trait Writer { 
-      def write(str: String)
-    }
-    object Terminal extends Writer {
-      def write(str: String) { System.out.println(str) }
-    }
-    ```
+```
+trait Writer {
+  def write(str: String)
+}
+object Terminal extends Writer {
+  def write(str: String) { System.out.println(str) }
+}
+```
 
-    The code above is implicitly completed to the following code:
+The code above is implicitly completed to the following code:
 
-    ``` 
-    trait Writer { 
-      def write(str: String): Unit
-    }
-    object Terminal extends Writer {
-      def write(str: String): Unit = { System.out.println(str) }
-    }
-    ```
+```
+trait Writer {
+  def write(str: String): Unit
+}
+object Terminal extends Writer {
+  def write(str: String): Unit = { System.out.println(str) }
+}
+```
 
 
 ### Method Return Type Inference
@@ -803,19 +819,20 @@ right-hand side of $m$ can be determined, which is then taken as the
 return type of $m$. Note that $R$ may be different from $R'$, as long
 as $R$ conforms to $R'$.
 
-(@) Assume the following definitions:
+###### Example
+Assume the following definitions:
 
-    ``` 
-    trait I {
-      def factorial(x: Int): Int
-    }
-    class C extends I {
-      def factorial(x: Int) = if (x == 0) 1 else x * factorial(x - 1)
-    }
-    ```
+```
+trait I {
+  def factorial(x: Int): Int
+}
+class C extends I {
+  def factorial(x: Int) = if (x == 0) 1 else x * factorial(x - 1)
+}
+```
 
-    Here, it is OK to leave out the result type of `factorial`
-    in `C`, even though the method is recursive.
+Here, it is OK to leave out the result type of `factorial`
+in `C`, even though the method is recursive.
 
 
 
@@ -901,23 +918,24 @@ An import clause with multiple import expressions
 sequence of import clauses 
 `import $p_1$.$I_1$; $\ldots$; import $p_n$.$I_n$`.
 
-(@) Consider the object definition:
+###### Example
+Consider the object definition:
 
-    ``` 
-    object M { 
-      def z = 0, one = 1  
-      def add(x: Int, y: Int): Int = x + y 
-    }
-    ```
-    Then the block
+```
+object M {
+  def z = 0, one = 1
+  def add(x: Int, y: Int): Int = x + y
+}
+```
 
-    ``` 
-    { import M.{one, z => zero, _}; add(zero, one) }
-    ```
+Then the block
 
-    is equivalent to the block 
+```
+{ import M.{one, z => zero, _}; add(zero, one) }
+```
 
-    ``` 
-    { M.add(M.z, M.one) } 
-    ```
+is equivalent to the block
 
+```
+{ M.add(M.z, M.one) }
+```

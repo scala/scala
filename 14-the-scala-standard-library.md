@@ -234,53 +234,55 @@ for type `Int` and for all subrange types.
 The `toString` method displays its receiver as an integer or
 floating point number.
 
-(@) As an example, here is the signature of the numeric value type `Int`:
+###### Example:
 
-    ``` 
-    package scala 
-    abstract sealed class Int extends AnyVal {
-      def == (that: Double): Boolean  // double equality
-      def == (that: Float): Boolean   // float equality
-      def == (that: Long): Boolean    // long equality
-      def == (that: Int): Boolean     // int equality
-      def == (that: Short): Boolean   // int equality
-      def == (that: Byte): Boolean    // int equality
-      def == (that: Char): Boolean    // int equality
-      /* analogous for !=, <, >, <=, >= */
+This is the signature of the numeric value type `Int`:
 
-      def + (that: Double): Double    // double addition
-      def + (that: Float): Double     // float addition
-      def + (that: Long): Long        // long addition
-      def + (that: Int): Int          // int addition
-      def + (that: Short): Int        // int addition
-      def + (that: Byte): Int         // int addition
-      def + (that: Char): Int         // int addition
-      /* analogous for -, *, /, % */
-      
-      def & (that: Long): Long        // long bitwise and
-      def & (that: Int): Int          // int bitwise and
-      def & (that: Short): Int        // int bitwise and
-      def & (that: Byte): Int         // int bitwise and
-      def & (that: Char): Int         // int bitwise and
-      /* analogous for |, ^ */
+```
+package scala
+abstract sealed class Int extends AnyVal {
+  def == (that: Double): Boolean  // double equality
+  def == (that: Float): Boolean   // float equality
+  def == (that: Long): Boolean    // long equality
+  def == (that: Int): Boolean     // int equality
+  def == (that: Short): Boolean   // int equality
+  def == (that: Byte): Boolean    // int equality
+  def == (that: Char): Boolean    // int equality
+  /* analogous for !=, <, >, <=, >= */
 
-      def << (cnt: Int): Int          // int left shift
-      def << (cnt: Long): Int         // long left shift
-      /* analogous for >>, >>> */
+  def + (that: Double): Double    // double addition
+  def + (that: Float): Double     // float addition
+  def + (that: Long): Long        // long addition
+  def + (that: Int): Int          // int addition
+  def + (that: Short): Int        // int addition
+  def + (that: Byte): Int         // int addition
+  def + (that: Char): Int         // int addition
+  /* analogous for -, *, /, % */
 
-      def unary_+ : Int               // int identity
-      def unary_- : Int               // int negation
-      def unary_~ : Int               // int bitwise negation
+  def & (that: Long): Long        // long bitwise and
+  def & (that: Int): Int          // int bitwise and
+  def & (that: Short): Int        // int bitwise and
+  def & (that: Byte): Int         // int bitwise and
+  def & (that: Char): Int         // int bitwise and
+  /* analogous for |, ^ */
 
-      def toByte: Byte                // convert to Byte
-      def toShort: Short              // convert to Short
-      def toChar: Char                // convert to Char
-      def toInt: Int                  // convert to Int
-      def toLong: Long                // convert to Long
-      def toFloat: Float              // convert to Float
-      def toDouble: Double            // convert to Double
-    }
-    ```
+  def << (cnt: Int): Int          // int left shift
+  def << (cnt: Long): Int         // long left shift
+  /* analogous for >>, >>> */
+
+  def unary_+ : Int               // int identity
+  def unary_- : Int               // int negation
+  def unary_~ : Int               // int bitwise negation
+
+  def toByte: Byte                // convert to Byte
+  def toShort: Short              // convert to Short
+  def toChar: Char                // convert to Char
+  def toInt: Int                  // convert to Int
+  def toLong: Long                // convert to Long
+  def toFloat: Float              // convert to Float
+  def toDouble: Double            // convert to Double
+}
+```
 
 
 ### Class `Boolean`
@@ -427,12 +429,12 @@ Because of the syntactic sugar for `apply` and `update` operations,
 we have the following correspondences between Scala and Java/C# code for
 operations on an array `xs`:
 
-------------------   ----------------------
-_Scala_              _Java/C#_
-`xs.length`          `xs.length`
-`xs(i)`              `xs[i]`
-`xs(i) = e`          `xs[i] = e`
-------------------   ----------------------
+|------------------|------------|
+|_Scala_           |_Java/C#_   |
+|`xs.length`       |`xs.length` |
+|`xs(i)`           |`xs[i]`     |
+|`xs(i) = e`       |`xs[i] = e` |
+|------------------|------------|
 
 Two implicit conversions exist in `Predef` that are frequently applied to arrays:
 a conversion to `scala.collection.mutable.ArrayOps` and a conversion to
@@ -495,11 +497,9 @@ def mkArray[T : ClassTag](elems: Seq[T]): Array[T] = {
 If type $T$ is a type for which the host platform offers a specialized array
 representation, this representation is used.
 
-(@) On the Java Virtual Machine, an invocation of
-    ```
-    mkArray(List(1,2,3))
-    ```
-    will return a primitive array of `int`s, written as `int[]` in Java.
+###### Example
+On the Java Virtual Machine, an invocation of `mkArray(List(1,2,3))`
+will return a primitive array of `int`s, written as `int[]` in Java.
 
 #### Companion object
 

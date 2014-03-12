@@ -54,44 +54,46 @@ is bound by a definition or declaration, then $x$ refers to the entity
 introduced by that binding. In that case, the type of $x$ is the type
 of the referenced entity.
 
-(@) Assume the following two definitions of a objects named `X` in packages `P` and `Q`.
+###### Example: bindings
 
-    ``` 
-    package P {
-      object X { val x = 1; val y = 2 }
-    }
+Assume the following two definitions of a objects named `X` in packages `P` and `Q`.
 
-    package Q {
-      object X { val x = true; val y = "" }
-    }
-    ```
+```
+package P {
+  object X { val x = 1; val y = 2 }
+}
 
-    The following program illustrates different kinds of bindings and
-    precedences between them.
+package Q {
+  object X { val x = true; val y = "" }
+}
+```
 
-    ``` 
-    package P {                  // `X' bound by package clause
-    import Console._             // `println' bound by wildcard import
-    object A {                   
-      println("L4: "+X)          // `X' refers to `P.X' here
-      object B {
-        import Q._               // `X' bound by wildcard import
-        println("L7: "+X)        // `X' refers to `Q.X' here
-        import X._               // `x' and `y' bound by wildcard import
-        println("L8: "+x)        // `x' refers to `Q.X.x' here
-        object C {
-          val x = 3              // `x' bound by local definition
-          println("L12: "+x)     // `x' refers to constant `3' here
-          { import Q.X._         // `x' and `y' bound by wildcard import
-    //      println("L14: "+x)   // reference to `x' is ambiguous here
-            import X.y           // `y' bound by explicit import
-            println("L16: "+y)   // `y' refers to `Q.X.y' here
-            { val x = "abc"      // `x' bound by local definition
-              import P.X._       // `x' and `y' bound by wildcard import
-    //        println("L19: "+y) // reference to `y' is ambiguous here
-              println("L20: "+x) // `x' refers to string ``abc'' here
-    }}}}}}
-    ```
+The following program illustrates different kinds of bindings and
+precedences between them.
+
+```
+package P {                  // `X' bound by package clause
+import Console._             // `println' bound by wildcard import
+object A {
+  println("L4: "+X)          // `X' refers to `P.X' here
+  object B {
+    import Q._               // `X' bound by wildcard import
+    println("L7: "+X)        // `X' refers to `Q.X' here
+    import X._               // `x' and `y' bound by wildcard import
+    println("L8: "+x)        // `x' refers to `Q.X.x' here
+    object C {
+      val x = 3              // `x' bound by local definition
+      println("L12: "+x)     // `x' refers to constant `3' here
+      { import Q.X._         // `x' and `y' bound by wildcard import
+//      println("L14: "+x)   // reference to `x' is ambiguous here
+        import X.y           // `y' bound by explicit import
+        println("L16: "+y)   // `y' refers to `Q.X.y' here
+        { val x = "abc"      // `x' bound by local definition
+          import P.X._       // `x' and `y' bound by wildcard import
+//        println("L19: "+y) // reference to `y' is ambiguous here
+          println("L20: "+x) // `x' refers to string ``abc'' here
+}}}}}}
+```
 
 A reference to a qualified (type- or term-) identifier $e.x$ refers to
 the member of the type $T$ of $e$ which has the name $x$ in the same

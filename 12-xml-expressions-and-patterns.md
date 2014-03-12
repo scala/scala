@@ -1,6 +1,6 @@
 # XML Expressions and Patterns
 
-__By Burak Emir__ \
+__By Burak Emir__
 
 This chapter describes the syntactic structure of XML expressions and patterns.
 It follows as closely as possible the XML 1.0 specification \cite{w3c:xml},
@@ -44,7 +44,7 @@ XmlContent    ::=    Element
                 |    CDSect
                 |    PI
                 |    Comment
-``` 
+```
 
 If an XML expression is a single element, its value is a runtime
 representation of an XML node (an instance of a subclass of 
@@ -95,7 +95,6 @@ Name          ::=  XNameStart {NameChar}
 
 XNameStart    ::= ‘_’ | BaseChar | Ideographic 
                  $\mbox{\rm\em (as in W3C XML, but without }$ ‘:’
-
 ```
 
 ## XML patterns

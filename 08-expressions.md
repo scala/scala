@@ -209,32 +209,33 @@ to the type or method of $x$ in the parent trait of $C$ whose simple
 name is $T$. That member must be uniquely defined. If it is a method,
 it must be concrete.
 
-(@super) Consider the following class definitions
+###### Example: `super`
+Consider the following class definitions
 
-    ``` 
-    class Root { def x = "Root" }
-    class A extends Root { override def x = "A" ; def superA = super.x }
-    trait B extends Root { override def x = "B" ; def superB = super.x }
-    class C extends Root with B { 
-      override def x = "C" ; def superC = super.x
-    }
-    class D extends A with B {
-      override def x = "D" ; def superD = super.x
-    }
-    ```
+```
+class Root { def x = "Root" }
+class A extends Root { override def x = "A" ; def superA = super.x }
+trait B extends Root { override def x = "B" ; def superB = super.x }
+class C extends Root with B {
+  override def x = "C" ; def superC = super.x
+}
+class D extends A with B {
+  override def x = "D" ; def superD = super.x
+}
+```
 
-    The linearization of class `C` is `{C, B, Root}` and
-    the linearization of class `D` is `{D, B, A, Root}`.
-    Then we have:
+The linearization of class `C` is `{C, B, Root}` and
+the linearization of class `D` is `{D, B, A, Root}`.
+Then we have:
 
-    ``` 
-    (new A).superA == "Root", 
-                              (new C).superB = "Root", (new C).superC = "B",
-    (new D).superA == "Root", (new D).superB = "A",    (new D).superD = "B",
-    ```
+```
+(new A).superA == "Root",
+                          (new C).superB = "Root", (new C).superC = "B",
+(new D).superA == "Root", (new D).superB = "A",    (new D).superD = "B",
+```
 
-    Note that the `superB` function returns different results
-    depending on whether `B` is mixed in with class `Root` or `A`.
+Note that the `superB` function returns different results
+depending on whether `B` is mixed in with class `Root` or `A`.
 
 
 ## Function Applications
@@ -320,27 +321,28 @@ run-time stack. However, if a local function or a final method calls
 itself as its last action, the call is executed using the stack-frame
 of the caller.
 
-(@) Assume the following function which computes the sum of a
-    variable number of arguments:
+###### Example
+Assume the following function which computes the sum of a
+variable number of arguments:
 
-    ``` 
-    def sum(xs: Int*) = (0 /: xs) ((x, y) => x + y)
-    ```
+```
+def sum(xs: Int*) = (0 /: xs) ((x, y) => x + y)
+```
 
-    Then
+Then
 
-    ``` 
-    sum(1, 2, 3, 4)
-    sum(List(1, 2, 3, 4): _*)
-    ```
+```
+sum(1, 2, 3, 4)
+sum(List(1, 2, 3, 4): _*)
+```
 
-    both yield `10` as result. On the other hand, 
+both yield `10` as result. On the other hand,
 
-    ``` 
-    sum(List(1, 2, 3, 4))
-    ```
+```
+sum(List(1, 2, 3, 4))
+```
 
-    would not typecheck.
+would not typecheck.
 
 
 ### Named and Default Arguments
@@ -432,18 +434,19 @@ parameterless method or call-by-name parameter of type
 `() => $T$`, which evaluates $e$ when it is applied to the empty
 parameterlist `()`.
 
-(@) The method values in the left column are each equivalent to the 
-    [anonymous functions](#anonymous-functions) on their right.
+###### Example
+The method values in the left column are each equivalent to the
+[anonymous functions](#anonymous-functions) on their right.
 
-    ------------------------------    -----------------------------------------------------
-    `Math.sin _`              `x => Math.sin(x)`
-    `Array.range _`           `(x1, x2) => Array.range(x1, x2)`
-    `List.map2 _`             `(x1, x2) => (x3) => List.map2(x1, x2)(x3)`
-    `List.map2(xs, ys)_`      `x => List.map2(xs, ys)(x)`
-    ------------------------------    -----------------------------------------------------
+|------------------------------ | --------------------------------------------|
+|`Math.sin _`                   | `x => Math.sin(x)`                          |
+|`Array.range _`                | `(x1, x2) => Array.range(x1, x2)`           |
+|`List.map2 _`                  | `(x1, x2) => (x3) => List.map2(x1, x2)(x3)` |
+|`List.map2(xs, ys)_`           | `x => List.map2(xs, ys)(x)`                 |
+|------------------------------ | --------------------------------------------|
 
-    Note that a space is necessary between a method name and the trailing underscore
-    because otherwise the underscore would be considered part of the name.  
+Note that a space is necessary between a method name and the trailing underscore
+because otherwise the underscore would be considered part of the name.
 
 
 ## Type Applications
@@ -531,25 +534,26 @@ types: If `{$D$}` is a class body, then
 `new {$D$}` is equivalent to the general instance creation expression
 `new AnyRef{$D$}`.
 
-(@) Consider the following structural instance creation expression:
+###### Example
+Consider the following structural instance creation expression:
 
-    ``` 
-    new { def getName() = "aaron" }
-    ```
+```
+new { def getName() = "aaron" }
+```
 
-    This is a shorthand for the general instance creation expression
+This is a shorthand for the general instance creation expression
 
-    ``` 
-    new AnyRef{ def getName() = "aaron" }
-    ```
+```
+new AnyRef{ def getName() = "aaron" }
+```
 
-    The latter is in turn a shorthand for the block
+The latter is in turn a shorthand for the block
 
-    ``` 
-    { class anon\$X extends AnyRef{ def getName() = "aaron" }; new anon\$X }
-    ```
+```
+{ class anon\$X extends AnyRef{ def getName() = "aaron" }; new anon\$X }
+```
 
-    where `anon\$X` is some freshly created name.
+where `anon\$X` is some freshly created name.
 
 
 ## Blocks
@@ -597,22 +601,23 @@ Evaluation of the block entails evaluation of its
 statement sequence, followed by an evaluation of the final expression
 $e$, which defines the result of the block.
 
-(@) Assuming a class `Ref[T](x: T)`, the block
+###### Example
+Assuming a class `Ref[T](x: T)`, the block
 
-    ``` 
-    { class C extends B {$\ldots$} ; new Ref(new C) }
-    ```
+```
+{ class C extends B {$\ldots$} ; new Ref(new C) }
+```
 
-    has the type `Ref[_1] forSome { type _1 <: B }`.
-    The block
+has the type `Ref[_1] forSome { type _1 <: B }`.
+The block
 
-    ``` 
-    { class C extends B {$\ldots$} ; new C }
-    ```
+```
+{ class C extends B {$\ldots$} ; new C }
+```
 
-    simply has type `B`, because with the rules [here](#simplification-rules)
-    the existentially quantified type 
-    `_1 forSome { type _1 <: B }` can be simplified to `B`.
+simply has type `B`, because with the rules [here](#simplification-rules)
+the existentially quantified type
+`_1 forSome { type _1 <: B }` can be simplified to `B`.
 
 
 ## Prefix, Infix, and Postfix Operations
@@ -760,13 +765,14 @@ The typed expression $e: T$ has type $T$. The type of
 expression $e$ is expected to conform to $T$. The result of
 the expression is the value of $e$ converted to type $T$.
 
-(@) Here are examples of well-typed and illegally typed expressions.
+###### Example
+Here are examples of well-typed and ill-typed expressions.
 
-    ``` 
-    1: Int               // legal, of type Int
-    1: Long              // legal, of type Long
-    // 1: string         // ***** illegal
-    ```
+```
+1: Int               // legal, of type Int
+1: Long              // legal, of type Long
+// 1: string         // ***** illegal
+```
 
 
 ## Annotated Expressions
@@ -804,63 +810,66 @@ left of the ‘`=`’ operator is interpreted as
 `$f.$update($\mathit{args}$, $e\,$)`, i.e.\
 the invocation of an `update` function defined by $f$.
 
-(@) Here are some assignment expressions and their equivalent expansions.
+###### Example
+Here are some assignment expressions and their equivalent expansions.
 
-    --------------------------    ---------------------
-    `x.f = e`             x.f_=(e)
-    `x.f() = e`           x.f.update(e)
-    `x.f(i) = e`          x.f.update(i, e)
-    `x.f(i, j) = e`       x.f.update(i, j, e)
-    --------------------------    ---------------------
+--------------------------    ---------------------
+`x.f = e`             x.f_=(e)
+`x.f() = e`           x.f.update(e)
+`x.f(i) = e`          x.f.update(i, e)
+`x.f(i, j) = e`       x.f.update(i, j, e)
+--------------------------    ---------------------
 
-(@imp-mat-mul) Here is the usual imperative code for matrix multiplication.
+###### Example: imperative matrix multiplication
 
-    ``` 
-    def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
-      val zss: Array[Array[Double]] = new Array(xss.length, yss(0).length) 
-      var i = 0 
-      while (i < xss.length) {
-        var j = 0 
-        while (j < yss(0).length) {
-          var acc = 0.0 
-          var k = 0 
-          while (k < yss.length) {
-            acc = acc + xss(i)(k) * yss(k)(j) 
-            k += 1
-          }
-          zss(i)(j) = acc 
-          j += 1
-        }
-        i += 1
+Here is the usual imperative code for matrix multiplication.
+
+```
+def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
+  val zss: Array[Array[Double]] = new Array(xss.length, yss(0).length)
+  var i = 0
+  while (i < xss.length) {
+    var j = 0
+    while (j < yss(0).length) {
+      var acc = 0.0
+      var k = 0
+      while (k < yss.length) {
+        acc = acc + xss(i)(k) * yss(k)(j)
+        k += 1
       }
-      zss
+      zss(i)(j) = acc
+      j += 1
     }
-    ```
+    i += 1
+  }
+  zss
+}
+```
 
-    Desugaring the array accesses and assignments yields the following
-    expanded version:
+Desugaring the array accesses and assignments yields the following
+expanded version:
 
-    ``` 
-    def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
-      val zss: Array[Array[Double]] = new Array(xss.length, yss.apply(0).length) 
-      var i = 0 
-      while (i < xss.length) {
-        var j = 0 
-        while (j < yss.apply(0).length) {
-          var acc = 0.0 
-          var k = 0 
-          while (k < yss.length) {
-            acc = acc + xss.apply(i).apply(k) * yss.apply(k).apply(j) 
-            k += 1
-          }
-          zss.apply(i).update(j, acc) 
-          j += 1
-        }
-        i += 1
+```
+def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
+  val zss: Array[Array[Double]] = new Array(xss.length, yss.apply(0).length)
+  var i = 0
+  while (i < xss.length) {
+    var j = 0
+    while (j < yss.apply(0).length) {
+      var acc = 0.0
+      var k = 0
+      while (k < yss.length) {
+        acc = acc + xss.apply(i).apply(k) * yss.apply(k).apply(j)
+        k += 1
       }
-      zss
+      zss.apply(i).update(j, acc)
+      j += 1
     }
-    ```
+    i += 1
+  }
+  zss
+}
+```
 
 
 ## Conditional Expressions
@@ -1007,64 +1016,66 @@ comprehensions have been eliminated.
     ```
 
 
-(@) The following code produces all pairs of numbers between $1$ and $n-1$ 
-    whose sums are prime.
+###### Example
+The following code produces all pairs of numbers between $1$ and $n-1$
+whose sums are prime.
 
-    ``` 
-    for  { i <- 1 until n 
-           j <- 1 until i 
-           if isPrime(i+j)
-    } yield (i, j)
-    ```
+```
+for  { i <- 1 until n
+       j <- 1 until i
+       if isPrime(i+j)
+} yield (i, j)
+```
 
-    The for comprehension is translated to:
+The for comprehension is translated to:
 
-    ``` 
-    (1 until n)
-      .flatMap {
-         case i => (1 until i)
-           .withFilter { j => isPrime(i+j) }
-           .map { case j => (i, j) } }
-    ```
+```
+(1 until n)
+  .flatMap {
+     case i => (1 until i)
+       .withFilter { j => isPrime(i+j) }
+       .map { case j => (i, j) } }
+```
 
-(@) For comprehensions can be used to express vector 
-    and matrix algorithms concisely. 
-    For instance, here is a function to compute the transpose of a given matrix:
+###### Example
+For comprehensions can be used to express vector
+and matrix algorithms concisely.
+For instance, here is a function to compute the transpose of a given matrix:
 
-    <!-- see test/files/run/t0421.scala -->
+<!-- see test/files/run/t0421.scala -->
 
-    ``` 
-    def transpose[A](xss: Array[Array[A]]) = {
-      for (i <- Array.range(0, xss(0).length)) yield
-        for (xs <- xss) yield xs(i)
-    }
-    ```
+```
+def transpose[A](xss: Array[Array[A]]) = {
+  for (i <- Array.range(0, xss(0).length)) yield
+    for (xs <- xss) yield xs(i)
+}
+```
 
-    Here is a function to compute the scalar product of two vectors:
+Here is a function to compute the scalar product of two vectors:
 
-    ``` 
-    def scalprod(xs: Array[Double], ys: Array[Double]) = {
-      var acc = 0.0 
-      for ((x, y) <- xs zip ys) acc = acc + x * y  
-      acc
-    }
-    ```
+```
+def scalprod(xs: Array[Double], ys: Array[Double]) = {
+  var acc = 0.0
+  for ((x, y) <- xs zip ys) acc = acc + x * y
+  acc
+}
+```
 
-    Finally, here is a function to compute the product of two matrices. 
-    Compare with the imperative version of \ref{ex:imp-mat-mul}.
+Finally, here is a function to compute the product of two matrices.
+Compare with the [imperative version](#example-imperative-matrix-multiplication).
 
-    ``` 
-    def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
-      val ysst = transpose(yss) 
-      for (xs <- xss) yield
-        for (yst <- ysst) yield 
-          scalprod(xs, yst)
-    }
-    ```
+```
+def matmul(xss: Array[Array[Double]], yss: Array[Array[Double]]) = {
+  val ysst = transpose(yss)
+  for (xs <- xss) yield
+    for (yst <- ysst) yield
+      scalprod(xs, yst)
+}
+```
 
-    The code above makes use of the fact that `map`, `flatMap`,
-    `withFilter`, and `foreach` are defined for instances of class
-    `scala.Array`.
+The code above makes use of the fact that `map`, `flatMap`,
+`withFilter`, and `foreach` are defined for instances of class
+`scala.Array`.
 
 
 ## Return Expressions
@@ -1231,23 +1242,24 @@ parameter section itself does not count as an implicit parameter
 section in the sense defined [here](#implicit-parameters). Hence, arguments to
 anonymous functions always have to be given explicitly.
 
-(@) Examples of anonymous functions:
+###### Example
+Examples of anonymous functions:
 
-    ``` 
-    x => x                             // The identity function
+```
+x => x                             // The identity function
 
-    f => g => x => f(g(x))             // Curried function composition
+f => g => x => f(g(x))             // Curried function composition
 
-    (x: Int,y: Int) => x + y           // A summation function
+(x: Int,y: Int) => x + y           // A summation function
 
-    () => { count += 1; count }        // The function which takes an
-                                       // empty parameter list $()$, 
-                                       // increments a non-local variable 
-                                       // `count' and returns the new value.
+() => { count += 1; count }        // The function which takes an
+                                   // empty parameter list $()$,
+                                   // increments a non-local variable
+                                   // `count' and returns the new value.
 
-    _ => 5                             // The function that ignores its argument
-                                       // and always returns 5.
-    ```
+_ => 5                             // The function that ignores its argument
+                                   // and always returns 5.
+```
 
 
 ### Placeholder Syntax for Anonymous Functions
@@ -1276,17 +1288,18 @@ the anonymous function `($u'_1$, ... $u'_n$) => $e'$`
 where each $u_i'$ results from $u_i$ by replacing the underscore with a fresh identifier and
 $e'$ results from $e$ by replacing each underscore section $u_i$ by $u_i'$.
 
-(@) The anonymous functions in the left column use placeholder
-    syntax. Each of these is equivalent to the anonymous function on its right.
+###### Example
+The anonymous functions in the left column use placeholder
+syntax. Each of these is equivalent to the anonymous function on its right.
 
-    ---------------------------      ------------------------------------
-    `_ + 1`                  `x => x + 1`
-    `_ * _`                  `(x1, x2) => x1 * x2`
-    `(_: Int) * 2`           `(x: Int) => (x: Int) * 2`
-    `if (_) x else y`        `z => if (z) x else y`
-    `_.map(f)`               `x => x.map(f)`
-    `_.map(_ + 1)`           `x => x.map(y => y + 1)`
-    ---------------------------      ------------------------------------
+|---------------------------|----------------------------|
+|`_ + 1`                    | `x => x + 1`               |
+|`_ * _`                    | `(x1, x2) => x1 * x2`      |
+|`(_: Int) * 2`             | `(x: Int) => (x: Int) * 2` |
+|`if (_) x else y`          | `z => if (z) x else y`     |
+|`_.map(f)`                 | `x => x.map(f)`            |
+|`_.map(_ + 1)`             | `x => x.map(y => y + 1)`   |
+|---------------------------|----------------------------|
 
 
 ## Constant Expressions
@@ -1539,26 +1552,27 @@ alternatives in $\mathscr{B}$. It is an error if there is no
 alternative in $\mathscr{B}$ which is more specific than all other
 alternatives in $\mathscr{B}$.
 
-(@) Consider the following definitions:
+###### Example
+Consider the following definitions:
 
-    ``` 
-    class A extends B {}
-    def f(x: B, y: B) = $\ldots$
-    def f(x: A, y: B) = $\ldots$
-    val a: A 
-    val b: B
-    ```
+```
+class A extends B {}
+def f(x: B, y: B) = $\ldots$
+def f(x: A, y: B) = $\ldots$
+val a: A
+val b: B
+```
 
-    Then the application `f(b, b)` refers to the first
-    definition of $f$ whereas the application `f(a, a)`
-    refers to the second.  Assume now we add a third overloaded definition
+Then the application `f(b, b)` refers to the first
+definition of $f$ whereas the application `f(a, a)`
+refers to the second.  Assume now we add a third overloaded definition
 
-    ``` 
-    def f(x: B, y: A) = $\ldots$
-    ```
+```
+def f(x: B, y: A) = $\ldots$
+```
 
-    Then the application `f(a, a)` is rejected for being ambiguous, since
-    no most specific applicable signature exists.
+Then the application `f(a, a)` is rejected for being ambiguous, since
+no most specific applicable signature exists.
 
 
 ### Local Type Inference
@@ -1653,95 +1667,98 @@ pre-order, it is also possible that a solution set has several optimal
 solutions for a type. In that case, a Scala compiler is free to pick
 any one of them.
 
-(@) Consider the two methods:
+###### Example
+Consider the two methods:
 
-    ``` 
-    def cons[A](x: A, xs: List[A]): List[A] = x :: xs
-    def nil[B]: List[B] = Nil
-    ```
+```
+def cons[A](x: A, xs: List[A]): List[A] = x :: xs
+def nil[B]: List[B] = Nil
+```
 
-    and the definition
+and the definition
 
-    ``` 
-    val xs = cons(1, nil)
-    ```
+```
+val xs = cons(1, nil)
+```
 
-    The application of `cons` is typed with an undefined expected
-    type. This application is completed by local type inference to 
-    `cons[Int](1, nil)`. 
-    Here, one uses the following
-    reasoning to infer the type argument `Int` for the type
-    parameter `a`:
+The application of `cons` is typed with an undefined expected
+type. This application is completed by local type inference to
+`cons[Int](1, nil)`.
+Here, one uses the following
+reasoning to infer the type argument `Int` for the type
+parameter `a`:
 
-    First, the argument expressions are typed. The first argument `1`
-    has type `Int` whereas the second argument `nil` is
-    itself polymorphic. One tries to type-check `nil` with an
-    expected type `List[a]`. This leads to the constraint system
+First, the argument expressions are typed. The first argument `1`
+has type `Int` whereas the second argument `nil` is
+itself polymorphic. One tries to type-check `nil` with an
+expected type `List[a]`. This leads to the constraint system
 
-    ``` 
-    List[b?] <: List[a]
-    ```
+```
+List[b?] <: List[a]
+```
 
-    where we have labeled `b?` with a question mark to indicate
-    that it is a variable in the constraint system.
-    Because class `List` is covariant, the optimal
-    solution of this constraint is
+where we have labeled `b?` with a question mark to indicate
+that it is a variable in the constraint system.
+Because class `List` is covariant, the optimal
+solution of this constraint is
 
-    ``` 
-    b = scala.Nothing
-    ```
+```
+b = scala.Nothing
+```
 
-    In a second step, one solves the following constraint system for
-    the type parameter `a` of `cons`:
+In a second step, one solves the following constraint system for
+the type parameter `a` of `cons`:
 
-    ``` 
-    Int <: a?
-    List[scala.Nothing] <: List[a?]
-    List[a?] <: $\mbox{\sl undefined}$
-    ```
+```
+Int <: a?
+List[scala.Nothing] <: List[a?]
+List[a?] <: $\mbox{\sl undefined}$
+```
 
-    The optimal solution of this constraint system is
+The optimal solution of this constraint system is
 
-    ``` 
-    a = Int
-    ```
+```
+a = Int
+```
 
-    so `Int` is the type inferred for `a`.
+so `Int` is the type inferred for `a`.
 
 
-(@) Consider now the definition  
+###### Example
 
-    ``` 
-    val ys = cons("abc", xs)
-    ```
+Consider now the definition
 
-    where `xs` is defined of type `List[Int]` as before.
-    In this case local type inference proceeds as follows.
+```
+val ys = cons("abc", xs)
+```
 
-    First, the argument expressions are typed. The first argument
-    `"abc"` has type `String`. The second argument `xs` is
-    first tried to be typed with expected type `List[a]`. This fails,
-    as `List[Int]` is not a subtype of `List[a]`. Therefore, 
-    the second strategy is tried; `xs` is now typed with expected type
-    `List[$\mbox{\sl undefined}$]`. This succeeds and yields the argument type
-    `List[Int]`.
+where `xs` is defined of type `List[Int]` as before.
+In this case local type inference proceeds as follows.
 
-    In a second step, one solves the following constraint system for
-    the type parameter `a` of `cons`:
+First, the argument expressions are typed. The first argument
+`"abc"` has type `String`. The second argument `xs` is
+first tried to be typed with expected type `List[a]`. This fails,
+as `List[Int]` is not a subtype of `List[a]`. Therefore,
+the second strategy is tried; `xs` is now typed with expected type
+`List[$\mbox{\sl undefined}$]`. This succeeds and yields the argument type
+`List[Int]`.
 
-    ``` 
-    String <: a?
-    List[Int] <: List[a?]
-    List[a?] <: $\mbox{\sl undefined}$
-    ```
+In a second step, one solves the following constraint system for
+the type parameter `a` of `cons`:
 
-    The optimal solution of this constraint system is
+```
+String <: a?
+List[Int] <: List[a?]
+List[a?] <: $\mbox{\sl undefined}$
+```
 
-    ``` 
-    a = scala.Any 
-    ```
+The optimal solution of this constraint system is
 
-    so `scala.Any` is the type inferred for `a`.
+```
+a = scala.Any
+```
+
+so `scala.Any` is the type inferred for `a`.
 
 
 ### Eta Expansion

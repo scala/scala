@@ -95,19 +95,19 @@ _    :    =    =>    <-    <:    <%     >:    #    @
 The Unicode operators \\u21D2 ‘$\Rightarrow$’ and \\u2190 ‘$\leftarrow$’, which have the ASCII 
 equivalents ‘=>’ and ‘<-’, are also reserved.
 
-(@) Here are examples of identifiers:
+###### Example: here are some identifiers:
 
-    ```
-        x         Object        maxIndex   p2p      empty_?
-        +         `yield`       αρετη     _y       dot_product_*
-        __system  _MAX_LEN_     
-    ```
+```
+    x         Object        maxIndex   p2p      empty_?
+    +         `yield`       αρετη     _y       dot_product_*
+    __system  _MAX_LEN_
+```
 
-(@) Backquote-enclosed strings are a solution when one needs to
-    access Java identifiers that are reserved words in Scala. For
-    instance, the statement `Thread.yield()` is illegal, since
-    `yield` is a reserved word in Scala. However, here's a
-    work-around: `` Thread.`yield`() ``
+###### Example: backquote-enclosed strings
+When one needs to access Java identifiers that are reserved words in Scala, use backquote-enclosed strings.
+For instance, the statement `Thread.yield()` is illegal, since
+`yield` is a reserved word in Scala. However, here's a
+work-around: `` Thread.`yield`() ``
 
 
 ## Newline Characters
@@ -202,96 +202,97 @@ A single new line token is accepted
 - in front of a [parameter clause](#function-declarations-and-definitions), and
 - after an [annotation](#user-defined-annotations).
 
-(@) The following code contains four well-formed statements, each
-    on two lines. The newline tokens between the two lines are not
-    treated as statement separators.
+###### Example: four well-formed statements, each on two lines
 
-    ``` 
-    if (x > 0)
-      x = x - 1
+The newline tokens between the two lines are not
+treated as statement separators.
 
-    while (x > 0)
-      x  = x / 2
+```
+if (x > 0)
+  x = x - 1
 
-    for (x <- 1 to 10)
-      println(x)
+while (x > 0)
+  x  = x / 2
 
-    type
-      IntList = List[Int]
-    ```
+for (x <- 1 to 10)
+  println(x)
 
-(@) The following code designates an anonymous class:
+type
+  IntList = List[Int]
+```
 
-    ``` 
-    new Iterator[Int]
-    {
-      private var x = 0
-      def hasNext = true
-      def next = { x += 1; x }
-    }
-    ```
+###### Example: an anonymous class
 
-    With an additional newline character, the same code is interpreted as
-    an object creation followed by a local block:
+```
+new Iterator[Int]
+{
+  private var x = 0
+  def hasNext = true
+  def next = { x += 1; x }
+}
+```
 
-    ``` 
-    new Iterator[Int] 
+With an additional newline character, the same code is interpreted as
+an object creation followed by a local block:
 
-    {
-      private var x = 0
-      def hasNext = true
-      def next = { x += 1; x }
-    }
-    ```
+```
+new Iterator[Int]
 
-(@) The following code designates a single expression:
+{
+  private var x = 0
+  def hasNext = true
+  def next = { x += 1; x }
+}
+```
 
-    ``` 
-      x < 0 ||
-      x > 10
-    ```
+###### Example: a single expression
 
-    With an additional newline character, the same code is interpreted as
-    two expressions:
+```
+  x < 0 ||
+  x > 10
+```
 
-    ``` 
-      x < 0 ||
+With an additional newline character, the same code is interpreted as
+two expressions:
 
-      x > 10
-    ```
+```
+  x < 0 ||
 
-(@) The following code designates a single, curried function definition:
+  x > 10
+```
 
-    ``` 
-    def func(x: Int)
-            (y: Int) = x + y
-    ```
+###### Example: a single, curried function definition
 
-    With an additional newline character, the same code is interpreted as
-    an abstract function definition and a syntactically illegal statement:
+```
+def func(x: Int)
+        (y: Int) = x + y
+```
 
-    ``` 
-    def func(x: Int)
+With an additional newline character, the same code is interpreted as
+an abstract function definition and a syntactically illegal statement:
 
-            (y: Int) = x + y
-    ```
+```
+def func(x: Int)
 
-(@) The following code designates an attributed definition:
+        (y: Int) = x + y
+```
 
-    ``` 
-    @serializable
-    protected class Data { ... }
-    ```
+###### Example: an attributed definition
 
-    With an additional newline character, the same code is interpreted as
-    an attribute and a separate statement (which is syntactically
-    illegal).
+```
+@serializable
+protected class Data { ... }
+```
 
-    ``` 
-    @serializable
+With an additional newline character, the same code is interpreted as
+an attribute and a separate statement (which is syntactically
+illegal).
 
-    protected class Data { ... }
-    ```
+```
+@serializable
+
+protected class Data { ... }
+```
 
 
 ## Literals
@@ -349,7 +350,7 @@ is _pt_. The numeric ranges given by these types are:
 `Char`   $0$ to $2^{16}-1$
 ---------------  -----------------------
 
-(@) Here are some integer literals:
+###### Example: some integer literals
 
 ```
 0          21          0xFFFFFFFF       -42L
@@ -378,17 +379,20 @@ If a floating point literal in a program is followed by a token
 starting with a letter, there must be at least one intervening
 whitespace character between the two tokens.
 
-(@) Here are some floating point literals:
+###### Example: some floating point literals
 
-    ```
-    0.0        1e30f      3.14159f      1.0e-100      .1
-    ```
+```
+0.0        1e30f      3.14159f      1.0e-100      .1
+```
 
-(@) The phrase `1.toString` parses as three different tokens:
-    the integer literal `1`, a `.`, and the identifier `toString`.
+###### Example: tokenizing
 
-(@) `1.` is not a valid floating point literal, because the
-    mandatory digit after the `.` is missing.
+The phrase `1.toString` parses as three different tokens:
+the integer literal `1`, a `.`, and the identifier `toString`.
+
+###### Example: invalid floating point literal
+
+`1.` is not a valid floating point literal because the mandatory digit after the `.` is missing.
 
 ### Boolean Literals
 
@@ -411,11 +415,11 @@ A character literal is a single character enclosed in quotes.
 The character is either a printable unicode character or is described
 by an [escape sequence](#escape-sequences).
 
-(@) Here are some character literals:
+###### Example: some character literals
 
-    ```
-    'a'    '\u0041'    '\n'    '\t'
-    ```
+```
+'a'    '\u0041'    '\n'    '\t'
+```
 
 Note that `'\u000A'` is _not_ a valid character literal because
 Unicode conversion is done before literal parsing and the Unicode
@@ -438,12 +442,12 @@ contains a double quote character, it must be escaped,
 i.e. `"\""`. The value of a string literal is an instance of
 class `String`. 
 
-(@) Here are some string literals:
+###### Example: some string literals
 
-    ``` 
-    "Hello,\nWorld!"       
-    "This string contains a \" character."
-    ```
+```
+"Hello,\nWorld!"
+"This string contains a \" character."
+```
 
 #### Multi-Line String Literals
 
@@ -460,21 +464,21 @@ must not necessarily be printable; newlines or other
 control characters are also permitted.  Unicode escapes work as everywhere else, but none
 of the escape sequences [here](#escape-sequences) are interpreted.
 
-(@) Here is a multi-line string literal:
+###### Example: a multi-line string literal:
 
-    ``` 
-      """the present string
-         spans three 
-         lines."""
-    ```
+```
+  """the present string
+     spans three
+     lines."""
+```
 
-    This would produce the string:
+This would produce the string:
 
-    ```
-    the present string
-         spans three 
-         lines.
-    ```
+```
+the present string
+     spans three
+     lines.
+```
 
 The Scala library contains a utility method `stripMargin`
 which can be used to strip leading whitespace from multi-line strings.
@@ -591,14 +595,15 @@ The scanner switches from XML mode to Scala mode if either
 Note that no Scala tokens are constructed in XML mode, and that comments are interpreted
 as text.
 
-(@) The following value definition uses an XML literal with two embedded
-Scala expressions
+###### Example: XML literals
 
-    ``` 
-    val b = <book>
-              <title>The Scala Language Specification</title>
-              <version>{scalaBook.version}</version>
-              <authors>{scalaBook.authors.mkList("", ", ", "")}</authors>
-            </book>
-    ```
+The following value definition uses an XML literal with two embedded
+Scala expressions:
 
+```
+val b = <book>
+          <title>The Scala Language Specification</title>
+          <version>{scalaBook.version}</version>
+          <authors>{scalaBook.authors.mkList("", ", ", "")}</authors>
+        </book>
+```

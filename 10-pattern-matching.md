@@ -29,8 +29,8 @@ variables in the pattern to the corresponding components of the value
 (or sequence of values).  The same variable name may not be bound more
 than once in a pattern.
 
-(@) Some examples of patterns are:
-
+###### Example
+Some examples of patterns are:
  1.  The pattern `ex: IOException` matches all instances of class
         `IOException`, binding variable \verb@ex@ to the instance.
  1.  The pattern `Some(x)` matches values of the form `Some($v$)`,
@@ -43,9 +43,9 @@ than once in a pattern.
         second element, and `xs` to the remainder.
  1.  The pattern `1 | 2 | 3` matches the integers between 1 and 3.
 
-    Pattern matching is always done in a context which supplies an
-    expected type of the pattern. We distinguish the following kinds of
-    patterns.
+Pattern matching is always done in a context which supplies an
+expected type of the pattern. We distinguish the following kinds of
+patterns.
 
 ### Variable Patterns
 
@@ -113,32 +113,33 @@ stable identifier pattern may not be a simple name starting with a lower-case
 letter. However, it is possible to enclose a such a variable name in
 backquotes; then it is treated as a stable identifier pattern.
 
-(@) Consider the following function definition:
+###### Example
+Consider the following function definition:
 
-    ``` 
-    def f(x: Int, y: Int) = x match {
-      case y => ...
-    }
-    ```
+```
+def f(x: Int, y: Int) = x match {
+  case y => ...
+}
+```
 
-    Here, `y` is a variable pattern, which matches any value.
-    If we wanted to turn the pattern into a stable identifier pattern, this
-    can be achieved as follows:
+Here, `y` is a variable pattern, which matches any value.
+If we wanted to turn the pattern into a stable identifier pattern, this
+can be achieved as follows:
 
-    ``` 
-    def f(x: Int, y: Int) = x match {
-      case `y` => ...
-    }
-    ```
+```
+def f(x: Int, y: Int) = x match {
+  case `y` => ...
+}
+```
 
-    Now, the pattern matches the `y` parameter of the enclosing function `f`.
-    That is, the match succeeds only if the `x` argument and the `y`
-    argument of `f` are equal.
+Now, the pattern matches the `y` parameter of the enclosing function `f`.
+That is, the match succeeds only if the `x` argument and the `y`
+argument of `f` are equal.
 
 ### Constructor Patterns
 
 ``` 
-  SimplePattern   ::=  StableId `(' [Patterns] `)
+SimplePattern   ::=  StableId `(' [Patterns] `)
 ```
 
 A constructor pattern is of the form $c(p_1 , \ldots , p_n)$ where $n
@@ -211,31 +212,32 @@ result type is of the form `Option[$S$]`, where $S$ is a subtype of
 `Seq[$T$]` for some element type $T$. 
 This case is further discussed [here](#pattern-seqs).
 
-(@) The `Predef` object contains a definition of an
-    extractor object `Pair`:
+###### Example
+The `Predef` object contains a definition of an
+extractor object `Pair`:
 
-    ``` 
-    object Pair {
-      def apply[A, B](x: A, y: B) = Tuple2(x, y)
-      def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
-    }
-    ```
+```
+object Pair {
+  def apply[A, B](x: A, y: B) = Tuple2(x, y)
+  def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
+}
+```
 
-    This means that the name `Pair` can be used in place of `Tuple2` for tuple 
-    formation as well as for deconstruction of tuples in patterns.
-    Hence, the following is possible:
+This means that the name `Pair` can be used in place of `Tuple2` for tuple
+formation as well as for deconstruction of tuples in patterns.
+Hence, the following is possible:
 
-    ``` 
-    val x = (1, 2)
-    val y = x match {
-      case Pair(i, s) => Pair(s + i, i * i)
-    }
-    ```
+```
+val x = (1, 2)
+val y = x match {
+  case Pair(i, s) => Pair(s + i, i * i)
+}
+```
 
 ### Pattern Sequences
 
 ``` 
-  SimplePattern ::= StableId `(' [Patterns `,'] [varid `@'] `_' `*' `)'
+SimplePattern ::= StableId `(' [Patterns `,'] [varid `@'] `_' `*' `)'
 ```
 
 A pattern sequence $p_1 , \ldots , p_n$ appears in two
@@ -451,76 +453,79 @@ has type type parameters $a_1 , \ldots , a_n$.  These type parameters
 are inferred in the same way as for the typed pattern
 `(_: $C[a_1 , \ldots , a_n]$)`.
 
-(@) Consider the program fragment:
+###### Example
+Consider the program fragment:
 
-    ``` 
-    val x: Any
-    x match {
-      case y: List[a] => ...
-    }
-    ```
+```
+val x: Any
+x match {
+  case y: List[a] => ...
+}
+```
 
-    Here, the type pattern `List[a]` is matched against the
-    expected type `Any`. The pattern binds the type variable
-    `a`.  Since `List[a]` conforms to `Any`
-    for every type argument, there are no constraints on `a`.
-    Hence, `a` is introduced as an abstract type with no
-    bounds. The scope of `a` is right-hand side of its case clause.
+Here, the type pattern `List[a]` is matched against the
+expected type `Any`. The pattern binds the type variable
+`a`.  Since `List[a]` conforms to `Any`
+for every type argument, there are no constraints on `a`.
+Hence, `a` is introduced as an abstract type with no
+bounds. The scope of `a` is right-hand side of its case clause.
 
-    On the other hand, if `x` is declared as
+On the other hand, if `x` is declared as
 
-    ``` 
-    val x: List[List[String]],
-    ```
+```
+val x: List[List[String]],
+```
 
-    this generates the constraint 
-    `List[a] <: List[List[String]]`, which simplifies to 
-    `a <: List[String]`, because `List` is covariant. Hence,
-    `a` is introduced with upper bound
-    `List[String]`.
+this generates the constraint
+`List[a] <: List[List[String]]`, which simplifies to
+`a <: List[String]`, because `List` is covariant. Hence,
+`a` is introduced with upper bound
+`List[String]`.
 
-(@) Consider the program fragment: 
+###### Example
+Consider the program fragment:
 
-    ``` 
-    val x: Any
-    x match {
-      case y: List[String] => ...
-    }
-    ```
+```
+val x: Any
+x match {
+  case y: List[String] => ...
+}
+```
 
-    Scala does not maintain information about type arguments at run-time,
-    so there is no way to check that `x` is a list of strings.
-    Instead, the Scala compiler will [erase](#type-erasure) the
-    pattern to `List[_]`; that is, it will only test whether the
-    top-level runtime-class of the value `x` conforms to
-    `List`, and the pattern match will succeed if it does.  This
-    might lead to a class cast exception later on, in the case where the
-    list `x` contains elements other than strings.  The Scala
-    compiler will flag this potential loss of type-safety with an
-    ``unchecked'' warning message.
+Scala does not maintain information about type arguments at run-time,
+so there is no way to check that `x` is a list of strings.
+Instead, the Scala compiler will [erase](#type-erasure) the
+pattern to `List[_]`; that is, it will only test whether the
+top-level runtime-class of the value `x` conforms to
+`List`, and the pattern match will succeed if it does.  This
+might lead to a class cast exception later on, in the case where the
+list `x` contains elements other than strings.  The Scala
+compiler will flag this potential loss of type-safety with an
+``unchecked'' warning message.
 
 
-(@) Consider the program fragment
+###### Example
+Consider the program fragment
 
-    ``` 
-    class Term[A]
-    class Number(val n: Int) extends Term[Int]
-    def f[B](t: Term[B]): B = t match {
-      case y: Number => y.n
-    }
-    ```
+```
+class Term[A]
+class Number(val n: Int) extends Term[Int]
+def f[B](t: Term[B]): B = t match {
+  case y: Number => y.n
+}
+```
 
-    The expected type of the pattern `y: Number` is
-    `Term[B]`.  The type `Number` does not conform to
-    `Term[B]`; hence Case 2 of the rules above
-    applies. This means that `b` is treated as another type
-    variable for which subtype constraints are inferred. In our case the
-    applicable constraint is `Number <: Term[B]`, which
-    entails `B = Int`.  Hence, `B` is treated in
-    the case clause as an abstract type with lower and upper bound
-    `Int`. Therefore, the right hand side of the case clause,
-    `y.n`, of type `Int`, is found to conform to the
-    function's declared result type, `Number`.
+The expected type of the pattern `y: Number` is
+`Term[B]`.  The type `Number` does not conform to
+`Term[B]`; hence Case 2 of the rules above
+applies. This means that `b` is treated as another type
+variable for which subtype constraints are inferred. In our case the
+applicable constraint is `Number <: Term[B]`, which
+entails `B = Int`.  Hence, `B` is treated in
+the case clause as an abstract type with lower and upper bound
+`Int`. Therefore, the right hand side of the case clause,
+`y.n`, of type `Int`, is found to conform to the
+function's declared result type, `Number`.
 
 
 ## Pattern Matching Expressions
@@ -601,43 +606,45 @@ the compilation of pattern matching can emit warnings which diagnose
 that a given set of patterns is not exhaustive, i.e.\ that there is a
 possibility of a `MatchError` being raised at run-time. 
 
-(@eval) Consider the following definitions of arithmetic terms:
+###### Example: `eval`
 
-    ``` 
-    abstract class Term[T]
-    case class Lit(x: Int) extends Term[Int]
-    case class Succ(t: Term[Int]) extends Term[Int]
-    case class IsZero(t: Term[Int]) extends Term[Boolean]
-    case class If[T](c: Term[Boolean],
-                     t1: Term[T],
-                     t2: Term[T]) extends Term[T]
-    ```
+Consider the following definitions of arithmetic terms:
 
-    There are terms to represent numeric literals, incrementation, a zero
-    test, and a conditional. Every term carries as a type parameter the
-    type of the expression it representes (either `Int` or `Boolean`).
+```
+abstract class Term[T]
+case class Lit(x: Int) extends Term[Int]
+case class Succ(t: Term[Int]) extends Term[Int]
+case class IsZero(t: Term[Int]) extends Term[Boolean]
+case class If[T](c: Term[Boolean],
+                 t1: Term[T],
+                 t2: Term[T]) extends Term[T]
+```
 
-    A type-safe evaluator for such terms can be written as follows.
+There are terms to represent numeric literals, incrementation, a zero
+test, and a conditional. Every term carries as a type parameter the
+type of the expression it representes (either `Int` or `Boolean`).
 
-    ``` 
-    def eval[T](t: Term[T]): T = t match {
-      case Lit(n)        => n
-      case Succ(u)       => eval(u) + 1
-      case IsZero(u)     => eval(u) == 0
-      case If(c, u1, u2) => eval(if (eval(c)) u1 else u2)
-    }
-    ```
+A type-safe evaluator for such terms can be written as follows.
 
-    Note that the evaluator makes crucial use of the fact that type
-    parameters of enclosing methods can acquire new bounds through pattern
-    matching.
+```
+def eval[T](t: Term[T]): T = t match {
+  case Lit(n)        => n
+  case Succ(u)       => eval(u) + 1
+  case IsZero(u)     => eval(u) == 0
+  case If(c, u1, u2) => eval(if (eval(c)) u1 else u2)
+}
+```
 
-    For instance, the type of the pattern in the second case,
-    `Succ(u)`, is `Int`. It conforms to the selector type
-    `T` only if we assume an upper and lower bound of `Int` for `T`.
-    Under the assumption `Int <: T <: Int` we can also
-    verify that the type right hand side of the second case, `Int`
-    conforms to its expected type, `T`.
+Note that the evaluator makes crucial use of the fact that type
+parameters of enclosing methods can acquire new bounds through pattern
+matching.
+
+For instance, the type of the pattern in the second case,
+`Succ(u)`, is `Int`. It conforms to the selector type
+`T` only if we assume an upper and lower bound of `Int` for `T`.
+Under the assumption `Int <: T <: Int` we can also
+verify that the type right hand side of the second case, `Int`
+conforms to its expected type, `T`.
 
 
 ## Pattern Matching Anonymous Functions
@@ -701,23 +708,24 @@ types of all $b_i$. The final default case in the `isDefinedAt`
 method is omitted if one of the patterns $p_1 , \ldots , p_n$ is
 already a variable or wildcard pattern.
 
-(@) Here is a method which uses a fold-left operation
-    `/:` to compute the scalar product of 
-    two vectors:
+###### Example
+Here is a method which uses a fold-left operation
+`/:` to compute the scalar product of
+two vectors:
 
-    ``` 
-    def scalarProduct(xs: Array[Double], ys: Array[Double]) = 
-      (0.0 /: (xs zip ys)) {
-        case (a, (b, c)) => a + b * c
-      }
-    ```
+```
+def scalarProduct(xs: Array[Double], ys: Array[Double]) =
+  (0.0 /: (xs zip ys)) {
+    case (a, (b, c)) => a + b * c
+  }
+```
 
-    The case clauses in this code are equivalent to the following
-    anonymous function:
+The case clauses in this code are equivalent to the following
+anonymous function:
 
-    ``` 
-      (x, y) => (x, y) match {
-        case (a, (b, c)) => a + b * c
-      }
-    ```
+```
+(x, y) => (x, y) match {
+  case (a, (b, c)) => a + b * c
+}
+```
 
