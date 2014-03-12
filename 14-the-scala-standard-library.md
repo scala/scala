@@ -378,11 +378,8 @@ trait Function$n$[-T_1, ..., -T_$n$, +R] {
 }
 ```
 
-A subclass of `Function1` represents partial functions,
-which are undefined on some points in their domain. In addition to the
-`apply` method of functions, partial functions also have a
-`isDefined` method, which tells whether the function is defined
-at the given argument:
+The `PartialFunction` subclass of `Function1` represents functions that (indirectly) specify their domain.
+Use the `isDefined` method to query whether the partial function is defined for a given input (i.e., whether the input is part of the function's domain).
 
 ``` 
 class PartialFunction[-A, +B] extends Function1[A, B] {
