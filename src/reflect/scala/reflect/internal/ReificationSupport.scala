@@ -850,9 +850,24 @@ trait ReificationSupport { self: SymbolTable =>
       case tree => throw new IllegalArgumentException("$tree is not valid representation of pattern match case")
     }
 
+    object SyntacticPartialFunction extends SyntacticPartialFunctionExtractor {
+      def apply(cases: List[Tree]): Match = Match(EmptyTree, mkCases(cases))
+      def unapply(tree: Match): Option[List[CaseDef]] = tree match {
+        case Match(EmptyTree, cases) => Some(cases)
+        case _                       => None
+      }
+    }
+
     object SyntacticMatch extends SyntacticMatchExtractor {
-      def apply(selector: Tree, cases: List[Tree]) = Match(selector, mkCases(cases))
-      def unapply(tree: Match): Option[(Tree, List[CaseDef])] = Match.unapply(tree)
+      def apply(scrutinee: Tree, cases: List[Tree]) = {
+        require(scrutinee.nonEmpty, "match's scrutinee may not be empty")
+        Match(scrutinee, mkCases(cases))
+      }
+
+      def unapply(tree: Match): Option[(Tree, List[CaseDef])] = tree match {
+        case Match(scrutinee, cases) if scrutinee.nonEmpty => Some((scrutinee, cases))
+        case _                                             => None
+      }
     }
 
     object SyntacticTry extends SyntacticTryExtractor {

@@ -762,9 +762,15 @@ trait Internals { self: Universe =>
       def unapply(lst: List[List[Tree]]): Option[List[List[T]]]
     }
 
+    val SyntacticPartialFunction: SyntacticPartialFunctionExtractor
+    trait SyntacticPartialFunctionExtractor {
+      def apply(cases: List[Tree]): Match
+      def unapply(tree: Match): Option[List[CaseDef]]
+    }
+
     val SyntacticMatch: SyntacticMatchExtractor
     trait SyntacticMatchExtractor {
-      def apply(selector: Tree, cases: List[Tree]): Match
+      def apply(scrutinee: Tree, cases: List[Tree]): Match
       def unapply(tree: Match): Option[(Tree, List[CaseDef])]
     }
 

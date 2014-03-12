@@ -630,6 +630,7 @@ trait StdNames {
     val SyntacticNew: NameType         = "SyntacticNew"
     val SyntacticObjectDef: NameType   = "SyntacticObjectDef"
     val SyntacticPackageObjectDef: NameType = "SyntacticPackageObjectDef"
+    val SyntacticPartialFunction: NameType = "SyntacticPartialFunction"
     val SyntacticPatDef: NameType      = "SyntacticPatDef"
     val SyntacticSelectType: NameType  = "SyntacticSelectType"
     val SyntacticSelectTerm: NameType  = "SyntacticSelectTerm"
