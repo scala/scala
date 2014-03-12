@@ -410,7 +410,8 @@ trait Definitions extends api.StandardDefinitions {
       else if (isScalaRepeatedParamType(tp)) elementExtract(RepeatedParamClass, tp) orElse tp
       else tp
     )
-    def repeatedToSingle(tp: Type): Type                     = elementExtract(RepeatedParamClass, tp) orElse tp
+    def repeatedToSingle(tp: Type): Type                     = elementExtract(RepeatedParamClass, tp) orElse elementExtract(JavaRepeatedParamClass, tp) orElse tp
+     // We don't need to deal with JavaRepeatedParamClass here, as `repeatedToSeq` is only called in the patmat translation for Scala sources.
     def repeatedToSeq(tp: Type): Type                        = elementTransform(RepeatedParamClass, tp)(seqType) orElse tp
     def seqToRepeated(tp: Type): Type                        = elementTransform(SeqClass, tp)(scalaRepeatedType) orElse tp
     def isReferenceArray(tp: Type)                           = elementTest(ArrayClass, tp)(_ <:< AnyRefTpe)

@@ -2271,7 +2271,7 @@ trait Types
       case _          => args.mkString("(", ", ", ")")
     }
     private def customToString = sym match {
-      case RepeatedParamClass => args.head + "*"
+      case RepeatedParamClass | JavaRepeatedParamClass => args.head + "*"
       case ByNameParamClass   => "=> " + args.head
       case _                  =>
         if (isFunctionTypeDirect(this)) {
