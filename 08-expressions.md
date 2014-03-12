@@ -931,11 +931,8 @@ A semicolon preceding the `while` symbol of a do loop expression is ignored.
 ``` 
 Expr1          ::=  `for' (`(' Enumerators `)' | `{' Enumerators `}') 
                        {nl} [`yield'] Expr
-Enumerators    ::=  Generator {semi Enumerator}
-Enumerator     ::=  Generator 
-                 |  Guard
-                 |  Pattern1 `=' Expr
-Generator      ::=  Pattern1 `<-' Expr [Guard]
+Enumerators    ::=  Generator {semi Generator}
+Generator      ::=  Pattern1 `<-' Expr {[semi] Guard | semi Pattern1 `=' Expr}
 Guard          ::=  `if' PostfixExpr
 ```
 
