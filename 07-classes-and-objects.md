@@ -673,7 +673,7 @@ ClassParamClauses ::=  {ClassParamClause}
                        [[nl] `(' implicit ClassParams `)']
 ClassParamClause  ::=  [nl] `(' [ClassParams] ')'
 ClassParams       ::=  ClassParam {`,' ClassParam}
-ClassParam        ::=  {Annotation} [{Modifier} (`val' | `var')] 
+ClassParam        ::=  {Annotation} {Modifier} [(`val' | `var')]
                        id [`:' ParamType] [`=' Expr]
 ClassTemplateOpt  ::=  `extends' ClassTemplate | [[`extends'] TemplateBody]
 ```
@@ -699,33 +699,28 @@ Here,
     If any annotations are given, they apply to the primary constructor of the 
     class.
   - $m$ is an [access modifier](#modifiers) such as
-    `private` or `protected`, possibly with a qualification.  If
-    such an access modifier is given it applies to the primary constructor
-    to the class.
+    `private` or `protected`, possibly with a qualification.
+    If such an access modifier is given it applies to the primary constructor of the class.
   - $(\mathit{ps}_1)\ldots(\mathit{ps}_n)$ are formal value parameter clauses for
-    the _primary
-    constructor_ of the class. The scope of a formal value parameter includes
+    the _primary constructor_ of the class. The scope of a formal value parameter includes
     all subsequent parameter sections and the template $t$. However, a formal 
-    value parameter may not form
-    part of the types of any of the parent classes or members of the class
-    template $t$.
+    value parameter may not form part of the types of any of the parent classes or members of the class template $t$.
     It is illegal to define two formal value parameters with the same name.
-    If no formal parameter sections are given, 
-    an empty parameter section `()` is assumed.
+
+    If no formal parameter sections are given, an empty parameter section `()` is assumed.
 
     If a formal parameter declaration $x: T$ is preceded by a `val`
-    or `var` keyword, an accessor (getter) 
-    [definition](#variable-declarations-and-definitions)
-    for this parameter is implicitly added to the
-    class. The getter introduces a value member $x$ of class $c$ that is
-    defined as an alias of the parameter. If the introducing keyword is
-    `var`, a setter accessor [`$x$_=`](#variable-declarations-and-definitions) 
-    is also implicitly added to the class. In invocation of that setter 
-    `$x$_=($e$)` changes the value of the parameter to the result of evaluating 
-    $e$. The formal parameter declaration may contain modifiers, which then
-    carry over to the accessor definition(s). A formal parameter prefixed
-    by `val` or `var` may not at the same time be a 
-    [call-by-name parameter](#by-name-parameters).
+    or `var` keyword, an accessor (getter) [definition](#variable-declarations-and-definitions)
+    for this parameter is implicitly added to the class.
+
+    The getter introduces a value member $x$ of class $c$ that is defined as an alias of the parameter.
+    If the introducing keyword is `var`, a setter accessor [`$x$_=`](#variable-declarations-and-definitions) is also implicitly added to the class.
+    In invocation of that setter  `$x$_=($e$)` changes the value of the parameter to the result of evaluating $e$.
+
+    The formal parameter declaration may contain modifiers, which then carry over to the accessor definition(s).
+    When access modifiers are given for a parameter, but no `val` or `var` keyword, `val` is assumed.
+    A formal parameter prefixed by `val` or `var` may not at the same time be a [call-by-name parameter](#by-name-parameters).
+
   - $t$ is a [template](#templates) of the form
 
     ``` 

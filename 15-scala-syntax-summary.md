@@ -192,7 +192,7 @@ grammar.
                          [[nl] ‘(’ ‘implicit’ ClassParams ‘)’]
   ClassParamClause  ::=  [nl] ‘(’ [ClassParams] ‘)’
   ClassParams       ::=  ClassParam {‘,’ ClassParam}
-  ClassParam        ::=  {Annotation} [{Modifier} (‘val’ | ‘var’)] 
+  ClassParam        ::=  {Annotation} {Modifier} [(`val' | `var')]
                          id ‘:’ ParamType [‘=’ Expr]
   Bindings          ::=  ‘(’ Binding {‘,’ Binding ‘)’
   Binding           ::=  (id | ‘_’) [‘:’ Type]
