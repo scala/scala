@@ -799,7 +799,7 @@ Conformance        $T <: U$          Type $T$ conforms to type $U$.
 
 ### Type Equivalence
 
-Equivalence $(\equiv)$ between types is the smallest congruence [^3] such that 
+Equivalence $(\equiv)$ between types is the smallest congruence [^congruence] such that
 the following holds:
 
 - If $t$ is defined by a type alias `type $t$ = $T$`, then $t$ is
@@ -814,11 +814,12 @@ the following holds:
   their refinements are equivalent. Two refinements are equivalent if they
   bind the same names and the modifiers, types and bounds of every
   declared entity are equivalent in both refinements.
-- Two [method types](#method-types) are equivalent if they have 
-  equivalent result types,
-  both have the same number of parameters, and corresponding parameters
-  have equivalent types.  Note that the names of parameters do not
-  matter for method type equivalence.
+- Two [method types](#method-types) are equivalent if:
+    - neither are implicit, or they both are [^implicit];
+    - they have equivalent result types;
+    - they have the same number of parameters; and
+    - corresponding parameters have equivalent types.
+      Note that the names of parameters do not matter for method type equivalence.
 - Two [polymorphic method types](#polymorphic-method-types) are equivalent if 
   they have the same number of type parameters, and, after renaming one set of 
   type parameters by another, the result types as well as lower and upper bounds
@@ -834,9 +835,9 @@ the following holds:
   bounds of corresponding type parameters are equivalent.
 
 
-[^3]: A congruence is an equivalence relation which is closed under formation
+[^congruence]: A congruence is an equivalence relation which is closed under formation
 of contexts
-
+[^implicit]: A method type is implicit if the parameter section that defines it starts with the `implicit` keyword.
 
 ### Conformance
 
