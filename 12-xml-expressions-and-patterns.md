@@ -115,10 +115,7 @@ representations of an XML tree
 that have the same structure as described by the pattern.
 XML patterns may contain [Scala patterns](#pattern-matching-expressions).
 
-Whitespace is treated the same way as in XML expressions. Patterns 
-that are entity references, CDATA sections, processing 
-instructions and comments match runtime representations which are the
-the same.
+Whitespace is treated the same way as in XML expressions.
 
 By default, beginning and trailing whitespace in element content is removed, 
 and consecutive occurrences of whitespace are replaced by a single space
