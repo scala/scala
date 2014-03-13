@@ -433,19 +433,19 @@ parameterless method or call-by-name parameter of type
 parameterlist `()`.
 
 ###### Example
-The method values in the left column are each equivalent to the
-[anonymous functions](#anonymous-functions) on their right.
+The method values in the left column are each equivalent to the [eta-expanded expressions](#eta-expansion) on the right.
 
 | | |
 |------------------------------ | --------------------------------------------|
 |`Math.sin _`                   | `x => Math.sin(x)`                          |
 |`Array.range _`                | `(x1, x2) => Array.range(x1, x2)`           |
 |`List.map2 _`                  | `(x1, x2) => (x3) => List.map2(x1, x2)(x3)` |
-|`List.map2(xs, ys)_`           | `x => List.map2(xs, ys)(x)`                 |
+|`List.map2(xs, ys)_`           | `{ val eta1 = xs; val eta2 = ys; x => List.map2(eta1, eta2)(x) }` |
 
 
 Note that a space is necessary between a method name and the trailing underscore
 because otherwise the underscore would be considered part of the name.
+
 
 
 ## Type Applications
