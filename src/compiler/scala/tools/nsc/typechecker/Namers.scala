@@ -552,7 +552,8 @@ trait Namers extends MethodSynthesis {
           val e = context.scope.lookupEntry(to)
 
           if (e != null && e.owner == context.scope && e.sym.exists)
-            typer.permanentlyHiddenWarning(pos, to0, e.sym)
+            if (!context.isPackageOwnedInDifferentUnit(e.sym))
+              typer.permanentlyHiddenWarning(pos, to0, e.sym)
           else if (context ne context.enclClass) {
             val defSym = context.prefix.member(to) filter (
               sym => sym.exists && context.isAccessible(sym, context.prefix, superAccess = false))

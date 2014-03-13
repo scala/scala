@@ -1,0 +1,6 @@
+A.scala:6: error: type mismatch;
+ found   : scala.collection.mutable.BitSet
+ required: p.BitSet
+   val b : BitSet = new scala.collection.mutable.BitSet
+                    ^
+one error found
