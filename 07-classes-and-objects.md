@@ -915,7 +915,7 @@ class different from `AnyRef`. In particular:
 
 - Method `equals: (Any)Boolean` is structural equality, where two
   instances are equal if they both belong to the case class in question and they
-  have equal (with respect to `equals`) constructor arguments.
+  have equal (with respect to `equals`) constructor arguments (restricted to the class's _elements_, i.e., the first parameter section).
 - Method `hashCode: Int` computes a hash-code. If the hashCode methods
   of the data structure members map equal (with respect to equals)
   values to equal hash-codes, then the case class hashCode method does
