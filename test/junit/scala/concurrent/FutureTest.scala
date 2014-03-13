@@ -59,4 +59,11 @@ class FutureTest {
     })
   }
 
+  @Test
+  def testFlatten {
+    assertResult(Right(1), Future(Future(1)).flatten)
+    assertResult(Right(2), Future(Future(Future(2))).flatten.flatten)
+    assertResult(Left(3),  Future(Future(throw IntThrowable(3))).flatten)
+    assertResult(Left(4),  Future(Future(Future(throw IntThrowable(4)))).flatten.flatten)
+  }
 }

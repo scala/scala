@@ -274,6 +274,12 @@ trait Future[+T] extends Awaitable[T] {
     p.future
   }
 
+  /** Converts a `Future[Future[S]]` into a `Future[S]`.
+   */
+  def flatten[S](implicit ev: T <:< Future[S]): Future[S] = {
+    flatMap(ev)(internalExecutor)
+  }
+
   /** Creates a new future by filtering the value of the current future with a predicate.
    *
    *  If the current future contains a value which satisfies the predicate, the new future will also hold that value.
