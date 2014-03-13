@@ -207,10 +207,9 @@ the following applies:
   $p_i$ matches the corresponding value $v_i$.
 
 An `unapplySeq` method in an object $x$ matches the pattern
-$x(p_1 , \ldots , p_n)$ if it takes exactly one argument and its
-result type is of the form `Option[$S$]`, where $S$ is a subtype of
-`Seq[$T$]` for some element type $T$. 
-This case is further discussed [here](#pattern-seqs).
+$x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$ if it takes exactly one argument
+and its result type is of the form `Option[($T_1 , \ldots , T_m$, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted).
+This case is further discussed [below](#pattern-seqs).
 
 ###### Example
 The `Predef` object contains a definition of an
@@ -240,17 +239,10 @@ val y = x match {
 SimplePattern ::= StableId `(' [Patterns `,'] [varid `@'] `_' `*' `)'
 ```
 
-A pattern sequence $p_1 , \ldots , p_n$ appears in two
-contexts. First, in a constructor pattern
-$c(q_1 , \ldots , q_m, p_1 , \ldots , p_n$), where $c$ is a case
-class which has $m+1$ primary constructor parameters, 
-ending in a [repeated parameter](#repeated-parameters) of type 
-$S*$. Second, in an extractor pattern
-$x(p_1 , \ldots , p_n)$ if the extractor object $x$ has an
-`unapplySeq` method with a result type conforming to 
-`Seq[$S$]`, but does not have an `unapply` method that 
-matches $p_1 , \ldots , p_n$.
-The expected type for the pattern sequence is in each case the type $S$.
+A pattern sequence $p_1 , \ldots , p_n$ appears in two contexts.
+First, in a constructor pattern $c(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$, where $c$ is a case class which has $m+1$ primary constructor parameters,  ending in a [repeated parameter](#repeated-parameters) of type  $S*$.
+Second, in an extractor pattern $x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$ if the extractor object $x$ does not have an `unapply` method,
+but it does define an `unapplySeq` method with a result type conforming to `Option[(T_1, ... , T_m, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted). The expected type for the patterns $p_i$ is $S$.
 
 The last pattern in a pattern sequence may be a _sequence wildcard_ `_*`. 
 Each element pattern $p_i$ is type-checked with
