@@ -433,8 +433,10 @@ trait Contexts { self: Analyzer =>
         case _         => false
       }
       val isImport = tree match {
-        case _: Import => true
-        case _         => false
+        // The guard is for SI-8403. It prevents adding imports again in the context created by
+        // `Namer#createInnerNamer`
+        case _: Import if tree != this.tree => true
+        case _                              => false
       }
       val sameOwner = owner == this.owner
       val prefixInChild =
