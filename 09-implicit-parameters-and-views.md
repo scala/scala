@@ -61,24 +61,28 @@ identifiers under this rule, then, second, eligible are also all
 `implicit` members of some object that belongs to the implicit
 scope of the implicit parameter's type, $T$.
 
-The _implicit scope_ of a type $T$ consists of all 
-[companion modules](#object-definitions)
-of classes that are associated with the
-implicit parameter's type.  Here, we say a class $C$ is 
-_associated_ with a type $T$, if it is a [base class](#class-linearization)
-of some part of $T$.  The _parts_ of a type $T$ are:
+The _implicit scope_ of a type $T$ consists of all [companion modules](#object-definitions) of classes that are associated with the implicit parameter's type.
+Here, we say a class $C$ is _associated_ with a type $T$ if it is a [base class](#class-linearization) of some part of $T$.
 
+The _parts_ of a type $T$ are:
 
-* if $T$ is a compound type `$T_1$ with $\ldots$ with $T_n$`, the
-  union of the parts of $T_1 , \ldots , T_n$, as well as $T$ itself,
-* if $T$ is a parameterized type `$S$[$T_1 , \ldots , T_n$]`, 
-  the union of the parts of $S$ and $T_1 , \ldots , T_n$,
-* if $T$ is a singleton type `$p$.type`, the parts of the type
-  of $p$,
-* if $T$ is a type projection `$S$#$U$`, the parts of $S$ as
-  well as $T$ itself,
-* in all other cases, just $T$ itself.
+- if $T$ is a compound type `$T_1$ with $\ldots$ with $T_n$`,
+  the union of the parts of $T_1 , \ldots , T_n$, as well as $T$ itself;
+- if $T$ is a parameterized type `$S$[$T_1 , \ldots , T_n$]`,
+  the union of the parts of $S$ and $T_1 , \ldots , T_n$;
+- if $T$ is a singleton type `$p$.type`,
+  the parts of the type of $p$;
+- if $T$ is a type projection `$S$#$U$`,
+  the parts of $S$ as well as $T$ itself;
+- if $T$ is a type alias, the parts of its expansion;
+- if $T$ is an abstract type, the parts of its upper bound;
+- if $T$ denotes an implicit conversion to a type with a method with argument types $T_1 , \ldots , T_n$ and result type $U$,
+  the union of the parts of $T_1 , \ldots , T_n$ and $U$;
+- the parts of quantified (existential or univeral) and annotated types are defined as the parts of the underlying types (e.g., the parts of `T forSome { ... }` are the parts of `T`);
+- in all other cases, just $T$ itself.
 
+Note that packages are internally represented as classes with companion modules to hold the package members.
+Thus, implicits defined in a package object are part of the implicit scope of a type prefixed by that package.
 
 If there are several eligible arguments which match the implicit
 parameter's type, a most specific one will be chosen using the rules
