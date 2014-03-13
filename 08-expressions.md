@@ -435,12 +435,14 @@ parameterlist `()`.
 ###### Example
 The method values in the left column are each equivalent to the [eta-expanded expressions](#eta-expansion) on the right.
 
-| | |
+| placeholder syntax | eta-expansion |
 |------------------------------ | --------------------------------------------|
 |`Math.sin _`                   | `x => Math.sin(x)`                          |
 |`Array.range _`                | `(x1, x2) => Array.range(x1, x2)`           |
-|`List.map2 _`                  | `(x1, x2) => (x3) => List.map2(x1, x2)(x3)` |
-|`List.map2(xs, ys)_`           | `{ val eta1 = xs; val eta2 = ys; x => List.map2(eta1, eta2)(x) }` |
+|`map2 _`                  | `(x1, x2) => (x3) => map2(x1, x2)(x3)` |
+|`map2(xs, ys)_`           | `{ val eta1 = xs; val eta2 = ys; x => map2(eta1, eta2)(x) }` |
+
+This assumes a method `def map2[A, B, C](xs: List[A], ys: List[B])(f: (A, B) => C): List[C]`.
 
 
 Note that a space is necessary between a method name and the trailing underscore
