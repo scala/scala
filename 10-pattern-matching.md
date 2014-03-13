@@ -1,3 +1,8 @@
+---
+title: Pattern Matching
+layout: default
+---
+
 # Pattern Matching
 
 ## Patterns

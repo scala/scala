@@ -1,3 +1,8 @@
+---
+title: Types
+layout: default
+---
+
 # Types
 
 ``` 

@@ -1,3 +1,8 @@
+---
+title: Classes and Objects
+layout: default
+---
+
 # Classes and Objects
 
 ``` 

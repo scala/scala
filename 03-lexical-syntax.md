@@ -1,3 +1,8 @@
+---
+title: Lexical Syntax
+layout: default
+---
+
 # Lexical Syntax
 
 Scala programs are written using the Unicode Basic Multilingual Plane

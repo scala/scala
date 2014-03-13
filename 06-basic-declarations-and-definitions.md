@@ -1,3 +1,8 @@
+---
+title: Basic Declarations and Definitions
+layout: default
+---
+
 # Basic Declarations and Definitions
 
 

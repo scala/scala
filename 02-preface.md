@@ -1,3 +1,8 @@
+---
+title: Preface
+layout: default
+---
+
 ## Preface
 
 Scala is a Java-like programming language which unifies

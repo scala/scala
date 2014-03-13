@@ -1,3 +1,8 @@
+---
+title: Implicit Parameters and Views
+layout: default
+---
+
 # Implicit Parameters and Views
 
 ## The Implicit Modifier

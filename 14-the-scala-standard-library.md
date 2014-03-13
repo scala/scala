@@ -1,3 +1,8 @@
+---
+title: The Scala Standard Library
+layout: default
+---
+
 # The Scala Standard Library
 
 The Scala standard library consists of the package `scala` with a

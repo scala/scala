@@ -1,3 +1,8 @@
+---
+title: Identifiers, Names and Scopes
+layout: default
+---
+
 # Identifiers, Names and Scopes
 
 Names in Scala identify types, values, methods, and classes which are
