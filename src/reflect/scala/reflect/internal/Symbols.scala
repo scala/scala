@@ -2343,7 +2343,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def localName: TermName  = name.localName
 
     /** The setter of this value or getter definition, or NoSymbol if none exists */
+    @deprecated("Use `setterIn` instead", "2.11.0")
     final def setter(base: Symbol, hasExpandedName: Boolean = needsExpandedSetterName): Symbol =
+      setterIn(base, hasExpandedName)
+
+    final def setterIn(base: Symbol, hasExpandedName: Boolean = needsExpandedSetterName): Symbol =
       base.info decl setterNameInBase(base, hasExpandedName) filter (_.hasAccessorFlag)
 
     def needsExpandedSetterName = (
