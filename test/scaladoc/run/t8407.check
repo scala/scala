@@ -1,0 +1,4 @@
+newSource:4: warning: not found: type $NotFound
+   *  @usecase def zipWithIndex: $NotFound
+               ^
+Done.
