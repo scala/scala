@@ -214,7 +214,7 @@ the following applies:
 An `unapplySeq` method in an object $x$ matches the pattern
 $x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$ if it takes exactly one argument
 and its result type is of the form `Option[($T_1 , \ldots , T_m$, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted).
-This case is further discussed [below](#pattern-seqs).
+This case is further discussed [below](#pattern-sequences).
 
 ###### Example
 The `Predef` object contains a definition of an

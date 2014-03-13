@@ -644,7 +644,7 @@ union : [A >: Nothing <: Comparable[A]] (x: Set[A], xs: Set[A]) Set[A]  .
 A type constructor is represented internally much like a polymorphic method type.
 `[$\pm$ $a_1$ >: $L_1$ <: $U_1 , \ldots , \pm a_n$ >: $L_n$ <: $U_n$] $T$` 
 represents a type that is expected by a 
-[type constructor parameter](#type-params) or an 
+[type constructor parameter](#type-parameters) or an
 [abstract type constructor binding](#type-declarations-and-type-aliases) with 
 the corresponding type parameter clause.
 

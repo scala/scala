@@ -8,7 +8,7 @@ layout: default
 __By Burak Emir__
 
 This chapter describes the syntactic structure of XML expressions and patterns.
-It follows as closely as possible the XML 1.0 specification \cite{w3c:xml},
+It follows as closely as possible the XML 1.0 specification,
 changes being mandated by the possibility of embedding Scala code fragments.
 
 ## XML expressions

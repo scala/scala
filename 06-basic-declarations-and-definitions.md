@@ -617,7 +617,7 @@ followed by zero or more value parameter clauses
 introduces a value with a (possibly polymorphic) method type whose
 parameter types and result type are as given.
 
-The type of the function body is expected to [conform](#expr-typing) 
+The type of the function body is expected to [conform](#expression-typing)
 to the function's declared
 result type, if one is given. If the function definition is not
 recursive, the result type may be omitted, in which case it is
