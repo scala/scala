@@ -1,12 +1,13 @@
 ---
 title: Lexical Syntax
 layout: default
+tag: lexical
 ---
 
 # Lexical Syntax
 
 Scala programs are written using the Unicode Basic Multilingual Plane
-(_BMP_) character set; Unicode supplementary characters are not
+( _BMP_ ) character set; Unicode supplementary characters are not
 presently supported.  This chapter defines the two modes of Scala's
 lexical syntax, the Scala mode and the _XML_ mode. If not
 otherwise mentioned, the following descriptions of Scala tokens refer
@@ -97,8 +98,8 @@ var         while       with        yield
 _    :    =    =>    <-    <:    <%     >:    #    @
 ```
 
-The Unicode operators \\u21D2 ‘$\Rightarrow$’ and \\u2190 ‘$\leftarrow$’, which have the ASCII 
-equivalents ‘=>’ and ‘<-’, are also reserved.
+The Unicode operators `\u21D2 $\Rightarrow$` and `\u2190 $\leftarrow$`, which have the ASCII
+equivalents `=>` and `<-`, are also reserved.
 
 ###### Example: here are some identifiers:
 
@@ -349,12 +350,12 @@ and the integer number fits in the numeric range defined by the type,
 then the number is converted to type _pt_ and the literal's type
 is _pt_. The numeric ranges given by these types are:
 
-| | |
+|                |                        |
 |----------------|------------------------|
 |`Byte`          | $-2^7$ to $2^7-1$      |
 |`Short`         | $-2^{15}$ to $2^{15}-1$|
 |`Char`          | $0$ to $2^{16}-1$      |
-|                                         |
+
 
 ###### Example: some integer literals
 
