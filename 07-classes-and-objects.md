@@ -350,15 +350,23 @@ $M'$:
 - If $M$ and $M'$ are both concrete value definitions, then either none
   of them is marked `lazy` or both must be marked `lazy`.
 
-A special rule concerns parameterless methods. If a paramterless
-method defined as `def $f$: $T$ = ...` or `def $f$ = ...` overrides a method of
-type $()T'$ which has an empty parameter list, then $f$ is also
-assumed to have an empty parameter list.
+A stable member can only be overridden by a stable member.
+For example, this is not allowed:
+
+```
+class X { val stable = 1}
+class Y extends X { override var stable = 1 } // error
+```
 
 Another restriction applies to abstract type members: An abstract type
 member with a [volatile type](#volatile-types) as its upper
 bound may not override an abstract type member which does not have a
 volatile upper bound.
+
+A special rule concerns parameterless methods. If a parameterless
+method defined as `def $f$: $T$ = ...` or `def $f$ = ...` overrides a method of
+type $()T'$ which has an empty parameter list, then $f$ is also
+assumed to have an empty parameter list.
 
 An overriding method inherits all default arguments from the definition
 in the superclass. By specifying default arguments in the overriding method
