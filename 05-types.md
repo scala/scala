@@ -791,10 +791,10 @@ These notions are defined mutually recursively as follows.
 
 We define two relations between types.
 
------------------  ----------------  -------------------------------------------------
-Type equivalence   $T \equiv U$      $T$ and $U$ are interchangeable in all contexts.
-Conformance        $T <: U$          Type $T$ conforms to type $U$.
------------------  ----------------  -------------------------------------------------
+|                 |                |                                                 |
+|-----------------|----------------|-------------------------------------------------|
+|Type equivalence |$T \equiv U$    |$T$ and $U$ are interchangeable in all contexts. |
+|Conformance      |$T <: U$        |Type $T$ conforms to type $U$.                   |
 
 
 ### Type Equivalence
@@ -913,8 +913,7 @@ _subsumes_ another declaration of the same name in some compound type or class
 type $C'$, if one of the following holds.
 
 - A value declaration or definition that defines a name $x$ with type $T$ 
-  subsumes 
-  a value or method declaration that defines $x$ with type $T'$, provided 
+  subsumes a value or method declaration that defines $x$ with type $T'$, provided 
   $T <: T'$.
 - A method declaration or definition that defines a name $x$ with type $T$ 
   subsumes a method declaration that defines $x$ with type $T'$, provided 

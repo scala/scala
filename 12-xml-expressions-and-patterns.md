@@ -23,10 +23,9 @@ related to entity resolution.
 
 The following productions describe Scala's extensible markup language,
 designed as close as possible to the W3C extensible markup language
-standard. Only the productions for attribute values and character data
-are changed. Scala does not support declarations, CDATA
-sections or processing instructions. Entity references are not
-resolved at runtime.
+standard. Only the productions for attribute values and character data are changed. 
+Scala does not support declarations, CDATA sections or processing instructions.
+Entity references are not resolved at runtime.
 
 ``` 
 Element       ::=    EmptyElemTag

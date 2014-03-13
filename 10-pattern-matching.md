@@ -376,7 +376,7 @@ pattern. Inference takes into account the expected type of the
 pattern.
 
 
-Type parameter inference for typed patterns. \
+### Type parameter inference for typed patterns.
 
 Assume a typed pattern $p: T'$. Let $T$ result from $T'$ where all wildcards in
 $T'$ are renamed to fresh variable names.  Let $a_1 , \ldots , a_n$ be
@@ -387,14 +387,14 @@ Type parameter inference constructs first a set of subtype constraints over
 the type variables $a_i$. The initial constraints set $\mathcal{C}_0$ reflects
 just the bounds of these type variables. That is, assuming $T$ has
 bound type variables $a_1 , \ldots , a_n$ which correspond to class
-type parameters $a'_1 , \ldots , a'_n$ with lower bounds $L_1
-, \ldots , L_n$ and upper bounds $U_1 , \ldots , U_n$, $\mathcal{C}_0$
-contains the constraints 
+type parameters $a'_1 , \ldots , a'_n$ with lower bounds $L_1, \ldots , L_n$
+and upper bounds $U_1 , \ldots , U_n$, $\mathcal{C}_0$ contains the constraints 
 
--------------  ------  --------------  ------------------------
-$a_i$          $<:$    $\sigma U_i$    $(i = 1, \ldots , n)$
-$\sigma L_i$   $<:$    $a_i$           $(i = 1 , \ldots , n)$
--------------  ------  --------------  ------------------------
+|             |      |               |                        |
+|-------------|------|---------------|------------------------|
+|$a_i$        | $<:$ | $\sigma U_i$  | $(i = 1, \ldots , n)$  |
+|$\sigma L_i$ | $<:$ | $a_i$         | $(i = 1 , \ldots , n)$ |
+
 
 where $\sigma$ is the substitution $[a'_1 := a_1 , \ldots , a'_n :=
 a_n]$.
@@ -402,14 +402,14 @@ a_n]$.
 The set $\mathcal{C}_0$ is then augmented by further subtype constraints. There are two
 cases.
 
-Case 1: \
+###### Case 1
 If there exists a substitution $\sigma$ over the type variables $a_i
 , \ldots , a_n$ such that $\sigma T$ conforms to $\mathit{pt}$, one determines
 the weakest subtype constraints $\mathcal{C}_1$ over the type variables $a_1
 , \ldots , a_n$ such that $\mathcal{C}_0 \wedge \mathcal{C}_1$ implies that $T$
 conforms to $\mathit{pt}$.
 
-Case 2: \
+###### Case 2
 Otherwise, if $T$ can not be made to conform to $\mathit{pt}$ by
 instantiating its type variables, one determines all type variables in
 $\mathit{pt}$ which are defined as type parameters of a method enclosing
@@ -430,12 +430,12 @@ The final step consists in choosing type bounds for the type
 variables which imply the established constraint system. The process
 is different for the two cases above.
 
-Case 1: \
+###### Case 1
 We take $a_i >: L_i <: U_i$ where each
 $L_i$ is minimal and each $U_i$ is maximal wrt $<:$ such that
 $a_i >: L_i <: U_i$ for $i = 1 , \ldots , n$ implies $\mathcal{C}_0 \wedge \mathcal{C}_1$.
 
-Case 2: \
+###### Case 2
 We take $a_i >: L_i <: U_i$ and $b_i >: L'_i <: U'_i$ where each $L_i$
 and $L'_j$ is minimal and each $U_i$ and $U'_j$ is maximal such that
 $a_i >: L_i <: U_i$ for $i = 1 , \ldots , n$ and 
