@@ -1032,12 +1032,6 @@ trait Contexts { self: Analyzer =>
         else
           finish(EmptyTree, sym)
 
-      def isPackageOwnedInDifferentUnit(s: Symbol) = (
-        s.isDefinedInPackage && (
-             !currentRun.compiles(s)
-          || unit.exists && s.sourceFile != unit.source.file
-        )
-      )
       def requiresQualifier(s: Symbol) = (
            s.owner.isClass
         && !s.owner.isPackageClass
@@ -1116,9 +1110,19 @@ trait Contexts { self: Analyzer =>
       //     package clause in the same compilation unit where the deﬁnition occurs have
       //     highest precedence.
       //  2) Explicit imports have next highest precedence.
+      //  3) Wildcard imports have next highest precedence.
+      //  4) Definitions made available by a package clause not in the compilation unit where
+      //     the definition occurs have lowest precedence.
       def depthOk(imp: ImportInfo) = (
            imp.depth > symbolDepth
-        || (unit.isJava && imp.isExplicitImport(name) && imp.depth == symbolDepth)
+        || (
+                imp.isExplicitImport(name)
+             && imp.depth == symbolDepth
+             && (
+                     unit.isJava
+                  || (settings.isScala211 && (defSym != NoSymbol && isPackageOwnedInDifferentUnit(defSym))) // SI-2458
+                )
+           )
       )
 
       while (!impSym.exists && imports.nonEmpty && depthOk(imports.head)) {
@@ -1128,7 +1132,7 @@ trait Contexts { self: Analyzer =>
       }
 
       if (defSym.exists && impSym.exists) {
-        // imported symbols take precedence over package-owned symbols in different compilation units.
+        // 4) imported symbols take precedence over package-owned symbols in different compilation units.
         if (isPackageOwnedInDifferentUnit(defSym))
           defSym = NoSymbol
         // Defined symbols take precedence over erroneous imports.
@@ -1210,6 +1214,12 @@ trait Contexts { self: Analyzer =>
       }
       res
     }
+    final def isPackageOwnedInDifferentUnit(s: Symbol) = (
+      s.isDefinedInPackage && (
+           !currentRun.compiles(s)
+        || unit.exists && s.sourceFile != unit.source.file
+      )
+    )
   } //class Context
 
   /** A `Context` focussed on an `Import` tree */
