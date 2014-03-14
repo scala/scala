@@ -1,0 +1,6 @@
+t8265.scala:1: warning: Construct depends on unsound variance analysis and will not compile in scala 2.11 and beyond
+class Foo[+CC[X]] { type Coll = CC[_] }
+                         ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

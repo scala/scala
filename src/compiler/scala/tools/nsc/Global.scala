@@ -236,6 +236,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   override def inform(msg: String)      = inform(NoPosition, msg)
   override def globalError(msg: String) = globalError(NoPosition, msg)
   override def warning(msg: String)     = warning(NoPosition, msg)
+  override def deprecationWarning(pos: Position, msg: String) = currentUnit.deprecationWarning(pos, msg)
 
   def globalError(pos: Position, msg: String) = reporter.error(pos, msg)
   def warning(pos: Position, msg: String)     = if (settings.fatalWarnings) globalError(pos, msg) else reporter.warning(pos, msg)
@@ -1236,7 +1237,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
 
     private val unitbuf = new SyncedCompilationBuffer
-      
+
     val compiledFiles   = new mutable.HashSet[String]
 
     /** A map from compiled top-level symbols to their source files */
@@ -1491,7 +1492,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
        made to the underlying structure.
      */
     def units: Iterator[CompilationUnit] = unitbuf.iterator
-    
+
     def registerPickle(sym: Symbol): Unit = ()
 
     /** does this run compile given class, module, or case factory? */

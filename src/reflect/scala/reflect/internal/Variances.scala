@@ -75,7 +75,14 @@ trait Variances {
         def nextVariance(sym: Symbol, v: Variance): Variance = (
           if (shouldFlip(sym, tvar)) v.flip
           else if (isLocalOnly(sym)) Bivariant
-          else if (sym.isAliasType) Invariant
+          else if (sym.isAliasType) (
+            // Unsound pre-2.11 behavior preserved under -Xsource:2.10
+            if (settings.isScala211 || sym.isOverridingSymbol) Invariant
+            else {
+              deprecationWarning(sym.pos, s"Construct depends on unsound variance analysis and will not compile in scala 2.11 and beyond")
+              Bivariant
+            }
+          )
           else v
         )
         def loop(sym: Symbol, v: Variance): Variance = (
