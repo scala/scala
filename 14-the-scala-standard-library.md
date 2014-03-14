@@ -140,12 +140,12 @@ Byte - Short
 
 `Byte` and `Short` are the lowest-ranked types in this order, 
 whereas `Double` is the highest-ranked.  Ranking does _not_
-imply a [conformance relationship](#conformance); for
+imply a [conformance relationship](05-types.html#conformance); for
 instance `Int` is not a subtype of `Long`.  However, object
-[`Predef`](#the-predef-object) defines [views](#views) 
+[`Predef`](#the-predef-object) defines [views](09-implicit-parameters-and-views.html#views)
 from every numeric value type to all higher-ranked numeric value types. 
 Therefore, lower-ranked types are implicitly converted to higher-ranked types
-when required by the [context](#implicit-conversions).
+when required by the [context](08-expressions.html#implicit-conversions).
 
 Given two numeric value types $S$ and $T$, the _operation type_ of
 $S$ and $T$ is defined as follows: If both $S$ and $T$ are subrange
@@ -471,7 +471,7 @@ val ys: Array[Object] = xs.asInstanceOf[Array[Object]] // OK
 
 The instantiation of an array with a polymorphic element type $T$ requires
 information about type $T$ at runtime.
-This information is synthesized by adding a [context bound](#context-bounds-and-view-bounds)
+This information is synthesized by adding a [context bound](09-implicit-parameters-and-views.html#context-bounds-and-view-bounds)
 of `scala.reflect.ClassTag` to type $T$.
 An example is the
 following implementation of method `mkArray`, which creates
@@ -502,7 +502,7 @@ will return a primitive array of `int`s, written as `int[]` in Java.
 
 `Array`'s companion object provides various factory methods for the
 instantiation of single- and multi-dimensional arrays, an extractor method
-[`unapplySeq`](#extractor-patterns) which enables pattern matching
+[`unapplySeq`](10-pattern-matching.html#extractor-patterns) which enables pattern matching
 over arrays and additional utility methods:
 
 ```
@@ -763,7 +763,7 @@ object Predef {
 
 The `Predef` object also contains a number of implicit definitions, which are available by default (because `Predef` is implicitly imported).
 Implicit definitions come in two priorities. High-priority implicits are defined in the `Predef` class itself whereas low priority implicits are defined in a class inherited by `Predef`. The rules of 
-static [overloading resolution](#overloading-resolution)
+static [overloading resolution](08-expressions.html#overloading-resolution)
 stipulate that, all other things being equal, implicit resolution 
 prefers high-priority implicits over low-priority ones.
 

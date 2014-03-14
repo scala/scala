@@ -20,8 +20,8 @@ Def         ::=  PatVarDef
 ```
 
 A _declaration_ introduces names and assigns them types. It can
-form part of a [class definition](#templates) or of a
-refinement in a [compound type](#compound-types).
+form part of a [class definition](07-classes-and-objects.html#templates) or of a
+refinement in a [compound type](05-types.html#compound-types).
 
 A _definition_ introduces names that denote terms or types. It can
 form part of an object or class definition or it can be local to a
@@ -115,7 +115,7 @@ type $T$.
 A value definition `val $x$: $T$ = $e$` defines $x$ as a
 name of the value that results from the evaluation of $e$. 
 If the value definition is not recursive, the type
-$T$ may be omitted, in which case the [packed type](#expression-typing) of 
+$T$ may be omitted, in which case the [packed type](08-expressions.html#expression-typing) of
 expression $e$ is assumed.  If a type $T$ is given, then $e$ is expected to 
 conform to it.
 
@@ -131,13 +131,13 @@ A _constant value definition_ is of the form
 final val x = e
 ```
 
-where `e` is a [constant expression](#constant-expressions). 
+where `e` is a [constant expression](08-expressions.html#constant-expressions).
 The `final` modifier must be
 present and no type annotation may be given. References to the
 constant value `x` are themselves treated as constant expressions; in the
 generated code they are replaced by the definition's right-hand side `e`.
 
-Value definitions can alternatively have a [pattern](#patterns)
+Value definitions can alternatively have a [pattern](10-pattern-matching.html#patterns)
 as left-hand side.  If $p$ is some pattern other
 than a simple name or a name followed by a colon and a type, then the
 value definition `val $p$ = $e$` is expanded as follows:
@@ -222,9 +222,9 @@ A variable definition `var $x$: $T$ = $e$` introduces a
 mutable variable with type $T$ and initial value as given by the
 expression $e$. The type $T$ can be omitted, in which case the type of
 $e$ is assumed. If $T$ is given, then $e$ is expected to 
-[conform to it](#expression-typing).
+[conform to it](08-expressions.html#expression-typing).
 
-Variable definitions can alternatively have a [pattern](#patterns)
+Variable definitions can alternatively have a [pattern](10-pattern-matching.html#patterns)
 as left-hand side.  A variable definition
  `var $p$ = $e$` where $p$ is a pattern other
 than a simple name or a name followed by a colon and a type is expanded in the same way 
@@ -325,7 +325,7 @@ the top type `scala.Any` is assumed.
 A type constructor declaration imposes additional restrictions on the
 concrete types for which $t$ may stand. Besides the bounds $L$ and
 $U$, the type parameter clause may impose higher-order bounds and
-variances, as governed by the [conformance of type constructors](#conformance).
+variances, as governed by the [conformance of type constructors](05-types.html#conformance).
 
 The scope of a type parameter extends over the bounds `>: $L$ <: $U$` and the type parameter clause $\mathit{tps}$ itself. A
 higher-order type parameter clause (of an abstract type constructor
@@ -413,7 +413,7 @@ function definitions.  In this section we consider only type parameter
 definitions with lower bounds `>: $L$` and upper bounds
 `<: $U$` whereas a discussion of context bounds
 `: $U$` and view bounds `<% $U$` 
-is deferred to [here](#context-bounds-and-view-bounds).
+is deferred to [here](09-implicit-parameters-and-views.html#context-bounds-and-view-bounds).
 
 The most general form of a first-order type parameter is
 `$@a_1 \ldots @a_n$ $\pm$ $t$ >: $L$ <: $U$`.
@@ -467,7 +467,7 @@ The following type parameter clauses are illegal:
 ## Variance Annotations
 
 Variance annotations indicate how instances of parameterized types
-vary with respect to [subtyping](#conformance).  A
+vary with respect to [subtyping](05-types.html#conformance).  A
 ‘+’ variance indicates a covariant dependency, a
 ‘-’ variance indicates a contravariant dependency, and a
 missing variance indication indicates an invariant dependency.
@@ -510,7 +510,7 @@ changes at the following constructs.
 <!-- TODO: handle type aliases --> 
 
 References to the type parameters in 
-[object-private or object-protected values, types, variables, or methods](#modifiers) of the class are not
+[object-private or object-protected values, types, variables, or methods](07-classes-and-objects.html#modifiers) of the class are not
 checked for their variance position. In these members the type parameter may 
 appear anywhere without restricting its legal variance annotations.
 
@@ -617,7 +617,7 @@ followed by zero or more value parameter clauses
 introduces a value with a (possibly polymorphic) method type whose
 parameter types and result type are as given.
 
-The type of the function body is expected to [conform](#expression-typing)
+The type of the function body is expected to [conform](08-expressions.html#expression-typing)
 to the function's declared
 result type, if one is given. If the function definition is not
 recursive, the result type may be omitted, in which case it is
@@ -687,7 +687,7 @@ The by-name modifier is disallowed for parameters of classes that
 carry a `val` or `var` prefix, including parameters of case
 classes for which a `val` prefix is implicitly generated. The
 by-name modifier is also disallowed for 
-[implicit parameters](#implicit-parameters).
+[implicit parameters](09-implicit-parameters-and-views.html#implicit-parameters).
 
 ###### Example
 The declaration
@@ -867,10 +867,10 @@ ImportSelector  ::= id [‘=>’ id | ‘=>’ ‘_’]
 ```
 
 An import clause has the form `import $p$.$I$` where $p$ is a 
-[stable identifier](#paths) and $I$ is an import expression.
+[stable identifier](05-types.html#paths) and $I$ is an import expression.
 The import expression determines a set of names of importable members of $p$
 which are made available without qualification.  A member $m$ of $p$ is
-_importable_ if it is not [object-private](#modifiers).
+_importable_ if it is not [object-private](07-classes-and-objects.html#modifiers).
 The most general form of an import expression is a list of _import selectors_
 
 ``` 

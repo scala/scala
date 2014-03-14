@@ -46,7 +46,7 @@ package $p_1$ { $\ldots$
 Every compilation unit implicitly imports the following packages, in the given order:
  1. the package `java.lang`,
  2. the package `scala`, and
- 3. the object [`scala.Predef`](#the-predef-object), unless there is an explicit top-level import that references `scala.Predef`.
+ 3. the object [`scala.Predef`](14-the-scala-standard-library.html#the-predef-object), unless there is an explicit top-level import that references `scala.Predef`.
 
 Members of a later import in that order hide members of an earlier import.
 

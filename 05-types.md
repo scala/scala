@@ -34,15 +34,15 @@ Value types are either _concrete_ or _abstract_.
 
 Every concrete value type can be represented as a _class type_, i.e. a
 [type designator](#type-designators) that refers to a
-[class or a trait](#class-definitions) [^1], or as a
+[class or a trait](07-classes-and-objects.html#class-definitions) [^1], or as a
 [compound type](#compound-types) representing an
 intersection of types, possibly with a [refinement](#compound-types)
 that further constrains the types of its members.
 <!-- 
 A shorthand exists for denoting [function types](#function-types) 
 -->
-Abstract value types are introduced by [type parameters](#type-parameters)
-and [abstract type bindings](#type-declarations-and-type-aliases). 
+Abstract value types are introduced by [type parameters](06-basic-declarations-and-definitions.html#type-parameters)
+and [abstract type bindings](06-basic-declarations-and-definitions.html#type-declarations-and-type-aliases).
 Parentheses in types can be used for grouping.
 
 [^1]: We assume that objects and packages also implicitly
@@ -107,7 +107,7 @@ SimpleType  ::=  Path ‘.’ type
 ```
 
 A singleton type is of the form `$p$.type`, where $p$ is a
-path pointing to a value expected to [conform](#expression-typing)
+path pointing to a value expected to [conform](08-expressions.html#expression-typing)
 to `scala.AnyRef`. The type denotes the set of values
 consisting of `null` and the value denoted by $p$. 
 
@@ -258,7 +258,7 @@ AnnotType  ::=  SimpleType {Annotation}
 ```
 
 An annotated type $T$ `$a_1 , \ldots , a_n$`
-attaches [annotations](#user-defined-annotations) 
+attaches [annotations](13-user-defined-annotations.html#user-defined-annotations)
 $a_1 , \ldots , a_n$ to the type $T$.
 
 ###### Example: annotated type
@@ -287,7 +287,7 @@ $T_1 , \ldots , T_n$ and the refinement `{ $R$ }`. A refinement
 `{ $R$ }` contains declarations and type definitions. 
 If a declaration or definition overrides a declaration or definition in
 one of the component types $T_1 , \ldots , T_n$, the usual rules for
-[overriding](#overriding) apply; otherwise the declaration
+[overriding](07-classes-and-objects.html#overriding) apply; otherwise the declaration
 or definition is said to be “structural” [^2].
 
 [^2]: A reference to a structurally defined member (method call or access 
@@ -354,10 +354,10 @@ $T_2$.  The type is equivalent to the type application
 `$\mathit{op}$[$T_1$, $T_2$]`.  The infix operator $\mathit{op}$ may be an 
 arbitrary identifier,
 except for `*`, which is reserved as a postfix modifier 
-denoting a [repeated parameter type](#repeated-parameters). 
+denoting a [repeated parameter type](06-basic-declarations-and-definitions.html#repeated-parameters).
 
 All type infix operators have the same precedence; parentheses have to
-be used for grouping. The [associativity](#prefix-infix-and-postfix-operations)
+be used for grouping. The [associativity](08-expressions.html#prefix-infix-and-postfix-operations)
 of a type operator is determined as for term operators: type operators
 ending in a colon ‘:’ are right-associative; all other
 operators are left-associative.
@@ -384,7 +384,7 @@ values that take arguments of types $T1 , \ldots , Tn$ and yield
 results of type $U$.  In the case of exactly one argument type
 $T \Rightarrow U$ is a shorthand for $(T) \Rightarrow U$.  
 An argument type of the form $\Rightarrow T$
-represents a [call-by-name parameter](#by-name-parameters) of type $T$.
+represents a [call-by-name parameter](06-basic-declarations-and-definitions.html#by-name-parameters) of type $T$.
 
 Function types associate to the right, e.g.
 $S \Rightarrow T \Rightarrow U$ is the same as 
@@ -404,7 +404,7 @@ trait Function_n[-T1 , … , -T$_n$, +R] {
 }
 ```
 
-Hence, function types are [covariant](#variance-annotations) in their
+Hence, function types are [covariant](06-basic-declarations-and-definitions.html#variance-annotations) in their
 result type and contravariant in their argument types.
 
 ### Existential Types
@@ -419,7 +419,7 @@ ExistentialDcl     ::= ‘type’ TypeDcl
 
 An existential type has the form `$T$ forSome { $Q$ }`
 where $Q$ is a sequence of 
-[type declarations](#type-declarations-and-type-aliases).
+[type declarations](06-basic-declarations-and-definitions.html#type-declarations-and-type-aliases).
 
 Let 
 $t_1[\mathit{tps}_1] >: L_1 <: U_1 , \ldots , t_n[\mathit{tps}_n] >: L_n <: U_n$ 
@@ -461,7 +461,7 @@ is equivalent to
 1. An existential type `$T$ forSome { $Q$ }` where $Q$ contains
 a clause `type $t[\mathit{tps}] >: L <: U$` is equivalent 
 to the type `$T'$ forSome { $Q$ }` where $T'$ results from $T$ by replacing 
-every [covariant occurrence](#variance-annotations) of $t$ in $T$ by $U$ and by 
+every [covariant occurrence](06-basic-declarations-and-definitions.html#variance-annotations) of $t$ in $T$ by $U$ and by
 replacing every contravariant occurrence of $t$ in $T$ by $L$.
 
 
@@ -590,7 +590,7 @@ that are re-evaluated each time the parameterless method name is
 referenced.
 
 Method types do not exist as types of values. If a method name is used
-as a value, its type is [implicitly converted](#implicit-conversions) to a 
+as a value, its type is [implicitly converted](08-expressions.html#implicit-conversions) to a
 corresponding function type.
 
 ###### Example
@@ -644,8 +644,8 @@ union : [A >: Nothing <: Comparable[A]] (x: Set[A], xs: Set[A]) Set[A]  .
 A type constructor is represented internally much like a polymorphic method type.
 `[$\pm$ $a_1$ >: $L_1$ <: $U_1 , \ldots , \pm a_n$ >: $L_n$ <: $U_n$] $T$` 
 represents a type that is expected by a 
-[type constructor parameter](#type-parameters) or an
-[abstract type constructor binding](#type-declarations-and-type-aliases) with 
+[type constructor parameter](06-basic-declarations-and-definitions.html#type-parameters) or an
+[abstract type constructor binding](06-basic-declarations-and-definitions.html#type-declarations-and-type-aliases) with
 the corresponding type parameter clause.
 
 ###### Example

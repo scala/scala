@@ -16,7 +16,7 @@ Template members and parameters labeled with an `implicit`
 modifier can be passed to [implicit parameters](#implicit-parameters)
 and can be used as implicit conversions called [views](#views). 
 The `implicit` modifier is illegal for all
-type members, as well as for [top-level objects](#packagings).
+type members, as well as for [top-level objects](11-top-level-definitions.html#packagings).
 
 ###### Example: `Monoid`
 The following code defines an abstract class of monoids and
@@ -61,13 +61,13 @@ call without a prefix and that denote an
 or an implicit parameter.  An eligible
 identifier may thus be a local name, or a member of an enclosing
 template, or it may be have been made accessible without a prefix
-through an [import clause](#import-clauses). If there are no eligible
+through an [import clause](06-basic-declarations-and-definitions.html#import-clauses). If there are no eligible
 identifiers under this rule, then, second, eligible are also all
 `implicit` members of some object that belongs to the implicit
 scope of the implicit parameter's type, $T$.
 
-The _implicit scope_ of a type $T$ consists of all [companion modules](#object-definitions) of classes that are associated with the implicit parameter's type.
-Here, we say a class $C$ is _associated_ with a type $T$ if it is a [base class](#class-linearization) of some part of $T$.
+The _implicit scope_ of a type $T$ consists of all [companion modules](07-classes-and-objects.html#object-definitions) of classes that are associated with the implicit parameter's type.
+Here, we say a class $C$ is _associated_ with a type $T$ if it is a [base class](07-classes-and-objects.html#class-linearization) of some part of $T$.
 
 The _parts_ of a type $T$ are:
 
@@ -91,7 +91,7 @@ Thus, implicits defined in a package object are part of the implicit scope of a 
 
 If there are several eligible arguments which match the implicit
 parameter's type, a most specific one will be chosen using the rules
-of static [overloading resolution](#overloading-resolution).
+of static [overloading resolution](08-expressions.html#overloading-resolution).
 If the parameter has a default argument and no implicit argument can
 be found the default argument is used.
 
@@ -118,7 +118,7 @@ be passed as implicit parameter.
 
 
 This discussion also shows that implicit parameters are inferred after
-any type arguments are [inferred](#local-type-inference). 
+any type arguments are [inferred](08-expressions.html#local-type-inference).
 
 Implicit methods can themselves have implicit parameters. An example
 is the following method from module `scala.List`, which injects
@@ -181,8 +181,8 @@ To prevent such infinite expansions, the compiler keeps track of
 a stack of “open implicit types” for which implicit arguments are currently being
 searched. Whenever an implicit argument for type $T$ is searched, the
 “core type” of $T$ is added to the stack. Here, the _core type_
-of $T$ is $T$ with aliases expanded, top-level type [annotations](#user-defined-annotations) and
-[refinements](#compound-types) removed, and occurrences
+of $T$ is $T$ with aliases expanded, top-level type [annotations](13-user-defined-annotations.html#user-defined-annotations) and
+[refinements](05-types.html#compound-types) removed, and occurrences
 of top-level existentially bound variables replaced by their upper
 bounds. The core type is removed from the stack once the search for
 the implicit argument either definitely fails or succeeds. Everytime a
@@ -190,7 +190,7 @@ core type is added to the stack, it is checked that this type does not
 dominate any of the other types in the set.
 
 Here, a core type $T$ _dominates_ a type $U$ if $T$ is 
-[equivalent](#type-equivalence)
+[equivalent](05-types.html#type-equivalence)
 to $U$, or if the top-level type constructors of $T$ and $U$ have a
 common element and $T$ is more complex than $U$.
 
@@ -434,7 +434,7 @@ Then the following rules apply.
     `Manifest.intersectionType[T]($ms$)` where $ms$ are the manifests
     determined for $M[T_1] , \ldots , M[T_n]$.
     Otherwise, if $M$ is trait `ClassManifest`, 
-    then a manifest is generated for the [intersection dominator](#type-erasure)
+    then a manifest is generated for the [intersection dominator](05-types.html#type-erasure)
     of the types $T_1 , \ldots , T_n$.
 1.  If $T$ is some other type, then if $M$ is trait `OptManifest`,
     a manifest is generated from the designator `scala.reflect.NoManifest`.

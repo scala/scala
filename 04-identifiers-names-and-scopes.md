@@ -7,10 +7,10 @@ layout: default
 
 Names in Scala identify types, values, methods, and classes which are
 collectively called _entities_. Names are introduced by local
-[definitions and declarations](#basic-declarations-and-definitions), 
-[inheritance](#class-members),
-[import clauses](#import-clauses), or 
-[package clauses](#packagings)
+[definitions and declarations](06-basic-declarations-and-definitions.html#basic-declarations-and-definitions),
+[inheritance](07-classes-and-objects.html#class-members),
+[import clauses](06-basic-declarations-and-definitions.html#import-clauses), or
+[package clauses](11-top-level-definitions.html#packagings)
 which are collectively called _bindings_.
 
 Bindings of different kinds have a precedence defined on them:
@@ -24,8 +24,8 @@ Bindings of different kinds have a precedence defined on them:
    compilation unit where the definition occurs have lowest precedence.
 
 
-There are two different name spaces, one for [types](#types)
-and one for [terms](#expressions). The same name may designate a
+There are two different name spaces, one for [types](05-types.html#types)
+and one for [terms](08-expressions.html#expressions). The same name may designate a
 type and a term, depending on the context where the name is used.
 
 A binding has a _scope_ in which the entity defined by a single
@@ -103,6 +103,6 @@ object A {
 A reference to a qualified (type- or term-) identifier $e.x$ refers to
 the member of the type $T$ of $e$ which has the name $x$ in the same
 namespace as the identifier. It is an error if $T$ is not a 
-[value type](#value-types). The type of $e.x$ is the member type of the
+[value type](05-types.html#value-types). The type of $e.x$ is the member type of the
 referenced entity in $T$.
 

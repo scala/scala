@@ -108,10 +108,10 @@ expected type of the pattern.
   SimplePattern   ::=  StableId
 ```
 
-A stable identifier pattern is a [stable identifier](#paths) $r$. 
+A stable identifier pattern is a [stable identifier](05-types.html#paths) $r$.
 The type of $r$ must conform to the expected
 type of the pattern. The pattern matches any value $v$ such that
-`$r$ == $v$` (see [here](#root-classes)).
+`$r$ == $v$` (see [here](14-the-scala-standard-library.html#root-classes)).
 
 To resolve the syntactic overlap with a variable pattern, a
 stable identifier pattern may not be a simple name starting with a lower-case
@@ -150,10 +150,10 @@ SimplePattern   ::=  StableId `(' [Patterns] `)
 A constructor pattern is of the form $c(p_1 , \ldots , p_n)$ where $n
 \geq 0$. It consists of a stable identifier $c$, followed by element
 patterns $p_1 , \ldots , p_n$. The constructor $c$ is a simple or
-qualified name which denotes a [case class](#case-classes). 
+qualified name which denotes a [case class](07-classes-and-objects.html#case-classes).
 If the case class is monomorphic, then it
 must conform to the expected type of the pattern, and the formal
-parameter types of $x$'s [primary constructor](#class-definitions)
+parameter types of $x$'s [primary constructor](07-classes-and-objects.html#class-definitions)
 are taken as the expected types of the element patterns $p_1, \ldots ,
 p_n$.  If the case class is polymorphic, then its type parameters are
 instantiated so that the instantiation of $c$ conforms to the expected
@@ -245,7 +245,7 @@ SimplePattern ::= StableId `(' [Patterns `,'] [varid `@'] `_' `*' `)'
 ```
 
 A pattern sequence $p_1 , \ldots , p_n$ appears in two contexts.
-First, in a constructor pattern $c(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$, where $c$ is a case class which has $m+1$ primary constructor parameters,  ending in a [repeated parameter](#repeated-parameters) of type  $S*$.
+First, in a constructor pattern $c(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$, where $c$ is a case class which has $m+1$ primary constructor parameters,  ending in a [repeated parameter](06-basic-declarations-and-definitions.html#repeated-parameters) of type  $S*$.
 Second, in an extractor pattern $x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$ if the extractor object $x$ does not have an `unapply` method,
 but it does define an `unapplySeq` method with a result type conforming to `Option[(T_1, ... , T_m, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted). The expected type for the patterns $p_i$ is $S$.
 
@@ -268,7 +268,7 @@ p_n$.
 An infix operation pattern $p;\mathit{op};q$ is a shorthand for the
 constructor or extractor pattern $\mathit{op}(p, q)$.  The precedence and
 associativity of operators in patterns is the same as in 
-[expressions](#prefix-infix-and-postfix-operations).
+[expressions](08-expressions.html#prefix-infix-and-postfix-operations).
 
 An infix operation pattern $p;\mathit{op};(q_1 , \ldots , q_n)$ is a
 shorthand for the constructor or extractor pattern $\mathit{op}(p, q_1
@@ -288,7 +288,7 @@ matches a value $v$ if at least one its alternatives matches $v$.
 
 ### XML Patterns
 
-XML patterns are treated [here](#xml-patterns).
+XML patterns are treated [here](12-xml-expressions-and-patterns.html#xml-patterns).
 
 ### Regular Expression Patterns
 
@@ -313,7 +313,7 @@ A pattern $p$ is _irrefutable_ for a type $T$, if one of the following applies:
 1.  $p$ is a variable pattern,
 1.  $p$ is a typed pattern $x: T'$, and $T <: T'$,
 1.  $p$ is a constructor pattern $c(p_1 , \ldots , p_n)$, the type $T$
-    is an instance of class $c$, the [primary constructor](#class-definitions)
+    is an instance of class $c$, the [primary constructor](07-classes-and-objects.html#class-definitions)
     of type $T$ has argument types $T_1 , \ldots , T_n$, and each $p_i$ is 
     irrefutable for $T_i$.
 
@@ -358,7 +358,7 @@ A type pattern $T$ is of one of the following  forms:
 
 Types which are not of one of the forms described above are also 
 accepted as type patterns. However, such type patterns will be translated to their
-[erasure](#type-erasure).  The Scala
+[erasure](05-types.html#type-erasure).  The Scala
 compiler will issue an ``unchecked'' warning for these patterns to
 flag the possible loss of type-safety.
 
@@ -491,7 +491,7 @@ x match {
 
 Scala does not maintain information about type arguments at run-time,
 so there is no way to check that `x` is a list of strings.
-Instead, the Scala compiler will [erase](#type-erasure) the
+Instead, the Scala compiler will [erase](05-types.html#type-erasure) the
 pattern to `List[_]`; that is, it will only test whether the
 top-level runtime-class of the value `x` conforms to
 `List`, and the pattern match will succeed if it does.  This
@@ -570,7 +570,7 @@ instead of $L_i$ and has upper bound $U'_i$ instead of $U_i$.
 
 The expected type of every block $b_i$ is the expected type of the
 whole pattern matching expression.  The type of the pattern matching
-expression is then the [weak least upper bound](#weak-conformance)
+expression is then the [weak least upper bound](05-types.html#weak-conformance)
 of the types of all blocks
 $b_i$.
 
@@ -598,7 +598,7 @@ side effects in guards. However, it is guaranteed that a guard
 expression is evaluated only if the pattern it guards matches.
 
 If the selector of a pattern match is an instance of a
-[`sealed` class](#modifiers), 
+[`sealed` class](07-classes-and-objects.html#modifiers),
 the compilation of pattern matching can emit warnings which diagnose
 that a given set of patterns is not exhaustive, i.e.\ that there is a
 possibility of a `MatchError` being raised at run-time. 
@@ -673,7 +673,7 @@ the expression is taken to be equivalent to the anonymous function:
 ```
 
 Here, each $x_i$ is a fresh name.
-As was shown [here](#anonymous-functions), this anonymous function is in turn
+As was shown [here](08-expressions.html#anonymous-functions), this anonymous function is in turn
 equivalent to the following instance creation expression, where
  $T$ is the weak least upper bound of the types of all $b_i$.
 

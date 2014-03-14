@@ -59,7 +59,7 @@ chain in the inheritance hierarchy which starts with the template's
 superclass.
 
 The _least proper supertype_ of a template is the class type or
-[compound type](#compound-types) consisting of all its parent
+[compound type](05-types.html#compound-types) consisting of all its parent
 class types. 
 
 The statement sequence $\mathit{stats}$ contains member definitions that
@@ -158,10 +158,10 @@ objects created by an instance creation expression, or of parts of an
 object's definition which are inherited by a class or object
 definition. A constructor invocation is a function application
 `$x$.$c$[$\mathit{targs}$]($\mathit{args}_1$)$\ldots$($\mathit{args}_n$)`, where $x$ is a 
-[stable identifier](#paths), $c$ is a type name which either designates a
+[stable identifier](05-types.html#paths), $c$ is a type name which either designates a
 class or defines an alias type for one, $\mathit{targs}$ is a type argument
 list, $\mathit{args}_1 , \ldots , \mathit{args}_n$ are argument lists, and there is a
-constructor of that class which is [applicable](#function-applications)
+constructor of that class which is [applicable](08-expressions.html#function-applications)
 to the given arguments. If the constructor invocation uses named or
 default arguments, it is transformed into a block expression using the
 same transformation as described [here](sec:named-default).
@@ -169,7 +169,7 @@ same transformation as described [here](sec:named-default).
 The prefix ``$x$.`' can be omitted.  A type argument list
 can be given only if the class $c$ takes type parameters.  Even then
 it can be omitted, in which case a type argument list is synthesized
-using [local type inference](#local-type-inference). If no explicit
+using [local type inference](08-expressions.html#local-type-inference). If no explicit
 arguments are given, an empty list `()` is implicitly supplied.
 
 An evaluation of a constructor invocation 
@@ -305,7 +305,7 @@ linearization of $C$) the class in which $M'$ is defined.
 
 It is an error if a template directly defines two matching members. It
 is also an error if a template contains two members (directly defined
-or inherited) with the same name and the same [erased type](#type-erasure).
+or inherited) with the same name and the same [erased type](05-types.html#type-erasure).
 Finally, a template is not allowed to contain two methods (directly
 defined or inherited) with the same name which both define default arguments.
 
@@ -332,7 +332,7 @@ trait `B`.
 A member $M$ of class $C$ that [matches](#class-members) 
 a non-private member $M'$ of a
 base class of $C$ is said to _override_ that member.  In this case
-the binding of the overriding member $M$ must [subsume](#conformance)
+the binding of the overriding member $M$ must [subsume](05-types.html#conformance)
 the binding of the overridden member $M'$.
 Furthermore, the following restrictions on modifiers apply to $M$ and
 $M'$:
@@ -364,7 +364,7 @@ class Y extends X { override var stable = 1 } // error
 ```
 
 Another restriction applies to abstract type members: An abstract type
-member with a [volatile type](#volatile-types) as its upper
+member with a [volatile type](05-types.html#volatile-types) as its upper
 bound may not override an abstract type member which does not have a
 volatile upper bound.
 
@@ -592,7 +592,7 @@ the validity and meaning of a modifier are as follows.
 - The `abstract` modifier is used in class definitions. It is
   redundant for traits, and mandatory for all other classes which have
   incomplete members.  Abstract classes cannot be 
-  [instantiated](#instance-creation-expressions) with a constructor invocation 
+  [instantiated](08-expressions.html#instance-creation-expressions) with a constructor invocation
   unless followed by mixins and/or a refinement which override all
   incomplete members of the class. Only abstract classes and traits can have
   abstract term members.
@@ -607,7 +607,7 @@ the validity and meaning of a modifier are as follows.
   a template. `final` is redundant for object definitions.  Members
   of final classes or objects are implicitly also final, so the
   `final` modifier is generally redundant for them, too. Note, however, that
-  [constant value definitions](#value-declarations-and-definitions) do require 
+  [constant value definitions](06-basic-declarations-and-definitions.html#value-declarations-and-definitions) do require
   an explicit `final` modifier, even if they are defined in a final class or 
   object. `final` may not be applied to incomplete members, and it may not be 
   combined in one modifier list with `sealed`.
@@ -708,7 +708,7 @@ Here,
     parameter section is called _polymorphic_, otherwise it is called
     _monomorphic_.
   - $as$ is a possibly empty sequence of 
-    [annotations](#user-defined-annotations). 
+    [annotations](13-user-defined-annotations.html#user-defined-annotations).
     If any annotations are given, they apply to the primary constructor of the 
     class.
   - $m$ is an [access modifier](#modifiers) such as
@@ -723,16 +723,16 @@ Here,
     If no formal parameter sections are given, an empty parameter section `()` is assumed.
 
     If a formal parameter declaration $x: T$ is preceded by a `val`
-    or `var` keyword, an accessor (getter) [definition](#variable-declarations-and-definitions)
+    or `var` keyword, an accessor (getter) [definition](06-basic-declarations-and-definitions.html#variable-declarations-and-definitions)
     for this parameter is implicitly added to the class.
 
     The getter introduces a value member $x$ of class $c$ that is defined as an alias of the parameter.
-    If the introducing keyword is `var`, a setter accessor [`$x$_=`](#variable-declarations-and-definitions) is also implicitly added to the class.
+    If the introducing keyword is `var`, a setter accessor [`$x$_=`](06-basic-declarations-and-definitions.html#variable-declarations-and-definitions) is also implicitly added to the class.
     In invocation of that setter  `$x$_=($e$)` changes the value of the parameter to the result of evaluating $e$.
 
     The formal parameter declaration may contain modifiers, which then carry over to the accessor definition(s).
     When access modifiers are given for a parameter, but no `val` or `var` keyword, `val` is assumed.
-    A formal parameter prefixed by `val` or `var` may not at the same time be a [call-by-name parameter](#by-name-parameters).
+    A formal parameter prefixed by `val` or `var` may not at the same time be a [call-by-name parameter](06-basic-declarations-and-definitions.html#by-name-parameters).
 
   - $t$ is a [template](#templates) of the form
 
@@ -818,7 +818,7 @@ If there are auxiliary constructors of a class $C$, they form together
 with $C$'s primary [constructor](#class-definitions)
 an overloaded constructor
 definition. The usual rules for 
-[overloading resolution](#overloading-resolution)
+[overloading resolution](08-expressions.html#overloading-resolution)
 apply for constructor invocations of $C$,
 including for the self constructor invocations in the constructor
 expressions themselves. However, unlike other methods, constructors
@@ -866,7 +866,7 @@ definition for the parameter is [generated](#class-definitions).
 
 A case class definition of `$c$[$\mathit{tps}\,$]($\mathit{ps}_1\,$)$\ldots$($\mathit{ps}_n$)` with type
 parameters $\mathit{tps}$ and value parameters $\mathit{ps}$ implicitly
-generates an [extractor object](#extractor-patterns) which is
+generates an [extractor object](10-pattern-matching.html#extractor-patterns) which is
 defined as follows:
 
 ``` 
@@ -900,7 +900,7 @@ def unapply[$\mathit{tps}\,$]($x$: $c$[$\mathit{tps}\,$]) = x ne null
 
 The name of the `unapply` method is changed to `unapplySeq` if the first
 parameter section $\mathit{ps}_1$ of $c$ ends in a 
-[repeated parameter](#repeated-parameters). 
+[repeated parameter](06-basic-declarations-and-definitions.html#repeated-parameters).
 If a companion object $c$ exists already, no new object is created,
 but the `apply` and `unapply` methods are added to the existing
 object instead.
@@ -921,7 +921,7 @@ In all cases `$x_{i,j}$` and `$T_{i,j}$` refer to the name and type of the corre
 `$\mathit{ps}_{i,j}$`.
 
 Every case class implicitly overrides some method definitions of class
-[`scala.AnyRef`](#root-classes) unless a definition of the same
+[`scala.AnyRef`](14-the-scala-standard-library.html#root-classes) unless a definition of the same
 method is already given in the case class itself or a concrete
 definition of the same method is given in some base class of the case
 class different from `AnyRef`. In particular:
@@ -998,7 +998,7 @@ Assume a trait $D$ defines some aspect of an instance $x$ of
 type $C$ (i.e.\ $D$ is a base class of $C$). Then the _actual
 supertype_ of $D$ in $x$ is the compound type consisting of all the
 base classes in $\mathcal{L}(C)$ that succeed $D$.  The actual supertype gives
-the context for resolving a [`super` reference](#this-and-super) in a trait. 
+the context for resolving a [`super` reference](08-expressions.html#this-and-super) in a trait.
 Note that the actual supertype depends 
 on the type to which the trait is added in a mixin composition; it is not
 statically known at the time the trait is defined.
@@ -1130,7 +1130,7 @@ constructor is being evaluated block until evaluation is complete.
 
 The expansion given above is not accurate for top-level objects. It
 cannot be because variable and method definition cannot appear on the
-top-level outside of a [package object](#package-objects). Instead,
+top-level outside of a [package object](11-top-level-definitions.html#package-objects). Instead,
 top-level objects are translated to static fields.
 
 ###### Example
