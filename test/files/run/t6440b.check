@@ -1,4 +1,4 @@
-pos: NoPosition bad symbolic reference. A signature in U.class refers to type T
-in package pack1 which is not available.
-It may be completely missing from the current classpath, or the version on
-the classpath might be incompatible with the version used when compiling U.class. ERROR
+pos: NoPosition bad symbolic reference to pack1.T encountered in class file 'U.class'.
+Cannot access type T in package pack1. The current classpath may be
+missing a definition for pack1.T, or U.class may have been compiled against a version that's
+incompatible with the one found on the current classpath. ERROR

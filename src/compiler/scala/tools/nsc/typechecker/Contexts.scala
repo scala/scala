@@ -103,7 +103,7 @@ trait Contexts { self: Analyzer =>
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)
-      unit.error(unit.firstXmlPos, "To compile XML syntax, the scala.xml package must be on the classpath.\nPlease see https://github.com/scala/scala/wiki/Scala-2.11#xml.")
+      unit.error(unit.firstXmlPos, "To compile XML syntax, the scala.xml package must be on the classpath.\nPlease see http://docs.scala-lang.org/overviews/core/scala-2.11.html#scala-xml.")
 
     // scala-xml needs `scala.xml.TopScope` to be in scope globally as `$scope`
     // We detect `scala-xml` by looking for `scala.xml.TopScope` and
@@ -544,6 +544,8 @@ trait Contexts { self: Analyzer =>
       if (checking) onTreeCheckerError(pos, msg) else unit.error(pos, msg)
 
     @inline private def issueCommon(err: AbsTypeError)(pf: PartialFunction[AbsTypeError, Unit]) {
+      // TODO: are errors allowed to have pos == NoPosition??
+      // if not, Jason suggests doing: val pos = err.errPos.orElse( { devWarning("Que?"); context.tree.pos })
       if (settings.Yissuedebug) {
         log("issue error: " + err.errMsg)
         (new Exception).printStackTrace()
