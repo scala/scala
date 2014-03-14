@@ -10,7 +10,7 @@ t8266-octal-interp.scala:6: warning: Octal escape literals are deprecated, use \
 t8266-octal-interp.scala:7: warning: Octal escape literals are deprecated, use \r instead.
     f"a\15c",
        ^
-t8266-octal-interp.scala:8: warning: Octal escape literals are deprecated, use \u0022 instead.
+t8266-octal-interp.scala:8: warning: Octal escape literals are deprecated, use ${'"'} or a triple-quoted literal """with embedded " or \u0022""" instead.
     f"a\42c",
        ^
 t8266-octal-interp.scala:9: warning: Octal escape literals are deprecated, use \\ instead.

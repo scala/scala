@@ -93,7 +93,8 @@ abstract class FormatInterpolator {
               case '\n' => "\\n"
               case '\f' => "\\f"
               case '\r' => "\\r"
-              case '\"' => "\\u0022"  // $" in future
+              case '\"' => "${'\"'}" /* avoid lint warn */ +
+                " or a triple-quoted literal \"\"\"with embedded \" or \\u0022\"\"\""  // $" in future
               case '\'' => "'"
               case '\\' => """\\"""
               case x    => "\\u%04x" format x
