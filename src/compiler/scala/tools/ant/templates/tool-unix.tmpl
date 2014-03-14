@@ -156,7 +156,7 @@ while [[ $# -gt 0 ]]; do
       java_args=("${java_args[@@]}" "$1")
       scala_args=("${scala_args[@@]}" "$1")
       # respect user-supplied -Dscala.usejavacp
-      case "$1" in -Dscala.usejavacp) OVERRIDE_USEJAVACP="";; esac
+      case "$1" in -Dscala.usejavacp*) OVERRIDE_USEJAVACP="";; esac
       shift
       ;;
     -J*)

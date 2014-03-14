@@ -49,7 +49,8 @@ if "%_TEST_PARAM:~0,2%"=="-J" (
 )
 
 if "%_TEST_PARAM:~0,2%"=="-D" (
-  if "%_TEST_PARAM%"=="-Dscala.usejavacp" (
+  rem Only match beginning of the -D option. The relevant bit is 17 chars long.
+  if "%_TEST_PARAM:~0,17%"=="-Dscala.usejavacp" (
     set _OVERRIDE_USEJAVACP=
   )
   rem test if this was double-quoted property "-Dprop=42"
