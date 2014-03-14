@@ -506,7 +506,6 @@ trait GenTraversableOnce[+A] extends Any {
   def toIndexedSeq: immutable.IndexedSeq[A]
 
   /** Converts this $coll to a stream.
-   *  $willNotTerminateInf
    *  @return a stream containing all elements of this $coll.
    */
   def toStream: Stream[A]
