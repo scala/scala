@@ -215,13 +215,10 @@ trait Future[+T] extends Awaitable[T] {
    *  @return    a future that will be completed with the transformed value
    */
   def transform[S](s: T => S, f: Throwable => Throwable)(implicit executor: ExecutionContext): Future[S] = {
-    val p = Promise[S]()
-    // transform on Try has the wrong shape for us here
-    onComplete {
-      case Success(r) => p complete Try(s(r))
-      case Failure(t) => p complete Try(throw f(t)) // will throw fatal errors!
+    mapTry {
+      case Success(r) => Success(s(r))
+      case Failure(t) => Failure(f(t))
     }
-    p.future
   }
 
   /** Creates a new future by applying a function to the successful result of
@@ -231,8 +228,28 @@ trait Future[+T] extends Awaitable[T] {
    *  $forComprehensionExamples
    */
   def map[S](f: T => S)(implicit executor: ExecutionContext): Future[S] = { // transform(f, identity)
+    mapTry(_ map f)
+  }
+
+  /** Creates a new future by applying a function to the success or failure value
+   *  of this future and transforming it into a new success or failure value.
+   *
+   *  Example:
+   *
+   *  {{{
+   *  future.mapTry {
+   *    case Success(x) => Success(x+1)
+   *    case Failure(_) => Success(-1)
+   *  }
+   *  }}}
+   */
+  def mapTry[S](f: Try[T] => Try[S])(implicit executor: ExecutionContext): Future[S] = {
     val p = Promise[S]()
-    onComplete { v => p complete (v map f) }
+    onComplete { v =>
+      try {
+        p complete f(v)
+      } catch { case NonFatal(t) => p failure t }
+    }
     p.future
   }
 
@@ -320,9 +337,7 @@ trait Future[+T] extends Awaitable[T] {
    *  }}}
    */
   def recover[U >: T](pf: PartialFunction[Throwable, U])(implicit executor: ExecutionContext): Future[U] = {
-    val p = Promise[U]()
-    onComplete { v => p complete (v recover pf) }
-    p.future
+    mapTry(_ recover pf)
   }
 
   /** Creates a new future that will handle any matching throwable that this
