@@ -4670,8 +4670,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case SilentTypeError(err: AccessTypeError) =>
               (tree1, Some(err))
             case SilentTypeError(err) =>
-              context issue err
-              return setError(tree)
+              SelectWithUnderlyingError(tree, err)
+              return tree
             case SilentResultValue(treeAndPre) =>
               (stabilize(treeAndPre._1, treeAndPre._2, mode, pt), None)
           }

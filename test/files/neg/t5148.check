@@ -1,5 +1,5 @@
-error: bad symbolic reference. A signature in Imports.class refers to type Request
-in class scala.tools.nsc.interpreter.IMain which is not available.
-It may be completely missing from the current classpath, or the version on
-the classpath might be incompatible with the version used when compiling Imports.class.
+error: bad symbolic reference to scala.tools.nsc.interpreter.IMain.Request encountered in class file 'Imports.class'.
+Cannot access type Request in class scala.tools.nsc.interpreter.IMain. The current classpath may be
+missing a definition for scala.tools.nsc.interpreter.IMain.Request, or Imports.class may have been compiled against a version that's
+incompatible with the one found on the current classpath.
 one error found

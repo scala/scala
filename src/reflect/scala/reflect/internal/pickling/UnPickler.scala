@@ -229,6 +229,20 @@ abstract class UnPickler {
           NoSymbol
         }
 
+        def moduleAdvice(missing: String): String = {
+          val module =
+            if      (missing.startsWith("scala.xml"))                Some(("org.scala-lang.modules", "scala-xml"))
+            else if (missing.startsWith("scala.util.parsing"))       Some(("org.scala-lang.modules", "scala-parser-combinators"))
+            else if (missing.startsWith("scala.swing"))              Some(("org.scala-lang.modules", "scala-swing"))
+            else if (missing.startsWith("scala.util.continuations")) Some(("org.scala-lang.plugins", "scala-continuations-library"))
+            else None
+
+          (module map { case (group, art) =>
+            s"""\n(NOTE: It looks like the $art module is missing; try adding a dependency on "$group" : "$art".
+               |       See http://docs.scala-lang.org/overviews/core/scala-2.11.html for more information.)""".stripMargin
+           } getOrElse "")
+        }
+
         // (1) Try name.
         fromName(name) orElse {
           // (2) Try with expanded name.  Can happen if references to private
@@ -240,11 +254,12 @@ abstract class UnPickler {
               // (4) Call the mirror's "missing" hook.
               adjust(mirrorThatLoaded(owner).missingHook(owner, name)) orElse {
                 // (5) Create a stub symbol to defer hard failure a little longer.
+                val fullName = s"${owner.fullName}.$name"
                 val missingMessage =
-                  s"""|bad symbolic reference. A signature in $filename refers to ${name.longString}
-                      |in ${owner.kindString} ${owner.fullName} which is not available.
-                      |It may be completely missing from the current classpath, or the version on
-                      |the classpath might be incompatible with the version used when compiling $filename.""".stripMargin
+                  s"""|bad symbolic reference to $fullName encountered in class file '$filename'.
+                      |Cannot access ${name.longString} in ${owner.kindString} ${owner.fullName}. The current classpath may be
+                      |missing a definition for $fullName, or $filename may have been compiled against a version that's
+                      |incompatible with the one found on the current classpath.${moduleAdvice(fullName)}""".stripMargin
                 owner.newStubSymbol(name, missingMessage)
               }
             }

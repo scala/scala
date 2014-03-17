@@ -359,6 +359,14 @@ trait ContextErrors {
         //setError(sel)
       }
 
+      def SelectWithUnderlyingError(sel: Tree, err: AbsTypeError) = {
+        // if there's no position, this is likely the result of a MissingRequirementError
+        // use the position of the selection we failed to type check to report the original message
+        if (err.errPos == NoPosition) issueNormalTypeError(sel, err.errMsg)
+        else issueTypeError(err)
+        setError(sel)
+      }
+
       //typedNew
       def IsAbstractError(tree: Tree, sym: Symbol) = {
         issueNormalTypeError(tree, sym + " is abstract; cannot be instantiated")
