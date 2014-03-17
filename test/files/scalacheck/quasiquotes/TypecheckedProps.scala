@@ -152,4 +152,9 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked") {
     assert(name == defName)
     assert(rhs ≈ defRhs)
   }
+
+  property("partial function") = test {
+    val q"{ case ..$cases }: $ascr" = typecheck(q"{ case 1 => () }: PartialFunction[Int, Unit]")
+    assert(cases ≈ q"{ case 1 => () }".cases)
+  }
 }

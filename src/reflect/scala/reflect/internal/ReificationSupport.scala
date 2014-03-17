@@ -6,7 +6,7 @@ import Flags._
 import util._
 
 trait ReificationSupport { self: SymbolTable =>
-  import definitions.{TupleClass, FunctionClass, ScalaPackage, UnitClass}
+  import definitions._
   import internal._
 
   class ReificationSupportImpl extends ReificationSupportApi {
@@ -852,9 +852,25 @@ trait ReificationSupport { self: SymbolTable =>
 
     object SyntacticPartialFunction extends SyntacticPartialFunctionExtractor {
       def apply(cases: List[Tree]): Match = Match(EmptyTree, mkCases(cases))
-      def unapply(tree: Match): Option[List[CaseDef]] = tree match {
+      def unapply(tree: Tree): Option[List[CaseDef]] = tree match {
         case Match(EmptyTree, cases) => Some(cases)
-        case _                       => None
+        case Typed(
+               Block(
+                 List(ClassDef(clsMods, tpnme.ANON_FUN_NAME, Nil, Template(
+                   List(abspf: TypeTree, ser: TypeTree), noSelfType, List(
+                     DefDef(_, nme.CONSTRUCTOR, _, _, _, _),
+                     DefDef(_, nme.applyOrElse, _, _, _,
+                       Match(_, cases :+
+                         CaseDef(Bind(nme.DEFAULT_CASE, Ident(nme.WILDCARD)), _, _))),
+                     DefDef(_, nme.isDefinedAt, _, _, _, _))))),
+                 Apply(Select(New(Ident(tpnme.ANON_FUN_NAME)), termNames.CONSTRUCTOR), List())),
+               pf: TypeTree)
+          if pf.tpe != null && pf.tpe.typeSymbol.eq(PartialFunctionClass) &&
+             abspf.tpe != null && abspf.tpe.typeSymbol.eq(AbstractPartialFunctionClass) &&
+             ser.tpe != null && ser.tpe.typeSymbol.eq(SerializableClass) &&
+             clsMods.hasFlag(FINAL) && clsMods.hasFlag(SYNTHETIC) =>
+          Some(cases)
+        case _ => None
       }
     }
 
