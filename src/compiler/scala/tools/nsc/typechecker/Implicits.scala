@@ -82,7 +82,7 @@ trait Implicits {
     //         `implicitSearchContext.undetparams`, *not* in `context.undetparams`
     //         Here, we copy them up to parent context (analogously to the way the errors are copied above),
     //         and then filter out any which *were* inferred and are part of the substitutor in the implicit search result.
-    context.undetparams = ((context.undetparams ++ implicitSearchContext.undetparams) filterNot result.subst.from.contains).distinct
+    context.undetparams = ((context.undetparams ++ result.undetparams) filterNot result.subst.from.contains).distinct
 
     if (Statistics.canEnable) Statistics.stopTimer(implicitNanos, start)
     if (Statistics.canEnable) Statistics.stopCounter(rawTypeImpl, rawTypeStart)
@@ -162,8 +162,9 @@ trait Implicits {
    *  @param  tree    The tree representing the implicit
    *  @param  subst   A substituter that represents the undetermined type parameters
    *                  that were instantiated by the winning implicit.
+   *  @param undetparams undeterminted type parameters
    */
-  class SearchResult(val tree: Tree, val subst: TreeTypeSubstituter) {
+  class SearchResult(val tree: Tree, val subst: TreeTypeSubstituter, val undetparams: List[Symbol]) {
     override def toString = "SearchResult(%s, %s)".format(tree,
       if (subst.isEmpty) "" else subst)
 
@@ -173,16 +174,16 @@ trait Implicits {
     final def isSuccess    = !isFailure
   }
 
-  lazy val SearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter) {
+  lazy val SearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter, Nil) {
     override def isFailure = true
   }
 
-  lazy val DivergentSearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter) {
+  lazy val DivergentSearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter, Nil) {
     override def isFailure   = true
     override def isDivergent = true
   }
 
-  lazy val AmbiguousSearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter) {
+  lazy val AmbiguousSearchFailure = new SearchResult(EmptyTree, EmptyTreeTypeSubstituter, Nil) {
     override def isFailure          = true
     override def isAmbiguousFailure = true
   }
@@ -719,7 +720,7 @@ trait Implicits {
               case Some(err) =>
                 fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
               case None      =>
-                val result = new SearchResult(unsuppressMacroExpansion(itree3), subst)
+                val result = new SearchResult(unsuppressMacroExpansion(itree3), subst, context.undetparams)
                 if (Statistics.canEnable) Statistics.incCounter(foundImplicits)
                 typingLog("success", s"inferred value of type $ptInstantiated is $result")
                 result
@@ -1126,7 +1127,7 @@ trait Implicits {
           val tree1 = typedPos(pos.focus)(arg)
           context.firstError match {
             case Some(err) => processMacroExpansionError(err.errPos, err.errMsg)
-            case None      => new SearchResult(tree1, EmptyTreeTypeSubstituter)
+            case None      => new SearchResult(tree1, EmptyTreeTypeSubstituter, Nil)
           }
         } catch {
           case ex: TypeError =>
@@ -1196,7 +1197,7 @@ trait Implicits {
       def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
       def mot(tp0: Type, from: List[Symbol], to: List[Type]): SearchResult = {
         implicit def wrapResult(tree: Tree): SearchResult =
-          if (tree == EmptyTree) SearchFailure else new SearchResult(tree, if (from.isEmpty) EmptyTreeTypeSubstituter else new TreeTypeSubstituter(from, to))
+          if (tree == EmptyTree) SearchFailure else new SearchResult(tree, if (from.isEmpty) EmptyTreeTypeSubstituter else new TreeTypeSubstituter(from, to), Nil)
 
         val tp1 = tp0.dealias
         tp1 match {
@@ -1284,7 +1285,7 @@ trait Implicits {
     }
 
     def wrapResult(tree: Tree): SearchResult =
-      if (tree == EmptyTree) SearchFailure else new SearchResult(tree, EmptyTreeTypeSubstituter)
+      if (tree == EmptyTree) SearchFailure else new SearchResult(tree, EmptyTreeTypeSubstituter, Nil)
 
     /** Materializes implicits of predefined types (currently, manifests and tags).
      *  Will be replaced by implicit macros once we fix them.
