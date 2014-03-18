@@ -17,13 +17,13 @@ object C {
 
   implicit def cbf[A]: CanBuildFrom[Invariant[A]] = ???
 }
-
+// always failed
 class Test1 {
   import C.{cbf, convert1, convert2}
   val s: Invariant[Nothing] = ???
   s.combined // fail
 }
-
+// didn't fail, now correctly fails
 class Test2 {
   import C.{cbf, convert2, convert1}
 
@@ -44,7 +44,7 @@ class TestExplicit {
   // Now the implicit Test fail uniformly as per this explicit conversion
   convert2(s).combined
 
-  // Breaking this expression down makes it work.
+  // Breaking this expression down doesn't make it work.
   {val c1 = convert2(s); c1.combined}
 }
 
