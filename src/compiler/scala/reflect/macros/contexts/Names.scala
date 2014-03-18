@@ -33,8 +33,9 @@ trait Names {
     //
     // TODO: hopefully SI-7823 will provide an ultimate answer to this problem.
     // In the meanwhile I will also keep open the original issue: SI-6879 "c.freshName is broken".
+    val prefix = if (name.endsWith("$")) name else name + "$" // SI-8425
     val sortOfUniqueSuffix = freshNameCreator.newName(nme.FRESH_SUFFIX)
-    name + "$" + sortOfUniqueSuffix
+    prefix + sortOfUniqueSuffix
   }
 
   def freshName[NameType <: Name](name: NameType): NameType =
