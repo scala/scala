@@ -53,15 +53,19 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
 	 * dependencies between snippets. Source code snippets are identified by symbols. Each symbol should
 	 * be associated with one snippet only.
 	 *
+	 * Snippets can be grouped to be compiled together in the same compiler run. This is
+	 * useful to compile macros, which cannot be used in the same compilation run that
+	 * defines them.
+	 *
 	 * Symbols are used to express extracted dependencies between source code snippets. This way we have
 	 * file system-independent way of testing dependencies between source code "files".
 	 */
-	def extractDependenciesFromSrcs(srcs: (Symbol, String)*): ExtractedSourceDependencies = {
-		val (symbolsForSrcs, rawSrcs) = srcs.unzip
-		assert(symbolsForSrcs.distinct.size == symbolsForSrcs.size,
-			s"Duplicate symbols for srcs detected: $symbolsForSrcs")
-		val (tempSrcFiles, testCallback) = compileSrcs(rawSrcs: _*)
-		val fileToSymbol = (tempSrcFiles zip symbolsForSrcs).toMap
+	def extractDependenciesFromSrcs(srcs: List[Map[Symbol, String]]): ExtractedSourceDependencies = {
+		val rawGroupedSrcs = srcs.map(_.values.toList).toList
+		val symbols = srcs.map(_.keys).flatten
+		val (tempSrcFiles, testCallback) = compileSrcs(rawGroupedSrcs)
+		val fileToSymbol = (tempSrcFiles zip symbols).toMap
+
 		val memberRefFileDeps =  testCallback.sourceDependencies collect {
 			// false indicates that those dependencies are not introduced by inheritance
 			case (target, src, false) => (src, target)
@@ -82,31 +86,55 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
 			// convert all collections to immutable variants
 			multiMap.toMap.mapValues(_.toSet).withDefaultValue(Set.empty)
 		}
+
 		ExtractedSourceDependencies(pairsToMultiMap(memberRefDeps), pairsToMultiMap(inheritanceDeps))
 	}
 
+	def extractDependenciesFromSrcs(srcs: (Symbol, String)*): ExtractedSourceDependencies = {
+		val symbols = srcs.map(_._1)
+		assert(symbols.distinct.size == symbols.size,
+			s"Duplicate symbols for srcs detected: $symbols")
+		extractDependenciesFromSrcs(List(srcs.toMap))
+	}
+
 	/**
-	 * Compiles given source code snippets written to a temporary files. Each snippet is
+	 * Compiles given source code snippets written to temporary files. Each snippet is
 	 * written to a separate temporary file.
+	 *
+	 * Snippets can be grouped to be compiled together in the same compiler run. This is
+	 * useful to compile macros, which cannot be used in the same compilation run that
+	 * defines them.
 	 *
 	 * The sequence of temporary files corresponding to passed snippets and analysis
 	 * callback is returned as a result.
 	 */
-	private def compileSrcs(srcs: String*): (Seq[File], TestCallback) = {
+	private def compileSrcs(groupedSrcs: List[List[String]]): (Seq[File], TestCallback) = {
 		withTemporaryDirectory { temp =>
 			val analysisCallback = new TestCallback(nameHashing)
 			val classesDir = new File(temp, "classes")
 			classesDir.mkdir()
-			val compiler = prepareCompiler(classesDir, analysisCallback)
-			val run = new compiler.Run
-			val srcFiles = srcs.toSeq.zipWithIndex map { case (src, i) =>
-				val fileName = s"Test_$i.scala"
-				prepareSrcFile(temp, fileName, src)
+
+			val compiler = prepareCompiler(classesDir, analysisCallback, classesDir.toString)
+
+			val files = for((compilationUnit, unitId) <- groupedSrcs.zipWithIndex) yield {
+				val run = new compiler.Run
+				val srcFiles = compilationUnit.toSeq.zipWithIndex map { case (src, i) =>
+					val fileName = s"Test-$unitId-$i.scala"
+					prepareSrcFile(temp, fileName, src)
+				}
+				val srcFilePaths = srcFiles.map(srcFile => srcFile.getAbsolutePath).toList
+
+				run.compile(srcFilePaths)
+
+				srcFilePaths.foreach(f => new File(f).delete)
+				srcFiles
 			}
-			val srcFilePaths = srcFiles.map(srcFile => srcFile.getAbsolutePath).toList
-			run.compile(srcFilePaths)
-			(srcFiles, analysisCallback)
+			(files.flatten.toSeq, analysisCallback)
 		}
+	}
+
+	private def compileSrcs(srcs: String*): (Seq[File], TestCallback) = {
+		compileSrcs(List(srcs.toList))
 	}
 
 	private def prepareSrcFile(baseDir: File, fileName: String, src: String): File = {
@@ -115,7 +143,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
 		srcFile
 	}
 
-	private def prepareCompiler(outputDir: File, analysisCallback: AnalysisCallback): CachedCompiler0#Compiler = {
+	private def prepareCompiler(outputDir: File, analysisCallback: AnalysisCallback, classpath: String = "."): CachedCompiler0#Compiler = {
 		val args = Array.empty[String]
 		object output extends SingleOutput {
 			def outputDirectory: File = outputDir
@@ -123,6 +151,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
 		val weakLog = new WeakLog(ConsoleLogger(), ConsoleReporter)
 		val cachedCompiler = new CachedCompiler0(args, output, weakLog, false)
 		val settings = cachedCompiler.settings
+		settings.classpath.value = classpath
 		settings.usejavacp.value = true
 		val scalaReporter = new ConsoleReporter(settings)
 		val delegatingReporter = DelegatingReporter(settings, ConsoleReporter)
