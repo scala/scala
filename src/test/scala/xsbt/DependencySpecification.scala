@@ -65,6 +65,19 @@ class DependencySpecification extends Specification {
 		inheritance('D) === Set('A, 'C)
 	}
 
+	"Extracted source dependencies from macro arguments" in {
+		val sourceDependencies = extractSourceDependenciesFromMacroArgument
+		val memberRef = sourceDependencies.memberRef
+		val inheritance = sourceDependencies.inheritance
+
+		memberRef('A) === Set('B, 'C)
+		inheritance('A) === Set.empty
+		memberRef('B) === Set.empty
+		inheritance('B) === Set.empty
+		memberRef('C) === Set.empty
+		inheritance('C) === Set.empty
+	}
+
 	private def extractSourceDependenciesPublic: ExtractedSourceDependencies = {
 		val srcA = "class A"
 		val srcB = "class B extends D[A]"
@@ -107,6 +120,27 @@ class DependencySpecification extends Specification {
 		val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
 		val sourceDependencies =
 			compilerForTesting.extractDependenciesFromSrcs('A -> srcA, 'B -> srcB, 'C -> srcC, 'D -> srcD)
+		sourceDependencies
+	}
+
+	private def extractSourceDependenciesFromMacroArgument: ExtractedSourceDependencies = {
+		val srcA = "class A { println(B.printTree(C.foo)) }"
+		val srcB = """
+			|import scala.language.experimental.macros
+			|import scala.reflect.macros._
+			|object B {
+			|  def printTree(arg: Any) = macro printTreeImpl
+			|  def printTreeImpl(c: Context)(arg: c.Expr[Any]): c.Expr[String] = {
+			|    val argStr = arg.tree.toString
+			|    val literalStr = c.universe.Literal(c.universe.Constant(argStr))
+			|    c.Expr[String](literalStr)
+			|  }
+			|}""".stripMargin
+		val srcC = "object C { val foo = 1 }"
+
+		val compilerForTesting = new ScalaCompilerForUnitTesting(nameHashing = true)
+		val sourceDependencies =
+			compilerForTesting.extractDependenciesFromSrcs(List(Map('B -> srcB, 'C -> srcC), Map('A -> srcA)))
 		sourceDependencies
 	}
 }
