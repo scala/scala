@@ -185,7 +185,7 @@ object Iterator {
     def next()  = if (hasNext) current.next else Iterator.empty.next
 
     override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] =
-      new ConcatIterator(queue :+ (() => that.toIterator))
+      new ConcatIterator((() => current) +: (queue :+ (() => that.toIterator)))
   }
 
   private[scala] final class JoinIterator[+A](lhs: Iterator[A], that: => GenTraversableOnce[A]) extends Iterator[A] {
