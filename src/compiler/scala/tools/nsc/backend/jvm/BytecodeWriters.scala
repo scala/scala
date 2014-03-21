@@ -52,7 +52,21 @@ trait BytecodeWriters {
   }
 
   trait BytecodeWriter {
+    def needsOutfile: Boolean = false
     def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile): Unit
+    def writeClass(label: String, jclassName: String, jclass: scala.tools.asm.ClassWriter, sym: Symbol): Unit = {
+      try {
+        val arr = jclass.toByteArray()
+        val outF: scala.tools.nsc.io.AbstractFile = {
+          if (needsOutfile) getFile(sym, jclassName, ".class") else null
+        }
+        writeClass(label, jclassName, arr, outF)
+      } catch {
+        case e: java.lang.RuntimeException if e != null && (e.getMessage contains "too large!") =>
+          reporter.error(sym.pos,
+            s"Could not write class $jclassName because it exceeds JVM code size limits. ${e.getMessage}")
+      }
+    }
     def close(): Unit = ()
   }
 
@@ -115,6 +129,7 @@ trait BytecodeWriters {
   }
 
   trait ClassBytecodeWriter extends BytecodeWriter {
+    override def needsOutfile: Boolean = true
     def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
       assert(outfile != null,
              "Precisely this override requires its invoker to hand out a non-null AbstractFile.")
