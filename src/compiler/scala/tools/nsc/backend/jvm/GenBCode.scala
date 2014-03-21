@@ -58,7 +58,9 @@ abstract class GenBCode extends BCodeSyncAndTry {
     override def description = "Generate bytecode from ASTs using the ASM library"
     override def erasedTypes = true
 
-    private var bytecodeWriter  : BytecodeWriter   = null
+    // initBytecodeWriter invokes fullName, thus we have to run it before the typer-dependent thread is activated.
+    val bytecodeWriter: BytecodeWriter   = initBytecodeWriter(cleanup.getEntryPoints)
+
     private var mirrorCodeGen   : JMirrorBuilder   = null
     private var beanInfoCodeGen : JBeanInfoBuilder = null
 
@@ -76,11 +78,11 @@ abstract class GenBCode extends BCodeSyncAndTry {
                      mirror:       asm.tree.ClassNode,
                      plain:        asm.tree.ClassNode,
                      bean:         asm.tree.ClassNode,
-                     outFolder:    scala.tools.nsc.io.AbstractFile) {
+                     outFolder:    bytecodeWriter.OutputFolder) {
       def isPoison = { arrivalPos == Int.MaxValue }
     }
 
-    private val poison2 = Item2(Int.MaxValue, null, null, null, null)
+    private val poison2 = Item2(Int.MaxValue, null, null, null, bytecodeWriter.NoOutputFolder)
     private val q2 = new _root_.java.util.LinkedList[Item2]
 
     /* ---------------- q3 ---------------- */
@@ -101,7 +103,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
                      mirror:     SubItem3,
                      plain:      SubItem3,
                      bean:       SubItem3,
-                     outFolder:  scala.tools.nsc.io.AbstractFile) {
+                     outFolder:  bytecodeWriter.OutputFolder) {
 
       def isPoison  = { arrivalPos == Int.MaxValue }
     }
@@ -112,13 +114,13 @@ abstract class GenBCode extends BCodeSyncAndTry {
         else 1
       }
     }
-    private val poison3 = Item3(Int.MaxValue, null, null, null, null)
+    private val poison3 = Item3(Int.MaxValue, null, null, null, bytecodeWriter.NoOutputFolder)
     private val q3 = new java.util.PriorityQueue[Item3](1000, i3comparator)
 
     /*
      *  Pipeline that takes ClassDefs from queue-1, lowers them into an intermediate form, placing them on queue-2
      */
-    class Worker1(needsOutFolder: Boolean) {
+    class Worker1 {
 
       val caseInsensitively = mutable.Map.empty[String, Symbol]
 
@@ -177,7 +179,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
         // -------------- "plain" class --------------
         val pcb = new PlainClassBuilder(cunit)
         pcb.genPlainClass(cd)
-        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisName, cunit) else null;
+        val outF = bytecodeWriter.outputFolder(claszSymbol, pcb.thisName, cunit)
         val plainC = pcb.cnode
 
         // -------------- bean info class, if needed --------------
@@ -268,13 +270,10 @@ abstract class GenBCode extends BCodeSyncAndTry {
       scalaPrimitives.init
       initBCodeTypes()
 
-      // initBytecodeWriter invokes fullName, thus we have to run it before the typer-dependent thread is activated.
-      bytecodeWriter  = initBytecodeWriter(cleanup.getEntryPoints)
       mirrorCodeGen   = new JMirrorBuilder
       beanInfoCodeGen = new JBeanInfoBuilder
 
-      val needsOutfileForSymbol = bytecodeWriter.isInstanceOf[ClassBytecodeWriter]
-      buildAndSendToDisk(needsOutfileForSymbol)
+      buildAndSendToDisk()
 
       // closing output files.
       bytecodeWriter.close()
@@ -303,10 +302,10 @@ abstract class GenBCode extends BCodeSyncAndTry {
      *    (c) dequeue one at a time from queue-2, convert it to byte-array,    place in queue-3
      *    (d) serialize to disk by draining queue-3.
      */
-    private def buildAndSendToDisk(needsOutFolder: Boolean) {
+    private def buildAndSendToDisk() {
 
       feedPipeline1()
-      (new Worker1(needsOutFolder)).run()
+      (new Worker1).run()
       (new Worker2).run()
       drainQ3()
 
@@ -321,14 +320,11 @@ abstract class GenBCode extends BCodeSyncAndTry {
     /* Pipeline that writes classfile representations to disk. */
     private def drainQ3() {
 
-      def sendToDisk(cfr: SubItem3, outFolder: scala.tools.nsc.io.AbstractFile) {
+      def sendToDisk(cfr: SubItem3, outFolder: bytecodeWriter.OutputFolder) {
         if (cfr != null){
           val SubItem3(jclassName, jclassBytes) = cfr
           try {
-            val outFile =
-              if (outFolder == null) null
-              else getFileForClassfile(outFolder, jclassName, ".class")
-            bytecodeWriter.writeClass(jclassName, jclassName, jclassBytes, outFile)
+            bytecodeWriter.writeClassToFolderNow(jclassName, jclassName, jclassBytes, outFolder)
           }
           catch {
             case e: FileConflictException =>

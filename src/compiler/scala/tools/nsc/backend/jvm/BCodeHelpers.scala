@@ -20,28 +20,7 @@ import scala.tools.nsc.io.AbstractFile
  *
  */
 abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
-
   import global._
-
-  /*
-   * must-single-thread
-   */
-  def getFileForClassfile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
-    getFile(base, clsName, suffix)
-  }
-
-  /*
-   * must-single-thread
-   */
-  def getOutFolder(csym: Symbol, cName: String, cunit: CompilationUnit): _root_.scala.tools.nsc.io.AbstractFile = {
-    try {
-      outputDirectory(csym)
-    } catch {
-      case ex: Throwable =>
-        cunit.error(cunit.body.pos, s"Couldn't create file for class $cName\n${ex.getMessage}")
-        null
-    }
-  }
 
   var pickledBytes = 0 // statistics
 
