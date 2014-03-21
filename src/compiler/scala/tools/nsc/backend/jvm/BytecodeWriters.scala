@@ -11,6 +11,9 @@ import scala.tools.nsc.io._
 import java.util.jar.Attributes.Name
 import scala.language.postfixOps
 import scala.util.control.NonFatal
+import scala.concurrent.{Future, blocking, Await}
+import scala.concurrent.duration.Duration
+import scala.concurrent.ExecutionContextExecutor
 
 /** Can't output a file due to the state of the file system. */
 class FileConflictException(msg: String, val file: AbstractFile) extends IOException(msg)
@@ -25,7 +28,7 @@ trait BytecodeWriters {
   import global._
 
   def factoryNonJarBytecodeWriter(): BytecodeWriter = {
-    type Writer  = ClassBytecodeWriter
+    type Writer  = ParallelClassBytecodeWriter
     val emitAsmp = settings.Ygenasmp.isSetByUser
     val doDump   = settings.Ydumpclasses.isSetByUser
 
@@ -42,12 +45,26 @@ trait BytecodeWriters {
     def NoOutputFolder: OutputFolder
     def outputFolder(csym: Symbol, cName: String, cunit: CompilationUnit): OutputFolder
 
+    /**
+     * Dump bytes to file. Should not interact with type checker, since it may be called from multiple threads.
+     */
     def writeClassToFolderNow(label: String, jclassName: String, jclassBytes: Array[Byte], folder: OutputFolder): Unit
 
+    /**
+     * Derive output folder for class from `sym`, serialize `jclass` as bytes, and call `writeClassToFolderNow`.
+     */
     def writeClass(label: String, jclassName: String, jclass: scala.tools.asm.ClassWriter, sym: Symbol): Unit
+
+    /**
+     * Make sure all classes are written, resources disposed of.
+     */
     def close(): Unit = ()
   }
 
+  /**
+   * Write classes to a jar, thus outputFolder is irrelevant.
+   * This Writer is not suitable for multithreading, since it writes everything to the same jar.
+   */
   final class DirectToJarfileWriter(jfile: JFile) extends BytecodeWriter {
     type OutputFolder = Null
     def NoOutputFolder = null
@@ -68,14 +85,20 @@ trait BytecodeWriters {
       try out.write(jclassBytes, 0, jclassBytes.length)
       finally out.flush()
 
-      informProgress(s"added $label $path to jar")
+      informProgress(s"added '$label' $path to jar")
     }
     override def close() = writer.close()
   }
 
+  /**
+   * Write classes to an output folder defined by the classname.
+   * This Writer is suitable for multithreading. See ParallelClassBytecodeWriter.
+   */
   class ClassBytecodeWriter extends BytecodeWriter {
     type OutputFolder = AbstractFile
     def NoOutputFolder = null
+
+    // Must only be called from main thread.
     final def outputFolder(csym: Symbol, cName: String, cunit: CompilationUnit): OutputFolder =
       try outputDirectory(csym)
       catch {
@@ -84,9 +107,11 @@ trait BytecodeWriters {
           NoOutputFolder
       }
 
+    // Must only be called from main thread.
     final protected def outputDirectory(sym: Symbol): AbstractFile =
       settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
 
+    // Must only be called from main thread.
     def writeClass(label: String, jclassName: String, jclass: scala.tools.asm.ClassWriter, sym: Symbol): Unit =
       try writeClassToFolderNow(label, jclassName, jclass.toByteArray(), outputDirectory(sym))
       catch {
@@ -95,9 +120,7 @@ trait BytecodeWriters {
             s"Could not write class $jclassName because it exceeds JVM code size limits. ${e.getMessage}")
       }
 
-    /**
-     * @param clsName cls.getName
-     */
+    // may be called from multiple threads
     private def getFile(base: AbstractFile, clsName: String, suffix: String): AbstractFile = {
       def ensureDirectory(dir: AbstractFile): AbstractFile =
         if (dir.isDirectory) dir
@@ -108,14 +131,52 @@ trait BytecodeWriters {
       ensureDirectory(dir) fileNamed pathParts.last + suffix
     }
 
+    // may be called from multiple threads
     def writeClassToFolderNow(label: String, jclassName: String, jclassBytes: Array[Byte], folder: OutputFolder): Unit = {
       val outfile: AbstractFile = getFile(folder, jclassName, ".class")
-
       val outstream = new DataOutputStream(outfile.bufferedOutput)
 
       try outstream.write(jclassBytes, 0, jclassBytes.length)
       finally outstream.close()
-      informProgress("wrote '" + label + "' to " + outfile)
+      informProgress(s"wrote '$label' to $outfile")
+    }
+  }
+
+  /**
+   * Write classes in parallel.
+   */
+  class ParallelClassBytecodeWriter(implicit val executor: ExecutionContextExecutor = scala.concurrent.ExecutionContext.Implicits.global) extends ClassBytecodeWriter {
+    private[this] val writers = collection.mutable.ListBuffer.empty[Future[Option[(Position, String)]]]
+
+    /**
+     * Queue write future. Must be called from main thread.
+     */
+    override def writeClass(label: String, jclassName: String, jclass: scala.tools.asm.ClassWriter, sym: Symbol): Unit = {
+      // do this in main thread
+      val outputFolder = outputDirectory(sym)
+
+      writers += Future {
+        // TODO: benchmark whether to use blocking, how to tune the thread pool
+        blocking { writeClassToFolderNow(label, jclassName, jclass.toByteArray(), outputFolder) }
+        None
+      } recover {
+        case e: java.lang.RuntimeException if e != null && (e.getMessage contains "too large!") =>
+          Some((sym.pos, s"Could not write class $jclassName because it exceeds JVM code size limits. ${e.getMessage}"))
+      }
+    }
+
+    /**
+     * Block until all writes have completed.
+     * Report errors that have occurred.
+     */
+    override def close(): Unit = {
+      // TODO: configurable timeout
+      Await.result(Future.sequence(writers), Duration.Inf) foreach {
+        case Some((pos, msg)) => reporter.error(pos, msg)
+        case _ => // None indicates success: see writeClass
+      }
+
+      super.close()
     }
   }
 
