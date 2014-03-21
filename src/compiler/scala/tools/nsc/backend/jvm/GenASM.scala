@@ -460,9 +460,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     // utilities useful when emitting plain, mirror, and beaninfo classes.
     // -----------------------------------------------------------------------------------------
 
-    def writeIfNotTooBig(label: String, jclassName: String, jclass: asm.ClassWriter, sym: Symbol) =
-      bytecodeWriter.writeClass(label, jclassName, jclass, sym)
-
     /** Specialized array conversion to prevent calling
      *  java.lang.reflect.Array.newInstance via TraversableOnce.toArray
      */
@@ -1268,7 +1265,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       addInnerClasses(clasz.symbol, jclass)
       jclass.visitEnd()
-      writeIfNotTooBig("" + c.symbol.name, thisName, jclass, c.symbol)
+      bytecodeWriter.writeClass("" + c.symbol.name, thisName, jclass, c.symbol)
     }
 
     /**
@@ -2796,7 +2793,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       addInnerClasses(modsym, mirrorClass)
       mirrorClass.visitEnd()
-      writeIfNotTooBig("" + modsym.name, mirrorName, mirrorClass, modsym)
+      bytecodeWriter.writeClass("" + modsym.name, mirrorName, mirrorClass, modsym)
     }
   } // end of class JMirrorBuilder
 
@@ -2923,7 +2920,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       addInnerClasses(clasz.symbol, beanInfoClass)
       beanInfoClass.visitEnd()
 
-      writeIfNotTooBig("BeanInfo ", beanInfoName, beanInfoClass, clasz.symbol)
+      bytecodeWriter.writeClass("BeanInfo ", beanInfoName, beanInfoClass, clasz.symbol)
     }
 
   } // end of class JBeanInfoBuilder
