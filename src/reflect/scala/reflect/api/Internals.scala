@@ -780,10 +780,16 @@ trait Internals { self: Universe =>
       def unapply(tree: Try): Option[(Tree, List[CaseDef], Tree)]
     }
 
-    val SyntacticIdent: SyntacticIdentExtractor
-    trait SyntacticIdentExtractor {
-      def apply(name: Name, isBackquoted: Boolean = false): Ident
-      def unapply(tree: Ident): Option[(Name, Boolean)]
+    val SyntacticTermIdent: SyntacticTermIdentExtractor
+    trait SyntacticTermIdentExtractor {
+      def apply(name: TermName, isBackquoted: Boolean = false): Ident
+      def unapply(id: Ident): Option[(TermName, Boolean)]
+    }
+
+    val SyntacticTypeIdent: SyntacticTypeIdentExtractor
+    trait SyntacticTypeIdentExtractor {
+      def apply(name: TypeName): Ident
+      def unapply(tree: Tree): Option[TypeName]
     }
 
     val SyntacticImport: SyntacticImportExtractor
@@ -802,6 +808,36 @@ trait Internals { self: Universe =>
     trait SyntacticSelectTermExtractor {
       def apply(qual: Tree, name: TermName): Select
       def unapply(tree: Tree): Option[(Tree, TermName)]
+    }
+
+    val SyntacticCompoundType: SyntacticCompoundTypeExtractor
+    trait SyntacticCompoundTypeExtractor {
+      def apply(parents: List[Tree], defns: List[Tree]): CompoundTypeTree
+      def unapply(tree: Tree): Option[(List[Tree], List[Tree])]
+    }
+
+    val SyntacticSingletonType: SyntacitcSingletonTypeExtractor
+    trait SyntacitcSingletonTypeExtractor {
+      def apply(tree: Tree): SingletonTypeTree
+      def unapply(tree: Tree): Option[Tree]
+    }
+
+    val SyntacticTypeProjection: SyntacticTypeProjectionExtractor
+    trait SyntacticTypeProjectionExtractor {
+      def apply(qual: Tree, name: TypeName): SelectFromTypeTree
+      def unapply(tree: Tree): Option[(Tree, TypeName)]
+    }
+
+    val SyntacticAnnotatedType: SyntacticAnnotatedTypeExtractor
+    trait SyntacticAnnotatedTypeExtractor {
+      def apply(tpt: Tree, annot: Tree): Annotated
+      def unapply(tree: Tree): Option[(Tree, Tree)]
+    }
+
+    val SyntacticExistentialType: SyntacticExistentialTypeExtractor
+    trait SyntacticExistentialTypeExtractor {
+      def apply(tpt: Tree, where: List[Tree]): ExistentialTypeTree
+      def unapply(tree: Tree): Option[(Tree, List[MemberDef])]
     }
   }
 

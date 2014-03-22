@@ -193,8 +193,6 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticAppliedType, tpt, targs)
       case SyntacticFunction(args, body) =>
         reifyBuildCall(nme.SyntacticFunction, args, body)
-      case SyntacticIdent(name, isBackquoted) =>
-        reifyBuildCall(nme.SyntacticIdent, name, isBackquoted)
       case SyntacticEmptyTypeTree() =>
         reifyBuildCall(nme.SyntacticEmptyTypeTree)
       case SyntacticImport(expr, selectors) =>
@@ -203,6 +201,20 @@ trait Reifiers { self: Quasiquotes =>
         reifyBuildCall(nme.SyntacticPartialFunction, cases)
       case SyntacticMatch(scrutinee, cases) =>
         reifyBuildCall(nme.SyntacticMatch, scrutinee, cases)
+      case SyntacticTermIdent(name, isBackquoted) =>
+        reifyBuildCall(nme.SyntacticTermIdent, name, isBackquoted)
+      case SyntacticTypeIdent(name) =>
+        reifyBuildCall(nme.SyntacticTypeIdent, name)
+      case SyntacticCompoundType(parents, defns) =>
+        reifyBuildCall(nme.SyntacticCompoundType, parents, defns)
+      case SyntacticSingletonType(ref) =>
+        reifyBuildCall(nme.SyntacticSingletonType, ref)
+      case SyntacticTypeProjection(qual, name) =>
+        reifyBuildCall(nme.SyntacticTypeProjection, qual, name)
+      case SyntacticAnnotatedType(tpt, annot) =>
+        reifyBuildCall(nme.SyntacticAnnotatedType, tpt, annot)
+      case SyntacticExistentialType(tpt, where) =>
+        reifyBuildCall(nme.SyntacticExistentialType, tpt, where)
       case Q(tree) if fillListHole.isDefinedAt(tree) =>
         mirrorBuildCall(nme.SyntacticBlock, fillListHole(tree))
       case Q(other) =>

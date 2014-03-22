@@ -2,30 +2,11 @@ import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport._
 
 object TypecheckedProps extends QuasiquoteProperties("typechecked") {
-  def original(tree: Tree) = tree match {
-    case tt: TypeTree => Some(tt.original)
-    case _            => None
-  }
-  def originals(trees: List[Tree]) = trees.flatMap(original)
-  val int = ScalaDot(TypeName("Int"))
-  val intint = List(int, int)
+
 
   property("tuple term") = test {
     val q"(..$elements)" = typecheck(q"(1, 2)")
     assert(elements ≈ List(q"1", q"2"))
-  }
-
-  property("tuple type") = test {
-    val tq"(..$els0)" = typecheckTyp(tq"Unit")
-    assert(els0.isEmpty)
-    val tq"(..$els1)" = typecheckTyp(tq"(Int, Int)")
-    assert(originals(els1) ≈ intint)
-  }
-
-  property("function type") = test {
-    val tq"(..$argtpes) => $restpe" = typecheckTyp(tq"(Int, Int) => Int")
-    assert(originals(argtpes) ≈ intint)
-    assert(original(restpe).get ≈ int)
   }
 
   property("for/for-yield") = test {
@@ -151,5 +132,80 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked") {
 
     assert(name == defName)
     assert(rhs ≈ defRhs)
+  }
+}
+
+trait TypecheckedTypes { self: QuasiquoteProperties =>
+  property("type ident") = test {
+    val q"$_; type $_ = $tpt" = typecheck(q"class C; type T = C")
+    val tq"C" = tpt
+  }
+
+  property("type select") = test {
+    val tq"scala.Int" = typecheckTyp(tq"Int")
+  }
+
+  property("this type select") = test {
+    val q"class $_ { $_; type $_ = $tpt }" = typecheck(q"class C { type A = Int; type B = this.A }")
+    val tq"this.$name" = tpt
+    val TypeName("A") = name
+  }
+
+  property("super type select") = test {
+    val q"$_; class $_ extends $_ { type $_ = $tpt }" =
+      typecheck(q"class C1 { type A = Int }; class C2 extends C1 { type B = super[C1].A }")
+    val tq"$empty.super[$c1].$a" = tpt
+    val TypeName("") = empty
+    val TypeName("C1") = c1
+    val TypeName("A") = a
+  }
+
+  property("applied type") = test {
+    val tt = typecheckTyp(q"Map[Int, Int]")
+    val tq"$tpt[..$tpts]" = tt
+    val tq"scala.this.Predef.Map" = tpt
+    val List(tq"scala.Int", tq"scala.Int") = tpts
+  }
+
+  property("tuple type") = test {
+    val tq"(..$els0)" = typecheckTyp(tq"Unit")
+    assert(els0.isEmpty)
+    val tq"(..$els1)" = typecheckTyp(tq"(Int, Int)")
+    val List(tq"scala.Int", tq"scala.Int") = els1
+  }
+
+  property("function type") = test {
+    val tq"(..$argtpes) => $restpe" = typecheckTyp(tq"(Int, Int) => Int")
+    val List(tq"scala.Int", tq"scala.Int") = argtpes
+    val tq"scala.Int" = restpe
+  }
+
+  property("compound type") = test {
+    val tq"..$parents { ..$defns }" = typecheckTyp(tq"Int { def x: Int }")
+    val List(tq"Int") = parents
+    val List(q"def x: Int") = defns
+  }
+
+  property("singleton type") = test {
+    val tq"$ref.type" = typecheckTyp(tq"scala.Predef.type")
+    val q"scala.Predef" = ref
+  }
+
+  property("type projection") = test {
+    val tq"$tpt#$name" = typecheckTyp(tq"({ type T = Int })#T")
+    val TypeName("T") = name
+    val tq"{ type T = Int }" = tpt
+  }
+
+  property("annotated type") = test {
+    val tq"$tpt @$annot" = typecheckTyp(tq"Int @unchecked")
+    val tq"scala.Int" = tpt
+    val q"new unchecked" = annot
+  }
+
+  property("existential type") = test {
+    val tq"$tpt forSome { ..$defns }" = typecheckTyp(tq"T forSome { type T }")
+    val tq"T" = tpt
+    val q"type T" :: Nil = defns
   }
 }
