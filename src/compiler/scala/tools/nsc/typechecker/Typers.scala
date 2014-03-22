@@ -4934,7 +4934,7 @@ trait Typers extends Modes with Adaptations with Tags {
 
             if (tree.isInstanceOf[PostfixSelect])
               checkFeature(tree.pos, PostfixOpsFeature, name.decode)
-            if (tree1.symbol != null && tree1.symbol.isOnlyRefinementMember)
+            if (tree1.symbol != null && tree1.symbol.isOnlyRefinementMember && !tree1.symbol.isMacro)
               checkFeature(tree1.pos, ReflectiveCallsFeature, tree1.symbol.toString)
 
             if (qual1.hasSymbolWhich(_.isRootPackage)) treeCopy.Ident(tree1, name)
