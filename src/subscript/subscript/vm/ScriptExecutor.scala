@@ -1006,12 +1006,12 @@ class CommonScriptExecutor extends ScriptExecutor {
     if (activateNext) {
       val t = message.node.template.children(nextActivationTemplateIndex)
       activateFrom(message.node, t, Some(nextActivationPass))
-      if (message.activation!=null) {
-        val nary_op_isLeftMerge = n match {
-          case nary@N_n_ary_op (t: T_n_ary, isLeftMerge) => isLeftMerge case _ => false
-        }
-        if (!nary_op_isLeftMerge) insertContinuation(message.activation, n)
+      val activation = if (message.activation != null) message.activation else Activation(message.node)
+      
+      val nary_op_isLeftMerge = n match {
+        case nary@N_n_ary_op (t: T_n_ary, isLeftMerge) => isLeftMerge case _ => false
       }
+      if (!nary_op_isLeftMerge) insertContinuation(activation, n)
     }
     else if (n.children.isEmpty) {
       insertDeactivation(n, null)
