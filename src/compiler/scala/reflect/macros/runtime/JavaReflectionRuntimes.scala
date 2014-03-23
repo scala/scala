@@ -14,7 +14,7 @@ trait JavaReflectionRuntimes {
 
     def resolveJavaReflectionRuntime(classLoader: ClassLoader): MacroRuntime = {
       val implClass = Class.forName(className, true, classLoader)
-      val implMeths = implClass.getDeclaredMethods.find(_.getName == methName)
+      val implMeths = implClass.getMethods.find(_.getName == methName)
       // relies on the fact that macro impls cannot be overloaded
       // so every methName can resolve to at maximum one method
       val implMeth = implMeths getOrElse { throw new NoSuchMethodException(s"$className.$methName") }
