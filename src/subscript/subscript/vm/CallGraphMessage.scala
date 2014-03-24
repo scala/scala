@@ -104,3 +104,5 @@ import scala.collection.mutable._
 	// i.e. 
 	// ->..?p:Int? loops and matches all sent integers like <-*1  <-*3
 	
+	case class InvokeFromET(node: CallGraphNodeTrait, payload: () => Unit) extends CallGraphMessage[CallGraphNodeTrait]
+	

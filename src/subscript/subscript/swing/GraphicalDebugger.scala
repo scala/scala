@@ -539,13 +539,14 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
   def sleep(duration_ms: Long) = try {Thread.sleep(duration_ms)} catch {case e: InterruptedException => println("sleep interrupted")}
   def confirmExit: Boolean = Dialog.showConfirmation(exitButton, "Are you sure?", "About to exit")==Dialog.Result.Yes
   
+  object MessageStatusLock
+  def messageBeingHandled(value: Boolean): Unit = MessageStatusLock.synchronized {
+    messageBeingHandled = value
+    MessageStatusLock.notify()
+  }
   
-  def awaitMessageBeingHandled(value: Boolean) = {
-    var sleeptime = 1
-    while (messageBeingHandled!=value) {
-      sleep(sleeptime)
-      if (sleeptime<100) sleeptime *=2
-    }
+  def awaitMessageBeingHandled(value: Boolean) = MessageStatusLock.synchronized {
+    while (messageBeingHandled != value) MessageStatusLock.wait()
   }
   
   def shouldStep: Boolean =
@@ -618,7 +619,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
      live       = {*awaitMessageBeingHandled(true)*}
                   if (shouldStep) ( @{gui(there)}: {!updateDisplay!} stepCommand 
                                  || if(autoCheckBox.selected) {*waitForStepTimeout*} else (-) )
-                  {messageBeingHandled=false}
+                  {messageBeingHandled(false)}
                   ... // TBD: parsing goes wrong without this comment; lineStartOffset was incremented unexpectedly
                || exitDebugger
   
@@ -647,7 +648,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
   
   def messageHandled(m: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait]): Unit = {
     currentMessage = m
-    messageBeingHandled=true 
+    messageBeingHandled(true) 
     awaitMessageBeingHandled(false)
     currentMessage = null
   }

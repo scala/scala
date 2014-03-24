@@ -66,7 +66,7 @@ trait CallGraphNodeTrait {
   def isExecuting  = false
   var numberOfBusyActions = 0
   def isActionBusy = numberOfBusyActions>0
-
+  
   var index = -1
   var stamp = 0
   var aaStartedCount = 0
@@ -226,6 +226,9 @@ abstract class CallGraphTreeNode_n_ary extends CallGraphTreeParentNode {
   var lastActivatedChild: CallGraphNodeTrait = null
   var aaStartedSinceLastOptionalBreak = false
   def mustBreak = hadBreak = true
+  
+  var breakWaker: CallGraphNodeTrait = null
+  
 }
 
 // The case classes for the bottom node types

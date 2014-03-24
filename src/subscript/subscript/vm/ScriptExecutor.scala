@@ -26,6 +26,7 @@
 
 package subscript.vm
 import scala.collection.mutable._
+import scala.collection.mutable.ListBuffer
 
 /*
  * Factory for script executors. Produces a CommonScriptExecutor
@@ -148,6 +149,7 @@ trait ScriptExecutor {
 
 class CommonScriptExecutor extends ScriptExecutor {
   
+  var waitsForMessage = false
  
   // send out a success when in an And-like context
   def doNeutral(n: CallGraphNodeTrait) =
@@ -165,7 +167,14 @@ class CommonScriptExecutor extends ScriptExecutor {
     childNode.parent = parentNode
     childNode.scriptExecutor = parentNode.scriptExecutor
     parentNode.children.append(childNode)
-    parentNode match {case p: CallGraphTreeNode_n_ary => p.lastActivatedChild = childNode case _ =>}
+    
+    parentNode match {
+      case p: CallGraphTreeNode_n_ary =>
+        childNode match {case N_break(_) | N_optional_break(_) | N_optional_break_loop(_) => p.breakWaker = p.lastActivatedChild case _ =>}
+        p.lastActivatedChild = childNode
+      
+      case _ =>
+    }
   }
   // disconnect a child node from its parent
   def disconnect(childNode: CallGraphNodeTrait) {
@@ -192,6 +201,9 @@ class CommonScriptExecutor extends ScriptExecutor {
       case maa@AAToBeReexecuted(n: CallGraphNodeTrait) => n.asInstanceOf[N_atomic_action].msgAAToBeExecuted = maa
       case _ =>
     }
+    
+    // Notify this
+    synchronized { notify() }
   }
   // remove a message from the queue
   def remove(m: CallGraphMessage[_ <: CallGraphNodeTrait]) = {
@@ -665,8 +677,12 @@ class CommonScriptExecutor extends ScriptExecutor {
 		    if (nodesToBeSuspended!=null) nodesToBeSuspended.foreach((n) => insert(Suspend(n)))
        case _ =>	    
 	  }
-      // message.child may be null now
-      message.node.forEachParent(p => insert(AAStarted(p, message.node)))
+    
+    val operator = message.node.n_ary_op_ancestor
+    if (operator != null && (operator.breakWaker eq message.node)) operator.aaStartedSinceLastOptionalBreak = true
+    
+    // message.child may be null now
+    message.node.forEachParent(p => insert(AAStarted(p, message.node)))
   }
   /*
    * Handle an AAEnded message
@@ -892,7 +908,7 @@ class CommonScriptExecutor extends ScriptExecutor {
       case _          => if (message.activation!=null || message.aaStarteds!=Nil || message.success!=null || message.deactivations != Nil) {
                            val b  = message.break
                            val as = message.aaStarteds
-                           n.aaStartedSinceLastOptionalBreak = n.aaStartedSinceLastOptionalBreak || as!=Nil
+                           // n.aaStartedSinceLastOptionalBreak = n.aaStartedSinceLastOptionalBreak || as!=Nil
                            if (b==null||b.activationMode==ActivationMode.Optional) {
                              if (n.activationMode==ActivationMode.Optional) {
                                  activateNextOrEnded = n.aaStartedSinceLastOptionalBreak
@@ -1001,12 +1017,12 @@ class CommonScriptExecutor extends ScriptExecutor {
     if (activateNext) {
       val t = message.node.template.children(nextActivationTemplateIndex)
       activateFrom(message.node, t, Some(nextActivationPass))
-      if (message.activation!=null) {
-        val nary_op_isLeftMerge = n match {
-          case nary@N_n_ary_op (t: T_n_ary, isLeftMerge) => isLeftMerge case _ => false
-        }
-        if (!nary_op_isLeftMerge) insertContinuation(message.activation, n)
+      val activation = if (message.activation != null) message.activation else Activation(message.node)
+      
+      val nary_op_isLeftMerge = n match {
+        case nary@N_n_ary_op (t: T_n_ary, isLeftMerge) => isLeftMerge case _ => false
       }
+      if (!nary_op_isLeftMerge) insertContinuation(activation, n)
     }
     else if (n.children.isEmpty) {
       insertDeactivation(n, null)
@@ -1015,12 +1031,11 @@ class CommonScriptExecutor extends ScriptExecutor {
     // decide on deactivation of n
     
   }
-
-  /*
-   * message dispatcher; not really OO, but all real activity should be at the executors; other things should be passive
-   */
-  def handle(message: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait]):Unit = {
-    message match {
+  
+  
+  type MessageHandler = PartialFunction[CallGraphMessage[_ <: CallGraphNodeTrait], Unit]
+  
+  val defaultHandler: MessageHandler = {
       case a@ Activation        (_) => handleActivation   (a)
       case a@Continuation       (_) => handleContinuation (a)
       case a@Continuation1      (_) => handleContinuation1(a)
@@ -1040,7 +1055,22 @@ class CommonScriptExecutor extends ScriptExecutor {
       case a@AAToBeExecuted     (_) => handleAAToBeExecuted     (a)
       case CommunicationMatchingMessage => handleCommunicationMatchingMessage
     }
+  val communicationHandler: MessageHandler = {
+    case InvokeFromET(_, payload) => payload()
   }
+  
+  private val messageHandlers = ListBuffer[MessageHandler](defaultHandler, communicationHandler)
+  def addHandler(h: MessageHandler)    = messageHandlers.synchronized { messageHandlers += h }
+  def removeHandler(h: MessageHandler) = messageHandlers.synchronized { messageHandlers -= h }
+  
+  def invokeFromET(f: => Unit) = insert(InvokeFromET(rootNode, () => f))
+  
+  /*
+   * message dispatcher; not really OO, but all real activity should be at the executors; other things should be passive
+   */
+  def handle(message: CallGraphMessage[_ <: subscript.vm.CallGraphNodeTrait]):Unit =
+    for (h <- messageHandlers if h isDefinedAt message) h(message)
+  
   
   /*
    * Main method of BasicExecutioner
@@ -1069,10 +1099,10 @@ class CommonScriptExecutor extends ScriptExecutor {
     else if (!rootNode.children.isEmpty) {
       messageAwaiting
       synchronized { // TBD: there should also be a synchronized call in the CodeExecutors
+        waitsForMessage = true
         if (callGraphMessageCount==0) // looks stupid, but event may have happened&notify() may have been called during tracing
-          synchronized {
             wait() // for an event to happen 
-          }
+        waitsForMessage = false
       }
       // note: there may also be deadlock because of unmatching communications
       // so there should preferably be a check for the existence of waiting event handling actions
