@@ -9,9 +9,10 @@ object ErrorProps extends QuasiquoteProperties("errors") {
     """)
 
   property("can't unquote with given rank") = fails(
-    "Can't unquote List[reflect.runtime.universe.Ident], consider using ..",
+    "Can't unquote List[StringBuilder], consider using .. or providing an implicit instance of Liftable[List[StringBuilder]]",
     """
-      val xs = List(q"x", q"x")
+      import java.lang.StringBuilder
+      val xs: List[StringBuilder] = Nil
       q"$xs"
     """)
 
@@ -71,9 +72,10 @@ object ErrorProps extends QuasiquoteProperties("errors") {
     """)
 
   property("use ... rank or provide liftable") = fails(
-    "Can't unquote List[List[reflect.runtime.universe.Ident]], consider using ...",
+    "Can't unquote List[List[StringBuilder]], consider using ... or providing an implicit instance of Liftable[List[List[StringBuilder]]]",
     """
-      val xs = List(List(q"x", q"x"))
+      import java.lang.StringBuilder
+      val xs: List[List[StringBuilder]] = Nil
       q"$xs"
     """)
 

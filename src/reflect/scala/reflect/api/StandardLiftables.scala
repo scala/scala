@@ -27,6 +27,7 @@ trait StandardLiftables { self: Universe =>
       callScala(stdnme.Symbol)(Literal(Constant(v.name)) :: Nil)
     }
 
+    implicit def liftTree[T <: Tree]: Liftable[T]              = Liftable { identity }
     implicit def liftName[T <: Name]: Liftable[T]              = Liftable { name => Ident(name) }
     implicit def liftExpr[T <: Expr[_]]: Liftable[T]           = Liftable { expr => expr.tree }
     implicit def liftType[T <: Type]: Liftable[T]              = Liftable { tpe => TypeTree(tpe) }
