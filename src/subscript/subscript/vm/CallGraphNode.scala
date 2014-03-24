@@ -290,8 +290,6 @@ case class N_n_ary_op           (template: T_n_ary_op      , isLeftMerge: Boolea
                                                                                       case Some(v:VariableHolder[V]) => v 
                                                                                       case _ => throw new Exception("not matched")}
   override def toString = super.toString+/*" "+children.length+*/(if(isIteration)" ..."else"")
-
-  override def n_ary_op_ancestor = this
 }
 
 // only one class for normal script calls and communicator-script calls
