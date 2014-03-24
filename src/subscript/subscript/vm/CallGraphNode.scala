@@ -67,9 +67,6 @@ trait CallGraphNodeTrait {
   var numberOfBusyActions = 0
   def isActionBusy = numberOfBusyActions>0
   
-  // User-defined data
-  var tag: Any = null
-
   var index = -1
   var stamp = 0
   var aaStartedCount = 0
@@ -229,6 +226,9 @@ abstract class CallGraphTreeNode_n_ary extends CallGraphTreeParentNode {
   var lastActivatedChild: CallGraphNodeTrait = null
   var aaStartedSinceLastOptionalBreak = false
   def mustBreak = hadBreak = true
+  
+  var breakWaker: CallGraphNodeTrait = null
+  
 }
 
 // The case classes for the bottom node types
@@ -290,6 +290,8 @@ case class N_n_ary_op           (template: T_n_ary_op      , isLeftMerge: Boolea
                                                                                       case Some(v:VariableHolder[V]) => v 
                                                                                       case _ => throw new Exception("not matched")}
   override def toString = super.toString+/*" "+children.length+*/(if(isIteration)" ..."else"")
+
+  override def n_ary_op_ancestor = this
 }
 
 // only one class for normal script calls and communicator-script calls

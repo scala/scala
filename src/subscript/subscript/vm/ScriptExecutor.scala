@@ -167,7 +167,14 @@ class CommonScriptExecutor extends ScriptExecutor {
     childNode.parent = parentNode
     childNode.scriptExecutor = parentNode.scriptExecutor
     parentNode.children.append(childNode)
-    parentNode match {case p: CallGraphTreeNode_n_ary => p.lastActivatedChild = childNode case _ =>}
+    
+    parentNode match {
+      case p: CallGraphTreeNode_n_ary =>
+        childNode match {case N_break(_) | N_optional_break(_) | N_optional_break_loop(_) => p.breakWaker = p.lastActivatedChild case _ =>}
+        p.lastActivatedChild = childNode
+      
+      case _ =>
+    }
   }
   // disconnect a child node from its parent
   def disconnect(childNode: CallGraphNodeTrait) {
@@ -670,8 +677,12 @@ class CommonScriptExecutor extends ScriptExecutor {
 		    if (nodesToBeSuspended!=null) nodesToBeSuspended.foreach((n) => insert(Suspend(n)))
        case _ =>	    
 	  }
-      // message.child may be null now
-      message.node.forEachParent(p => insert(AAStarted(p, message.node)))
+    
+    val operator = message.node.n_ary_op_ancestor
+    if (operator != null && operator.breakWaker == message.node) operator.aaStartedSinceLastOptionalBreak = true
+    
+    // message.child may be null now
+    message.node.forEachParent(p => insert(AAStarted(p, message.node)))
   }
   /*
    * Handle an AAEnded message
@@ -897,7 +908,7 @@ class CommonScriptExecutor extends ScriptExecutor {
       case _          => if (message.activation!=null || message.aaStarteds!=Nil || message.success!=null || message.deactivations != Nil) {
                            val b  = message.break
                            val as = message.aaStarteds
-                           n.aaStartedSinceLastOptionalBreak = n.aaStartedSinceLastOptionalBreak || as!=Nil
+                           // n.aaStartedSinceLastOptionalBreak = n.aaStartedSinceLastOptionalBreak || as!=Nil
                            if (b==null||b.activationMode==ActivationMode.Optional) {
                              if (n.activationMode==ActivationMode.Optional) {
                                  activateNextOrEnded = n.aaStartedSinceLastOptionalBreak
