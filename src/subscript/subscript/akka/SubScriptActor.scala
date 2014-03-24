@@ -1,8 +1,9 @@
-package subscript.vm
+package subscript.akka
 
-import akka.actor.Actor
 import subscript.DSL._scriptType
 import scala.collection.mutable.ListBuffer
+import subscript.vm._
+import akka.actor._
 
 trait SubScriptActor extends Actor {
 
