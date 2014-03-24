@@ -679,7 +679,7 @@ class CommonScriptExecutor extends ScriptExecutor {
 	  }
     
     val operator = message.node.n_ary_op_ancestor
-    if (operator != null && operator.breakWaker == message.node) operator.aaStartedSinceLastOptionalBreak = true
+    if (operator != null && (operator.breakWaker eq message.node)) operator.aaStartedSinceLastOptionalBreak = true
     
     // message.child may be null now
     message.node.forEachParent(p => insert(AAStarted(p, message.node)))
