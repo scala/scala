@@ -88,14 +88,20 @@ object LiftableProps extends QuasiquoteProperties("liftable") {
     assert(q"$const" ≈ q"0")
   }
 
+  val immutable = q"$scalapkg.collection.immutable"
+
   property("lift list variants") = test {
     val lst = List(1, 2)
-    val immutable = q"$scalapkg.collection.immutable"
     assert(q"$lst" ≈ q"$immutable.List(1, 2)")
     assert(q"f(..$lst)" ≈ q"f(1, 2)")
     val llst = List(List(1), List(2))
     assert(q"f(..$llst)" ≈ q"f($immutable.List(1), $immutable.List(2))")
     assert(q"f(...$llst)" ≈ q"f(1)(2)")
+  }
+
+  property("lift list of tree") = test {
+    val lst = List(q"a", q"b")
+    assert(q"$lst" ≈ q"$immutable.List(a, b)")
   }
 
   property("lift tuple") = test {
