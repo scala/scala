@@ -227,9 +227,9 @@ trait ReificationSupport { self: SymbolTable =>
         else throw new IllegalArgumentException(s"can't create applied type from non-type $tree")
 
       def unapply(tree: Tree): Option[(Tree, List[Tree])] = tree match {
-        case AppliedTypeTree(tpe, targs) => Some((tpe, targs))
-        case _ if tree.isType            => Some((tree, Nil))
-        case _                           => None
+        case MaybeTypeTreeOriginal(AppliedTypeTree(tpe, targs)) => Some((tpe, targs))
+        case _ if tree.isType => Some((tree, Nil))
+        case _ => None
       }
     }
 
@@ -875,13 +875,24 @@ trait ReificationSupport { self: SymbolTable =>
       def unapply(tree: Try): Option[(Tree, List[CaseDef], Tree)] = Try.unapply(tree)
     }
 
-    object SyntacticIdent extends SyntacticIdentExtractor {
-      def apply(name: Name, isBackquoted: Boolean) = {
+    object SyntacticTermIdent extends SyntacticTermIdentExtractor {
+      def apply(name: TermName, isBackquoted: Boolean): Ident = {
         val id = self.Ident(name)
         if (isBackquoted) id updateAttachment BackquotedIdentifierAttachment
         id
       }
-      def unapply(tree: Ident): Some[(Name, Boolean)] = Some((tree.name, tree.hasAttachment[BackquotedIdentifierAttachment.type]))
+      def unapply(id: Ident): Option[(TermName, Boolean)] = id.name match {
+        case name: TermName => Some((name, id.hasAttachment[BackquotedIdentifierAttachment.type]))
+        case _              => None
+      }
+    }
+
+    object SyntacticTypeIdent extends SyntacticTypeIdentExtractor {
+      def apply(name: TypeName): Ident = self.Ident(name)
+      def unapply(tree: Tree): Option[TypeName] = tree match {
+        case MaybeTypeTreeOriginal(Ident(name: TypeName)) => Some(name)
+        case _ => None
+      }
     }
 
     /** Facade over Imports and ImportSelectors that lets to structurally
@@ -1027,8 +1038,8 @@ trait ReificationSupport { self: SymbolTable =>
     object SyntacticSelectType extends SyntacticSelectTypeExtractor {
       def apply(qual: Tree, name: TypeName): Select = Select(qual, name)
       def unapply(tree: Tree): Option[(Tree, TypeName)] = tree match {
-        case Select(qual, name: TypeName) => Some((qual, name))
-        case _                            => None
+        case MaybeTypeTreeOriginal(Select(qual, name: TypeName)) => Some((qual, name))
+        case _ => None
       }
     }
 
@@ -1037,6 +1048,63 @@ trait ReificationSupport { self: SymbolTable =>
       def unapply(tree: Tree): Option[(Tree, TermName)] = tree match {
         case Select(qual, name: TermName) => Some((qual, name))
         case _                            => None
+      }
+    }
+
+    object SyntacticCompoundType extends SyntacticCompoundTypeExtractor {
+      def apply(parents: List[Tree], defns: List[Tree]) =
+        CompoundTypeTree(Template(gen.mkParents(NoMods, parents), noSelfType, defns))
+      def unapply(tree: Tree): Option[(List[Tree], List[Tree])] = tree match {
+        case MaybeTypeTreeOriginal(CompoundTypeTree(Template(parents, _, defns))) =>
+          Some((parents, defns))
+        case _ =>
+          None
+      }
+    }
+
+    object SyntacticSingletonType extends SyntacitcSingletonTypeExtractor {
+      def apply(ref: Tree): SingletonTypeTree = SingletonTypeTree(ref)
+      def unapply(tree: Tree): Option[Tree] = tree match {
+        case MaybeTypeTreeOriginal(SingletonTypeTree(ref)) =>
+          Some(ref)
+        case _ =>
+          None
+      }
+    }
+
+    object SyntacticTypeProjection extends SyntacticTypeProjectionExtractor {
+      def apply(qual: Tree, name: TypeName): SelectFromTypeTree =
+        SelectFromTypeTree(qual, name)
+      def unapply(tree: Tree): Option[(Tree, TypeName)] = tree match {
+        case MaybeTypeTreeOriginal(SelectFromTypeTree(qual, name)) =>
+          Some((qual, name))
+        case _ =>
+          None
+      }
+    }
+
+    object SyntacticAnnotatedType extends SyntacticAnnotatedTypeExtractor {
+      def apply(tpt: Tree, annot: Tree): Annotated =
+        Annotated(annot, tpt)
+      def unapply(tree: Tree): Option[(Tree, Tree)] = tree match {
+        case MaybeTypeTreeOriginal(Annotated(annot, tpt)) =>
+          Some((tpt, annot))
+        case _ =>
+          None
+      }
+    }
+
+    object SyntacticExistentialType extends SyntacticExistentialTypeExtractor {
+      def apply(tpt: Tree, where: List[Tree]): ExistentialTypeTree =
+        ExistentialTypeTree(tpt, where.map {
+          case md: MemberDef => md
+          case tree => throw new IllegalArgumentException("$tree is not legal forSome definition")
+        })
+      def unapply(tree: Tree): Option[(Tree, List[MemberDef])] = tree match {
+        case MaybeTypeTreeOriginal(ExistentialTypeTree(tpt, where)) =>
+          Some((tpt, where))
+        case _ =>
+          None
       }
     }
   }
