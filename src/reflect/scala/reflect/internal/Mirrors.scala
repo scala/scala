@@ -30,6 +30,8 @@ trait Mirrors extends api.Mirrors {
     val EmptyPackageClass: ClassSymbol
     val EmptyPackage: ModuleSymbol
 
+    def symbolOf[T: universe.WeakTypeTag]: universe.TypeSymbol = universe.weakTypeTag[T].in(this).tpe.typeSymbolDirect.asType
+
     def findMemberFromRoot(fullName: Name): Symbol = {
       val segs = nme.segments(fullName.toString, fullName.isTermName)
       if (segs.isEmpty) NoSymbol

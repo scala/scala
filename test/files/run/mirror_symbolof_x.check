@@ -1,0 +1,13 @@
+class Int
+object C
+type T
+type Id
+class Nothing
+class Null
+class Int
+object C
+type T
+type Id
+class Nothing
+class Null
+exception: class C not found.

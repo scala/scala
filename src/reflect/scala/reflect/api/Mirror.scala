@@ -118,4 +118,22 @@ abstract class Mirror[U <: Universe with Singleton] {
    *  @group Mirror
    */
   def staticPackage(fullName: String): U#ModuleSymbol
+
+  /**
+   * Shortcut for `implicitly[WeakTypeTag[T]].tpe`
+   * @group TypeTags
+   */
+  def weakTypeOf[T: universe.WeakTypeTag]: U#Type = universe.weakTypeTag[T].in(this).tpe
+
+  /**
+   * Shortcut for `implicitly[TypeTag[T]].tpe`
+   * @group TypeTags
+   */
+  def typeOf[T: universe.TypeTag]: U#Type = universe.typeTag[T].in(this).tpe
+
+  /**
+   * Type symbol of `x` as derived from a type tag.
+   * @group TypeTags
+   */
+  def symbolOf[T: universe.WeakTypeTag]: U#TypeSymbol
 }
