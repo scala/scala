@@ -165,11 +165,11 @@ object Iterator {
   /** Avoid stack overflows when applying ++ to lots of iterators by
    *  flattening the unevaluated iterators out into a vector of closures.
    */
-  private[scala] final class ConcatIterator[+A](initial: Vector[() => Iterator[A]]) extends Iterator[A] {
-    // current set to null when all iterators are exhausted
-    private[this] var current: Iterator[A] = Iterator.empty
+  private[scala] final class ConcatIterator[+A](private[this] var current: Iterator[A], initial: Vector[() => Iterator[A]]) extends Iterator[A] {
+    @deprecated def this(initial: Vector[() => Iterator[A]]) = this(Iterator.empty, initial) // for binary compatibility
     private[this] var queue: Vector[() => Iterator[A]] = initial
     // Advance current to the next non-empty iterator
+    // current is set to null when all iterators are exhausted
     private[this] def advance(): Boolean = {
       if (queue.isEmpty) {
         current = null
@@ -185,7 +185,7 @@ object Iterator {
     def next()  = if (hasNext) current.next else Iterator.empty.next
 
     override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] =
-      new ConcatIterator(queue :+ (() => that.toIterator))
+      new ConcatIterator(current, queue :+ (() => that.toIterator))
   }
 
   private[scala] final class JoinIterator[+A](lhs: Iterator[A], that: => GenTraversableOnce[A]) extends Iterator[A] {
@@ -194,7 +194,7 @@ object Iterator {
     def next    = if (lhs.hasNext) lhs.next else rhs.next
 
     override def ++[B >: A](that: => GenTraversableOnce[B]) =
-      new ConcatIterator(Vector(() => this, () => that.toIterator))
+      new ConcatIterator(this, Vector(() => that.toIterator))
   }
 }
 
