@@ -241,10 +241,15 @@ trait ReificationSupport { self: SymbolTable =>
         case UnApply(treeInfo.Unapplied(Select(fun, nme.unapply)), pats) =>
           Some((fun, pats :: Nil))
         case treeInfo.Applied(fun, targs, argss) =>
-          val callee =
-            if (fun.isTerm) SyntacticTypeApplied(fun, targs)
-            else SyntacticAppliedType(fun, targs)
-          Some((callee, argss))
+          fun match {
+            case Select(_: New, nme.CONSTRUCTOR) =>
+              Some((tree, Nil))
+            case _ =>
+              val callee =
+                if (fun.isTerm) SyntacticTypeApplied(fun, targs)
+                else SyntacticAppliedType(fun, targs)
+              Some((callee, argss))
+          }
       }
     }
 

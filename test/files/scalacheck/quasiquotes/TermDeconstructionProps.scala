@@ -239,4 +239,11 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     val q"new ..$parents" = q"new Foo with Bar"
     assert(parents ≈ List(tq"Foo", tq"Bar"))
   }
+
+  property("SI-8387 new is not an application") = test {
+    val `new` = q"new F(x)"
+    val q"$f(...$argss)" = `new`
+    assert(f ≈ `new`)
+    assert(argss.isEmpty)
+  }
 }
