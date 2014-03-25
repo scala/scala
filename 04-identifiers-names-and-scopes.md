@@ -34,18 +34,21 @@ in some inner scope _shadows_ bindings of lower precedence in the
 same scope as well as bindings of the same or lower precedence in outer
 scopes. 
 
+<!-- TODO: either the example, the spec, or the compiler is wrong
+
 Note that shadowing is only a partial order. In a situation like
 
 ``` 
-val x = 1;
+val x = 1
 {
-  import p.x;
+  import p.x
   x
 }
 ```
 
 neither binding of `x` shadows the other. Consequently, the
-reference to `x` in the third line above would be ambiguous.
+reference to `x` in the last line of the block above would be ambiguous.
+-->
 
 A reference to an unqualified (type- or term-) identifier $x$ is bound
 by the unique binding, which
