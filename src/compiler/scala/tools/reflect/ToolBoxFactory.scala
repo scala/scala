@@ -63,7 +63,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
         try body
         finally cleanupCaches()
 
-      def verify(expr: Tree): Unit = {
+      def verify(expr: Tree): Tree = {
         // Previously toolboxes used to typecheck their inputs before compiling.
         // Actually, the initial demo by Martin first typechecked the reified tree,
         // then ran it, which typechecked it again, and only then launched the
@@ -84,14 +84,8 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           msg += "if you have troubles tracking free type variables, consider using -Xlog-free-types"
           throw ToolBoxError(msg)
         }
-      }
 
-      def wrapIntoTerm(tree: Tree): Tree =
-        if (!tree.isTerm) Block(List(tree), Literal(Constant(()))) else tree
-
-      def unwrapFromTerm(tree: Tree): Tree = tree match {
-        case Block(List(tree), Literal(Constant(()))) => tree
-        case tree => tree
+        expr
       }
 
       def extractFreeTerms(expr0: Tree, wrapFreeTermRefs: Boolean): (Tree, scala.collection.mutable.LinkedHashMap[FreeTermSymbol, TermName]) = {
@@ -121,50 +115,51 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
       }
 
       def transformDuringTyper(expr0: Tree, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean)(transform: (analyzer.Typer, Tree) => Tree): Tree = {
-        verify(expr0)
+        wrappingIntoTerm(verify(expr0))(expr1 => {
+          // need to wrap the expr, because otherwise you won't be able to typecheck macros against something that contains free vars
+          val exprAndFreeTerms = extractFreeTerms(expr1, wrapFreeTermRefs = false)
+          var expr2 = exprAndFreeTerms._1
+          val freeTerms = exprAndFreeTerms._2
+          val dummies = freeTerms.map{ case (freeTerm, name) => ValDef(NoMods, name, TypeTree(freeTerm.info), Select(Ident(PredefModule), newTermName("$qmark$qmark$qmark"))) }.toList
+          expr2 = Block(dummies, expr2)
 
-        // need to wrap the expr, because otherwise you won't be able to typecheck macros against something that contains free vars
-        var (expr, freeTerms) = extractFreeTerms(expr0, wrapFreeTermRefs = false)
-        val dummies = freeTerms.map{ case (freeTerm, name) => ValDef(NoMods, name, TypeTree(freeTerm.info), Select(Ident(PredefModule), newTermName("$qmark$qmark$qmark"))) }.toList
-        expr = Block(dummies, wrapIntoTerm(expr))
+          // [Eugene] how can we implement that?
+          // !!! Why is this is in the empty package? If it's only to make
+          // it inaccessible then please put it somewhere designed for that
+          // rather than polluting the empty package with synthetics.
+          val ownerClass    = rootMirror.EmptyPackageClass.newClassSymbol(newTypeName("<expression-owner>"))
+          build.setTypeSignature(ownerClass, ClassInfoType(List(ObjectClass.tpe), newScope, ownerClass))
+          val owner         = ownerClass.newLocalDummy(expr2.pos)
+          var currentTyper  = analyzer.newTyper(analyzer.rootContext(NoCompilationUnit, EmptyTree).make(expr2, owner))
+          val wrapper1      = if (!withImplicitViewsDisabled) (currentTyper.context.withImplicitsEnabled[Tree] _) else (currentTyper.context.withImplicitsDisabled[Tree] _)
+          val wrapper2      = if (!withMacrosDisabled) (currentTyper.context.withMacrosEnabled[Tree] _) else (currentTyper.context.withMacrosDisabled[Tree] _)
+          def wrapper       (tree: => Tree) = wrapper1(wrapper2(tree))
 
-        // [Eugene] how can we implement that?
-        // !!! Why is this is in the empty package? If it's only to make
-        // it inaccessible then please put it somewhere designed for that
-        // rather than polluting the empty package with synthetics.
-        val ownerClass    = rootMirror.EmptyPackageClass.newClassSymbol(newTypeName("<expression-owner>"))
-        build.setTypeSignature(ownerClass, ClassInfoType(List(ObjectClass.tpe), newScope, ownerClass))
-        val owner         = ownerClass.newLocalDummy(expr.pos)
-        var currentTyper  = analyzer.newTyper(analyzer.rootContext(NoCompilationUnit, EmptyTree).make(expr, owner))
-        val wrapper1      = if (!withImplicitViewsDisabled) (currentTyper.context.withImplicitsEnabled[Tree] _) else (currentTyper.context.withImplicitsDisabled[Tree] _)
-        val wrapper2      = if (!withMacrosDisabled) (currentTyper.context.withMacrosEnabled[Tree] _) else (currentTyper.context.withMacrosDisabled[Tree] _)
-        def wrapper       (tree: => Tree) = wrapper1(wrapper2(tree))
+          val run = new Run
+          run.symSource(ownerClass) = NoAbstractFile // need to set file to something different from null, so that currentRun.defines works
+          phase = run.typerPhase // need to set a phase to something <= typerPhase, otherwise implicits in typedSelect will be disabled
+          currentTyper.context.setReportErrors() // need to manually set context mode, otherwise typer.silent will throw exceptions
+          reporter.reset()
 
-        val run = new Run
-        run.symSource(ownerClass) = NoAbstractFile // need to set file to something different from null, so that currentRun.defines works
-        phase = run.typerPhase // need to set a phase to something <= typerPhase, otherwise implicits in typedSelect will be disabled
-        currentTyper.context.setReportErrors() // need to manually set context mode, otherwise typer.silent will throw exceptions
-        reporter.reset()
-
-        val expr1 = wrapper(transform(currentTyper, expr))
-        var (dummies1, unwrapped) = expr1 match {
-          case Block(dummies, unwrapped) => (dummies, unwrapped)
-          case unwrapped => (Nil, unwrapped)
-        }
-        var invertedIndex = freeTerms map (_.swap)
-        // todo. also fixup singleton types
-        unwrapped = new Transformer {
-          override def transform(tree: Tree): Tree =
-            tree match {
-              case Ident(name) if invertedIndex contains name =>
-                Ident(invertedIndex(name)) setType tree.tpe
-              case _ =>
-                super.transform(tree)
-            }
-        }.transform(unwrapped)
-        new TreeTypeSubstituter(dummies1 map (_.symbol), dummies1 map (dummy => SingleType(NoPrefix, invertedIndex(dummy.symbol.name)))).traverse(unwrapped)
-        unwrapped = if (expr0.isTerm) unwrapped else unwrapFromTerm(unwrapped)
-        unwrapped
+          val expr3 = wrapper(transform(currentTyper, expr2))
+          var (dummies1, result) = expr3 match {
+            case Block(dummies, result) => (dummies, result)
+            case result => (Nil, result)
+          }
+          var invertedIndex = freeTerms map (_.swap)
+          // todo. also fixup singleton types
+          result = new Transformer {
+            override def transform(tree: Tree): Tree =
+              tree match {
+                case Ident(name) if invertedIndex contains name =>
+                  Ident(invertedIndex(name)) setType tree.tpe
+                case _ =>
+                  super.transform(tree)
+              }
+          }.transform(result)
+          new TreeTypeSubstituter(dummies1 map (_.symbol), dummies1 map (dummy => SingleType(NoPrefix, invertedIndex(dummy.symbol.name)))).traverse(result)
+          result
+        })
       }
 
       def typeCheck(expr: Tree, pt: Type, silent: Boolean, withImplicitViewsDisabled: Boolean, withMacrosDisabled: Boolean): Tree =
