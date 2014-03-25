@@ -38,8 +38,10 @@ Note that shadowing is only a partial order. In a situation like
 
 ``` 
 val x = 1;
-{ import p.x; 
-  x }
+{
+  import p.x;
+  x
+}
 ```
 
 neither binding of `x` shadows the other. Consequently, the
