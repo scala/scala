@@ -222,4 +222,21 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     val q"{ case ..$cases }" = q"{ case a => b case c => d }"
     val List(cq"a => b", cq"c => d") = cases
   }
+
+  property("SI-8350 `new C` and `new C()` are equivalent") = test {
+    val q"new C" = q"new C()"
+    val q"new C()" = q"new C"
+  }
+
+  property("SI-8350 new applications extracted only for non-empty ctor calls") = test{
+    val q"new $c1" = q"new C()"
+    assert(c1 ≈ tq"C")
+    val q"new $c2" = q"new C(x)"
+    assert(c2 ≈ q"${tq"C"}(x)")
+  }
+
+  property("SI-8350 original test case") = test {
+    val q"new ..$parents" = q"new Foo with Bar"
+    assert(parents ≈ List(tq"Foo", tq"Bar"))
+  }
 }
