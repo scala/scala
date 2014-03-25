@@ -7,12 +7,11 @@ tag: lexical
 # Lexical Syntax
 
 Scala programs are written using the Unicode Basic Multilingual Plane
-( _BMP_ ) character set; Unicode supplementary characters are not
+(_BMP_) character set; Unicode supplementary characters are not
 presently supported.  This chapter defines the two modes of Scala's
-lexical syntax, the Scala mode and the _XML_ mode. If not
+lexical syntax, the Scala mode and the _XML mode_. If not
 otherwise mentioned, the following descriptions of Scala tokens refer
-to Scala mode, and literal characters `‘c’` refer to the ASCII fragment
-`\u0000` – `\u007F`.
+to _Scala mode_, and literal characters `‘c’` refer to the ASCII fragment `\u0000` – `\u007F`.
 
 In Scala mode, _Unicode escapes_ are replaced by the corresponding
 Unicode character with the given hexadecimal code.
