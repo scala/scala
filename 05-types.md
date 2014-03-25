@@ -291,8 +291,8 @@ one of the component types $T_1 , \ldots , T_n$, the usual rules for
 or definition is said to be “structural” [^2].
 
 [^2]: A reference to a structurally defined member (method call or access 
-to a value or variable) may generate binary code that is significantly 
-slower than an equivalent code to a non-structural member.
+      to a value or variable) may generate binary code that is significantly
+      slower than an equivalent code to a non-structural member.
 
 Within a method declaration in a structural refinement, the type of
 any value parameter may only refer to type parameters or abstract
