@@ -6,7 +6,8 @@
   MathJax.Hub.Config({
     tex2jax: {
       inlineMath: [['$','$'], ['\\(','\\)']],
-      skipTags: ['script', 'noscript', 'style', 'textarea']
+      skipTags: ['script', 'noscript', 'style', 'textarea'],
+      processEscapes: true
     }
   });
   </script>
