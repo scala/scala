@@ -18,7 +18,7 @@ The lexical syntax of Scala is given by the following grammar in EBNF form:
 
 ``` 
 whiteSpace       ::=  ‘\u0020’ | ‘\u0009’ | ‘\u000D’ | ‘\u000A’
-upper            ::=  ‘A’ | … | ‘Z’ | ‘$’ | ‘_’  // and Unicode category Lu
+upper            ::=  ‘A’ | … | ‘Z’ | ‘\$’ | ‘_’  // and Unicode category Lu
 lower            ::=  ‘a’ | … | ‘z’ // and Unicode category Ll
 letter           ::=  upper | lower // and Unicode categories Lo, Lt, Nl
 digit            ::=  ‘0’ | … | ‘9’

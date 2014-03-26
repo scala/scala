@@ -51,12 +51,9 @@ discussed subsequently in decreasing order of precedence.
 
 ## Expression Typing
 
-The typing of expressions is often relative to some _expected type_ 
-(which might be undefined).
-When we write ``expression $e$ is expected to conform to
-type $T$'', we mean: (1) the expected type of $e$ is
-$T$, and (2) the type of expression $e$ must conform to
-$T$.
+The typing of expressions is often relative to some _expected type_  (which might be undefined). When we write "expression $e$ is expected to conform to type $T$", we mean:
+  1. the expected type of $e$ is $T$, and
+  2. the type of expression $e$ must conform to $T$.
 
 The following skolemization rule is applied universally for every
 expression: If the type of an expression would be an existential type
@@ -91,14 +88,14 @@ which refers to a special “`null`” object. This object
 implements methods in class `scala.AnyRef` as follows:
 
 - `eq($x\,$)` and `==($x\,$)` return `true` iff the
-  argument $x$ is also the ``null'' object.
+  argument $x$ is also the "null" object.
 - `ne($x\,$)` and `!=($x\,$)` return true iff the 
-  argument x is not also the ``null'' object.
+  argument x is not also the "null" object.
 - `isInstanceOf[$T\,$]` always returns `false`.
 - `asInstanceOf[$T\,$]` returns the [default value](06-basic-declarations-and-definitions.html#value-declarations-and-definitions) of type $T$.
 - `##` returns ``0``.
 
-A reference to any other member of the ``null'' object causes a
+A reference to any other member of the "null" object causes a
 `NullPointerException` to be thrown. 
 
 
@@ -1309,7 +1306,7 @@ syntax. Each of these is equivalent to the anonymous function on its right.
 ## Constant Expressions
 
 Constant expressions are expressions that the Scala compiler can evaluate to a constant.
-The definition of ``constant expression'' depends on the platform, but they
+The definition of "constant expression" depends on the platform, but they
 include at least the expressions of the following forms:
 
 - A literal of a value class, such as an integer
@@ -1484,8 +1481,8 @@ single applicable alternative, that alternative is chosen. Otherwise, let $\math
 be the set of applicable alternatives which don't employ any default argument
 in the application to $e_1 , \ldots , e_m$. It is again an error if $\mathscr{CC}$ is empty.
 Otherwise, one chooses the _most specific_ alternative among the alternatives
-in $\mathscr{CC}$, according to the following definition of being ``as specific as'', and
-``more specific than'':
+in $\mathscr{CC}$, according to the following definition of being "as specific as", and
+"more specific than":
 
 <!--
 question: given

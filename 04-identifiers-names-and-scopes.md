@@ -107,7 +107,7 @@ object A {
         { val x = "abc"      // `x' bound by local definition
           import P.X._       // `x' and `y' bound by wildcard import
 //        println("L19: "+y) // reference to `y' is ambiguous here
-          println("L20: "+x) // `x' refers to string ``abc'' here
+          println("L20: "+x) // `x' refers to string "abc" here
 }}}}}}
 ```
 

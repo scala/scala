@@ -359,7 +359,7 @@ A type pattern $T$ is of one of the following  forms:
 Types which are not of one of the forms described above are also 
 accepted as type patterns. However, such type patterns will be translated to their
 [erasure](05-types.html#type-erasure).  The Scala
-compiler will issue an ``unchecked'' warning for these patterns to
+compiler will issue an "unchecked" warning for these patterns to
 flag the possible loss of type-safety.
 
 A _type variable pattern_ is a simple identifier which starts with
@@ -492,7 +492,7 @@ top-level runtime-class of the value `x` conforms to
 might lead to a class cast exception later on, in the case where the
 list `x` contains elements other than strings.  The Scala
 compiler will flag this potential loss of type-safety with an
-``unchecked'' warning message.
+"unchecked" warning message.
 
 
 ###### Example

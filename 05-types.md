@@ -711,40 +711,39 @@ These notions are defined mutually recursively as follows.
 
 1. The set of _base types_ of a type is a set of class types,
    given as follows.
-
-    - The base types of a class type $C$ with parents $T_1 , \ldots , T_n$ are
-      $C$ itself, as well as the base types of the compound type
-      `$T_1$ with … with $T_n$ { $R$ }`.
-    - The base types of an aliased type are the base types of its alias.
-    - The base types of an abstract type are the base types of its upper bound.
-    - The base types of a parameterized type 
-      `$C$[$T_1 , \ldots , T_n$]` are the base types
-      of type $C$, where every occurrence of a type parameter $a_i$ 
-      of $C$ has been replaced by the corresponding parameter type $T_i$.
-    - The base types of a singleton type `$p$.type` are the base types of
-      the type of $p$.
-    - The base types of a compound type 
-      `$T_1$ with $\ldots$ with $T_n$ { $R$ }`
-      are the _reduced union_ of the base
-      classes of all $T_i$'s. This means: 
-      Let the multi-set $\mathscr{S}$ be the multi-set-union of the
-      base types of all $T_i$'s.
-      If $\mathscr{S}$ contains several type instances of the same class, say
-      `$S^i$#$C$[$T^i_1 , \ldots , T^i_n$]` $(i \in I)$, then
-      all those instances 
-      are replaced by one of them which conforms to all
-      others. It is an error if no such instance exists. It follows that the 
-      reduced union, if it exists,
-      produces a set of class types, where different types are instances of 
-      different classes.
-    - The base types of a type selection `$S$#$T$` are
-      determined as follows. If $T$ is an alias or abstract type, the
-      previous clauses apply. Otherwise, $T$ must be a (possibly
-      parameterized) class type, which is defined in some class $B$.  Then
-      the base types of `$S$#$T$` are the base types of $T$
-      in $B$ seen from the prefix type $S$.
-    - The base types of an existential type `$T$ forSome { $Q$ }` are
-      all types `$S$ forSome { $Q$ }` where $S$ is a base type of $T$.
+  - The base types of a class type $C$ with parents $T_1 , \ldots , T_n$ are
+    $C$ itself, as well as the base types of the compound type
+    `$T_1$ with … with $T_n$ { $R$ }`.
+  - The base types of an aliased type are the base types of its alias.
+  - The base types of an abstract type are the base types of its upper bound.
+  - The base types of a parameterized type 
+    `$C$[$T_1 , \ldots , T_n$]` are the base types
+    of type $C$, where every occurrence of a type parameter $a_i$ 
+    of $C$ has been replaced by the corresponding parameter type $T_i$.
+  - The base types of a singleton type `$p$.type` are the base types of
+    the type of $p$.
+  - The base types of a compound type 
+    `$T_1$ with $\ldots$ with $T_n$ { $R$ }`
+    are the _reduced union_ of the base
+    classes of all $T_i$'s. This means: 
+    Let the multi-set $\mathscr{S}$ be the multi-set-union of the
+    base types of all $T_i$'s.
+    If $\mathscr{S}$ contains several type instances of the same class, say
+    `$S^i$#$C$[$T^i_1 , \ldots , T^i_n$]` $(i \in I)$, then
+    all those instances 
+    are replaced by one of them which conforms to all
+    others. It is an error if no such instance exists. It follows that the 
+    reduced union, if it exists,
+    produces a set of class types, where different types are instances of 
+    different classes.
+  - The base types of a type selection `$S$#$T$` are
+    determined as follows. If $T$ is an alias or abstract type, the
+    previous clauses apply. Otherwise, $T$ must be a (possibly
+    parameterized) class type, which is defined in some class $B$.  Then
+    the base types of `$S$#$T$` are the base types of $T$
+    in $B$ seen from the prefix type $S$.
+  - The base types of an existential type `$T$ forSome { $Q$ }` are
+    all types `$S$ forSome { $Q$ }` where $S$ is a base type of $T$.
 
 1. The notion of a type $T$ _in class $C$ seen from some prefix type $S$_
    makes sense only if the prefix type $S$
@@ -776,8 +775,8 @@ These notions are defined mutually recursively as follows.
 
     If $T$ is a possibly parameterized class type, where $T$'s class
     is defined in some other class $D$, and $S$ is some prefix type,
-    then we use ``$T$ seen from $S$'' as a shorthand for
-    ``$T$ in $D$ seen from $S$''.
+    then we use "$T$ seen from $S$" as a shorthand for
+    "$T$ in $D$ seen from $S$".
 
 1. The _member bindings_ of a type $T$ are (1) all bindings $d$ such that
    there exists a type instance of some class $C$ among the base types of $T$
