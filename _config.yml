@@ -5,6 +5,5 @@ markdown: redcarpet
 encoding: utf-8
 redcarpet:
   extensions: ["no_intra_emphasis", "fenced_code_blocks", "autolink", "tables", "with_toc_data", "strikethrough", "lax_spacing", "space_after_headers", "superscript", "footnotes"]
-  
-# baseurl: /my-site-name
+baseurl: /scala-ref-markdown/
 # permalink: /docs/:title.html
