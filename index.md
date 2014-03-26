@@ -4,7 +4,7 @@ layout: default
 ---
 
 <ul>
-  {% for post in site.pages %}
+  {% for post in site.pages | sort:"name" %}
     <li>
       <a href="{{site.baseurl}}{{ post.url }}">{{ post.title }}</a>
     </li>
