@@ -37,7 +37,7 @@ than once in a pattern.
 ###### Example
 Some examples of patterns are:
  1.  The pattern `ex: IOException` matches all instances of class
-        `IOException`, binding variable \verb@ex@ to the instance.
+        `IOException`, binding variable `ex` to the instance.
  1.  The pattern `Some(x)` matches values of the form `Some($v$)`,
         binding `x` to the argument value $v$ of the `Some` constructor.
  1.  The pattern `(x, _)` matches pairs of values, binding `x` to
@@ -245,7 +245,7 @@ SimplePattern ::= StableId `(' [Patterns `,'] [varid `@'] `_' `*' `)'
 ```
 
 A pattern sequence $p_1 , \ldots , p_n$ appears in two contexts.
-First, in a constructor pattern $c(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$, where $c$ is a case class which has $m+1$ primary constructor parameters,  ending in a [repeated parameter](06-basic-declarations-and-definitions.html#repeated-parameters) of type  $S*$.
+First, in a constructor pattern $c(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$, where $c$ is a case class which has $m+1$ primary constructor parameters,  ending in a [repeated parameter](06-basic-declarations-and-definitions.html#repeated-parameters) of type `S*`.
 Second, in an extractor pattern $x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$ if the extractor object $x$ does not have an `unapply` method,
 but it does define an `unapplySeq` method with a result type conforming to `Option[(T_1, ... , T_m, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted). The expected type for the patterns $p_i$ is $S$.
 
@@ -400,11 +400,7 @@ The set $\mathcal{C}_0$ is then augmented by further subtype constraints. There 
 cases.
 
 ###### Case 1
-If there exists a substitution $\sigma$ over the type variables $a_i
-, \ldots , a_n$ such that $\sigma T$ conforms to $\mathit{pt}$, one determines
-the weakest subtype constraints $\mathcal{C}_1$ over the type variables $a_1
-, \ldots , a_n$ such that $\mathcal{C}_0 \wedge \mathcal{C}_1$ implies that $T$
-conforms to $\mathit{pt}$.
+If there exists a substitution $\sigma$ over the type variables $a_i , \ldots , a_n$ such that $\sigma T$ conforms to $\mathit{pt}$, one determines the weakest subtype constraints $\mathcal{C}_1$ over the type variables $a_1, \ldots , a_n$ such that $\mathcal{C}_0 \wedge \mathcal{C}_1$ implies that $T$ conforms to $\mathit{pt}$.
 
 ###### Case 2
 Otherwise, if $T$ can not be made to conform to $\mathit{pt}$ by
@@ -428,9 +424,7 @@ variables which imply the established constraint system. The process
 is different for the two cases above.
 
 ###### Case 1
-We take $a_i >: L_i <: U_i$ where each
-$L_i$ is minimal and each $U_i$ is maximal wrt $<:$ such that
-$a_i >: L_i <: U_i$ for $i = 1 , \ldots , n$ implies $\mathcal{C}_0 \wedge \mathcal{C}_1$.
+We take $a_i >: L_i <: U_i$ where each $L_i$ is minimal and each $U_i$ is maximal wrt $<:$ such that $a_i >: L_i <: U_i$ for $i = 1, \ldots, n$ implies $\mathcal{C}_0 \wedge \mathcal{C}_1$.
 
 ###### Case 2
 We take $a_i >: L_i <: U_i$ and $b_i >: L'_i <: U'_i$ where each $L_i$
@@ -444,7 +438,7 @@ complexity of inferred bounds. Minimality and maximality of types have
 to be understood relative to the set of types of acceptable
 complexity.
 
-Type parameter inference for constructor patterns. \
+#### Type parameter inference for constructor patterns.
 Assume a constructor pattern $C(p_1 , \ldots , p_n)$ where class $C$
 has type type parameters $a_1 , \ldots , a_n$.  These type parameters
 are inferred in the same way as for the typed pattern
@@ -549,8 +543,8 @@ variables in $p_i$ comprises the pattern's guard and the corresponding block $b_
 Let $T$ be the type of the selector expression $e$ and let $a_1
 , \ldots , a_m$ be the type parameters of all methods enclosing 
 the pattern matching expression.  For every $a_i$, let $L_i$ be its
-lower bound and $U_i$ be its higher bound.  Every pattern $p \in
-\{p_1, , \ldots , p_n\}$ can be typed in two ways. First, it is attempted
+lower bound and $U_i$ be its higher bound.  Every pattern $p \in \{p_1, , \ldots , p_n\}$
+can be typed in two ways. First, it is attempted
 to type $p$ with $T$ as its expected type. If this fails, $p$ is
 instead typed with a modified expected type $T'$ which results from
 $T$ by replacing every occurrence of a type parameter $a_i$ by
@@ -576,15 +570,14 @@ $b_i$.
 
 When applying a pattern matching expression to a selector value,
 patterns are tried in sequence until one is found which matches the
-[selector value](#patterns). Say this case is 
-$\mathbf{case} p_i \Rightarrow b_i$. The result of the whole expression is 
-then the result of
-evaluating $b_i$, where all pattern variables of $p_i$ are bound to
+[selector value](#patterns). Say this case is `$case p_i \Rightarrow b_i$`.
+The result of the whole expression is the result of evaluating $b_i$,
+where all pattern variables of $p_i$ are bound to
 the corresponding parts of the selector value.  If no matching pattern
 is found, a `scala.MatchError` exception is thrown.
 
-The pattern in a case may also be followed by a guard suffix \
-`if e`\ with a boolean expression $e$.  The guard expression is
+The pattern in a case may also be followed by a guard suffix
+`if e` with a boolean expression $e$.  The guard expression is
 evaluated if the preceding pattern in the case matches. If the guard
 expression evaluates to `true`, the pattern match succeeds as
 normal. If the guard expression evaluates to `false`, the pattern
@@ -600,7 +593,7 @@ expression is evaluated only if the pattern it guards matches.
 If the selector of a pattern match is an instance of a
 [`sealed` class](07-classes-and-objects.html#modifiers),
 the compilation of pattern matching can emit warnings which diagnose
-that a given set of patterns is not exhaustive, i.e.\ that there is a
+that a given set of patterns is not exhaustive, i.e. that there is a
 possibility of a `MatchError` being raised at run-time. 
 
 ###### Example: `eval`

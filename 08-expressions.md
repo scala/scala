@@ -260,7 +260,7 @@ type of argument $e_i$ $(i = 1 , \ldots , m)$. If $f$ is a polymorphic method,
 [local type inference](#local-type-inference) is used to determine
 type arguments for $f$. If $f$ has some value type, the application is taken to
 be equivalent to `$f$.apply($e_1 , \ldots , e_m$)`,
-i.e.\ the application of an `apply` method defined by $f$.
+i.e. the application of an `apply` method defined by $f$.
 
 The function $f$ must be _applicable_ to its arguments $e_1
 , \ldots , e_n$ of types $S_1 , \ldots , S_n$.
@@ -309,10 +309,10 @@ the local value for that parameter has the form `val $y_i$ = () => $e$`
 and the argument passed to the function is `$y_i$()`.
 
 The last argument in an application may be marked as a sequence
-argument, e.g.\ `$e$: _*`. Such an argument must correspond
+argument, e.g. `$e$: _*`. Such an argument must correspond
 to a [repeated parameter](06-basic-declarations-and-definitions.html#repeated-parameters) of type
 `$S$*` and it must be the only argument matching this
-parameter (i.e.\ the number of formal parameters and actual arguments
+parameter (i.e. the number of formal parameters and actual arguments
 must be the same). Furthermore, the type of $e$ must conform to
 `scala.Seq[$T$]`, for some type $T$ which conforms to
 $S$. In this case, the argument list is transformed by replacing the
@@ -414,9 +414,9 @@ The final result of the transformation is a block of the form
   val $y_1$ = $e_1$
   $\ldots$
   val $y_m$ = $e_m$
-  val $z_1$ = q.$m$\$default\$i[$\mathit{targs}$]($\mathit{args}_1$)$, \ldots ,$($\mathit{args}_l$)
+  val $z_1$ = $q.m\$default\$i[\mathit{targs}](\mathit{args}_1), \ldots ,(\mathit{args}_l)$
   $\ldots$
-  val $z_d$ = q.$m$\$default\$j[$\mathit{targs}$]($\mathit{args}_1$)$, \ldots ,$($\mathit{args}_l$)
+  val $z_d$ = $q.m\$default\$j[\mathit{targs}](\mathit{args}_1), \ldots ,(\mathit{args}_l)$
   q.$m$[$\mathit{targs}$]($\mathit{args}_1$)$, \ldots ,$($\mathit{args}_l$)($\mathit{args}$)
 }
 ```
@@ -428,12 +428,12 @@ The final result of the transformation is a block of the form
 SimpleExpr    ::=  SimpleExpr1 `_'
 ```
 
-The expression ~`$e$ _`~ is well-formed if $e$ is of method
+The expression `$e$ _` is well-formed if $e$ is of method
 type or if $e$ is a call-by-name parameter.  If $e$ is a method with
-parameters, `$e$ _`~ represents $e$ converted to a function
+parameters, `$e$ _` represents $e$ converted to a function
 type by [eta expansion](#eta-expansion). If $e$ is a
 parameterless method or call-by-name parameter of type 
-`=>$T$`, `$e$ _`~ represents the function of type 
+`=>$T$`, `$e$ _` represents the function of type
 `() => $T$`, which evaluates $e$ when it is applied to the empty
 parameterlist `()`.
 
@@ -473,7 +473,7 @@ U_i$, where $\sigma$ is the substitution $[a_1 := T_1 , \ldots , a_n
 
 If the function part $e$ is of some value type, the type application
 is taken to be equivalent to 
-`$e$.apply[$T_1 , \ldots ,$ T$_n$]`, i.e.\ the application of an `apply` method defined by
+`$e$.apply[$T_1 , \ldots ,$ T$_n$]`, i.e. the application of an `apply` method defined by
 $e$.
 
 Type applications can be omitted if 
@@ -593,7 +593,7 @@ Specifically,
 - A locally defined type definition  `type$\;t = T$`
   is bound by the existential clause `type$\;t >: T <: T$`.
   It is an error if $t$ carries type parameters. 
-- A locally defined value definition~ `val$\;x: T = e$` is
+- A locally defined value definition `val$\;x: T = e$` is
   bound by the existential clause `val$\;x: T$`.
 - A locally defined class definition `class$\;c$ extends$\;t$`
   is bound by the existential clause `type$\;c <: T$` where
@@ -671,7 +671,7 @@ character. Characters are listed below in increasing order of
 precedence, with characters on the same line having the same precedence.
 
 ```
-$\mbox{\rm\sl(all letters)}$
+(all letters)
 |
 ^
 &
@@ -680,7 +680,7 @@ $\mbox{\rm\sl(all letters)}$
 :
 + -
 * / %
-$\mbox{\rm\sl(all other special characters)}$
+(all other special characters)
 ```
 
 That is, operators starting with a letter have lowest precedence,
@@ -713,7 +713,7 @@ parts of an expression as follows.
   sequence is interpreted as
   $e_0;\mathit{op}_1;(e_1;\mathit{op}_2;(\ldots \mathit{op}_n;e_n)\ldots)$.
 - Postfix operators always have lower precedence than infix
-  operators. E.g.\ $e_1;\mathit{op}_1;e_2;\mathit{op}_2$ is always equivalent to
+  operators. E.g. $e_1;\mathit{op}_1;e_2;\mathit{op}_2$ is always equivalent to
   $(e_1;\mathit{op}_1;e_2);\mathit{op}_2$.
 
 The right-hand operand of a left-associative operator may consist of
@@ -814,7 +814,7 @@ is interpreted as the invocation `$f.x$_=($e\,$)`.
 
 An assignment `$f$($\mathit{args}\,$) = $e$` with a function application to the
 left of the ‘`=`’ operator is interpreted as 
-`$f.$update($\mathit{args}$, $e\,$)`, i.e.\
+`$f.$update($\mathit{args}$, $e\,$)`, i.e.
 the invocation of an `update` function defined by $f$.
 
 ###### Example
@@ -1373,13 +1373,13 @@ The following five implicit conversions can be applied to an
 expression $e$ which has some value type $T$ and which is type-checked with
 some expected type $\mathit{pt}$.
 
-_Overloading Resolution_ \
+#### Overloading Resolution
 If an expression denotes several possible members of a class, 
 [overloading resolution](#overloading-resolution)
 is applied to pick a unique member.
 
 
-_Type Instantiation_ \
+###### Type Instantiation
 An expression $e$ of polymorphic type
 
 ``` 
@@ -1394,29 +1394,29 @@ for the type variables `$a_1 , \ldots , a_n$` and
 implicitly embedding $e$ in the [type application](#type-applications)
 `$e$[$T_1 , \ldots , T_n$]`.
 
-_Numeric Widening_ \
+###### Numeric Widening
 If $e$ has a primitive number type which [weakly conforms](05-types.html#weak-conformance)
 to the expected type, it is widened to
 the expected type using one of the numeric conversion methods
 `toShort`, `toChar`, `toInt`, `toLong`,
 `toFloat`, `toDouble` defined [here](14-the-scala-standard-library.html#numeric-value-types).
 
-_Numeric Literal Narrowing_ \
+###### Numeric Literal Narrowing
 If the expected type is `Byte`, `Short` or `Char`, and
 the expression $e$ is an integer literal fitting in the range of that
 type, it is converted to the same literal in that type.
 
-_Value Discarding_  \
+###### Value Discarding
 If $e$ has some value type and the expected type is `Unit`,
 $e$ is converted to the expected type by embedding it in the 
 term `{ $e$; () }`.
 
-_View Application_ \
+###### View Application
 If none of the previous conversions applies, and $e$'s type
 does not conform to the expected type $\mathit{pt}$, it is attempted to convert
-$e$ to the expected type with a [view](09-implicit-parameters-and-views.html#views).\bigskip
+$e$ to the expected type with a [view](09-implicit-parameters-and-views.html#views).
 
-_Dynamic Member Selection_ \
+###### Dynamic Member Selection
 If none of the previous conversions applies, and $e$ is a prefix
 of a selection $e.x$, and $e$'s type conforms to class `scala.Dynamic`,
 then the selection is rewritten according to the rules for 
@@ -1427,23 +1427,23 @@ then the selection is rewritten according to the rules for
 The following four implicit conversions can be applied to methods
 which are not applied to some argument list.
 
-_Evaluation_ \
+###### Evaluation
 A parameterless method $m$ of type `=> $T$` is always converted to
 type $T$ by evaluating the expression to which $m$ is bound.
 
-_Implicit Application_ \
-  If the method takes only implicit parameters, implicit
-  arguments are passed following the rules [here](09-implicit-parameters-and-views.html#implicit-parameters).
+###### Implicit Application
+If the method takes only implicit parameters, implicit
+arguments are passed following the rules [here](09-implicit-parameters-and-views.html#implicit-parameters).
 
-_Eta Expansion_ \
-  Otherwise, if the method is not a constructor, 
-  and the expected type $\mathit{pt}$ is a function type
-  $(\mathit{Ts}') \Rightarrow T'$, [eta-expansion](#eta-expansion)
-  is performed on the expression $e$.
+###### Eta Expansion
+Otherwise, if the method is not a constructor,
+and the expected type $\mathit{pt}$ is a function type
+$(\mathit{Ts}') \Rightarrow T'$, [eta-expansion](#eta-expansion)
+is performed on the expression $e$.
 
-_Empty Application_ \
-  Otherwise, if $e$ has method type $()T$, it is implicitly applied to the empty
-  argument list, yielding $e()$.
+###### Empty Application
+Otherwise, if $e$ has method type $()T$, it is implicitly applied to the empty
+argument list, yielding $e()$.
 
 ### Overloading Resolution
 
@@ -1592,7 +1592,7 @@ type arguments $T_1 , \ldots , T_n$ depends on the context in which
 the expression appears and on the expected type $\mathit{pt}$. 
 There are three cases.
 
-_Case 1: Selections_ \
+###### Case 1: Selections
 If the expression appears as the prefix of a selection with a name
 $x$, then type inference is _deferred_ to the whole expression
 $e.x$. That is, if $e.x$ has type $S$, it is now treated as having
@@ -1600,7 +1600,7 @@ type [$a_1$ >: $L_1$ <: $U_1 , \ldots , a_n$ >: $L_n$ <: $U_n$]$S$,
 and local type inference is applied in turn to infer type arguments 
 for $a_1 , \ldots , a_n$, using the context in which $e.x$ appears.
 
-_Case 2: Values_ \
+###### Case 2: Values
 If the expression $e$ appears as a value without being applied to
 value arguments, the type arguments are inferred by solving a
 constraint system which relates the expression's type $T$ with the
@@ -1611,9 +1611,9 @@ means finding a substitution $\sigma$ of types $T_i$ for the type
 parameters $a_i$ such that
 
 - None of inferred types $T_i$ is a [singleton type](05-types.html#singleton-types)
-- All type parameter bounds are respected, i.e.\ 
+- All type parameter bounds are respected, i.e.
   $\sigma L_i <: \sigma a_i$ and $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
-- The expression's type conforms to the expected type, i.e.\ 
+- The expression's type conforms to the expected type, i.e.
   $\sigma T <: \sigma \mathit{pt}$.
 
 It is a compile time error if no such substitution exists.  
@@ -1622,11 +1622,11 @@ each type variable $a_i$ a minimal or maximal type $T_i$ of the
 solution space.  A _maximal_ type $T_i$ will be chosen if the type
 parameter $a_i$ appears [contravariantly](06-basic-declarations-and-definitions.html#variance-annotations) in the
 type $T$ of the expression.  A _minimal_ type $T_i$ will be chosen
-in all other situations, i.e.\ if the variable appears covariantly,
+in all other situations, i.e. if the variable appears covariantly,
 non-variantly or not at all in the type $T$. We call such a substitution
 an _optimal solution_ of the given constraint system for the type $T$.
 
-_Case 3: Methods_ \
+###### Case 3: Methods
 The last case applies if the expression
 $e$ appears in an application $e(d_1 , \ldots , d_m)$. In that case
 $T$ is a method type $(p_1:R_1 , \ldots , p_m:R_m)T'$. Without loss of
@@ -1638,7 +1638,7 @@ argument expression $d_j$ is typed first with the expected type $R_j$,
 in which the type parameters $a_1 , \ldots , a_n$ are taken as type
 constants.  If this fails, the argument $d_j$ is typed instead with an
 expected type $R_j'$ which results from $R_j$ by replacing every type
-parameter in $a_1 , \ldots , a_n$ with {\sl undefined}.
+parameter in $a_1 , \ldots , a_n$ with _undefined_.
 
 In a second step, type arguments are inferred by solving a constraint
 system which relates the method's type with the expected type
@@ -1648,14 +1648,12 @@ finding a substitution $\sigma$ of types $T_i$ for the type parameters
 $a_i$ such that
 
 - None of inferred types $T_i$ is a [singleton type](05-types.html#singleton-types)
-- All type parameter bounds are respected, i.e.\ 
-  $\sigma L_i <: \sigma a_i$ and $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
-- The method's result type $T'$ conforms to the expected type, i.e.\ 
-  $\sigma T' <: \sigma \mathit{pt}$.
+- All type parameter bounds are respected, i.e. $\sigma L_i <: \sigma a_i$ and
+  $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
+- The method's result type $T'$ conforms to the expected type, i.e. $\sigma T' <: \sigma \mathit{pt}$.
 - Each argument type [weakly conforms](05-types.html#weak-conformance)
   to the corresponding formal parameter
-  type, i.e.\ 
-  $\sigma S_j <:_w \sigma R_j$ for $j = 1 , \ldots , m$.
+  type, i.e. $\sigma S_j <:_w \sigma R_j$ for $j = 1 , \ldots , m$.
 
 It is a compile time error if no such substitution exists.  If several
 solutions exist, an optimal one for the type $T'$ is chosen.
@@ -1716,7 +1714,7 @@ the type parameter `a` of `cons`:
 ```
 Int <: a?
 List[scala.Nothing] <: List[a?]
-List[a?] <: $\mbox{\sl undefined}$
+List[a?] <: $\mathit{undefined}$
 ```
 
 The optimal solution of this constraint system is
@@ -1744,7 +1742,7 @@ First, the argument expressions are typed. The first argument
 first tried to be typed with expected type `List[a]`. This fails,
 as `List[Int]` is not a subtype of `List[a]`. Therefore,
 the second strategy is tried; `xs` is now typed with expected type
-`List[$\mbox{\sl undefined}$]`. This succeeds and yields the argument type
+`List[$\mathit{undefined}$]`. This succeeds and yields the argument type
 `List[Int]`.
 
 In a second step, one solves the following constraint system for
@@ -1753,7 +1751,7 @@ the type parameter `a` of `cons`:
 ```
 String <: a?
 List[Int] <: List[a?]
-List[a?] <: $\mbox{\sl undefined}$
+List[a?] <: $\mathit{undefined}$
 ```
 
 The optimal solution of this constraint system is
@@ -1806,7 +1804,7 @@ Further assuming the selection is not followed by any function arguments, such a
 $e$.applyDynamic("$x$")
 ```
 
-If the selection is followed by some arguments, e.g.\ $e.x(\mathit{args})$, then that expression
+If the selection is followed by some arguments, e.g. $e.x(\mathit{args})$, then that expression
 is rewritten to
 
 ``` 

@@ -64,6 +64,12 @@ is bound by a definition or declaration, then $x$ refers to the entity
 introduced by that binding. In that case, the type of $x$ is the type
 of the referenced entity.
 
+A reference to a qualified (type- or term-) identifier $e.x$ refers to
+the member of the type $T$ of $e$ which has the name $x$ in the same
+namespace as the identifier. It is an error if $T$ is not a [value type](05-types.html#value-types).
+The type of $e.x$ is the member type of the referenced entity in $T$.
+
+
 ###### Example: bindings
 
 Assume the following two definitions of a objects named `X` in packages `P` and `Q`.
@@ -104,10 +110,4 @@ object A {
           println("L20: "+x) // `x' refers to string ``abc'' here
 }}}}}}
 ```
-
-A reference to a qualified (type- or term-) identifier $e.x$ refers to
-the member of the type $T$ of $e$ which has the name $x$ in the same
-namespace as the identifier. It is an error if $T$ is not a 
-[value type](05-types.html#value-types). The type of $e.x$ is the member type of the
-referenced entity in $T$.
 

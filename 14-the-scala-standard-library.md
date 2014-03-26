@@ -318,8 +318,7 @@ The `equals` method returns `true` if the argument is the
 same boolean value as the receiver, `false` otherwise.  The
 `hashCode` method returns a fixed, implementation-specific hash-code when invoked on `true`, 
 and a different, fixed, implementation-specific hash-code when invoked on `false`. The `toString` method
-returns the receiver converted to a string, i.e.\ either `"true"`
-or `"false"`.
+returns the receiver converted to a string, i.e. either `"true"` or `"false"`.
 
 ### Class `Unit`
 

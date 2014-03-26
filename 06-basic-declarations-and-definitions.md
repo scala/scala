@@ -64,7 +64,7 @@ All definitions have a ``repeated form`` where the initial
 definition keyword is followed by several constituent definitions
 which are separated by commas.  A repeated definition is
 always interpreted as a sequence formed from the
-constituent definitions. E.g.\ the function definition
+constituent definitions. E.g. the function definition
 `def f(x) = x, g(y) = y` expands to
 `def f(x) = x; def g(y) = y` and
 the type definition
@@ -419,7 +419,7 @@ The most general form of a first-order type parameter is
 `$@a_1 \ldots @a_n$ $\pm$ $t$ >: $L$ <: $U$`.
 Here, $L$, and $U$ are lower and upper bounds that
 constrain possible type arguments for the parameter.  It is a
-compile-time error if $L$ does not conform to $U$. $\pm$ is a _variance_, i.e.\ an optional prefix of either `+`, or
+compile-time error if $L$ does not conform to $U$. $\pm$ is a _variance_, i.e. an optional prefix of either `+`, or
 `-`. One or more annotations may precede the type parameter.
 
 <!--
@@ -433,7 +433,7 @@ TODO: Why
 TODO: this is a pretty awkward description of scoping and distinctness of binders
 -->
 
-The names of all type parameters must be pairwise different in their enclosing type parameter clause.  The scope of a type parameter includes in each case the whole type parameter clause. Therefore it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause.  However, a type parameter may not be bounded directly or indirectly by itself.\
+The names of all type parameters must be pairwise different in their enclosing type parameter clause.  The scope of a type parameter includes in each case the whole type parameter clause. Therefore it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause.  However, a type parameter may not be bounded directly or indirectly by itself.
 
 A type constructor parameter adds a nested type parameter clause to the type parameter. The most general form of a type constructor parameter is `$@a_1\ldots@a_n$ $\pm$ $t[\mathit{tps}\,]$ >: $L$ <: $U$`.  
 
@@ -610,7 +610,7 @@ A function declaration has the form `def $f\,\mathit{psig}$: $T$`, where
 $f$ is the function's name, $\mathit{psig}$ is its parameter
 signature and $T$ is its result type. A function definition
 `def $f\,\mathit{psig}$: $T$ = $e$` also includes a _function body_ $e$,
-i.e.\ an expression which defines the function's result.  A parameter
+i.e. an expression which defines the function's result.  A parameter
 signature consists of an optional type parameter clause `[$\mathit{tps}\,$]`,
 followed by zero or more value parameter clauses
 `($\mathit{ps}_1$)$\ldots$($\mathit{ps}_n$)`.  Such a declaration or definition
@@ -676,7 +676,7 @@ def compare$\$$default$\$$2[T](a: T): T = a
 ParamType          ::=  ‘=>’ Type
 ```
 
-The type of a value parameter may be prefixed by `=>`, e.g.\
+The type of a value parameter may be prefixed by `=>`, e.g.
 `$x$: => $T$`. The type of such a parameter is then the
 parameterless method type `=> $T$`. This indicates that the
 corresponding argument is not evaluated at the point of function
@@ -879,7 +879,7 @@ The most general form of an import expression is a list of _import selectors_
 
 for $n \geq 0$, where the final wildcard ‘_’ may be absent.  It
 makes available each importable member `$p$.$x_i$` under the unqualified name
-$y_i$. I.e.\ every import selector `$x_i$ => $y_i$` renames
+$y_i$. I.e. every import selector `$x_i$ => $y_i$` renames
 `$p$.$x_i$` to
 $y_i$.  If a final wildcard is present, all importable members $z$ of
 $p$ other than `$x_1 , \ldots , x_n,y_1 , \ldots , y_n$` are also made available
@@ -909,11 +909,11 @@ $x$. In this case, $x$ is imported without renaming, so the
 import selector is equivalent to `$x$ => $x$`. Furthermore, it is
 possible to replace the whole import selector list by a single
 identifier or wildcard. The import clause `import $p$.$x$` is
-equivalent to `import $p$.{$x\,$}`, i.e.\ it makes available without
+equivalent to `import $p$.{$x\,$}`, i.e. it makes available without
 qualification the member $x$ of $p$. The import clause
 `import $p$._` is equivalent to
 `import $p$.{_}`, 
-i.e.\ it makes available without qualification all members of $p$
+i.e. it makes available without qualification all members of $p$
 (this is analogous to `import $p$.*` in Java).
 
 An import clause with multiple import expressions

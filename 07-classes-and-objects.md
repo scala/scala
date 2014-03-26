@@ -73,7 +73,7 @@ also contain expressions; these are executed in the order they are
 given as part of the initialization of a template.
 
 The sequence of template statements may be prefixed with a formal
-parameter definition and an arrow, e.g.\ `$x$ =>`, or
+parameter definition and an arrow, e.g. `$x$ =>`, or
 `$x$:$T$ =>`.  If a formal parameter is given, it can be
 used as an alias for the reference `this` throughout the
 body of the template.  
@@ -110,12 +110,10 @@ object O extends Base with Mixin {}
 
 <!-- TODO: Make all references to Java generic -->
 
-**Inheriting from Java Types** \
-A template may have a Java class as its superclass and Java interfaces as its
+**Inheriting from Java Types** A template may have a Java class as its superclass and Java interfaces as its
 mixins. 
 
-**Template Evaluation** \
-Consider a template `$sc$ with $mt_1$ with $mt_n$ { $\mathit{stats}$ }`.
+**Template Evaluation** Consider a template `$sc$ with $mt_1$ with $mt_n$ { $\mathit{stats}$ }`.
 
 If this is the template of a [trait](#traits) then its _mixin-evaluation_ 
 consists of an evaluation of the statement sequence $\mathit{stats}$.
@@ -132,7 +130,7 @@ consists of the following steps.
 - Finally the statement sequence $\mathit{stats}\,$ is evaluated.
 
 
-_Delayed Initializaton_ \
+###### Delayed Initializaton
 The initialization code of an object or class (but not a trait) that follows 
 the superclass
 constructor invocation and the mixin-evaluation of the template's base
@@ -166,7 +164,7 @@ to the given arguments. If the constructor invocation uses named or
 default arguments, it is transformed into a block expression using the
 same transformation as described [here](sec:named-default).
 
-The prefix ``$x$.`' can be omitted.  A type argument list
+The prefix `$x$.` can be omitted.  A type argument list
 can be given only if the class $c$ takes type parameters.  Even then
 it can be omitted, in which case a type argument list is synthesized
 using [local type inference](08-expressions.html#local-type-inference). If no explicit
@@ -281,7 +279,7 @@ $M`$ where every occurrence of a type parameter $t`$ of $M`$ has been replaced b
 -->
 
 Member definitions fall into two categories: concrete and abstract.
-Members of class $C$ are either _directly defined_ (i.e.\ they appear in
+Members of class $C$ are either _directly defined_ (i.e. they appear in
 $C$'s statement sequence $\mathit{stats}$) or they are _inherited_.  There are two rules
 that determine the set of members of a class, one for each category:
 
@@ -507,122 +505,129 @@ modifier may not occur more than once.  Modifiers preceding a repeated
 definition apply to all constituent definitions.  The rules governing
 the validity and meaning of a modifier are as follows.
 
-- The `private` modifier can be used with any definition or
-  declaration in a template.  Such members can be accessed only from
-  within the directly enclosing template and its companion module or 
-  [companion class](#object-definitions). They
-  are not inherited by subclasses and they may not override definitions
-  in parent classes.
+### `private`
+The `private` modifier can be used with any definition or
+declaration in a template.  Such members can be accessed only from
+within the directly enclosing template and its companion module or
+[companion class](#object-definitions). They
+are not inherited by subclasses and they may not override definitions
+in parent classes.
 
-  The modifier can be _qualified_ with an identifier $C$ (e.g.
-  `private[$C$]`) that must denote a class or package
-  enclosing the definition.  Members labeled with such a modifier are
-  accessible respectively only from code inside the package $C$ or only
-  from code inside the class $C$ and its 
-  [companion module](#object-definitions).
+The modifier can be _qualified_ with an identifier $C$ (e.g.
+`private[$C$]`) that must denote a class or package
+enclosing the definition.  Members labeled with such a modifier are
+accessible respectively only from code inside the package $C$ or only
+from code inside the class $C$ and its
+[companion module](#object-definitions).
 
-  An different form of qualification is `private[this]`. A member
-  $M$ marked with this modifier is called _object-protected_; it can be accessed only from within
-  the object in which it is defined. That is, a selection $p.M$ is only
-  legal if the prefix is `this` or `$O$.this`, for some
-  class $O$ enclosing the reference. In addition, the restrictions for
-  unqualified `private` apply.
+An different form of qualification is `private[this]`. A member
+$M$ marked with this modifier is called _object-protected_; it can be accessed only from within
+the object in which it is defined. That is, a selection $p.M$ is only
+legal if the prefix is `this` or `$O$.this`, for some
+class $O$ enclosing the reference. In addition, the restrictions for
+unqualified `private` apply.
 
-  Members marked private without a qualifier are called _class-private_, 
-  whereas members labeled with `private[this]`
-  are called _object-private_.  A member _is private_ if it is
-  either class-private or object-private, but not if it is marked
-  `private[$C$]` where $C$ is an identifier; in the latter
-  case the member is called _qualified private_.
+Members marked private without a qualifier are called _class-private_,
+whereas members labeled with `private[this]`
+are called _object-private_.  A member _is private_ if it is
+either class-private or object-private, but not if it is marked
+`private[$C$]` where $C$ is an identifier; in the latter
+case the member is called _qualified private_.
 
-  Class-private or object-private members may not be abstract, and may
-  not have `protected` or `override` modifiers.
+Class-private or object-private members may not be abstract, and may
+not have `protected` or `override` modifiers.
 
-- The `protected` modifier applies to class member definitions.
-  Protected members of a class can be accessed from within
-    - the template of the defining class, 
-    - all templates that have the defining class as a base class,
-    - the companion module of any of those classes.
-  A `protected` modifier can be qualified with an
-  identifier $C$ (e.g.  `protected[$C$]`) that must denote a
-  class or package enclosing the definition.  Members labeled with such
-  a modifier are also accessible respectively from all code inside the
-  package $C$ or from all code inside the class $C$ and its 
-  [companion module](#object-definitions).
+#### `protected`
+The `protected` modifier applies to class member definitions.
+Protected members of a class can be accessed from within
+  - the template of the defining class,
+  - all templates that have the defining class as a base class,
+  - the companion module of any of those classes.
 
-  A protected identifier $x$ may be used as a member name in a selection
-  `$r$.$x$` only if one of the following applies:
-    - The access is within the template defining the member, or, if
-      a qualification $C$ is given, inside the package $C$,
-      or the class $C$, or its companion module, or
-    - $r$ is one of the reserved words `this` and
-      `super`, or
-    - $r$'s type conforms to a type-instance of the
-      class which contains the access.
+A `protected` modifier can be qualified with an
+identifier $C$ (e.g.  `protected[$C$]`) that must denote a
+class or package enclosing the definition.  Members labeled with such
+a modifier are also accessible respectively from all code inside the
+package $C$ or from all code inside the class $C$ and its
+[companion module](#object-definitions).
 
-  A different form of qualification is `protected[this]`. A member
-  $M$ marked with this modifier is called _object-protected_; it can be accessed only from within
-  the object in which it is defined. That is, a selection $p.M$ is only
-  legal if the prefix is `this` or `$O$.this`, for some
-  class $O$ enclosing the reference. In addition, the restrictions for
-  unqualified `protected` apply.
+A protected identifier $x$ may be used as a member name in a selection
+`$r$.$x$` only if one of the following applies:
+  - The access is within the template defining the member, or, if
+    a qualification $C$ is given, inside the package $C$,
+    or the class $C$, or its companion module, or
+  - $r$ is one of the reserved words `this` and
+    `super`, or
+  - $r$'s type conforms to a type-instance of the
+    class which contains the access.
 
-- The `override` modifier applies to class member definitions or 
-  declarations.  It
-  is mandatory for member definitions or declarations that override some 
-  other concrete
-  member definition in a parent class. If an `override`
-  modifier is given, there must be at least one overridden member
-  definition or declaration (either concrete or abstract).  
+A different form of qualification is `protected[this]`. A member
+$M$ marked with this modifier is called _object-protected_; it can be accessed only from within
+the object in which it is defined. That is, a selection $p.M$ is only
+legal if the prefix is `this` or `$O$.this`, for some
+class $O$ enclosing the reference. In addition, the restrictions for
+unqualified `protected` apply.
 
-- The `override` modifier has an additional significance when
-  combined with the `abstract` modifier.  That modifier combination
-  is only allowed for value members of traits.  
+#### `override`
+The `override` modifier applies to class member definitions or declarations.
+It is mandatory for member definitions or declarations that override some
+other concrete member definition in a parent class. If an `override`
+modifier is given, there must be at least one overridden member
+definition or declaration (either concrete or abstract).
 
-  We call a member $M$ of a template _incomplete_ if it is either
-  abstract (i.e.\ defined by a declaration), or it is labeled
-  `abstract` and `override` and 
-  every member overridden by $M$ is again incomplete. 
+#### `abstract override`
+The `override` modifier has an additional significance when
+combined with the `abstract` modifier.  That modifier combination
+is only allowed for value members of traits.
 
-  Note that the `abstract override` modifier combination does not
-  influence the concept whether a member is concrete or abstract. A
-  member is _abstract_ if only a declaration is given for it; it is
-  _concrete_ if a full definition is given.
+We call a member $M$ of a template _incomplete_ if it is either
+abstract (i.e. defined by a declaration), or it is labeled
+`abstract` and `override` and
+every member overridden by $M$ is again incomplete.
 
-- The `abstract` modifier is used in class definitions. It is
-  redundant for traits, and mandatory for all other classes which have
-  incomplete members.  Abstract classes cannot be 
-  [instantiated](08-expressions.html#instance-creation-expressions) with a constructor invocation
-  unless followed by mixins and/or a refinement which override all
-  incomplete members of the class. Only abstract classes and traits can have
-  abstract term members.
+Note that the `abstract override` modifier combination does not
+influence the concept whether a member is concrete or abstract. A
+member is _abstract_ if only a declaration is given for it;
+it is _concrete_ if a full definition is given.
 
-  The `abstract` modifier can also be used in conjunction with
-  `override` for class member definitions. In that case the
-  previous discussion applies.
+#### `abstract`
+The `abstract` modifier is used in class definitions. It is
+redundant for traits, and mandatory for all other classes which have
+incomplete members.  Abstract classes cannot be
+[instantiated](08-expressions.html#instance-creation-expressions) with a constructor invocation
+unless followed by mixins and/or a refinement which override all
+incomplete members of the class. Only abstract classes and traits can have
+abstract term members.
 
-- The `final` modifier applies to class member definitions and to
-  class definitions. A `final` class member definition may not be
-  overridden in subclasses. A `final` class may not be inherited by
-  a template. `final` is redundant for object definitions.  Members
-  of final classes or objects are implicitly also final, so the
-  `final` modifier is generally redundant for them, too. Note, however, that
-  [constant value definitions](06-basic-declarations-and-definitions.html#value-declarations-and-definitions) do require
-  an explicit `final` modifier, even if they are defined in a final class or 
-  object. `final` may not be applied to incomplete members, and it may not be 
-  combined in one modifier list with `sealed`.
+The `abstract` modifier can also be used in conjunction with
+`override` for class member definitions. In that case the
+previous discussion applies.
 
-- The `sealed` modifier applies to class definitions. A
-  `sealed` class may not be directly inherited, except if the inheriting 
-  template is defined in the same source file as the inherited class.
-  However, subclasses of a sealed class can be inherited anywhere.
+#### `final`
+The `final` modifier applies to class member definitions and to
+class definitions. A `final` class member definition may not be
+overridden in subclasses. A `final` class may not be inherited by
+a template. `final` is redundant for object definitions.  Members
+of final classes or objects are implicitly also final, so the
+`final` modifier is generally redundant for them, too. Note, however, that
+[constant value definitions](06-basic-declarations-and-definitions.html#value-declarations-and-definitions) do require
+an explicit `final` modifier, even if they are defined in a final class or
+object. `final` may not be applied to incomplete members, and it may not be
+combined in one modifier list with `sealed`.
 
-- The `lazy` modifier applies to value definitions. A `lazy`
-  value is initialized the first time it is accessed (which might never
-  happen at all). Attempting to access a lazy value during its
-  initialization might lead to looping behavior. If an exception is
-  thrown during initialization, the value is considered uninitialized,
-  and a later access will retry to evaluate its right hand side.
+#### `sealed`
+The `sealed` modifier applies to class definitions. A
+`sealed` class may not be directly inherited, except if the inheriting
+template is defined in the same source file as the inherited class.
+However, subclasses of a sealed class can be inherited anywhere.
+
+#### `lazy`
+The `lazy` modifier applies to value definitions. A `lazy`
+value is initialized the first time it is accessed (which might never
+happen at all). Attempting to access a lazy value during its
+initialization might lead to looping behavior. If an exception is
+thrown during initialization, the value is considered uninitialized,
+and a later access will retry to evaluate its right hand side.
 
 
 ###### Example
@@ -673,7 +678,7 @@ new m.C(0) {} // **** error: illegal inheritance from sealed class.
 ```
 
 A similar access restriction can be achieved by marking the primary
-constructor `private` ((example)[#example-private-constructor]).
+constructor `private` ([example](#example-private-constructor)).
 
 
 ## Class Definitions
@@ -799,7 +804,7 @@ parameter sections and the constructor
 expression $e$.  A constructor expression is either a self constructor
 invocation `this($\mathit{args}_1$)$\ldots$($\mathit{args}_n$)` or a block
 which begins with a self constructor invocation. The self constructor
-invocation must construct a generic instance of the class. I.e.\ if the
+invocation must construct a generic instance of the class. I.e. if the
 class in question has name $C$ and type parameters
 `[$\mathit{tps}\,$]`, then a self constructor invocation must
 generate an instance of `$C$[$\mathit{tps}\,$]`; it is not permitted
@@ -825,7 +830,7 @@ expressions themselves. However, unlike other methods, constructors
 are never inherited.  To prevent infinite cycles of constructor
 invocations, there is the restriction that every self constructor
 invocation must refer to a constructor definition which precedes it
-(i.e.\ it must refer to either a preceding auxiliary constructor or the
+(i.e. it must refer to either a preceding auxiliary constructor or the
 primary constructor of the class).  
 
 
@@ -994,14 +999,12 @@ constructor parameters. Furthermore, no constructor arguments are
 passed to the superclass of the trait. This is not necessary as traits are
 initialized after the superclass is initialized.
 
-Assume a trait $D$ defines some aspect of an instance $x$ of
-type $C$ (i.e.\ $D$ is a base class of $C$). Then the _actual
-supertype_ of $D$ in $x$ is the compound type consisting of all the
+Assume a trait $D$ defines some aspect of an instance $x$ of type $C$ (i.e. $D$ is a base class of $C$).
+Then the _actual supertype_ of $D$ in $x$ is the compound type consisting of all the
 base classes in $\mathcal{L}(C)$ that succeed $D$.  The actual supertype gives
 the context for resolving a [`super` reference](08-expressions.html#this-and-super) in a trait.
-Note that the actual supertype depends 
-on the type to which the trait is added in a mixin composition; it is not
-statically known at the time the trait is defined.
+Note that the actual supertype depends on the type to which the trait is added in a mixin composition;
+it is not statically known at the time the trait is defined.
 
 If $D$ is not a trait, then its actual supertype is simply its
 least proper supertype (which is statically known).

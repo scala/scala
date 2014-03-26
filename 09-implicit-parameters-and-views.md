@@ -409,13 +409,11 @@ Then the following rules apply.
 1.  If $T$ is an instance of `Array[$S$]`, a manifest is generated
     with the invocation `$\mathit{Mobj}$.arrayType[S](m)`, where $m$ is the manifest
     determined for $M[S]$.
-1.  If $T$ is some other class type $S\#C[U_1 , \ldots , U_n]$ where the prefix
-    type $S$ 
-    cannot be statically determined from the class $C$, 
-    a manifest is generated 
-    with the invocation `$\mathit{Mobj}$.classType[T]($m_0$, classOf[T], $ms$)`
+1.  If $T$ is some other class type $S$#$C[U_1, \ldots, U_n]$ where the prefix
+    type $S$ cannot be statically determined from the class $C$,
+    a manifest is generated with the invocation `$\mathit{Mobj}$.classType[T]($m_0$, classOf[T], $ms$)`
     where $m_0$ is the manifest determined for $M'[S]$ and $ms$ are the
-    manifests determined for $M'[U_1] , \ldots , M'[U_n]$.
+    manifests determined for $M'[U_1], \ldots, M'[U_n]$.
 1.  If $T$ is some other class type with type arguments $U_1 , \ldots , U_n$,
     a manifest is generated 
     with the invocation `$\mathit{Mobj}$.classType[T](classOf[T], $ms$)`

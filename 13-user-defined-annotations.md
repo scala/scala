@@ -35,19 +35,16 @@ String @local                               // Type annotation
 The meaning of annotation clauses is implementation-dependent. On the
 Java platform, the following annotations have a standard meaning.
 
-  * `@transient` \
-    Marks a field to be non-persistent; this is
+  * `@transient` Marks a field to be non-persistent; this is
     equivalent to the `transient`
     modifier in Java.
 
-  * `@volatile` \
-    Marks a field which can change its value
+  * `@volatile` Marks a field which can change its value
     outside the control of the program; this
     is equivalent to the `volatile`
     modifier in Java.
 
-  * `@SerialVersionUID(<longlit>)` \
-    Attaches a serial version identifier (a
+  * `@SerialVersionUID(<longlit>)` Attaches a serial version identifier (a
     `long` constant) to a class.
     This is equivalent to a the following field
     definition in Java:
@@ -56,8 +53,7 @@ Java platform, the following annotations have a standard meaning.
     private final static SerialVersionUID = <longlit>
     ```
 
-  * `@throws(<classlit>)` \
-    A Java compiler checks that a program contains handlers for checked exceptions
+  * `@throws(<classlit>)` A Java compiler checks that a program contains handlers for checked exceptions
     by analyzing which checked exceptions can result from execution of a method or
     constructor. For each checked exception which is a possible result, the
     `throws`
@@ -66,8 +62,7 @@ Java platform, the following annotations have a standard meaning.
 
 ## Java Beans Annotations
 
-  * `@scala.beans.BeanProperty` \
-    When prefixed to a definition of some variable `X`, this
+  * `@scala.beans.BeanProperty` When prefixed to a definition of some variable `X`, this
     annotation causes getter and setter methods `getX`, `setX`
     in the Java bean style to be added in the class containing the
     variable. The first letter of the variable appears capitalized after
@@ -77,27 +72,23 @@ Java platform, the following annotations have a standard meaning.
     code-generation; therefore, these methods become visible only once a
     classfile for the containing class is generated.
 
-  * `@scala.beans.BooleanBeanProperty` \
-    This annotation is equivalent to `scala.reflect.BeanProperty`, but
+  * `@scala.beans.BooleanBeanProperty` This annotation is equivalent to `scala.reflect.BeanProperty`, but
     the generated getter method is named `isX` instead of `getX`.
 
 ## Deprecation Annotations
 
-  * `@deprecated(<stringlit>)` \
-    Marks a definition as deprecated. Accesses to the
+  * `@deprecated(<stringlit>)` Marks a definition as deprecated. Accesses to the
     defined entity will then cause a deprecated warning mentioning the
     message `<stringlit>` to be issued from the compiler.  Deprecated
     warnings are suppressed in code that belongs itself to a definition
     that is labeled deprecated.
 
-  * `@deprecatedName(name: <symbollit>)` \
-    Marks a formal parameter name as deprecated. Invocations of this entity
+  * `@deprecatedName(name: <symbollit>)` Marks a formal parameter name as deprecated. Invocations of this entity
     using named parameter syntax refering to the deprecated parameter name cause a deprecation warning.
 
 ## Scala Compiler Annotations
 
-  * `@unchecked` \
-    When applied to the selector of a `match` expression,
+  * `@unchecked` When applied to the selector of a `match` expression,
     this attribute suppresses any warnings about non-exhaustive pattern
     matches which would otherwise be emitted. For instance, no warnings
     would be produced for the method definition below.
@@ -112,8 +103,7 @@ Java platform, the following annotations have a standard meaning.
     infer that the pattern match is non-exhaustive, and could produce a
     warning because `Option` is a `sealed` class.
 
-  * `@uncheckedStable` \
-    When applied a value declaration or definition, it allows the defined
+  * `@uncheckedStable` When applied a value declaration or definition, it allows the defined
     value to appear in a path, even if its type is [volatile](05-types.html#volatile-types).
     For instance, the following member definitions are legal:
 
@@ -132,8 +122,7 @@ Java platform, the following annotations have a standard meaning.
     types, the annotation has no effect.
 
 
-  * `@specialized` \
-    When applied to the definition of a type parameter, this annotation causes
+  * `@specialized` When applied to the definition of a type parameter, this annotation causes
     the compiler
     to generate specialized definitions for primitive types. An optional list of
     primitive
@@ -149,9 +138,8 @@ Java platform, the following annotations have a standard meaning.
     ```
 
     Whenever the static type of an expression matches a specialized variant of
-    a definition,
-    the compiler will instead use the specialized version. See \cite{spec-sid}
-    for more details of the implementation.
+    a definition, the compiler will instead use the specialized version.
+    See \cite{spec-sid} for more details of the implementation.
 
 
 Other annotations may be interpreted by platform- or
@@ -171,7 +159,7 @@ during the compilation run that analyzes them.
 Classes inheriting from `scala.ClassfileAnnotation` may be
 subject to further restrictions in order to assure that they can be
 mapped to the host environment. In particular, on both the Java and
-the .NET platforms, such classes must be toplevel; i.e.\ they may not
+the .NET platforms, such classes must be toplevel; i.e. they may not
 be contained in another class or object.  Additionally, on both
 Java and .NET, all constructor arguments must be constant expressions.
 

@@ -302,7 +302,7 @@ definition within the refinement. This restriction does not apply to
 the method's result type.
 
 If no refinement is given, the empty refinement is implicitly added,
-i.e.\  `$T_1$ with … with $T_n$` is a shorthand for
+i.e. `$T_1$ with … with $T_n$` is a shorthand for
 `$T_1$ with … with $T_n$ {}`.
 
 A compound type may also consist of just a refinement
@@ -348,7 +348,7 @@ a value `callsign` and a `fly` method.
 InfixType     ::=  CompoundType {id [nl] CompoundType}
 ```
 
-An infix type `$T_1$ \mathit{op} $T_2$` consists of an infix
+An infix type `$T_1 \mathit{op} T_2$` consists of an infix
 operator $\mathit{op}$ which gets applied to two type operands $T_1$ and
 $T_2$.  The type is equivalent to the type application 
 `$\mathit{op}$[$T_1$, $T_2$]`.  The infix operator $\mathit{op}$ may be an 
@@ -935,7 +935,7 @@ type $C'$, if one of the following holds.
 
 
 The $(<:)$ relation forms pre-order between types,
-i.e.\ it is transitive and reflexive. _least upper bounds_ and 
+i.e. it is transitive and reflexive. _least upper bounds_ and
 _greatest lower bounds_ of a set of types
 are understood to be relative to that order.
 
