@@ -523,11 +523,21 @@ trait ReificationSupport { self: SymbolTable =>
     object SyntacticDefDef extends SyntacticDefDefExtractor {
       def apply(mods: Modifiers, name: TermName, tparams: List[Tree],
                 vparamss: List[List[Tree]], tpt: Tree, rhs: Tree): DefDef = {
+        val tparams0 = mkTparams(tparams)
         val vparamss0 = mkParam(vparamss, PARAM)
-        DefDef(mods, name, mkTparams(tparams), vparamss0, tpt, rhs)
+        val rhs0 = {
+          if (name != nme.CONSTRUCTOR) rhs
+          else rhs match {
+            case Block(_, _) => rhs
+            case _ => Block(List(rhs), gen.mkSyntheticUnit)
+          }
+        }
+        DefDef(mods, name, tparams0, vparamss0, tpt, rhs0)
       }
 
       def unapply(tree: Tree): Option[(Modifiers, TermName, List[TypeDef], List[List[ValDef]], Tree, Tree)] = tree match {
+        case DefDef(mods, nme.CONSTRUCTOR, tparams, vparamss, tpt, Block(List(expr), Literal(Constant(())))) =>
+          Some((mods, nme.CONSTRUCTOR, tparams, vparamss, tpt, expr))
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           Some((mods, name, tparams, vparamss, tpt, rhs))
         case _ => None
