@@ -1,6 +1,7 @@
 ---
 title: Identifiers, Names and Scopes
 layout: default
+chapter: 2
 ---
 
 # Identifiers, Names and Scopes
@@ -70,7 +71,7 @@ namespace as the identifier. It is an error if $T$ is not a [value type](05-type
 The type of $e.x$ is the member type of the referenced entity in $T$.
 
 
-###### Example: bindings
+### Example:
 
 Assume the following two definitions of a objects named `X` in packages `P` and `Q`.
 

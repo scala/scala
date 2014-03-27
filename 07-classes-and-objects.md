@@ -1,6 +1,7 @@
 ---
 title: Classes and Objects
 layout: default
+chapter: 5
 ---
 
 # Classes and Objects
@@ -377,7 +378,7 @@ it is possible to add new defaults (if the corresponding parameter in the
 superclass does not have a default) or to override the defaults of the
 superclass (otherwise).
 
-###### Example: compound types
+### Example:
 
 Consider the definitions:
 
@@ -759,7 +760,7 @@ which when applied to parameters conforming to types $\mathit{ps}$
 initializes instances of type `$c$[$\mathit{tps}\,$]` by evaluating the template
 $t$.
 
-###### Example: private constructor
+### Example:
 The following example illustrates `val` and `var` parameters of a class `C`:
 
 ```
@@ -1009,7 +1010,7 @@ it is not statically known at the time the trait is defined.
 If $D$ is not a trait, then its actual supertype is simply its
 least proper supertype (which is statically known).
 
-###### Example: `Comparable`
+### Example:
 The following trait defines the property
 of being comparable to objects of some type. It contains an abstract
 method `<` and default implementations of the other

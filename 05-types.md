@@ -1,6 +1,7 @@
 ---
 title: Types
 layout: default
+chapter: 3
 ---
 
 # Types
@@ -148,7 +149,7 @@ A qualified type designator has the form `p.t` where `p` is
 a [path](#paths) and _t_ is a type name. Such a type designator is
 equivalent to the type projection `p.type#t`.
 
-###### Example: fully qualified type designators
+### Example:
 
 Some type designators and their expansions are listed below. We assume
 a local type parameter $t$, a value `maintable`
@@ -181,7 +182,7 @@ well-formed if each actual type parameter
 _conforms to its bounds_, i.e. $\sigma L_i <: T_i <: \sigma U_i$ where $\sigma$ is the
 substitution $[ a_1 := T_1 , \ldots , a_n := T_n ]$.
 
-###### Example: parameterized types
+### Example:
 Given the partial type definitions:
 
 ```
@@ -205,7 +206,7 @@ F[List, Int]
 G[S, String]
 ```
 
-###### Example: ill-formed types
+### Example:
 
 Given the [above type definitions](example-parameterized-types),
 the following types are ill-formed:
@@ -261,7 +262,7 @@ An annotated type $T$ `$a_1 , \ldots , a_n$`
 attaches [annotations](13-user-defined-annotations.html#user-defined-annotations)
 $a_1 , \ldots , a_n$ to the type $T$.
 
-###### Example: annotated type
+### Example:
 
 The following type adds the `@suspendable` annotation to the type `String`:
 
@@ -309,7 +310,7 @@ A compound type may also consist of just a refinement
 `{ $R$ }` with no preceding component types. Such a type is
 equivalent to `AnyRef{ R }`.
 
-###### Example: structural refinement in a method's parameter type
+### Example:
 
 The following example shows how to declare and use a method which
 a parameter type that contains a refinement with structural declarations.
@@ -509,7 +510,7 @@ or [tuple types](#tuple-types).
 Their expansion is then the expansion in the equivalent parameterized
 type.
 
-###### Example: existential types
+### Example:
 
 Assume the class definitions
 
@@ -533,7 +534,7 @@ An alternative formulation of the first type above using wildcard syntax is:
 Ref[_ <: java.lang.Number]
 ```
 
-###### Example: abbreviating an existential type with the underscore
+### Example:
 
 The type `List[List[_]]` is equivalent to the existential type
 
@@ -541,7 +542,7 @@ The type `List[List[_]]` is equivalent to the existential type
 List[List[t] forSome { type t }] .
 ```
 
-###### Example: existential type equivalence
+### Example:
 
 Assume a covariant type
 
@@ -670,7 +671,7 @@ same name, we model
 
 An overloaded type consisting of type alternatives $T_1 \commadots T_n (n \geq 2)$ is denoted internally $T_1 \overload \ldots \overload T_n$.
 
-###### Example: The definitions
+### Example:
 ```
 def println: Unit
 def println(s: String): Unit = $\ldots$
@@ -688,7 +689,7 @@ println:  => Unit $\overload$
           [A] (A) (A => String) Unit
 ```
 
-###### Example: The definitions
+### Example:
 ```
 def f(x: T): T = $\ldots$
 val f = 0

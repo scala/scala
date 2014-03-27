@@ -1,7 +1,7 @@
 ---
 title: Lexical Syntax
 layout: default
-tag: lexical
+chapter: 1
 ---
 
 # Lexical Syntax
@@ -100,7 +100,7 @@ _    :    =    =>    <-    <:    <%     >:    #    @
 The Unicode operators `\u21D2 $\Rightarrow$` and `\u2190 $\leftarrow$`, which have the ASCII
 equivalents `=>` and `<-`, are also reserved.
 
-###### Example: here are some identifiers:
+### Example:
 
 ```
     x         Object        maxIndex   p2p      empty_?
@@ -108,7 +108,7 @@ equivalents `=>` and `<-`, are also reserved.
     __system  _MAX_LEN_
 ```
 
-###### Example: backquote-enclosed strings
+### Example:
 When one needs to access Java identifiers that are reserved words in Scala, use backquote-enclosed strings.
 For instance, the statement `Thread.yield()` is illegal, since
 `yield` is a reserved word in Scala. However, here's a
@@ -207,7 +207,7 @@ A single new line token is accepted
 - in front of a [parameter clause](06-basic-declarations-and-definitions.html#function-declarations-and-definitions), and
 - after an [annotation](13-user-defined-annotations.html#user-defined-annotations).
 
-###### Example: four well-formed statements, each on two lines
+### Example:
 
 The newline tokens between the two lines are not
 treated as statement separators.
@@ -226,7 +226,7 @@ type
   IntList = List[Int]
 ```
 
-###### Example: an anonymous class
+### Example:
 
 ```
 new Iterator[Int]
@@ -250,7 +250,7 @@ new Iterator[Int]
 }
 ```
 
-###### Example: a single expression
+### Example:
 
 ```
   x < 0 ||
@@ -266,7 +266,7 @@ two expressions:
   x > 10
 ```
 
-###### Example: a single, curried function definition
+### Example:
 
 ```
 def func(x: Int)
@@ -282,7 +282,7 @@ def func(x: Int)
         (y: Int) = x + y
 ```
 
-###### Example: an attributed definition
+### Example:
 
 ```
 @serializable
@@ -356,7 +356,7 @@ is _pt_. The numeric ranges given by these types are:
 |`Char`          | $0$ to $2^{16}-1$      |
 
 
-###### Example: some integer literals
+### Example:
 
 ```
 0          21          0xFFFFFFFF       -42L
@@ -385,18 +385,18 @@ If a floating point literal in a program is followed by a token
 starting with a letter, there must be at least one intervening
 whitespace character between the two tokens.
 
-###### Example: some floating point literals
+### Example:
 
 ```
 0.0        1e30f      3.14159f      1.0e-100      .1
 ```
 
-###### Example: tokenizing
+### Example:
 
 The phrase `1.toString` parses as three different tokens:
 the integer literal `1`, a `.`, and the identifier `toString`.
 
-###### Example: invalid floating point literal
+### Example:
 
 `1.` is not a valid floating point literal because the mandatory digit after the `.` is missing.
 
@@ -420,7 +420,7 @@ A character literal is a single character enclosed in quotes.
 The character is either a printable unicode character or is described
 by an [escape sequence](#escape-sequences).
 
-###### Example: some character literals
+### Example:
 
 ```
 'a'    '\u0041'    '\n'    '\t'
@@ -447,7 +447,7 @@ contains a double quote character, it must be escaped,
 i.e. `"\""`. The value of a string literal is an instance of
 class `String`. 
 
-###### Example: some string literals
+### Example:
 
 ```
 "Hello,\nWorld!"
@@ -469,7 +469,7 @@ must not necessarily be printable; newlines or other
 control characters are also permitted.  Unicode escapes work as everywhere else, but none
 of the escape sequences [here](#escape-sequences) are interpreted.
 
-###### Example: a multi-line string literal:
+### Example:
 
 ```
   """the present string
@@ -600,7 +600,7 @@ The scanner switches from XML mode to Scala mode if either
 Note that no Scala tokens are constructed in XML mode, and that comments are interpreted
 as text.
 
-###### Example: XML literals
+### Example:
 
 The following value definition uses an XML literal with two embedded
 Scala expressions:

@@ -1,6 +1,7 @@
 ---
 title: XML Expressions and Patterns
 layout: default
+chapter: 10
 ---
 
 # XML Expressions and Patterns

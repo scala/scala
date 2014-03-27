@@ -1,6 +1,7 @@
 ---
 title: Pattern Matching
 layout: default
+chapter: 8
 ---
 
 # Pattern Matching
@@ -596,7 +597,7 @@ the compilation of pattern matching can emit warnings which diagnose
 that a given set of patterns is not exhaustive, i.e. that there is a
 possibility of a `MatchError` being raised at run-time. 
 
-###### Example: `eval`
+### Example:
 
 Consider the following definitions of arithmetic terms:
 

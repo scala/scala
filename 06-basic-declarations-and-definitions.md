@@ -1,6 +1,7 @@
 ---
 title: Basic Declarations and Definitions
 layout: default
+chapter: 4
 ---
 
 # Basic Declarations and Definitions
@@ -573,7 +574,7 @@ abstract class Sequence[+A] {
 }
 ```
 
-###### Example: Here is a case where a contravariant type parameter is useful.
+### Example:
 
 ```
 abstract class OutputChannel[-A] {

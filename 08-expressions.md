@@ -1,6 +1,7 @@
 ---
 title: Expressions
 layout: default
+chapter: 6
 ---
 
 # Expressions
@@ -209,7 +210,7 @@ to the type or method of $x$ in the parent trait of $C$ whose simple
 name is $T$. That member must be uniquely defined. If it is a method,
 it must be concrete.
 
-###### Example: `super`
+### Example:
 Consider the following class definitions
 
 ```
@@ -824,7 +825,7 @@ Here are some assignment expressions and their equivalent expansions.
 `x.f(i, j) = e`       x.f.update(i, j, e)
 --------------------------    ---------------------
 
-###### Example: imperative matrix multiplication
+### Example:
 
 Here is the usual imperative code for matrix multiplication.
 

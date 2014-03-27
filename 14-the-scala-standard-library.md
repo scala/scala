@@ -1,6 +1,7 @@
 ---
 title: The Scala Standard Library
 layout: default
+chapter: 12
 ---
 
 # The Scala Standard Library
@@ -234,7 +235,7 @@ for type `Int` and for all subrange types.
 The `toString` method displays its receiver as an integer or
 floating point number.
 
-###### Example:
+### Example:
 
 This is the signature of the numeric value type `Int`:
 
