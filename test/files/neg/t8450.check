@@ -1,0 +1,6 @@
+t8450.scala:5: warning: implicit numeric widening
+  def elapsed: Foo = (System.nanoTime - 100L).foo
+                                      ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
