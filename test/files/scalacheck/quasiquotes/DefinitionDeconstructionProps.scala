@@ -229,6 +229,12 @@ trait DefDeconstruction { self: QuasiquoteProperties =>
     val q"def foo(...$argss)(implicit ..$impl)" = q"def foo(x: Int)"
     assert(impl.isEmpty)
   }
+
+  property("SI-8451") = test {
+    val q"def this(..$params) = this(..$args)" = q"def this(x: Int) = this(0)"
+    assert(params ≈ List(q"${Modifiers(PARAM)} val x: Int"))
+    assert(args ≈ List(q"0"))
+  }
 }
 
 trait ImportDeconstruction { self: QuasiquoteProperties =>
