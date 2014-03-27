@@ -10,7 +10,7 @@ The Scala standard library consists of the package `scala` with a
 number of classes and modules. Some of these classes are described in
 the following.
 
-![Class hierarchy of Scala](resources/classhierarchy.pdf)
+![Class hierarchy of Scala](public/images/classhierarchy.pdf)
 
 ## Root Classes
 

@@ -1,0 +1,7 @@
+# based on http://www.paperplanes.de/2013/8/13/deploying-your-jekyll-blog-to-s3-with-travis-ci.html
+language: ruby
+rvm:
+  - 1.9.3
+script: bundle exec jekyll build -s spec/ -d build/spec
+install: bundle install
+# after_success: bundle exec s3_website push --headless

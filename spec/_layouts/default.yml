@@ -24,8 +24,7 @@
     $( document ).ready(function(){ $("h3[id*='example']").text("") })
   </script>
 
-  <link rel="stylesheet" type="text/css" href="resources/style.css">
-  <link rel="stylesheet" type="text/css" href="resources/github.css">
+  <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
 
 </head>
 

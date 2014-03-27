@@ -1,16 +1,26 @@
+---
+title: References
+layout: default
+chapter: 14
+---
+
+
+# References
+
+<!-- TODO
 
 
 %% Article
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-@article{milner:polymorphism, 
-  author	= {Robin Milner}, 
-  title		= {A {T}heory of {T}ype {P}olymorphism in {P}rogramming}, 
-  journal	= {Journal of Computer and System Sciences}, 
-  year		= {1978}, 
-  month		= {Dec}, 
-  volume	= {17}, 
-  pages		= {348--375}, 
+@article{milner:polymorphism,
+  author	= {Robin Milner},
+  title		= {A {T}heory of {T}ype {P}olymorphism in {P}rogramming},
+  journal	= {Journal of Computer and System Sciences},
+  year		= {1978},
+  month		= {Dec},
+  volume	= {17},
+  pages		= {348-375},
   folder	= { 2-1}
 }
 
@@ -32,7 +42,7 @@ for syntactic definitions?",
 @Book{abelson-sussman:structure,
   author	= {Harold Abelson and Gerald Jay Sussman and Julie Sussman},
   title		= {The Structure and Interpretation of Computer Programs, 2nd
-		  edition},
+                  edition},
   publisher	= {MIT Press},
   address	= {Cambridge, Massachusetts},
   year		= {1996},
@@ -63,7 +73,7 @@ for syntactic definitions?",
   year		= "2003",
   month		= "sep",
   note		= {ISBN 0-954-16178-5\hspace*{\fill}\\
-		  \verb@http://www.python.org/doc/current/ref/ref.html@}
+                  \verb@http://www.python.org/doc/current/ref/ref.html@}
 }
 
 @Manual{odersky:scala-reference,
@@ -98,13 +108,13 @@ for syntactic definitions?",
 
 @InProceedings{odersky-et-al:fool10,
   author	= {Martin Odersky and Vincent Cremet and Christine R\"ockl
-		  and Matthias Zenger},
+                  and Matthias Zenger},
   title		= {A {N}ominal {T}heory of {O}bjects with {D}ependent {T}ypes},
   booktitle	= {Proc. FOOL 10},
   year		= 2003,
   month		= jan,
   note		= {\hspace*{\fill}\\
-		  \verb@http://www.cis.upenn.edu/~bcpierce/FOOL/FOOL10.html@}		  
+                  \verb@http://www.cis.upenn.edu/~bcpierce/FOOL/FOOL10.html@}
 }
 
 
@@ -115,14 +125,14 @@ for syntactic definitions?",
   author	= {W3C},
   title		= {Document Object Model ({DOM})},
   howpublished	= {\hspace*{\fill}\\
-		  \verb@http://www.w3.org/DOM/@}
+                  \verb@http://www.w3.org/DOM/@}
 }
 
 @Misc{w3c:xml,
   author	= {W3C},
   title		= {Extensible {M}arkup {L}anguage ({XML})},
   howpublished	= {\hspace*{\fill}\\
-		  \verb@http://www.w3.org/TR/REC-xml@}
+                  \verb@http://www.w3.org/TR/REC-xml@}
 }
 
 @TechReport{scala-overview-tech-report,
@@ -151,7 +161,7 @@ for syntactic definitions?",
 
 @InCollection{cremet-odersky:pilib,
   author =       {Vincent Cremet and Martin Odersky},
-  title =        {{PiLib} - A {H}osted {L}anguage for {P}i-{C}alculus {S}tyle {C}oncurrency},
+  title =        {PiLib} - A {H}osted {L}anguage for {P}i-{C}alculus {S}tyle {C}oncurrency},
   booktitle =    {Domain-Specific Program Generation},
   publisher =    {Springer},
   year =         2005,
@@ -170,7 +180,7 @@ for syntactic definitions?",
 
 @InProceedings{odersky:scala-experiment,
   author =       {Martin Odersky},
-  title =        {The {S}cala {E}xperiment -- {C}an {W}e {P}rovide {B}etter {L}anguage {S}upport for {C}omponent {S}ystems?},
+  title =        {The {S}cala {E}xperiment - {C}an {W}e {P}rovide {B}etter {L}anguage {S}upport for {C}omponent {S}ystems?},
   booktitle =    {Proc. ACM Symposium on Principles of Programming Languages},
   year =         2006
 }
@@ -191,3 +201,7 @@ for syntactic definitions?",
   note =         {SID-9}
 }
 
+
+
+
+-->

@@ -1,3 +1,5 @@
+/* from https://gist.github.com/andyferra/2554919 */
+
 body {
   font-family: Helvetica, arial, sans-serif;
   font-size: 14px;
@@ -100,9 +102,11 @@ h6 {
 
 p, blockquote, ul, ol, dl, li, table, pre {
   margin: 15px 0;
+  -moz-font-feature-settings: "onum";
+  -ms-font-feature-settings: "onum";
+  -webkit-font-feature-settings: "onum";
+  font-feature-settings: "onum";
 }
-<script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 
 hr {
   background: transparent url("../../images/modules/pulls/dirty-shade.png") repeat-x 0 0;
