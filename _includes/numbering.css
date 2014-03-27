@@ -41,12 +41,12 @@ h3:before {
   margin-right: 1em;
 }
 
-h3[id*='example:'] {
+h3[id*='example'] {
   /* must increment here */
   counter-increment: example;
   display: inline;
 }
-h3[id*='example:']:before {
+h3[id*='example']:before {
   /* and must reset again here */
   counter-reset: chapter {{ page.chapter }};
 

@@ -40,7 +40,7 @@ class for objects).
 The signatures of these root classes are described by the following
 definitions.
 
-``` 
+```scala
 package scala 
 /** The universal root class */
 abstract class Any {
@@ -87,12 +87,11 @@ class AnyRef extends Any {
   def synchronized[T](body: => T): T // execute `body` in while locking `this`.
 }                           
 
-```
-
+```scala
 The type test `$x$.isInstanceOf[$T$]` is equivalent to a typed
 pattern match
 
-``` 
+```scala
 $x$ match {
   case _: $T'$ => true
   case _ => false
@@ -131,7 +130,7 @@ Subrange types, as well as `Int` and `Long` are called _integer types_, whereas 
 
 Numeric value types are ranked in the following partial order:
 
-```
+```scala
 Byte - Short 
              \
                Int - Long - Float - Double
@@ -215,7 +214,7 @@ type. If this is true, it will perform the `==` operation which
 is appropriate for that type. That is, the `equals` method of a
 numeric value type can be thought of being defined as follows:
 
-``` 
+```scala
 def equals(other: Any): Boolean = other match {
   case that: Byte   => this == that
   case that: Short  => this == that
@@ -235,11 +234,11 @@ for type `Int` and for all subrange types.
 The `toString` method displays its receiver as an integer or
 floating point number.
 
-### Example:
+### Example
 
 This is the signature of the numeric value type `Int`:
 
-```
+```scala
 package scala
 abstract sealed class Int extends AnyVal {
   def == (that: Double): Boolean  // double equality
@@ -292,7 +291,7 @@ Class `Boolean` has only two values: `true` and
 `false`. It implements operations as given in the following
 class definition.
 
-``` 
+```scala
 package scala 
 abstract sealed class Boolean extends AnyVal {
   def && (p: => Boolean): Boolean = // boolean and
@@ -347,7 +346,7 @@ class of the underlying host system (and may be identified with
 it). For Scala clients the class is taken to support in each case a
 method
 
-``` 
+```scala
 def + (that: Any): String 
 ```
 
@@ -359,7 +358,7 @@ right operand.
 Scala defines tuple classes `Tuple$n$` for $n = 2 , \ldots , 22$.
 These are defined as follows.
 
-``` 
+```scala
 package scala 
 case class Tuple$n$[+T_1, ..., +T_n](_1: T_1, ..., _$n$: T_$n$) {
   def toString = "(" ++ _1 ++ "," ++ $\ldots$ ++ "," ++ _$n$ ++ ")"
@@ -375,7 +374,7 @@ as an alias for `Tuple3`.
 Scala defines function classes `Function$n$` for $n = 1 , \ldots , 22$.
 These are defined as follows.
 
-``` 
+```scala
 package scala 
 trait Function$n$[-T_1, ..., -T_$n$, +R] {
   def apply(x_1: T_1, ..., x_$n$: T_$n$): R
@@ -386,7 +385,7 @@ trait Function$n$[-T_1, ..., -T_$n$, +R] {
 The `PartialFunction` subclass of `Function1` represents functions that (indirectly) specify their domain.
 Use the `isDefined` method to query whether the partial function is defined for a given input (i.e., whether the input is part of the function's domain).
 
-``` 
+```scala
 class PartialFunction[-A, +B] extends Function1[A, B] {
   def isDefinedAt(x: A): Boolean
 }
@@ -401,7 +400,7 @@ All operations on arrays desugar to the corresponding operations of the
 underlying platform. Therefore, the following class definition is given for
 informational purposes only:
 
-```
+```scala
 final class Array[T](_length: Int)
 extends java.io.Serializable with java.lang.Cloneable {
   def length: Int = $\ldots$
@@ -463,7 +462,7 @@ However, it is possible to cast an expression of type
 `Array[String]` to `Array[Object]`, and this
 cast will succeed without raising a `ClassCastException`. Example:
 
-``` 
+```scala
 val xs = new Array[String](2)
 // val ys: Array[Object] = xs   // **** error: incompatible types
 val ys: Array[Object] = xs.asInstanceOf[Array[Object]] // OK
@@ -478,7 +477,7 @@ following implementation of method `mkArray`, which creates
 an array of an arbitrary type $T$, given a sequence of $T$`s which
 defines its elements:
 
-```
+```scala
 import reflect.ClassTag
 def mkArray[T : ClassTag](elems: Seq[T]): Array[T] = {
   val result = new Array[T](elems.length)
@@ -505,7 +504,7 @@ instantiation of single- and multi-dimensional arrays, an extractor method
 [`unapplySeq`](10-pattern-matching.html#extractor-patterns) which enables pattern matching
 over arrays and additional utility methods:
 
-```
+```scala
 package scala
 object Array { 
   /** copies array elements from `src` to `dest`. */
@@ -558,7 +557,7 @@ object Array {
 
 ## Class Node
 
-``` 
+```scala
 package scala.xml 
 
 trait Node {
@@ -637,7 +636,7 @@ for Scala programs. It is always implicitly imported, so that all its
 defined members are available without qualification. Its definition
 for the JVM environment conforms to the following signature:
 
-``` 
+```scala
 package scala
 object Predef {
 
@@ -714,8 +713,7 @@ object Predef {
 ```
 
 
-``` 
-
+```scala
   // tupling ---------------------------------------------------------
 
   type Pair[+A, +B] = Tuple2[A, B]

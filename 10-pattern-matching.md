@@ -8,7 +8,7 @@ chapter: 8
 
 ## Patterns
 
-``` 
+```ebnf
   Pattern         ::=  Pattern1 { ‘|’ Pattern1 }
   Pattern1        ::=  varid ‘:’ TypePat
                     |  ‘_’ ‘:’ TypePat
@@ -55,7 +55,7 @@ patterns.
 
 ### Variable Patterns
 
-``` 
+```ebnf
   SimplePattern   ::=  `_'
                     |  varid
 ```
@@ -69,7 +69,7 @@ which is treated as if it was a fresh variable on each occurrence.
 ### Typed Patterns
 
 
-``` 
+```ebnf
   Pattern1        ::=  varid `:' TypePat
                     |  `_' `:' TypePat
 ```
@@ -83,7 +83,7 @@ that value.
 
 ### Pattern Binders
 
-``` 
+```ebnf
   Pattern2        ::=  varid `@' Pattern3
 ```
 
@@ -95,7 +95,7 @@ and it binds the variable name to that value.
 
 ### Literal Patterns
 
-``` 
+```ebnf
   SimplePattern   ::=  Literal
 ```
 
@@ -105,7 +105,7 @@ expected type of the pattern.
 
 ### Stable Identifier Patterns
 
-``` 
+```ebnf
   SimplePattern   ::=  StableId
 ```
 
@@ -122,7 +122,7 @@ backquotes; then it is treated as a stable identifier pattern.
 ###### Example
 Consider the following function definition:
 
-```
+```scala
 def f(x: Int, y: Int) = x match {
   case y => ...
 }
@@ -132,7 +132,7 @@ Here, `y` is a variable pattern, which matches any value.
 If we wanted to turn the pattern into a stable identifier pattern, this
 can be achieved as follows:
 
-```
+```scala
 def f(x: Int, y: Int) = x match {
   case `y` => ...
 }
@@ -144,7 +144,7 @@ argument of `f` are equal.
 
 ### Constructor Patterns
 
-``` 
+```ebnf
 SimplePattern   ::=  StableId `(' [Patterns] `)
 ```
 
@@ -170,7 +170,7 @@ repeated parameter. This is further discussed [here](#pattern-sequences).
 
 ### Tuple Patterns
 
-``` 
+```ebnf
   SimplePattern   ::=  `(' [Patterns] `)'
 ```
 
@@ -181,7 +181,7 @@ where $n \geq 2$. The empty tuple
 
 ### Extractor Patterns
 
-``` 
+```ebnf
   SimplePattern   ::=  StableId `(' [Patterns] `)'
 ```
 
@@ -221,7 +221,7 @@ This case is further discussed [below](#pattern-sequences).
 The `Predef` object contains a definition of an
 extractor object `Pair`:
 
-```
+```scala
 object Pair {
   def apply[A, B](x: A, y: B) = Tuple2(x, y)
   def unapply[A, B](x: Tuple2[A, B]): Option[Tuple2[A, B]] = Some(x)
@@ -232,7 +232,7 @@ This means that the name `Pair` can be used in place of `Tuple2` for tuple
 formation as well as for deconstruction of tuples in patterns.
 Hence, the following is possible:
 
-```
+```scala
 val x = (1, 2)
 val y = x match {
   case Pair(i, s) => Pair(s + i, i * i)
@@ -241,7 +241,7 @@ val y = x match {
 
 ### Pattern Sequences
 
-``` 
+```ebnf
 SimplePattern ::= StableId `(' [Patterns `,'] [varid `@'] `_' `*' `)'
 ```
 
@@ -262,7 +262,7 @@ p_n$.
 
 ### Infix Operation Patterns
 
-``` 
+```ebnf
   Pattern3  ::=  SimplePattern {id [nl] SimplePattern}
 ```
 
@@ -277,7 +277,7 @@ shorthand for the constructor or extractor pattern $\mathit{op}(p, q_1
 
 ### Pattern Alternatives
 
-``` 
+```ebnf
   Pattern   ::=  Pattern1 { `|' Pattern1 }
 ```
 
@@ -320,7 +320,7 @@ A pattern $p$ is _irrefutable_ for a type $T$, if one of the following applies:
 
 ## Type Patterns
 
-``` 
+```ebnf
   TypePat           ::=  Type
 ```
 
@@ -448,7 +448,7 @@ are inferred in the same way as for the typed pattern
 ###### Example
 Consider the program fragment:
 
-```
+```scala
 val x: Any
 x match {
   case y: List[a] => ...
@@ -464,7 +464,7 @@ bounds. The scope of `a` is right-hand side of its case clause.
 
 On the other hand, if `x` is declared as
 
-```
+```scala
 val x: List[List[String]],
 ```
 
@@ -477,7 +477,7 @@ this generates the constraint
 ###### Example
 Consider the program fragment:
 
-```
+```scala
 val x: Any
 x match {
   case y: List[String] => ...
@@ -499,7 +499,7 @@ compiler will flag this potential loss of type-safety with an
 ###### Example
 Consider the program fragment
 
-```
+```scala
 class Term[A]
 class Number(val n: Int) extends Term[Int]
 def f[B](t: Term[B]): B = t match {
@@ -522,7 +522,7 @@ function's declared result type, `Number`.
 
 ## Pattern Matching Expressions
 
-``` 
+```ebnf
   Expr            ::=  PostfixExpr `match' `{' CaseClauses `}'
   CaseClauses     ::=  CaseClause {CaseClause}
   CaseClause      ::=  `case' Pattern [Guard] `=>' Block
@@ -530,7 +530,7 @@ function's declared result type, `Number`.
 
 A pattern matching expression
 
-``` 
+```scala
 e match { case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ }
 ```
 
@@ -597,11 +597,11 @@ the compilation of pattern matching can emit warnings which diagnose
 that a given set of patterns is not exhaustive, i.e. that there is a
 possibility of a `MatchError` being raised at run-time. 
 
-### Example:
+### Example
 
 Consider the following definitions of arithmetic terms:
 
-```
+```scala
 abstract class Term[T]
 case class Lit(x: Int) extends Term[Int]
 case class Succ(t: Term[Int]) extends Term[Int]
@@ -617,7 +617,7 @@ type of the expression it representes (either `Int` or `Boolean`).
 
 A type-safe evaluator for such terms can be written as follows.
 
-```
+```scala
 def eval[T](t: Term[T]): T = t match {
   case Lit(n)        => n
   case Succ(u)       => eval(u) + 1
@@ -640,13 +640,13 @@ conforms to its expected type, `T`.
 
 ## Pattern Matching Anonymous Functions
 
-``` 
+```ebnf
   BlockExpr ::= `{' CaseClauses `}'
 ```
 
 An anonymous function can be defined by a sequence of cases 
 
-``` 
+```scala
 { case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ }
 ```
 
@@ -660,7 +660,7 @@ $R$ may be undetermined.
 If the expected type is `scala.Function$k$[$S_1 , \ldots , S_k$, $R$]`,
 the expression is taken to be equivalent to the anonymous function:
 
-``` 
+```scala
 ($x_1: S_1 , \ldots , x_k: S_k$) => ($x_1 , \ldots , x_k$) match { 
   case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ 
 }
@@ -671,7 +671,7 @@ As was shown [here](08-expressions.html#anonymous-functions), this anonymous fun
 equivalent to the following instance creation expression, where
  $T$ is the weak least upper bound of the types of all $b_i$.
 
-``` 
+```scala
 new scala.Function$k$[$S_1 , \ldots , S_k$, $T$] {
   def apply($x_1: S_1 , \ldots , x_k: S_k$): $T$ = ($x_1 , \ldots , x_k$) match {
     case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$
@@ -682,7 +682,7 @@ new scala.Function$k$[$S_1 , \ldots , S_k$, $T$] {
 If the expected type is `scala.PartialFunction[$S$, $R$]`,
 the expression is taken to be equivalent to the following instance creation expression:
 
-``` 
+```scala
 new scala.PartialFunction[$S$, $T$] {
   def apply($x$: $S$): $T$ = x match {
     case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$
@@ -704,7 +704,7 @@ Here is a method which uses a fold-left operation
 `/:` to compute the scalar product of
 two vectors:
 
-```
+```scala
 def scalarProduct(xs: Array[Double], ys: Array[Double]) =
   (0.0 /: (xs zip ys)) {
     case (a, (b, c)) => a + b * c
@@ -714,7 +714,7 @@ def scalarProduct(xs: Array[Double], ys: Array[Double]) =
 The case clauses in this code are equivalent to the following
 anonymous function:
 
-```
+```scala
 (x, y) => (x, y) match {
   case (a, (b, c)) => a + b * c
 }

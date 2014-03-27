@@ -39,7 +39,7 @@ scopes.
 
 Note that shadowing is only a partial order. In a situation like
 
-``` 
+```scala
 val x = 1
 {
   import p.x
@@ -71,11 +71,11 @@ namespace as the identifier. It is an error if $T$ is not a [value type](05-type
 The type of $e.x$ is the member type of the referenced entity in $T$.
 
 
-### Example:
+### Example
 
 Assume the following two definitions of a objects named `X` in packages `P` and `Q`.
 
-```
+```scala
 package P {
   object X { val x = 1; val y = 2 }
 }
@@ -88,7 +88,7 @@ package Q {
 The following program illustrates different kinds of bindings and
 precedences between them.
 
-```
+```scala
 package P {                  // `X' bound by package clause
 import Console._             // `println' bound by wildcard import
 object A {

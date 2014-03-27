@@ -8,7 +8,7 @@ chapter: 9
 
 ## Compilation Units
 
-``` 
+```ebnf
 CompilationUnit  ::=  {‘package’ QualId semi} TopStatSeq
 TopStatSeq       ::=  TopStat {semi TopStat}
 TopStat          ::=  {Annotation} {Modifier} TmplDef
@@ -25,7 +25,7 @@ package clause.
 
 A compilation unit 
 
-``` 
+```scala
 package $p_1$;
 $\ldots$
 package $p_n$;
@@ -36,7 +36,7 @@ starting with one or more package
 clauses is equivalent to a compilation unit consisting of the
 packaging 
 
-``` 
+```scala
 package $p_1$ { $\ldots$
   package $p_n$ {
     $\mathit{stats}$
@@ -55,7 +55,7 @@ The exception to the implicit import of `scala.Predef` can be useful to hide, e.
 
 ## Packagings
 
-``` 
+```ebnf
 Packaging       ::=  ‘package’ QualId [nl] ‘{’ TopStatSeq ‘}’
 ```
 
@@ -74,7 +74,7 @@ Inside the packaging, all members of package $p$ are visible under their
 simple names. However this rule does not extend to members of enclosing
 packages of $p$ that are designated by a prefix of the path $p$.
 
-``` 
+```scala
 package org.net.prj {
   ...
 }
@@ -97,7 +97,7 @@ are visible to each other without qualification.
 
 ## Package Objects
 
-``` 
+```ebnf
 PackageObject   ::=  ‘package’ ‘object’ ObjectDef
 ```
 
@@ -116,7 +116,7 @@ future version of Scala.
 
 ## Package References
 
-``` 
+```ebnf
 QualId           ::=  id {‘.’ id}
 ```
 
@@ -131,7 +131,7 @@ outermost root package which contains all top-level packages.
 ###### Example
 Consider the following program:
 
-```
+```scala
 package b {
   class B
 }
@@ -168,7 +168,7 @@ which executes the initializaton code of the object $m$.
 The following example will create a hello world program by defining
 a method `main` in module `test.HelloWorld`.
 
-```
+```scala
 package test
 object HelloWorld {
   def main(args: Array[String]) { println("Hello World") }
@@ -177,13 +177,13 @@ object HelloWorld {
 
 This program can be started by the command
 
-```
+```scala
 scala test.HelloWorld
 ```
 
 In a Java environment, the command
 
-```
+```scala
 java test.HelloWorld
 ```
 
@@ -192,7 +192,7 @@ would work as well.
 `HelloWorld` can also be defined without a `main` method
 by inheriting from `App` instead:
 
-```
+```scala
 package test
 object HelloWorld extends App {
   println("Hello World")

@@ -6,7 +6,7 @@ chapter: 11
 
 # User-Defined Annotations
 
-``` 
+```ebnf
   Annotation       ::=  ‘@’ SimpleType {ArgumentExprs}
   ConstrAnnotation ::=  ‘@’ SimpleType ArgumentExprs
 ```
@@ -26,7 +26,7 @@ does not matter.
 
 Examples:
 
-``` 
+```scala
 @deprecated("Use D", "1.0") class C { ... } // Class annotation
 @transient @volatile var m: Int             // Variable annotation
 String @local                               // Type annotation

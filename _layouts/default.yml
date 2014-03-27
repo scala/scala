@@ -21,7 +21,7 @@
   <script type="text/javascript">
     // clear content of H3 nodes that start with "Example:"
     // the content is only there to determine ID of the H3 element (redcarpet doesn't let us set css id)
-    $( document ).ready(function(){ $("h3[id*='example:']").text("") })
+    $( document ).ready(function(){ $("h3[id*='example']").text("") })
   </script>
 
   <link rel="stylesheet" type="text/css" href="resources/style.css">

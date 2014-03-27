@@ -10,14 +10,14 @@ The following descriptions of Scala tokens uses literal characters `‘c’` whe
 
 _Unicode escapes_ are used to represent the Unicode character with the given hexadecimal code:
 
-```
+```ebnf
 UnicodeEscape ::= ‘\‘ ‘u‘ {‘u‘} hexDigit hexDigit hexDigit hexDigit
 hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
 ```
 
 The lexical syntax of Scala is given by the following grammar in EBNF form:
 
-``` 
+```ebnf
 whiteSpace       ::=  ‘\u0020’ | ‘\u0009’ | ‘\u000D’ | ‘\u000A’
 upper            ::=  ‘A’ | … | ‘Z’ | ‘\$’ | ‘_’  // and Unicode category Lu
 lower            ::=  ‘a’ | … | ‘z’ // and Unicode category Ll
@@ -75,7 +75,7 @@ semi             ::=  ‘;’ |  nl {nl}
 The context-free syntax of Scala is given by the following EBNF
 grammar.
 
-``` 
+```ebnf
   Literal           ::=  [‘-’] integerLiteral
                       |  [‘-’] floatingPointLiteral
                       |  booleanLiteral

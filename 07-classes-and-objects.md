@@ -6,7 +6,7 @@ chapter: 5
 
 # Classes and Objects
 
-``` 
+```ebnf
 TmplDef          ::= [`case'] `class' ClassDef
                   |  [`case'] `object' ObjectDef
                   |  `trait' TraitDef
@@ -18,7 +18,7 @@ are both defined in terms of _templates_.
 
 ## Templates
 
-``` 
+```ebnf
 ClassTemplate   ::=  [EarlyDefs] ClassParents [TemplateBody]
 TraitTemplate   ::=  [EarlyDefs] TraitParents [TemplateBody]
 ClassParents    ::=  Constr {`with' AnnotType}
@@ -96,7 +96,7 @@ without introducing an alias name for it.
 ###### Example
 Consider the following class definitions:
 
-```
+```scala
 class Base extends Object {}
 trait Mixin extends Base {}
 object O extends Mixin {}
@@ -104,7 +104,7 @@ object O extends Mixin {}
 
 In this case, the definition of `O` is expanded to:
 
-```
+```scala
 object O extends Base with Mixin {}
 ```
 
@@ -141,14 +141,14 @@ it. But templates inheriting the `scala.DelayedInit` trait
 can override the hook by re-implementing the `delayedInit`
 method, which is defined as follows:
 
-``` 
+```scala
 def delayedInit(body: => Unit)
 ```
 
 
 ### Constructor Invocations
 
-``` 
+```ebnf
 Constr  ::=  AnnotType {`(' [Exprs] `)'}
 ```
 
@@ -199,7 +199,7 @@ $\mathcal{L}(C) = C, \mathcal{L}(C_n) \; \vec{+} \; \ldots \; \vec{+} \; \mathca
 Here $\vec{+}$ denotes concatenation where elements of the right operand
 replace identical elements of the left operand:
 
-```
+```scala
 \[
 \begin{array}{lcll}
 \{a, A\} \;\vec{+}\; B &=& a, (A \;\vec{+}\; B)  &{\bf if} \; a \not\in B \\
@@ -212,7 +212,7 @@ replace identical elements of the left operand:
 ###### Example
 Consider the following class definitions.
 
-```
+```scala
 abstract class AbsIterator extends AnyRef { ... }
 trait RichIterator extends AbsIterator { ... }
 class StringIterator extends AbsIterator { ... }
@@ -221,7 +221,7 @@ class Iter extends StringIterator with RichIterator { ... }
 
 Then the linearization of class `Iter` is
 
-```
+```scala
 { Iter, RichIterator, StringIterator, AbsIterator, AnyRef, Any }
 ```
 
@@ -233,7 +233,7 @@ a linearization of a class always contains the linearization of its direct super
 
 For instance, the linearization of `StringIterator` is
 
-```
+```scala
 { StringIterator, AbsIterator, AnyRef, Any }
 ```
 
@@ -241,7 +241,7 @@ which is a suffix of the linearization of its subclass `Iter`.
 The same is not true for the linearization of mixins.
 For instance, the linearization of `RichIterator` is
 
-```
+```scala
 { RichIterator, AbsIterator, AnyRef, Any }
 ```
 
@@ -312,7 +312,7 @@ defined or inherited) with the same name which both define default arguments.
 ###### Example
 Consider the trait definitions:
 
-```
+```scala
 trait A { def f: Int }
 trait B extends A { def f: Int = 1 ; def g: Int = 2 ; def h: Int = 3 }
 trait C extends A { override def f: Int = 4 ; def g: Int }
@@ -357,7 +357,7 @@ $M'$:
 A stable member can only be overridden by a stable member.
 For example, this is not allowed:
 
-```
+```scala
 class X { val stable = 1}
 class Y extends X { override var stable = 1 } // error
 ```
@@ -378,11 +378,11 @@ it is possible to add new defaults (if the corresponding parameter in the
 superclass does not have a default) or to override the defaults of the
 superclass (otherwise).
 
-### Example:
+### Example
 
 Consider the definitions:
 
-```
+```scala
 trait Root { type T <: Root }
 trait A extends Root { type T <: A }
 trait B extends Root { type T <: B }
@@ -396,7 +396,7 @@ which fails to subsume the binding `type T <: A` of `T`
 in type `A`. The problem can be solved by adding an overriding
 definition of type `T` in class `C`:
 
-```
+```scala
 class C extends A with B { type T <: C }
 ```
 
@@ -418,7 +418,7 @@ necessary to make subtyping decidable [@kennedy-pierce:decidable]).
 
 ### Early Definitions
 
-``` 
+```ebnf
 EarlyDefs         ::= `{' [EarlyDef {semi EarlyDef}] `}' `with'
 EarlyDef          ::=  {Annotation} {Modifier} PatVarDef
 ```
@@ -427,7 +427,7 @@ A template may start with an _early field definition_ clause,
 which serves to define certain field values before the supertype
 constructor is called. In a template
 
-``` 
+```scala
 { val $p_1$: $T_1$ = $e_1$
   ...
   val $p_n$: $T_n$ = $e_n$
@@ -462,7 +462,7 @@ before the superclass constructor of the template is called.
 Early definitions are particularly useful for
 traits, which do not have normal constructor parameters. Example:
 
-```
+```scala
 trait Greeting {
   val name: String
   val msg = "How are you, "+name
@@ -486,7 +486,7 @@ body, it would be initialized after the constructor of
 
 ## Modifiers
 
-``` 
+```ebnf
 Modifier          ::=  LocalModifier 
                     |  AccessModifier
                     |  `override'
@@ -634,7 +634,7 @@ and a later access will retry to evaluate its right hand side.
 ###### Example
 The following code illustrates the use of qualified private:
 
-```
+```scala
 package outerpkg.innerpkg
 class Outer {
   class Inner {
@@ -659,7 +659,7 @@ A useful idiom to prevent clients of a class from
 constructing new instances of that class is to declare the class
 `abstract` and `sealed`:
 
-```
+```scala
 object m {
   abstract sealed class C (x: Int) {
     def nextC = new C(x + 1) {}
@@ -673,7 +673,7 @@ For instance, in the code above clients can create instances of class
 object; it is not possible for clients to create objects of class
 `m.C` directly. Indeed the following two lines are both in error:
 
-```
+```scala
 new m.C(0)    // **** error: C is abstract, so it cannot be instantiated.
 new m.C(0) {} // **** error: illegal inheritance from sealed class.
 ```
@@ -684,7 +684,7 @@ constructor `private` ([example](#example-private-constructor)).
 
 ## Class Definitions
 
-``` 
+```ebnf
 TmplDef           ::=  `class' ClassDef 
 ClassDef          ::=  id [TypeParamClause] {Annotation} 
                        [AccessModifier] ClassParamClauses ClassTemplateOpt 
@@ -699,7 +699,7 @@ ClassTemplateOpt  ::=  `extends' ClassTemplate | [[`extends'] TemplateBody]
 
 The most general form of class definition is 
 
-``` 
+```scala
 class $c$[$\mathit{tps}\,$] $as$ $m$($\mathit{ps}_1$)$\ldots$($\mathit{ps}_n$) extends $t$    $\gap(n \geq 0)$.
 ```
 
@@ -760,10 +760,10 @@ which when applied to parameters conforming to types $\mathit{ps}$
 initializes instances of type `$c$[$\mathit{tps}\,$]` by evaluating the template
 $t$.
 
-### Example:
+### Example
 The following example illustrates `val` and `var` parameters of a class `C`:
 
-```
+```scala
 class C(x: Int, val y: String, var z: List[String])
 val c = new C(1, "abc", List())
 c.z = c.y :: c.z
@@ -771,7 +771,7 @@ c.z = c.y :: c.z
 
 The following class can be created only from its companion module.
 
-```
+```scala
 object Sensitive {
   def makeSensitive(credentials: Certificate): Sensitive =
     if (credentials == Admin) new Sensitive()
@@ -785,7 +785,7 @@ class Sensitive private () {
 
 ### Constructor Definitions
 
-``` 
+```ebnf
 FunDef         ::= `this' ParamClause ParamClauses 
                    (`=' ConstrExpr | [nl] ConstrBlock)
 ConstrExpr     ::= SelfInvocation
@@ -838,7 +838,7 @@ primary constructor of the class).
 ###### Example
 Consider the class definition
 
-```
+```scala
 class LinkedList[A]() {
   var head = _
   var tail = null
@@ -855,7 +855,7 @@ third one constructs a list with a given head and tail.
 
 ## Case Classes
 
-``` 
+```ebnf
 TmplDef  ::=  `case' `class' ClassDef
 ```
 
@@ -875,7 +875,7 @@ parameters $\mathit{tps}$ and value parameters $\mathit{ps}$ implicitly
 generates an [extractor object](10-pattern-matching.html#extractor-patterns) which is
 defined as follows:
 
-``` 
+```scala
 object $c$ {
   def apply[$\mathit{tps}\,$]($\mathit{ps}_1\,$)$\ldots$($\mathit{ps}_n$): $c$[$\mathit{tps}\,$] = new $c$[$\mathit{Ts}\,$]($\mathit{xs}_1\,$)$\ldots$($\mathit{xs}_n$)
   def unapply[$\mathit{tps}\,$]($x$: $c$[$\mathit{tps}\,$]) =
@@ -900,7 +900,7 @@ If the case class definition contains an empty value parameter list, the
 `unapply` method returns a `Boolean` instead of an `Option` type and
 is defined as follows:
 
-``` 
+```scala
 def unapply[$\mathit{tps}\,$]($x$: $c$[$\mathit{tps}\,$]) = x ne null
 ```
 
@@ -915,7 +915,7 @@ A method named `copy` is implicitly added to every case class unless the
 class already has a member (directly defined or inherited) with that name, or the
 class has a repeated parameter. The method is defined as follows:
 
-``` 
+```scala
 def copy[$\mathit{tps}\,$]($\mathit{ps}'_1\,$)$\ldots$($\mathit{ps}'_n$): $c$[$\mathit{tps}\,$] = new $c$[$\mathit{Ts}\,$]($\mathit{xs}_1\,$)$\ldots$($\mathit{xs}_n$)
 ```
 
@@ -946,7 +946,7 @@ class different from `AnyRef`. In particular:
 ###### Example
 Here is the definition of abstract syntax for lambda calculus:
 
-```
+```scala
 class Expr
 case class Var   (x: String)          extends Expr
 case class Apply (f: Expr, e: Expr)   extends Expr
@@ -957,7 +957,7 @@ This defines a class `Expr` with case classes
 `Var`, `Apply` and `Lambda`. A call-by-value evaluator
 for lambda expressions could then be written as follows.
 
-```
+```scala
 type Env = String => Value
 case class Value(e: Expr, env: Env)
 
@@ -976,7 +976,7 @@ def eval(e: Expr, env: Env): Value = e match {
 It is possible to define further case classes that extend type
 `Expr` in other parts of the program, for instance
 
-```
+```scala
 case class Number(x: Int) extends Expr
 ```
 
@@ -988,7 +988,7 @@ directly extend `Expr` must be in the same source file as
 
 ### Traits
 
-``` 
+```ebnf
 TmplDef          ::=  `trait' TraitDef
 TraitDef         ::=  id [TypeParamClause] TraitTemplateOpt
 TraitTemplateOpt ::=  `extends' TraitTemplate | [[`extends'] TemplateBody]
@@ -1010,14 +1010,14 @@ it is not statically known at the time the trait is defined.
 If $D$ is not a trait, then its actual supertype is simply its
 least proper supertype (which is statically known).
 
-### Example:
+### Example
 The following trait defines the property
 of being comparable to objects of some type. It contains an abstract
 method `<` and default implementations of the other
 comparison operators `<=`, `>`, and
 `>=`.
 
-```
+```scala
 trait Comparable[T <: Comparable[T]] { self: T =>
   def < (that: T): Boolean
   def <=(that: T): Boolean = this < that || this == that
@@ -1035,7 +1035,7 @@ given key. Finally, there is a method `apply` which is like
 `get`, except that it returns a given default value if the table
 is undefined for the given key. This class is implemented as follows.
 
-```
+```scala
 abstract class Table[A, B](defaultValue: B) {
   def get(key: A): Option[B]
   def set(key: A, value: B)
@@ -1048,7 +1048,7 @@ abstract class Table[A, B](defaultValue: B) {
 
 Here is a concrete implementation of the `Table` class.
 
-```
+```scala
 class ListTable[A, B](defaultValue: B) extends Table[A, B](defaultValue) {
   private var elems: List[(A, B)]
   def get(key: A) = elems.find(._1.==(key)).map(._2)
@@ -1059,7 +1059,7 @@ class ListTable[A, B](defaultValue: B) extends Table[A, B](defaultValue) {
 Here is a trait that prevents concurrent access to the
 `get` and `set` operations of its parent class:
 
-```
+```scala
 trait SynchronizedTable[A, B] extends Table[A, B] {
   abstract override def get(key: A): B =
     synchronized { super.get(key) }
@@ -1080,7 +1080,7 @@ Finally, the following mixin composition creates a synchronized list
 table with strings as keys and integers as values and with a default
 value `0`:
 
-```
+```scala
 object MyTable extends ListTable[String, Int](0) with SynchronizedTable
 ```
 
@@ -1093,7 +1093,7 @@ in `MyTable`.
 
 ## Object Definitions
 
-``` 
+```ebnf
 ObjectDef       ::=  id ClassTemplate
 ```
 
@@ -1103,7 +1103,7 @@ most general form is
 $m$ is the name of the object to be defined, and 
 $t$ is a [template](#templates) of the form
 
-``` 
+```scala
 $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\mathit{stats}$ }
 ```
 
@@ -1118,7 +1118,7 @@ The object definition defines a single object (or: _module_)
 conforming to the template $t$.  It is roughly equivalent to the
 following definition of a lazy value:
 
-``` 
+```scala
 lazy val $m$ = new $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { this: $m.type$ => $\mathit{stats}$ }
 ```
 
@@ -1142,7 +1142,7 @@ Classes in Scala do not have static members; however, an equivalent
 effect can be achieved by an accompanying object definition
 E.g.
 
-```
+```scala
 abstract class Point {
   val x: Double
   val y: Double

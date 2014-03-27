@@ -16,7 +16,7 @@ to _Scala mode_, and literal characters `‘c’` refer to the ASCII fragment `\
 In Scala mode, _Unicode escapes_ are replaced by the corresponding
 Unicode character with the given hexadecimal code.
 
-```
+```ebnf
 UnicodeEscape ::= ‘\‘ ‘u‘ {‘u‘} hexDigit hexDigit hexDigit hexDigit
 hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
 ```
@@ -45,7 +45,7 @@ classes (Unicode general category given in parentheses):
 
 ## Identifiers
 
-``` 
+```ebnf
 op       ::=  opchar {opchar} 
 varid    ::=  lower idrest
 plainid  ::=  upper idrest
@@ -70,7 +70,7 @@ of all characters excluding the backquotes themselves.
  
 As usual, a longest match rule applies. For instance, the string
 
-``` 
+```scala
 big_bob++=`def`
 ```
 
@@ -85,7 +85,7 @@ User programs should not define identifiers which contain `‘$’` characters.
 The following names are reserved words instead of being members of the
 syntactic class `id` of lexical identifiers.
 
-```
+```scala
 abstract    case        catch       class       def
 do          else        extends     false       final
 finally     for         forSome     if          implicit
@@ -100,15 +100,15 @@ _    :    =    =>    <-    <:    <%     >:    #    @
 The Unicode operators `\u21D2 $\Rightarrow$` and `\u2190 $\leftarrow$`, which have the ASCII
 equivalents `=>` and `<-`, are also reserved.
 
-### Example:
+### Example
 
-```
+```scala
     x         Object        maxIndex   p2p      empty_?
     +         `yield`       αρετη     _y       dot_product_*
     __system  _MAX_LEN_
 ```
 
-### Example:
+### Example
 When one needs to access Java identifiers that are reserved words in Scala, use backquote-enclosed strings.
 For instance, the statement `Thread.yield()` is illegal, since
 `yield` is a reserved word in Scala. However, here's a
@@ -117,7 +117,7 @@ work-around: `` Thread.`yield`() ``
 
 ## Newline Characters
 
-``` 
+```ebnf
 semi ::= ‘;’ |  nl {nl}
 ```
 
@@ -132,7 +132,7 @@ as the special token “nl” if the three following criteria are satisfied:
 The tokens that can terminate a statement are: literals, identifiers
 and the following delimiters and reserved words:
 
-```
+```scala
 this    null    true    false    return    type    <xml-start>    
 _       )       ]       }
 ```
@@ -140,7 +140,7 @@ _       )       ]       }
 The tokens that can begin a statement are all Scala tokens _except_
 the following delimiters and reserved words:
 
-```
+```scala
 catch    else    extends    finally    forSome    match        
 with    yield    ,    .    ;    :    =    =>    <-    <:    <%    
 >:    #    [    )    ]    }
@@ -207,12 +207,12 @@ A single new line token is accepted
 - in front of a [parameter clause](06-basic-declarations-and-definitions.html#function-declarations-and-definitions), and
 - after an [annotation](13-user-defined-annotations.html#user-defined-annotations).
 
-### Example:
+### Example
 
 The newline tokens between the two lines are not
 treated as statement separators.
 
-```
+```scala
 if (x > 0)
   x = x - 1
 
@@ -226,9 +226,9 @@ type
   IntList = List[Int]
 ```
 
-### Example:
+### Example
 
-```
+```scala
 new Iterator[Int]
 {
   private var x = 0
@@ -240,7 +240,7 @@ new Iterator[Int]
 With an additional newline character, the same code is interpreted as
 an object creation followed by a local block:
 
-```
+```scala
 new Iterator[Int]
 
 {
@@ -250,9 +250,9 @@ new Iterator[Int]
 }
 ```
 
-### Example:
+### Example
 
-```
+```scala
   x < 0 ||
   x > 10
 ```
@@ -260,15 +260,15 @@ new Iterator[Int]
 With an additional newline character, the same code is interpreted as
 two expressions:
 
-```
+```scala
   x < 0 ||
 
   x > 10
 ```
 
-### Example:
+### Example
 
-```
+```scala
 def func(x: Int)
         (y: Int) = x + y
 ```
@@ -276,15 +276,15 @@ def func(x: Int)
 With an additional newline character, the same code is interpreted as
 an abstract function definition and a syntactically illegal statement:
 
-```
+```scala
 def func(x: Int)
 
         (y: Int) = x + y
 ```
 
-### Example:
+### Example
 
-```
+```scala
 @serializable
 protected class Data { ... }
 ```
@@ -293,7 +293,7 @@ With an additional newline character, the same code is interpreted as
 an attribute and a separate statement (which is syntactically
 illegal).
 
-```
+```scala
 @serializable
 
 protected class Data { ... }
@@ -311,7 +311,7 @@ each case as in Java.
   particular float and double. 
 -->
 
-``` 
+```ebnf
 Literal  ::=  [‘-’] integerLiteral
            |  [‘-’] floatingPointLiteral
            |  booleanLiteral
@@ -324,7 +324,7 @@ Literal  ::=  [‘-’] integerLiteral
 
 ### Integer Literals
 
-``` 
+```ebnf
 integerLiteral  ::=  (decimalNumeral | hexNumeral | octalNumeral) 
                        [‘L’ | ‘l’]
 decimalNumeral  ::=  ‘0’ | nonZeroDigit {digit}
@@ -356,16 +356,16 @@ is _pt_. The numeric ranges given by these types are:
 |`Char`          | $0$ to $2^{16}-1$      |
 
 
-### Example:
+### Example
 
-```
+```scala
 0          21          0xFFFFFFFF       -42L
 ```
 
 
 ### Floating Point Literals
 
-``` 
+```ebnf
 floatingPointLiteral  ::=  digit {digit} ‘.’ digit {digit} [exponentPart] [floatType]
                         |  ‘.’ digit {digit} [exponentPart] [floatType]
                         |  digit {digit} exponentPart [floatType]
@@ -385,24 +385,24 @@ If a floating point literal in a program is followed by a token
 starting with a letter, there must be at least one intervening
 whitespace character between the two tokens.
 
-### Example:
+### Example
 
-```
+```scala
 0.0        1e30f      3.14159f      1.0e-100      .1
 ```
 
-### Example:
+### Example
 
 The phrase `1.toString` parses as three different tokens:
 the integer literal `1`, a `.`, and the identifier `toString`.
 
-### Example:
+### Example
 
 `1.` is not a valid floating point literal because the mandatory digit after the `.` is missing.
 
 ### Boolean Literals
 
-``` 
+```ebnf
 booleanLiteral  ::=  ‘true’ | ‘false’
 ```
 
@@ -412,7 +412,7 @@ members of type `Boolean`.
 
 ### Character Literals
 
-``` 
+```ebnf
 characterLiteral  ::=  ‘'’ (printableChar | charEscapeSeq) ‘'’
 ```
 
@@ -420,9 +420,9 @@ A character literal is a single character enclosed in quotes.
 The character is either a printable unicode character or is described
 by an [escape sequence](#escape-sequences).
 
-### Example:
+### Example
 
-```
+```scala
 'a'    '\u0041'    '\n'    '\t'
 ```
 
@@ -435,7 +435,7 @@ the octal escape `'\12'` ([see here](#escape-sequences)).
 
 ### String Literals
 
-``` 
+```ebnf
 stringLiteral  ::=  ‘"’ {stringElement} ‘"’
 stringElement  ::=  printableCharNoDoubleQuote  |  charEscapeSeq
 ```
@@ -447,16 +447,16 @@ contains a double quote character, it must be escaped,
 i.e. `"\""`. The value of a string literal is an instance of
 class `String`. 
 
-### Example:
+### Example
 
-```
+```scala
 "Hello,\nWorld!"
 "This string contains a \" character."
 ```
 
 #### Multi-Line String Literals
 
-```
+```ebnf
 stringLiteral   ::=  ‘"""’ multiLineChars ‘"""’
 multiLineChars  ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 ```
@@ -469,9 +469,9 @@ must not necessarily be printable; newlines or other
 control characters are also permitted.  Unicode escapes work as everywhere else, but none
 of the escape sequences [here](#escape-sequences) are interpreted.
 
-### Example:
+### Example
 
-```
+```scala
   """the present string
      spans three
      lines."""
@@ -479,7 +479,7 @@ of the escape sequences [here](#escape-sequences) are interpreted.
 
 This would produce the string:
 
-```
+```scala
 the present string
      spans three
      lines.
@@ -489,7 +489,7 @@ The Scala library contains a utility method `stripMargin`
 which can be used to strip leading whitespace from multi-line strings.
 The expression
 
-``` 
+```scala
  """the present string
    |spans three
    |lines.""".stripMargin
@@ -497,7 +497,7 @@ The expression
 
 evaluates to
 
-``` 
+```scala
 the present string
 spans three 
 lines.
@@ -536,7 +536,7 @@ string literal does not start a valid escape sequence.
 
 ### Symbol literals
 
-``` 
+```ebnf
 symbolLiteral  ::=  ‘'’ plainid
 ```
 
@@ -544,7 +544,7 @@ A symbol literal `'x` is a shorthand for the expression
 `scala.Symbol("x")`. `Symbol` is a [case class](07-classes-and-objects.html#case-classes),
 which is defined as follows.
 
-``` 
+```scala
 package scala
 final case class Symbol private (name: String) {
   override def toString: String = "'" + name
@@ -580,7 +580,7 @@ angle bracket '<' in the following circumstance: The '<' must be
 preceded either by whitespace, an opening parenthesis or an opening
 brace and immediately followed by a character starting an XML name.
 
-``` 
+```ebnf
  ( whitespace | ‘(’ | ‘{’ ) ‘<’ (XNameStart | ‘!’ | ‘?’)
 
   XNameStart ::= ‘_’ | BaseChar | Ideographic // as in W3C XML, but without ‘:’
@@ -600,12 +600,12 @@ The scanner switches from XML mode to Scala mode if either
 Note that no Scala tokens are constructed in XML mode, and that comments are interpreted
 as text.
 
-### Example:
+### Example
 
 The following value definition uses an XML literal with two embedded
 Scala expressions:
 
-```
+```scala
 val b = <book>
           <title>The Scala Language Specification</title>
           <version>{scalaBook.version}</version>

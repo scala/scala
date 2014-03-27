@@ -6,7 +6,7 @@ chapter: 3
 
 # Types
 
-``` 
+```ebnf
   Type              ::=  FunctionArgTypes ‘=>’ Type
                       |  InfixType [ExistentialClause]
   FunctionArgTypes  ::=  InfixType
@@ -66,7 +66,7 @@ the corresponding anonymous type function directly.
 
 ## Paths
 
-``` 
+```ebnf
 Path            ::=  StableId
                   |  [id ‘.’] this
 StableId        ::=  id
@@ -103,7 +103,7 @@ forms.
 
 ### Singleton Types
 
-``` 
+```ebnf
 SimpleType  ::=  Path ‘.’ type
 ```
 
@@ -117,7 +117,7 @@ declared to be a subtype of trait `scala.Singleton`.
 
 ### Type Projection
 
-``` 
+```ebnf
 SimpleType  ::=  SimpleType ‘#’ id
 ```
 
@@ -132,7 +132,7 @@ If $x$ references an abstract type member, then $T$ must be a
 
 ### Type Designators
 
-``` 
+```ebnf
 SimpleType  ::=  StableId
 ```
 
@@ -149,7 +149,7 @@ A qualified type designator has the form `p.t` where `p` is
 a [path](#paths) and _t_ is a type name. Such a type designator is
 equivalent to the type projection `p.type#t`.
 
-### Example:
+### Example
 
 Some type designators and their expansions are listed below. We assume
 a local type parameter $t$, a value `maintable`
@@ -166,7 +166,7 @@ with a type member `Node` and the standard class `scala.Int`,
 
 ### Parameterized Types
 
-``` 
+```ebnf
 SimpleType      ::=  SimpleType TypeArgs
 TypeArgs        ::=  ‘[’ Types ‘]’
 ```
@@ -182,10 +182,10 @@ well-formed if each actual type parameter
 _conforms to its bounds_, i.e. $\sigma L_i <: T_i <: \sigma U_i$ where $\sigma$ is the
 substitution $[ a_1 := T_1 , \ldots , a_n := T_n ]$.
 
-### Example:
+### Example
 Given the partial type definitions:
 
-```
+```scala
 class TreeMap[A <: Comparable[A], B] { … }
 class List[A] { … }
 class I extends Comparable[I] { … }
@@ -197,7 +197,7 @@ class G[M[ Z <: I ], I] { … }
 
 the following parameterized types are well formed:
 
-```
+```scala
 TreeMap[I, String]
 List[I]
 List[List[Boolean]]
@@ -206,12 +206,12 @@ F[List, Int]
 G[S, String]
 ```
 
-### Example:
+### Example
 
 Given the [above type definitions](example-parameterized-types),
 the following types are ill-formed:
 
-```
+```scala
 TreeMap[I]            // illegal: wrong number of parameters
 TreeMap[List[I], Int] // illegal: type parameter not within bound
 
@@ -226,7 +226,7 @@ G[S, Int]             // illegal: S constrains its parameter to
 
 ### Tuple Types
 
-``` 
+```ebnf
 SimpleType    ::=   ‘(’ Types ‘)’
 ```
 
@@ -240,7 +240,7 @@ class and product trait are defined at least as follows in the
 standard Scala library (they might also add other methods and
 implement other traits).
 
-``` 
+```scala
 case class Tuple$n$[+T1, … , +$T_n$](_1: T1, … , _n: $T_n$) 
 extends Product_n[T1, … , $T_n$]
 
@@ -254,7 +254,7 @@ trait Product_n[+T1, … , +$T_n$] {
 
 ### Annotated Types
 
-``` 
+```ebnf
 AnnotType  ::=  SimpleType {Annotation}
 ```
 
@@ -262,18 +262,18 @@ An annotated type $T$ `$a_1 , \ldots , a_n$`
 attaches [annotations](13-user-defined-annotations.html#user-defined-annotations)
 $a_1 , \ldots , a_n$ to the type $T$.
 
-### Example:
+### Example
 
 The following type adds the `@suspendable` annotation to the type `String`:
 
-```
+```scala
 String @suspendable
 ```
 
 
 ### Compound Types
 
-``` 
+```ebnf
 CompoundType    ::=  AnnotType {‘with’ AnnotType} [Refinement]
                   |  Refinement
 Refinement      ::=  [nl] ‘{’ RefineStat {semi RefineStat} ‘}’
@@ -310,12 +310,12 @@ A compound type may also consist of just a refinement
 `{ $R$ }` with no preceding component types. Such a type is
 equivalent to `AnyRef{ R }`.
 
-### Example:
+### Example
 
 The following example shows how to declare and use a method which
 a parameter type that contains a refinement with structural declarations.
 
-```
+```scala
 case class Bird (val name: String) extends Object {
         def fly(height: Int) = …
 …
@@ -345,7 +345,7 @@ a value `callsign` and a `fly` method.
  
 ### Infix Types
 
-``` 
+```ebnf
 InfixType     ::=  CompoundType {id [nl] CompoundType}
 ```
 
@@ -374,7 +374,7 @@ $t_0 \mathit{op_1} (t_1 \mathit{op_2} ( \ldots \mathit{op_n} t_n) \ldots)$.
 
 ### Function Types
 
-``` 
+```ebnf
 Type              ::=  FunctionArgs ‘=>’ Type
 FunctionArgs      ::=  InfixType
                     |  ‘(’ [ ParamType {‘,’ ParamType } ] ‘)’
@@ -397,7 +397,7 @@ $(T_1 , \ldots , T_n) \Rightarrow U$ is a shorthand for the class type
 `Function$_n$[T1 , … , $T_n$, U]`. Such class
 types are defined in the Scala library for $n$ between 0 and 9 as follows.
 
-``` 
+```scala
 package scala 
 trait Function_n[-T1 , … , -T$_n$, +R] {
   def apply(x1: T1 , … , x$_n$: T$_n$): R 
@@ -410,7 +410,7 @@ result type and contravariant in their argument types.
 
 ### Existential Types
 
-``` 
+```ebnf
 Type               ::= InfixType ExistentialClauses
 ExistentialClauses ::= ‘forSome’ ‘{’ ExistentialDcl 
                        {semi ExistentialDcl} ‘}’
@@ -479,7 +479,7 @@ fresh type name and $T'$ results from $T$ by replacing every occurrence of
 
 #### Placeholder Syntax for Existential Types
 
-``` 
+```ebnf
 WildcardType   ::=  ‘_’ TypeBounds
 ```
 
@@ -499,7 +499,7 @@ $T$ is a wildcard type `_$\;$>:$\,L\,$<:$\,U$`. Then $T$ is equivalent to the
 existential
 type
 
-```
+```scala
 $p.c[\mathit{targs},t,\mathit{targs}']$ forSome { type $t$ >: $L$ <: $U$ }
 ```
 
@@ -510,18 +510,18 @@ or [tuple types](#tuple-types).
 Their expansion is then the expansion in the equivalent parameterized
 type.
 
-### Example:
+### Example
 
 Assume the class definitions
 
-```
+```scala
 class Ref[T]
 abstract class Outer { type T } .
 ```
 
 Here are some examples of existential types:
 
-```
+```scala
 Ref[T] forSome { type T <: java.lang.Number }
 Ref[x.T] forSome { val x: Outer }
 Ref[x_type # T] forSome { type x_type <: Outer with Singleton }
@@ -530,35 +530,35 @@ Ref[x_type # T] forSome { type x_type <: Outer with Singleton }
 The last two types in this list are equivalent.
 An alternative formulation of the first type above using wildcard syntax is:
 
-```
+```scala
 Ref[_ <: java.lang.Number]
 ```
 
-### Example:
+### Example
 
 The type `List[List[_]]` is equivalent to the existential type
 
-```
+```scala
 List[List[t] forSome { type t }] .
 ```
 
-### Example:
+### Example
 
 Assume a covariant type
 
-```
+```scala
 class List[+T]
 ```
 
 The type
 
-```
+```scala
 List[T] forSome { type T <: java.lang.Number }
 ```
 
 is equivalent (by simplification rule 4 above) to
 
-```
+```scala
 List[java.lang.Number] forSome { type T <: java.lang.Number }
 ```
 
@@ -606,7 +606,7 @@ def c (x: Int) (y: String, z: String): String
 
 produce the typings
 
-```
+```scala
 a: => Int
 b: (Int) Boolean
 c: (Int) (String, String) String
@@ -628,14 +628,14 @@ take type arguments `$S_1 , \ldots , S_n$` which
 
 The declarations
 
-```
+```scala
 def empty[A]: List[A]
 def union[A <: Comparable[A]] (x: Set[A], xs: Set[A]): Set[A]
 ```
 
 produce the typings
 
-```
+```scala
 empty : [A >: Nothing <: Any] List[A]
 union : [A >: Nothing <: Comparable[A]] (x: Set[A], xs: Set[A]) Set[A]  .
 ```
@@ -671,7 +671,7 @@ same name, we model
 
 An overloaded type consisting of type alternatives $T_1 \commadots T_n (n \geq 2)$ is denoted internally $T_1 \overload \ldots \overload T_n$.
 
-### Example:
+### Example
 ```
 def println: Unit
 def println(s: String): Unit = $\ldots$
@@ -689,7 +689,7 @@ println:  => Unit $\overload$
           [A] (A) (A => String) Unit
 ```
 
-### Example:
+### Example
 ```
 def f(x: T): T = $\ldots$
 val f = 0
@@ -944,7 +944,7 @@ The least upper bound or greatest lower bound
 of a set of types does not always exist. For instance, consider
 the class definitions
 
-``` 
+```scala
 class A[+T] {}
 class B extends A[B]
 class C extends A[C]
@@ -980,7 +980,7 @@ to a type $T$, written $S <:_w
 T$, if $S <: T$ or both $S$ and $T$ are primitive number types
 and $S$ precedes $T$ in the following ordering.
 
-```
+```scala
 Byte  $<:_w$ Short 
 Short $<:_w$ Int
 Char  $<:_w$ Int

@@ -8,7 +8,7 @@ chapter: 7
 
 ## The Implicit Modifier
 
-``` 
+```ebnf
 LocalModifier  ::= ‘implicit’
 ParamClauses   ::= {ParamClause} [nl] ‘(’ ‘implicit’ Params ‘)’
 ```
@@ -19,12 +19,12 @@ and can be used as implicit conversions called [views](#views).
 The `implicit` modifier is illegal for all
 type members, as well as for [top-level objects](11-top-level-definitions.html#packagings).
 
-### Example:
+### Example
 The following code defines an abstract class of monoids and
 two concrete implementations, `StringMonoid` and
 `IntMonoid`. The two implementations are marked implicit.
 
-```
+```scala
 abstract class Monoid[A] extends SemiGroup[A] {
   def unit: A
   def add(x: A, y: A): A
@@ -101,7 +101,7 @@ Assuming the classes from the [`Monoid` example](#example-monoid), here is a
 method which computes the sum of a list of elements using the
 monoid's `add` and `unit` operations.
 
-```
+```scala
 def sum[A](xs: List[A])(implicit m: Monoid[A]): A =
   if (xs.isEmpty) m.unit
   else m.add(xs.head, sum(xs.tail))
@@ -126,7 +126,7 @@ is the following method from module `scala.List`, which injects
 lists into the `scala.Ordered` class, provided the element
 type of the list is also convertible to this type.
 
-``` 
+```scala
 implicit def list2ordered[A](x: List[A])
   (implicit elem2ordered: A => Ordered[A]): Ordered[List[A]] = 
   ...
@@ -134,14 +134,14 @@ implicit def list2ordered[A](x: List[A])
 
 Assume in addition a method
 
-``` 
+```scala
 implicit def int2ordered(x: Int): Ordered[Int]
 ```
 
 that injects integers into the `Ordered` class.  We can now
 define a `sort` method over ordered lists:
 
-``` 
+```scala
 def sort[A](xs: List[A])(implicit a2ordered: A => Ordered[A]) = ...
 ```
 
@@ -149,13 +149,13 @@ We can apply `sort` to a list of lists of integers
 `yss: List[List[Int]]` 
 as follows:
 
-``` 
+```scala
 sort(yss)
 ```
 
 The call above will be completed by passing two nested implicit arguments:
 
-``` 
+```scala
 sort(yss)(xs: List[Int] => list2ordered[Int](xs)(int2ordered)) .
 ```
 
@@ -164,7 +164,7 @@ raises the possibility of an infinite recursion.  For instance, one
 might try to define the following method, which injects _every_ type into the 
 `Ordered` class:
 
-``` 
+```scala
 implicit def magic[A](x: A)(implicit a2ordered: A => Ordered[A]): Ordered[A] = 
   a2ordered(x)
 ```
@@ -174,7 +174,7 @@ Now, if one tried to apply
 another injection into the `Ordered` class, one would obtain an infinite
 expansion:
 
-``` 
+```scala
 sort(arg)(x => magic(x)(x => magic(x)(x => ... )))
 ```
 
@@ -218,7 +218,7 @@ When typing `sort(xs)` for some list `xs` of type `List[List[List[Int]]]`,
 the sequence of types for
 which implicit arguments are searched is
 
-```
+```scala
 List[List[Int]] => Ordered[List[List[Int]]],
 List[Int] => Ordered[List[Int]]
 Int => Ordered[Int]
@@ -233,14 +233,14 @@ Hence, the code typechecks.
 Let `ys` be a list of some type which cannot be converted
 to `Ordered`. For instance:
 
-```
+```scala
 val ys = List(new IllegalArgumentException, new ClassCastException, new Error)
 ```
 
 Assume that the definition of `magic` above is in scope. Then the sequence
 of types for which implicit arguments are searched is
 
-```
+```scala
 Throwable => Ordered[Throwable],
 Throwable => Ordered[Throwable],
 ...
@@ -290,10 +290,10 @@ As for implicit parameters, overloading resolution is applied
 if there are several possible candidates (of either the call-by-value
 or the call-by-name category).
 
-### Example:
+### Example
 Class `scala.Ordered[A]` contains a method
 
-```
+```scala
   def <= [B >: A](that: B)(implicit b2ordered: B => Ordered[B]): Boolean .
 ```
 
@@ -302,13 +302,13 @@ and assume that the `list2ordered` and `int2ordered`
 methods defined [here](#implicit-parameters) are in scope.
 Then the operation
 
-```
+```scala
   xs <= ys
 ```
 
 is legal, and is expanded to:
 
-```
+```scala
   list2ordered(xs)(int2ordered).<=
     (ys)
     (xs => list2ordered(xs)(int2ordered))
@@ -322,7 +322,7 @@ method.
 
 ## Context Bounds and View Bounds
 
-``` 
+```ebnf
   TypeParam ::= (id | ‘_’) [TypeParamClause] [‘>:’ Type] [‘<:’ Type] 
                 {‘<%’ Type} {‘:’ Type}
 ```
@@ -342,13 +342,13 @@ A method or class containing type parameters with view or context bounds is trea
 equivalent to a method with implicit parameters. Consider first the case of a
 single parameter with view and/or context bounds such as:
 
-``` 
+```scala
 def $f$[$A$ <% $T_1$ ... <% $T_m$ : $U_1$ : $U_n$]($\mathit{ps}$): $R$ = ...
 ```
 
 Then the method definition above is expanded to
 
-``` 
+```scala
 def $f$[$A$]($\mathit{ps}$)(implicit $v_1$: $A$ => $T_1$, ..., $v_m$: $A$ => $T_m$,
                        $w_1$: $U_1$[$A$], ..., $w_n$: $U_n$[$A$]): $R$ = ...
 ```
@@ -369,7 +369,7 @@ additional implicit parameters.
 The `<=` method from the [`Ordered` example](#example-ordered) can be declared
 more concisely as follows:
 
-```
+```scala
 def <= [B >: A <% Ordered[B]](that: B): Boolean
 ```
 
@@ -382,7 +382,7 @@ standard library contains a hierarchy of four manifest classes,
 with `OptManifest`
 at the top. Their signatures follow the outline below.
 
-``` 
+```scala
 trait OptManifest[+T]
 object NoManifest extends OptManifest[Nothing]
 trait ClassManifest[T] extends OptManifest[T]
