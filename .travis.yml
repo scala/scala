@@ -18,4 +18,4 @@ after_success:
   - ssh-add -D
   - chmod 600 spec/id_dsa_travis
   - ssh-add spec/id_dsa_travis
-  - rsync -rzv build/spec/ scalatest@chara.epfl.ch:/home/linuxsoft/archives/scala/spec/2.11/
+  - rsync -e 'ssh -o StrictHostKeyChecking=no' -rzv build/spec/ scalatest@chara.epfl.ch:/home/linuxsoft/archives/scala/spec/2.11/
