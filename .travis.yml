@@ -19,4 +19,4 @@ after_success:
   - eval "$(ssh-agent)"
   - ssh-add -D
   - ssh-add spec/id_dsa_travis
-  - rsync -e 'ssh -o StrictHostKeyChecking=no' -rzv build/spec/ scalatest@chara.epfl.ch:/home/linuxsoft/archives/scala/spec/2.11/
+  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && rsync -e "ssh -o StrictHostKeyChecking=no" -rzv build/spec/ scalatest@chara.epfl.ch:/home/linuxsoft/archives/scala/spec/2.11/'
