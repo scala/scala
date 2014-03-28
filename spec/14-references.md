@@ -7,8 +7,22 @@ chapter: 14
 
 # References
 
+TODO (see comments in markdown source)
+
 <!-- TODO
 
+provide a nice reading list to get up to speed with theory,...
+
+## Scala's Foundations
+[@scala-overview-tech-report;
+@odersky:scala-experiment;
+@odersky:sca;
+@odersky-et-al:ecoop03;
+@odersky-zenger:fool12]
+
+## Learning Scala
+
+## Related Work
 
 %% Article
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
