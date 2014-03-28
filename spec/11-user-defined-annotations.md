@@ -105,7 +105,7 @@ Java platform, the following annotations have a standard meaning.
     warning because `Option` is a `sealed` class.
 
   * `@uncheckedStable` When applied a value declaration or definition, it allows the defined
-    value to appear in a path, even if its type is [volatile](05-types.html#volatile-types).
+    value to appear in a path, even if its type is [volatile](03-types.html#volatile-types).
     For instance, the following member definitions are legal:
 
     ```
