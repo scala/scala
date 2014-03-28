@@ -39,6 +39,11 @@
       <artifactId>scala-compiler</artifactId>
       <version>@VERSION@</version>
     </dependency>
+    <dependency>
+      <groupId>org.scala-lang.plugins</groupId>
+      <artifactId>scala-continuations-plugin_@VERSION@</artifactId> <!-- plugins are fully cross-versioned -->
+      <version>@CONTINUATIONS_PLUGIN_VERSION@</version>
+    </dependency>
     <!-- duplicated from scala-compiler, where it's optional,
     so that resolving scala-dist's transitive dependencies does not include jline,
     even though we need to include it in the dist, but macros depending on the compiler

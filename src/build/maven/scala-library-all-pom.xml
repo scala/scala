@@ -49,11 +49,11 @@
       <artifactId>scala-parser-combinators_@SCALA_BINARY_VERSION@</artifactId>
       <version>@PARSER_COMBINATORS_VERSION@</version>
     </dependency>
-    <dependency>
-      <groupId>org.scala-lang.plugins</groupId>
-      <artifactId>scala-continuations-plugin_@SCALA_BINARY_VERSION@</artifactId>
-      <version>@CONTINUATIONS_PLUGIN_VERSION@</version>
-    </dependency>
+    <!--
+         the continuations plugin is a dependency of scala-dist, as scala-library-all should be
+         a drop-in replacement for scala-library, and as such should not (indirectly)
+         depend on plugins/the compiler.
+    -->
     <dependency>
       <groupId>org.scala-lang.plugins</groupId>
       <artifactId>scala-continuations-library_@SCALA_BINARY_VERSION@</artifactId>
