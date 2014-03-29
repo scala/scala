@@ -11,13 +11,14 @@ Scala programs are written using the Unicode Basic Multilingual Plane
 presently supported.  This chapter defines the two modes of Scala's
 lexical syntax, the Scala mode and the _XML mode_. If not
 otherwise mentioned, the following descriptions of Scala tokens refer
-to _Scala mode_, and literal characters `‘c’` refer to the ASCII fragment `\u0000` – `\u007F`.
+to _Scala mode_, and literal characters ‘c’ refer to the ASCII fragment 
+`\u0000` – `\u007F`.
 
 In Scala mode, _Unicode escapes_ are replaced by the corresponding
 Unicode character with the given hexadecimal code.
 
 ```ebnf
-UnicodeEscape ::= ‘\‘ ‘u‘ {‘u‘} hexDigit hexDigit hexDigit hexDigit
+UnicodeEscape ::= ‘\’ ‘u’ {‘u’} hexDigit hexDigit hexDigit hexDigit
 hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
 ```
 
@@ -40,8 +41,8 @@ classes (Unicode general category given in parentheses):
 1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `.
 1. Delimiter characters ``‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’ ``.
 1. Operator characters. These consist of all printable ASCII characters
-   `\u0020 - \u007F` which are in none of the sets above, mathematical symbols (`Sm`)
-   and other symbols (`So`).
+   `\u0020` - `\u007F` which are in none of the sets above, mathematical 
+   symbols (`Sm`) and other symbols (`So`).
 
 ## Identifiers
 
@@ -58,7 +59,7 @@ idrest   ::=  {letter | digit} [‘_’ op]
 
 There are three ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
-letters and digits. This may be followed by underscore `‘_’`
+letters and digits. This may be followed by underscore ‘_’
 characters and another string composed of either letters and digits or
 of operator characters.  Second, an identifier can start with an operator 
 character followed by an arbitrary sequence of operator characters.
@@ -79,8 +80,8 @@ decomposes into the three identifiers `big_bob`, `++=`, and
 _variable identifiers_, which start with a lower case letter, and
 _constant identifiers_, which do not.
 
-The `‘$’` character is reserved for compiler-synthesized identifiers.
-User programs should not define identifiers which contain `‘$’` characters.
+The ‘\$’ character is reserved for compiler-synthesized identifiers.
+User programs should not define identifiers which contain ‘\$’ characters.
 
 The following names are reserved words instead of being members of the
 syntactic class `id` of lexical identifiers.
@@ -97,11 +98,11 @@ var         while       with        yield
 _    :    =    =>    <-    <:    <%     >:    #    @
 ```
 
-The Unicode operators `\u21D2 $\Rightarrow$` and `\u2190 $\leftarrow$`, which have the ASCII
+The Unicode operators `\u21D2` ‘$\Rightarrow$’ and `\u2190` ‘$\leftarrow$’, which have the ASCII
 equivalents `=>` and `<-`, are also reserved.
 
 ### Example
-
+Here are examples of identifiers:
 ```scala
     x         Object        maxIndex   p2p      empty_?
     +         `yield`       αρετη     _y       dot_product_*
@@ -217,7 +218,7 @@ if (x > 0)
   x = x - 1
 
 while (x > 0)
-  x  = x / 2
+  x = x / 2
 
 for (x <- 1 to 10)
   println(x)
@@ -338,9 +339,9 @@ octalDigit      ::=  ‘0’ | … | ‘7’
 Integer literals are usually of type `Int`, or of type
 `Long` when followed by a `L` or
 `l` suffix. Values of type `Int` are all integer
-numbers between $-2^{31}$ and $2^{31}-1$, inclusive.  Values of
-type `Long` are all integer numbers between $-2^{63}$ and
-$2^{63}-1$, inclusive. A compile-time error occurs if an integer literal
+numbers between $-2\^{31}$ and $2\^{31}-1$, inclusive.  Values of
+type `Long` are all integer numbers between $-2\^{63}$ and
+$2\^{63}-1$, inclusive. A compile-time error occurs if an integer literal
 denotes a number outside these ranges.
 
 However, if the expected type [_pt_](06-expressions.html#expression-typing) of a literal
@@ -349,11 +350,11 @@ and the integer number fits in the numeric range defined by the type,
 then the number is converted to type _pt_ and the literal's type
 is _pt_. The numeric ranges given by these types are:
 
-|                |                        |
-|----------------|------------------------|
-|`Byte`          | $-2^7$ to $2^7-1$      |
-|`Short`         | $-2^{15}$ to $2^{15}-1$|
-|`Char`          | $0$ to $2^{16}-1$      |
+|                |                          |
+|----------------|--------------------------|
+|`Byte`          | $-2\^7$ to $2\^7-1$      |
+|`Short`         | $-2\^{15}$ to $2\^{15}-1$|
+|`Char`          | $0$ to $2\^{16}-1$       |
 
 
 ### Example
@@ -576,7 +577,7 @@ comment.
 
 In order to allow literal inclusion of XML fragments, lexical analysis
 switches from Scala mode to XML mode when encountering an opening
-angle bracket '<' in the following circumstance: The '<' must be
+angle bracket ‘<’ in the following circumstance: The ‘<’ must be
 preceded either by whitespace, an opening parenthesis or an opening
 brace and immediately followed by a character starting an XML name.
 
