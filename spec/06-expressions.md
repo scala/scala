@@ -266,7 +266,7 @@ The function $f$ must be _applicable_ to its arguments $e_1
 If $f$ has a method type $(p_1:T_1 , \ldots , p_n:T_n)U$
 we say that an argument expression $e_i$ is a _named_ argument if
 it has the form $x_i=e'_i$ and $x_i$ is one of the parameter names
-$p_1 , \ldots , p_n$. The function $f$ is applicable if all of the follwing conditions
+$p_1 , \ldots , p_n$. The function $f$ is applicable if all of the following conditions
 hold:
 
 - For every named argument $x_i=e'_i$ the type $S_i$
@@ -438,14 +438,13 @@ parameterlist `()`.
 ###### Example
 The method values in the left column are each equivalent to the [eta-expanded expressions](#eta-expansion) on the right.
 
-| placeholder syntax | eta-expansion |
-|------------------------------ | --------------------------------------------|
-|`Math.sin _`                   | `x => Math.sin(x)`                          |
-|`Array.range _`                | `(x1, x2) => Array.range(x1, x2)`           |
-|`map2 _`                  | `(x1, x2) => (x3) => map2(x1, x2)(x3)` |
-|`map2(xs, ys)_`           | `{ val eta1 = xs; val eta2 = ys; x => map2(eta1, eta2)(x) }` |
-
-This assumes a method `def map2[A, B, C](xs: List[A], ys: List[B])(f: (A, B) => C): List[C]`.
+| placeholder syntax            | eta-expansion                                                               |
+|------------------------------ | ----------------------------------------------------------------------------|
+|`math.sin _`                   | `x => math.sin(x)`                                                          |
+|`math.pow _`                   | `(x1, x2) => math.pow(x1, x2)`                                              |
+|`val vs = 1 to 9; vs.fold _`   | `(z) => (op) => vs.fold(z)(op)`                                             |
+|`(1 to 9).fold(z)_`            | `{ val eta1 = z; val eta2 = 1 to 9; op => eta2.fold(eta1)(op) }`            |
+|`Some(1).fold(??? : Int)_`     | `{ val eta1 = () => ???; val eta2 = Some(1); op => eta2.fold(eta1())(op) }` |
 
 
 Note that a space is necessary between a method name and the trailing underscore
