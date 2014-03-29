@@ -59,7 +59,7 @@ The typing of expressions is often relative to some _expected type_  (which migh
 The following skolemization rule is applied universally for every
 expression: If the type of an expression would be an existential type
 $T$, then the type of the expression is assumed instead to be a
-[skolemization](05-types.html#existential-types) of $T$.
+[skolemization](03-types.html#existential-types) of $T$.
 
 Skolemization is reversed by type packing. Assume an expression $e$ of
 type $T$ and let $t_1[\mathit{tps}_1] >: L_1 <: U_1 , \ldots , t_n[\mathit{tps}_n] >: L_n <: U_n$ be
@@ -77,7 +77,7 @@ $T$ forSome { type $t_1[\mathit{tps}_1] >: L_1 <: U_1$; $\ldots$; type $t_n[\mat
 SimpleExpr    ::=  Literal
 ```
 
-Typing of literals is as described [here](03-lexical-syntax.html#literals); their
+Typing of literals is as described [here](01-lexical-syntax.html#literals); their
 evaluation is immediate.
 
 
@@ -93,7 +93,7 @@ implements methods in class `scala.AnyRef` as follows:
 - `ne($x\,$)` and `!=($x\,$)` return true iff the 
   argument x is not also the "null" object.
 - `isInstanceOf[$T\,$]` always returns `false`.
-- `asInstanceOf[$T\,$]` returns the [default value](06-basic-declarations-and-definitions.html#value-declarations-and-definitions) of type $T$.
+- `asInstanceOf[$T\,$]` returns the [default value](04-basic-declarations-and-definitions.html#value-declarations-and-definitions) of type $T$.
 - `##` returns ``0``.
 
 A reference to any other member of the "null" object causes a
@@ -111,14 +111,14 @@ A designator refers to a named term. It can be a _simple name_ or
 a _selection_. 
 
 A simple name $x$ refers to a value as specified 
-[here](04-identifiers-names-and-scopes.html#identifiers-names-and-scopes).
+[here](02-identifiers-names-and-scopes.html#identifiers-names-and-scopes).
 If $x$ is bound by a definition or declaration in an enclosing class
 or object $C$, it is taken to be equivalent to the selection
 `$C$.this.$x$` where $C$ is taken to refer to the class containing $x$
-even if the type name $C$ is [shadowed](04-identifiers-names-and-scopes.html#identifiers-names-and-scopes) at the
+even if the type name $C$ is [shadowed](02-identifiers-names-and-scopes.html#identifiers-names-and-scopes) at the
 occurrence of $x$.
 
-If $r$ is a [stable identifier](05-types.html#paths) of type $T$, the selection $r.x$ refers
+If $r$ is a [stable identifier](03-types.html#paths) of type $T$, the selection $r.x$ refers
 statically to a term member $m$ of $r$ that is identified in $T$ by
 the name $x$. 
 
@@ -132,8 +132,8 @@ $y$.
 
 The expected type of a designator's prefix is always undefined.  The
 type of a designator is the type $T$ of the entity it refers to, with
-the following exception: The type of a [path](05-types.html#paths) $p$
-which occurs in a context where a [stable type](05-types.html#singleton-types)
+the following exception: The type of a [path](03-types.html#paths) $p$
+which occurs in a context where a [stable type](03-types.html#singleton-types)
 is required is the singleton type `$p$.type`.
 
 The contexts where a stable type is required are those that satisfy
@@ -266,7 +266,7 @@ The function $f$ must be _applicable_ to its arguments $e_1
 If $f$ has a method type $(p_1:T_1 , \ldots , p_n:T_n)U$
 we say that an argument expression $e_i$ is a _named_ argument if
 it has the form $x_i=e'_i$ and $x_i$ is one of the parameter names
-$p_1 , \ldots , p_n$. The function $f$ is applicable if all of the follwing conditions
+$p_1 , \ldots , p_n$. The function $f$ is applicable if all of the following conditions
 hold:
 
 - For every named argument $x_i=e'_i$ the type $S_i$
@@ -308,7 +308,7 @@ and the argument passed to the function is `$y_i$()`.
 
 The last argument in an application may be marked as a sequence
 argument, e.g. `$e$: _*`. Such an argument must correspond
-to a [repeated parameter](06-basic-declarations-and-definitions.html#repeated-parameters) of type
+to a [repeated parameter](04-basic-declarations-and-definitions.html#repeated-parameters) of type
 `$S$*` and it must be the only argument matching this
 parameter (i.e. the number of formal parameters and actual arguments
 must be the same). Furthermore, the type of $e$ must conform to
@@ -396,7 +396,7 @@ positional arguments and to $e'_i$ for named arguments of the form
 `$x_i=e'_i$`. Then, for every parameter which is not specified
 by the argument list, a value definition using a fresh name $z_i$ is created,
 which is initialized using the method computing the 
-[default argument](06-basic-declarations-and-definitions.html#function-declarations-and-definitions) of
+[default argument](04-basic-declarations-and-definitions.html#function-declarations-and-definitions) of
 this parameter.
 
 Let $\mathit{args}$ be a permutation of the generated names $y_i$ and $z_i$ such such
@@ -438,14 +438,13 @@ parameterlist `()`.
 ###### Example
 The method values in the left column are each equivalent to the [eta-expanded expressions](#eta-expansion) on the right.
 
-| placeholder syntax | eta-expansion |
-|------------------------------ | --------------------------------------------|
-|`Math.sin _`                   | `x => Math.sin(x)`                          |
-|`Array.range _`                | `(x1, x2) => Array.range(x1, x2)`           |
-|`map2 _`                  | `(x1, x2) => (x3) => map2(x1, x2)(x3)` |
-|`map2(xs, ys)_`           | `{ val eta1 = xs; val eta2 = ys; x => map2(eta1, eta2)(x) }` |
-
-This assumes a method `def map2[A, B, C](xs: List[A], ys: List[B])(f: (A, B) => C): List[C]`.
+| placeholder syntax            | eta-expansion                                                               |
+|------------------------------ | ----------------------------------------------------------------------------|
+|`math.sin _`                   | `x => math.sin(x)`                                                          |
+|`math.pow _`                   | `(x1, x2) => math.pow(x1, x2)`                                              |
+|`val vs = 1 to 9; vs.fold _`   | `(z) => (op) => vs.fold(z)(op)`                                             |
+|`(1 to 9).fold(z)_`            | `{ val eta1 = z; val eta2 = 1 to 9; op => eta2.fold(eta1)(op) }`            |
+|`Some(1).fold(??? : Int)_`     | `{ val eta1 = () => ???; val eta2 = Some(1); op => eta2.fold(eta1())(op) }` |
 
 
 Note that a space is necessary between a method name and the trailing underscore
@@ -501,11 +500,11 @@ SimpleExpr     ::=  `new' (ClassTemplate | TemplateBody)
 
 A simple instance creation expression is of the form 
 `new $c$` 
-where $c$ is a [constructor invocation](07-classes-and-objects.html#constructor-invocations). Let $T$ be
+where $c$ is a [constructor invocation](05-classes-and-objects.html#constructor-invocations). Let $T$ be
 the type of $c$. Then $T$ must
 denote a (a type instance of) a non-abstract subclass of
 `scala.AnyRef`. Furthermore, the _concrete self type_ of the
-expression must conform to the [self type](07-classes-and-objects.html#templates) of the class denoted by
+expression must conform to the [self type](05-classes-and-objects.html#templates) of the class denoted by
 $T$. The concrete self type is normally
 $T$, except if the expression `new $c$` appears as the
 right hand side of a value definition
@@ -523,7 +522,7 @@ object of type $T$ which is is initialized by evaluating $c$. The
 type of the expression is $T$.
 
 A general instance creation expression is of the form 
-`new $t$` for some [class template](07-classes-and-objects.html#templates) $t$.
+`new $t$` for some [class template](05-classes-and-objects.html#templates) $t$.
 Such an expression is equivalent to the block
 
 ```scala
@@ -582,7 +581,7 @@ undefined.
 
 The type of a block `$s_1$; $\ldots$; $s_n$; $e$` is
 `$T$ forSome {$\,Q\,$}`, where $T$ is the type of $e$ and $Q$ 
-contains [existential clauses](05-types.html#existential-types)
+contains [existential clauses](03-types.html#existential-types)
 for every value or type name which is free in $T$ 
 and which is defined locally in one of the statements $s_1 , \ldots , s_n$.
 We say the existential clause _binds_ the occurrence of the value or type name.
@@ -620,7 +619,7 @@ The block
 { class C extends B {$\ldots$} ; new C }
 ```
 
-simply has type `B`, because with the rules [here](05-types.html#simplification-rules)
+simply has type `B`, because with the rules [here](03-types.html#simplification-rules)
 the existentially quantified type
 `_1 forSome { type _1 <: B }` can be simplified to `B`.
 
@@ -727,7 +726,7 @@ name.
 ### Assignment Operators
 
 An assignment operator is an operator symbol (syntax category
-`op` in [Identifiers](03-lexical-syntax.html#identifiers)) that ends in an equals character
+`op` in [Identifiers](01-lexical-syntax.html#identifiers)) that ends in an equals character
 “`=`”, with the exception of operators for which one of 
 the following conditions holds:
 
@@ -787,7 +786,7 @@ Expr1              ::=  PostfixExpr `:' Annotation {Annotation}
 ```
 
 An annotated expression `$e$: @$a_1$ $\ldots$ @$a_n$`
-attaches [annotations](13-user-defined-annotations.html#user-defined-annotations) $a_1 , \ldots , a_n$ to the
+attaches [annotations](11-user-defined-annotations.html#user-defined-annotations) $a_1 , \ldots , a_n$ to the
 expression $e$.
 
 
@@ -889,7 +888,7 @@ value of $e_1$. The condition $e_1$ is expected to
 conform to type `Boolean`.  The then-part $e_2$ and the
 else-part $e_3$ are both expected to conform to the expected
 type of the conditional expression. The type of the conditional
-expression is the [weak least upper bound](05-types.html#weak-conformance)
+expression is the [weak least upper bound](03-types.html#weak-conformance)
 of the types of $e_2$ and
 $e_3$.  A semicolon preceding the `else` symbol of a
 conditional expression is ignored.
@@ -958,7 +957,7 @@ defined by translation to invocations of four methods: `map`,
 be implemented in different ways for different carrier types.
 
 The translation scheme is as follows.  In a first step, every
-generator `$p$ <- $e$`, where $p$ is not [irrefutable](10-pattern-matching.html#patterns)
+generator `$p$ <- $e$`, where $p$ is not [irrefutable](08-pattern-matching.html#patterns)
 for the type of $e$ is replaced by
 
 ```scala
@@ -1164,7 +1163,7 @@ Let $\mathit{pt}$ be the expected type of the try expression.  The block
 $b$ is expected to conform to $\mathit{pt}$.  The handler $h$
 is expected conform to type
 `scala.PartialFunction[scala.Throwable, $\mathit{pt}\,$]`.  The
-type of the try expression is the [weak least upper bound](05-types.html#weak-conformance)
+type of the try expression is the [weak least upper bound](03-types.html#weak-conformance)
 of the type of $b$
 and the result type of $h$.
 
@@ -1239,9 +1238,9 @@ In that case, a fresh name for the parameter is chosen arbitrarily.
 
 A named parameter of an anonymous function may be optionally preceded
 by an `implicit` modifier. In that case the parameter is
-labeled [`implicit`](09-implicit-parameters-and-views.html#implicit-parameters-and-views); however the
+labeled [`implicit`](07-implicit-parameters-and-views.html#implicit-parameters-and-views); however the
 parameter section itself does not count as an implicit parameter
-section in the sense defined [here](09-implicit-parameters-and-views.html#implicit-parameters). Hence, arguments to
+section in the sense defined [here](07-implicit-parameters-and-views.html#implicit-parameters). Hence, arguments to
 anonymous functions always have to be given explicitly.
 
 ###### Example
@@ -1312,13 +1311,13 @@ include at least the expressions of the following forms:
 
 - A literal of a value class, such as an integer
 - A string literal
-- A class constructed with [`Predef.classOf`](14-the-scala-standard-library.html#the-predef-object)
+- A class constructed with [`Predef.classOf`](12-the-scala-standard-library.html#the-predef-object)
 - An element of an enumeration from the underlying platform
 - A literal array, of the form
   `Array$(c_1 , \ldots , c_n)$`,
   where all of the $c_i$'s are themselves constant expressions
 - An identifier defined by a 
-  [constant value definition](06-basic-declarations-and-definitions.html#value-declarations-and-definitions).
+  [constant value definition](04-basic-declarations-and-definitions.html#value-declarations-and-definitions).
 
 
 ## Statements
@@ -1363,7 +1362,7 @@ available implicit conversions are given in the next two sub-sections.
 
 We say, a type $T$ is _compatible_ to a type $U$ if $T$ weakly conforms
 to $U$ after applying [eta-expansion](#eta-expansion) and 
-[view applications](09-implicit-parameters-and-views.html#views).
+[view applications](07-implicit-parameters-and-views.html#views).
 
 ### Value Conversions
 
@@ -1393,11 +1392,11 @@ implicitly embedding $e$ in the [type application](#type-applications)
 `$e$[$T_1 , \ldots , T_n$]`.
 
 ###### Numeric Widening
-If $e$ has a primitive number type which [weakly conforms](05-types.html#weak-conformance)
+If $e$ has a primitive number type which [weakly conforms](03-types.html#weak-conformance)
 to the expected type, it is widened to
 the expected type using one of the numeric conversion methods
 `toShort`, `toChar`, `toInt`, `toLong`,
-`toFloat`, `toDouble` defined [here](14-the-scala-standard-library.html#numeric-value-types).
+`toFloat`, `toDouble` defined [here](12-the-scala-standard-library.html#numeric-value-types).
 
 ###### Numeric Literal Narrowing
 If the expected type is `Byte`, `Short` or `Char`, and
@@ -1412,7 +1411,7 @@ term `{ $e$; () }`.
 ###### View Application
 If none of the previous conversions applies, and $e$'s type
 does not conform to the expected type $\mathit{pt}$, it is attempted to convert
-$e$ to the expected type with a [view](09-implicit-parameters-and-views.html#views).
+$e$ to the expected type with a [view](07-implicit-parameters-and-views.html#views).
 
 ###### Dynamic Member Selection
 If none of the previous conversions applies, and $e$ is a prefix
@@ -1431,7 +1430,7 @@ type $T$ by evaluating the expression to which $m$ is bound.
 
 ###### Implicit Application
 If the method takes only implicit parameters, implicit
-arguments are passed following the rules [here](09-implicit-parameters-and-views.html#implicit-parameters).
+arguments are passed following the rules [here](07-implicit-parameters-and-views.html#implicit-parameters).
 
 ###### Eta Expansion
 Otherwise, if the method is not a constructor,
@@ -1608,7 +1607,7 @@ $T$ is a value type; if it is a method type we apply
 means finding a substitution $\sigma$ of types $T_i$ for the type
 parameters $a_i$ such that
 
-- None of inferred types $T_i$ is a [singleton type](05-types.html#singleton-types)
+- None of inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
 - All type parameter bounds are respected, i.e.
   $\sigma L_i <: \sigma a_i$ and $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
 - The expression's type conforms to the expected type, i.e.
@@ -1618,7 +1617,7 @@ It is a compile time error if no such substitution exists.
 If several substitutions exist, local-type inference will choose for
 each type variable $a_i$ a minimal or maximal type $T_i$ of the
 solution space.  A _maximal_ type $T_i$ will be chosen if the type
-parameter $a_i$ appears [contravariantly](06-basic-declarations-and-definitions.html#variance-annotations) in the
+parameter $a_i$ appears [contravariantly](04-basic-declarations-and-definitions.html#variance-annotations) in the
 type $T$ of the expression.  A _minimal_ type $T_i$ will be chosen
 in all other situations, i.e. if the variable appears covariantly,
 non-variantly or not at all in the type $T$. We call such a substitution
@@ -1645,11 +1644,11 @@ constraint system means
 finding a substitution $\sigma$ of types $T_i$ for the type parameters
 $a_i$ such that
 
-- None of inferred types $T_i$ is a [singleton type](05-types.html#singleton-types)
+- None of inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
 - All type parameter bounds are respected, i.e. $\sigma L_i <: \sigma a_i$ and
   $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
 - The method's result type $T'$ conforms to the expected type, i.e. $\sigma T' <: \sigma \mathit{pt}$.
-- Each argument type [weakly conforms](05-types.html#weak-conformance)
+- Each argument type [weakly conforms](03-types.html#weak-conformance)
   to the corresponding formal parameter
   type, i.e. $\sigma S_j <:_w \sigma R_j$ for $j = 1 , \ldots , m$.
 
@@ -1657,7 +1656,7 @@ It is a compile time error if no such substitution exists.  If several
 solutions exist, an optimal one for the type $T'$ is chosen.
 
 All or parts of an expected type $\mathit{pt}$ may be undefined. The rules for
-[conformance](05-types.html#conformance) are extended to this case by adding
+[conformance](03-types.html#conformance) are extended to this case by adding
 the rule that for any type $T$ the following two statements are always
 true: $\mathit{undefined} <: T$ and $T <: \mathit{undefined}$
 
@@ -1781,6 +1780,10 @@ n$). The result of eta-conversion is then:
   ($y_1: T_1 , \ldots , y_n: T_n$) => $e'$($y_1 , \ldots , y_n$) 
 }
 ```
+
+The behavior of [call-by-name parameters](#function-applications)
+is preserved under eta-expansion: the corresponding actual argument expression,
+a sub-expression of parameterless method type, is not evaluated in the expanded block.
 
 ### Dynamic Member Selection
 

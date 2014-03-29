@@ -12,7 +12,11 @@ We use redcarpet 3.1 and jekyll 2 (currently in alpha) to generate the html. Ess
 
 ## Building
 
-Travis CI builds the spec automatically on every commit and . To preview locally, run `bundle exec jekyll serve -d build/spec/ -s spec/ -w --baseurl=""` and surf to http://0.0.0.0:4000/. Jekyll will rebuild as you edit the markdown, but make sure to restart it when you change `_config.yml`.
+Travis CI builds the spec automatically on every commit to master and publishes to http://www.scala-lang.org/files/archive/spec/2.11/. 
+
+To preview locally, run `bundle exec jekyll serve -d build/spec/ -s spec/ -w --baseurl=""` (in the root of your checkout of scala/scala),
+and open http://0.0.0.0:4000/. Jekyll will rebuild as you edit the markdown, but make sure to restart it when you change `_config.yml`.
+
 
 ## General Advice for editors
 

@@ -189,23 +189,23 @@ that a semicolon in place of the newline would be illegal in every one
 of these cases):
 
 - between the condition of a 
-  [conditional expression](08-expressions.html#conditional-expressions)
-  or [while loop](08-expressions.html#while-loop-expressions) and the next
+  [conditional expression](06-expressions.html#conditional-expressions)
+  or [while loop](06-expressions.html#while-loop-expressions) and the next
   following expression,
 - between the enumerators of a 
-  [for-comprehension](08-expressions.html#for-comprehensions-and-for-loops)
+  [for-comprehension](06-expressions.html#for-comprehensions-and-for-loops)
   and the next following expression, and
 - after the initial `type` keyword in a 
-  [type definition or declaration](06-basic-declarations-and-definitions.html#type-declarations-and-type-aliases).
+  [type definition or declaration](04-basic-declarations-and-definitions.html#type-declarations-and-type-aliases).
 
 A single new line token is accepted
 
 - in front of an opening brace ‘{’, if that brace is a legal
   continuation of the current statement or expression,
-- after an [infix operator](08-expressions.html#prefix-infix-and-postfix-operations),
+- after an [infix operator](06-expressions.html#prefix-infix-and-postfix-operations),
   if the first token on the next line can start an expression,
-- in front of a [parameter clause](06-basic-declarations-and-definitions.html#function-declarations-and-definitions), and
-- after an [annotation](13-user-defined-annotations.html#user-defined-annotations).
+- in front of a [parameter clause](04-basic-declarations-and-definitions.html#function-declarations-and-definitions), and
+- after an [annotation](11-user-defined-annotations.html#user-defined-annotations).
 
 ### Example
 
@@ -343,7 +343,7 @@ type `Long` are all integer numbers between $-2^{63}$ and
 $2^{63}-1$, inclusive. A compile-time error occurs if an integer literal
 denotes a number outside these ranges.
 
-However, if the expected type [_pt_](08-expressions.html#expression-typing) of a literal
+However, if the expected type [_pt_](06-expressions.html#expression-typing) of a literal
 in an expression is either `Byte`, `Short`, or `Char`
 and the integer number fits in the numeric range defined by the type,
 then the number is converted to type _pt_ and the literal's type
@@ -506,7 +506,7 @@ lines.
 Method `stripMargin` is defined in class
 [scala.collection.immutable.StringLike](http://www.scala-lang.org/api/current/index.html#scala.collection.immutable.StringLike). 
 Because there is a predefined
-[implicit conversion](08-expressions.html#implicit-conversions) from `String` to
+[implicit conversion](06-expressions.html#implicit-conversions) from `String` to
 `StringLike`, the method is applicable to all strings.
 
 
@@ -541,7 +541,7 @@ symbolLiteral  ::=  ‘'’ plainid
 ```
 
 A symbol literal `'x` is a shorthand for the expression
-`scala.Symbol("x")`. `Symbol` is a [case class](07-classes-and-objects.html#case-classes),
+`scala.Symbol("x")`. `Symbol` is a [case class](05-classes-and-objects.html#case-classes),
 which is defined as follows.
 
 ```scala
