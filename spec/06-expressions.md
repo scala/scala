@@ -1782,6 +1782,10 @@ n$). The result of eta-conversion is then:
 }
 ```
 
+The behavior of [call-by-name parameters](#function-applications)
+is preserved under eta-expansion: the corresponding actual argument expression,
+a sub-expression of parameterless method type, is not evaluated in the expanded block.
+
 ### Dynamic Member Selection
 
 The standard Scala library defines a trait `scala.Dynamic` which defines a member
