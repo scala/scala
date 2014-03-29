@@ -155,13 +155,12 @@ Some type designators and their expansions are listed below. We assume
 a local type parameter $t$, a value `maintable`
 with a type member `Node` and the standard class `scala.Int`,
 
-| | |
+| Designator          | Expansion                 |
 |-------------------- | --------------------------|
 |t                    | ε.type#t                  |
 |Int                  | scala.type#Int            |
 |scala.Int            | scala.type#Int            |
 |data.maintable.Node  | data.maintable.type#Node  |
-
 
 
 ### Parameterized Types
@@ -796,9 +795,9 @@ These notions are defined mutually recursively as follows.
 
 We define two relations between types.
 
-|                 |                |                                                 |
+| Relation        | Form           | Meaning                                         |
 |-----------------|----------------|-------------------------------------------------|
-|Type equivalence |$T \equiv U$    |$T$ and $U$ are interchangeable in all contexts. |
+|Equivalence      |$T \equiv U$    |$T$ and $U$ are interchangeable in all contexts. |
 |Conformance      |$T <: U$        |Type $T$ conforms to type $U$.                   |
 
 
