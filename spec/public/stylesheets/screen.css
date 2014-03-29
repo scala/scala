@@ -311,43 +311,22 @@ span.float-right > span {
   text-align: right;
 }
 
-code, tt {
-  margin: 0 2px;
-  padding: 0 5px;
-  white-space: nowrap;
+.highlight pre {
   border: 1px solid #eaeaea;
   background-color: #f8f8f8;
   border-radius: 3px;
+  line-height: 19px;
+  overflow: auto;
+  padding: 6px 10px;
+  white-space: nowrap;
 }
 
-pre code {
+code {
+  background-color: transparent;
+  border: none;
   margin: 0;
   padding: 0;
   white-space: pre;
-  border: none;
-  background: transparent;
-}
-
-.highlight pre {
-  background-color: #f8f8f8;
-  border: 1px solid #cccccc;
-  font-size: 13px;
-  line-height: 19px;
-  overflow: auto;
-  padding: 6px 10px;
-  border-radius: 3px;
-}
-pre {
-  background-color: #f8f8f8;
-  border: 1px solid #cccccc;
-  font-size: 13px;
-  line-height: 19px;
-  overflow: auto;
-  padding: 6px 10px;
-  border-radius: 3px;
-}
-pre code, pre tt {
-  background-color: transparent;
-  border: none;
+  font-size: 16px;
 }
 
