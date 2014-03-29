@@ -81,16 +81,16 @@ and in that function form a central role in Scala's type system.
 A path is one of the following.
 
 - The empty path ε (which cannot be written explicitly in user programs).
-- `$C$.this`, where $C$ references a class. 
-  The path `this` is taken as a shorthand for `$C$.this` where 
+- $C.$`this`, where $C$ references a class.
+  The path `this` is taken as a shorthand for $C.$`this` where
   $C$ is the name of the class directly enclosing the reference. 
-- `$p$.$x$` where $p$ is a path and $x$ is a stable member of $p$.
+- $p.x$ where $p$ is a path and $x$ is a stable member of $p$.
   _Stable members_ are packages or members introduced by object definitions or 
   by value definitions of [non-volatile types](#volatile-types).
-- `$C$.super.$x$` or `$C$.super[$M$].$x$`
+- $C.$`super`$.x$ or $C.$`super`$[M].x$
   where $C$ references a class and $x$ references a 
   stable member of the super class or designated parent class $M$ of $C$. 
-  The prefix `super` is taken as a shorthand for `$C$.super` where 
+  The prefix `super` is taken as a shorthand for $C.$`super` where
   $C$ is the name of the class directly enclosing the reference. 
 
 A _stable identifier_ is a path which ends in an identifier.
@@ -107,7 +107,7 @@ forms.
 SimpleType  ::=  Path ‘.’ type
 ```
 
-A singleton type is of the form `$p$.type`, where $p$ is a
+A singleton type is of the form $p.$`type`, where $p$ is a
 path pointing to a value expected to [conform](06-expressions.html#expression-typing)
 to `scala.AnyRef`. The type denotes the set of values
 consisting of `null` and the value denoted by $p$. 
@@ -121,7 +121,7 @@ declared to be a subtype of trait `scala.Singleton`.
 SimpleType  ::=  SimpleType ‘#’ id
 ```
 
-A type projection `$T$#$x$` references the type member named
+A type projection $T$#$x$ references the type member named
 $x$ of type $T$. 
 
 <!--
@@ -141,9 +141,9 @@ qualified. All such type designators are shorthands for type projections.
 
 Specifically, the unqualified type name $t$ where $t$ is bound in some
 class, object, or package $C$ is taken as a shorthand for
-`$C$.this.type#$t$`. If $t$ is
+$C.$`this.type#`$t$. If $t$ is
 not bound in a class, object, or package, then $t$ is taken as a
-shorthand for `ε.type#$t$`.
+shorthand for ε`.type#`$t$.
 
 A qualified type designator has the form `p.t` where `p` is
 a [path](#paths) and _t_ is a type name. Such a type designator is
@@ -177,7 +177,7 @@ $n \geq 1$. $T$ must refer to a type constructor which takes $n$ type
 parameters $a_1 , \ldots , a_n$.
 
 Say the type parameters have lower bounds $L_1 , \ldots , L_n$ and
-upper bounds $U_1 ,  \ldots , U_n$.  The parameterized type is
+upper bounds $U_1, \ldots, U_n$.  The parameterized type is
 well-formed if each actual type parameter
 _conforms to its bounds_, i.e. $\sigma L_i <: T_i <: \sigma U_i$ where $\sigma$ is the
 substitution $[ a_1 := T_1 , \ldots , a_n := T_n ]$.
@@ -258,7 +258,7 @@ trait Product_n[+T1, … , +$T_n$] {
 AnnotType  ::=  SimpleType {Annotation}
 ```
 
-An annotated type $T$ `$a_1 , \ldots , a_n$`
+An annotated type $T$ $a_1, \ldots, a_n$
 attaches [annotations](11-user-defined-annotations.html#user-defined-annotations)
 $a_1 , \ldots , a_n$ to the type $T$.
 
@@ -282,10 +282,10 @@ RefineStat      ::=  Dcl
                   |
 ```
 
-A compound type `$T_1$ with … with $T_n$ { $R$ }`
+A compound type $T_1$ `with` … `with` $T_n \\{ R \\}$
 represents objects with members as given in the component types 
-$T_1 , \ldots , T_n$ and the refinement `{ $R$ }`. A refinement
-`{ $R$ }` contains declarations and type definitions. 
+$T_1 , \ldots , T_n$ and the refinement $\\{ R \\}$. A refinement
+$\\{ R \\}$ contains declarations and type definitions.
 If a declaration or definition overrides a declaration or definition in
 one of the component types $T_1 , \ldots , T_n$, the usual rules for
 [overriding](05-classes-and-objects.html#overriding) apply; otherwise the declaration
@@ -303,12 +303,11 @@ definition within the refinement. This restriction does not apply to
 the method's result type.
 
 If no refinement is given, the empty refinement is implicitly added,
-i.e. `$T_1$ with … with $T_n$` is a shorthand for
-`$T_1$ with … with $T_n$ {}`.
+i.e. $T_1$ `with` … `with` $T_n$ is a shorthand for $T_1$ `with` … `with` $T_n \\{\\}$.
 
 A compound type may also consist of just a refinement
-`{ $R$ }` with no preceding component types. Such a type is
-equivalent to `AnyRef{ R }`.
+$\\{ R \\}$ with no preceding component types. Such a type is
+equivalent to `AnyRef` $\\{ R \\}$.
 
 ### Example
 
@@ -349,12 +348,11 @@ a value `callsign` and a `fly` method.
 InfixType     ::=  CompoundType {id [nl] CompoundType}
 ```
 
-An infix type `$T_1 \mathit{op} T_2$` consists of an infix
-operator $\mathit{op}$ which gets applied to two type operands $T_1$ and
+An infix type $T_1$ `op` $T_2$ consists of an infix
+operator `op` which gets applied to two type operands $T_1$ and
 $T_2$.  The type is equivalent to the type application 
-`$\mathit{op}$[$T_1$, $T_2$]`.  The infix operator $\mathit{op}$ may be an 
-arbitrary identifier,
-except for `*`, which is reserved as a postfix modifier 
+`op`$[T_1, T_2]$.  The infix operator `op` may be an
+arbitrary identifier, except for `*`, which is reserved as a postfix modifier
 denoting a [repeated parameter type](04-basic-declarations-and-definitions.html#repeated-parameters).
 
 All type infix operators have the same precedence; parentheses have to
@@ -779,24 +777,24 @@ These notions are defined mutually recursively as follows.
     then we use "$T$ seen from $S$" as a shorthand for
     "$T$ in $D$ seen from $S$".
 
-1. The _member bindings_ of a type $T$ are (1) all bindings $d$ such that
-   there exists a type instance of some class $C$ among the base types of $T$
-   and there exists a definition or declaration $d'$ in $C$
-   such that $d$ results from $d'$ by replacing every
-   type $T'$ in $d'$ by $T'$ in $C$ seen from $T$, and (2) all bindings
-   of the type's [refinement](#compound-types), if it has one.
+1. The _member bindings_ of a type $T$ are
+   1. all bindings $d$ such that there exists a type instance of some class $C$ among the base types of $T$
+     and there exists a definition or declaration $d'$ in $C$
+     such that $d$ results from $d'$ by replacing every
+     type $T'$ in $d'$ by $T'$ in $C$ seen from $T$, and
+   2. all bindings of the type's [refinement](#compound-types), if it has one.
 
-   The _definition_ of a type projection `$S$#$t$` is the member
-   binding $d_t$ of the type $t$ in $S$. In that case, we also say
-   that ~$S$#$t$` _is defined by_ $d_t$.
-   share a to
+   The _definition_ of a type projection `S#T` is the member
+   binding $d_T$ of the type `T` in `S`. In that case, we also say
+   that `S#T` _is defined by_ $d_T$.
+
 
 
 ## Relations between types
 
 We define two relations between types.
 
-|                 |                |                                                 |
+|Name             | Symbolically   |Interpretation                                   |
 |-----------------|----------------|-------------------------------------------------|
 |Type equivalence |$T \equiv U$    |$T$ and $U$ are interchangeable in all contexts. |
 |Conformance      |$T <: U$        |Type $T$ conforms to type $U$.                   |
@@ -840,8 +838,7 @@ the following holds:
   bounds of corresponding type parameters are equivalent.
 
 
-[^congruence]: A congruence is an equivalence relation which is closed under formation
-of contexts
+[^congruence]: A congruence is an equivalence relation which is closed under formation of contexts
 [^implicit]: A method type is implicit if the parameter section that defines it starts with the `implicit` keyword.
 
 ### Conformance
