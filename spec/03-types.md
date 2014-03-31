@@ -155,7 +155,7 @@ Some type designators and their expansions are listed below. We assume
 a local type parameter $t$, a value `maintable`
 with a type member `Node` and the standard class `scala.Int`,
 
-| | |
+| Designator          | Expansion                 |
 |-------------------- | --------------------------|
 |t                    | ε.type#t                  |
 |Int                  | scala.type#Int            |
@@ -796,11 +796,11 @@ We define two relations between types.
 
 |Name             | Symbolically   |Interpretation                                   |
 |-----------------|----------------|-------------------------------------------------|
-|Type equivalence |$T \equiv U$    |$T$ and $U$ are interchangeable in all contexts. |
+|Equivalence      |$T \equiv U$    |$T$ and $U$ are interchangeable in all contexts. |
 |Conformance      |$T <: U$        |Type $T$ conforms to type $U$.                   |
 
 
-### Type Equivalence
+### Equivalence
 
 Equivalence $(\equiv)$ between types is the smallest congruence [^congruence] such that
 the following holds:
