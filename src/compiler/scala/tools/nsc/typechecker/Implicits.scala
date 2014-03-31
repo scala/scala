@@ -833,19 +833,26 @@ trait Implicits {
        *  so that if there is a best candidate it can still be selected.
        */
       object DivergentImplicitRecovery {
-        // symbol of the implicit that caused the divergence.
-        // Initially null, will be saved on first diverging expansion.
-        private var implicitSym: Symbol    = _
-        private var countdown: Int = 1
+        private var divergentError: Option[DivergentImplicitTypeError] = None
 
-        def sym: Symbol = implicitSym
-        def apply(search: SearchResult, i: ImplicitInfo): SearchResult =
-          if (search.isDivergent && countdown > 0) {
-            countdown -= 1
-            implicitSym = i.sym
-            log(s"discarding divergent implicit $implicitSym during implicit search")
+        private def saveDivergent(err: DivergentImplicitTypeError) {
+          if (divergentError.isEmpty) divergentError = Some(err)
+        }
+
+        def issueSavedDivergentError() {
+          divergentError foreach (err => context.issue(err))
+        }
+
+        def apply(search: SearchResult, i: ImplicitInfo, errors: Seq[AbsTypeError]): SearchResult = {
+          if (search.isDivergent && divergentError.isEmpty) {
+            // Divergence triggered by `i` at this level of the implicit serach. We haven't
+            // seen divergence so far, we won't issue this error just yet, and instead temporarily
+            // treat `i` as a failed candidate.
+            saveDivergent(DivergentImplicitTypeError(tree, pt, i.sym))
+            log(s"discarding divergent implicit ${i.sym} during implicit search")
             SearchFailure
           } else search
+        }
       }
 
       /** Sorted list of eligible implicits.
@@ -871,7 +878,9 @@ trait Implicits {
       @tailrec private def rankImplicits(pending: Infos, acc: Infos): Infos = pending match {
         case Nil      => acc
         case i :: is  =>
-          DivergentImplicitRecovery(typedImplicit(i, ptChecked = true, isLocalToCallsite), i) match {
+          val typedImplicitResult = typedImplicit(i, ptChecked = true, isLocalToCallsite)
+          val recoveredResult = DivergentImplicitRecovery(typedImplicitResult, i, context.errors)
+          recoveredResult match {
             case sr if sr.isDivergent =>
               Nil
             case sr if sr.isFailure =>
@@ -921,12 +930,9 @@ trait Implicits {
         }
 
         if (best.isFailure) {
-          /* If there is no winner, and we witnessed and caught divergence,
-           * now we can throw it for the error message.
-           */
-          if (DivergentImplicitRecovery.sym != null) {
-            DivergingImplicitExpansionError(tree, pt, DivergentImplicitRecovery.sym)(context)
-          }
+          // If there is no winner, and we witnessed and recorded a divergence error,
+          // our recovery attempt has failed, so we must now issue it.
+          DivergentImplicitRecovery.issueSavedDivergentError()
 
           if (invalidImplicits.nonEmpty)
             setAddendum(pos, () =>
