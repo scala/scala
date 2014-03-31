@@ -33,8 +33,8 @@ object-oriented and functional programming.  It is a pure
 object-oriented language in the sense that every value is an
 object. Types and behavior of objects are described by
 classes. Classes can be composed using mixin composition.  Scala is
-designed to work seamlessly with two less pure but mainstream
-object-oriented languages – Java and C#.
+designed to work seamlessly with less pure but mainstream
+object-oriented languages like Java.
 
 Scala is a functional language in the sense that every function is a
 value. Nesting of function definitions and higher-order functions are
