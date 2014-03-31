@@ -422,12 +422,11 @@ used (it is `Object` on the Java platform).
 and `update` means element update.
 
 Because of the syntactic sugar for `apply` and `update` operations,
-we have the following correspondences between Scala and Java/C# code for
+we have the following correspondences between Scala and Java code for
 operations on an array `xs`:
 
-| | |
+|_Scala_           |_Java_      |
 |------------------|------------|
-|_Scala_           |_Java/C#_   |
 |`xs.length`       |`xs.length` |
 |`xs(i)`           |`xs[i]`     |
 |`xs(i) = e`       |`xs[i] = e` |
@@ -449,7 +448,7 @@ explained in the following.
 
 #### Variance
 
-Unlike arrays in Java or C#, arrays in Scala are _not_
+Unlike arrays in Java, arrays in Scala are _not_
 co-variant; That is, $S <: T$ does not imply 
 `Array[$S$] $<:$ Array[$T$]` in Scala.  
 However, it is possible to cast an array
