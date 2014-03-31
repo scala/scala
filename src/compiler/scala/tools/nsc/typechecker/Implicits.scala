@@ -844,6 +844,10 @@ trait Implicits {
         }
 
         def apply(search: SearchResult, i: ImplicitInfo, errors: Seq[AbsTypeError]): SearchResult = {
+          // A divergent error from a nested implicit search will be found in `errors`. Stash that
+          // aside to be re-issued if this implicit search fails.
+          errors.collectFirst { case err: DivergentImplicitTypeError => err } foreach saveDivergent
+
           if (search.isDivergent && divergentError.isEmpty) {
             // Divergence triggered by `i` at this level of the implicit serach. We haven't
             // seen divergence so far, we won't issue this error just yet, and instead temporarily
@@ -879,16 +883,16 @@ trait Implicits {
         case Nil      => acc
         case i :: is  =>
           val typedImplicitResult = typedImplicit(i, ptChecked = true, isLocalToCallsite)
-          val recoveredResult = DivergentImplicitRecovery(typedImplicitResult, i, context.errors)
+          // We don't want errors that occur during checking implicit info
+          // to influence the check of further infos. But we do need to pass the errors
+          // to `DivergentImplicitRecovery` so that it can note `DivergentImplicitTypeError` that is
+          // being propagated from a nested implicit search; this will be re-issued if this level
+          // of the search fails.
+          val recoveredResult = DivergentImplicitRecovery(typedImplicitResult, i, context.flushAndReturnBuffer())
           recoveredResult match {
             case sr if sr.isDivergent =>
               Nil
             case sr if sr.isFailure =>
-              // We don't want errors that occur during checking implicit info
-              // to influence the check of further infos.
-              context.reportBuffer.retainErrors {
-                case err: DivergentImplicitTypeError => true
-              }
               rankImplicits(is, acc)
             case newBest        =>
               best = newBest
