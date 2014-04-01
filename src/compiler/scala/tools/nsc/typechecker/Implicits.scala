@@ -891,31 +891,33 @@ trait Implicits {
        *   - if it matches, forget about all others it improves upon
        */
       @tailrec private def rankImplicits(pending: Infos, acc: Infos): Infos = pending match {
-        case Nil      => acc
-        case i :: is  =>
-          val typedImplicitResult = typedImplicit(i, ptChecked = true, isLocalToCallsite)
-          // Pass the errors to `DivergentImplicitRecovery` so that it can note the first `DivergentImplicitTypeError`
-          // that is being propagated from a nested implicit search;
-          // this one will be re-issued if this level of the search fails.
-          val recoveredResult = DivergentImplicitRecovery(typedImplicitResult, i, context.errors)
-          recoveredResult match {
-            case sr if sr.isDivergent =>
-              Nil
-            case sr if sr.isFailure =>
-              rankImplicits(is, acc)
-            case newBest        =>
-              best = newBest
-              val newPending = undoLog undo {
-                is filterNot (alt => alt == i || {
-                  try improves(i, alt)
-                  catch {
-                    case e: CyclicReference =>
-                      debugwarn(s"Discarding $i during implicit search due to cyclic reference")
-                      true
-                  }
-                })
+        case Nil                          => acc
+        case firstPending :: otherPending =>
+          def firstPendingImproves(alt: ImplicitInfo) =
+            firstPending == alt || (
+              try improves(firstPending, alt)
+              catch {
+                case e: CyclicReference =>
+                  debugwarn(s"Discarding $firstPending during implicit search due to cyclic reference.")
+                  true
               }
-              rankImplicits(newPending, i :: acc)
+            )
+
+          val typedFirstPending = typedImplicit(firstPending, ptChecked = true, isLocalToCallsite)
+
+          // Pass the errors to `DivergentImplicitRecovery` so that it can note
+          // the first `DivergentImplicitTypeError` that is being propagated
+          // from a nested implicit search; this one will be
+          // re-issued if this level of the search fails.
+          DivergentImplicitRecovery(typedFirstPending, firstPending, context.errors) match {
+            case sr if sr.isDivergent => Nil
+            case sr if sr.isFailure   => rankImplicits(otherPending, acc)
+            case newBest              =>
+              best = newBest // firstPending is our new best, since we already pruned last time around:
+              val pendingImprovingBest = undoLog undo {
+                otherPending filterNot firstPendingImproves
+              }
+              rankImplicits(pendingImprovingBest, firstPending :: acc)
           }
       }
 
