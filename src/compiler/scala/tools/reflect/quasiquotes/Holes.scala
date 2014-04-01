@@ -43,13 +43,13 @@ trait Holes { self: Quasiquotes =>
     tpe <:< NothingClass.tpe || tpe <:< NullClass.tpe
   private def extractIterableTParam(tpe: Type) =
     IterableTParam.asSeenFrom(tpe, IterableClass)
-  private def stripIterable(tpe: Type, limit: Option[Rank] = None): (Rank, Type) =
-    if (limit.map { _ == NoDot }.getOrElse { false }) (NoDot, tpe)
+  private def stripIterable(tpe: Type, limit: Rank = DotDotDot): (Rank, Type) =
+    if (limit == NoDot) (NoDot, tpe)
     else if (tpe != null && !isIterableType(tpe)) (NoDot, tpe)
     else if (isBottomType(tpe)) (NoDot, tpe)
     else {
       val targ = extractIterableTParam(tpe)
-      val (rank, innerTpe) = stripIterable(targ, limit.map { _.pred })
+      val (rank, innerTpe) = stripIterable(targ, limit.pred)
       (rank.succ, innerTpe)
     }
   private def iterableTypeFromRank(n: Rank, tpe: Type): Type = {
@@ -76,7 +76,7 @@ trait Holes { self: Quasiquotes =>
 
   class ApplyHole(annotatedRank: Rank, unquotee: Tree) extends Hole {
     val (strippedTpe, tpe): (Type, Type) = {
-      val (strippedRank, strippedTpe) = stripIterable(unquotee.tpe, limit = Some(annotatedRank))
+      val (strippedRank, strippedTpe) = stripIterable(unquotee.tpe, limit = annotatedRank)
       if (isBottomType(strippedTpe)) cantSplice()
       else if (isNativeType(strippedTpe)) {
         if (strippedRank != NoDot && !(strippedTpe <:< treeType) && !isLiftableType(strippedTpe)) cantSplice()
@@ -193,7 +193,7 @@ trait Holes { self: Quasiquotes =>
         val (iterableRank, _) = stripIterable(tpe)
         if (iterableRank.value < rank.value)
           c.abort(pat.pos, s"Can't extract $tpe with $rank, consider using $iterableRank")
-        val (_, strippedTpe) = stripIterable(tpe, limit = Some(rank))
+        val (_, strippedTpe) = stripIterable(tpe, limit = rank)
         if (strippedTpe <:< treeType) treeNoUnlift
         else
           unlifters.spawn(strippedTpe, rank).map {
