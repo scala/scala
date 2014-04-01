@@ -839,13 +839,6 @@ trait Implicits {
           if (divergentError.isEmpty) divergentError = Some(err)
         }
 
-        def retainRemainingDivergentErrors() = {
-          val saved = divergentError.getOrElse(null)
-          context.reportBuffer.retainErrors {
-            case err: DivergentImplicitTypeError => err ne saved
-          }
-        }
-
         def issueSavedDivergentError() {
           divergentError foreach (err => context.issue(err))
         }
@@ -862,7 +855,18 @@ trait Implicits {
             saveDivergent(DivergentImplicitTypeError(tree, pt, i.sym))
             log(s"discarding divergent implicit ${i.sym} during implicit search")
             SearchFailure
-          } else search
+          } else {
+            if (search.isFailure) {
+              // We don't want errors that occur during checking implicit info
+              // to influence the check of further infos, but we should retain divergent implicit errors
+              // (except for the one we already squirreled away)
+              val saved = divergentError.getOrElse(null)
+              context.reportBuffer.retainErrors {
+                case err: DivergentImplicitTypeError => err ne saved
+              }
+            }
+            search
+          }
         }
       }
 
@@ -898,10 +902,6 @@ trait Implicits {
             case sr if sr.isDivergent =>
               Nil
             case sr if sr.isFailure =>
-              // We don't want errors that occur during checking implicit info
-              // to influence the check of further infos, but we should retain divergent implicit errors
-              // (except for the one we already squirreled away)
-              DivergentImplicitRecovery.retainRemainingDivergentErrors()
               rankImplicits(is, acc)
             case newBest        =>
               best = newBest
