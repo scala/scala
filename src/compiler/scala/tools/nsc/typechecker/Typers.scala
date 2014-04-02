@@ -197,7 +197,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
          !from.isError
       && !to.isError
       && context.implicitsEnabled
-      && (inferView(EmptyTree, from, to, reportAmbiguous = false) != EmptyTree)
+      && (inferView(context.tree, from, to, reportAmbiguous = false, saveErrors = true) != EmptyTree)
+      // SI-8230 / SI-8463 We'd like to change this to `saveErrors = false`, but can't.
+      // For now, we can at least pass in `context.tree` rather then `EmptyTree` so as
+      // to avoid unpositioned type errors.
     )
 
     def inferView(tree: Tree, from: Type, to: Type, reportAmbiguous: Boolean): Tree =
