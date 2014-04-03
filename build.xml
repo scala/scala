@@ -260,6 +260,12 @@ TODO:
       </artifact:dependencies>
       <copy-deps project="junit"/>
 
+      <!-- ScalaTest -->
+      <property name="scalatest.version" value="2.10"/>
+      <artifact:dependencies pathId="scalatest.classpath" filesetId="scalatest.fileset">
+        <dependency groupId="org.scalatest" artifactId="scalatest_2.10" version="2.1.0"/>
+      </artifact:dependencies>
+
       <!-- Pax runner -->
       <property name="pax.exam.version" value="2.6.0"/>
       <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset">
@@ -693,6 +699,8 @@ TODO:
       <path refid="quick.library.build.path"/>
       <pathelement location="${build-quick.dir}/classes/subscript"/>
       <pathelement location="${swing.jar}"/>
+      <path refid="test.junit.compiler.build.path"/>
+      <path refid="test.scalatest.compiler.build.path"/>
     </path>
 
     <path id="quick.reflect.build.path">
@@ -933,6 +941,13 @@ TODO:
       <path refid="junit.classpath"/>
     </path>
 
+    <path id="test.scalatest.compiler.build.path">
+      <pathelement location="${test.junit.classes}"/>
+      <path refid="quick.compiler.build.path"/>
+      <path refid="quick.repl.build.path"/>
+      <path refid="scalatest.classpath"/>
+    </path>
+
     <path id="test.osgi.compiler.build.path">
       <pathelement location="${test.osgi.classes}"/>
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-library.jar"/>
@@ -1071,8 +1086,8 @@ TODO:
   <target name="quick.actors"     depends="quick.lib">
     <staged-build with="locker"   stage="quick" project="actors"/> </target>
 
-  <target name="quick.subscript"  depends="quick.lib">
-    <staged-build with="locker"   stage="quick" project="subscript"/> </target>
+  <target name="quick.subscript"  depends="quick.comp">
+    <staged-build with="quick"   stage="quick" project="subscript"/> </target>
 
 
 
