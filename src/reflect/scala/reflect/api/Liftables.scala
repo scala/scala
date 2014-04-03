@@ -6,7 +6,7 @@ trait Liftables { self: Universe =>
 
   /** A type class that defines a representation of `T` as a `Tree`.
    *
-   *  @see [[http://docs.scala-lang.org/overviews/macros/quasiquotes.html#lifting]]
+   *  @see [[http://docs.scala-lang.org/overviews/quasiquotes/lifting.html]]
    */
   trait Liftable[T] {
     def apply(value: T): Tree
@@ -32,7 +32,7 @@ trait Liftables { self: Universe =>
      *  lifted: universe.Tree = O
      *  }}}
      *
-     *  @see [[http://docs.scala-lang.org/overviews/macros/quasiquotes.html#lifting]]
+     *  @see [[http://docs.scala-lang.org/overviews/quasiquotes/lifting.html]]
      */
     def apply[T](f: T => Tree): Liftable[T] =
       new Liftable[T] { def apply(value: T): Tree = f(value) }
@@ -40,7 +40,7 @@ trait Liftables { self: Universe =>
 
   /** A type class that defines a way to extract instance of `T` from a `Tree`.
    *
-   *  @see [[http://docs.scala-lang.org/overviews/macros/quasiquotes.html#unlifting]]
+   *  @see [[http://docs.scala-lang.org/overviews/quasiquotes/unlifting.html]]
    */
   trait Unliftable[T] {
     def unapply(tree: Tree): Option[T]
@@ -66,7 +66,7 @@ trait Liftables { self: Universe =>
      *  scala> val q"${_: O.type}" = q"$Oref"
      *  }}}
      *
-     *  @see [[http://docs.scala-lang.org/overviews/macros/quasiquotes.html#unlifting]]
+     *  @see [[http://docs.scala-lang.org/overviews/quasiquotes/unlifting.html]]
      */
     def apply[T](pf: PartialFunction[Tree, T]): Unliftable[T] = new Unliftable[T] {
       def unapply(value: Tree): Option[T] = pf.lift(value)
