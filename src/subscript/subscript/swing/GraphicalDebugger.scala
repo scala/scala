@@ -134,7 +134,9 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
     override def paint(g: Graphics2D) {
         g.setColor(AWTColor.white)
         g.fillRect(0, 0, size.width, size.height)
-        onPaintCallGraph(g)
+        try {
+          onPaintCallGraph(g)
+        } catch {case ex:Exception => println(ex.getStackTrace)}
     }
   }
   val templateTreesPanel = new Panel {
@@ -342,18 +344,19 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
         val x2       = cHCenter
         val y2       = cTop
         
-        if (currentMessage!=null) {
+        val text:String = if (currentMessage==null) null else
           currentMessage match { // node.index is not checked by node.equals!!!!
-            case AAHappened(mp,mc,mode) if(p.index==mp.index&&c.index==mc.index) => drawArrow(x2, y2, x1, y1, "AA Happened")
-            case Success   (mp,null)  => // println("Success  (mp,null)")  // TBD: how come?
-            case Success   (mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x2, y2, x1, y1, "Success")
-            case Break     (mp,mc, activationMode) if (p.index==mp.index&&c.index==mc.index) 
-                                                                              => drawArrow(x2, y2, x1, y1,  getBreakText(activationMode))
-            case Exclude   (mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x1, y1, x2, y2, "Exclude")
-            case _                                                            => drawArrow(x1, y1, x2, y2, null)
+            case AAHappened(mp,mc,mode) if(p.index==mp.index&&c.index==mc.index)  => "AA Happened"
+            case Success   (mp,null)                                              =>  null
+            case Success   (mp,mc)      if (p.index==mp.index&&c.index==mc.index) => "Success"
+            case Break     (mp,mc,mode) if (p.index==mp.index&&c.index==mc.index) => getBreakText(mode)
+            case Exclude   (mp,mc)      if (p.index==mp.index&&c.index==mc.index) => "Exclude"
+            case _                                                                => null
           }
-        }
-        else drawArrow(x1, y1, x2, y2, null)
+        
+        val doDownwards = currentMessage.isInstanceOf[Exclude]
+        if (doDownwards) drawArrow(x1, y1, x2, y2, text)
+        else             drawArrow(x2, y2, x1, y1, text)
         
         g.setStroke(normalStroke)
         g.setColor (AWTColor.black)
