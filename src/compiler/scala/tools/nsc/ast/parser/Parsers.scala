@@ -167,13 +167,19 @@ self =>
     }
 
     def scriptLiteral() : Tree = {
+      val wasInSubScript_script     = in.isInSubScript_script
+      val wasInSubScript_nativeCode = in.isInSubScript_nativeCode
+      in.isInSubScript_script = true
+      in.isInSubScript_header = false
+      in.isInSubScript_nativeCode = false
+      var result: Tree = null
       inBrackets{
-        val wasInSubScript_script = in.isInSubScript_script
-        in.isInSubScript_script = true
         val se = scriptExpr
-        in.isInSubScript_script = wasInSubScript_script
-        makeScriptHeaderAndLocalsAndBody("<lambda>", se, Nil)
+        result = makeScriptHeaderAndLocalsAndBody("<lambda>", se, Nil)
       }
+      in.isInSubScript_script     = wasInSubScript_script
+      in.isInSubScript_nativeCode = wasInSubScript_nativeCode
+      result
     }
     def xmlLiteral       () : Tree = xmlp.xLiteral
     def xmlLiteralPattern() : Tree = xmlp.xLiteralPattern
@@ -1356,7 +1362,7 @@ self =>
                                                       newTermName(raw_bar), 
                                                       newTermName(raw_bar2), 
                                                       newTermName(raw_amp),  
-                                                      newTermName(raw_amp),
+                                                      newTermName(raw_amp2),
                                                       newTermName(raw_slash),
                                                       newTermName(raw_mathDot),
                                                       newTermName(raw_space)
@@ -2358,7 +2364,7 @@ self =>
 	    p
       case _ if (isLiteral) => atPos(in.offset)(literal(isNegated))
       case NEW    => syntaxError(in.offset, "'new' expressions not yet supported in script bodies"); EmptyTree
-      case _      => syntaxErrorOrIncomplete("illegal start of simple expression", true); errorTermTree
+      case _      => syntaxErrorOrIncomplete("illegal start of simple script term", true); errorTermTree
     }
     }
     
