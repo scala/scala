@@ -160,12 +160,11 @@ class OperatorsSuite extends FunSuite {
   /*
    * Low level stuff
    */
-  def testScriptBehaviours(scriptString: String, behaviours: String, scriptBody: TemplateChildNode) {
-    val scriptDef = _script(this, Symbol(scriptString)) {scriptBody} // create a script structure for the VM
+  def testScriptBehaviours(scriptDef: Script, scriptString: String, behaviours: String) {
     
     if (behaviours.startsWith("=")) {
       val ref = behaviours.drop(1)
-      testScriptBehaviours(scriptString, scriptBehaviourMap(ref), scriptBody)
+      testScriptBehaviours(scriptDef, scriptString, scriptBehaviourMap(ref))
     }
     else {
       import scala.util.matching.Regex
@@ -175,7 +174,7 @@ class OperatorsSuite extends FunSuite {
         val input          = inputAndResult(0)
         val expectedResult = if (inputAndResult.length>1) inputAndResult(1) else "1"
         
-        testScriptBehaviour(scriptString, scriptDef, input, expectedResult)
+        testScriptBehaviour(scriptDef, scriptString, input, expectedResult)
       }
     }
   }
@@ -189,7 +188,7 @@ class OperatorsSuite extends FunSuite {
   var textIndex = 0
   var executor: ScriptExecutor = null
 
-  def testScriptBehaviour(scriptString: String, scriptDef: _scriptType, input: String, expectedResult: String) {
+  def testScriptBehaviour(scriptDef: Script, scriptString: String, input: String, expectedResult: String) {
     //println("testScript("+scriptString+", "+input+" -> "+expectedResult+")")
     
     textIndex += 1
@@ -248,10 +247,9 @@ class OperatorsSuite extends FunSuite {
        if (expectedAtomsAtEndOfInput== None) {
            expectedAtomsAtEndOfInput = Some(expectedAtoms)
            scriptSuccessAtEndOfInput = Some(executor.hasSuccess)
-if (false) println("inputStream.isEmpty=" + inputStream.isEmpty 
-      + " expectedAtoms = " + expectedAtoms.mkString 
-      + (if (inputStream.isEmpty) "" else " inputStream.head = " + inputStream.head) 
-      + " scriptSuccess = " + scriptSuccessAtEndOfInput)         
+           if (false) println("inputStream.isEmpty=${inputStream.isEmpty} expectedAtoms=${expectedAtoms.mkString}"
+                             +     (if (inputStream.isEmpty) "" else " inputStream.head=${inputStream.head}") 
+                             +                                          " scriptSuccess=$scriptSuccessAtEndOfInput")
        }
     }
     else if (inputStream.head==atom) {inputStream = inputStream.drop(1); acceptedAtoms += atom}
@@ -261,196 +259,161 @@ if (false) println("inputStream.isEmpty=" + inputStream.isEmpty
   } 
 
   //  script expression structure for an atom. It essentially comes down to the following script:
-  //  atom(name: Char) = @expect(there,name): {?tryAccept(here, name)?}
-  def atom(name: Char) = _at{there: N_code_unsure => expect(there,name)} {_unsure{here: N_code_unsure=>tryAccept(here,name)}}
+  def script ..
+    atom(name: Char) = @{expect(there,name)}: {?tryAccept(here, name)?}
+    a = atom('a')
+    b = atom('b')
+    c = atom('c')
+    d = atom('d')
 
-  /*
-   * Anticompiler section: prepare a "scriptBodyMap": script expression strings -> structures that the SubScript VM understands
-   * The operands are: a b c (-) (+) (+-) break  .  ..  ...
-   * 
-   * The script expressions are:
-   * for opnd1 <- operands 
-   *   yield opnd1
-   *   for op1 <- behaviour operators; opnd2 <- operands
-   *     yield opnd1 op1 opnd2
-   *     for opnd3 <- operands
-   *       yield opnd1 op1 opnd2 op1 opnd3
-   *       for op2 <- behaviour operators
-   *         yield (opnd1 op1 opnd2) op2 opnd3
-   *         yield  opnd1 op1 (opnd2 op2 opnd3)
-   *   
-   */
-  val _a = atom('a')
-  val _b = atom('b')
-  val _c = atom('c')
-  
-  val scriptBodyMap = scala.collection.mutable.Map[String, TemplateChildNode]()
-  
-  def addBM(scriptString: String, body: TemplateChildNode) = scriptBodyMap(scriptString) = body
-  
-  val atomsWithNames  = scala.collection.immutable.Map[TemplateChildNode,String](
-    _a -> "a"
-  , _b -> "b"
-  , _c -> "c" )
-  val specialOperands = List(_deadlock, _empty, _neutral, _break, _optionalBreak, _optionalBreak_loop, _loop)
-    
-  val operandsWithNames = atomsWithNames ++: specialOperands.map(s=>s->s.kindAsString)
-    
-  for((opnd1,name1)<-operandsWithNames) {
-    addBM(name1, opnd1)
-    for ((opnd2,name2)<-operandsWithNames; bos1<-behaviorOperators) {
-      //val bo1 = _op(bos1) _
-      addBM(name1+bos1+name2, _op(bos1)(opnd1,opnd2))
-      for ((opnd3,name3)<-operandsWithNames) {
-        addBM(name1+bos1+name2+bos1+name3, _op(bos1)(opnd1,opnd2,opnd3))
-	    for (bos2<-behaviorOperators) {
-	      //val bo2 = _op(bos2) _
-	      addBM("("+name1+bos1+name2+")"+bos2+name3    , _op(bos2)(_op(bos1)(opnd1,opnd2),opnd3))
-	      addBM(    name1+bos1+"("+name2+bos2+name3+")", _op(bos1)(opnd1,_op(bos2)(opnd2,opnd3)))
-	    }
-      }
-    }
-  }
-  
   /*
    * scriptBehaviourMap: relation between scripts and outcomes
    *   keys are script strings, which should also be keys in the scriptBodyMap, so that bodies can be found
    *   the outcomes are a input traces in relation to their outcomes, see #testScriptBehaviour
    */
   val scriptBehaviourList1 = List( // list, not a map, to remain ordered
-    "a&b&c"   -> "cb->a" // goes wrong since "Ignore" status causes AAToBeReexecuted which may be stored in LIFO order...TBD in ScriptExecutor
-   , "(-)"    -> "->0"
-   , "(+)"    -> ""
-   , "(+-)"   -> ""
-   , "break"  -> "=(+-)"
-   , "."      -> "=(+-)"
-   , ".."     -> "=(+-)"
-   , "..."    -> "=(+-)"
-    
-   , "a"      -> "->a a"
-  )
+     [a&b&c]   -> "a&b&c"   -> "cb->a" // goes wrong since "Ignore" status causes AAToBeReexecuted which may be stored in LIFO order...TBD in ScriptExecutor
+   , [(-)]     -> "(-)"     -> "->0"
+   , [(+)]     -> "(+)"     -> ""
+   , [(+-)]    -> "(+-)"    -> ""
+   , [break]   -> "break"   -> "=(+-)"
+   , [.]       -> "."       -> "=(+-)"
+   , [..]      -> ".."      -> "=(+-)"
+   , [...]     -> "..."     -> "=(+-)"
+                               
+   , [a]       -> "a"       -> "->a a"
+  )           
   val scriptBehaviourList = List( // list, not a map, to remain ordered
-      
+              
    // simple terms
-     "(-)"    -> "->0"
-   , "(+)"    -> ""
-   , "(+-)"   -> ""
-   , "break"  -> "=(+-)"
-   , "."      -> "=(+-)"
-   , ".."     -> "=(+-)"
-   , "..."    -> "=(+-)"
-    
-   , "a"      -> "->a a"
-    
+     [(-)]     -> "(-)"     -> "->0"
+   , [(+)]     -> "(+)"     -> ""
+   , [(+-)]    -> "(+-)"    -> ""
+   , [break]   -> "break"   -> "=(+-)"
+   , [.]       -> "."       -> "=(+-)"
+   , [..]      -> ".."      -> "=(+-)"
+   , [...]     -> "..."     -> "=(+-)"
+                               
+   , [a]       -> "a"       -> "->a a"
+                               
    //  a op b 
-   , "a;b"    -> "->a a->b ab"
-   , "a+b"    -> "->ab a b"
-   , "a&b"    -> "->ab a->b  b->a  ab ba"
-   , "a&&b"   -> "->ab a->b  b->a  ab ba"
-   , "a|b"    -> "->ab a->1b b->1a ab ba"
-   , "a||b"   -> "->ab a b"
-   , "a/b"    -> "->ab a b"
-   
+   , [a;b]     -> "a;b"     -> "->a a->b ab"
+   , [a+b]     -> "a+b"     -> "->ab a b"
+   , [a&b]     -> "a&b"     -> "->ab a->b  b->a  ab ba"
+   , [a&&b]    -> "a&&b"    -> "->ab a->b  b->a  ab ba"
+   , [a|b]     -> "a|b"     -> "->ab a->1b b->1a ab ba"
+   , [a||b]    -> "a||b"    -> "->ab a b"
+   , [a/b]     -> "a/b"     -> "->ab a b"
+                               
    // a op antineutral
-   , "a;(-)"  -> "->a a->0"
-   , "(-);a"  -> "=(-)"
-   , "a&(-)"  -> "->a a->0"
-   , "(-)&a"  -> "->a a->0"
-   , "a&&(-)" -> "->0"
-   , "(-)&&a" -> "->0"
-
-   , "a+(+)"  -> "->1a a"
-   , "(+)+a"  -> "->1a a"
-   , "a|(+)"  -> "->1a a"
-   , "(+)|a"  -> "->1a a"
-   , "a||(+)" -> ""
-   , "(+)||a" -> ""
-   , "a/(+)"  -> "->1a a"
-   , "(+)/a"  -> "->1a a"
-   
+   , [a;(-)]   -> "a;(-)"   -> "->a a->0"
+   , [(-);a]   -> "(-);a"   -> "=(-)"
+   , [a&(-)]   -> "a&(-)"   -> "->a a->0"
+   , [(-)&a]   -> "(-)&a"   -> "->a a->0"
+   , [a&&(-)]  -> "a&&(-)"  -> "->0"
+   , [(-)&&a]  -> "(-)&&a"  -> "->0"
+                             
+   , [a+(+)]   -> "a+(+)"   -> "->1a a"
+   , [(+)+a]   -> "(+)+a"   -> "->1a a"
+   , [a|(+)]   -> "a|(+)"   -> "->1a a"
+   , [(+)|a]   -> "(+)|a"   -> "->1a a"
+   , [a||(+)]  -> "a||(+)"  -> ""
+   , [(+)||a]  -> "(+)||a"  -> ""
+   , [a/(+)]   -> "a/(+)"   -> "->1a a"
+   , [(+)/a]   -> "(+)/a"   -> "->1a a"
+                               
    // 2 operand sequences with iterator or break or optional break, 
-   , "break;a" -> ""
-   , ".;a"     -> "->1a a"
-   , "..;a"    -> "->1a a->1a aa->1a"
-   , "...;a"   -> "->a  a->a  aa->a"
-   
-   , "a;break" -> "->a  a"
-   , "a;."     -> "->a  a"
-   , "a;.."    -> "->a  a->1a aa->1a"
-   , "a;..."   -> "->a  a->a  aa->a"
+   , [break;a] -> "break;a" -> ""
+   , [.;a]     -> ".;a"     -> "->1a a"
+   , [..;a]    -> "..;a"    -> "->1a a->1a aa->1a"
+   , [...;a]   -> "...;a"   -> "->a  a->a  aa->a"
+                               
+   , [a;break] -> "a;break" -> "->a  a"
+   , [a;.]     -> "a;."     -> "->a  a"
+   , [a;..]    -> "a;.."    -> "->a  a->1a aa->1a"
+   , [a;...]   -> "a;..."   -> "->a  a->a  aa->a"
    
    // 3 operand sequences with iterator or break or optional break, 
-   , "a;b;break"   -> "=a;b"
-   , "a;b;."       -> "=a;b"
-   , "a;b;.."      -> "->a  a->b ab->1a aba->b abab->1a"
-   , "a;b;..."     -> "->a  a->b ab->a  aba->b abab->a"
-   
-   , "a;break;b"   -> "->a  a"
-   , "a;.;b"       -> "->a  a->1b ab"
-   , "a;..;b"      -> "->a  a->1b ab->a aba->1b"
-   , "a;...;b"     -> "->a  a->b  ab->a aba->b"
-   
-   , "break;a;b"   -> "->1"
-   , ".;a;b"       -> "->1a a->b ab"
-   , "..;a;b"      -> "->1a a->b ab->1a aba->b"
-   , "...;a;b"     -> "->a  a->b  ab->a aba->b"
+   , [a;b;break]   -> "a;b;break"   -> "=a;b"
+   , [a;b;.]       -> "a;b;."       -> "=a;b"
+   , [a;b;..]      -> "a;b;.."      -> "->a  a->b ab->1a aba->b abab->1a"
+   , [a;b;...]     -> "a;b;..."     -> "->a  a->b ab->a  aba->b abab->a"
+                                       
+   , [a;break;b]   -> "a;break;b"   -> "->a  a"
+   , [a;.;b]       -> "a;.;b"       -> "->a  a->1b ab"
+   , [a;..;b]      -> "a;..;b"      -> "->a  a->1b ab->a aba->1b"
+   , [a;...;b]     -> "a;...;b"     -> "->a  a->b  ab->a aba->b"
+                                       
+   , [break;a;b]   -> "break;a;b"   -> "->1"
+   , [.;a;b]       -> ".;a;b"       -> "->1a a->b ab"
+   , [..;a;b]      -> "..;a;b"      -> "->1a a->b ab->1a aba->b"
+   , [...;a;b]     -> "...;a;b"     -> "->a  a->b  ab->a aba->b"
    
    // 2 level nested 2 operand sequences with iterator or break or optional break, 
-   , "a;(b;break)" -> "->a  a->b ab"
-   , "a;(b;.)"     -> "->a  a->b ab"
-   , "a;(b;..)"    -> "->a  a->b ab->1b abb->1b"
-   , "a;(b;...)"   -> "->a  a->b  ab->b"
-   
-   , "(a;b);break" -> "=a;b"
-   , "(a;b);."     -> "=a;b"
-   , "(a;b);.."    -> "->a  a->b ab->1a aba->b abab->1a"
-   , "(a;b);..."   -> "->a  a->b ab->a  aba->b abab->a"
-   
-   , "a;(break;b)" -> "->a  a"
-   , "a;(.;b)"     -> "->a  a->1b ab"
-   , "a;(..;b)"    -> "->a  a->1b ab->1b"
-   , "a;(...;b)"   -> "->a  a->b  ab->b"
-   
-   , "(a;break);b" -> "->a  a->b ab"
-   , "(a;.);b"     -> "->a  a->b ab"
-   , "(a;..);b"    -> "->a  a->ab aa->ab ab aab"
-   , "(a;...);b"   -> "->a  a->a  aa->a"
-   
-   , "break;(a;b)" -> "->1"
-   , ".;(a;b)"     -> "->1a a->b ab"
-   , "..;(a;b)"    -> "->1a a->b ab->1a aba->b"
-   , "...;(a;b)"   -> "->a  a->b  ab->a aba->b"
-   
-   , "(break;a);b" -> "b"
-   , "(.;a);b"     -> "->ab  a->b ab b"
-   , "(..;a);b"    -> "->ab  a->ab aa->ab b ab aab"
-   , "(...;a);b"   -> "->a  a->a  aa->a"
+   , [a;(b;break)] -> "a;(b;break)" -> "->a  a->b ab"
+   , [a;(b;.)]     -> "a;(b;.)"     -> "->a  a->b ab"
+   , [a;(b;..)]    -> "a;(b;..)"    -> "->a  a->b ab->1b abb->1b"
+   , [a;(b;...)]   -> "a;(b;...)"   -> "->a  a->b  ab->b"
+                                       
+   , [(a;b);break] -> "(a;b);break" -> "=a;b"
+   , [(a;b);.]     -> "(a;b);."     -> "=a;b"
+   , [(a;b);..]    -> "(a;b);.."    -> "->a  a->b ab->1a aba->b abab->1a"
+   , [(a;b);...]   -> "(a;b);..."   -> "->a  a->b ab->a  aba->b abab->a"
+                                       
+   , [a;(break;b)] -> "a;(break;b)" -> "->a  a"
+   , [a;(.;b)]     -> "a;(.;b)"     -> "->a  a->1b ab"
+   , [a;(..;b)]    -> "a;(..;b)"    -> "->a  a->1b ab->1b"
+   , [a;(...;b)]   -> "a;(...;b)"   -> "->a  a->b  ab->b"
+                                       
+   , [(a;break);b] -> "(a;break);b" -> "->a  a->b ab"
+   , [(a;.);b]     -> "(a;.);b"     -> "->a  a->b ab"
+   , [(a;..);b]    -> "(a;..);b"    -> "->a  a->ab aa->ab ab aab"
+   , [(a;...);b]   -> "(a;...);b"   -> "->a  a->a  aa->a"
+                                       
+   , [break;(a;b)] -> "break;(a;b)" -> "->1"
+   , [.;(a;b)]     -> ".;(a;b)"     -> "->1a a->b ab"
+   , [..;(a;b)]    -> "..;(a;b)"    -> "->1a a->b ab->1a aba->b"
+   , [...;(a;b)]   -> "...;(a;b)"   -> "->a  a->b  ab->a aba->b"
+                                       
+   , [(break;a);b] -> "(break;a);b" -> "b"
+   , [(.;a);b]     -> "(.;a);b"     -> "->ab  a->b ab b"
+   , [(..;a);b]    -> "(..;a);b"    -> "->ab  a->ab aa->ab b ab aab"
+   , [(...;a);b]   -> "(...;a);b"   -> "->a  a->a  aa->a"
 
    // parallel composition
-   , "(...;a)&b"   -> "->ab  a->ab  aa->ab  b->a  ba->a  ab->a  aba->a"
-   , "(...;a)|b"   -> "->ab  a->ab  aa->ab  b->1a  ba->1a  ab->1a  aba->1a"
-   , "b&(...;a)"   -> "=(...;a)&b"  // commutative
-   , "b|(...;a)"   -> "=(...;a)|b"  // commutative
-
-   , "a&b&c"       -> "->abc a->bc  b->ac  c->ab  ab->c  ac->b  ba->c  bc->a  ca->b  cb->a  abc acb bac bca cab cba" 
-   , "a&&b&&c"     -> "->abc a->bc  b->ac  c->ab  ab->c  ac->b  ba->c  bc->a  ca->b  cb->a  abc acb bac bca cab cba"  
-   , "a|b|c"       -> "->abc a->1bc b->1ac c->1ab ab->1c ac->1b ba->1c bc->1a ca->1b cb->1a abc acb bac bca cab cba"  
-   , "a||b||c"     -> "->abc a b c"  
-   
+   , [(...;a)&b]   -> "(...;a)&b"   -> "->ab  a->ab  aa->ab  b->a  ba->a  ab->a  aba->a"
+   , [(...;a)|b]   -> "(...;a)|b"   -> "->ab  a->ab  aa->ab  b->1a  ba->1a  ab->1a  aba->1a"
+   , [b&(...;a)]   -> "b&(...;a)"   -> "=(...;a)&b"  // commutative
+   , [b|(...;a)]   -> "b|(...;a)"   -> "=(...;a)|b"  // commutative
+                                       
+   , [a&b&c]       -> "a&b&c"       -> "->abc a->bc  b->ac  c->ab  ab->c  ac->b  ba->c  bc->a  ca->b  cb->a  abc acb bac bca cab cba" 
+   , [a&&b&&c]     -> "a&&b&&c"     -> "->abc a->bc  b->ac  c->ab  ab->c  ac->b  ba->c  bc->a  ca->b  cb->a  abc acb bac bca cab cba"  
+   , [a|b|c]       -> "a|b|c"       -> "->abc a->1bc b->1ac c->1ab ab->1c ac->1b ba->1c bc->1a ca->1b cb->1a abc acb bac bca cab cba"  
+   , [a||b||c]     -> "a||b||c"     -> "->abc a b c"  
+                                       
    // disruption with compound left hand operand
-   , "(a|b)/c"     -> "->abc a->1bc b->1ac c ac bc ab ba"
-   , "(a;b)/c"     -> "->ac a->bc ab c ac" 
-   , "(a;b)/(+)"   -> "->1a a->1b ab"
+   , [(a|b)/c]     -> "(a|b)/c"     -> "->abc a->1bc b->1ac c ac bc ab ba"
+   , [(a;b)/c]     -> "(a;b)/c"     -> "->ac a->bc ab c ac" 
+   , [(a;b)/(+)]   -> "(a;b)/(+)"   -> "->1a a->1b ab"
+   
+   // optional break
+   , [ a / . / b ]         -> " a / . / b "         -> "a"
+   , [ a b / . / c d ]     -> " a b / . / c d "     -> "->a a->bc  ab     ac->d  acd"
+   , [ a b & . & c d ]     -> " a b & . & c d "     -> "->a a->bc  ab->1c ac->bd abc->d  abcd acb->d  acd->b  acbd acdb"
+   , [ a b | . | c d ]     -> " a b | . | c d "     -> "->a a->bc  ab->1c ac->bd abc->1d abcd acb->1d acd->1b acbd acdb"
+   , [ . / a b ]           -> " . / a b "           -> "->1a a->b  ab"
+   , [ . & a b ]           -> " . & a b "           -> "->1a a->b  ab"
+   , [ . | a b ]           -> " . | a b "           -> "->1a a->b  ab"
+   , [ . / a b / . / c d ] -> " . / a b / . / c d " -> "->1a a->bc ab ac->d acd"
+   , [ a b  | .  | 1 ]     -> " a b  | .  | 1 "     -> "->a a->1b ab"
+   , [ a b || . || 1 ]     -> " a b || . || 1 "     -> "a"
+   , [ a b  & .  & 0 ]     -> " a b  & .  & 0 "     -> "ab0"
+   , [ a b && . && 0 ]     -> " a b && . && 0 "     -> "a0"
+   , [ (a b+1)  & .  & 0 ] -> " (a b+1)  & .  & 0 " -> "->1a a->b ab->0"
+   , [ (a b+1) && . && 0 ] -> " (a b+1) && . && 0 " -> "->1a a->0"
  )
   val scriptBehaviourMap = scriptBehaviourList.toMap
   
-  /*
-   * Test the behaviours of the given script expression.
-   */
-  def testScriptBehaviours(scriptString: String, behaviours: String): Unit = 
-      testScriptBehaviours(scriptString,         behaviours,   scriptBodyMap(scriptString))
-      
-      
   /*
    * Test logic behaviour
    * For each behaviour operator #, a neutral operand (for #) n, another operand x, it should hold:
@@ -459,9 +422,10 @@ if (false) println("inputStream.isEmpty=" + inputStream.isEmpty
    *  
    *  (+-) should need only behave neutrally next to an "a": (+-)#a = a#(+-) = a
    */
-  def testLogicalOr  = testLogic(false, logicalOrOperators )
-  def testLogicalAnd = testLogic( true, logicalAndOperators)
+  //def testLogicalOr  = testLogic(false, logicalOrOperators )
+  //def testLogicalAnd = testLogic( true, logicalAndOperators)
   
+  /*
   def testLogic(isLogicalAnd: Boolean, operatorStrings: Seq[String]) = {
     val    neutralProcess = if ( isLogicalAnd) _empty else _deadlock
     val notNeutralProcess = if (!isLogicalAnd) _empty else _deadlock
@@ -476,11 +440,14 @@ if (false) println("inputStream.isEmpty=" + inputStream.isEmpty
       }
     }
   }
+
+  */
   
   def testBehaviours = {
-    for ( (scriptName, behaviours) <- scriptBehaviourList) {
-      //println(scriptName, behaviour, behaviour.split(" ").mkString(" * "))
-      testScriptBehaviours(scriptName, behaviours)
+    for ( (aScriptWithString, behaviours) <- scriptBehaviourList) {
+      testScriptBehaviours(aScriptWithString.key  .asInstanceOf[Script], 
+                           aScriptWithString.value.asInstanceOf[Script],
+                           behaviours.asInstanceOf[String])
     }
   }
   
@@ -488,6 +455,6 @@ if (false) println("inputStream.isEmpty=" + inputStream.isEmpty
    * High level calls that will be tested:
    */
   testBehaviours
-  testLogicalOr
-  testLogicalAnd
+  //testLogicalOr
+  //testLogicalAnd
 }
