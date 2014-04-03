@@ -166,6 +166,15 @@ self =>
       new MarkupParser(this, preserveWS = true)
     }
 
+    def scriptLiteral() : Tree = {
+      inBrackets{
+        val wasInSubScript_script = in.isInSubScript_script
+        in.isInSubScript_script = true
+        val se = scriptExpr
+        in.isInSubScript_script = wasInSubScript_script
+        makeScriptHeaderAndLocalsAndBody("<lambda>", se, Nil)
+      }
+    }
     def xmlLiteral       () : Tree = xmlp.xLiteral
     def xmlLiteralPattern() : Tree = xmlp.xLiteralPattern
   }
@@ -1673,6 +1682,66 @@ self =>
     var scriptLocalVariables              = new scala.collection.mutable.HashMap[Name,(Tree, Boolean)] // should be in a context stack; now the scope becomes too big 
     var scriptLocalValues                 = new scala.collection.mutable.HashMap[Name,(Tree, Boolean)]
     
+    def makeScriptHeaderAndLocalsAndBody(name: String, scriptBody: Tree, paramBindings: List[Tree]): Tree = {
+    		        
+		        // now all parameters and local values should be available in the list buffers.
+		        // transform the tree so that the identifiers are replaced appropriately
+		        // Note: actual adapting parameters have already got an underscore in their name prefix (...)
+		        // so these will not be found in the scriptFormalOutputParameters list etc.
+		        val scriptLocalDataTransformer = new Transformer {
+		          override def transform(tree: Tree): Tree = tree match {
+		            case ident @ Ident(name) => 
+		              if      (isFormalOutputParameter     (name)
+		                    || isFormalConstrainedParameter(name)) atPos(ident.pos) {Select(Ident(newTermName(underscore_prefix(name.toString))), value_Name)} // _p.value
+		              else if (scriptLocalVariables             .contains(name) 
+		                   ||  scriptLocalValues                .contains(name)) {  // _c.at(here).value
+		                      val select_at     = atPos(ident.pos) {Select(Ident(newTermName(underscore_prefix(name.toString))), at_Name)}
+		                      val apply_at_here = atPos(ident.pos) {Apply(select_at, List(here_Ident))}
+		                      atPos(ident.pos) {Select(apply_at_here, value_Name)}
+		              } else ident
+		            case _ => super.transform(tree)
+		          }
+		        }
+		        val rhs_withAdjustedScriptLocalDataTransformed = scriptLocalDataTransformer.transform(scriptBody)
+		        
+		        // add for each variable and value: val _c = subscript.DSL._declare[Char]('c)
+		        val resultElems = new ListBuffer[Tree]
+		        
+		        // This pattern captures the algorithm of the local variable's body generation
+		        // First argument is the name of the variable, second - its type, that makes sense
+		        // in current scope
+		        def localValBody(vn: Name, vt: Tree): Tree = {
+		          val vSym               = Apply(scalaDot(nme.Symbol), List(Literal(Constant(vn.toString))))
+                  val declare_typed      = TypeApply      (dslFunFor(DEF), List(vt))
+                  val rhs                = Apply(declare_typed, List(vSym))
+                  rhs
+		        }
+		        
+		        // This pattern captures the local variable declaration.
+		        // First algorithm is the name, second algorithm is the body
+		        def localValDef(vn: Name, rhs: Tree): ValDef = {
+		          val underscored_v_name = newTermName(underscore_prefix(vn.toString))
+		          val valDef = ValDef(NoMods, underscored_v_name, TypeTree(), rhs)
+		          valDef
+		        }
+		        
+		        import TypeOperations._
+		        for ((vn,(vt, isType)) <- scriptLocalVariables ++ scriptLocalValues) {
+		          val valDef = {
+		            val rhs = if (isType) localValBody(vn, vt) else withTypeOf(vt)(localValBody(vn, _))
+		            localValDef(vn, rhs)
+		          }
+		          resultElems += valDef
+		        }
+		        
+		        val scriptNameAsSym         = Apply(scalaDot(nme.Symbol), List(Literal(Constant(name.toString))))
+	            val scriptHeader            = Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings) 
+	            val scriptHeaderAndBody     = Apply(scriptHeader, List(rhs_withAdjustedScriptLocalDataTransformed))
+	            
+	            resultElems += scriptHeaderAndBody
+	            makeBlock(resultElems.toList)
+    }
+    
     def scriptDefsOrDcls(start : Int, mods: Modifiers): List[Tree] = {
       in.isInSubScript_script = true
       in.nextToken
@@ -1780,67 +1849,11 @@ self =>
 		              }
 		            }
     
-		        
-		        
-		        // now all parameters and local values should be available in the list buffers.
-		        // transform the tree so that the identifiers are replaced appropriately
-		        // Note: actual adapting parameters have already got an underscore in their name prefix (...)
-		        // so these will not be found in the scriptFormalOutputParameters list etc.
-		        val scriptLocalDataTransformer = new Transformer {
-		          override def transform(tree: Tree): Tree = tree match {
-		            case ident @ Ident(name) => 
-		              if      (isFormalOutputParameter     (name)
-		                    || isFormalConstrainedParameter(name)) atPos(ident.pos) {Select(Ident(newTermName(underscore_prefix(name.toString))), value_Name)} // _p.value
-		              else if (scriptLocalVariables             .contains(name) 
-		                   ||  scriptLocalValues                .contains(name)) {  // _c.at(here).value
-		                      val select_at     = atPos(ident.pos) {Select(Ident(newTermName(underscore_prefix(name.toString))), at_Name)}
-		                      val apply_at_here = atPos(ident.pos) {Apply(select_at, List(here_Ident))}
-		                      atPos(ident.pos) {Select(apply_at_here, value_Name)}
-		              } else ident
-		            case _ => super.transform(tree)
-		          }
-		        }
-		        val rhs_withAdjustedScriptLocalDataTransformed = scriptLocalDataTransformer.transform(rhs)
-		        
-		        // add for each variable and value: val _c = subscript.DSL._declare[Char]('c)
-		        val rhs_withVariablesAndValuesDeclarations = new ListBuffer[Tree]
-		        
-		        // This pattern captures the algorithm of the local variable's body generation
-		        // First argument is the name of the variable, second - it's type, that makes sence
-		        // in current scope
-		        def localValBody(vn: Name, vt: Tree): Tree = {
-		          val vSym               = Apply(scalaDot(nme.Symbol), List(Literal(Constant(vn.toString))))
-                  val declare_typed      = TypeApply      (dslFunFor(DEF), List(vt))
-                  val rhs                = Apply(declare_typed, List(vSym))
-                  rhs
-		        }
-		        
-		        // This pattern captures the local variable declaration.
-		        // First algorithm is the name, second algorithm is the body
-		        def localValDef(vn: Name, rhs: Tree): ValDef = {
-		          val underscored_v_name = newTermName(underscore_prefix(vn.toString))
-		          val valDef = ValDef(NoMods, underscored_v_name, TypeTree(), rhs)
-		          valDef
-		        }
-		        
-		        import TypeOperations._
-		        for ((vn,(vt, isType)) <- scriptLocalVariables ++ scriptLocalValues) {
-		          val valDef = {
-		            val rhs = if (isType) localValBody(vn, vt) else withTypeOf(vt)(localValBody(vn, _))
-		            localValDef(vn, rhs)
-		          }
-		          rhs_withVariablesAndValuesDeclarations += valDef
-		        }
-		        
-		        val underscored_script_name = newTermName(underscore_prefix(name.toString))
-		        val scriptNameAsSym         = Apply(scalaDot(nme.Symbol), List(Literal(Constant(name.toString))))
-	            val scriptHeader            = Apply(s_script, This(tpnme.EMPTY)::scriptNameAsSym::paramBindings) 
-	            val scriptHeaderAndBody     = Apply(scriptHeader, List(rhs_withAdjustedScriptLocalDataTransformed))
-	            
-	            val scriptHeaderAndLocalsAndBody = rhs_withVariablesAndValuesDeclarations
-	            scriptHeaderAndLocalsAndBody += scriptHeaderAndBody
+	            val scriptHeaderAndLocalsAndBody = makeScriptHeaderAndLocalsAndBody(name.toString, rhs, paramBindings)
+		        val underscored_script_name      = newTermName(underscore_prefix(   name.toString))
+
 	            // to enable moving this all to a later phase, we should create a ScriptDef rather than a DefDef
-	            DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), s_scriptType, makeBlock(scriptHeaderAndLocalsAndBody.toList))
+	            DefDef(newmods, underscored_script_name, tparams, List(underscored_param_defs), s_scriptType, scriptHeaderAndLocalsAndBody)
 		      }
 	          signalParseProgress(scriptDef.pos)
 
@@ -2642,6 +2655,7 @@ self =>
       else simpleExpr()
     }
     def xmlLiteral(): Tree
+    def scriptLiteral(): Tree
 
     /** {{{
      *  SimpleExpr    ::= new (ClassTemplate | TemplateBody)
@@ -2661,6 +2675,7 @@ self =>
       val t =
         if (isLiteral) literal()
         else in.token match {
+          case LBRACKET => canApply = false; scriptLiteral()
           case XMLSTART => xmlLiteral()
           case IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER
                       => path(thisOK = true, typeOK = false)
