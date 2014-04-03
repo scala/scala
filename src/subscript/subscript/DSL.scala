@@ -41,6 +41,7 @@ import subscript.vm._
  */
 object DSL {
   type _scriptType = N_call=>Unit
+  type Script = _scriptType
   def _script   (owner : AnyRef, name        : Symbol      , p: FormalParameter[_]*)(_t: TemplateChildNode): _scriptType = {(_c: N_call) => _c.calls(T_script    (owner, "script"       , name,     _t), p:_*)}
   def _comscript(owner : AnyRef, communicator: Communicator, p: FormalParameter[_]*)                       : _scriptType = {(_c: N_call) => _c.calls(T_commscript(owner, "communicator" , communicator), p:_*)}
   
@@ -58,15 +59,15 @@ object DSL {
 
   implicit def communicatorToCommunicatorRole(c: Communicator) = new CommunicatorRole(c)
   
-  def _execute(_script: N_call => Unit): ScriptExecutor = _execute(_script, null, true)
-  def _execute(_script: N_call => Unit, executor: ScriptExecutor): ScriptExecutor = _execute(_script, null, executor)
-  def _execute(_script: N_call => Unit, debugger: ScriptDebugger): ScriptExecutor = _execute(_script, debugger, false)
-  def _execute(_script: N_call => Unit,                           allowDebugger: Boolean): ScriptExecutor = _execute(_script, null, allowDebugger)
-  def _execute(_script: N_call => Unit, debugger: ScriptDebugger, allowDebugger: Boolean): ScriptExecutor = {
+  def _execute(_script: _scriptType): ScriptExecutor = _execute(_script, null, true)
+  def _execute(_script: _scriptType, executor: ScriptExecutor): ScriptExecutor = _execute(_script, null, executor)
+  def _execute(_script: _scriptType, debugger: ScriptDebugger): ScriptExecutor = _execute(_script, debugger, false)
+  def _execute(_script: _scriptType,                           allowDebugger: Boolean): ScriptExecutor = _execute(_script, null, allowDebugger)
+  def _execute(_script: _scriptType, debugger: ScriptDebugger, allowDebugger: Boolean): ScriptExecutor = {
     val executor = ScriptExecutorFactory.createScriptExecutor(allowDebugger && debugger == null)
     _execute(_script, debugger, executor)
   }
-  def _execute(_script: N_call => Unit, debugger: ScriptDebugger, executor: ScriptExecutor): ScriptExecutor = {
+  def _execute(_script: _scriptType, debugger: ScriptDebugger, executor: ScriptExecutor): ScriptExecutor = {
     if (debugger!=null) debugger.attach(executor)
     _script(executor.anchorNode)
     executor.run
