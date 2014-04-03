@@ -197,7 +197,7 @@ class CommonScriptExecutor extends ScriptExecutor {
     // then that message may be garbage collected and the link to the node will be gone, so that the node may also 
     // be garbage collected
     m match {
-      case maa@AAToBeExecuted  (n: CallGraphNodeTrait) => n.asInstanceOf[N_atomic_action].msgAAToBeExecuted = maa
+      case maa@AAToBeExecuted  (n: N_atomic_action) => n.asInstanceOf[N_atomic_action].msgAAToBeExecuted = maa
       case maa@AAToBeReexecuted(n: CallGraphNodeTrait) => n.asInstanceOf[N_atomic_action].msgAAToBeExecuted = maa
       case _ =>
     }

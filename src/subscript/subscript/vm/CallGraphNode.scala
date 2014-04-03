@@ -213,7 +213,7 @@ trait CallGraphNonTreeParentNode extends CallGraphNonTreeNode with CallGraphPare
 abstract class N_atomic_action  extends CallGraphLeafNode with DoCodeHolder[Unit] {
   type T <: T_atomic_action
   override def asynchronousAllowed: Boolean = true
-  var msgAAToBeExecuted: CallGraphMessage[_] = null
+  var msgAAToBeExecuted: CallGraphMessage[CallGraphNodeTrait] = null
 }
 
 abstract class CallGraphTreeNode_n_ary extends CallGraphTreeParentNode {
