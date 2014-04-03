@@ -41,7 +41,8 @@
     </dependency>
     <dependency>
       <groupId>org.scala-lang.plugins</groupId>
-      <artifactId>scala-continuations-plugin_@VERSION@</artifactId> <!-- plugins are fully cross-versioned -->
+      <!-- plugins are fully cross-versioned. But, we don't publish with 2.11.0-SNAPSHOT, instead use full version of the last non-snapshot version -->
+      <artifactId>scala-continuations-plugin_@SCALA_FULL_VERSION@</artifactId>
       <version>@CONTINUATIONS_PLUGIN_VERSION@</version>
     </dependency>
     <!-- duplicated from scala-compiler, where it's optional,
