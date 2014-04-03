@@ -223,7 +223,7 @@ class CommonScriptExecutor extends ScriptExecutor {
     
     // Continuations are merged with already existing ones
     // TBD: make separate priorities of continuations...
-    // e.g. a continuation for AAActivated should not be merged (probably) with one for AAStarted
+    // e.g. a continuation for AAActivated should not be merged (probably) with one for AAHappened
     if (c==null) {
       c = new Continuation(n)
     }
@@ -250,10 +250,8 @@ class CommonScriptExecutor extends ScriptExecutor {
                           child: CallGraphNodeTrait) =>  c.aaActivated = a
       case a@CAActivated  (node: CallGraphNodeTrait, 
                           child: CallGraphNodeTrait) =>  c.caActivated = a
-      case a@AAStarted    (node: CallGraphNodeTrait, 
-                          child: CallGraphNodeTrait) =>  c.aaStarteds ::= a
-      case a@AAEnded      (node: CallGraphNodeTrait, 
-                          child: CallGraphNodeTrait) =>  c.aaEndeds ::= a
+      case a@AAHappened   (node: CallGraphNodeTrait, 
+                          child: CallGraphNodeTrait, _) =>  c.aaHappeneds ::= a
     }
     if (n.continuation==null) {
         n.continuation = c
@@ -277,7 +275,7 @@ class CommonScriptExecutor extends ScriptExecutor {
   
   def hasSuccess     = rootNode.hasSuccess
   
-  var aaStartedCount = 0; // count for started atomic actions; TBD: use for determining success
+  var aaHappenedCount = 0; // count for happened atomic actions; TBD: use for determining success
   
   /*
    * A root node is at the top of the script call graph.
@@ -621,7 +619,7 @@ class CommonScriptExecutor extends ScriptExecutor {
 	          
 
   /*
-   * Handle an AAStarted message
+   * Handle an AAHappened message
    *
    * Resets the node's hadSuccess flag
    * Increments the busyActions count
@@ -631,14 +629,18 @@ class CommonScriptExecutor extends ScriptExecutor {
    * If the node is an exclusive opeator: decide on what children to exclude
    * 
    * Insert the exclude messages and suspend messages
-   * For each parent node insert an AAStarted message
+   * For each parent node insert an AAHappened message
    * 
-   * TBD: ensure that an n-ary node gets only 1 AAStarted msg 
+   * TBD: ensure that an n-ary node gets only 1 AAHappened msg 
    * after an AA started in a communication reachable from multiple child nodes (*)
    */
-  def handleAAStarted(message: AAStarted): Unit = {
+  def handleAAHappened(message: AAHappened): Unit = {
     message.node.hasSuccess   = false
-    message.node.numberOfBusyActions += 1; 
+    message.node.numberOfBusyActions += (message.mode match {
+      case     AtomicCodeFragmentExecuted =>  0
+      case DurationalCodeFragmentStarted  =>  1
+      case DurationalCodeFragmentEnded    => -1
+    })
     message.node match {
        case n@N_1_ary_op(t: T_1_ary)    => insertContinuation1(message) //don't return; just put the continuations in place
        case n@N_n_ary_op(t: T_n_ary, _) => insertContinuation (message) //don't return; just put the continuations in place, mainly used for left merge operators
@@ -648,7 +650,7 @@ class CommonScriptExecutor extends ScriptExecutor {
 	        var nodesToBeExcluded : Buffer[CallGraphNodeTrait] = null
 			if (T_n_ary_op.isSuspending(n.template)) {
 		      val s = message.child
-		      if (s.aaStartedCount==1) {
+		      if (s.aaHappenedCount==1) {
 		        t.kind match {
 		          case "#" | "#%#"   => nodesToBeSuspended = n.children - s 
 		          case "#%"          => nodesToBeExcluded  = n.children.filter(_.index < s.index) 
@@ -662,13 +664,13 @@ class CommonScriptExecutor extends ScriptExecutor {
 		          case ";" | "|;" 
 		           | "||;" | "|;|" 
 		           | "+"   | "|+"  => nodesToBeExcluded = n.children.filter(_.index != message.child.index)
-		                         // after (*), do: nodesToBeExcluded = n.children -- message.aaStarteds.map( (as:AAStarted) => as.child)  
+		                         // after (*), do: nodesToBeExcluded = n.children -- message.aaHappeneds.map( (as:AAHappened) => as.child)  
 		                  
 		          case "/" | "|/" 
 		             | "|/|"       => nodesToBeExcluded = n.children.filter(_.index < message.child.index)
 		                              // after (*), do: 
 		                              // val minIndex = message.child.index
-		                              // nodesToBeExcluded = n.children -- message.aaStarteds.map( (as:AAStarted) => as.child)
+		                              // nodesToBeExcluded = n.children -- message.aaHappeneds.map( (as:AAHappened) => as.child)
 		          case _ =>
 	          }
 	        }
@@ -679,39 +681,10 @@ class CommonScriptExecutor extends ScriptExecutor {
 	  }
     
     val operator = message.node.n_ary_op_ancestor
-    if (operator != null && (operator.breakWaker eq message.node)) operator.aaStartedSinceLastOptionalBreak = true
+    if (operator != null && (operator.breakWaker eq message.node)) operator.aaHappenedSinceLastOptionalBreak = true
     
     // message.child may be null now
-    message.node.forEachParent(p => insert(AAStarted(p, message.node)))
-  }
-  /*
-   * Handle an AAEnded message
-   *
-   * Resets the node's hadSuccess flag
-   * Decrements the busyActions count
-   * 
-   * If the node is an n_ary or 1_ary operator: insert a continuation message 
-   *
-   * For each parent node insert an AAStarted message
-   * 
-   * TBD: ensure that an n-ary node gets only 1 AAStarted msg 
-   * after an AA started in a communication reachable from multiple child nodes (*)
-   */
-  def handleAAEnded(message: AAEnded): Unit = {
-    message.node.numberOfBusyActions -= 1; 
-    message.node.hasSuccess = false
-	  message.node match {
-               case n@  N_1_ary_op      (t: T_1_ary        )  => if(message.child!=null) {
-                                                                   insertContinuation1(message)
-                                                                   //don't return; just put the continuations in place
-                                                                 }
-               case n@  N_n_ary_op      (_: T_n_ary, _     )  => if(message.child!=null) {
-                                                                   insertContinuation(message)
-                                                                   //don't return; just put the continuations in place
-                                                                  }
-              case _ => 
-	  }
-      message.node.forEachParent(p => insert(AAEnded(p, message.node)))
+    message.node.forEachParent(p => insert(AAHappened(p, message.node, message.mode)))
   }
   
   /*
@@ -894,10 +867,10 @@ class CommonScriptExecutor extends ScriptExecutor {
       case kind if (T_n_ary_op.isLeftMerge(kind)) => 
                          val aa = message.aaActivated
                          val ca = message.caActivated
-                         val as = message.aaStarteds
+                         val as = message.aaHappeneds
                          val b  = message.break
                          activateNextOrEnded = aa==null && ca==null ||
-                                               as!=Nil  && as.exists( (as:AAStarted) => as.node==n.lastActivatedChild )
+                                               as!=Nil  && as.exists( (as:AAHappened) => as.node==n.lastActivatedChild )
                          if (b!=null) {
                            // ???
                          }
@@ -905,16 +878,16 @@ class CommonScriptExecutor extends ScriptExecutor {
                            childNode = n.lastActivatedChild
                          }
                          
-      case _          => if (message.activation!=null || message.aaStarteds!=Nil || message.success!=null || message.deactivations != Nil) {
+      case _          => if (message.activation!=null || message.aaHappeneds!=Nil || message.success!=null || message.deactivations != Nil) {
                            val b  = message.break
-                           val as = message.aaStarteds
-                           // n.aaStartedSinceLastOptionalBreak = n.aaStartedSinceLastOptionalBreak || as!=Nil
+                           //val ahs = message.aaHappeneds
+                           // n.aaHappenedSinceLastOptionalBreak = n.aaHappenedSinceLastOptionalBreak || ahs!=Nil
                            if (b==null||b.activationMode==ActivationMode.Optional) {
                              if (n.activationMode==ActivationMode.Optional) {
-                                 activateNextOrEnded = n.aaStartedSinceLastOptionalBreak
+                                 activateNextOrEnded = n.aaHappenedSinceLastOptionalBreak
                                  if (activateNextOrEnded) {
                                    n.activationMode = ActivationMode.Active
-                                   n.aaStartedSinceLastOptionalBreak = false
+                                   n.aaHappenedSinceLastOptionalBreak = false
                                    childNode = n.lastActivatedChild
                                  }
                              }
@@ -982,12 +955,12 @@ class CommonScriptExecutor extends ScriptExecutor {
     if (!shouldSucceed) { // could already have been set for .. as child of ;
       
       // TBD: improve
-      if (activateNextOrEnded || message.success != null || message.aaEndeds != Nil) {
+      if (activateNextOrEnded || message.success != null || message.aaHappeneds != Nil) {
         var nodesToBeResumed: Buffer[CallGraphNodeTrait] = null
-        if (message.success != null || message.aaEndeds != Nil) {
+        if (message.success != null || message.aaHappeneds != Nil) {
           n.template.kind match {
             case "/" => shouldSucceed = message.success != null ||
-                                        message.aaEndeds.exists(_.child.index<n.rightmostChildThatEndedInSuccess_index) || 
+                                        message.aaHappeneds.exists(_.child.index<n.rightmostChildThatEndedInSuccess_index) || 
 		                                n.children.exists((e:CallGraphNodeTrait)=>e.hasSuccess)
             case _ =>
 		          T_n_ary_op.getLogicalKind(n.template.kind) match {
@@ -1048,8 +1021,7 @@ class CommonScriptExecutor extends ScriptExecutor {
       case a@AAActivated      (_,_) => handleAAActivated(a)
       case a@CAActivated      (_,_) => handleCAActivated(a)
       case a@CAActivatedTBD     (_) => handleCAActivatedTBD(a)
-      case a@AAStarted        (_,_) => handleAAStarted  (a)
-      case a@AAEnded          (_,_) => handleAAEnded    (a)
+      case a@AAHappened     (_,_,_) => handleAAHappened (a)
       case a@AAExecutionFinished(_) => handleAAExecutionFinished(a)
       case a@AAToBeReexecuted   (_) => handleAAToBeReexecuted   (a)
       case a@AAToBeExecuted     (_) => handleAAToBeExecuted     (a)

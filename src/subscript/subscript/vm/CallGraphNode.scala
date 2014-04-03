@@ -69,7 +69,7 @@ trait CallGraphNodeTrait {
   
   var index = -1
   var stamp = 0
-  var aaStartedCount = 0
+  var aaHappenedCount = 0
   var properties: Map[Any,Any] = new HashMap[Any,Any]
   var _scriptExecutor: ScriptExecutor = null
   def scriptExecutor = _scriptExecutor
@@ -111,7 +111,7 @@ trait CallGraphNodeTrait {
   override def toString = index+" "+template
 
   // TBD: are these necessary? :
-  //var aaStartedCountAtLastSuccess = 0
+  //var aaHappenedCountAtLastSuccess = 0
   //def recentSuccess = aaStartedCountAtLastSuccess==aaStartedCount
   
   def n_ary_op_else_ancestor: N_n_ary_op = {
@@ -224,7 +224,7 @@ abstract class CallGraphTreeNode_n_ary extends CallGraphTreeParentNode {
   def getLogicalKind = T_n_ary_op.getLogicalKind(template)
   var continuation: Continuation = null
   var lastActivatedChild: CallGraphNodeTrait = null
-  var aaStartedSinceLastOptionalBreak = false
+  var aaHappenedSinceLastOptionalBreak = false
   def mustBreak = hadBreak = true
   
   var breakWaker: CallGraphNodeTrait = null

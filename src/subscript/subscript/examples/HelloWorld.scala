@@ -1,4 +1,4 @@
-//package subscript.test
+//package subscript.examples
 
 import subscript._
 import subscript.DSL._
@@ -10,8 +10,8 @@ import subscript.swing.SimpleSubscriptApplication
 
 // Subscript sample application: "Hello world!", printed using a sequence of 2 code fragments
 
-object TestHelloWorld extends TestHelloWorldApp
-class  TestHelloWorldApp 
+object HelloWorld extends HelloWorldApp
+class  HelloWorldApp 
 {
   // bridge method:
   def main( args: Array[String]): Unit = println("Success: "+_execute(_main(args)).hasSuccess)

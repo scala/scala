@@ -70,8 +70,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
      var ss: List[String] = Nil
      if (c != null) {
           if ( c.success       != null) ss ::= "Success"
-          if (!c.aaEndeds     .isEmpty) ss ::= "AA Ended"
-          if (!c.aaStarteds   .isEmpty) ss ::= "AA Started"
+          if (!c.aaHappeneds  .isEmpty) ss ::= "AA Happened"
           if (!c.deactivations.isEmpty) ss ::= "Deactivations"
           if ( c.activation    != null) ss ::= "Activation"
      }
@@ -84,8 +83,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
   //"Activation  "
   //"Deactivation"
   //"Continuation"
-  //"AAStarted   "
-  //"AAEnded     "
+  //"AAHappened     "
   //"Success     "
   //"Break       "
   //"Exclude     "
@@ -94,8 +92,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
   val checkBox_step_Activation   = new CheckBox {text = "Act" ; selected = true}
   val checkBox_step_Deactivation = new CheckBox {text = "Dea" ; selected = true}
   val checkBox_step_Continuation = new CheckBox {text = "Cnt" ; selected = true}
-  val checkBox_step_AAStarted    = new CheckBox {text = "AAS" ; selected = true}
-  val checkBox_step_AAEnded      = new CheckBox {text = "AAE" ; selected = true}
+  val checkBox_step_AAHappened   = new CheckBox {text = "AAH" ; selected = true}
   val checkBox_step_Success      = new CheckBox {text = "Scs" ; selected = true}
   val checkBox_step_Break        = new CheckBox {text = "Brk" ; selected = true}
   val checkBox_step_Exclude      = new CheckBox {text = "Exc" ; selected = true}
@@ -104,8 +101,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
   val checkBox_log_Activation   = new CheckBox {text = "Act" ; selected = true}
   val checkBox_log_Deactivation = new CheckBox {text = "Dea" ; selected = true}
   val checkBox_log_Continuation = new CheckBox {text = "Cnt" ; selected = true}
-  val checkBox_log_AAStarted    = new CheckBox {text = "AAS" ; selected = true}
-  val checkBox_log_AAEnded      = new CheckBox {text = "AAE" ; selected = true}
+  val checkBox_log_AAHappened   = new CheckBox {text = "AAH" ; selected = true}
   val checkBox_log_Success      = new CheckBox {text = "Scs" ; selected = true}
   val checkBox_log_Break        = new CheckBox {text = "Brk" ; selected = true}
   val checkBox_log_Exclude      = new CheckBox {text = "Exc" ; selected = true}
@@ -116,8 +112,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
     contents += checkBox_step_Activation  
     contents += checkBox_step_Deactivation
     contents += checkBox_step_Continuation
-    contents += checkBox_step_AAStarted   
-    contents += checkBox_step_AAEnded     
+    contents += checkBox_step_AAHappened   
     contents += checkBox_step_Success     
     contents += checkBox_step_Break       
     contents += checkBox_step_Exclude     
@@ -127,8 +122,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
     contents += checkBox_log_Activation  
     contents += checkBox_log_Deactivation
     contents += checkBox_log_Continuation
-    contents += checkBox_log_AAStarted   
-    contents += checkBox_log_AAEnded     
+    contents += checkBox_log_AAHappened     
     contents += checkBox_log_Success     
     contents += checkBox_log_Break       
     contents += checkBox_log_Exclude     
@@ -350,14 +344,13 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
         
         if (currentMessage!=null) {
           currentMessage match { // node.index is not checked by node.equals!!!!
-            case AAStarted(mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x2, y2, x1, y1, "AA Started")
-            case AAEnded  (mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x2, y2, x1, y1, "AA Ended")
-            case Success  (mp,null)  => // println("Success  (mp,null)")  // TBD: how come?
-            case Success  (mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x2, y2, x1, y1, "Success")
-            case Break    (mp,mc, activationMode) if (p.index==mp.index&&c.index==mc.index) 
-                                                                             => drawArrow(x2, y2, x1, y1,  getBreakText(activationMode))
-            case Exclude  (mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x1, y1, x2, y2, "Exclude")
-            case _                                                           => drawArrow(x1, y1, x2, y2, null)
+            case AAHappened(mp,mc,mode) if(p.index==mp.index&&c.index==mc.index) => drawArrow(x2, y2, x1, y1, "AA Happened")
+            case Success   (mp,null)  => // println("Success  (mp,null)")  // TBD: how come?
+            case Success   (mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x2, y2, x1, y1, "Success")
+            case Break     (mp,mc, activationMode) if (p.index==mp.index&&c.index==mc.index) 
+                                                                              => drawArrow(x2, y2, x1, y1,  getBreakText(activationMode))
+            case Exclude   (mp,mc) if (p.index==mp.index&&c.index==mc.index)  => drawArrow(x1, y1, x2, y2, "Exclude")
+            case _                                                            => drawArrow(x1, y1, x2, y2, null)
           }
         }
         else drawArrow(x1, y1, x2, y2, null)
@@ -373,9 +366,8 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
             val fontMetrics = g.getFontMetrics
             interestingContinuationInternals(nn.continuation).foreach{s: String=>drawStringTopLeft(g, s, x, y); y += fontMetrics.getHeight - 2}
           case _ => if (currentMessage!=null&&currentMessage.node==n) currentMessage match {
-            case s: Success   if (s.child==null) => drawStringTopLeft(g, "Success"  , x, y) 
-            case a: AAStarted if (a.child==null) => drawStringTopLeft(g, "AA Started", x, y) 
-            case a: AAEnded   if (a.child==null) => drawStringTopLeft(g, "AA Ended"  , x, y) 
+            case s: Success    if (s.child==null) => drawStringTopLeft(g, "Success"    , x, y) 
+            case a: AAHappened if (a.child==null) => drawStringTopLeft(g, "AA Happened", x, y) 
             case _ => 
           }
         }
@@ -553,8 +545,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
     currentMessage match {
       case Activation(_)       => checkBox_step_Activation  .selected
       case Deactivation(_,_,_) => checkBox_step_Deactivation.selected
-      case AAStarted(_,_)      => checkBox_step_AAStarted   .selected
-      case AAEnded(_,_)        => checkBox_step_AAEnded     .selected
+      case AAHappened(_,_,_)   => checkBox_step_AAHappened  .selected
       case Success(_,_)        => checkBox_step_Success     .selected
       case Break(_,_,_)        => checkBox_step_Break       .selected
       case Exclude(_,_)        => checkBox_step_Exclude     .selected
@@ -582,8 +573,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
       if (msg match {
         case Activation(_)       => checkBox_log_Activation  .selected
         case Deactivation(_,_,_) => checkBox_log_Deactivation.selected
-        case AAStarted(_,_)      => checkBox_log_AAStarted   .selected
-        case AAEnded(_,_)        => checkBox_log_AAEnded     .selected
+        case AAHappened(_,_,_)   => checkBox_log_AAHappened  .selected
         case Success(_,_)        => checkBox_log_Success     .selected
         case Break(_,_,_)        => checkBox_log_Break       .selected
         case Exclude(_,_)        => checkBox_log_Exclude     .selected

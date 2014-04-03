@@ -27,6 +27,11 @@
 package subscript.vm
 import scala.collection.mutable._
 
+  abstract class AAHappenedMode
+  case object AtomicCodeFragmentExecuted    extends AAHappenedMode
+  case object DurationalCodeFragmentStarted extends AAHappenedMode
+  case object DurationalCodeFragmentEnded   extends AAHappenedMode
+  
   trait CallGraphMessage[N <: CallGraphNodeTrait] {
       var priority = 0 // TBD: determine good priority levels
       var index = -1
@@ -47,8 +52,7 @@ import scala.collection.mutable._
 	  var break: Break = null
 	  var aaActivated: AAActivated = null
 	  var caActivated: CAActivated = null
-	  var aaStarteds : List[AAStarted] = Nil
-	  var aaEndeds   : List[AAEnded  ] = Nil
+	  var aaHappeneds : List[AAHappened] = Nil
 	  var childNode  : CallGraphNodeTrait = null
 	  
 	  override def toString = {
@@ -59,8 +63,7 @@ import scala.collection.mutable._
 	    if (break        !=null) result += " "+break
 	    if (aaActivated  !=null) result += " "+aaActivated
 	    if (caActivated  !=null) result += " "+caActivated
-	    if (aaStarteds   !=Nil ) result += " "+aaStarteds.mkString
-	    if (aaEndeds     !=Nil ) result += " "+aaEndeds.mkString
+	    if (aaHappeneds  !=Nil ) result += " "+aaHappeneds.mkString
 	    if (childNode    !=null) result += " "+childNode
 	    result
 	  }
@@ -81,10 +84,8 @@ import scala.collection.mutable._
 	case class CAActivated        (node: CallGraphNodeTrait, 
 	                              child: CallGraphNodeTrait) extends CallGraphMessageN {priority = 15} // for immediate handling
 	case class CAActivatedTBD     (node: N_call            ) extends CallGraphMessageN {priority = 2} // for late handling
-	case class AAStarted          (node: CallGraphNodeTrait, 
-	                              child: CallGraphNodeTrait) extends CallGraphMessageN {priority = 17}
-	case class AAEnded            (node: CallGraphNodeTrait, 
-	                              child: CallGraphNodeTrait) extends CallGraphMessageN {priority = 16}
+	case class AAHappened         (node: CallGraphNodeTrait, 
+	                              child: CallGraphNodeTrait, mode: AAHappenedMode) extends CallGraphMessageN {priority = 17}
 	case class AAToBeExecuted     (node: CallGraphNodeTrait) extends CallGraphMessage[CallGraphNodeTrait] {priority = 1}
 	case class AAToBeReexecuted   (node: CallGraphNodeTrait) extends CallGraphMessage[CallGraphNodeTrait] {priority = 0}
 	case class AAExecutionFinished(node: CallGraphNodeTrait) extends CallGraphMessage[CallGraphNodeTrait] {priority = 6}
