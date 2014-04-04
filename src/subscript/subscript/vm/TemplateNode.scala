@@ -57,8 +57,8 @@ trait TemplateNode {
       case T_if_else            (_,_,_) => "if-else"
       case T_launch                 (_) => "*"
       case T_launch_anchor          (_) => "**"
-      case T_inline_if            (_,_) => "?if"
-      case T_inline_if_else     (_,_,_) => "?if-else"
+      case T_then            (_,_) => "then"
+      case T_then_else     (_,_,_) => "then-else"
       case T_annotation           (_,_) => "@:"
       case T_call                   (_) => "call"
       case T_script (_, kind: String, name: Symbol, _)          => name.toString
@@ -144,8 +144,8 @@ case class T_if            (code: () => N_if      => Boolean, child0: TemplateCh
 case class T_if_else       (code: () => N_if_else => Boolean, child0: TemplateChildNode, child1: TemplateChildNode) extends T_1_ary with TemplateCodeHolder[N_if_else, Boolean] {type N = N_if_else            }
 case class T_launch        (child0: TemplateChildNode)                            extends T_1_ary                            {type N = N_launch             }
 case class T_launch_anchor (child0: TemplateChildNode)                            extends T_1_ary                            {type N = N_launch_anchor; override def root=this;}
-case class T_inline_if     (child0: TemplateChildNode, child1: TemplateChildNode) extends T_1_ary                            {type N = N_inline_if     }
-case class T_inline_if_else(child0: TemplateChildNode, child1: TemplateChildNode,
+case class T_then     (child0: TemplateChildNode, child1: TemplateChildNode) extends T_1_ary                            {type N = N_inline_if     }
+case class T_then_else(child0: TemplateChildNode, child1: TemplateChildNode,
                                                        child2: TemplateChildNode) extends T_1_ary                    {type N = N_inline_if_else}
 
 //case class T_0_ary_op(kind: String                                           ) extends T_0_ary  {type N = N_0_ary_op}

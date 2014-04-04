@@ -280,8 +280,8 @@ case class N_annotation[CN<:CallGraphNodeTrait,CT<:TemplateChildNode] (template:
 
 // the following 4 types may have multiple children active synchronously
 case class N_launch_anchor      (template: T_launch_anchor                       ) extends CallGraphTreeParentNode {type T = T_launch_anchor }
-case class N_inline_if          (template: T_inline_if                           ) extends CallGraphTreeParentNode {type T = T_inline_if     }
-case class N_inline_if_else     (template: T_inline_if_else                      ) extends CallGraphTreeParentNode {type T = T_inline_if_else}
+case class N_then               (template: T_then                                ) extends CallGraphTreeParentNode {type T = T_then     }
+case class N_then_else          (template: T_then_else                           ) extends CallGraphTreeParentNode {type T = T_then_else}
 case class N_n_ary_op           (template: T_n_ary_op      , isLeftMerge: Boolean) extends CallGraphTreeNode_n_ary {type T = T_n_ary_op      
   val mapNamePassToVariableHolder = new HashMap[(Symbol,Int), VariableHolder[_]]
   def    initLocalVariable[V<:Any](name: Symbol, fromPass: Int, value: V)         = mapNamePassToVariableHolder += ((name,fromPass)->new VariableHolder(value))
