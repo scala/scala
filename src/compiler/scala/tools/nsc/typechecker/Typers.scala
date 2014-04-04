@@ -4582,7 +4582,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val funName: Literal = Literal(Constant(fun match {
             case Ident(name) => name.toString
             case Select(qual, selector) => selector.toString
-            case Literal(constant) => constant.stringValue
+            case Literal(constant) => constant.escapedStringValue
             case _ => fun.toString // "<call>"
           }))
           if (underscored_fun != null) silent(op => op.typed(atPos(fun.pos) {underscored_fun}, mode.forFunMode, funpt),
