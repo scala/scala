@@ -1,9 +1,9 @@
 package subscript
 
-import org.scalatest.FunSuite
+//import org.scalatest.FunSuite
 
+import org.junit._
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 
 import subscript.DSL._
 import subscript.vm.{TemplateChildNode, N_code_unsure, CallGraphNodeTrait, UnsureExecutionResult, 
@@ -64,25 +64,6 @@ import subscript.vm.{TemplateChildNode, N_code_unsure, CallGraphNodeTrait, Unsur
  *   BTW: a behaviour "a" is equivalent to "a->1" etc.
  *
  * *************************** 
- * Anticompiler
- * *************************** 
- *
- *   Since there is no SubScript compiler available, the specificiation of script expressions is done using strings.
- *   These need to be related to structures as known by the SubScript VM. This is accomplished by a kind of "anticompiler".
- *   This anticompiler creates a scriptBodyMap with all needed and many unneeded script expression key/values.
- *   Typically these are expressions with 0, 1 or 2 operators; with 1 operator expressed with 2 or 3 operands
- *   
- *     (-)     // 10 
- *     b&&(+)  // 10*7*10
- *     a;b;c   // 10*7*10*10
- *     a;(b+c) // 10*7*10*7*10
- *     (a;b)+c // 10*7*10*7*10
- *
- *  Total 105710 entries.
- *  This does not affect the test speed and memory usage too much,
- *  but the anticompiler should not proceed to 3 operators.
- *  
- * *************************** 
  * Low level implementation 
  * *************************** 
  * 
@@ -141,8 +122,9 @@ import subscript.vm.{TemplateChildNode, N_code_unsure, CallGraphNodeTrait, Unsur
  * A MultiSet would therefore do better than a Set, but since it is not in the standard Scala library we use a List here.
  * 
  */
-@RunWith(classOf[JUnitRunner])
-class OperatorsSuite extends FunSuite {
+//@RunWith(classOf[JUnitRunner])
+@Test
+class OperatorsSuite {
 
   /*
    * Behaviour operators characterized by their logic property
@@ -184,7 +166,7 @@ class OperatorsSuite extends FunSuite {
     //println("testScript("+scriptString+", "+input+" -> "+expectedResult+")")
     
     textIndex += 1
-    test(textIndex+". script "+scriptString+"     :     "+input+" -> "+expectedResult) {
+    //test(textIndex+". script "+scriptString+"     :     "+input+" -> "+expectedResult) {
     
 	  acceptedAtoms         = ""
 	  inputStream           = scala.io.Source.fromString(input).toStream
@@ -197,7 +179,7 @@ class OperatorsSuite extends FunSuite {
 	  val expectedResultAtoms   = (if (expectedResultSuccess||expectedResultFailure) expectedResult.drop(1) else expectedResult)
 	                              .sortWith(_<_).mkString
 
-      assert(!expectedResultFailure || expectedResultAtoms.isEmpty, "test specification error: no atoms expected after failure (0)")
+      Assert.assertTrue("test specification error: no atoms expected after failure (0)", !expectedResultFailure || expectedResultAtoms.isEmpty)
 
 	  executor = new CommonScriptExecutor
 
@@ -209,16 +191,16 @@ class OperatorsSuite extends FunSuite {
       val executionSuccess = scriptSuccessAtEndOfInput.getOrElse(executor.hasSuccess)
       
       if (!expectedResultSuccess) {
-        assert(!executionSuccess, "script execution should have no success; accepted="+acceptedAtoms)
+        Assert.assertFalse("script execution should have no success; accepted="+acceptedAtoms, executionSuccess)
       }
       else { // note: only check for expectedAtoms here (in else branch); otherwise (-)&&a would raise false alarm
-        assert(executionSuccess, "script execution should have success; accepted="+acceptedAtoms)
+        Assert.assertTrue("script execution should have success; accepted="+acceptedAtoms, executionSuccess)
         val    expectedAtomsAtEndOfInputString = expectedAtomsAtEndOfInput.getOrElse(Nil).sortWith(_<_).mkString
-        assert(expectedAtomsAtEndOfInputString===expectedResultAtoms, 
-              "expectedAtomsAtEndOfInput=" + expectedAtomsAtEndOfInputString + " required=" + expectedResultAtoms) 
+        Assert.assertTrue("expectedAtomsAtEndOfInput=" + expectedAtomsAtEndOfInputString + " required=" + expectedResultAtoms,
+                            expectedAtomsAtEndOfInputString==expectedResultAtoms) 
       }
-      assert(acceptedAtoms===input, "acceptedAtoms='" + acceptedAtoms + "' required='" + input+"'") 
-    }   
+      Assert.assertTrue("acceptedAtoms='" + acceptedAtoms + "' required='" + input+"'", acceptedAtoms==input) 
+    //}   
   }
 
   // utility method: remove 1 occurrence of elt from list; see http://stackoverflow.com/a/5640727
