@@ -31,10 +31,13 @@ package subscript.vm
  */
 import CallGraphNode._scriptType
 
-trait TemplateNode {
-  type N <: CallGraphNodeTrait
-  def kindAsString: String = 
-    this match {
+object TemplateNode {
+  
+
+  def kindAsString(t: TemplateNode): String = 
+    t match {
+      // matching on T_n_ary_op (and T_1_ary_op) does not work;
+      // therefore FTTB those classes have their on implementation of kindAsString
       case T_1_ary_op(kind: String, _) => kind
       case T_n_ary_op(kind: String, _) => kind
       
@@ -66,8 +69,80 @@ trait TemplateNode {
       case T_commscript(_, kind: String, _)                     => "cscript"
       case T_communication(_, kind: String, names: Seq[Symbol]) => "comm"
       case T_local_valueCode  (_, _, _)                         => "T_local_valueCode???"
-      case _ => getClass.getName.substring(2)
+      case _ => getClass.getName
     }
+  
+    def subScriptInfixOpPrecedence(operator: String): Int = // pretty compatible with Scala
+      operator.charAt(0) match {
+      case ';'             => 1
+      case '|'             => 2
+      case '^'             => 3
+      case '&'             => 4
+      case '=' | '!'       => 5
+      case '<' | '>'       => 6
+      case ':'             => 7
+      case '+' | '-'       => 8
+      case '*' | '/' | '%' => 9
+      case _               => 10
+    }
+    
+  private def hierarchyString(thisNode:TemplateNode, parent:TemplateNode, parentIsSpaceSeq: Boolean): String = 
+  { 
+    val children = thisNode.children
+    
+    // the next 13 lines seem to be necessary since matching on T_n_ary_op (and T_1_ary_op) does not work
+    if (thisNode.isInstanceOf[T_n_ary_op]) {
+        val tn = thisNode.asInstanceOf[T_n_ary_op]
+        var isSpaceSeq = false
+        val doParenthesize = if (parent==null) false 
+           else if (parent.isInstanceOf[T_n_ary_op]) {
+             val pn = parent.asInstanceOf[T_n_ary_op]
+             if (tn.kind==";" && !parentIsSpaceSeq) {isSpaceSeq = true; false}
+             else subScriptInfixOpPrecedence(tn.kind) <= subScriptInfixOpPrecedence(pn.kind)
+           }
+           else parent.isInstanceOf[T_annotation[_,_]] ||
+                parent.isInstanceOf[T_1_ary_op]
+        val s = children.map(hierarchyString(_, thisNode, isSpaceSeq)).mkString(if (isSpaceSeq) " " else thisNode.kindAsString)
+        if (doParenthesize) "(" + s + ")" else s
+    }
+    else thisNode match {
+      case T_n_ary_op(kind: String, _) =>
+        var isSpaceSeq = false
+        val doParenthesize = if (parent==null) false else parent match {
+          case T_annotation        (_,_) => true
+          case T_launch              (_) => true
+          case T_launch_anchor       (_) => true
+          case T_1_ary_op(pk: String, _) => true
+          case T_n_ary_op(pk: String, _) => if (kind==";" && !parentIsSpaceSeq) {isSpaceSeq = true; false}
+                                            else subScriptInfixOpPrecedence(kind) <= subScriptInfixOpPrecedence(pk)
+          case _                         => false
+        }
+        val s = children.map(hierarchyString(_, thisNode, isSpaceSeq)).mkString(if (isSpaceSeq) " " else thisNode.kindAsString)
+        if (doParenthesize) "(" + s + ")" else s
+      case T_1_ary_op(kind: String, _) =>   kind + hierarchyString(children.head, thisNode, false)
+      case T_launch          (_) => thisNode.kindAsString + hierarchyString(children.head, thisNode, false)
+      case T_launch_anchor   (_) => thisNode.kindAsString + hierarchyString(children.head, thisNode, false)
+      case T_if            (_,_) => "if()["      + hierarchyString(children.head, thisNode, false) + "]"
+      case T_if_else     (_,_,_) => "if()["      + hierarchyString(children.head, thisNode, false) + "]else[" + hierarchyString(children.tail.head, thisNode, false) + "]"
+      case T_then          (_,_) =>     "["      + hierarchyString(children.head, thisNode, false) + "]then[" + hierarchyString(children.tail.head, thisNode, false) + "]"
+      case T_then_else   (_,_,_) =>     "["      + hierarchyString(children.head, thisNode, false) + "]then[" + hierarchyString(children.tail.head, thisNode, false) + 
+                                                                                                "]else[" + hierarchyString(children.tail.tail.head, thisNode, false) + "]"
+      case T_annotation    (_,_) => thisNode.kindAsString + hierarchyString(children.head, thisNode, false)
+      case T_script (_, kind: String, name: Symbol, _) => name.toString + " = " + hierarchyString(children.head, thisNode, false)
+    //case T_commscript(_, kind: String, _)                     => "cscript"
+    //case T_communication(_, kind: String, names: Seq[Symbol]) => "comm"
+      case _ => thisNode.kindAsString
+    }
+  }
+}
+
+trait TemplateNode {
+  type N <: CallGraphNodeTrait
+  def kindAsString: String = TemplateNode.kindAsString(this)
+
+  /* reconstruct a human readable string representation of the script expression */
+  def hierarchyString: String = TemplateNode.hierarchyString(this, null, false)
+  
   def owner: AnyRef
   def root:TemplateNode
   def parent:TemplateNode
@@ -152,8 +227,6 @@ case class T_then_else(child0: TemplateChildNode, child1: TemplateChildNode,
 //case class T_0_ary_op(kind: String                                           ) extends T_0_ary  {type N = N_0_ary_op}
 case class T_1_ary_op(kind: String,                child0: TemplateChildNode ) extends T_1_ary {type N = N_1_ary_op; override def kindAsString=kind}
 case class T_n_ary_op(kind: String, override val children: TemplateChildNode*) extends T_n_ary {type N = N_n_ary_op; override def kindAsString=kind}
-
-//case class T_0_ary_name(kind: String, name: Symbol) extends TemplateChildNode_0_Trait
 
 case class T_annotation[CN<:CallGraphNodeTrait,CT<:TemplateChildNode](code: () => N_annotation[CN,CT] => Unit, child0: TemplateChildNode) extends T_1_ary with TemplateCodeHolder[N_annotation[CN,CT], Unit] {
   type N=N_annotation[CN,CT] 

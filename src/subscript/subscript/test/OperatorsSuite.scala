@@ -244,145 +244,145 @@ class OperatorsSuite {
    *   the outcomes are a input traces in relation to their outcomes, see #testScriptBehaviour
    */
   val scriptBehaviourList1 = List( // list, not a map, to remain ordered
-     [a&b&c]   -> "a&b&c"   -> "cb->a" // goes wrong since "Ignore" status causes AAToBeReexecuted which may be stored in LIFO order...TBD in ScriptExecutor
-   , [(-)]     -> "(-)"     -> "->0"
-   , [(+)]     -> "(+)"     -> ""
-   , [(+-)]    -> "(+-)"    -> ""
-   , [break]   -> "break"   -> "=(+-)"
-   , [.]       -> "."       -> "=(+-)"
-   , [..]      -> ".."      -> "=(+-)"
-   , [...]     -> "..."     -> "=(+-)"
-                               
-   , [a]       -> "a"       -> "->a a"
+     [a&b&c]   -> "cb->a" // goes wrong since "Ignore" status causes AAToBeReexecuted which may be stored in LIFO order...TBD in ScriptExecutor
+   , [(-)]     -> "->0"
+   , [(+)]     -> ""
+   , [(+-)]    -> ""
+   , [break]   -> "=(+-)"
+   , [.]       -> "=(+-)"
+   , [..]      -> "=(+-)"
+   , [...]     -> "=(+-)"
+                  
+   , [a]       -> "->a a"
   )           
   val scriptBehaviourList = List( // list, not a map, to remain ordered
               
    // simple terms
-     [(-)]     -> "(-)"     -> "->0"
-   , [(+)]     -> "(+)"     -> ""
-   , [(+-)]    -> "(+-)"    -> ""
-   , [break]   -> "break"   -> ""
-   , [.]       -> "."       -> ""
-   , [..]      -> ".."      -> ""
-   , [...]     -> "..."     -> ""
-                               
-   , [a]       -> "a"       -> "->a a"
+     [(-)]     -> "->0"
+   , [(+)]     -> ""
+   , [(+-)]    -> ""
+   , [break]   -> ""
+   , [.]       -> ""
+   , [..]      -> ""
+   , [...]     -> ""
+                  
+   , [a]       -> "->a a"
                                
    //  a op b 
-   , [a;b]     -> "a;b"     -> "->a a->b ab"
-   , [a+b]     -> "a+b"     -> "->ab a b"
-   , [a&b]     -> "a&b"     -> "->ab a->b  b->a  ab ba"
-   , [a&&b]    -> "a&&b"    -> "->ab a->b  b->a  ab ba"
-   , [a|b]     -> "a|b"     -> "->ab a->1b b->1a ab ba"
-   , [a||b]    -> "a||b"    -> "->ab a b"
-   , [a/b]     -> "a/b"     -> "->ab a b"
+   , [a;b]     -> "->a a->b ab"
+   , [a+b]     -> "->ab a b"
+   , [a&b]     -> "->ab a->b  b->a  ab ba"
+   , [a&&b]    -> "->ab a->b  b->a  ab ba"
+   , [a|b]     -> "->ab a->1b b->1a ab ba"
+   , [a||b]    -> "->ab a b"
+   , [a/b]     -> "->ab a b"
                                
    // a op antineutral
-   , [a;(-)]   -> "a;(-)"   -> "->a a->0"
-   , [(-);a]   -> "(-);a"   -> "->0"
-   , [a&(-)]   -> "a&(-)"   -> "->a a->0"
-   , [(-)&a]   -> "(-)&a"   -> "->a a->0"
-   , [a&&(-)]  -> "a&&(-)"  -> "->0"
-   , [(-)&&a]  -> "(-)&&a"  -> "->0"
+   , [a;(-)]   -> "->a a->0"
+   , [(-);a]   -> "->0"
+   , [a&(-)]   -> "->a a->0"
+   , [(-)&a]   -> "->a a->0"
+   , [a&&(-)]  -> "->0"
+   , [(-)&&a]  -> "->0"
                              
-   , [a+(+)]   -> "a+(+)"   -> "->1a a"
-   , [(+)+a]   -> "(+)+a"   -> "->1a a"
-   , [a|(+)]   -> "a|(+)"   -> "->1a a"
-   , [(+)|a]   -> "(+)|a"   -> "->1a a"
-   , [a||(+)]  -> "a||(+)"  -> ""
-   , [(+)||a]  -> "(+)||a"  -> ""
-   , [a/(+)]   -> "a/(+)"   -> "->1a a"
-   , [(+)/a]   -> "(+)/a"   -> "->1a a"
+   , [a+(+)]   -> "->1a a"
+   , [(+)+a]   -> "->1a a"
+   , [a|(+)]   -> "->1a a"
+   , [(+)|a]   -> "->1a a"
+   , [a||(+)]  -> ""
+   , [(+)||a]  -> ""
+   , [a/(+)]   -> "->1a a"
+   , [(+)/a]   -> "->1a a"
                                
    // 2 operand sequences with iterator or break or optional break, 
-   , [break;a] -> "break;a" -> ""
-   , [.;a]     -> ".;a"     -> "->1a a"
-   , [..;a]    -> "..;a"    -> "->1a a->1a aa->1a"
-   , [...;a]   -> "...;a"   -> "->a  a->a  aa->a"
-                               
-   , [a;break] -> "a;break" -> "->a  a"
-   , [a;.]     -> "a;."     -> "->a  a"
-   , [a;..]    -> "a;.."    -> "->a  a->1a aa->1a"
-   , [a;...]   -> "a;..."   -> "->a  a->a  aa->a"
+   , [break;a] -> ""
+   , [.;a]     -> "->1a a"
+   , [..;a]    -> "->1a a->1a aa->1a"
+   , [...;a]   -> "->a  a->a  aa->a"
+                  
+   , [a;break] -> "->a  a"
+   , [a;.]     -> "->a  a"
+   , [a;..]    -> "->a  a->1a aa->1a"
+   , [a;...]   -> "->a  a->a  aa->a"
    
    // 3 operand sequences with iterator or break or optional break, 
-   , [a;b;break]   -> "a;b;break"   -> "->a a->b ab"
-   , [a;b;.]       -> "a;b;."       -> "->a a->b ab"
-   , [a;b;..]      -> "a;b;.."      -> "->a  a->b ab->1a aba->b abab->1a"
-   , [a;b;...]     -> "a;b;..."     -> "->a  a->b ab->a  aba->b abab->a"
-                                       
-   , [a;break;b]   -> "a;break;b"   -> "->a  a"
-   , [a;.;b]       -> "a;.;b"       -> "->a  a->1b ab"
-   , [a;..;b]      -> "a;..;b"      -> "->a  a->1b ab->a aba->1b"
-   , [a;...;b]     -> "a;...;b"     -> "->a  a->b  ab->a aba->b"
-                                       
-   , [break;a;b]   -> "break;a;b"   -> "->1"
-   , [.;a;b]       -> ".;a;b"       -> "->1a a->b ab"
-   , [..;a;b]      -> "..;a;b"      -> "->1a a->b ab->1a aba->b"
-   , [...;a;b]     -> "...;a;b"     -> "->a  a->b  ab->a aba->b"
+   , [a;b;break]   -> "->a a->b ab"
+   , [a;b;.]       -> "->a a->b ab"
+   , [a;b;..]      -> "->a  a->b ab->1a aba->b abab->1a"
+   , [a;b;...]     -> "->a  a->b ab->a  aba->b abab->a"
+                      
+   , [a;break;b]   -> "->a  a"
+   , [a;.;b]       -> "->a  a->1b ab"
+   , [a;..;b]      -> "->a  a->1b ab->a aba->1b"
+   , [a;...;b]     -> "->a  a->b  ab->a aba->b"
+                      
+   , [break;a;b]   -> "->1"
+   , [.;a;b]       -> "->1a a->b ab"
+   , [..;a;b]      -> "->1a a->b ab->1a aba->b"
+   , [...;a;b]     -> "->a  a->b  ab->a aba->b"
    
    // 2 level nested 2 operand sequences with iterator or break or optional break, 
-   , [a;(b;break)] -> "a;(b;break)" -> "->a  a->b ab"
-   , [a;(b;.)]     -> "a;(b;.)"     -> "->a  a->b ab"
-   , [a;(b;..)]    -> "a;(b;..)"    -> "->a  a->b ab->1b abb->1b"
-   , [a;(b;...)]   -> "a;(b;...)"   -> "->a  a->b  ab->b"
-                                       
-   , [(a;b);break] -> "(a;b);break" -> "->a a->b ab"
-   , [(a;b);.]     -> "(a;b);."     -> "->a a->b ab"
-   , [(a;b);..]    -> "(a;b);.."    -> "->a  a->b ab->1a aba->b abab->1a"
-   , [(a;b);...]   -> "(a;b);..."   -> "->a  a->b ab->a  aba->b abab->a"
-                                       
-   , [a;(break;b)] -> "a;(break;b)" -> "->a  a"
-   , [a;(.;b)]     -> "a;(.;b)"     -> "->a  a->1b ab"
-   , [a;(..;b)]    -> "a;(..;b)"    -> "->a  a->1b ab->1b"
-   , [a;(...;b)]   -> "a;(...;b)"   -> "->a  a->b  ab->b"
-                                       
-   , [(a;break);b] -> "(a;break);b" -> "->a  a->b ab"
-   , [(a;.);b]     -> "(a;.);b"     -> "->a  a->b ab"
-   , [(a;..);b]    -> "(a;..);b"    -> "->a  a->ab aa->ab ab aab"
-   , [(a;...);b]   -> "(a;...);b"   -> "->a  a->a  aa->a"
-                                       
-   , [break;(a;b)] -> "break;(a;b)" -> "->1"
-   , [.;(a;b)]     -> ".;(a;b)"     -> "->1a a->b ab"
-   , [..;(a;b)]    -> "..;(a;b)"    -> "->1a a->b ab->1a aba->b"
-   , [...;(a;b)]   -> "...;(a;b)"   -> "->a  a->b  ab->a aba->b"
-                                       
-   , [(break;a);b] -> "(break;a);b" -> "b"
-   , [(.;a);b]     -> "(.;a);b"     -> "->ab  a->b ab b"
-   , [(..;a);b]    -> "(..;a);b"    -> "->ab  a->ab aa->ab b ab aab"
-   , [(...;a);b]   -> "(...;a);b"   -> "->a  a->a  aa->a"
+   , [a;(b;break)] -> "->a  a->b ab"
+   , [a;(b;.)]     -> "->a  a->b ab"
+   , [a;(b;..)]    -> "->a  a->b ab->1b abb->1b"
+   , [a;(b;...)]   -> "->a  a->b  ab->b"
+                      
+   , [(a;b);break] -> "->a a->b ab"
+   , [(a;b);.]     -> "->a a->b ab"
+   , [(a;b);..]    -> "->a  a->b ab->1a aba->b abab->1a"
+   , [(a;b);...]   -> "->a  a->b ab->a  aba->b abab->a"
+                      
+   , [a;(break;b)] -> "->a  a"
+   , [a;(.;b)]     -> "->a  a->1b ab"
+   , [a;(..;b)]    -> "->a  a->1b ab->1b"
+   , [a;(...;b)]   -> "->a  a->b  ab->b"
+                      
+   , [(a;break);b] -> "->a  a->b ab"
+   , [(a;.);b]     -> "->a  a->b ab"
+   , [(a;..);b]    -> "->a  a->ab aa->ab ab aab"
+   , [(a;...);b]   -> "->a  a->a  aa->a"
+                      
+   , [break;(a;b)] -> "->1"
+   , [.;(a;b)]     -> "->1a a->b ab"
+   , [..;(a;b)]    -> "->1a a->b ab->1a aba->b"
+   , [...;(a;b)]   -> "->a  a->b  ab->a aba->b"
+                      
+   , [(break;a);b] -> "b"
+   , [(.;a);b]     -> "->ab  a->b ab b"
+   , [(..;a);b]    -> "->ab  a->ab aa->ab b ab aab"
+   , [(...;a);b]   -> "->a  a->a  aa->a"
 
    // parallel composition
-   , [(...;a)&b]   -> "(...;a)&b"   -> "->ab  a->ab  aa->ab  b->a  ba->a  ab->a  aba->a"
-   , [b&(...;a)]   -> "b&(...;a)"   -> "->ab  a->ab  aa->ab  b->a  ba->a  ab->a  aba->a"  // commutative
-   , [(...;a)|b]   -> "(...;a)|b"   -> "->ab  a->ab  aa->ab  b->1a  ba->1a  ab->1a  aba->1a"
-   , [b|(...;a)]   -> "b|(...;a)"   -> "->ab  a->ab  aa->ab  b->1a  ba->1a  ab->1a  aba->1a"  // commutative
-                                       
-   , [a&b&c]       -> "a&b&c"       -> "->abc a->bc  b->ac  c->ab  ab->c  ac->b  ba->c  bc->a  ca->b  cb->a  abc acb bac bca cab cba" 
-   , [a&&b&&c]     -> "a&&b&&c"     -> "->abc a->bc  b->ac  c->ab  ab->c  ac->b  ba->c  bc->a  ca->b  cb->a  abc acb bac bca cab cba"  
-   , [a|b|c]       -> "a|b|c"       -> "->abc a->1bc b->1ac c->1ab ab->1c ac->1b ba->1c bc->1a ca->1b cb->1a abc acb bac bca cab cba"  
-   , [a||b||c]     -> "a||b||c"     -> "->abc a b c"  
+   , [(...;a)&b]   -> "->ab  a->ab  aa->ab  b->a  ba->a  ab->a  aba->a"
+   , [b&(...;a)]   -> "->ab  a->ab  aa->ab  b->a  ba->a  ab->a  aba->a"  // commutative
+   , [(...;a)|b]   -> "->ab  a->ab  aa->ab  b->1a  ba->1a  ab->1a  aba->1a"
+   , [b|(...;a)]   -> "->ab  a->ab  aa->ab  b->1a  ba->1a  ab->1a  aba->1a"  // commutative
+                      
+   , [a&b&c]       -> "->abc a->bc  b->ac  c->ab  ab->c  ac->b  ba->c  bc->a  ca->b  cb->a  abc acb bac bca cab cba" 
+   , [a&&b&&c]     -> "->abc a->bc  b->ac  c->ab  ab->c  ac->b  ba->c  bc->a  ca->b  cb->a  abc acb bac bca cab cba"  
+   , [a|b|c]       -> "->abc a->1bc b->1ac c->1ab ab->1c ac->1b ba->1c bc->1a ca->1b cb->1a abc acb bac bca cab cba"  
+   , [a||b||c]     -> "->abc a b c"  
                                        
    // disruption with compound left hand operand
-   , [(a|b)/c]     -> "(a|b)/c"     -> "->abc a->1bc b->1ac c ac bc ab ba"
-   , [(a;b)/c]     -> "(a;b)/c"     -> "->ac a->bc ab c ac" 
-   , [(a;b)/(+)]   -> "(a;b)/(+)"   -> "->1a a->1b ab"
+   , [(a|b)/c]     -> "->abc a->1bc b->1ac c ac bc ab ba"
+   , [(a;b)/c]     -> "->ac a->bc ab c ac" 
+   , [(a;b)/(+)]   -> "->1a a->1b ab"
    
    // optional break
-   , [ a / . / b ]             -> " a / . / b "             -> "a"
-   , [ a b / . / c d ]         -> " a b / . / c d "         -> "->a a->bc  ab     ac->d  acd"
-   , [ a b & . & c d ]         -> " a b & . & c d "         -> "->a a->bc  ab->1c ac->bd abc->d  abcd acb->d  acd->b  acbd acdb"
-   , [ a b | . | c d ]         -> " a b | . | c d "         -> "->a a->bc  ab->1c ac->bd abc->1d abcd acb->1d acd->1b acbd acdb"
-   , [ . / a b ]               -> " . / a b "               -> "->1a a->b  ab"
-   , [ . & a b ]               -> " . & a b "               -> "->1a a->b  ab"
-   , [ . | a b ]               -> " . | a b "               -> "->1a a->b  ab"
-   , [ . / a b / . / c d ]     -> " . / a b / . / c d "     -> "->1a a->bc ab ac->d acd"
-   , [ a b  | .  | (+) ]       -> " a b  | .  | (+) "       -> "->a a->1b ab"
-   , [ a b || . || (+) ]       -> " a b || . || (+) "       -> "a"
-   , [ a b  & .  & (-) ]       -> " a b  & .  & (-) "       -> "ab0"
-   , [ a b && . && (-) ]       -> " a b && . && (-) "       -> "a0"
-   , [ (a b+(+))  & .  & (-) ] -> " (a b+(+))  & .  & (-) " -> "->1a a->b ab->0"
-   , [ (a b+(+)) && . && (-) ] -> " (a b+(+)) && . && (-) " -> "->1a a->0"
+   , [ a / . / b ]             -> "a"
+   , [ a b / . / c d ]         -> "->a a->bc  ab     ac->d  acd"
+   , [ a b & . & c d ]         -> "->a a->bc  ab->1c ac->bd abc->d  abcd acb->d  acd->b  acbd acdb"
+   , [ a b | . | c d ]         -> "->a a->bc  ab->1c ac->bd abc->1d abcd acb->1d acd->1b acbd acdb"
+   , [ . / a b ]               -> "->1a a->b  ab"
+   , [ . & a b ]               -> "->1a a->b  ab"
+   , [ . | a b ]               -> "->1a a->b  ab"
+   , [ . / a b / . / c d ]     -> "->1a a->bc ab ac->d acd"
+   , [ a b  | .  | (+) ]       -> "->a a->1b ab"
+   , [ a b || . || (+) ]       -> "a"
+   , [ a b  & .  & (-) ]       -> "ab0"
+   , [ a b && . && (-) ]       -> "a0"
+   , [ (a b+(+))  & .  & (-) ] -> "->1a a->b ab->0"
+   , [ (a b+(+)) && . && (-) ] -> "->1a a->0"
 
   )
 
@@ -419,15 +419,28 @@ class OperatorsSuite {
   
   def testBehaviours = {
     for ( (key, behaviours) <- scriptBehaviourList) {
-      val (aScript, aString) = key.asInstanceOf[(Script,String)]
-      testScriptBehaviours(aScript, aString, behaviours.asInstanceOf[String])
+      val aScript = key.asInstanceOf[Script]
+      val bodyString = DSL.toScriptBodyString(aScript)
+      testScriptBehaviours(aScript, bodyString, behaviours.asInstanceOf[String])
     }
   }
   
   /*
    * High level calls that will be tested:
    */
-  testBehaviours
+  //testBehaviours
   //testLogicalOr
   //testLogicalAnd
+
 }
+/*
+object OperatorsSuite extends OperatorsSuite {
+  def main( args: Array[String]): Unit = {
+    for ( (key, behaviours) <- scriptBehaviourList) {
+      val (aScript, aString) = key.asInstanceOf[(Script,String)]
+      val bodyString = DSL.toScriptBodyString(aScript)
+      println(f"$aString%25s <==> $bodyString%25s")
+    }
+  }
+}
+*/
