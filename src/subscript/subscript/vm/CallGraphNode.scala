@@ -363,6 +363,8 @@ case class CommunicatorRole(communicator: Communicator) {
 
 // Utility stuff for Script Call Graph Nodes
 object CallGraphNode {
+  type _scriptType = N_call=>Unit
+  
   var currentStamp = 0; // used for searching common ancestors
   
   def nextStamp() = {currentStamp = currentStamp+1; currentStamp}

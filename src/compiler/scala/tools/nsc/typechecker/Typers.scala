@@ -4579,6 +4579,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case Select(qual, selector) =>  Select(qual, underscore_name(selector))
             case _ => null
           }
+          val funName: Literal = Literal(Constant(fun match {
+            case Ident(name) => name.toString
+            case Select(qual, selector) => selector.toString
+            case Literal(constant) => constant.stringValue
+            case _ => fun.toString // "<call>"
+          }))
           if (underscored_fun != null) silent(op => op.typed(atPos(fun.pos) {underscored_fun}, mode.forFunMode, funpt),
                  if (mode.inExprMode) false else context.ambiguousErrors,
                  if (mode.inExprMode) tree  else context.tree) match {
@@ -4615,7 +4621,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
              
               // blockToFunction adds "here" to the context
               val function_here_to_code = blockToFunction(tree2, nodeType, tree.pos) // here=>(_a(here.toString))(here)
-              val apply_template        = Apply(fun_template, List(function_here_to_code)) // _call  {here=>(_a(here.toString))(here)}
+              val apply_template        = Apply(fun_template, List(funName, function_here_to_code)) // _call  {here=>(_a(here.toString))(here)}
 
               // by now the ScriptApply has been rewritten into 3 nested normal Apply's, so this can be typed:
               tree_scriptResolution = typed(apply_template)
@@ -4634,7 +4640,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
              
                   // blockToFunction adds "here" to the context
                   val function_here_to_code = op.blockToFunction(tree2, nodeType, tree.pos) // here=>(a)(here)
-                  val apply_template        = Apply(fun_template, List(function_here_to_code)) // _call  {here=>a(here)}
+                  val apply_template        = Apply(fun_template, List(funName, function_here_to_code)) // _call  {here=>a(here)}
 
                   // by now the ScriptApply has been rewritten into 4 nested normal Apply's, so this can be typed:
                   op.typed(apply_template)
@@ -4656,7 +4662,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 		             
 		                  // blockToFunction adds "here" to the context
 		                  val function_here_to_code = op.blockToFunction(tree2, nodeType, tree.pos) // here=>(_b(ActualValueParameter(a))))(here)
-		                  val apply_template        = Apply(fun_template, List(function_here_to_code)) // _call  {here=>(_b(ActualValueParameter(a)))(here)}
+		                  val apply_template        = Apply(fun_template, List(funName, function_here_to_code)) // _call  {here=>(_b(ActualValueParameter(a)))(here)}
 		
 		                  // by now the ScriptApply has been rewritten into 4 nested normal Apply's, so this can be typed:
 		                  op.typed(apply_template)

@@ -29,6 +29,7 @@ package subscript.vm
 /*
  *  Template Nodes are used to describe abstract syntax trees of the compiled scripts
  */
+import CallGraphNode._scriptType
 
 trait TemplateNode {
   type N <: CallGraphNodeTrait
@@ -57,10 +58,10 @@ trait TemplateNode {
       case T_if_else            (_,_,_) => "if-else"
       case T_launch                 (_) => "*"
       case T_launch_anchor          (_) => "**"
-      case T_then            (_,_) => "then"
-      case T_then_else     (_,_,_) => "then-else"
+      case T_then                 (_,_) => "then"
+      case T_then_else          (_,_,_) => "then-else"
       case T_annotation           (_,_) => "@:"
-      case T_call                   (_) => "call"
+      case T_call        (calleeName,_) => calleeName
       case T_script (_, kind: String, name: Symbol, _)          => name.toString
       case T_commscript(_, kind: String, _)                     => "cscript"
       case T_communication(_, kind: String, names: Seq[Symbol]) => "comm"
@@ -142,11 +143,11 @@ case class T_nu()                   extends T_0_ary                             
 case class T_loop()                 extends T_0_ary                                  {type N = N_loop               }
 case class T_if            (code: () => N_if      => Boolean, child0: TemplateChildNode)                            extends T_1_ary with TemplateCodeHolder[N_if     , Boolean] {type N = N_if                 }
 case class T_if_else       (code: () => N_if_else => Boolean, child0: TemplateChildNode, child1: TemplateChildNode) extends T_1_ary with TemplateCodeHolder[N_if_else, Boolean] {type N = N_if_else            }
-case class T_launch        (child0: TemplateChildNode)                            extends T_1_ary                            {type N = N_launch             }
-case class T_launch_anchor (child0: TemplateChildNode)                            extends T_1_ary                            {type N = N_launch_anchor; override def root=this;}
-case class T_then     (child0: TemplateChildNode, child1: TemplateChildNode) extends T_1_ary                            {type N = N_inline_if     }
+case class T_launch        (child0: TemplateChildNode)                                                              extends T_1_ary                            {type N = N_launch             }
+case class T_launch_anchor (child0: TemplateChildNode)                       extends T_1_ary {type N = N_launch_anchor; override def root=this;}
+case class T_then     (child0: TemplateChildNode, child1: TemplateChildNode) extends T_1_ary {type N = N_then     }
 case class T_then_else(child0: TemplateChildNode, child1: TemplateChildNode,
-                                                       child2: TemplateChildNode) extends T_1_ary                    {type N = N_inline_if_else}
+                                                  child2: TemplateChildNode) extends T_1_ary {type N = N_then_else}
 
 //case class T_0_ary_op(kind: String                                           ) extends T_0_ary  {type N = N_0_ary_op}
 case class T_1_ary_op(kind: String,                child0: TemplateChildNode ) extends T_1_ary {type N = N_1_ary_op; override def kindAsString=kind}
@@ -158,7 +159,7 @@ case class T_annotation[CN<:CallGraphNodeTrait,CT<:TemplateChildNode](code: () =
   type N=N_annotation[CN,CT] 
 }
 
-case class T_call(code: () => N_call => N_call => Unit) extends T_0_ary with TemplateCodeHolder[N_call, N_call => Unit] {type N = N_call}
+case class T_call(calleeName: String, code: () => N_call => _scriptType) extends T_0_ary with TemplateCodeHolder[N_call, _scriptType] {type N = N_call}
 
 case class T_script (owner: AnyRef, kind: String, name: Symbol, child0: TemplateChildNode) extends TemplateNode_1_Trait with TemplateRootNode {
   type N = N_script

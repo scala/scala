@@ -282,7 +282,7 @@ class CommonScriptExecutor extends ScriptExecutor {
    * Directly below that is an anchor node, i.e. a script call node; 
    * below it the callee script will pend, i.e. the script that has been called from Scala.
    */
-  val anchorTemplate =     T_call(null)
+  val anchorTemplate =     T_call("<root>", null)
   val rootTemplate   = new T_launch_anchor(anchorTemplate) {override def owner=CommonScriptExecutor.this}
   val rootNode       =     N_launch_anchor(rootTemplate)
   val anchorNode     =     N_call(anchorTemplate)
@@ -318,7 +318,7 @@ class CommonScriptExecutor extends ScriptExecutor {
       case t @ T_delta                  (                          ) => N_delta         (t)
       case t @ T_epsilon                (                          ) => N_epsilon       (t)
       case t @ T_nu                     (                          ) => N_nu            (t)
-      case t @ T_call                   (              _           ) => N_call          (t)
+      case t @ T_call                   (        _,    _           ) => N_call          (t)
       case t @ T_privatevar             (              name        ) => N_privatevar    (t)
       case t @ T_localvar               (_,_,lv:LocalVariable[_],_ ) => N_localvar      (t)
       case t @ T_code_normal            (              _           ) => N_code_normal   (t)

@@ -254,6 +254,11 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
         val r = new Rectangle(boxLeft, boxTop, boxWidth, BOX_H)
         val n = if (currentMessage==null) null else currentMessage.node.asInstanceOf[CallGraphNodeTrait]
         
+        val nameFont = t match {
+          case _:T_call => smallFont
+          case _        => normalFont
+        }
+
         // this check goes a bit wrong, resulting in too many template nodes being highlighted occasionally.
         // The problem is that almost "equal" templates are still different per node, and we don't want to draw them all.
         // Sometime a solution will be found
@@ -270,6 +275,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
         emphasize(isCurrentTemplate)
         g draw r
         emphasize (false)
+        g.setFont(nameFont)
         drawStringCentered(g, s, hCenter, vCenter-3)
         (t.children zip childHCs).foreach{ c_hc: (TemplateNode, Double) =>
           drawEdge(t, thisX, yGrid, c_hc._1, c_hc._2, yGrid+1)
@@ -408,6 +414,10 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
           case no: N_n_ary_op => no.template.kindAsString + (if (no.isIteration) " ..." else "")
           case _              => n .template.kindAsString
         }
+        val nameFont = n match {
+          case _: N_script | _: N_call => smallFont
+          case _                       => normalFont
+        }
         
         val r = new Rectangle(boxLeft, boxTop, BOX_W, BOX_H)
         g.setColor(fillColor(n, lightGreen, true)) 
@@ -432,7 +442,7 @@ class GraphicalDebuggerApp extends SimpleSubscriptApplication with ScriptDebugge
         drawContinuationTexts(n, boxRight, boxTop)
         drawStringTopLeft (g, n.index.toString, boxLeft+2, boxTop+5)
         if (n.hasSuccess) drawStringTopRight(g, "S", boxRight-1, boxTop+5)
-        g.setFont(normalFont)
+        g.setFont(nameFont)
         drawStringCentered(g, s, hCenter, vCenter)
 	    n match {
           case nn: CallGraphTreeNode_n_ary => 

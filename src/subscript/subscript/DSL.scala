@@ -40,10 +40,10 @@ import subscript.vm._
  * Usage: see example programs
  */
 object DSL {
-  type _scriptType = N_call=>Unit
+  type _scriptType = CallGraphNode._scriptType
   type Script = _scriptType
-  def _script   (owner : AnyRef, name        : Symbol      , p: FormalParameter[_]*)(_t: TemplateChildNode): _scriptType = {(_c: N_call) => _c.calls(T_script    (owner, "script"       , name,     _t), p:_*)}
-  def _comscript(owner : AnyRef, communicator: Communicator, p: FormalParameter[_]*)                       : _scriptType = {(_c: N_call) => _c.calls(T_commscript(owner, "communicator" , communicator), p:_*)}
+  def _script   (owner : AnyRef, name        : Symbol      , p: FormalParameter[_]*)(_t: TemplateChildNode): Script = {(_c: N_call) => _c.calls(T_script    (owner, "script"       , name,     _t), p:_*)}
+  def _comscript(owner : AnyRef, communicator: Communicator, p: FormalParameter[_]*)                       : Script = {(_c: N_call) => _c.calls(T_commscript(owner, "communicator" , communicator), p:_*)}
   
 // TBD: communication scripts
 //  def _communication(owner: Any, names: Symbol*): N_communication => TemplateNode = {
@@ -59,15 +59,15 @@ object DSL {
 
   implicit def communicatorToCommunicatorRole(c: Communicator) = new CommunicatorRole(c)
   
-  def _execute(_script: _scriptType): ScriptExecutor = _execute(_script, null, true)
-  def _execute(_script: _scriptType, executor: ScriptExecutor): ScriptExecutor = _execute(_script, null, executor)
-  def _execute(_script: _scriptType, debugger: ScriptDebugger): ScriptExecutor = _execute(_script, debugger, false)
-  def _execute(_script: _scriptType,                           allowDebugger: Boolean): ScriptExecutor = _execute(_script, null, allowDebugger)
-  def _execute(_script: _scriptType, debugger: ScriptDebugger, allowDebugger: Boolean): ScriptExecutor = {
+  def _execute(_script: Script): ScriptExecutor = _execute(_script, null, true)
+  def _execute(_script: Script, executor: ScriptExecutor): ScriptExecutor = _execute(_script, null, executor)
+  def _execute(_script: Script, debugger: ScriptDebugger): ScriptExecutor = _execute(_script, debugger, false)
+  def _execute(_script: Script,                           allowDebugger: Boolean): ScriptExecutor = _execute(_script, null, allowDebugger)
+  def _execute(_script: Script, debugger: ScriptDebugger, allowDebugger: Boolean): ScriptExecutor = {
     val executor = ScriptExecutorFactory.createScriptExecutor(allowDebugger && debugger == null)
     _execute(_script, debugger, executor)
   }
-  def _execute(_script: _scriptType, debugger: ScriptDebugger, executor: ScriptExecutor): ScriptExecutor = {
+  def _execute(_script: Script, debugger: ScriptDebugger, executor: ScriptExecutor): ScriptExecutor = {
     if (debugger!=null) debugger.attach(executor)
     _script(executor.anchorNode)
     executor.run
@@ -89,7 +89,7 @@ object DSL {
   def _eventhandling0     (cf: => Unit) = T_code_eventhandling     (() => (_here:N_code_eventhandling     ) => cf)
   def _eventhandling_loop0(cf: => Unit) = T_code_eventhandling_loop(() => (_here:N_code_eventhandling_loop) => cf)
 
-  implicit def _call      (cf: => (N_call                    =>Unit)) = T_call(()=>n=>cf)
+  implicit def _call      (calleeName: String, cf: => _scriptType) = T_call(calleeName, ()=>n=>cf)
   
   implicit def valueToActualValueParameter[T<:Any](value: T) = new ActualValueParameter(value)
 
