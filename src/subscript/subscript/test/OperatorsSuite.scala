@@ -47,16 +47,15 @@ import subscript.vm.{TemplateChildNode, N_code_unsure, CallGraphNodeTrait, Unsur
  * 
  *   A script test case specification is a tuple of
  *   - a script expression, depicted as a string, e.g., "a+b"
- *   - a "behaviours" string, i.e. either
- *     - "=expr"        => the behaviour is the same as of the referred "expr"
- *     - a space-separated-list of behaviour cases, e.g. "->a a->b ab"
- *       a behaviour case either matches one of the following:
- *       - "input"        => the scripts accepts the tokens of the given input and then ends successfully
- *       - "input->result => the script accepts the tokens in input, with the given result
- *          Here "input" is a sequence of tokens "a","b","c", e.g. "aaba"; 
- *          each token is to be eaten by the corresponding atom a,b,c.
- *          "result" is either "0" for deadlock, or a subsequence of "1abc", e.g. "1a" or "b"
- *             "1" means the script may terminate successfully, "a" means an "a" is expected, etc.
+ *   - a "behaviours" string, i.e. a space-separated-list of behaviour cases, e.g. "->a a->b ab"
+ *   
+ *   A behaviour case either matches one of the following:
+ *   - "input"        => the scripts accepts the tokens of the given input and then ends successfully
+ *   - "input->result => the script accepts the tokens in input, with the given result
+ *      Here "input" is a sequence of tokens "a","b","c", e.g. "aaba"; 
+ *      each token is to be eaten by the corresponding atom a,b,c.
+ *      "result" is either "0" for deadlock, or a subsequence of "1abc", e.g. "1a" or "b"
+ *         "1" means the script may terminate successfully, "a" means an "a" is expected, etc.
  *        
  *   Example test specification: 
  *   
@@ -162,20 +161,13 @@ class OperatorsSuite extends FunSuite {
    */
   def testScriptBehaviours(scriptDef: Script, scriptString: String, behaviours: String) {
     
-    if (behaviours.startsWith("=")) {
-      val ref = behaviours.drop(1)
-      testScriptBehaviours(scriptDef, scriptString, scriptBehaviourMap(ref))
-    }
-    else {
-      import scala.util.matching.Regex
-      val pattern = new Regex(" +") // replace all multispaces by a single space, just before splitting behaviours:
-      for (behaviour<-(pattern replaceAllIn(behaviours," ")).split(" ")) {
-        val inputAndResult = behaviour.split("->")
-        val input          = inputAndResult(0)
-        val expectedResult = if (inputAndResult.length>1) inputAndResult(1) else "1"
-        
-        testScriptBehaviour(scriptDef, scriptString, input, expectedResult)
-      }
+    import scala.util.matching.Regex
+    val pattern = new Regex(" +") // replace all multispaces by a single space, just before splitting behaviours:
+    for (behaviour<-(pattern replaceAllIn(behaviours," ")).split(" ")) {
+      val inputAndResult = behaviour.split("->")
+      val input          = inputAndResult(0)
+      val expectedResult = if (inputAndResult.length>1) inputAndResult(1) else "1"
+      testScriptBehaviour(scriptDef, scriptString, input, expectedResult)
     }
   }
 
@@ -205,7 +197,7 @@ class OperatorsSuite extends FunSuite {
 	  val expectedResultAtoms   = (if (expectedResultSuccess||expectedResultFailure) expectedResult.drop(1) else expectedResult)
 	                              .sortWith(_<_).mkString
 
-//      assert(!expectedResultFailure || expectedResultAtoms.isEmpty, "test specification error: no atoms expected after failure (0)")
+      assert(!expectedResultFailure || expectedResultAtoms.isEmpty, "test specification error: no atoms expected after failure (0)")
 
 	  executor = new CommonScriptExecutor
 
@@ -216,7 +208,6 @@ class OperatorsSuite extends FunSuite {
       
       val executionSuccess = scriptSuccessAtEndOfInput.getOrElse(executor.hasSuccess)
       
- /* 
       if (!expectedResultSuccess) {
         assert(!executionSuccess, "script execution should have no success; accepted="+acceptedAtoms)
       }
@@ -227,7 +218,6 @@ class OperatorsSuite extends FunSuite {
               "expectedAtomsAtEndOfInput=" + expectedAtomsAtEndOfInputString + " required=" + expectedResultAtoms) 
       }
       assert(acceptedAtoms===input, "acceptedAtoms='" + acceptedAtoms + "' required='" + input+"'") 
-*/
     }   
   }
 
@@ -289,10 +279,10 @@ class OperatorsSuite extends FunSuite {
      [(-)]     -> "(-)"     -> "->0"
    , [(+)]     -> "(+)"     -> ""
    , [(+-)]    -> "(+-)"    -> ""
-   , [break]   -> "break"   -> "=(+-)"
-   , [.]       -> "."       -> "=(+-)"
-   , [..]      -> ".."      -> "=(+-)"
-   , [...]     -> "..."     -> "=(+-)"
+   , [break]   -> "break"   -> ""
+   , [.]       -> "."       -> ""
+   , [..]      -> ".."      -> ""
+   , [...]     -> "..."     -> ""
                                
    , [a]       -> "a"       -> "->a a"
                                
@@ -307,7 +297,7 @@ class OperatorsSuite extends FunSuite {
                                
    // a op antineutral
    , [a;(-)]   -> "a;(-)"   -> "->a a->0"
-   , [(-);a]   -> "(-);a"   -> "=(-)"
+   , [(-);a]   -> "(-);a"   -> "->0"
    , [a&(-)]   -> "a&(-)"   -> "->a a->0"
    , [(-)&a]   -> "(-)&a"   -> "->a a->0"
    , [a&&(-)]  -> "a&&(-)"  -> "->0"
@@ -334,8 +324,8 @@ class OperatorsSuite extends FunSuite {
    , [a;...]   -> "a;..."   -> "->a  a->a  aa->a"
    
    // 3 operand sequences with iterator or break or optional break, 
-   , [a;b;break]   -> "a;b;break"   -> "=a;b"
-   , [a;b;.]       -> "a;b;."       -> "=a;b"
+   , [a;b;break]   -> "a;b;break"   -> "->a a->b ab"
+   , [a;b;.]       -> "a;b;."       -> "->a a->b ab"
    , [a;b;..]      -> "a;b;.."      -> "->a  a->b ab->1a aba->b abab->1a"
    , [a;b;...]     -> "a;b;..."     -> "->a  a->b ab->a  aba->b abab->a"
                                        
@@ -355,8 +345,8 @@ class OperatorsSuite extends FunSuite {
    , [a;(b;..)]    -> "a;(b;..)"    -> "->a  a->b ab->1b abb->1b"
    , [a;(b;...)]   -> "a;(b;...)"   -> "->a  a->b  ab->b"
                                        
-   , [(a;b);break] -> "(a;b);break" -> "=a;b"
-   , [(a;b);.]     -> "(a;b);."     -> "=a;b"
+   , [(a;b);break] -> "(a;b);break" -> "->a a->b ab"
+   , [(a;b);.]     -> "(a;b);."     -> "->a a->b ab"
    , [(a;b);..]    -> "(a;b);.."    -> "->a  a->b ab->1a aba->b abab->1a"
    , [(a;b);...]   -> "(a;b);..."   -> "->a  a->b ab->a  aba->b abab->a"
                                        
@@ -382,9 +372,9 @@ class OperatorsSuite extends FunSuite {
 
    // parallel composition
    , [(...;a)&b]   -> "(...;a)&b"   -> "->ab  a->ab  aa->ab  b->a  ba->a  ab->a  aba->a"
+   , [b&(...;a)]   -> "b&(...;a)"   -> "->ab  a->ab  aa->ab  b->a  ba->a  ab->a  aba->a"  // commutative
    , [(...;a)|b]   -> "(...;a)|b"   -> "->ab  a->ab  aa->ab  b->1a  ba->1a  ab->1a  aba->1a"
-   , [b&(...;a)]   -> "b&(...;a)"   -> "=(...;a)&b"  // commutative
-   , [b|(...;a)]   -> "b|(...;a)"   -> "=(...;a)|b"  // commutative
+   , [b|(...;a)]   -> "b|(...;a)"   -> "->ab  a->ab  aa->ab  b->1a  ba->1a  ab->1a  aba->1a"  // commutative
                                        
    , [a&b&c]       -> "a&b&c"       -> "->abc a->bc  b->ac  c->ab  ab->c  ac->b  ba->c  bc->a  ca->b  cb->a  abc acb bac bca cab cba" 
    , [a&&b&&c]     -> "a&&b&&c"     -> "->abc a->bc  b->ac  c->ab  ab->c  ac->b  ba->c  bc->a  ca->b  cb->a  abc acb bac bca cab cba"  
@@ -397,21 +387,23 @@ class OperatorsSuite extends FunSuite {
    , [(a;b)/(+)]   -> "(a;b)/(+)"   -> "->1a a->1b ab"
    
    // optional break
-   , [ a / . / b ]         -> " a / . / b "         -> "a"
-   , [ a b / . / c d ]     -> " a b / . / c d "     -> "->a a->bc  ab     ac->d  acd"
-   , [ a b & . & c d ]     -> " a b & . & c d "     -> "->a a->bc  ab->1c ac->bd abc->d  abcd acb->d  acd->b  acbd acdb"
-   , [ a b | . | c d ]     -> " a b | . | c d "     -> "->a a->bc  ab->1c ac->bd abc->1d abcd acb->1d acd->1b acbd acdb"
-   , [ . / a b ]           -> " . / a b "           -> "->1a a->b  ab"
-   , [ . & a b ]           -> " . & a b "           -> "->1a a->b  ab"
-   , [ . | a b ]           -> " . | a b "           -> "->1a a->b  ab"
-   , [ . / a b / . / c d ] -> " . / a b / . / c d " -> "->1a a->bc ab ac->d acd"
-   , [ a b  | .  | 1 ]     -> " a b  | .  | 1 "     -> "->a a->1b ab"
-   , [ a b || . || 1 ]     -> " a b || . || 1 "     -> "a"
-   , [ a b  & .  & 0 ]     -> " a b  & .  & 0 "     -> "ab0"
-   , [ a b && . && 0 ]     -> " a b && . && 0 "     -> "a0"
-   , [ (a b+1)  & .  & 0 ] -> " (a b+1)  & .  & 0 " -> "->1a a->b ab->0"
-   , [ (a b+1) && . && 0 ] -> " (a b+1) && . && 0 " -> "->1a a->0"
- )
+   , [ a / . / b ]             -> " a / . / b "             -> "a"
+   , [ a b / . / c d ]         -> " a b / . / c d "         -> "->a a->bc  ab     ac->d  acd"
+   , [ a b & . & c d ]         -> " a b & . & c d "         -> "->a a->bc  ab->1c ac->bd abc->d  abcd acb->d  acd->b  acbd acdb"
+   , [ a b | . | c d ]         -> " a b | . | c d "         -> "->a a->bc  ab->1c ac->bd abc->1d abcd acb->1d acd->1b acbd acdb"
+   , [ . / a b ]               -> " . / a b "               -> "->1a a->b  ab"
+   , [ . & a b ]               -> " . & a b "               -> "->1a a->b  ab"
+   , [ . | a b ]               -> " . | a b "               -> "->1a a->b  ab"
+   , [ . / a b / . / c d ]     -> " . / a b / . / c d "     -> "->1a a->bc ab ac->d acd"
+   , [ a b  | .  | (+) ]       -> " a b  | .  | (+) "       -> "->a a->1b ab"
+   , [ a b || . || (+) ]       -> " a b || . || (+) "       -> "a"
+   , [ a b  & .  & (-) ]       -> " a b  & .  & (-) "       -> "ab0"
+   , [ a b && . && (-) ]       -> " a b && . && (-) "       -> "a0"
+   , [ (a b+(+))  & .  & (-) ] -> " (a b+(+))  & .  & (-) " -> "->1a a->b ab->0"
+   , [ (a b+(+)) && . && (-) ] -> " (a b+(+)) && . && (-) " -> "->1a a->0"
+
+  )
+
   val scriptBehaviourMap = scriptBehaviourList.toMap
   
   /*
@@ -444,10 +436,9 @@ class OperatorsSuite extends FunSuite {
   */
   
   def testBehaviours = {
-    for ( (aScriptWithString, behaviours) <- scriptBehaviourList) {
-      testScriptBehaviours(aScriptWithString.key  .asInstanceOf[Script], 
-                           aScriptWithString.value.asInstanceOf[Script],
-                           behaviours.asInstanceOf[String])
+    for ( (key, behaviours) <- scriptBehaviourList) {
+      val (aScript, aString) = key.asInstanceOf[(Script,String)]
+      testScriptBehaviours(aScript, aString, behaviours.asInstanceOf[String])
     }
   }
   
