@@ -1,8 +1,6 @@
 package subscript
 
-import org.scalatest.FunSuite
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 
 import subscript.Predef._
 import subscript.DSL._
