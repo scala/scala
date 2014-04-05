@@ -53,8 +53,7 @@ object DSL {
 //    (_c: N_communication) => _c.inits(T_communication("communication", names.toList.map(_.asInstanceOf[Symbol])), owner)
 //  }
 
-  def getScriptTemplate    (s: Script): T_script     = {val t  = T_call("root", () => (n:N_call) => s)
-                                                        val nc = N_call(t); s(nc); nc.t_callee}
+  def getScriptTemplate    (s: Script): T_script     = {val nc = N_call(T_call("", null); s(nc); nc.t_callee}
   def getScriptBodyTemplate(s: Script): TemplateNode = getScriptTemplate(s).child0
   def toScriptString    (s: Script): String =          getScriptTemplate    (s).hierarchyString
   def toScriptBodyString(s: Script): String = {val c = getScriptBodyTemplate(s); if(c==null) "" else c.hierarchyString}

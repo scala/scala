@@ -114,7 +114,7 @@ object SubScriptActor {
   
   
   def extractTemplate(script: _scriptType) = {
-    val extractor = N_call(T_call(null))
+    val extractor = N_call(T_call("", null))
     script(extractor)
     extractor.t_callee
   }

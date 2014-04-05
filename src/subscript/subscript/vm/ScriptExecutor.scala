@@ -463,25 +463,25 @@ class CommonScriptExecutor extends ScriptExecutor {
    */
   def handleSuccess(message: Success): Unit = {
           message.node match {
-               case n@  N_annotation    (_) => {} // onSuccess?
-               case n@  N_inline_if     (t: T_2_ary        )  => if (message.child.template==t.child0) {
+               case n@  N_annotation (_) => {} // onSuccess?
+               case n@  N_then       (t: T_2_ary        )  => if (message.child.template==t.child0) {
+                                                                           activateFrom(n, t.child1)
+                                                                           return
+                                                              }
+               case n@  N_then_else  (t: T_3_ary        )  => if (message.child.template==t.child0) {
                                                                               activateFrom(n, t.child1)
                                                                               return
-                                                                       }
-               case n@  N_inline_if_else(t: T_3_ary        )  => if (message.child.template==t.child0) {
-                                                                              activateFrom(n, t.child1)
-                                                                              return
-                                                                       }
-               case n@  N_1_ary_op      (t: T_1_ary        )  => if(message.child!=null) {
-                                                                   insertContinuation1(message) 
-                                                                   return
-                                                                 }
-               case n@  N_n_ary_op      (_: T_n_ary, _      ) => if(message.child!=null) {
-                                                                   insertContinuation(message) 
-                                                                   return
-                                                                 }
-               case n@  N_call          (_: T_call          ) => if (!n.allActualParametersMatch) {return}
-                                                                 n.transferParameters
+                                                              }
+               case n@  N_1_ary_op   (t: T_1_ary        )  => if(message.child!=null) {
+                                                                insertContinuation1(message) 
+                                                                return
+                                                              }
+               case n@  N_n_ary_op   (_: T_n_ary, _      ) => if(message.child!=null) {
+                                                                insertContinuation(message) 
+                                                                return
+                                                              }
+               case n@  N_call       (_: T_call          ) => if (!n.allActualParametersMatch) {return}
+                                                              n.transferParameters
                case _ =>
           }
          message.node.hasSuccess = true
