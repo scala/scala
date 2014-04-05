@@ -37,7 +37,7 @@ object TemplateNode {
   def kindAsString(t: TemplateNode): String = 
     t match {
       // matching on T_n_ary_op (and T_1_ary_op) does not work;
-      // therefore FTTB those classes have their on implementation of kindAsString
+      // therefore FTTB those classes have their own implementation of kindAsString
       case T_1_ary_op(kind: String, _) => kind
       case T_n_ary_op(kind: String, _) => kind
       

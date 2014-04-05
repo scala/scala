@@ -436,8 +436,8 @@ class CommonScriptExecutor extends ScriptExecutor {
            case n@N_if                         (t) => if (executeCode(n)) activateFrom(n, t.child0) else {doNeutral(n); insertDeactivation(n,null)}
            case n@N_if_else                    (t) => if (executeCode(n)) activateFrom(n, t.child0) 
                                                                else  activateFrom(n, t.child1)
-           case n@N_inline_if                  (t) => activateFrom(n, t.child0)
-           case n@N_inline_if_else             (t) => activateFrom(n, t.child0)
+           case n@N_then                       (t) => activateFrom(n, t.child0)
+           case n@N_then_else                  (t) => activateFrom(n, t.child0)
            case n@N_n_ary_op                   (t, isLeftMerge) => val cn = activateFrom(n, t.children.head); if (!isLeftMerge) insertContinuation(message, cn)
            case n@N_call                       (t) => executeCode(n)(n)
                                                       if (n.t_callee!=null) {activateFrom(n, n.t_callee)}
