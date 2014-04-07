@@ -50,6 +50,11 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  def isConstructorWithDefault(t: Tree) = t match {
+    case DefDef(_, nme.CONSTRUCTOR, _, vparamss, _, _)  => mexists(vparamss)(_.mods.hasDefault)
+    case _                                              => false
+  }
+
   /** Is tree a pure (i.e. non-side-effecting) definition?
    */
   def isPureDef(tree: Tree): Boolean = tree match {
