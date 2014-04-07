@@ -55,7 +55,13 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
 		}
 
 		def handleTreeNode(node: Tree): Unit = {
-			def handleMacroExpansion(original: Tree): Unit = original.foreach(handleTreeNode)
+			def handleMacroExpansion(original: Tree): Unit = {
+				// Some macros seem to have themselves registered as original tree.
+				// In this case, we only need to handle the children of the original tree,
+				// because we already handled the expanded tree.
+				if(original == node) original.children.foreach(handleTreeNode)
+				else original.foreach(handleTreeNode)
+			}
 
 			def handleClassicTreeNode(node: Tree): Unit = node match {
 				case _: DefTree | _: Template => ()
