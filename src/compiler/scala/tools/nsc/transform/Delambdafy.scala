@@ -252,39 +252,35 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           captureProxies2 += ((capture, sym))
         }
 
-      // the Optional proxy that will hold a reference to the 'this'
-      // object used by the lambda, if any. NoSymbol if there is no this proxy
-      val thisProxy = {
-        val target = targetMethod(originalFunction)
-        if (thisReferringMethods contains target) {
-          val sym = anonClass.newVariable(nme.FAKE_LOCAL_THIS, originalFunction.pos, SYNTHETIC)
-          sym.info = oldClass.tpe
-          sym
-        } else NoSymbol
-      }
+        // the Optional proxy that will hold a reference to the 'this'
+        // object used by the lambda, if any. NoSymbol if there is no this proxy
+        val thisProxy = {
+          val target = targetMethod(originalFunction)
+          if (thisReferringMethods contains target) {
+            val sym = anonClass.newVariable(nme.FAKE_LOCAL_THIS, originalFunction.pos, SYNTHETIC)
+            sym.info = oldClass.tpe
+            sym
+          } else NoSymbol
+        }
 
-      val decapturify = new DeCapturifyTransformer(captureProxies2, unit, oldClass, anonClass, originalFunction.symbol.pos, thisProxy)
+        val decapturify = new DeCapturifyTransformer(captureProxies2, unit, oldClass, anonClass, originalFunction.symbol.pos, thisProxy)
 
-      val accessorMethod = createAccessorMethod(thisProxy, originalFunction)
+        val accessorMethod = createAccessorMethod(thisProxy, originalFunction)
 
-      val decapturedFunction = decapturify.transform(originalFunction).asInstanceOf[Function]
+        val decapturedFunction = decapturify.transform(originalFunction).asInstanceOf[Function]
 
-      val members = (optionSymbol(thisProxy).toList ++ (captureProxies2 map (_._2))) map {member =>
-        anonClass.info.decls enter member
-        ValDef(member, gen.mkZero(member.tpe)) setPos decapturedFunction.pos
-      }
+        val members = (optionSymbol(thisProxy).toList ++ (captureProxies2 map (_._2))) map {member =>
+          anonClass.info.decls enter member
+          ValDef(member, gen.mkZero(member.tpe)) setPos decapturedFunction.pos
+        }
 
-      // constructor
-      val constr = createConstructor(anonClass, members)
+        // constructor
+        val constr = createConstructor(anonClass, members)
 
-      // apply method with same arguments and return type as original lambda.
-      val applyMethodDef = createApplyMethod(anonClass, decapturedFunction, accessorMethod, thisProxy)
+        // apply method with same arguments and return type as original lambda.
+        val applyMethodDef = createApplyMethod(anonClass, decapturedFunction, accessorMethod, thisProxy)
 
-      val bridgeMethod = createBridgeMethod(anonClass, originalFunction, applyMethodDef)
-
-      def fulldef(sym: Symbol) =
-        if (sym == NoSymbol) sym.toString
-        else s"$sym: ${sym.tpe} in ${sym.owner}"
+        val bridgeMethod = createBridgeMethod(anonClass, originalFunction, applyMethodDef)
 
         bridgeMethod foreach (bm =>
           // TODO SI-6260 maybe just create the apply method with the signature (Object => Object) in all cases
