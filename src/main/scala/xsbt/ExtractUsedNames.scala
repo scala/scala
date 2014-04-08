@@ -59,6 +59,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
 				// Some macros seem to have themselves registered as original tree.
 				// In this case, we only need to handle the children of the original tree,
 				// because we already handled the expanded tree.
+				// See https://issues.scala-lang.org/browse/SI-8486
 				if(original == node) original.children.foreach(handleTreeNode)
 				else original.foreach(handleTreeNode)
 			}

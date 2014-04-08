@@ -150,6 +150,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile
 				 * Some macros appear to contain themselves as original tree
 				 * In this case, we don't need to inspect the original tree because
 				 * we already inspected its expansion, which is equal.
+				 * See https://issues.scala-lang.org/browse/SI-8486
 				 */
 				case MacroExpansionOf(original) if original != tree =>
 					this.traverse(original)
