@@ -130,7 +130,10 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         if (!thisProxy.exists) {
           target setFlag STATIC
         }
-        val params = ((optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}) ++ (target.paramss.flatten map ValDef.apply)).toList
+        val params0 = ((optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}) ++ (target.paramss.flatten map ValDef.apply)).toList
+        val arity = fun.vparams.length
+        val (lambdaParams, captureParams) = params0.splitAt(arity)
+        val params = captureParams ++ lambdaParams // LambdaMetafactory expects this ordering.
 
         val methSym = oldClass.newMethod(unit.freshTermName(nme.accessor.toString() + "$"), target.pos, FINAL | BRIDGE | SYNTHETIC | PROTECTED | STATIC)
 
@@ -147,7 +150,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val body = localTyper.typed {
           val newTarget = Select(if (thisProxy.exists) gen.mkAttributedRef(paramSyms(0)) else gen.mkAttributedThis(oldClass), target)
           val newParams = paramSyms drop (if (thisProxy.exists) 1 else 0) map Ident
-          Apply(newTarget, newParams)
+          val (newCaptureParams, newLambdaParams) = newParams.splitAt(newParams.length - arity)
+          Apply(newTarget, newLambdaParams ++ newCaptureParams)
         } setPos fun.pos
         val methDef = DefDef(methSym, List(params), body)
 
@@ -176,7 +180,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
         newClass.info.decls enter methSym
 
-        val Apply(_, oldParams) = fun.body
+        val Apply(_, oldParams0) = fun.body
+        val (lambdaParams, capturedParams) = oldParams0.splitAt(fun.vparams.length)
+        val oldParams = capturedParams ++ lambdaParams
 
         val body = localTyper typed Apply(Select(gen.mkAttributedThis(oldClass), accessor.symbol), (optionSymbol(thisProxy) map {tp => Select(gen.mkAttributedThis(newClass), tp)}).toList ++ oldParams)
         body.substituteSymbols(fun.vparams map (_.symbol), params map (_.symbol))
@@ -298,6 +304,19 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       val (anonymousClassDef, thisProxy, accessorMethod) = makeAnonymousClass
 
       pkg.info.decls enter anonymousClassDef.symbol
+
+      val useLambdaMetafactory = {
+        val hasValueClass = exitingErasure {
+          val methodType: Type = targetMethod(originalFunction).info
+          methodType.exists(_.isInstanceOf[ErasedValueType])
+        }
+        val isTarget18 = settings.target.value.contains("jvm-1.8")
+        isTarget18 && !hasValueClass
+      }
+      if (useLambdaMetafactory) {
+        val targetAttachment = LambdaMetaFactoryCapable(targetMethod(originalFunction), accessorMethod.symbol, originalFunction.vparams.length)
+        anonymousClassDef.symbol.updateAttachment(targetAttachment)
+      }
 
       val thisArg = optionSymbol(thisProxy) map (_ => gen.mkAttributedThis(oldClass) setPos originalFunction.pos)
       val captureArgs = captures map (capture => Ident(capture) setPos originalFunction.pos)
@@ -457,4 +476,6 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         super.traverse(tree)
     }
   }
+
+  final case class LambdaMetaFactoryCapable(symbol: Symbol, accessor: Symbol, arity: Int)
 }

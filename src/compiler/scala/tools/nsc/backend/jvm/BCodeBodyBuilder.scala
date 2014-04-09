@@ -620,10 +620,15 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
             case rt: ClassBType =>
               assert(exemplar(ctor.owner).c == rt, s"Symbol ${ctor.owner.fullName} is different from $rt")
-              mnode.visitTypeInsn(asm.Opcodes.NEW, rt.internalName)
-              bc dup generatedType
-              genLoadArguments(args, paramTKs(app))
-              genCallMethod(ctor, icodes.opcodes.Static(onInstance = true))
+              ctor.owner.attachments.get[delambdafy.LambdaMetaFactoryCapable] match {
+                case Some(attachment) =>
+                  genInvokeDynamicLambda(app, ctor, args, attachment.accessor, attachment.arity)
+                case _ =>
+                  mnode.visitTypeInsn(asm.Opcodes.NEW, rt.internalName)
+                  bc dup generatedType
+                  genLoadArguments(args, paramTKs(app))
+                  genCallMethod(ctor, icodes.opcodes.Static(onInstance = true))
+              }
 
             case _ =>
               abort(s"Cannot instantiate $tpt of kind: $generatedType")
@@ -940,6 +945,11 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       StringReference
     }
 
+    private val lambdaMetaFactoryBootstrapHandle =
+      new asm.Handle(asm.Opcodes.H_INVOKESTATIC,
+        "java/lang/invoke/LambdaMetafactory", "metafactory",
+        "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;")
+
     def genCallMethod(method: Symbol, style: InvokeStyle, hostClass0: Symbol = null, pos: Position = NoPosition) {
 
       val siteSymbol = claszSymbol
@@ -1227,7 +1237,29 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     def genSynchronized(tree: Apply, expectedType: BType): BType
     def genLoadTry(tree: Try): BType
+    
+    def genInvokeDynamicLambda(app: Apply, ctor: Symbol, args: List[Tree], lambdaTarget: Symbol, arity: Int) {
+      debuglog(s"Using invokedynamic rather than `new ${ctor.owner}`")
 
+      val targetHandle =
+        new asm.Handle(asm.Opcodes.H_INVOKESTATIC,
+          symInfoTK(lambdaTarget.owner).asClassBType.internalName,
+          lambdaTarget.name.toString,
+          asmMethodType(lambdaTarget).descriptor)
+      val (capturedParams, lambdaParams) = lambdaTarget.paramss.head.splitAt(lambdaTarget.paramss.head.length - arity)
+      // Requires https://github.com/scala/scala-java8-compat on the runtime classpath
+      val functionalInterface = s"Lscala/compat/java8/JFunction${arity};"
+      val desc = capturedParams.map(sym => toTypeKind(sym.info)).mkString(("("), ";", ")") + functionalInterface
+      // TODO specialization
+      val applyN = asmMethodType(FunctionClass(arity).info.decl(nme.apply)).toASMType
+      val constrainedType = new MethodBType(lambdaParams.map(p => toTypeKind(p.tpe)), toTypeKind(lambdaTarget.tpe.resultType)).toASMType
+
+      genLoadArguments(args, paramTKs(app))
+      bc.jmethod.visitInvokeDynamicInsn("apply", desc, lambdaMetaFactoryBootstrapHandle,
+          // boostrap args
+        applyN, targetHandle, constrainedType
+      )
+    }
   }
 
 }

@@ -148,6 +148,13 @@ abstract class GenBCode extends BCodeSyncAndTry {
        */
       def visit(item: Item1) {
         val Item1(arrivalPos, cd, cunit) = item
+        cd.symbol.attachments.get[delambdafy.LambdaMetaFactoryCapable] match {
+          case Some(attachment) =>
+            debuglog(s"Eliding class file emission ${cd.symbol}, we'll use invokedynamic instead")
+            return
+          case _ =>
+        }
+
         val claszSymbol = cd.symbol
 
         // GenASM checks this before classfiles are emitted, https://github.com/scala/scala/commit/e4d1d930693ac75d8eb64c2c3c69f2fc22bec739
