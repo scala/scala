@@ -62,7 +62,8 @@ trait Sorted[K, +This <: Sorted[K, This]] {
   /** Creates a ranged projection of this collection with both a lower-bound
    *  and an upper-bound.
    *
-   *  @param from  The upper-bound (exclusive) of the ranged projection.
+   *  @param from The lower-bound (inclusive) of the ranged projection.
+   *  @param until The upper-bound (exclusive) of the ranged projection.
    */
   def range(from: K, until: K): This = rangeImpl(Some(from), Some(until))
 
