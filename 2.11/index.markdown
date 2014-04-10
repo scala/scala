@@ -179,13 +179,13 @@ scala> :history
 
 ### `:javap` ([#1880](https://github.com/scala/scala/pull/1880))
 
-The command to dissasemble Java output got some bugfixes and new features. It is now possible to filter out members of classes:
+The command to dissasemble Java output got some bugfixes and new features. It is now possible to selectively display members of classes:
 
-- `Bar#foo` filters out all `foo` members
-- `Bar#` filters out all `apply` members
-- `-fun Bar#foo` filters out all anonfuns of `foo` members
-- `-fun Bar#` filters out all anonfuns of `apply` members
-- `-app Bar` filters out `Bar.delayedInit`
+- `Bar#foo` displays all `foo` members
+- `Bar#` displays all `apply` members
+- `-fun Bar#foo` displays all anonfuns of `foo` members
+- `-fun Bar#` displays all anonfuns of `apply` members
+- `-app Bar` displays `Bar.delayedInit`
 
 Example usage:
 
