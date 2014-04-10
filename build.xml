@@ -550,6 +550,7 @@ TODO:
       <echo message="Updating `versions.properties`:"/>
       <echo message="starr.version                              = ${starr.version}"/>
       <echo message="scala.binary.version                       = ${scala.binary.version}"/>
+      <echo message="scala.full.version                         = ${scala.full.version}"/>
       <echo message="scala-xml.version.number                   = ${scala-xml.version.number}"/>
       <echo message="scala-parser-combinators.version.number    = ${scala-parser-combinators.version.number}"/>
       <echo message="scala-continuations-plugin.version.number  = ${scala-continuations-plugin.version.number}"/>
@@ -563,6 +564,7 @@ TODO:
       <propertyfile file="versions.properties">
         <entry key="starr.version"                              value="${starr.version}"/>
         <entry key="scala.binary.version"                       value="${scala.binary.version}"/>
+        <entry key="scala.full.version"                         value="${scala.full.version}"/>
         <entry key="scala-xml.version.number"                   value="${scala-xml.version.number}"/>
         <entry key="scala-parser-combinators.version.number"    value="${scala-parser-combinators.version.number}"/>
         <entry key="scala-continuations-plugin.version.number"  value="${scala-continuations-plugin.version.number}"/>
