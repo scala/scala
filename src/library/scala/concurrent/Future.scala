@@ -256,6 +256,24 @@ trait Future[+T] extends Awaitable[T] {
     }
     p.future
   }
+  
+  /** Creates a new future by applying a partial function to the result of this 
+   *  future, and returns the result of the function as the new future.
+   * 
+   *  This method will apply the partial function to this future for both
+   *  successful and failed states, thus this method can be seen as the
+   *  aggregation of map and recover.
+   * 
+   *  @param  pf        the partial function to apply to the result of this future
+   *  @param  executor  the ExecutionContext the callback will execute on
+   * 
+   *  @return           a future with the result of the partial function
+   */
+  def mapAll[U](pf: PartialFunction[Try[T], U])(implicit executor: ExecutionContext): Future[U] = {
+    val p = Promise[U]()
+    onComplete { v => p complete Try(pf(v)) }
+    p.future
+  }
 
   /** Creates a new future by filtering the value of the current future with a predicate.
    *
