@@ -311,6 +311,8 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
    *  any Windows backslashes with the one true file separator char.
    */
   def normalizeLog() {
+    import scala.util.matching.Regex
+
     // Apply judiciously; there are line comments in the "stub implementations" error output.
     val slashes    = """[/\\]+""".r
     def squashSlashes(s: String) = slashes replaceAllIn (s, "/")
@@ -324,7 +326,8 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     // no spaces in test file paths below root, because otherwise how to detect end of path string?
     val pathFinder = raw"""(?i)\Q${elided}${File.separator}\E([\${File.separator}\S]*)""".r
     def canonicalize(s: String): String = (
-      pathFinder replaceAllIn (s, m => ellipsis + squashSlashes(m group 1))
+      pathFinder replaceAllIn (s, m =>
+        Regex.quoteReplacement(ellipsis + squashSlashes(m group 1)))
     )
 
     def masters    = {
