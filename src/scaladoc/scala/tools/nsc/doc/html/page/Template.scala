@@ -306,9 +306,6 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         <xml:group>
           <div id="comment" class="fullcommenttop">{ memberToCommentBodyHtml(mbr, inTpl, isSelf = true) }</div>
         </xml:group>
-      case dte: DocTemplateEntity if mbr.comment.isDefined =>
-        // comment of inner, documented class (only short comment, full comment is on the class' own page)
-        memberToInlineCommentHtml(mbr, isSelf)
       case _ =>
         // comment of non-class member or non-documentented inner class
         val commentBody = memberToCommentBodyHtml(mbr, inTpl, isSelf = false)
