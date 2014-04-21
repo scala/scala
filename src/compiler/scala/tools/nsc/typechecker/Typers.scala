@@ -2482,7 +2482,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      * an alternative TODO: add partial function AST node or equivalent and get rid of this synthesis --> do everything in uncurry (or later)
      * however, note that pattern matching codegen is designed to run *before* uncurry
      */
-    def synthesizePartialFunction(paramName: TermName, paramPos: Position, tree: Tree, mode: Mode, pt: Type): Tree = {
+    def synthesizePartialFunction(paramName: TermName, paramPos: Position, paramSynthetic: Boolean,
+                                  tree: Tree, mode: Mode, pt: Type): Tree = {
       assert(pt.typeSymbol == PartialFunctionClass, s"PartialFunction synthesis for match in $tree requires PartialFunction expected type, but got $pt.")
       val targs = pt.dealiasWiden.typeArgs
 
@@ -2510,7 +2511,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val casesTrue = cases map (c => deriveCaseDef(c)(x => atPos(x.pos.focus)(TRUE)).duplicate.asInstanceOf[CaseDef])
 
       // must generate a new tree every time
-      def selector: Tree = gen.mkUnchecked(
+      def selector(paramSym: Symbol): Tree = gen.mkUnchecked(
         if (sel != EmptyTree) sel.duplicate
         else atPos(tree.pos.focusStart)(
           // SI-6925: subsume type of the selector to `argTp`
@@ -2521,7 +2522,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // hence the cast, which will be erased in posterasure
           // (the cast originally caused  extremely weird types to show up
           //  in test/scaladoc/run/SI-5933.scala because `variantToSkolem` was missing `tpSym.initialize`)
-          gen.mkCastPreservingAnnotations(Ident(paramName), argTp)
+          gen.mkCastPreservingAnnotations(Ident(paramSym), argTp)
         ))
 
       def mkParam(methodSym: Symbol, tp: Type = argTp) =
@@ -2549,14 +2550,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         methodSym setInfo polyType(List(A1, B1), MethodType(paramSyms, B1.tpe))
 
         val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym))
-        // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
-        paramSyms foreach (methodBodyTyper.context.scope enter _)
+        if (!paramSynthetic) methodBodyTyper.context.scope enter x
 
         // First, type without the default case; only the cases provided
         // by the user are typed. The LUB of these becomes `B`, the lower
         // bound of `B1`, which in turn is the result type of the default
         // case
-        val match0 = methodBodyTyper.typedMatch(selector, cases, mode, resTp)
+        val match0 = methodBodyTyper.typedMatch(selector(x), cases, mode, resTp)
         val matchResTp = match0.tpe
 
         B1 setInfo TypeBounds.lower(matchResTp) // patch info
@@ -2630,11 +2630,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val paramSym = mkParam(methodSym)
 
         val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym)) // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
-        methodBodyTyper.context.scope enter paramSym
+        if (!paramSynthetic) methodBodyTyper.context.scope enter paramSym
         methodSym setInfo MethodType(List(paramSym), BooleanTpe)
 
         val defaultCase = mkDefaultCase(FALSE)
-        val match_ = methodBodyTyper.typedMatch(selector, casesTrue :+ defaultCase, mode, BooleanTpe)
+        val match_ = methodBodyTyper.typedMatch(selector(paramSym), casesTrue :+ defaultCase, mode, BooleanTpe)
 
         DefDef(methodSym, methodBodyTyper.virtualizedMatch(match_, mode, BooleanTpe))
       }
@@ -2648,10 +2648,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         methodSym setInfo MethodType(List(paramSym), AnyTpe)
 
         val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym))
-        // should use the DefDef for the context's tree, but it doesn't exist yet (we need the typer we're creating to create it)
-        methodBodyTyper.context.scope enter paramSym
+        if (!paramSynthetic) methodBodyTyper.context.scope enter paramSym
 
-        val match_ = methodBodyTyper.typedMatch(selector, cases, mode, resTp)
+        val match_ = methodBodyTyper.typedMatch(selector(paramSym), cases, mode, resTp)
 
         val matchResTp = match_.tpe
         methodSym setInfo MethodType(List(paramSym), matchResTp) // patch info
@@ -2923,7 +2922,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val p = fun.vparams.head
             if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
 
-            outerTyper.synthesizePartialFunction(p.name, p.pos, fun.body, mode, pt)
+            outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, fun.body, mode, pt)
 
           // Use synthesizeSAMFunction to expand `(p1: T1, ..., pN: TN) => body`
           // to an instance of the corresponding anonymous subclass of `pt`.
@@ -4210,7 +4209,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val cases = tree.cases
         if (selector == EmptyTree) {
           if (pt.typeSymbol == PartialFunctionClass)
-            synthesizePartialFunction(newTermName(context.unit.fresh.newName("x")), tree.pos, tree, mode, pt)
+            synthesizePartialFunction(newTermName(context.unit.fresh.newName("x")), tree.pos, paramSynthetic = true, tree, mode, pt)
           else {
             val arity = if (isFunctionType(pt)) pt.dealiasWiden.typeArgs.length - 1 else 1
             val params = for (i <- List.range(0, arity)) yield
