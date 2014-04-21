@@ -304,6 +304,7 @@ TODO:
            necessary cross suffix (usually something like "_2.11.0-M6". -->
       <prepareCross name="scala-xml" />
       <prepareCross name="scala-parser-combinators" />
+      <property name="scala-continuations-plugin.cross.suffix" value="_${scala.full.version}"/>
       <prepareCross name="scala-continuations-plugin" />
       <prepareCross name="scala-continuations-library"/>
       <prepareCross name="scala-swing"/>
