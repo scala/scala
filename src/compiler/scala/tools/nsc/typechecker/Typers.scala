@@ -1041,11 +1041,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (tree.tpe <:< AnyTpe) pt.dealias match {
             case TypeRef(_, UnitClass, _) => // (12)
               if (settings.warnValueDiscard)
-                context.unit.warning(tree.pos, "discarded non-Unit value")
+                context.warning(tree.pos, "discarded non-Unit value")
               return typedPos(tree.pos, mode, pt)(Block(List(tree), Literal(Constant(()))))
             case TypeRef(_, sym, _) if isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt) =>
               if (settings.warnNumericWiden)
-                context.unit.warning(tree.pos, "implicit numeric widening")
+                context.warning(tree.pos, "implicit numeric widening")
               return typedPos(tree.pos, mode, pt)(Select(tree, "to" + sym.name))
             case _ =>
           }
@@ -5109,7 +5109,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def isPlausible(m: Symbol) = m.alternatives exists (m => requiresNoArgs(m.info))
 
         def maybeWarn(s: String): Unit = {
-          def warn(message: String)         = context.unit.warning(lit.pos, s"$message Did you forget the interpolator?")
+          def warn(message: String)         = context.warning(lit.pos, s"$message Did you forget the interpolator?")
           def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
           def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
           def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(s drop 1))
