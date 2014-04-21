@@ -1,0 +1,27 @@
+t8430.scala:15: warning: match may not be exhaustive.
+It would fail on the following inputs: ??, LetC, LetF, LetL(IntLit), LetP
+  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+                  ^
+t8430.scala:16: warning: match may not be exhaustive.
+It would fail on the following inputs: ??, LetC, LetF, LetL(IntLit), LetP
+  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+                  ^
+t8430.scala:17: warning: match may not be exhaustive.
+It would fail on the following inputs: ??, LetC, LetF, LetL(IntLit), LetP
+  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+                  ^
+t8430.scala:18: warning: match may not be exhaustive.
+It would fail on the following inputs: ??, LetC, LetF, LetL(IntLit), LetP
+  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+                  ^
+t8430.scala:19: warning: match may not be exhaustive.
+It would fail on the following inputs: ??, LetC, LetF, LetL(IntLit), LetP
+  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+                  ^
+t8430.scala:20: warning: match may not be exhaustive.
+It would fail on the following inputs: ??, LetC, LetF, LetL(IntLit), LetP
+  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+                  ^
+error: No warnings can be incurred under -Xfatal-warnings.
+6 warnings found
+one error found
