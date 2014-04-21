@@ -15,7 +15,7 @@ import base.comment._
 
 import model._
 import model.diagram._
-import scala.xml.{ NodeSeq, Text, UnprefixedAttribute }
+import scala.xml.{Elem, NodeSeq, Text, UnprefixedAttribute}
 import scala.language.postfixOps
 import scala.collection.mutable. { Set, HashSet }
 
@@ -110,7 +110,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
               <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
         }}
         { owner }
-        <h1>{ displayName }</h1>
+        <h1>{ displayName }</h1> { permalink(tpl) }
       </div>
 
       { signature(tpl, isSelf = true) }
@@ -723,6 +723,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
 
   /** name, tparams, params, result */
   def signature(mbr: MemberEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
+
     def inside(hasLinks: Boolean, nameLink: String = ""): NodeSeq =
       <xml:group>
       <span class="modifier_kind">
@@ -833,11 +834,11 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
       </xml:group>
     mbr match {
       case dte: DocTemplateEntity if !isSelf =>
-        <h4 class="signature">{ inside(hasLinks = true, nameLink = relativeLinkTo(dte)) }</h4>
+        <h4 class="signature">{ inside(hasLinks = true, nameLink = relativeLinkTo(dte)) }</h4> ++ permalink(dte, isSelf)
       case _ if isSelf =>
         <h4 id="signature" class="signature">{ inside(hasLinks = true) }</h4>
       case _ =>
-        <h4 class="signature">{ inside(hasLinks = true) }</h4>
+        <h4 class="signature">{ inside(hasLinks = true) }</h4> ++ permalink(mbr)
     }
 
   }

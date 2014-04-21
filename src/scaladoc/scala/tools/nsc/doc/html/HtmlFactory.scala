@@ -97,7 +97,9 @@ class HtmlFactory(val universe: doc.Universe, index: doc.Index) {
     "selected2.png",
     "selected-right-implicits.png",
     "selected-implicits.png",
-    "unselected.png"
+    "unselected.png",
+
+    "permalink.png"
   )
 
   /** Generates the Scaladoc site for a model into the site root.

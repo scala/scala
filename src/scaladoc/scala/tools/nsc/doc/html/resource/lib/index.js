@@ -1,5 +1,5 @@
 // © 2009–2010 EPFL/LAMP
-// code by Gilles Dubochet with contributions by Johannes Rudolph and "spiros"
+// code by Gilles Dubochet with contributions by Johannes Rudolph, "spiros" and Marcin Kubala
 
 var topLevelTemplates = undefined;
 var topLevelPackages = undefined;
@@ -11,7 +11,7 @@ var focusFilterState = undefined;
 
 var title = $(document).attr('title');
 
-var lastHash = "";
+var lastFragment = "";
 
 $(document).ready(function() {
     $('body').layout({
@@ -24,9 +24,13 @@ $(document).ready(function() {
         ,north__paneSelector: ".ui-west-north"
     });
     $('iframe').bind("load", function(){
-        var subtitle = $(this).contents().find('title').text();
-        $(document).attr('title', (title ? title + " - " : "") + subtitle);
-
+        try {
+            var subtitle = $(this).contents().find('title').text();
+            $(document).attr('title', (title ? title + " - " : "") + subtitle);
+        } catch (e) {
+            // Chrome doesn't allow reading the iframe's contents when
+            // used on the local file system.
+        }
         setUrlFragmentFromFrameSrc();
     });
 
@@ -64,21 +68,43 @@ $(document).ready(function() {
 // Set the iframe's src according to the fragment of the current url.
 // fragment = "#scala.Either" => iframe url = "scala/Either.html"
 // fragment = "#scala.Either@isRight:Boolean" => iframe url = "scala/Either.html#isRight:Boolean"
+// fragment = "#scalaz.iteratee.package@>@>[E,A]=scalaz.iteratee.package.Iteratee[E,A]" => iframe url = "scalaz/iteratee/package.html#>@>[E,A]=scalaz.iteratee.package.Iteratee[E,A]"
 function setFrameSrcFromUrlFragment() {
-  var fragment = location.hash.slice(1);
-  if(fragment) {
-    var loc = fragment.split("@")[0].replace(/\./g, "/");
-    if(loc.indexOf(".html") < 0) loc += ".html";
-    if(fragment.indexOf('@') > 0) loc += ("#" + fragment.split("@", 2)[1]);
-    frames["template"].location.replace(loc);
-  }
-  else
-    frames["template"].location.replace("package.html");
+
+    function extractLoc(fragment) {
+        var loc = fragment.split('@')[0].replace(/\./g, "/");
+        if (loc.indexOf(".html") < 0) {
+            loc += ".html";
+        }
+        return loc;
+    }
+
+    function extractMemberSig(fragment) {
+        var splitIdx = fragment.indexOf('@');
+        if (splitIdx < 0) {
+            return;
+        }
+        return fragment.substr(splitIdx + 1);
+    }
+
+    var fragment = location.hash.slice(1);
+    if (fragment) {
+        var locWithMemeberSig = extractLoc(fragment);
+        var memberSig = extractMemberSig(fragment);
+        if (memberSig) {
+            locWithMemeberSig += "#" + memberSig;
+        }
+        frames["template"].location.replace(locWithMemeberSig);
+    } else {
+        console.log("empty fragment detected");
+        frames["template"].location.replace("package.html");
+    }
 }
 
 // Set the url fragment according to the src of the iframe "template".
 // iframe url = "scala/Either.html"  =>  url fragment = "#scala.Either"
 // iframe url = "scala/Either.html#isRight:Boolean"  =>  url fragment = "#scala.Either@isRight:Boolean"
+// iframe url = "scalaz/iteratee/package.html#>@>[E,A]=scalaz.iteratee.package.Iteratee[E,A]" => fragment = "#scalaz.iteratee.package@>@>[E,A]=scalaz.iteratee.package.Iteratee[E,A]"
 function setUrlFragmentFromFrameSrc() {
   try {
     var commonLength = location.pathname.lastIndexOf("/");

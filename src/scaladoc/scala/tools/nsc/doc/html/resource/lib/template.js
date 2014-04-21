@@ -1,23 +1,57 @@
 // © 2009–2010 EPFL/LAMP
-// code by Gilles Dubochet with contributions by Pedro Furlanetto
+// code by Gilles Dubochet with contributions by Pedro Furlanetto and Marcin Kubala
 
 $(document).ready(function(){
 
+    var controls = {
+        visibility: {
+            publicOnly: $("#visbl").find("> ol > li.public"),
+            all: $("#visbl").find("> ol > li.all")
+        }
+    };
+
     // Escapes special characters and returns a valid jQuery selector
     function escapeJquery(str){
-        return str.replace(/([;&,\.\+\*\~':"\!\^#$%@\[\]\(\)=>\|])/g, '\\$1');
+        return str.replace(/([;&,\.\+\*\~':"\!\^#$%@\[\]\(\)=<>\|])/g, '\\$1');
     }
 
-    // highlight and jump to selected member
-    if (window.location.hash) {
-      var temp = window.location.hash.replace('#', '');
-      var elem = '#'+escapeJquery(temp);
-
-      window.scrollTo(0, 0);
-      $(elem).parent().effect("highlight", {color: "#FFCC85"}, 3000);
-      $('html,body').animate({scrollTop:$(elem).parent().offset().top}, 1000);
+    function toggleVisibilityFilter(ctrlToEnable, ctrToDisable) {
+        if (ctrlToEnable.hasClass("out")) {
+            ctrlToEnable.removeClass("out").addClass("in");
+            ctrToDisable.removeClass("in").addClass("out");
+            filter();
+        }
     }
-    
+
+    controls.visibility.publicOnly.click(function () {
+        toggleVisibilityFilter(controls.visibility.publicOnly, controls.visibility.all);
+    });
+
+    controls.visibility.all.click(function () {
+        toggleVisibilityFilter(controls.visibility.all, controls.visibility.publicOnly);
+    });
+
+    function exposeMember(jqElem) {
+        var jqElemParent = jqElem.parent(),
+            parentName = jqElemParent.attr("name"),
+            linearizationName = /^([^#]*)(#.*)?$/gi.exec(parentName)[1];
+
+        // switch visibility filter if necessary
+        if (jqElemParent.attr("visbl") == "prt") {
+            toggleVisibilityFilter(controls.visibility.all, controls.visibility.publicOnly);
+        }
+
+        // toggle appropriate linearization buttons
+        if (linearizationName) {
+            $("#linearization li.out[name='" + linearizationName + "']").removeClass("out").addClass("in");
+        }
+
+        filter();
+        window.scrollTo(0, 0);
+        jqElemParent.effect("highlight", {color: "#FFCC85"}, 3000);
+        $('html,body').animate({scrollTop: jqElemParent.offset().top}, 1000);
+    }
+
     var isHiddenClass = function (name) {
         return name == 'scala.Any' ||
                name == 'scala.AnyRef';
@@ -97,7 +131,7 @@ $(document).ready(function(){
         else if ($(this).hasClass("out")) {
             $(this).removeClass("out");
             $(this).addClass("in");
-        };
+        }
         filter();
     });
 
@@ -109,7 +143,7 @@ $(document).ready(function(){
         else if ($(this).hasClass("out")) {
             $(this).removeClass("out");
             $(this).addClass("in");
-        };
+        }
         filter();
     });
 
@@ -147,32 +181,18 @@ $(document).ready(function(){
     });
     $("#visbl > ol > li.public").click(function() {
         if ($(this).hasClass("out")) {
-            $(this).removeClass("out").addClass("in");
-            $("#visbl > ol > li.all").removeClass("in").addClass("out");
-            filter();
-        };
-    })
-    $("#visbl > ol > li.all").click(function() {
-        if ($(this).hasClass("out")) {
-            $(this).removeClass("out").addClass("in");
-            $("#visbl > ol > li.public").removeClass("in").addClass("out");
-            filter();
-        };
-    });
-    $("#order > ol > li.alpha").click(function() {
-        if ($(this).hasClass("out")) {
             orderAlpha();
-        };
+        }
     })
     $("#order > ol > li.inherit").click(function() {
         if ($(this).hasClass("out")) {
             orderInherit();
-        };
+        }
     });
     $("#order > ol > li.group").click(function() {
         if ($(this).hasClass("out")) {
             orderGroup();
-        };
+        }
     });
     $("#groupedMembers").hide();
 
@@ -181,7 +201,7 @@ $(document).ready(function(){
     // Create tooltips
     $(".extype").add(".defval").tooltip({
         tip: "#tooltip",
-        position:"top center",
+        position: "top center",
         predelay: 500,
         onBeforeShow: function(ev) {
             $(this.getTip()).text(this.getTrigger().attr("name"));
@@ -233,6 +253,20 @@ $(document).ready(function(){
     windowTitle();
 
     if ($("#order > ol > li.group").length == 1) { orderGroup(); };
+
+    function findElementByHash(locationHash) {
+        var temp = locationHash.replace('#', '');
+        var memberSelector = '#' + escapeJquery(temp);
+        return $(memberSelector);
+    }
+
+    // highlight and jump to selected member
+    if (window.location.hash) {
+        var jqElem = findElementByHash(window.location.hash);
+        if (jqElem.length > 0) {
+            exposeMember(jqElem);
+        }
+    }
 });
 
 function orderAlpha() {
