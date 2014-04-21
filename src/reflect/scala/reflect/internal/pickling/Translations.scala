@@ -62,21 +62,22 @@ trait Translations {
   }
 
   def picklerTag(tpe: Type): Int = tpe match {
-    case NoType               => NOtpe
-    case NoPrefix             => NOPREFIXtpe
-    case _: ThisType          => THIStpe
-    case _: SingleType        => SINGLEtpe
-    case _: SuperType         => SUPERtpe
-    case _: ConstantType      => CONSTANTtpe
-    case _: TypeBounds        => TYPEBOUNDStpe
-    case _: TypeRef           => TYPEREFtpe
-    case _: RefinedType       => REFINEDtpe
-    case _: ClassInfoType     => CLASSINFOtpe
-    case _: MethodType        => METHODtpe
-    case _: PolyType          => POLYtpe
-    case _: NullaryMethodType => POLYtpe  // bad juju, distinct ints are not at a premium!
-    case _: ExistentialType   => EXISTENTIALtpe
-    case _: AnnotatedType     => ANNOTATEDtpe
+    case NoType                        => NOtpe
+    case NoPrefix                      => NOPREFIXtpe
+    case _: ThisType                   => THIStpe
+    case _: SingleType                 => SINGLEtpe
+    case _: SuperType                  => SUPERtpe
+    case _: ConstantType               => CONSTANTtpe
+    case _: TypeBounds                 => TYPEBOUNDStpe
+    case _: TypeRef                    => TYPEREFtpe
+    case _: RefinedType                => REFINEDtpe
+    case _: ClassInfoType              => CLASSINFOtpe
+    case _: MethodType                 => METHODtpe
+    case _: PolyType                   => POLYtpe
+    case _: NullaryMethodType          => POLYtpe  // bad juju, distinct ints are not at a premium!
+    case _: ExistentialType            => EXISTENTIALtpe
+    case StaticallyAnnotatedType(_, _) => ANNOTATEDtpe
+    case _: AnnotatedType              => picklerTag(tpe.underlying)
   }
 
   def picklerSubTag(tree: Tree): Int = tree match {
