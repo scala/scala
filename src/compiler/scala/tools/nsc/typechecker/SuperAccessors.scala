@@ -346,12 +346,14 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
      *  performance hit for the compiler as a whole.
      */
     override def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A = {
+      val savedValid = validCurrentOwner
       if (owner.isClass) validCurrentOwner = true
       val savedLocalTyper = localTyper
       localTyper = localTyper.atOwner(tree, if (owner.isModule) owner.moduleClass else owner)
       typers = typers updated (owner, localTyper)
       val result = super.atOwner(tree, owner)(trans)
       localTyper = savedLocalTyper
+      validCurrentOwner = savedValid
       typers -= owner
       result
     }
