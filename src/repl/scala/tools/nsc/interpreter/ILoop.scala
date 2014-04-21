@@ -402,7 +402,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   private val crashRecovery: PartialFunction[Throwable, Boolean] = {
     case ex: Throwable =>
-      echo(intp.global.throwableAsString(ex))
+      val (err, explain) = (
+        if (intp.isInitializeComplete)
+          (intp.global.throwableAsString(ex), "")
+        else
+          (ex.getMessage, "The compiler did not initialize.\n")
+      )
+      echo(err)
 
       ex match {
         case _: NoSuchMethodError | _: NoClassDefFoundError =>
@@ -410,7 +416,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
           throw ex
         case _  =>
           def fn(): Boolean =
-            try in.readYesOrNo(replayQuestionMessage, { echo("\nYou must enter y or n.") ; fn() })
+            try in.readYesOrNo(explain + replayQuestionMessage, { echo("\nYou must enter y or n.") ; fn() })
             catch { case _: RuntimeException => false }
 
           if (fn()) replay()

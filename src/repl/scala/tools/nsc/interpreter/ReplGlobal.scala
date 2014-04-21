@@ -55,6 +55,8 @@ trait ReplGlobal extends Global {
         // newNamer(rootContext(unit)).enterSym(unit.body)
       }
     }
+    // add to initial or terminal phase to sanity check Run at construction
+    override val requires = List("typer")  // ensure they didn't -Ystop-after:parser
   }
 
   override protected def computePhaseDescriptors: List[SubComponent] = {

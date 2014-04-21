@@ -117,8 +117,10 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private def _initSources = List(new BatchSourceFile("<init>", "class $repl_$init { }"))
   private def _initialize() = {
     try {
-      // todo. if this crashes, REPL will hang
-      new _compiler.Run() compileSources _initSources
+      // if this crashes, REPL will hang its head in shame
+      val run = new _compiler.Run()
+      assert(run.typerPhase != NoPhase, "REPL requires a typer phase.")
+      run compileSources _initSources
       _initializeComplete = true
       true
     }
@@ -384,6 +386,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   def compileSourcesKeepingRun(sources: SourceFile*) = {
     val run = new Run()
+    assert(run.typerPhase != NoPhase, "REPL requires a typer phase.")
     reporter.reset()
     run compileSources sources.toList
     (!reporter.hasErrors, run)
