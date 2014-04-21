@@ -739,6 +739,20 @@ object Test extends Properties("HtmlFactory") {
       case node: scala.xml.Node => true
       case _ => false
     }
+
+    property("SI-8514: No inconsistencies") =
+      checkText("SI-8514.scala")(
+        (Some("a/package"),
+         """class A extends AnyRef
+            Some doc here
+            Some doc here
+            Annotations @DeveloperApi()
+         """, true),
+        (Some("a/package"),
+         """class B extends AnyRef
+            Annotations @DeveloperApi()
+         """, true)
+      )
   }
 
   // SI-8144
