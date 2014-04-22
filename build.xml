@@ -75,8 +75,8 @@ TODO:
   <target name="nightly"><optimized name="all.done"/></target>
   <target name="nightly.checkall"> <antcall target="all.done"> <param name="partest.scalac_opts" value="-Ycheck:all"/></antcall></target>
 
-  <!-- The IDE build requires actors/swing/continuations, so need to publish them during PR validation until they are modules -->
-  <target name="publish-opt-nodocs" description="Publishes Scala (optimized) without generating docs/testing (library/reflect/compiler/actors/swing/continuations).">
+  <!-- The IDE build requires swing/continuations, so need to publish them during PR validation until they are modules -->
+  <target name="publish-opt-nodocs" description="Publishes Scala (optimized) without generating docs/testing (library/reflect/compiler/swing/continuations).">
     <antcall target="publish">
       <param name="docs.skip" value="1"/>
       <param name="scalac.args.optimise" value="-optimise"/>
@@ -556,8 +556,6 @@ TODO:
       <echo message="scala-continuations-plugin.version.number  = ${scala-continuations-plugin.version.number}"/>
       <echo message="scala-continuations-library.version.number = ${scala-continuations-library.version.number}"/>
       <echo message="scala-swing.version.number                 = ${scala-swing.version.number}"/>
-      <echo message="akka-actor.version.number                  = ${akka-actor.version.number}"/>
-      <echo message="actors-migration.version.number            = ${actors-migration.version.number}"/>
       <echo message="partest.version.number                     = ${partest.version.number}"/>
       <echo message="scalacheck.version.number                  = ${scalacheck.version.number}"/>
 
@@ -570,8 +568,6 @@ TODO:
         <entry key="scala-continuations-plugin.version.number"  value="${scala-continuations-plugin.version.number}"/>
         <entry key="scala-continuations-library.version.number" value="${scala-continuations-library.version.number}"/>
         <entry key="scala-swing.version.number"                 value="${scala-swing.version.number}"/>
-        <entry key="akka-actor.version.number"                  value="${akka-actor.version.number}"/>
-        <entry key="actors-migration.version.number"            value="${actors-migration.version.number}"/>
         <entry key="partest.version.number"                     value="${partest.version.number}"/>
         <entry key="scalacheck.version.number"                  value="${scalacheck.version.number}"/>
       </propertyfile>
@@ -607,8 +603,6 @@ TODO:
     <property name="scaladoc.namesuffix"           value="_${scala.binary.version}"/>
     <property name="scaladoc.version"              value="${scala-compiler-doc.version.number}"/>
     <property name="scaladoc.targetjar"            value="scala-compiler-doc_${scala.binary.version}-${scala-compiler-doc.version.number}.jar"/>
-
-    <property name="actors.description"            value="Scala Actors Library"/>
 
     <property name="swing.description"             value="Scala Swing Library"/>
     <property name="swing.package"                 value="modules."/>
@@ -648,7 +642,7 @@ TODO:
     <property name="partest-javaagent.description" value="Scala Compiler Testing Tool (compiler-specific java agent)"/>
 
     <!-- projects without project-specific options: asm, forkjoin, manual, bin, repl -->
-    <for list="actors,compiler,interactive,scaladoc,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml,continuations-plugin,continuations-library" param="project">
+    <for list="compiler,interactive,scaladoc,library,parser-combinators,partest,partest-extras,partest-javaagent,reflect,scalap,swing,xml,continuations-plugin,continuations-library" param="project">
       <sequential>
         <!-- description is mandatory -->
         <init-project-prop project="@{project}" name="package"     default=""/> <!-- used by mvn-package, copy-bundle, make-bundle -->
@@ -697,7 +691,7 @@ TODO:
       There must be a variable of the shape @{stage}.@{project}.build.path
       for all @{stage} in locker, quick, strap
       and all @{project} in library, reflect, compiler
-        when stage is quick, @{project} also includes: actors, repl, scalap
+        when stage is quick, @{project} also includes: repl, scalap
 
       NOTE: interactive, scaladoc, are only used upto quick; they are still packed into the compiler jar
     -->
@@ -728,11 +722,6 @@ TODO:
       <pathelement location="${build-quick.dir}/classes/library"/>
       <path refid="forkjoin.classpath"/>
       <path refid="aux.libs"/>
-    </path>
-
-    <path id="quick.actors.build.path">
-      <path refid="quick.library.build.path"/>
-      <pathelement location="${build-quick.dir}/classes/actors"/>
     </path>
 
     <path id="quick.reflect.build.path">
@@ -784,7 +773,6 @@ TODO:
 
     <path id="quick.bin.tool.path">
       <path refid="quick.repl.build.path"/>
-      <path refid="quick.actors.build.path"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
       <pathelement location="${build-quick.dir}/classes/scaladoc"/>
       <path refid="external-modules-nocore"/>
@@ -804,7 +792,6 @@ TODO:
       <pathelement location="${library.jar}"/>
       <pathelement location="${xml.jar}"/>
       <pathelement location="${parser-combinators.jar}"/>
-      <pathelement location="${actors.jar}"/>
       <pathelement location="${reflect.jar}"/>
       <pathelement location="${compiler.jar}"/>
       <!-- TODO modularize compiler: <pathelement location="${scaladoc.jar}"/> -->
@@ -816,10 +803,6 @@ TODO:
     <path id="pack.library.files">
       <fileset dir="${build-quick.dir}/classes/library"/>
       <fileset dir="${forkjoin-classes}"/>
-    </path>
-
-    <path id="pack.actors.files">
-      <fileset dir="${build-quick.dir}/classes/actors"/>
     </path>
 
     <path id="pack.compiler.files">
@@ -869,7 +852,6 @@ TODO:
     <path id="docs.scaladoc.build.path">              <path refid="quick.scaladoc.build.path"/> </path>
     <path id="docs.interactive.build.path">           <path refid="quick.interactive.build.path"/> </path>
     <path id="docs.scalap.build.path">                <path refid="quick.scalap.build.path"/>   </path>
-    <path id="docs.actors.build.path">                <path refid="quick.actors.build.path"/>   </path>
 
     <!-- run-time classpath for scaladoc TODO: resolve through maven -->
     <path id="scaladoc.classpath">
@@ -925,9 +907,8 @@ TODO:
       <pathelement location="${interactive.jar}"/>
       -->
 
-      <!-- TODO: move scalap & actors out of repo -->
+      <!-- TODO: move scalap out of repo -->
       <pathelement location="${scalap.jar}"/>
-      <pathelement location="${actors.jar}"/>
 
       <!-- partest's dependencies, which marks most of its dependencies as provided,
            (but not scala-library, so we filter that one out...)
@@ -950,7 +931,6 @@ TODO:
           <rsel:name name="scala-library*.jar"/>
           <rsel:name name="scala-compiler*.jar"/>
           <rsel:name name="scala-reflect*.jar"/>
-          <rsel:name name="scala-actors*.jar"/>
           <rsel:name name="scala-parser-combinators*.jar"/>
           <rsel:name name="scala-xml*.jar"/>
         </rsel:or></rsel:not>
@@ -976,7 +956,6 @@ TODO:
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-library.jar"/>
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-reflect.jar"/>
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-compiler.jar"/>
-      <pathelement location="${build-osgi.dir}/org.scala-lang.scala-actors.jar"/>
       <path refid="pax.exam.classpath"/>
       <path refid="forkjoin.classpath"/>
     </path>
@@ -1106,10 +1085,6 @@ TODO:
   <target name="quick.scalap"     depends="quick.repl">
     <staged-build with="locker"   stage="quick" project="scalap"/> </target>
 
-  <target name="quick.actors"     depends="quick.lib">
-    <staged-build with="locker"   stage="quick" project="actors"/> </target>
-
-
 
   <target name="quick.modules" depends="quick.repl, quick.scaladoc, quick.interactive, quick.scalap"/>
 
@@ -1160,14 +1135,12 @@ TODO:
   <target name="pack.interactive" depends="quick.interactive"> <staged-pack project="interactive"/> </target>
   -->
 
-  <target name="pack.actors" depends="quick.actors"> <staged-pack project="actors"/> </target>
-
   <target name="pack.scalap"     depends="quick.scalap">     <staged-pack project="scalap"/> </target>
 
   <target name="pack.core" depends="pack.reflect, pack.comp, pack.lib"/>
 
   <!-- TODO modularize compiler: pack.scaladoc, pack.interactive, -->
-  <target name="pack.modules" depends="pack.actors, pack.scalap">
+  <target name="pack.modules" depends="pack.scalap">
     <copy todir="${build-pack.dir}/lib">
       <path refid="external-modules-nocore" />
       <mapper type="flatten" />
@@ -1273,8 +1246,6 @@ TODO:
             <include name="${scaladoc.jar}"/>
             -->
 
-          <file name="${actors.jar}"/>
-
           <file name="${continuations-plugin.jar}"/>
           <file name="${continuations-library.jar}"/>
           <file name="${parser-combinators.jar}"/>
@@ -1300,11 +1271,6 @@ TODO:
         <fileset dir="${src.dir}/interactive"/>
       </make-bundle>
       -->
-
-      <make-bundle project="actors">
-        <fileset dir="${src.dir}/actors"/>
-      </make-bundle>
-
 
       <make-bundle project="continuations-plugin"/>
       <make-bundle project="continuations-library"/>
@@ -1589,12 +1555,6 @@ TODO:
   </target>
   -->
 
-  <target name="docs.actors" depends="docs.start" unless="docs.skip">
-    <staged-docs project="actors">
-      <include name="**/*.scala"/>
-    </staged-docs>
-  </target>
-
   <target name="docs.scalap" depends="docs.start" unless="docs.skip">
     <staged-docs project="scalap">
       <include name="**/*.scala"/>
@@ -1603,7 +1563,7 @@ TODO:
 
   <target name="docs.core" depends="docs.lib, docs.reflect, docs.comp" unless="docs.skip"/>
   <!-- TODO modularize compiler:  docs.scaladoc, docs.interactive, -->
-  <target name="docs.done" depends="docs.core, docs.actors, docs.scalap" unless="docs.skip"/>
+  <target name="docs.done" depends="docs.core, docs.scalap" unless="docs.skip"/>
 
   <!-- doc/ and man/ -->
   <target name="pack.doc" depends="scaladoc.task" unless="docs.skip"> <!-- depends on scaladoc.task for scalac taskdef -->
@@ -1677,8 +1637,6 @@ MAIN DISTRIBUTION PACKAGING
     <mvn-package project="interactive"/>
     <mvn-package project="scaladoc"/>
     -->
-
-    <mvn-package project="actors"/>
 
     <!-- don't bother fitting scalap into the mould: it will move out soon -->
     <copy tofile="${dist.maven}/scalap/scalap-pom.xml" file="${src.dir}/build/maven/scalap-pom.xml" overwrite="true"/>
