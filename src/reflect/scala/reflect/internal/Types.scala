@@ -4113,8 +4113,8 @@ trait Types
 
   def isSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol], depth: Depth): Boolean = {
     def isSubArg(t1: Type, t2: Type, variance: Variance) = (
-         (variance.isContravariant || isSubType(t1, t2, depth))
-      && (variance.isCovariant || isSubType(t2, t1, depth))
+         (variance.isCovariant || isSubType(t2, t1, depth))     // The order of these two checks can be material for performance (SI-8478)
+      && (variance.isContravariant || isSubType(t1, t2, depth))
     )
 
     corresponds3(tps1, tps2, mapList(tparams)(_.variance))(isSubArg)
