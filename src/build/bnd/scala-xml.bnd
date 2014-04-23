@@ -1,5 +1,8 @@
 Bundle-Name: Scala XML Library
 Bundle-SymbolicName: org.scala-lang.modules.scala-xml
-ver: @VERSION@
+ver: @XML_VERSION@
 Bundle-Version: ${ver}
 Export-Package: *;version=${ver}
+Import-Package: scala.*;version="${range;[==,=+);@VERSION@}",*
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+

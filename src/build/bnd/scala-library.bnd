@@ -4,3 +4,5 @@ ver: @VERSION@
 Bundle-Version: ${ver}
 Export-Package: *;version=${ver}
 Import-Package: sun.misc;resolution:=optional, *
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+

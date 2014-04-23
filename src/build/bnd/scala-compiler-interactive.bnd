@@ -3,4 +3,6 @@ Bundle-SymbolicName: org.scala-lang.modules.scala-compiler-interactive_@SCALA_BI
 ver: @SCALA_COMPILER_INTERACTIVE_VERSION@
 Bundle-Version: ${ver}
 Export-Package: *;version=${ver}
-Import-Package: *
+Import-Package: scala.*;version="${range;[==,=+);@VERSION@}",*
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+
