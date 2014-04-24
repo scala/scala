@@ -408,12 +408,44 @@
           <if>
             <equals arg1="${@{project}.docroot}" arg2="NOT SET"/>
             <then>
-              <scaladoc destdir="${build-docs.dir}/@{project}" doctitle="${@{project}.description}" docfooter="epfl" docversion="${version.number}" sourcepath="${src.dir}" classpathref="docs.@{project}.build.path" srcdir="${src.dir}/${@{project}.srcdir}" addparams="${scalac.args.all}" implicits="on" diagrams="on" groups="on" rawOutput="${scaladoc.raw.output}" noPrefixes="${scaladoc.no.prefixes}" docUncompilable="${src.dir}/library-aux" skipPackages="${@{project}.skipPackages}">
+              <scaladoc
+                destdir="${build-docs.dir}/@{project}"
+                doctitle="${@{project}.description}"
+                docfooter="epfl"
+                docversion="${version.number}"
+                sourcepath="${src.dir}"
+                classpathref="docs.@{project}.build.path"
+                srcdir="${src.dir}/${@{project}.srcdir}"
+                addparams="${scalac.args.all}"
+                docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
+                implicits="on"
+                diagrams="on"
+                groups="on"
+                rawOutput="${scaladoc.raw.output}"
+                noPrefixes="${scaladoc.no.prefixes}"
+                docUncompilable="${src.dir}/library-aux"
+                skipPackages="${@{project}.skipPackages}">
                 <includes/>
               </scaladoc>
             </then>
             <else>
-              <scaladoc destdir="${build-docs.dir}/@{project}" doctitle="${@{project}.description}" docfooter="epfl" docversion="${version.number}" sourcepath="${src.dir}" classpathref="docs.@{project}.build.path" srcdir="${src.dir}/${@{project}.srcdir}" docRootContent="${src.dir}/@{project}/${@{project}.docroot}" addparams="${scalac.args.all}" implicits="on" diagrams="on" groups="on" rawOutput="${scaladoc.raw.output}" noPrefixes="${scaladoc.no.prefixes}" docUncompilable="${src.dir}/library-aux" skipPackages="${@{project}.skipPackages}">
+              <scaladoc docRootContent="${src.dir}/@{project}/${@{project}.docroot}"
+                destdir="${build-docs.dir}/@{project}"
+                doctitle="${@{project}.description}"
+                docfooter="epfl"
+                docversion="${version.number}"
+                sourcepath="${src.dir}"
+                classpathref="docs.@{project}.build.path"
+                srcdir="${src.dir}/${@{project}.srcdir}"
+                addparams="${scalac.args.all}"
+                docsourceurl="${scaladoc.url}€{FILE_PATH}.scala#L1"
+                implicits="on"
+                diagrams="on"
+                groups="on"
+                rawOutput="${scaladoc.raw.output}"
+                noPrefixes="${scaladoc.no.prefixes}"
+                docUncompilable="${src.dir}/library-aux"
+                skipPackages="${@{project}.skipPackages}">
                 <includes/>
               </scaladoc>
             </else>
