@@ -42,7 +42,7 @@ object TailCalls {
 
   /** This class represents a tailcalling computation
    */
-  abstract class TailRec[+A] {
+  abstract sealed class TailRec[+A] {
 
     /** Continue the computation with `f`. */
     final def map[B](f: A => B): TailRec[B] =
@@ -84,15 +84,15 @@ object TailCalls {
   }
 
   /** Internal class representing a tailcall */
-  protected case class Call[A](rest: () => TailRec[A]) extends TailRec[A]
+  protected final case class Call[A](rest: () => TailRec[A]) extends TailRec[A]
 
   /** Internal class representing the final result returned from a tailcalling
     * computation */
-  protected case class Done[A](value: A) extends TailRec[A]
+  protected final case class Done[A](value: A) extends TailRec[A]
 
   /** Internal class representing a continuation with function A => TailRec[B].
     * It is needed for the flatMap to be implemented. */
-  protected case class Cont[A, B](a: TailRec[A], f: A => TailRec[B]) extends TailRec[B]
+  protected final case class Cont[A, B](a: TailRec[A], f: A => TailRec[B]) extends TailRec[B]
 
   /** Performs a tailcall
    *  @param rest  the expression to be evaluated in the tailcall
