@@ -1,6 +1,6 @@
 package test;
 
-import scala.actors.TIMEOUT;
+case object TIMEOUT
 
 class MailBox {
 
