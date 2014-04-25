@@ -11,7 +11,8 @@ package runtime
 
 import scala.collection.{ mutable, immutable }
 import scala.math.{ ScalaNumericConversions, ScalaNumericAnyConversions }
-import immutable.NumericRange
+import scala.math.Numeric.{ DoubleAsIfIntegral, FloatAsIfIntegral }
+import immutable.{Range, NumericRange}
 import Proxy.Typed
 
 /** Base classes for the Rich* wrappers of the primitive types.
@@ -64,10 +65,32 @@ trait FractionalProxy[T] extends Any with ScalaNumberProxy[T] with RangedProxy[T
   type ResultWithoutStep = Range.Partial[T, NumericRange[T]]
 
   def isWhole() = false
-  def until(end: T): ResultWithoutStep                  = new Range.Partial(NumericRange(self, end, _))
-  def until(end: T, step: T): NumericRange.Exclusive[T] = NumericRange(self, end, step)
-  def to(end: T): ResultWithoutStep                     = new Range.Partial(NumericRange.inclusive(self, end, _))
-  def to(end: T, step: T): NumericRange.Inclusive[T]    = NumericRange.inclusive(self, end, step)
+  def until(end: T): ResultWithoutStep = {
+    val fix = (integralNum eq DoubleAsIfIntegral)
+    new Range.Partial((step: T) => {
+      if (fix) Range.Double(num.toDouble(self), num.toDouble(end), num.toDouble(step)).asInstanceOf[NumericRange[T]]
+      else NumericRange(self, end, step)
+    })
+  }
+  def until(end: T, step: T): NumericRange.Exclusive[T] = {
+    if (integralNum eq DoubleAsIfIntegral) {
+      Range.Double(num.toDouble(self), num.toDouble(end), num.toDouble(step)).asInstanceOf[NumericRange.Exclusive[T]]
+    }
+    else NumericRange(self, end, step)
+  }
+  def to(end: T): ResultWithoutStep                     = {
+    val fix = (integralNum eq DoubleAsIfIntegral)
+    new Range.Partial((step: T) => {
+      if (fix) Range.Double.inclusive(num.toDouble(self), num.toDouble(end), num.toDouble(step)).asInstanceOf[NumericRange[T]]
+      else NumericRange.inclusive(self, end, step)
+    })
+  }
+  def to(end: T, step: T): NumericRange.Inclusive[T]    = {
+    if (integralNum eq DoubleAsIfIntegral) {
+      Range.Double.inclusive(num.toDouble(self), num.toDouble(end), num.toDouble(step)).asInstanceOf[NumericRange.Inclusive[T]]
+    }
+    else NumericRange.inclusive(self, end, step)
+  }
 }
 
 trait OrderedProxy[T] extends Any with Ordered[T] with Typed[T] {
