@@ -16,8 +16,9 @@ private[internal] trait TypeConstraints {
   private lazy val _undoLog = new UndoLog
   def undoLog = _undoLog
 
+  import TypeConstraints.UndoPair
   class UndoLog extends Clearable {
-    private type UndoPairs = List[(TypeVar, TypeConstraint)]
+    type UndoPairs = List[UndoPair[TypeVar, TypeConstraint]]
     //OPT this method is public so we can do `manual inlining`
     var log: UndoPairs = List()
 
@@ -29,7 +30,7 @@ private[internal] trait TypeConstraints {
     def undoTo(limit: UndoPairs) {
       assertCorrectThread()
       while ((log ne limit) && log.nonEmpty) {
-        val (tv, constr) = log.head
+        val UndoPair(tv, constr) = log.head
         tv.constr = constr
         log = log.tail
       }
@@ -40,7 +41,7 @@ private[internal] trait TypeConstraints {
       *  which is already synchronized.
       */
     private[reflect] def record(tv: TypeVar) = {
-      log ::= ((tv, tv.constr.cloneInternal))
+      log ::= UndoPair(tv, tv.constr.cloneInternal)
     }
 
     def clear() {
@@ -265,4 +266,10 @@ private[internal] trait TypeConstraints {
 
     tvars forall (tv => tv.instWithinBounds || util.andFalse(logBounds(tv)))
   }
+}
+
+private[internal] object TypeConstraints {
+  // UndoPair is declared in companion object to not hold an outer pointer reference
+  final case class UndoPair[TypeVar <: SymbolTable#TypeVar,
+    TypeConstraint <: TypeConstraints#TypeConstraint](tv: TypeVar, tConstraint: TypeConstraint)
 }
