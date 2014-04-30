@@ -688,7 +688,24 @@ trait Scanners extends ScannersCommon {
         setStrVal()
         nextChar()
         token = STRINGLIT
-      } else syntaxError("unclosed string literal")
+      } else unclosedStringLit()
+    }
+
+    private def unclosedStringLit(): Unit = syntaxError("unclosed string literal")
+
+    // supplemental line-oriented advice on missing quote
+    private var advice = List.empty[(Position, String)]
+
+    // advice for the last line or so (some syntax errors detected after newline)
+    def lineAdvice = {
+      advice = advice filter { case (p, _) => p.point >= lastLineStartOffset }
+      if (advice.isEmpty) "" else advice map (_._2) mkString (" (", " ", ")")
+    }
+
+    // add advice at a position, forgetting old advice
+    def advise(pos: Position, msg: String) = {
+      val cur = advice filter { case (p, m) => p.source.file == pos.source.file && p.line == pos.line }
+      advice = cur :+ ((pos, msg))
     }
 
     private def getRawStringLit(): Unit = {
@@ -764,7 +781,7 @@ trait Scanners extends ScannersCommon {
           if (multiLine)
             incompleteInputError("unclosed multi-line string literal")
           else
-            syntaxError("unclosed string literal")
+            unclosedStringLit()
         }
         else {
           putChar(ch)
@@ -1068,21 +1085,19 @@ trait Scanners extends ScannersCommon {
 
 // Errors -----------------------------------------------------------------
 
-    /** generate an error at the given offset
-    */
-    def syntaxError(off: Offset, msg: String) {
+    /** generate an error at the given offset */
+    def syntaxError(off: Offset, msg: String): Unit = {
       error(off, msg)
       token = ERROR
     }
 
-    /** generate an error at the current token offset
-    */
+    /** generate an error at the current token offset */
     def syntaxError(msg: String): Unit = syntaxError(offset, msg)
 
     def deprecationWarning(msg: String): Unit = deprecationWarning(offset, msg)
 
     /** signal an error where the input ended in the middle of a token */
-    def incompleteInputError(msg: String) {
+    def incompleteInputError(msg: String): Unit = {
       incompleteInputError(offset, msg)
       token = EOF
     }

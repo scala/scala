@@ -1,0 +1,4 @@
+t6476-bad-esc-c.scala:5: error: unclosed string literal
+  def g = "xyz
+          ^
+one error found
