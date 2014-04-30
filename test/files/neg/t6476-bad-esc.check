@@ -1,0 +1,7 @@
+t6476-bad-esc.scala:3: error: unclosed string literal
+  def f = s"abc\"def"
+                    ^
+t6476-bad-esc.scala:3: error: ';' expected but 'def' found. (A trailing '\' escapes nothing. Use \\, $$ or $" for literal \, $ or ".)
+  def f = s"abc\"def"
+                 ^
+two errors found

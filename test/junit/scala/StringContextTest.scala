@@ -48,4 +48,33 @@ class StringContextTest {
     val res = processEscapes(s)
     assertEquals("Scala", res)
   }
+
+  @Test def t6631_baseline() = assertEquals("\f\r\n\t", s"""\f\r\n\t""")
+
+  @Test def t6631_badEscape() = assertThrows[InvalidEscapeException] {
+    s"""\x"""
+  }
+
+  @Test def antiHijack_?() = {
+    object AllYourStringsAreBelongToMe { case class StringContext(args: Any*) { def s(args: Any) = "!!!!" } }
+    import AllYourStringsAreBelongToMe._
+    //assertEquals("????", s"????")
+    assertEquals("!!!!", s"????")   // OK to hijack core interpolator ids
+  }
+
+  @Test def t6476() {
+    val x = 42
+    assertThrows[InvalidEscapeException] {
+      Console println s"abc\$x"      // rt
+    }
+    assertThrows[InvalidEscapeException] {
+      Console println s"""abc\$x"""  // rt
+    }
+    assertThrows[InvalidEscapeException] {
+      Console println s"\"           // rt
+    }
+    assertThrows[InvalidEscapeException] {
+      Console println s"""\"""       // rt
+    }
+  }
 }

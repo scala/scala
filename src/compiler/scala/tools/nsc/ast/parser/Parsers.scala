@@ -226,12 +226,13 @@ self =>
       for ((offset, msg) <- syntaxErrors)
         unit.error(o2p(offset), msg)
 
-    override def syntaxError(offset: Offset, msg: String) {
-      if (smartParsing) syntaxErrors += ((offset, msg))
-      else unit.error(o2p(offset), msg)
+    override def syntaxError(offset: Offset, msg: String): Unit = {
+      val text = s"${msg}${in.lineAdvice}"
+      if (smartParsing) syntaxErrors += ((offset, text))
+      else unit.error(o2p(offset), text)
     }
 
-    override def incompleteInputError(msg: String) {
+    override def incompleteInputError(msg: String): Unit = {
       val offset = source.content.length - 1
       if (smartParsing) syntaxErrors += ((offset, msg))
       else unit.incompleteInputError(o2p(offset), msg)
@@ -544,27 +545,22 @@ self =>
     }
     def warning(offset: Offset, msg: String): Unit
     def incompleteInputError(msg: String): Unit
-    private def syntaxError(pos: Position, msg: String, skipIt: Boolean) {
+    def syntaxError(offset: Offset, msg: String): Unit
+    def syntaxError(msg: String, skipIt: Boolean): Unit = syntaxError(in.offset, msg, skipIt)
+    private def syntaxError(pos: Position, msg: String, skipIt: Boolean): Unit = {
       syntaxError(pos pointOrElse in.offset, msg, skipIt)
     }
-    def syntaxError(offset: Offset, msg: String): Unit
-    def syntaxError(msg: String, skipIt: Boolean) {
-      syntaxError(in.offset, msg, skipIt)
-    }
-
-    def syntaxError(offset: Offset, msg: String, skipIt: Boolean) {
+    def syntaxError(offset: Offset, msg: String, skipIt: Boolean): Unit = {
       if (offset > lastErrorOffset) {
         syntaxError(offset, msg)
-        // no more errors on this token.
-        lastErrorOffset = in.offset
+        lastErrorOffset = in.offset     // no more errors on this token.
       }
-      if (skipIt)
-        skip(UNDEF)
+      if (skipIt) skip(UNDEF)
     }
 
-    def warning(msg: String) { warning(in.offset, msg) }
+    def warning(msg: String): Unit = warning(in.offset, msg)
 
-    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean) {
+    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean): Unit = {
       if (in.token == EOF)
         incompleteInputError(msg)
       else
@@ -1221,15 +1217,16 @@ self =>
                                                      skipIt = true)(EmptyTree)
       // Like Swiss cheese, with holes
       def stringCheese: Tree = atPos(in.offset) {
-        val start = in.offset
+        val start        = in.offset
         val interpolator = in.name.encoded // ident() for INTERPOLATIONID
+        val builtIn      = (in.name == nme.s || in.name == nme.f)
 
         val partsBuf = new ListBuffer[Tree]
-        val exprBuf = new ListBuffer[Tree]
+        val exprsBuf = new ListBuffer[Tree]
         in.nextToken()
         while (in.token == STRINGPART) {
           partsBuf += literal()
-          exprBuf += (
+          exprsBuf += (
             if (inPattern) dropAnyBraces(pattern())
             else in.token match {
               case IDENTIFIER => atPos(in.offset)(Ident(ident()))
@@ -1242,11 +1239,23 @@ self =>
         }
         if (in.token == STRINGLIT) partsBuf += literal()
 
+        // Sanity check erroneous s"abc\"def" or s"abc\$x"; macro detects f"abc\" only.
+        // Since we can't know the semantics yet, save our suspicions for when scanner hits unclosed string lit.
+        if (builtIn) {
+          val bs = """\"""
+          def oddly(s: String) = (s.reverse prefixLength (_ == '\\')) % 2 != 0
+          val advice = """A trailing '\' escapes nothing. Use \\, $$ or $" for literal \, $ or "."""
+          for (p <- partsBuf; Literal(Constant(s: String)) = p if (s endsWith bs) && oddly(s))
+            in.advise(p.pos withPoint (p.pos.point + s.length - 1), advice)
+        }
+
+        // Documenting that it is intentional that the ident is not rooted for purposes of virtualization
+        //val t1 = atPos(o2p(start)) { Select(Select (Ident(nme.ROOTPKG), nme.scala_), nme.StringContext) }
         val t1 = atPos(o2p(start)) { Ident(nme.StringContext) }
         val t2 = atPos(start) { Apply(t1, partsBuf.toList) }
         t2 setPos t2.pos.makeTransparent
         val t3 = Select(t2, interpolator) setPos t2.pos
-        atPos(start) { Apply(t3, exprBuf.toList) }
+        atPos(start) { Apply(t3, exprsBuf.toList) }
       }
       if (inPattern) stringCheese
       else withPlaceholders(stringCheese, isAny = true) // strinterpolator params are Any* by definition

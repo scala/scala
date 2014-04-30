@@ -1,0 +1,13 @@
+t6476-bad-esc-b.scala:5: error: Trailing '\' escapes nothing.
+  def h = f"abc\"
+               ^
+t6476-bad-esc-b.scala:7: error: Trailing '\' escapes nothing.
+  def j = f"abc\\\"
+                 ^
+t6476-bad-esc-b.scala:8: error: Trailing '\' escapes nothing.
+  def k = f"abc\${x}\${x}"
+               ^
+t6476-bad-esc-b.scala:8: error: Trailing '\' escapes nothing.
+  def k = f"abc\${x}\${x}"
+                    ^
+four errors found
