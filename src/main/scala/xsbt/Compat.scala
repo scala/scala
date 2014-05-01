@@ -38,95 +38,92 @@ import scala.tools.nsc.symtab.Flags
  * The technique described above is used in several places below.
  *
  */
-abstract class Compat
-{
-	val global: Global
-	import global._
-	val LocalChild = global.tpnme.LOCAL_CHILD
-	val Nullary = global.NullaryMethodType
-	val ScalaObjectClass = definitions.ScalaObjectClass
+abstract class Compat {
+  val global: Global
+  import global._
+  val LocalChild = global.tpnme.LOCAL_CHILD
+  val Nullary = global.NullaryMethodType
+  val ScalaObjectClass = definitions.ScalaObjectClass
 
-	private[this] final class MiscCompat
-	{
-		// in 2.9, nme.LOCALCHILD was renamed to tpnme.LOCAL_CHILD
-		def tpnme = nme
-		def LOCAL_CHILD = nme.LOCALCHILD
-		def LOCALCHILD = sourceCompatibilityOnly
+  private[this] final class MiscCompat {
+    // in 2.9, nme.LOCALCHILD was renamed to tpnme.LOCAL_CHILD
+    def tpnme = nme
+    def LOCAL_CHILD = nme.LOCALCHILD
+    def LOCALCHILD = sourceCompatibilityOnly
 
-		// in 2.10, ScalaObject was removed
-		def ScalaObjectClass = definitions.ObjectClass
+    // in 2.10, ScalaObject was removed
+    def ScalaObjectClass = definitions.ObjectClass
 
-		def NullaryMethodType = NullaryMethodTpe
+    def NullaryMethodType = NullaryMethodTpe
 
-		def MACRO = DummyValue
+    def MACRO = DummyValue
 
-		// in 2.10, sym.moduleSuffix exists, but genJVM.moduleSuffix(Symbol) does not
-		def moduleSuffix(sym: Symbol): String = sourceCompatibilityOnly
-		// in 2.11 genJVM does not exist
-		def genJVM = this
-	}
-	// in 2.9, NullaryMethodType was added to Type
-	object NullaryMethodTpe {
-		def unapply(t: Type): Option[Type] = None
-	}
+    // in 2.10, sym.moduleSuffix exists, but genJVM.moduleSuffix(Symbol) does not
+    def moduleSuffix(sym: Symbol): String = sourceCompatibilityOnly
+    // in 2.11 genJVM does not exist
+    def genJVM = this
+  }
+  // in 2.9, NullaryMethodType was added to Type
+  object NullaryMethodTpe {
+    def unapply(t: Type): Option[Type] = None
+  }
 
-	protected implicit def symbolCompat(sym: Symbol): SymbolCompat = new SymbolCompat(sym)
-	protected final class SymbolCompat(sym: Symbol) {
-		// before 2.10, sym.moduleSuffix doesn't exist, but genJVM.moduleSuffix does
-		def moduleSuffix = global.genJVM.moduleSuffix(sym)
+  protected implicit def symbolCompat(sym: Symbol): SymbolCompat = new SymbolCompat(sym)
+  protected final class SymbolCompat(sym: Symbol) {
+    // before 2.10, sym.moduleSuffix doesn't exist, but genJVM.moduleSuffix does
+    def moduleSuffix = global.genJVM.moduleSuffix(sym)
 
-		def enclosingTopLevelClass: Symbol = sym.toplevelClass
-		def toplevelClass: Symbol = sourceCompatibilityOnly
-	}
+    def enclosingTopLevelClass: Symbol = sym.toplevelClass
+    def toplevelClass: Symbol = sourceCompatibilityOnly
+  }
 
+  val DummyValue = 0
+  def hasMacro(s: Symbol): Boolean =
+    {
+      val MACRO = Flags.MACRO // will be DummyValue for versions before 2.10
+      MACRO != DummyValue && s.hasFlag(MACRO)
+    }
+  def moduleSuffix(s: Symbol): String = s.moduleSuffix
 
-	val DummyValue = 0
-	def hasMacro(s: Symbol): Boolean =
-	{
-		val MACRO = Flags.MACRO // will be DummyValue for versions before 2.10
-		MACRO != DummyValue && s.hasFlag(MACRO)
-	}
-	def moduleSuffix(s: Symbol): String = s.moduleSuffix
+  private[this] def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
 
-	private[this] def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
+  private[this] final implicit def miscCompat(n: AnyRef): MiscCompat = new MiscCompat
 
-	private[this] final implicit def miscCompat(n: AnyRef): MiscCompat = new MiscCompat
+  object MacroExpansionOf {
+    def unapply(tree: Tree): Option[Tree] = {
 
-	object MacroExpansionOf {
-		def unapply(tree: Tree): Option[Tree] = {
+      // MacroExpansionAttachment (MEA) compatibility for 2.8.x and 2.9.x
+      object Compat {
+        class MacroExpansionAttachment(val original: Tree)
 
-			// MacroExpansionAttachment (MEA) compatibility for 2.8.x and 2.9.x
-			object Compat {
-				class MacroExpansionAttachment(val original: Tree)
+        // Trees have no attachments in 2.8.x and 2.9.x
+        implicit def withAttachments(tree: Tree): WithAttachments = new WithAttachments(tree)
+        class WithAttachments(val tree: Tree) {
+          object EmptyAttachments {
+            def all = Set.empty[Any]
+          }
+          val attachments = EmptyAttachments
+        }
+      }
+      import Compat._
 
-				// Trees have no attachments in 2.8.x and 2.9.x
-				implicit def withAttachments(tree: Tree): WithAttachments = new WithAttachments(tree)
-				class WithAttachments(val tree: Tree) {
-					object EmptyAttachments {
-						def all = Set.empty[Any]
-					}
-					val attachments = EmptyAttachments
-				}
-			}
-			import Compat._
+      locally {
+        // Wildcard imports are necessary since 2.8.x and 2.9.x don't have `MacroExpansionAttachment` at all
+        import global._ // this is where MEA lives in 2.10.x
 
-			locally {
-				// Wildcard imports are necessary since 2.8.x and 2.9.x don't have `MacroExpansionAttachment` at all
-				import global._ // this is where MEA lives in 2.10.x
+        // `original` has been renamed to `expandee` in 2.11.x
+        implicit def withExpandee(att: MacroExpansionAttachment): WithExpandee = new WithExpandee(att)
+        class WithExpandee(att: MacroExpansionAttachment) {
+          def expandee: Tree = att.original
+        }
 
-				// `original` has been renamed to `expandee` in 2.11.x
-				implicit def withExpandee(att: MacroExpansionAttachment): WithExpandee = new WithExpandee(att)
-				class WithExpandee(att: MacroExpansionAttachment) {
-					def expandee: Tree = att.original
-				}
-
-				locally {
-					import analyzer._ // this is where MEA lives in 2.11.x
-					tree.attachments.all.collect {
-						case att: MacroExpansionAttachment => att.expandee
-					} headOption
-				}
-			}
-		}
-	}
+        locally {
+          import analyzer._ // this is where MEA lives in 2.11.x
+          tree.attachments.all.collect {
+            case att: MacroExpansionAttachment => att.expandee
+          } headOption
+        }
+      }
+    }
+  }
 }

@@ -39,86 +39,85 @@ import scala.tools.nsc._
  *
  */
 class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) extends Compat {
-	import global._
+  import global._
 
-	def extract(unit: CompilationUnit): Set[String] = {
-		val tree = unit.body
-		val extractedByTreeWalk = extractByTreeWalk(tree)
-		extractedByTreeWalk
-	}
+  def extract(unit: CompilationUnit): Set[String] = {
+    val tree = unit.body
+    val extractedByTreeWalk = extractByTreeWalk(tree)
+    extractedByTreeWalk
+  }
 
-	private def extractByTreeWalk(tree: Tree): Set[String] = {
-		val namesBuffer = collection.mutable.ListBuffer.empty[String]
-		def addSymbol(symbol: Symbol): Unit = {
-			val symbolNameAsString = symbol.name.decode.trim
-			namesBuffer += symbolNameAsString
-		}
+  private def extractByTreeWalk(tree: Tree): Set[String] = {
+    val namesBuffer = collection.mutable.ListBuffer.empty[String]
+    def addSymbol(symbol: Symbol): Unit = {
+      val symbolNameAsString = symbol.name.decode.trim
+      namesBuffer += symbolNameAsString
+    }
 
-		def handleTreeNode(node: Tree): Unit = {
-			def handleMacroExpansion(original: Tree): Unit = {
-				// Some macros seem to have themselves registered as original tree.
-				// In this case, we only need to handle the children of the original tree,
-				// because we already handled the expanded tree.
-				// See https://issues.scala-lang.org/browse/SI-8486
-				if(original == node) original.children.foreach(handleTreeNode)
-				else original.foreach(handleTreeNode)
-			}
+    def handleTreeNode(node: Tree): Unit = {
+      def handleMacroExpansion(original: Tree): Unit = {
+        // Some macros seem to have themselves registered as original tree.
+        // In this case, we only need to handle the children of the original tree,
+        // because we already handled the expanded tree.
+        // See https://issues.scala-lang.org/browse/SI-8486
+        if (original == node) original.children.foreach(handleTreeNode)
+        else original.foreach(handleTreeNode)
+      }
 
-			def handleClassicTreeNode(node: Tree): Unit = node match {
-				case _: DefTree | _: Template => ()
-				// turns out that Import node has a TermSymbol associated with it
-				// I (Grzegorz) tried to understand why it's there and what does it represent but
-				// that logic was introduced in 2005 without any justification I'll just ignore the
-				// import node altogether and just process the selectors in the import node
-				case Import(_, selectors: List[ImportSelector]) =>
-					def usedNameInImportSelector(name: Name): Unit =
-						if ((name != null) && (name != nme.WILDCARD)) namesBuffer += name.toString
-					selectors foreach { selector =>
-						usedNameInImportSelector(selector.name)
-						usedNameInImportSelector(selector.rename)
-					}
-				// TODO: figure out whether we should process the original tree or walk the type
-				// the argument for processing the original tree: we process what user wrote
-				// the argument for processing the type: we catch all transformations that typer applies
-				// to types but that might be a bad thing because it might expand aliases eagerly which
-				// not what we need
-				case t: TypeTree if t.original != null =>
-					t.original.foreach(handleTreeNode)
-				case t if t.hasSymbol && eligibleAsUsedName(t.symbol) =>
-					addSymbol(t.symbol)
-				case _ => ()
-			}
+      def handleClassicTreeNode(node: Tree): Unit = node match {
+        case _: DefTree | _: Template => ()
+        // turns out that Import node has a TermSymbol associated with it
+        // I (Grzegorz) tried to understand why it's there and what does it represent but
+        // that logic was introduced in 2005 without any justification I'll just ignore the
+        // import node altogether and just process the selectors in the import node
+        case Import(_, selectors: List[ImportSelector]) =>
+          def usedNameInImportSelector(name: Name): Unit =
+            if ((name != null) && (name != nme.WILDCARD)) namesBuffer += name.toString
+          selectors foreach { selector =>
+            usedNameInImportSelector(selector.name)
+            usedNameInImportSelector(selector.rename)
+          }
+        // TODO: figure out whether we should process the original tree or walk the type
+        // the argument for processing the original tree: we process what user wrote
+        // the argument for processing the type: we catch all transformations that typer applies
+        // to types but that might be a bad thing because it might expand aliases eagerly which
+        // not what we need
+        case t: TypeTree if t.original != null =>
+          t.original.foreach(handleTreeNode)
+        case t if t.hasSymbol && eligibleAsUsedName(t.symbol) =>
+          addSymbol(t.symbol)
+        case _ => ()
+      }
 
-			node match {
-				case MacroExpansionOf(original) =>
-					handleClassicTreeNode(node)
-					handleMacroExpansion(original)
-				case _ =>
-					handleClassicTreeNode(node)
-			}
-		}
+      node match {
+        case MacroExpansionOf(original) =>
+          handleClassicTreeNode(node)
+          handleMacroExpansion(original)
+        case _ =>
+          handleClassicTreeNode(node)
+      }
+    }
 
-		tree.foreach(handleTreeNode)
-		namesBuffer.toSet
-	}
+    tree.foreach(handleTreeNode)
+    namesBuffer.toSet
+  }
 
+  /**
+   * Needed for compatibility with Scala 2.8 which doesn't define `tpnme`
+   */
+  private object tpnme {
+    val EMPTY = nme.EMPTY.toTypeName
+    val EMPTY_PACKAGE_NAME = nme.EMPTY_PACKAGE_NAME.toTypeName
+  }
 
-	/**
-	 * Needed for compatibility with Scala 2.8 which doesn't define `tpnme`
-	 */
-	private object tpnme {
-		val EMPTY = nme.EMPTY.toTypeName
-		val EMPTY_PACKAGE_NAME = nme.EMPTY_PACKAGE_NAME.toTypeName
-	}
+  private def eligibleAsUsedName(symbol: Symbol): Boolean = {
+    def emptyName(name: Name): Boolean = name match {
+      case nme.EMPTY | nme.EMPTY_PACKAGE_NAME | tpnme.EMPTY | tpnme.EMPTY_PACKAGE_NAME => true
+      case _ => false
+    }
 
-	private def eligibleAsUsedName(symbol: Symbol): Boolean = {
-		def emptyName(name: Name): Boolean = name match {
-			case nme.EMPTY | nme.EMPTY_PACKAGE_NAME | tpnme.EMPTY | tpnme.EMPTY_PACKAGE_NAME => true
-			case _ => false
-		}
-
-		(symbol != NoSymbol) &&
-		!symbol.isSynthetic &&
-		!emptyName(symbol.name)
-	}
+    (symbol != NoSymbol) &&
+      !symbol.isSynthetic &&
+      !emptyName(symbol.name)
+  }
 }
