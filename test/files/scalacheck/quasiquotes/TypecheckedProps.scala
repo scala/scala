@@ -1,9 +1,8 @@
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport._
 
-object TypecheckedProps extends QuasiquoteProperties("typechecked") {
-
-
+object TypecheckedProps extends QuasiquoteProperties("typechecked")
+                           with TypecheckedTypes {
   property("tuple term") = test {
     val q"(..$elements)" = typecheck(q"(1, 2)")
     assert(elements ≈ List(q"1", q"2"))
@@ -166,7 +165,7 @@ trait TypecheckedTypes { self: QuasiquoteProperties =>
   }
 
   property("applied type") = test {
-    val tt = typecheckTyp(q"Map[Int, Int]")
+    val tt = typecheckTyp(tq"Map[Int, Int]")
     val tq"$tpt[..$tpts]" = tt
     val tq"scala.this.Predef.Map" = tpt
     val List(tq"scala.Int", tq"scala.Int") = tpts
@@ -205,7 +204,7 @@ trait TypecheckedTypes { self: QuasiquoteProperties =>
   property("annotated type") = test {
     val tq"$tpt @$annot" = typecheckTyp(tq"Int @unchecked")
     val tq"scala.Int" = tpt
-    val q"new unchecked" = annot
+    val tq"unchecked" = annot
   }
 
   property("existential type") = test {
