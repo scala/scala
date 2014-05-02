@@ -368,12 +368,13 @@ TODO:
       <typedef resource="aQute/bnd/ant/taskdef.properties" classpathref="extra.tasks.classpath" />
 
       <echo message="Using Scala ${starr.version} for STARR."/>
-      <artifact:dependencies pathId="starr.compiler.path">
+      <artifact:dependencies pathId="starr.compiler.path" filesetId="starr.fileset">
         <artifact:remoteRepository refid="extra-repo"/>
         <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
         <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
         <dependency groupId="org.scala-lang" artifactId="scala-compiler" version="${starr.version}"/>
       </artifact:dependencies>
+      <copy-deps project="starr"/>
 
       <property name="maven-deps-done"     value="yep!"/>
     </then></if>
