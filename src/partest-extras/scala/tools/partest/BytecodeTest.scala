@@ -34,7 +34,7 @@ abstract class BytecodeTest extends ASMConverters {
   /** produce the output to be compared against a checkfile */
   protected def show(): Unit
 
-  def main(args: Array[String]): Unit = show
+  def main(args: Array[String]): Unit = show()
 
   // asserts
   def sameBytecode(methA: MethodNode, methB: MethodNode) = {
