@@ -596,18 +596,26 @@ trait Printers extends api.Printers { self: SymbolTable =>
       }
     }
 
-    protected def emptyTree(tree: Tree) = tree match {
-      case EmptyTree | build.SyntacticEmptyTypeTree() => true
-      case _ => false
+    object EmptyTypeTree {
+      def unapply(tt: TypeTree): Boolean = tt match {
+        case build.SyntacticEmptyTypeTree() if tt.wasEmpty || tt.isEmpty => true
+        case _ => false
+      }
     }
 
-    protected def originalTypeTrees(trees: List[Tree]) =
-      trees.filter(!emptyTree(_)) map {
-        case tt: TypeTree => tt.original
-  	    case tree => tree
+    protected def isEmptyTree(tree: Tree) =
+      tree match {
+        case EmptyTree | EmptyTypeTree() => true
+        case _ => false
       }
 
-    val defaultClasses = List(tpnme.AnyRef)
+    protected def originalTypeTrees(trees: List[Tree]) =
+      trees.filter(!isEmptyTree(_)) map {
+        case tt: TypeTree if tt.original != null => tt.original
+        case tree => tree
+      }
+
+    val defaultClasses = List(tpnme.AnyRef, tpnme.Object)
     val defaultTraitsForCase = List(tpnme.Product, tpnme.Serializable)
     protected def removeDefaultTypesFromList(trees: List[Tree])(classesToRemove: List[Name] = defaultClasses)(traitsToRemove: List[Name]) = {
       def removeDefaultTraitsFromList(trees: List[Tree], traitsToRemove: List[Name]): List[Tree] =
@@ -623,9 +631,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
       removeDefaultTraitsFromList(removeDefaultClassesFromList(trees, classesToRemove), traitsToRemove)
     }
 
-    protected def removeDefaultClassesFromList(trees: List[Tree], classesToRemove: List[Name] = defaultClasses) = 
+    protected def removeDefaultClassesFromList(trees: List[Tree], classesToRemove: List[Name] = defaultClasses) =
       originalTypeTrees(trees) filter {
         case Select(Ident(sc), name) => !(classesToRemove.contains(name) && sc == nme.scala_)
+        case tt: TypeTree if tt.tpe != null => !(classesToRemove contains(newTypeName(tt.tpe.toString())))
         case _ => true
       }
 
@@ -637,7 +646,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
       }
 
     override def printOpt(prefix: String, tree: Tree) = 
-      if (!emptyTree(tree)) super.printOpt(prefix, tree)
+      if (!isEmptyTree(tree)) super.printOpt(prefix, tree)
 
     override def printColumn(ts: List[Tree], start: String, sep: String, end: String) = {
       super.printColumn(ts.filter(!syntheticToRemove(_)), start, sep, end)
@@ -952,7 +961,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           def printTp = print("(", tp, ")")
 
           tp match {
-            case EmptyTree | build.SyntacticEmptyTypeTree() => printTp
+            case EmptyTree | EmptyTypeTree() => printTp
             // case for untypechecked trees
             case Annotated(annot, arg) if (expr ne null) && (arg ne null) && expr.equalsStructure(arg) => printTp // remove double arg - 5: 5: @unchecked
             case tt: TypeTree if tt.original.isInstanceOf[Annotated] => printTp
@@ -963,7 +972,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
         // print only fun when targs are TypeTrees with empty original
         case TypeApply(fun, targs) =>
-          if (targs.exists(emptyTree(_))) {
+          if (targs.exists(isEmptyTree(_))) {
             print(fun)
           } else super.printTree(tree)
 
@@ -984,8 +993,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
             case treeInfo.Unapplied(body) =>
               body match {
                 case Select(qual, name) if name == nme.unapply  => print(qual)
-                case TypeApply(Select(qual, name), args) if name == nme.unapply || name == nme.unapplySeq =>
-                  print(TypeApply(qual, args))
+                case TypeApply(Select(qual, name), _) if name == nme.unapply || name == nme.unapplySeq =>
+                  print(qual)
                 case _ => print(body)
               }
             case _ => print(fun)
@@ -1061,7 +1070,11 @@ trait Printers extends api.Printers { self: SymbolTable =>
           print("(", qualifier, ")#", blankForOperatorName(selector), printedName(selector))
 
         case tt: TypeTree =>
-          if (!emptyTree(tt)) print(tt.original)   
+          if (!isEmptyTree(tt)) {
+            val original = tt.original
+            if (original != null) print(original)
+            else super.printTree(tree)
+          }
 
         case AppliedTypeTree(tp, args) =>
           // it's possible to have (=> String) => String type but Function1[=> String, String] is not correct
