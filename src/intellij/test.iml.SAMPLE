@@ -1,21 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="scala" name="Scala">
+      <configuration>
+        <option name="compilerLibraryLevel" value="Project" />
+        <option name="compilerLibraryName" value="starr" />
+        <option name="languageLevel" value="Scala 2.11" />
+      </configuration>
+    </facet>
+  </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$/../../test" />
+    <content url="file://$MODULE_DIR$/../../test">
+      <excludeFolder url="file://$MODULE_DIR$/../../test/junit" />
+    </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="library" />
-    <orderEntry type="module" module-name="xml" />
-    <orderEntry type="module" module-name="parser-combinators" />
     <orderEntry type="module" module-name="reflect" />
     <orderEntry type="module" module-name="compiler" />
+    <orderEntry type="module" module-name="repl" />
     <orderEntry type="module" module-name="actors" />
-    <orderEntry type="module" module-name="swing" />
-    <orderEntry type="module" module-name="partest" />
     <orderEntry type="module" module-name="asm" />
     <orderEntry type="module" module-name="forkjoin" />
-    <orderEntry type="library" name="junit" level="project" />
+    <orderEntry type="module" module-name="partest-extras" />
+    <orderEntry type="library" name="scaladoc-deps" level="project" />
+    <orderEntry type="library" name="partest" level="project" />
   </component>
 </module>
 

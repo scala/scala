@@ -4,7 +4,8 @@
     <facet type="scala" name="Scala">
       <configuration>
         <option name="compilerLibraryLevel" value="Project" />
-        <option name="compilerLibraryName" value="compiler-locker" />
+        <option name="compilerLibraryName" value="starr" />
+        <option name="languageLevel" value="Scala 2.11" />
         <option name="maximumHeapSize" value="1536" />
         <option name="vmOptions" value="-Xms1536m -Xss1m -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=256m -XX:+CMSClassUnloadingEnabled -XX:+UseCompressedOops -XX:+UseParallelGC" />
       </configuration>
@@ -20,8 +21,8 @@
     <orderEntry type="module" module-name="library" />
     <orderEntry type="module" module-name="reflect" />
     <orderEntry type="module" module-name="compiler" />
-    <orderEntry type="module" module-name="xml" />
-    <orderEntry type="module" module-name="parser-combinators" />
-    <orderEntry type="module" module-name="partest" />
+    <orderEntry type="library" name="partest" level="project" />
+    <orderEntry type="library" name="scaladoc-deps" level="project" />
   </component>
 </module>
+

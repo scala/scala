@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="AntConfiguration">
-    <defaultAnt bundledAnt="true" />
-  </component>
   <component name="CompilerConfiguration">
     <option name="DEFAULT_COMPILER" value="Javac" />
     <resourceExtensions>
@@ -21,11 +18,13 @@
       <entry name="?*.tld" />
       <entry name="?*.ftl" />
     </wildcardResourcePatterns>
-    <annotationProcessing enabled="false" useClasspath="true" />
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="false">
+        <processorPath useClasspath="true" />
+      </profile>
+    </annotationProcessing>
   </component>
-  <component name="CopyrightManager" default="">
-    <module2copyright />
-  </component>
+  <component name="CopyrightManager" default="" />
   <component name="DependencyValidationManager">
     <option name="SKIP_IMPORT_STATEMENTS" value="false" />
   </component>
@@ -41,11 +40,16 @@
       <profile version="1.0" is_locked="false">
         <option name="myName" value="Project Default" />
         <option name="myLocal" value="false" />
+        <inspection_tool class="LoggerInitializedWithForeignClass" enabled="false" level="WARNING" enabled_by_default="false">
+          <option name="loggerClassName" value="org.apache.log4j.Logger,org.slf4j.LoggerFactory,org.apache.commons.logging.LogFactory,java.util.logging.Logger" />
+          <option name="loggerFactoryMethodName" value="getLogger,getLogger,getLog,getLogger" />
+        </inspection_tool>
         <inspection_tool class="SpellCheckingInspection" enabled="false" level="TYPO" enabled_by_default="false">
           <option name="processCode" value="true" />
           <option name="processLiterals" value="true" />
           <option name="processComments" value="true" />
         </inspection_tool>
+        <inspection_tool class="UnitMethodIsParameterless" enabled="false" level="WARNING" enabled_by_default="false" />
       </profile>
     </profiles>
     <option name="PROJECT_PROFILE" value="Project Default" />
@@ -53,7 +57,7 @@
     <version value="1.0" />
   </component>
   <component name="JavacSettings">
-    <option name="ADDITIONAL_OPTIONS_STRING" value="-source 1.5 -target 1.5" />
+    <option name="ADDITIONAL_OPTIONS_STRING" value="-source 1.6 -target 1.6" />
   </component>
   <component name="JavadocGenerationManager">
     <option name="OUTPUT_DIRECTORY" />
@@ -205,12 +209,15 @@
       <module fileurl="file://$PROJECT_DIR$/interactive.iml" filepath="$PROJECT_DIR$/interactive.iml" />
       <module fileurl="file://$PROJECT_DIR$/library.iml" filepath="$PROJECT_DIR$/library.iml" />
       <module fileurl="file://$PROJECT_DIR$/manual.iml" filepath="$PROJECT_DIR$/manual.iml" />
+      <module fileurl="file://$PROJECT_DIR$/partest-extras.iml" filepath="$PROJECT_DIR$/partest-extras.iml" />
+      <module fileurl="file://$PROJECT_DIR$/partest-javaagent.iml" filepath="$PROJECT_DIR$/partest-javaagent.iml" />
       <module fileurl="file://$PROJECT_DIR$/reflect.iml" filepath="$PROJECT_DIR$/reflect.iml" />
       <module fileurl="file://$PROJECT_DIR$/repl.iml" filepath="$PROJECT_DIR$/repl.iml" />
       <module fileurl="file://$PROJECT_DIR$/scala.iml" filepath="$PROJECT_DIR$/scala.iml" />
       <module fileurl="file://$PROJECT_DIR$/scaladoc.iml" filepath="$PROJECT_DIR$/scaladoc.iml" />
       <module fileurl="file://$PROJECT_DIR$/scalap.iml" filepath="$PROJECT_DIR$/scalap.iml" />
       <module fileurl="file://$PROJECT_DIR$/test.iml" filepath="$PROJECT_DIR$/test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/test-junit.iml" filepath="$PROJECT_DIR$/test-junit.iml" />
     </modules>
   </component>
   <component name="ProjectResources">
@@ -234,45 +241,46 @@
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="compiler-locker">
-      <CLASSES>
-        <root url="file://$PROJECT_DIR$/../../build/locker/classes/library" />
-        <root url="file://$PROJECT_DIR$/../../build/locker/classes/compiler" />
-        <root url="file://$PROJECT_DIR$/../../build/locker/classes/reflect" />
-        <root url="file://$PROJECT_DIR$/../../build/asm/classes" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
     <library name="junit">
       <CLASSES>
         <root url="file://$PROJECT_DIR$/../../build/deps/junit" />
       </CLASSES>
       <JAVADOC />
-      <SOURCES>
-        <root url="file://$PROJECT_DIR$/../../build/deps/junit" />
-      </SOURCES>
+      <SOURCES />
       <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/junit" recursive="false" />
-      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/junit" recursive="false" type="SOURCES" />
     </library>
-    <library name="partest-deps">
+    <library name="partest">
       <CLASSES>
         <root url="file://$PROJECT_DIR$/../../build/deps/partest" />
       </CLASSES>
       <JAVADOC />
-      <SOURCES>
-        <root url="file://$PROJECT_DIR$/../../build/deps/junit" />
-      </SOURCES>
+      <SOURCES />
       <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/partest" recursive="false" />
-      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/junit" recursive="false" type="SOURCES" />
     </library>
     <library name="repl-deps">
-       <CLASSES>
+      <CLASSES>
         <root url="file://$PROJECT_DIR$/../../build/deps/repl" />
-       </CLASSES>
-       <JAVADOC />
-       <SOURCES />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
       <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/repl" recursive="false" />
-     </library>
+    </library>
+    <library name="scaladoc-deps">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/scaladoc" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/scaladoc" recursive="false" />
+    </library>
+    <library name="starr">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../build/deps/starr" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+      <jarDirectory url="file://$PROJECT_DIR$/../../build/deps/starr" recursive="false" />
+    </library>
   </component>
 </project>
+
