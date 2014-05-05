@@ -745,7 +745,7 @@
     <attribute name="dir" default="${partest.dir}"/>
     <attribute name="srcdir" default="files"/> <!-- TODO: make targets for `pending` and other subdirs -->
     <attribute name="colors" default="${partest.colors}"/>
-    <attribute name="scalacOpts" default="${scalac.args.optimise}"/>
+    <attribute name="scalacOpts" default="${partest.scalac_opts} ${scalac.args.optimise}"/>
     <attribute name="pcp" default="${toString:partest.compilation.path}"/>
     <attribute name="kinds"/>
     <sequential>
