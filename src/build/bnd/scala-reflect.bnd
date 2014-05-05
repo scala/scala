@@ -6,5 +6,4 @@ Export-Package: *;version=${ver}
 Import-Package: scala.*;version="${range;[==,=+);${ver}}", \
                 scala.tools.nsc;resolution:=optional;version="${range;[==,=+);${ver}}", \
                 *
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6, JavaSE-1.7
