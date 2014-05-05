@@ -926,7 +926,9 @@ trait Iterator[+A] extends TraversableOnce[A] {
     private def takeDestructively(size: Int): Seq[A] = {
       val buf = new ArrayBuffer[A]
       var i = 0
-      while (self.hasNext && i < size) {
+      // The order of terms in the following condition is important
+      // here as self.hasNext could be blocking
+      while (i < size && self.hasNext) {
         buf += self.next
         i += 1
       }
