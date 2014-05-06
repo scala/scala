@@ -16,6 +16,6 @@ class GroupedIteratorTest {
     val it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next = { i += 1; i } }
     val slidingIt = it sliding 2
     slidingIt.next
-    assert(counter == 1)
+    assertEquals("Counter should be one, that means we didn't look further than needed", 1, counter)
   }
 }
