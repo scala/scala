@@ -1523,8 +1523,9 @@ TODO:
 
   <target name="test.bc-opt" description="Optimized version of test.bc."> <optimized name="test.bc"/></target>
   <target name="test.bc" depends="bc.init, pack.lib, pack.reflect">
-    <bc.check project="library"/>
-    <bc.check project="reflect"/>
+    <echo message="binary compatibility testing disabled in the 2.12.x branch"/>
+    <!-- <bc.check project="library"/> -->
+    <!-- <bc.check project="reflect"/> -->
   </target>
 
 <!-- ===========================================================================
