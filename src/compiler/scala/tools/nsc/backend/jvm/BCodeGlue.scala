@@ -18,7 +18,7 @@ import scala.collection.{ immutable, mutable }
  *  @version 1.0
  *
  */
-abstract class BCodeGlue extends SubComponent {
+abstract class BCodeGlue extends SubComponent with BCodeICodeCommon {
 
   import global._
 

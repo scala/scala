@@ -1020,17 +1020,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         tree :: Nil
     }
 
-    /* Some useful equality helpers. */
-    def isNull(t: Tree) = {
-      t match {
-        case Literal(Constant(null)) => true
-        case _ => false
-      }
-    }
-
-    /* If l or r is constant null, returns the other ; otherwise null */
-    def ifOneIsNull(l: Tree, r: Tree) = if (isNull(l)) r else if (isNull(r)) l else null
-
     /* Emit code to compare the two top-most stack values using the 'op' operator. */
     private def genCJUMP(success: asm.Label, failure: asm.Label, op: TestOp, tk: BType) {
       if (tk.isIntSizedType) { // BOOL, BYTE, CHAR, SHORT, or INT
@@ -1200,6 +1189,12 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           // expr == null -> expr eq null
           genLoad(l, ObjectReference)
           genCZJUMP(success, failure, icodes.EQ, ObjectReference)
+        } else if (isNonNullExpr(l)) {
+          // SI-7852 Avoid null check if L is statically non-null.
+          genLoad(l, ObjectReference)
+          genLoad(r, ObjectReference)
+          genCallMethod(Object_equals, icodes.opcodes.Dynamic)
+          genCZJUMP(success, failure, icodes.NE, BOOL)
         } else {
           // l == r -> if (l eq null) r eq null else l.equals(r)
           val eqEqTempLocal = locals.makeLocal(AnyRefReference, nme.EQEQ_LOCAL_VAR.toString)
