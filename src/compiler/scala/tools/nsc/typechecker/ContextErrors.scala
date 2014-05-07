@@ -750,7 +750,7 @@ trait ContextErrors {
       protected def macroExpansionError(expandee: Tree, msg: String, pos: Position = NoPosition) = {
         def msgForLog = if (msg != null && (msg contains "exception during macro expansion")) msg.split(EOL).drop(1).headOption.getOrElse("?") else msg
         macroLogLite("macro expansion has failed: %s".format(msgForLog))
-        if (msg != null) context.error(if (pos.isDefined) pos else expandee.pos, msg) // issueTypeError(PosAndMsgTypeError(..)) won't work => swallows positions
+        if (msg != null) issueTypeError(PosAndMsgTypeError(if (pos.isDefined) pos else expandee.pos, msg))
         setError(expandee)
         throw MacroExpansionException
       }
