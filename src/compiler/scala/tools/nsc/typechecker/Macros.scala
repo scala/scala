@@ -42,13 +42,15 @@ import Fingerprint._
  *    (Expr(elems))
  *    (TypeTag(Int))
  */
-trait Macros extends FastTrack with MacroRuntimes with Traces with Helpers {
+trait Macros extends MacroRuntimes with Traces with Helpers {
   self: Analyzer =>
 
   import global._
   import definitions._
   import treeInfo.{isRepeatedParamType => _, _}
   import MacrosStats._
+
+  lazy val fastTrack = new FastTrack[self.type](self)
 
   def globalSettings = global.settings
 
