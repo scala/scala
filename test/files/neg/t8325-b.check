@@ -1,0 +1,10 @@
+t8325-b.scala:3: error: Unmatched closing brace '}' ignored here
+  def k(is: Int*} = ???
+                ^
+t8325-b.scala:3: error: ';' expected but '=' found.
+  def k(is: Int*} = ???
+                  ^
+t8325-b.scala:4: error: eof expected but '}' found.
+}
+^
+three errors found
