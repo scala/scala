@@ -55,8 +55,6 @@ trait JavaPlatform extends Platform {
     (sym isNonBottomSubClass BoxedBooleanClass)
   }
 
-  def doLoad(cls: ClassPath[AbstractFile]#ClassRep): Boolean = true
-
   def needCompile(bin: AbstractFile, src: AbstractFile) =
     src.lastModified >= bin.lastModified
 }
