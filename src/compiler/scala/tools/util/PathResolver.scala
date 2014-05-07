@@ -298,7 +298,7 @@ class PathResolver(settings: Settings, context: JavaContext, flatClasspath: => F
   def containers = Calculated.containers
 
   lazy val result = {
-    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings, flatClasspath)
+    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings.YclasspathImpl.value == "flat", flatClasspath)
     if (settings.Ylogcp) {
       Console print f"Classpath built from ${settings.toConciseString} %n"
       Console print s"Defaults: ${PathResolver.Defaults}"
@@ -317,4 +317,3 @@ class FlatClasspathResolver(settings: Settings, flatClasspathFactory: ClasspathF
   PathResolverBase[FlatClasspath](settings, flatClasspathFactory) {
   def containers = Calculated.containers
 }
-

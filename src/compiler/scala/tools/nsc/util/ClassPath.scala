@@ -386,22 +386,23 @@ class JavaClassPath(
   // this is required for sbt-interface compatibility because sbt calls findClass and
   // we have to dispatch it to the correct classpath implementation
   // Yes, I know, it's bat shit insane (GK)
-  settings: Settings, flatClasspath: => FlatClasspath)
+  flatClasspathEnabled: Boolean, flatClasspath: => FlatClasspath)
 extends MergedClassPath[AbstractFile](containers, context) {
+
+  def this(containers: IndexedSeq[ClassPath[AbstractFile]], context: JavaContext) =
+    this(containers, context, false, sys.error("FlatClasspath is disabled."))
 
   // it's a lazy val so if we do not use flat classpath we shouldn't be forcing this
   lazy val cachedFlatClasspath = {
-    assert(settings.YclasspathImpl.value == "flat", "Flat classpath has been forced (evaluated) unexpectedly")
+    assert(flatClasspathEnabled, "Flat classpath has been forced (evaluated) unexpectedly")
     flatClasspath
   }
 
-  override def findClass(name: String): Option[AnyClassRep] = settings.YclasspathImpl.value match {
-    case "recursive" => super.findClass(name)
-    case "flat" => {
+  override def findClass(name: String): Option[AnyClassRep] =
+    if (flatClasspathEnabled) {
       val classfile = cachedFlatClasspath.findClassFile(name)
       val classRep = classfile.map(file => ClassRep(Some(file), None))
       classRep
-    }
-  }
+    } else super.findClass(name)
 
 }
