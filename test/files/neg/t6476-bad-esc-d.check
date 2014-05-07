@@ -1,0 +1,4 @@
+t6476-bad-esc-d.scala:3: error: ';' expected but string literal found. (A trailing '\' escapes nothing. Use \\, $$ or $" for literal \, $ or ".)
+  def f = s"\"abcdef\""
+                     ^
+one error found
