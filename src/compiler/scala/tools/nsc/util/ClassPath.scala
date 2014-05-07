@@ -18,7 +18,6 @@ import java.util.regex.PatternSyntaxException
 import scala.reflect.runtime.ReflectionUtils
 import ClassPath._
 import scala.reflect.io.FileZipArchive
-import scala.tools.nsc.classpath.ZipFileIndexClasspath
 import scala.tools.nsc.classpath.FlatClasspath
 
 /** <p>
