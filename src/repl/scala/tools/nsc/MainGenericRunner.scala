@@ -40,6 +40,10 @@ class MainGenericRunner {
     Console.err println str
     false
   }
+  def printFn(str: String): Boolean = {
+    Console.out println str
+    true
+  }
 
   def process(args: Array[String]): Boolean = {
     val command = new GenericRunnerCommand(args.toList, (x: String) => errorFn(x))
@@ -47,7 +51,7 @@ class MainGenericRunner {
     def sampleCompiler = new Global(settings)   // def so its not created unless needed
 
     if (!command.ok)                      return errorFn("\n" + command.shortUsageMsg)
-    else if (settings.version)            return errorFn("Scala code runner %s -- %s".format(versionString, copyrightString))
+    else if (settings.version)            return printFn("Scala code runner %s -- %s".format(versionString, copyrightString))
     else if (command.shouldStopWithInfo)  return errorFn(command getInfoMessage sampleCompiler)
 
     def isE   = !settings.execute.isDefault
