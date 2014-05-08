@@ -18,9 +18,11 @@ import scala.collection.{ immutable, mutable }
  *  @version 1.0
  *
  */
-abstract class BCodeGlue extends SubComponent with BCodeICodeCommon {
+abstract class BCodeGlue extends SubComponent {
 
   import global._
+
+  protected val bCodeICodeCommon: BCodeICodeCommon[global.type] = new BCodeICodeCommon(global)
 
   object BType {
 

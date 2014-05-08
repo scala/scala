@@ -18,7 +18,7 @@ import scala.annotation.switch
  *  @author  Iulian Dragos
  *  @version 1.0
  */
-abstract class GenICode extends SubComponent with jvm.BCodeICodeCommon {
+abstract class GenICode extends SubComponent {
   import global._
   import icodes._
   import icodes.opcodes._
@@ -28,6 +28,9 @@ abstract class GenICode extends SubComponent with jvm.BCodeICodeCommon {
     isUniversalEqualityOp, isReferenceEqualityOp
   }
   import platform.isMaybeBoxed
+
+  private val bCodeICodeCommon: jvm.BCodeICodeCommon[global.type] = new jvm.BCodeICodeCommon(global)
+  import bCodeICodeCommon._
 
   val phaseName = "icode"
 

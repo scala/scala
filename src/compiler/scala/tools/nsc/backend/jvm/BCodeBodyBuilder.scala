@@ -23,6 +23,7 @@ import scala.tools.asm
 abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
   import global._
   import definitions._
+  import bCodeICodeCommon._
 
   /*
    * Functionality to build the body of ASM MethodNode, except for `synchronized` and `try` expressions.

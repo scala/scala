@@ -12,8 +12,7 @@ import PartialFunction._
  * This trait contains code shared between GenBCode and GenICode that depends on types defined in
  * the compiler cake (Global).
  */
-trait BCodeICodeCommon {
-  val global: Global
+final class BCodeICodeCommon[G <: Global](val global: G) {
   import global._
 
   /** Some useful equality helpers. */
