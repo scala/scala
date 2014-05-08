@@ -239,6 +239,13 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
   }
 
   /*
+   *  must-single-thread
+   */
+  def serialVUID(csym: Symbol): Option[Long] = csym getAnnotation definitions.SerialVersionUIDAttr collect {
+    case AnnotationInfo(_, _, (_, LiteralAnnotArg(const)) :: Nil) => const.longValue
+  }
+
+  /*
    * Populates the InnerClasses JVM attribute with `refedInnerClasses`.
    * In addition to inner classes mentioned somewhere in `jclass` (where `jclass` is a class file being emitted)
    * `refedInnerClasses` should contain those inner classes defined as direct member classes of `jclass`
@@ -879,13 +886,6 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
     // There's a space tradeoff between these multi-branch instructions (details in the JVM spec).
     // The particular value in use for `MIN_SWITCH_DENSITY` reflects a heuristic.
     val MIN_SWITCH_DENSITY = 0.7
-
-    /*
-     *  must-single-thread
-     */
-    def serialVUID(csym: Symbol): Option[Long] = csym getAnnotation definitions.SerialVersionUIDAttr collect {
-      case AnnotationInfo(_, Literal(const) :: _, _) => const.longValue
-    }
 
     /*
      *  Add public static final field serialVersionUID with value `id`

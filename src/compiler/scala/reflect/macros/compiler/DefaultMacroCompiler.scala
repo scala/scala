@@ -53,7 +53,7 @@ abstract class DefaultMacroCompiler extends Resolvers
         (EmptyTree, TermName(""), Nil)
     }
     val bundleImplRef = MacroImplRefCompiler(
-      atPos(macroDdef.rhs.pos)(gen.mkTypeApply(Select(New(maybeBundleRef, List(List(Ident(Predef_???)))), methName), targs)),
+      atPos(macroDdef.rhs.pos)(gen.mkTypeApply(Select(New(maybeBundleRef, List(List(Literal(Constant(null))))), methName), targs)),
       isImplBundle = true
     )
     val vanillaResult = tryCompile(vanillaImplRef)
