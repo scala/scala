@@ -88,7 +88,7 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
   )
   // Methods like apply throw exceptions on invalid n, but methods like take/drop
   // are forgiving: therefore the checks are with the methods.
-  private def locationAfterN(n: Int): T = start + (step * fromInt(n))
+  private[immutable] def locationAfterN(n: Int): T = start + (step * fromInt(n))
 
   // When one drops everything.  Can't ever have unchecked operations
   // like "end + 1" or "end - 1" because ranges involving Int.{ MinValue, MaxValue }
@@ -99,7 +99,7 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
   final override def take(n: Int): NumericRange[T] = (
     if (n <= 0 || length == 0) newEmptyRange(start)
     else if (n >= length) this
-    else new NumericRange.Inclusive(start, locationAfterN(n - 1), step)
+    else copy(start, locationAfterN(n - (if (isInclusive) 1 else 0)), step)
   )
 
   final override def drop(n: Int): NumericRange[T] = (
@@ -152,13 +152,25 @@ extends AbstractSeq[T] with IndexedSeq[T] with Serializable {
   private[immutable] def mapRange[A](fm: T => A)(implicit unum: Integral[A]): NumericRange[A] = {
     val self = this
 
-    // XXX This may be incomplete.
+    // Make sure that every method that returns a new NumericRange is either
+    // overridden here, or uses only the copy method!
     new NumericRange[A](fm(start), fm(end), fm(step), isInclusive) {
-      def copy(start: A, end: A, step: A): NumericRange[A] =
-        if (isInclusive) NumericRange.inclusive(start, end, step)
-        else NumericRange(start, end, step)
+      // Horrible hack to make sure that Double keeps asking BigDecimal to get precision right
+      def copy(start: A, end: A, step: A): NumericRange[A] = {
+        if (unum eq scala.math.Numeric.DoubleAsIfIntegral) {
+          (
+            if (isInclusive) Range.Double.inclusive(unum.toDouble(start), unum.toDouble(end), unum.toDouble(step))
+            else Range.Double(unum.toDouble(start), unum.toDouble(end), unum.toDouble(step))
+          ).asInstanceOf[NumericRange[A]]
+        }
+        else {
+          if (isInclusive) NumericRange.inclusive(start, end, step)
+          else NumericRange(start, end, step)
+        }
+      }
 
       private lazy val underlyingRange: NumericRange[T] = self
+      override private[immutable] def locationAfterN(n: Int) = fm(underlyingRange.locationAfterN(n))
       override def foreach[U](f: A => U) { underlyingRange foreach (x => f(fm(x))) }
       override def isEmpty = underlyingRange.isEmpty
       override def apply(idx: Int): A = fm(underlyingRange(idx))
@@ -273,9 +285,31 @@ object NumericRange {
       val startside = num.signum(start)
       val endside = num.signum(end)
       num.toInt{
-        if (startside*endside >= 0) {
+        if (zero != num.quot(one,limit)) {
+          // Ugly hack to work around DoubleAsIfIntegral not actually acting Integral w.r.t quot.
+          // We're dealing with some sort of floating-point or fractional range.
+          // Furthermore, "quot" is not actually the quotient but just plain division.
+          // We'll assume we can use it to compute the range here, and that we can subtract ends.
+          val steps = check(num.quot(num.minus(end, start), step))
+          val isteps = num.fromInt(num.toInt(steps))
+          if (steps == isteps) {
+            // Lucked out, it's exact!
+            if (isInclusive) check(num.plus(isteps,one)) else isteps
+          }
+          else {
+            val endstep = {
+              if ((num eq scala.math.Numeric.DoubleAsIfIntegral) || (num eq scala.math.Numeric.FloatAsIfIntegral)) {
+                val span = BigDecimal.valueOf(num.toDouble(step))*BigDecimal.valueOf(num.toDouble(isteps))
+                val ans = (BigDecimal.valueOf(num.toDouble(start)) + span).toDouble
+                if (num eq scala.math.Numeric.DoubleAsIfIntegral) ans.asInstanceOf[T] else ans.toFloat.asInstanceOf[T]
+              }
+              else num.plus(start, num.times(step, isteps))
+            }
+            if (num.gt(end, endstep) || isInclusive) check(num.plus(isteps,one)) else isteps
+          }
+        }
+        else if (startside*endside >= 0) {
           // We're sure we can subtract these numbers.
-          // Note that we do not use .rem because of different conventions for Long and BigInt
           val diff = num.minus(end, start)
           val quotient = check(num.quot(diff, step))
           val remainder = num.minus(diff, num.times(quotient, step))
