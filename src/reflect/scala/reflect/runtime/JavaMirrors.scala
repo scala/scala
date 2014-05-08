@@ -760,8 +760,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
           module.moduleClass setInfo new ClassInfoType(List(), newScope, module.moduleClass)
         }
 
-        def enter(sym: Symbol, mods: JavaAccFlags) =
-          ( if (mods.isStatic) module.moduleClass else clazz ).info.decls enter sym
+        def enter(sym: Symbol, mods: JavaAccFlags) = followStatic(clazz, module, mods).info.decls enter sym
 
         def enterEmptyCtorIfNecessary(): Unit = {
           if (jclazz.getConstructors.isEmpty)
@@ -801,8 +800,12 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
      * If Java modifiers `mods` contain STATIC, return the module class
      *  of the companion module of `clazz`, otherwise the class `clazz` itself.
      */
-    private def followStatic(clazz: Symbol, mods: JavaAccFlags) =
-      if (mods.isStatic) clazz.companionModule.moduleClass else clazz
+    private def followStatic(clazz: Symbol, mods: JavaAccFlags): Symbol = followStatic(clazz, clazz.companionModule, mods)
+
+    private def followStatic(clazz: Symbol, module: Symbol, mods: JavaAccFlags): Symbol =
+      // SI-8196 `orElse(clazz)` needed for implementation details of the backend, such as the static
+      //         field containing the cache for structural calls.
+      if (mods.isStatic) module.moduleClass.orElse(clazz) else clazz
 
   /** Methods which need to be treated with care
    *  because they either are getSimpleName or call getSimpleName:
