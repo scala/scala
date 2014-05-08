@@ -302,7 +302,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
      */
     def defaultTargets = symbol.annotations map (_.symbol) filter isMetaAnnotation
     // Test whether the typeSymbol of atp conforms to the given class.
-    def matches(clazz: Symbol) = symbol isNonBottomSubClass clazz
+    def matches(clazz: Symbol) = !symbol.isInstanceOf[StubSymbol] && (symbol isNonBottomSubClass clazz)
     // All subtrees of all args are considered.
     def hasArgWhich(p: Tree => Boolean) = args exists (_ exists p)
 

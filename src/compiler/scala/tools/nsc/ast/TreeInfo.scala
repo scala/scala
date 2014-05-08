@@ -74,11 +74,21 @@ abstract class TreeInfo extends scala.reflect.internal.TreeInfo {
     }
   }
 
+  // TODO these overrides, and the slow trickle of bugs that they solve (e.g. SI-8479),
+  //      suggest that we should pursue an alternative design in which the DocDef nodes
+  //      are eliminated from the tree before typer, and instead are modelled as tree
+  //      attachments.
+
   /** Is tree legal as a member definition of an interface?
    */
   override def isInterfaceMember(tree: Tree): Boolean = tree match {
     case DocDef(_, definition)         => isInterfaceMember(definition)
     case _ => super.isInterfaceMember(tree)
+  }
+
+  override def isConstructorWithDefault(t: Tree) = t match {
+    case DocDef(_, definition) => isConstructorWithDefault(definition)
+    case _ => super.isConstructorWithDefault(t)
   }
 
   /** Is tree a pure (i.e. non-side-effecting) definition?
