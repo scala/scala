@@ -46,4 +46,14 @@ class MapWrapperTest {
     assertFalse(javaMap.containsKey(null))       // negative test, null key
     assertEquals(4, scalaMap.containsCounter)
   }
+
+  // test for SI-8504
+  @Test
+  def testHashCode() {
+    import scala.collection.JavaConverters._
+    val javaMap = Map(1 -> null).asJava
+
+    // Before the fix for SI-8504, this throws a NPE
+    javaMap.hashCode
+  }
 }
