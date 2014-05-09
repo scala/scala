@@ -194,7 +194,7 @@ private[collection] trait Wrappers {
             def getKey = k
             def getValue = v
             def setValue(v1 : B) = self.put(k, v1)
-            override def hashCode = byteswap32(k.hashCode) + (byteswap32(v.hashCode) << 16)
+            override def hashCode = byteswap32(k.##) + (byteswap32(v.##) << 16)
             override def equals(other: Any) = other match {
               case e: ju.Map.Entry[_, _] => k == e.getKey && v == e.getValue
               case _ => false

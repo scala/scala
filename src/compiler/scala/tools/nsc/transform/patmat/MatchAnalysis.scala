@@ -149,14 +149,15 @@ trait TreeAndTypeAnalysis extends Debugging {
       object typeArgsToWildcardsExceptArray extends TypeMap {
         // SI-6771 dealias would be enough today, but future proofing with the dealiasWiden.
         // See neg/t6771b.scala for elaboration
-        def apply(tp: Type): Type = tp.dealiasWiden match {
+        def apply(tp: Type): Type = tp.dealias match {
           case TypeRef(pre, sym, args) if args.nonEmpty && (sym ne ArrayClass) =>
             TypeRef(pre, sym, args map (_ => WildcardType))
           case _ =>
             mapOver(tp)
         }
       }
-      debug.patmatResult(s"checkableType($tp)")(typeArgsToWildcardsExceptArray(tp))
+      val result = typeArgsToWildcardsExceptArray(tp)
+      debug.patmatResult(s"checkableType($tp)")(result)
     }
 
     // a type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)

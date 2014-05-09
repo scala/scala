@@ -356,9 +356,13 @@ abstract class ClassfileParser {
       // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
       // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
       // that are not in their correct place (see bug for details)
-      if (!settings.isScaladoc)
-        warning(s"Class $name not found - continuing with a stub.")
-      return NoSymbol.newClass(name.toTypeName)
+
+      // TODO More consistency with use of stub symbols in `Unpickler`
+      //   - better owner than `NoSymbol`
+      //   - remove eager warning
+      val msg = s"Class $name not found - continuing with a stub."
+      if (!settings.isScaladoc) warning(msg)
+      return NoSymbol.newStubSymbol(name.toTypeName, msg)
     }
     val completer     = new loaders.ClassfileLoader(file)
     var owner: Symbol = rootMirror.RootClass

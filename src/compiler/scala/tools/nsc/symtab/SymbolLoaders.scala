@@ -251,7 +251,7 @@ abstract class SymbolLoaders {
       root.setInfo(new PackageClassInfoType(newScope, root))
 
       if (!root.isRoot) {
-        for (classRep <- classpath.classes if platform.doLoad(classRep)) {
+        for (classRep <- classpath.classes) {
           initializeFromClassPath(root, classRep)
         }
       }

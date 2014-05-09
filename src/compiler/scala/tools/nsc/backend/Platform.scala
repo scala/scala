@@ -31,14 +31,6 @@ trait Platform {
   def isMaybeBoxed(sym: Symbol): Boolean
 
   /**
-   * Tells whether a class should be loaded and entered into the package
-   * scope. On .NET, this method returns `false` for all synthetic classes
-   * (anonymous classes, implementation classes, module classes), their
-   * symtab is encoded in the pickle of another class.
-   */
-  def doLoad(cls: ClassPath[AbstractFile]#ClassRep): Boolean
-
-  /**
    * Tells whether a class with both a binary and a source representation
    * (found in classpath and in sourcepath) should be re-compiled. Behaves
    * on the JVM similar to javac, i.e. if the source file is newer than the classfile,
