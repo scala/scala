@@ -5,15 +5,15 @@ scala> class M[A]
 defined class M
 
 scala> implicit def ma0[A](a: A): M[A] = null
-warning: there were 1 feature warning(s); re-run with -feature for details
+warning: there was one feature warning; re-run with -feature for details
 ma0: [A](a: A)M[A]
 
 scala> implicit def ma1[A](a: A): M[A] = null
-warning: there were 1 feature warning(s); re-run with -feature for details
+warning: there was one feature warning; re-run with -feature for details
 ma1: [A](a: A)M[A]
 
 scala> def convert[F[X <: F[X]]](builder: F[_ <: F[_]]) = 0
-warning: there were 1 feature warning(s); re-run with -feature for details
+warning: there was one feature warning; re-run with -feature for details
 convert: [F[X <: F[X]]](builder: F[_ <: F[_]])Int
 
 scala> convert(Some[Int](0))
