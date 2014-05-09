@@ -29,8 +29,12 @@ trait Solving extends Logic {
     type Clause  = collection.Set[Lit]
     // a clause is a disjunction of distinct literals
     def clause(l: Lit*): Clause = (
-      // neg/t7020.scala changes output 1% of the time, the non-determinism is quelled with this linked set
-      mutable.LinkedHashSet(l: _*)
+      if (l.lengthCompare(1) <= 0) {
+        l.toSet // SI-8531 Avoid LinkedHashSet's bulk for 0 and 1 element clauses
+      } else {
+        // neg/t7020.scala changes output 1% of the time, the non-determinism is quelled with this linked set
+        mutable.LinkedHashSet(l: _*)
+      }
     )
 
     type Lit
