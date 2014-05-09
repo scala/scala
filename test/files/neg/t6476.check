@@ -1,0 +1,4 @@
+t6476.scala:3: error: unclosed string literal
+  s"$"
+    ^
+one error found
