@@ -1042,15 +1042,18 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             // add accessor definitions
             addDefDef(sym, {
               if (sym.isSetter) {
+                val getter = sym.getter(clazz)
+                def setInitFlag = mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter))
                 if (isOverriddenSetter(sym)) UNIT
                 else accessedRef match {
-                  case ref @ Literal(_) => ref
+                  case ref @ Literal(_) =>
+                    if (!needsInitFlag(getter)) ref
+                    else Block(setInitFlag, ref)
                   case ref =>
                     val init   = Assign(ref, Ident(sym.firstParam))
-                    val getter = sym.getter(clazz)
 
                     if (!needsInitFlag(getter)) init
-                    else Block(init, mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)), UNIT)
+                    else Block(init, setInitFlag, UNIT)
                 }
               }
               else if (needsInitFlag(sym))
