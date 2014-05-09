@@ -1142,9 +1142,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
     def isParcelableClass = isAndroidParcelableClass(clasz.symbol)
 
-    def serialVUID: Option[Long] = clasz.symbol getAnnotation SerialVersionUIDAttr collect {
-      case AnnotationInfo(_, Literal(const) :: _, _) => const.longValue
-    }
+    def serialVUID: Option[Long] = genBCode.serialVUID(clasz.symbol)
 
     private def getSuperInterfaces(c: IClass): Array[String] = {
 
