@@ -238,7 +238,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         //      - reinstate the assertion in `Erasure.resolveAnonymousBridgeClash`
         val suffix = "$lambda$" + (
           if (funOwner.isPrimaryConstructor) ""
-          else "$" + funOwner.name
+          else "$" + funOwner.name + "$"
         )
         val name = unit.freshTypeName(s"${oldClass.name.decode}$suffix")
 
