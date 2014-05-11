@@ -6,5 +6,6 @@ object Test extends App {
   val c = cm.classSymbol(mutant.getClass)
   println(c)
   println(c.fullName)
-  println(c.info)
+  // under -Xcheckinit there's an additional $init$ field
+  c.info.toString.lines.filter(_ != "  private var bitmap$init$0: Boolean") foreach println
 }

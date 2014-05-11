@@ -9,7 +9,7 @@ object Test extends BytecodeTest {
     val classNode = loadClassNode("Symbols", skipDebugInfo = false)
     val textifier = new Textifier
     classNode.accept(new TraceClassVisitor(null, textifier, null))
-    
+
     val classString = stringFromWriter(w => textifier.print(w))
     val result =
       classString.split('\n')
