@@ -654,9 +654,10 @@ self =>
     def isIdentExcept(except: Name) = isIdent && in.name != except
     def isIdentOf(name: Name)       = isIdent && in.name == name
 
-    def isUnaryOp = isIdent && raw.isUnary(in.name)
-    def isRawStar = isIdent && in.name == raw.STAR
-    def isRawBar  = isIdent && in.name == raw.BAR
+    def isUnaryOp  = isIdent && raw.isUnary(in.name)
+    def isRawStar  = isRawIdent && in.name == raw.STAR
+    def isRawBar   = isRawIdent && in.name == raw.BAR
+    def isRawIdent = in.token == IDENTIFIER
 
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
     def isMacro = in.token == IDENTIFIER && in.name == nme.MACROkw
@@ -1001,19 +1002,30 @@ self =>
       }
 
       def infixTypeRest(t: Tree, mode: InfixMode.Value): Tree = {
-        if (isIdent && in.name != nme.STAR) {
-          val opOffset = in.offset
+        // Detect postfix star for repeated args.
+        // Only RPAREN can follow, but accept COMMA and EQUALS for error's sake.
+        // Take RBRACE as a paren typo.
+        def checkRepeatedParam = if (isRawStar) {
+          lookingAhead (in.token match {
+            case RPAREN | COMMA | EQUALS | RBRACE => t
+            case _                                => EmptyTree
+          })
+        } else EmptyTree
+        def asInfix = {
+          val opOffset  = in.offset
           val leftAssoc = treeInfo.isLeftAssoc(in.name)
-          if (mode != InfixMode.FirstOp) checkAssoc(opOffset, in.name, leftAssoc = mode == InfixMode.LeftOp)
-          val op = identForType()
-          val tycon = atPos(opOffset) { Ident(op) }
+          if (mode != InfixMode.FirstOp)
+            checkAssoc(opOffset, in.name, leftAssoc = mode == InfixMode.LeftOp)
+          val tycon = atPos(opOffset) { Ident(identForType()) }
           newLineOptWhenFollowing(isTypeIntroToken)
           def mkOp(t1: Tree) = atPos(t.pos.start, opOffset) { AppliedTypeTree(tycon, List(t, t1)) }
           if (leftAssoc)
             infixTypeRest(mkOp(compoundType()), InfixMode.LeftOp)
           else
             mkOp(infixType(InfixMode.RightOp))
-        } else t
+        }
+        if (isIdent) checkRepeatedParam orElse asInfix
+        else t
       }
 
       /** {{{

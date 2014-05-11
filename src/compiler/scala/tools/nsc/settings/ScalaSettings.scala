@@ -62,8 +62,14 @@ trait ScalaSettings extends AbsScalaSettings
   /*val argfiles = */ BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
   val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp"
   val d             = OutputSetting     (outputDirs, ".")
-  val nospecialization = BooleanSetting    ("-no-specialization", "Ignore @specialize annotations.")
-  val language      = MultiStringSetting("-language", "feature", "Enable one or more language features.")
+  val nospecialization = BooleanSetting ("-no-specialization", "Ignore @specialize annotations.")
+
+  // Would be nice to build this dynamically from scala.languageFeature.
+  // The two requirements: delay error checking until you have symbols, and let compiler command build option-specific help.
+  val language      = {
+    val features = List("dynamics", "postfixOps", "reflectiveCalls", "implicitConversions", "higherKinds", "existentials", "experimental.macros")
+    MultiChoiceSetting("-language", "feature", "Enable one or more language features", features)
+  }
 
   /*
    * The previous "-source" option is intended to be used mainly

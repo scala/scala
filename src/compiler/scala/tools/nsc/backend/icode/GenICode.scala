@@ -13,13 +13,12 @@ import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.{ ListBuffer, Buffer }
 import scala.tools.nsc.symtab._
 import scala.annotation.switch
-import PartialFunction._
 
 /**
  *  @author  Iulian Dragos
  *  @version 1.0
  */
-abstract class GenICode extends SubComponent  {
+abstract class GenICode extends SubComponent {
   import global._
   import icodes._
   import icodes.opcodes._
@@ -29,6 +28,9 @@ abstract class GenICode extends SubComponent  {
     isUniversalEqualityOp, isReferenceEqualityOp
   }
   import platform.isMaybeBoxed
+
+  private val bCodeICodeCommon: jvm.BCodeICodeCommon[global.type] = new jvm.BCodeICodeCommon(global)
+  import bCodeICodeCommon._
 
   val phaseName = "icode"
 
@@ -1325,15 +1327,6 @@ abstract class GenICode extends SubComponent  {
       case _ =>
         List(tree)
     }
-
-    /** Some useful equality helpers.
-     */
-    def isNull(t: Tree) = cond(t) { case Literal(Constant(null)) => true }
-    def isLiteral(t: Tree) = cond(t) { case Literal(_) => true }
-    def isNonNullExpr(t: Tree) = isLiteral(t) || ((t.symbol ne null) && t.symbol.isModule)
-
-    /* If l or r is constant null, returns the other ; otherwise null */
-    def ifOneIsNull(l: Tree, r: Tree) = if (isNull(l)) r else if (isNull(r)) l else null
 
     /**
      * Find the label denoted by `lsym` and enter it in context `ctx`.

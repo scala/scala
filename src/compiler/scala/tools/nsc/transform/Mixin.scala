@@ -1004,24 +1004,56 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       buildBitmapOffsets()
       var stats1 = addCheckedGetters(clazz, stats)
 
-      def accessedReference(sym: Symbol) = sym.tpe match {
-        case MethodType(Nil, ConstantType(c)) => Literal(c)
-        case _ =>
-          // if it is a mixed-in lazy value, complete the accessor
-          if (sym.isLazy && sym.isGetter) {
-            val isUnit    = sym.tpe.resultType.typeSymbol == UnitClass
-            val initCall  = Apply(staticRef(initializer(sym)), gen.mkAttributedThis(clazz) :: Nil)
-            val selection = Select(This(clazz), sym.accessed)
-            val init      = if (isUnit) initCall else atPos(sym.pos)(Assign(selection, initCall))
-            val returns   = if (isUnit) UNIT else selection
-
-            mkLazyDef(clazz, sym, List(init), returns, fieldOffset(sym))
-          }
-          else sym.getter(sym.owner).tpe.resultType.typeSymbol match {
-            case UnitClass  => UNIT
-            case _          => Select(This(clazz), sym.accessed)
-          }
+      def getterBody(getter: Symbol) = {
+        assert(getter.isGetter)
+        val readValue = getter.tpe match {
+          // A field "final val f = const" in a trait generates a getter with a ConstantType.
+          case MethodType(Nil, ConstantType(c)) =>
+            Literal(c)
+          case _ =>
+            // if it is a mixed-in lazy value, complete the accessor
+            if (getter.isLazy) {
+              val isUnit    = isUnitGetter(getter)
+              val initCall  = Apply(staticRef(initializer(getter)), gen.mkAttributedThis(clazz) :: Nil)
+              val selection = fieldAccess(getter)
+              val init      = if (isUnit) initCall else atPos(getter.pos)(Assign(selection, initCall))
+              val returns   = if (isUnit) UNIT else selection
+              mkLazyDef(clazz, getter, List(init), returns, fieldOffset(getter))
+            }
+            // For a field of type Unit in a trait, no actual field is generated when being mixed in.
+            else if (isUnitGetter(getter)) UNIT
+            else fieldAccess(getter)
+        }
+        if (!needsInitFlag(getter)) readValue
+        else mkCheckedAccessor(clazz, readValue, fieldOffset(getter), getter.pos, getter)
       }
+
+      def setterBody(setter: Symbol) = {
+        val getter = setter.getterIn(clazz)
+
+        // A trait with a field of type Unit creates a trait setter (invoked by the
+        // implementation class constructor), like for any other trait field.
+        // However, no actual field is created in the class that mixes in the trait.
+        // Therefore the setter does nothing (except setting the -Xcheckinit flag).
+
+        val setInitFlag =
+          if (!needsInitFlag(getter)) Nil
+          else List(mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)))
+
+        val fieldInitializer =
+          if (isUnitGetter(getter)) Nil
+          else List(Assign(fieldAccess(setter), Ident(setter.firstParam)))
+
+        (fieldInitializer ::: setInitFlag) match {
+          case Nil => UNIT
+          // If there's only one statement, the Block factory does not actually create a Block.
+          case stats => Block(stats: _*)
+        }
+      }
+
+      def isUnitGetter(getter: Symbol) = getter.tpe.resultType.typeSymbol == UnitClass
+      def fieldAccess(accessor: Symbol) = Select(This(clazz), accessor.accessed)
+
       def isOverriddenSetter(sym: Symbol) =
         nme.isTraitSetterName(sym.name) && {
           val other = sym.nextOverriddenSymbol
@@ -1036,27 +1068,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         }
         // if class is not a trait add accessor definitions
         else if (!clazz.isTrait) {
-          // This needs to be a def to avoid sharing trees
-          def accessedRef = accessedReference(sym)
           if (isConcreteAccessor(sym)) {
             // add accessor definitions
             addDefDef(sym, {
               if (sym.isSetter) {
+                // If this is a setter of a mixed-in field which is overridden by another mixin,
+                // the trait setter of the overridden one does not need to do anything - the
+                // trait setter of the overriding field will initialize the field.
                 if (isOverriddenSetter(sym)) UNIT
-                else accessedRef match {
-                  case ref @ Literal(_) => ref
-                  case ref =>
-                    val init   = Assign(ref, Ident(sym.firstParam))
-                    val getter = sym.getter(clazz)
-
-                    if (!needsInitFlag(getter)) init
-                    else Block(init, mkSetFlag(clazz, fieldOffset(getter), getter, bitmapKind(getter)), UNIT)
-                }
+                else setterBody(sym)
               }
-              else if (needsInitFlag(sym))
-                mkCheckedAccessor(clazz, accessedRef, fieldOffset(sym), sym.pos, sym)
-              else
-                accessedRef
+              else getterBody(sym)
             })
           }
           else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {

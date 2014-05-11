@@ -711,10 +711,7 @@ trait Namers extends MethodSynthesis {
         val m = ensureCompanionObject(tree, caseModuleDef)
         m.moduleClass.updateAttachment(new ClassForCaseCompanionAttachment(tree))
       }
-      val hasDefault = impl.body exists {
-        case DefDef(_, nme.CONSTRUCTOR, _, vparamss, _, _)  => mexists(vparamss)(_.mods.hasDefault)
-        case _                                              => false
-      }
+      val hasDefault = impl.body exists treeInfo.isConstructorWithDefault
       if (hasDefault) {
         val m = ensureCompanionObject(tree)
         m.updateAttachment(new ConstructorDefaultsAttachment(tree, null))

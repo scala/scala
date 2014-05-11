@@ -22,6 +22,8 @@ abstract class BCodeGlue extends SubComponent {
 
   import global._
 
+  protected val bCodeICodeCommon: BCodeICodeCommon[global.type] = new BCodeICodeCommon(global)
+
   object BType {
 
     import global.chrs

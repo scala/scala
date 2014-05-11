@@ -1,0 +1,7 @@
+t6988.scala:3: error: annotation argument needs to be a constant; found: 13.asInstanceOf[Long]
+@SerialVersionUID(13.asInstanceOf[Long]) case class IdentifyMessage1(userName: String, user: User, code: Int)
+                                 ^
+t6988.scala:8: error: annotation argument needs to be a constant; found: O.SerialUID
+@SerialVersionUID(O.SerialUID) case class IdentifyMessage3(userName: String, user: User, code: Int)
+                    ^
+two errors found
