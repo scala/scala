@@ -206,7 +206,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
 
   override /*SeqLike*/
   def lastIndexWhere(p: A => Boolean, end: Int): Int = {
-    var i = end
+    var i = math.min(end, length - 1)
     while (i >= 0 && !p(this(i))) i -= 1
     i
   }
