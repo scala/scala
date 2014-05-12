@@ -132,7 +132,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         }
         val params = ((optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}) ++ (target.paramss.flatten map ValDef.apply)).toList
 
-        val methSym = oldClass.newMethod(unit.freshTermName(nme.accessor.toString()), target.pos, FINAL | BRIDGE | SYNTHETIC | PROTECTED | STATIC)
+        val methSym = oldClass.newMethod(unit.freshTermName(nme.accessor.toString() + "$"), target.pos, FINAL | BRIDGE | SYNTHETIC | PROTECTED | STATIC)
 
         val paramSyms = params map {param => methSym.newSyntheticValueParam(param.symbol.tpe, param.name) }
 
@@ -238,7 +238,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         //      - reinstate the assertion in `Erasure.resolveAnonymousBridgeClash`
         val suffix = "$lambda$" + (
           if (funOwner.isPrimaryConstructor) ""
-          else "$" + funOwner.name
+          else "$" + funOwner.name + "$"
         )
         val name = unit.freshTypeName(s"${oldClass.name.decode}$suffix")
 
