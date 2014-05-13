@@ -14,6 +14,8 @@ import scala.tools.nsc.symtab._
 import scala.annotation.switch
 
 import scala.tools.asm
+import scala.tools.asm.util.{TraceMethodVisitor, ASMifier}
+import java.io.PrintWriter
 
 /*
  *
@@ -114,9 +116,13 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       addClassFields()
 
       innerClassBufferASM ++= trackMemberClasses(claszSymbol, Nil)
-
       gen(cd.impl)
+      addInnerClassesASM(cnode, innerClassBufferASM.toList)
 
+      if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
+        AsmUtils.traceClass(cnode)
+
+      cnode.innerClasses
       assert(cd.symbol == claszSymbol, "Someone messed up BCodePhase.claszSymbol during genPlainClass().")
 
     } // end of method genPlainClass()
@@ -639,6 +645,10 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         // Note we don't invoke visitMax, thus there are no FrameNode among mnode.instructions.
         // The only non-instruction nodes to be found are LabelNode and LineNumberNode.
       }
+
+      if (AsmUtils.traceMethodEnabled && mnode.name.contains(AsmUtils.traceMethodPattern))
+        AsmUtils.traceMethod(mnode)
+
       mnode = null
     } // end of method genDefDef()
 

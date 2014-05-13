@@ -243,6 +243,17 @@ abstract class GenBCode extends BCodeSyncAndTry {
         val plainC  = SubItem3(plain.name, getByteArray(plain))
         val beanC   = if (bean == null)   null else SubItem3(bean.name, getByteArray(bean))
 
+        if (AsmUtils.traceSerializedClassEnabled && plain.name.contains(AsmUtils.traceSerializedClassPattern)) {
+          def readClass(bytes: Array[Byte]): asm.tree.ClassNode = {
+            val node = new asm.tree.ClassNode()
+            new asm.ClassReader(bytes).accept(node, 0)
+            node
+          }
+          if (mirrorC != null) AsmUtils.traceClass(readClass(mirrorC.jclassBytes))
+          AsmUtils.traceClass(readClass(plainC.jclassBytes))
+          if (beanC != null) AsmUtils.traceClass(readClass(beanC.jclassBytes))
+        }
+
         q3 add Item3(arrivalPos, mirrorC, plainC, beanC, outFolder)
 
       }

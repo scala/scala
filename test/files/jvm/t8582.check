@@ -1,0 +1,44 @@
+getClass on module gives module class
+ class p1.p2.Singleton$Singleton$
+
+Nested module classes are found through reflection
+ p1.p2.Singleton$Singleton$: List(class p1.p2.Singleton$Singleton$Singleton$)
+
+Reflection can find direct nested classes (A1-B1-C1)
+ A1: List(class A1$B1)
+ A1$B1: List(class A1$B1$C1)
+ A1$B1$C1: List()
+
+Reflection can find direct nested classes (A2-B2-C2)
+ A2: List(class A2$B2)
+ A2$B2: List(class A2$B2$C2)
+ A2$B2$C2: List()
+
+Mirror classes have the same InnerClass attributes as the corresponding module class:
+ className[p1/p2/Singleton$Singleton$] outerClassName[p1/p2/Singleton] innerName[Singleton$] access[9]
+Module class
+ className[p1/p2/Singleton$Singleton$] outerClassName[p1/p2/Singleton] innerName[Singleton$] access[9]
+
+An outer class has a InnerClass attribute for direct nested classes
+ className[A1$B1] outerClassName[A1] innerName[B1] access[1]
+A nested class has an InnerClass attribute for itself (and also for its nested classes)
+ className[A1$B1] outerClassName[A1] innerName[B1] access[1]
+ className[A1$B1$C1] outerClassName[A1$B1] innerName[C1] access[1]
+C1 is a nested class, so it has an InnerClass attribute for itself.
+Because that attribute leads to an entry for B1 in the constant pool, C1 needs an InnerClass attribute for B1.
+ className[A1$B1] outerClassName[A1] innerName[B1] access[1]
+ className[A1$B1$C1] outerClassName[A1$B1] innerName[C1] access[1]
+
+The BeanInfo class has the same InnerClass attributes as the corresponding bean
+ className[A1$B1] outerClassName[A1] innerName[B1] access[1]
+ className[A1$B1$C1] outerClassName[A1$B1] innerName[C1] access[1]
+
+Class A2 mentions class C2 in the constant pool (due to method  f), therefore it needs an InnerClass attribute for C1
+ className[A2$B2] outerClassName[A2] innerName[B2] access[1]
+ className[A2$B2$C2] outerClassName[A2$B2] innerName[C2] access[1]
+B2
+ className[A2$B2] outerClassName[A2] innerName[B2] access[1]
+ className[A2$B2$C2] outerClassName[A2$B2] innerName[C2] access[1]
+C2
+ className[A2$B2] outerClassName[A2] innerName[B2] access[1]
+ className[A2$B2$C2] outerClassName[A2$B2] innerName[C2] access[1]
