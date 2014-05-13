@@ -2799,6 +2799,8 @@ trait Types
       value
     }
 
+    def precludesWidening(tp: Type) = tp.isStable || tp.contains(SingletonClass)
+
     /** Create a new TypeConstraint based on the given symbol.
      */
     private def deriveConstraint(tparam: Symbol): TypeConstraint = {
@@ -2807,18 +2809,24 @@ trait Types
        *  See SI-5359.
        */
       val bounds  = tparam.info.bounds
+
       /* We can seed the type constraint with the type parameter
        * bounds as long as the types are concrete.  This should lower
        * the complexity of the search even if it doesn't improve
        * any results.
        */
-      if (propagateParameterBoundsToTypeVars) {
-        val exclude = bounds.isEmptyBounds || (bounds exists typeIsNonClassType)
+      val constr =
+        if (propagateParameterBoundsToTypeVars) {
+          val exclude = bounds.isEmptyBounds || (bounds exists typeIsNonClassType)
 
-        if (exclude) new TypeConstraint
-        else TypeVar.trace("constraint", "For " + tparam.fullLocationString)(new TypeConstraint(bounds))
-      }
-      else new TypeConstraint
+          if (exclude) new TypeConstraint
+          else TypeVar.trace("constraint", "For " + tparam.fullLocationString)(new TypeConstraint(bounds))
+        }
+        else new TypeConstraint
+
+      if (precludesWidening(bounds.hi)) constr.stopWidening()
+
+      constr
     }
     def untouchable(tparam: Symbol): TypeVar                 = createTypeVar(tparam, untouchable = true)
     def apply(tparam: Symbol): TypeVar                       = createTypeVar(tparam, untouchable = false)
