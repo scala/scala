@@ -1108,7 +1108,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
       constructor.visitVarInsn(asm.Opcodes.ALOAD, 0)
       // push the class
-      constructor.visitLdcInsn(exemplar(cls).c)
+      constructor.visitLdcInsn(exemplar(cls).c.toASMType)
 
       // push the string array of field information
       constructor.visitLdcInsn(new java.lang.Integer(fieldList.length))
