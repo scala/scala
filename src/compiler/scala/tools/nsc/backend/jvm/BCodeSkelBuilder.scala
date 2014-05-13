@@ -116,12 +116,13 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       addClassFields()
 
       innerClassBufferASM ++= trackMemberClasses(claszSymbol, Nil)
-
       gen(cd.impl)
+      addInnerClassesASM(cnode, innerClassBufferASM.toList)
 
       if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
         AsmUtils.traceClass(cnode)
 
+      cnode.innerClasses
       assert(cd.symbol == claszSymbol, "Someone messed up BCodePhase.claszSymbol during genPlainClass().")
 
     } // end of method genPlainClass()
