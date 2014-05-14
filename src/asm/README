@@ -1,0 +1,30 @@
+Version 5.0.2, SVN r1741, tags/ASM_5_0_2
+
+Git SVN repo: https://github.com/lrytz/asm
+  - git svn howto: https://github.com/lrytz/asm/issues/1
+
+Upgrading ASM
+-------------
+
+Start by deleting all source files in src/asm/ and copy the ones from the latest ASM release.
+
+Excluded Files (don't copy):
+  - package.html files
+  - org/objectweb/asm/commons
+  - org/objectweb/asm/optimizer
+  - org/objectweb/asm/xml
+
+Re-packaging and cosmetic changes:
+  - convert line endings (there are some CRLF)
+    find src/asm/scala/tools/asm -name '*.java' | xargs dos2unix
+  - change package clauses
+    find src/asm/scala/tools/asm -name '*.java' | xargs sed -i '' -e 's/package org\.objectweb\.asm/package scala.tools.asm/'
+  - update imports
+    find src/asm/scala/tools/asm -name '*.java' | xargs sed -i '' -e 's/import org\.objectweb\.asm/import scala.tools.asm/'
+  - update @links, @associates
+    find src/asm/scala/tools/asm -name '*.java' | xargs sed -i '' -e 's/@link org\.objectweb\.asm/@link scala.tools.asm/'
+    find src/asm/scala/tools/asm -name '*.java' | xargs sed -i '' -e 's/@associates org\.objectweb\.asm/@associates scala.tools.asm/'
+  - remove trailing whitespace
+    find src/asm/scala/tools/asm -name '*.java' | xargs sed -i '' -e 's/[ ]*$//'
+
+Actual changes: check the git log for [asm-cherry-pick] after the previous upgrade.
