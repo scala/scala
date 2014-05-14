@@ -29,7 +29,7 @@
  */
 package scala.tools.asm.signature;
 
-import org.objectweb.asm.Opcodes;
+import scala.tools.asm.Opcodes;
 
 /**
  * A signature visitor that generates signatures in string format.

@@ -34,11 +34,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.TypePath;
-import org.objectweb.asm.TypeReference;
+import scala.tools.asm.Label;
+import scala.tools.asm.MethodVisitor;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.TypePath;
+import scala.tools.asm.TypeReference;
 
 /**
  * A node that represents a type annotation on a local or resource variable.

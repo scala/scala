@@ -29,8 +29,8 @@
  */
 package scala.tools.asm.util;
 
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.signature.SignatureVisitor;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.signature.SignatureVisitor;
 
 /**
  * A {@link SignatureVisitor} that prints a disassembled view of the signature

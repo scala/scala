@@ -31,17 +31,17 @@ package scala.tools.asm.tree.analysis;
 
 import java.util.List;
 
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.IntInsnNode;
-import org.objectweb.asm.tree.InvokeDynamicInsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MultiANewArrayInsnNode;
-import org.objectweb.asm.tree.TypeInsnNode;
+import scala.tools.asm.Handle;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.Type;
+import scala.tools.asm.tree.AbstractInsnNode;
+import scala.tools.asm.tree.FieldInsnNode;
+import scala.tools.asm.tree.IntInsnNode;
+import scala.tools.asm.tree.InvokeDynamicInsnNode;
+import scala.tools.asm.tree.LdcInsnNode;
+import scala.tools.asm.tree.MethodInsnNode;
+import scala.tools.asm.tree.MultiANewArrayInsnNode;
+import scala.tools.asm.tree.TypeInsnNode;
 
 /**
  * An {@link Interpreter} for {@link BasicValue} values.

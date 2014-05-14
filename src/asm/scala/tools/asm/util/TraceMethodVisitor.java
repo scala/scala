@@ -29,13 +29,13 @@
  */
 package scala.tools.asm.util;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Attribute;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.TypePath;
+import scala.tools.asm.AnnotationVisitor;
+import scala.tools.asm.Attribute;
+import scala.tools.asm.Handle;
+import scala.tools.asm.Label;
+import scala.tools.asm.MethodVisitor;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.TypePath;
 
 /**
  * A {@link MethodVisitor} that prints the methods it visits with a

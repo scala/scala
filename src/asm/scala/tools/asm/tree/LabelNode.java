@@ -31,8 +31,8 @@ package scala.tools.asm.tree;
 
 import java.util.Map;
 
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
+import scala.tools.asm.Label;
+import scala.tools.asm.MethodVisitor;
 
 /**
  * An {@link AbstractInsnNode} that encapsulates a {@link Label}.

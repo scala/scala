@@ -31,7 +31,7 @@ package scala.tools.asm.tree.analysis;
 
 import java.util.Set;
 
-import org.objectweb.asm.tree.AbstractInsnNode;
+import scala.tools.asm.tree.AbstractInsnNode;
 
 /**
  * A {@link Value} that is represented by its type in a two types type system.

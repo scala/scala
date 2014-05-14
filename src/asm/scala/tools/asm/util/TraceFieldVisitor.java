@@ -29,11 +29,11 @@
  */
 package scala.tools.asm.util;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Attribute;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.TypePath;
+import scala.tools.asm.AnnotationVisitor;
+import scala.tools.asm.Attribute;
+import scala.tools.asm.FieldVisitor;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.TypePath;
 
 /**
  * A {@link FieldVisitor} that prints the fields it visits with a

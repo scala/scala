@@ -31,11 +31,11 @@ package scala.tools.asm.tree.analysis;
 
 import java.util.List;
 
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.InvokeDynamicInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
+import scala.tools.asm.Type;
+import scala.tools.asm.tree.AbstractInsnNode;
+import scala.tools.asm.tree.FieldInsnNode;
+import scala.tools.asm.tree.InvokeDynamicInsnNode;
+import scala.tools.asm.tree.MethodInsnNode;
 
 /**
  * An extended {@link BasicInterpreter} that checks that bytecode instructions

@@ -37,23 +37,23 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Attribute;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.TypePath;
-import org.objectweb.asm.TypeReference;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.analysis.Analyzer;
-import org.objectweb.asm.tree.analysis.BasicValue;
-import org.objectweb.asm.tree.analysis.Frame;
-import org.objectweb.asm.tree.analysis.SimpleVerifier;
+import scala.tools.asm.AnnotationVisitor;
+import scala.tools.asm.Attribute;
+import scala.tools.asm.ClassReader;
+import scala.tools.asm.ClassVisitor;
+import scala.tools.asm.FieldVisitor;
+import scala.tools.asm.Label;
+import scala.tools.asm.MethodVisitor;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.Type;
+import scala.tools.asm.TypePath;
+import scala.tools.asm.TypeReference;
+import scala.tools.asm.tree.ClassNode;
+import scala.tools.asm.tree.MethodNode;
+import scala.tools.asm.tree.analysis.Analyzer;
+import scala.tools.asm.tree.analysis.BasicValue;
+import scala.tools.asm.tree.analysis.Frame;
+import scala.tools.asm.tree.analysis.SimpleVerifier;
 
 /**
  * A {@link ClassVisitor} that checks that its methods are properly used. More

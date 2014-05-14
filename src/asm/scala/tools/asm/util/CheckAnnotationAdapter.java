@@ -29,9 +29,9 @@
  */
 package scala.tools.asm.util;
 
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
+import scala.tools.asm.AnnotationVisitor;
+import scala.tools.asm.Opcodes;
+import scala.tools.asm.Type;
 
 /**
  * An {@link AnnotationVisitor} that checks that its methods are properly used.

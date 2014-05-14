@@ -34,9 +34,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import scala.tools.asm.Label;
+import scala.tools.asm.MethodVisitor;
+import scala.tools.asm.Opcodes;
 
 /**
  * A node that represents a TABLESWITCH instruction.
