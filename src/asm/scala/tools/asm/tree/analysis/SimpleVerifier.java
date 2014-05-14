@@ -27,17 +27,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree.analysis;
+package org.objectweb.asm.tree.analysis;
 
 import java.util.List;
 
-import scala.tools.asm.Type;
+import org.objectweb.asm.Type;
 
 /**
  * An extended {@link BasicVerifier} that performs more precise verifications.
  * This verifier computes exact class types, instead of using a single "object
  * reference" type (as done in the {@link BasicVerifier}).
- *
+ * 
  * @author Eric Bruneton
  * @author Bing Ran
  */
@@ -78,7 +78,7 @@ public class SimpleVerifier extends BasicVerifier {
     /**
      * Constructs a new {@link SimpleVerifier} to verify a specific class. This
      * class will not be loaded into the JVM since it may be incorrect.
-     *
+     * 
      * @param currentClass
      *            the class that is verified.
      * @param currentSuperClass
@@ -94,7 +94,7 @@ public class SimpleVerifier extends BasicVerifier {
     /**
      * Constructs a new {@link SimpleVerifier} to verify a specific class. This
      * class will not be loaded into the JVM since it may be incorrect.
-     *
+     * 
      * @param currentClass
      *            the class that is verified.
      * @param currentSuperClass
@@ -107,7 +107,7 @@ public class SimpleVerifier extends BasicVerifier {
     public SimpleVerifier(final Type currentClass,
             final Type currentSuperClass,
             final List<Type> currentClassInterfaces, final boolean isInterface) {
-        this(ASM4, currentClass, currentSuperClass, currentClassInterfaces,
+        this(ASM5, currentClass, currentSuperClass, currentClassInterfaces,
                 isInterface);
     }
 
@@ -125,7 +125,7 @@ public class SimpleVerifier extends BasicVerifier {
      * Set the <code>ClassLoader</code> which will be used to load referenced
      * classes. This is useful if you are verifying multiple interdependent
      * classes.
-     *
+     * 
      * @param loader
      *            a <code>ClassLoader</code> to use
      */

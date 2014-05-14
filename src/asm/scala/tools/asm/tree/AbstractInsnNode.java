@@ -27,17 +27,18 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import scala.tools.asm.MethodVisitor;
+import org.objectweb.asm.MethodVisitor;
 
 /**
  * A node that represents a bytecode instruction. <i>An instruction can appear
  * at most once in at most one {@link InsnList} at a time</i>.
- *
+ * 
  * @author Eric Bruneton
  */
 public abstract class AbstractInsnNode {
@@ -128,6 +129,28 @@ public abstract class AbstractInsnNode {
     protected int opcode;
 
     /**
+     * The runtime visible type annotations of this instruction. This field is
+     * only used for real instructions (i.e. not for labels, frames, or line
+     * number nodes). This list is a list of {@link TypeAnnotationNode} objects.
+     * May be <tt>null</tt>.
+     * 
+     * @associates org.objectweb.asm.tree.TypeAnnotationNode
+     * @label visible
+     */
+    public List<TypeAnnotationNode> visibleTypeAnnotations;
+
+    /**
+     * The runtime invisible type annotations of this instruction. This field is
+     * only used for real instructions (i.e. not for labels, frames, or line
+     * number nodes). This list is a list of {@link TypeAnnotationNode} objects.
+     * May be <tt>null</tt>.
+     * 
+     * @associates org.objectweb.asm.tree.TypeAnnotationNode
+     * @label invisible
+     */
+    public List<TypeAnnotationNode> invisibleTypeAnnotations;
+
+    /**
      * Previous instruction in the list to which this instruction belongs.
      */
     AbstractInsnNode prev;
@@ -147,7 +170,7 @@ public abstract class AbstractInsnNode {
 
     /**
      * Constructs a new {@link AbstractInsnNode}.
-     *
+     * 
      * @param opcode
      *            the opcode of the instruction to be constructed.
      */
@@ -158,7 +181,7 @@ public abstract class AbstractInsnNode {
 
     /**
      * Returns the opcode of this instruction.
-     *
+     * 
      * @return the opcode of this instruction.
      */
     public int getOpcode() {
@@ -167,7 +190,7 @@ public abstract class AbstractInsnNode {
 
     /**
      * Returns the type of this instruction.
-     *
+     * 
      * @return the type of this instruction, i.e. one the constants defined in
      *         this class.
      */
@@ -176,7 +199,7 @@ public abstract class AbstractInsnNode {
     /**
      * Returns the previous instruction in the list to which this instruction
      * belongs, if any.
-     *
+     * 
      * @return the previous instruction in the list to which this instruction
      *         belongs, if any. May be <tt>null</tt>.
      */
@@ -187,7 +210,7 @@ public abstract class AbstractInsnNode {
     /**
      * Returns the next instruction in the list to which this instruction
      * belongs, if any.
-     *
+     * 
      * @return the next instruction in the list to which this instruction
      *         belongs, if any. May be <tt>null</tt>.
      */
@@ -197,15 +220,38 @@ public abstract class AbstractInsnNode {
 
     /**
      * Makes the given code visitor visit this instruction.
-     *
+     * 
      * @param cv
      *            a code visitor.
      */
     public abstract void accept(final MethodVisitor cv);
 
     /**
+     * Makes the given visitor visit the annotations of this instruction.
+     * 
+     * @param mv
+     *            a method visitor.
+     */
+    protected final void acceptAnnotations(final MethodVisitor mv) {
+        int n = visibleTypeAnnotations == null ? 0 : visibleTypeAnnotations
+                .size();
+        for (int i = 0; i < n; ++i) {
+            TypeAnnotationNode an = visibleTypeAnnotations.get(i);
+            an.accept(mv.visitInsnAnnotation(an.typeRef, an.typePath, an.desc,
+                    true));
+        }
+        n = invisibleTypeAnnotations == null ? 0 : invisibleTypeAnnotations
+                .size();
+        for (int i = 0; i < n; ++i) {
+            TypeAnnotationNode an = invisibleTypeAnnotations.get(i);
+            an.accept(mv.visitInsnAnnotation(an.typeRef, an.typePath, an.desc,
+                    false));
+        }
+    }
+
+    /**
      * Returns a copy of this instruction.
-     *
+     * 
      * @param labels
      *            a map from LabelNodes to cloned LabelNodes.
      * @return a copy of this instruction. The returned instruction does not
@@ -216,7 +262,7 @@ public abstract class AbstractInsnNode {
 
     /**
      * Returns the clone of the given label.
-     *
+     * 
      * @param label
      *            a label.
      * @param map
@@ -230,7 +276,7 @@ public abstract class AbstractInsnNode {
 
     /**
      * Returns the clones of the given labels.
-     *
+     * 
      * @param labels
      *            a list of labels.
      * @param map
@@ -244,5 +290,37 @@ public abstract class AbstractInsnNode {
             clones[i] = map.get(labels.get(i));
         }
         return clones;
+    }
+
+    /**
+     * Clones the annotations of the given instruction into this instruction.
+     * 
+     * @param insn
+     *            the source instruction.
+     * @return this instruction.
+     */
+    protected final AbstractInsnNode cloneAnnotations(
+            final AbstractInsnNode insn) {
+        if (insn.visibleTypeAnnotations != null) {
+            this.visibleTypeAnnotations = new ArrayList<TypeAnnotationNode>();
+            for (int i = 0; i < insn.visibleTypeAnnotations.size(); ++i) {
+                TypeAnnotationNode src = insn.visibleTypeAnnotations.get(i);
+                TypeAnnotationNode ann = new TypeAnnotationNode(src.typeRef,
+                        src.typePath, src.desc);
+                src.accept(ann);
+                this.visibleTypeAnnotations.add(ann);
+            }
+        }
+        if (insn.invisibleTypeAnnotations != null) {
+            this.invisibleTypeAnnotations = new ArrayList<TypeAnnotationNode>();
+            for (int i = 0; i < insn.invisibleTypeAnnotations.size(); ++i) {
+                TypeAnnotationNode src = insn.invisibleTypeAnnotations.get(i);
+                TypeAnnotationNode ann = new TypeAnnotationNode(src.typeRef,
+                        src.typePath, src.desc);
+                src.accept(ann);
+                this.invisibleTypeAnnotations.add(ann);
+            }
+        }
+        return this;
     }
 }

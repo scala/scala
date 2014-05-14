@@ -27,12 +27,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.signature;
+package org.objectweb.asm.signature;
 
 /**
  * A type signature parser to make a signature visitor visit an existing
  * signature.
- *
+ * 
  * @author Thomas Hallgren
  * @author Eric Bruneton
  */
@@ -45,7 +45,7 @@ public class SignatureReader {
 
     /**
      * Constructs a {@link SignatureReader} for the given signature.
-     *
+     * 
      * @param signature
      *            A <i>ClassSignature</i>, <i>MethodTypeSignature</i>, or
      *            <i>FieldTypeSignature</i>.
@@ -60,12 +60,12 @@ public class SignatureReader {
      * constructor (see {@link #SignatureReader(String) SignatureReader}). This
      * method is intended to be called on a {@link SignatureReader} that was
      * created using a <i>ClassSignature</i> (such as the <code>signature</code>
-     * parameter of the {@link scala.tools.asm.ClassVisitor#visit
+     * parameter of the {@link org.objectweb.asm.ClassVisitor#visit
      * ClassVisitor.visit} method) or a <i>MethodTypeSignature</i> (such as the
      * <code>signature</code> parameter of the
-     * {@link scala.tools.asm.ClassVisitor#visitMethod
+     * {@link org.objectweb.asm.ClassVisitor#visitMethod
      * ClassVisitor.visitMethod} method).
-     *
+     * 
      * @param v
      *            the visitor that must visit this signature.
      */
@@ -119,10 +119,10 @@ public class SignatureReader {
      * method is intended to be called on a {@link SignatureReader} that was
      * created using a <i>FieldTypeSignature</i>, such as the
      * <code>signature</code> parameter of the
-     * {@link scala.tools.asm.ClassVisitor#visitField ClassVisitor.visitField}
-     * or {@link scala.tools.asm.MethodVisitor#visitLocalVariable
+     * {@link org.objectweb.asm.ClassVisitor#visitField ClassVisitor.visitField}
+     * or {@link org.objectweb.asm.MethodVisitor#visitLocalVariable
      * MethodVisitor.visitLocalVariable} methods.
-     *
+     * 
      * @param v
      *            the visitor that must visit this signature.
      */
@@ -132,7 +132,7 @@ public class SignatureReader {
 
     /**
      * Parses a field type signature and makes the given visitor visit it.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be parsed.
      * @param pos

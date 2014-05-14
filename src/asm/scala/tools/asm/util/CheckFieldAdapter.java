@@ -27,12 +27,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.util;
+package org.objectweb.asm.util;
 
-import scala.tools.asm.AnnotationVisitor;
-import scala.tools.asm.Attribute;
-import scala.tools.asm.FieldVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.TypePath;
+import org.objectweb.asm.TypeReference;
 
 /**
  * A {@link FieldVisitor} that checks that its methods are properly used.
@@ -45,20 +47,25 @@ public class CheckFieldAdapter extends FieldVisitor {
      * Constructs a new {@link CheckFieldAdapter}. <i>Subclasses must not use
      * this constructor</i>. Instead, they must use the
      * {@link #CheckFieldAdapter(int, FieldVisitor)} version.
-     *
+     * 
      * @param fv
      *            the field visitor to which this adapter must delegate calls.
+     * @throws IllegalStateException
+     *             If a subclass calls this constructor.
      */
     public CheckFieldAdapter(final FieldVisitor fv) {
-        this(Opcodes.ASM4, fv);
+        this(Opcodes.ASM5, fv);
+        if (getClass() != CheckFieldAdapter.class) {
+            throw new IllegalStateException();
+        }
     }
 
     /**
      * Constructs a new {@link CheckFieldAdapter}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4}.
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      * @param fv
      *            the field visitor to which this adapter must delegate calls.
      */
@@ -72,6 +79,21 @@ public class CheckFieldAdapter extends FieldVisitor {
         checkEnd();
         CheckMethodAdapter.checkDesc(desc, false);
         return new CheckAnnotationAdapter(super.visitAnnotation(desc, visible));
+    }
+
+    @Override
+    public AnnotationVisitor visitTypeAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        checkEnd();
+        int sort = typeRef >>> 24;
+        if (sort != TypeReference.FIELD) {
+            throw new IllegalArgumentException("Invalid type reference sort 0x"
+                    + Integer.toHexString(sort));
+        }
+        CheckClassAdapter.checkTypeRefAndPath(typeRef, typePath);
+        CheckMethodAdapter.checkDesc(desc, false);
+        return new CheckAnnotationAdapter(super.visitTypeAnnotation(typeRef,
+                typePath, desc, visible));
     }
 
     @Override

@@ -27,17 +27,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.Map;
 
-import scala.tools.asm.MethodVisitor;
+import org.objectweb.asm.MethodVisitor;
 
 /**
  * A node that represents a local variable instruction. A local variable
  * instruction is an instruction that loads or stores the value of a local
  * variable.
- *
+ * 
  * @author Eric Bruneton
  */
 public class VarInsnNode extends AbstractInsnNode {
@@ -50,7 +50,7 @@ public class VarInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link VarInsnNode}.
-     *
+     * 
      * @param opcode
      *            the opcode of the local variable instruction to be
      *            constructed. This opcode must be ILOAD, LLOAD, FLOAD, DLOAD,
@@ -66,7 +66,7 @@ public class VarInsnNode extends AbstractInsnNode {
 
     /**
      * Sets the opcode of this instruction.
-     *
+     * 
      * @param opcode
      *            the new instruction opcode. This opcode must be ILOAD, LLOAD,
      *            FLOAD, DLOAD, ALOAD, ISTORE, LSTORE, FSTORE, DSTORE, ASTORE or
@@ -84,10 +84,11 @@ public class VarInsnNode extends AbstractInsnNode {
     @Override
     public void accept(final MethodVisitor mv) {
         mv.visitVarInsn(opcode, var);
+        acceptAnnotations(mv);
     }
 
     @Override
     public AbstractInsnNode clone(final Map<LabelNode, LabelNode> labels) {
-        return new VarInsnNode(opcode, var);
+        return new VarInsnNode(opcode, var).cloneAnnotations(this);
     }
 }

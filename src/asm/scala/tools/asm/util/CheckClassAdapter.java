@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.util;
+package org.objectweb.asm.util;
 
 import java.io.FileInputStream;
 import java.io.PrintWriter;
@@ -37,21 +37,23 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import scala.tools.asm.AnnotationVisitor;
-import scala.tools.asm.Attribute;
-import scala.tools.asm.ClassReader;
-import scala.tools.asm.ClassVisitor;
-import scala.tools.asm.FieldVisitor;
-import scala.tools.asm.Label;
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.Type;
-import scala.tools.asm.tree.ClassNode;
-import scala.tools.asm.tree.MethodNode;
-import scala.tools.asm.tree.analysis.Analyzer;
-import scala.tools.asm.tree.analysis.BasicValue;
-import scala.tools.asm.tree.analysis.Frame;
-import scala.tools.asm.tree.analysis.SimpleVerifier;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.TypePath;
+import org.objectweb.asm.TypeReference;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.analysis.Analyzer;
+import org.objectweb.asm.tree.analysis.BasicValue;
+import org.objectweb.asm.tree.analysis.Frame;
+import org.objectweb.asm.tree.analysis.SimpleVerifier;
 
 /**
  * A {@link ClassVisitor} that checks that its methods are properly used. More
@@ -60,40 +62,40 @@ import scala.tools.asm.tree.analysis.SimpleVerifier;
  * of method calls. For example, the invalid sequence
  * <tt>visitField(ACC_PUBLIC, "i", "I", null)</tt> <tt>visitField(ACC_PUBLIC,
  * "i", "D", null)</tt> will <i>not</i> be detected by this class adapter.
- *
+ * 
  * <p>
  * <code>CheckClassAdapter</code> can be also used to verify bytecode
  * transformations in order to make sure transformed bytecode is sane. For
  * example:
- *
+ * 
  * <pre>
  *   InputStream is = ...; // get bytes for the source class
  *   ClassReader cr = new ClassReader(is);
  *   ClassWriter cw = new ClassWriter(cr, ClassWriter.COMPUTE_MAXS);
  *   ClassVisitor cv = new <b>MyClassAdapter</b>(new CheckClassAdapter(cw));
  *   cr.accept(cv, 0);
- *
+ * 
  *   StringWriter sw = new StringWriter();
  *   PrintWriter pw = new PrintWriter(sw);
  *   CheckClassAdapter.verify(new ClassReader(cw.toByteArray()), false, pw);
  *   assertTrue(sw.toString(), sw.toString().length()==0);
  * </pre>
- *
+ * 
  * Above code runs transformed bytecode trough the
  * <code>CheckClassAdapter</code>. It won't be exactly the same verification as
  * JVM does, but it run data flow analysis for the code of each method and
  * checks that expectations are met for each method instruction.
- *
+ * 
  * <p>
  * If method bytecode has errors, assertion text will show the erroneous
  * instruction number and dump of the failed method with information about
  * locals and stack slot for each instruction. For example (format is -
  * insnNumber locals : stack):
- *
+ * 
  * <pre>
- * scala.tools.asm.tree.analysis.AnalyzerException: Error at instruction 71: Expected I, but found .
- *   at scala.tools.asm.tree.analysis.Analyzer.analyze(Analyzer.java:289)
- *   at scala.tools.asm.util.CheckClassAdapter.verify(CheckClassAdapter.java:135)
+ * org.objectweb.asm.tree.analysis.AnalyzerException: Error at instruction 71: Expected I, but found .
+ *   at org.objectweb.asm.tree.analysis.Analyzer.analyze(Analyzer.java:289)
+ *   at org.objectweb.asm.util.CheckClassAdapter.verify(CheckClassAdapter.java:135)
  * ...
  * remove()V
  * 00000 LinkedBlockingQueue$Itr . . . . . . . .  :
@@ -102,24 +104,24 @@ import scala.tools.asm.tree.analysis.SimpleVerifier;
  *   ISTORE 2
  * 00001 LinkedBlockingQueue$Itr <b>.</b> I . . . . . .  :
  * ...
- *
+ * 
  * 00071 LinkedBlockingQueue$Itr <b>.</b> I . . . . . .  :
  *   ILOAD 1
  * 00072 <b>?</b>
- *   INVOKESPECIAL java/lang/Integer.<init> (I)V
+ *   INVOKESPECIAL java/lang/Integer.&lt;init&gt; (I)V
  * ...
  * </pre>
- *
+ * 
  * In the above output you can see that variable 1 loaded by
  * <code>ILOAD 1</code> instruction at position <code>00071</code> is not
  * initialized. You can also see that at the beginning of the method (code
  * inserted by the transformation) variable 2 is initialized.
- *
+ * 
  * <p>
  * Note that when used like that, <code>CheckClassAdapter.verify()</code> can
  * trigger additional class loading, because it is using
  * <code>SimpleVerifier</code>.
- *
+ * 
  * @author Eric Bruneton
  */
 public class CheckClassAdapter extends ClassVisitor {
@@ -164,10 +166,10 @@ public class CheckClassAdapter extends ClassVisitor {
      * Checks a given class.
      * <p>
      * Usage: CheckClassAdapter &lt;binary class name or class file name&gt;
-     *
+     * 
      * @param args
      *            the command line arguments.
-     *
+     * 
      * @throws Exception
      *             if the class cannot be found, or if an IO exception occurs.
      */
@@ -190,7 +192,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a given class.
-     *
+     * 
      * @param cr
      *            a <code>ClassReader</code> that contains bytecode for the
      *            analysis.
@@ -215,7 +217,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
         List<Type> interfaces = new ArrayList<Type>();
         for (Iterator<String> i = cn.interfaces.iterator(); i.hasNext();) {
-            interfaces.add(Type.getObjectType(i.next().toString()));
+            interfaces.add(Type.getObjectType(i.next()));
         }
 
         for (int i = 0; i < methods.size(); ++i) {
@@ -242,7 +244,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a given class
-     *
+     * 
      * @param cr
      *            a <code>ClassReader</code> that contains bytecode for the
      *            analysis.
@@ -308,7 +310,7 @@ public class CheckClassAdapter extends ClassVisitor {
      * Constructs a new {@link CheckClassAdapter}. <i>Subclasses must not use
      * this constructor</i>. Instead, they must use the
      * {@link #CheckClassAdapter(int, ClassVisitor, boolean)} version.
-     *
+     * 
      * @param cv
      *            the class visitor to which this adapter must delegate calls.
      */
@@ -320,7 +322,7 @@ public class CheckClassAdapter extends ClassVisitor {
      * Constructs a new {@link CheckClassAdapter}. <i>Subclasses must not use
      * this constructor</i>. Instead, they must use the
      * {@link #CheckClassAdapter(int, ClassVisitor, boolean)} version.
-     *
+     * 
      * @param cv
      *            the class visitor to which this adapter must delegate calls.
      * @param checkDataFlow
@@ -328,17 +330,22 @@ public class CheckClassAdapter extends ClassVisitor {
      *            <tt>false</tt> to not perform any data flow check (see
      *            {@link CheckMethodAdapter}). This option requires valid
      *            maxLocals and maxStack values.
+     * @throws IllegalStateException
+     *             If a subclass calls this constructor.
      */
     public CheckClassAdapter(final ClassVisitor cv, final boolean checkDataFlow) {
-        this(Opcodes.ASM4, cv, checkDataFlow);
+        this(Opcodes.ASM5, cv, checkDataFlow);
+        if (getClass() != CheckClassAdapter.class) {
+            throw new IllegalStateException();
+        }
     }
 
     /**
      * Constructs a new {@link CheckClassAdapter}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4}.
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      * @param cv
      *            the class visitor to which this adapter must delegate calls.
      * @param checkDataFlow
@@ -440,7 +447,15 @@ public class CheckClassAdapter extends ClassVisitor {
             CheckMethodAdapter.checkInternalName(outerName, "outer class name");
         }
         if (innerName != null) {
-            CheckMethodAdapter.checkIdentifier(innerName, "inner class name");
+            int start = 0;
+            while (start < innerName.length()
+                    && Character.isDigit(innerName.charAt(start))) {
+                start++;
+            }
+            if (start == 0 || start < innerName.length()) {
+                CheckMethodAdapter.checkIdentifier(innerName, start, -1,
+                        "inner class name");
+            }
         }
         checkAccess(access, Opcodes.ACC_PUBLIC + Opcodes.ACC_PRIVATE
                 + Opcodes.ACC_PROTECTED + Opcodes.ACC_STATIC
@@ -517,6 +532,23 @@ public class CheckClassAdapter extends ClassVisitor {
     }
 
     @Override
+    public AnnotationVisitor visitTypeAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        checkState();
+        int sort = typeRef >>> 24;
+        if (sort != TypeReference.CLASS_TYPE_PARAMETER
+                && sort != TypeReference.CLASS_TYPE_PARAMETER_BOUND
+                && sort != TypeReference.CLASS_EXTENDS) {
+            throw new IllegalArgumentException("Invalid type reference sort 0x"
+                    + Integer.toHexString(sort));
+        }
+        checkTypeRefAndPath(typeRef, typePath);
+        CheckMethodAdapter.checkDesc(desc, false);
+        return new CheckAnnotationAdapter(super.visitTypeAnnotation(typeRef,
+                typePath, desc, visible));
+    }
+
+    @Override
     public void visitAttribute(final Attribute attr) {
         checkState();
         if (attr == null) {
@@ -556,7 +588,7 @@ public class CheckClassAdapter extends ClassVisitor {
      * Checks that the given access flags do not contain invalid flags. This
      * method also checks that mutually incompatible flags are not set
      * simultaneously.
-     *
+     * 
      * @param access
      *            the access flags to be checked
      * @param possibleAccess
@@ -585,7 +617,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a class signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      */
@@ -609,7 +641,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a method signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      */
@@ -648,7 +680,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a field signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      */
@@ -661,8 +693,79 @@ public class CheckClassAdapter extends ClassVisitor {
     }
 
     /**
+     * Checks the reference to a type in a type annotation.
+     * 
+     * @param typeRef
+     *            a reference to an annotated type.
+     * @param typePath
+     *            the path to the annotated type argument, wildcard bound, array
+     *            element type, or static inner type within 'typeRef'. May be
+     *            <tt>null</tt> if the annotation targets 'typeRef' as a whole.
+     */
+    static void checkTypeRefAndPath(int typeRef, TypePath typePath) {
+        int mask = 0;
+        switch (typeRef >>> 24) {
+        case TypeReference.CLASS_TYPE_PARAMETER:
+        case TypeReference.METHOD_TYPE_PARAMETER:
+        case TypeReference.METHOD_FORMAL_PARAMETER:
+            mask = 0xFFFF0000;
+            break;
+        case TypeReference.FIELD:
+        case TypeReference.METHOD_RETURN:
+        case TypeReference.METHOD_RECEIVER:
+        case TypeReference.LOCAL_VARIABLE:
+        case TypeReference.RESOURCE_VARIABLE:
+        case TypeReference.INSTANCEOF:
+        case TypeReference.NEW:
+        case TypeReference.CONSTRUCTOR_REFERENCE:
+        case TypeReference.METHOD_REFERENCE:
+            mask = 0xFF000000;
+            break;
+        case TypeReference.CLASS_EXTENDS:
+        case TypeReference.CLASS_TYPE_PARAMETER_BOUND:
+        case TypeReference.METHOD_TYPE_PARAMETER_BOUND:
+        case TypeReference.THROWS:
+        case TypeReference.EXCEPTION_PARAMETER:
+            mask = 0xFFFFFF00;
+            break;
+        case TypeReference.CAST:
+        case TypeReference.CONSTRUCTOR_INVOCATION_TYPE_ARGUMENT:
+        case TypeReference.METHOD_INVOCATION_TYPE_ARGUMENT:
+        case TypeReference.CONSTRUCTOR_REFERENCE_TYPE_ARGUMENT:
+        case TypeReference.METHOD_REFERENCE_TYPE_ARGUMENT:
+            mask = 0xFF0000FF;
+            break;
+        default:
+            throw new IllegalArgumentException("Invalid type reference sort 0x"
+                    + Integer.toHexString(typeRef >>> 24));
+        }
+        if ((typeRef & ~mask) != 0) {
+            throw new IllegalArgumentException("Invalid type reference 0x"
+                    + Integer.toHexString(typeRef));
+        }
+        if (typePath != null) {
+            for (int i = 0; i < typePath.getLength(); ++i) {
+                int step = typePath.getStep(i);
+                if (step != TypePath.ARRAY_ELEMENT
+                        && step != TypePath.INNER_TYPE
+                        && step != TypePath.TYPE_ARGUMENT
+                        && step != TypePath.WILDCARD_BOUND) {
+                    throw new IllegalArgumentException(
+                            "Invalid type path step " + i + " in " + typePath);
+                }
+                if (step != TypePath.TYPE_ARGUMENT
+                        && typePath.getStepArgument(i) != 0) {
+                    throw new IllegalArgumentException(
+                            "Invalid type path step argument for step " + i
+                                    + " in " + typePath);
+                }
+            }
+        }
+    }
+
+    /**
      * Checks the formal type parameters of a class or method signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      * @param pos
@@ -683,7 +786,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a formal type parameter of a class or method signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      * @param pos
@@ -707,7 +810,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a field type signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      * @param pos
@@ -733,7 +836,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a class type signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      * @param pos
@@ -764,7 +867,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks the type arguments in a class type signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      * @param pos
@@ -785,7 +888,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a type argument in a class type signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      * @param pos
@@ -807,7 +910,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a type variable signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      * @param pos
@@ -826,7 +929,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a type signature.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      * @param pos
@@ -854,7 +957,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks an identifier.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      * @param pos
@@ -875,7 +978,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Checks a single character.
-     *
+     * 
      * @param signature
      *            a string containing the signature that must be checked.
      * @param pos
@@ -892,7 +995,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
     /**
      * Returns the signature car at the given index.
-     *
+     * 
      * @param signature
      *            a signature.
      * @param pos

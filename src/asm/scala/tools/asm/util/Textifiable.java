@@ -27,26 +27,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.util;
+package org.objectweb.asm.util;
 
 import java.util.Map;
 
-import scala.tools.asm.Label;
+import org.objectweb.asm.Label;
 
 /**
- * An {@link scala.tools.asm.Attribute Attribute} that can print a readable
+ * An {@link org.objectweb.asm.Attribute Attribute} that can print a readable
  * representation of itself.
- *
+ * 
  * Implementations should construct readable output from an attribute data
  * structure. Such representation could be used in unit test assertions.
- *
+ * 
  * @author Eugene Kuleshov
  */
 public interface Textifiable {
 
     /**
      * Build a human readable representation of this attribute.
-     *
+     * 
      * @param buf
      *            a buffer used for printing Java code.
      * @param labelNames

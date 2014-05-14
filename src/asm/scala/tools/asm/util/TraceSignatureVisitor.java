@@ -27,15 +27,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.util;
+package org.objectweb.asm.util;
 
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.signature.SignatureVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.signature.SignatureVisitor;
 
 /**
  * A {@link SignatureVisitor} that prints a disassembled view of the signature
  * it visits.
- *
+ * 
  * @author Eugene Kuleshov
  * @author Eric Bruneton
  */
@@ -75,13 +75,13 @@ public final class TraceSignatureVisitor extends SignatureVisitor {
     private String separator = "";
 
     public TraceSignatureVisitor(final int access) {
-        super(Opcodes.ASM4);
+        super(Opcodes.ASM5);
         isInterface = (access & Opcodes.ACC_INTERFACE) != 0;
         this.declaration = new StringBuffer();
     }
 
     private TraceSignatureVisitor(final StringBuffer buf) {
-        super(Opcodes.ASM4);
+        super(Opcodes.ASM5);
         this.declaration = buf;
     }
 

@@ -27,22 +27,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.Map;
 
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * A node that represents a MULTIANEWARRAY instruction.
- *
+ * 
  * @author Eric Bruneton
  */
 public class MultiANewArrayInsnNode extends AbstractInsnNode {
 
     /**
-     * An array type descriptor (see {@link scala.tools.asm.Type}).
+     * An array type descriptor (see {@link org.objectweb.asm.Type}).
      */
     public String desc;
 
@@ -53,9 +53,9 @@ public class MultiANewArrayInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link MultiANewArrayInsnNode}.
-     *
+     * 
      * @param desc
-     *            an array type descriptor (see {@link scala.tools.asm.Type}).
+     *            an array type descriptor (see {@link org.objectweb.asm.Type}).
      * @param dims
      *            number of dimensions of the array to allocate.
      */
@@ -73,11 +73,12 @@ public class MultiANewArrayInsnNode extends AbstractInsnNode {
     @Override
     public void accept(final MethodVisitor mv) {
         mv.visitMultiANewArrayInsn(desc, dims);
+        acceptAnnotations(mv);
     }
 
     @Override
     public AbstractInsnNode clone(final Map<LabelNode, LabelNode> labels) {
-        return new MultiANewArrayInsnNode(desc, dims);
+        return new MultiANewArrayInsnNode(desc, dims).cloneAnnotations(this);
     }
 
 }

@@ -27,15 +27,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * A node that represents a stack map frame. These nodes are pseudo instruction
@@ -48,7 +48,7 @@ import scala.tools.asm.Opcodes;
  * <br>
  * (*) this is mandatory only for classes whose version is greater than or equal
  * to {@link Opcodes#V1_6 V1_6}.
- *
+ * 
  * @author Eric Bruneton
  */
 public class FrameNode extends AbstractInsnNode {
@@ -83,7 +83,7 @@ public class FrameNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link FrameNode}.
-     *
+     * 
      * @param type
      *            the type of this frame. Must be {@link Opcodes#F_NEW} for
      *            expanded frames, or {@link Opcodes#F_FULL},
@@ -136,7 +136,7 @@ public class FrameNode extends AbstractInsnNode {
 
     /**
      * Makes the given visitor visit this stack map frame.
-     *
+     * 
      * @param mv
      *            a method visitor.
      */

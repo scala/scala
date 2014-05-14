@@ -28,11 +28,11 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package scala.tools.asm;
+package org.objectweb.asm;
 
 /**
  * Information about a class being parsed in a {@link ClassReader}.
- *
+ * 
  * @author Eric Bruneton
  */
 class Context {
@@ -73,9 +73,44 @@ class Context {
     String desc;
 
     /**
+     * The label objects, indexed by bytecode offset, of the method currently
+     * being parsed (only bytecode offsets for which a label is needed have a
+     * non null associated Label object).
+     */
+    Label[] labels;
+
+    /**
+     * The target of the type annotation currently being parsed.
+     */
+    int typeRef;
+
+    /**
+     * The path of the type annotation currently being parsed.
+     */
+    TypePath typePath;
+
+    /**
      * The offset of the latest stack map frame that has been parsed.
      */
     int offset;
+
+    /**
+     * The labels corresponding to the start of the local variable ranges in the
+     * local variable type annotation currently being parsed.
+     */
+    Label[] start;
+
+    /**
+     * The labels corresponding to the end of the local variable ranges in the
+     * local variable type annotation currently being parsed.
+     */
+    Label[] end;
+
+    /**
+     * The local variable indices for each local variable range in the local
+     * variable type annotation currently being parsed.
+     */
+    int[] index;
 
     /**
      * The encoding of the latest stack map frame that has been parsed.

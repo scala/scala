@@ -27,14 +27,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.util;
+package org.objectweb.asm.util;
 
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.signature.SignatureVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.signature.SignatureVisitor;
 
 /**
  * A {@link SignatureVisitor} that checks that its methods are properly used.
- *
+ * 
  * @author Eric Bruneton
  */
 public class CheckSignatureAdapter extends SignatureVisitor {
@@ -103,7 +103,7 @@ public class CheckSignatureAdapter extends SignatureVisitor {
      * Creates a new {@link CheckSignatureAdapter} object. <i>Subclasses must
      * not use this constructor</i>. Instead, they must use the
      * {@link #CheckSignatureAdapter(int, int, SignatureVisitor)} version.
-     *
+     * 
      * @param type
      *            the type of signature to be checked. See
      *            {@link #CLASS_SIGNATURE}, {@link #METHOD_SIGNATURE} and
@@ -113,15 +113,15 @@ public class CheckSignatureAdapter extends SignatureVisitor {
      *            <tt>null</tt>.
      */
     public CheckSignatureAdapter(final int type, final SignatureVisitor sv) {
-        this(Opcodes.ASM4, type, sv);
+        this(Opcodes.ASM5, type, sv);
     }
 
     /**
      * Creates a new {@link CheckSignatureAdapter} object.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4}.
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      * @param type
      *            the type of signature to be checked. See
      *            {@link #CLASS_SIGNATURE}, {@link #METHOD_SIGNATURE} and

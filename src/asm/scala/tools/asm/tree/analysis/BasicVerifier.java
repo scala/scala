@@ -27,27 +27,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree.analysis;
+package org.objectweb.asm.tree.analysis;
 
 import java.util.List;
 
-import scala.tools.asm.Type;
-import scala.tools.asm.tree.AbstractInsnNode;
-import scala.tools.asm.tree.FieldInsnNode;
-import scala.tools.asm.tree.InvokeDynamicInsnNode;
-import scala.tools.asm.tree.MethodInsnNode;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 
 /**
  * An extended {@link BasicInterpreter} that checks that bytecode instructions
  * are correctly used.
- *
+ * 
  * @author Eric Bruneton
  * @author Bing Ran
  */
 public class BasicVerifier extends BasicInterpreter {
 
     public BasicVerifier() {
-        super(ASM4);
+        super(ASM5);
     }
 
     protected BasicVerifier(final int api) {

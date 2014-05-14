@@ -27,15 +27,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.util;
+package org.objectweb.asm.util;
 
-import scala.tools.asm.AnnotationVisitor;
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.Type;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 /**
  * An {@link AnnotationVisitor} that checks that its methods are properly used.
- *
+ * 
  * @author Eric Bruneton
  */
 public class CheckAnnotationAdapter extends AnnotationVisitor {
@@ -49,7 +49,7 @@ public class CheckAnnotationAdapter extends AnnotationVisitor {
     }
 
     CheckAnnotationAdapter(final AnnotationVisitor av, final boolean named) {
-        super(Opcodes.ASM4, av);
+        super(Opcodes.ASM5, av);
         this.named = named;
     }
 
@@ -70,7 +70,7 @@ public class CheckAnnotationAdapter extends AnnotationVisitor {
         }
         if (value instanceof Type) {
             int sort = ((Type) value).getSort();
-            if (sort != Type.OBJECT && sort != Type.ARRAY) {
+            if (sort == Type.METHOD) {
                 throw new IllegalArgumentException("Invalid annotation value");
             }
         }

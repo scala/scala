@@ -32,81 +32,45 @@ package org.objectweb.asm.tree;
 import org.objectweb.asm.MethodVisitor;
 
 /**
- * A node that represents a local variable declaration.
+ * A node that represents a parameter access and name.
  * 
- * @author Eric Bruneton
+ * @author Remi Forax
  */
-public class LocalVariableNode {
-
+public class ParameterNode {
     /**
-     * The name of a local variable.
+     * The parameter's name.
      */
     public String name;
 
     /**
-     * The type descriptor of this local variable.
+     * The parameter's access flags (see {@link org.objectweb.asm.Opcodes}).
+     * Valid values are <tt>ACC_FINAL</tt>, <tt>ACC_SYNTHETIC</tt> and
+     * <tt>ACC_MANDATED</tt>.
      */
-    public String desc;
+    public int access;
 
     /**
-     * The signature of this local variable. May be <tt>null</tt>.
-     */
-    public String signature;
-
-    /**
-     * The first instruction corresponding to the scope of this local variable
-     * (inclusive).
-     */
-    public LabelNode start;
-
-    /**
-     * The last instruction corresponding to the scope of this local variable
-     * (exclusive).
-     */
-    public LabelNode end;
-
-    /**
-     * The local variable's index.
-     */
-    public int index;
-
-    /**
-     * Constructs a new {@link LocalVariableNode}.
+     * Constructs a new {@link ParameterNode}.
      * 
+     * @param access
+     *            The parameter's access flags. Valid values are
+     *            <tt>ACC_FINAL</tt>, <tt>ACC_SYNTHETIC</tt> or/and
+     *            <tt>ACC_MANDATED</tt> (see {@link org.objectweb.asm.Opcodes}).
      * @param name
-     *            the name of a local variable.
-     * @param desc
-     *            the type descriptor of this local variable.
-     * @param signature
-     *            the signature of this local variable. May be <tt>null</tt>.
-     * @param start
-     *            the first instruction corresponding to the scope of this local
-     *            variable (inclusive).
-     * @param end
-     *            the last instruction corresponding to the scope of this local
-     *            variable (exclusive).
-     * @param index
-     *            the local variable's index.
+     *            the parameter's name.
      */
-    public LocalVariableNode(final String name, final String desc,
-            final String signature, final LabelNode start, final LabelNode end,
-            final int index) {
+    public ParameterNode(final String name, final int access) {
         this.name = name;
-        this.desc = desc;
-        this.signature = signature;
-        this.start = start;
-        this.end = end;
-        this.index = index;
+        this.access = access;
     }
 
     /**
-     * Makes the given visitor visit this local variable declaration.
+     * Makes the given visitor visit this parameter declaration.
      * 
      * @param mv
      *            a method visitor.
      */
     public void accept(final MethodVisitor mv) {
-        mv.visitLocalVariable(name, desc, signature, start.getLabel(),
-                end.getLabel(), index);
+        mv.visitParameter(name, access);
     }
 }

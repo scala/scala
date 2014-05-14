@@ -27,16 +27,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.Map;
 
-import scala.tools.asm.MethodVisitor;
+import org.objectweb.asm.MethodVisitor;
 
 /**
  * A node that represents a line number declaration. These nodes are pseudo
  * instruction nodes in order to be inserted in an instruction list.
- *
+ * 
  * @author Eric Bruneton
  */
 public class LineNumberNode extends AbstractInsnNode {
@@ -54,7 +54,7 @@ public class LineNumberNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link LineNumberNode}.
-     *
+     * 
      * @param line
      *            a line number. This number refers to the source file from
      *            which the class was compiled.

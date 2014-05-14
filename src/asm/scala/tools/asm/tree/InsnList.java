@@ -27,12 +27,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
-import scala.tools.asm.MethodVisitor;
+import org.objectweb.asm.MethodVisitor;
 
 /**
  * A doubly linked list of {@link AbstractInsnNode} objects. <i>This
@@ -63,7 +63,7 @@ public class InsnList {
 
     /**
      * Returns the number of instructions in this list.
-     *
+     * 
      * @return the number of instructions in this list.
      */
     public int size() {
@@ -72,7 +72,7 @@ public class InsnList {
 
     /**
      * Returns the first instruction in this list.
-     *
+     * 
      * @return the first instruction in this list, or <tt>null</tt> if the list
      *         is empty.
      */
@@ -82,7 +82,7 @@ public class InsnList {
 
     /**
      * Returns the last instruction in this list.
-     *
+     * 
      * @return the last instruction in this list, or <tt>null</tt> if the list
      *         is empty.
      */
@@ -95,12 +95,12 @@ public class InsnList {
      * of the instructions in this list to avoid scanning the whole list each
      * time it is called. Once the cache is built, this method run in constant
      * time. This cache is invalidated by all the methods that modify the list.
-     *
+     * 
      * @param index
      *            the index of the instruction that must be returned.
      * @return the instruction whose index is given.
      * @throws IndexOutOfBoundsException
-     *             if (index < 0 || index >= size()).
+     *             if (index &lt; 0 || index &gt;= size()).
      */
     public AbstractInsnNode get(final int index) {
         if (index < 0 || index >= size) {
@@ -116,7 +116,7 @@ public class InsnList {
      * Returns <tt>true</tt> if the given instruction belongs to this list. This
      * method always scans the instructions of this list until it finds the
      * given instruction or reaches the end of the list.
-     *
+     * 
      * @param insn
      *            an instruction.
      * @return <tt>true</tt> if the given instruction belongs to this list.
@@ -135,7 +135,7 @@ public class InsnList {
      * list each time it is called. Once the cache is built, this method run in
      * constant time. The cache is invalidated by all the methods that modify
      * the list.
-     *
+     * 
      * @param insn
      *            an instruction <i>of this list</i>.
      * @return the index of the given instruction in this list. <i>The result of
@@ -152,7 +152,7 @@ public class InsnList {
 
     /**
      * Makes the given visitor visit all of the instructions in this list.
-     *
+     * 
      * @param mv
      *            the method visitor that must visit the instructions.
      */
@@ -166,7 +166,7 @@ public class InsnList {
 
     /**
      * Returns an iterator over the instructions in this list.
-     *
+     * 
      * @return an iterator over the instructions in this list.
      */
     public ListIterator<AbstractInsnNode> iterator() {
@@ -175,7 +175,7 @@ public class InsnList {
 
     /**
      * Returns an iterator over the instructions in this list.
-     *
+     * 
      * @return an iterator over the instructions in this list.
      */
     @SuppressWarnings("unchecked")
@@ -185,7 +185,7 @@ public class InsnList {
 
     /**
      * Returns an array containing all of the instructions in this list.
-     *
+     * 
      * @return an array containing all of the instructions in this list.
      */
     public AbstractInsnNode[] toArray() {
@@ -202,7 +202,7 @@ public class InsnList {
 
     /**
      * Replaces an instruction of this list with another instruction.
-     *
+     * 
      * @param location
      *            an instruction <i>of this list</i>.
      * @param insn
@@ -238,20 +238,12 @@ public class InsnList {
 
     /**
      * Adds the given instruction to the end of this list.
-     *
+     * 
      * @param insn
      *            an instruction, <i>which must not belong to any
      *            {@link InsnList}</i>.
      */
     public void add(final AbstractInsnNode insn) {
-        if(insn.prev != null || insn.next != null) {
-            // Adding an instruction that still refers to others (in the same or another InsnList) leads to hard to debug bugs.
-            // Initially everything may look ok (e.g. iteration follows `next` thus a stale `prev` isn't noticed).
-            // However, a stale link brings the doubly-linked into disarray e.g. upon removing an element,
-            // which results in the `next` of a stale `prev` being updated, among other failure scenarios.
-            // Better fail early.
-            throw new RuntimeException("Instruction " + insn + " already belongs to some InsnList.");
-        }
         ++size;
         if (last == null) {
             first = insn;
@@ -267,7 +259,7 @@ public class InsnList {
 
     /**
      * Adds the given instructions to the end of this list.
-     *
+     * 
      * @param insns
      *            an instruction list, which is cleared during the process. This
      *            list must be different from 'this'.
@@ -292,7 +284,7 @@ public class InsnList {
 
     /**
      * Inserts the given instruction at the begining of this list.
-     *
+     * 
      * @param insn
      *            an instruction, <i>which must not belong to any
      *            {@link InsnList}</i>.
@@ -313,7 +305,7 @@ public class InsnList {
 
     /**
      * Inserts the given instructions at the begining of this list.
-     *
+     * 
      * @param insns
      *            an instruction list, which is cleared during the process. This
      *            list must be different from 'this'.
@@ -338,7 +330,7 @@ public class InsnList {
 
     /**
      * Inserts the given instruction after the specified instruction.
-     *
+     * 
      * @param location
      *            an instruction <i>of this list</i> after which insn must be
      *            inserted.
@@ -364,7 +356,7 @@ public class InsnList {
 
     /**
      * Inserts the given instructions after the specified instruction.
-     *
+     * 
      * @param location
      *            an instruction <i>of this list</i> after which the
      *            instructions must be inserted.
@@ -394,7 +386,7 @@ public class InsnList {
 
     /**
      * Inserts the given instruction before the specified instruction.
-     *
+     * 
      * @param location
      *            an instruction <i>of this list</i> before which insn must be
      *            inserted.
@@ -420,7 +412,7 @@ public class InsnList {
 
     /**
      * Inserts the given instructions before the specified instruction.
-     *
+     * 
      * @param location
      *            an instruction <i>of this list</i> before which the
      *            instructions must be inserted.
@@ -451,7 +443,7 @@ public class InsnList {
 
     /**
      * Removes the given instruction from this list.
-     *
+     * 
      * @param insn
      *            the instruction <i>of this list</i> that must be removed.
      */
@@ -484,7 +476,7 @@ public class InsnList {
 
     /**
      * Removes all of the instructions of this list.
-     *
+     * 
      * @param mark
      *            if the instructions must be marked as no longer belonging to
      *            any {@link InsnList}.
@@ -535,6 +527,8 @@ public class InsnList {
 
         AbstractInsnNode prev;
 
+        AbstractInsnNode remove;
+
         InsnListIterator(int index) {
             if (index == size()) {
                 next = null;
@@ -556,12 +550,22 @@ public class InsnList {
             AbstractInsnNode result = next;
             prev = result;
             next = result.next;
+            remove = result;
             return result;
         }
 
         public void remove() {
-            InsnList.this.remove(prev);
-            prev = prev.prev;
+            if (remove != null) {
+                if (remove == next) {
+                    next = next.next;
+                } else {
+                    prev = prev.prev;
+                }
+                InsnList.this.remove(remove);
+                remove = null;
+            } else {
+                throw new IllegalStateException();
+            }
         }
 
         public boolean hasPrevious() {
@@ -572,6 +576,7 @@ public class InsnList {
             AbstractInsnNode result = prev;
             next = result;
             prev = result.prev;
+            remove = result;
             return result;
         }
 
@@ -598,6 +603,7 @@ public class InsnList {
         public void add(Object o) {
             InsnList.this.insertBefore(next, (AbstractInsnNode) o);
             prev = (AbstractInsnNode) o;
+            remove = null;
         }
 
         public void set(Object o) {

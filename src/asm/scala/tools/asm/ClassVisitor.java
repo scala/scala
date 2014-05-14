@@ -27,22 +27,23 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm;
+package org.objectweb.asm;
 
 /**
  * A visitor to visit a Java class. The methods of this class must be called in
  * the following order: <tt>visit</tt> [ <tt>visitSource</tt> ] [
  * <tt>visitOuterClass</tt> ] ( <tt>visitAnnotation</tt> |
- * <tt>visitAttribute</tt> )* ( <tt>visitInnerClass</tt> | <tt>visitField</tt> |
- * <tt>visitMethod</tt> )* <tt>visitEnd</tt>.
- *
+ * <tt>visitTypeAnnotation</tt> | <tt>visitAttribute</tt> )* (
+ * <tt>visitInnerClass</tt> | <tt>visitField</tt> | <tt>visitMethod</tt> )*
+ * <tt>visitEnd</tt>.
+ * 
  * @author Eric Bruneton
  */
 public abstract class ClassVisitor {
 
     /**
      * The ASM API version implemented by this visitor. The value of this field
-     * must be one of {@link Opcodes#ASM4}.
+     * must be one of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      */
     protected final int api;
 
@@ -54,10 +55,10 @@ public abstract class ClassVisitor {
 
     /**
      * Constructs a new {@link ClassVisitor}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4}.
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      */
     public ClassVisitor(final int api) {
         this(api, null);
@@ -65,16 +66,16 @@ public abstract class ClassVisitor {
 
     /**
      * Constructs a new {@link ClassVisitor}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4}.
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      * @param cv
      *            the class visitor to which this visitor must delegate method
      *            calls. May be null.
      */
     public ClassVisitor(final int api, final ClassVisitor cv) {
-        if (api != Opcodes.ASM4) {
+        if (api != Opcodes.ASM4 && api != Opcodes.ASM5) {
             throw new IllegalArgumentException();
         }
         this.api = api;
@@ -83,7 +84,7 @@ public abstract class ClassVisitor {
 
     /**
      * Visits the header of the class.
-     *
+     * 
      * @param version
      *            the class version.
      * @param access
@@ -115,7 +116,7 @@ public abstract class ClassVisitor {
 
     /**
      * Visits the source of the class.
-     *
+     * 
      * @param source
      *            the name of the source file from which the class was compiled.
      *            May be <tt>null</tt>.
@@ -133,7 +134,7 @@ public abstract class ClassVisitor {
     /**
      * Visits the enclosing class of the class. This method must be called only
      * if the class has an enclosing class.
-     *
+     * 
      * @param owner
      *            internal name of the enclosing class of the class.
      * @param name
@@ -153,7 +154,7 @@ public abstract class ClassVisitor {
 
     /**
      * Visits an annotation of the class.
-     *
+     * 
      * @param desc
      *            the class descriptor of the annotation class.
      * @param visible
@@ -169,8 +170,41 @@ public abstract class ClassVisitor {
     }
 
     /**
+     * Visits an annotation on a type in the class signature.
+     * 
+     * @param typeRef
+     *            a reference to the annotated type. The sort of this type
+     *            reference must be {@link TypeReference#CLASS_TYPE_PARAMETER
+     *            CLASS_TYPE_PARAMETER},
+     *            {@link TypeReference#CLASS_TYPE_PARAMETER_BOUND
+     *            CLASS_TYPE_PARAMETER_BOUND} or
+     *            {@link TypeReference#CLASS_EXTENDS CLASS_EXTENDS}. See
+     *            {@link TypeReference}.
+     * @param typePath
+     *            the path to the annotated type argument, wildcard bound, array
+     *            element type, or static inner type within 'typeRef'. May be
+     *            <tt>null</tt> if the annotation targets 'typeRef' as a whole.
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return a visitor to visit the annotation values, or <tt>null</tt> if
+     *         this visitor is not interested in visiting this annotation.
+     */
+    public AnnotationVisitor visitTypeAnnotation(int typeRef,
+            TypePath typePath, String desc, boolean visible) {
+        if (api < Opcodes.ASM5) {
+            throw new RuntimeException();
+        }
+        if (cv != null) {
+            return cv.visitTypeAnnotation(typeRef, typePath, desc, visible);
+        }
+        return null;
+    }
+
+    /**
      * Visits a non standard attribute of the class.
-     *
+     * 
      * @param attr
      *            an attribute.
      */
@@ -183,7 +217,7 @@ public abstract class ClassVisitor {
     /**
      * Visits information about an inner class. This inner class is not
      * necessarily a member of the class being visited.
-     *
+     * 
      * @param name
      *            the internal name of an inner class (see
      *            {@link Type#getInternalName() getInternalName}).
@@ -207,7 +241,7 @@ public abstract class ClassVisitor {
 
     /**
      * Visits a field of the class.
-     *
+     * 
      * @param access
      *            the field's access flags (see {@link Opcodes}). This parameter
      *            also indicates if the field is synthetic and/or deprecated.
@@ -244,7 +278,7 @@ public abstract class ClassVisitor {
      * Visits a method of the class. This method <i>must</i> return a new
      * {@link MethodVisitor} instance (or <tt>null</tt>) each time it is called,
      * i.e., it should not return a previously returned visitor.
-     *
+     * 
      * @param access
      *            the method's access flags (see {@link Opcodes}). This
      *            parameter also indicates if the method is synthetic and/or

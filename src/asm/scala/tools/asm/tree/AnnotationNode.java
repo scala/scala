@@ -27,17 +27,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import scala.tools.asm.AnnotationVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * A node that represents an annotationn.
- *
+ * 
  * @author Eric Bruneton
  */
 public class AnnotationNode extends AnnotationVisitor {
@@ -52,7 +52,7 @@ public class AnnotationNode extends AnnotationVisitor {
      * as two consecutive elements in the list. The name is a {@link String},
      * and the value may be a {@link Byte}, {@link Boolean}, {@link Character},
      * {@link Short}, {@link Integer}, {@link Long}, {@link Float},
-     * {@link Double}, {@link String} or {@link scala.tools.asm.Type}, or an
+     * {@link Double}, {@link String} or {@link org.objectweb.asm.Type}, or an
      * two elements String array (for enumeration values), a
      * {@link AnnotationNode}, or a {@link List} of values of one of the
      * preceding types. The list may be <tt>null</tt> if there is no name value
@@ -64,20 +64,25 @@ public class AnnotationNode extends AnnotationVisitor {
      * Constructs a new {@link AnnotationNode}. <i>Subclasses must not use this
      * constructor</i>. Instead, they must use the
      * {@link #AnnotationNode(int, String)} version.
-     *
+     * 
      * @param desc
      *            the class descriptor of the annotation class.
+     * @throws IllegalStateException
+     *             If a subclass calls this constructor.
      */
     public AnnotationNode(final String desc) {
-        this(Opcodes.ASM4, desc);
+        this(Opcodes.ASM5, desc);
+        if (getClass() != AnnotationNode.class) {
+            throw new IllegalStateException();
+        }
     }
 
     /**
      * Constructs a new {@link AnnotationNode}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4}.
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      * @param desc
      *            the class descriptor of the annotation class.
      */
@@ -88,12 +93,12 @@ public class AnnotationNode extends AnnotationVisitor {
 
     /**
      * Constructs a new {@link AnnotationNode} to visit an array value.
-     *
+     * 
      * @param values
      *            where the visited values must be stored.
      */
     AnnotationNode(final List<Object> values) {
-        super(Opcodes.ASM4);
+        super(Opcodes.ASM5);
         this.values = values;
     }
 
@@ -164,9 +169,10 @@ public class AnnotationNode extends AnnotationVisitor {
      * version. This methods checks that this node, and all its nodes
      * recursively, do not contain elements that were introduced in more recent
      * versions of the ASM API than the given version.
-     *
+     * 
      * @param api
-     *            an ASM API version. Must be one of {@link Opcodes#ASM4}.
+     *            an ASM API version. Must be one of {@link Opcodes#ASM4} or
+     *            {@link Opcodes#ASM5}.
      */
     public void check(final int api) {
         // nothing to do
@@ -174,7 +180,7 @@ public class AnnotationNode extends AnnotationVisitor {
 
     /**
      * Makes the given visitor visit this annotation.
-     *
+     * 
      * @param av
      *            an annotation visitor. Maybe <tt>null</tt>.
      */
@@ -193,7 +199,7 @@ public class AnnotationNode extends AnnotationVisitor {
 
     /**
      * Makes the given visitor visit a given annotation value.
-     *
+     * 
      * @param av
      *            an annotation visitor. Maybe <tt>null</tt>.
      * @param name

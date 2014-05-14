@@ -27,20 +27,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm;
+package org.objectweb.asm;
 
 /**
  * A visitor to visit a Java field. The methods of this class must be called in
- * the following order: ( <tt>visitAnnotation</tt> | <tt>visitAttribute</tt> )*
- * <tt>visitEnd</tt>.
- *
+ * the following order: ( <tt>visitAnnotation</tt> |
+ * <tt>visitTypeAnnotation</tt> | <tt>visitAttribute</tt> )* <tt>visitEnd</tt>.
+ * 
  * @author Eric Bruneton
  */
 public abstract class FieldVisitor {
 
     /**
      * The ASM API version implemented by this visitor. The value of this field
-     * must be one of {@link Opcodes#ASM4}.
+     * must be one of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      */
     protected final int api;
 
@@ -52,10 +52,10 @@ public abstract class FieldVisitor {
 
     /**
      * Constructs a new {@link FieldVisitor}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4}.
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      */
     public FieldVisitor(final int api) {
         this(api, null);
@@ -63,16 +63,16 @@ public abstract class FieldVisitor {
 
     /**
      * Constructs a new {@link FieldVisitor}.
-     *
+     * 
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4}.
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      * @param fv
      *            the field visitor to which this visitor must delegate method
      *            calls. May be null.
      */
     public FieldVisitor(final int api, final FieldVisitor fv) {
-        if (api != Opcodes.ASM4) {
+        if (api != Opcodes.ASM4 && api != Opcodes.ASM5) {
             throw new IllegalArgumentException();
         }
         this.api = api;
@@ -81,7 +81,7 @@ public abstract class FieldVisitor {
 
     /**
      * Visits an annotation of the field.
-     *
+     * 
      * @param desc
      *            the class descriptor of the annotation class.
      * @param visible
@@ -97,8 +97,37 @@ public abstract class FieldVisitor {
     }
 
     /**
+     * Visits an annotation on the type of the field.
+     * 
+     * @param typeRef
+     *            a reference to the annotated type. The sort of this type
+     *            reference must be {@link TypeReference#FIELD FIELD}. See
+     *            {@link TypeReference}.
+     * @param typePath
+     *            the path to the annotated type argument, wildcard bound, array
+     *            element type, or static inner type within 'typeRef'. May be
+     *            <tt>null</tt> if the annotation targets 'typeRef' as a whole.
+     * @param desc
+     *            the class descriptor of the annotation class.
+     * @param visible
+     *            <tt>true</tt> if the annotation is visible at runtime.
+     * @return a visitor to visit the annotation values, or <tt>null</tt> if
+     *         this visitor is not interested in visiting this annotation.
+     */
+    public AnnotationVisitor visitTypeAnnotation(int typeRef,
+            TypePath typePath, String desc, boolean visible) {
+        if (api < Opcodes.ASM5) {
+            throw new RuntimeException();
+        }
+        if (fv != null) {
+            return fv.visitTypeAnnotation(typeRef, typePath, desc, visible);
+        }
+        return null;
+    }
+
+    /**
      * Visits a non standard attribute of the field.
-     *
+     * 
      * @param attr
      *            an attribute.
      */

@@ -27,16 +27,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.util;
+package org.objectweb.asm.util;
 
 import java.io.PrintWriter;
 
-import scala.tools.asm.AnnotationVisitor;
-import scala.tools.asm.Attribute;
-import scala.tools.asm.ClassVisitor;
-import scala.tools.asm.FieldVisitor;
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.TypePath;
 
 /**
  * A {@link ClassVisitor} that prints the classes it visits with a
@@ -47,36 +48,36 @@ import scala.tools.asm.Opcodes;
  * The trace printed when visiting the <tt>Hello</tt> class is the following:
  * <p>
  * <blockquote>
- *
+ * 
  * <pre>
  * // class version 49.0 (49) // access flags 0x21 public class Hello {
- *
+ * 
  * // compiled from: Hello.java
- *
+ * 
  * // access flags 0x1 public &lt;init&gt; ()V ALOAD 0 INVOKESPECIAL
  * java/lang/Object &lt;init&gt; ()V RETURN MAXSTACK = 1 MAXLOCALS = 1
- *
+ * 
  * // access flags 0x9 public static main ([Ljava/lang/String;)V GETSTATIC
  * java/lang/System out Ljava/io/PrintStream; LDC &quot;hello&quot;
  * INVOKEVIRTUAL java/io/PrintStream println (Ljava/lang/String;)V RETURN
  * MAXSTACK = 2 MAXLOCALS = 1 }
  * </pre>
- *
+ * 
  * </blockquote> where <tt>Hello</tt> is defined by:
  * <p>
  * <blockquote>
- *
+ * 
  * <pre>
  * public class Hello {
- *
+ * 
  *     public static void main(String[] args) {
  *         System.out.println(&quot;hello&quot;);
  *     }
  * }
  * </pre>
- *
+ * 
  * </blockquote>
- *
+ * 
  * @author Eric Bruneton
  * @author Eugene Kuleshov
  */
@@ -94,7 +95,7 @@ public final class TraceClassVisitor extends ClassVisitor {
 
     /**
      * Constructs a new {@link TraceClassVisitor}.
-     *
+     * 
      * @param pw
      *            the print writer to be used to print the class.
      */
@@ -104,7 +105,7 @@ public final class TraceClassVisitor extends ClassVisitor {
 
     /**
      * Constructs a new {@link TraceClassVisitor}.
-     *
+     * 
      * @param cv
      *            the {@link ClassVisitor} to which this visitor delegates
      *            calls. May be <tt>null</tt>.
@@ -117,7 +118,7 @@ public final class TraceClassVisitor extends ClassVisitor {
 
     /**
      * Constructs a new {@link TraceClassVisitor}.
-     *
+     * 
      * @param cv
      *            the {@link ClassVisitor} to which this visitor delegates
      *            calls. May be <tt>null</tt>.
@@ -130,7 +131,7 @@ public final class TraceClassVisitor extends ClassVisitor {
      */
     public TraceClassVisitor(final ClassVisitor cv, final Printer p,
             final PrintWriter pw) {
-        super(Opcodes.ASM4, cv);
+        super(Opcodes.ASM5, cv);
         this.pw = pw;
         this.p = p;
     }
@@ -162,6 +163,16 @@ public final class TraceClassVisitor extends ClassVisitor {
         Printer p = this.p.visitClassAnnotation(desc, visible);
         AnnotationVisitor av = cv == null ? null : cv.visitAnnotation(desc,
                 visible);
+        return new TraceAnnotationVisitor(av, p);
+    }
+
+    @Override
+    public AnnotationVisitor visitTypeAnnotation(int typeRef,
+            TypePath typePath, String desc, boolean visible) {
+        Printer p = this.p.visitClassTypeAnnotation(typeRef, typePath, desc,
+                visible);
+        AnnotationVisitor av = cv == null ? null : cv.visitTypeAnnotation(
+                typeRef, typePath, desc, visible);
         return new TraceAnnotationVisitor(av, p);
     }
 

@@ -27,11 +27,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm;
+package org.objectweb.asm;
 
 /**
  * Information about an exception handler block.
- *
+ * 
  * @author Eric Bruneton
  */
 class Handler {
@@ -71,7 +71,7 @@ class Handler {
     /**
      * Removes the range between start and end from the given exception
      * handlers.
-     *
+     * 
      * @param h
      *            an exception handler list.
      * @param start

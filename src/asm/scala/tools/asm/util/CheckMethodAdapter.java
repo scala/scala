@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.util;
+package org.objectweb.asm.util;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -39,17 +39,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import scala.tools.asm.AnnotationVisitor;
-import scala.tools.asm.Attribute;
-import scala.tools.asm.Handle;
-import scala.tools.asm.Label;
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.Type;
-import scala.tools.asm.tree.MethodNode;
-import scala.tools.asm.tree.analysis.Analyzer;
-import scala.tools.asm.tree.analysis.BasicValue;
-import scala.tools.asm.tree.analysis.BasicVerifier;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.TypePath;
+import org.objectweb.asm.TypeReference;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.analysis.Analyzer;
+import org.objectweb.asm.tree.analysis.BasicValue;
+import org.objectweb.asm.tree.analysis.BasicVerifier;
 
 /**
  * A {@link MethodVisitor} that checks that its methods are properly used. More
@@ -58,13 +60,13 @@ import scala.tools.asm.tree.analysis.BasicVerifier;
  * arguments - such as the fact that the given opcode is correct for a given
  * visit method. This adapter can also perform some basic data flow checks (more
  * precisely those that can be performed without the full class hierarchy - see
- * {@link scala.tools.asm.tree.analysis.BasicVerifier}). For instance in a
+ * {@link org.objectweb.asm.tree.analysis.BasicVerifier}). For instance in a
  * method whose signature is <tt>void m ()</tt>, the invalid instruction
  * IRETURN, or the invalid sequence IADD L2I will be detected if the data flow
  * checks are enabled. These checks are enabled by using the
  * {@link #CheckMethodAdapter(int,String,String,MethodVisitor,Map)} constructor.
  * They are not performed if any other constructor is used.
- *
+ * 
  * @author Eric Bruneton
  */
 public class CheckMethodAdapter extends MethodVisitor {
@@ -371,7 +373,7 @@ public class CheckMethodAdapter extends MethodVisitor {
      * {@link #CheckMethodAdapter(int,String,String,MethodVisitor,Map)}).
      * <i>Subclasses must not use this constructor</i>. Instead, they must use
      * the {@link #CheckMethodAdapter(int, MethodVisitor, Map)} version.
-     *
+     * 
      * @param mv
      *            the method visitor to which this adapter must delegate calls.
      */
@@ -385,22 +387,27 @@ public class CheckMethodAdapter extends MethodVisitor {
      * {@link #CheckMethodAdapter(int,String,String,MethodVisitor,Map)}).
      * <i>Subclasses must not use this constructor</i>. Instead, they must use
      * the {@link #CheckMethodAdapter(int, MethodVisitor, Map)} version.
-     *
+     * 
      * @param mv
      *            the method visitor to which this adapter must delegate calls.
      * @param labels
      *            a map of already visited labels (in other methods).
+     * @throws IllegalStateException
+     *             If a subclass calls this constructor.
      */
     public CheckMethodAdapter(final MethodVisitor mv,
             final Map<Label, Integer> labels) {
-        this(Opcodes.ASM4, mv, labels);
+        this(Opcodes.ASM5, mv, labels);
+        if (getClass() != CheckMethodAdapter.class) {
+            throw new IllegalStateException();
+        }
     }
 
     /**
      * Constructs a new {@link CheckMethodAdapter} object. This method adapter
      * will not perform any data flow check (see
      * {@link #CheckMethodAdapter(int,String,String,MethodVisitor,Map)}).
-     *
+     * 
      * @param mv
      *            the method visitor to which this adapter must delegate calls.
      * @param labels
@@ -419,7 +426,7 @@ public class CheckMethodAdapter extends MethodVisitor {
      * will perform basic data flow checks. For instance in a method whose
      * signature is <tt>void m ()</tt>, the invalid instruction IRETURN, or the
      * invalid sequence IADD L2I will be detected.
-     *
+     * 
      * @param access
      *            the method's access flags.
      * @param name
@@ -434,7 +441,7 @@ public class CheckMethodAdapter extends MethodVisitor {
     public CheckMethodAdapter(final int access, final String name,
             final String desc, final MethodVisitor cmv,
             final Map<Label, Integer> labels) {
-        this(new MethodNode(access, name, desc, null, null) {
+        this(new MethodNode(Opcodes.ASM5, access, name, desc, null, null) {
             @Override
             public void visitEnd() {
                 Analyzer<BasicValue> a = new Analyzer<BasicValue>(
@@ -462,11 +469,41 @@ public class CheckMethodAdapter extends MethodVisitor {
     }
 
     @Override
+    public void visitParameter(String name, int access) {
+        if (name != null) {
+            checkUnqualifiedName(version, name, "name");
+        }
+        CheckClassAdapter.checkAccess(access, Opcodes.ACC_FINAL
+                + Opcodes.ACC_MANDATED + Opcodes.ACC_SYNTHETIC);
+        super.visitParameter(name, access);
+    }
+
+    @Override
     public AnnotationVisitor visitAnnotation(final String desc,
             final boolean visible) {
         checkEndMethod();
         checkDesc(desc, false);
         return new CheckAnnotationAdapter(super.visitAnnotation(desc, visible));
+    }
+
+    @Override
+    public AnnotationVisitor visitTypeAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        checkEndMethod();
+        int sort = typeRef >>> 24;
+        if (sort != TypeReference.METHOD_TYPE_PARAMETER
+                && sort != TypeReference.METHOD_TYPE_PARAMETER_BOUND
+                && sort != TypeReference.METHOD_RETURN
+                && sort != TypeReference.METHOD_RECEIVER
+                && sort != TypeReference.METHOD_FORMAL_PARAMETER
+                && sort != TypeReference.THROWS) {
+            throw new IllegalArgumentException("Invalid type reference sort 0x"
+                    + Integer.toHexString(sort));
+        }
+        CheckClassAdapter.checkTypeRefAndPath(typeRef, typePath);
+        CheckMethodAdapter.checkDesc(desc, false);
+        return new CheckAnnotationAdapter(super.visitTypeAnnotation(typeRef,
+                typePath, desc, visible));
     }
 
     @Override
@@ -647,9 +684,30 @@ public class CheckMethodAdapter extends MethodVisitor {
         ++insnCount;
     }
 
+    @Deprecated
     @Override
-    public void visitMethodInsn(final int opcode, final String owner,
-            final String name, final String desc) {
+    public void visitMethodInsn(int opcode, String owner, String name,
+            String desc) {
+        if (api >= Opcodes.ASM5) {
+            super.visitMethodInsn(opcode, owner, name, desc);
+            return;
+        }
+        doVisitMethodInsn(opcode, owner, name, desc,
+                opcode == Opcodes.INVOKEINTERFACE);
+    }
+
+    @Override
+    public void visitMethodInsn(int opcode, String owner, String name,
+            String desc, boolean itf) {
+        if (api < Opcodes.ASM5) {
+            super.visitMethodInsn(opcode, owner, name, desc, itf);
+            return;
+        }
+        doVisitMethodInsn(opcode, owner, name, desc, itf);
+    }
+
+    private void doVisitMethodInsn(int opcode, final String owner,
+            final String name, final String desc, final boolean itf) {
         checkStartCode();
         checkEndCode();
         checkOpcode(opcode, 5);
@@ -658,7 +716,21 @@ public class CheckMethodAdapter extends MethodVisitor {
         }
         checkInternalName(owner, "owner");
         checkMethodDesc(desc);
-        super.visitMethodInsn(opcode, owner, name, desc);
+        if (opcode == Opcodes.INVOKEVIRTUAL && itf) {
+            throw new IllegalArgumentException(
+                    "INVOKEVIRTUAL can't be used with interfaces");
+        }
+        if (opcode == Opcodes.INVOKEINTERFACE && !itf) {
+            throw new IllegalArgumentException(
+                    "INVOKEINTERFACE can't be used with classes");
+        }
+        // Calling super.visitMethodInsn requires to call the correct version
+        // depending on this.api (otherwise infinite loops can occur). To
+        // simplify and to make it easier to automatically remove the backward
+        // compatibility code, we inline the code of the overridden method here.
+        if (mv != null) {
+            mv.visitMethodInsn(opcode, owner, name, desc, itf);
+        }
         ++insnCount;
     }
 
@@ -797,6 +869,29 @@ public class CheckMethodAdapter extends MethodVisitor {
     }
 
     @Override
+    public AnnotationVisitor visitInsnAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        checkStartCode();
+        checkEndCode();
+        int sort = typeRef >>> 24;
+        if (sort != TypeReference.INSTANCEOF && sort != TypeReference.NEW
+                && sort != TypeReference.CONSTRUCTOR_REFERENCE
+                && sort != TypeReference.METHOD_REFERENCE
+                && sort != TypeReference.CAST
+                && sort != TypeReference.CONSTRUCTOR_INVOCATION_TYPE_ARGUMENT
+                && sort != TypeReference.METHOD_INVOCATION_TYPE_ARGUMENT
+                && sort != TypeReference.CONSTRUCTOR_REFERENCE_TYPE_ARGUMENT
+                && sort != TypeReference.METHOD_REFERENCE_TYPE_ARGUMENT) {
+            throw new IllegalArgumentException("Invalid type reference sort 0x"
+                    + Integer.toHexString(sort));
+        }
+        CheckClassAdapter.checkTypeRefAndPath(typeRef, typePath);
+        CheckMethodAdapter.checkDesc(desc, false);
+        return new CheckAnnotationAdapter(super.visitInsnAnnotation(typeRef,
+                typePath, desc, visible));
+    }
+
+    @Override
     public void visitTryCatchBlock(final Label start, final Label end,
             final Label handler, final String type) {
         checkStartCode();
@@ -821,6 +916,22 @@ public class CheckMethodAdapter extends MethodVisitor {
     }
 
     @Override
+    public AnnotationVisitor visitTryCatchAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        checkStartCode();
+        checkEndCode();
+        int sort = typeRef >>> 24;
+        if (sort != TypeReference.EXCEPTION_PARAMETER) {
+            throw new IllegalArgumentException("Invalid type reference sort 0x"
+                    + Integer.toHexString(sort));
+        }
+        CheckClassAdapter.checkTypeRefAndPath(typeRef, typePath);
+        CheckMethodAdapter.checkDesc(desc, false);
+        return new CheckAnnotationAdapter(super.visitTryCatchAnnotation(
+                typeRef, typePath, desc, visible));
+    }
+
+    @Override
     public void visitLocalVariable(final String name, final String desc,
             final String signature, final Label start, final Label end,
             final int index) {
@@ -838,6 +949,40 @@ public class CheckMethodAdapter extends MethodVisitor {
                     "Invalid start and end labels (end must be greater than start)");
         }
         super.visitLocalVariable(name, desc, signature, start, end, index);
+    }
+
+    @Override
+    public AnnotationVisitor visitLocalVariableAnnotation(int typeRef,
+            TypePath typePath, Label[] start, Label[] end, int[] index,
+            String desc, boolean visible) {
+        checkStartCode();
+        checkEndCode();
+        int sort = typeRef >>> 24;
+        if (sort != TypeReference.LOCAL_VARIABLE
+                && sort != TypeReference.RESOURCE_VARIABLE) {
+            throw new IllegalArgumentException("Invalid type reference sort 0x"
+                    + Integer.toHexString(sort));
+        }
+        CheckClassAdapter.checkTypeRefAndPath(typeRef, typePath);
+        checkDesc(desc, false);
+        if (start == null || end == null || index == null
+                || end.length != start.length || index.length != start.length) {
+            throw new IllegalArgumentException(
+                    "Invalid start, end and index arrays (must be non null and of identical length");
+        }
+        for (int i = 0; i < start.length; ++i) {
+            checkLabel(start[i], true, "start label");
+            checkLabel(end[i], true, "end label");
+            checkUnsignedShort(index[i], "Invalid variable index");
+            int s = labels.get(start[i]).intValue();
+            int e = labels.get(end[i]).intValue();
+            if (e < s) {
+                throw new IllegalArgumentException(
+                        "Invalid start and end labels (end must be greater than start)");
+            }
+        }
+        return super.visitLocalVariableAnnotation(typeRef, typePath, start,
+                end, index, desc, visible);
     }
 
     @Override
@@ -917,7 +1062,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks a stack frame value.
-     *
+     * 
      * @param value
      *            the value to be checked.
      */
@@ -942,7 +1087,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the type of the given opcode is equal to the given type.
-     *
+     * 
      * @param opcode
      *            the opcode to be checked.
      * @param type
@@ -956,7 +1101,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given value is a signed byte.
-     *
+     * 
      * @param value
      *            the value to be checked.
      * @param msg
@@ -971,7 +1116,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given value is a signed short.
-     *
+     * 
      * @param value
      *            the value to be checked.
      * @param msg
@@ -986,7 +1131,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given value is an unsigned short.
-     *
+     * 
      * @param value
      *            the value to be checked.
      * @param msg
@@ -1002,7 +1147,7 @@ public class CheckMethodAdapter extends MethodVisitor {
     /**
      * Checks that the given value is an {@link Integer}, a{@link Float}, a
      * {@link Long}, a {@link Double} or a {@link String}.
-     *
+     * 
      * @param cst
      *            the value to be checked.
      */
@@ -1044,7 +1189,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given string is a valid unqualified name.
-     *
+     * 
      * @param version
      *            the class version.
      * @param name
@@ -1068,7 +1213,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given string is a valid Java identifier.
-     *
+     * 
      * @param name
      *            the string to be checked.
      * @param msg
@@ -1080,7 +1225,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given substring is a valid Java identifier.
-     *
+     * 
      * @param name
      *            the string to be checked.
      * @param start
@@ -1113,7 +1258,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given string is a valid Java identifier.
-     *
+     * 
      * @param version
      *            the class version.
      * @param name
@@ -1156,7 +1301,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given string is a valid internal class name.
-     *
+     * 
      * @param name
      *            the string to be checked.
      * @param msg
@@ -1176,7 +1321,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given substring is a valid internal class name.
-     *
+     * 
      * @param name
      *            the string to be checked.
      * @param start
@@ -1202,7 +1347,7 @@ public class CheckMethodAdapter extends MethodVisitor {
                 checkIdentifier(name, begin, slash, null);
                 begin = slash + 1;
             } while (slash != max);
-        } catch (IllegalArgumentException _) {
+        } catch (IllegalArgumentException unused) {
             throw new IllegalArgumentException(
                     "Invalid "
                             + msg
@@ -1213,7 +1358,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given string is a valid type descriptor.
-     *
+     * 
      * @param desc
      *            the string to be checked.
      * @param canBeVoid
@@ -1228,7 +1373,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that a the given substring is a valid type descriptor.
-     *
+     * 
      * @param desc
      *            the string to be checked.
      * @param start
@@ -1280,7 +1425,7 @@ public class CheckMethodAdapter extends MethodVisitor {
             }
             try {
                 checkInternalName(desc, start + 1, index, null);
-            } catch (IllegalArgumentException _) {
+            } catch (IllegalArgumentException unused) {
                 throw new IllegalArgumentException("Invalid descriptor: "
                         + desc);
             }
@@ -1292,7 +1437,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given string is a valid method descriptor.
-     *
+     * 
      * @param desc
      *            the string to be checked.
      */
@@ -1323,7 +1468,7 @@ public class CheckMethodAdapter extends MethodVisitor {
     /**
      * Checks that the given label is not null. This method can also check that
      * the label has been visited.
-     *
+     * 
      * @param label
      *            the label to be checked.
      * @param checkVisited
@@ -1345,7 +1490,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Checks that the given label is not a label used only for debug purposes.
-     *
+     * 
      * @param label
      *            the label to be checked.
      */
@@ -1365,7 +1510,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Returns the Field object corresponding to the Label.status field.
-     *
+     * 
      * @return the Field object corresponding to the Label.status field.
      */
     private static Field getLabelStatusField() {
@@ -1380,7 +1525,7 @@ public class CheckMethodAdapter extends MethodVisitor {
 
     /**
      * Returns the field of the Label class whose name is given.
-     *
+     * 
      * @param name
      *            a field name.
      * @return the field of the Label class whose name is given, or null.

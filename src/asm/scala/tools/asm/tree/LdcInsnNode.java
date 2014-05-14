@@ -27,16 +27,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree;
+package org.objectweb.asm.tree;
 
 import java.util.Map;
 
-import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 /**
  * A node that represents an LDC instruction.
- *
+ * 
  * @author Eric Bruneton
  */
 public class LdcInsnNode extends AbstractInsnNode {
@@ -44,13 +44,13 @@ public class LdcInsnNode extends AbstractInsnNode {
     /**
      * The constant to be loaded on the stack. This parameter must be a non null
      * {@link Integer}, a {@link Float}, a {@link Long}, a {@link Double}, a
-     * {@link String} or a {@link scala.tools.asm.Type}.
+     * {@link String} or a {@link org.objectweb.asm.Type}.
      */
     public Object cst;
 
     /**
      * Constructs a new {@link LdcInsnNode}.
-     *
+     * 
      * @param cst
      *            the constant to be loaded on the stack. This parameter must be
      *            a non null {@link Integer}, a {@link Float}, a {@link Long}, a
@@ -69,10 +69,11 @@ public class LdcInsnNode extends AbstractInsnNode {
     @Override
     public void accept(final MethodVisitor mv) {
         mv.visitLdcInsn(cst);
+        acceptAnnotations(mv);
     }
 
     @Override
     public AbstractInsnNode clone(final Map<LabelNode, LabelNode> labels) {
-        return new LdcInsnNode(cst);
+        return new LdcInsnNode(cst).cloneAnnotations(this);
     }
 }

@@ -27,11 +27,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm;
+package org.objectweb.asm;
 
 /**
  * An edge in the control flow graph of a method body. See {@link Label Label}.
- *
+ * 
  * @author Eric Bruneton
  */
 class Edge {

@@ -27,30 +27,30 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package scala.tools.asm.tree.analysis;
+package org.objectweb.asm.tree.analysis;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import scala.tools.asm.Opcodes;
-import scala.tools.asm.Type;
-import scala.tools.asm.tree.AbstractInsnNode;
-import scala.tools.asm.tree.FieldInsnNode;
-import scala.tools.asm.tree.InvokeDynamicInsnNode;
-import scala.tools.asm.tree.LdcInsnNode;
-import scala.tools.asm.tree.MethodInsnNode;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 
 /**
  * An {@link Interpreter} for {@link SourceValue} values.
- *
+ * 
  * @author Eric Bruneton
  */
 public class SourceInterpreter extends Interpreter<SourceValue> implements
         Opcodes {
 
     public SourceInterpreter() {
-        super(ASM4);
+        super(ASM5);
     }
 
     protected SourceInterpreter(final int api) {
