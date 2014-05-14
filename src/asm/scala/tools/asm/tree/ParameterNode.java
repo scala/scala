@@ -29,74 +29,48 @@
  */
 package scala.tools.asm.tree;
 
-import java.util.Map;
-
-import scala.tools.asm.Handle;
 import scala.tools.asm.MethodVisitor;
-import scala.tools.asm.Opcodes;
 
 /**
- * A node that represents an invokedynamic instruction.
+ * A node that represents a parameter access and name.
  *
  * @author Remi Forax
  */
-public class InvokeDynamicInsnNode extends AbstractInsnNode {
-
+public class ParameterNode {
     /**
-     * Invokedynamic name.
+     * The parameter's name.
      */
     public String name;
 
     /**
-     * Invokedynamic descriptor.
+     * The parameter's access flags (see {@link scala.tools.asm.Opcodes}).
+     * Valid values are <tt>ACC_FINAL</tt>, <tt>ACC_SYNTHETIC</tt> and
+     * <tt>ACC_MANDATED</tt>.
      */
-    public String desc;
+    public int access;
 
     /**
-     * Bootstrap method
-     */
-    public Handle bsm;
-
-    /**
-     * Bootstrap constant arguments
-     */
-    public Object[] bsmArgs;
-
-    /**
-     * Constructs a new {@link InvokeDynamicInsnNode}.
+     * Constructs a new {@link ParameterNode}.
      *
+     * @param access
+     *            The parameter's access flags. Valid values are
+     *            <tt>ACC_FINAL</tt>, <tt>ACC_SYNTHETIC</tt> or/and
+     *            <tt>ACC_MANDATED</tt> (see {@link scala.tools.asm.Opcodes}).
      * @param name
-     *            invokedynamic name.
-     * @param desc
-     *            invokedynamic descriptor (see {@link scala.tools.asm.Type}).
-     * @param bsm
-     *            the bootstrap method.
-     * @param bsmArgs
-     *            the boostrap constant arguments.
+     *            the parameter's name.
      */
-    public InvokeDynamicInsnNode(final String name, final String desc,
-            final Handle bsm, final Object... bsmArgs) {
-        super(Opcodes.INVOKEDYNAMIC);
+    public ParameterNode(final String name, final int access) {
         this.name = name;
-        this.desc = desc;
-        this.bsm = bsm;
-        this.bsmArgs = bsmArgs;
+        this.access = access;
     }
 
-    @Override
-    public int getType() {
-        return INVOKE_DYNAMIC_INSN;
-    }
-
-    @Override
+    /**
+     * Makes the given visitor visit this parameter declaration.
+     *
+     * @param mv
+     *            a method visitor.
+     */
     public void accept(final MethodVisitor mv) {
-        mv.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
-        acceptAnnotations(mv);
-    }
-
-    @Override
-    public AbstractInsnNode clone(final Map<LabelNode, LabelNode> labels) {
-        return new InvokeDynamicInsnNode(name, desc, bsm, bsmArgs)
-                .cloneAnnotations(this);
+        mv.visitParameter(name, access);
     }
 }

@@ -73,11 +73,12 @@ public class MultiANewArrayInsnNode extends AbstractInsnNode {
     @Override
     public void accept(final MethodVisitor mv) {
         mv.visitMultiANewArrayInsn(desc, dims);
+        acceptAnnotations(mv);
     }
 
     @Override
     public AbstractInsnNode clone(final Map<LabelNode, LabelNode> labels) {
-        return new MultiANewArrayInsnNode(desc, dims);
+        return new MultiANewArrayInsnNode(desc, dims).cloneAnnotations(this);
     }
 
 }

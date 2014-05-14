@@ -49,7 +49,7 @@ public class CheckAnnotationAdapter extends AnnotationVisitor {
     }
 
     CheckAnnotationAdapter(final AnnotationVisitor av, final boolean named) {
-        super(Opcodes.ASM4, av);
+        super(Opcodes.ASM5, av);
         this.named = named;
     }
 
@@ -70,7 +70,7 @@ public class CheckAnnotationAdapter extends AnnotationVisitor {
         }
         if (value instanceof Type) {
             int sort = ((Type) value).getSort();
-            if (sort != Type.OBJECT && sort != Type.ARRAY) {
+            if (sort == Type.METHOD) {
                 throw new IllegalArgumentException("Invalid annotation value");
             }
         }

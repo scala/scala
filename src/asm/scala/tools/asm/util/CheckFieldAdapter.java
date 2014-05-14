@@ -33,6 +33,8 @@ import scala.tools.asm.AnnotationVisitor;
 import scala.tools.asm.Attribute;
 import scala.tools.asm.FieldVisitor;
 import scala.tools.asm.Opcodes;
+import scala.tools.asm.TypePath;
+import scala.tools.asm.TypeReference;
 
 /**
  * A {@link FieldVisitor} that checks that its methods are properly used.
@@ -48,9 +50,14 @@ public class CheckFieldAdapter extends FieldVisitor {
      *
      * @param fv
      *            the field visitor to which this adapter must delegate calls.
+     * @throws IllegalStateException
+     *             If a subclass calls this constructor.
      */
     public CheckFieldAdapter(final FieldVisitor fv) {
-        this(Opcodes.ASM4, fv);
+        this(Opcodes.ASM5, fv);
+        if (getClass() != CheckFieldAdapter.class) {
+            throw new IllegalStateException();
+        }
     }
 
     /**
@@ -58,7 +65,7 @@ public class CheckFieldAdapter extends FieldVisitor {
      *
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4}.
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      * @param fv
      *            the field visitor to which this adapter must delegate calls.
      */
@@ -72,6 +79,21 @@ public class CheckFieldAdapter extends FieldVisitor {
         checkEnd();
         CheckMethodAdapter.checkDesc(desc, false);
         return new CheckAnnotationAdapter(super.visitAnnotation(desc, visible));
+    }
+
+    @Override
+    public AnnotationVisitor visitTypeAnnotation(final int typeRef,
+            final TypePath typePath, final String desc, final boolean visible) {
+        checkEnd();
+        int sort = typeRef >>> 24;
+        if (sort != TypeReference.FIELD) {
+            throw new IllegalArgumentException("Invalid type reference sort 0x"
+                    + Integer.toHexString(sort));
+        }
+        CheckClassAdapter.checkTypeRefAndPath(typeRef, typePath);
+        CheckMethodAdapter.checkDesc(desc, false);
+        return new CheckAnnotationAdapter(super.visitTypeAnnotation(typeRef,
+                typePath, desc, visible));
     }
 
     @Override

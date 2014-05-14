@@ -78,10 +78,11 @@ public class IntInsnNode extends AbstractInsnNode {
     @Override
     public void accept(final MethodVisitor mv) {
         mv.visitIntInsn(opcode, operand);
+        acceptAnnotations(mv);
     }
 
     @Override
     public AbstractInsnNode clone(final Map<LabelNode, LabelNode> labels) {
-        return new IntInsnNode(opcode, operand);
+        return new IntInsnNode(opcode, operand).cloneAnnotations(this);
     }
 }

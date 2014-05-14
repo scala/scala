@@ -53,7 +53,7 @@ public class BasicInterpreter extends Interpreter<BasicValue> implements
         Opcodes {
 
     public BasicInterpreter() {
-        super(ASM4);
+        super(ASM5);
     }
 
     protected BasicInterpreter(final int api) {

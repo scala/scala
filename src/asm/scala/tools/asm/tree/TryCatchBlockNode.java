@@ -29,6 +29,8 @@
  */
 package scala.tools.asm.tree;
 
+import java.util.List;
+
 import scala.tools.asm.MethodVisitor;
 
 /**
@@ -60,6 +62,26 @@ public class TryCatchBlockNode {
     public String type;
 
     /**
+     * The runtime visible type annotations on the exception handler type. This
+     * list is a list of {@link TypeAnnotationNode} objects. May be
+     * <tt>null</tt>.
+     *
+     * @associates scala.tools.asm.tree.TypeAnnotationNode
+     * @label visible
+     */
+    public List<TypeAnnotationNode> visibleTypeAnnotations;
+
+    /**
+     * The runtime invisible type annotations on the exception handler type.
+     * This list is a list of {@link TypeAnnotationNode} objects. May be
+     * <tt>null</tt>.
+     *
+     * @associates scala.tools.asm.tree.TypeAnnotationNode
+     * @label invisible
+     */
+    public List<TypeAnnotationNode> invisibleTypeAnnotations;
+
+    /**
      * Constructs a new {@link TryCatchBlockNode}.
      *
      * @param start
@@ -82,6 +104,29 @@ public class TryCatchBlockNode {
     }
 
     /**
+     * Updates the index of this try catch block in the method's list of try
+     * catch block nodes. This index maybe stored in the 'target' field of the
+     * type annotations of this block.
+     *
+     * @param index
+     *            the new index of this try catch block in the method's list of
+     *            try catch block nodes.
+     */
+    public void updateIndex(final int index) {
+        int newTypeRef = 0x42000000 | (index << 8);
+        if (visibleTypeAnnotations != null) {
+            for (TypeAnnotationNode tan : visibleTypeAnnotations) {
+                tan.typeRef = newTypeRef;
+            }
+        }
+        if (invisibleTypeAnnotations != null) {
+            for (TypeAnnotationNode tan : invisibleTypeAnnotations) {
+                tan.typeRef = newTypeRef;
+            }
+        }
+    }
+
+    /**
      * Makes the given visitor visit this try catch block.
      *
      * @param mv
@@ -90,5 +135,19 @@ public class TryCatchBlockNode {
     public void accept(final MethodVisitor mv) {
         mv.visitTryCatchBlock(start.getLabel(), end.getLabel(),
                 handler == null ? null : handler.getLabel(), type);
+        int n = visibleTypeAnnotations == null ? 0 : visibleTypeAnnotations
+                .size();
+        for (int i = 0; i < n; ++i) {
+            TypeAnnotationNode an = visibleTypeAnnotations.get(i);
+            an.accept(mv.visitTryCatchAnnotation(an.typeRef, an.typePath,
+                    an.desc, true));
+        }
+        n = invisibleTypeAnnotations == null ? 0 : invisibleTypeAnnotations
+                .size();
+        for (int i = 0; i < n; ++i) {
+            TypeAnnotationNode an = invisibleTypeAnnotations.get(i);
+            an.accept(mv.visitTryCatchAnnotation(an.typeRef, an.typePath,
+                    an.desc, false));
+        }
     }
 }
