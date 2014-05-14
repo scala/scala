@@ -34,7 +34,7 @@ import java.util.Map;
 import scala.tools.asm.Label;
 
 /**
- * An {@link org.objectweb.asm.Attribute Attribute} that can print the ASM code
+ * An {@link scala.tools.asm.Attribute Attribute} that can print the ASM code
  * to create an equivalent attribute.
  *
  * @author Eugene Kuleshov

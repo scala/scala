@@ -54,14 +54,14 @@ public class ClassNode extends ClassVisitor {
     public int version;
 
     /**
-     * The class's access flags (see {@link org.objectweb.asm.Opcodes}). This
+     * The class's access flags (see {@link scala.tools.asm.Opcodes}). This
      * field also indicates if the class is deprecated.
      */
     public int access;
 
     /**
      * The internal name of the class (see
-     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}).
+     * {@link scala.tools.asm.Type#getInternalName() getInternalName}).
      */
     public String name;
 
@@ -72,7 +72,7 @@ public class ClassNode extends ClassVisitor {
 
     /**
      * The internal of name of the super class (see
-     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}). For
+     * {@link scala.tools.asm.Type#getInternalName() getInternalName}). For
      * interfaces, the super class is {@link Object}. May be <tt>null</tt>, but
      * only for the {@link Object} class.
      */
@@ -80,7 +80,7 @@ public class ClassNode extends ClassVisitor {
 
     /**
      * The internal names of the class's interfaces (see
-     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}). This
+     * {@link scala.tools.asm.Type#getInternalName() getInternalName}). This
      * list is a list of {@link String} objects.
      */
     public List<String> interfaces;
@@ -119,7 +119,7 @@ public class ClassNode extends ClassVisitor {
      * The runtime visible annotations of this class. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
      *
-     * @associates org.objectweb.asm.tree.AnnotationNode
+     * @associates scala.tools.asm.tree.AnnotationNode
      * @label visible
      */
     public List<AnnotationNode> visibleAnnotations;
@@ -128,7 +128,7 @@ public class ClassNode extends ClassVisitor {
      * The runtime invisible annotations of this class. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
      *
-     * @associates org.objectweb.asm.tree.AnnotationNode
+     * @associates scala.tools.asm.tree.AnnotationNode
      * @label invisible
      */
     public List<AnnotationNode> invisibleAnnotations;
@@ -137,7 +137,7 @@ public class ClassNode extends ClassVisitor {
      * The runtime visible type annotations of this class. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
      *
-     * @associates org.objectweb.asm.tree.TypeAnnotationNode
+     * @associates scala.tools.asm.tree.TypeAnnotationNode
      * @label visible
      */
     public List<TypeAnnotationNode> visibleTypeAnnotations;
@@ -146,7 +146,7 @@ public class ClassNode extends ClassVisitor {
      * The runtime invisible type annotations of this class. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
      *
-     * @associates org.objectweb.asm.tree.TypeAnnotationNode
+     * @associates scala.tools.asm.tree.TypeAnnotationNode
      * @label invisible
      */
     public List<TypeAnnotationNode> invisibleTypeAnnotations;
@@ -155,7 +155,7 @@ public class ClassNode extends ClassVisitor {
      * The non standard attributes of this class. This list is a list of
      * {@link Attribute} objects. May be <tt>null</tt>.
      *
-     * @associates org.objectweb.asm.Attribute
+     * @associates scala.tools.asm.Attribute
      */
     public List<Attribute> attrs;
 
@@ -163,7 +163,7 @@ public class ClassNode extends ClassVisitor {
      * Informations about the inner classes of this class. This list is a list
      * of {@link InnerClassNode} objects.
      *
-     * @associates org.objectweb.asm.tree.InnerClassNode
+     * @associates scala.tools.asm.tree.InnerClassNode
      */
     public List<InnerClassNode> innerClasses;
 
@@ -171,7 +171,7 @@ public class ClassNode extends ClassVisitor {
      * The fields of this class. This list is a list of {@link FieldNode}
      * objects.
      *
-     * @associates org.objectweb.asm.tree.FieldNode
+     * @associates scala.tools.asm.tree.FieldNode
      */
     public List<FieldNode> fields;
 
@@ -179,7 +179,7 @@ public class ClassNode extends ClassVisitor {
      * The methods of this class. This list is a list of {@link MethodNode}
      * objects.
      *
-     * @associates org.objectweb.asm.tree.MethodNode
+     * @associates scala.tools.asm.tree.MethodNode
      */
     public List<MethodNode> methods;
 

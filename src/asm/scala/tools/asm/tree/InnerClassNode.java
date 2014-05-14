@@ -40,13 +40,13 @@ public class InnerClassNode {
 
     /**
      * The internal name of an inner class (see
-     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}).
+     * {@link scala.tools.asm.Type#getInternalName() getInternalName}).
      */
     public String name;
 
     /**
      * The internal name of the class to which the inner class belongs (see
-     * {@link org.objectweb.asm.Type#getInternalName() getInternalName}). May be
+     * {@link scala.tools.asm.Type#getInternalName() getInternalName}). May be
      * <tt>null</tt>.
      */
     public String outerName;
@@ -68,11 +68,11 @@ public class InnerClassNode {
      *
      * @param name
      *            the internal name of an inner class (see
-     *            {@link org.objectweb.asm.Type#getInternalName()
+     *            {@link scala.tools.asm.Type#getInternalName()
      *            getInternalName}).
      * @param outerName
      *            the internal name of the class to which the inner class
-     *            belongs (see {@link org.objectweb.asm.Type#getInternalName()
+     *            belongs (see {@link scala.tools.asm.Type#getInternalName()
      *            getInternalName}). May be <tt>null</tt>.
      * @param innerName
      *            the (simple) name of the inner class inside its enclosing

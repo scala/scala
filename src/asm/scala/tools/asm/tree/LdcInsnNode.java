@@ -44,7 +44,7 @@ public class LdcInsnNode extends AbstractInsnNode {
     /**
      * The constant to be loaded on the stack. This parameter must be a non null
      * {@link Integer}, a {@link Float}, a {@link Long}, a {@link Double}, a
-     * {@link String} or a {@link org.objectweb.asm.Type}.
+     * {@link String} or a {@link scala.tools.asm.Type}.
      */
     public Object cst;
 

@@ -66,7 +66,7 @@ public class TryCatchBlockNode {
      * list is a list of {@link TypeAnnotationNode} objects. May be
      * <tt>null</tt>.
      *
-     * @associates org.objectweb.asm.tree.TypeAnnotationNode
+     * @associates scala.tools.asm.tree.TypeAnnotationNode
      * @label visible
      */
     public List<TypeAnnotationNode> visibleTypeAnnotations;
@@ -76,7 +76,7 @@ public class TryCatchBlockNode {
      * This list is a list of {@link TypeAnnotationNode} objects. May be
      * <tt>null</tt>.
      *
-     * @associates org.objectweb.asm.tree.TypeAnnotationNode
+     * @associates scala.tools.asm.tree.TypeAnnotationNode
      * @label invisible
      */
     public List<TypeAnnotationNode> invisibleTypeAnnotations;
