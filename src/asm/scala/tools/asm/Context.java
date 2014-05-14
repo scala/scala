@@ -28,7 +28,7 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.objectweb.asm;
+package scala.tools.asm;
 
 /**
  * Information about a class being parsed in a {@link ClassReader}.

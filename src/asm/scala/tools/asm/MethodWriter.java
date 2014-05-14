@@ -27,7 +27,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.objectweb.asm;
+package scala.tools.asm;
 
 /**
  * A {@link MethodVisitor} that generates methods in bytecode form. Each visit
