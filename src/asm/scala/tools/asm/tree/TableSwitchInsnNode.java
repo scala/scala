@@ -40,7 +40,7 @@ import scala.tools.asm.Opcodes;
 
 /**
  * A node that represents a TABLESWITCH instruction.
- * 
+ *
  * @author Eric Bruneton
  */
 public class TableSwitchInsnNode extends AbstractInsnNode {
@@ -68,7 +68,7 @@ public class TableSwitchInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link TableSwitchInsnNode}.
-     * 
+     *
      * @param min
      *            the minimum key value.
      * @param max

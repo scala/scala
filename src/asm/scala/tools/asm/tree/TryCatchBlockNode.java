@@ -35,7 +35,7 @@ import scala.tools.asm.MethodVisitor;
 
 /**
  * A node that represents a try catch block.
- * 
+ *
  * @author Eric Bruneton
  */
 public class TryCatchBlockNode {
@@ -65,7 +65,7 @@ public class TryCatchBlockNode {
      * The runtime visible type annotations on the exception handler type. This
      * list is a list of {@link TypeAnnotationNode} objects. May be
      * <tt>null</tt>.
-     * 
+     *
      * @associates org.objectweb.asm.tree.TypeAnnotationNode
      * @label visible
      */
@@ -75,7 +75,7 @@ public class TryCatchBlockNode {
      * The runtime invisible type annotations on the exception handler type.
      * This list is a list of {@link TypeAnnotationNode} objects. May be
      * <tt>null</tt>.
-     * 
+     *
      * @associates org.objectweb.asm.tree.TypeAnnotationNode
      * @label invisible
      */
@@ -83,7 +83,7 @@ public class TryCatchBlockNode {
 
     /**
      * Constructs a new {@link TryCatchBlockNode}.
-     * 
+     *
      * @param start
      *            beginning of the exception handler's scope (inclusive).
      * @param end
@@ -107,7 +107,7 @@ public class TryCatchBlockNode {
      * Updates the index of this try catch block in the method's list of try
      * catch block nodes. This index maybe stored in the 'target' field of the
      * type annotations of this block.
-     * 
+     *
      * @param index
      *            the new index of this try catch block in the method's list of
      *            try catch block nodes.
@@ -128,7 +128,7 @@ public class TryCatchBlockNode {
 
     /**
      * Makes the given visitor visit this try catch block.
-     * 
+     *
      * @param mv
      *            a method visitor.
      */

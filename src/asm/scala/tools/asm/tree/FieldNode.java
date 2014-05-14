@@ -41,7 +41,7 @@ import scala.tools.asm.TypePath;
 
 /**
  * A node that represents a field.
- * 
+ *
  * @author Eric Bruneton
  */
 public class FieldNode extends FieldVisitor {
@@ -77,7 +77,7 @@ public class FieldNode extends FieldVisitor {
     /**
      * The runtime visible annotations of this field. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
-     * 
+     *
      * @associates org.objectweb.asm.tree.AnnotationNode
      * @label visible
      */
@@ -86,7 +86,7 @@ public class FieldNode extends FieldVisitor {
     /**
      * The runtime invisible annotations of this field. This list is a list of
      * {@link AnnotationNode} objects. May be <tt>null</tt>.
-     * 
+     *
      * @associates org.objectweb.asm.tree.AnnotationNode
      * @label invisible
      */
@@ -95,7 +95,7 @@ public class FieldNode extends FieldVisitor {
     /**
      * The runtime visible type annotations of this field. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
-     * 
+     *
      * @associates org.objectweb.asm.tree.TypeAnnotationNode
      * @label visible
      */
@@ -104,7 +104,7 @@ public class FieldNode extends FieldVisitor {
     /**
      * The runtime invisible type annotations of this field. This list is a list
      * of {@link TypeAnnotationNode} objects. May be <tt>null</tt>.
-     * 
+     *
      * @associates org.objectweb.asm.tree.TypeAnnotationNode
      * @label invisible
      */
@@ -113,7 +113,7 @@ public class FieldNode extends FieldVisitor {
     /**
      * The non standard attributes of this field. This list is a list of
      * {@link Attribute} objects. May be <tt>null</tt>.
-     * 
+     *
      * @associates org.objectweb.asm.Attribute
      */
     public List<Attribute> attrs;
@@ -122,7 +122,7 @@ public class FieldNode extends FieldVisitor {
      * Constructs a new {@link FieldNode}. <i>Subclasses must not use this
      * constructor</i>. Instead, they must use the
      * {@link #FieldNode(int, int, String, String, String, Object)} version.
-     * 
+     *
      * @param access
      *            the field's access flags (see
      *            {@link org.objectweb.asm.Opcodes}). This parameter also
@@ -153,7 +153,7 @@ public class FieldNode extends FieldVisitor {
     /**
      * Constructs a new {@link FieldNode}. <i>Subclasses must not use this
      * constructor</i>.
-     * 
+     *
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
      *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
@@ -245,7 +245,7 @@ public class FieldNode extends FieldVisitor {
      * This methods checks that this node, and all its nodes recursively, do not
      * contain elements that were introduced in more recent versions of the ASM
      * API than the given version.
-     * 
+     *
      * @param api
      *            an ASM API version. Must be one of {@link Opcodes#ASM4} or
      *            {@link Opcodes#ASM5}.
@@ -265,7 +265,7 @@ public class FieldNode extends FieldVisitor {
 
     /**
      * Makes the given class visitor visit this field.
-     * 
+     *
      * @param cv
      *            a class visitor.
      */

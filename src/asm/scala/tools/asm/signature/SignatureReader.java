@@ -32,7 +32,7 @@ package scala.tools.asm.signature;
 /**
  * A type signature parser to make a signature visitor visit an existing
  * signature.
- * 
+ *
  * @author Thomas Hallgren
  * @author Eric Bruneton
  */
@@ -45,7 +45,7 @@ public class SignatureReader {
 
     /**
      * Constructs a {@link SignatureReader} for the given signature.
-     * 
+     *
      * @param signature
      *            A <i>ClassSignature</i>, <i>MethodTypeSignature</i>, or
      *            <i>FieldTypeSignature</i>.
@@ -65,7 +65,7 @@ public class SignatureReader {
      * <code>signature</code> parameter of the
      * {@link org.objectweb.asm.ClassVisitor#visitMethod
      * ClassVisitor.visitMethod} method).
-     * 
+     *
      * @param v
      *            the visitor that must visit this signature.
      */
@@ -122,7 +122,7 @@ public class SignatureReader {
      * {@link org.objectweb.asm.ClassVisitor#visitField ClassVisitor.visitField}
      * or {@link org.objectweb.asm.MethodVisitor#visitLocalVariable
      * MethodVisitor.visitLocalVariable} methods.
-     * 
+     *
      * @param v
      *            the visitor that must visit this signature.
      */
@@ -132,7 +132,7 @@ public class SignatureReader {
 
     /**
      * Parses a field type signature and makes the given visitor visit it.
-     * 
+     *
      * @param signature
      *            a string containing the signature that must be parsed.
      * @param pos

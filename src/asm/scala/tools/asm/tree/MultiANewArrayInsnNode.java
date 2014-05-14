@@ -36,7 +36,7 @@ import scala.tools.asm.Opcodes;
 
 /**
  * A node that represents a MULTIANEWARRAY instruction.
- * 
+ *
  * @author Eric Bruneton
  */
 public class MultiANewArrayInsnNode extends AbstractInsnNode {
@@ -53,7 +53,7 @@ public class MultiANewArrayInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link MultiANewArrayInsnNode}.
-     * 
+     *
      * @param desc
      *            an array type descriptor (see {@link org.objectweb.asm.Type}).
      * @param dims

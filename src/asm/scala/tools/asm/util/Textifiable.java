@@ -36,17 +36,17 @@ import scala.tools.asm.Label;
 /**
  * An {@link org.objectweb.asm.Attribute Attribute} that can print a readable
  * representation of itself.
- * 
+ *
  * Implementations should construct readable output from an attribute data
  * structure. Such representation could be used in unit test assertions.
- * 
+ *
  * @author Eugene Kuleshov
  */
 public interface Textifiable {
 
     /**
      * Build a human readable representation of this attribute.
-     * 
+     *
      * @param buf
      *            a buffer used for printing Java code.
      * @param labelNames

@@ -37,7 +37,7 @@ import scala.tools.asm.tree.LabelNode;
 
 /**
  * A method subroutine (corresponds to a JSR instruction).
- * 
+ *
  * @author Eric Bruneton
  */
 class Subroutine {

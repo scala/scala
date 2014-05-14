@@ -37,7 +37,7 @@ import scala.tools.asm.Opcodes;
 
 /**
  * A node that represents an invokedynamic instruction.
- * 
+ *
  * @author Remi Forax
  */
 public class InvokeDynamicInsnNode extends AbstractInsnNode {
@@ -64,7 +64,7 @@ public class InvokeDynamicInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link InvokeDynamicInsnNode}.
-     * 
+     *
      * @param name
      *            invokedynamic name.
      * @param desc

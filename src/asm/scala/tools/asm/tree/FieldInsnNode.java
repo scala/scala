@@ -36,7 +36,7 @@ import scala.tools.asm.MethodVisitor;
 /**
  * A node that represents a field instruction. A field instruction is an
  * instruction that loads or stores the value of a field of an object.
- * 
+ *
  * @author Eric Bruneton
  */
 public class FieldInsnNode extends AbstractInsnNode {
@@ -59,7 +59,7 @@ public class FieldInsnNode extends AbstractInsnNode {
 
     /**
      * Constructs a new {@link FieldInsnNode}.
-     * 
+     *
      * @param opcode
      *            the opcode of the type instruction to be constructed. This
      *            opcode must be GETSTATIC, PUTSTATIC, GETFIELD or PUTFIELD.
@@ -82,7 +82,7 @@ public class FieldInsnNode extends AbstractInsnNode {
 
     /**
      * Sets the opcode of this instruction.
-     * 
+     *
      * @param opcode
      *            the new instruction opcode. This opcode must be GETSTATIC,
      *            PUTSTATIC, GETFIELD or PUTFIELD.

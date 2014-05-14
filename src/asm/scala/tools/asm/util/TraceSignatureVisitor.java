@@ -35,7 +35,7 @@ import scala.tools.asm.signature.SignatureVisitor;
 /**
  * A {@link SignatureVisitor} that prints a disassembled view of the signature
  * it visits.
- * 
+ *
  * @author Eugene Kuleshov
  * @author Eric Bruneton
  */

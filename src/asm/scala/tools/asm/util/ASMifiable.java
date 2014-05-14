@@ -36,14 +36,14 @@ import scala.tools.asm.Label;
 /**
  * An {@link org.objectweb.asm.Attribute Attribute} that can print the ASM code
  * to create an equivalent attribute.
- * 
+ *
  * @author Eugene Kuleshov
  */
 public interface ASMifiable {
 
     /**
      * Prints the ASM code to create an attribute equal to this attribute.
-     * 
+     *
      * @param buf
      *            a buffer used for printing Java code.
      * @param varName
