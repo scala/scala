@@ -409,19 +409,19 @@ abstract class BCodeIdiomatic extends BCodeGlue {
 
     // can-multi-thread
     final def invokespecial(owner: String, name: String, desc: String) {
-      jmethod.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, name, desc)
+      jmethod.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, name, desc, false)
     }
     // can-multi-thread
     final def invokestatic(owner: String, name: String, desc: String) {
-      jmethod.visitMethodInsn(Opcodes.INVOKESTATIC, owner, name, desc)
+      jmethod.visitMethodInsn(Opcodes.INVOKESTATIC, owner, name, desc, false)
     }
     // can-multi-thread
     final def invokeinterface(owner: String, name: String, desc: String) {
-      jmethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, owner, name, desc)
+      jmethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, owner, name, desc, true)
     }
     // can-multi-thread
     final def invokevirtual(owner: String, name: String, desc: String) {
-      jmethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, name, desc)
+      jmethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, name, desc, false)
     }
 
     // can-multi-thread

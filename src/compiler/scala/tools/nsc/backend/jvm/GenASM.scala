@@ -975,7 +975,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         index += jparamType.getSize()
       }
 
-      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, javaType(m).getDescriptor)
+      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, javaType(m).getDescriptor, false)
       mirrorMethod.visitInsn(jReturnType.getOpcode(asm.Opcodes.IRETURN))
 
       mirrorMethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
@@ -1061,7 +1061,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         asm.Opcodes.INVOKEVIRTUAL,
         moduleName,
         androidFieldName.toString,
-        asm.Type.getMethodDescriptor(creatorType, Array.empty[asm.Type]: _*)
+        asm.Type.getMethodDescriptor(creatorType, Array.empty[asm.Type]: _*),
+        false
       )
 
       // PUTSTATIC `thisName`.CREATOR;
@@ -1521,7 +1522,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       if (isStaticModule(clasz.symbol)) {
         clinit.visitTypeInsn(asm.Opcodes.NEW, thisName)
         clinit.visitMethodInsn(asm.Opcodes.INVOKESPECIAL,
-                               thisName, INSTANCE_CONSTRUCTOR_NAME, mdesc_arglessvoid)
+                               thisName, INSTANCE_CONSTRUCTOR_NAME, mdesc_arglessvoid, false)
       }
 
       if (isParcelableClass) { legacyAddCreatorCode(clinit) }
@@ -1665,16 +1666,16 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       def rem(tk: TypeKind) { emitPrimitive(remOpcodes, tk) }
 
       def invokespecial(owner: String, name: String, desc: String) {
-        jmethod.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, name, desc)
+        jmethod.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, name, desc, false)
       }
       def invokestatic(owner: String, name: String, desc: String) {
-        jmethod.visitMethodInsn(Opcodes.INVOKESTATIC, owner, name, desc)
+        jmethod.visitMethodInsn(Opcodes.INVOKESTATIC, owner, name, desc, false)
       }
       def invokeinterface(owner: String, name: String, desc: String) {
-        jmethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, owner, name, desc)
+        jmethod.visitMethodInsn(Opcodes.INVOKEINTERFACE, owner, name, desc, true)
       }
       def invokevirtual(owner: String, name: String, desc: String) {
-        jmethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, name, desc)
+        jmethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, name, desc, false)
       }
 
       def goTo(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.GOTO, label) }
@@ -2924,7 +2925,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       // invoke the superclass constructor, which will do the
       // necessary java reflection and create Method objects.
-      constructor.visitMethodInsn(asm.Opcodes.INVOKESPECIAL, "scala/beans/ScalaBeanInfo", INSTANCE_CONSTRUCTOR_NAME, conJType.getDescriptor)
+      constructor.visitMethodInsn(asm.Opcodes.INVOKESPECIAL, "scala/beans/ScalaBeanInfo", INSTANCE_CONSTRUCTOR_NAME, conJType.getDescriptor, false)
       constructor.visitInsn(asm.Opcodes.RETURN)
 
       constructor.visitMaxs(0, 0) // just to follow protocol, dummy arguments
