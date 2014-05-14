@@ -481,7 +481,7 @@ trait Infer extends Checkable {
             else if (targ.typeSymbol == JavaRepeatedParamClass) targ.baseType(ArrayClass)
             // this infers Foo.type instead of "object Foo" (see also widenIfNecessary)
             else if (targ.typeSymbol.isModuleClass || tvar.constr.avoidWiden) targ
-            else targ.widen
+            else targ.deconst.widen
           )
         ))
       }
@@ -533,7 +533,7 @@ trait Infer extends Checkable {
 
       // Then define remaining type variables from argument types.
       map2(argtpes, formals) { (argtpe, formal) =>
-        val tp1 = argtpe.deconst.instantiateTypeParams(tparams, tvars)
+        val tp1 = argtpe.instantiateTypeParams(tparams, tvars)
         val pt1 = formal.instantiateTypeParams(tparams, tvars)
 
         // Note that isCompatible side-effects: subtype checks involving typevars
@@ -975,7 +975,7 @@ trait Infer extends Checkable {
         try {
           val pt      = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
           val formals = formalTypes(mt.paramTypes, args.length)
-          val argtpes = tupleIfNecessary(formals, args map (x => elimAnonymousClass(x.tpe.deconst)))
+          val argtpes = tupleIfNecessary(formals, args map (x => elimAnonymousClass(x.tpe)))
           val restpe  = fn.tpe.resultType(argtpes)
 
           val AdjustedTypeArgs.AllArgsAndUndets(okparams, okargs, allargs, leftUndet) =
