@@ -1040,10 +1040,10 @@ trait Namers extends MethodSynthesis {
        * so the resulting type is a valid external method type, it does not contain (references to) skolems.
        */
       def thisMethodType(restpe: Type) = {
-        val checkDependencies = new DependentTypeChecker(context)(this)
-        checkDependencies check vparamSymss
-        // DEPMETTODO: check not needed when they become on by default
-        checkDependencies(restpe)
+        if (vparamSymss.lengthCompare(0) > 0) { // OPT fast path for methods of 0-1 parameter lists
+          val checkDependencies = new DependentTypeChecker(context)(this)
+          checkDependencies check vparamSymss
+        }
 
         val makeMethodType = (vparams: List[Symbol], restpe: Type) => {
           // TODODEPMET: check that we actually don't need to do anything here
@@ -1750,7 +1750,6 @@ trait Namers extends MethodSynthesis {
         for (p <- vps)
           this(p.info)
         // can only refer to symbols in earlier parameter sections
-        // (if the extension is enabled)
         okParams ++= vps
       }
     }
