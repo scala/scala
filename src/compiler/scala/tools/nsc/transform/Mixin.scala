@@ -391,7 +391,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           else {
             sourceModule setPos sym.pos
             if (sourceModule.flags != MODULE) {
-              log("!!! Directly setting sourceModule flags from %s to MODULE".format(sourceModule.flagString))
+              log("!!! Directly setting sourceModule flags for $sourceModule from %s to MODULE".format(sourceModule.flagString))
               sourceModule.flags = MODULE
             }
           }
