@@ -30,20 +30,22 @@ abstract class BCodeGlue extends SubComponent {
 
     // ------------- sorts -------------
 
-    val VOID   : Int =  0
-    val BOOLEAN: Int =  1
-    val CHAR   : Int =  2
-    val BYTE   : Int =  3
-    val SHORT  : Int =  4
-    val INT    : Int =  5
-    val FLOAT  : Int =  6
-    val LONG   : Int =  7
-    val DOUBLE : Int =  8
-    val ARRAY  : Int =  9
-    val OBJECT : Int = 10
-    val METHOD : Int = 11
+    final val VOID    = asm.Type.VOID
+    final val BOOLEAN = asm.Type.BOOLEAN
+    final val CHAR    = asm.Type.CHAR
+    final val BYTE    = asm.Type.BYTE
+    final val SHORT   = asm.Type.SHORT
+    final val INT     = asm.Type.INT
+    final val FLOAT   = asm.Type.FLOAT
+    final val LONG    = asm.Type.LONG
+    final val DOUBLE  = asm.Type.DOUBLE
+    final val ARRAY   = asm.Type.ARRAY
+    final val OBJECT  = asm.Type.OBJECT
+    final val METHOD  = asm.Type.METHOD
 
     // ------------- primitive types -------------
+
+    // magic shifted numbers: see comment on class BType. This has been copied 1:1 from asm.Type.
 
     val VOID_TYPE    = new BType(VOID,    ('V' << 24) | (5 << 16) | (0 << 8) | 0, 1)
     val BOOLEAN_TYPE = new BType(BOOLEAN, ('Z' << 24) | (0 << 16) | (5 << 8) | 1, 1)
@@ -99,7 +101,7 @@ abstract class BCodeGlue extends SubComponent {
           var resPos = off + 1
           while (chrs(resPos) != ')') { resPos += 1 }
           val resType = getType(resPos + 1)
-          val len = resPos - off + 1 + resType.len;
+          val len = resPos - off + 1 + resType.len
           new BType(
             METHOD,
             off,
@@ -116,7 +118,7 @@ abstract class BCodeGlue extends SubComponent {
      *  can-multi-thread
      */
     def getObjectType(index: Int, length: Int): BType = {
-      val sort = if (chrs(index) == '[') ARRAY else OBJECT;
+      val sort = if (chrs(index) == '[') ARRAY else OBJECT
       new BType(sort, index, length)
     }
 
@@ -147,7 +149,7 @@ abstract class BCodeGlue extends SubComponent {
     /*
      * Returns the Java types corresponding to the argument types of method descriptor whose first argument starts at idx0.
      *
-     * @param idx0 index into chrs of the first argument.
+     * @param idx0 index into chrs of the first argument (after the '(').
      * @return the Java types corresponding to the argument types of the given method descriptor.
      *
      * can-multi-thread
@@ -160,7 +162,7 @@ abstract class BCodeGlue extends SubComponent {
       while (chrs(off) != ')') {
         args(size) = getType(off)
         off += args(size).len
-        if (args(size).sort == OBJECT) { off += 2 }
+        if (args(size).sort == OBJECT) { off += 2 } // account for 'L' and ';'
         // debug: assert("LVZBSCIJFD[)".contains(chrs(off)))
         size += 1
       }
@@ -243,8 +245,31 @@ abstract class BCodeGlue extends SubComponent {
 
   } // end of object BType
 
-  /*
-   * Based on ASM's Type class. Namer's chrs is used in this class for the same purposes as the `buf` char array in asm.Type.
+  /**
+   * Based on ASM's Type class. Namer's chrs is used in this class for the same purposes as the
+   * `buf` char array in asm.Type.
+   *
+   * @param sort One of BType.VOID ... BType.METHOD
+   *
+   * @param off  For array, object and method types, the offset of the type description in
+   *             global.chrs.
+   *             For primitive types, the `off` field contains
+   *               - at byte 0 (& 0xff): the lenght, 0 for void, 2 for long/double, 1 otherwise
+   *               - at byte 1 (& 0xff00): the Opcode offset for the corresponding xALOAD / xSTORE
+   *                 instruction. Example: Opcodes.IALOAD is 46, to load a boolean or a byte the
+   *                 necessary Opcode.BALOAD is 51, therefore the offset value is 5.
+   *               - at byte 2 (& 0xff0000): the Opcode offset for other instructions (xLOAD,
+   *                 xSTORE, xADD, etc). See method BType#getOpcode.
+   *               - at byte 3 (& 0xff000000): the descriptor ('V' for void, etc)
+   *             For array types, the description starts with one or more '['
+   *
+   * @param len  The length of the type description
+   *              - 1 for primitive types
+   *              - For array, object and method types, the number of characters in global.chrs.
+   *                Note: for array and method types, '[' and '(' and ')' are stored in the array
+   *                and included in the length, for example "[Ljava/lang/Object;" or "()L...;"
+   *                For object types, the leading 'L' and trailing ';' are not stored in the array
+   *                and therefore excluded from the length, for example "java/lang/Object".
    *
    * All methods of this classs can-multi-thread
    */
@@ -255,33 +280,20 @@ abstract class BCodeGlue extends SubComponent {
     /*
      * can-multi-thread
      */
-    def toASMType: scala.tools.asm.Type = {
-      import scala.tools.asm
-      // using `asm.Type.SHORT` instead of `BType.SHORT` because otherwise "warning: could not emit switch for @switch annotated match"
-      (sort: @switch) match {
-        case asm.Type.VOID    => asm.Type.VOID_TYPE
-        case asm.Type.BOOLEAN => asm.Type.BOOLEAN_TYPE
-        case asm.Type.CHAR    => asm.Type.CHAR_TYPE
-        case asm.Type.BYTE    => asm.Type.BYTE_TYPE
-        case asm.Type.SHORT   => asm.Type.SHORT_TYPE
-        case asm.Type.INT     => asm.Type.INT_TYPE
-        case asm.Type.FLOAT   => asm.Type.FLOAT_TYPE
-        case asm.Type.LONG    => asm.Type.LONG_TYPE
-        case asm.Type.DOUBLE  => asm.Type.DOUBLE_TYPE
-        case asm.Type.ARRAY   |
-             asm.Type.OBJECT  => asm.Type.getObjectType(getInternalName)
-        case asm.Type.METHOD  => asm.Type.getMethodType(getDescriptor)
-      }
+    def toASMType: asm.Type = (sort: @switch) match {
+      case BType.VOID    => asm.Type.VOID_TYPE
+      case BType.BOOLEAN => asm.Type.BOOLEAN_TYPE
+      case BType.CHAR    => asm.Type.CHAR_TYPE
+      case BType.BYTE    => asm.Type.BYTE_TYPE
+      case BType.SHORT   => asm.Type.SHORT_TYPE
+      case BType.INT     => asm.Type.INT_TYPE
+      case BType.FLOAT   => asm.Type.FLOAT_TYPE
+      case BType.LONG    => asm.Type.LONG_TYPE
+      case BType.DOUBLE  => asm.Type.DOUBLE_TYPE
+      case BType.ARRAY   |
+           BType.OBJECT  => asm.Type.getObjectType(getInternalName)
+      case BType.METHOD  => asm.Type.getMethodType(getDescriptor)
     }
-
-    /*
-     * Unlike for ICode's REFERENCE, isBoxedType(t) implies isReferenceType(t)
-     * Also, `isReferenceType(RT_NOTHING) == true` , similarly for RT_NULL.
-     * Use isNullType() , isNothingType() to detect Nothing and Null.
-     *
-     * can-multi-thread
-     */
-    def hasObjectSort = (sort == BType.OBJECT)
 
     /*
      * Returns the number of dimensions of this array type. This method should
@@ -292,6 +304,7 @@ abstract class BCodeGlue extends SubComponent {
      * can-multi-thread
      */
     def getDimensions: Int = {
+      assert(isArray, s"getDimensions on non-array type $this")
       var i = 1
       while (chrs(off + i) == '[') {
         i += 1
@@ -308,8 +321,31 @@ abstract class BCodeGlue extends SubComponent {
      * can-multi-thread
      */
     def getElementType: BType = {
-      assert(isArray, s"Asked for the element type of a non-array type: $this")
+      assert(isArray, s"getElementType on non-array type $this")
       BType.getType(off + getDimensions)
+    }
+
+    /*
+     * Element vs. Component type of an array:
+     * Quoting from the JVMS, Sec. 2.4 "Reference Types and Values"
+     *
+     *   An array type consists of a component type with a single dimension (whose
+     *   length is not given by the type). The component type of an array type may itself be
+     *   an array type. If, starting from any array type, one considers its component type,
+     *   and then (if that is also an array type) the component type of that type, and so on,
+     *   eventually one must reach a component type that is not an array type; this is called
+     *   the element type of the array type. The element type of an array type is necessarily
+     *   either a primitive type, or a class type, or an interface type.
+     *
+     */
+
+    /* The type of items this array holds.
+     *
+     * can-multi-thread
+     */
+    def getComponentType: BType = {
+      assert(isArray, s"Asked for the component type of a non-array type: $this")
+      BType.getType(off + 1)
     }
 
     /*
@@ -323,6 +359,7 @@ abstract class BCodeGlue extends SubComponent {
      * can-multi-thread
      */
     def getInternalName: String = {
+      assert(isRefOrArrayType, s"getInternalName on non-object, non-array type $this")
       new String(chrs, off, len)
     }
 
@@ -332,7 +369,7 @@ abstract class BCodeGlue extends SubComponent {
      * can-multi-thread
      */
     def getSimpleName: String = {
-      assert(hasObjectSort, s"not of object sort: $toString")
+      assert(hasObjectSort, s"getSimpleName on non-object $this")
       val iname = getInternalName
       val idx = iname.lastIndexOf('/')
       if (idx == -1) iname
@@ -348,6 +385,7 @@ abstract class BCodeGlue extends SubComponent {
      * can-multi-thread
      */
     def getArgumentTypes: Array[BType] = {
+      assert(sort == BType.METHOD, s"getArgumentTypes on non-method $this")
       BType.getArgumentTypes(off + 1)
     }
 
@@ -360,7 +398,7 @@ abstract class BCodeGlue extends SubComponent {
      * can-multi-thread
      */
     def getReturnType: BType = {
-      assert(chrs(off) == '(', s"doesn't look like a method descriptor: $toString")
+      assert(sort == BType.METHOD, s"getReturnType on non-method $this")
       var resPos = off + 1
       while (chrs(resPos) != ')') { resPos += 1 }
       BType.getType(resPos + 1)
@@ -374,6 +412,15 @@ abstract class BCodeGlue extends SubComponent {
     def isValueType       = (sort <  BType.ARRAY) // can-multi-thread
     def isArray           = (sort == BType.ARRAY) // can-multi-thread
     def isUnitType        = (sort == BType.VOID)  // can-multi-thread
+
+    /*
+     * Unlike for ICode's REFERENCE, isBoxedType(t) implies isReferenceType(t)
+     * Also, `isReferenceType(RT_NOTHING) == true` , similarly for RT_NULL.
+     * Use isNullType() , isNothingType() to detect Nothing and Null.
+     *
+     * can-multi-thread
+     */
+    def hasObjectSort = (sort == BType.OBJECT)
 
     def isRefOrArrayType   = { hasObjectSort ||  isArray    } // can-multi-thread
     def isNonUnitValueType = { isValueType   && !isUnitType } // can-multi-thread
@@ -442,29 +489,6 @@ abstract class BCodeGlue extends SubComponent {
      */
     def isWideType = (getSize == 2)
 
-    /*
-     * Element vs. Component type of an array:
-     * Quoting from the JVMS, Sec. 2.4 "Reference Types and Values"
-     *
-     *   An array type consists of a component type with a single dimension (whose
-     *   length is not given by the type). The component type of an array type may itself be
-     *   an array type. If, starting from any array type, one considers its component type,
-     *   and then (if that is also an array type) the component type of that type, and so on,
-     *   eventually one must reach a component type that is not an array type; this is called
-     *   the element type of the array type. The element type of an array type is necessarily
-     *   either a primitive type, or a class type, or an interface type.
-     *
-     */
-
-    /* The type of items this array holds.
-     *
-     * can-multi-thread
-     */
-    def getComponentType: BType = {
-      assert(isArray, s"Asked for the component type of a non-array type: $this")
-      BType.getType(off + 1)
-    }
-
     // ------------------------------------------------------------------------
     // Conversion to type descriptors
     // ------------------------------------------------------------------------
@@ -532,7 +556,7 @@ abstract class BCodeGlue extends SubComponent {
      * can-multi-thread
      */
     def getOpcode(opcode: Int): Int = {
-      import scala.tools.asm.Opcodes
+      import asm.Opcodes
       if (opcode == Opcodes.IALOAD || opcode == Opcodes.IASTORE) {
         // the offset for IALOAD or IASTORE is in byte 1 of 'off' for
         // primitive types (buf == null)
@@ -594,7 +618,7 @@ abstract class BCodeGlue extends SubComponent {
      * can-multi-thread
      */
     override def hashCode(): Int = {
-      var hc = 13 * sort;
+      var hc = 13 * sort
       if (sort >= BType.ARRAY) {
         var i = off
         val end = i + len
@@ -621,7 +645,7 @@ abstract class BCodeGlue extends SubComponent {
    *
    * must-single-thread
    */
-  def brefType(iname: String): BType = { brefType(newTypeName(iname.toCharArray(), 0, iname.length())) }
+  def brefType(iname: String): BType = brefType(newTypeName(iname.toCharArray(), 0, iname.length()))
 
   /*
    * Creates a BType token for the TypeName received as argument.

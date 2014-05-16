@@ -40,7 +40,10 @@ trait Names extends api.Names {
   /** Hashtable for finding type names quickly. */
   private val typeHashtable = new Array[TypeName](HASH_SIZE)
 
-  /** The hashcode of a name. */
+  /**
+   * The hashcode of a name depends on the first, the last and the middle character,
+   * and the length of the name.
+   */
   private def hashValue(cs: Array[Char], offset: Int, len: Int): Int =
     if (len > 0)
       (len * (41 * 41 * 41) +
@@ -158,9 +161,9 @@ trait Names extends api.Names {
 
   final def lookupTypeNameIfExisting(cs: Array[Char], failOnNotFound: Boolean): TypeName = {
 
-    val hterm = hashValue(cs, 0, cs.size) & HASH_MASK
+    val hterm = hashValue(cs, 0, cs.length) & HASH_MASK
     var nterm = termHashtable(hterm)
-    while ((nterm ne null) && (nterm.length != cs.size || !equals(nterm.start, cs, 0, cs.size))) {
+    while ((nterm ne null) && (nterm.length != cs.length || !equals(nterm.start, cs, 0, cs.length))) {
       nterm = nterm.next
     }
     if (nterm eq null) {
