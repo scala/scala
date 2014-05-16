@@ -12,7 +12,7 @@ package scala
 package collection
 package immutable
 
-import java.io._
+import java.io.{File, FileReader, Reader}
 import scala.util.matching.Regex
 import scala.reflect.ClassTag
 

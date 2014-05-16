@@ -6,6 +6,6 @@ scala> // should infer List[scala.collection.immutable.Seq[Nothing]]
 scala> // but reverted that for SI-5534.
 
 scala> val x = List(List(), Vector())
-x: List[scala.collection.immutable.Seq[Nothing] with scala.collection.AbstractSeq[Nothing] with java.io.Serializable] = List(List(), Vector())
+x: List[scala.collection.immutable.Seq[Nothing] with scala.collection.AbstractSeq[Nothing] with Serializable] = List(List(), Vector())
 
 scala> :quit
