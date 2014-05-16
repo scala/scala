@@ -77,11 +77,12 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
    */
   final class CClassWriter(flags: Int) extends asm.ClassWriter(flags) {
 
-    /*
-     *  This method is thread re-entrant because chrs never grows during its operation (that's because all TypeNames being looked up have already been entered).
-     *  To stress this point, rather than using `newTypeName()` we use `lookupTypeName()`
+    /**
+     * This method is thread re-entrant because chrs never grows during its operation (that's
+     * because all TypeNames being looked up have already been entered).
+     * To stress this point, rather than using `newTypeName()` we use `lookupTypeName()`
      *
-     *  can-multi-thread
+     * can-multi-thread
      */
     override def getCommonSuperClass(inameA: String, inameB: String): String = {
       val a = brefType(lookupTypeName(inameA.toCharArray))
@@ -95,14 +96,15 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
   }
 
-  /*
-   *  Finding the least upper bound in agreement with the bytecode verifier (given two internal names handed out by ASM)
-   *  Background:
-   *    http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
-   *    http://comments.gmane.org/gmane.comp.java.vm.languages/2293
-   *    https://issues.scala-lang.org/browse/SI-3872
+  /**
+   * Finding the least upper bound in agreement with the bytecode verifier (given two internal names
+   * handed out by ASM)
+   * Background:
+   *   http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
+   *   http://comments.gmane.org/gmane.comp.java.vm.languages/2293
+   *   https://issues.scala-lang.org/browse/SI-3872
    *
-   *  can-multi-thread
+   * can-multi-thread
    */
   def jvmWiseLUB(a: BType, b: BType): BType = {
 
@@ -401,7 +403,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
      *
      *  must-single-thread
      */
-    final def internalName(sym: Symbol): String = { asmClassType(sym).getInternalName }
+    final def internalName(sym: Symbol): String = asmClassType(sym).getInternalName
 
     /*
      *  Tracks (if needed) the inner class given by `sym`.

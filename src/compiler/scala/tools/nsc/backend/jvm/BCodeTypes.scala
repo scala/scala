@@ -24,8 +24,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   // when compiling the Scala library, some assertions don't hold (e.g., scala.Boolean has null superClass although it's not an interface)
   val isCompilingStdLib = !(settings.sourcepath.isDefault)
 
-  val srBoxedUnit  = brefType("scala/runtime/BoxedUnit")
-
   // special names
   var StringReference             : BType = null
   var ThrowableReference          : BType = null
@@ -350,8 +348,8 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     val superInterfaces0: List[Symbol] = csym.mixinClasses
     val superInterfaces = existingSymbols(superInterfaces0 ++ csym.annotations.map(newParentForAttr)).distinct
 
-    assert(!superInterfaces.contains(NoSymbol), s"found NoSymbol among: ${superInterfaces.mkString}")
-    assert(superInterfaces.forall(s => s.isInterface || s.isTrait), s"found non-interface among: ${superInterfaces.mkString}")
+    assert(!superInterfaces.contains(NoSymbol), s"found NoSymbol among: ${superInterfaces.mkString(", ")}")
+    assert(superInterfaces.forall(s => s.isInterface || s.isTrait), s"found non-interface among: ${superInterfaces.mkString(", ")}")
 
     minimizeInterfaces(superInterfaces)
   }
@@ -395,8 +393,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     tr
   }
 
-  val EMPTY_TRACKED_ARRAY  = Array.empty[Tracked]
-
   /*
    * must-single-thread
    */
@@ -413,14 +409,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
         ((sc != NoSymbol) && !sc.isInterface) || isCompilingStdLib,
       "superClass out of order"
     )
-    val ifaces    = getSuperInterfaces(csym) map exemplar;
-    val ifacesArr =
-     if (ifaces.isEmpty) EMPTY_TRACKED_ARRAY
-     else {
-      val arr = new Array[Tracked](ifaces.size)
-      ifaces.copyToArray(arr)
-      arr
-     }
+    val ifacesArr = getSuperInterfaces(csym).map(exemplar).toArray
 
     val flags = mkFlags(
       javaFlags(csym),
@@ -724,14 +713,8 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       }
     }
 
-    // now that we have all of `ics` , `csym` , and soon the inner-classes-chain, it's too tempting not to cache.
-    if (chain.isEmpty) { null }
-    else {
-      val arr = new Array[InnerClassEntry](chain.size)
-      (chain map toInnerClassEntry).copyToArray(arr)
-
-      arr
-    }
+    if (chain.isEmpty) null
+    else chain.map(toInnerClassEntry).toArray
   }
 
   /*

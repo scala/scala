@@ -653,7 +653,7 @@ abstract class BCodeGlue extends SubComponent {
    *
    *  can-multi-thread
    */
-  def brefType(iname: TypeName): BType = { BType.getObjectType(iname.start, iname.length) }
+  def brefType(iname: TypeName): BType = BType.getObjectType(iname.start, iname.length)
 
   // due to keyboard economy only
   val UNIT   = BType.VOID_TYPE
