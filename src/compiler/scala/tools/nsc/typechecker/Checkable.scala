@@ -100,7 +100,7 @@ trait Checkable {
   private def typeArgsInTopLevelType(tp: Type): List[Type] = {
     val tps = tp match {
       case RefinedType(parents, _)              => parents flatMap typeArgsInTopLevelType
-      case TypeRef(_, ArrayClass, arg :: Nil)   => typeArgsInTopLevelType(arg)
+      case TypeRef(_, ArrayClass, arg :: Nil)   => if (arg.typeSymbol.isAbstractType) arg :: Nil else typeArgsInTopLevelType(arg)
       case TypeRef(pre, sym, args)              => typeArgsInTopLevelType(pre) ++ args
       case ExistentialType(tparams, underlying) => tparams.map(_.tpe) ++ typeArgsInTopLevelType(underlying)
       case _                                    => Nil
@@ -108,14 +108,31 @@ trait Checkable {
     tps filterNot isUnwarnableTypeArg
   }
 
+  private def scrutConformsToPatternType(scrut: Type, pattTp: Type): Boolean = {
+    def typeVarToWildcard(tp: Type) = {
+      // The need for typeSymbolDirect is demonstrated in neg/t8597b.scala
+      if (tp.typeSymbolDirect.isPatternTypeVariable) WildcardType else tp
+    }
+    val pattTpWild = pattTp.map(typeVarToWildcard)
+    scrut <:< pattTpWild
+  }
+
   private class CheckabilityChecker(val X: Type, val P: Type) {
     def Xsym = X.typeSymbol
     def Psym = P.typeSymbol
-    def XR   = if (Xsym == AnyClass) classExistentialType(Psym) else propagateKnownTypes(X, Psym)
+    def PErased = {
+      P match {
+        case erasure.GenericArray(n, core) => existentialAbstraction(core.typeSymbol :: Nil, P)
+        case _ => existentialAbstraction(Psym.typeParams, Psym.tpe_*)
+      }
+    }
+    def XR   = if (Xsym == AnyClass) PErased else intersectionType(PErased :: propagateKnownTypes(X, Psym) :: Nil)
+
+
     // sadly the spec says (new java.lang.Boolean(true)).isInstanceOf[scala.Boolean]
-    def P1   = X matchesPattern P
+    def P1   = scrutConformsToPatternType(X, P)
     def P2   = !Psym.isPrimitiveValueClass && isNeverSubType(X, P)
-    def P3   = isNonRefinementClassType(P) && (XR matchesPattern P)
+    def P3   = isNonRefinementClassType(P) && scrutConformsToPatternType(XR, P)
     def P4   = !(P1 || P2 || P3)
 
     def summaryString = f"""
