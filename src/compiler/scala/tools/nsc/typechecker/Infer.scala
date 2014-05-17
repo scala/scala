@@ -1109,11 +1109,11 @@ trait Infer extends Checkable {
     // (see #3692, where the type param T's bounds were set to > : T <: T, so that parts looped)
     // the changes are rolled back by restoreTypeBounds, but might be unintentially observed in the mean time
     def instantiateTypeVar(tvar: TypeVar) {
-      val tparam                    = tvar.origin.typeSymbol
-      val TypeBounds(lo0, hi0)      = tparam.info.bounds
-      val tb @ TypeBounds(lo1, hi1) = instBounds(tvar)
-      val enclCase                  = context.enclosingCaseDef
-      def enclCase_s                = enclCase.toString.replaceAll("\\n", " ").take(60)
+      val tparam                     = tvar.origin.typeSymbol
+      val tb0 @ TypeBounds(lo0, hi0) = tparam.info.bounds
+      val tb @ TypeBounds(lo1, hi1)  = instBounds(tvar)
+      val enclCase                   = context.enclosingCaseDef
+      def enclCase_s                 = enclCase.toString.replaceAll("\\n", " ").take(60)
 
       if (enclCase.savedTypeBounds.nonEmpty) log(
         sm"""|instantiateTypeVar with nonEmpty saved type bounds {
@@ -1121,18 +1121,18 @@ trait Infer extends Checkable {
              |      saved  ${enclCase.savedTypeBounds}
              |     tparam  ${tparam.shortSymbolClass} ${tparam.defString}
              |}""")
+      val lo2 = if (lo1 <:< lo0) lo1 else lo0
+      val hi2 = if (hi0 <:< hi1) hi0 else hi1
+      val tb2 = TypeBounds(lo2, hi2)
 
-      if (lo1 <:< hi1) {
-        if (lo1 <:< lo0 && hi0 <:< hi1) // bounds unimproved
-          log(s"redundant bounds: discarding TypeBounds($lo1, $hi1) for $tparam, no improvement on TypeBounds($lo0, $hi0)")
-        else if (tparam == lo1.typeSymbolDirect || tparam == hi1.typeSymbolDirect)
-          log(s"cyclical bounds: discarding TypeBounds($lo1, $hi1) for $tparam because $tparam appears as bounds")
-        else {
-          enclCase pushTypeBounds tparam
-          tparam setInfo logResult(s"updated bounds: $tparam from ${tparam.info} to")(tb)
-        }
+      if (tb2 =:= tb0) // bounds unimproved
+        log(s"redundant bounds: discarding TypeBounds($lo1, $hi1) for $tparam, no improvement on TypeBounds($lo0, $hi0)")
+      else if (tparam == lo1.typeSymbolDirect || tparam == hi1.typeSymbolDirect)
+        log(s"cyclical bounds: discarding TypeBounds($lo1, $hi1) for $tparam because $tparam appears as bounds")
+      else {
+        enclCase pushTypeBounds tparam
+        tparam setInfo logResult(s"updated bounds: $tparam from ${tparam.info} to")(tb)
       }
-      else log(s"inconsistent bounds: discarding TypeBounds($lo1, $hi1)")
     }
 
     /** Type intersection of simple type tp1 with general type tp2.
