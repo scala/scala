@@ -107,12 +107,18 @@ trait Names extends api.Names {
         // The logic order here is future-proofing against the possibility
         // that name.toString will become an eager val, in which case the call
         // to enterChars cannot follow the construction of the TermName.
-        val ncStart = nc
-        enterChars(cs, offset, len)
+        var startIndex = 0
+        if (cs == chrs) {
+          // Optimize for subName, the new name is already stored in chrs
+          startIndex = offset
+        } else {
+          startIndex = nc
+          enterChars(cs, offset, len)
+        }
         val next = termHashtable(h)
         val termName =
-          if (cachedString ne null) new TermName_S(ncStart, len, next, cachedString)
-          else new TermName_R(ncStart, len, next)
+          if (cachedString ne null) new TermName_S(startIndex, len, next, cachedString)
+          else new TermName_R(startIndex, len, next)
         // Add the new termName to the hashtable only after it's been fully constructed
         termHashtable(h) = termName
         termName
