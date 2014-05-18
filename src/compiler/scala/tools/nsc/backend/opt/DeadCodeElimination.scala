@@ -169,7 +169,7 @@ abstract class DeadCodeElimination extends SubComponent {
 
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) | LOAD_FIELD(_, _) | // Why LOAD_FIELD? It can NPE!
                  THROW(_)   | LOAD_ARRAY_ITEM(_) | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
-                 LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() | CHECK_CAST(_) =>
+                 LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() | CHECK_CAST(_) | CREATE_ARRAY(_, _) =>
               moveToWorkList()
 
             case CALL_METHOD(m1, _) if isSideEffecting(m1) =>
