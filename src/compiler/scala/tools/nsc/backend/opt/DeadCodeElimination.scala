@@ -172,6 +172,11 @@ abstract class DeadCodeElimination extends SubComponent {
                  LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() | CHECK_CAST(_) =>
               moveToWorkList()
 
+            case LOAD_FIELD(sym, isStatic) if isStatic || !inliner.isClosureClass(sym.owner) =>
+              // static load may trigger static initization.
+              // non-static load can throw NPE (but we know closure fields can't be accessed via a
+              // null reference.
+              moveToWorkList()
             case CALL_METHOD(m1, _) if isSideEffecting(m1) =>
               moveToWorkList()
 
