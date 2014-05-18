@@ -1299,6 +1299,11 @@ trait Types
     private def emptyLowerBound = typeIsNothing(lo) || lo.isWildcard
     private def emptyUpperBound = typeIsAny(hi) || hi.isWildcard
     def isEmptyBounds = emptyLowerBound && emptyUpperBound
+    def union(other: TypeBounds) =
+      TypeBounds(
+        if (other.lo <:< lo) other.lo else lo,
+        if (hi <:< other.hi) other.hi else hi
+      )
 
     override def safeToString = scalaNotation(_.toString)
 
