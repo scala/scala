@@ -193,6 +193,8 @@ abstract class DeadCodeElimination extends SubComponent {
               moveToWorkListIf(necessary)
             case LOAD_MODULE(sym) if isLoadNeeded(sym) =>
               moveToWorkList() // SI-4859 Module initialization might side-effect.
+            case CALL_PRIMITIVE(Arithmetic(DIV | REM, INT | LONG) | ArrayLength(_)) =>
+              moveToWorkList() // SI-8601 Might divide by zero
             case _ => ()
               moveToWorkListIf(cond = false)
           }
