@@ -25,6 +25,7 @@ import java.io.PrintWriter
  */
 abstract class BCodeSkelBuilder extends BCodeHelpers {
   import global._
+  import bTypes._
 
   /*
    * There's a dedicated PlainClassBuilder for each CompilationUnit,

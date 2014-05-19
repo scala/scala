@@ -22,6 +22,7 @@ import scala.tools.asm
  */
 abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
   import global._
+  import bTypes._
 
 
   /*

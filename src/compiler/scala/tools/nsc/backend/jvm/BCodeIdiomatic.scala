@@ -19,9 +19,17 @@ import collection.convert.Wrappers.JListWrapper
  *  @version 1.0
  *
  */
-abstract class BCodeIdiomatic extends BCodeGlue {
+abstract class BCodeIdiomatic extends SubComponent {
+  protected val bCodeICodeCommon: BCodeICodeCommon[global.type] = new BCodeICodeCommon(global)
+
+  val bTypes = new BTypes[global.type](global) {
+    def chrs = global.chrs
+    override type BTypeName = global.TypeName
+    override def createNewName(s: String) = global.newTypeName(s)
+  }
 
   import global._
+  import bTypes._
 
   val classfileVersion: Int = settings.target.value match {
     case "jvm-1.5"     => asm.Opcodes.V1_5

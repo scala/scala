@@ -20,8 +20,8 @@ import scala.tools.nsc.io.AbstractFile
  *
  */
 abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
-
   import global._
+  import bTypes._
 
   /*
    * must-single-thread

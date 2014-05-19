@@ -1,33 +1,53 @@
-/* NSC -- new Scala compiler
- * Copyright 2005-2012 LAMP/EPFL
- * @author  Martin Odersky
- */
-
-package scala
-package tools.nsc
+package scala.tools.nsc
 package backend.jvm
 
-import scala.tools.asm
+import scala.collection.immutable
 import scala.annotation.switch
-import scala.collection.{ immutable, mutable }
+import scala.tools.asm
 
-/*
- *  Immutable representations of bytecode-level types.
+/**
+ * BTypes is a backend component that defines the class BType, a number of basic instances and
+ * some utilities.
  *
- *  @author  Miguel Garcia, http://lamp.epfl.ch/~magarcia/ScalaCompilerCornerReloaded
- *  @version 1.0
+ * A BType is essentially an slice of the array `chrs` denoting the name of the type, and a field
+ * denoting the kind (object, array, method, or one of the primitive types).
  *
+ * BTypes depends on Global just because it re-uses hash-consing of Name. It would be cleaner to
+ * create an interface for BTypeName and extend it in scala.reflect.internal.Names#Name, that
+ * would simplify testing BTypes (no Global needed).
  */
-abstract class BCodeGlue extends SubComponent {
+abstract class BTypes[G <: Global](val __global_dont_use: G) {
+  def chrs: Array[Char]
 
-  import global._
+  /**
+   * Interface for names stored in `chrs`
+   */
+  type BTypeName <: __global_dont_use.Name
 
-  protected val bCodeICodeCommon: BCodeICodeCommon[global.type] = new BCodeICodeCommon(global)
+  /**
+   * Create a new name in `chrs`. Names are assumed to be hash-consed. Equality on BType will use
+   * reference equality to compare the names.
+   */
+  def createNewName(s: String): BTypeName
 
+  /**
+   * Creates a BType for the class, interface or array descriptor `iname`.
+   *
+   * must-single-thread
+   */
+  def brefType(iname: String): BType = brefType(createNewName(iname))
+
+  /**
+   * Creates a BType for the class, interface or array descriptor `iname`.
+   *
+   * can-multi-thread
+   */
+  def brefType(iname: BTypeName): BType = BType.getObjectType(iname.start, iname.length)
+
+  /**
+   * TODO @lry : make members private to BType, move those used outside into the BTypes component
+   */
   object BType {
-
-    import global.chrs
-
     // ------------- sorts -------------
 
     final val VOID    = asm.Type.VOID
@@ -128,7 +148,7 @@ abstract class BCodeGlue extends SubComponent {
      * must-single-thread
      */
     def getMethodType(methodDescriptor: String): BType = {
-      val n = global.newTypeName(methodDescriptor)
+      val n = createNewName(methodDescriptor)
       new BType(BType.METHOD, n.start, n.length) // TODO assert isValidMethodDescriptor
     }
 
@@ -142,7 +162,7 @@ abstract class BCodeGlue extends SubComponent {
      * must-single-thread
      */
     def getMethodType(returnType: BType, argumentTypes: Array[BType]): BType = {
-      val n = global.newTypeName(getMethodDescriptor(returnType, argumentTypes))
+      val n = createNewName(getMethodDescriptor(returnType, argumentTypes))
       new BType(BType.METHOD, n.start, n.length)
     }
 
@@ -210,7 +230,7 @@ abstract class BCodeGlue extends SubComponent {
      * must-single-thread
      */
     def getReturnType(methodDescriptor: String): BType = {
-      val n     = global.newTypeName(methodDescriptor)
+      val n     = createNewName(methodDescriptor)
       val delta = n.pos(')') // `delta` is relative to the Name's zero-based start position, not a valid index into chrs.
       assert(delta < n.length, s"not a valid method descriptor: $methodDescriptor")
       getType(n.start + delta + 1)
@@ -228,8 +248,8 @@ abstract class BCodeGlue extends SubComponent {
      * can-multi-thread
      */
     def getMethodDescriptor(
-        returnType: BType,
-        argumentTypes: Array[BType]): String =
+                             returnType: BType,
+                             argumentTypes: Array[BType]): String =
     {
       val buf = new StringBuffer()
       buf.append('(')
@@ -251,8 +271,7 @@ abstract class BCodeGlue extends SubComponent {
    *
    * @param sort One of BType.VOID ... BType.METHOD
    *
-   * @param off  For array, object and method types, the offset of the type description in
-   *             global.chrs.
+   * @param off  For array, object and method types, the offset of the type description in chrs.
    *             For primitive types, the `off` field contains
    *               - at byte 0 (& 0xff): the lenght, 0 for void, 2 for long/double, 1 otherwise
    *               - at byte 1 (& 0xff00): the Opcode offset for the corresponding xALOAD / xSTORE
@@ -265,18 +284,15 @@ abstract class BCodeGlue extends SubComponent {
    *
    * @param len  The length of the type description
    *              - 1 for primitive types
-   *              - For array, object and method types, the number of characters in global.chrs.
+   *              - For array, object and method types, the number of characters in chrs.
    *                Note: for array and method types, '[' and '(' and ')' are stored in the array
-   *                and included in the length, for example "[Ljava/lang/Object;" or "()L...;"
+   *                and included in the length, for example "[Ljava/lang/Object;" or "(I)L...;"
    *                For object types, the leading 'L' and trailing ';' are not stored in the array
    *                and therefore excluded from the length, for example "java/lang/Object".
    *
    * All methods of this classs can-multi-thread
    */
   final class BType(val sort: Int, val off: Int, val len: Int) {
-
-    import global.chrs
-
     /*
      * can-multi-thread
      */
@@ -438,9 +454,9 @@ abstract class BCodeGlue extends SubComponent {
         case BOXED_UNIT  | BOXED_BOOLEAN | BOXED_CHAR   |
              BOXED_BYTE  | BOXED_SHORT   | BOXED_INT    |
              BOXED_FLOAT | BOXED_LONG    | BOXED_DOUBLE
-          => true
+        => true
         case _
-          => false
+        => false
       }
     }
 
@@ -454,9 +470,9 @@ abstract class BCodeGlue extends SubComponent {
       (sort : @switch) match {
         case BType.BOOLEAN | BType.CHAR  |
              BType.BYTE    | BType.SHORT | BType.INT
-          => true
+        => true
         case _
-          => false
+        => false
       }
     }
 
@@ -469,9 +485,9 @@ abstract class BCodeGlue extends SubComponent {
         case BType.CHAR  |
              BType.BYTE  | BType.SHORT | BType.INT |
              BType.LONG
-          => true
+        => true
         case _
-          => false
+        => false
       }
     }
 
@@ -635,27 +651,9 @@ abstract class BCodeGlue extends SubComponent {
      *
      * can-multi-thread
      */
-    override def toString: String = { getDescriptor }
-
+    override def toString: String = getDescriptor
   }
 
-  /*
-   * Creates a TypeName and the BType token for it.
-   * This method does not add to `innerClassBufferASM`, use `internalName()` or `asmType()` or `toTypeKind()` for that.
-   *
-   * must-single-thread
-   */
-  def brefType(iname: String): BType = brefType(newTypeName(iname.toCharArray(), 0, iname.length()))
-
-  /*
-   * Creates a BType token for the TypeName received as argument.
-   * This method does not add to `innerClassBufferASM`, use `internalName()` or `asmType()` or `toTypeKind()` for that.
-   *
-   *  can-multi-thread
-   */
-  def brefType(iname: TypeName): BType = BType.getObjectType(iname.start, iname.length)
-
-  // due to keyboard economy only
   val UNIT   = BType.VOID_TYPE
   val BOOL   = BType.BOOLEAN_TYPE
   val CHAR   = BType.CHAR_TYPE
@@ -684,8 +682,8 @@ abstract class BCodeGlue extends SubComponent {
    */
   val RT_NOTHING = brefType("scala/runtime/Nothing$")
   val RT_NULL    = brefType("scala/runtime/Null$")
-  val CT_NOTHING = brefType("scala/Nothing") // TODO needed?
-  val CT_NULL    = brefType("scala/Null")    // TODO needed?
+  val CT_NOTHING = brefType("scala/Nothing")
+  val CT_NULL    = brefType("scala/Null")
 
   val srBooleanRef = brefType("scala/runtime/BooleanRef")
   val srByteRef    = brefType("scala/runtime/ByteRef")
@@ -714,7 +712,7 @@ abstract class BCodeGlue extends SubComponent {
 
   case class MethodNameAndType(mname: String, mdesc: String)
 
-  val asmBoxTo: Map[BType, MethodNameAndType] = {
+  val asmBoxTo: immutable.Map[BType, MethodNameAndType] = {
     Map(
       BOOL   -> MethodNameAndType("boxToBoolean",   "(Z)Ljava/lang/Boolean;"  ) ,
       BYTE   -> MethodNameAndType("boxToByte",      "(B)Ljava/lang/Byte;"     ) ,
@@ -727,7 +725,7 @@ abstract class BCodeGlue extends SubComponent {
     )
   }
 
-  val asmUnboxTo: Map[BType, MethodNameAndType] = {
+  val asmUnboxTo: immutable.Map[BType, MethodNameAndType] = {
     Map(
       BOOL   -> MethodNameAndType("unboxToBoolean", "(Ljava/lang/Object;)Z") ,
       BYTE   -> MethodNameAndType("unboxToByte",    "(Ljava/lang/Object;)B") ,
@@ -740,3 +738,4 @@ abstract class BCodeGlue extends SubComponent {
     )
   }
 }
+

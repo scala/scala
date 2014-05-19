@@ -18,8 +18,8 @@ import scala.collection.{ immutable, mutable }
  *
  */
 abstract class BCodeTypes extends BCodeIdiomatic {
-
   import global._
+  import bTypes._
 
   // when compiling the Scala library, some assertions don't hold (e.g., scala.Boolean has null superClass although it's not an interface)
   val isCompilingStdLib = !(settings.sourcepath.isDefault)
