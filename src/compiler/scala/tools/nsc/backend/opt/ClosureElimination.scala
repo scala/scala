@@ -56,10 +56,11 @@ abstract class ClosureElimination extends SubComponent {
       case (BOX(t1), UNBOX(t2)) if (t1 == t2) =>
         Some(Nil)
 
-      // Can't eliminate (LOAD_FIELD, DROP) without eliding side effects:
-      //  - static class initialization
-      //  - NPE if the receiver is null
-      // We could replace the LOAD/DROP with a null check to preserve semantics.
+      case (LOAD_FIELD(sym, isStatic), DROP(_)) if !sym.hasAnnotation(definitions.VolatileAttr) =>
+        if (isStatic)
+          Some(Nil)
+        else
+          Some(DROP(REFERENCE(definitions.ObjectClass)) :: Nil)
 
       case _ => None
     }
