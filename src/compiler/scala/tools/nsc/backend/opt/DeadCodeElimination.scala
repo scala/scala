@@ -167,9 +167,9 @@ abstract class DeadCodeElimination extends SubComponent {
               set += idx
               localStores(key) = set
 
-            case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) | LOAD_FIELD(_, _) | // Why LOAD_FIELD? It can NPE!
+            case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
                  THROW(_)   | LOAD_ARRAY_ITEM(_) | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
-                 LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() | CHECK_CAST(_) | CREATE_ARRAY(_, _) =>
+                 LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() | CHECK_CAST(_) =>
               moveToWorkList()
 
             case CALL_METHOD(m1, _) if isSideEffecting(m1) =>
@@ -193,8 +193,6 @@ abstract class DeadCodeElimination extends SubComponent {
               moveToWorkListIf(necessary)
             case LOAD_MODULE(sym) if isLoadNeeded(sym) =>
               moveToWorkList() // SI-4859 Module initialization might side-effect.
-            case CALL_PRIMITIVE(Arithmetic(DIV | REM, INT | LONG) | ArrayLength(_)) =>
-              moveToWorkList() // SI-8601 Might divide by zero
             case _ => ()
               moveToWorkListIf(cond = false)
           }
