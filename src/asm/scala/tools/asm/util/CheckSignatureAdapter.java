@@ -113,7 +113,7 @@ public class CheckSignatureAdapter extends SignatureVisitor {
      *            <tt>null</tt>.
      */
     public CheckSignatureAdapter(final int type, final SignatureVisitor sv) {
-        this(Opcodes.ASM4, type, sv);
+        this(Opcodes.ASM5, type, sv);
     }
 
     /**
@@ -121,7 +121,7 @@ public class CheckSignatureAdapter extends SignatureVisitor {
      *
      * @param api
      *            the ASM API version implemented by this visitor. Must be one
-     *            of {@link Opcodes#ASM4}.
+     *            of {@link Opcodes#ASM4} or {@link Opcodes#ASM5}.
      * @param type
      *            the type of signature to be checked. See
      *            {@link #CLASS_SIGNATURE}, {@link #METHOD_SIGNATURE} and

@@ -50,7 +50,7 @@ public class ProfilerVisitor extends ClassVisitor implements Opcodes {
         mv.visitLdcInsn(name);
         mv.visitLdcInsn(desc);
         mv.visitMethodInsn(INVOKESTATIC, profilerClass, "methodCalled",
-            "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+            "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
       }
     }
     return mv;
