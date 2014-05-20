@@ -85,10 +85,9 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    */
   def seq: TraversableOnce[A]
 
-  /** Presently these are abstract because the Traversable versions use
-   *  breakable/break, and I wasn't sure enough of how that's supposed to
-   *  function to consolidate them with the Iterator versions.
-   */
+  // Presently these are abstract because the Traversable versions use
+  // breakable/break, and I wasn't sure enough of how that's supposed to
+  // function to consolidate them with the Iterator versions.
   def forall(p: A => Boolean): Boolean
   def exists(p: A => Boolean): Boolean
   def find(p: A => Boolean): Option[A]
