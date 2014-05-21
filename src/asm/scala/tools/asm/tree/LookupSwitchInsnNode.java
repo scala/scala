@@ -105,6 +105,7 @@ public class LookupSwitchInsnNode extends AbstractInsnNode {
             labels[i] = this.labels.get(i).getLabel();
         }
         mv.visitLookupSwitchInsn(dflt.getLabel(), keys, labels);
+        acceptAnnotations(mv);
     }
 
     @Override
@@ -112,6 +113,6 @@ public class LookupSwitchInsnNode extends AbstractInsnNode {
         LookupSwitchInsnNode clone = new LookupSwitchInsnNode(clone(dflt,
                 labels), null, clone(this.labels, labels));
         clone.keys.addAll(keys);
-        return clone;
+        return clone.cloneAnnotations(this);
     }
 }
