@@ -1050,29 +1050,21 @@ abstract class Erasure extends AddInterfaces
             }
           }
 
-          def isAccessible(sym: Symbol) = localTyper.context.isAccessible(sym, sym.owner.thisType)
-          if (!isAccessible(owner) && qual.tpe != null) {
+          def isJvmAccessible(sym: Symbol) = (sym.isClass && !sym.isJavaDefined) || localTyper.context.isAccessible(sym, sym.owner.thisType)
+          if (!isJvmAccessible(owner) && qual.tpe != null) {
             qual match {
               case Super(_, _) =>
-                // Insert a cast here at your peril -- see SI-5162. Bail out if the target method is defined in
-                // Java, otherwise, we'd get an IllegalAccessError at runtime. If the target method is defined in
-                // Scala, however, we should have access.
-                if (owner.isJavaDefined) unit.error(tree.pos, s"Unable to access ${tree.symbol.fullLocationString} with a super reference.")
+                // Insert a cast here at your peril -- see SI-5162.
+                unit.error(tree.pos, s"Unable to access ${tree.symbol.fullLocationString} with a super reference.")
                 tree
               case _ =>
                 // Todo: Figure out how qual.tpe could be null in the check above (it does appear in build where SwingWorker.this
                 // has a null type).
                 val qualSym = qual.tpe.widen.typeSymbol
-                if (isAccessible(qualSym) && !qualSym.isPackageClass && !qualSym.isPackageObjectClass) {
+                if (isJvmAccessible(qualSym) && !qualSym.isPackageClass && !qualSym.isPackageObjectClass) {
                   // insert cast to prevent illegal access error (see #4283)
                   // util.trace("insert erasure cast ") (*/
-                  if (qualSym.isDerivedValueClass) {
-                    assert(!owner.isJavaDefined, owner)
-                    // Safe, as derived value can't extend Java classes that would be JVM inaccessible
-                    devWarning("SI-8607 Not casting qualifier ${qual} to its widened type as it is a derived value class and this cast will trip up the rest of erasure/post erasure.")
-                    tree
-                  } else
-                    treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name) //)
+                  treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name) //)
                 } else tree
             }
           } else tree
