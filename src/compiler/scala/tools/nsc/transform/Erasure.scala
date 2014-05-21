@@ -1066,7 +1066,13 @@ abstract class Erasure extends AddInterfaces
                 if (isAccessible(qualSym) && !qualSym.isPackageClass && !qualSym.isPackageObjectClass) {
                   // insert cast to prevent illegal access error (see #4283)
                   // util.trace("insert erasure cast ") (*/
-                  treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name) //)
+                  if (qualSym.isDerivedValueClass) {
+                    assert(!owner.isJavaDefined, owner)
+                    // Safe, as derived value can't extend Java classes that would be JVM inaccessible
+                    devWarning("SI-8607 Not casting qualifier ${qual} to its widened type as it is a derived value class and this cast will trip up the rest of erasure/post erasure.")
+                    tree
+                  } else
+                    treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name) //)
                 } else tree
             }
           } else tree
