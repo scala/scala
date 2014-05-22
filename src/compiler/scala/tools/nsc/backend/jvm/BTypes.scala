@@ -4,6 +4,8 @@ package backend.jvm
 import scala.collection.immutable
 import scala.annotation.switch
 import scala.tools.asm
+import asm.Opcodes
+import scala.collection.mutable.ListBuffer
 
 /**
  * BTypes is a backend component that defines the class BType, a number of basic instances and
@@ -30,675 +32,346 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
    */
   def createNewName(s: String): BTypeName
 
-  /**
-   * Creates a BType for the class, interface or array descriptor `iname`.
-   *
-   * must-single-thread
-   */
-  def brefType(iname: String): BType = brefType(createNewName(iname))
-
-  /**
-   * Creates a BType for the class, interface or array descriptor `iname`.
-   *
-   * can-multi-thread
-   */
-  def brefType(iname: BTypeName): BType = BType.getObjectType(iname.start, iname.length)
-
-  /**
-   * TODO @lry : make members private to BType, move those used outside into the BTypes component
-   */
-  object BType {
-    // ------------- sorts -------------
-
-    final val VOID    = asm.Type.VOID
-    final val BOOLEAN = asm.Type.BOOLEAN
-    final val CHAR    = asm.Type.CHAR
-    final val BYTE    = asm.Type.BYTE
-    final val SHORT   = asm.Type.SHORT
-    final val INT     = asm.Type.INT
-    final val FLOAT   = asm.Type.FLOAT
-    final val LONG    = asm.Type.LONG
-    final val DOUBLE  = asm.Type.DOUBLE
-    final val ARRAY   = asm.Type.ARRAY
-    final val OBJECT  = asm.Type.OBJECT
-    final val METHOD  = asm.Type.METHOD
-
-    // ------------- primitive types -------------
-
-    // magic shifted numbers: see comment on class BType. This has been copied 1:1 from asm.Type.
-
-    val VOID_TYPE    = new BType(VOID,    ('V' << 24) | (5 << 16) | (0 << 8) | 0, 1)
-    val BOOLEAN_TYPE = new BType(BOOLEAN, ('Z' << 24) | (0 << 16) | (5 << 8) | 1, 1)
-    val CHAR_TYPE    = new BType(CHAR,    ('C' << 24) | (0 << 16) | (6 << 8) | 1, 1)
-    val BYTE_TYPE    = new BType(BYTE,    ('B' << 24) | (0 << 16) | (5 << 8) | 1, 1)
-    val SHORT_TYPE   = new BType(SHORT,   ('S' << 24) | (0 << 16) | (7 << 8) | 1, 1)
-    val INT_TYPE     = new BType(INT,     ('I' << 24) | (0 << 16) | (0 << 8) | 1, 1)
-    val FLOAT_TYPE   = new BType(FLOAT,   ('F' << 24) | (2 << 16) | (2 << 8) | 1, 1)
-    val LONG_TYPE    = new BType(LONG,    ('J' << 24) | (1 << 16) | (1 << 8) | 2, 1)
-    val DOUBLE_TYPE  = new BType(DOUBLE,  ('D' << 24) | (3 << 16) | (3 << 8) | 2, 1)
-
-    /*
-     * Returns the Java type corresponding to the given type descriptor.
-     *
-     * @param off the offset of this descriptor in the chrs buffer.
-     * @return the Java type corresponding to the given type descriptor.
-     *
-     * can-multi-thread
-     */
-    def getType(off: Int): BType = {
-      var len = 0
-      chrs(off) match {
-        case 'V' => VOID_TYPE
-        case 'Z' => BOOLEAN_TYPE
-        case 'C' => CHAR_TYPE
-        case 'B' => BYTE_TYPE
-        case 'S' => SHORT_TYPE
-        case 'I' => INT_TYPE
-        case 'F' => FLOAT_TYPE
-        case 'J' => LONG_TYPE
-        case 'D' => DOUBLE_TYPE
-        case '[' =>
-          len = 1
-          while (chrs(off + len) == '[') {
-            len += 1
-          }
-          if (chrs(off + len) == 'L') {
-            len += 1
-            while (chrs(off + len) != ';') {
-              len += 1
-            }
-          }
-          new BType(ARRAY, off, len + 1)
-        case 'L' =>
-          len = 1
-          while (chrs(off + len) != ';') {
-            len += 1
-          }
-          new BType(OBJECT, off + 1, len - 1)
-        // case '(':
-        case _ =>
-          assert(chrs(off) == '(')
-          var resPos = off + 1
-          while (chrs(resPos) != ')') { resPos += 1 }
-          val resType = getType(resPos + 1)
-          val len = resPos - off + 1 + resType.len
-          new BType(
-            METHOD,
-            off,
-            if (resType.hasObjectSort) {
-              len + 2 // "+ 2" accounts for the "L ... ;" in a descriptor for a non-array reference.
-            } else {
-              len
-            }
-          )
-      }
+  /*sealed*/ trait BType { // Not sealed for now due to SI-8546
+    final override def toString: String = this match {
+      case UNIT   => "V"
+      case BOOL   => "Z"
+      case CHAR   => "C"
+      case BYTE   => "B"
+      case SHORT  => "S"
+      case INT    => "I"
+      case FLOAT  => "F"
+      case LONG   => "J"
+      case DOUBLE => "D"
+      case c @ ClassBType(_, _)   => "L" + c.internalName + ";"
+      case ArrayBType(component)  => "[" + component
+      case MethodBType(args, res) => "(" + args.mkString + ")" + res
     }
 
-    /* Params denote an internal name.
-     *  can-multi-thread
+    /**
+     * @return The Java descriptor of this type. Examples:
+     *  - int: I
+     *  - java.lang.String: Ljava/lang/String;
+     *  - int[]: [I
+     *  - Object m(String s, double d): (Ljava/lang/String;D)Ljava/lang/Object;
      */
-    def getObjectType(index: Int, length: Int): BType = {
-      val sort = if (chrs(index) == '[') ARRAY else OBJECT
-      new BType(sort, index, length)
+    final def descriptor = toString
+
+    /**
+     * @return 0 for void, 2 for long and double, 1 otherwise
+     */
+    final def size: Int = this match {
+      case UNIT => 0
+      case LONG | DOUBLE => 2
+      case _ => 1
     }
 
-    /*
-     * @param methodDescriptor a method descriptor.
-     *
-     * must-single-thread
-     */
-    def getMethodType(methodDescriptor: String): BType = {
-      val n = createNewName(methodDescriptor)
-      new BType(BType.METHOD, n.start, n.length) // TODO assert isValidMethodDescriptor
+    final def isPrimitive: Boolean = this.isInstanceOf[PrimitiveBType]
+    final def isRef: Boolean       = this.isInstanceOf[RefBType]
+    final def isArray: Boolean     = this.isInstanceOf[ArrayBType]
+    final def isClass: Boolean     = this.isInstanceOf[ClassBType]
+    final def isMethod: Boolean    = this.isInstanceOf[MethodBType]
+
+    final def isNonVoidPrimitiveType = isPrimitive && this != UNIT
+    // TODO @lry should also include !isMethod in isNonSpecial? in this case it would be equivalent to isClass, so we could get rid of it.
+    final def isNonSpecial           = !isPrimitive && !isArray && !isPhantomType
+    final def isNullType             = this == RT_NULL || this == CT_NULL
+    final def isNothingType          = this == RT_NOTHING || this == CT_NOTHING
+    final def isPhantomType          = isNullType || isNothingType
+
+    final def isBoxed = this match {
+      case BOXED_UNIT  | BOXED_BOOLEAN | BOXED_CHAR   |
+           BOXED_BYTE  | BOXED_SHORT   | BOXED_INT    |
+           BOXED_FLOAT | BOXED_LONG    | BOXED_DOUBLE => true
+      case _ => false
     }
 
-    /*
-     * Returns the Java method type corresponding to the given argument and return types.
-     *
-     * @param returnType the return type of the method.
-     * @param argumentTypes the argument types of the method.
-     * @return the Java type corresponding to the given argument and return types.
-     *
-     * must-single-thread
+    final def isIntSizedType = this == BOOL || this == CHAR || this == BYTE ||
+                               this == SHORT || this == INT
+    final def isIntegralType = this == INT || this == BYTE || this == LONG ||
+                               this == CHAR || this == SHORT
+    final def isRealType     = this == FLOAT || this == DOUBLE
+    final def isNumericType  = isIntegralType || isRealType
+    final def isWideType     = size == 2
+
+    /**
+     * See documentation of [[typedOpcode]].
+     * The numbers are taken from asm.Type.VOID_TYPE ff., the values are those shifted by << 8.
      */
-    def getMethodType(returnType: BType, argumentTypes: Array[BType]): BType = {
-      val n = createNewName(getMethodDescriptor(returnType, argumentTypes))
-      new BType(BType.METHOD, n.start, n.length)
+    private def loadStoreOpcodeOffset: Int = this match {
+      case UNIT | INT  => 0
+      case BOOL | BYTE => 5
+      case CHAR        => 6
+      case SHORT       => 7
+      case FLOAT       => 2
+      case LONG        => 1
+      case DOUBLE      => 3
+      case _           => 4
     }
 
-    /*
-     * Returns the Java types corresponding to the argument types of method descriptor whose first argument starts at idx0.
-     *
-     * @param idx0 index into chrs of the first argument (after the '(').
-     * @return the Java types corresponding to the argument types of the given method descriptor.
-     *
-     * can-multi-thread
+    /**
+     * See documentation of [[typedOpcode]].
+     * The numbers are taken from asm.Type.VOID_TYPE ff., the values are those shifted by << 16.
      */
-    private def getArgumentTypes(idx0: Int): Array[BType] = {
-      assert(chrs(idx0 - 1) == '(', "doesn't look like a method descriptor.")
-      val args = new Array[BType](getArgumentCount(idx0))
-      var off = idx0
-      var size = 0
-      while (chrs(off) != ')') {
-        args(size) = getType(off)
-        off += args(size).len
-        if (args(size).sort == OBJECT) { off += 2 } // account for 'L' and ';'
-        // debug: assert("LVZBSCIJFD[)".contains(chrs(off)))
-        size += 1
-      }
-      // debug: var check = 0; while (check < args.length) { assert(args(check) != null); check += 1 }
-      args
+    private def typedOpcodeOffset: Int = this match {
+      case UNIT                               => 5
+      case BOOL | CHAR | BYTE | SHORT | INT   => 0
+      case FLOAT                              => 2
+      case LONG                               => 1
+      case DOUBLE                             => 3
+      case _                                  => 4
     }
 
-    /*
-     * Returns the number of argument types of this method type, whose first argument starts at idx0.
+    /**
+     * Some JVM opcodes have typed variants. This method returns the correct opcode according to
+     * the type.
      *
-     * @param idx0 index into chrs of the first argument.
-     * @return the number of argument types of this method type.
-     *
-     * can-multi-thread
+     * @param opcode A JVM instruction opcode. This opcode must be one of ILOAD, ISTORE, IALOAD,
+     *               IASTORE, IADD, ISUB, IMUL, IDIV, IREM, INEG, ISHL, ISHR, IUSHR, IAND, IOR
+     *               IXOR and IRETURN.
+     * @return The opcode adapted to this java type. For example, if this type is `float` and
+     *         `opcode` is `IRETURN`, this method returns `FRETURN`.
      */
-    private def getArgumentCount(idx0: Int): Int = {
-      assert(chrs(idx0 - 1) == '(', "doesn't look like a method descriptor.")
-      var off  = idx0
-      var size = 0
-      var keepGoing = true
-      while (keepGoing) {
-        val car = chrs(off)
-        off += 1
-        if (car == ')') {
-          keepGoing = false
-        } else if (car == 'L') {
-          while (chrs(off) != ';') { off += 1 }
-          off += 1
-          size += 1
-        } else if (car != '[') {
-          size += 1
-        }
-      }
-
-      size
+    final def typedOpcode(opcode: Int): Int = {
+      if (opcode == Opcodes.IALOAD || opcode == Opcodes.IASTORE)
+        opcode + loadStoreOpcodeOffset
+      else
+        opcode + typedOpcodeOffset
     }
 
-    /*
-     * Returns the Java type corresponding to the return type of the given
-     * method descriptor.
+    /**
+     * The asm.Type corresponding to this BType.
      *
-     * @param methodDescriptor a method descriptor.
-     * @return the Java type corresponding to the return type of the given method descriptor.
+     * Note about asm.Type.getObjectType (*): For class types, the method expects the internal
+     * name, i.e. without the surrounding 'L' and ';'. For array types on the other hand, the
+     * method expects a full descriptor, for example "[Ljava/lang/String;".
      *
-     * must-single-thread
+     * See method asm.Type.getType that creates a asm.Type from a type descriptor
+     *  - for an OBJECT type, the 'L' and ';' are not part of the range of the created Type
+     *  - for an ARRAY type, the full descriptor is part of the range
      */
-    def getReturnType(methodDescriptor: String): BType = {
-      val n     = createNewName(methodDescriptor)
-      val delta = n.pos(')') // `delta` is relative to the Name's zero-based start position, not a valid index into chrs.
-      assert(delta < n.length, s"not a valid method descriptor: $methodDescriptor")
-      getType(n.start + delta + 1)
+    def toASMType: asm.Type = this match {
+      case UNIT   => asm.Type.VOID_TYPE
+      case BOOL   => asm.Type.BOOLEAN_TYPE
+      case CHAR   => asm.Type.CHAR_TYPE
+      case BYTE   => asm.Type.BYTE_TYPE
+      case SHORT  => asm.Type.SHORT_TYPE
+      case INT    => asm.Type.INT_TYPE
+      case FLOAT  => asm.Type.FLOAT_TYPE
+      case LONG   => asm.Type.LONG_TYPE
+      case DOUBLE => asm.Type.DOUBLE_TYPE
+      case c @ ClassBType(_, _)  => asm.Type.getObjectType(c.internalName) // (*)
+      case a @ ArrayBType(_)     => asm.Type.getObjectType(a.descriptor)
+      case m @ MethodBType(_, _) => asm.Type.getMethodType(m.descriptor)
     }
 
-    /*
-     * Returns the descriptor corresponding to the given argument and return types.
-     * Note: no BType is created here for the resulting method descriptor,
-     *       if that's desired the invoker is responsible for that.
-     *
-     * @param returnType the return type of the method.
-     * @param argumentTypes the argument types of the method.
-     * @return the descriptor corresponding to the given argument and return types.
-     *
-     * can-multi-thread
-     */
-    def getMethodDescriptor(
-                             returnType: BType,
-                             argumentTypes: Array[BType]): String =
-    {
-      val buf = new StringBuffer()
-      buf.append('(')
-      var i = 0
-      while (i < argumentTypes.length) {
-        argumentTypes(i).getDescriptor(buf)
-        i += 1
-      }
-      buf.append(')')
-      returnType.getDescriptor(buf)
-      buf.toString()
-    }
-
-  } // end of object BType
-
-  /**
-   * Based on ASM's Type class. Namer's chrs is used in this class for the same purposes as the
-   * `buf` char array in asm.Type.
-   *
-   * @param sort One of BType.VOID ... BType.METHOD
-   *
-   * @param off  For array, object and method types, the offset of the type description in chrs.
-   *             For primitive types, the `off` field contains
-   *               - at byte 0 (& 0xff): the lenght, 0 for void, 2 for long/double, 1 otherwise
-   *               - at byte 1 (& 0xff00): the Opcode offset for the corresponding xALOAD / xSTORE
-   *                 instruction. Example: Opcodes.IALOAD is 46, to load a boolean or a byte the
-   *                 necessary Opcode.BALOAD is 51, therefore the offset value is 5.
-   *               - at byte 2 (& 0xff0000): the Opcode offset for other instructions (xLOAD,
-   *                 xSTORE, xADD, etc). See method BType#getOpcode.
-   *               - at byte 3 (& 0xff000000): the descriptor ('V' for void, etc)
-   *             For array types, the description starts with one or more '['
-   *
-   * @param len  The length of the type description
-   *              - 1 for primitive types
-   *              - For array, object and method types, the number of characters in chrs.
-   *                Note: for array and method types, '[' and '(' and ')' are stored in the array
-   *                and included in the length, for example "[Ljava/lang/Object;" or "(I)L...;"
-   *                For object types, the leading 'L' and trailing ';' are not stored in the array
-   *                and therefore excluded from the length, for example "java/lang/Object".
-   *
-   * All methods of this classs can-multi-thread
-   */
-  final class BType(val sort: Int, val off: Int, val len: Int) {
-    /*
-     * can-multi-thread
-     */
-    def toASMType: asm.Type = (sort: @switch) match {
-      case BType.VOID    => asm.Type.VOID_TYPE
-      case BType.BOOLEAN => asm.Type.BOOLEAN_TYPE
-      case BType.CHAR    => asm.Type.CHAR_TYPE
-      case BType.BYTE    => asm.Type.BYTE_TYPE
-      case BType.SHORT   => asm.Type.SHORT_TYPE
-      case BType.INT     => asm.Type.INT_TYPE
-      case BType.FLOAT   => asm.Type.FLOAT_TYPE
-      case BType.LONG    => asm.Type.LONG_TYPE
-      case BType.DOUBLE  => asm.Type.DOUBLE_TYPE
-      case BType.ARRAY   |
-           BType.OBJECT  => asm.Type.getObjectType(getInternalName)
-      case BType.METHOD  => asm.Type.getMethodType(getDescriptor)
-    }
-
-    /*
-     * Returns the number of dimensions of this array type. This method should
-     * only be used for an array type.
-     *
-     * @return the number of dimensions of this array type.
-     *
-     * can-multi-thread
-     */
-    def getDimensions: Int = {
-      assert(isArray, s"getDimensions on non-array type $this")
-      var i = 1
-      while (chrs(off + i) == '[') {
-        i += 1
-      }
-      i
-    }
-
-    /*
-     * Returns the (ultimate) element type of this array type.
-     * This method should only be used for an array type.
-     *
-     * @return Returns the type of the elements of this array type.
-     *
-     * can-multi-thread
-     */
-    def getElementType: BType = {
-      assert(isArray, s"getElementType on non-array type $this")
-      BType.getType(off + getDimensions)
-    }
-
-    /*
-     * Element vs. Component type of an array:
-     * Quoting from the JVMS, Sec. 2.4 "Reference Types and Values"
-     *
-     *   An array type consists of a component type with a single dimension (whose
-     *   length is not given by the type). The component type of an array type may itself be
-     *   an array type. If, starting from any array type, one considers its component type,
-     *   and then (if that is also an array type) the component type of that type, and so on,
-     *   eventually one must reach a component type that is not an array type; this is called
-     *   the element type of the array type. The element type of an array type is necessarily
-     *   either a primitive type, or a class type, or an interface type.
-     *
-     */
-
-    /* The type of items this array holds.
-     *
-     * can-multi-thread
-     */
-    def getComponentType: BType = {
-      assert(isArray, s"Asked for the component type of a non-array type: $this")
-      BType.getType(off + 1)
-    }
-
-    /*
-     * Returns the internal name of the class corresponding to this object or
-     * array type. The internal name of a class is its fully qualified name (as
-     * returned by Class.getName(), where '.' are replaced by '/'. This method
-     * should only be used for an object or array type.
-     *
-     * @return the internal name of the class corresponding to this object type.
-     *
-     * can-multi-thread
-     */
-    def getInternalName: String = {
-      assert(isRefOrArrayType, s"getInternalName on non-object, non-array type $this")
-      new String(chrs, off, len)
-    }
-
-    /*
-     * @return the suffix of the internal name until the last '/' (if '/' present), internal name otherwise.
-     *
-     * can-multi-thread
-     */
-    def getSimpleName: String = {
-      assert(hasObjectSort, s"getSimpleName on non-object $this")
-      val iname = getInternalName
-      val idx = iname.lastIndexOf('/')
-      if (idx == -1) iname
-      else iname.substring(idx + 1)
-    }
-
-    /*
-     * Returns the argument types of methods of this type.
-     * This method should only be used for method types.
-     *
-     * @return the argument types of methods of this type.
-     *
-     * can-multi-thread
-     */
-    def getArgumentTypes: Array[BType] = {
-      assert(sort == BType.METHOD, s"getArgumentTypes on non-method $this")
-      BType.getArgumentTypes(off + 1)
-    }
-
-    /*
-     * Returns the return type of methods of this type.
-     * This method should only be used for method types.
-     *
-     * @return the return type of methods of this type.
-     *
-     * can-multi-thread
-     */
-    def getReturnType: BType = {
-      assert(sort == BType.METHOD, s"getReturnType on non-method $this")
-      var resPos = off + 1
-      while (chrs(resPos) != ')') { resPos += 1 }
-      BType.getType(resPos + 1)
-    }
-
-    // ------------------------------------------------------------------------
-    // Inspector methods
-    // ------------------------------------------------------------------------
-
-    def isPrimitiveOrVoid = (sort <  BType.ARRAY) // can-multi-thread
-    def isValueType       = (sort <  BType.ARRAY) // can-multi-thread
-    def isArray           = (sort == BType.ARRAY) // can-multi-thread
-    def isUnitType        = (sort == BType.VOID)  // can-multi-thread
-
-    /*
-     * Unlike for ICode's REFERENCE, isBoxedType(t) implies isReferenceType(t)
-     * Also, `isReferenceType(RT_NOTHING) == true` , similarly for RT_NULL.
-     * Use isNullType() , isNothingType() to detect Nothing and Null.
-     *
-     * can-multi-thread
-     */
-    def hasObjectSort = (sort == BType.OBJECT)
-
-    def isRefOrArrayType   = { hasObjectSort ||  isArray    } // can-multi-thread
-    def isNonUnitValueType = { isValueType   && !isUnitType } // can-multi-thread
-
-    def isNonSpecial  = { !isValueType && !isArray && !isPhantomType   } // can-multi-thread
-    def isNothingType = { (this == RT_NOTHING) || (this == CT_NOTHING) } // can-multi-thread
-    def isNullType    = { (this == RT_NULL)    || (this == CT_NULL)    } // can-multi-thread
-    def isPhantomType = { isNothingType || isNullType } // can-multi-thread
-
-    /*
-     * can-multi-thread
-     */
-    def isBoxed = {
-      this match {
-        case BOXED_UNIT  | BOXED_BOOLEAN | BOXED_CHAR   |
-             BOXED_BYTE  | BOXED_SHORT   | BOXED_INT    |
-             BOXED_FLOAT | BOXED_LONG    | BOXED_DOUBLE
-        => true
-        case _
-        => false
-      }
-    }
-
-    /* On the JVM,
-     *    BOOL, BYTE, CHAR, SHORT, and INT
-     *  are like Ints for the purpose of lub calculation.
-     *
-     * can-multi-thread
-     */
-    def isIntSizedType = {
-      (sort : @switch) match {
-        case BType.BOOLEAN | BType.CHAR  |
-             BType.BYTE    | BType.SHORT | BType.INT
-        => true
-        case _
-        => false
-      }
-    }
-
-    /* On the JVM, similar to isIntSizedType except that BOOL isn't integral while LONG is.
-     *
-     * can-multi-thread
-     */
-    def isIntegralType = {
-      (sort : @switch) match {
-        case BType.CHAR  |
-             BType.BYTE  | BType.SHORT | BType.INT |
-             BType.LONG
-        => true
-        case _
-        => false
-      }
-    }
-
-    /* On the JVM, FLOAT and DOUBLE.
-     *
-     * can-multi-thread
-     */
-    def isRealType = { (sort == BType.FLOAT ) || (sort == BType.DOUBLE) }
-
-    def isNumericType = (isIntegralType || isRealType) // can-multi-thread
-
-    /* Is this type a category 2 type in JVM terms? (ie, is it LONG or DOUBLE?)
-     *
-     * can-multi-thread
-     */
-    def isWideType = (getSize == 2)
-
-    // ------------------------------------------------------------------------
-    // Conversion to type descriptors
-    // ------------------------------------------------------------------------
-
-    /*
-     * @return the descriptor corresponding to this Java type.
-     *
-     * can-multi-thread
-     */
-    def getDescriptor: String = {
-      val buf = new StringBuffer()
-      getDescriptor(buf)
-      buf.toString()
-    }
-
-    /*
-     * Appends the descriptor corresponding to this Java type to the given string buffer.
-     *
-     * @param buf the string buffer to which the descriptor must be appended.
-     *
-     * can-multi-thread
-     */
-    private def getDescriptor(buf: StringBuffer) {
-      if (isPrimitiveOrVoid) {
-        // descriptor is in byte 3 of 'off' for primitive types (buf == null)
-        buf.append(((off & 0xFF000000) >>> 24).asInstanceOf[Char])
-      } else if (sort == BType.OBJECT) {
-        buf.append('L')
-        buf.append(chrs, off, len)
-        buf.append(';')
-      } else { // sort == ARRAY || sort == METHOD
-        buf.append(chrs, off, len)
-      }
-    }
-
-    // ------------------------------------------------------------------------
-    // Corresponding size and opcodes
-    // ------------------------------------------------------------------------
-
-    /*
-     * Returns the size of values of this type.
-     * This method must not be used for method types.
-     *
-     * @return the size of values of this type, i.e., 2 for <tt>long</tt> and
-     *         <tt>double</tt>, 0 for <tt>void</tt> and 1 otherwise.
-     *
-     * can-multi-thread
-     */
-    def getSize: Int = {
-      // the size is in byte 0 of 'off' for primitive types (buf == null)
-      if (isPrimitiveOrVoid) (off & 0xFF) else 1
-    }
-
-    /*
-     * Returns a JVM instruction opcode adapted to this Java type. This method
-     * must not be used for method types.
-     *
-     * @param opcode a JVM instruction opcode. This opcode must be one of ILOAD,
-     *        ISTORE, IALOAD, IASTORE, IADD, ISUB, IMUL, IDIV, IREM, INEG, ISHL,
-     *        ISHR, IUSHR, IAND, IOR, IXOR and IRETURN.
-     * @return an opcode that is similar to the given opcode, but adapted to
-     *         this Java type. For example, if this type is <tt>float</tt> and
-     *         <tt>opcode</tt> is IRETURN, this method returns FRETURN.
-     *
-     * can-multi-thread
-     */
-    def getOpcode(opcode: Int): Int = {
-      import asm.Opcodes
-      if (opcode == Opcodes.IALOAD || opcode == Opcodes.IASTORE) {
-        // the offset for IALOAD or IASTORE is in byte 1 of 'off' for
-        // primitive types (buf == null)
-        opcode + (if (isPrimitiveOrVoid) (off & 0xFF00) >> 8 else 4)
-      } else {
-        // the offset for other instructions is in byte 2 of 'off' for
-        // primitive types (buf == null)
-        opcode + (if (isPrimitiveOrVoid) (off & 0xFF0000) >> 16 else 4)
-      }
-    }
-
-    // ------------------------------------------------------------------------
-    // Equals, hashCode and toString
-    // ------------------------------------------------------------------------
-
-    /*
-     * Tests if the given object is equal to this type.
-     *
-     * @param o the object to be compared to this type.
-     * @return <tt>true</tt> if the given object is equal to this type.
-     *
-     * can-multi-thread
-     */
-    override def equals(o: Any): Boolean = {
-      if (!(o.isInstanceOf[BType])) {
-        return false
-      }
-      val t = o.asInstanceOf[BType]
-      if (this eq t) {
-        return true
-      }
-      if (sort != t.sort) {
-        return false
-      }
-      if (sort >= BType.ARRAY) {
-        if (len != t.len) {
-          return false
-        }
-        // sort checked already
-        if (off == t.off) {
-          return true
-        }
-        var i = 0
-        while (i < len) {
-          if (chrs(off + i) != chrs(t.off + i)) {
-            return false
-          }
-          i += 1
-        }
-        // If we reach here, we could update the largest of (this.off, t.off) to match the other, so as to simplify future == comparisons.
-        // But that would require a var rather than val.
-      }
-      true
-    }
-
-    /*
-     * @return a hash code value for this type.
-     *
-     * can-multi-thread
-     */
-    override def hashCode(): Int = {
-      var hc = 13 * sort
-      if (sort >= BType.ARRAY) {
-        var i = off
-        val end = i + len
-        while (i < end) {
-          hc = 17 * (hc + chrs(i))
-          i += 1
-        }
-      }
-      hc
-    }
-
-    /*
-     * @return the descriptor of this type.
-     *
-     * can-multi-thread
-     */
-    override def toString: String = getDescriptor
+    def asRefBType  : RefBType   = this.asInstanceOf[RefBType]
+    def asArrayBType: ArrayBType = this.asInstanceOf[ArrayBType]
+    def asClassBType: ClassBType = this.asInstanceOf[ClassBType]
   }
 
-  val UNIT   = BType.VOID_TYPE
-  val BOOL   = BType.BOOLEAN_TYPE
-  val CHAR   = BType.CHAR_TYPE
-  val BYTE   = BType.BYTE_TYPE
-  val SHORT  = BType.SHORT_TYPE
-  val INT    = BType.INT_TYPE
-  val LONG   = BType.LONG_TYPE
-  val FLOAT  = BType.FLOAT_TYPE
-  val DOUBLE = BType.DOUBLE_TYPE
+  object BType {
+    /**
+     * @param chars The character array containing the descriptor
+     * @param start The position where the descriptor starts
+     * @return The BType and the index of the first character after the consumed descriptor
+     */
+    private[BTypes] def fromNonMethodDescriptor(chars: Array[Char], start: Int): (BType, Int) = {
+      chars(start) match {
+        case 'L' =>
+          var i = start
+          while (chars(i) != ';') { i += 1 }
+          // Example: chars = "IILpkg/Cls;I"
+          //                     ^       ^
+          //                  start=2   i=10
+          // `start + 1` to exclude the 'L', `i - start - 1` excludes the ';'
+          (new ClassBType(new String(chars, start + 1, i - start - 1)), i + 1)
+        case '[' =>
+          val (res, next) = fromNonMethodDescriptor(chars, start + 1)
+          (ArrayBType(res), next)
+        case 'V' => (UNIT,   start + 1)
+        case 'Z' => (BOOL,   start + 1)
+        case 'C' => (CHAR,   start + 1)
+        case 'B' => (BYTE,   start + 1)
+        case 'S' => (SHORT,  start + 1)
+        case 'I' => (INT,    start + 1)
+        case 'F' => (FLOAT,  start + 1)
+        case 'J' => (LONG,   start + 1)
+        case 'D' => (DOUBLE, start + 1)
+      }
+    }
+  }
 
-  val BOXED_UNIT    = brefType("java/lang/Void")
-  val BOXED_BOOLEAN = brefType("java/lang/Boolean")
-  val BOXED_BYTE    = brefType("java/lang/Byte")
-  val BOXED_SHORT   = brefType("java/lang/Short")
-  val BOXED_CHAR    = brefType("java/lang/Character")
-  val BOXED_INT     = brefType("java/lang/Integer")
-  val BOXED_LONG    = brefType("java/lang/Long")
-  val BOXED_FLOAT   = brefType("java/lang/Float")
-  val BOXED_DOUBLE  = brefType("java/lang/Double")
+  sealed trait PrimitiveBType extends BType
+
+  case object UNIT   extends PrimitiveBType
+  case object BOOL   extends PrimitiveBType
+  case object CHAR   extends PrimitiveBType
+  case object BYTE   extends PrimitiveBType
+  case object SHORT  extends PrimitiveBType
+  case object INT    extends PrimitiveBType
+  case object FLOAT  extends PrimitiveBType
+  case object LONG   extends PrimitiveBType
+  case object DOUBLE extends PrimitiveBType
+
+  sealed trait RefBType extends BType {
+    /**
+     * The class or array type of this reference type. Used for ANEWARRAY, MULTIANEWARRAY,
+     * INSTANCEOF and CHECKCAST instructions.
+     *
+     * In contrast to the descriptor, this string does not contain the surrounding 'L' and ';' for
+     * class types, for example "java/lang/String".
+     * However, for array types, the full descriptor is used, for example "[Ljava/lang/String;".
+     *
+     * This can be verified for example using javap or ASMifier.
+     */
+    def classOrArrayType: String = this match {
+      case c: ClassBType => c.internalName
+      case a: ArrayBType => a.descriptor
+    }
+  }
+
+  /**
+   * Class or Interface type.
+   *
+   * Classes are represented using their name as a slice of the `chrs` array. This representation is
+   * efficient because the JVM class name is initially created using `classSymbol.javaBinaryName`.
+   * This already adds the necessary string to the `chrs` array, so it makes sense to reuse the same
+   * name table in the backend.
+   *
+   * Not a case class because that would expose the (Int, Int) constructor (didn't find a way to
+   * make it private, also the factory in the companion).
+   */
+  class ClassBType private(val offset: Int, val length: Int) extends RefBType {
+    /**
+     * Construct a ClassBType for a given (intenred) class name.
+     *
+     * @param n The class name as a slice of the `chrs` array, without the surrounding 'L' and ';'.
+     *          Note that `classSymbol.javaBinaryName` returns exactly such a name.
+     */
+    def this(n: BTypeName) = this(n.start, n.length)
+
+    /**
+     * Construct a ClassBType for a given java class name.
+     *
+     * @param s A class name of the form "java/lang/String", without the surrounding 'L' and ';'.
+     */
+    def this(s: String) = this(createNewName(s))
+
+    /**
+     * The internal name of a class is the string returned by java.lang.Class.getName, with all '.'
+     * replaced by '/'. For example "java/lang/String".
+     */
+    def internalName: String = new String(chrs, offset, length)
+
+    /**
+     * @return The class name without the package prefix
+     */
+    def simpleName: String = internalName.split("/").last
+
+    /**
+     * Custom equals / hashCode are needed because this is not a case class.
+     */
+    override def equals(o: Any): Boolean = (this eq o.asInstanceOf[Object]) || (o match {
+      case ClassBType(`offset`, `length`) => true
+      case _ => false
+    })
+
+    override def hashCode: Int = {
+      import scala.runtime.Statics
+      var acc: Int = -889275714
+      acc = Statics.mix(acc, offset)
+      acc = Statics.mix(acc, length)
+      Statics.finalizeHash(acc, 2)
+    }
+  }
+
+  object ClassBType {
+    def apply(n: BTypeName): ClassBType = new ClassBType(n)
+    def apply(s: String): ClassBType = new ClassBType(s)
+
+    def unapply(c: ClassBType): Option[(Int, Int)] =
+      if (c == null) None
+      else Some((c.offset, c.length))
+  }
+
+  case class ArrayBType(componentType: BType) extends RefBType {
+    def dimension: Int = componentType match {
+      case a: ArrayBType => 1 + a.dimension
+      case _ => 1
+    }
+
+    def elementType: BType = componentType match {
+      case a: ArrayBType => a.elementType
+      case t => t
+    }
+  }
+
+  case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType {
+    private def this(types: (List[BType], BType)) = this(types._1, types._2)
+    def this(descriptor: String) = this(MethodBType.decomposeMethodDescriptor(descriptor))
+  }
+
+  object MethodBType {
+    private def decomposeMethodDescriptor(descriptor: String): (List[BType], BType) = {
+      val chars = descriptor.toCharArray
+      assert(chars(0) == '(', s"Not a valid method descriptor: $descriptor")
+      var i = 1
+      val argTypes = new ListBuffer[BType]
+      while (chars(i) != ')') {
+        val (argType, next) = BType.fromNonMethodDescriptor(chars, i)
+        argTypes += argType
+        i = next
+      }
+      val (resType, _) = BType.fromNonMethodDescriptor(chars, i + 1) // `i + 1` to skip the ')'
+      (argTypes.toList, resType)
+    }
+    def apply(descriptor: String) = {
+      val (argTypes, resType) = decomposeMethodDescriptor(descriptor)
+      new MethodBType(argTypes, resType)
+    }
+  }
+
+  val BOXED_UNIT    = ClassBType("java/lang/Void")
+  val BOXED_BOOLEAN = ClassBType("java/lang/Boolean")
+  val BOXED_BYTE    = ClassBType("java/lang/Byte")
+  val BOXED_SHORT   = ClassBType("java/lang/Short")
+  val BOXED_CHAR    = ClassBType("java/lang/Character")
+  val BOXED_INT     = ClassBType("java/lang/Integer")
+  val BOXED_LONG    = ClassBType("java/lang/Long")
+  val BOXED_FLOAT   = ClassBType("java/lang/Float")
+  val BOXED_DOUBLE  = ClassBType("java/lang/Double")
 
   /*
-   * RT_NOTHING and RT_NULL exist at run-time only.
-   * They are the bytecode-level manifestation (in method signatures only) of what shows up as NothingClass resp. NullClass in Scala ASTs.
-   * Therefore, when RT_NOTHING or RT_NULL are to be emitted,
-   * a mapping is needed: the internal names of NothingClass and NullClass can't be emitted as-is.
+   * RT_NOTHING and RT_NULL exist at run-time only. They are the bytecode-level manifestation (in
+   * method signatures only) of what shows up as NothingClass resp. NullClass in Scala ASTs.
+   *
+   * Therefore, when RT_NOTHING or RT_NULL are to be emitted, a mapping is needed: the internal
+   * names of NothingClass and NullClass can't be emitted as-is.
    */
-  val RT_NOTHING = brefType("scala/runtime/Nothing$")
-  val RT_NULL    = brefType("scala/runtime/Null$")
-  val CT_NOTHING = brefType("scala/Nothing")
-  val CT_NULL    = brefType("scala/Null")
+  val RT_NOTHING = ClassBType("scala/runtime/Nothing$")
+  val RT_NULL    = ClassBType("scala/runtime/Null$")
+  val CT_NOTHING = ClassBType("scala/Nothing")
+  val CT_NULL    = ClassBType("scala/Null")
 
-  val srBooleanRef = brefType("scala/runtime/BooleanRef")
-  val srByteRef    = brefType("scala/runtime/ByteRef")
-  val srCharRef    = brefType("scala/runtime/CharRef")
-  val srIntRef     = brefType("scala/runtime/IntRef")
-  val srLongRef    = brefType("scala/runtime/LongRef")
-  val srFloatRef   = brefType("scala/runtime/FloatRef")
-  val srDoubleRef  = brefType("scala/runtime/DoubleRef")
+  val srBooleanRef = ClassBType("scala/runtime/BooleanRef")
+  val srByteRef    = ClassBType("scala/runtime/ByteRef")
+  val srCharRef    = ClassBType("scala/runtime/CharRef")
+  val srIntRef     = ClassBType("scala/runtime/IntRef")
+  val srLongRef    = ClassBType("scala/runtime/LongRef")
+  val srFloatRef   = ClassBType("scala/runtime/FloatRef")
+  val srDoubleRef  = ClassBType("scala/runtime/DoubleRef")
 
-  /*  Map from type kinds to the Java reference types.
-   *  Useful when pushing class literals onto the operand stack (ldc instruction taking a class literal).
-   *  @see Predef.classOf
-   *  @see genConstant()
+  /**
+   * Map from type kinds to the Java reference types.
+   * Useful when pushing class literals onto the operand stack (ldc instruction taking a class
+   * literal).
+   * @see Predef.classOf
+   * @see genConstant()
+   *
+   * TODO @lry rename to "boxedClassOfPrimitive" or so, check usages
    */
-  val classLiteral = immutable.Map[BType, BType](
+  val classLiteral = immutable.Map[BType, ClassBType](
     UNIT   -> BOXED_UNIT,
     BOOL   -> BOXED_BOOLEAN,
     BYTE   -> BOXED_BYTE,
@@ -710,7 +383,7 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
     DOUBLE -> BOXED_DOUBLE
   )
 
-  case class MethodNameAndType(mname: String, mdesc: String)
+  case class MethodNameAndType(name: String, descriptor: String)
 
   val asmBoxTo: immutable.Map[BType, MethodNameAndType] = {
     Map(
@@ -738,4 +411,3 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
     )
   }
 }
-

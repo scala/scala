@@ -56,7 +56,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
   /*
    * can-multi-thread
    */
-  def firstCommonSuffix(as: List[Tracked], bs: List[Tracked]): BType = {
+  def firstCommonSuffix(as: List[Tracked], bs: List[Tracked]): ClassBType = {
     var chainA = as
     var chainB = bs
     var fcs: Tracked = null
@@ -85,10 +85,10 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
      * can-multi-thread
      */
     override def getCommonSuperClass(inameA: String, inameB: String): String = {
-      val a = brefType(lookupTypeName(inameA.toCharArray))
-      val b = brefType(lookupTypeName(inameB.toCharArray))
+      val a = ClassBType(lookupTypeName(inameA.toCharArray))
+      val b = ClassBType(lookupTypeName(inameB.toCharArray))
       val lca = jvmWiseLUB(a, b)
-      val lcaName = lca.getInternalName // don't call javaName because that side-effects innerClassBuffer.
+      val lcaName = lca.internalName // don't call javaName because that side-effects innerClassBuffer.
       assert(lcaName != "scala/Any")
 
       lcaName // ASM caches the answer during the lifetime of a ClassWriter. We outlive that. Not sure whether caching on our side would improve things.
@@ -106,7 +106,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
    *
    * can-multi-thread
    */
-  def jvmWiseLUB(a: BType, b: BType): BType = {
+  def jvmWiseLUB(a: ClassBType, b: ClassBType): ClassBType = {
 
     assert(a.isNonSpecial, s"jvmWiseLUB() received a non-plain-class $a")
     assert(b.isNonSpecial, s"jvmWiseLUB() received a non-plain-class $b")
@@ -403,14 +403,14 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
      *
      *  must-single-thread
      */
-    final def internalName(sym: Symbol): String = asmClassType(sym).getInternalName
+    final def internalName(sym: Symbol): String = asmClassType(sym).internalName
 
     /*
      *  Tracks (if needed) the inner class given by `sym`.
      *
      *  must-single-thread
      */
-    final def asmClassType(sym: Symbol): BType = {
+    final def asmClassType(sym: Symbol): ClassBType = {
       assert(
         hasInternalName(sym),
         {
@@ -516,17 +516,18 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
         case _: ConstantType    => toTypeKind(t.underlying)
 
         case TypeRef(_, sym, args)    =>
-          if (sym == ArrayClass) arrayOf(toTypeKind(args.head))
+          if (sym == ArrayClass) ArrayBType(toTypeKind(args.head))
           else                   primitiveOrRefType2(sym)
 
         case ClassInfoType(_, _, sym) =>
           assert(sym != ArrayClass, "ClassInfoType to ArrayClass!")
           primitiveOrRefType(sym)
 
+        // TODO @lry check below comments / todo's
         // !!! Iulian says types which make no sense after erasure should not reach here, which includes the ExistentialType, AnnotatedType, RefinedType.
         case ExistentialType(_, t)   => toTypeKind(t) // TODO shouldn't get here but the following does: akka-actor/src/main/scala/akka/util/WildcardTree.scala
         case AnnotatedType(_, w)     => toTypeKind(w) // TODO test/files/jvm/annotations.scala causes an AnnotatedType to reach here.
-        case RefinedType(parents, _) => parents map toTypeKind reduceLeft jvmWiseLUB
+        case RefinedType(parents, _) => parents.map(toTypeKind(_).asClassBType) reduceLeft jvmWiseLUB
 
         // For sure WildcardTypes shouldn't reach here either, but when debugging such situations this may come in handy.
         // case WildcardType    => REFERENCE(ObjectClass)
@@ -540,12 +541,12 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
     /*
      * must-single-thread
      */
-    def asmMethodType(msym: Symbol): BType = {
+    def asmMethodType(msym: Symbol): MethodBType = {
       assert(msym.isMethod, s"not a method-symbol: $msym")
       val resT: BType =
-        if (msym.isClassConstructor || msym.isConstructor) BType.VOID_TYPE
-        else toTypeKind(msym.tpe.resultType);
-      BType.getMethodType( resT, mkArray(msym.tpe.paramTypes map toTypeKind) )
+        if (msym.isClassConstructor || msym.isConstructor) UNIT
+        else toTypeKind(msym.tpe.resultType)
+      MethodBType(msym.tpe.paramTypes map toTypeKind, resT)
     }
 
     /*
@@ -579,14 +580,14 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
      *
      *  must-single-thread
      */
-    final def descriptor(t: Type):   String = { toTypeKind(t).getDescriptor   }
+    final def descriptor(t: Type):   String = { toTypeKind(t).descriptor   }
 
     /*
      *  Tracks (if needed) the inner class given by `sym`.
      *
      *  must-single-thread
      */
-    final def descriptor(sym: Symbol): String = { asmClassType(sym).getDescriptor }
+    final def descriptor(sym: Symbol): String = { asmClassType(sym).descriptor }
 
   } // end of trait BCInnerClassGen
 
@@ -802,7 +803,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
       val thrownExceptions: List[String] = getExceptions(throws)
 
       val jReturnType = toTypeKind(methodInfo.resultType)
-      val mdesc = BType.getMethodType(jReturnType, mkArray(paramJavaTypes)).getDescriptor
+      val mdesc = MethodBType(paramJavaTypes, jReturnType).descriptor
       val mirrorMethodName = m.javaSimpleName.toString
       val mirrorMethod: asm.MethodVisitor = jclass.visitMethod(
         flags,
@@ -821,13 +822,13 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
       var index = 0
       for(jparamType <- paramJavaTypes) {
-        mirrorMethod.visitVarInsn(jparamType.getOpcode(asm.Opcodes.ILOAD), index)
-        assert(jparamType.sort != BType.METHOD, jparamType)
-        index += jparamType.getSize
+        mirrorMethod.visitVarInsn(jparamType.typedOpcode(asm.Opcodes.ILOAD), index)
+        assert(!jparamType.isInstanceOf[MethodBType], jparamType)
+        index += jparamType.size
       }
 
-      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, asmMethodType(m).getDescriptor, false)
-      mirrorMethod.visitInsn(jReturnType.getOpcode(asm.Opcodes.IRETURN))
+      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, asmMethodType(m).descriptor, false)
+      mirrorMethod.visitInsn(jReturnType.typedOpcode(asm.Opcodes.IRETURN))
 
       mirrorMethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
       mirrorMethod.visitEnd()
@@ -995,7 +996,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
         flags,
         mirrorName,
         null /* no java-generic-signature */,
-        JAVA_LANG_OBJECT.getInternalName,
+        JAVA_LANG_OBJECT.internalName,
         EMPTY_STRING_ARRAY
       )
 
@@ -1087,12 +1088,11 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
         EMPTY_STRING_ARRAY // no throwable exceptions
       )
 
-      val stringArrayJType: BType = arrayOf(JAVA_LANG_STRING)
-      val conJType: BType =
-        BType.getMethodType(
-          BType.VOID_TYPE,
-          Array(exemplar(definitions.ClassClass).c, stringArrayJType, stringArrayJType)
-        )
+      val stringArrayJType: BType = ArrayBType(JAVA_LANG_STRING)
+      val conJType: BType = MethodBType(
+        exemplar(definitions.ClassClass).c :: stringArrayJType :: stringArrayJType :: Nil,
+        UNIT
+      )
 
       def push(lst: List[String]) {
         var fi = 0
@@ -1101,7 +1101,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
           constructor.visitLdcInsn(new java.lang.Integer(fi))
           if (f == null) { constructor.visitInsn(asm.Opcodes.ACONST_NULL) }
           else           { constructor.visitLdcInsn(f) }
-          constructor.visitInsn(JAVA_LANG_STRING.getOpcode(asm.Opcodes.IASTORE))
+          constructor.visitInsn(JAVA_LANG_STRING.typedOpcode(asm.Opcodes.IASTORE))
           fi += 1
         }
       }
@@ -1114,17 +1114,17 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
       // push the string array of field information
       constructor.visitLdcInsn(new java.lang.Integer(fieldList.length))
-      constructor.visitTypeInsn(asm.Opcodes.ANEWARRAY, JAVA_LANG_STRING.getInternalName)
+      constructor.visitTypeInsn(asm.Opcodes.ANEWARRAY, JAVA_LANG_STRING.internalName)
       push(fieldList)
 
       // push the string array of method information
       constructor.visitLdcInsn(new java.lang.Integer(methodList.length))
-      constructor.visitTypeInsn(asm.Opcodes.ANEWARRAY, JAVA_LANG_STRING.getInternalName)
+      constructor.visitTypeInsn(asm.Opcodes.ANEWARRAY, JAVA_LANG_STRING.internalName)
       push(methodList)
 
       // invoke the superclass constructor, which will do the
       // necessary java reflection and create Method objects.
-      constructor.visitMethodInsn(asm.Opcodes.INVOKESPECIAL, "scala/beans/ScalaBeanInfo", INSTANCE_CONSTRUCTOR_NAME, conJType.getDescriptor, false)
+      constructor.visitMethodInsn(asm.Opcodes.INVOKESPECIAL, "scala/beans/ScalaBeanInfo", INSTANCE_CONSTRUCTOR_NAME, conJType.descriptor, false)
       constructor.visitInsn(asm.Opcodes.RETURN)
 
       constructor.visitMaxs(0, 0) // just to follow protocol, dummy arguments
@@ -1163,7 +1163,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
     def legacyAddCreatorCode(clinit: asm.MethodVisitor, cnode: asm.tree.ClassNode, thisName: String) {
       // this tracks the inner class in innerClassBufferASM, if needed.
       val androidCreatorType = asmClassType(AndroidCreatorClass)
-      val tdesc_creator = androidCreatorType.getDescriptor
+      val tdesc_creator = androidCreatorType.descriptor
 
       cnode.visitField(
         PublicStaticFinal,
@@ -1184,12 +1184,12 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
       )
 
       // INVOKEVIRTUAL `moduleName`.CREATOR() : android.os.Parcelable$Creator;
-      val bt = BType.getMethodType(androidCreatorType, Array.empty[BType])
+      val bt = MethodBType(Nil, androidCreatorType)
       clinit.visitMethodInsn(
         asm.Opcodes.INVOKEVIRTUAL,
         moduleName,
         "CREATOR",
-        bt.getDescriptor,
+        bt.descriptor,
         false
       )
 

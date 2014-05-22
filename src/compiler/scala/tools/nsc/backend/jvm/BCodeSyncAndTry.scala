@@ -9,9 +9,7 @@ package tools.nsc
 package backend
 package jvm
 
-import scala.collection.{ mutable, immutable }
-import scala.annotation.switch
-
+import scala.collection.immutable
 import scala.tools.asm
 
 /*
@@ -185,7 +183,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
       val caseHandlers: List[EHClause] =
         for (CaseDef(pat, _, caseBody) <- catches) yield {
           pat match {
-            case Typed(Ident(nme.WILDCARD), tpt)  => NamelessEH(tpeTK(tpt), caseBody)
+            case Typed(Ident(nme.WILDCARD), tpt)  => NamelessEH(tpeTK(tpt).asClassBType, caseBody)
             case Ident(nme.WILDCARD)              => NamelessEH(ThrowableReference,  caseBody)
             case Bind(_, _)                       => BoundEH   (pat.symbol, caseBody)
           }
@@ -251,7 +249,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
         // (2.a) emit case clause proper
         val startHandler = currProgramPoint()
         var endHandler: asm.Label = null
-        var excType: BType = null
+        var excType: ClassBType = null
         registerCleanup(finCleanup)
         ch match {
           case NamelessEH(typeToDrop, caseBody) =>
@@ -270,7 +268,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
             nopIfNeeded(startHandler)
             endHandler = currProgramPoint()
             emitLocalVarScope(patSymbol, startHandler, endHandler)
-            excType = patTK
+            excType = patTK.asClassBType
         }
         unregisterCleanup(finCleanup)
         // (2.b)  mark the try-body as protected by this case clause.
@@ -358,10 +356,10 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
       }
     }
 
-    def protect(start: asm.Label, end: asm.Label, handler: asm.Label, excType: BType) {
+    def protect(start: asm.Label, end: asm.Label, handler: asm.Label, excType: ClassBType) {
       val excInternalName: String =
         if (excType == null) null
-        else excType.getInternalName
+        else excType.internalName
       assert(start != end, "protecting a range of zero instructions leads to illegal class format. Solution: add a NOP to that range.")
       mnode.visitTryCatchBlock(start, end, handler, excInternalName)
     }
@@ -388,7 +386,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
     def mayCleanStack(tree: Tree): Boolean = tree exists { t => t.isInstanceOf[Try] }
 
     trait EHClause
-    case class NamelessEH(typeToDrop: BType,  caseBody: Tree) extends EHClause
+    case class NamelessEH(typeToDrop: ClassBType,  caseBody: Tree) extends EHClause
     case class BoundEH    (patSymbol: Symbol, caseBody: Tree) extends EHClause
 
   }
