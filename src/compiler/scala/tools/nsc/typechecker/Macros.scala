@@ -263,7 +263,12 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     }
 
   def isBlackbox(expandee: Tree): Boolean = isBlackbox(dissectApplied(expandee).core.symbol)
-  def isBlackbox(macroDef: Symbol): Boolean = {
+  def isBlackbox(macroDef: Symbol): Boolean = pluginsIsBlackbox(macroDef)
+
+  /** Default implementation of `isBlackbox`.
+   *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsIsBlackbox for more details)
+   */
+  def standardIsBlackbox(macroDef: Symbol): Boolean = {
     val fastTrackBoxity = fastTrack.get(macroDef).map(_.isBlackbox)
     val bindingBoxity = loadMacroImplBinding(macroDef).map(_.isBlackbox)
     fastTrackBoxity orElse bindingBoxity getOrElse false
