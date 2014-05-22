@@ -1,0 +1,15 @@
+t8610.scala:3: warning: `$name` looks like an interpolated identifier! Did you forget the interpolator?
+  def x = "Hi, $name"   // missing interp
+          ^
+t8610.scala:5: warning: Adapting argument list by creating a 2-tuple: this may not be what you want.
+        signature: X.f(p: (Int, Int)): Int
+  given arguments: 3, 4
+ after adaptation: X.f((3, 4): (Int, Int))
+  def g = f(3, 4)       // adapted
+           ^
+t8610.scala:6: warning: side-effecting nullary methods are discouraged: suggest defining as `def u()` instead
+  def u: Unit = ()      // unitarian universalist
+      ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found
