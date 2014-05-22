@@ -310,6 +310,7 @@ h1 {
   position: fixed;
   margin-left: 300px;
   display: block;
+  -webkit-overflow-scrolling: touch;
 }
 
 #content > iframe {

@@ -50,7 +50,7 @@ public class SourceInterpreter extends Interpreter<SourceValue> implements
         Opcodes {
 
     public SourceInterpreter() {
-        super(ASM4);
+        super(ASM5);
     }
 
     protected SourceInterpreter(final int api) {

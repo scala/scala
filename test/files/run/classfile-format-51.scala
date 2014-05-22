@@ -32,7 +32,7 @@ object Test extends DirectTest {
     val constructor = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null)
     constructor.visitCode()
     constructor.visitVarInsn(ALOAD, 0)
-    constructor.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V")
+    constructor.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false)
     constructor.visitInsn(RETURN)
     constructor.visitMaxs(1, 1)
     constructor.visitEnd()
@@ -47,19 +47,19 @@ object Test extends DirectTest {
     val bootstrap = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, bootstrapMethodName, bootStrapMethodType, null, null)
     bootstrap.visitCode()
 //  val lookup = MethodHandles.lookup();
-    bootstrap.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodHandles", "lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;")
+    bootstrap.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodHandles", "lookup", "()Ljava/lang/invoke/MethodHandles$Lookup;", false)
     bootstrap.visitVarInsn(ASTORE, 3) // lookup
 
 //  val clazz = lookup.lookupClass();
     bootstrap.visitVarInsn(ALOAD, 3) // lookup
-    bootstrap.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "lookupClass", "()Ljava/lang/Class;")
+    bootstrap.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "lookupClass", "()Ljava/lang/Class;", false)
     bootstrap.visitVarInsn(ASTORE, 4) // clazz
 
 // val methodType = MethodType.fromMethodDescriptorString("()Ljava/lang/String, clazz.getClassLoader()")
     bootstrap.visitLdcInsn("()Ljava/lang/String;")
     bootstrap.visitVarInsn(ALOAD, 4) // CLAZZ
-    bootstrap.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getClassLoader", "()Ljava/lang/ClassLoader;")
-    bootstrap.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodType", "fromMethodDescriptorString", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/invoke/MethodType;")
+    bootstrap.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getClassLoader", "()Ljava/lang/ClassLoader;", false)
+    bootstrap.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodType", "fromMethodDescriptorString", "(Ljava/lang/String;Ljava/lang/ClassLoader;)Ljava/lang/invoke/MethodType;", false)
     bootstrap.visitVarInsn(ASTORE, 5) // methodType
 
 //  val methodHandle = lookup.findStatic(thisClass, "target", methodType)
@@ -67,14 +67,14 @@ object Test extends DirectTest {
     bootstrap.visitVarInsn(ALOAD, 4) // clazz
     bootstrap.visitLdcInsn("target")
     bootstrap.visitVarInsn(ALOAD, 5) // methodType
-    bootstrap.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "findStatic", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;")
+    bootstrap.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "findStatic", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false)
     bootstrap.visitVarInsn(ASTORE, 6) // methodHandle
 
 //  new ConstantCallSite(methodHandle)
     bootstrap.visitTypeInsn(NEW, "java/lang/invoke/ConstantCallSite")
     bootstrap.visitInsn(DUP)
     bootstrap.visitVarInsn(ALOAD, 6) // methodHandle
-    bootstrap.visitMethodInsn(INVOKESPECIAL, "java/lang/invoke/ConstantCallSite", "<init>", "(Ljava/lang/invoke/MethodHandle;)V")
+    bootstrap.visitMethodInsn(INVOKESPECIAL, "java/lang/invoke/ConstantCallSite", "<init>", "(Ljava/lang/invoke/MethodHandle;)V", false)
     bootstrap.visitInsn(ARETURN)
     bootstrap.visitMaxs(4,7)
     bootstrap.visitEnd()

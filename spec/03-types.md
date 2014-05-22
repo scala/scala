@@ -352,8 +352,7 @@ An infix type $T_1$ `op` $T_2$ consists of an infix
 operator `op` which gets applied to two type operands $T_1$ and
 $T_2$.  The type is equivalent to the type application 
 `op`$[T_1, T_2]$.  The infix operator `op` may be an
-arbitrary identifier, except for `*`, which is reserved as a postfix modifier
-denoting a [repeated parameter type](04-basic-declarations-and-definitions.html#repeated-parameters).
+arbitrary identifier.
 
 All type infix operators have the same precedence; parentheses have to
 be used for grouping. The [associativity](06-expressions.html#prefix-infix-and-postfix-operations)
