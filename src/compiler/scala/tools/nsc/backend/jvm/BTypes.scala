@@ -256,7 +256,10 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
      *
      * @param s A class name of the form "java/lang/String", without the surrounding 'L' and ';'.
      */
-    def this(s: String) = this(createNewName(s))
+    def this(s: String) = this({
+      assert(!(s.head == 'L' && s.last == ';'), s"Descriptor instead of internal name: $s")
+      createNewName(s)
+    })
 
     /**
      * The internal name of a class is the string returned by java.lang.Class.getName, with all '.'
