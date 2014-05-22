@@ -50,8 +50,26 @@ trait Warnings {
   val warnUnused           = BooleanSetting   ("-Ywarn-unused", "Warn when local and private vals, vars, defs, and types are are unused")
   val warnUnusedImport     = BooleanSetting   ("-Ywarn-unused-import", "Warn when imports are unused")
 
-   // Warning groups.
-  val lint = BooleanSetting("-Xlint", "Enable recommended additional warnings.") enablingIfNotSetByUser lintWarnings
+  // Warning groups.
+  val lint                 = {
+    // Boolean setting for testing if lint is on; not "added" to option processing
+    val xlint = new BooleanSetting("-Xlint", "Enable recommended additional warnings.")
+    val lintables = (lintWarnings map (_.name drop 2)).sorted
+    def propagate(ss: List[String]): Unit = ss match {
+      case w :: rest => lintWarnings find (_.name == s"-Y$w") foreach (_.value = true) ; propagate(rest)
+      case Nil         => ()
+    }
+    def enableAll(): Unit = {   // enable lint and the group
+      xlint.value = true
+      for (s <- lintWarnings if !s.isSetByUser) s.value = true
+    }
+    // The command option
+    MultiChoiceSetting("-Xlint", "warning", "Enable recommended additional warnings", lintables, enableAll) withPostSetHook { x =>
+      propagate(x.value)      // enabling the selections (on each append to value)
+      xlint.value = true      // only enables lint, not the group
+    }
+    xlint
+  }
 
   // Backward compatibility.
   @deprecated("Use fatalWarnings", "2.11.0") def Xwarnfatal            = fatalWarnings      // used by sbt
