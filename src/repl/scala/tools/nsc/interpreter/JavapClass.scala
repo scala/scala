@@ -226,15 +226,20 @@ class JavapClass(
           def isOurMethod = {
             val lparen = line.lastIndexOf('(')
             val blank = line.lastIndexOf(' ', lparen)
-            (blank >= 0 && line.substring(blank+1, lparen) == pattern)
+            if (blank < 0) false
+            else {
+              val method = line.substring(blank+1, lparen)
+              (method == pattern || ((method startsWith pattern+"$") && (method endsWith "$sp")))
+            }
           }
-          filtering = if (filtering) {
-            // next blank line terminates section
-            // for -public, next line is next method, more or less
-            line.trim.nonEmpty && !isAnyMethod
-          } else {
-            isAnyMethod && isOurMethod
-          }
+          filtering =
+            if (filtering) {
+              // next blank line terminates section
+              // for -public, next line is next method, more or less
+              line.trim.nonEmpty && !isAnyMethod
+            } else {
+              isAnyMethod && isOurMethod
+            }
           filtering
         }
         // do we output this line?
