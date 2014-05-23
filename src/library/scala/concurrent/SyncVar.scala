@@ -20,6 +20,8 @@ class SyncVar[A] {
   private var isDefined: Boolean = false
   private var value: Option[A] = None
 
+  /** Waits for this SyncVar to become defined and returns
+    *  the result, without unsetting the stored value. */
   def get: A = synchronized {
     while (!isDefined) wait()
     value.get
@@ -58,7 +60,7 @@ class SyncVar[A] {
   }
 
   /** Waits for this SyncVar to become defined and returns
-   *  the result */
+   *  the result, unsetting the stored value before returning. */
   def take(): A = synchronized {
     try get
     finally unsetVal()

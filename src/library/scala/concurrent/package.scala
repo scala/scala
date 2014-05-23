@@ -55,6 +55,10 @@ package object concurrent {
 }
 
 package concurrent {
+  /**
+   * This marker trait is used by `Await` to ensure that `Awaitable.ready` and `Awaitable.result`
+   * are only called from the global `Await` methods, not directly by user code.
+   */
   @implicitNotFound("Don't call `Awaitable` methods directly, use the `Await` object.")
   sealed trait CanAwait
 
