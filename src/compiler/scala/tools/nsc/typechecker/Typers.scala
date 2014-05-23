@@ -1687,7 +1687,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val sameSourceFile = context.unit.source.file == psym.sourceFile
 
-          if (psym.hasDeprecatedInheritanceAnnotation && !sameSourceFile) {
+          if (!isPastTyper && psym.hasDeprecatedInheritanceAnnotation && !sameSourceFile) {
             val suffix = psym.deprecatedInheritanceMessage map (": " + _) getOrElse ""
             val msg = s"inheritance from ${psym.fullLocationString} is deprecated$suffix"
             unit.deprecationWarning(parent.pos, msg)

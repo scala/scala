@@ -14,6 +14,8 @@ import scala.tools.nsc.symtab._
 import scala.annotation.switch
 
 import scala.tools.asm
+import scala.tools.asm.util.{TraceMethodVisitor, ASMifier}
+import java.io.PrintWriter
 
 /*
  *
@@ -114,9 +116,13 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       addClassFields()
 
       innerClassBufferASM ++= trackMemberClasses(claszSymbol, Nil)
-
       gen(cd.impl)
+      addInnerClassesASM(cnode, innerClassBufferASM.toList)
 
+      if (AsmUtils.traceClassEnabled && cnode.name.contains(AsmUtils.traceClassPattern))
+        AsmUtils.traceClass(cnode)
+
+      cnode.innerClasses
       assert(cd.symbol == claszSymbol, "Someone messed up BCodePhase.claszSymbol during genPlainClass().")
 
     } // end of method genPlainClass()
@@ -228,7 +234,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       if (isCZStaticModule) {
         clinit.visitTypeInsn(asm.Opcodes.NEW, thisName)
         clinit.visitMethodInsn(asm.Opcodes.INVOKESPECIAL,
-                               thisName, INSTANCE_CONSTRUCTOR_NAME, "()V")
+                               thisName, INSTANCE_CONSTRUCTOR_NAME, "()V", false)
       }
       if (isCZParcelable) { legacyAddCreatorCode(clinit, cnode, thisName) }
       clinit.visitInsn(asm.Opcodes.RETURN)
@@ -639,6 +645,10 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         // Note we don't invoke visitMax, thus there are no FrameNode among mnode.instructions.
         // The only non-instruction nodes to be found are LabelNode and LineNumberNode.
       }
+
+      if (AsmUtils.traceMethodEnabled && mnode.name.contains(AsmUtils.traceMethodPattern))
+        AsmUtils.traceMethod(mnode)
+
       mnode = null
     } // end of method genDefDef()
 
@@ -676,7 +686,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         val jname  = callee.javaSimpleName.toString
         val jowner = internalName(callee.owner)
         val jtype  = asmMethodType(callee).getDescriptor
-        insnModB   = new asm.tree.MethodInsnNode(asm.Opcodes.INVOKESPECIAL, jowner, jname, jtype)
+        insnModB   = new asm.tree.MethodInsnNode(asm.Opcodes.INVOKESPECIAL, jowner, jname, jtype, false)
       }
 
       var insnParcA: asm.tree.AbstractInsnNode = null
@@ -697,7 +707,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         val jowner = internalName(callee.owner)
         val jname  = callee.javaSimpleName.toString
         val jtype  = asmMethodType(callee).getDescriptor
-        insnParcA  = new asm.tree.MethodInsnNode(asm.Opcodes.INVOKESTATIC, jowner, jname, jtype)
+        insnParcA  = new asm.tree.MethodInsnNode(asm.Opcodes.INVOKESTATIC, jowner, jname, jtype, false)
         // PUTSTATIC `thisName`.CREATOR;
         insnParcB  = new asm.tree.FieldInsnNode(asm.Opcodes.PUTSTATIC, thisName, "CREATOR", andrFieldDescr)
       }

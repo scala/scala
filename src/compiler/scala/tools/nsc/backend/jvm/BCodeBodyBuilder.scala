@@ -808,7 +808,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         emit(asm.Opcodes.ATHROW) // ICode enters here into enterIgnoreMode, we'll rely instead on DCE at ClassNode level.
       } else if (from.isNullType) {
         bc drop from
-        mnode.visitInsn(asm.Opcodes.ACONST_NULL)
+        emit(asm.Opcodes.ACONST_NULL)
       }
       else (from, to) match  {
         case (BYTE, LONG) | (SHORT, LONG) | (CHAR, LONG) | (INT, LONG) => bc.emitT2T(INT, LONG)

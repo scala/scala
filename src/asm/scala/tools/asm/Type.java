@@ -401,8 +401,8 @@ public class Type {
      * @return the size of the arguments of the method (plus one for the
      *         implicit this argument), argSize, and the size of its return
      *         value, retSize, packed into a single int i =
-     *         <tt>(argSize << 2) | retSize</tt> (argSize is therefore equal to
-     *         <tt>i >> 2</tt>, and retSize to <tt>i & 0x03</tt>).
+     *         <tt>(argSize &lt;&lt; 2) | retSize</tt> (argSize is therefore equal to
+     *         <tt>i &gt;&gt; 2</tt>, and retSize to <tt>i &amp; 0x03</tt>).
      */
     public static int getArgumentsAndReturnSizes(final String desc) {
         int n = 1;
@@ -606,9 +606,10 @@ public class Type {
      *
      * @return the size of the arguments (plus one for the implicit this
      *         argument), argSize, and the size of the return value, retSize,
-     *         packed into a single int i = <tt>(argSize << 2) | retSize</tt>
-     *         (argSize is therefore equal to <tt>i >> 2</tt>, and retSize to
-     *         <tt>i & 0x03</tt>).
+     *         packed into a single
+     *         int i = <tt>(argSize &lt;&lt; 2) | retSize</tt>
+     *         (argSize is therefore equal to <tt>i &gt;&gt; 2</tt>,
+     *         and retSize to <tt>i &amp; 0x03</tt>).
      */
     public int getArgumentsAndReturnSizes() {
         return getArgumentsAndReturnSizes(getDescriptor());

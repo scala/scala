@@ -1,0 +1,6 @@
+property descriptors
+x -- int -- public int p.C.x() -- null
+y -- class java.lang.String -- public java.lang.String p.C.y() -- public void p.C.y_$eq(java.lang.String)
+z -- class scala.collection.immutable.List -- public scala.collection.immutable.List p.C.z() -- public void p.C.z_$eq(scala.collection.immutable.List)
+method descriptors
+f -- public p.C p.C.f()

@@ -824,7 +824,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
         index += jparamType.getSize
       }
 
-      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, asmMethodType(m).getDescriptor)
+      mirrorMethod.visitMethodInsn(asm.Opcodes.INVOKEVIRTUAL, moduleName, mirrorMethodName, asmMethodType(m).getDescriptor, false)
       mirrorMethod.visitInsn(jReturnType.getOpcode(asm.Opcodes.IRETURN))
 
       mirrorMethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
@@ -1108,7 +1108,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
       constructor.visitVarInsn(asm.Opcodes.ALOAD, 0)
       // push the class
-      constructor.visitLdcInsn(exemplar(cls).c)
+      constructor.visitLdcInsn(exemplar(cls).c.toASMType)
 
       // push the string array of field information
       constructor.visitLdcInsn(new java.lang.Integer(fieldList.length))
@@ -1122,7 +1122,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
       // invoke the superclass constructor, which will do the
       // necessary java reflection and create Method objects.
-      constructor.visitMethodInsn(asm.Opcodes.INVOKESPECIAL, "scala/beans/ScalaBeanInfo", INSTANCE_CONSTRUCTOR_NAME, conJType.getDescriptor)
+      constructor.visitMethodInsn(asm.Opcodes.INVOKESPECIAL, "scala/beans/ScalaBeanInfo", INSTANCE_CONSTRUCTOR_NAME, conJType.getDescriptor, false)
       constructor.visitInsn(asm.Opcodes.RETURN)
 
       constructor.visitMaxs(0, 0) // just to follow protocol, dummy arguments
@@ -1187,7 +1187,8 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
         asm.Opcodes.INVOKEVIRTUAL,
         moduleName,
         "CREATOR",
-        bt.getDescriptor
+        bt.getDescriptor,
+        false
       )
 
       // PUTSTATIC `thisName`.CREATOR;
