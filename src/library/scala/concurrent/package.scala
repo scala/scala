@@ -55,6 +55,11 @@ package object concurrent {
 }
 
 package concurrent {
+  /**
+   * This marker trait is used by [[Await]] to ensure that [[Awaitable.ready]] and [[Awaitable.result]]
+   * are not directly called by user code. An implicit instance of this trait is only available when
+   * user code is currently calling the methods on [[Await]].
+   */
   @implicitNotFound("Don't call `Awaitable` methods directly, use the `Await` object.")
   sealed trait CanAwait
 
