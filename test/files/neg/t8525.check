@@ -1,0 +1,6 @@
+t8525.scala:9: warning: private[this] value name in class X shadows mutable name inherited from class Named.  Changes to name will not be visible within class X - you may want to give them distinct names.
+  override def toString = name // shadowing mutable var name
+                          ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

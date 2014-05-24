@@ -1,9 +1,12 @@
-t8610-arg.scala:3: warning: `$name` looks like an interpolated identifier! Did you forget the interpolator?
+t8610-arg.scala:5: warning: possible missing interpolator: detected interpolated identifier `$name`
   def x = "Hi, $name"   // missing interp
           ^
-t8610-arg.scala:6: warning: side-effecting nullary methods are discouraged: suggest defining as `def u()` instead
+t8610-arg.scala:9: warning: private[this] value name in class X shadows mutable name inherited from class Named.  Changes to name will not be visible within class X - you may want to give them distinct names.
+  override def toString = name // shadowing mutable var name
+                          ^
+t8610-arg.scala:8: warning: side-effecting nullary methods are discouraged: suggest defining as `def u()` instead
   def u: Unit = ()      // unitarian universalist
       ^
 error: No warnings can be incurred under -Xfatal-warnings.
-two warnings found
+three warnings found
 one error found

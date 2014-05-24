@@ -26,7 +26,7 @@ class SettingsTest {
     assertThrows[IllegalArgumentException](check("-Ytest-setting:rubbish"))
   }
 
-  @Test def userSettingsHavePredecenceOverOptimize() {
+  @Test def userSettingsHavePrecedenceOverOptimize() {
     def check(args: String*): MutableSettings#BooleanSetting = {
       val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
       val (ok, residual) = s.processArguments(args.toList, processAll = true)
@@ -38,7 +38,7 @@ class SettingsTest {
     assertFalse(check("-Yinline:false", "-optimise").value)
   }
 
-  @Test def userSettingsHavePredecenceOverLint() {
+  @Test def userSettingsHavePrecedenceOverLint() {
     def check(args: String*): MutableSettings#BooleanSetting = {
       val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
       val (ok, residual) = s.processArguments(args.toList, processAll = true)
@@ -48,5 +48,19 @@ class SettingsTest {
     assertTrue(check("-Xlint").value)
     assertFalse(check("-Xlint", "-Ywarn-adapted-args:false").value)
     assertFalse(check("-Ywarn-adapted-args:false", "-Xlint").value)
+  }
+
+  def check(args: String*)(b: MutableSettings => MutableSettings#BooleanSetting): MutableSettings#BooleanSetting = {
+    val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
+    val (ok, residual) = s.processArguments(args.toList, processAll = true)
+    assert(residual.isEmpty)
+    b(s)
+  }
+  @Test def anonymousLintersCanBeNamed() {
+    assertTrue(check("-Xlint")(_.warnMissingInterpolator)) // among Xlint
+    assertFalse(check("-Xlint:-warn-missing-interpolator")(_.warnMissingInterpolator))
+    assertFalse(check("-Xlint:-warn-missing-interpolator", "-Xlint")(_.warnMissingInterpolator))
+    // two lint settings are first come etc; unlike -Y
+    assertTrue(check("-Xlint", "-Xlint:-warn-missing-interpolator")(_.warnMissingInterpolator))
   }
 }

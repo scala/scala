@@ -1,4 +1,4 @@
-t8610.scala:4: warning: `$name` looks like an interpolated identifier! Did you forget the interpolator?
+t8610.scala:4: warning: possible missing interpolator: detected interpolated identifier `$name`
   def x = "Hi, $name"   // missing interp
           ^
 t8610.scala:6: warning: Adapting argument list by creating a 2-tuple: this may not be what you want.
