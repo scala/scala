@@ -444,7 +444,7 @@ class MutableSettings(val errorFn: String => Unit)
       value = s.equalsIgnoreCase("true")
     }
     override def tryToSetColon(args: List[String]) = args match {
-      case Nil => tryToSet(Nil)
+      case Nil     => tryToSet(Nil)
       case List(x) =>
         if (x.equalsIgnoreCase("true")) {
           value = true
@@ -452,7 +452,8 @@ class MutableSettings(val errorFn: String => Unit)
         } else if (x.equalsIgnoreCase("false")) {
           value = false
           Some(Nil)
-        } else errorAndValue("'" + x + "' is not a valid choice for '" + name + "'", None)
+        } else errorAndValue(s"'$x' is not a valid choice for '$name'", None)
+      case _       => errorAndValue(s"'$name' accepts only one boolean value", None)
     }
   }
 
