@@ -3022,7 +3022,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         || (looker.hasAccessorFlag && !accessed.hasAccessorFlag && accessed.isPrivate)
       )
 
-      def checkNoDoubleDefs(stats: List[Tree]): Unit = {
+      def checkNoDoubleDefs: Unit = {
         val scope = if (inBlock) context.scope else context.owner.info.decls
         var e = scope.elems
         while ((e ne null) && e.owner == scope) {
@@ -3057,8 +3057,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           //         the corresponding synthetics to the package class, only to the package object class.
           def shouldAdd(sym: Symbol) =
             inBlock || !context.isInPackageObject(sym, context.owner)
-          for (sym <- scope if shouldAdd(sym))
-            for (tree <- context.unit.synthetics get sym) {
+          for (sym <- scope)
+            for (tree <- context.unit.synthetics get sym if shouldAdd(sym)) { // OPT: shouldAdd is usually true. Call it here, rather than in the outer loop
               newStats += typedStat(tree) // might add even more synthetics to the scope
               context.unit.synthetics -= sym
             }
@@ -3104,7 +3104,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val stats1 = stats mapConserve typedStat
       if (phase.erasedTypes) stats1
       else {
-        checkNoDoubleDefs(stats1)
+        // As packages are open, it doesn't make sense to check double definitions here. Furthermore,
+        // it is expensive if the package is large. Instead, such double defininitions are checked in `Namers.enterInScope`
+        if (!context.owner.isPackageClass)
+          checkNoDoubleDefs
         addSynthetics(stats1)
       }
     }
