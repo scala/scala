@@ -922,6 +922,9 @@ trait Iterator[+A] extends TraversableOnce[A] {
     /** For reasons which remain to be determined, calling
      *  self.take(n).toSeq cause an infinite loop, so we have
      *  a slight variation on take for local usage.
+     *  NB: self.take.toSeq is slice.toStream, lazily built on self,
+     *  so a subsequent self.hasNext would not test self after the
+     *  group was consumed.
      */
     private def takeDestructively(size: Int): Seq[A] = {
       val buf = new ArrayBuffer[A]
@@ -945,12 +948,10 @@ trait Iterator[+A] extends TraversableOnce[A] {
       // so the rest of the code can be oblivious
       val xs: Seq[B] = {
         val res = takeDestructively(count)
-        // extra checks so we don't calculate length unless there's reason
-        if (pad.isDefined && !self.hasNext) {
-          val shortBy = count - res.length
-          if (shortBy > 0) res ++ padding(shortBy) else res
-        }
-        else res
+        // was: extra checks so we don't calculate length unless there's reason
+        // but since we took the group eagerly, just use the fast length
+        val shortBy = count - res.length
+        if (shortBy > 0 && pad.isDefined) res ++ padding(shortBy) else res
       }
       lazy val len = xs.length
       lazy val incomplete = len < count
