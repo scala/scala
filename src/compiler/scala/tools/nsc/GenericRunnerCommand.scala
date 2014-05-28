@@ -50,17 +50,16 @@ extends CompilerCommand(args, settings) {
     case Nil      => AsRepl
     case hd :: _  => waysToRun find (_.name == settings.howtorun.value) getOrElse guessHowToRun(hd)
   }
-  private def interpolate(s: String) = s.trim.replaceAll("@cmd@", cmdName).replaceAll("@compileCmd@", compCmdName) + "\n"
 
-  def shortUsageMsg = interpolate("""
-Usage: @cmd@ <options> [<script|class|object|jar> <arguments>]
-   or  @cmd@ -help
+  def shortUsageMsg =
+s"""|Usage: $cmdName <options> [<script|class|object|jar> <arguments>]
+    |   or  $cmdName -help
+    |
+    |All options to $compCmdName (see $compCmdName -help) are also allowed.
+""".stripMargin
 
-All options to @compileCmd@ (see @compileCmd@ -help) are also allowed.
-""")
-
-  override def usageMsg = shortUsageMsg + interpolate("""
-The first given argument other than options to @cmd@ designates
+  override def usageMsg = f"""$shortUsageMsg
+The first given argument other than options to $cmdName designates
 what to run.  Runnable targets are:
 
   - a file containing scala source
@@ -68,7 +67,7 @@ what to run.  Runnable targets are:
   - a runnable jar file with a valid Main-Class attribute
   - or if no argument is given, the repl (interactive shell) is started
 
-Options to @cmd@ which reach the java runtime:
+Options to $cmdName which reach the java runtime:
 
  -Dname=prop  passed directly to java to set system properties
  -J<arg>      -J is stripped and <arg> passed to java as-is
@@ -86,8 +85,7 @@ A file argument will be run as a scala script unless it contains only
 self-contained compilation units (classes and objects) and exactly one
 runnable main method.  In that case the file will be compiled and the
 main method invoked.  This provides a bridge between scripts and standard
-scala source.
-  """) + "\n"
+scala source.%n"""
 }
 
 object GenericRunnerCommand {
