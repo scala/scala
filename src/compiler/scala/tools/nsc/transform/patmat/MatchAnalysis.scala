@@ -105,6 +105,16 @@ trait TreeAndTypeAnalysis extends Debugging {
         case modSym: ModuleClassSymbol =>
           Some(List(tp))
         // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
+        case sym: RefinementClassSymbol =>
+          val parentSubtypes: List[Option[List[Type]]] = tp.parents.map(parent => enumerateSubtypes(parent))
+          if (parentSubtypes exists (_.isDefined))
+            // If any of the parents is enumerable, then the refinement type is enumerable.
+            Some(
+              // We must only include subtypes of the parents that conform to `tp`.
+              // See neg/virtpatmat_exhaust_compound.scala for an example.
+              parentSubtypes flatMap (_.getOrElse(Nil)) filter (_ <:< tp)
+            )
+          else None
         case sym if !sym.isSealed || isPrimitiveValueClass(sym) =>
           debug.patmat("enum unsealed "+ ((tp, sym, sym.isSealed, isPrimitiveValueClass(sym))))
           None
