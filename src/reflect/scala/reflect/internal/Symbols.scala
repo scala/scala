@@ -781,6 +781,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
     final def needsFlatClasses    = phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass
 
+    // TODO introduce a flag for these?
+    final def isPatternTypeVariable: Boolean =
+      isAbstractType && !isExistential && !isTypeParameterOrSkolem && isLocalToBlock
+
     /** change name by appending $$<fully-qualified-name-of-class `base`>
      *  Do the same for any accessed symbols or setters/getters.
      *  Implementation in TermSymbol.

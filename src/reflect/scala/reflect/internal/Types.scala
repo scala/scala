@@ -780,6 +780,7 @@ trait Types
       }
     }
 
+
     /** Is this type a subtype of that type in a pattern context?
      *  Dummy type arguments on the right hand side are replaced with
      *  fresh existentials, except for Arrays.
@@ -793,8 +794,9 @@ trait Types
           case ArrayTypeRef(elem1) => elem1 matchesPattern elem2
           case _                   => false
         }
-      case TypeRef(_, sym, args) =>
+      case TypeRef(pre, sym, args) =>
         val that1 = existentialAbstraction(args map (_.typeSymbol), that)
+
         (that ne that1) && (this <:< that1) && {
           debuglog(s"$this.matchesPattern($that) depended on discarding args and testing <:< $that1")
           true
@@ -2750,6 +2752,7 @@ trait Types
   }
 
   object ArrayTypeRef {
+    def apply(arg: Type): Type = TypeRef(NoPrefix, ArrayClass, arg :: Nil)
     def unapply(tp: Type) = tp match {
       case TypeRef(_, ArrayClass, arg :: Nil) => Some(arg)
       case _                                  => None
