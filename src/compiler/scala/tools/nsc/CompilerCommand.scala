@@ -20,8 +20,11 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
   def ok    = processArgumentsResult._1
   def files = processArgumentsResult._2
 
-  /** The name of the command */
+  /** The name of the command. */
   def cmdName = "scalac"
+
+  /** A descriptive alias for version and help messages. */
+  def cmdDesc = "compiler"
 
   private def explainAdvanced = "\n" + """
     |-- Notes on option parsing --
@@ -85,7 +88,11 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
 
   def getInfoMessage(global: Global): String = {
     import settings._
-    if (help)               usageMsg + global.pluginOptionsHelp
+    import Properties.{ versionString, copyrightString } //versionFor
+    def versionFor(command: String) = f"Scala $command $versionString -- $copyrightString"
+
+    if (version)            versionFor(cmdDesc)
+    else if (help)          usageMsg + global.pluginOptionsHelp
     else if (Xhelp)         xusageMsg
     else if (Yhelp)         yusageMsg
     else if (showPlugins)   global.pluginDescriptions

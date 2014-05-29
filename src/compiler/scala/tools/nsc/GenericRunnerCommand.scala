@@ -19,9 +19,10 @@ extends CompilerCommand(args, settings) {
   def this(args: List[String]) =
     this(args, str => Console.println("Error: " + str))
 
-  /** name of the associated compiler command */
   override def cmdName = "scala"
-  def compCmdName = "scalac"
+  override def cmdDesc = "code runner"
+
+  def compCmdName = "scalac"  // super.cmdName
 
   // change CompilerCommand behavior
   override def shouldProcessArguments: Boolean = false
