@@ -661,10 +661,7 @@ trait Types
         else {
           val m     = newAsSeenFromMap(pre.normalize, clazz)
           val tp    = m(this)
-          val tp1   = existentialAbstraction(m.capturedParams, tp)
-
-          if (m.capturedSkolems.isEmpty) tp1
-          else deriveType(m.capturedSkolems, _.cloneSymbol setFlag CAPTURED)(tp1)
+          existentialAbstraction(m.capturedParams, tp)
         }
       } finally if (Statistics.canEnable) Statistics.popTimer(typeOpsStack, start)
     }

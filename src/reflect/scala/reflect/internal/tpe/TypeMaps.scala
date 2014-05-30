@@ -459,7 +459,6 @@ private[internal] trait TypeMaps {
     //   class Inner(lhs: T) { def f = lhs }
     // }
     def capturedParams: List[Symbol]  = _capturedParams
-    def capturedSkolems: List[Symbol] = _capturedSkolems
 
     def apply(tp: Type): Type = tp match {
       case tp @ ThisType(_)                                            => thisTypeAsSeen(tp)
@@ -468,7 +467,6 @@ private[internal] trait TypeMaps {
       case _                                                           => mapOver(tp)
     }
 
-    private var _capturedSkolems: List[Symbol] = Nil
     private var _capturedParams: List[Symbol]  = Nil
     private val isStablePrefix = seenFromPrefix.isStable
 
@@ -504,12 +502,6 @@ private[internal] trait TypeMaps {
           _capturedParams ::= qvar
           debuglog(s"Captured This(${clazz.fullNameString}) seen from $seenFromPrefix: ${qvar.defString}")
           qvar.tpe
-      }
-    }
-    protected def captureSkolems(skolems: List[Symbol]) {
-      for (p <- skolems; if !(capturedSkolems contains p)) {
-        debuglog(s"Captured $p seen from $seenFromPrefix")
-        _capturedSkolems ::= p
       }
     }
 
@@ -583,7 +575,7 @@ private[internal] trait TypeMaps {
         else nextBase match {
           case NoType                         => loop(NoType, clazz.owner) // backstop for SI-2797, must remove `SingletonType#isHigherKinded` and run pos/t2797.scala to get here.
           case applied @ TypeRef(_, _, _)     => correspondingTypeArgument(classParam, applied)
-          case ExistentialType(eparams, qtpe) => captureSkolems(eparams) ; loop(qtpe, clazz)
+          case ExistentialType(eparams, qtpe) => loop(qtpe, clazz)
           case t                              => abort(s"$tparam in ${tparam.owner} cannot be instantiated from ${seenFromPrefix.widen}")
         }
       }
