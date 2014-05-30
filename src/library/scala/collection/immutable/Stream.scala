@@ -97,6 +97,14 @@ import scala.language.implicitConversions
  *  If, on the other hand, there is nothing holding on to the head (e.g. we used
  *  `def` to define the `Stream`) then once it is no longer being used directly,
  *  it disappears.
+ *
+ *  - Note that some operations, including [[drop]], [[dropWhile]],
+ *  [[flatMap]] or [[collect]] may process a large number of intermediate
+ *  elements before returning.  These necessarily hold onto the head, since
+ *  they are methods on `Stream`, and a stream holds its own head.  For
+ *  computations of this sort where memoization is not desired, use
+ *  `Iterator` when possible.
+ *
  *  {{{
  *  // For example, let's build the natural numbers and do some silly iteration
  *  // over them.
