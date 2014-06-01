@@ -18,27 +18,25 @@ import scala.collection.{ immutable, mutable }
  *
  */
 abstract class BCodeTypes extends BCodeIdiomatic {
-
   import global._
+  import bTypes._
 
   // when compiling the Scala library, some assertions don't hold (e.g., scala.Boolean has null superClass although it's not an interface)
   val isCompilingStdLib = !(settings.sourcepath.isDefault)
 
-  val srBoxedUnit  = brefType("scala/runtime/BoxedUnit")
-
   // special names
-  var StringReference             : BType = null
-  var ThrowableReference          : BType = null
-  var jlCloneableReference        : BType = null // java/lang/Cloneable
-  var jlNPEReference              : BType = null // java/lang/NullPointerException
-  var jioSerializableReference    : BType = null // java/io/Serializable
-  var scalaSerializableReference  : BType = null // scala/Serializable
-  var classCastExceptionReference : BType = null // java/lang/ClassCastException
+  var StringReference             : ClassBType = null
+  var ThrowableReference          : ClassBType = null
+  var jlCloneableReference        : ClassBType = null // java/lang/Cloneable
+  var jlNPEReference              : ClassBType = null // java/lang/NullPointerException
+  var jioSerializableReference    : ClassBType = null // java/io/Serializable
+  var scalaSerializableReference  : ClassBType = null // scala/Serializable
+  var classCastExceptionReference : ClassBType = null // java/lang/ClassCastException
 
   /* A map from scala primitive type-symbols to BTypes */
   var primitiveTypeMap: Map[Symbol, BType] = null
   /* A map from scala type-symbols for Nothing and Null to (runtime version) BTypes */
-  var phantomTypeMap:   Map[Symbol, BType] = null
+  var phantomTypeMap:   Map[Symbol, ClassBType] = null
   /* Maps the method symbol for a box method to the boxed type of the result.
    *  For example, the method symbol for `Byte.box()`) is mapped to the BType `Ljava/lang/Integer;`. */
   var boxResultType:    Map[Symbol, BType] = null
@@ -63,10 +61,10 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   val AbstractFunctionReference         = new Array[Tracked](definitions.MaxFunctionArity + 1)
   val abstractFunctionArityMap = mutable.Map.empty[BType, Int]
 
-  var PartialFunctionReference:         BType = null // scala.PartialFunction
-  var AbstractPartialFunctionReference: BType = null // scala.runtime.AbstractPartialFunction
+  var PartialFunctionReference:         ClassBType = null // scala.PartialFunction
+  var AbstractPartialFunctionReference: ClassBType = null // scala.runtime.AbstractPartialFunction
 
-  var BoxesRunTime: BType = null
+  var BoxesRunTime: ClassBType = null
 
   /*
    * must-single-thread
@@ -107,7 +105,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     // Other than that, they aren't needed there (e.g., `isSubtypeOf()` special-cases boxed classes, similarly for others).
     val boxedClasses = List(BoxedBooleanClass, BoxedCharacterClass, BoxedByteClass, BoxedShortClass, BoxedIntClass, BoxedLongClass, BoxedFloatClass, BoxedDoubleClass)
     for(csym <- boxedClasses) {
-      val key = brefType(csym.javaBinaryName.toTypeName)
+      val key = ClassBType(csym.javaBinaryName.toTypeName)
       val tr  = buildExemplar(key, csym)
       symExemplars.put(csym, tr)
       exemplars.put(tr.c, tr)
@@ -147,16 +145,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     scalaSerializableReference  = exemplar(SerializableClass).c
     classCastExceptionReference = exemplar(ClassCastExceptionClass).c
 
-    /*
-     *  The bytecode emitter special-cases String concatenation, in that three methods of `JCodeMethodN`
-     *  ( `genStartConcat()` , `genStringConcat()` , and `genEndConcat()` )
-     *  don't obtain the method descriptor of the callee via `asmMethodType()` (as normally done)
-     *  but directly emit callsites on StringBuilder using literal constant for method descriptors.
-     *  In order to make sure those method descriptors are available as BTypes, they are initialized here.
-     */
-    BType.getMethodType("()V")                   // necessary for JCodeMethodN.genStartConcat
-    BType.getMethodType("()Ljava/lang/String;")  // necessary for JCodeMethodN.genEndConcat
-
     PartialFunctionReference    = exemplar(PartialFunctionClass).c
     for(idx <- 0 to definitions.MaxFunctionArity) {
       FunctionReference(idx)           = exemplar(FunctionClass(idx))
@@ -165,12 +153,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       AbstractPartialFunctionReference = exemplar(AbstractPartialFunctionClass).c
     }
 
-    // later a few analyses (e.g. refreshInnerClasses) will look up BTypes based on descriptors in instructions
-    // we make sure those BTypes can be found via lookup as opposed to creating them on the fly.
-    BoxesRunTime = brefType("scala/runtime/BoxesRunTime")
-    asmBoxTo.values   foreach { mnat: MethodNameAndType => BType.getMethodType(mnat.mdesc) }
-    asmUnboxTo.values foreach { mnat: MethodNameAndType => BType.getMethodType(mnat.mdesc) }
-
+    BoxesRunTime = ClassBType("scala/runtime/BoxesRunTime")
   }
 
   /*
@@ -191,28 +174,41 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   // allowing answering `conforms()` without resorting to typer.
   // ------------------------------------------------
 
-  val exemplars       = new java.util.concurrent.ConcurrentHashMap[BType,  Tracked]
-  val symExemplars    = new java.util.concurrent.ConcurrentHashMap[Symbol, Tracked]
-
-  /*
-   *  Typically, a question about a BType can be answered only by using the BType as lookup key in one or more maps.
-   *  A `Tracked` object saves time by holding together information required to answer those questions:
-   *
-   *    - `sc`     denotes the bytecode-level superclass if any, null otherwise
-   *
-   *    - `ifaces` denotes the interfaces explicitly declared.
-   *               Not included are those transitively supported, but the utility method `allLeafIfaces()` can be used for that.
-   *
-   *    - `innersChain` denotes the containing classes for a non-package-level class `c`, null otherwise.
-   *               Note: the optimizer may inline anonymous closures, thus eliding those inner classes
-   *               (no physical class file is emitted for elided classes).
-   *               Before committing `innersChain` to bytecode, cross-check with the list of elided classes (SI-6546).
-   *
-   *  All methods of this class can-multi-thread
+  /**
+   * TODO @lry should probably be a map form ClassBType to Tracked
    */
-  case class Tracked(c: BType, flags: Int, sc: Tracked, ifaces: Array[Tracked], innersChain: Array[InnerClassEntry]) {
+  val exemplars = new java.util.concurrent.ConcurrentHashMap[BType, Tracked]
+
+  /**
+   * Maps class symbols to their corresponding `Tracked` instance.
+   */
+  val symExemplars = new java.util.concurrent.ConcurrentHashMap[Symbol, Tracked]
+
+  /**
+   * A `Tracked` instance stores information about a BType. This allows ansering type questions
+   * without resolving to the compiler, in a thread-safe manner, in particular isSubtypeOf.
+   *
+   * @param c           the BType described by this `Tracked`
+   * @param flags       the java flags for the type, computed by BCodeTypes#javaFlags
+   * @param sc          the bytecode-level superclass if any, null otherwise
+   * @param ifaces      the interfaces explicitly declared. Not included are those transitively
+   *                    supported, but the utility method `allLeafIfaces()` can be used for that.
+   * @param innersChain the containing classes for a non-package-level class `c`, null otherwise.
+   *
+   * Note: the optimizer may inline anonymous closures, thus eliding those inner classes (no
+   * physical class file is emitted for elided classes). Before committing `innersChain` to
+   * bytecode, cross-check with the list of elided classes (SI-6546).
+   *
+   * All methods of this class can-multi-thread
+   *
+   * TODO @lry c: ClassBType. rename to ClassBTypeInfo
+   */
+  case class Tracked(c: ClassBType, flags: Int, sc: Tracked, ifaces: Array[Tracked], innersChain: Array[InnerClassEntry]) {
 
     // not a case-field because we initialize it only for JVM classes we emit.
+    // TODO @lry make it an Option[List[BType]]
+    // TODO: this is currently not used. a commit in the optimizer branch uses this field to
+    // re-compute inner classes (ee4c185). leaving it in for now.
     private var _directMemberClasses: List[BType] = null
 
     def directMemberClasses: List[BType] = {
@@ -223,9 +219,9 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     def directMemberClasses_=(bs: List[BType]) {
       if (_directMemberClasses != null) {
         // TODO we enter here when both mirror class and plain class are emitted for the same ModuleClassSymbol.
-        assert(_directMemberClasses == bs.sortBy(_.off))
+        assert(_directMemberClasses.sameElements(bs))
       }
-      _directMemberClasses = bs.sortBy(_.off)
+      _directMemberClasses = bs
     }
 
     /* `isCompilingStdLib` saves the day when compiling:
@@ -247,7 +243,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     def isInnerClass = { innersChain != null }
     def isLambda = {
       // ie isLCC || isTraditionalClosureClass
-      isFinal && (c.getSimpleName.contains(tpnme.ANON_FUN_NAME.toString)) && isFunctionType(c)
+      isFinal && (c.simpleName.contains(tpnme.ANON_FUN_NAME.toString)) && isFunctionType(c)
     }
 
     /* can-multi-thread */
@@ -350,8 +346,8 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     val superInterfaces0: List[Symbol] = csym.mixinClasses
     val superInterfaces = existingSymbols(superInterfaces0 ++ csym.annotations.map(newParentForAttr)).distinct
 
-    assert(!superInterfaces.contains(NoSymbol), s"found NoSymbol among: ${superInterfaces.mkString}")
-    assert(superInterfaces.forall(s => s.isInterface || s.isTrait), s"found non-interface among: ${superInterfaces.mkString}")
+    assert(!superInterfaces.contains(NoSymbol), s"found NoSymbol among: ${superInterfaces.mkString(", ")}")
+    assert(superInterfaces.forall(s => s.isInterface || s.isTrait), s"found non-interface among: ${superInterfaces.mkString(", ")}")
 
     minimizeInterfaces(superInterfaces)
   }
@@ -380,8 +376,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     if (opt != null) {
       return opt
     }
-
-    val key = brefType(csym.javaBinaryName.toTypeName)
+    val key = new ClassBType(csym.javaBinaryName.toTypeName)
     assert(key.isNonSpecial || isCompilingStdLib, s"Not a class to track: ${csym.fullName}")
 
     // TODO accomodate the fix for SI-5031 of https://github.com/scala/scala/commit/0527b2549bcada2fda2201daa630369b377d0877
@@ -395,12 +390,10 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     tr
   }
 
-  val EMPTY_TRACKED_ARRAY  = Array.empty[Tracked]
-
   /*
    * must-single-thread
    */
-  private def buildExemplar(key: BType, csym: Symbol): Tracked = {
+  private def buildExemplar(key: ClassBType, csym: Symbol): Tracked = {
     val sc =
      if (csym.isImplClass) definitions.ObjectClass
      else csym.superClass
@@ -413,14 +406,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
         ((sc != NoSymbol) && !sc.isInterface) || isCompilingStdLib,
       "superClass out of order"
     )
-    val ifaces    = getSuperInterfaces(csym) map exemplar;
-    val ifacesArr =
-     if (ifaces.isEmpty) EMPTY_TRACKED_ARRAY
-     else {
-      val arr = new Array[Tracked](ifaces.size)
-      ifaces.copyToArray(arr)
-      arr
-     }
+    val ifacesArr = getSuperInterfaces(csym).map(exemplar).toArray
 
     val flags = mkFlags(
       javaFlags(csym),
@@ -476,29 +462,30 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       if ((b == jlCloneableReference)     ||
           (b == jioSerializableReference) ||
           (b == AnyRefReference))    { true  }
-      else if (b.isArray)            { conforms(a.getComponentType, b.getComponentType) }
+      else if (b.isArray)            { conforms(a.asArrayBType.componentType, // TODO @lry change to pattern match, get rid of casts
+                                                b.asArrayBType.componentType) }
       else                           { false }
     }
     else if (a.isBoxed) { // may be null
       if (b.isBoxed)                 { a == b }
       else if (b == AnyRefReference) { true   }
-      else if (!(b.hasObjectSort))   { false  }
+      else if (!(b.isClass))         { false  }
       else                           { exemplars.get(a).isSubtypeOf(b) } // e.g., java/lang/Double conforms to java/lang/Number
     }
     else if (a.isNullType) { // known to be null
       if (b.isNothingType)      { false }
-      else if (b.isValueType)   { false }
+      else if (b.isPrimitive)   { false }
       else                      { true  }
     }
     else if (a.isNothingType) { // known to be Nothing
       true
     }
-    else if (a.isUnitType) {
-      b.isUnitType
+    else if (a == UNIT) {
+      b == UNIT
     }
-    else if (a.hasObjectSort) { // may be null
+    else if (a.isClass) { // may be null
       if (a.isNothingType)      { true  }
-      else if (b.hasObjectSort) { exemplars.get(a).isSubtypeOf(b) }
+      else if (b.isClass)       { exemplars.get(a).isSubtypeOf(b) }
       else if (b.isArray)       { a.isNullType } // documentation only, because `if(a.isNullType)` (above) covers this case already.
       else                      { false }
     }
@@ -506,8 +493,8 @@ abstract class BCodeTypes extends BCodeIdiomatic {
 
       def msg = s"(a: $a, b: $b)"
 
-      assert(a.isNonUnitValueType, s"a isn't a non-Unit value type. $msg")
-      assert(b.isValueType, s"b isn't a value type. $msg")
+      assert(a.isNonVoidPrimitiveType, s"a isn't a non-Unit value type. $msg")
+      assert(b.isPrimitive, s"b isn't a value type. $msg")
 
       (a eq b) || (a match {
         case BOOL | BYTE | SHORT | CHAR => b == INT || b == LONG // TODO Actually, BOOL does NOT conform to LONG. Even with adapt().
@@ -521,7 +508,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
    * can-multi-thread
    */
   def maxValueType(a: BType, other: BType): BType = {
-    assert(a.isValueType, "maxValueType() is defined only for 1st arg valuetypes (2nd arg doesn't matter).")
+    assert(a.isPrimitive, "maxValueType() is defined only for 1st arg valuetypes (2nd arg doesn't matter).")
 
     def uncomparable: Nothing = {
       abort(s"Uncomparable BTypes: $a with $other")
@@ -537,30 +524,30 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       case BOOL => uncomparable
 
       case BYTE =>
-        if (other == CHAR)             INT
+        if (other == CHAR)      INT
         else if (other.isNumericType)  other
         else                           uncomparable
 
       case SHORT =>
         other match {
-          case BYTE                          => SHORT
-          case CHAR                          => INT
+          case BYTE                                               => SHORT
+          case CHAR                                               => INT
           case INT  | LONG  | FLOAT | DOUBLE => other
-          case _                             => uncomparable
+          case _                                                         => uncomparable
         }
 
       case CHAR =>
         other match {
-          case BYTE | SHORT                 => INT
+          case BYTE | SHORT                               => INT
           case INT  | LONG | FLOAT | DOUBLE => other
-          case _                            => uncomparable
+          case _                                                        => uncomparable
         }
 
       case INT =>
         other match {
           case BYTE | SHORT | CHAR   => INT
           case LONG | FLOAT | DOUBLE => other
-          case _                     => uncomparable
+          case _                                          => uncomparable
         }
 
       case LONG =>
@@ -569,7 +556,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
         else                        uncomparable
 
       case FLOAT =>
-        if (other == DOUBLE)           DOUBLE
+        if (other == DOUBLE)    DOUBLE
         else if (other.isNumericType)  FLOAT
         else                           uncomparable
 
@@ -586,18 +573,18 @@ abstract class BCodeTypes extends BCodeIdiomatic {
    *  can-multi-thread
    */
   final def maxType(a: BType, other: BType): BType = {
-    if (a.isValueType) { maxValueType(a, other) }
+    if (a.isPrimitive) { maxValueType(a, other) }
     else {
       if (a.isNothingType)     return other;
       if (other.isNothingType) return a;
       if (a == other)          return a;
        // Approximate `lub`. The common type of two references is always AnyRef.
        // For 'real' least upper bound wrt to subclassing use method 'lub'.
-      assert(a.isArray || a.isBoxed || a.hasObjectSort, s"This is not a valuetype and it's not something else, what is it? $a")
+      assert(a.isArray || a.isBoxed || a.isClass, s"This is not a valuetype and it's not something else, what is it? $a")
       // TODO For some reason, ICode thinks `REFERENCE(...).maxType(BOXED(whatever))` is `uncomparable`. Here, that has maxType AnyRefReference.
       //      BTW, when swapping arguments, ICode says BOXED(whatever).maxType(REFERENCE(...)) == AnyRefReference, so I guess the above was an oversight in REFERENCE.maxType()
-      if (other.isRefOrArrayType) { AnyRefReference }
-      else                        { abort(s"Uncomparable BTypes: $a with $other") }
+      if (other.isRef) { AnyRefReference }
+      else             { abort(s"Uncomparable BTypes: $a with $other") }
     }
   }
 
@@ -609,7 +596,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
    *  can-multi-thread
    */
   def isPartialFunctionType(t: BType): Boolean = {
-    (t.hasObjectSort) && exemplars.get(t).isSubtypeOf(PartialFunctionReference)
+    (t.isClass) && exemplars.get(t).isSubtypeOf(PartialFunctionReference)
   }
 
   /*
@@ -618,7 +605,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
    *  can-multi-thread
    */
   def isFunctionType(t: BType): Boolean = {
-    if (!t.hasObjectSort) return false
+    if (!t.isClass) return false
     var idx = 0
     val et: Tracked = exemplars.get(t)
     while (idx <= definitions.MaxFunctionArity) {
@@ -724,14 +711,8 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       }
     }
 
-    // now that we have all of `ics` , `csym` , and soon the inner-classes-chain, it's too tempting not to cache.
-    if (chain.isEmpty) { null }
-    else {
-      val arr = new Array[InnerClassEntry](chain.size)
-      (chain map toInnerClassEntry).copyToArray(arr)
-
-      arr
-    }
+    if (chain.isEmpty) null
+    else chain.map(toInnerClassEntry).toArray
   }
 
   /*

@@ -40,7 +40,10 @@ trait Names extends api.Names {
   /** Hashtable for finding type names quickly. */
   private val typeHashtable = new Array[TypeName](HASH_SIZE)
 
-  /** The hashcode of a name. */
+  /**
+   * The hashcode of a name depends on the first, the last and the middle character,
+   * and the length of the name.
+   */
   private def hashValue(cs: Array[Char], offset: Int, len: Int): Int =
     if (len > 0)
       (len * (41 * 41 * 41) +
@@ -104,10 +107,21 @@ trait Names extends api.Names {
         // The logic order here is future-proofing against the possibility
         // that name.toString will become an eager val, in which case the call
         // to enterChars cannot follow the construction of the TermName.
-        val ncStart = nc
-        enterChars(cs, offset, len)
-        if (cachedString ne null) new TermName_S(ncStart, len, h, cachedString)
-        else new TermName_R(ncStart, len, h)
+        var startIndex = 0
+        if (cs == chrs) {
+          // Optimize for subName, the new name is already stored in chrs
+          startIndex = offset
+        } else {
+          startIndex = nc
+          enterChars(cs, offset, len)
+        }
+        val next = termHashtable(h)
+        val termName =
+          if (cachedString ne null) new TermName_S(startIndex, len, next, cachedString)
+          else new TermName_R(startIndex, len, next)
+        // Add the new termName to the hashtable only after it's been fully constructed
+        termHashtable(h) = termName
+        termName
       }
     }
     if (synchronizeNames) nameLock.synchronized(body) else body
@@ -145,40 +159,20 @@ trait Names extends api.Names {
     newTermName(bs, offset, len).toTypeName
 
   /**
-   *  Used only by the GenBCode backend, to represent bytecode-level types in a way that makes equals() and hashCode() efficient.
-   *  For bytecode-level types of OBJECT sort, its internal name (not its descriptor) is stored.
-   *  For those of ARRAY sort,  its descriptor is stored ie has a leading '['
-   *  For those of METHOD sort, its descriptor is stored ie has a leading '('
+   * Used by the GenBCode backend to lookup type names that are known to already exist. This method
+   * might be invoked in a multi-threaded setting. Invoking newTypeName instead might be unsafe.
    *
-   *  can-multi-thread
-   *  TODO SI-6240 !!! JZ Really? the constructors TermName and TypeName publish unconstructed `this` references
-   *               into the hash tables; we could observe them here before the subclass constructor completes.
+   * can-multi-thread: names are added to the hash tables only after they are fully constructed.
    */
-  final def lookupTypeName(cs: Array[Char]): TypeName = { lookupTypeNameIfExisting(cs, true) }
+  final def lookupTypeName(cs: Array[Char]): TypeName = {
+    val hash = hashValue(cs, 0, cs.length) & HASH_MASK
+    var typeName = typeHashtable(hash)
 
-  final def lookupTypeNameIfExisting(cs: Array[Char], failOnNotFound: Boolean): TypeName = {
-
-    val hterm = hashValue(cs, 0, cs.size) & HASH_MASK
-    var nterm = termHashtable(hterm)
-    while ((nterm ne null) && (nterm.length != cs.size || !equals(nterm.start, cs, 0, cs.size))) {
-      nterm = nterm.next
+    while ((typeName ne null) && (typeName.length != cs.length || !equals(typeName.start, cs, 0, cs.length))) {
+      typeName = typeName.next
     }
-    if (nterm eq null) {
-      if (failOnNotFound) { assert(false, "TermName not yet created: " + new String(cs)) }
-      return null
-    }
-
-    val htype = hashValue(chrs, nterm.start, nterm.length) & HASH_MASK
-    var ntype = typeHashtable(htype)
-    while ((ntype ne null) && ntype.start != nterm.start) {
-      ntype = ntype.next
-    }
-    if (ntype eq null) {
-      if (failOnNotFound) { assert(false, "TypeName not yet created: " + new String(cs)) }
-      return null
-    }
-
-    ntype
+    assert(typeName != null, s"TypeName ${new String(cs)} not yet created.")
+    typeName
   }
 
 // Classes ----------------------------------------------------------------------
@@ -515,43 +509,47 @@ trait Names extends api.Names {
   /** TermName_S and TypeName_S have fields containing the string version of the name.
    *  TermName_R and TypeName_R recreate it each time toString is called.
    */
-  private final class TermName_S(index0: Int, len0: Int, hash: Int, override val toString: String) extends TermName(index0, len0, hash) {
-    protected def createCompanionName(h: Int): TypeName = new TypeName_S(index, len, h, toString)
+  private final class TermName_S(index0: Int, len0: Int, next0: TermName, override val toString: String) extends TermName(index0, len0, next0) {
+    protected def createCompanionName(next: TypeName): TypeName = new TypeName_S(index, len, next, toString)
     override def newName(str: String): TermName = newTermNameCached(str)
   }
-  private final class TypeName_S(index0: Int, len0: Int, hash: Int, override val toString: String) extends TypeName(index0, len0, hash) {
-    protected def createCompanionName(h: Int): TermName = new TermName_S(index, len, h, toString)
+  private final class TypeName_S(index0: Int, len0: Int, next0: TypeName, override val toString: String) extends TypeName(index0, len0, next0) {
     override def newName(str: String): TypeName = newTypeNameCached(str)
   }
 
-  private final class TermName_R(index0: Int, len0: Int, hash: Int) extends TermName(index0, len0, hash) {
-    protected def createCompanionName(h: Int): TypeName = new TypeName_R(index, len, h)
+  private final class TermName_R(index0: Int, len0: Int, next0: TermName) extends TermName(index0, len0, next0) {
+    protected def createCompanionName(next: TypeName): TypeName = new TypeName_R(index, len, next)
     override def toString = new String(chrs, index, len)
   }
 
-  private final class TypeName_R(index0: Int, len0: Int, hash: Int) extends TypeName(index0, len0, hash) {
-    protected def createCompanionName(h: Int): TermName = new TermName_R(index, len, h)
+  private final class TypeName_R(index0: Int, len0: Int, next0: TypeName) extends TypeName(index0, len0, next0) {
     override def toString = new String(chrs, index, len)
   }
 
   // SYNCNOTE: caller to constructor must synchronize if `synchronizeNames` is enabled
-  sealed abstract class TermName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) with TermNameApi {
+  sealed abstract class TermName(index0: Int, len0: Int, val next: TermName) extends Name(index0, len0) with TermNameApi {
     type ThisNameType = TermName
     protected[this] def thisName: TermName = this
-    val next: TermName = termHashtable(hash)
-    termHashtable(hash) = this
+
     def isTermName: Boolean = true
     def isTypeName: Boolean = false
     def toTermName: TermName = this
     def toTypeName: TypeName = {
       def body = {
+        // Re-computing the hash saves a field for storing it in the TermName
         val h = hashValue(chrs, index, len) & HASH_MASK
         var n = typeHashtable(h)
         while ((n ne null) && n.start != index)
           n = n.next
 
         if (n ne null) n
-        else createCompanionName(h)
+        else {
+          val next = typeHashtable(h)
+          val typeName = createCompanionName(next)
+          // Add the new typeName to the hashtable only after it's been fully constructed
+          typeHashtable(h) = typeName
+          typeName
+        }
       }
       if (synchronizeNames) nameLock.synchronized(body) else body
     }
@@ -562,7 +560,7 @@ trait Names extends api.Names {
 
     def nameKind = "term"
     /** SYNCNOTE: caller must synchronize if `synchronizeNames` is enabled */
-    protected def createCompanionName(h: Int): TypeName
+    protected def createCompanionName(next: TypeName): TypeName
   }
 
   implicit val TermNameTag = ClassTag[TermName](classOf[TermName])
@@ -572,24 +570,22 @@ trait Names extends api.Names {
     def unapply(name: TermName): Option[String] = Some(name.toString)
   }
 
-  sealed abstract class TypeName(index0: Int, len0: Int, hash: Int) extends Name(index0, len0) with TypeNameApi {
+  sealed abstract class TypeName(index0: Int, len0: Int, val next: TypeName) extends Name(index0, len0) with TypeNameApi {
     type ThisNameType = TypeName
     protected[this] def thisName: TypeName = this
-
-    val next: TypeName = typeHashtable(hash)
-    typeHashtable(hash) = this
 
     def isTermName: Boolean = false
     def isTypeName: Boolean = true
     def toTermName: TermName = {
       def body = {
+        // Re-computing the hash saves a field for storing it in the TypeName
         val h = hashValue(chrs, index, len) & HASH_MASK
         var n = termHashtable(h)
         while ((n ne null) && n.start != index)
           n = n.next
 
-        if (n ne null) n
-        else createCompanionName(h)
+        assert (n ne null, s"TypeName $this is missing its correspondent")
+        n
       }
       if (synchronizeNames) nameLock.synchronized(body) else body
     }
@@ -601,8 +597,6 @@ trait Names extends api.Names {
 
     def nameKind = "type"
     override def decode = if (nameDebug) super.decode + "!" else super.decode
-    /** SYNCNOTE: caller must synchronize if `synchronizeNames` is enabled */
-    protected def createCompanionName(h: Int): TermName
   }
 
   implicit val TypeNameTag = ClassTag[TypeName](classOf[TypeName])
