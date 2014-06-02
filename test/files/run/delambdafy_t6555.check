@@ -5,11 +5,11 @@ package <empty> {
       Foo.super.<init>();
       ()
     };
-    private[this] val f: Int => Int = {
-      final <artifact> def $anonfun(param: Int): Int = param;
-      ((param: Int) => $anonfun(param))
+    private[this] val f: String => String = {
+      final <artifact> def $anonfun(param: String): String = param;
+      ((param: String) => $anonfun(param))
     };
-    <stable> <accessor> def f(): Int => Int = Foo.this.f
+    <stable> <accessor> def f(): String => String = Foo.this.f
   }
 }
 

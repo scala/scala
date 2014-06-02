@@ -1,35 +1,35 @@
 [[syntax trees at end of                lambdalift]] // newSource1.scala
 package <empty> {
   class T extends Object {
-    <paramaccessor> private[this] val classParam: Int = _;
-    def <init>(classParam: Int): T = {
+    <paramaccessor> private[this] val classParam: String = _;
+    def <init>(classParam: String): T = {
       T.super.<init>();
       ()
     };
-    private[this] val field: Int = 0;
-    <stable> <accessor> def field(): Int = T.this.field;
-    def foo(methodParam: Int): Function0 = {
-      val methodLocal: Int = 0;
+    private[this] val field: String = "";
+    <stable> <accessor> def field(): String = T.this.field;
+    def foo(methodParam: String): Function0 = {
+      val methodLocal: String = "";
       {
         (() => T.this.$anonfun$1(methodParam, methodLocal)).$asInstanceOf[Function0]()
       }
     };
-    def bar(barParam: Int): Object = {
+    def bar(barParam: String): Object = {
       @volatile var MethodLocalObject$module: runtime.VolatileObjectRef = scala.runtime.VolatileObjectRef.zero();
       T.this.MethodLocalObject$1(barParam, MethodLocalObject$module)
     };
-    def tryy(tryyParam: Int): Function0 = {
-      var tryyLocal: runtime.IntRef = scala.runtime.IntRef.create(0);
+    def tryy(tryyParam: String): Function0 = {
+      var tryyLocal: runtime.ObjectRef = scala.runtime.ObjectRef.create("");
       {
-        (() => T.this.$anonfun$2(tryyParam, tryyLocal)).$asInstanceOf[Function0]()
+        (new <$anon: Function0>(T.this, tryyParam, tryyLocal): Function0)
       }
     };
-    final <artifact> private[this] def $anonfun$1(methodParam$1: Int, methodLocal$1: Int): Int = T.this.classParam.+(T.this.field()).+(methodParam$1).+(methodLocal$1);
+    final <artifact> private[this] def $anonfun$1(methodParam$1: String, methodLocal$1: String): String = T.this.classParam.+(T.this.field()).+(methodParam$1).+(methodLocal$1);
     abstract trait MethodLocalTrait$1 extends Object {
       <synthetic> <stable> <artifact> def $outer(): T
     };
     object MethodLocalObject$2 extends Object with T#MethodLocalTrait$1 {
-      def <init>($outer: T, barParam$1: Int): T#MethodLocalObject$2.type = {
+      def <init>($outer: T, barParam$1: String): T#MethodLocalObject$2.type = {
         MethodLocalObject$2.super.<init>();
         MethodLocalObject$2.this.$asInstanceOf[T#MethodLocalTrait$1$class]()./*MethodLocalTrait$1$class*/$init$(barParam$1);
         ()
@@ -38,19 +38,34 @@ package <empty> {
       <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$2.this.$outer;
       <synthetic> <stable> <artifact> def $outer(): T = MethodLocalObject$2.this.$outer
     };
-    final <stable> private[this] def MethodLocalObject$1(barParam$1: Int, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = {
+    final <stable> private[this] def MethodLocalObject$1(barParam$1: String, MethodLocalObject$module$1: runtime.VolatileObjectRef): T#MethodLocalObject$2.type = {
       MethodLocalObject$module$1.elem = new T#MethodLocalObject$2.type(T.this, barParam$1);
       MethodLocalObject$module$1.elem.$asInstanceOf[T#MethodLocalObject$2.type]()
     };
     abstract trait MethodLocalTrait$1$class extends Object with T#MethodLocalTrait$1 {
-      def /*MethodLocalTrait$1$class*/$init$(barParam$1: Int): Unit = {
+      def /*MethodLocalTrait$1$class*/$init$(barParam$1: String): Unit = {
         ()
       };
-      scala.this.Predef.print(scala.Int.box(barParam$1))
+      scala.this.Predef.print(barParam$1)
     };
-    final <artifact> private[this] def $anonfun$2(tryyParam$1: Int, tryyLocal$1: runtime.IntRef): Unit = try {
-      tryyLocal$1.elem = tryyParam$1
-    } finally ()
+    @SerialVersionUID(value = 0) final <synthetic> class $anonfun$tryy$1 extends scala.runtime.AbstractFunction0$mcV$sp with Serializable {
+      def <init>($outer: T, tryyParam$1: String, tryyLocal$1: runtime.ObjectRef): <$anon: Function0> = {
+        $anonfun$tryy$1.super.<init>();
+        ()
+      };
+      final def apply(): Unit = $anonfun$tryy$1.this.apply$mcV$sp();
+      <specialized> def apply$mcV$sp(): Unit = try {
+        $anonfun$tryy$1.this.tryyLocal$1.elem = $anonfun$tryy$1.this.tryyParam$1
+      } finally ();
+      <synthetic> <paramaccessor> <artifact> private[this] val $outer: T = _;
+      <synthetic> <stable> <artifact> def $outer(): T = $anonfun$tryy$1.this.$outer;
+      final <bridge> <artifact> def apply(): Object = {
+        $anonfun$tryy$1.this.apply();
+        scala.runtime.BoxedUnit.UNIT
+      };
+      <synthetic> <paramaccessor> private[this] val tryyParam$1: String = _;
+      <synthetic> <paramaccessor> private[this] val tryyLocal$1: runtime.ObjectRef = _
+    }
   }
 }
 

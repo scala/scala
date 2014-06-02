@@ -15,7 +15,7 @@ object Test extends StoreReporterDirectTest {
   override def code = """package o
                         |package a {
                         |  class C {
-                        |    def hihi = List(1,2).map(_ * 2)
+                        |    def hihi = List(1,2).map(_ => "")
                         |  }
                         |}
                         |package object a {
