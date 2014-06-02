@@ -130,10 +130,11 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         if (!thisProxy.exists) {
           target setFlag STATIC
         }
-        val params0 = ((optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}) ++ (target.paramss.flatten map ValDef.apply)).toList
+        val targetParams = target.paramss.flatten map (param => ValDef(param))
         val arity = fun.vparams.length
-        val (lambdaParams, captureParams) = params0.splitAt(arity)
-        val params = captureParams ++ lambdaParams // LambdaMetafactory expects this ordering.
+        val (lambdaParams, captureParams) = targetParams.splitAt(arity)
+        val thisProxyParam: Option[ValDef] = optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}
+        val params = thisProxyParam.toList ++ captureParams ++ lambdaParams // LambdaMetafactory expects this ordering.
 
         val methSym = oldClass.newMethod(unit.freshTermName(nme.accessor.toString() + "$"), target.pos, FINAL | BRIDGE | SYNTHETIC | PROTECTED | STATIC)
 
