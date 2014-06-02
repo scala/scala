@@ -72,8 +72,10 @@ abstract class UnCurry extends InfoTransform
     private val repeatedParams    = mutable.Map[Symbol, List[ValDef]]()
 
     private lazy val forceSpecializationInfoTransformOfFunctionN: Unit = {
-      exitingSpecialize {
-        FunctionClass.seq.foreach(cls => cls.info)
+      if (currentRun.specializePhase != NoPhase) {
+        exitingSpecialize {
+          FunctionClass.seq.foreach(cls => cls.info)
+        }
       }
     }
 

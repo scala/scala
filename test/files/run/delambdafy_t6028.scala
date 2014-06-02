@@ -5,11 +5,11 @@ object Test extends DirectTest {
 
   override def extraSettings: String = "-usejavacp -Ydelambdafy:method -Xprint:lambdalift -d " + testOutput.path
 
-  override def code = """class T(classParam: Int) {
-                        |  val field: Int = 0
-                        |  def foo(methodParam: Int) = {val methodLocal = 0 ; () => classParam + field + methodParam + methodLocal }
-                        |  def bar(barParam: Int) = { trait MethodLocalTrait { print(barParam) }; object MethodLocalObject extends MethodLocalTrait; MethodLocalObject }
-                        |  def tryy(tryyParam: Int) = { var tryyLocal = 0; () => try { tryyLocal = tryyParam } finally () }
+  override def code = """class T(classParam: String) {
+                        |  val field: String = ""
+                        |  def foo(methodParam: String) = {val methodLocal = "" ; () => classParam + field + methodParam + methodLocal }
+                        |  def bar(barParam: String) = { trait MethodLocalTrait { print(barParam) }; object MethodLocalObject extends MethodLocalTrait; MethodLocalObject }
+                        |  def tryy(tryyParam: String) = { var tryyLocal = ""; () => try { tryyLocal = tryyParam } finally () }
                         |}
                         |""".stripMargin.trim
 
