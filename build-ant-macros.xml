@@ -467,6 +467,11 @@
           <filter token="SCALA_FULL_VERSION" value="${scala.full.version}"/>
           <filter token="SCALA_COMPILER_DOC_VERSION" value="${scala-compiler-doc.version.number}"/>
           <filter token="SCALA_COMPILER_INTERACTIVE_VERSION" value="${scala-compiler-interactive.version.number}"/>
+          <filter token="XML_VERSION"                value="${scala-xml.version.number}" />
+          <filter token="PARSER_COMBINATORS_VERSION" value="${scala-parser-combinators.version.number}" />
+          <filter token="CONTINUATIONS_PLUGIN_VERSION"  value="${scala-continuations-plugin.version.number}" />
+          <filter token="CONTINUATIONS_LIBRARY_VERSION" value="${scala-continuations-library.version.number}" />
+          <filter token="SCALA_SWING_VERSION"           value="${scala-swing.version.number}" />
         </filterset>
       </copy>
       <bnd classpath="${@{project}.jar}" eclipse="false" failok="false" exceptions="true" files="${build-osgi.dir}/${@{project}.name}.bnd" output="${build-osgi.dir}"/>

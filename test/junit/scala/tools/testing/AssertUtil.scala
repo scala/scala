@@ -5,15 +5,20 @@ package testing
  *  that are ultimately based on junit.Assert primitives.
  */
 object AssertUtil {
-  /** Check if exception T (or a subclass) was thrown during evaluation of f.
-   *  If any other exception or throwable is found instead it will be re-thrown.
+  /**
+   * Check if throwable T (or a subclass) was thrown during evaluation of f, and that its message
+   * satisfies the `checkMessage` predicate.
+   * If any other exception will be re-thrown.
    */
-  def assertThrows[T <: Exception](f: => Any)(implicit manifest: Manifest[T]): Unit =
+  def assertThrows[T <: Throwable](f: => Any,
+                                   checkMessage: String => Boolean = s => true)
+                                  (implicit manifest: Manifest[T]): Unit = {
     try f
     catch {
-      case e: Exception =>
-        val clazz = manifest.erasure.asInstanceOf[Class[T]]
+      case e: Throwable if checkMessage(e.getMessage) =>
+        val clazz = manifest.runtimeClass
         if (!clazz.isAssignableFrom(e.getClass))
           throw e
     }
+  }
 }

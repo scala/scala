@@ -1401,7 +1401,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       // TODO param names: (m.params map (p => javaName(p.sym)))
 
-      // typestate: entering mode with valid call sequences:
+      // typestate: entering mode with valid call sequences: (see ASM Guide, 3.2.1)
       //   [ visitAnnotationDefault ] ( visitAnnotation | visitParameterAnnotation | visitAttribute )*
 
       emitAnnotations(jmethod, others)
@@ -1446,7 +1446,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         val hasStaticBitSet = ((flags & asm.Opcodes.ACC_STATIC) != 0)
         genCode(m, emitVars, hasStaticBitSet)
 
-        jmethod.visitMaxs(0, 0) // just to follow protocol, dummy arguments
+        // visitMaxs needs to be called according to the protocol. The arguments will be ignored
+        // since maximums (and stack map frames) are computed. See ASM Guide, Section 3.2.1,
+        // section "ClassWriter options"
+        jmethod.visitMaxs(0, 0)
       }
 
       jmethod.visitEnd()
