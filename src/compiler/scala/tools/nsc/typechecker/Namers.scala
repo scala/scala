@@ -1040,10 +1040,10 @@ trait Namers extends MethodSynthesis {
        * so the resulting type is a valid external method type, it does not contain (references to) skolems.
        */
       def thisMethodType(restpe: Type) = {
-        val checkDependencies = new DependentTypeChecker(context)(this)
-        checkDependencies check vparamSymss
-        // DEPMETTODO: check not needed when they become on by default
-        checkDependencies(restpe)
+        if (vparamSymss.lengthCompare(0) > 0) { // OPT fast path for methods of 0-1 parameter lists
+          val checkDependencies = new DependentTypeChecker(context)(this)
+          checkDependencies check vparamSymss
+        }
 
         val makeMethodType = (vparams: List[Symbol], restpe: Type) => {
           // TODODEPMET: check that we actually don't need to do anything here
@@ -1177,7 +1177,13 @@ trait Namers extends MethodSynthesis {
         }
       }
 
-      addDefaultGetters(meth, ddef, vparamss, tparams, overriddenSymbol(methResTp))
+      val overridden = {
+        val isConstr   = meth.isConstructor
+        if (isConstr || !methOwner.isClass) NoSymbol else overriddenSymbol(methResTp)
+      }
+      val hasDefaults = mexists(vparamss)(_.symbol.hasDefault) || mexists(overridden.paramss)(_.hasDefault)
+      if (hasDefaults)
+        addDefaultGetters(meth, ddef, vparamss, tparams, overridden)
 
       // fast track macros, i.e. macros defined inside the compiler, are hardcoded
       // hence we make use of that and let them have whatever right-hand side they need
@@ -1219,7 +1225,7 @@ trait Namers extends MethodSynthesis {
      * typechecked, the corresponding param would not yet have the "defaultparam"
      * flag.
      */
-    private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef], overriddenSymbol: => Symbol) {
+    private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef], overridden: Symbol) {
       val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(ddef.duplicate)
       // having defs here is important to make sure that there's no sneaky tree sharing
       // in methods with multiple default parameters
@@ -1227,7 +1233,6 @@ trait Namers extends MethodSynthesis {
       def rvparamss = rvparamss0.map(_.map(_.duplicate))
       val methOwner  = meth.owner
       val isConstr   = meth.isConstructor
-      val overridden = if (isConstr || !methOwner.isClass) NoSymbol else overriddenSymbol
       val overrides  = overridden != NoSymbol && !overridden.isOverloaded
       // value parameters of the base class (whose defaults might be overridden)
       var baseParamss = (vparamss, overridden.tpe.paramss) match {
@@ -1745,7 +1750,6 @@ trait Namers extends MethodSynthesis {
         for (p <- vps)
           this(p.info)
         // can only refer to symbols in earlier parameter sections
-        // (if the extension is enabled)
         okParams ++= vps
       }
     }

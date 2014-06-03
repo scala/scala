@@ -3,4 +3,7 @@ Bundle-SymbolicName: org.scala-lang.scala-reflect
 ver: @VERSION@
 Bundle-Version: ${ver}
 Export-Package: *;version=${ver}
-Import-Package: scala.tools.nsc;resolution:=optional, *
+Import-Package: scala.*;version="${range;[==,=+);${ver}}", \
+                scala.tools.nsc;resolution:=optional;version="${range;[==,=+);${ver}}", \
+                *
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6, JavaSE-1.7

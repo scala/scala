@@ -162,6 +162,13 @@ class HashSet[A] extends AbstractSet[A]
   def - (e: A): HashSet[A] =
     nullToEmpty(removed0(e, computeHash(e), 0))
 
+  /** Returns this $coll as an immutable set.
+   *  
+   *  A new set will not be built; lazy collections will stay lazy.
+   */
+  @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
+  override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set[B]]
+
   override def filter(p: A => Boolean) = {
     val buffer = new Array[HashSet[A]](bufferSize(size))
     nullToEmpty(filter0(p, false, 0, buffer, 0))

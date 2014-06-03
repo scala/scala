@@ -1306,7 +1306,7 @@ trait Implicits {
     }
 
     def wrapResult(tree: Tree): SearchResult =
-      if (tree == EmptyTree) SearchFailure else new SearchResult(tree, EmptyTreeTypeSubstituter, Nil)
+      if (tree == EmptyTree) SearchFailure else new SearchResult(atPos(pos.focus)(tree), EmptyTreeTypeSubstituter, Nil)
 
     /** Materializes implicits of predefined types (currently, manifests and tags).
      *  Will be replaced by implicit macros once we fix them.
