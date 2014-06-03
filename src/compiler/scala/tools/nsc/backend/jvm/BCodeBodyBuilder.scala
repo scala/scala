@@ -1253,9 +1253,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       // TODO specialization
       val applyN = asmMethodType(FunctionClass(arity).info.decl(nme.apply)).toASMType
       val constrainedType = new MethodBType(lambdaParams.map(p => toTypeKind(p.tpe)), toTypeKind(lambdaTarget.tpe.resultType)).toASMType
-      val args1 = if (lambdaTarget.owner.isImplClass) args.drop(1) else args
+      val (args1, expectedTypes) = if (lambdaTarget.owner.isImplClass) (args.drop(1), paramTKs(app).drop(1)) else (args, paramTKs(app))
+      genLoadArguments(args1, expectedTypes)
 
-      genLoadArguments(args1, paramTKs(app))
       bc.jmethod.visitInvokeDynamicInsn("apply", desc, lambdaMetaFactoryBootstrapHandle,
           // boostrap args
         applyN, targetHandle, constrainedType
