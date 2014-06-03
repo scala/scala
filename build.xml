@@ -268,6 +268,11 @@ TODO:
     -->
     <if><not><isset property="maven-deps-done"></isset></not><then>
       <mkdir dir="${user.home}/.m2/repository"/>
+
+      <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
+      <artifact:remoteRepository id="sonatype-snapshots" url="https://oss.sonatype.org/content/repositories/snapshots"/>
+      <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
+
       <!-- This task has an issue where if the user directory does not exist, so we create it above. UGH. -->
       <artifact:dependencies pathId="extra.tasks.classpath" filesetId="extra.tasks.fileset">
         <dependency groupId="biz.aQute" artifactId="bnd" version="1.50.0"/>
@@ -296,9 +301,36 @@ TODO:
         <dependency groupId="org.apache.felix" artifactId="org.apache.felix.framework" version="3.2.2"/>
       </artifact:dependencies>
 
-
-      <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
-      <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
+      <!-- scala-java8-compat, used by the experimental -target jvm-1.8 support. -->
+      <if><isset property="scala-java8-compat.package"/><then>
+        <property name="scala-java8-compat.version" value="0.1.0-SNAPSHOT"/>
+        <property name="scala-java8-compat.binary.version" value="2.10"/>
+        <artifact:dependencies pathId="scala-java8-compat.classpath" filesetId="scala-java8-compat.fileset">
+          <artifact:remoteRepository refid="sonatype-snapshots"/>
+          <dependency groupId="org.scala-lang.modules" artifactId="scala-java8-compat_${scala-java8-compat.binary.version}" version="${scala-java8-compat.version}">
+              <exclusion groupId="org.scala-lang" artifactId="scala-library"/>
+          </dependency>
+        </artifact:dependencies>
+        <property name="scala-java8-compat-classes" value="${build-quick.dir}/scala-java8-compat"/>
+        <delete dir="${scala-java8-compat-classes}"/>
+        <unzip dest="${scala-java8-compat-classes}">
+          <fileset refid="scala-java8-compat.fileset"/>
+          <patternset>
+            <include name="**/*.class"/>
+          </patternset>
+        </unzip>
+        <path id="scala-java8-compat.libs">
+          <pathelement location="${scala-java8-compat-classes}"/>
+        </path>
+        <fileset id="scala-java8-compat.fileset" dir="${scala-java8-compat-classes}">
+          <include name="**/*"/>
+        </fileset>
+      </then>
+      <else>
+          <path id="scala-java8-compat.libs"/>
+          <fileset id="scala-java8-compat.fileset" dir="." excludes="**"/>
+      </else>
+      </if>
 
       <!-- prepare, for each of the names below, the property "@{name}.cross", set to the
            necessary cross suffix (usually something like "_2.11.0-M6". -->
@@ -730,6 +762,7 @@ TODO:
       <pathelement location="${build-quick.dir}/classes/library"/>
       <path refid="forkjoin.classpath"/>
       <path refid="aux.libs"/>
+      <path refid="scala-java8-compat.libs"/>
     </path>
 
     <path id="quick.actors.build.path">
@@ -818,6 +851,7 @@ TODO:
     <path id="pack.library.files">
       <fileset dir="${build-quick.dir}/classes/library"/>
       <fileset dir="${forkjoin-classes}"/>
+      <fileset refid="scala-java8-compat.fileset"/>
     </path>
 
     <path id="pack.actors.files">
