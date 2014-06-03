@@ -111,8 +111,8 @@ import scala.language.implicitConversions"""
                        "  */"),
 
           Op(">>",  "/**\n" +
-                       "  * Returns this value bit-shifted left by the specified number of bits,\n" +
-                       "  *         filling in the right bits with the same value as the left-most bit of this.\n" +
+                       "  * Returns this value bit-shifted right by the specified number of bits,\n" +
+                       "  *         filling in the left bits with the same value as the left-most bit of this.\n" +
                        "  *         The effect of this is to retain the sign of the value.\n" +
                        "  * @example {{{\n" +
                        "  * -21 >> 3 == -3\n" +
