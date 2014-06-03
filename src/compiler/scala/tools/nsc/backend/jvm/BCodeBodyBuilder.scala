@@ -691,7 +691,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
                 case _ =>
               }
               if ((targetTypeKind != null) && (sym == definitions.Array_clone) && invokeStyle.isDynamic) {
-                val target: String = targetTypeKind.asClassBType.internalName
+                val target: String = targetTypeKind.asRefBType.classOrArrayType
                 bc.invokevirtual(target, "clone", "()Ljava/lang/Object;")
               }
               else {
