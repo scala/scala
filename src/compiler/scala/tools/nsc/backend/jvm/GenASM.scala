@@ -381,6 +381,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     case "jvm-1.5"     => asm.Opcodes.V1_5
     case "jvm-1.6"     => asm.Opcodes.V1_6
     case "jvm-1.7"     => asm.Opcodes.V1_7
+    case "jvm-1.8"     => asm.Opcodes.V1_8
   }
 
   private val majorVersion: Int = (classfileVersion & 0xFF)

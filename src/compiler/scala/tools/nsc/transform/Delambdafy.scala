@@ -130,7 +130,20 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         if (!thisProxy.exists) {
           target setFlag STATIC
         }
-        val params = ((optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}) ++ (target.paramss.flatten map ValDef.apply)).toList
+        val targetParams = target.paramss.flatten map (param => ValDef(param))
+        val arity = fun.vparams.length
+        val numParamsBeforeMixin = enteringMixin(target.info.params.length)
+        val numParams = target.info.params.length
+        val numCapturedParams = numParamsBeforeMixin - arity
+        val hasSelfParam = {
+          val numSelfParams = numParams - arity - numCapturedParams
+          assert((0 to 1) contains numSelfParams, target.info)
+          numSelfParams > 0
+        }
+        val targetParams1 = targetParams.drop(if (hasSelfParam) 1 else 0)
+        val (lambdaParams, captureParams) = targetParams1.splitAt(arity)
+        val thisProxyParam: Option[ValDef] = optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}
+        val params = thisProxyParam.toList ++ captureParams ++ lambdaParams // LambdaMetafactory expects this ordering.
 
         val methSym = oldClass.newMethod(unit.freshTermName(nme.accessor.toString() + "$"), target.pos, FINAL | BRIDGE | SYNTHETIC | PROTECTED | STATIC)
 
@@ -147,7 +160,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val body = localTyper.typed {
           val newTarget = Select(if (thisProxy.exists) gen.mkAttributedRef(paramSyms(0)) else gen.mkAttributedThis(oldClass), target)
           val newParams = paramSyms drop (if (thisProxy.exists) 1 else 0) map Ident
-          Apply(newTarget, newParams)
+          val (newCaptureParams, newLambdaParams) = newParams.splitAt(newParams.length - arity)
+          val selfParam = if (hasSelfParam) List(optionSymbol(thisProxy).map(Ident(_)).getOrElse(gen.mkZero(ObjectTpe))) else Nil
+          Apply(newTarget, selfParam ++ newLambdaParams ++ newCaptureParams)
         } setPos fun.pos
         val methDef = DefDef(methSym, List(params), body)
 
@@ -176,7 +191,10 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
         newClass.info.decls enter methSym
 
-        val Apply(_, oldParams) = fun.body
+        val Apply(_, oldParams00) = fun.body
+        val oldParams0 = if (accessor.symbol.owner.isTrait) oldParams00.drop(1) else oldParams00
+        val (lambdaParams, capturedParams) = oldParams0.splitAt(fun.vparams.length)
+        val oldParams = capturedParams ++ lambdaParams
 
         val body = localTyper typed Apply(Select(gen.mkAttributedThis(oldClass), accessor.symbol), (optionSymbol(thisProxy) map {tp => Select(gen.mkAttributedThis(newClass), tp)}).toList ++ oldParams)
         body.substituteSymbols(fun.vparams map (_.symbol), params map (_.symbol))
@@ -252,39 +270,35 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           captureProxies2 += ((capture, sym))
         }
 
-      // the Optional proxy that will hold a reference to the 'this'
-      // object used by the lambda, if any. NoSymbol if there is no this proxy
-      val thisProxy = {
-        val target = targetMethod(originalFunction)
-        if (thisReferringMethods contains target) {
-          val sym = anonClass.newVariable(nme.FAKE_LOCAL_THIS, originalFunction.pos, SYNTHETIC)
-          sym.info = oldClass.tpe
-          sym
-        } else NoSymbol
-      }
+        // the Optional proxy that will hold a reference to the 'this'
+        // object used by the lambda, if any. NoSymbol if there is no this proxy
+        val thisProxy = {
+          val target = targetMethod(originalFunction)
+          if (thisReferringMethods contains target) {
+            val sym = anonClass.newVariable(nme.FAKE_LOCAL_THIS, originalFunction.pos, SYNTHETIC)
+            sym.info = oldClass.tpe
+            sym
+          } else NoSymbol
+        }
 
-      val decapturify = new DeCapturifyTransformer(captureProxies2, unit, oldClass, anonClass, originalFunction.symbol.pos, thisProxy)
+        val decapturify = new DeCapturifyTransformer(captureProxies2, unit, oldClass, anonClass, originalFunction.symbol.pos, thisProxy)
 
-      val accessorMethod = createAccessorMethod(thisProxy, originalFunction)
+        val accessorMethod = createAccessorMethod(thisProxy, originalFunction)
 
-      val decapturedFunction = decapturify.transform(originalFunction).asInstanceOf[Function]
+        val decapturedFunction = decapturify.transform(originalFunction).asInstanceOf[Function]
 
-      val members = (optionSymbol(thisProxy).toList ++ (captureProxies2 map (_._2))) map {member =>
-        anonClass.info.decls enter member
-        ValDef(member, gen.mkZero(member.tpe)) setPos decapturedFunction.pos
-      }
+        val members = (optionSymbol(thisProxy).toList ++ (captureProxies2 map (_._2))) map {member =>
+          anonClass.info.decls enter member
+          ValDef(member, gen.mkZero(member.tpe)) setPos decapturedFunction.pos
+        }
 
-      // constructor
-      val constr = createConstructor(anonClass, members)
+        // constructor
+        val constr = createConstructor(anonClass, members)
 
-      // apply method with same arguments and return type as original lambda.
-      val applyMethodDef = createApplyMethod(anonClass, decapturedFunction, accessorMethod, thisProxy)
+        // apply method with same arguments and return type as original lambda.
+        val applyMethodDef = createApplyMethod(anonClass, decapturedFunction, accessorMethod, thisProxy)
 
-      val bridgeMethod = createBridgeMethod(anonClass, originalFunction, applyMethodDef)
-
-      def fulldef(sym: Symbol) =
-        if (sym == NoSymbol) sym.toString
-        else s"$sym: ${sym.tpe} in ${sym.owner}"
+        val bridgeMethod = createBridgeMethod(anonClass, originalFunction, applyMethodDef)
 
         bridgeMethod foreach (bm =>
           // TODO SI-6260 maybe just create the apply method with the signature (Object => Object) in all cases
@@ -302,6 +316,20 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       val (anonymousClassDef, thisProxy, accessorMethod) = makeAnonymousClass
 
       pkg.info.decls enter anonymousClassDef.symbol
+
+      val useLambdaMetafactory = {
+        val hasValueClass = exitingErasure {
+          val methodType: Type = targetMethod(originalFunction).info
+          methodType.exists(_.isInstanceOf[ErasedValueType])
+        }
+        val yieldsUnit = restpe.typeSymbol == UnitClass
+        val isTarget18 = settings.target.value.contains("jvm-1.8")
+        isTarget18 && !hasValueClass && !yieldsUnit
+      }
+      if (useLambdaMetafactory) {
+        val targetAttachment = LambdaMetaFactoryCapable(targetMethod(originalFunction), accessorMethod.symbol, originalFunction.vparams.length)
+        anonymousClassDef.symbol.updateAttachment(targetAttachment)
+      }
 
       val thisArg = optionSymbol(thisProxy) map (_ => gen.mkAttributedThis(oldClass) setPos originalFunction.pos)
       val captureArgs = captures map (capture => Ident(capture) setPos originalFunction.pos)
@@ -461,4 +489,6 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         super.traverse(tree)
     }
   }
+
+  final case class LambdaMetaFactoryCapable(symbol: Symbol, accessor: Symbol, arity: Int)
 }

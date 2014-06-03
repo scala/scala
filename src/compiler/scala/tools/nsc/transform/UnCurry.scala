@@ -71,6 +71,14 @@ abstract class UnCurry extends InfoTransform
     private val newMembers        = mutable.Map[Symbol, mutable.Buffer[Tree]]()
     private val repeatedParams    = mutable.Map[Symbol, List[ValDef]]()
 
+    private lazy val forceSpecializationInfoTransformOfFunctionN: Unit = {
+      if (currentRun.specializePhase != NoPhase) {
+        exitingSpecialize {
+          FunctionClass.seq.foreach(cls => cls.info)
+        }
+      }
+    }
+
     /** Add a new synthetic member for `currentOwner` */
     private def addNewMember(t: Tree): Unit =
       newMembers.getOrElseUpdate(currentOwner, mutable.Buffer()) += t
@@ -221,8 +229,15 @@ abstract class UnCurry extends InfoTransform
           def mkMethod(owner: Symbol, name: TermName, additionalFlags: FlagSet = NoFlags): DefDef =
             gen.mkMethodFromFunction(localTyper)(fun, owner, name, additionalFlags)
 
-          val canUseDelamdafyMethod = (inConstructorFlag == 0) // Avoiding synthesizing code prone to SI-6666, SI-8363 by using old-style lambda translation
+          def isSpecialized = {
+            forceSpecializationInfoTransformOfFunctionN
+            !(specializeTypes.specializedType(fun.tpe) =:= fun.tpe)
+          }
 
+          def canUseDelamdafyMethod = (
+               (inConstructorFlag == 0) // Avoiding synthesizing code prone to SI-6666, SI-8363 by using old-style lambda translation
+            && !isSpecialized           // DelambdafyTransformer currently only emits generic FunctionN-s, use the old style in the meantime
+          )
           if (inlineFunctionExpansion || !canUseDelamdafyMethod) {
             val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
             val anonClass = fun.symbol.owner newAnonymousFunctionClass(fun.pos, inConstructorFlag) addAnnotation SerialVersionUIDAnnotation

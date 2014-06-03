@@ -5,9 +5,9 @@ package <empty> {
       Foo.super.<init>();
       ()
     };
-    def bar(x: () => Int): Int = x.apply();
-    def foo(): Int = Foo.this.bar({
-      final <artifact> def $anonfun(): Int = 1;
+    def bar(x: () => String): String = x.apply();
+    def foo(): String = Foo.this.bar({
+      final <artifact> def $anonfun(): String = "";
       (() => $anonfun())
     })
   }
