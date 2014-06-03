@@ -1243,18 +1243,19 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
       val targetHandle =
         new asm.Handle(asm.Opcodes.H_INVOKESTATIC,
-          symInfoTK(lambdaTarget.owner).asClassBType.internalName,
+          asmClassType(lambdaTarget.owner).internalName,
           lambdaTarget.name.toString,
           asmMethodType(lambdaTarget).descriptor)
       val (capturedParams, lambdaParams) = lambdaTarget.paramss.head.splitAt(lambdaTarget.paramss.head.length - arity)
       // Requires https://github.com/scala/scala-java8-compat on the runtime classpath
       val functionalInterface = s"Lscala/compat/java8/JFunction${arity};"
-      val desc = capturedParams.map(sym => toTypeKind(sym.info)).mkString(("("), ";", ")") + functionalInterface
+      val desc = capturedParams.map(sym => toTypeKind(sym.info)).mkString(("("), "", ")") + functionalInterface
       // TODO specialization
       val applyN = asmMethodType(FunctionClass(arity).info.decl(nme.apply)).toASMType
       val constrainedType = new MethodBType(lambdaParams.map(p => toTypeKind(p.tpe)), toTypeKind(lambdaTarget.tpe.resultType)).toASMType
+      val args1 = if (lambdaTarget.owner.isImplClass) args.drop(1) else args
 
-      genLoadArguments(args, paramTKs(app))
+      genLoadArguments(args1, paramTKs(app))
       bc.jmethod.visitInvokeDynamicInsn("apply", desc, lambdaMetaFactoryBootstrapHandle,
           // boostrap args
         applyN, targetHandle, constrainedType

@@ -132,7 +132,16 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         }
         val targetParams = target.paramss.flatten map (param => ValDef(param))
         val arity = fun.vparams.length
-        val (lambdaParams, captureParams) = targetParams.splitAt(arity)
+        val numParamsBeforeMixin = enteringMixin(target.info.params.length)
+        val numParams = target.info.params.length
+        val numCapturedParams = numParamsBeforeMixin - arity
+        val hasSelfParam = {
+          val numSelfParams = numParams - arity - numCapturedParams
+          assert((0 to 1) contains numSelfParams, target.info)
+          numSelfParams > 0
+        }
+        val targetParams1 = targetParams.drop(if (hasSelfParam) 1 else 0)
+        val (lambdaParams, captureParams) = targetParams1.splitAt(arity)
         val thisProxyParam: Option[ValDef] = optionSymbol(thisProxy) map {proxy:Symbol => ValDef(proxy)}
         val params = thisProxyParam.toList ++ captureParams ++ lambdaParams // LambdaMetafactory expects this ordering.
 
@@ -152,7 +161,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           val newTarget = Select(if (thisProxy.exists) gen.mkAttributedRef(paramSyms(0)) else gen.mkAttributedThis(oldClass), target)
           val newParams = paramSyms drop (if (thisProxy.exists) 1 else 0) map Ident
           val (newCaptureParams, newLambdaParams) = newParams.splitAt(newParams.length - arity)
-          Apply(newTarget, newLambdaParams ++ newCaptureParams)
+          val selfParam = if (hasSelfParam) List(optionSymbol(thisProxy).map(Ident(_)).getOrElse(gen.mkZero(ObjectTpe))) else Nil
+          Apply(newTarget, selfParam ++ newLambdaParams ++ newCaptureParams)
         } setPos fun.pos
         val methDef = DefDef(methSym, List(params), body)
 
@@ -181,7 +191,8 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
         newClass.info.decls enter methSym
 
-        val Apply(_, oldParams0) = fun.body
+        val Apply(_, oldParams00) = fun.body
+        val oldParams0 = if (accessor.symbol.owner.isTrait) oldParams00.drop(1) else oldParams00
         val (lambdaParams, capturedParams) = oldParams0.splitAt(fun.vparams.length)
         val oldParams = capturedParams ++ lambdaParams
 
@@ -311,8 +322,9 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           val methodType: Type = targetMethod(originalFunction).info
           methodType.exists(_.isInstanceOf[ErasedValueType])
         }
+        val yieldsUnit = restpe.typeSymbol == UnitClass
         val isTarget18 = settings.target.value.contains("jvm-1.8")
-        isTarget18 && !hasValueClass
+        isTarget18 && !hasValueClass && !yieldsUnit
       }
       if (useLambdaMetafactory) {
         val targetAttachment = LambdaMetaFactoryCapable(targetMethod(originalFunction), accessorMethod.symbol, originalFunction.vparams.length)
