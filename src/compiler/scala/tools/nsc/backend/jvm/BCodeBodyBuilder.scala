@@ -686,7 +686,12 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
                 case _ =>
               }
               if ((targetTypeKind != null) && (sym == definitions.Array_clone) && invokeStyle.isDynamic) {
-                val target: String = targetTypeKind.asClassBType.internalName
+                // An invokevirtual points to a CONSTANT_Methodref_info which in turn points to a
+                // CONSTANT_Class_info of the receiver type.
+                // The JVMS is not explicit about this, but that receiver type may be an array type
+                // descriptor (instead of a class internal name):
+                //   invokevirtual  #2; //Method "[I".clone:()Ljava/lang/Object
+                val target: String = targetTypeKind.asRefBType.classOrArrayType
                 bc.invokevirtual(target, "clone", "()Ljava/lang/Object;")
               }
               else {
