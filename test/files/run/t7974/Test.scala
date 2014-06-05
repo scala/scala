@@ -6,7 +6,7 @@ import scala.tools.nsc.util.stringFromWriter
 
 object Test extends BytecodeTest {
   def show {
-    val classNode = loadClassNode("Symbols", skipDebugInfo = false)
+    val classNode = loadClassNode("Symbols", skipDebugInfo = true)
     val textifier = new Textifier
     classNode.accept(new TraceClassVisitor(null, textifier, null))
 

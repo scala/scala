@@ -1,4 +1,5 @@
 #partest java6
+Welcome to Scala
 Type in expressions to have them evaluated.
 Type :help for more information.
 
@@ -6,9 +7,9 @@ scala> :javap -app MyApp$
 public final void delayedEndpoint$MyApp$1();
   Code:
    Stack=2, Locals=1, Args_size=1
-   0:	getstatic	#61; //Field scala/Console$.MODULE$:Lscala/Console$;
-   3:	ldc	#63; //String Hello, delayed world.
-   5:	invokevirtual	#67; //Method scala/Console$.println:(Ljava/lang/Object;)V
+   0:	getstatic	#XX; //Field scala/Console$.MODULE$:Lscala/Console$;
+   3:	ldc	#XX; //String Hello, delayed world.
+   5:	invokevirtual	#XX; //Method scala/Console$.println:(Ljava/lang/Object;)V
    8:	return
   LocalVariableTable: 
    Start  Length  Slot  Name   Signature
@@ -16,6 +17,7 @@ public final void delayedEndpoint$MyApp$1();
 
 scala> 
 #partest !java6
+Welcome to Scala
 Type in expressions to have them evaluated.
 Type :help for more information.
 
@@ -24,9 +26,9 @@ scala> :javap -app MyApp$
     flags: ACC_PUBLIC, ACC_FINAL
     Code:
       stack=2, locals=1, args_size=1
-         0: getstatic     #61                 // Field scala/Console$.MODULE$:Lscala/Console$;
-         3: ldc           #63                 // String Hello, delayed world.
-         5: invokevirtual #67                 // Method scala/Console$.println:(Ljava/lang/Object;)V
+         0: getstatic     #XX                 // Field scala/Console$.MODULE$:Lscala/Console$;
+         3: ldc           #XX                 // String Hello, delayed world.
+         5: invokevirtual #XX                 // Method scala/Console$.println:(Ljava/lang/Object;)V
          8: return        
       LocalVariableTable:
         Start  Length  Slot  Name   Signature
