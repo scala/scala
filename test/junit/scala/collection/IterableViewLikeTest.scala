@@ -11,6 +11,7 @@ class IterableViewLikeTest {
 
   @Test
   def hasCorrectDropAndTakeMethods() {
+    import language.postfixOps
     val iter = Iterable(1, 2, 3)
 
     import scala.language.postfixOps
