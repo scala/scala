@@ -11,6 +11,7 @@ class IterableViewLikeTest {
 
   @Test
   def hasCorrectDropAndTakeMethods() {
+    import language.postfixOps
     val iter = Iterable(1, 2, 3)
 
     assertEquals(Iterable.empty[Int], iter.view take Int.MinValue force)
