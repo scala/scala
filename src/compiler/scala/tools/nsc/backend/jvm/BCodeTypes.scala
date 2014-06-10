@@ -21,8 +21,9 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   import global._
   import bTypes._
 
-  // when compiling the Scala library, some assertions don't hold (e.g., scala.Boolean has null superClass although it's not an interface)
-  val isCompilingStdLib = !(settings.sourcepath.isDefault)
+  // Used only for assertions. When compiling the Scala library, some assertions don't hold
+  // (e.g., scala.Boolean has null superClass although it's not an interface)
+  private val isCompilingStdLib = !(settings.sourcepath.isDefault)
 
   // special names
   var StringReference             : ClassBType = null
@@ -175,12 +176,21 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   // ------------------------------------------------
 
   /**
-   * TODO @lry should probably be a map form ClassBType to Tracked
+   * Type information for classBTypes.
+   *
+   * TODO rename Tracked
    */
-  val exemplars = new java.util.concurrent.ConcurrentHashMap[BType, Tracked]
+  val exemplars = new java.util.concurrent.ConcurrentHashMap[ClassBType, Tracked]
 
   /**
    * Maps class symbols to their corresponding `Tracked` instance.
+   *
+   * This map is only used during the first backend phase (Worker1) where ClassDef trees are
+   * transformed into ClassNode asm trees. In this phase, ClassBTypes and their Tracked are created
+   * and added to the `exemplars` map. The `symExemplars` map is only used to know if a symbol has
+   * already been visited.
+   *
+   * TODO move this map to the builder class. it's only used during building. can be gc'd with the builder.
    */
   val symExemplars = new java.util.concurrent.ConcurrentHashMap[Symbol, Tracked]
 
@@ -313,7 +323,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   final def isDeprecated(sym: Symbol): Boolean = { sym.annotations exists (_ matches definitions.DeprecatedAttr) }
 
   /* must-single-thread */
-  final def hasInternalName(sym: Symbol) = { sym.isClass || (sym.isModule && !sym.isMethod) }
+  final def hasInternalName(sym: Symbol) = sym.isClass || sym.isModuleNotMethod
 
   /* must-single-thread */
   def getSuperInterfaces(csym: Symbol): List[Symbol] = {
@@ -702,6 +712,10 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     var x = ics
     while (x ne NoSymbol) {
       assert(x.isClass, s"not a class symbol: ${x.fullName}")
+      // Uses `rawowner` because `owner` reflects changes in the owner chain due to flattening.
+      // The owner chain of a class only contains classes. This is because the lambdalift phase
+      // changes the `rawowner` destructively to point to the enclosing class. Before, the owner
+      // might be for example a method.
       val isInner = !x.rawowner.isPackageClass
       if (isInner) {
         chain ::= x
@@ -794,14 +808,23 @@ abstract class BCodeTypes extends BCodeIdiomatic {
    * must-single-thread
    */
   def javaFlags(sym: Symbol): Int = {
-    // constructors of module classes should be private
-    // PP: why are they only being marked private at this stage and not earlier?
+    // constructors of module classes should be private. introduced in b06edbc, probably to prevent
+    // creating module instances from java. for nested modules, the constructor needs to be public
+    // since they are created by the outer class and stored in a field. a java client can create
+    // new instances via outerClassInstance.new InnerModuleClass$().
+    // TODO: do this early, mark the symbol private.
     val privateFlag =
       sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModule(sym.owner))
 
-    // Final: the only fields which can receive ACC_FINAL are eager vals.
-    // Neither vars nor lazy vals can, because:
+    // Symbols marked in source as `final` have the FINAL flag. (In the past, the flag was also
+    // added to modules and module classes, not anymore since 296b706).
+    // Note that the presence of the `FINAL` flag on a symbol does not correspond 1:1 to emitting
+    // ACC_FINAL in bytecode.
     //
+    // Top-level modules are marked ACC_FINAL in bytecode (even without the FINAL flag). Nested
+    // objects don't get the flag to allow overriding (under -Yoverride-objects, SI-5676).
+    //
+    // For fields, only eager val fields can receive ACC_FINAL. vars or lazy vals can't:
     // Source: http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.5.3
     // "Another problem is that the specification allows aggressive
     // optimization of final fields. Within a thread, it is permissible to
@@ -818,7 +841,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     // we can exclude lateFINAL. Such symbols are eligible for inlining, but to
     // avoid breaking proxy software which depends on subclassing, we do not
     // emit ACC_FINAL.
-    // Nested objects won't receive ACC_FINAL in order to allow for their overriding.
 
     val finalFlag = (
          (((sym.rawflags & symtab.Flags.FINAL) != 0) || isTopLevelModule(sym))
@@ -845,6 +867,10 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
       if (sym.hasFlag(symtab.Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0
     )
+    // TODO @lry should probably also check / add "deprectated"
+    // all call sites of "javaFlags" seem to check for deprecation rigth after.
+    // Exception: the call below in javaFieldFlags. However, the caller of javaFieldFlags then
+    // does the check.
   }
 
   /*

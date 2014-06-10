@@ -1099,13 +1099,28 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
 // ------ owner attribute --------------------------------------------------------------
 
-    /** In general when seeking the owner of a symbol, one should call `owner`.
-     *  The other possibilities include:
-     *    - call `safeOwner` if it is expected that the target may be NoSymbol
-     *    - call `assertOwner` if it is an unrecoverable error if the target is NoSymbol
+    /**
+     * The owner of a symbol. Changes over time to adapt to the structure of the trees:
+     *  - Up to lambdalift, the owner is the lexically enclosing definition. For definitions
+     *    in a local block, the owner is also the next enclosing definition.
+     *  - After lambdalift, all local method and class definitions (those not owned by a class
+     *    or package class) change their owner to the enclosing class. This is done through
+     *    a destructive "sym.owner = sym.owner.enclClass". The old owner is saved by
+     *    saveOriginalOwner for the backend (needed to generate the EnclosingMethod attribute).
+     *  - After flatten, all classes are owned by a PackageClass. This is done through a
+     *    phase check (if after flatten) in the (overridden) method "def owner" in
+     *    ModuleSymbol / ClassSymbol. The `rawowner` field is not modified.
+     *  - Owners are also changed in other situations, for example when moving trees into a new
+     *    lexical context, e.g. in the named/default arguments tranformation, or when translating
+     *    extension method definitions.
      *
-     *  `owner` behaves like `safeOwner`, but logs NoSymbol.owner calls under -Xdev.
-     *  `assertOwner` aborts compilation immediately if called on NoSymbol.
+     * In general when seeking the owner of a symbol, one should call `owner`.
+     * The other possibilities include:
+     *   - call `safeOwner` if it is expected that the target may be NoSymbol
+     *   - call `assertOwner` if it is an unrecoverable error if the target is NoSymbol
+     *
+     * `owner` behaves like `safeOwner`, but logs NoSymbol.owner calls under -Xdev.
+     * `assertOwner` aborts compilation immediately if called on NoSymbol.
      */
     def owner: Symbol = {
       if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
@@ -2811,6 +2826,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def owner = {
       if (Statistics.hotEnabled) Statistics.incCounter(ownerCount)
+      // a module symbol may have the lateMETHOD flag after refchecks, see isModuleNotMethod
       if (!isMethod && needsFlatClasses) rawowner.owner
       else rawowner
     }

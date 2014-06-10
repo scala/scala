@@ -235,10 +235,24 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
   /**
    * Class or Interface type.
    *
-   * Classes are represented using their name as a slice of the `chrs` array. This representation is
-   * efficient because the JVM class name is initially created using `classSymbol.javaBinaryName`.
-   * This already adds the necessary string to the `chrs` array, so it makes sense to reuse the same
-   * name table in the backend.
+   * The information for creating a ClassBType (superClass, interfaces, etc) is obtained
+   *   - either from a ClassSymbol, for classes being compiled or referenced from source (see
+   *     BCodeTypes)
+   *   - or, during inlining, from ASM ClassNodes that are parsed from class files.
+   *
+   * The class name is represented as a slice of the `chrs` array. This representation is efficient
+   * because the JVM class name is obtained through `classSymbol.javaBinaryName`. This already adds
+   * the necessary string to the `chrs` array, so it makes sense to reuse the same name table in the
+   * backend.
+   *
+   * Not a case class because that would expose the constructor that takes (offset, length)
+   * parameters (I didn't find a way to make it private, also the factory in the companion).
+   *
+   * @param offset     See below
+   * @param length     The class name is represented as offset and length in the `chrs` array.
+   *                   The (public) constructors of ClassBType take a BTypeName, which are
+   *                   hash-consed. This ensures that two ClassBType instances for the same name
+   *                   have the same offset and length.
    *
    * Not a case class because that would expose the (Int, Int) constructor (didn't find a way to
    * make it private, also the factory in the companion).
