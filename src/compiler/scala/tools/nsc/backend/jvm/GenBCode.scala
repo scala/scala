@@ -271,7 +271,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
     override def run() {
 
       arrivalPos = 0 // just in case
-      scalaPrimitives.init
+      scalaPrimitives.init()
       initBCodeTypes()
 
       // initBytecodeWriter invokes fullName, thus we have to run it before the typer-dependent thread is activated.
