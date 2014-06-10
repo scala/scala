@@ -977,7 +977,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         if (!isModuleInitialized &&
             jMethodName == INSTANCE_CONSTRUCTOR_NAME &&
             jname == INSTANCE_CONSTRUCTOR_NAME &&
-            isStaticModule(siteSymbol)) {
+            isStaticModuleClass(siteSymbol)) {
           isModuleInitialized = true
           mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
           mnode.visitFieldInsn(
