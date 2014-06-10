@@ -77,12 +77,12 @@ trait ExecutionContext {
 }
 
 /**
- * Union interface since Java does not support union types
+ * An [[ExecutionContext]] that is also a Java [[Executor]].
  */
 trait ExecutionContextExecutor extends ExecutionContext with Executor
 
 /**
- * Union interface since Java does not support union types
+ * An [[ExecutionContext]] that is also a Java [[ExecutorService]].
  */
 trait ExecutionContextExecutorService extends ExecutionContextExecutor with ExecutorService
 

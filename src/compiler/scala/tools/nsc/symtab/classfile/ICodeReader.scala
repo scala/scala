@@ -780,32 +780,40 @@ abstract class ICodeReader extends ClassfileParser {
           bb = otherBlock
 //          Console.println("\t> entering bb: " + bb)
         }
-        instr match {
-          case LJUMP(target) =>
-            otherBlock = blocks(target)
-            bb.emitOnly(JUMP(otherBlock))
 
-          case LCJUMP(success, failure, cond, kind) =>
-            otherBlock = blocks(success)
-            val failBlock = blocks(failure)
-            bb.emitOnly(CJUMP(otherBlock, failBlock, cond, kind))
+        if (bb.closed) {
+          // the basic block is closed, i.e. the previous instruction was a jump, return or throw,
+          // but the next instruction is not a jump target. this means that the next instruction is
+          // dead code. we can therefore advance until the next jump target.
+          debuglog(s"ICode reader skipping dead instruction $instr in classfile $instanceCode")
+        } else {
+          instr match {
+            case LJUMP(target) =>
+              otherBlock = blocks(target)
+              bb.emitOnly(JUMP(otherBlock))
 
-          case LCZJUMP(success, failure, cond, kind) =>
-            otherBlock = blocks(success)
-            val failBlock = blocks(failure)
-            bb.emitOnly(CZJUMP(otherBlock, failBlock, cond, kind))
+            case LCJUMP(success, failure, cond, kind) =>
+              otherBlock = blocks(success)
+              val failBlock = blocks(failure)
+              bb.emitOnly(CJUMP(otherBlock, failBlock, cond, kind))
 
-          case LSWITCH(tags, targets) =>
-            bb.emitOnly(SWITCH(tags, targets map blocks))
+            case LCZJUMP(success, failure, cond, kind) =>
+              otherBlock = blocks(success)
+              val failBlock = blocks(failure)
+              bb.emitOnly(CZJUMP(otherBlock, failBlock, cond, kind))
 
-          case RETURN(_) =>
-            bb emitOnly instr
+            case LSWITCH(tags, targets) =>
+              bb.emitOnly(SWITCH(tags, targets map blocks))
 
-          case THROW(clasz) =>
-            bb emitOnly instr
+            case RETURN(_) =>
+              bb emitOnly instr
 
-          case _ =>
-            bb emit instr
+            case THROW(clasz) =>
+              bb emitOnly instr
+
+            case _ =>
+              bb emit instr
+          }
         }
       }
 

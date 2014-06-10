@@ -217,7 +217,8 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
   sealed trait RefBType extends BType {
     /**
      * The class or array type of this reference type. Used for ANEWARRAY, MULTIANEWARRAY,
-     * INSTANCEOF and CHECKCAST instructions.
+     * INSTANCEOF and CHECKCAST instructions. Also used for emitting invokevirtual calls to
+     * (a: Array[T]).clone() for any T, see genApply.
      *
      * In contrast to the descriptor, this string does not contain the surrounding 'L' and ';' for
      * class types, for example "java/lang/String".

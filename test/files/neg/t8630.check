@@ -1,0 +1,7 @@
+t8630.scala:1: error: '{' expected but 'abstract' found.
+package bobsdelights  abstract class Fruit(  val name: String,  val color: String  )  object Fruits {  object Apple extends Fruit("apple", "red")  object Orange extends Fruit("orange", "orange")  object Pear extends Fruit("pear", "yellowish")  val menu = List(Apple, Orange, Pear)  }
+                      ^
+t8630.scala:1: error: '}' expected but eof found.
+package bobsdelights  abstract class Fruit(  val name: String,  val color: String  )  object Fruits {  object Apple extends Fruit("apple", "red")  object Orange extends Fruit("orange", "orange")  object Pear extends Fruit("pear", "yellowish")  val menu = List(Apple, Orange, Pear)  }
+                                                                                                                                                                                                                                                                                           ^
+two errors found

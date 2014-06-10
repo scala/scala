@@ -1357,20 +1357,24 @@ TODO:
   </target>
 
   <target name="test.osgi" depends="test.osgi.comp">
-    <stopwatch name="test.osgi.timer"/>
-    <mkdir dir="${test.osgi.classes}"/>
+    <if><isset property="has.java8"/><then>
+      <echo message="Skipping OSGi JUnit tests on Java 8. See SI-8642"/>
+    </then><else>
+      <echo message="Running OSGi JUnit tests. Output in ${build-osgi.dir}"/>
+      <stopwatch name="test.osgi.timer"/>
+      <mkdir dir="${test.osgi.classes}"/>
 
-    <echo message="Running OSGi JUnit tests. Output in ${build-osgi.dir}"/>
-    <junit fork="yes" haltonfailure="yes">
-      <classpath refid="test.osgi.compiler.build.path"/>
-      <batchtest fork="yes" todir="${build-osgi.dir}">
-        <fileset dir="${test.osgi.classes}">
-          <include name="**/*Test.class"/>
-        </fileset>
-      </batchtest>
-      <formatter type="xml" /> <!-- silenced by having it use a file; I tried for an hour to use other formatters but classpath issues drove me to this usefile="false" -->
-    </junit>
-    <stopwatch name="test.osgi.timer" action="total"/>
+      <junit fork="yes" haltonfailure="yes">
+        <classpath refid="test.osgi.compiler.build.path"/>
+        <batchtest fork="yes" todir="${build-osgi.dir}">
+          <fileset dir="${test.osgi.classes}">
+            <include name="**/*Test.class"/>
+          </fileset>
+        </batchtest>
+        <formatter type="xml" /> <!-- silenced by having it use a file; I tried for an hour to use other formatters but classpath issues drove me to this usefile="false" -->
+      </junit>
+      <stopwatch name="test.osgi.timer" action="total"/>
+    </else></if>
   </target>
 
 

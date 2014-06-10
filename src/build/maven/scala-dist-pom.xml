@@ -40,6 +40,11 @@
       <version>@VERSION@</version>
     </dependency>
     <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scalap</artifactId>
+      <version>@VERSION@</version>
+    </dependency>
+    <dependency>
       <groupId>org.scala-lang.plugins</groupId>
       <!-- plugins are fully cross-versioned. But, we don't publish with 2.11.0-SNAPSHOT, instead use full version of the last non-snapshot version -->
       <artifactId>scala-continuations-plugin_@SCALA_FULL_VERSION@</artifactId>

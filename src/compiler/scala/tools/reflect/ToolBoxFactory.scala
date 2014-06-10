@@ -141,6 +141,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
           val run = new Run
           run.symSource(ownerClass) = NoAbstractFile // need to set file to something different from null, so that currentRun.defines works
           phase = run.typerPhase // need to set a phase to something <= typerPhase, otherwise implicits in typedSelect will be disabled
+          globalPhase = run.typerPhase // amazing... looks like phase and globalPhase are different things, so we need to set them separately
           currentTyper.context.setReportErrors() // need to manually set context mode, otherwise typer.silent will throw exceptions
           reporter.reset()
 
