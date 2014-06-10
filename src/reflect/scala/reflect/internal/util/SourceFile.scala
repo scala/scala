@@ -40,7 +40,7 @@ abstract class SourceFile {
   def lineToString(index: Int): String = {
     val start = lineToOffset(index)
     var end = start
-    while (!isEndOfLine(end) && end <= length) end += 1
+    while (end < length && !isEndOfLine(end)) end += 1
     new String(content, start, end - start)
   }
 

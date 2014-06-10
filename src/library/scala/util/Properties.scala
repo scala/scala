@@ -155,9 +155,12 @@ private[scala] trait PropertiesTrait {
   // This is looking for javac, tools.jar, etc.
   // Tries JDK_HOME first, then the more common but likely jre JAVA_HOME,
   // and finally the system property based javaHome.
-  def jdkHome              = envOrElse("JDK_HOME", envOrElse("JAVA_HOME", javaHome))
+  def jdkHome               = envOrElse("JDK_HOME", envOrElse("JAVA_HOME", javaHome))
 
-  def versionMsg            = "Scala %s %s -- %s".format(propCategory, versionString, copyrightString)
+  // private[scala] for 2.12
+  private[this] def versionFor(command: String) = f"Scala $command $versionString -- $copyrightString"
+
+  def versionMsg            = versionFor(propCategory)
   def scalaCmd              = if (isWin) "scala.bat" else "scala"
   def scalacCmd             = if (isWin) "scalac.bat" else "scalac"
 

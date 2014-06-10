@@ -2,26 +2,24 @@ package scala
 package tools.nsc
 
 import scala.tools.nsc.reporters.ConsoleReporter
-import Properties.{ versionString, copyrightString, residentPromptString }
+import Properties.{ versionMsg, residentPromptString }
 import scala.reflect.internal.util.FakePos
 
 abstract class Driver {
 
   val prompt = residentPromptString
 
-  val versionMsg = "Scala compiler " +
-    versionString + " -- " +
-    copyrightString
-
   var reporter: ConsoleReporter = _
   protected var command: CompilerCommand = _
   protected var settings: Settings = _
 
-  protected def scalacError(msg: String) {
+  protected def scalacError(msg: String): Unit = {
     reporter.error(FakePos("scalac"), msg + "\n  scalac -help  gives more information")
   }
 
-  protected def processSettingsHook(): Boolean = true
+  protected def processSettingsHook(): Boolean = {
+    if (settings.version) { reporter echo versionMsg ; false } else true
+  }
 
   protected def newCompiler(): Global
 
@@ -37,14 +35,12 @@ abstract class Driver {
   }
 
   def process(args: Array[String]) {
-    val ss       = new Settings(scalacError)
-    reporter     = new ConsoleReporter(ss)
+    val ss   = new Settings(scalacError)
+    reporter = new ConsoleReporter(ss)
     command  = new CompilerCommand(args.toList, ss)
     settings = command.settings
 
-    if (settings.version) {
-      reporter.echo(versionMsg)
-    } else if (processSettingsHook()) {
+    if (processSettingsHook()) {
       val compiler = newCompiler()
       try {
         if (reporter.hasErrors)
@@ -68,5 +64,4 @@ abstract class Driver {
     process(args)
     sys.exit(if (reporter.hasErrors) 1 else 0)
   }
-
 }

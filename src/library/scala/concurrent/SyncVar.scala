@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 /** A class to provide safe concurrent access to a mutable cell.
  *  All methods are synchronized.
  *
+ *  @tparam A type of the contained value
  *  @author  Martin Odersky
  *  @version 1.0, 10/03/2003
  */
@@ -20,6 +21,12 @@ class SyncVar[A] {
   private var isDefined: Boolean = false
   private var value: Option[A] = None
 
+  /**
+   * Waits for this SyncVar to become defined and returns
+   * the result, without modifying the stored value.
+   *
+   * @return value that is held in this container
+   */
   def get: A = synchronized {
     while (!isDefined) wait()
     value.get
@@ -57,8 +64,12 @@ class SyncVar[A] {
     value
   }
 
-  /** Waits for this SyncVar to become defined and returns
-   *  the result */
+  /**
+   * Waits for this SyncVar to become defined and returns
+   * the result, unsetting the stored value before returning.
+   *
+   * @return value that was held in this container
+   */
   def take(): A = synchronized {
     try get
     finally unsetVal()
@@ -129,4 +140,3 @@ class SyncVar[A] {
   }
 
 }
-

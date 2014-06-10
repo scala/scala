@@ -14,8 +14,8 @@ package mutable
  * An immutable AVL Tree implementation formerly used by mutable.TreeSet
  *
  * @author Lucien Pereira
- * @deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11.0")
  */
+@deprecated("AVLTree and its related classes are being removed from the standard library since they're not different enough from RedBlackTree to justify keeping them.", "2.11.2")
 private[mutable] sealed trait AVLTree[+A] extends Serializable {
   def balance: Int
 

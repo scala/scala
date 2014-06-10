@@ -174,8 +174,8 @@ trait NamesDefaults { self: Analyzer =>
           // assigning the correct method symbol, typedSelect will just assign the type. the reason
           // to still call 'typed' is to correctly infer singleton types, SI-5259.
           val selectPos =
-            if(qual.pos.isRange && baseFun.pos.isRange) qual.pos.union(baseFun.pos).withStart(Math.min(qual.pos.end, baseFun.pos.end))
-            else baseFun.pos
+            if(qual.pos.isRange && baseFun1.pos.isRange) qual.pos.union(baseFun1.pos).withStart(Math.min(qual.pos.end, baseFun1.pos.end))
+            else baseFun1.pos
           val f = blockTyper.typedOperator(Select(newQual, selected).setSymbol(baseFun1.symbol).setPos(selectPos))
           if (funTargs.isEmpty) f
           else TypeApply(f, funTargs).setType(baseFun.tpe)

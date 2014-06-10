@@ -14,8 +14,8 @@ package scala.concurrent
  *
  *  @author  Martin Odersky
  *  @version 1.0, 10/03/2003
- *  @deprecated("Use java.util.concurrent.locks.Lock", "2.11.0")
  */
+@deprecated("Use java.util.concurrent.locks.Lock", "2.11.2")
 class Lock {
   var available = true
 

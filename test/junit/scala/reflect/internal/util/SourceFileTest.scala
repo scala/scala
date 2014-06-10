@@ -17,6 +17,11 @@ class SourceFileTest {
     assertFalse(file.isEndOfLine(Int.MaxValue))
   }
 
+  @Test def si8630_lineToString(): Unit = {
+    val code = "abc "
+    assertEquals(code, new BatchSourceFile("", code).lineToString(0))
+  }
+
   @Test
   def si8205_lineToString(): Unit = {
     assertEquals("", lineContentOf("", 0))
