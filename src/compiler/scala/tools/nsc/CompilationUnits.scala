@@ -123,32 +123,27 @@ trait CompilationUnits { global: Global =>
      */
     val icode: LinkedHashSet[icodes.IClass] = new LinkedHashSet
 
-    def reporter = global.reporter
+    // reporter and its forwarded methods
+    def reporter  = global.reporter
+    def reporting = currentRun.reporting
 
-    def echo(pos: Position, msg: String) =
-      reporter.echo(pos, msg)
+    def echo(pos: Position, msg: String): Unit                = reporter.echo(pos, msg)
+    def error(pos: Position, msg: String): Unit               = reporter.error(pos, msg)
+    def warning(pos: Position, msg: String): Unit             = reporter.warning(pos, msg)
 
-    def error(pos: Position, msg: String) =
-      reporter.error(pos, msg)
+    def deprecationWarning(pos: Position, msg: String): Unit  = reporting.deprecationWarning(pos, msg)
+    def uncheckedWarning(pos: Position, msg: String): Unit    = reporting.uncheckedWarning(pos, msg)
+    def inlinerWarning(pos: Position, msg: String): Unit      = reporting.inlinerWarning(pos, msg)
+    def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "",
+                       required: Boolean): Unit               = reporting.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
 
-    def warning(pos: Position, msg: String) =
-      reporter.warning(pos, msg)
-
-    def deprecationWarning(pos: Position, msg: String) =
-      currentRun.deprecationWarnings0.warn(pos, msg)
-
-    def uncheckedWarning(pos: Position, msg: String) =
-      currentRun.uncheckedWarnings0.warn(pos, msg)
-
-    def inlinerWarning(pos: Position, msg: String) =
-      currentRun.inlinerWarnings.warn(pos, msg)
-
-    def incompleteInputError(pos: Position, msg:String) =
-      reporter.incompleteInputError(pos, msg)
+    // repl
+    def incompleteHandled: Boolean                            = reporting.incompleteHandled
+    def incompleteInputError(pos: Position, msg:String): Unit = reporting.incompleteInputError(pos, msg)
 
     // used by the IDE -- TODO: don't use reporter to communicate comments from parser to IDE!
-    def comment(pos: Position, msg: String): Unit =
-      reporter.comment(pos, msg)
+    def comment(pos: Position, msg: String): Unit             = reporter.comment(pos, msg)
+
 
     /** Is this about a .java source file? */
     lazy val isJava = source.file.name.endsWith(".java")

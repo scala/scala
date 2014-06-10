@@ -746,21 +746,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (!OK) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
               featureTrait getAnnotation LanguageFeatureAnnot
-            val req     = if (required) "needs to" else "should"
-            val fqname  = "scala.language." + featureName
-            val explain = (
-              if (currentRun.reportedFeature contains featureTrait) "" else
-              s"""|
-                  |This can be achieved by adding the import clause 'import $fqname'
-                  |or by setting the compiler option -language:$featureName.
-                  |See the Scala docs for value $fqname for a discussion
-                  |why the feature $req be explicitly enabled.""".stripMargin
-            )
-            currentRun.reportedFeature += featureTrait
-
-            val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)
-            if (required) unit.error(pos, msg)
-            else currentRun.featureWarnings.warn(pos, msg)
+            unit.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
           }
           OK
         }

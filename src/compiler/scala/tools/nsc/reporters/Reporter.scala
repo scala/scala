@@ -53,15 +53,6 @@ abstract class Reporter {
     override def toString: String = "ERROR"
   }
 
-  private var incompleteHandler: (Position, String) => Unit = null
-  def incompleteHandled = incompleteHandler != null
-  def withIncompleteHandler[T](handler: (Position, String) => Unit)(thunk: => T) = {
-    val saved = incompleteHandler
-    incompleteHandler = handler
-    try thunk
-    finally incompleteHandler = saved
-  }
-
   // used by sbt (via unit.cancel) to cancel a compile (see hasErrors)
   var cancelled: Boolean = false
 
@@ -70,12 +61,6 @@ abstract class Reporter {
 
   // overridden by sbt
   def hasWarnings: Boolean = WARNING.count > 0
-
-  // TODO
-  def incompleteInputError(pos: Position, msg: String): Unit = {
-    if (incompleteHandled) incompleteHandler(pos, msg)
-    else error(pos, msg)
-  }
 
   // overridden by sbt, IDE -- should move out of this interface
   // it's unrelated to reporting (IDE receives comments from ScaladocAnalyzer)

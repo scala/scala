@@ -793,7 +793,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
           }
           ((pos, msg)) :: loop(filtered)
       }
-      val warnings = loop(run.allConditionalWarnings flatMap (_.warnings))
+      val warnings = loop(run.reporting.allConditionalWarnings)
       if (warnings.nonEmpty)
         mostRecentWarnings = warnings
     }
@@ -1121,7 +1121,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
     def apply(line: String): Result = debugging(s"""parse("$line")""")  {
       var isIncomplete = false
-      reporter.withIncompleteHandler((_, _) => isIncomplete = true) {
+      currentRun.reporting.withIncompleteHandler((_, _) => isIncomplete = true) {
         reporter.reset()
         val trees = newUnitParser(line).parseStats()
         if (reporter.hasErrors) Error

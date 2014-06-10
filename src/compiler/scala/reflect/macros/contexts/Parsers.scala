@@ -9,7 +9,10 @@ trait Parsers {
 
   def parse(code: String) = {
     val sreporter = new StoreReporter()
-    val unit = new CompilationUnit(newSourceFile(code, "<macro>")) { override def reporter = sreporter }
+    val unit = new CompilationUnit(newSourceFile(code, "<macro>")) {
+      override def reporter = sreporter
+      override def reporting = new PerRunReporting { override def reporter = sreporter }
+    }
     val parser = newUnitParser(unit)
     val tree = gen.mkTreeOrBlock(parser.parseStatsOrPackages())
     sreporter.infos.foreach {
