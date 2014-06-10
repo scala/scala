@@ -43,9 +43,9 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
       case FLOAT  => "F"
       case LONG   => "J"
       case DOUBLE => "D"
-      case c @ ClassBType(_, _)   => "L" + c.internalName + ";"
-      case ArrayBType(component)  => "[" + component
-      case MethodBType(args, res) => "(" + args.mkString + ")" + res
+      case ClassBType(internalName) => "L" + internalName + ";"
+      case ArrayBType(component)    => "[" + component
+      case MethodBType(args, res)   => "(" + args.mkString + ")" + res
     }
 
     /**
@@ -160,9 +160,9 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
       case FLOAT  => asm.Type.FLOAT_TYPE
       case LONG   => asm.Type.LONG_TYPE
       case DOUBLE => asm.Type.DOUBLE_TYPE
-      case c @ ClassBType(_, _)  => asm.Type.getObjectType(c.internalName) // (*)
-      case a @ ArrayBType(_)     => asm.Type.getObjectType(a.descriptor)
-      case m @ MethodBType(_, _) => asm.Type.getMethodType(m.descriptor)
+      case ClassBType(internalName) => asm.Type.getObjectType(internalName) // see (*) above
+      case a: ArrayBType            => asm.Type.getObjectType(a.descriptor)
+      case m: MethodBType           => asm.Type.getMethodType(m.descriptor)
     }
 
     def asRefBType  : RefBType   = this.asInstanceOf[RefBType]
@@ -227,8 +227,8 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
      * This can be verified for example using javap or ASMifier.
      */
     def classOrArrayType: String = this match {
-      case c: ClassBType => c.internalName
-      case a: ArrayBType => a.descriptor
+      case ClassBType(internalName) => internalName
+      case a: ArrayBType            => a.descriptor
     }
   }
 
@@ -458,21 +458,23 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
    */
   class ClassBType private(val offset: Int, val length: Int) extends RefBType {
     /**
-     * Construct a ClassBType for a given (intenred) class name.
+     * Construct a ClassBType from the (intenred) internal name of a class.
      *
-     * @param n The class name as a slice of the `chrs` array, without the surrounding 'L' and ';'.
-     *          Note that `classSymbol.javaBinaryName` returns exactly such a name.
+     * @param internalName The internal name as a slice of the `chrs` array. The internal name does
+     *                     not have the surrounding 'L' and ';'. Note that
+     *                     `classSymbol.javaBinaryName` returns exactly such a name.
      */
-    def this(n: BTypeName) = this(n.start, n.length)
+    def this(internalName: BTypeName) = this(internalName.start, internalName.length)
 
     /**
-     * Construct a ClassBType for a given java class name.
+     * Construct a ClassBType from the internal name of a class.
      *
-     * @param s A class name of the form "java/lang/String", without the surrounding 'L' and ';'.
+     * @param internalName The internal name of a class has the form "java/lang/String", without the
+     *                     surrounding 'L' and ';'.
      */
-    def this(s: String) = this({
-      assert(!(s.head == 'L' && s.last == ';'), s"Descriptor instead of internal name: $s")
-      createNewName(s)
+    def this(internalName: String) = this({
+      assert(!(internalName.head == 'L' && internalName.last == ';'), s"Descriptor instead of internal name: $internalName")
+      createNewName(internalName)
     })
 
     /**
@@ -490,7 +492,7 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
      * Custom equals / hashCode are needed because this is not a case class.
      */
     override def equals(o: Any): Boolean = (this eq o.asInstanceOf[Object]) || (o match {
-      case ClassBType(`offset`, `length`) => true
+      case c: ClassBType => c.offset == this.offset && c.length == this.length
       case _ => false
     })
 
@@ -504,12 +506,15 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
   }
 
   object ClassBType {
-    def apply(n: BTypeName): ClassBType = new ClassBType(n)
-    def apply(s: String): ClassBType = new ClassBType(s)
+    def apply(internalName: BTypeName): ClassBType = new ClassBType(internalName)
+    def apply(internalName: String): ClassBType = new ClassBType(internalName)
 
-    def unapply(c: ClassBType): Option[(Int, Int)] =
+    /**
+     * Pattern matching on a ClassBType extracts the `internalName` of the class.
+     */
+    def unapply(c: ClassBType): Option[String] =
       if (c == null) None
-      else Some((c.offset, c.length))
+      else Some(c.internalName)
   }
 
   case class ArrayBType(componentType: BType) extends RefBType {
