@@ -755,12 +755,23 @@ abstract class BCodeTypes extends BCodeIdiomatic {
         innerSym.rawname + innerSym.moduleSuffix
     }
 
-    val flagsWithFinal: Int = mkFlags(
+    // TODO @lry compare with table in spec: for example, deprecated should not be there it seems.
+    //   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.6-300-D.1-D.1
+    // including "deprecated" was added in the initial commit of GenASM, but it was never in GenJVM.
+    val flags: Int = mkFlags(
+      // TODO @lry adding "static" whenever the class is owned by a module seems wrong.
+      //   class C { object O { class I } }
+      // here, I is marked static in the InnerClass attribute. But the I constructor takes an outer instance.
+      // was added in 0469d41
+      // what should it be? check what would make sense for java reflection.
+      //  member of top-level object should be static? how about anonymous / local class that has
+      //    been lifted to a top-level object?
+      //  member that is only nested in objects should be static?
+      //  verify: will ICodeReader still work after that? the code was introduced because of icode reader.
       if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
       javaFlags(innerSym),
       if (isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
     ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
-    val flags = if (innerSym.isModuleClass) flagsWithFinal & ~asm.Opcodes.ACC_FINAL else flagsWithFinal // For SI-5676, object overriding.
 
     val jname = innerSym.javaBinaryName.toString // never null
     val oname = { // null when method-enclosed
