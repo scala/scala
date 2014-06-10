@@ -291,8 +291,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       log(s"!!!$pos_s $msg") // such warnings always at least logged
   }
 
-  def informComplete(msg: String): Unit    = reporter.withoutTruncating(inform(msg))
-
   def logError(msg: String, t: Throwable): Unit = ()
 
   override def shouldLogAtThisPhase = settings.log.isSetByUser && (
@@ -351,9 +349,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   }
 
   if (settings.verbose || settings.Ylogcp) {
-    // Uses the "do not truncate" inform
-    informComplete("[search path for source files: " + classPath.sourcepaths.mkString(",") + "]")
-    informComplete("[search path for class files: " + classPath.asClasspathString + "]")
+    reporter.echo(
+      s"[search path for source files: ${classPath.sourcepaths.mkString(",")}]\n"+
+      s"[search path for class files: ${classPath.asClasspathString}")
   }
 
   // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
@@ -1212,6 +1210,20 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def uncheckedWarnings: List[(Position, String)] = uncheckedWarnings0.warnings.toList // used in sbt
     def deprecationWarnings: List[(Position, String)] = deprecationWarnings0.warnings.toList // used in sbt
 
+    def reportAdditionalErrors(): Unit = {
+      if (!reporter.hasErrors) {
+        if (reporter.hasWarnings && settings.fatalWarnings)
+          globalError("No warnings can be incurred under -Xfatal-warnings.")
+
+        allConditionalWarnings foreach (_.summarize())
+
+        if (seenMacroExpansionsFallingBack)
+          warning("some macros could not be expanded and code fell back to overridden methods;"+
+                  "\nrecompiling with generated classfiles on the classpath might help.")
+        // todo: migrationWarnings
+      }
+    }
+
     var reportedFeature = Set[Symbol]()
 
     /** Has any macro expansion used a fallback during this run? */
@@ -1416,6 +1428,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       refreshProgress()
     }
 
+    // for sbt
     def cancel() { reporter.cancelled = true }
 
     private def currentProgress   = (phasec * size) + unitc
@@ -1565,26 +1578,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    def reportCompileErrors() {
-      if (!reporter.hasErrors && reporter.hasWarnings && settings.fatalWarnings)
-        globalError("No warnings can be incurred under -Xfatal-warnings.")
-
-      if (reporter.hasErrors) {
-        for ((sym, file) <- symSource.iterator) {
-          sym.reset(new loaders.SourcefileLoader(file))
-          if (sym.isTerm)
-            sym.moduleClass reset loaders.moduleClassLoader
-        }
-      }
-      else {
-        allConditionalWarnings foreach (_.summarize())
-
-        if (seenMacroExpansionsFallingBack)
-          warning("some macros could not be expanded and code fell back to overridden methods;"+
-                  "\nrecompiling with generated classfiles on the classpath might help.")
-        // todo: migrationWarnings
-      }
-    }
 
     /** Caching member symbols that are def-s in Defintions because they might change from Run to Run. */
     val runDefinitions: definitions.RunDefinitions = new definitions.RunDefinitions
@@ -1597,7 +1590,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
       def checkDeprecations() = {
         checkDeprecatedSettings(newCompilationUnit(""))
-        reportCompileErrors()
+        reportAdditionalErrors()
       }
 
       val units = sources map scripted map (new CompilationUnit(_))
@@ -1621,7 +1614,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       checkDeprecatedSettings(unitbuf.head)
       globalPhase = fromPhase
 
-     while (globalPhase.hasNext && !reporter.hasErrors) {
+      while (globalPhase.hasNext && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
         globalPhase.run()
@@ -1667,6 +1660,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         advancePhase()
       }
 
+      reportAdditionalErrors()
+
       if (traceSymbolActivity)
         units map (_.body) foreach (traceSymbols recordSymbolsInTree _)
 
@@ -1674,8 +1669,15 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       if (settings.Yshow.isDefault)
         showMembers()
 
-      reportCompileErrors()
+      if (reporter.hasErrors) {
+        for ((sym, file) <- symSource.iterator) {
+          sym.reset(new loaders.SourcefileLoader(file))
+          if (sym.isTerm)
+            sym.moduleClass reset loaders.moduleClassLoader
+        }
+      }
       symSource.keys foreach (x => resetPackageClass(x.owner))
+
       informTime("total", startTime)
 
       // Clear any sets or maps created via perRunCaches.

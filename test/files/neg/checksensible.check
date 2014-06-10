@@ -98,5 +98,6 @@ checksensible.scala:95: warning: comparing values of types Unit and Int using `!
     while ((c = in.read) != -1)
                          ^
 error: No warnings can be incurred under -Xfatal-warnings.
+error: there were 3 deprecation warnings; re-run with -deprecation for details
 33 warnings found
-one error found
+two errors found

@@ -10,8 +10,7 @@ import scala.collection.mutable
 import scala.reflect.internal.util.Position
 
 /**
- * This class implements a Reporter that displays messages on a text
- * console.
+ * This class implements a Reporter that stores its reports in the set `infos`.
  */
 class StoreReporter extends Reporter {
   case class Info(pos: Position, msg: String, severity: Severity) {

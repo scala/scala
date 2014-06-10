@@ -11,5 +11,6 @@ unchecked-refinement.scala:24: warning: a pattern match on a refinement type is 
     /* nowarn - todo */ case x: AnyRef { def size: Int } if b  => x.size   // this could/should do a static conformance test and not warn
                                 ^
 error: No warnings can be incurred under -Xfatal-warnings.
+error: there was one feature warning; re-run with -feature for details
 four warnings found
-one error found
+two errors found

@@ -146,7 +146,8 @@ trait CompilationUnits { global: Global =>
     def incompleteInputError(pos: Position, msg:String) =
       reporter.incompleteInputError(pos, msg)
 
-    def comment(pos: Position, msg: String) =
+    // used by the IDE -- TODO: don't use reporter to communicate comments from parser to IDE!
+    def comment(pos: Position, msg: String): Unit =
       reporter.comment(pos, msg)
 
     /** Is this about a .java source file? */

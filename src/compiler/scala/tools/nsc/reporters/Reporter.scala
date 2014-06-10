@@ -8,9 +8,10 @@ package reporters
 
 import scala.reflect.internal.util._
 
-/**
- * This interface provides methods to issue information, warning and
- * error messages.
+/** Report information, warnings and errors.
+ *
+ * This describes the stable interface for issuing information, warnings and errors.
+ * The only abstract method in this class must be info0.
  */
 abstract class Reporter {
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
@@ -29,19 +30,6 @@ abstract class Reporter {
     override def toString: String = "ERROR"
   }
 
-  /** Whether very long lines can be truncated.  This exists so important
-   *  debugging information (like printing the classpath) is not rendered
-   *  invisible due to the max message length.
-   */
-  private var _truncationOK: Boolean = true
-  def truncationOK = _truncationOK
-  def withoutTruncating[T](body: => T): T = {
-    val saved = _truncationOK
-    _truncationOK = false
-    try body
-    finally _truncationOK = saved
-  }
-
   private var incompleteHandler: (Position, String) => Unit = null
   def incompleteHandled = incompleteHandler != null
   def withIncompleteHandler[T](handler: (Position, String) => Unit)(thunk: => T) = {
@@ -51,6 +39,7 @@ abstract class Reporter {
     finally incompleteHandler = saved
   }
 
+  // used by sbt (via unit.cancel) to cancel a compile (see hasErrors)
   var cancelled   = false
   def hasErrors   = ERROR.count > 0 || cancelled
   def hasWarnings = WARNING.count > 0
@@ -58,21 +47,23 @@ abstract class Reporter {
   /** For sending a message which should not be labeled as a warning/error,
    *  but also shouldn't require -verbose to be visible.
    */
-  def echo(msg: String): Unit                                = info(NoPosition, msg, force = true)
-  def echo(pos: Position, msg: String): Unit                 = info(pos, msg, force = true)
+  def echo(msg: String): Unit                   = info(NoPosition, msg, force = true)
+  def echo(pos: Position, msg: String): Unit    = info(pos, msg, force = true)
 
-  /** Informational messages, suppressed unless -verbose or force=true. */
-  def info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg, INFO, force)
+  /** Informational messages. If `!force`, they may be suppressed. */
+  final def info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg, INFO, force)
 
   /** Warnings and errors. */
-  def warning(pos: Position, msg: String): Unit              = withoutTruncating(info0(pos, msg, WARNING, force = false))
-  def error(pos: Position, msg: String): Unit                = withoutTruncating(info0(pos, msg, ERROR, force = false))
+  def warning(pos: Position, msg: String): Unit = info0(pos, msg, WARNING, force = false)
+  def error(pos: Position, msg: String): Unit   = info0(pos, msg, ERROR, force = false)
   def incompleteInputError(pos: Position, msg: String): Unit = {
     if (incompleteHandled) incompleteHandler(pos, msg)
     else error(pos, msg)
   }
 
-  def comment(pos: Position, msg: String) { }
+  // overridden by sbt, IDE:
+  // `comment` is unrelated to reporting and should move out (IDE receives comments from ScaladocAnalyzer)
+  def comment(pos: Position, msg: String) {}
   def flush() { }
   def reset() {
     INFO.count        = 0
