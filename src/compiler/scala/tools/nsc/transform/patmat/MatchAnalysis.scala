@@ -104,7 +104,6 @@ trait TreeAndTypeAnalysis extends Debugging {
         // TODO case _ if tp.isTupleType => // recurse into component types
         case modSym: ModuleClassSymbol =>
           Some(List(tp))
-        // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
         case sym: RefinementClassSymbol =>
           val parentSubtypes: List[Option[List[Type]]] = tp.parents.map(parent => enumerateSubtypes(parent))
           if (parentSubtypes exists (_.isDefined))
@@ -115,10 +114,8 @@ trait TreeAndTypeAnalysis extends Debugging {
               parentSubtypes flatMap (_.getOrElse(Nil)) filter (_ <:< tp)
             )
           else None
-        case sym if !sym.isSealed || isPrimitiveValueClass(sym) =>
-          debug.patmat("enum unsealed "+ ((tp, sym, sym.isSealed, isPrimitiveValueClass(sym))))
-          None
-        case sym =>
+        // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
+        case sym if sym.isSealed && !isPrimitiveValueClass(sym) =>
           val subclasses = debug.patmatResult(s"enum $sym sealed, subclasses")(
             // symbols which are both sealed and abstract need not be covered themselves, because
             // all of their children must be and they cannot otherwise be created.
@@ -146,6 +143,9 @@ trait TreeAndTypeAnalysis extends Debugging {
               else None
             }
           })
+        case sym =>
+          debug.patmat("enum unsealed "+ ((tp, sym, sym.isSealed, isPrimitiveValueClass(sym))))
+          None
       }
 
     // approximate a type to the static type that is fully checkable at run time,
