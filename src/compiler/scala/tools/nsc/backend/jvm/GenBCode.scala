@@ -165,7 +165,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
         // -------------- mirror class, if needed --------------
         val mirrorC =
-          if (isStaticModule(claszSymbol) && isTopLevelModule(claszSymbol)) {
+          if (isTopLevelModuleClass(claszSymbol)) {
             if (claszSymbol.companionClass == NoSymbol) {
               mirrorCodeGen.genMirrorClass(claszSymbol, cunit)
             } else {

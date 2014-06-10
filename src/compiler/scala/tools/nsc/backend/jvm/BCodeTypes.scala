@@ -627,19 +627,51 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     false
   }
 
-  /*
+  /**
    * must-single-thread
+   *
+   * True for module classes of package level objects. The backend will generate a mirror class for
+   * such objects.
    */
-  def isTopLevelModule(sym: Symbol): Boolean = {
-    exitingPickler { sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass }
+  def isTopLevelModuleClass(sym: Symbol): Boolean = exitingPickler {
+    // phase travel to pickler required for isNestedClass (looks at owner)
+    val r = sym.isModuleClass && !sym.isNestedClass
+    // The mixin phase adds the `lateMODULE` flag to trait implementation classes. Since the flag
+    // is late, it should not be visible here inside the time travel. We check this.
+    if (r) assert(!sym.isImplClass, s"isModuleClass should be false for impl class $sym")
+    r
   }
 
-  /*
+  /**
    * must-single-thread
+   *
+   * True for module classes of modules that are top-level or owned only by objects. Module classes
+   * for such objects will get a MODULE$ flag and a corresponding static initializer.
    */
-  def isStaticModule(sym: Symbol): Boolean = {
-    sym.isModuleClass && !sym.isImplClass && !sym.isLifted
+  def isStaticModuleClass(sym: Symbol): Boolean = {
+    /* The implementation of this method is tricky because it is a source-level property. Various
+     * phases changed the symbol's properties in the meantime.
+     *
+     * (1) Phase travel to to pickler is required to exclude implementation classes; they have the
+     * lateMODULEs after mixin, so isModuleClass would be true.
+     *
+     * (2) We cannot use `sym.isStatic` because lambdalift modified (destructively) the owner. For
+     * example, in
+     *   object T { def f { object U } }
+     * the owner of U is T, so UModuleClass.isStatic is true. Phase travel does not help here.
+     * So we basically re-implement `sym.isStaticOwner`, but using the original owner chain.
+     */
+
+    def isOriginallyStaticOwner(sym: Symbol): Boolean = {
+      sym.isPackageClass || sym.isModuleClass && isOriginallyStaticOwner(sym.originalOwner)
+    }
+
+    exitingPickler { // (1)
+      sym.isModuleClass &&
+      isOriginallyStaticOwner(sym.originalOwner) // (2)
+    }
   }
+
 
   // ---------------------------------------------------------------------
   // ---------------- InnerClasses attribute (JVMS 4.7.6) ----------------
@@ -743,7 +775,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
         null
       else {
         val outerName = innerSym.rawowner.javaBinaryName
-        if (isTopLevelModule(innerSym.rawowner)) nme.stripModuleSuffix(outerName)
+        if (isTopLevelModuleClass(innerSym.rawowner)) nme.stripModuleSuffix(outerName)
         else outerName
       }
     }
@@ -825,7 +857,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     // new instances via outerClassInstance.new InnerModuleClass$().
     // TODO: do this early, mark the symbol private.
     val privateFlag =
-      sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModule(sym.owner))
+      sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModuleClass(sym.owner))
 
     // Symbols marked in source as `final` have the FINAL flag. (In the past, the flag was also
     // added to modules and module classes, not anymore since 296b706).
@@ -854,7 +886,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     // emit ACC_FINAL.
 
     val finalFlag = (
-         (((sym.rawflags & symtab.Flags.FINAL) != 0) || isTopLevelModule(sym))
+         (((sym.rawflags & symtab.Flags.FINAL) != 0) || isTopLevelModuleClass(sym))
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
       && !sym.isMutable // lazy vals and vars both
