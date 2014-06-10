@@ -139,8 +139,10 @@ trait ScalacPatternExpanders {
       def acceptMessage   = if (extractor.isErroneous) "" else s" to hold ${extractor.offeringString}"
       val requiresTupling = isUnapply && patterns.totalArity == 1 && productArity > 1
 
-      if (requiresTupling && effectivePatternArity(args) == 1)
-        currentUnit.deprecationWarning(sel.pos, s"${sel.symbol.owner} expects $productArity patterns$acceptMessage but crushing into $productArity-tuple to fit single pattern (SI-6675)")
+      if (requiresTupling && effectivePatternArity(args) == 1) {
+        val sym = sel.symbol.owner
+        currentUnit.deprecationWarning(sel.pos, sym, s"${sym} expects $productArity patterns$acceptMessage but crushing into $productArity-tuple to fit single pattern (SI-6675)")
+      }
 
       val normalizedExtractor = if (requiresTupling) tupleExtractor(extractor) else extractor
       validateAligned(fn, Aligned(patterns, normalizedExtractor))

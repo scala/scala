@@ -132,8 +132,10 @@ trait CompilationUnits { global: Global =>
     def warning(pos: Position, msg: String): Unit             = reporter.warning(pos, msg)
 
     def deprecationWarning(pos: Position, msg: String): Unit  = reporting.deprecationWarning(pos, msg)
+    def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit = reporting.deprecationWarning(pos, sym, msg)
     def uncheckedWarning(pos: Position, msg: String): Unit    = reporting.uncheckedWarning(pos, msg)
     def inlinerWarning(pos: Position, msg: String): Unit      = reporting.inlinerWarning(pos, msg)
+
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "",
                        required: Boolean): Unit               = reporting.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
 

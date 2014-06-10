@@ -10,6 +10,9 @@ package internal
 /** Provides delegates to the reporter doing the actual work.
  * All forwarding methods should be marked final,
  * but some subclasses out of our reach stil override them.
+ *
+ * Eventually, this interface should be reduced to one method: `reporter`,
+ * and clients should indirect themselves (reduce duplication of forwarders).
  */
 trait Reporting { self : Positions =>
   def reporter: Reporter

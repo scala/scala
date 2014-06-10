@@ -61,6 +61,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     private val _inlinerWarnings        = new ConditionalWarning("inliner", settings.YinlinerWarnings)
     private val _allConditionalWarnings = List(_deprecationWarnings, _uncheckedWarnings, _featureWarnings, _inlinerWarnings)
 
+    // TODO: remove in favor of the overload that takes a Symbol, give that argument a default (NoSymbol)
     def deprecationWarning(pos: Position, msg: String): Unit = _deprecationWarnings.warn(pos, msg)
     def uncheckedWarning(pos: Position, msg: String): Unit   = _uncheckedWarnings.warn(pos, msg)
     def featureWarning(pos: Position, msg: String): Unit     = _featureWarnings.warn(pos, msg)
@@ -72,6 +73,9 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     def inlinerWarnings     = _inlinerWarnings.warnings.toList
 
     def allConditionalWarnings = _allConditionalWarnings flatMap (_.warnings)
+
+    // behold! the symbol that caused the deprecation warning (may not be deprecated itself)
+    def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit = _deprecationWarnings.warn(pos, msg)
 
     private[this] var reportedFeature = Set[Symbol]()
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit = {

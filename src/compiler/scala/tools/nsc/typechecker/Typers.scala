@@ -941,10 +941,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
       def adaptConstant(value: Constant): Tree = {
         val sym = tree.symbol
-        if (sym != null && sym.isDeprecated) {
-          val msg = sym.toString + sym.locationString + " is deprecated: " + sym.deprecationMessage.getOrElse("")
-          unit.deprecationWarning(tree.pos, msg)
-        }
+        if (sym != null && sym.isDeprecated)
+          unit.deprecationWarning(tree.pos, sym, s"${sym.toString}${sym.locationString} is deprecated: ${sym.deprecationMessage.getOrElse("")}")
+
         treeCopy.Literal(tree, value)
       }
 
@@ -1676,7 +1675,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (!isPastTyper && psym.hasDeprecatedInheritanceAnnotation && !sameSourceFile) {
             val suffix = psym.deprecatedInheritanceMessage map (": " + _) getOrElse ""
             val msg = s"inheritance from ${psym.fullLocationString} is deprecated$suffix"
-            unit.deprecationWarning(parent.pos, msg)
+            unit.deprecationWarning(parent.pos, psym, msg)
           }
 
           if (psym.isSealed && !phase.erasedTypes)
@@ -3666,7 +3665,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
 
           if (annType.typeSymbol == DeprecatedAttr && argss.flatten.size < 2)
-            unit.deprecationWarning(ann.pos, "@deprecated now takes two arguments; see the scaladoc.")
+            unit.deprecationWarning(ann.pos, DeprecatedAttr, "@deprecated now takes two arguments; see the scaladoc.")
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
           else annInfo(typedAnn)
@@ -4698,10 +4697,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // temporarily use `filter` as an alternative for `withFilter`
       def tryWithFilterAndFilter(tree: Select, qual: Tree): Tree = {
-        def warn() = unit.deprecationWarning(tree.pos, s"`withFilter' method does not yet exist on ${qual.tpe.widen}, using `filter' method instead")
+        def warn(sym: Symbol) = unit.deprecationWarning(tree.pos, sym, s"`withFilter' method does not yet exist on ${qual.tpe.widen}, using `filter' method instead")
         silent(_ => typedSelect(tree, qual, nme.withFilter)) orElse { _ =>
           silent(_ => typed1(Select(qual, nme.filter) setPos tree.pos, mode, pt)) match {
-            case SilentResultValue(res) => warn() ; res
+            case SilentResultValue(res) => warn(res.symbol) ; res
             case SilentTypeError(err)   => WithFilterError(tree, err)
           }
         }
@@ -5482,7 +5481,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         def reportWarning(inferredType: Type) = {
           val explanation = s"inference of $inferredType from macro impl's c.Expr[$inferredType] is deprecated and is going to stop working in 2.12"
-          unit.deprecationWarning(ddef.pos, s"$commonMessage ($explanation)")
+          unit.deprecationWarning(ddef.pos, ddef.symbol, s"$commonMessage ($explanation)")
         }
         computeMacroDefTypeFromMacroImplRef(ddef, rhs1) match {
           case ErrorType => ErrorType

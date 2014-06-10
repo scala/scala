@@ -546,7 +546,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
           if (other.hasDeprecatedOverridingAnnotation) {
             val suffix = other.deprecatedOverridingMessage map (": " + _) getOrElse ""
             val msg = s"overriding ${other.fullLocationString} is deprecated$suffix"
-            unit.deprecationWarning(member.pos, msg)
+            unit.deprecationWarning(member.pos, other, msg)
           }
         }
       }
@@ -1287,11 +1287,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     private def checkUndesiredProperties(sym: Symbol, pos: Position) {
       // If symbol is deprecated, and the point of reference is not enclosed
       // in either a deprecated member or a scala bridge method, issue a warning.
-      if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
-        unit.deprecationWarning(pos, "%s%s is deprecated%s".format(
-          sym, sym.locationString, sym.deprecationMessage map (": " + _) getOrElse "")
-        )
-      }
+      if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation))
+        unit.deprecationWarning(pos, sym, s"${sym}${sym.locationString} is deprecated${sym.deprecationMessage map (": " + _) getOrElse ""}")
+
       // Similar to deprecation: check if the symbol is marked with @migration
       // indicating it has changed semantics between versions.
       if (sym.hasMigrationAnnotation && settings.Xmigration.value != NoScalaVersion) {
@@ -1409,8 +1407,8 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         if(!concrOvers.isEmpty)
           unit.deprecationWarning(
             tree.pos,
-            symbol.toString + " overrides concrete, non-deprecated symbol(s):" +
-            concrOvers.map(_.name.decode).mkString("    ", ", ", ""))
+            symbol,
+            s"${symbol.toString} overrides concrete, non-deprecated symbol(s):    ${concrOvers.map(_.name.decode).mkString(", ")}")
       }
     }
     private def isRepeatedParamArg(tree: Tree) = currentApplication match {
