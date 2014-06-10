@@ -115,7 +115,7 @@ trait TreeAndTypeAnalysis extends Debugging {
             )
           else None
         // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
-        case sym if sym.isSealed && !isPrimitiveValueClass(sym) =>
+        case sym if sym.isSealed =>
           val subclasses = debug.patmatResult(s"enum $sym sealed, subclasses")(
             // symbols which are both sealed and abstract need not be covered themselves, because
             // all of their children must be and they cannot otherwise be created.
