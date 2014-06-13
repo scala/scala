@@ -72,6 +72,11 @@ class SymbolTableForUnitTesting extends SymbolTable {
   def picklerPhase: scala.reflect.internal.Phase = SomePhase
   def erasurePhase: scala.reflect.internal.Phase = SomePhase
 
+  // Members declared in scala.reflect.internal.Reporting
+  def reporter = new scala.reflect.internal.ReporterImpl {
+    protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = println(msg)
+  }
+
   // Members declared in scala.reflect.internal.SymbolTable
   def currentRunId: Int = 1
   def log(msg: => AnyRef): Unit = println(msg)

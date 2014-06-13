@@ -10,9 +10,15 @@ package nsc
 import reporters.{ Reporter, ConsoleReporter }
 import scala.collection.{ mutable, immutable }
 
+/** Provides delegates to the reporter doing the actual work.
+ * PerRunReporting implements per-Run stateful info tracking and reporting
+ *
+ * TODO: make reporting configurable
+ */
 trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions with CompilationUnits with scala.reflect.api.Symbols =>
   def settings: Settings
-  def reporter: Reporter
+
+  // == currentRun.reporting
   def currentReporting: PerRunReporting
 
   def supplementTyperState(errorMessage: String): String
@@ -20,10 +26,6 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
   // not deprecated yet, but a method called "error" imported into
   // nearly every trait really must go.  For now using globalError.
   def error(msg: String) = globalError(msg)
-
-  override def inform(pos: Position, msg: String)      = reporter.echo(pos, msg)
-  override def warning(pos: Position, msg: String)     = reporter.warning(pos, msg)
-  override def globalError(pos: Position, msg: String) = reporter.error(pos, msg)
 
   override def deprecationWarning(pos: Position, msg: String) = currentReporting.deprecationWarning(pos, msg)
   override def supplementErrorMessage(errorMessage: String)   = currentReporting.supplementErrorMessage(errorMessage)
