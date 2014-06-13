@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2014 Contributor. All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Scala License which accompanies this distribution, and
+ * is available at http://www.scala-lang.org/license.html
+ */
 package scala.tools.nsc
 package symtab
 
@@ -6,6 +11,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 import org.junit.runners.JUnit4
+import scala.tools.nsc.settings.ClassPathImplementationType
 
 @RunWith(classOf[JUnit4])
 class SymbolTableTest {
@@ -22,7 +28,7 @@ class SymbolTableTest {
     var i = 0
     while (i < 200) {
       object symbolTable extends SymbolTableForUnitTesting
-      symbolTable.settings.YclasspathImpl.value = "flat"
+      symbolTable.settings.YclasspathImpl.value = ClassPathImplementationType.Flat
       symbolTable.definitions.init()
       val listClassTpe = symbolTable.definitions.ListClass.tpe
       val seqClassTpe = symbolTable.definitions.SeqClass.tpe

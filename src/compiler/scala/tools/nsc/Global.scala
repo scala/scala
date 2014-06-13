@@ -1,6 +1,10 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
+ *
+ * Copyright (c) 2014 Contributor. All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Scala License which accompanies this distribution, and
+ * is available at http://www.scala-lang.org/license.html
  */
 
 package scala
@@ -9,17 +13,15 @@ package nsc
 
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
-import java.util.UUID._
 import scala.compat.Platform.currentTime
-import scala.collection.{ mutable, immutable }
+import scala.collection.mutable
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString }
+import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning }
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
-import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
-import scala.reflect.io.VirtualFile
-import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
+import scala.reflect.internal.util.{ SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
+import scala.reflect.internal.pickling.PickleBuffer
+import symtab.{ Flags, SymbolTable, SymbolTrackers }
 import symtab.classfile.Pickler
 import plugins.Plugins
 import ast._
@@ -28,7 +30,7 @@ import typechecker._
 import transform.patmat.PatternMatching
 import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
-import backend.{ ScalaPrimitives, Platform, JavaPlatform }
+import backend.{ ScalaPrimitives, JavaPlatform }
 import backend.jvm.GenBCode
 import backend.jvm.GenASM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, ClosureElimination, DeadCodeElimination }
@@ -36,6 +38,7 @@ import backend.icode.analysis._
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath.FlatClasspath
+import scala.tools.nsc.settings.ClassPathImplementationType
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
@@ -60,8 +63,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val universe: self.type = self
     def rootLoader: LazyType = {
       settings.YclasspathImpl.value match {
-        case "flat" => new loaders.PackageLoaderUsingFlatClasspath(FlatClasspath.RootPackage, flatClasspath)
-        case "recursive" => new loaders.PackageLoader(classPath)
+        case ClassPathImplementationType.Flat => new loaders.PackageLoaderUsingFlatClasspath(FlatClasspath.RootPackage, flatClasspath)
+        case ClassPathImplementationType.Recursive => new loaders.PackageLoader(classPath)
       }
     }
     override def toString = "compiler mirror"
@@ -891,7 +894,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           }
           cp.entries find matchesCanonical match {
             case Some(oldEntry) =>
-              List(oldEntry -> cp.context.newClassPath(dir))
+              List(oldEntry -> cp.context.createClassPath(dir))
             case None =>
               println(s"canonical = $canonical, origins = ${cp.entries map (_.origin)}")
               error(s"cannot invalidate: no entry named $path in classpath $classPath")
@@ -1101,6 +1104,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.
    */
+
   override def supplementTyperState(errorMessage: String): String = try {
     val tree      = analyzer.lastTreeToTyper
     val sym       = tree.symbol
@@ -1114,6 +1118,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       val strs = xs.zipWithIndex map { case (line, idx) => f"${start + idx}%6d $line" }
       strs.mkString("== Source file context for tree position ==\n\n", "\n", "")
     }
+
     catch { case t: Exception => devWarning("" + t) ; "<Cannot read source file>" }
 
     val info1 = formatExplain(
@@ -1147,6 +1152,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       inform("[running phase " + ph.name + " on " + currentRun.size +  " compilation units]")
   }
 
+
   def newSourceFile(code: String, filename: String = "<console>") =
     new BatchSourceFile(filename, code)
 
@@ -1164,6 +1170,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** A Run is a single execution of the compiler on a set of units.
    */
+
   class Run extends RunContextApi with RunReporting {
     /** Have been running into too many init order issues with Run
      *  during erroneous conditions.  Moved all these vals up to the
@@ -1173,10 +1180,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     /** The currently compiled unit; set from GlobalPhase */
     var currentUnit: CompilationUnit = NoCompilationUnit
 
+
     // used in sbt
     def uncheckedWarnings: List[(Position, String)] = reporting.uncheckedWarnings
     // used in sbt
     def deprecationWarnings: List[(Position, String)] = reporting.deprecationWarnings
+
 
     private class SyncedCompilationBuffer { self =>
       private val underlying = new mutable.ArrayBuffer[CompilationUnit]
@@ -1440,9 +1449,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     private def checkDeprecatedSettings(unit: CompilationUnit) {
       // issue warnings for any usage of deprecated settings
       settings.userSetSettings filter (_.isDeprecated) foreach { s =>
+
         currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get)
       }
       if (settings.target.value.contains("jvm-1.5"))
+
         currentRun.reporting.deprecationWarning(NoPosition, settings.target.name + ":" + settings.target.value + " is deprecated: use target for Java 1.6 or above.")
     }
 
@@ -1536,6 +1547,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
       def checkDeprecations() = {
         checkDeprecatedSettings(newCompilationUnit(""))
+
         reporting.summarizeErrors()
       }
 

@@ -1,6 +1,10 @@
 /* NSC -- new Scala compiler
  * Copyright 2006-2013 LAMP/EPFL
  * @author  Martin Odersky
+ *
+ * Copyright (c) 2014 Contributor. All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Scala License which accompanies this distribution, and
+ * is available at http://www.scala-lang.org/license.html
  */
 
 
@@ -9,15 +13,13 @@ package util
 
 import java.net.URL
 import scala.collection.{ mutable, immutable }
-import io.{ File, Directory, Path, Jar, AbstractFile }
+import io.{ File, Directory, Jar, AbstractFile }
 import scala.reflect.internal.util.StringOps.splitWhere
 import Jar.isJarOrZip
 import File.pathSeparator
 import java.net.MalformedURLException
 import java.util.regex.PatternSyntaxException
-import scala.reflect.runtime.ReflectionUtils
 import ClassPath._
-import scala.reflect.io.FileZipArchive
 import scala.tools.nsc.classpath.FlatClasspath
 
 /** <p>
@@ -109,20 +111,20 @@ object ClassPath {
      */
     def toBinaryName(rep: T): String
 
-    def sourcesInPath(path: String): List[ClassPath[T]] =
+    override def sourcesInPath(path: String): List[ClassPath[T]] =
       for (file <- expandPath(path, expandStar = false) ; dir <- Option(AbstractFile getDirectory file)) yield
         new SourcePath[T](dir, this)
   }
 
   class JavaContext extends ClassPathContext[AbstractFile] {
-    def toBinaryName(rep: AbstractFile) = {
+    override def toBinaryName(rep: AbstractFile) = {
       val name = rep.name
       assert(endsClass(name), name)
       name.substring(0, name.length - 6)
     }
-    def newClassPath(dir: AbstractFile): ClassPath[AbstractFile] = {
-        new DirectoryClassPath(dir, this)
-    }
+
+    override def createClassPath(dir: AbstractFile): ClassPath[AbstractFile] =
+	    new DirectoryClassPath(dir, this)
   }
 
   object DefaultJavaContext extends JavaContext
@@ -306,6 +308,7 @@ class MergedClassPath[T](
   val entries: IndexedSeq[ClassPath[T]],
   val context: ClassPathContext[T])
 extends ClassPath[T] {
+
   def this(entries: TraversableOnce[ClassPath[T]], context: ClassPathContext[T]) =
     this(entries.toIndexedSeq, context)
 
@@ -368,10 +371,12 @@ extends ClassPath[T] {
     }
     new MergedClassPath[T](newEntries, context)
   }
+
   def show() {
     println("ClassPath %s has %d entries and results in:\n".format(name, entries.size))
     asClasspathString split ':' foreach (x => println("  " + x))
   }
+
   override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")
 }
 
@@ -379,29 +384,28 @@ extends ClassPath[T] {
  * The classpath when compiling with target:jvm. Binary files (classfiles) are represented
  * as AbstractFile. nsc.io.ZipArchive is used to view zip/jar archives as directories.
  */
-class JavaClassPath(
-  containers: IndexedSeq[ClassPath[AbstractFile]],
-  context: JavaContext,
-  // this is required for sbt-interface compatibility because sbt calls findClass and
-  // we have to dispatch it to the correct classpath implementation
-  // Yes, I know, it's bat shit insane (GK)
-  flatClasspathEnabled: Boolean, flatClasspath: => FlatClasspath)
-extends MergedClassPath[AbstractFile](containers, context) {
+class JavaClassPath(containers: IndexedSeq[ClassPath[AbstractFile]],
+                    context: JavaContext,
+                    // this is required for sbt-interface compatibility because sbt calls findClass and
+                    // we have to dispatch it to the correct classpath implementation
+                    // Yes, I know, it's bat shit insane (GK)
+                    flatClasspathEnabled: Boolean, flatClasspath: => FlatClasspath)
+	extends MergedClassPath[AbstractFile](containers, context) {
 
-  def this(containers: IndexedSeq[ClassPath[AbstractFile]], context: JavaContext) =
-    this(containers, context, false, sys.error("FlatClasspath is disabled."))
+	def this(containers: IndexedSeq[ClassPath[AbstractFile]], context: JavaContext) =
+		this(containers, context, false, sys.error("FlatClasspath is disabled."))
 
-  // it's a lazy val so if we do not use flat classpath we shouldn't be forcing this
-  lazy val cachedFlatClasspath = {
-    assert(flatClasspathEnabled, "Flat classpath has been forced (evaluated) unexpectedly")
-    flatClasspath
-  }
+	// it's a lazy val so if we do not use flat classpath we shouldn't be forcing this
+	lazy val cachedFlatClasspath = {
+		assert(flatClasspathEnabled, "Flat classpath has been forced (evaluated) unexpectedly")
+		flatClasspath
+	}
 
-  override def findClass(name: String): Option[AnyClassRep] =
-    if (flatClasspathEnabled) {
-      val classfile = cachedFlatClasspath.findClassFile(name)
-      val classRep = classfile.map(file => ClassRep(Some(file), None))
-      classRep
-    } else super.findClass(name)
+	override def findClass(name: String): Option[AnyClassRep] =
+		if (flatClasspathEnabled) {
+			val classfile = cachedFlatClasspath.findClassFile(name)
+			val classRep = classfile.map(file => ClassRep(Some(file), None))
+			classRep
+		} else super.findClass(name)
 
 }

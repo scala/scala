@@ -1,19 +1,26 @@
+/*
+ * Copyright (c) 2014 Contributor. All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Scala License which accompanies this distribution, and
+ * is available at http://www.scala-lang.org/license.html
+ */
 package scala.tools.nsc.classpath
 
 import scala.tools.nsc.util.ClassPath
 import scala.reflect.io.AbstractFile
 
 class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends FlatClasspath {
+
   /** Empty string represents root package */
-  def packages(inPackage: String): Seq[PackageEntry] = {
+  override def packages(inPackage: String): Seq[PackageEntry] = {
     if (inPackage == FlatClasspath.RootPackage) {
       wrappedClasspath.packages.map(pkg => new WrappingPackageEntry(pkg.name, pkg))
     } else {
       val wrappedPackage = selectWrappedPackage(inPackage)
-      wrappedPackage.packages.map(pkg => new WrappingPackageEntry(inPackage + "." + pkg.name, pkg))
+      wrappedPackage.packages.map(pkg => new WrappingPackageEntry(s"$inPackage.${pkg.name}", pkg))
     }
   }
-  def classes(inPackage: String): Seq[ClassfileEntry] = {
+
+  override def classes(inPackage: String): Seq[ClassfileEntry] = {
     if (inPackage == FlatClasspath.RootPackage) {
       wrappedClasspath.classes.map(classRep => new WrappingClassfileEntry(classRep))
     } else {
@@ -41,15 +48,16 @@ class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends F
     wrappedPackage
   }
 
-  def findClassFile(name: String): Option[AbstractFile] = wrappedClasspath.findClassFile(name)
+  override def findClassFile(name: String): Option[AbstractFile] = wrappedClasspath.findClassFile(name)
 
   protected class WrappingPackageEntry(
       val name: String,
       wrappedPackage: ClassPath[AbstractFile]) extends PackageEntry
+
   protected class WrappingClassfileEntry(wrappedClassfileRep: ClassPath[AbstractFile]#AnyClassRep)
     extends ClassfileEntry {
     assert(wrappedClassfileRep.binary.isDefined)
-    def name = wrappedClassfileRep.name
-    def file: AbstractFile = wrappedClassfileRep.binary.get
+    override def name = wrappedClassfileRep.name
+    override def file: AbstractFile = wrappedClassfileRep.binary.get
   }
 }

@@ -1,6 +1,10 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
+ *
+ * Copyright (c) 2014 Contributor. All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Scala License which accompanies this distribution, and
+ * is available at http://www.scala-lang.org/license.html
  */
 
 package scala.tools.nsc
@@ -8,13 +12,13 @@ package symtab
 
 import java.io.IOException
 import scala.compat.Platform.currentTime
-import scala.tools.nsc.util.{ ClassPath }
+import scala.tools.nsc.util.ClassPath
 import classfile.ClassfileParser
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
-import scala.tools.nsc.classpath.FlatClasspath
-import scala.tools.nsc.classpath.ClassfileEntry
+import scala.tools.nsc.classpath.{PackageNameUtils, FlatClasspath, ClassfileEntry}
+import scala.tools.nsc.settings.ClassPathImplementationType
 
 /** This class ...
  *
@@ -49,7 +53,7 @@ abstract class SymbolLoaders {
 
   protected def signalError(root: Symbol, ex: Throwable) {
     if (settings.debug) ex.printStackTrace()
-    globalError(ex.getMessage() match {
+    globalError(ex.getMessage match {
       case null => "i/o error while loading " + root.name
       case msg  => "error while loading " + root.name + ", " + msg
     })
@@ -252,7 +256,7 @@ abstract class SymbolLoaders {
    * Load contents of a package
    */
   class PackageLoader(classpath: ClassPath[AbstractFile]) extends SymbolLoader with FlagAgnosticCompleter {
-    protected def description = "package loader "+ classpath.name
+    protected def description = s"package loader ${classpath.name}"
 
     protected def doComplete(root: Symbol) {
       assert(root.isPackageClass, root)
@@ -277,8 +281,9 @@ abstract class SymbolLoaders {
    * Load contents of a package
    */
   class PackageLoaderUsingFlatClasspath(packageName: String, classpath: FlatClasspath) extends SymbolLoader with FlagAgnosticCompleter {
-    protected def description = "package loader "+ { 
-      if (packageName == FlatClasspath.RootPackage) "<root package>" else packageName
+    protected def description = {
+	    val shownPackageName = if (packageName == FlatClasspath.RootPackage) "<root package>" else packageName
+	    s"package loader $shownPackageName"
     }
 
     protected def doComplete(root: Symbol) {
@@ -295,8 +300,7 @@ abstract class SymbolLoaders {
       if (!root.isEmptyPackageClass) {
         for (pkg <- packages) {
           val fullName = pkg.name
-          val lastDot = fullName.lastIndexOf('.')
-          val name = fullName.substring(lastDot+1)
+	        val name = PackageNameUtils.lastSubpackageNameForPackage(fullName)
           val packageLoader = new PackageLoaderUsingFlatClasspath(fullName, classpath)
           enterPackage(root, name, packageLoader)
         }
@@ -325,8 +329,8 @@ abstract class SymbolLoaders {
       private type SymbolLoadersRefined = SymbolLoaders { val symbolTable: classfileParser.symbolTable.type }
       val loaders = SymbolLoaders.this.asInstanceOf[SymbolLoadersRefined]
       def classfileLookup: util.ClassfileLookup = settings.YclasspathImpl.value match {
-        case "recursive" => platform.classPath
-        case "flat" => platform.flatClasspath
+        case ClassPathImplementationType.Recursive => platform.classPath
+        case ClassPathImplementationType.Flat => platform.flatClasspath
       }
     }
 

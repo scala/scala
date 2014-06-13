@@ -72,12 +72,6 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
   def container = unsupported()
   def absolute  = unsupported()
 
-  private def walkIterator(its: Iterator[AbstractFile]): Iterator[AbstractFile] = {
-    its flatMap { f =>
-      if (f.isDirectory) walkIterator(f.iterator)
-      else Iterator(f)
-    }
-  }
   /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
   sealed abstract class Entry(path: String) extends VirtualFile(baseName(path), path) {
     // have to keep this name for compat with sbt's compiler-interface
@@ -85,15 +79,17 @@ abstract class ZipArchive(override val file: JFile) extends AbstractFile with Eq
     override def underlyingSource = Some(self)
     override def toString = self.path + "(" + path + ")"
   }
+
   /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
   class DirEntry(path: String) extends Entry(path) {
-    val entries = mutable.HashMap[String, Entry]().withDefaultValue(null)
+    protected[io] val entries = mutable.HashMap[String, Entry]().withDefaultValue(null)
 
     override def isDirectory = true
     override def iterator: Iterator[Entry] = entries.valuesIterator
     override def lookupName(name: String, directory: Boolean): Entry = {
       lookupNameUnchecked(name, directory)
     }
+
     override def lookupNameUnchecked(name: String, directory: Boolean): Entry = {
       if (directory) entries(name + "/")
       else entries(name)

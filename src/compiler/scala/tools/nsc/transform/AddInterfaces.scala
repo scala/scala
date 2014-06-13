@@ -63,46 +63,46 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   def implClassPhase = currentRun.erasurePhase.next
 
   private def newImplClass(iface: Symbol): Symbol = {
-    val inClass   = iface.owner.isClass
-    val implName  = tpnme.implClassName(iface.name)
-    val implFlags = (iface.flags & ~(INTERFACE | lateINTERFACE)) | IMPLCLASS
+	  val ownerIsClass = iface.owner.isClass
+	  val implName = tpnme.implClassName(iface.name)
+	  val implFlags = (iface.flags & ~(INTERFACE | lateINTERFACE)) | IMPLCLASS
 
-    val impl0 = (
-      if (!inClass) NoSymbol
-      else iface.owner.info.decl(implName) match {
-        case NoSymbol => NoSymbol
-        case implSym  =>
-          // Unlink a pre-existing symbol only if the implementation class is
-          // visible on the compilation classpath.  In general this is true under
-          // -optimise and not otherwise, but the classpath can use arbitrary
-          // logic so the classpath must be queried.
-//          if (classPath.context.isValidName(implName + ".class")) {
-            iface.owner.info.decls unlink implSym
-            NoSymbol
-//          }
-//          else {
-//            log(s"not unlinking $iface's existing implClass ${implSym.name} because it is not on the classpath.")
-//            implSym
-//          }
-      }
-    )
-    val impl = impl0 orElse {
-      val impl = iface.owner.newImplClass(implName, iface.pos, implFlags)
-      if (iface.thisSym != iface) {
-        impl.typeOfThis = iface.typeOfThis
-        impl.thisSym setName iface.thisSym.name
-      }
-      impl.associatedFile = iface.sourceFile
-      if (inClass)
-        iface.owner.info.decls enter impl
+	  val impl0 =
+		  if (!ownerIsClass) NoSymbol
+		  else iface.owner.info.decl(implName) match {
+			  case NoSymbol => NoSymbol
+			  case implSym =>
+				  // Unlink a pre-existing symbol only if the implementation class is
+				  // visible on the compilation classpath. In general this is true under
+				  // -optimise and not otherwise, but the classpath can use arbitrary
+				  // logic so the classpath must be queried.
+				  //          if (classPath.context.isValidName(implName + ".class")) { TODO why this code is commented out?
+				  iface.owner.info.decls unlink implSym
+				  NoSymbol
+			  //          }
+			  //          else {
+			  //            log(s"not unlinking $iface's existing implClass ${implSym.name} because it is not on the classpath.")
+			  //            implSym
+			  //          }
+		  }
 
-      impl
-    }
-    if (currentRun compiles iface)
-      currentRun.symSource(impl) = iface.sourceFile
+	  val impl = impl0 orElse {
+		  val impl = iface.owner.newImplClass(implName, iface.pos, implFlags)
+		  if (iface.thisSym != iface) {
+			  impl.typeOfThis = iface.typeOfThis
+			  impl.thisSym setName iface.thisSym.name
+		  }
+		  impl.associatedFile = iface.sourceFile
+		  if (ownerIsClass)
+			  iface.owner.info.decls enter impl
 
-    implClassMap(iface) = impl
-    impl setInfo new LazyImplClassType(iface)
+		  impl
+	  }
+	  if (currentRun compiles iface)
+		  currentRun.symSource(impl) = iface.sourceFile
+
+	  implClassMap(iface) = impl
+	  impl setInfo new LazyImplClassType(iface)
   }
 
   /** Return the implementation class of a trait; create a new one of one does not yet exist */

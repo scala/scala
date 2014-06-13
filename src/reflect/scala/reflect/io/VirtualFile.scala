@@ -75,10 +75,10 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
   }
 
   /** Does this abstract file denote an existing file? */
-  def create() { unsupported() }
+  def create(): Unit = unsupported()
 
   /** Delete the underlying file or directory (recursively). */
-  def delete() { unsupported() }
+  def delete(): Unit = unsupported()
 
   /**
    * Returns the abstract file in this abstract directory with the

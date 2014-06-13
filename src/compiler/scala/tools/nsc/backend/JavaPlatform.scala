@@ -1,6 +1,10 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Paul Phillips
+ *
+ * Copyright (c) 2014 Contributor. All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Scala License which accompanies this distribution, and
+ * is available at http://www.scala-lang.org/license.html
  */
 
 package scala.tools.nsc
@@ -11,6 +15,7 @@ import util.{ClassPath,MergedClassPath,DeltaClassPath}
 import scala.tools.util.PathResolver
 import scala.tools.nsc.classpath.FlatClasspath
 import scala.tools.nsc.classpath.DefaultFlatClasspathManager
+import scala.tools.nsc.settings.ClassPathImplementationType
 
 trait JavaPlatform extends Platform {
   val global: Global
@@ -21,13 +26,13 @@ trait JavaPlatform extends Platform {
   private var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
 
   def classPath: ClassPath[AbstractFile] = {
-    //assert(settings.YclasspathImpl.value == "recursive")
+    assert(settings.YclasspathImpl.value == ClassPathImplementationType.Recursive)
     if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, flatClasspath).result)
     currentClassPath.get
   }
 
   lazy val flatClasspath: FlatClasspath = {
-    assert(settings.YclasspathImpl.value == "flat")
+    assert(settings.YclasspathImpl.value == ClassPathImplementationType.Flat)
     DefaultFlatClasspathManager.createClasspath(settings)
   }
 

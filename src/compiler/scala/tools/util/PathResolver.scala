@@ -1,6 +1,10 @@
 /* NSC -- new Scala compiler
  * Copyright 2006-2013 LAMP/EPFL
  * @author  Paul Phillips
+ *
+ * Copyright (c) 2014 Contributor. All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Scala License which accompanies this distribution, and
+ * is available at http://www.scala-lang.org/license.html
  */
 
 package scala
@@ -17,6 +21,7 @@ import PartialFunction.condOpt
 import scala.language.postfixOps
 import scala.tools.nsc.classpath.ClasspathFactory
 import scala.tools.nsc.classpath.FlatClasspath
+import scala.tools.nsc.settings.ClassPathImplementationType
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SIW/Classpath
@@ -298,7 +303,7 @@ class PathResolver(settings: Settings, context: JavaContext, flatClasspath: => F
   def containers = Calculated.containers
 
   lazy val result = {
-    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings.YclasspathImpl.value == "flat", flatClasspath)
+    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings.YclasspathImpl.value == ClassPathImplementationType.Flat, flatClasspath)
     if (settings.Ylogcp) {
       Console print f"Classpath built from ${settings.toConciseString} %n"
       Console print s"Defaults: ${PathResolver.Defaults}"
