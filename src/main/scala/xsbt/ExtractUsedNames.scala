@@ -56,12 +56,12 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
 
     def handleTreeNode(node: Tree): Unit = {
       def handleMacroExpansion(original: Tree): Unit = {
-        // Some macros seem to have themselves registered as original tree.
-        // In this case, we only need to handle the children of the original tree,
-        // because we already handled the expanded tree.
+        // Some macros seem to be their own orignal tree, or appear in the children of their
+        // original tree. To prevent infinite loops, we need to filter out nodes that we already
+        // handled.
+        // This is only relevant for Scala 2.10.4
         // See https://issues.scala-lang.org/browse/SI-8486
-        if (original == node) original.children.foreach(handleTreeNode)
-        else original.foreach(handleTreeNode)
+        original.filter(_ ne node).foreach(handleTreeNode)
       }
 
       def handleClassicTreeNode(node: Tree): Unit = node match {
