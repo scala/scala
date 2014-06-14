@@ -308,11 +308,16 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         val functionalInterface: Symbol = {
           val sym = originalFunction.tpe.typeSymbol
           val pack = currentRun.runDefinitions.Scala_Java8_CompatPackage
-          val returnUnit = restpe.typeSymbol == UnitClass
-          val functionInterfaceArray =
-            if (returnUnit) currentRun.runDefinitions.Scala_Java8_CompatPackage_JProcedure
-            else currentRun.runDefinitions.Scala_Java8_CompatPackage_JFunction
-          functionInterfaceArray.apply(arity)
+          val name1 = specializeTypes.specializedFunctionName(sym, originalFunction.tpe.typeArgs)
+          if (name1.toTypeName == sym.name) {
+            val returnUnit = restpe.typeSymbol == UnitClass
+            val functionInterfaceArray =
+              if (returnUnit) currentRun.runDefinitions.Scala_Java8_CompatPackage_JProcedure
+              else currentRun.runDefinitions.Scala_Java8_CompatPackage_JFunction
+            functionInterfaceArray.apply(arity)
+          } else {
+            pack.info.decl(name1.toTypeName.prepend("J"))
+          }
         }
         if (functionalInterface.exists) {
           val captureArgs = captures.iterator.map(capture => gen.mkAttributedRef(capture) setPos originalFunction.pos).toList
