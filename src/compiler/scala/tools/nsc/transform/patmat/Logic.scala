@@ -11,6 +11,7 @@ import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.HashSet
+import scala.annotation.tailrec
 
 trait Logic extends Debugging  {
   import PatternMatchingStats._
@@ -46,7 +47,7 @@ trait Logic extends Debugging  {
     type Tree
 
     class Prop
-    case class Eq(p: Var, q: Const) extends Prop
+    final case class Eq(p: Var, q: Const) extends Prop
 
     type Const
 
@@ -103,39 +104,53 @@ trait Logic extends Debugging  {
       def implications: List[(Sym, List[Sym], List[Sym])]
     }
 
+    private def propToLinkedHashSet(ops: Seq[Prop]) = {
+      val set = new mutable.LinkedHashSet[Prop]()
+      ops.foreach(set += _)
+      set
+    }
+
     // would be nice to statically check whether a prop is equational or pure,
     // but that requires typing relations like And(x: Tx, y: Ty) : (if(Tx == PureProp && Ty == PureProp) PureProp else Prop)
-    case class And(a: Prop, b: Prop) extends Prop
-    case class Or(a: Prop, b: Prop) extends Prop
-    case class Not(a: Prop) extends Prop
+    final case class And(ops: mutable.LinkedHashSet[Prop]) extends Prop
+    object And {
+      def apply(ops: Prop*) = new And(propToLinkedHashSet(ops))
+    }
+    final case class Or(ops: mutable.LinkedHashSet[Prop]) extends Prop
+    object Or {
+      def apply(ops: Prop*) = new Or(propToLinkedHashSet(ops))
+    }
+
+    final case class Not(a: Prop) extends Prop
 
     case object True extends Prop
     case object False extends Prop
 
     // symbols are propositions
-    abstract case class Sym(variable: Var, const: Const) extends Prop {
+    final class Sym private[PropositionalLogic] (val variable: Var, val const: Const) extends Prop {
       private val id: Int = Sym.nextSymId
 
-      override def toString = variable +"="+ const +"#"+ id
+      override def toString = variable + "=" + const + "#" + id
     }
-    class UniqueSym(variable: Var, const: Const) extends Sym(variable, const)
+
     object Sym {
       private val uniques: HashSet[Sym] = new HashSet("uniques", 512)
       def apply(variable: Var, const: Const): Sym = {
-        val newSym = new UniqueSym(variable, const)
+        val newSym = new Sym(variable, const)
         (uniques findEntryOrUpdate newSym)
       }
-      private def nextSymId = {_symId += 1; _symId}; private var _symId = 0
+      def nextSymId = {_symId += 1; _symId}; private var _symId = 0
       implicit val SymOrdering: Ordering[Sym] = Ordering.by(_.id)
     }
 
-    def /\(props: Iterable[Prop]) = if (props.isEmpty) True else props.reduceLeft(And(_, _))
-    def \/(props: Iterable[Prop]) = if (props.isEmpty) False else props.reduceLeft(Or(_, _))
+    def /\(props: Iterable[Prop]) = if (props.isEmpty) True else And(props.toSeq: _*)
+    def \/(props: Iterable[Prop]) = if (props.isEmpty) False else Or(props.toSeq: _*)
+
 
     trait PropTraverser {
       def apply(x: Prop): Unit = x match {
-        case And(a, b) => apply(a); apply(b)
-        case Or(a, b) => apply(a); apply(b)
+        case And(ops) => ops foreach apply
+        case Or(ops) => ops foreach apply
         case Not(a) => apply(a)
         case Eq(a, b) => applyVar(a); applyConst(b)
         case _ =>
@@ -154,8 +169,8 @@ trait Logic extends Debugging  {
 
     trait PropMap {
       def apply(x: Prop): Prop = x match { // TODO: mapConserve
-        case And(a, b) => And(apply(a), apply(b))
-        case Or(a, b) => Or(apply(a), apply(b))
+        case And(ops) => And(ops map apply)
+        case Or(ops) => Or(ops map apply)
         case Not(a) => Not(apply(a))
         case p => p
       }
@@ -255,8 +270,8 @@ trait Logic extends Debugging  {
         }
       }
 
-      debug.patmat("eqAxioms:\n"+ cnfString(toFormula(eqAxioms)))
-      debug.patmat("pure:"+ pure.map(p => cnfString(p)).mkString("\n"))
+      debug.patmat(s"eqAxioms:\n$eqAxioms")
+      debug.patmat(s"pure:${pure.mkString("\n")}")
 
       if (Statistics.canEnable) Statistics.stopTimer(patmatAnaVarEq, start)
 
