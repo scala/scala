@@ -628,7 +628,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
           val fields = presupers filter (_.getterName == name)
           assert(fields.length == 1)
           val to = fields.head.symbol
-          if (!to.tpe.isInstanceOf[ConstantType])
+          if (!enteringErasure(to.tpe.isInstanceOf[ConstantType]))
             constrStatBuf += mkAssign(to, Ident(stat.symbol))
         case _ =>
       }
@@ -639,7 +639,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
       case DefDef(_,_,_,_,_,rhs) =>
         // methods with constant result type get literals as their body
         // all methods except the primary constructor go into template
-        stat.symbol.tpe match {
+        enteringErasure(stat.symbol.tpe) match {
           case MethodType(List(), tp @ ConstantType(c)) =>
             defBuf += deriveDefDef(stat)(Literal(c) setPos _.pos setType tp)
           case _ =>
@@ -654,7 +654,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         // if the val def is an early initialized or a parameter accessor, it goes
         // before the superclass constructor call, otherwise it goes after.
         // Lazy vals don't get the assignment in the constructor.
-        if (!stat.symbol.tpe.isInstanceOf[ConstantType]) {
+        if (!enteringErasure(stat.symbol.tpe.isInstanceOf[ConstantType])) {
           if (rhs != EmptyTree && !stat.symbol.isLazy) {
             val rhs1 = intoConstructor(stat.symbol, rhs)
             (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(

@@ -89,7 +89,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         settings.checkInit
      && sym.isGetter
      && !sym.isInitializedToDefault
-     && !isConstantType(sym.info.finalResultType) // SI-4742
+     && !enteringErasure(isConstantType(sym.info.finalResultType)) // SI-4742
      && !sym.hasFlag(PARAMACCESSOR | SPECIALIZED | LAZY)
      && !sym.accessed.hasFlag(PRESUPER)
      && !sym.isOuterAccessor
@@ -207,8 +207,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       def newGetter(field: Symbol): Symbol = {
         // println("creating new getter for "+ field +" : "+ field.info +" at "+ field.locationString+(field hasFlag MUTABLE))
         val newFlags = field.flags & ~PrivateLocal | ACCESSOR | lateDEFERRED | ( if (field.isMutable) 0 else STABLE )
-        // TODO preserve pre-erasure info?
-        clazz.newMethod(field.getterName, field.pos, newFlags) setInfo MethodType(Nil, field.info)
+        enteringErasure {
+          clazz.newMethod(field.getterName, field.pos, newFlags) setInfo MethodType(Nil, field.info)
+        }
       }
 
       /* Create a new setter. Setters are never private or local. They are
@@ -218,8 +219,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val setterName = field.setterName
         val newFlags   = field.flags & ~PrivateLocal | ACCESSOR | lateDEFERRED
         val setter     = clazz.newMethod(setterName, field.pos, newFlags)
-        // TODO preserve pre-erasure info?
-        setter setInfo MethodType(setter.newSyntheticValueParams(List(field.info)), UnitTpe)
+        enteringErasure {
+          setter setInfo MethodType(setter.newSyntheticValueParams(List(field.info)), UnitTpe)
+        }
         if (field.needsExpandedSetterName)
           setter.name = nme.expandedSetterName(setter.name, clazz)
 
@@ -237,7 +239,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           }
           val getter = member.getter(clazz)
           if (getter == NoSymbol) addMember(clazz, newGetter(member))
-          if (!member.tpe.isInstanceOf[ConstantType] && !member.isLazy) {
+          val isConstant = enteringErasure(member.tpe).resultType.isInstanceOf[ConstantType]
+          if (!isConstant && !member.isLazy) {
             val setter = member.setter(clazz)
             if (setter == NoSymbol) addMember(clazz, newSetter(member))
           }
@@ -301,7 +304,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               )
             }
             if (!mixinMember.isSetter)
-              mixinMember.tpe match {
+              enteringErasure(mixinMember.tpe) match {
                 case MethodType(Nil, ConstantType(_)) =>
                   // mixinMember is a constant; only getter is needed
                   ;
@@ -1006,7 +1009,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
       def getterBody(getter: Symbol) = {
         assert(getter.isGetter)
-        val readValue = getter.tpe match {
+        val readValue = enteringErasure(getter.tpe) match {
           // A field "final val f = const" in a trait generates a getter with a ConstantType.
           case MethodType(Nil, ConstantType(c)) =>
             Literal(c)
@@ -1235,7 +1238,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           val ifaceGetter = sym getter iface
 
           if (ifaceGetter == NoSymbol) abort("No getter for " + sym + " in " + iface)
-          else typedPos(tree.pos)((qual DOT ifaceGetter)())
+          else atPos(tree.pos)(localTyper.typed(qual DOT ifaceGetter, tree.tpe))
 
         case Assign(Apply(lhs @ Select(qual, _), List()), rhs) =>
           // assign to fields in some implementation class via an abstract
