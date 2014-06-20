@@ -38,7 +38,7 @@ import scala.annotation.tailrec
  * To provide your own string interpolator, create an implicit class
  * which adds a method to `StringContext`.  Here's an example:
  * {{{
- *    implicit class JsonHelper(val sc: StringContext) extends AnyVal {
+ *    implicit class JsonHelper(private val sc: StringContext) extends AnyVal {
  *      def json(args: Any*): JSONObject = ...
  *    }
  *    val x: JSONObject = json"{ a: $a }"
