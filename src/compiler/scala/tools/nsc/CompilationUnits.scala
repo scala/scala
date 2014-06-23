@@ -123,28 +123,9 @@ trait CompilationUnits { global: Global =>
      */
     val icode: LinkedHashSet[icodes.IClass] = new LinkedHashSet
 
-    // reporter and its forwarded methods
-    def reporter  = global.reporter
-    def reporting = currentRun.reporting
-
-    def echo(pos: Position, msg: String): Unit                = reporter.echo(pos, msg)
-    def error(pos: Position, msg: String): Unit               = reporter.error(pos, msg)
-    def warning(pos: Position, msg: String): Unit             = reporter.warning(pos, msg)
-
-    def deprecationWarning(pos: Position, msg: String): Unit  = reporting.deprecationWarning(pos, msg)
-    def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit = reporting.deprecationWarning(pos, sym, msg)
-    def uncheckedWarning(pos: Position, msg: String): Unit    = reporting.uncheckedWarning(pos, msg)
-    def inlinerWarning(pos: Position, msg: String): Unit      = reporting.inlinerWarning(pos, msg)
-
-    def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "",
-                       required: Boolean): Unit               = reporting.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
-
-    // repl
-    def incompleteHandled: Boolean                            = reporting.incompleteHandled
-    def incompleteInputError(pos: Position, msg:String): Unit = reporting.incompleteInputError(pos, msg)
-
-    // used by the IDE -- TODO: don't use reporter to communicate comments from parser to IDE!
-    def comment(pos: Position, msg: String): Unit             = reporter.comment(pos, msg)
+    // called by ScalaDocAnalyzer, overridden by the IDE (in Reporter)
+    // TODO: don't use reporter to communicate comments from parser to IDE!
+    final def comment(pos: Position, msg: String): Unit = reporter.comment(pos, msg)
 
 
     /** Is this about a .java source file? */

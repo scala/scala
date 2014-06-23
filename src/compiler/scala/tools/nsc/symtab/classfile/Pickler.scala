@@ -69,7 +69,7 @@ abstract class Pickler extends SubComponent {
             // OPT: do this only as a recovery after fatal error. Checking in advance was expensive.
             if (t.isErroneous) {
               if (settings.debug) e.printStackTrace()
-              unit.error(t.pos, "erroneous or inaccessible type")
+              reporter.error(t.pos, "erroneous or inaccessible type")
               return
             }
           }

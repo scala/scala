@@ -103,8 +103,8 @@ trait ScalacPatternExpanders {
       def offerString   = if (extractor.isErroneous) "" else s" offering $offering"
       def arityExpected = ( if (extractor.hasSeq) "at least " else "" ) + productArity
 
-      def err(msg: String)         = currentUnit.error(tree.pos, msg)
-      def warn(msg: String)        = currentUnit.warning(tree.pos, msg)
+      def err(msg: String)         = reporter.error(tree.pos, msg)
+      def warn(msg: String)        = reporter.warning(tree.pos, msg)
       def arityError(what: String) = err(s"$what patterns for $owner$offerString: expected $arityExpected, found $totalArity")
 
       if (isStar && !isSeq)
@@ -141,7 +141,7 @@ trait ScalacPatternExpanders {
 
       if (requiresTupling && effectivePatternArity(args) == 1) {
         val sym = sel.symbol.owner
-        currentUnit.deprecationWarning(sel.pos, sym, s"${sym} expects $productArity patterns$acceptMessage but crushing into $productArity-tuple to fit single pattern (SI-6675)")
+        currentRun.reporting.deprecationWarning(sel.pos, sym, s"${sym} expects $productArity patterns$acceptMessage but crushing into $productArity-tuple to fit single pattern (SI-6675)")
       }
 
       val normalizedExtractor = if (requiresTupling) tupleExtractor(extractor) else extractor

@@ -443,7 +443,7 @@ trait Namers extends MethodSynthesis {
         && clazz.exists
       )
       if (fails) {
-        context.unit.error(tree.pos, (
+        reporter.error(tree.pos, (
             s"Companions '$clazz' and '$module' must be defined in same file:\n"
           + s"  Found in ${clazz.sourceFile.canonicalPath} and ${module.sourceFile.canonicalPath}")
         )
@@ -718,7 +718,7 @@ trait Namers extends MethodSynthesis {
       }
       val owner = tree.symbol.owner
       if (settings.lint && owner.isPackageObjectClass && !mods.isImplicit) {
-        context.unit.warning(tree.pos,
+        reporter.warning(tree.pos,
           "it is not recommended to define classes/objects inside of package objects.\n" +
           "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
         )
@@ -730,7 +730,7 @@ trait Namers extends MethodSynthesis {
           log("enter implicit wrapper "+tree+", owner = "+owner)
           enterImplicitWrapper(tree)
         }
-        else context.unit.error(tree.pos, "implicit classes must accept exactly one primary constructor parameter")
+        else reporter.error(tree.pos, "implicit classes must accept exactly one primary constructor parameter")
       }
       validateCompanionDefs(tree)
     }
