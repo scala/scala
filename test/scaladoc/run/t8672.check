@@ -1,0 +1,4 @@
+Some(Chain(List(Text(New in release 1.2.3.4, it works), Text(.))))
+Some(Text(Sentence no period))
+Some(Chain(List(Text(Sentence period at end), Text(.))))
+Done.
