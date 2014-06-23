@@ -536,7 +536,7 @@ trait NamesDefaults { self: Analyzer =>
           def matchesName(param: Symbol) = !param.isSynthetic && (
             (param.name == name) || (param.deprecatedParamName match {
               case Some(`name`) =>
-                context0.unit.deprecationWarning(arg.pos, param,
+                context0.deprecationWarning(arg.pos, param,
                   s"the parameter name $name has been deprecated. Use ${param.name} instead.")
                 true
               case _ => false

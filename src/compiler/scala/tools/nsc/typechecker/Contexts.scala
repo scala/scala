@@ -593,6 +593,14 @@ trait Contexts { self: Analyzer =>
       else if (bufferErrors) reportBuffer += (pos -> msg)
     }
 
+    def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit =
+      currentRun.reporting.deprecationWarning(pos, sym, msg)
+
+    def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit =
+      currentRun.reporting.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
+
+    def echo(pos: Position, msg: String): Unit = reporter.echo(pos, msg)
+
     // nextOuter determines which context is searched next for implicits
     // (after `this`, which contributes `newImplicits` below.) In
     // most cases, it is simply the outer context: if we're owned by
