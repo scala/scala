@@ -4399,7 +4399,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (retry) {
             val Select(qual, name) = fun
             tryTypedArgs(args, forArgMode(fun, mode)) match {
-              case Some(args1) =>
+              case Some(args1) if !args1.exists(arg => arg.exists(_.isErroneous)) =>
                 val qual1 =
                   if (!pt.isError) adaptToArguments(qual, name, args1, pt, reportAmbiguous = true, saveErrors = true)
                   else qual
