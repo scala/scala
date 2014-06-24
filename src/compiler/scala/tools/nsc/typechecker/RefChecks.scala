@@ -1288,7 +1288,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       // If symbol is deprecated, and the point of reference is not enclosed
       // in either a deprecated member or a scala bridge method, issue a warning.
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation))
-        currentRun.reporting.deprecationWarning(pos, sym, s"${sym}${sym.locationString} is deprecated${sym.deprecationMessage map (": " + _) getOrElse ""}")
+        currentRun.reporting.deprecationWarning(pos, sym)
 
       // Similar to deprecation: check if the symbol is marked with @migration
       // indicating it has changed semantics between versions.
