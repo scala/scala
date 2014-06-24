@@ -64,3 +64,128 @@ Example:
 ## The Scala Improvement Process
 A new language feature requires a SIP (Scala Improvement Process) proposal. Note that significant additions to the standard library are also considered candidates for a SIP proposal.
 For more details on submitting SIPs, see [how to submit a SIP](http://docs.scala-lang.org/sips/sip-submission.html).
+
+# Development workflow FAQ
+
+There are some useful practices to follow when working on this repository. If there's something not in this FAQ, please don't hesitate to ask [scala-internals](https://groups.google.com/forum/#!forum/scala-internals) mailing list.
+
+## Workflow 101: building, running tests, etc.
+
+The project is built with `ant`. There are several stages of the compilation: locker, quick, pack, strap, and docs. Most of the time when working on this repository, you would only want to perform the quick stage.
+
+**Q:** How do I build the repo?
+
+**A:** `ant build`
+***
+**Q:** How do I clean-build the repo?
+
+**A:** `ant clean build`
+***
+**Q:** How do I clean the repo, including things that got compiled during the locker stage?
+
+**A:** `ant all.clean`
+***
+**Q:** Is it possible to not compile locker at all, and use a released scala version for it?
+
+**A:** Yes. You need to have a `build.properties` file in the root of this repo, which contains:
+```
+locker.skip=1
+starr.use.released=1
+```
+***
+**Q:** How do I run tests?
+
+**A:** `ant test`
+***
+**Q:** Can I use some kind of `grep`-like interface for deciding which tests to run?
+
+**A:** Yes you can! `./tools/partest-ack "dottype"`
+***
+**Q:** So, I've built myself a scala version. How do I use it now?
+
+**A:** `/build/quick/bin/` contains `scala`, `scalac`, `scaladoc`, and `scalap` executables.
+***
+**Q:** Can I try and use this newly built scala from a local sbt project?
+
+**A:** You can. Here's how:
+```
+$ ant publish-local-opt -Dmaven.version.suffix="-test"
+$ sbt
+[info] Set current project to test (in build file:/Users/georgii/workspace/test/)
+> set resolvers += Resolver.mavenLocal
+[info] Defining *:resolvers
+[info] The new value will be used by *:externalResolvers
+[info] Reapplying settings...
+[info] Set current project to test (in build file:/Users/georgii/workspace/test/)
+> ++2.12.0-test
+[info] Setting version to 2.12.0-test
+[info] Set current project to test (in build file:/Users/georgii/workspace/test/)
+> console
+[info] Starting scala interpreter...
+[info]
+Welcome to Scala version 2.12.0-20140623-155543-8bdacad317 (Java HotSpot(TM) 64-Bit Server VM, Java 1.7.0_51).
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala>
+```
+
+## Workflow 102: how do I do this, and what did just happen
+
+Some things that you want to perform might be not that straightforward to achieve. Here are some:
+
+**Q:** How do I add a macro to `Predef`?
+
+**A:** For the reason of bootstrapping, you cannot just throw a macro into the `Predef`. There is a more involved process here. You might want to follow the way `StringContext.f` is added. In short, you need to define your macro under `src/compiler/scala/tools/reflect/` and provide no implementation in `Predef` (`def fn = macro ???`). Now you want to set up the wiring. Add the name of your macro to `src/reflect/scala/reflect/internal/StdNames.scala`, add the needed links to it to `src/reflect/scala/reflect/internal/Definitions.scala`, and finally specify the bindings in `src/compiler/scala/tools/reflect/FastTrack.scala`. [Here's](https://github.com/folone/scala/commit/59536ea833ca16c985339727baed5d70e577b0fe) an example of adding a macro.
+***
+**Q:** Can I use quasiquotes in the compiler?
+
+**A:** No, you cannot, for the same reason of bootstrapping. You will have to build trees by hand. Hint: to get an idea of what kind of tree your quasiquote produces, you might want to use `showRaw`.
+***
+**Q:** What's the story with tests?
+
+**A:** Tests are run with a tool called [partest](https://github.com/scala/scala-partest). You can run them all with `ant test`, or manually with `test/partest` executable. There are several categories of tests. Most notable are `scalacheck`, `run`, and `neg`. `scalacheck` tests are property-based tests. `run` and `neg` are both interaction test-suites (with the distinction that `neg` tests are expected to not compile). That means compiling/running those tests will produce input-output interaction that is captured in the `.check` files (expected output). You will get test failures if the content of a `.check` file is different from what the test produces while running. If the change in the output is an expected product of your work, you might not want to change the `.check` file by hand. To make partest change the `.check` file, run it with a `--update-check` flag, like so `./test/partest --update-check path/to/test.scala`. For more information on partest, please refer to its [documentation](http://docs.scala-lang.org/tutorials/partest-guide.html).
+***
+**Q:** I just tried to run tests, and they failed with a strange-looking error. Something like:
+```
+test.bc:
+     [echo] Checking backward binary compatibility for scala-library (against 2.11.0)
+     [mima] Found 2 binary incompatibiities
+     [mima] ================================
+     [mima]  * synthetic method
+     [mima]    scala$package$Class$method(java.lang.String)Unit in trait
+     [mima]    scala.package.Class does not have a correspondent in old version
+     [mima]  * synthetic method
+     [mima]    scala$package$AnotherClass$anotherMethod(java.lang.String)Unit in trait
+     [mima]    scala.package.AnotherClass does not have a correspondent in old version
+     [mima] Generated filter config definition
+     [mima] ==================================
+     [mima]
+     [mima]     filter {
+     [mima]         problems=[
+     [mima]             {
+     [mima]                 matchName="scala.package.Class$method"
+     [mima]                 problemName=MissingMethodProblem
+     [mima]             },
+     [mima]             {
+     [mima]                 matchName="scala.package.AnotherClass$anotherMethod"
+     [mima]                 problemName=MissingMethodProblem
+     [mima]             }
+     [mima]         ]
+     [mima]     }
+     [mima]
+
+BUILD FAILED
+/localhome/jenkins/c/workspace/pr-scala-test/scala/build.xml:1530: The following error occurred while executing this line:
+/localhome/jenkins/c/workspace/pr-scala-test/scala/build-ant-macros.xml:791: The following error occurred while executing this line:
+/localhome/jenkins/c/workspace/pr-scala-test/scala/build-ant-macros.xml:773: Java returned: 2
+
+Total time: 6 minutes 46 seconds
+Build step 'Execute shell' marked build as failure
+Archiving artifacts
+Notifying upstream projects of job completion
+Finished: FAILURE
+```
+What does this mean and what do I do now?
+
+**A:** This means your change is backward or forward binary incompatible with the specified version (the check is performed by the [migration manager](https://github.com/typesafehub/migration-manager)). The error message is actually saying what you need to add to `bincompat-backward.whitelist.conf` or `bincompat-forward.whitelist.conf` to make the error go away. If you are getting this on an internal/experimental api, it should be safe to add suggested sections to the config. Otherwise, you might want to target a newer version of scala for this change.
