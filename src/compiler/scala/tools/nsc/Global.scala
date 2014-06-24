@@ -1045,7 +1045,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
   def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
   def currentFreshNameCreator      = currentUnit.fresh
-  def currentReporting             = currentRun.reporting
 
   def isGlobalInitialized = (
        definitions.isDefinitionsInitialized
@@ -1093,7 +1092,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   /** Don't want to introduce new errors trying to report errors,
    *  so swallow exceptions.
    */
-  def supplementTyperState(errorMessage: String): String = try {
+  override def supplementTyperState(errorMessage: String): String = try {
     val tree      = analyzer.lastTreeToTyper
     val sym       = tree.symbol
     val tpe       = tree.tpe
@@ -1156,7 +1155,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** A Run is a single execution of the compiler on a set of units.
    */
-  class Run extends RunContextApi {
+  class Run extends RunContextApi with RunReporting {
     /** Have been running into too many init order issues with Run
      *  during erroneous conditions.  Moved all these vals up to the
      *  top of the file so at least they're not trivially null.
@@ -1164,8 +1163,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     var isDefined = false
     /** The currently compiled unit; set from GlobalPhase */
     var currentUnit: CompilationUnit = NoCompilationUnit
-
-    val reporting = new PerRunReporting
 
     // used in sbt
     def uncheckedWarnings: List[(Position, String)] = reporting.uncheckedWarnings

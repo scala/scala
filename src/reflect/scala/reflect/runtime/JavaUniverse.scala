@@ -27,6 +27,14 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
     protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = log(msg)
   }
 
+  // minimal Run to get Reporting wired
+  def currentRun = new RunReporting {}
+  class PerRunReporting extends PerRunReportingBase {
+    def deprecationWarning(pos: Position, msg: String): Unit = reporter.warning(pos, msg)
+  }
+  protected def PerRunReporting = new PerRunReporting
+
+
   type TreeCopier = InternalTreeCopierOps
   implicit val TreeCopierTag: ClassTag[TreeCopier] = ClassTag[TreeCopier](classOf[TreeCopier])
   def newStrictTreeCopier: TreeCopier = new StrictTreeCopier

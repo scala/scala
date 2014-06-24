@@ -16,6 +16,32 @@ package internal
  */
 trait Reporting { self : Positions =>
   def reporter: Reporter
+  def currentRun: RunReporting
+
+  trait RunReporting {
+    val reporting: PerRunReporting = PerRunReporting
+  }
+
+  type PerRunReporting <: PerRunReportingBase
+  protected def PerRunReporting: PerRunReporting
+  abstract class PerRunReportingBase {
+    def deprecationWarning(pos: Position, msg: String): Unit
+
+    /** Have we already supplemented the error message of a compiler crash? */
+    private[this] var supplementedError = false
+    def supplementErrorMessage(errorMessage: String): String =
+      if (supplementedError) errorMessage
+      else {
+        supplementedError = true
+        supplementTyperState(errorMessage)
+      }
+
+  }
+
+  // overridden in Global
+  def supplementTyperState(errorMessage: String): String = errorMessage
+
+  def supplementErrorMessage(errorMessage: String) = currentRun.reporting.supplementErrorMessage(errorMessage)
 
   @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
   def inform(msg: String): Unit      = inform(NoPosition, msg)
@@ -39,11 +65,6 @@ trait Reporting { self : Positions =>
   def warning(pos: Position, msg: String)     = reporter.warning(pos, msg)
   @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
   def globalError(pos: Position, msg: String) = reporter.error(pos, msg)
-
-  def deprecationWarning(pos: Position, msg: String): Unit = warning(msg)
-
-  /** Overridden when we know more about what was happening during a failure. */
-  def supplementErrorMessage(msg: String): String = msg
 }
 
 import util.Position

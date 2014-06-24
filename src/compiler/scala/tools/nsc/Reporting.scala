@@ -18,24 +18,13 @@ import scala.collection.{ mutable, immutable }
 trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions with CompilationUnits with scala.reflect.api.Symbols =>
   def settings: Settings
 
-  // == currentRun.reporting
-  def currentReporting: PerRunReporting
-
-  def supplementTyperState(errorMessage: String): String
-
   // not deprecated yet, but a method called "error" imported into
   // nearly every trait really must go.  For now using globalError.
   def error(msg: String) = globalError(msg)
 
-  override def deprecationWarning(pos: Position, msg: String) = currentReporting.deprecationWarning(pos, msg)
-  override def supplementErrorMessage(errorMessage: String)   = currentReporting.supplementErrorMessage(errorMessage)
-
-  // a new instance of this class is created for every Run (access the current instance via `currentReporting`)
-  class PerRunReporting {
-    // NOTE: scala.reflect.macros.Parsers#parse relies on everything related to reporting going through this def...
-    // TODO: can we rework this to avoid the indirection/fragility?
-    def reporter = Reporting.this.reporter
-
+  // a new instance of this class is created for every Run (access the current instance via `currentRun.reporting`)
+  protected def PerRunReporting = new PerRunReporting
+  class PerRunReporting extends PerRunReportingBase {
     /** Collects for certain classes of warnings during this run. */
     private class ConditionalWarning(what: String, option: Settings#BooleanSetting) {
       val warnings = mutable.LinkedHashMap[Position, String]()
@@ -126,13 +115,5 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       if (incompleteHandled) incompleteHandler(pos, msg)
       else reporter.error(pos, msg)
 
-    /** Have we already supplemented the error message of a compiler crash? */
-    private[this] var supplementedError = false
-    def supplementErrorMessage(errorMessage: String): String =
-      if (supplementedError) errorMessage
-      else {
-        supplementedError = true
-        supplementTyperState(errorMessage)
-      }
   }
 }
