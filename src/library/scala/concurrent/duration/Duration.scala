@@ -621,7 +621,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
   }
   def -(other: Duration) = other match {
     case x: FiniteDuration => add(-x.length, x.unit)
-    case _                 => other
+    case _                 => -other
   }
 
   def *(factor: Double) =

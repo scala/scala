@@ -61,6 +61,11 @@ object Test extends App {
   minf -  inf mustBe minf
   minf + minf mustBe minf
 
+  for (i <- Seq(zero, one, two, three)) {
+    i - inf mustBe minf
+    i - minf mustBe inf
+  }
+
   inf.compareTo(inf) mustBe 0
   inf.compareTo(one) mustBe 1
   inf.compareTo(minf) mustBe 1
