@@ -26,6 +26,7 @@ object Test extends App {
   check(ls.sorted, ls.view.sorted.toList, "sorted")
 
   check(ls.distinct, ls.view.distinct.toList, "distinct")
+  check(ls.distinctBy(_ % 2), ls.view.distinctBy(_ % 2).toList, "distinctBy")
 
   check(ls.tail, ls.view.tail.toList, "tail")  
 

@@ -453,12 +453,21 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    */
   def intersect[B >: A](that: GenSeq[B]): Repr
 
-  /** Builds a new $coll from this $coll without any duplicate elements.
+  /** Builds a new $coll from this $coll without any duplicate elements (as
+   *  determined by `==`).
    *  $willNotTerminateInf
    *
    *  @return  A new $coll which contains the first occurrence of every element of this $coll.
    */
   def distinct: Repr
+
+  /** Builds a new $coll from this $coll without any duplicate elements (as
+   *  determined by `==` after applying transforming function `f`).
+   *  $willNotTerminateInf
+   *
+   *  @return  A new $coll which contains the first occurrence of every element of this $coll.
+   */
+  def distinctBy[B](f: A => B): Repr
 
   /** Hashcodes for $Coll produce a value from the hashcodes of all the
    *  elements of the $coll.

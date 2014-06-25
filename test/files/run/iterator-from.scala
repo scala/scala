@@ -25,7 +25,7 @@ object Test extends App {
   }
 
   def testMap[A <% Ordered[A], B](map: SortedMap[A, B], list: List[(A, B)]) {
-    val distinctSorted = distinctByKey(list).sortBy(_._1)
+    val distinctSorted = list.reverse.distinctBy(_._1).sortBy(_._1)
     assertEquals("Map size wasn't the same as list sze", map.size, distinctSorted.size)
 
     for(keyValue <- distinctSorted) {
@@ -46,8 +46,6 @@ object Test extends App {
   def assertEquals[A](msg: String, x: A, y: A) {
     assert(x == y, s"$msg\n1: $x\n2: $y")
   }
-
-  def distinctByKey[A,B](list: List[(A, B)]) : List[(A,B)] = list.groupBy(_._1).map(_._2.last).toList
 
   object Weekday extends Enumeration {
     type Weekday = Value

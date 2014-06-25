@@ -1,5 +1,5 @@
-/** This is a test to make sure distinct always
- *  returns the first of any duplicated element.
+/** This is a test to make sure distinct and distinctBy always
+ *  return the first of any duplicated element.
  */
 object Test {
   val alphabet = 'a' to 'z' mkString ""
@@ -11,5 +11,9 @@ object Test {
     val result = longList.distinct mkString ""
 
     println(result)
+
+    val result2 = longList.distinctBy(_.toInt) mkString ""
+
+    println(result2)
   }
 }

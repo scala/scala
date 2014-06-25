@@ -311,7 +311,8 @@ self =>
     _ intersect that
   }
 
-  /** Builds a new $coll from this $coll without any duplicate elements.
+  /** Builds a new $coll from this $coll without any duplicate elements (as
+   *  determined by `==`).
    *  $willNotTerminateInf
    *
    *  @return  A new $coll which contains the first occurrence of every element of this $coll.
@@ -319,6 +320,17 @@ self =>
   def distinct: Repr = sequentially {
     _.distinct
   }
+
+  /** Builds a new $coll from this $coll without any duplicate elements (as
+   *  determined by `==` after applying transforming function `f`).
+   *  $willNotTerminateInf
+   *
+   *  @return  A new $coll which contains the first occurrence of every element of this $coll.
+   */
+  def distinctBy[U](f: T => U): Repr = sequentially {
+    _.distinctBy(f)
+  }
+
 
   override def toString = seq.mkString(stringPrefix + "(", ", ", ")")
 

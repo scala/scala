@@ -863,8 +863,8 @@ self =>
   }
 
   /** Builds a new stream from this stream in which any duplicates (as
-   * determined by `==`) have been removed. Among duplicate elements, only the
-   * first one is retained in the resulting `Stream`.
+   * determined by `==` after applying transforming function `f`) have been removed.
+   * Among duplicate elements, only the first one is retained in the resulting `Stream`.
    *
    * @return A new `Stream` representing the result of applying distinctness to
    * the original `Stream`.
@@ -873,17 +873,20 @@ self =>
    * def naturalsFrom(i: Int): Stream[Int] = i #:: { i #:: naturalsFrom(i + 1) }
    * naturalsFrom(1) take 6 mkString ", "
    * // produces: "1, 1, 2, 2, 3, 3"
-   * (naturalsFrom(1) distinct) take 6 mkString ", "
+   * (naturalsFrom(1) distinctBy(identity)) take 6 mkString ", "
    * // produces: "1, 2, 3, 4, 5, 6"
    * }}}
    */
-  override def distinct: Stream[A] = {
+  override def distinctBy[B](f: A => B): Stream[A] = {
     // This should use max memory proportional to N, whereas
     // recursively calling distinct on the tail is N^2.
-    def loop(seen: Set[A], rest: Stream[A]): Stream[A] = {
+    def loop(seen: Set[B], rest: Stream[A]): Stream[A] = {
       if (rest.isEmpty) rest
-      else if (seen(rest.head)) loop(seen, rest.tail)
-      else cons(rest.head, loop(seen + rest.head, rest.tail))
+      else {
+        val fhead = f(rest.head)
+        if (seen(fhead)) loop(seen, rest.tail)
+        else cons(rest.head, loop(seen + fhead, rest.tail))
+      }
     }
     loop(Set(), this)
   }

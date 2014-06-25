@@ -482,18 +482,29 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     occ
   }
 
-  /** Builds a new $coll from this $coll without any duplicate elements.
+  /** Builds a new $coll from this $coll without any duplicate elements (as
+   *  determined by `==`).
    *  $willNotTerminateInf
    *
    *  @return  A new $coll which contains the first occurrence of every element of this $coll.
    */
-  def distinct: Repr = {
+  def distinct: Repr = distinctBy(identity)
+
+
+  /** Builds a new $coll from this $coll without any duplicate elements (as
+    * determined by `==` after applying transforming function `f`).
+    * $willNotTerminateInf
+    *
+    * @return  A new $coll which contains the first occurrence of every element of this $coll.
+    */
+  def distinctBy[B](f: A => B): Repr = {
     val b = newBuilder
-    val seen = mutable.HashSet[A]()
+    val seen = mutable.HashSet[B]()
     for (x <- this) {
-      if (!seen(x)) {
+      val fx = f(x)
+      if (!seen(fx)) {
         b += x
-        seen += x
+        seen += fx
       }
     }
     b.result()

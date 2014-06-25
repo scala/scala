@@ -439,7 +439,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
                     case _              => t
                   }
                   // SI-7290 Discard duplicate alternatives that would crash the backend
-                  val distinctAlts = distinctBy(switchableAlts)(extractConst)
+                  val distinctAlts = switchableAlts.distinctBy(extractConst)
                   if (distinctAlts.size < switchableAlts.size) {
                     val duplicated = switchableAlts.groupBy(extractConst).flatMap(_._2.drop(1).take(1)) // report the first duplicated
                     global.currentUnit.warning(pos, s"Pattern contains duplicate alternatives: ${duplicated.mkString(", ")}")

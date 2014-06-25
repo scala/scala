@@ -260,5 +260,8 @@ trait SeqViewLike[+A,
   override def distinct: This =
     newForced(thisSeq.distinct).asInstanceOf[This]
 
+  override def distinctBy[B](f: A => B): This =
+    newForced(thisSeq.distinctBy(f)).asInstanceOf[This]
+
   override def stringPrefix = "SeqView"
 }
