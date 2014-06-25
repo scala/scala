@@ -1,0 +1,9 @@
+t8610-arg.scala:3: warning: `$name` looks like an interpolated identifier! Did you forget the interpolator?
+  def x = "Hi, $name"   // missing interp
+          ^
+t8610-arg.scala:6: warning: side-effecting nullary methods are discouraged: suggest defining as `def u()` instead
+  def u: Unit = ()      // unitarian universalist
+      ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found

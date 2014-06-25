@@ -211,10 +211,10 @@ class MutableSettings(val errorFn: String => Unit)
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
-  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String]): MultiChoiceSetting = {
+  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: () => Unit = () => ()): MultiChoiceSetting = {
     val fullChoix = choices.mkString(": ", ",", ".")
     val fullDescr = s"$descr$fullChoix"
-    add(new MultiChoiceSetting(name, helpArg, fullDescr, choices))
+    add(new MultiChoiceSetting(name, helpArg, fullDescr, choices, default))
   }
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
@@ -553,12 +553,18 @@ class MutableSettings(val errorFn: String => Unit)
       }
   }
 
+  /** A setting that receives any combination of enumerated values,
+   *  including "_" to mean all values.
+   *  In non-colonated mode, stops consuming args at the first
+   *  non-value, instead of at the next option, as for a multi-string.
+   */
   class MultiChoiceSetting private[nsc](
     name: String,
     arg: String,
     descr: String,
-    override val choices: List[String])
-  extends MultiStringSetting(name, arg, descr)
+    override val choices: List[String],
+    override val default: () => Unit
+  ) extends MultiStringSetting(name, arg, descr)
 
   /** A setting that accumulates all strings supplied to it,
    *  until it encounters one starting with a '-'.
@@ -570,24 +576,34 @@ class MutableSettings(val errorFn: String => Unit)
   extends Setting(name, descr) with Clearable {
     type T = List[String]
     protected var v: T = Nil
+    val default: () => Unit = () => ()            // no natural default
     def appendToValue(str: String) { value ++= List(str) }
     def badChoice(s: String, n: String) = errorFn(s"'$s' is not a valid choice for '$name'")
 
-    def tryToSet(args: List[String]) = {
-      val (strings, rest) = args span (x => !x.startsWith("-"))
-      strings foreach {
-        case "_" if choices.nonEmpty => choices foreach appendToValue
+    private def tts(args: List[String], verify: Boolean) = {
+      def tryArg(arg: String) = arg match {
+        case "_" if choices.nonEmpty                      => choices foreach appendToValue
         case s if choices.isEmpty || (choices contains s) => appendToValue(s)
-        case s => badChoice(s, name)
+        case s                                            => badChoice(s, name)
       }
+      def loop(args: List[String]): List[String] = args match {
+        case Nil         => Nil
+        case arg :: _
+          if (arg startsWith "-") || (!verify && choices.nonEmpty && !(choices contains arg))
+                         => args
+        case arg :: rest => tryArg(arg) ; loop(rest)
+      }
+      val rest = loop(args)
+      if (rest.size == args.size) default()       // if no arg consumed, trigger default action
       Some(rest)
     }
-    override def tryToSetColon(args: List[String]) = tryToSet(args)
+    def tryToSet(args: List[String])                  = tts(args, verify = false)
+    override def tryToSetColon(args: List[String])    = tts(args, verify = true)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
-    def clear(): Unit = (v = Nil)
-    def unparse: List[String] = value map (name + ":" + _)
 
-    def contains(s: String) = value contains s
+    def clear(): Unit         = (v = Nil)
+    def unparse: List[String] = value map (name + ":" + _)
+    def contains(s: String)   = value contains s
 
     withHelpSyntax(name + ":<" + arg + ">")
   }
@@ -606,10 +622,8 @@ class MutableSettings(val errorFn: String => Unit)
     protected var v: T = default
     def indexOfChoice: Int = choices indexOf value
 
-    private def usageErrorMessage = {
-      "Usage: %s:<%s>\n  where <%s> choices are %s (default: %s)\n".format(
-        name, helpArg, helpArg, choices mkString ", ", default)
-    }
+    private def usageErrorMessage = f"Usage: $name:<$helpArg>%n where <$helpArg> choices are ${choices mkString ", "} (default: $default)%n"
+
     def tryToSet(args: List[String]) = errorAndValue(usageErrorMessage, None)
 
     override def tryToSetColon(args: List[String]) = args match {
