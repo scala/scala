@@ -213,6 +213,31 @@ class FancyTailCalls {
     } finally {}
   }
 
+  def tcInBooleanExprFirstOp(x: Int, v: Int): Boolean = {
+    {
+      def loop(n: Int): Int = {
+        if (n == 0) v else loop(n - 1)
+      }
+      loop(x)
+    } == v && true
+  }
+  def tcInBooleanExprSecondOp(x: Int, v: Int): Boolean = {
+    true && {
+      def loop(n: Int): Int = {
+        if (n == 0) v else loop(n - 1)
+      }
+      loop(x)
+    } == v
+  }
+  def tcInIfCond(x: Int, v: Int): Boolean = {
+    if ({
+      def loop(n: Int): Int = {
+        if (n == 0) v else loop(n - 1)
+      }
+      loop(x)
+    } == v) true else false
+  }
+
   import FancyTailCalls._
   final def differentInstance(n: Int, v: Int): Int = {
     if (n == 0) v
@@ -376,8 +401,11 @@ object Test {
     check_success_b("TailCall.b2", TailCall.b2(max), true)
 
     val FancyTailCalls = new FancyTailCalls;
-    check_success("FancyTailCalls.tcTryLocal",   FancyTailCalls.tcTryLocal(max, max), max)
-    check_success("FancyTailCalls.differentInstance",   FancyTailCalls.differentInstance(max, 42), 42)
+    check_success("FancyTailCalls.tcTryLocal", FancyTailCalls.tcTryLocal(max, max), max)
+    check_success_b("FancyTailCalls.tcInBooleanExprFirstOp", FancyTailCalls.tcInBooleanExprFirstOp(max, max), true)
+    check_success_b("FancyTailCalls.tcInBooleanExprSecondOp", FancyTailCalls.tcInBooleanExprSecondOp(max, max), true)
+    check_success_b("FancyTailCalls.tcInIfCond", FancyTailCalls.tcInIfCond(max, max), true)
+    check_success("FancyTailCalls.differentInstance", FancyTailCalls.differentInstance(max, 42), 42)
     check_success("PolyObject.tramp", PolyObject.tramp[Int](max), 0)
   }
 
