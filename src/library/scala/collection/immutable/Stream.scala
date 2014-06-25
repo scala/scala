@@ -310,8 +310,13 @@ self =>
   override def toStream: Stream[A] = this
 
   override def hasDefiniteSize = {
-    def loop(s: Stream[A]): Boolean = s.isEmpty || s.tailDefined && loop(s.tail)
-    loop(this)
+    // reference to head required to detect cycles
+    val h = this
+
+    def loop(s: Stream[A]): Boolean =
+      s.isEmpty || s.tailDefined && (s ne h) && loop(s.tail)
+
+    isEmpty || tailDefined && loop(tail)
   }
 
   /** Create a new stream which contains all elements of this stream followed by
@@ -699,16 +704,25 @@ self =>
    * resulting string.
    */
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
+    // reference to head required to detect cycles
+    val h = this
+
     def loop(pre: String, these: Stream[A]) {
       if (these.isEmpty) b append end
       else {
         b append pre append these.head
-        if (these.tailDefined) loop(sep, these.tail)
+        if (these.tailDefined && (h ne these.tail)) loop(sep, these.tail)
         else b append sep append "?" append end
       }
     }
+
     b append start
-    loop("", this)
+
+    if (tailDefined && (h eq tail))
+      b append sep append "?" append end
+    else
+      loop("", this)
+
     b
   }
 
