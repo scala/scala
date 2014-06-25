@@ -50,6 +50,10 @@ test NonTailCall.f2
 test TailCall.b1 was successful
 test TailCall.b2 was successful
 test FancyTailCalls.tcTryLocal was successful
+test FancyTailCalls.tcInBooleanExprFirstOp was successful
+test FancyTailCalls.tcInBooleanExprSecondOp was successful
+test FancyTailCalls.tcInIfCond was successful
+test FancyTailCalls.tcInPatternGuard was successful
 test FancyTailCalls.differentInstance was successful
 test PolyObject.tramp was successful
 #partest avian
@@ -104,5 +108,9 @@ test NonTailCall.f2
 test TailCall.b1 was successful
 test TailCall.b2 was successful
 test FancyTailCalls.tcTryLocal was successful
+test FancyTailCalls.tcInBooleanExprFirstOp was successful
+test FancyTailCalls.tcInBooleanExprSecondOp was successful
+test FancyTailCalls.tcInIfCond was successful
+test FancyTailCalls.tcInPatternGuard was successful
 test FancyTailCalls.differentInstance was successful
 test PolyObject.tramp was successful
