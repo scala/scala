@@ -208,7 +208,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       super.skipDocComment()
     }
     override def skipBlockComment(): Unit = {
-      inDocComment = false
+      inDocComment = false // ??? this means docBuffer won't receive contents of this comment???
       docBuffer = new StringBuilder("/*")
       super.skipBlockComment()
     }
@@ -217,9 +217,10 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       def foundStarComment(start: Int, end: Int) = try {
         val str = docBuffer.toString
         val pos = Position.range(unit.source, start, start, end)
-        unit.comment(pos, str)
-        if (inDocComment)
+        if (inDocComment) {
+          signalParsedDocComment(str, pos)
           lastDoc = DocComment(str, pos)
+        }
         true
       } finally {
         docBuffer    = null
