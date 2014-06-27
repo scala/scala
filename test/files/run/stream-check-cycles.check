@@ -1,0 +1,19 @@
+Stream()
+Stream(1)
+Stream(1, 2)
+Stream(1, 2, 3)
+
+false
+Stream(1, 2, ?)
+
+true
+Stream(1, 2)
+
+false
+Stream(1, 2, 3, ?)
+
+false
+Stream(4, 5, 1, 2, 3, ?)
+false
+Stream(1, 2, 3, 4, 5, ?)
+
