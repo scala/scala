@@ -10,7 +10,7 @@ package scala
 package io
 
 import scala.collection.AbstractIterator
-import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile }
+import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile, Closeable }
 import java.net.{ URI, URL }
 
 /** This object provides convenience methods to create an iterable
@@ -176,7 +176,7 @@ object Source {
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class Source extends Iterator[Char] {
+abstract class Source extends Iterator[Char] with Closeable {
   /** the actual iterator */
   protected val iter: Iterator[Char]
 
