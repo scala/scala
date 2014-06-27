@@ -11,7 +11,7 @@ object Test extends SessionTest {
     |depp: String
     |
     |scala> def a = depp
-    |warning: there were 1 deprecation warning(s); re-run with -deprecation for details
+    |warning: there was one deprecation warning; re-run with -deprecation for details
     |a: String
     |
     |scala> :settings +deprecation

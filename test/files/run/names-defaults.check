@@ -1,7 +1,7 @@
 names-defaults.scala:269: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
     spawn(b = { val ttt = 1; ttt }, a = 0)
                              ^
-warning: there were 4 deprecation warning(s); re-run with -deprecation for details
+warning: there were 4 deprecation warnings; re-run with -deprecation for details
 1: @
 get: $
 get: 2

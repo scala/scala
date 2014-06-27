@@ -1,4 +1,4 @@
-warning: there were 5 deprecation warning(s); re-run with -deprecation for details
+warning: there were 5 deprecation warnings; re-run with -deprecation for details
 test '\u0024' == '$' was successful
 test '\u005f' == '_' was successful
 test 65.asInstanceOf[Char] == 'A' was successful

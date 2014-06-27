@@ -1,3 +1,3 @@
-warning: there were 4 deprecation warning(s); re-run with -deprecation for details
+warning: there were 4 deprecation warnings; re-run with -deprecation for details
 Note: deprecation/Use_2.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
