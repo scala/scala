@@ -1,4 +1,4 @@
-warning: there were 14 inliner warning(s); re-run with -Yinline-warnings for details
+warning: there were 14 inliner warnings; re-run with -Yinline-warnings for details
     .|.               c1.f1:     OK
     .|.               c1.fi:     OK
     .|...             c1.fv:     OK

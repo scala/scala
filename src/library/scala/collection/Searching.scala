@@ -54,7 +54,7 @@ object Searching {
       */
     final def search[B >: A](elem: B)(implicit ord: Ordering[B]): SearchResult =
       coll match {
-        case _: IndexedSeq[A] => binarySearch(elem, -1, coll.length)(ord)
+        case _: IndexedSeq[A] => binarySearch(elem, 0, coll.length)(ord)
         case _ => linearSearch(coll.view, elem, 0)(ord)
       }
 
@@ -81,18 +81,18 @@ object Searching {
     final def search[B >: A](elem: B, from: Int, to: Int)
     (implicit ord: Ordering[B]): SearchResult =
       coll match {
-        case _: IndexedSeq[A] => binarySearch(elem, from-1, to)(ord)
+        case _: IndexedSeq[A] => binarySearch(elem, from, to)(ord)
         case _ => linearSearch(coll.view(from, to), elem, from)(ord)
       }
 
     @tailrec
     private def binarySearch[B >: A](elem: B, from: Int, to: Int)
     (implicit ord: Ordering[B]): SearchResult = {
-      if ((to-from) == 1) InsertionPoint(from) else {
-        val idx = from+(to-from)/2
+      if (to == from) InsertionPoint(from) else {
+        val idx = from+(to-from-1)/2
         math.signum(ord.compare(elem, coll(idx))) match {
           case -1 => binarySearch(elem, from, idx)(ord)
-          case  1 => binarySearch(elem, idx, to)(ord)
+          case  1 => binarySearch(elem, idx + 1, to)(ord)
           case  _ => Found(idx)
         }
       }
@@ -105,7 +105,7 @@ object Searching {
       while (it.hasNext) {
         val cur = it.next()
         if (ord.equiv(elem, cur)) return Found(idx)
-        else if (ord.lt(elem, cur)) return InsertionPoint(idx-1)
+        else if (ord.lt(elem, cur)) return InsertionPoint(idx)
         idx += 1
       }
       InsertionPoint(idx)

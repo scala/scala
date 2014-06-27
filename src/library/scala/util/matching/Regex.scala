@@ -274,12 +274,18 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
   //  @see UnanchoredRegex
   protected def runMatcher(m: Matcher) = m.matches()
 
-  /** Return all matches of this regexp in given character sequence as a [[scala.util.matching.Regex.MatchIterator]],
+  /** Return all non-overlapping matches of this regexp in given character 
+   *  sequence as a [[scala.util.matching.Regex.MatchIterator]],
    *  which is a special [[scala.collection.Iterator]] that returns the
    *  matched strings, but can also be converted into a normal iterator
    *  that returns objects of type [[scala.util.matching.Regex.Match]]
    *  that can be queried for data such as the text that precedes the
    *  match, subgroups, etc.
+   * 
+   *  Where potential matches overlap, the first possible match is returned,
+   *  followed by the next match that is completely after the first.  For
+   *  instance, `"hat[^a]+".r` will match `hath` and `hattth` in the string
+   *  `"hathatthattthatttt"`.
    *
    *  Attempting to retrieve information about a match before initializing
    *  the iterator can result in [[java.lang.IllegalStateException]]s. See
@@ -292,7 +298,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
   def findAllIn(source: CharSequence) = new Regex.MatchIterator(source, this, groupNames)
 
 
-  /** Return all matches of this regexp in given character sequence as a
+  /** Return all non-overlapping matches of this regexp in given character sequence as a
    *  [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match]].
    *
    *  @param source The text to match against.

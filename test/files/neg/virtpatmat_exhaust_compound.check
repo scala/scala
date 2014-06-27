@@ -1,0 +1,15 @@
+virtpatmat_exhaust_compound.scala:14: warning: match may not be exhaustive.
+It would fail on the following inputs: O1, O2, O4
+  a match {
+  ^
+virtpatmat_exhaust_compound.scala:18: warning: match may not be exhaustive.
+It would fail on the following input: O4
+  def t1(a: Product with Base with Base2) = a match {
+                                            ^
+virtpatmat_exhaust_compound.scala:22: warning: match may not be exhaustive.
+It would fail on the following input: O2
+  def t2(a: Product with Base { def foo: Int }) = a match {
+                                                  ^
+error: No warnings can be incurred under -Xfatal-warnings.
+three warnings found
+one error found

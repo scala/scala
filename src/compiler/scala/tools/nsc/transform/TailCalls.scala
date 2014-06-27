@@ -328,11 +328,14 @@ abstract class TailCalls extends Transform {
           )
 
         case CaseDef(pat, guard, body) =>
+          // CaseDefs are already translated and guards were moved into the body.
+          // If this was not the case, guards would have to be transformed here as well.
+          assert(guard.isEmpty)
           deriveCaseDef(tree)(transform)
 
         case If(cond, thenp, elsep) =>
           treeCopy.If(tree,
-            cond,
+            noTailTransform(cond),
             transform(thenp),
             transform(elsep)
           )
@@ -363,7 +366,7 @@ abstract class TailCalls extends Transform {
           rewriteApply(tapply, fun, targs, vargs)
 
         case Apply(fun, args) if fun.symbol == Boolean_or || fun.symbol == Boolean_and =>
-          treeCopy.Apply(tree, fun, transformTrees(args))
+          treeCopy.Apply(tree, noTailTransform(fun), transformTrees(args))
 
         // this is to detect tailcalls in translated matches
         // it's a one-argument call to a label that is in a tailposition and that looks like label(x) {x}

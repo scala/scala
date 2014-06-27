@@ -1,4 +1,4 @@
-warning: there were 2 feature warning(s); re-run with -feature for details
+warning: there were 2 feature warnings; re-run with -feature for details
                 p.Iterable[Int]
                 p.Set[Int]
                 p.Seq[Int]

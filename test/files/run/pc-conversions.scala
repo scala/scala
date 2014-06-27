@@ -1,5 +1,5 @@
 /*
- * filter: inliner warning\(s\); re-run with -Yinline-warnings for details
+ * filter: inliner warning; re-run with -Yinline-warnings for details
  */
 
 import collection._

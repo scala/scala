@@ -8,7 +8,7 @@ scala> import scala.reflect.runtime._
 import scala.reflect.runtime._
 
 scala> classManifest[List[_]]
-warning: there were 1 deprecation warning(s); re-run with -deprecation for details
+warning: there was one deprecation warning; re-run with -deprecation for details
 res0: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[<?>]
 
 scala> scala.reflect.classTag[List[_]]
