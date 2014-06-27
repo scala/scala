@@ -21,11 +21,10 @@ package scala
  *  val f: PartialFunction[Int, Any] = { case _ => 1/0 }
  *  }}}
  * 
- *  It is the responsibility of the caller of `apply` to check for membership
- *  in the domain by calling `isDefinedAt`, to ensure sanity of return values. 
- *  A notable exception to this rule is `PartialFunction`s created with curly 
- *  braces and case statements; In this case, a [[scala.MatchError]] is 
- *  thrown if `isDefinedAt` (i.e. pattern matching) fails.
+ *  It is the responsibility of the caller to call `isDefinedAt` before
+ *  before calling `apply`, because if `isDefinedAt` is false, an exception
+ *  may or may not be thrown. In the case that an exception is not thrown,
+ *  an insane value may be returned. 
  *
  *  The main distinction between `PartialFunction` and [[scala.Function1]] is
  *  that the user of a `PartialFunction` may choose to do something different
