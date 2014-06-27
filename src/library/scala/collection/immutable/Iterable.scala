@@ -35,6 +35,7 @@ trait Iterable[+A] extends Traversable[A]
 }
 
 /** $factoryInfo
+ *  The current default implementation of a $Coll is a `List`.
  *  @define Coll `immutable.Iterable`
  *  @define coll immutable iterable collection
  */
