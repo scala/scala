@@ -93,7 +93,7 @@ class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val cod
     val buf = new Array[Char](bufferSize)
     var n = 0
     while (n != -1) {
-      n = charReader.read(buf)
+      n = allReader.read(buf)
       if (n>0) sb.appendAll(buf, 0, n)
     }
     sb.result
