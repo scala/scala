@@ -1,2 +1,2 @@
-warning: there were 1 inliner warning(s); re-run with -Yinline-warnings for details
+warning: there was one inliner warning; re-run with -Yinline-warnings for details
 2

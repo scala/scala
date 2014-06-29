@@ -1169,8 +1169,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       if (option) reporter.warning(pos, msg)
       else if (!(warnings contains pos)) warnings += ((pos, msg))
     def summarize() =
-      if (warnings.nonEmpty && (option.isDefault || settings.fatalWarnings))
-        warning("there were %d %s warning(s); re-run with %s for details".format(warnings.size, what, option.name))
+      if (warnings.nonEmpty && (option.isDefault || settings.fatalWarnings)){
+        val warningEvent = if (warnings.size > 1) s"were ${ warnings.size } $what warnings" else s"was one $what warning"
+        warning(s"there $warningEvent; re-run with ${ option.name } for details")
+      }
   }
 
   def newSourceFile(code: String, filename: String = "<console>") =

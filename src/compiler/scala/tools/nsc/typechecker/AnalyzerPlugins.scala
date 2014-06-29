@@ -190,6 +190,16 @@ trait AnalyzerPlugins { self: Analyzer =>
     def pluginsTypedMacroBody(typer: Typer, ddef: DefDef): Option[Tree] = None
 
     /**
+     * Figures out whether the given macro definition is blackbox or whitebox.
+     *
+     * Default implementation provided in `self.standardIsBlackbox` loads the macro impl binding
+     * and fetches boxity from the "isBlackbox" field of the macro signature.
+     *
+     * $nonCumulativeReturnValueDoc.
+     */
+    def pluginsIsBlackbox(macroDef: Symbol): Option[Boolean] = None
+
+    /**
      * Expands an application of a def macro (i.e. of a symbol that has the MACRO flag set),
      * possibly using the current typer mode and the provided prototype.
      *
@@ -373,6 +383,14 @@ trait AnalyzerPlugins { self: Analyzer =>
     def description = "typecheck this macro definition"
     def default = standardTypedMacroBody(typer, ddef)
     def custom(plugin: MacroPlugin) = plugin.pluginsTypedMacroBody(typer, ddef)
+  })
+
+  /** @see MacroPlugin.pluginsIsBlackbox */
+  def pluginsIsBlackbox(macroDef: Symbol): Boolean = invoke(new NonCumulativeOp[Boolean] {
+    def position = macroDef.pos
+    def description = "compute boxity for this macro definition"
+    def default = standardIsBlackbox(macroDef)
+    def custom(plugin: MacroPlugin) = plugin.pluginsIsBlackbox(macroDef)
   })
 
   /** @see MacroPlugin.pluginsMacroExpand */

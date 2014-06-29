@@ -666,7 +666,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     }
 
     def summary(): Inline = {
-      val i = inline(check("."))
+      val i = inline(checkSentenceEnded())
       Summary(
         if (jump("."))
           Chain(List(i, Text(".")))
@@ -783,6 +783,16 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         offset = poff
         ok
       })
+    }
+
+    def checkSentenceEnded(): Boolean = {
+      (char == '.') && {
+        val poff = offset
+        nextChar() // read '.'
+        val ok = char == endOfText || char == endOfLine || isWhitespace(char)
+        offset = poff
+        ok
+      }
     }
 
     def reportError(pos: Position, message: String) {

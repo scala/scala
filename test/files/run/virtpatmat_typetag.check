@@ -1,9 +1,9 @@
-1 is not a Int; it's a class java.lang.Integer
+1 is a Int
 1 is a java.lang.Integer
 1 is not a java.lang.String; it's a class java.lang.Integer
 true is a Any
 woele is a java.lang.String
-1 is not a Int; it's a class java.lang.Integer
+1 is a Int
 1 is a java.lang.Integer
 1 is not a java.lang.String; it's a class java.lang.Integer
 true is a Any

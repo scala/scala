@@ -263,7 +263,12 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     }
 
   def isBlackbox(expandee: Tree): Boolean = isBlackbox(dissectApplied(expandee).core.symbol)
-  def isBlackbox(macroDef: Symbol): Boolean = {
+  def isBlackbox(macroDef: Symbol): Boolean = pluginsIsBlackbox(macroDef)
+
+  /** Default implementation of `isBlackbox`.
+   *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsIsBlackbox for more details)
+   */
+  def standardIsBlackbox(macroDef: Symbol): Boolean = {
     val fastTrackBoxity = fastTrack.get(macroDef).map(_.isBlackbox)
     val bindingBoxity = loadMacroImplBinding(macroDef).map(_.isBlackbox)
     fastTrackBoxity orElse bindingBoxity getOrElse false
@@ -417,9 +422,10 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
             val wrappedArgs = mapWithIndex(args)((arg, j) => {
               val fingerprint = implParams(min(j, implParams.length - 1))
+              val duplicatedArg = duplicateAndKeepPositions(arg)
               fingerprint match {
-                case LiftedTyped => context.Expr[Nothing](arg.duplicate)(TypeTag.Nothing) // TODO: SI-5752
-                case LiftedUntyped => arg.duplicate
+                case LiftedTyped => context.Expr[Nothing](duplicatedArg)(TypeTag.Nothing) // TODO: SI-5752
+                case LiftedUntyped => duplicatedArg
                 case _ => abort(s"unexpected fingerprint $fingerprint in $binding with paramss being $paramss " +
                                 s"corresponding to arg $arg in $argss")
               }
