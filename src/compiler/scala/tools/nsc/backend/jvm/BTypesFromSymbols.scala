@@ -25,82 +25,13 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   // (e.g., scala.Boolean has null superClass although it's not an interface)
   private val isCompilingStdLib = !(settings.sourcepath.isDefault)
 
-  // special names
-  var StringReference             : ClassBType = null
-  var ThrowableReference          : ClassBType = null
-  var jlCloneableReference        : ClassBType = null // java/lang/Cloneable
-  var jlNPEReference              : ClassBType = null // java/lang/NullPointerException
-  var jioSerializableReference    : ClassBType = null // java/io/Serializable
-  var scalaSerializableReference  : ClassBType = null // scala/Serializable
-  var classCastExceptionReference : ClassBType = null // java/lang/ClassCastException
-
-  /* A map from scala primitive type-symbols to BTypes */
-  var primitiveTypeMap: Map[Symbol, BType] = null
-  /* A map from scala type-symbols for Nothing and Null to (runtime version) BTypes */
-  var phantomTypeMap:   Map[Symbol, ClassBType] = null
-  /* Maps the method symbol for a box method to the boxed type of the result.
-   *  For example, the method symbol for `Byte.box()`) is mapped to the BType `Ljava/lang/Integer;`. */
-  var boxResultType:    Map[Symbol, BType] = null
-  /* Maps the method symbol for an unbox method to the primitive type of the result.
-   *  For example, the method symbol for `Byte.unbox()`) is mapped to the BType BYTE. */
-  var unboxResultType:  Map[Symbol, BType] = null
-
-  var hashMethodSym: Symbol = null // scala.runtime.ScalaRunTime.hash
-
-  var AndroidParcelableInterface: Symbol = null
-  var AndroidCreatorClass       : Symbol = null // this is an inner class, use asmType() to get hold of its BType while tracking in innerClassBufferASM
-
-  var BeanInfoAttr: Symbol = null
-
-  /* The Object => String overload. */
-  var String_valueOf: Symbol = null
-
   var ArrayInterfaces: Set[Tracked] = null
-
-  // scala.FunctionX and scala.runtim.AbstractFunctionX
-  val FunctionReference                 = new Array[Tracked](definitions.MaxFunctionArity + 1)
-  val AbstractFunctionReference         = new Array[Tracked](definitions.MaxFunctionArity + 1)
-  val abstractFunctionArityMap = mutable.Map.empty[BType, Int]
-
-  var PartialFunctionReference:         ClassBType = null // scala.PartialFunction
-  var AbstractPartialFunctionReference: ClassBType = null // scala.runtime.AbstractPartialFunction
-
-  var BoxesRunTime: ClassBType = null
 
   /*
    * must-single-thread
    */
   def initBCodeTypes() {
     import definitions._
-
-    primitiveTypeMap =
-      Map(
-        UnitClass     -> UNIT,
-        BooleanClass  -> BOOL,
-        CharClass     -> CHAR,
-        ByteClass     -> BYTE,
-        ShortClass    -> SHORT,
-        IntClass      -> INT,
-        LongClass     -> LONG,
-        FloatClass    -> FLOAT,
-        DoubleClass   -> DOUBLE
-      )
-
-    phantomTypeMap =
-      Map(
-        NothingClass -> RT_NOTHING,
-        NullClass    -> RT_NULL,
-        NothingClass -> RT_NOTHING, // we map on purpose to RT_NOTHING, getting rid of the distinction compile-time vs. runtime for NullClass.
-        NullClass    -> RT_NULL     // ditto.
-      )
-
-    boxResultType =
-      for((csym, msym) <- currentRun.runDefinitions.boxMethod)
-      yield (msym -> classLiteral(primitiveTypeMap(csym)))
-
-    unboxResultType =
-      for((csym, msym) <- currentRun.runDefinitions.unboxMethod)
-      yield (msym -> primitiveTypeMap(csym))
 
     // boxed classes are looked up in the `exemplars` map by jvmWiseLUB().
     // Other than that, they aren't needed there (e.g., `isSubtypeOf()` special-cases boxed classes, similarly for others).
@@ -114,47 +45,9 @@ abstract class BCodeTypes extends BCodeIdiomatic {
 
     // reversePrimitiveMap = (primitiveTypeMap map { case (s, pt) => (s.tpe, pt) } map (_.swap)).toMap
 
-    hashMethodSym = getMember(ScalaRunTimeModule, nme.hash_)
-
-    // TODO avoiding going through through missingHook for every line in the REPL: https://github.com/scala/scala/commit/8d962ed4ddd310cc784121c426a2e3f56a112540
-    AndroidParcelableInterface = rootMirror.getClassIfDefined("android.os.Parcelable")
-    AndroidCreatorClass        = rootMirror.getClassIfDefined("android.os.Parcelable$Creator")
-
-    // the following couldn't be an eager vals in Phase constructors:
-    // that might cause cycles before Global has finished initialization.
-    BeanInfoAttr = rootMirror.getRequiredClass("scala.beans.BeanInfo")
-
-    String_valueOf = {
-      getMember(StringModule, nme.valueOf) filter (sym =>
-        sym.info.paramTypes match {
-          case List(pt) => pt.typeSymbol == ObjectClass
-          case _        => false
-        }
-      )
-    }
-
     exemplar(JavaCloneableClass)
     exemplar(JavaSerializableClass)
     exemplar(SerializableClass)
-
-    StringReference             = exemplar(StringClass).c
-    StringBuilderReference      = exemplar(StringBuilderClass).c
-    ThrowableReference          = exemplar(ThrowableClass).c
-    jlCloneableReference        = exemplar(JavaCloneableClass).c
-    jlNPEReference              = exemplar(NullPointerExceptionClass).c
-    jioSerializableReference    = exemplar(JavaSerializableClass).c
-    scalaSerializableReference  = exemplar(SerializableClass).c
-    classCastExceptionReference = exemplar(ClassCastExceptionClass).c
-
-    PartialFunctionReference    = exemplar(PartialFunctionClass).c
-    for(idx <- 0 to definitions.MaxFunctionArity) {
-      FunctionReference(idx)           = exemplar(FunctionClass(idx))
-      AbstractFunctionReference(idx)   = exemplar(AbstractFunctionClass(idx))
-      abstractFunctionArityMap        += (AbstractFunctionReference(idx).c -> idx)
-      AbstractPartialFunctionReference = exemplar(AbstractPartialFunctionClass).c
-    }
-
-    BoxesRunTime = ClassBType("scala/runtime/BoxesRunTime")
   }
 
   /*

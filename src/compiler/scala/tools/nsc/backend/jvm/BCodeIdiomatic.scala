@@ -52,10 +52,6 @@ abstract class BCodeIdiomatic extends SubComponent {
   val CLASS_CONSTRUCTOR_NAME    = "<clinit>"
   val INSTANCE_CONSTRUCTOR_NAME = "<init>"
 
-  val ObjectReference   = ClassBType("java/lang/Object")
-  val AnyRefReference   = ObjectReference
-  val objArrayReference = ArrayBType(ObjectReference)
-
   val JAVA_LANG_OBJECT  = ObjectReference
   val JAVA_LANG_STRING  = ClassBType("java/lang/String")
 
@@ -657,21 +653,6 @@ abstract class BCodeIdiomatic extends SubComponent {
       case B2F | C2F | S2F | I2F | L2F | F2F | D2F => FLOAT
       case B2D | C2D | S2D | I2D | L2D | F2D | D2D => DOUBLE
     }
-  }
-
-  final val typeOfArrayOp: Map[Int, BType] = {
-    import scalaPrimitives._
-    Map(
-      (List(ZARRAY_LENGTH, ZARRAY_GET, ZARRAY_SET) map (_ -> BOOL))   ++
-      (List(BARRAY_LENGTH, BARRAY_GET, BARRAY_SET) map (_ -> BYTE))   ++
-      (List(SARRAY_LENGTH, SARRAY_GET, SARRAY_SET) map (_ -> SHORT))  ++
-      (List(CARRAY_LENGTH, CARRAY_GET, CARRAY_SET) map (_ -> CHAR))   ++
-      (List(IARRAY_LENGTH, IARRAY_GET, IARRAY_SET) map (_ -> INT))    ++
-      (List(LARRAY_LENGTH, LARRAY_GET, LARRAY_SET) map (_ -> LONG))   ++
-      (List(FARRAY_LENGTH, FARRAY_GET, FARRAY_SET) map (_ -> FLOAT))  ++
-      (List(DARRAY_LENGTH, DARRAY_GET, DARRAY_SET) map (_ -> DOUBLE)) ++
-      (List(OARRAY_LENGTH, OARRAY_GET, OARRAY_SET) map (_ -> ObjectReference)) : _*
-    )
   }
 
   /*
