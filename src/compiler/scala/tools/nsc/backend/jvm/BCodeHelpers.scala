@@ -45,32 +45,6 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
 
   var pickledBytes = 0 // statistics
 
-  // -----------------------------------------------------------------------------------------
-  // finding the least upper bound in agreement with the bytecode verifier (given two internal names handed by ASM)
-  // Background:
-  //  http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
-  //  http://comments.gmane.org/gmane.comp.java.vm.languages/2293
-  //  https://issues.scala-lang.org/browse/SI-3872
-  // -----------------------------------------------------------------------------------------
-
-  /*
-   * can-multi-thread
-   */
-  def firstCommonSuffix(as: List[Tracked], bs: List[Tracked]): ClassBType = {
-    var chainA = as
-    var chainB = bs
-    var fcs: Tracked = null
-    do {
-      if      (chainB contains chainA.head) fcs = chainA.head
-      else if (chainA contains chainB.head) fcs = chainB.head
-      else {
-        chainA = chainA.tail
-        chainB = chainB.tail
-      }
-    } while (fcs == null)
-    fcs.c
-  }
-
   /*  An `asm.ClassWriter` that uses `jvmWiseLUB()`
    *  The internal name of the least common ancestor of the types given by inameA and inameB.
    *  It's what ASM needs to know in order to compute stack map frames, http://asm.ow2.org/doc/developer-guide.html#controlflow
@@ -94,41 +68,6 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
       lcaName // ASM caches the answer during the lifetime of a ClassWriter. We outlive that. Not sure whether caching on our side would improve things.
     }
 
-  }
-
-  /**
-   * Finding the least upper bound in agreement with the bytecode verifier (given two internal names
-   * handed out by ASM)
-   * Background:
-   *   http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
-   *   http://comments.gmane.org/gmane.comp.java.vm.languages/2293
-   *   https://issues.scala-lang.org/browse/SI-3872
-   *
-   * can-multi-thread
-   */
-  def jvmWiseLUB(a: ClassBType, b: ClassBType): ClassBType = {
-
-    assert(a.isNonSpecial, s"jvmWiseLUB() received a non-plain-class $a")
-    assert(b.isNonSpecial, s"jvmWiseLUB() received a non-plain-class $b")
-
-    val ta = exemplars.get(a)
-    val tb = exemplars.get(b)
-
-    val res = (ta.isInterface, tb.isInterface) match {
-      case (true, true) =>
-        // exercised by test/files/run/t4761.scala
-        if      (tb.isSubtypeOf(ta.c)) ta.c
-        else if (ta.isSubtypeOf(tb.c)) tb.c
-        else ObjectReference
-      case (true, false) =>
-        if (tb.isSubtypeOf(a)) a else ObjectReference
-      case (false, true) =>
-        if (ta.isSubtypeOf(b)) b else ObjectReference
-      case _ =>
-        firstCommonSuffix(ta :: ta.superClasses, tb :: tb.superClasses)
-    }
-    assert(res.isNonSpecial, "jvmWiseLUB() returned a non-plain-class.")
-    res
   }
 
   /*

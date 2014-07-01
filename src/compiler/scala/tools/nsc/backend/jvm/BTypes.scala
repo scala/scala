@@ -94,6 +94,80 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
     final def isNumericType  = isIntegralType || isRealType
     final def isWideType     = size == 2
 
+    /*
+     * Subtype check `a <:< b` on BTypes that takes into account the JVM built-in numeric promotions (e.g. BYTE to INT).
+     * Its operation can be visualized more easily in terms of the Java bytecode type hierarchy.
+     * This method used to be called, in the ICode world, TypeKind.<:<()
+     *
+     * can-multi-thread
+     */
+    final def conforms(a: BType, b: BType): Boolean = {
+      if (a.isArray) { // may be null
+        /* Array subtyping is covariant here, as in Java bytecode. Also necessary for Java interop. */
+        if ((b == jlCloneableReference)     ||
+            (b == jioSerializableReference) ||
+            (b == AnyRefReference))    { true  }
+        else if (b.isArray)            { conforms(a.asArrayBType.componentType, // TODO @lry change to pattern match, get rid of casts
+                                                  b.asArrayBType.componentType) }
+        else                           { false }
+      }
+      else if (a.isBoxed) { // may be null
+        if (b.isBoxed)                 { a == b }
+        else if (b == AnyRefReference) { true   }
+        else if (!(b.isClass))         { false  }
+        else                           { exemplars.get(a).isSubtypeOf(b) } // e.g., java/lang/Double conforms to java/lang/Number
+      }
+      else if (a.isNullType) { // known to be null
+        if (b.isNothingType)      { false }
+        else if (b.isPrimitive)   { false }
+        else                      { true  }
+      }
+      else if (a.isNothingType) { // known to be Nothing
+        true
+      }
+      else if (a == UNIT) {
+        b == UNIT
+      }
+      else if (a.isClass) { // may be null
+        if (a.isNothingType)      { true  }
+        else if (b.isClass)       { exemplars.get(a).isSubtypeOf(b) }
+        else if (b.isArray)       { a.isNullType } // documentation only, because `if(a.isNullType)` (above) covers this case already.
+        else                      { false }
+      }
+      else {
+
+        def msg = s"(a: $a, b: $b)"
+
+        assert(a.isNonVoidPrimitiveType, s"a isn't a non-Unit value type. $msg")
+        assert(b.isPrimitive, s"b isn't a value type. $msg")
+
+        (a eq b) || (a match {
+          case BOOL | BYTE | SHORT | CHAR => b == INT || b == LONG // TODO Actually, BOOL does NOT conform to LONG. Even with adapt().
+          case _                          => a == b
+        })
+      }
+    }
+
+    /* Takes promotions of numeric primitives into account.
+     *
+     *  can-multi-thread
+     */
+    final def maxType(a: BType, other: BType): BType = {
+      if (a.isPrimitive) { maxValueType(a, other) }
+      else {
+        if (a.isNothingType)     return other;
+        if (other.isNothingType) return a;
+        if (a == other)          return a;
+         // Approximate `lub`. The common type of two references is always AnyRef.
+         // For 'real' least upper bound wrt to subclassing use method 'lub'.
+        assert(a.isArray || a.isBoxed || a.isClass, s"This is not a valuetype and it's not something else, what is it? $a")
+        // TODO For some reason, ICode thinks `REFERENCE(...).maxType(BOXED(whatever))` is `uncomparable`. Here, that has maxType AnyRefReference.
+        //      BTW, when swapping arguments, ICode says BOXED(whatever).maxType(REFERENCE(...)) == AnyRefReference, so I guess the above was an oversight in REFERENCE.maxType()
+        if (other.isRef) { AnyRefReference }
+        else             { abort(s"Uncomparable BTypes: $a with $other") }
+      }
+    }
+
     /**
      * See documentation of [[typedOpcode]].
      * The numbers are taken from asm.Type.VOID_TYPE ff., the values are those shifted by << 8.
@@ -202,7 +276,72 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
     }
   }
 
-  sealed trait PrimitiveBType extends BType
+  sealed trait PrimitiveBType extends BType {
+    /* The maxValueType of (Char, Byte) and of (Char, Short) is Int, to encompass the negative values of Byte and Short. See ticket #2087.
+     *
+     * can-multi-thread
+     */
+    def maxValueType(a: BType, other: BType): BType = {
+      assert(a.isPrimitive, "maxValueType() is defined only for 1st arg valuetypes (2nd arg doesn't matter).")
+
+      def uncomparable: Nothing = {
+        abort(s"Uncomparable BTypes: $a with $other")
+      }
+
+      if (a.isNothingType)      return other;
+      if (other.isNothingType)  return a;
+      if (a == other)           return a;
+
+      a match {
+
+        case UNIT => uncomparable
+        case BOOL => uncomparable
+
+        case BYTE =>
+          if (other == CHAR)      INT
+          else if (other.isNumericType)  other
+          else                           uncomparable
+
+        case SHORT =>
+          other match {
+            case BYTE                                               => SHORT
+            case CHAR                                               => INT
+            case INT  | LONG  | FLOAT | DOUBLE => other
+            case _                                                         => uncomparable
+          }
+
+        case CHAR =>
+          other match {
+            case BYTE | SHORT                               => INT
+            case INT  | LONG | FLOAT | DOUBLE => other
+            case _                                                        => uncomparable
+          }
+
+        case INT =>
+          other match {
+            case BYTE | SHORT | CHAR   => INT
+            case LONG | FLOAT | DOUBLE => other
+            case _                                          => uncomparable
+          }
+
+        case LONG =>
+          if (other.isIntegralType)   LONG
+          else if (other.isRealType)  DOUBLE
+          else                        uncomparable
+
+        case FLOAT =>
+          if (other == DOUBLE)    DOUBLE
+          else if (other.isNumericType)  FLOAT
+          else                           uncomparable
+
+        case DOUBLE =>
+          if (other.isNumericType)  DOUBLE
+          else                      uncomparable
+
+        case _ => uncomparable
+      }
+    }
+  }
 
   case object UNIT   extends PrimitiveBType
   case object BOOL   extends PrimitiveBType
@@ -487,6 +626,85 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
      * @return The class name without the package prefix
      */
     def simpleName: String = internalName.split("/").last
+
+    /* can-multi-thread */
+    def isSubtypeOf(other: BType): Boolean = {
+      assert(other.isNonSpecial, "so called special cases have to be handled in BCodeTypes.conforms()")
+
+      if (c == other) return true;
+
+      val otherIsIface = exemplars.get(other).isInterface
+
+      if (this.isInterface) {
+        if (other == ObjectReference) return true;
+        if (!otherIsIface) return false;
+      }
+      else {
+        if (sc != null && sc.isSubtypeOf(other)) return true;
+        if (!otherIsIface) return false;
+      }
+
+      var idx = 0
+      while (idx < ifaces.length) {
+        if (ifaces(idx).isSubtypeOf(other)) return true;
+        idx += 1
+      }
+
+      false
+    }
+
+    /**
+     * Finding the least upper bound in agreement with the bytecode verifier (given two internal names
+     * handed out by ASM)
+     * Background:
+     *   http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
+     *   http://comments.gmane.org/gmane.comp.java.vm.languages/2293
+     *   https://issues.scala-lang.org/browse/SI-3872
+     *
+     * can-multi-thread
+     */
+    def jvmWiseLUB(a: ClassBType, b: ClassBType): ClassBType = {
+
+      assert(a.isNonSpecial, s"jvmWiseLUB() received a non-plain-class $a")
+      assert(b.isNonSpecial, s"jvmWiseLUB() received a non-plain-class $b")
+
+      val ta = exemplars.get(a)
+      val tb = exemplars.get(b)
+
+      val res = (ta.isInterface, tb.isInterface) match {
+        case (true, true) =>
+          // exercised by test/files/run/t4761.scala
+          if      (tb.isSubtypeOf(ta.c)) ta.c
+          else if (ta.isSubtypeOf(tb.c)) tb.c
+          else ObjectReference
+        case (true, false) =>
+          if (tb.isSubtypeOf(a)) a else ObjectReference
+        case (false, true) =>
+          if (ta.isSubtypeOf(b)) b else ObjectReference
+        case _ =>
+          firstCommonSuffix(ta :: ta.superClasses, tb :: tb.superClasses)
+      }
+      assert(res.isNonSpecial, "jvmWiseLUB() returned a non-plain-class.")
+      res
+    }
+
+    /*
+     * can-multi-thread
+     */
+    def firstCommonSuffix(as: List[Tracked], bs: List[Tracked]): ClassBType = {
+      var chainA = as
+      var chainB = bs
+      var fcs: Tracked = null
+      do {
+        if      (chainB contains chainA.head) fcs = chainA.head
+        else if (chainA contains chainB.head) fcs = chainB.head
+        else {
+          chainA = chainA.tail
+          chainB = chainB.tail
+        }
+      } while (fcs == null)
+      fcs.c
+    }
 
     /**
      * Custom equals / hashCode are needed because this is not a case class.
