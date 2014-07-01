@@ -19,8 +19,6 @@ import scala.collection.mutable
  *
  */
 abstract class BCodeIdiomatic extends SubComponent {
-  protected val bCodeICodeCommon: BCodeICodeCommon[global.type] = new BCodeICodeCommon(global)
-
   val bTypes = new BTypesFromSymbols[global.type](global)
 
   import global._

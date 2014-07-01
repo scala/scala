@@ -24,6 +24,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   import global._
   import definitions._
 
+  val bCodeICodeCommon: BCodeICodeCommon[global.type] = new BCodeICodeCommon(global)
+  val bCodeAsmCommon: BCodeAsmCommon[global.type] = new BCodeAsmCommon(global)
+  import bCodeAsmCommon._
+
   // Why the proxy, see documentation of class [[CoreBTypes]].
   val coreBTypes = new CoreBTypesProxy[this.type](this)
   import coreBTypes._
@@ -114,45 +118,63 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val flags = javaFlags(classSym)
 
-    def classOrModuleClass(sym: Symbol): Symbol = {
-      if      (sym.isClass)  sym
-      else if (sym.isModule) sym.moduleClass
-      else                   NoSymbol
-    }
-
-    /* The InnerClass table must contain all nested classes. Local or anonymous classes (not
-     * members) are referenced from the emitted code of the class, so they are in innerClassBuffer.
+    /* The InnerClass table of a class C must contain all nested classes of C, even if they are only
+     * declared but not otherwise referenced in C (from the bytecode or a method / field signature).
+     * We collect them here.
      *
-     * TODO @lry check the above. For example: class C { def foo = { class D; 0 } }, is D added?
+     * Nested classes that are also referenced in C will be added to the innerClassBufferASM during
+     * code generation, but those duplicates will be eliminated when emitting the InnerClass
+     * attribute.
      *
-     * For member classes however, there might be no reference at all in the code of the class.
-     * The JMV spec still requires those classes to be added to the InnerClass table, so we collect
-     * them here.
+     * Why doe we need to collect classes into innerClassBufferASM at all? To collect references to
+     * nested classes, but NOT nested in C, that are used within C.
      */
-    val memberClassSymbols = exitingErasure {
-      // time travel to a time before lambdalift (which lifts local classes up to the class, making them members)
-      for (sym <- List(classSym, classSym.linkedClassOfClass);
-           memberClass <- sym.info.decls.map(classOrModuleClass) if memberClass.isClass)
-      yield memberClass
+    val nestedClassSymbols = {
+      // The lambdalift phase lifts all nested classes to the enclosing class, so if we collect
+      // member classes right after lambdalift, we obtain all nested classes, including local and
+      // anonymous ones.
+      val nestedClasses = exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(classSym))
+
+      // If this is a top-level class, and it has a companion object, the member classes of the
+      // companion are added as members of the class. For example:
+      //   class C { }
+      //   object C {
+      //     class D
+      //     def f = { class E }
+      //   }
+      // The class D is added as a member of class C. The reason is that the InnerClass attribute
+      // for D will containt class "C" and NOT the module class "C$" as the outer class of D.
+      // This is done by buildNestedInfo, the reason is Java compatibility, see comment in BTypes.
+      // For consistency, the InnerClass entry for D needs to be present in C - to Java it looks
+      // like D is a member of C, not C$.
+      val linkedClass = exitingPickler(classSym.linkedClassOfClass) // linkedCoC does not work properly in late phases
+      val companionModuleMembers = {
+        // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
+        // not local classes of the companion module (E in the exmaple) that were lifted by lambdalift.
+        if (isTopLevelModuleClass(linkedClass)) exitingPickler(memberClassesOf(linkedClass))
+        else Nil
+      }
+
+      nestedClasses ++ companionModuleMembers
     }
 
     /**
      * For nested java classes, the scala compiler creates both a class and a module (and therefore
-     * a module class) symbol. For example, in `class A { class B {} }`, the memberClassSymbols
+     * a module class) symbol. For example, in `class A { class B {} }`, the nestedClassSymbols
      * for A contain both the class B and the module class B.
      * Here we get rid of the module class B, making sure that the class B is present.
      */
-    val memberClassSymbolsNoJavaModuleClasses = memberClassSymbols.filter(s => {
+    val nestedClassSymbolsNoJavaModuleClasses = nestedClassSymbols.filter(s => {
       if (s.isJavaDefined && s.isModuleClass) {
-        // We could also search in memberClassSymbols for s.linkedClassOfClass, but sometimes that
+        // We could also search in nestedClassSymbols for s.linkedClassOfClass, but sometimes that
         // returns NoSymbol, so it doesn't work.
-        val nb = memberClassSymbols.count(mc => mc.name == s.name && mc.owner == s.owner)
-        assert(nb == 2, s"Java member module without member class: $s - $memberClassSymbols")
+        val nb = nestedClassSymbols.count(mc => mc.name == s.name && mc.owner == s.owner)
+        assert(nb == 2, s"Java member module without member class: $s - $nestedClassSymbols")
         false
       } else true
     })
 
-    val memberClasses = memberClassSymbolsNoJavaModuleClasses.map(classBTypeFromSymbol)
+    val memberClasses = nestedClassSymbolsNoJavaModuleClasses.map(classBTypeFromSymbol)
 
     val nestedInfo = buildNestedInfo(classSym)
 
@@ -207,10 +229,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val isNested = !innerClassSym.rawowner.isPackageClass
     if (!isNested) None
     else {
-      // Phase travel to a time where the owner chain is in its original form. Example:
-      //   object T { def f { class C } }
-      // C is an inner class (not a static nested class), see InnerClass summary in BTypes.
-      val isStaticNestedClass = enteringPickler(innerClassSym.isStatic)
+      // See comment in BTypes, when is a class marked static in the InnerClass table.
+      val isStaticNestedClass = isOriginallyStaticOwner(innerClassSym.originalOwner)
 
       // After lambdalift (which is where we are), the rawowoner field contains the enclosing class.
       val enclosingClassSym = {
@@ -220,15 +240,20 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
           // nested class, the symbol for D is nested in the module class C (not in the class C).
           // For the InnerClass attribute, we use the class symbol C, which represents the situation
           // in the source code.
-          assert(innerClassSym.isStatic, innerClassSym.rawowner)
-          innerClassSym.rawowner.linkedClassOfClass
+
+          // Cannot use innerClassSym.isStatic: this method looks at the owner, which is a package
+          // at this pahse (after lambdalift, flatten).
+          assert(isOriginallyStaticOwner(innerClassSym.originalOwner), innerClassSym.originalOwner)
+
+          // phase travel for linkedCoC - does not always work in late phases
+          exitingPickler(innerClassSym.rawowner.linkedClassOfClass)
         }
         else innerClassSym.rawowner
       }
       val enclosingClass: ClassBType = classBTypeFromSymbol(enclosingClassSym)
 
       val outerName: Option[String] = {
-        if (innerClassSym.originalEnclosingMethod != NoSymbol) {
+        if (isAnonymousOrLocalClass(innerClassSym)) {
           None
         } else {
           val outerName = innerClassSym.rawowner.javaBinaryName
@@ -266,23 +291,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
    * for such objects will get a MODULE$ flag and a corresponding static initializer.
    */
   final def isStaticModuleClass(sym: Symbol): Boolean = {
-    /* The implementation of this method is tricky because it is a source-level property. Various
-     * phases changed the symbol's properties in the meantime.
-     *
-     * (1) Phase travel to to pickler is required to exclude implementation classes; they have the
+    /* (1) Phase travel to to pickler is required to exclude implementation classes; they have the
      * lateMODULEs after mixin, so isModuleClass would be true.
-     *
-     * (2) We cannot use `sym.isStatic` because lambdalift modified (destructively) the owner. For
-     * example, in
-     *   object T { def f { object U } }
-     * the owner of U is T, so UModuleClass.isStatic is true. Phase travel does not help here.
-     * So we basically re-implement `sym.isStaticOwner`, but using the original owner chain.
+     * (2) isStaticModuleClass is a source-level property. See comment on isOriginallyStaticOwner.
      */
-
-    def isOriginallyStaticOwner(sym: Symbol): Boolean = {
-      sym.isPackageClass || sym.isModuleClass && isOriginallyStaticOwner(sym.originalOwner)
-    }
-
     exitingPickler { // (1)
       sym.isModuleClass &&
       isOriginallyStaticOwner(sym.originalOwner) // (2)

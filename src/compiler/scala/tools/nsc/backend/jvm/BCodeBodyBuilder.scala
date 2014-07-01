@@ -23,8 +23,8 @@ import scala.tools.asm
 abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
   import global._
   import definitions._
-  import bCodeICodeCommon._
   import bTypes._
+  import bCodeICodeCommon._
   import coreBTypes._
 
   /*

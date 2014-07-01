@@ -27,6 +27,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
   import global._
   import bTypes._
   import coreBTypes._
+  import bCodeAsmCommon._
 
   /*
    * There's a dedicated PlainClassBuilder for each CompilationUnit,
@@ -153,10 +154,10 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         cnode.visitSource(cunit.source.toString, null /* SourceDebugExtension */)
       }
 
-      val enclM = getEnclosingMethodAttribute(claszSymbol)
-      if (enclM != null) {
-        val EnclMethodEntry(className, methodName, methodType) = enclM
-        cnode.visitOuterClass(className, methodName, methodType.descriptor)
+      enclosingMethodAttribute(claszSymbol, internalName, asmMethodType(_).descriptor) match {
+        case Some(EnclosingMethodEntry(className, methodName, methodDescriptor)) =>
+          cnode.visitOuterClass(className, methodName, methodDescriptor)
+        case _ => ()
       }
 
       val ssa = getAnnotPickle(thisName, claszSymbol)

@@ -74,15 +74,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
   }
 
-  protected def originalEnclosingMethod(sym: Symbol): Symbol = {
-    if (sym.isMethod || sym == NoSymbol) sym
-    else {
-      val owner = sym.originalOwner
-      if (sym.isLocalDummy) owner.enclClass.primaryConstructor
-      else originalEnclosingMethod(owner)
-    }
-  }
-
   def symbolOf[T: WeakTypeTag]: TypeSymbol = weakTypeOf[T].typeSymbolDirect.asType
 
   abstract class SymbolContextApiImpl extends SymbolApi {
@@ -2122,16 +2113,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  is not one. */
     def enclosingPackage: Symbol = enclosingPackageClass.companionModule
 
-    /** Return the original enclosing method of this symbol. It should return
-     *  the same thing as enclMethod when called before lambda lift,
-     *  but it preserves the original nesting when called afterwards.
-     *
-     *  @note This method is NOT available in the presentation compiler run. The
-     *        originalOwner map is not populated for memory considerations (the symbol
-     *        may hang on to lazy types and in turn to whole (outdated) compilation units.
-     */
-    def originalEnclosingMethod: Symbol = Symbols.this.originalEnclosingMethod(this)
-
     /** The method or class which logically encloses the current symbol.
      *  If the symbol is defined in the initialization part of a template
      *  this is the template's primary constructor, otherwise it is
@@ -3532,7 +3513,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def rawInfo: Type = NoType
     override def accessBoundary(base: Symbol): Symbol = enclosingRootClass
     def cloneSymbolImpl(owner: Symbol, newFlags: Long) = abort("NoSymbol.clone()")
-    override def originalEnclosingMethod = this
   }
 
   protected def makeNoSymbol: NoSymbol = new NoSymbol

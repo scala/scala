@@ -403,9 +403,11 @@ abstract class BTypes {
    * Fields in the InnerClass entries:
    *  - inner class: the (nested) class C we are talking about
    *  - outer class: the class of which C is a member. Has to be null for non-members, i.e. for
-   *                 local and anonymous classes.
+   *                 local and anonymous classes. NOTE: this co-incides with the presence of an
+   *                 EnclosingMethod attribute (see below)
    *  - inner name:  A string with the simple name of the inner class. Null for anonymous classes.
-   *  - flags:       access property flags, details in JVMS, table in 4.7.6.
+   *  - flags:       access property flags, details in JVMS, table in 4.7.6. Static flag: see
+   *                 discussion below.
    *
    *
    * Note 1: when a nested class is present in the InnerClass attribute, all of its enclosing
@@ -446,6 +448,13 @@ abstract class BTypes {
    * JVMS 4.7.7: the attribute must be present "if and only if it represents a local class
    * or an anonymous class" (i.e. not for member classes).
    *
+   * The attribute is mis-named, it should be called "EnclosingClass". It has to be defined for all
+   * local and anonymous classes, no matter if there is an enclosing method or not. Accordingly, the
+   * "class" field (see below) must be always defined, while the "method" field may be null.
+   *
+   * NOTE: When a EnclosingMethod attribute is requried (local and anonymous classes), the "outer"
+   * field in the InnerClass table must be null.
+   *
    * Fields:
    *  - class:  the enclosing class
    *  - method: the enclosing method (or constructor). Null if the class is not enclosed by a
@@ -456,9 +465,8 @@ abstract class BTypes {
    *            Note: the field is required for anonymous classes defined within local variable
    *            initializers (within a method), Java example below (**).
    *
-   *            Currently, the Scala compiler sets "method" to the class constructor for classes
-   *            defined in initializer blocks or field initializers. This is probably OK, since the
-   *            Scala compiler desugars these statements into to the primary constructor.
+   *            For local and anonymous classes in initializer blocks or field initializers, and
+   *            class-level anonymous classes, the scala compiler sets the "method" field to null.
    *
    *
    * (*)
@@ -520,29 +528,36 @@ abstract class BTypes {
    * STATIC flag
    * -----------
    *
-   * Java: static nested classes have the "static" flag in the InnerClass attribute. This is not the
-   * case for local classes defined within a static method, even though such classes, as they are
-   * defined in a static context, don't take an "outer" instance.
-   * Non-static nested classes (inner classes, including local classes defined in a non-static
-   * method) take an "outer" instance on construction.
+   * Java: static member classes have the static flag in the InnerClass attribute, for example B in
+   *   class A { static class B { } }
    *
-   * Scala: Explicitouter adds an "outer" parameter to nested classes, except for classes defined
-   * in a static context, i.e. when all outer classes are module classes.
+   * The spec is not very clear about when the static flag should be emitted. It says: "Marked or
+   * implicitly static in source."
+   *
+   * The presence of the static flag does NOT coincide with the absence of an "outer" field in the
+   * class. The java compiler never puts the static flag for local classes, even if they don't have
+   * an outer pointer:
+   *
+   *   class A {
+   *     void f()        { class B {} }
+   *     static void g() { calss C {} }
+   *   }
+   *
+   * B has an outer pointer, C doesn't. Both B and C are NOT marked static in the InnerClass table.
+   *
+   * It seems sane to follow the same principle in the Scala compiler. So:
+   *
    *   package p
    *   object O1 {
-   *     class C1 // static
-   *     object O2 {
+   *     class C1 // static inner class
+   *     object O2 { // static inner module
    *       def f = {
-   *         class C2 { // static
-   *           class C3 // non-static, needs outer
+   *         class C2 { // non-static inner class, even though there's no outer pointer
+   *           class C3 // non-static, has an outer pointer
    *         }
    *       }
    *     }
    *   }
-   *
-   * Int the InnerClass attribute, the `static` flag is added for all classes defined in a static
-   * context, i.e. also for C2. This is different than in Java.
-   *
    *
    * Mirror Classes
    * --------------
@@ -799,7 +814,12 @@ abstract class BTypes {
    *                            to the InnerClass table, enclosing nested classes are also added.
    * @param outerName           The outerName field in the InnerClass entry, may be None.
    * @param innerName           The innerName field, may be None.
-   * @param isStaticNestedClass True if this is a static nested class (not inner class).
+   * @param isStaticNestedClass True if this is a static nested class (not inner class) (*)
+   *
+   * (*) Note that the STATIC flag in ClassInfo.flags, obtained through javaFlags(classSym), is not
+   * correct for the InnerClass entry, see javaFlags. The static flag in the InnerClass describes
+   * a source-level propety: if the class is in a static context (does not have an outer pointer).
+   * This is checked when building the NestedInfo.
    */
   case class NestedInfo(enclosingClass: ClassBType,
                         outerName: Option[String],

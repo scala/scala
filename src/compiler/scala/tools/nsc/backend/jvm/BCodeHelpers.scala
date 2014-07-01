@@ -789,55 +789,6 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
         new java.lang.Long(id)
       ).visitEnd()
     }
-
-    /*
-     * @param owner internal name of the enclosing class of the class.
-     *
-     * @param name the name of the method that contains the class.
-
-     * @param methodType the method that contains the class.
-     */
-    case class EnclMethodEntry(owner: String, name: String, methodType: BType)
-
-    /*
-     * @return null if the current class is not internal to a method
-     *
-     * Quoting from JVMS 4.7.7 The EnclosingMethod Attribute
-     *   A class must have an EnclosingMethod attribute if and only if it is a local class or an anonymous class.
-     *   A class may have no more than one EnclosingMethod attribute.
-     *
-     * must-single-thread
-     */
-    def getEnclosingMethodAttribute(clazz: Symbol): EnclMethodEntry = { // JVMS 4.7.7
-
-      def newEEE(eClass: Symbol, m: Symbol) = {
-        EnclMethodEntry(
-          internalName(eClass),
-          m.javaSimpleName.toString,
-          asmMethodType(m)
-        )
-      }
-
-      var res: EnclMethodEntry = null
-      val sym = clazz.originalEnclosingMethod
-      if (sym.isMethod) {
-        debuglog(s"enclosing method for $clazz is $sym (in ${sym.enclClass})")
-        res = newEEE(sym.enclClass, sym)
-      } else if (clazz.isAnonymousClass) {
-        val enclClass = clazz.rawowner
-        assert(enclClass.isClass, enclClass)
-        val sym = enclClass.primaryConstructor
-        if (sym == NoSymbol) {
-          log(s"Ran out of room looking for an enclosing method for $clazz: no constructor here: $enclClass.")
-        } else {
-          debuglog(s"enclosing method for $clazz is $sym (in $enclClass)")
-          res = newEEE(enclClass, sym)
-        }
-      }
-
-      res
-    }
-
   } // end of trait BCClassGen
 
   /* basic functionality for class file building of plain, mirror, and beaninfo classes. */

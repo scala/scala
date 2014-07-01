@@ -449,6 +449,8 @@ abstract class LambdaLift extends InfoTransform {
       if (sym.isClass) sym.owner = sym.owner.toInterface
       if (sym.isMethod) sym setFlag LIFTED
       liftedDefs(sym.owner) ::= tree
+      // TODO: this modifies the ClassInfotype of the enclosing class, which is associated with another phase (explicitouter).
+      // This breaks type history: in a phase travel to before lambda lift, the ClassInfoType will contain lifted classes.
       sym.owner.info.decls enterUnique sym
       debuglog("lifted: " + sym + " from " + oldOwner + " to " + sym.owner)
       EmptyTree
