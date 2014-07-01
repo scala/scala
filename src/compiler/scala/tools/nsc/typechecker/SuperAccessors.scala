@@ -247,7 +247,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               // also exists in a superclass, because they may be surprised
               // to find out that a constructor parameter will shadow a
               // field. See SI-4762.
-              if (settings.lint) {
+              if (settings.warnPrivateShadow) {
                 if (sym.isPrivateLocal && sym.paramss.isEmpty) {
                   qual.symbol.ancestors foreach { parent =>
                     parent.info.decls filterNot (x => x.isPrivate || x.isLocalToThis) foreach { m2 =>

@@ -58,9 +58,9 @@ class SettingsTest {
   }
   @Test def anonymousLintersCanBeNamed() {
     assertTrue(check("-Xlint")(_.warnMissingInterpolator)) // among Xlint
-    assertFalse(check("-Xlint:-warn-missing-interpolator")(_.warnMissingInterpolator))
-    assertFalse(check("-Xlint:-warn-missing-interpolator", "-Xlint")(_.warnMissingInterpolator))
+    assertFalse(check("-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
+    assertFalse(check("-Xlint:-missing-interpolator", "-Xlint")(_.warnMissingInterpolator))
     // two lint settings are first come etc; unlike -Y
-    assertTrue(check("-Xlint", "-Xlint:-warn-missing-interpolator")(_.warnMissingInterpolator))
+    assertTrue(check("-Xlint", "-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
   }
 }

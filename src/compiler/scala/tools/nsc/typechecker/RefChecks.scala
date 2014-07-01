@@ -167,7 +167,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       }
 
       // This has become noisy with implicit classes.
-      if (settings.lint && settings.developer) {
+      if (settings.warnPolyImplicitOverload && settings.developer) {
         clazz.info.decls filter (x => x.isImplicit && x.typeParams.nonEmpty) foreach { sym =>
           // implicit classes leave both a module symbol and a method symbol as residue
           val alts = clazz.info.decl(sym.name).alternatives filterNot (_.isModule)
@@ -954,7 +954,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       def apply(tp: Type) = mapOver(tp).normalize
     }
 
-    def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.lint) (fn, args) match {
+    def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.warnOptionImplicit) (fn, args) match {
       case (tap@TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == currentRun.runDefinitions.Option_apply =>
         reporter.warning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.") // SI-6567
       case _ =>
@@ -1320,7 +1320,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         && !qual.tpe.isInstanceOf[ThisType]
         && sym.accessedOrSelf.isVal
       )
-      if (settings.lint.value && isLikelyUninitialized)
+      if (settings.warnDelayedInit && isLikelyUninitialized)
         reporter.warning(pos, s"Selecting ${sym} from ${sym.owner}, which extends scala.DelayedInit, is likely to yield an uninitialized value")
     }
 
@@ -1387,7 +1387,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     private def checkByNameRightAssociativeDef(tree: DefDef) {
       tree match {
         case DefDef(_, name, _, params :: _, _, _) =>
-          if (settings.lint && !treeInfo.isLeftAssoc(name.decodedName) && params.exists(p => isByName(p.symbol)))
+          if (settings.warnByNameRightAssociative && !treeInfo.isLeftAssoc(name.decodedName) && params.exists(p => isByName(p.symbol)))
             reporter.warning(tree.pos,
               "by-name parameters will be evaluated eagerly when called as a right-associative infix operator. For more details, see SI-1980.")
         case _ =>
