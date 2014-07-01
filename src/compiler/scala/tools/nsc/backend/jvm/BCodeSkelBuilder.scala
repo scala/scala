@@ -141,10 +141,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
           classBType.internalName
       }
 
-      val flags = GenBCode.mkFlags(
-        javaFlags(claszSymbol),
-        if (isDeprecated(claszSymbol)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo access flag
-      )
+      val flags = javaFlags(claszSymbol)
 
       val thisSignature = getGenericSignature(claszSymbol, claszSymbol.owner)
       cnode.visit(classfileVersion, flags,
@@ -245,10 +242,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
        */
       for (f <- fieldSymbols(claszSymbol)) {
         val javagensig = getGenericSignature(f, claszSymbol)
-        val flags = GenBCode.mkFlags(
-          javaFieldFlags(f),
-          if (isDeprecated(f)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo access flag
-        )
+        val flags = javaFieldFlags(f)
 
         val jfield = new asm.tree.FieldNode(
           flags,
@@ -571,8 +565,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         javaFlags(methSymbol),
         if (claszSymbol.isInterface) asm.Opcodes.ACC_ABSTRACT   else 0,
         if (methSymbol.isStrictFP)   asm.Opcodes.ACC_STRICT     else 0,
-        if (isNative)                asm.Opcodes.ACC_NATIVE     else 0, // native methods of objects are generated in mirror classes
-        if (isDeprecated(methSymbol)) asm.Opcodes.ACC_DEPRECATED else 0  // ASM pseudo access flag
+        if (isNative)                asm.Opcodes.ACC_NATIVE     else 0  // native methods of objects are generated in mirror classes
       )
 
       // TODO needed? for(ann <- m.symbol.annotations) { ann.symbol.initialize }

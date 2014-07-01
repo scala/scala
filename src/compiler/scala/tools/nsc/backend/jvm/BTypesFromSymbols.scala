@@ -106,10 +106,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes with CoreBTyp
 
     val interfaces = getSuperInterfaces(classSym).map(classBTypeFromSymbol)
 
-    val flags = GenBCode.mkFlags(
-      javaFlags(classSym),
-      if (isDeprecated(classSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo access flag
-    )
+    val flags = javaFlags(classSym)
 
     def classOrModuleClass(sym: Symbol): Symbol = {
       if      (sym.isClass)  sym
@@ -286,8 +283,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes with CoreBTyp
     }
   }
 
-  final def isDeprecated(sym: Symbol): Boolean = sym.annotations exists (_ matches DeprecatedAttr)
-
   // legacy, to be removed when the @remote annotation gets removed
   final def isRemote(s: Symbol) = (s hasAnnotation definitions.RemoteAttr)
   final def hasPublicBitSet(flags: Int) = ((flags & asm.Opcodes.ACC_PUBLIC) != 0)
@@ -304,6 +299,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes with CoreBTyp
    * for methods:
    *  - the same as for fields, plus:
    *  - abstract, synchronized (not used), strictfp (not used), native (not used)
+   * for all:
+   *  - deprecated
    *
    *  (*) protected cannot be used, since inner classes 'see' protected members,
    *      and they would fail verification after lifted.
@@ -366,12 +363,9 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes with CoreBTyp
       if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
       if (sym.hasEnumFlag) ACC_ENUM else 0,
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
-      if (sym.hasFlag(symtab.Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0
+      if (sym.hasFlag(symtab.Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0,
+      if (sym.isDeprecated) asm.Opcodes.ACC_DEPRECATED else 0
     )
-    // TODO @lry should probably also check / add "deprectated"
-    // all call sites of "javaFlags" seem to check for deprecation rigth after.
-    // Exception: the call below in javaFieldFlags. However, the caller of javaFieldFlags then
-    // does the check.
   }
 
   def javaFieldFlags(sym: Symbol) = {
