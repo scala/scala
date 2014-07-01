@@ -415,7 +415,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       reporter.cancelled || unit.isJava && this.id > maxJavaPhase
     }
 
-    final def applyPhase(unit: CompilationUnit) {
+    final def withCurrentUnit(unit: CompilationUnit)(task: => Unit) {
       if ((unit ne null) && unit.exists)
         lastSeenSourceFile = unit.source
 
@@ -427,7 +427,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         currentRun.currentUnit = unit
         if (!cancelled(unit)) {
           currentRun.informUnitStarting(this, unit)
-          apply(unit)
+          task
         }
         currentRun.advanceUnit()
       } finally {
@@ -435,6 +435,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         currentRun.currentUnit = unit0
       }
     }
+
+    final def applyPhase(unit: CompilationUnit) = withCurrentUnit(unit)(apply(unit))
   }
 
   // phaseName = "parser"
