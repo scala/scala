@@ -636,10 +636,17 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         else
           innerSym.rawname + innerSym.moduleSuffix
 
-      // add inner classes which might not have been referenced yet
-      // TODO @lry according to the spec, all nested classes should be added, also local and
-      // anonymous. This seems to add only member classes - or not? it's exitingErasure, so maybe
-      // local / anonymous classes have been lifted by lambdalift. are they in the "decls" though?
+      /* The InnerClass table must contain all nested classes. Local or anonymous classes (not
+       * members) are referenced from the emitted code of the class, so they will be found when
+       * building the InnerClass table (currently they are added to the innerClassBufferASM set
+       * during bytecode generation; that might change to a bytecode traversal.)
+       *
+       * TODO @lry check the above. For example: class C { def foo = { class D; 0 } }, is D added?
+       *
+       * For member classes however, there might be no reference at all in the code of the class.
+       * The JMV spec still requires those classes to be added to the InnerClass table, so we collect
+       * them here.
+       */
       exitingErasure {
         for (sym <- List(csym, csym.linkedClassOfClass); m <- sym.info.decls.map(innerClassSymbolFor) if m.isClass)
           innerClassBuffer += m
