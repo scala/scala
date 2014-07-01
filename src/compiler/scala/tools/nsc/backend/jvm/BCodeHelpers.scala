@@ -923,10 +923,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
 
       innerClassBufferASM.clear()
 
-      val flags = GenBCode.mkFlags(
-        javaFlags(cls),
-        if (isDeprecated(cls)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo access flag
-      )
+      val flags = javaFlags(cls)
 
       val beanInfoName  = (internalName(cls) + "BeanInfo")
       val beanInfoClass = new asm.tree.ClassNode
