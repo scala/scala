@@ -58,10 +58,200 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     exemplars.clear()
   }
 
-  val PublicStatic      = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
-  val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
-
   val strMODULE_INSTANCE_FIELD = nme.MODULE_INSTANCE_FIELD.toString
+
+  /*
+   * must-single-thread
+   */
+  private def buildExemplar(key: ClassBType, csym: Symbol): Tracked = {
+    val sc =
+     if (csym.isImplClass) definitions.ObjectClass
+     else csym.superClass
+    assert(
+      if (csym == definitions.ObjectClass)
+        sc == NoSymbol
+      else if (csym.isInterface)
+        sc == definitions.ObjectClass
+      else
+        ((sc != NoSymbol) && !sc.isInterface) || isCompilingStdLib,
+      "superClass out of order"
+    )
+    val ifacesArr = getSuperInterfaces(csym).map(exemplar).toArray
+
+    val flags = mkFlags(
+      javaFlags(csym),
+      if (isDeprecated(csym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo access flag
+    )
+
+    val tsc = if (sc == NoSymbol) null else exemplar(sc)
+
+    val innersChain = saveInnerClassesFor(csym, key)
+
+    Tracked(key, flags, tsc, ifacesArr, innersChain)
+  }
+
+  /* must-single-thread */
+  def getSuperInterfaces(csym: Symbol): List[Symbol] = {
+
+    // Additional interface parents based on annotations and other cues
+    def newParentForAttr(ann: AnnotationInfo): Symbol = ann.symbol match {
+      case definitions.RemoteAttr => definitions.RemoteInterfaceClass
+      case _                      => NoSymbol
+    }
+
+    /* Drop redundant interfaces (which are implemented by some other parent) from the immediate parents.
+     *  In other words, no two interfaces in the result are related by subtyping.
+     *  This method works on Symbols, a similar one (not duplicate) works on Tracked instances.
+     */
+    def minimizeInterfaces(lstIfaces: List[Symbol]): List[Symbol] = {
+      var rest   = lstIfaces
+      var leaves = List.empty[Symbol]
+      while (!rest.isEmpty) {
+        val candidate = rest.head
+        val nonLeaf = leaves exists { lsym => lsym isSubClass candidate }
+        if (!nonLeaf) {
+          leaves = candidate :: (leaves filterNot { lsym => candidate isSubClass lsym })
+        }
+        rest = rest.tail
+      }
+
+      leaves
+    }
+
+    val superInterfaces0: List[Symbol] = csym.mixinClasses
+    val superInterfaces = existingSymbols(superInterfaces0 ++ csym.annotations.map(newParentForAttr)).distinct
+
+    assert(!superInterfaces.contains(NoSymbol), s"found NoSymbol among: ${superInterfaces.mkString(", ")}")
+    assert(superInterfaces.forall(s => s.isInterface || s.isTrait), s"found non-interface among: ${superInterfaces.mkString(", ")}")
+
+    minimizeInterfaces(superInterfaces)
+  }
+
+  /* For given symbol return a symbol corresponding to a class that should be declared as inner class.
+   *
+   *  For example:
+   *  class A {
+   *    class B
+   *    object C
+   *  }
+   *
+   *  then method will return:
+   *    NoSymbol for A,
+   *    the same symbol for A.B (corresponding to A$B class), and
+   *    A$C$ symbol for A.C.
+   *
+   * must-single-thread
+   */
+  def innerClassSymbolFor(s: Symbol): Symbol =
+    if (s.isClass) s else if (s.isModule) s.moduleClass else NoSymbol
+
+  /*
+   *  Computes the chain of inner-class (over the is-member-of relation) for the given argument.
+   *  The resulting chain will be cached in `exemplars`.
+   *
+   *  The chain thus cached is valid during this compiler run, see in contrast
+   *  `innerClassBufferASM` for a cache that is valid only for the class being emitted.
+   *
+   *  The argument can be any symbol, but given that this method is invoked only from `buildExemplar()`,
+   *  in practice it has been vetted to be a class-symbol.
+   *
+   *  Returns:
+   *
+   *    - a non-empty array of entries for an inner-class argument.
+   *      The array's first element is the outermost top-level class,
+   *      the array's last element corresponds to csym.
+   *
+   *    - null otherwise.
+   *
+   *  This method does not add to `innerClassBufferASM`, use instead `exemplar()` for that.
+   *
+   *  must-single-thread
+   */
+  final def saveInnerClassesFor(csym: Symbol, csymTK: BType): Array[InnerClassEntry] = {
+
+    val ics = innerClassSymbolFor(csym)
+    if (ics == NoSymbol) {
+      return null
+    }
+    assert(ics == csym, s"Disagreement between innerClassSymbolFor() and exemplar()'s tracked symbol for the same input: ${csym.fullName}")
+
+    var chain: List[Symbol] = Nil
+    var x = ics
+    while (x ne NoSymbol) {
+      assert(x.isClass, s"not a class symbol: ${x.fullName}")
+      // Uses `rawowner` because `owner` reflects changes in the owner chain due to flattening.
+      // The owner chain of a class only contains classes. This is because the lambdalift phase
+      // changes the `rawowner` destructively to point to the enclosing class. Before, the owner
+      // might be for example a method.
+      val isInner = !x.rawowner.isPackageClass
+      if (isInner) {
+        chain ::= x
+        x = innerClassSymbolFor(x.rawowner)
+      } else {
+        x = NoSymbol
+      }
+    }
+
+    if (chain.isEmpty) null
+    else chain.map(toInnerClassEntry).toArray
+  }
+
+  /*
+   * must-single-thread
+   */
+  private def toInnerClassEntry(innerSym: Symbol): InnerClassEntry = {
+
+    /* The outer name for this inner class. Note that it returns null
+     *  when the inner class should not get an index in the constant pool.
+     *  That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
+     */
+    def outerName(innerSym: Symbol): Name = {
+      if (innerSym.originalEnclosingMethod != NoSymbol)
+        null
+      else {
+        val outerName = innerSym.rawowner.javaBinaryName
+        if (isTopLevelModuleClass(innerSym.rawowner)) nme.stripModuleSuffix(outerName)
+        else outerName
+      }
+    }
+
+    def innerName(innerSym: Symbol): String = {
+      if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
+        null
+      else
+        innerSym.rawname + innerSym.moduleSuffix
+    }
+
+    // TODO @lry compare with table in spec: for example, deprecated should not be there it seems.
+    //   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.6-300-D.1-D.1
+    // including "deprecated" was added in the initial commit of GenASM, but it was never in GenJVM.
+    val flags: Int = mkFlags(
+      // TODO @lry adding "static" whenever the class is owned by a module seems wrong.
+      //   class C { object O { class I } }
+      // here, I is marked static in the InnerClass attribute. But the I constructor takes an outer instance.
+      // was added in 0469d41
+      // what should it be? check what would make sense for java reflection.
+      //  member of top-level object should be static? how about anonymous / local class that has
+      //    been lifted to a top-level object?
+      //  member that is only nested in objects should be static?
+      //  verify: will ICodeReader still work after that? the code was introduced because of icode reader.
+      if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
+      javaFlags(innerSym),
+      if (isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
+    ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
+
+    val jname = innerSym.javaBinaryName.toString // never null
+    val oname = { // null when method-enclosed
+      val on = outerName(innerSym)
+      if (on == null) null else on.toString
+    }
+    val iname = { // null for anonymous inner class
+      val in = innerName(innerSym)
+      if (in == null) null else in.toString
+    }
+
+    InnerClassEntry(jname, oname, iname, flags)
+  }
 
   // ------------------------------------------------
   // accessory maps tracking the isInterface, innerClasses, superClass, and supportedInterfaces relations,
@@ -218,43 +408,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   /* must-single-thread */
   final def hasInternalName(sym: Symbol) = sym.isClass || sym.isModuleNotMethod
 
-  /* must-single-thread */
-  def getSuperInterfaces(csym: Symbol): List[Symbol] = {
-
-    // Additional interface parents based on annotations and other cues
-    def newParentForAttr(ann: AnnotationInfo): Symbol = ann.symbol match {
-      case definitions.RemoteAttr => definitions.RemoteInterfaceClass
-      case _                      => NoSymbol
-    }
-
-    /* Drop redundant interfaces (which are implemented by some other parent) from the immediate parents.
-     *  In other words, no two interfaces in the result are related by subtyping.
-     *  This method works on Symbols, a similar one (not duplicate) works on Tracked instances.
-     */
-    def minimizeInterfaces(lstIfaces: List[Symbol]): List[Symbol] = {
-      var rest   = lstIfaces
-      var leaves = List.empty[Symbol]
-      while (!rest.isEmpty) {
-        val candidate = rest.head
-        val nonLeaf = leaves exists { lsym => lsym isSubClass candidate }
-        if (!nonLeaf) {
-          leaves = candidate :: (leaves filterNot { lsym => candidate isSubClass lsym })
-        }
-        rest = rest.tail
-      }
-
-      leaves
-    }
-
-    val superInterfaces0: List[Symbol] = csym.mixinClasses
-    val superInterfaces = existingSymbols(superInterfaces0 ++ csym.annotations.map(newParentForAttr)).distinct
-
-    assert(!superInterfaces.contains(NoSymbol), s"found NoSymbol among: ${superInterfaces.mkString(", ")}")
-    assert(superInterfaces.forall(s => s.isInterface || s.isTrait), s"found non-interface among: ${superInterfaces.mkString(", ")}")
-
-    minimizeInterfaces(superInterfaces)
-  }
-
   /*
    * Records the superClass and supportedInterfaces relations,
    * so that afterwards queries can be answered without resorting to typer.
@@ -291,36 +444,6 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     if (csym != csym0) { symExemplars.put(csym0, tr) }
     exemplars.put(tr.c, tr) // tr.c is the hash-consed, internalized, canonical representative for csym's key.
     tr
-  }
-
-  /*
-   * must-single-thread
-   */
-  private def buildExemplar(key: ClassBType, csym: Symbol): Tracked = {
-    val sc =
-     if (csym.isImplClass) definitions.ObjectClass
-     else csym.superClass
-    assert(
-      if (csym == definitions.ObjectClass)
-        sc == NoSymbol
-      else if (csym.isInterface)
-        sc == definitions.ObjectClass
-      else
-        ((sc != NoSymbol) && !sc.isInterface) || isCompilingStdLib,
-      "superClass out of order"
-    )
-    val ifacesArr = getSuperInterfaces(csym).map(exemplar).toArray
-
-    val flags = mkFlags(
-      javaFlags(csym),
-      if (isDeprecated(csym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo access flag
-    )
-
-    val tsc = if (sc == NoSymbol) null else exemplar(sc)
-
-    val innersChain = saveInnerClassesFor(csym, key)
-
-    Tracked(key, flags, tsc, ifacesArr, innersChain)
   }
 
   // ---------------- utilities around interfaces represented by Tracked instances. ----------------
@@ -381,6 +504,29 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     false
   }
 
+  // ---------------------------------------------------------------------
+  // ---------------- InnerClasses attribute (JVMS 4.7.6) ----------------
+  // ---------------------------------------------------------------------
+
+  val INNER_CLASSES_FLAGS =
+    (asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_PRIVATE   | asm.Opcodes.ACC_PROTECTED |
+     asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT  | asm.Opcodes.ACC_FINAL)
+
+  /*
+   * @param name the internal name of an inner class.
+   * @param outerName the internal name of the class to which the inner class belongs.
+   *                  May be `null` for non-member inner classes (ie for a Java local class or a Java anonymous class).
+   * @param innerName the (simple) name of the inner class inside its enclosing class. It's `null` for anonymous inner classes.
+   * @param access the access flags of the inner class as originally declared in the enclosing class.
+   */
+  case class InnerClassEntry(name: String, outerName: String, innerName: String, access: Int) {
+    assert(name != null, "Null isn't good as class name in an InnerClassEntry.")
+  }
+
+  // --------------------------------------------
+  // ---------------- Java flags ----------------
+  // --------------------------------------------
+
   /**
    * must-single-thread
    *
@@ -407,164 +553,15 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     sym.isModuleClass && sym.isStatic
   }
 
-  // ---------------------------------------------------------------------
-  // ---------------- InnerClasses attribute (JVMS 4.7.6) ----------------
-  // ---------------------------------------------------------------------
-
-  val INNER_CLASSES_FLAGS =
-    (asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_PRIVATE   | asm.Opcodes.ACC_PROTECTED |
-     asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_INTERFACE | asm.Opcodes.ACC_ABSTRACT  | asm.Opcodes.ACC_FINAL)
-
-  /*
-   * @param name the internal name of an inner class.
-   * @param outerName the internal name of the class to which the inner class belongs.
-   *                  May be `null` for non-member inner classes (ie for a Java local class or a Java anonymous class).
-   * @param innerName the (simple) name of the inner class inside its enclosing class. It's `null` for anonymous inner classes.
-   * @param access the access flags of the inner class as originally declared in the enclosing class.
-   */
-  case class InnerClassEntry(name: String, outerName: String, innerName: String, access: Int) {
-    assert(name != null, "Null isn't good as class name in an InnerClassEntry.")
-  }
-
-  /* For given symbol return a symbol corresponding to a class that should be declared as inner class.
-   *
-   *  For example:
-   *  class A {
-   *    class B
-   *    object C
-   *  }
-   *
-   *  then method will return:
-   *    NoSymbol for A,
-   *    the same symbol for A.B (corresponding to A$B class), and
-   *    A$C$ symbol for A.C.
-   *
-   * must-single-thread
-   */
-  def innerClassSymbolFor(s: Symbol): Symbol =
-    if (s.isClass) s else if (s.isModule) s.moduleClass else NoSymbol
-
-  /*
-   *  Computes the chain of inner-class (over the is-member-of relation) for the given argument.
-   *  The resulting chain will be cached in `exemplars`.
-   *
-   *  The chain thus cached is valid during this compiler run, see in contrast
-   *  `innerClassBufferASM` for a cache that is valid only for the class being emitted.
-   *
-   *  The argument can be any symbol, but given that this method is invoked only from `buildExemplar()`,
-   *  in practice it has been vetted to be a class-symbol.
-   *
-   *  Returns:
-   *
-   *    - a non-empty array of entries for an inner-class argument.
-   *      The array's first element is the outermost top-level class,
-   *      the array's last element corresponds to csym.
-   *
-   *    - null otherwise.
-   *
-   *  This method does not add to `innerClassBufferASM`, use instead `exemplar()` for that.
-   *
-   *  must-single-thread
-   */
-  final def saveInnerClassesFor(csym: Symbol, csymTK: BType): Array[InnerClassEntry] = {
-
-    val ics = innerClassSymbolFor(csym)
-    if (ics == NoSymbol) {
-      return null
-    }
-    assert(ics == csym, s"Disagreement between innerClassSymbolFor() and exemplar()'s tracked symbol for the same input: ${csym.fullName}")
-
-    var chain: List[Symbol] = Nil
-    var x = ics
-    while (x ne NoSymbol) {
-      assert(x.isClass, s"not a class symbol: ${x.fullName}")
-      // Uses `rawowner` because `owner` reflects changes in the owner chain due to flattening.
-      // The owner chain of a class only contains classes. This is because the lambdalift phase
-      // changes the `rawowner` destructively to point to the enclosing class. Before, the owner
-      // might be for example a method.
-      val isInner = !x.rawowner.isPackageClass
-      if (isInner) {
-        chain ::= x
-        x = innerClassSymbolFor(x.rawowner)
-      } else {
-        x = NoSymbol
-      }
-    }
-
-    if (chain.isEmpty) null
-    else chain.map(toInnerClassEntry).toArray
-  }
-
   /*
    * must-single-thread
    */
-  private def toInnerClassEntry(innerSym: Symbol): InnerClassEntry = {
-
-    /* The outer name for this inner class. Note that it returns null
-     *  when the inner class should not get an index in the constant pool.
-     *  That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
-     */
-    def outerName(innerSym: Symbol): Name = {
-      if (innerSym.originalEnclosingMethod != NoSymbol)
-        null
-      else {
-        val outerName = innerSym.rawowner.javaBinaryName
-        if (isTopLevelModuleClass(innerSym.rawowner)) nme.stripModuleSuffix(outerName)
-        else outerName
-      }
-    }
-
-    def innerName(innerSym: Symbol): String = {
-      if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
-        null
-      else
-        innerSym.rawname + innerSym.moduleSuffix
-    }
-
-    // TODO @lry compare with table in spec: for example, deprecated should not be there it seems.
-    //   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.6-300-D.1-D.1
-    // including "deprecated" was added in the initial commit of GenASM, but it was never in GenJVM.
-    val flags: Int = mkFlags(
-      // TODO @lry adding "static" whenever the class is owned by a module seems wrong.
-      //   class C { object O { class I } }
-      // here, I is marked static in the InnerClass attribute. But the I constructor takes an outer instance.
-      // was added in 0469d41
-      // what should it be? check what would make sense for java reflection.
-      //  member of top-level object should be static? how about anonymous / local class that has
-      //    been lifted to a top-level object?
-      //  member that is only nested in objects should be static?
-      //  verify: will ICodeReader still work after that? the code was introduced because of icode reader.
-      if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
-      javaFlags(innerSym),
-      if (isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
-    ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
-
-    val jname = innerSym.javaBinaryName.toString // never null
-    val oname = { // null when method-enclosed
-      val on = outerName(innerSym)
-      if (on == null) null else on.toString
-    }
-    val iname = { // null for anonymous inner class
-      val in = innerName(innerSym)
-      if (in == null) null else in.toString
-    }
-
-    InnerClassEntry(jname, oname, iname, flags)
-  }
-
-  // --------------------------------------------
-  // ---------------- Java flags ----------------
-  // --------------------------------------------
+  final def isRemote(s: Symbol) = (s hasAnnotation definitions.RemoteAttr)
 
   /*
    * can-multi-thread
    */
   final def hasPublicBitSet(flags: Int) = ((flags & asm.Opcodes.ACC_PUBLIC) != 0)
-
-  /*
-   * must-single-thread
-   */
-  final def isRemote(s: Symbol) = (s hasAnnotation definitions.RemoteAttr)
 
   /*
    * Return the Java modifiers for the given symbol.

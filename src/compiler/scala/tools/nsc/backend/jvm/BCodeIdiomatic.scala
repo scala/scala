@@ -40,8 +40,6 @@ abstract class BCodeIdiomatic extends SubComponent {
   val majorVersion: Int = (classfileVersion & 0xFF)
   val emitStackMapFrame = (majorVersion >= 50)
 
-  def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
-
   val extraProc: Int = mkFlags(
     asm.ClassWriter.COMPUTE_MAXS,
     if (emitStackMapFrame) asm.ClassWriter.COMPUTE_FRAMES else 0

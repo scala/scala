@@ -385,3 +385,10 @@ abstract class GenBCode extends BCodeSyncAndTry {
   } // end of class BCodePhase
 
 } // end of class GenBCode
+
+object GenBCode {
+  def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
+
+  val PublicStatic      = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
+  val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
+}
