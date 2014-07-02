@@ -251,6 +251,17 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * nonempty '''and''' `pf` is defined for that value.
    * Returns $none otherwise.
    *
+   * @example {{{
+   * // Returns Some(HTTP) because the partial function covers the case.
+   * Some("http").collect({case "http" => "HTTP"})
+   *
+   * // Returns None because the partial function doesn't cover the case.
+   * Some("ftp").collect({case "http" => "HTTP"})
+   *
+   * // Returns None because None is passed to the collect method.
+   * None.collect({case value => value})
+   * }}}
+   *
    *  @param  pf   the partial function.
    *  @return the result of applying `pf` to this $option's
    *  value (if possible), or $none.
