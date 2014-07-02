@@ -1,37 +1,51 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2014 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+
 package scala.tools.nsc
 package backend.jvm
 
-import scala.collection.immutable
-import scala.annotation.switch
 import scala.tools.asm
 import asm.Opcodes
-import scala.collection.mutable.ListBuffer
 
 /**
- * BTypes is a backend component that defines the class BType, a number of basic instances and
- * some utilities.
+ * The BTypes component defines The BType class hierarchy. BTypes encapsulates all type information
+ * that is required after building the ASM nodes. This includes optimizations, geneartion of
+ * InnerClass attributes and generation of stack map frames.
  *
- * A BType is essentially an slice of the array `chrs` denoting the name of the type, and a field
- * denoting the kind (object, array, method, or one of the primitive types).
- *
- * BTypes depends on Global just because it re-uses hash-consing of Name. It would be cleaner to
- * create an interface for BTypeName and extend it in scala.reflect.internal.Names#Name, that
- * would simplify testing BTypes (no Global needed).
+ * This representation is immutable and independent of the compiler data structures, hence it can
+ * be queried by concurrent threads.
  */
-abstract class BTypes[G <: Global](val __global_dont_use: G) {
-  def chrs: Array[Char]
+abstract class BTypes {
+  /**
+   * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
+   * construction.
+   *
+   * This map is used when computing stack map frames. The asm.ClassWriter invokes the method
+   * `getCommonSuperClass`. In this method we need to obtain the ClassBType for a given internal
+   * name. The method assumes that every class type that appears in the bytecode exists in the map.
+   *
+   * Concurrent because stack map frames are computed when in the class writer, which might run
+   * on multiple classes concurrently.
+   */
+  protected val classBTypeFromInternalNameMap: collection.concurrent.Map[String, ClassBType]
 
   /**
-   * Interface for names stored in `chrs`
+   * The string represented by the `offset` / `length` values of a ClassBType, see comment of that
+   * class.
    */
-  type BTypeName <: __global_dont_use.Name
+  protected def internalNameString(offset: Int, lenght: Int): String
 
   /**
-   * Create a new name in `chrs`. Names are assumed to be hash-consed. Equality on BType will use
-   * reference equality to compare the names.
+   * Obtain a previously constructed ClassBType for a given internal name.
    */
-  def createNewName(s: String): BTypeName
+  def classBTypeFromInternalName(internalName: String) = classBTypeFromInternalNameMap(internalName)
 
+  /**
+   * A BType is either a primitve type, a ClassBType, an ArrayBType of one of these, or a MethodType
+   * referring to BTypes.
+   */
   /*sealed*/ trait BType { // Not sealed for now due to SI-8546
     final override def toString: String = this match {
       case UNIT   => "V"
@@ -73,18 +87,11 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
     final def isMethod: Boolean    = this.isInstanceOf[MethodBType]
 
     final def isNonVoidPrimitiveType = isPrimitive && this != UNIT
-    // TODO @lry should also include !isMethod in isNonSpecial? in this case it would be equivalent to isClass, so we could get rid of it.
-    final def isNonSpecial           = !isPrimitive && !isArray && !isPhantomType
-    final def isNullType             = this == RT_NULL || this == CT_NULL
-    final def isNothingType          = this == RT_NOTHING || this == CT_NOTHING
-    final def isPhantomType          = isNullType || isNothingType
 
-    final def isBoxed = this match {
-      case BOXED_UNIT  | BOXED_BOOLEAN | BOXED_CHAR   |
-           BOXED_BYTE  | BOXED_SHORT   | BOXED_INT    |
-           BOXED_FLOAT | BOXED_LONG    | BOXED_DOUBLE => true
-      case _ => false
-    }
+    final def isNullType             = this == RT_NULL
+    final def isNothingType          = this == RT_NOTHING
+
+    final def isBoxed = this.isClass && boxedClasses(this.asClassBType)
 
     final def isIntSizedType = this == BOOL || this == CHAR || this == BYTE ||
                                this == SHORT || this == INT
@@ -95,77 +102,69 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
     final def isWideType     = size == 2
 
     /*
-     * Subtype check `a <:< b` on BTypes that takes into account the JVM built-in numeric promotions (e.g. BYTE to INT).
-     * Its operation can be visualized more easily in terms of the Java bytecode type hierarchy.
-     * This method used to be called, in the ICode world, TypeKind.<:<()
-     *
-     * can-multi-thread
+     * Subtype check `this <:< other` on BTypes that takes into account the JVM built-in numeric
+     * promotions (e.g. BYTE to INT). Its operation can be visualized more easily in terms of the
+     * Java bytecode type hierarchy.
      */
-    final def conforms(a: BType, b: BType): Boolean = {
-      if (a.isArray) { // may be null
-        /* Array subtyping is covariant here, as in Java bytecode. Also necessary for Java interop. */
-        if ((b == jlCloneableReference)     ||
-            (b == jioSerializableReference) ||
-            (b == AnyRefReference))    { true  }
-        else if (b.isArray)            { conforms(a.asArrayBType.componentType, // TODO @lry change to pattern match, get rid of casts
-                                                  b.asArrayBType.componentType) }
-        else                           { false }
-      }
-      else if (a.isBoxed) { // may be null
-        if (b.isBoxed)                 { a == b }
-        else if (b == AnyRefReference) { true   }
-        else if (!(b.isClass))         { false  }
-        else                           { exemplars.get(a).isSubtypeOf(b) } // e.g., java/lang/Double conforms to java/lang/Number
-      }
-      else if (a.isNullType) { // known to be null
-        if (b.isNothingType)      { false }
-        else if (b.isPrimitive)   { false }
-        else                      { true  }
-      }
-      else if (a.isNothingType) { // known to be Nothing
-        true
-      }
-      else if (a == UNIT) {
-        b == UNIT
-      }
-      else if (a.isClass) { // may be null
-        if (a.isNothingType)      { true  }
-        else if (b.isClass)       { exemplars.get(a).isSubtypeOf(b) }
-        else if (b.isArray)       { a.isNullType } // documentation only, because `if(a.isNullType)` (above) covers this case already.
-        else                      { false }
-      }
-      else {
+    final def conformsTo(other: BType): Boolean = {
+      assert(isRef || isPrimitive, s"conformsTo cannot handle $this")
+      assert(other.isRef || other.isPrimitive, s"conformsTo cannot handle $other")
 
-        def msg = s"(a: $a, b: $b)"
+      this match {
+        case ArrayBType(component) =>
+          if (other == ObjectReference || other == jlCloneableReference || other == jioSerializableReference) true
+          else other match {
+            case ArrayBType(otherComponoent) => component.conformsTo(otherComponoent)
+            case _ => false
+          }
 
-        assert(a.isNonVoidPrimitiveType, s"a isn't a non-Unit value type. $msg")
-        assert(b.isPrimitive, s"b isn't a value type. $msg")
+        case classType: ClassBType =>
+          if (isBoxed) {
+            if (other.isBoxed) this == other
+            else if (other == ObjectReference) true
+            else other match {
+              case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType) // e.g., java/lang/Double conforms to java/lang/Number
+              case _ => false
+            }
+          } else if (isNullType) {
+            if (other.isNothingType) false
+            else if (other.isPrimitive) false
+            else true // Null conforms to all classes (except Nothing) and arrays.
+          } else if (isNothingType) {
+            true
+          } else other match {
+            case otherClassType: ClassBType => classType.isSubtypeOf(otherClassType)
+            // case ArrayBType(_) => this.isNullType   // documentation only, because `if (isNullType)` above covers this case
+            case _ =>
+              // isNothingType ||                      // documentation only, because `if (isNothingType)` above covers this case
+              false
+          }
 
-        (a eq b) || (a match {
-          case BOOL | BYTE | SHORT | CHAR => b == INT || b == LONG // TODO Actually, BOOL does NOT conform to LONG. Even with adapt().
-          case _                          => a == b
-        })
+        case UNIT =>
+          other == UNIT
+        case BOOL | BYTE | SHORT | CHAR =>
+          this == other || other == INT || other == LONG // TODO Actually, BOOL does NOT conform to LONG. Even with adapt().
+        case _ =>
+          assert(isPrimitive && other.isPrimitive, s"Expected primitive types $this - $other")
+          this == other
       }
     }
 
-    /* Takes promotions of numeric primitives into account.
-     *
-     *  can-multi-thread
+    /**
+     * Compute the upper bound of two types.
+     * Takes promotions of numeric primitives into account.
      */
-    final def maxType(a: BType, other: BType): BType = {
-      if (a.isPrimitive) { maxValueType(a, other) }
-      else {
-        if (a.isNothingType)     return other;
-        if (other.isNothingType) return a;
-        if (a == other)          return a;
-         // Approximate `lub`. The common type of two references is always AnyRef.
-         // For 'real' least upper bound wrt to subclassing use method 'lub'.
-        assert(a.isArray || a.isBoxed || a.isClass, s"This is not a valuetype and it's not something else, what is it? $a")
-        // TODO For some reason, ICode thinks `REFERENCE(...).maxType(BOXED(whatever))` is `uncomparable`. Here, that has maxType AnyRefReference.
-        //      BTW, when swapping arguments, ICode says BOXED(whatever).maxType(REFERENCE(...)) == AnyRefReference, so I guess the above was an oversight in REFERENCE.maxType()
-        if (other.isRef) { AnyRefReference }
-        else             { abort(s"Uncomparable BTypes: $a with $other") }
-      }
+    final def maxType(other: BType): BType = this match {
+      case pt: PrimitiveBType => pt.maxValueType(other)
+
+      case _: ArrayBType | _: ClassBType =>
+        if (isNothingType)       return other
+        if (other.isNothingType) return this
+        if (this == other)       return this
+
+        assert(other.isRef, s"Cannot compute maxType: $this, $other")
+        // Approximate `lub`. The common type of two references is always ObjectReference.
+        ObjectReference
     }
 
     /**
@@ -239,106 +238,73 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
       case m: MethodBType           => asm.Type.getMethodType(m.descriptor)
     }
 
-    def asRefBType  : RefBType   = this.asInstanceOf[RefBType]
-    def asArrayBType: ArrayBType = this.asInstanceOf[ArrayBType]
-    def asClassBType: ClassBType = this.asInstanceOf[ClassBType]
-  }
-
-  object BType {
-    /**
-     * @param chars The character array containing the descriptor
-     * @param start The position where the descriptor starts
-     * @return The BType and the index of the first character after the consumed descriptor
-     */
-    private[BTypes] def fromNonMethodDescriptor(chars: Array[Char], start: Int): (BType, Int) = {
-      chars(start) match {
-        case 'L' =>
-          var i = start
-          while (chars(i) != ';') { i += 1 }
-          // Example: chars = "IILpkg/Cls;I"
-          //                     ^       ^
-          //                  start=2   i=10
-          // `start + 1` to exclude the 'L', `i - start - 1` excludes the ';'
-          (new ClassBType(new String(chars, start + 1, i - start - 1)), i + 1)
-        case '[' =>
-          val (res, next) = fromNonMethodDescriptor(chars, start + 1)
-          (ArrayBType(res), next)
-        case 'V' => (UNIT,   start + 1)
-        case 'Z' => (BOOL,   start + 1)
-        case 'C' => (CHAR,   start + 1)
-        case 'B' => (BYTE,   start + 1)
-        case 'S' => (SHORT,  start + 1)
-        case 'I' => (INT,    start + 1)
-        case 'F' => (FLOAT,  start + 1)
-        case 'J' => (LONG,   start + 1)
-        case 'D' => (DOUBLE, start + 1)
-      }
-    }
+    def asRefBType       : RefBType       = this.asInstanceOf[RefBType]
+    def asArrayBType     : ArrayBType     = this.asInstanceOf[ArrayBType]
+    def asClassBType     : ClassBType     = this.asInstanceOf[ClassBType]
+    def asPrimitiveBType : PrimitiveBType = this.asInstanceOf[PrimitiveBType]
   }
 
   sealed trait PrimitiveBType extends BType {
-    /* The maxValueType of (Char, Byte) and of (Char, Short) is Int, to encompass the negative values of Byte and Short. See ticket #2087.
+
+    /**
+     * The upper bound of two primitive types. The `other` type has to be either a primitive
+     * type or Nothing.
      *
-     * can-multi-thread
+     * The maxValueType of (Char, Byte) and of (Char, Short) is Int, to encompass the negative
+     * values of Byte and Short. See ticket #2087.
      */
-    def maxValueType(a: BType, other: BType): BType = {
-      assert(a.isPrimitive, "maxValueType() is defined only for 1st arg valuetypes (2nd arg doesn't matter).")
+    final def maxValueType(other: BType): BType = {
 
-      def uncomparable: Nothing = {
-        abort(s"Uncomparable BTypes: $a with $other")
-      }
+      def uncomparable: Nothing = throw new AssertionError(s"Cannot compute maxValueType: $this, $other")
 
-      if (a.isNothingType)      return other;
-      if (other.isNothingType)  return a;
-      if (a == other)           return a;
+      if (!other.isPrimitive && !other.isNothingType) uncomparable
 
-      a match {
+      if (other.isNothingType) return this
+      if (this == other)       return this
 
-        case UNIT => uncomparable
-        case BOOL => uncomparable
-
+      this match {
         case BYTE =>
-          if (other == CHAR)      INT
-          else if (other.isNumericType)  other
-          else                           uncomparable
+          if (other == CHAR)            INT
+          else if (other.isNumericType) other
+          else                          uncomparable
 
         case SHORT =>
           other match {
-            case BYTE                                               => SHORT
-            case CHAR                                               => INT
+            case BYTE                          => SHORT
+            case CHAR                          => INT
             case INT  | LONG  | FLOAT | DOUBLE => other
-            case _                                                         => uncomparable
+            case _                             => uncomparable
           }
 
         case CHAR =>
           other match {
-            case BYTE | SHORT                               => INT
+            case BYTE | SHORT                 => INT
             case INT  | LONG | FLOAT | DOUBLE => other
-            case _                                                        => uncomparable
+            case _                            => uncomparable
           }
 
         case INT =>
           other match {
             case BYTE | SHORT | CHAR   => INT
             case LONG | FLOAT | DOUBLE => other
-            case _                                          => uncomparable
+            case _                     => uncomparable
           }
 
         case LONG =>
-          if (other.isIntegralType)   LONG
-          else if (other.isRealType)  DOUBLE
-          else                        uncomparable
+          if (other.isIntegralType)  LONG
+          else if (other.isRealType) DOUBLE
+          else                       uncomparable
 
         case FLOAT =>
-          if (other == DOUBLE)    DOUBLE
-          else if (other.isNumericType)  FLOAT
-          else                           uncomparable
+          if (other == DOUBLE)          DOUBLE
+          else if (other.isNumericType) FLOAT
+          else                          uncomparable
 
         case DOUBLE =>
-          if (other.isNumericType)  DOUBLE
-          else                      uncomparable
+          if (other.isNumericType) DOUBLE
+          else                     uncomparable
 
-        case _ => uncomparable
+        case UNIT | BOOL => uncomparable
       }
     }
   }
@@ -400,6 +366,14 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
    *    - instance initializer: exectued when class is initialized (instance creation, static
    *      field access, ...)
    *
+   *  - A static nested class can be defined as
+   *    - a static member class (explicitly static), or
+   *    - a member class of an interface (implicitly static)
+   *    - local classes are never static, even if they are defined in a static method.
+   *
+   *   Note: it is NOT the case that all inner classes (non-static) have an outer pointer. Example:
+   *     class C { static void foo { class D {} } }
+   *   The class D is an inner class (non-static), but javac does not add an outer pointer to it.
    *
    * InnerClass
    * ----------
@@ -410,8 +384,8 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
    * The JLS 13.1, points 9. / 10. requires: a class must reference (in the CP)
    *  - its immediately enclosing class
    *  - all of its member classes
-   *  - all local and anonymous classes that appear elsewhere (method, constructor, initializer
-   *    block, field initializer)
+   *  - all local and anonymous classes that are referenced (or declared) elsewhere (method,
+   *    constructor, initializer block, field initializer)
    *
    * In a comment, the 4.7.6 spec says: this implies an entry in the InnerClass attribute for
    *  - All enclosing classes (except the outermost, which is top-level)
@@ -571,130 +545,164 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
    */
 
   /**
-   * Class or Interface type.
+   * A ClassBType represents a class or interface type. The necessary information to build a
+   * ClassBType is extracted from compiler symbols and types, see BTypesFromSymbols.
    *
-   * The information for creating a ClassBType (superClass, interfaces, etc) is obtained
-   *   - either from a ClassSymbol, for classes being compiled or referenced from source (see
-   *     BCodeTypes)
-   *   - or, during inlining, from ASM ClassNodes that are parsed from class files.
+   * The `offset` and `length` fields are used to represent the internal name of the class. They
+   * are indices into some character array. The internal name can be obtained through the method
+   * `internalNameString`, which is abstract in this component. Name creation is assumed to be
+   * hash-consed, so if two ClassBTypes have the same internal name, they NEED to have the same
+   * `offset` and `length`.
    *
-   * The class name is represented as a slice of the `chrs` array. This representation is efficient
-   * because the JVM class name is obtained through `classSymbol.javaBinaryName`. This already adds
-   * the necessary string to the `chrs` array, so it makes sense to reuse the same name table in the
-   * backend.
+   * The actual implementation in subclass BTypesFromSymbols uses the global `chrs` array from the
+   * name table. This representation is efficient because the JVM class name is obtained through
+   * `classSymbol.javaBinaryName`. This already adds the necessary string to the `chrs` array,
+   * so it makes sense to reuse the same name table in the backend.
    *
-   * Not a case class because that would expose the constructor that takes (offset, length)
-   * parameters (I didn't find a way to make it private, also the factory in the companion).
-   *
-   * @param offset     See below
-   * @param length     The class name is represented as offset and length in the `chrs` array.
-   *                   The (public) constructors of ClassBType take a BTypeName, which are
-   *                   hash-consed. This ensures that two ClassBType instances for the same name
-   *                   have the same offset and length.
-   *
-   * Not a case class because that would expose the (Int, Int) constructor (didn't find a way to
-   * make it private, also the factory in the companion).
+   * ClassBType is not a case class because we want a custom equals method, and because the
+   * extractor extracts the internalName, which is what you typically need.
    */
-  class ClassBType private(val offset: Int, val length: Int) extends RefBType {
+  final class ClassBType(val offset: Int, val length: Int) extends RefBType {
     /**
-     * Construct a ClassBType from the (intenred) internal name of a class.
+     * Write-once variable allows initializing a cyclic graph of infos. This is required for
+     * nested classes. Example: for the definition `class A { class B }` we have
      *
-     * @param internalName The internal name as a slice of the `chrs` array. The internal name does
-     *                     not have the surrounding 'L' and ';'. Note that
-     *                     `classSymbol.javaBinaryName` returns exactly such a name.
+     *   B.info.nestedInfo.outerClass == A
+     *   A.info.memberClasses contains B
      */
-    def this(internalName: BTypeName) = this(internalName.start, internalName.length)
+    private var _info: ClassInfo = null
 
-    /**
-     * Construct a ClassBType from the internal name of a class.
-     *
-     * @param internalName The internal name of a class has the form "java/lang/String", without the
-     *                     surrounding 'L' and ';'.
-     */
-    def this(internalName: String) = this({
-      assert(!(internalName.head == 'L' && internalName.last == ';'), s"Descriptor instead of internal name: $internalName")
-      createNewName(internalName)
-    })
+    def info: ClassInfo = {
+      assert(_info != null, s"ClassBType.info not yet assigned: $this")
+      _info
+    }
+
+    def info_=(i: ClassInfo): Unit = {
+      assert(_info == null, s"Cannot set ClassBType.info multiple times: $this")
+      _info = i
+      checkInfoConsistency()
+    }
+
+    classBTypeFromInternalNameMap(internalName) = this
+
+    private def checkInfoConsistency(): Unit = {
+      // we assert some properties. however, some of the linked ClassBType (members, superClass,
+      // interfaces) may not yet have an `_info` (initialization of cyclic structures). so we do a
+      // best-effort verification.
+      def ifInit(c: ClassBType)(p: ClassBType => Boolean): Boolean = c._info == null || p(c)
+
+      def isJLO(t: ClassBType) = t.internalName == "java/lang/Object"
+
+      assert(!ClassBType.isInternalPhantomType(internalName), s"Cannot create ClassBType for phantom type $this")
+
+      assert(
+        if (info.superClass.isEmpty) { isJLO(this) || (isCompilingPrimitive && ClassBType.hasNoSuper(internalName)) }
+        else if (isInterface) isJLO(info.superClass.get)
+        else !isJLO(this) && ifInit(info.superClass.get)(!_.isInterface),
+        s"Invalid superClass in $this: ${info.superClass}"
+      )
+      assert(
+        info.interfaces.forall(c => ifInit(c)(_.isInterface)),
+        s"Invalid interfaces in $this: ${info.interfaces}"
+      )
+
+      assert(info.memberClasses.forall(c => ifInit(c)(_.isNestedClass)), info.memberClasses)
+    }
 
     /**
      * The internal name of a class is the string returned by java.lang.Class.getName, with all '.'
      * replaced by '/'. For example "java/lang/String".
      */
-    def internalName: String = new String(chrs, offset, length)
+    def internalName: String = internalNameString(offset, length)
 
     /**
      * @return The class name without the package prefix
      */
     def simpleName: String = internalName.split("/").last
 
-    /* can-multi-thread */
-    def isSubtypeOf(other: BType): Boolean = {
-      assert(other.isNonSpecial, "so called special cases have to be handled in BCodeTypes.conforms()")
+    def isInterface = (info.flags & asm.Opcodes.ACC_INTERFACE) != 0
 
-      if (c == other) return true;
+    def superClassesTransitive: List[ClassBType] = info.superClass match {
+      case None => Nil
+      case Some(sc) => sc :: sc.superClassesTransitive
+    }
 
-      val otherIsIface = exemplars.get(other).isInterface
+    def isNestedClass = info.nestedInfo.isDefined
 
-      if (this.isInterface) {
-        if (other == ObjectReference) return true;
-        if (!otherIsIface) return false;
+    def enclosingNestedClassesChain: List[ClassBType] =
+      if (isNestedClass) this :: info.nestedInfo.get.enclosingClass.enclosingNestedClassesChain
+      else Nil
+
+    def innerClassAttributeEntry: Option[InnerClassEntry] = info.nestedInfo map {
+      case NestedInfo(_, outerName, innerName, isStaticNestedClass) =>
+        InnerClassEntry(
+          internalName,
+          outerName.orNull,
+          innerName.orNull,
+          GenBCode.mkFlags(
+            info.flags,
+            if (isStaticNestedClass) asm.Opcodes.ACC_STATIC else 0
+          ) & ClassBType.INNER_CLASSES_FLAGS
+        )
+    }
+
+    def isSubtypeOf(other: ClassBType): Boolean = {
+      if (this == other) return true
+
+      if (isInterface) {
+        if (other == ObjectReference) return true // interfaces conform to Object
+        if (!other.isInterface) return false // this is an interface, the other is some class other than object. interfaces cannot extend classes, so the result is false.
+        // else: this and other are both interfaces. continue to (*)
+      } else {
+        val sc = info.superClass
+        if (sc.isDefined && sc.get.isSubtypeOf(other)) return true // the superclass of this class conforms to other
+        if (!other.isInterface) return false // this and other are both classes, and the superclass of this does not conform
+        // else: this is a class, the other is an interface. continue to (*)
       }
-      else {
-        if (sc != null && sc.isSubtypeOf(other)) return true;
-        if (!otherIsIface) return false;
-      }
 
-      var idx = 0
-      while (idx < ifaces.length) {
-        if (ifaces(idx).isSubtypeOf(other)) return true;
-        idx += 1
-      }
-
-      false
+      // (*) check if some interface of this class conforms to other.
+      info.interfaces.exists(_.isSubtypeOf(other))
     }
 
     /**
-     * Finding the least upper bound in agreement with the bytecode verifier (given two internal names
-     * handed out by ASM)
+     * Finding the least upper bound in agreement with the bytecode verifier
      * Background:
      *   http://gallium.inria.fr/~xleroy/publi/bytecode-verification-JAR.pdf
      *   http://comments.gmane.org/gmane.comp.java.vm.languages/2293
      *   https://issues.scala-lang.org/browse/SI-3872
-     *
-     * can-multi-thread
      */
-    def jvmWiseLUB(a: ClassBType, b: ClassBType): ClassBType = {
+    def jvmWiseLUB(other: ClassBType): ClassBType = {
+      def isNotNullOrNothing(c: ClassBType) = !c.isNullType && !c.isNothingType
+      assert(isNotNullOrNothing(this) && isNotNullOrNothing(other), s"jvmWiseLub for null or nothing: $this - $other")
 
-      assert(a.isNonSpecial, s"jvmWiseLUB() received a non-plain-class $a")
-      assert(b.isNonSpecial, s"jvmWiseLUB() received a non-plain-class $b")
-
-      val ta = exemplars.get(a)
-      val tb = exemplars.get(b)
-
-      val res = (ta.isInterface, tb.isInterface) match {
+      val res: ClassBType = (this.isInterface, other.isInterface) match {
         case (true, true) =>
           // exercised by test/files/run/t4761.scala
-          if      (tb.isSubtypeOf(ta.c)) ta.c
-          else if (ta.isSubtypeOf(tb.c)) tb.c
+          if      (other.isSubtypeOf(this)) this
+          else if (this.isSubtypeOf(other)) other
           else ObjectReference
+
         case (true, false) =>
-          if (tb.isSubtypeOf(a)) a else ObjectReference
+          if (other.isSubtypeOf(this)) this else ObjectReference
+
         case (false, true) =>
-          if (ta.isSubtypeOf(b)) b else ObjectReference
+          if (this.isSubtypeOf(other)) other else ObjectReference
+
         case _ =>
-          firstCommonSuffix(ta :: ta.superClasses, tb :: tb.superClasses)
+          // TODO @lry I don't really understand the reasoning here.
+          // Both this and other are classes. The code takes (transitively) all superclasses and
+          // finds the first common one.
+          firstCommonSuffix(this :: this.superClassesTransitive, other :: other.superClassesTransitive)
       }
-      assert(res.isNonSpecial, "jvmWiseLUB() returned a non-plain-class.")
+
+      assert(isNotNullOrNothing(res), s"jvmWiseLub computed: $res")
       res
     }
 
-    /*
-     * can-multi-thread
-     */
-    def firstCommonSuffix(as: List[Tracked], bs: List[Tracked]): ClassBType = {
+    private def firstCommonSuffix(as: List[ClassBType], bs: List[ClassBType]): ClassBType = {
       var chainA = as
       var chainB = bs
-      var fcs: Tracked = null
+      var fcs: ClassBType = null
       do {
         if      (chainB contains chainA.head) fcs = chainA.head
         else if (chainA contains chainB.head) fcs = chainB.head
@@ -703,11 +711,11 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
           chainB = chainB.tail
         }
       } while (fcs == null)
-      fcs.c
+      fcs
     }
 
     /**
-     * Custom equals / hashCode are needed because this is not a case class.
+     * Custom equals / hashCode: we only compare the name (offset / length)
      */
     override def equals(o: Any): Boolean = (this eq o.asInstanceOf[Object]) || (o match {
       case c: ClassBType => c.offset == this.offset && c.length == this.length
@@ -724,16 +732,86 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
   }
 
   object ClassBType {
-    def apply(internalName: BTypeName): ClassBType = new ClassBType(internalName)
-    def apply(internalName: String): ClassBType = new ClassBType(internalName)
-
     /**
      * Pattern matching on a ClassBType extracts the `internalName` of the class.
      */
     def unapply(c: ClassBType): Option[String] =
       if (c == null) None
       else Some(c.internalName)
+
+    /**
+     * Valid flags for InnerClass attribute entry.
+     * See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.6
+     */
+    private val INNER_CLASSES_FLAGS = {
+      asm.Opcodes.ACC_PUBLIC   | asm.Opcodes.ACC_PRIVATE   | asm.Opcodes.ACC_PROTECTED  |
+      asm.Opcodes.ACC_STATIC   | asm.Opcodes.ACC_FINAL     | asm.Opcodes.ACC_INTERFACE  |
+      asm.Opcodes.ACC_ABSTRACT | asm.Opcodes.ACC_SYNTHETIC | asm.Opcodes.ACC_ANNOTATION |
+      asm.Opcodes.ACC_ENUM
+    }
+
+    // Primitive classes have no super class. A ClassBType for those is only created when
+    // they are actually being compiled (e.g., when compiling scala/Boolean.scala).
+    private val hasNoSuper = Set(
+      "scala/Unit",
+      "scala/Boolean",
+      "scala/Char",
+      "scala/Byte",
+      "scala/Short",
+      "scala/Int",
+      "scala/Float",
+      "scala/Long",
+      "scala/Double"
+    )
+
+    private val isInternalPhantomType = Set(
+      "scala/Null",
+      "scala/Nothing"
+    )
   }
+
+  /**
+   * The type info for a class. Used for symboltable-independent subtype checks in the backend.
+   *
+   * @param superClass    The super class, not defined for class java/lang/Object.
+   * @param interfaces    All transitively implemented interfaces, except for those inherited
+   *                      through the superclass.
+   * @param flags         The java flags, obtained through `javaFlags`. Used also to derive
+   *                      the flags for InnerClass entries.
+   * @param memberClasses Classes nested in this class. Those need to be added to the
+   *                      InnerClass table, see the InnerClass spec summary above.
+   * @param nestedInfo    If this describes a nested class, information for the InnerClass table.
+   */
+  case class ClassInfo(superClass: Option[ClassBType], interfaces: List[ClassBType], flags: Int,
+                       memberClasses: List[ClassBType], nestedInfo: Option[NestedInfo])
+
+  /**
+   * Information required to add a class to an InnerClass table.
+   * The spec summary above explains what information is required for the InnerClass entry.
+   *
+   * @param enclosingClass      The enclosing class, if it is also nested. When adding a class
+   *                            to the InnerClass table, enclosing nested classes are also added.
+   * @param outerName           The outerName field in the InnerClass entry, may be None.
+   * @param innerName           The innerName field, may be None.
+   * @param isStaticNestedClass True if this is a static nested class (not inner class).
+   */
+  case class NestedInfo(enclosingClass: ClassBType,
+                        outerName: Option[String],
+                        innerName: Option[String],
+                        isStaticNestedClass: Boolean)
+
+  /**
+   * This class holds the data for an entry in the InnerClass table. See the InnerClass summary
+   * above in this file.
+   *
+   * There's some overlap with the class NestedInfo, but it's not exactly the same and cleaner to
+   * keep separate.
+   * @param name      The internal name of the class.
+   * @param outerName The internal name of the outer class, may be null.
+   * @param innerName The simple name of the inner class, may be null.
+   * @param flags     The flags for this class in the InnerClass entry.
+   */
+  case class InnerClassEntry(name: String, outerName: String, innerName: String, flags: Int)
 
   case class ArrayBType(componentType: BType) extends RefBType {
     def dimension: Int = componentType match {
@@ -747,28 +825,27 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
     }
   }
 
-  case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType {
-    private def this(types: (List[BType], BType)) = this(types._1, types._2)
-    def this(descriptor: String) = this(MethodBType.decomposeMethodDescriptor(descriptor))
-  }
+  case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType
 
-  object MethodBType {
-    private def decomposeMethodDescriptor(descriptor: String): (List[BType], BType) = {
-      val chars = descriptor.toCharArray
-      assert(chars(0) == '(', s"Not a valid method descriptor: $descriptor")
-      var i = 1
-      val argTypes = new ListBuffer[BType]
-      while (chars(i) != ')') {
-        val (argType, next) = BType.fromNonMethodDescriptor(chars, i)
-        argTypes += argType
-        i = next
-      }
-      val (resType, _) = BType.fromNonMethodDescriptor(chars, i + 1) // `i + 1` to skip the ')'
-      (argTypes.toList, resType)
-    }
-    def apply(descriptor: String) = {
-      val (argTypes, resType) = decomposeMethodDescriptor(descriptor)
-      new MethodBType(argTypes, resType)
-    }
-  }
+  /* Some definitions that are required for the implementation of BTypes. They are abstract because
+   * initializing them requires information from types / symbols, which is not accessible here in
+   * BTypes.
+   *
+   * They are defs (not vals) because they are implemented using vars (see comment on CoreBTypes).
+   */
+
+  def boxedClasses: Set[ClassBType]
+
+  def RT_NOTHING : ClassBType
+  def RT_NULL    : ClassBType
+
+  def ObjectReference          : ClassBType
+  def jlCloneableReference     : ClassBType
+  def jioSerializableReference : ClassBType
+
+  /**
+   * True if the current compilation unit is of a primitive class (scala.Boolean et al).
+   * Used only in assertions. Abstract here because its implementation depends on global.
+   */
+  def isCompilingPrimitive: Boolean
 }

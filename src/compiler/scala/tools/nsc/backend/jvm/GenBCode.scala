@@ -46,6 +46,8 @@ import scala.tools.asm
 abstract class GenBCode extends BCodeSyncAndTry {
   import global._
 
+  import bTypes._
+
   val phaseName = "jvm"
 
   override def newPhase(prev: Phase) = new BCodePhase(prev)
@@ -272,7 +274,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
       arrivalPos = 0 // just in case
       scalaPrimitives.init()
-      initBCodeTypes()
+      bTypes.intializeCoreBTypes()
 
       // initBytecodeWriter invokes fullName, thus we have to run it before the typer-dependent thread is activated.
       bytecodeWriter  = initBytecodeWriter(cleanup.getEntryPoints)
@@ -297,9 +299,6 @@ abstract class GenBCode extends BCodeSyncAndTry {
        * (2) if requested, check-java-signatures, over and beyond the syntactic checks in `getGenericSignature()`
        *
        */
-
-      // clearing maps
-      clearBCodeTypes()
     }
 
     /*
@@ -389,6 +388,6 @@ abstract class GenBCode extends BCodeSyncAndTry {
 object GenBCode {
   def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
 
-  val PublicStatic      = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
-  val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
+  final val PublicStatic      = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
+  final val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
 }
