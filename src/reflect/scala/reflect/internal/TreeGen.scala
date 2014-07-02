@@ -451,10 +451,10 @@ abstract class TreeGen {
   def mkSyntheticUnit() = Literal(Constant(())).updateAttachment(SyntheticUnitAttachment)
 
   /** Create block of statements `stats`  */
-  def mkBlock(stats: List[Tree]): Tree =
+  def mkBlock(stats: List[Tree], doFlatten: Boolean = true): Tree =
     if (stats.isEmpty) mkSyntheticUnit()
     else if (!stats.last.isTerm) Block(stats, mkSyntheticUnit())
-    else if (stats.length == 1) stats.head
+    else if (stats.length == 1 && doFlatten) stats.head
     else Block(stats.init, stats.last)
 
   /** Create a block that wraps multiple statements but don't

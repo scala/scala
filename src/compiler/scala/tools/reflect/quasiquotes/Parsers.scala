@@ -69,9 +69,14 @@ trait Parsers { self: Quasiquotes =>
         override def makeTupleType(trees: List[Tree]): Tree = TupleTypePlaceholder(trees)
 
         // q"{ $x }"
-        override def makeBlock(stats: List[Tree]): Tree = stats match {
-          case (head @ Ident(name)) :: Nil if isHole(name) => Block(Nil, head)
-          case _ => super.makeBlock(stats)
+        override def makeBlock(stats: List[Tree]): Tree = method match {
+          case nme.apply   =>
+            stats match {
+              case (head @ Ident(name)) :: Nil if isHole(name) => Block(Nil, head)
+              case _ => super.makeBlock(stats)
+            }
+          case nme.unapply => gen.mkBlock(stats, doFlatten = false)
+          case other       => global.abort("unreachable")
         }
 
         // tq"$a => $b"
