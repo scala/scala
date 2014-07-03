@@ -9,6 +9,7 @@ package nsc
 
 import reporters.{ Reporter, ConsoleReporter }
 import scala.collection.{ mutable, immutable }
+import scala.reflect.internal.util.StringOps.countElementsAsString
 
 /** Provides delegates to the reporter doing the actual work.
  * PerRunReporting implements per-Run stateful info tracking and reporting
@@ -34,11 +35,10 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       def summarize() =
         if (warnings.nonEmpty && (option.isDefault || settings.fatalWarnings)) {
           val numWarnings  = warnings.size
-          val warningEvent = // TODO use scala.reflect.internal.util.StringOps.countElementsAsString(numWarnings, s"$what warning")
-            if (numWarnings > 1) s"were $numWarnings $what warnings"
-            else s"was one $what warning"
+          val warningVerb  = if (numWarnings == 1) "was" else "were"
+          val warningCount = countElementsAsString(numWarnings, s"$what warning")
 
-          reporter.warning(NoPosition, s"there $warningEvent; re-run with ${option.name} for details")
+          reporter.warning(NoPosition, s"there $warningVerb $warningCount; re-run with ${option.name} for details")
         }
     }
 
