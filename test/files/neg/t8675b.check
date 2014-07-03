@@ -1,0 +1,6 @@
+t8675b.scala:19: error: missing parameter type for expanded function
+The argument types of an anonymous function must be fully known. (SLS 8.5)
+Expected type was: List[Test.Reportable1[?,?]] => Boolean
+  for (path: List[Any] <- (null : Engine1).asRequirement.pathsIncludingSelf.toList) {
+                                                                            ^
+one error found
