@@ -912,6 +912,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Int]]
   private def isDelayed(expandee: Tree) = delayed contains expandee
   private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Int] =
+    // !settings.XfundepMaterialization.value implies forced.isEmpty
     if (forced(expandee)) scala.collection.mutable.Set[Int]()
     else delayed.getOrElse(expandee, {
       val calculated = scala.collection.mutable.Set[Symbol]()
