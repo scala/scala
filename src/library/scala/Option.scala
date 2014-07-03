@@ -211,6 +211,17 @@ sealed abstract class Option[+A] extends Product with Serializable {
 
   /** Tests whether the option contains a given value as an element.
    *
+   * @example {{{
+   * // Returns true because Some instance contains string "something" which equals "something".
+   * Some("something") contains "something"
+   *
+   * // Returns false because "something" != "anything".
+   * Some("something") contains "anything"
+   *
+   * // Returns false when method called on None.
+   * None contains "anything"
+   * }}}
+   *
    *  @param elem the element to test.
    *  @return `true` if the option has an element that is equal (as
    *  determined by `==`) to `elem`, `false` otherwise.
