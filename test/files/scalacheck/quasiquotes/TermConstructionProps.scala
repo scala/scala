@@ -310,4 +310,16 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     val cases = List(cq"a => b", cq"c => d")
     assertEqAst(q"{ case ..$cases }", "{ case a => b case c => d }")
   }
+
+  property("SI-8609 a") = test {
+    val q1 = q"val x = 1"
+    val q2 = q"..$q1; val y = 2"
+    assert(q2 ≈ q"{ val x = 1; val y = 2 }")
+  }
+
+  property("SI-8609 b") = test {
+    val q1 = q"import foo.bar"
+    val q2 = q"..$q1; val y = 2"
+    assert(q2 ≈ q"{ import foo.bar; val y = 2 }")
+  }
 }
