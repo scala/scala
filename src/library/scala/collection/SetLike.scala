@@ -17,16 +17,15 @@ import parallel.ParSet
 /** A template trait for sets.
  *
  *  $setNote
+ *    '''Implementation note:'''
+ *    This trait provides most of the operations of a `Set` independently of its representation.
+ *    It is typically inherited by concrete implementations of sets.
  *  $setTags
  *  @since 2.8
  *
  *  @define setNote
  *
  *  A set is a collection that contains no duplicate elements.
- *
- *    '''Implementation note:'''
- *    This trait provides most of the operations of a `Set` independently of its representation.
- *    It is typically inherited by concrete implementations of sets.
  *
  *    To implement a concrete set, you need to provide implementations of the
  *    following methods:
