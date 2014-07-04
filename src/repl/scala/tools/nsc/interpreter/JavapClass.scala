@@ -41,16 +41,16 @@ class JavapClass(
    *  Byte data for filename args is retrieved with findBytes.
    */
   def apply(args: Seq[String]): List[JpResult] = {
-    val (options, claases) = args partition (s => (s startsWith "-") && s.length > 1)
+    val (options, classes) = args partition (s => (s startsWith "-") && s.length > 1)
     val (flags, upgraded) = upgrade(options)
     import flags.{ app, fun, help, raw }
-    val targets = if (fun && !help) FunFinder(loader, intp).funs(claases) else claases
-    if (help || claases.isEmpty)
+    val targets = if (fun && !help) FunFinder(loader, intp).funs(classes) else classes
+    if (help || classes.isEmpty)
       List(JpResult(JavapTool.helper(printWriter)))
     else if (targets.isEmpty)
       List(JpResult("No anonfuns found."))
     else
-      tool(raw, upgraded)(targets map (claas => targeted(claas, app)))
+      tool(raw, upgraded)(targets map (klass => targeted(klass, app)))
   }
 
   /** Cull our tool options. */
@@ -67,17 +67,18 @@ class JavapClass(
       case f: Failure[_]            => (path,   Failure(f.exception))
     }
 
-  /** Find bytes. Handle "-", "-app", "Foo#bar" (by ignoring member), "#bar" (by taking "bar"). */
+  /** Find bytes. Handle "-", "-app", "Foo#bar" (by ignoring member), "#bar" (by taking "bar").
+   *  @return the path to use for filtering, and the byte array
+   */
   private def bytesFor(path: String, app: Boolean) = Try {
     def last = intp.get.mostRecentVar  // fail if no intp
-    def req = path match {
-      case "-" => last
-      case HashSplit(prefix, member) =>
-        if (prefix != null) prefix
-        else if (member != null) member
-        else "#"
+    val req = path match {
+      case "-"                                    => last
+      case HashSplit(prefix, _) if prefix != null => prefix
+      case HashSplit(_, member) if member != null => member
+      case s                                      => s
     }
-    val targetedBytes = if (app) findAppBody(req) else (req, findBytes(req))
+    val targetedBytes = if (app) findAppBody(req) else (path, findBytes(req))
     if (targetedBytes._2.isEmpty) throw new FileNotFoundException(s"Could not find class bytes for '$path'")
     targetedBytes
   }
@@ -217,27 +218,36 @@ class JavapClass(
         // if apply is added here, it's for other than -fun: javap Foo#, perhaps m#?
         val filterOn = target.splitHashMember._2 map { s => if (s.isEmpty) "apply" else s }
         var filtering = false   // true if in region matching filter
-        // true to output
-        def checkFilter(line: String) = if (filterOn.isEmpty) true else {
+        // turn filtering on/off given the pattern of interest
+        def filterStatus(line: String, pattern: String) = {
           // cheap heuristic, todo maybe parse for the java sig.
           // method sigs end in paren semi
           def isAnyMethod = line.endsWith(");")
           def isOurMethod = {
             val lparen = line.lastIndexOf('(')
             val blank = line.lastIndexOf(' ', lparen)
-            (blank >= 0 && line.substring(blank+1, lparen) == filterOn.get)
+            if (blank < 0) false
+            else {
+              val method = line.substring(blank+1, lparen)
+              (method == pattern || ((method startsWith pattern+"$") && (method endsWith "$sp")))
+            }
           }
-          filtering = if (filtering) {
-            // next blank line terminates section
-            // for -public, next line is next method, more or less
-            line.trim.nonEmpty && !isAnyMethod
-          } else {
-            isAnyMethod && isOurMethod
-          }
+          filtering =
+            if (filtering) {
+              // next blank line terminates section
+              // for -public, next line is next method, more or less
+              line.trim.nonEmpty && !isAnyMethod
+            } else {
+              isAnyMethod && isOurMethod
+            }
           filtering
         }
-        for (line <- Source.fromString(preamble + written).getLines(); if checkFilter(line))
-          printWriter write line+lineSeparator
+        // do we output this line?
+        def checkFilter(line: String) = filterOn map (filterStatus(line, _)) getOrElse true
+        for {
+          line <- Source.fromString(preamble + written).getLines()
+          if checkFilter(line)
+        } printWriter write f"$line%n"
         printWriter.flush()
       }
     }
@@ -275,7 +285,7 @@ class JavapClass(
 
     override def apply(raw: Boolean, options: Seq[String])(inputs: Seq[Input]): List[JpResult] =
       (inputs map {
-        case (claas, Success(ba)) => JpResult(showable(raw, claas, newPrinter(new ByteArrayInputStream(ba), newEnv(options))))
+        case (klass, Success(ba)) => JpResult(showable(raw, klass, newPrinter(new ByteArrayInputStream(ba), newEnv(options))))
         case (_, Failure(e))      => JpResult(e.toString)
       }).toList orFailed List(noToolError)
   }
@@ -290,10 +300,10 @@ class JavapClass(
     //object TaskResult extends Enumeration {
     //  val Ok, Error, CmdErr, SysErr, Abnormal = Value
     //}
-    val TaskClaas = loader.tryToInitializeClass[Task](JavapTool.Tool).orNull
-    override protected def failed = TaskClaas eq null
+    val TaskClass = loader.tryToInitializeClass[Task](JavapTool.Tool).orNull
+    override protected def failed = TaskClass eq null
 
-    val TaskCtor  = TaskClaas.getConstructor(
+    val TaskCtor  = TaskClass.getConstructor(
       classOf[Writer],
       classOf[JavaFileManager],
       classOf[DiagnosticListener[_]],
@@ -344,8 +354,12 @@ class JavapClass(
       import Kind._
       import StandardLocation._
       import JavaFileManager.Location
-      import java.net.URI
-      def uri(name: String): URI = new URI(name) // new URI("jfo:" + name)
+      import java.net.{ URI, URISyntaxException }
+
+      // name#fragment is OK, but otherwise fragile
+      def uri(name: String): URI =
+        try new URI(name) // new URI("jfo:" + name)
+        catch { case _: URISyntaxException => new URI("dummy") }
 
       def inputNamed(name: String): Try[ByteAry] = (managed find (_._1 == name)).get._2
       def managedFile(name: String, kind: Kind) = kind match {
@@ -379,19 +393,19 @@ class JavapClass(
     def showable(raw: Boolean, target: String): Showable = showWithPreamble(raw, target, reporter.reportable(raw))
 
     // eventually, use the tool interface
-    def task(options: Seq[String], claases: Seq[String], inputs: Seq[Input]): Task = {
+    def task(options: Seq[String], classes: Seq[String], inputs: Seq[Input]): Task = {
       //ServiceLoader.load(classOf[javax.tools.DisassemblerTool]).
-      //getTask(writer, fileManager, reporter, options.asJava, claases.asJava)
+      //getTask(writer, fileManager, reporter, options.asJava, classes.asJava)
       import JavaConverters.asJavaIterableConverter
-      TaskCtor.newInstance(writer, fileManager(inputs), reporter, options.asJava, claases.asJava)
+      TaskCtor.newInstance(writer, fileManager(inputs), reporter, options.asJava, classes.asJava)
         .orFailed (throw new IllegalStateException)
     }
     // a result per input
-    private def applyOne(raw: Boolean, options: Seq[String], claas: String, inputs: Seq[Input]): Try[JpResult] =
+    private def applyOne(raw: Boolean, options: Seq[String], klass: String, inputs: Seq[Input]): Try[JpResult] =
       Try {
-        task(options, Seq(claas), inputs).call()
+        task(options, Seq(klass), inputs).call()
       } map {
-        case true => JpResult(showable(raw, claas))
+        case true => JpResult(showable(raw, klass))
         case _    => JpResult(reporter.reportable(raw))
       } recoverWith {
         case e: java.lang.reflect.InvocationTargetException => e.getCause match {
@@ -402,7 +416,7 @@ class JavapClass(
         reporter.clear()
       }
     override def apply(raw: Boolean, options: Seq[String])(inputs: Seq[Input]): List[JpResult] = (inputs map {
-      case (claas, Success(_))  => applyOne(raw, options, claas, inputs).get
+      case (klass, Success(_))  => applyOne(raw, options, klass, inputs).get
       case (_, Failure(e))      => JpResult(e.toString)
     }).toList orFailed List(noToolError)
   }
@@ -534,6 +548,7 @@ class JavapClass(
 
     private def isTaskable(cl: ScalaClassLoader) = hasClass(cl, Tool)
 
+    /** Select the tool implementation for this platform. */
     def apply() = if (isTaskable(loader)) new JavapTool7 else new JavapTool6
   }
 }
@@ -545,7 +560,8 @@ object JavapClass {
     intp: Option[IMain] = None
   ) = new JavapClass(loader, printWriter, intp)
 
-  val HashSplit = "(.*?)(?:#([^#]*))?".r
+  val HashSplit = "([^#]+)?(?:#(.+)?)?".r
+
   // We enjoy flexibility in specifying either a fully-qualified class name com.acme.Widget
   // or a resource path com/acme/Widget.class; but not widget.out
   implicit class MaybeClassLike(val s: String) extends AnyVal {
@@ -580,11 +596,11 @@ object JavapClass {
     /* only the file location from which the given class is loaded */
     def locate(k: String): Option[Path] = {
       Try {
-        val claas = try cl loadClass k catch {
+        val klass = try cl loadClass k catch {
           case _: NoClassDefFoundError => null    // let it snow
         }
         // cf ScalaClassLoader.originOfClass
-        claas.getProtectionDomain.getCodeSource.getLocation
+        klass.getProtectionDomain.getCodeSource.getLocation
       } match {
         case Success(null)              => None
         case Success(loc) if loc.isFile => Some(Path(new JFile(loc.toURI)))
