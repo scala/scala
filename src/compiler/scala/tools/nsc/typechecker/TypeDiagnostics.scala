@@ -41,9 +41,9 @@ trait TypeDiagnostics {
    *  indicate that the restriction may be lifted in the future.
    */
   def restrictionWarning(pos: Position, unit: CompilationUnit, msg: String): Unit =
-    unit.warning(pos, "Implementation restriction: " + msg)
+    reporter.warning(pos, "Implementation restriction: " + msg)
   def restrictionError(pos: Position, unit: CompilationUnit, msg: String): Unit =
-    unit.error(pos, "Implementation restriction: " + msg)
+    reporter.error(pos, "Implementation restriction: " + msg)
 
   /** A map of Positions to addendums - if an error involves a position in
    *  the map, the addendum should also be printed.
@@ -435,12 +435,8 @@ trait TypeDiagnostics {
   trait TyperDiagnostics {
     self: Typer =>
 
-    private def contextError(context0: Analyzer#Context, pos: Position, msg: String) = context0.error(pos, msg)
-    private def contextError(context0: Analyzer#Context, pos: Position, err: Throwable) = context0.error(pos, err)
-    private def contextWarning(pos: Position, msg: String) = context.unit.warning(pos, msg)
-
     def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
-      contextWarning(pos, "imported `%s' is permanently hidden by definition of %s".format(hidden, defn.fullLocationString))
+      context.warning(pos, "imported `%s' is permanently hidden by definition of %s".format(hidden, defn.fullLocationString))
 
     object checkUnused {
       val ignoreNames = Set[TermName]("readResolve", "readObject", "writeObject", "writeReplace")
@@ -542,15 +538,15 @@ trait TypeDiagnostics {
             else if (sym.isModule) "object"
             else "term"
           )
-          unit.warning(pos, s"$why $what in ${sym.owner} is never used")
+          reporter.warning(pos, s"$why $what in ${sym.owner} is never used")
         }
         p.unsetVars foreach { v =>
-          unit.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set - it could be a val")
+          reporter.warning(v.pos, s"local var ${v.name} in ${v.owner} is never set - it could be a val")
         }
         p.unusedTypes foreach { t =>
           val sym = t.symbol
           val why = if (sym.isPrivate) "private" else "local"
-          unit.warning(t.pos, s"$why ${sym.fullLocationString} is never used")
+          reporter.warning(t.pos, s"$why ${sym.fullLocationString} is never used")
         }
       }
     }
@@ -627,13 +623,13 @@ trait TypeDiagnostics {
               case Import(expr, _)  => expr.pos
               case _                => ex.pos
             }
-            contextError(context0, pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
+            context0.error(pos, cyclicReferenceMessage(sym, info.tree) getOrElse ex.getMessage())
 
             if (sym == ObjectClass)
               throw new FatalError("cannot redefine root "+sym)
           }
         case _ =>
-          contextError(context0, ex.pos, ex)
+          context0.error(ex.pos, ex)
       }
     }
   }

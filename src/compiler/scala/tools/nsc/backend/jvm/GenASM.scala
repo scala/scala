@@ -113,7 +113,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
 
       // Warn when classes will overwrite one another on case-insensitive systems.
       for ((_, v1 :: v2 :: _) <- sortedClasses groupBy (_.symbol.javaClassName.toString.toLowerCase)) {
-        v1.cunit.warning(v1.symbol.pos,
+        reporter.warning(v1.symbol.pos,
           s"Class ${v1.symbol.javaClassName} differs only in case from ${v2.symbol.javaClassName}. " +
           "Such classes will overwrite one another on case-insensitive filesystems.")
       }
@@ -141,7 +141,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         try emitFor(c)
         catch {
           case e: FileConflictException =>
-            c.cunit.error(c.symbol.pos, s"error writing ${c.symbol}: ${e.getMessage}")
+            reporter.error(c.symbol.pos, s"error writing ${c.symbol}: ${e.getMessage}")
         }
         sortedClasses = sortedClasses.tail
         classes -= c.symbol // GC opportunity
@@ -1363,7 +1363,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       if (m.symbol.isStaticConstructor || definitions.isGetClass(m.symbol)) return
 
       if (m.params.size > MaximumJvmParameters) {
-        getCurrentCUnit().error(m.symbol.pos, s"Platform restriction: a parameter list's length cannot exceed $MaximumJvmParameters.")
+        reporter.error(m.symbol.pos, s"Platform restriction: a parameter list's length cannot exceed $MaximumJvmParameters.")
         return
       }
 
@@ -3245,7 +3245,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       }
 
       if(!isValidSignature) {
-        unit.warning(sym.pos,
+        reporter.warning(sym.pos,
             """|compiler bug: created invalid generic signature for %s in %s
                |signature: %s
                |if this is reproducible, please report bug at https://issues.scala-lang.org/
@@ -3258,7 +3258,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       val normalizedTpe = enteringErasure(erasure.prepareSigMap(memberTpe))
       val bytecodeTpe = owner.thisType.memberInfo(sym)
       if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
-        unit.warning(sym.pos,
+        reporter.warning(sym.pos,
             """|compiler bug: created generic signature for %s in %s that does not conform to its erasure
                |signature: %s
                |original type: %s

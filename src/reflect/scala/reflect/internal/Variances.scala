@@ -79,7 +79,7 @@ trait Variances {
             // Unsound pre-2.11 behavior preserved under -Xsource:2.10
             if (settings.isScala211 || sym.isOverridingSymbol) Invariant
             else {
-              deprecationWarning(sym.pos, s"Construct depends on unsound variance analysis and will not compile in scala 2.11 and beyond")
+              currentRun.reporting.deprecationWarning(sym.pos, s"Construct depends on unsound variance analysis and will not compile in scala 2.11 and beyond")
               Bivariant
             }
           )

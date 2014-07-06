@@ -558,7 +558,7 @@ trait Infer extends Checkable {
         foreachWithIndex(targs) ((targ, idx) =>
           targ.typeSymbol match {
             case sym @ (AnyClass | AnyValClass) =>
-              context.unit.warning(argumentPosition(idx), s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
+              reporter.warning(argumentPosition(idx), s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
             case _ =>
           }
         )

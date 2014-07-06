@@ -110,7 +110,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   lazy val reporter: ReplReporter = new ReplReporter(this)
 
   import formatting._
-  import reporter.{ printMessage, withoutTruncating }
+  import reporter.{ printMessage, printUntruncatedMessage }
 
   // This exists mostly because using the reporter too early leads to deadlock.
   private def echo(msg: String) { Console println msg }
@@ -609,7 +609,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       }
       else {
         // don't truncate stack traces
-        withoutTruncating(printMessage(result))
+        printUntruncatedMessage(result)
         IR.Error
       }
     }
@@ -793,7 +793,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
           }
           ((pos, msg)) :: loop(filtered)
       }
-      val warnings = loop(run.allConditionalWarnings flatMap (_.warnings))
+      val warnings = loop(run.reporting.allConditionalWarnings)
       if (warnings.nonEmpty)
         mostRecentWarnings = warnings
     }
@@ -1121,7 +1121,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
     def apply(line: String): Result = debugging(s"""parse("$line")""")  {
       var isIncomplete = false
-      reporter.withIncompleteHandler((_, _) => isIncomplete = true) {
+      currentRun.reporting.withIncompleteHandler((_, _) => isIncomplete = true) {
         reporter.reset()
         val trees = newUnitParser(line).parseStats()
         if (reporter.hasErrors) Error

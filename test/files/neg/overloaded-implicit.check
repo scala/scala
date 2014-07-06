@@ -4,6 +4,7 @@ overloaded-implicit.scala:2: warning: parameterized overloaded implicit methods 
 overloaded-implicit.scala:3: warning: parameterized overloaded implicit methods are not visible as view bounds
   implicit def imp1[T](x: Set[T]): Map[T, T] = Map()
                ^
+warning: there were four feature warnings; re-run with -feature for details
 error: No warnings can be incurred under -Xfatal-warnings.
-two warnings found
+three warnings found
 one error found

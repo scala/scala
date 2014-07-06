@@ -860,9 +860,9 @@ trait JavaScanners extends ast.parser.ScannersCommon {
   class JavaUnitScanner(unit: CompilationUnit) extends JavaScanner {
     in = new JavaCharArrayReader(unit.source.content, !settings.nouescape.value, syntaxError)
     init()
-    def error  (pos: Int, msg: String) = unit.  error(pos, msg)
-    def incompleteInputError(pos: Int, msg: String) = unit.incompleteInputError(pos, msg)
-    def deprecationWarning(pos: Int, msg: String) = unit.deprecationWarning(pos, msg)
+    def error  (pos: Int, msg: String) = reporter.error(pos, msg)
+    def incompleteInputError(pos: Int, msg: String) = currentRun.reporting.incompleteInputError(pos, msg)
+    def deprecationWarning(pos: Int, msg: String) = currentRun.reporting.deprecationWarning(pos, msg)
     implicit def g2p(pos: Int): Position = Position.offset(unit.source, pos)
   }
 }

@@ -275,7 +275,7 @@ trait Checkable {
           ;
         // Matching on types like case _: AnyRef { def bippy: Int } => doesn't work -- yet.
         case RefinedType(_, decls) if !decls.isEmpty =>
-          getContext.unit.warning(tree.pos, s"a pattern match on a refinement type is unchecked")
+          reporter.warning(tree.pos, s"a pattern match on a refinement type is unchecked")
         case RefinedType(parents, _) =>
           parents foreach (p => checkCheckable(tree, p, X, inPattern, canRemedy))
         case _ =>
@@ -285,14 +285,14 @@ trait Checkable {
 
           if (checker.neverMatches) {
             val addendum = if (checker.neverSubClass) "" else " (but still might match its erasure)"
-            getContext.unit.warning(tree.pos, s"fruitless type test: a value of type $X cannot also be a $PString$addendum")
+            reporter.warning(tree.pos, s"fruitless type test: a value of type $X cannot also be a $PString$addendum")
           }
           else if (checker.isUncheckable) {
             val msg = (
               if (checker.uncheckableType =:= P) s"abstract type $where$PString"
               else s"${checker.uncheckableMessage} in type $where$PString"
             )
-            getContext.unit.warning(tree.pos, s"$msg is unchecked since it is eliminated by erasure")
+            reporter.warning(tree.pos, s"$msg is unchecked since it is eliminated by erasure")
           }
       }
     }

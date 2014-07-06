@@ -17,7 +17,7 @@ abstract class TreeCheckers extends Analyzer {
 
   override protected def onTreeCheckerError(pos: Position, msg: String) {
     if (settings.fatalWarnings)
-      currentUnit.warning(pos, "\n** Error during internal checking:\n" + msg)
+      reporter.warning(pos, "\n** Error during internal checking:\n" + msg)
   }
 
   case class DiffResult[T](lost: List[T], gained: List[T]) {
@@ -170,7 +170,7 @@ abstract class TreeCheckers extends Analyzer {
   )
 
 
-  def errorFn(pos: Position, msg: Any): Unit = currentUnit.warning(pos, "[check: %s] %s".format(phase.prev, msg))
+  def errorFn(pos: Position, msg: Any): Unit = reporter.warning(pos, "[check: %s] %s".format(phase.prev, msg))
   def errorFn(msg: Any): Unit                = errorFn(NoPosition, msg)
 
   def informFn(msg: Any) {

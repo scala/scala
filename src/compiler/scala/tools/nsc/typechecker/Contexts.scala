@@ -66,7 +66,7 @@ trait Contexts { self: Analyzer =>
         def isMask(s: ImportSelector) = s.name != nme.WILDCARD && s.rename == nme.WILDCARD
 
         imp.tree.selectors filterNot (s => isMask(s) || used(s)) foreach { sel =>
-          unit.warning(imp posOf sel, "Unused import")
+          reporter.warning(imp posOf sel, "Unused import")
         }
       }
       allUsedSelectors --= imps
@@ -103,7 +103,7 @@ trait Contexts { self: Analyzer =>
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)
-      unit.error(unit.firstXmlPos, "To compile XML syntax, the scala.xml package must be on the classpath.\nPlease see http://docs.scala-lang.org/overviews/core/scala-2.11.html#scala-xml.")
+      reporter.error(unit.firstXmlPos, "To compile XML syntax, the scala.xml package must be on the classpath.\nPlease see http://docs.scala-lang.org/overviews/core/scala-2.11.html#scala-xml.")
 
     // scala-xml needs `scala.xml.TopScope` to be in scope globally as `$scope`
     // We detect `scala-xml` by looking for `scala.xml.TopScope` and
@@ -359,7 +359,7 @@ trait Contexts { self: Analyzer =>
     /** Issue and clear all warnings from the report buffer */
     def flushAndIssueWarnings() {
       reportBuffer.warnings foreach {
-        case (pos, msg) => unit.warning(pos, msg)
+        case (pos, msg) => reporter.warning(pos, msg)
       }
       reportBuffer.clearAllWarnings()
     }
@@ -541,7 +541,7 @@ trait Contexts { self: Analyzer =>
     }
 
     private def unitError(pos: Position, msg: String): Unit =
-      if (checking) onTreeCheckerError(pos, msg) else unit.error(pos, msg)
+      if (checking) onTreeCheckerError(pos, msg) else reporter.error(pos, msg)
 
     @inline private def issueCommon(err: AbsTypeError)(pf: PartialFunction[AbsTypeError, Unit]) {
       // TODO: are errors allowed to have pos == NoPosition??
@@ -589,9 +589,19 @@ trait Contexts { self: Analyzer =>
 
     /** Issue/throw the given error message according to the current mode for error reporting. */
     def warning(pos: Position, msg: String, force: Boolean = false) {
-      if (reportErrors || force) unit.warning(pos, msg)
+      if (reportErrors || force) reporter.warning(pos, msg)
       else if (bufferErrors) reportBuffer += (pos -> msg)
     }
+
+    def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit =
+      currentRun.reporting.deprecationWarning(pos, sym, msg)
+    def deprecationWarning(pos: Position, sym: Symbol): Unit =
+      currentRun.reporting.deprecationWarning(pos, sym) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
+
+    def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit =
+      currentRun.reporting.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
+
+    def echo(pos: Position, msg: String): Unit = reporter.echo(pos, msg)
 
     // nextOuter determines which context is searched next for implicits
     // (after `this`, which contributes `newImplicits` below.) In

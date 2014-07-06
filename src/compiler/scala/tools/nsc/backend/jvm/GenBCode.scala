@@ -156,7 +156,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
           case None =>
             caseInsensitively.put(lowercaseJavaClassName, claszSymbol)
           case Some(dupClassSym) =>
-            item.cunit.warning(
+            reporter.warning(
               claszSymbol.pos,
               s"Class ${claszSymbol.javaClassName} differs only in case from ${dupClassSym.javaClassName}. " +
               "Such classes will overwrite one another on case-insensitive filesystems."

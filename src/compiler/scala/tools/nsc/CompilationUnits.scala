@@ -123,31 +123,10 @@ trait CompilationUnits { global: Global =>
      */
     val icode: LinkedHashSet[icodes.IClass] = new LinkedHashSet
 
-    def reporter = global.reporter
+    // called by ScalaDocAnalyzer, overridden by the IDE (in Reporter)
+    // TODO: don't use reporter to communicate comments from parser to IDE!
+    final def comment(pos: Position, msg: String): Unit = reporter.comment(pos, msg)
 
-    def echo(pos: Position, msg: String) =
-      reporter.echo(pos, msg)
-
-    def error(pos: Position, msg: String) =
-      reporter.error(pos, msg)
-
-    def warning(pos: Position, msg: String) =
-      reporter.warning(pos, msg)
-
-    def deprecationWarning(pos: Position, msg: String) =
-      currentRun.deprecationWarnings0.warn(pos, msg)
-
-    def uncheckedWarning(pos: Position, msg: String) =
-      currentRun.uncheckedWarnings0.warn(pos, msg)
-
-    def inlinerWarning(pos: Position, msg: String) =
-      currentRun.inlinerWarnings.warn(pos, msg)
-
-    def incompleteInputError(pos: Position, msg:String) =
-      reporter.incompleteInputError(pos, msg)
-
-    def comment(pos: Position, msg: String) =
-      reporter.comment(pos, msg)
 
     /** Is this about a .java source file? */
     lazy val isJava = source.file.name.endsWith(".java")

@@ -558,7 +558,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           }
 
         emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, suppression.exhaustive).getOrElse{
-          if (requireSwitch) typer.context.unit.warning(scrut.pos, "could not emit switch for @switch annotated match")
+          if (requireSwitch) reporter.warning(scrut.pos, "could not emit switch for @switch annotated match")
 
           if (casesNoSubstOnly nonEmpty) {
             // before optimizing, check casesNoSubstOnly for presence of a default case,

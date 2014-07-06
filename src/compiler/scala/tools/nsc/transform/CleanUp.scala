@@ -76,7 +76,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       val qual0 = ad.qual
       val params = ad.args
         if (settings.logReflectiveCalls)
-          unit.echo(ad.pos, "method invocation uses reflection")
+          reporter.echo(ad.pos, "method invocation uses reflection")
 
         val typedPos = typedWithPos(ad.pos) _
 
@@ -360,13 +360,13 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
               assert(params.length == mparams.length, ((params, mparams)))
               (mparams, resType)
             case tpe @ OverloadedType(pre, alts) =>
-              unit.warning(ad.pos, s"Overloaded type reached the backend! This is a bug in scalac.\n     Symbol: ${ad.symbol}\n  Overloads: $tpe\n  Arguments: " + ad.args.map(_.tpe))
+              reporter.warning(ad.pos, s"Overloaded type reached the backend! This is a bug in scalac.\n     Symbol: ${ad.symbol}\n  Overloads: $tpe\n  Arguments: " + ad.args.map(_.tpe))
               alts filter (_.paramss.flatten.size == params.length) map (_.tpe) match {
                 case mt @ MethodType(mparams, resType) :: Nil =>
-                  unit.warning(NoPosition, "Only one overload has the right arity, proceeding with overload " + mt)
+                  reporter.warning(NoPosition, "Only one overload has the right arity, proceeding with overload " + mt)
                   (mparams, resType)
                 case _ =>
-                  unit.error(ad.pos, "Cannot resolve overload.")
+                  reporter.error(ad.pos, "Cannot resolve overload.")
                   (Nil, NoType)
               }
           }

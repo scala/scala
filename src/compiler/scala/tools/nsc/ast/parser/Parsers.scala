@@ -205,11 +205,11 @@ self =>
     override def newScanner() = new UnitScanner(unit, patches)
 
     override def warning(offset: Offset, msg: String) {
-      unit.warning(o2p(offset), msg)
+      reporter.warning(o2p(offset), msg)
     }
 
     override def deprecationWarning(offset: Offset, msg: String) {
-      unit.deprecationWarning(o2p(offset), msg)
+      currentRun.reporting.deprecationWarning(o2p(offset), msg)
     }
 
     private var smartParsing = false
@@ -224,17 +224,17 @@ self =>
     val syntaxErrors = new ListBuffer[(Int, String)]
     def showSyntaxErrors() =
       for ((offset, msg) <- syntaxErrors)
-        unit.error(o2p(offset), msg)
+        reporter.error(o2p(offset), msg)
 
     override def syntaxError(offset: Offset, msg: String) {
       if (smartParsing) syntaxErrors += ((offset, msg))
-      else unit.error(o2p(offset), msg)
+      else reporter.error(o2p(offset), msg)
     }
 
     override def incompleteInputError(msg: String) {
       val offset = source.content.length - 1
       if (smartParsing) syntaxErrors += ((offset, msg))
-      else unit.incompleteInputError(o2p(offset), msg)
+      else currentRun.reporting.incompleteInputError(o2p(offset), msg)
     }
 
     /** parse unit. If there are inbalanced braces,
