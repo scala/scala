@@ -1381,6 +1381,7 @@ trait Implicits {
         def maybeInvalidConversionError(msg: String) {
           // We have to check context.ambiguousErrors even though we are calling "issueAmbiguousError"
           // which ostensibly does exactly that before issuing the error. Why? I have no idea. Test is pos/t7690.
+          // AM: I would guess it's because ambiguous errors will be buffered in silent mode if they are not reported
           if (context.ambiguousErrors)
             context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, msg))
         }

@@ -543,37 +543,23 @@ trait Contexts { self: Analyzer =>
     private def unitError(pos: Position, msg: String): Unit =
       if (checking) onTreeCheckerError(pos, msg) else reporter.error(pos, msg)
 
-    @inline private def issueCommon(err: AbsTypeError)(pf: PartialFunction[AbsTypeError, Unit]) {
+    @inline private def issueCommon(err: AbsTypeError, reportError: Boolean) {
       // TODO: are errors allowed to have pos == NoPosition??
       // if not, Jason suggests doing: val pos = err.errPos.orElse( { devWarning("Que?"); context.tree.pos })
       if (settings.Yissuedebug) {
         log("issue error: " + err.errMsg)
         (new Exception).printStackTrace()
       }
-      if (pf isDefinedAt err) pf(err)
+      if (reportError) unitError(err.errPos, addDiagString(err.errMsg))
       else if (bufferErrors) { reportBuffer += err }
       else throw new TypeError(err.errPos, err.errMsg)
     }
 
     /** Issue/buffer/throw the given type error according to the current mode for error reporting. */
-    def issue(err: AbsTypeError) {
-      issueCommon(err) { case _ if reportErrors =>
-        unitError(err.errPos, addDiagString(err.errMsg))
-      }
-    }
+    private[typechecker] def issue(err: AbsTypeError) = issueCommon(err, reportErrors)
 
     /** Issue/buffer/throw the given implicit ambiguity error according to the current mode for error reporting. */
-    def issueAmbiguousError(pre: Type, sym1: Symbol, sym2: Symbol, err: AbsTypeError) {
-      issueCommon(err) { case _ if ambiguousErrors =>
-        if (!pre.isErroneous && !sym1.isErroneous && !sym2.isErroneous)
-          unitError(err.errPos, err.errMsg)
-      }
-    }
-
-    /** Issue/buffer/throw the given implicit ambiguity error according to the current mode for error reporting. */
-    def issueAmbiguousError(err: AbsTypeError) {
-      issueCommon(err) { case _ if ambiguousErrors => unitError(err.errPos, addDiagString(err.errMsg)) }
-    }
+    private[typechecker] def issueAmbiguousError(err: AbsTypeError) = issueCommon(err, ambiguousErrors)
 
     /** Issue/throw the given `err` according to the current mode for error reporting. */
     def error(pos: Position, err: Throwable) =
