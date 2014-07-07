@@ -123,8 +123,21 @@ trait CompilationUnits { global: Global =>
      */
     val icode: LinkedHashSet[icodes.IClass] = new LinkedHashSet
 
+    @deprecated("Call global.reporter.echo directly instead.", "2.11.2")
+    final def echo(pos: Position, msg: String): Unit    = reporter.echo(pos, msg)
+    @deprecated("Call global.reporter.error (or typer.context.error) directly instead.", "2.11.2")
+    final def error(pos: Position, msg: String): Unit   = reporter.error(pos, msg)
+    @deprecated("Call global.reporter.warning (or typer.context.warning) directly instead.", "2.11.2")
+    final def warning(pos: Position, msg: String): Unit = reporter.warning(pos, msg)
+
+    @deprecated("Call global.currentRun.reporting.deprecationWarning directly instead.", "2.11.2")
+    final def deprecationWarning(pos: Position, msg: String): Unit = currentRun.reporting.deprecationWarning(pos, msg)
+    @deprecated("Call global.currentRun.reporting.uncheckedWarning directly instead.", "2.11.2")
+    final def uncheckedWarning(pos: Position, msg: String): Unit   = currentRun.reporting.uncheckedWarning(pos, msg)
+
     // called by ScalaDocAnalyzer, overridden by the IDE (in Reporter)
     // TODO: don't use reporter to communicate comments from parser to IDE!
+    @deprecated("This method will be removed.", "2.11.2")
     final def comment(pos: Position, msg: String): Unit = reporter.comment(pos, msg)
 
 
