@@ -261,7 +261,7 @@ trait PatternTypers {
 
     def doTypedUnapply(tree: Tree, fun0: Tree, fun: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
       def duplErrTree = setError(treeCopy.Apply(tree, fun0, args))
-      def duplErrorTree(err: AbsTypeError) = { issue(err); duplErrTree }
+      def duplErrorTree(err: AbsTypeError) = { context.issue(err); duplErrTree }
 
       if (args.length > MaxTupleArity)
         return duplErrorTree(TooManyArgsPatternError(fun))

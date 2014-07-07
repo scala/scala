@@ -199,8 +199,6 @@ trait Infer extends Checkable {
 
     def getContext = context
 
-    def issue(err: AbsTypeError): Unit = context.issue(err)
-
     def explainTypes(tp1: Type, tp2: Type) = {
       if (context.reportErrors)
         withDisambiguation(List(), tp1, tp2)(global.explainTypes(tp1, tp2))

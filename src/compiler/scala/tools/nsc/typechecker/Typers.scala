@@ -3149,7 +3149,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
       // TODO_NMT: check the assumption that args nonEmpty
       def duplErrTree = setError(treeCopy.Apply(tree, fun0, args))
-      def duplErrorTree(err: AbsTypeError) = { issue(err); duplErrTree }
+      def duplErrorTree(err: AbsTypeError) = { context.issue(err); duplErrTree }
 
       def preSelectOverloaded(fun: Tree): Tree = {
         if (fun.hasSymbolField && fun.symbol.isOverloaded) {
@@ -4395,7 +4395,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case _ => ()
             }
           }
-          typeErrors foreach issue
+          typeErrors foreach context.issue
           setError(treeCopy.Apply(tree, fun, args))
         }
 
@@ -4449,7 +4449,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               doTypedApply(tree, fun2, args, mode, pt)
           case err: SilentTypeError =>
             onError({
-              err.reportableErrors foreach issue
+              err.reportableErrors foreach context.issue
               args foreach (arg => typed(arg, mode, ErrorType))
               setError(tree)
             })
@@ -4686,7 +4686,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               else
                 // before failing due to access, try a dynamic call.
                 asDynamicCall getOrElse {
-                  issue(accessibleError.get)
+                  context.issue(accessibleError.get)
                   setError(tree)
                 }
             case _ =>
