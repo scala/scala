@@ -265,8 +265,9 @@ trait Contexts { self: Analyzer =>
 
     def defaultModeForTyped: Mode = if (inTypeConstructorAllowed) Mode.NOmode else Mode.EXPRmode
 
-    /** These messages are printed when issuing an error */
-    var diagnostic: List[String] = Nil
+    /** To enrich error messages involving default arguments.
+        When extending the notion, group diagnostics in an object. */
+    var diagUsedDefaults: Boolean = false
 
     /** Saved type bounds for type parameters which are narrowed in a GADT. */
     var savedTypeBounds: List[(Symbol, Type)] = List()
@@ -452,7 +453,7 @@ trait Contexts { self: Analyzer =>
 
       // Fields that are directly propagated
       c.variance           = variance
-      c.diagnostic         = diagnostic
+      c.diagUsedDefaults   = diagUsedDefaults
       c.openImplicits      = openImplicits
       c.contextMode        = contextMode // note: ConstructorSuffix, a bit within `mode`, is conditionally overwritten below.
       c._reportBuffer      = reportBuffer
@@ -532,16 +533,15 @@ trait Contexts { self: Analyzer =>
     //
     // Error and warning issuance
     //
-
     private def addDiagString(msg: String) = {
-      val ds =
-        if (diagnostic.isEmpty) ""
-        else diagnostic.mkString("\n","\n", "")
-      if (msg endsWith ds) msg else msg + ds
+      val diagUsedDefaultsMsg = "Error occurred in an application involving default arguments."
+      if (diagUsedDefaults && !(msg endsWith diagUsedDefaultsMsg)) msg + "\n" + diagUsedDefaultsMsg
+      else msg
     }
 
     private def unitError(pos: Position, msg: String): Unit =
-      if (checking) onTreeCheckerError(pos, msg) else reporter.error(pos, msg)
+      if (checking) onTreeCheckerError(pos, msg)
+      else reporter.error(pos, msg)
 
     @inline private def issueCommon(err: AbsTypeError, reportError: Boolean) {
       // TODO: are errors allowed to have pos == NoPosition??
