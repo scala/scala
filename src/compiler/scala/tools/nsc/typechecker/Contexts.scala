@@ -365,6 +365,46 @@ trait Contexts { self: Analyzer =>
       reportBuffer.clearAllWarnings()
     }
 
+
+    /** Try inference twice, once without views and once with views,
+     *  unless views are already disabled.
+     */
+    abstract class TryTwice {
+      def tryOnce(isLastTry: Boolean): Unit
+
+      def apply(): Unit =
+        if (implicitsEnabled) {
+          val savedContextMode = contextMode
+          var fallback = false
+          setBufferErrors()
+          // We cache the current buffer because it is impossible to
+          // distinguish errors that occurred before entering tryTwice
+          // and our first attempt in 'withImplicitsDisabled'. If the
+          // first attempt fails we try with implicits on *and* clean
+          // buffer but that would also flush any pre-tryTwice valid
+          // errors, hence some manual buffer tweaking is necessary.
+          val errorsToRestore = flushAndReturnBuffer()
+          try {
+            withImplicitsDisabled(tryOnce(false))
+            if (hasErrors) {
+              fallback = true
+              contextMode = savedContextMode
+              flushBuffer()
+              tryOnce(true)
+            }
+          } catch {
+            case ex: CyclicReference  => throw ex
+            case ex: TypeError        => // recoverable cyclic references
+              contextMode = savedContextMode
+              if (!fallback) tryOnce(true) else ()
+          } finally {
+            contextMode = savedContextMode
+            updateBuffer(errorsToRestore)
+          }
+        }
+        else tryOnce(true)
+    }
+
     //
     // Temporary mode adjustment
     //
