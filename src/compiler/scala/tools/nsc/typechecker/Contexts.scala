@@ -490,6 +490,12 @@ trait Contexts { self: Analyzer =>
       c
     }
 
+    def makeNonSilent(newtree: Tree): Context = {
+      val c = make(newtree)
+      c.setReportErrors()
+      c
+    }
+
     /** Make a silent child context does not allow implicits. Used to prevent chaining of implicit views. */
     def makeImplicit(reportAmbiguousErrors: Boolean) = {
       val c = makeSilent(reportAmbiguousErrors)
