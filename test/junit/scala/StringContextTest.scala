@@ -82,6 +82,35 @@ class StringContextTest {
   }
 
   // Use this method to avoid problems with a locale-dependent decimal mark.
-  // The string interpolation is not used here intentionally as this method is used to test string interpolation.
-  private def formatUsingCurrentLocale(number: Double, decimalPlaces: Int = 2) = ("%." + decimalPlaces + "f").format(number)
+  // The string interpolation is intentionally not used here as this method is used to test string interpolation.
+  private def formatUsingCurrentLocale(number: Double, decimalPlaces: Int = 2) =
+    ("%." + decimalPlaces + "f").format(number)
+
+  @Test def t5856(): Unit = {
+    class X {
+      override def toString = "Test"
+
+      assertEquals("Test", s"$this")
+      assertEquals("TestTest", s"$this$this")
+      assertEquals("Test$", s"$this$$")
+      assertEquals("Test.##", s"$this.##")
+      assertEquals("Test.toString", s"$this.toString")
+      assertEquals("Test=THIS", s"$this=THIS")
+    }
+    new X
+  }
+  @Test def t6476(): Unit = {
+    assertEquals("\"Hello, world.\"", s"$"Hello, world.$"")
+    val foo   = 42
+    val foo_  = 43
+    val foo_* = 44
+    assertEquals("44", s"$foo_*")
+    assertEquals("42_*", s"$`foo`_*")
+    assertEquals("43=", s"$`foo_`=")
+
+    val foo$bar = 3
+    val bar = "skidoo"
+    assertEquals("<3", s"<$`foo$bar`")
+    assertEquals("42skidoo", s"$foo$bar")
+  }
 }

@@ -5,7 +5,7 @@ import util._
 object Test extends App {
   val days = (1 to 12).toList
 
-  days map s"On the $_th day of Christmas" foreach println
+  days map s"On the $_th day of Christmas" foreach println // no value `_th'
 
   val rf = (n: Int) => s"\\*{$_}"(n).r
   def stars(n: Int)(s: String) = {
