@@ -481,9 +481,9 @@ trait Scanners extends ScannersCommon {
                   nextRawChar()                        // now eat it
                   offset += 3
                   nextRawChar()
-                  getStringPart(multiLine = true)
                   sepRegions = STRINGPART :: sepRegions // indicate string part
                   sepRegions = STRINGLIT :: sepRegions // once more to indicate multi line string part
+                  getStringPart(multiLine = true)
                 } else {
                   nextChar()
                   token = STRINGLIT
@@ -491,8 +491,8 @@ trait Scanners extends ScannersCommon {
                 }
               } else {
                 offset += 1
-                getStringPart(multiLine = false)
                 sepRegions = STRINGLIT :: sepRegions // indicate single line string part
+                getStringPart(multiLine = false)
               }
             } else {
               nextChar()
@@ -621,7 +621,7 @@ trait Scanners extends ScannersCommon {
            'K' | 'L' | 'M' | 'N' | 'O' |
            'P' | 'Q' | 'R' | 'S' | 'T' |
            'U' | 'V' | 'W' | 'X' | 'Y' |
-           'Z' | '$' |
+           'Z' |
            'a' | 'b' | 'c' | 'd' | 'e' |
            'f' | 'g' | 'h' | 'i' | 'j' |
            'k' | 'l' | 'm' | 'n' | 'o' |
@@ -637,6 +637,14 @@ trait Scanners extends ScannersCommon {
         putChar(ch)
         nextChar()
         getIdentOrOperatorRest()
+      case '$' =>
+        if (inStringInterpolation) {
+          finishNamed()
+        } else {
+          putChar(ch)
+          nextChar()
+          getIdentRest()
+        }
       case SU => // strangely enough, Character.isUnicodeIdentifierPart(SU) returns true!
         finishNamed()
       case _ =>
@@ -730,7 +738,7 @@ trait Scanners extends ScannersCommon {
         }
       } else if (ch == '$') {
         nextRawChar()
-        if (ch == '$') {
+        if (ch == '$' || ch == '"') {
           putChar(ch)
           nextRawChar()
           getStringPart(multiLine)
@@ -738,25 +746,21 @@ trait Scanners extends ScannersCommon {
           finishStringPart()
           nextRawChar()
           next.token = LBRACE
-        } else if (ch == '_') {
+        } else if (ch == '`' || ch == '_' || Character.isUnicodeIdentifierStart(ch)) {
           finishStringPart()
-          nextRawChar()
-          next.token = USCORE
-        } else if (Character.isUnicodeIdentifierStart(ch)) {
-          finishStringPart()
-          do {
+          prev copyFrom this          // save current
+          if (ch == '`') {
+            getBackquotedIdent()
+          } else {
             putChar(ch)
-            nextRawChar()
-          } while (ch != SU && Character.isUnicodeIdentifierPart(ch))
-          next.token = IDENTIFIER
-          next.name = newTermName(cbuf.toString)
-          cbuf.clear()
-          val idx = next.name.start - kwOffset
-          if (idx >= 0 && idx < kwArray.length) {
-            next.token = kwArray(idx)
+            nextChar()
+            getIdentRest()
           }
+          next.token = token          // offsets already set
+          next.name  = name
+          this copyFrom prev          // restore current
         } else {
-          syntaxError("invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected")
+          syntaxError("invalid string interpolation: `$$', `$\"', `$'ident or `$'BlockExpr expected")
         }
       } else {
         val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
