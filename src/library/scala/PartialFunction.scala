@@ -22,9 +22,9 @@ package scala
  *  }}}
  * 
  *  It is the responsibility of the caller to call `isDefinedAt` before
- *  before calling `apply`, because if `isDefinedAt` is false, an exception
- *  may or may not be thrown. In the case that an exception is not thrown,
- *  an insane value may be returned. 
+ *  calling `apply`, because if `isDefinedAt` is false, it is not guaranteed
+ *  `apply` will throw an exception to indicate an error condition. If an
+ *  exception is not thrown, evaluation may result in an arbitrary value.
  *
  *  The main distinction between `PartialFunction` and [[scala.Function1]] is
  *  that the user of a `PartialFunction` may choose to do something different
