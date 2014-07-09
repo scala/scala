@@ -640,8 +640,8 @@ trait Contexts { self: Analyzer =>
     }
 
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def warning(pos: Position, msg: String, force: Boolean = false) {
-      if (reportErrors || force) reporter.warning(pos, msg)
+    def warning(pos: Position, msg: String) {
+      if (reportErrors) reporter.warning(pos, msg)
       else if (bufferErrors) reportBuffer += (pos -> msg)
     }
 

@@ -2990,7 +2990,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     ConstructorsOrderError(stat)
                 }
 
-                if (treeInfo.isPureExprForWarningPurposes(result)) context.warning(stat.pos,
+                if (!isPastTyper && treeInfo.isPureExprForWarningPurposes(result)) context.warning(stat.pos,
                   "a pure expression does nothing in statement position; " +
                   "you may be omitting necessary parentheses"
                 )
