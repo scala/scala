@@ -857,7 +857,8 @@ trait Implicits {
             SearchFailure
           } else {
             if (search.isFailure) {
-              // We don't want errors that occur during checking implicit info
+              // Discard the divergentError we saved (if any), as well as all errors that are not of type DivergentImplicitTypeError
+              // We don't want errors that occur while checking the implicit info
               // to influence the check of further infos, but we should retain divergent implicit errors
               // (except for the one we already squirreled away)
               val saved = divergentError.getOrElse(null)
