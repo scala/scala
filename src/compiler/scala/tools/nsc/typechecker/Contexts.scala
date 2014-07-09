@@ -317,7 +317,7 @@ trait Contexts { self: Analyzer =>
      */
     def savingUndeterminedTypeParams[A](reportAmbiguous: Boolean = ambiguousErrors)(body: => A): A = {
       withMode() {
-        this(AmbiguousErrors) = reportAmbiguous
+        setAmbiguousErrors(reportAmbiguous)
         val saved = extractUndetparams()
         try body
         finally undetparams = saved
@@ -337,9 +337,9 @@ trait Contexts { self: Analyzer =>
     def ambiguousErrors = this(AmbiguousErrors)
     private def throwErrors = contextMode.inNone(ReportErrors | BufferErrors)
 
-    private def setReportErrors(): Unit                   = set(enable = ReportErrors | AmbiguousErrors, disable = BufferErrors)
-    private def setBufferErrors(): Unit                   = set(enable = BufferErrors, disable = ReportErrors | AmbiguousErrors)
-    private def setThrowErrors(): Unit                    = this(ReportErrors | AmbiguousErrors | BufferErrors) = false
+    private def setReportErrors(): Unit                   = set(enable = ReportErrors, disable = BufferErrors)
+    private def setBufferErrors(): Unit                   = set(enable = BufferErrors, disable = ReportErrors)
+    private def setThrowErrors(): Unit                    = this(ReportErrors | BufferErrors) = false
     private def setAmbiguousErrors(report: Boolean): Unit = this(AmbiguousErrors) = report
 
 
@@ -354,6 +354,7 @@ trait Contexts { self: Analyzer =>
           val savedContextMode = contextMode
           var fallback = false
           setBufferErrors()
+          setAmbiguousErrors(false)
           // We cache the current buffer because it is impossible to
           // distinguish errors that occurred before entering tryTwice
           // and our first attempt in 'withImplicitsDisabled'. If the
@@ -425,6 +426,7 @@ trait Contexts { self: Analyzer =>
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
       withMode() { // withMode with no arguments to restore the mode mutated by `setBufferErrors`.
         setBufferErrors()
+        setAmbiguousErrors(false)
         try expr && !reportBuffer.hasErrors
         finally reportBuffer.clearAll()
       }
@@ -492,6 +494,7 @@ trait Contexts { self: Analyzer =>
     /** Use reporter (possibly buffered) for errors/warnings and enable implicit conversion **/
     def initRootContext(): Unit = {
       setReportErrors()
+      setAmbiguousErrors(true)
       this(EnrichmentEnabled | ImplicitsEnabled) = true
     }
 
@@ -500,6 +503,7 @@ trait Contexts { self: Analyzer =>
      */
     def initRootContextPostTyper(): Unit = {
       setThrowErrors()
+      setAmbiguousErrors(false)
       this(EnrichmentEnabled | ImplicitsEnabled) = false
     }
 
@@ -525,6 +529,7 @@ trait Contexts { self: Analyzer =>
     def makeNonSilent(newtree: Tree): Context = {
       val c = make(newtree)
       c.setReportErrors()
+      c.setAmbiguousErrors(true)
       c
     }
 
