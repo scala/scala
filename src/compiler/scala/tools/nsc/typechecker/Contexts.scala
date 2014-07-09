@@ -98,7 +98,7 @@ trait Contexts { self: Analyzer =>
   }
 
 
-  def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, erasedTypes: Boolean = false): Context = {
+  def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree): Context = {
     val rootImportsContext = (startContext /: rootImports(unit))((c, sym) => c.make(gen.mkWildcardImport(sym)))
 
     // there must be a scala.xml package when xml literals were parsed in this unit
@@ -113,10 +113,16 @@ trait Contexts { self: Analyzer =>
       else rootImportsContext.make(gen.mkImport(ScalaXmlPackage, nme.TopScope, nme.dollarScope))
 
     val c = contextWithXML.make(tree, unit = unit)
-    if (erasedTypes) c.setThrowErrors() else c.setReportErrors()
-    c(EnrichmentEnabled | ImplicitsEnabled) = !erasedTypes
+    c.initRootContext()
     c
   }
+
+  def rootContextPostTyper(unit: CompilationUnit, tree: Tree = EmptyTree): Context = {
+    val c = rootContext(unit, tree)
+    c.initRootContextPostTyper()
+    c
+  }
+
 
   def resetContexts() {
     startContext.enclosingContextChain foreach { context =>
@@ -509,6 +515,20 @@ trait Contexts { self: Analyzer =>
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
       c
+    }
+
+    /** Use reporter (possibly buffered) for errors/warnings and enable implicit conversion **/
+    def initRootContext(): Unit = {
+      setReportErrors()
+      this(EnrichmentEnabled | ImplicitsEnabled) = true
+    }
+
+    /** Disable implicit conversion/enrichment, throw TypeError on error.
+     * TODO: can we phase out TypeError and uniformly rely on reporter?
+     */
+    def initRootContextPostTyper(): Unit = {
+      setThrowErrors()
+      this(EnrichmentEnabled | ImplicitsEnabled) = false
     }
 
     def make(tree: Tree, owner: Symbol, scope: Scope): Context =

@@ -17,9 +17,9 @@ trait TypingTransformers {
   abstract class TypingTransformer(unit: CompilationUnit) extends Transformer {
     var localTyper: analyzer.Typer =
       if (phase.erasedTypes)
-        erasure.newTyper(erasure.rootContext(unit, EmptyTree, erasedTypes = true)).asInstanceOf[analyzer.Typer]
-      else
-        analyzer.newTyper(analyzer.rootContext(unit, EmptyTree, true))
+        erasure.newTyper(erasure.rootContextPostTyper(unit, EmptyTree)).asInstanceOf[analyzer.Typer]
+      else // TODO: AM: should some phases use a regular rootContext instead of a post-typer one??
+        analyzer.newTyper(analyzer.rootContextPostTyper(unit, EmptyTree))
     protected var curTree: Tree = _
 
     override final def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
