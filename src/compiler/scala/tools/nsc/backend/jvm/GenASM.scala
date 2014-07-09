@@ -381,6 +381,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     case "jvm-1.5"     => asm.Opcodes.V1_5
     case "jvm-1.6"     => asm.Opcodes.V1_6
     case "jvm-1.7"     => asm.Opcodes.V1_7
+    case "jvm-1.8"     => asm.Opcodes.V1_8
   }
 
   private val majorVersion: Int = (classfileVersion & 0xFF)
@@ -635,7 +636,17 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
         else
           innerSym.rawname + innerSym.moduleSuffix
 
-      // add inner classes which might not have been referenced yet
+      /* The InnerClass table must contain all nested classes. Local or anonymous classes (not
+       * members) are referenced from the emitted code of the class, so they will be found when
+       * building the InnerClass table (currently they are added to the innerClassBufferASM set
+       * during bytecode generation; that might change to a bytecode traversal.)
+       *
+       * TODO @lry check the above. For example: class C { def foo = { class D; 0 } }, is D added?
+       *
+       * For member classes however, there might be no reference at all in the code of the class.
+       * The JMV spec still requires those classes to be added to the InnerClass table, so we collect
+       * them here.
+       */
       exitingErasure {
         for (sym <- List(csym, csym.linkedClassOfClass); m <- sym.info.decls.map(innerClassSymbolFor) if m.isClass)
           innerClassBuffer += m

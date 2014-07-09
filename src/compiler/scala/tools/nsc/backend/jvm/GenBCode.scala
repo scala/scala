@@ -46,6 +46,8 @@ import scala.tools.asm
 abstract class GenBCode extends BCodeSyncAndTry {
   import global._
 
+  import bTypes._
+
   val phaseName = "jvm"
 
   override def newPhase(prev: Phase) = new BCodePhase(prev)
@@ -130,7 +132,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
             return
           }
           else {
-            try   { visit(item) }
+            try   { withCurrentUnit(item.cunit)(visit(item)) }
             catch {
               case ex: Throwable =>
                 ex.printStackTrace()
@@ -165,7 +167,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
         // -------------- mirror class, if needed --------------
         val mirrorC =
-          if (isStaticModule(claszSymbol) && isTopLevelModule(claszSymbol)) {
+          if (isTopLevelModuleClass(claszSymbol)) {
             if (claszSymbol.companionClass == NoSymbol) {
               mirrorCodeGen.genMirrorClass(claszSymbol, cunit)
             } else {
@@ -271,8 +273,8 @@ abstract class GenBCode extends BCodeSyncAndTry {
     override def run() {
 
       arrivalPos = 0 // just in case
-      scalaPrimitives.init
-      initBCodeTypes()
+      scalaPrimitives.init()
+      bTypes.intializeCoreBTypes()
 
       // initBytecodeWriter invokes fullName, thus we have to run it before the typer-dependent thread is activated.
       bytecodeWriter  = initBytecodeWriter(cleanup.getEntryPoints)
@@ -297,9 +299,6 @@ abstract class GenBCode extends BCodeSyncAndTry {
        * (2) if requested, check-java-signatures, over and beyond the syntactic checks in `getGenericSignature()`
        *
        */
-
-      // clearing maps
-      clearBCodeTypes()
     }
 
     /*
@@ -385,3 +384,10 @@ abstract class GenBCode extends BCodeSyncAndTry {
   } // end of class BCodePhase
 
 } // end of class GenBCode
+
+object GenBCode {
+  def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
+
+  final val PublicStatic      = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC
+  final val PublicStaticFinal = asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_STATIC | asm.Opcodes.ACC_FINAL
+}
