@@ -119,6 +119,19 @@ trait ContextErrors {
 
   import ErrorUtils._
 
+  private def MacroIncompatibleEngineError(friendlyMessage: String, internalMessage: String) = {
+    def debugDiagnostic = s"(internal diagnostic: $internalMessage)"
+    val message = if (macroDebugLite || macroDebugVerbose) s"$friendlyMessage $debugDiagnostic" else friendlyMessage
+    // TODO: clean this up! (This is a more explicit version of what the code use to do, to reveal the issue.)
+    throw new TypeError(analyzer.lastTreeToTyper.pos, message)
+  }
+
+  def MacroCantExpand210xMacrosError(internalMessage: String) =
+    MacroIncompatibleEngineError("can't expand macros compiled by previous versions of Scala", internalMessage)
+
+  def MacroCantExpandIncompatibleMacrosError(internalMessage: String) =
+    MacroIncompatibleEngineError("macro cannot be expanded, because it was compiled by an incompatible macro engine", internalMessage)
+
   trait TyperContextErrors {
     self: Typer =>
 
@@ -729,17 +742,6 @@ trait ContextErrors {
         NormalTypeError(expandee, "too many argument lists for " + fun)
       }
 
-      private def MacroIncompatibleEngineError(friendlyMessage: String, internalMessage: String) = {
-        def debugDiagnostic = s"(internal diagnostic: $internalMessage)"
-        val message = if (macroDebugLite || macroDebugVerbose) s"$friendlyMessage $debugDiagnostic" else friendlyMessage
-        issueNormalTypeError(lastTreeToTyper, message)
-      }
-
-      def MacroCantExpand210xMacrosError(internalMessage: String) =
-        MacroIncompatibleEngineError("can't expand macros compiled by previous versions of Scala", internalMessage)
-
-      def MacroCantExpandIncompatibleMacrosError(internalMessage: String) =
-        MacroIncompatibleEngineError("macro cannot be expanded, because it was compiled by an incompatible macro engine", internalMessage)
 
       case object MacroExpansionException extends Exception with scala.util.control.ControlThrowable
 
