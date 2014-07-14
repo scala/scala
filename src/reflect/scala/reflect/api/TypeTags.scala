@@ -349,8 +349,7 @@ trait TypeTags { self: Universe =>
 
 // This class should be final, but we can't do that in Scala 2.11.x without breaking
 // binary incompatibility.
-// Since instances of this class are serialized, this class should have a
-// SerialVersionUID annotation.
+@SerialVersionUID(1L)
 private[scala] class SerializedTypeTag(var tpec: TypeCreator, var concrete: Boolean) extends Serializable {
   import scala.reflect.runtime.universe.{TypeTag, WeakTypeTag, runtimeMirror}
   @throws(classOf[ObjectStreamException])

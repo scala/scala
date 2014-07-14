@@ -163,6 +163,7 @@ trait Exprs { self: Universe =>
   }
 }
 
+@SerialVersionUID(1L)
 private[scala] class SerializedExpr(var treec: TreeCreator, var tag: ru.WeakTypeTag[_]) extends Serializable {
   import scala.reflect.runtime.universe.{Expr, runtimeMirror}
 
