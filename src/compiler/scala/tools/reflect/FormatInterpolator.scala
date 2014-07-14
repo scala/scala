@@ -183,11 +183,13 @@ abstract class FormatInterpolator {
     }
 
     //q"{..$evals; ${fstring.toString}.format(..$ids)}"
-    locally {
+    val format = fstring.toString
+    if (ids.isEmpty && !format.contains("%")) Literal(Constant(format))
+    else {
       val expr =
         Apply(
           Select(
-            Literal(Constant(fstring.toString)),
+            Literal(Constant(format)),
             newTermName("format")),
           ids.toList
         )
