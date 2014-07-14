@@ -65,7 +65,7 @@ trait PatternMatching extends Transform
         } catch {
           case x: (Types#TypeError) =>
             // TODO: this should never happen; error should've been reported during type checking
-            unit.error(tree.pos, "error during expansion of this match (this is a scalac bug).\nThe underlying error was: "+ x.msg)
+            reporter.error(tree.pos, "error during expansion of this match (this is a scalac bug).\nThe underlying error was: "+ x.msg)
             translated
         }
       case Try(block, catches, finalizer) =>
@@ -175,13 +175,13 @@ trait Interface extends ast.TreeDSL {
     val matchOwner = typer.context.owner
     def pureType(tp: Type): Type = tp
 
-    def reportUnreachable(pos: Position) = typer.context.unit.warning(pos, "unreachable code")
+    def reportUnreachable(pos: Position) = reporter.warning(pos, "unreachable code")
     def reportMissingCases(pos: Position, counterExamples: List[String]) = {
       val ceString =
         if (counterExamples.tail.isEmpty) "input: " + counterExamples.head
         else "inputs: " + counterExamples.mkString(", ")
 
-      typer.context.unit.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
+      reporter.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
     }
   }
 

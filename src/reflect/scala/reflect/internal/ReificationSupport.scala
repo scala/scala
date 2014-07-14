@@ -97,6 +97,8 @@ trait ReificationSupport { self: SymbolTable =>
     def toStats(tree: Tree): List[Tree] = tree match {
       case EmptyTree             => Nil
       case SyntacticBlock(stats) => stats
+      case defn if defn.isDef    => defn :: Nil
+      case imp: Import           => imp :: Nil
       case _                     => throw new IllegalArgumentException(s"can't flatten $tree")
     }
 

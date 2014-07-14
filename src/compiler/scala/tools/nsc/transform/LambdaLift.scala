@@ -339,7 +339,7 @@ abstract class LambdaLift extends InfoTransform {
           if (clazz.isStaticOwner) clazz.fullLocationString
           else s"the unconstructed `this` of ${clazz.fullLocationString}"
         val msg = s"Implementation restriction: access of ${sym.fullLocationString} from ${currentClass.fullLocationString}, would require illegal premature access to $what"
-        currentUnit.error(curTree.pos, msg)
+        reporter.error(curTree.pos, msg)
       }
       val qual =
         if (clazz == currentClass) gen.mkAttributedThis(clazz)

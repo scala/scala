@@ -93,7 +93,7 @@ abstract class UnCurry extends InfoTransform
     override def transform(tree: Tree): Tree = (
       try postTransform(mainTransform(tree))
       catch { case ex: TypeError =>
-        unit.error(ex.pos, ex.msg)
+        reporter.error(ex.pos, ex.msg)
         debugStack(ex)
         EmptyTree
       }
@@ -174,7 +174,7 @@ abstract class UnCurry extends InfoTransform
           cdef <- catches
           if catchesThrowable(cdef) && !isSyntheticCase(cdef)
         } {
-          unit.warning(body.pos, "catch block may intercept non-local return from " + meth)
+          reporter.warning(body.pos, "catch block may intercept non-local return from " + meth)
         }
 
         Block(List(keyDef), tryCatch)
@@ -706,10 +706,10 @@ abstract class UnCurry extends InfoTransform
      */
     private def saveRepeatedParams(dd: DefDef): Unit =
       if (dd.symbol.isConstructor)
-        unit.error(dd.symbol.pos, "A constructor cannot be annotated with a `varargs` annotation.")
+        reporter.error(dd.symbol.pos, "A constructor cannot be annotated with a `varargs` annotation.")
       else treeInfo.repeatedParams(dd) match {
         case Nil  =>
-          unit.error(dd.symbol.pos, "A method without repeated parameters cannot be annotated with the `varargs` annotation.")
+          reporter.error(dd.symbol.pos, "A method without repeated parameters cannot be annotated with the `varargs` annotation.")
         case reps =>
           repeatedParams(dd.symbol) = reps
       }
@@ -782,7 +782,7 @@ abstract class UnCurry extends InfoTransform
 
       // check if the method with that name and those arguments already exists in the template
       currentClass.info.member(forwsym.name).alternatives.find(s => s != forwsym && s.tpe.matches(forwsym.tpe)) match {
-        case Some(s) => unit.error(dd.symbol.pos,
+        case Some(s) => reporter.error(dd.symbol.pos,
                                    "A method with a varargs annotation produces a forwarder method with the same signature "
                                    + s.tpe + " as an existing method.")
         case None =>

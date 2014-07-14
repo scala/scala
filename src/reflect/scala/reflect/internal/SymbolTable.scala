@@ -46,16 +46,12 @@ abstract class SymbolTable extends macros.Universe
                               with pickling.Translations
                               with FreshNames
                               with Internals
+                              with Reporting
 {
 
   val gen = new InternalTreeGen { val global: SymbolTable.this.type = SymbolTable.this }
 
   def log(msg: => AnyRef): Unit
-  def deprecationWarning(pos: Position, msg: String): Unit = warning(msg)
-  def warning(msg: String): Unit     = Console.err.println(msg)
-  def inform(msg: String): Unit      = Console.err.println(msg)
-  def globalError(msg: String): Unit = abort(msg)
-  def abort(msg: String): Nothing    = throw new FatalError(supplementErrorMessage(msg))
 
   protected def elapsedMessage(msg: String, start: Long) =
     msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start) + "ms"
@@ -81,9 +77,6 @@ abstract class SymbolTable extends macros.Universe
 
   /** Prints a stack trace if -Ydebug or equivalent was given, otherwise does nothing. */
   def debugStack(t: Throwable): Unit  = devWarning(throwableAsString(t))
-
-  /** Overridden when we know more about what was happening during a failure. */
-  def supplementErrorMessage(msg: String): String = msg
 
   private[scala] def printCaller[T](msg: String)(result: T) = {
     Console.err.println("%s: %s\nCalled from: %s".format(msg, result,

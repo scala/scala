@@ -27,7 +27,7 @@ trait GenJVMASM {
   protected def isJavaEntryPoint(icls: IClass) = {
     val sym = icls.symbol
     def fail(msg: String, pos: Position = sym.pos) = {
-      icls.cunit.warning(sym.pos,
+      reporter.warning(sym.pos,
         sym.name + " has a main method with parameter type Array[String], but " + sym.fullName('.') + " will not be a runnable program.\n" +
           "  Reason: " + msg
         // TODO: make this next claim true, if possible

@@ -1,0 +1,8 @@
+Scope{
+  def <init>: <?>;
+  sealed abstract trait T extends ;
+  def foo: <?>
+}
+Scope{
+  def f: <?>
+}

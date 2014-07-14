@@ -680,7 +680,7 @@ abstract class GenICode extends SubComponent {
                 val dims = arr.dimensions
                 var elemKind = arr.elementKind
                 if (args.length > dims)
-                  unit.error(tree.pos, "too many arguments for array constructor: found " + args.length +
+                  reporter.error(tree.pos, "too many arguments for array constructor: found " + args.length +
                              " but array has only " + dims + " dimension(s)")
                 if (args.length != dims)
                   for (i <- args.length until dims) elemKind = ARRAY(elemKind)

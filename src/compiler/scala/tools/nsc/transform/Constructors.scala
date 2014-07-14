@@ -54,7 +54,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
         def check(tree: Tree) = {
           for (t <- tree) t match {
             case t: RefTree if uninitializedVals(t.symbol.accessedOrSelf) && t.qualifier.symbol == clazz =>
-              unit.warning(t.pos, s"Reference to uninitialized ${t.symbol.accessedOrSelf}")
+              reporter.warning(t.pos, s"Reference to uninitialized ${t.symbol.accessedOrSelf}")
             case _ =>
           }
         }
@@ -685,7 +685,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
       // mangling before we introduce more of it.
       val conflict = clazz.info.nonPrivateMember(acc.name) filter (s => s.isGetter && !s.isOuterField && s.enclClass.isTrait)
       if (conflict ne NoSymbol)
-        unit.error(acc.pos, "parameter '%s' requires field but conflicts with %s".format(acc.name, conflict.fullLocationString))
+        reporter.error(acc.pos, "parameter '%s' requires field but conflicts with %s".format(acc.name, conflict.fullLocationString))
 
       copyParam(acc, parameter(acc))
     }

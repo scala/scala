@@ -288,6 +288,13 @@ private[collection] trait Wrappers {
     override def empty: Repr = null.asInstanceOf[Repr]
   }
 
+  /** Wraps a Java map as a Scala one.  If the map is to support concurrent access,
+    * use [[JConcurrentMapWrapper]] instead.  If the wrapped map is synchronized 
+    * (e.g. from `java.util.Collections.synchronizedMap`), it is your responsibility 
+    * to wrap all non-atomic operations with `underlying.synchronized`.
+    * This includes `get`, as `java.util.Map`'s API does not allow for an
+    * atomic `get` when `null` values may be present.
+    */
   case class JMapWrapper[A, B](underlying : ju.Map[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JMapWrapper[A, B]] {
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
@@ -314,6 +321,10 @@ private[collection] trait Wrappers {
     def replace(k: A, oldval: B, newval: B) = underlying.replace(k, oldval, newval)
   }
 
+  /** Wraps a concurrent Java map as a Scala one.  Single-element concurrent
+    * access is supported; multi-element operations such as maps and filters
+    * are not guaranteed to be atomic.
+    */
   case class JConcurrentMapWrapper[A, B](underlying: juc.ConcurrentMap[A, B]) extends mutable.AbstractMap[A, B] with JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with concurrent.Map[A, B] {
     override def get(k: A) = {
       val v = underlying get k
