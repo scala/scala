@@ -131,18 +131,19 @@ trait CommentFactoryBase { this: MemberLookupBase =>
   /** Javadoc tags that should be replaced by something useful, such as wiki
     * syntax, or that should be dropped. */
   private val JavadocTags =
-    new Regex("""\{\@(code|docRoot|inheritDoc|link|linkplain|literal|value)([^}]*)\}""")
+    new Regex("""\{\@(code|docRoot|linkplain|link|literal|value)\p{Zs}*([^}]*)\}""")
 
   /** Maps a javadoc tag to a useful wiki replacement, or an empty string if it cannot be salvaged. */
-  private def javadocReplacement(mtch: Regex.Match): String = mtch.group(1) match {
-    case "code" => "`" + mtch.group(2) + "`"
-    case "docRoot"  => ""
-    case "inheritDoc" => ""
-    case "link"  => "`" + mtch.group(2) + "`"
-    case "linkplain" => "`" + mtch.group(2) + "`"
-    case "literal"  => mtch.group(2)
-    case "value" => "`" + mtch.group(2) + "`"
-    case _ => ""
+  private def javadocReplacement(mtch: Regex.Match): String = {
+    mtch.group(1) match {
+      case "code" => "<code>" + mtch.group(2) + "</code>"
+      case "docRoot"  => ""
+      case "link"  => "`[[" + mtch.group(2) + "]]`"
+      case "linkplain" => "[[" + mtch.group(2) + "]]"
+      case "literal"  => "`" + mtch.group(2) + "`"
+      case "value" => "`" + mtch.group(2) + "`"
+      case _ => ""
+    }
   }
 
   /** Safe HTML tags that can be kept. */
@@ -680,7 +681,6 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       jump("[[")
       val parens = 2 + repeatJump('[')
       val stop  = "]" * parens
-      //println("link with " + parens + " matching parens")
       val target = readUntil { check(stop) || check(" ") }
       val title =
         if (!check(stop)) Some({
