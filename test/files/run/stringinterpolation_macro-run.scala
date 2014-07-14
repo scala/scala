@@ -115,6 +115,7 @@ println(f"""${"1234"}%TD""")
 
 // literals and arg indexes
 println(f"%%")
+println(f" mind%n------%nmatter%n")
 println(f"${7}%d %<d ${9}%d")
 println(f"${7}%d %2$$d ${9}%d")
 
