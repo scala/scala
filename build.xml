@@ -827,6 +827,11 @@ TODO:
     <path id="pack.compiler.files">
       <fileset dir="${build-quick.dir}/classes/compiler"/>
 
+      <!-- include versions.properties in scala-compiler.jar
+           versions.properties determines scala-library-all's pom and could thus be reconstructed from it,
+           but the property file is easier to digest by ivy-based tools -->
+      <pathelement location="${basedir}/versions.properties"/>
+
       <!-- TODO modularize compiler. Remove the other class dirs as soon as they become modules -->
       <fileset dir="${build-quick.dir}/classes/scaladoc"/>
       <fileset dir="${build-quick.dir}/classes/interactive"/>
