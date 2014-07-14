@@ -72,8 +72,10 @@ trait Parsers { self: Quasiquotes =>
         override def makeBlock(stats: List[Tree]): Tree = method match {
           case nme.apply   =>
             stats match {
+              // we don't want to eagerly flatten trees with placeholders as they
+              // might have to be wrapped into a block depending on their value
               case (head @ Ident(name)) :: Nil if isHole(name) => Block(Nil, head)
-              case _ => super.makeBlock(stats)
+              case _ => gen.mkBlock(stats, doFlatten = true)
             }
           case nme.unapply => gen.mkBlock(stats, doFlatten = false)
           case other       => global.abort("unreachable")
