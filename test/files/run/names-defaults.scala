@@ -401,6 +401,10 @@ object Test extends App {
   C4441a().copy()
   C4441b()().copy()()
 
+  // SI-8117
+  def f8177(a: Int = 0, b: Int = 0, c: Int = 0) = s"$a $b $c"
+  println(f8177(a = 1, 1))
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))
