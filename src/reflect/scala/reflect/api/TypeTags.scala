@@ -9,6 +9,7 @@ package api
 
 import java.lang.{ Class => jClass }
 import scala.language.implicitConversions
+import java.io.ObjectStreamException
 
 /**
  * A `TypeTag[T]` encapsulates the runtime type representation of some type `T`.
@@ -233,6 +234,7 @@ trait TypeTags { self: Universe =>
       val otherMirror1 = otherMirror.asInstanceOf[scala.reflect.api.Mirror[otherMirror.universe.type]]
       otherMirror.universe.WeakTypeTag[T](otherMirror1, tpec)
     }
+    @throws(classOf[ObjectStreamException])
     private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = false)
   }
 
@@ -293,10 +295,13 @@ trait TypeTags { self: Universe =>
       val otherMirror1 = otherMirror.asInstanceOf[scala.reflect.api.Mirror[otherMirror.universe.type]]
       otherMirror.universe.TypeTag[T](otherMirror1, tpec)
     }
+    @throws(classOf[ObjectStreamException])
     private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = true)
   }
 
   /* @group TypeTags */
+  // This class only exists to silence MIMA complaining about a binary incompatibility.
+  // Only the top-level class (api.PredefTypeCreator) should be used.
   private class PredefTypeCreator[T](copyIn: Universe => Universe#TypeTag[T]) extends TypeCreator {
     def apply[U <: Universe with Singleton](m: scala.reflect.api.Mirror[U]): U # Type = {
       copyIn(m.universe).asInstanceOf[U # TypeTag[T]].tpe
@@ -304,8 +309,9 @@ trait TypeTags { self: Universe =>
   }
 
   /* @group TypeTags */
-  private class PredefTypeTag[T](_tpe: Type, copyIn: Universe => Universe#TypeTag[T]) extends TypeTagImpl[T](rootMirror, new PredefTypeCreator(copyIn)) {
+  private class PredefTypeTag[T](_tpe: Type, copyIn: Universe => Universe#TypeTag[T]) extends TypeTagImpl[T](rootMirror, new api.PredefTypeCreator(copyIn)) {
     override lazy val tpe: Type = _tpe
+    @throws(classOf[ObjectStreamException])
     private def writeReplace(): AnyRef = new SerializedTypeTag(tpec, concrete = true)
   }
 
@@ -341,20 +347,27 @@ trait TypeTags { self: Universe =>
   def symbolOf[T: WeakTypeTag]: TypeSymbol
 }
 
+// This class should be final, but we can't do that in Scala 2.11.x without breaking
+// binary incompatibility.
+@SerialVersionUID(1L)
 private[scala] class SerializedTypeTag(var tpec: TypeCreator, var concrete: Boolean) extends Serializable {
-  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
-    out.writeObject(tpec)
-    out.writeBoolean(concrete)
-  }
-
-  private def readObject(in: java.io.ObjectInputStream): Unit = {
-    tpec = in.readObject().asInstanceOf[TypeCreator]
-    concrete = in.readBoolean()
-  }
-
+  import scala.reflect.runtime.universe.{TypeTag, WeakTypeTag, runtimeMirror}
+  @throws(classOf[ObjectStreamException])
   private def readResolve(): AnyRef = {
-    import scala.reflect.runtime.universe._
-    if (concrete) TypeTag(rootMirror, tpec)
-    else WeakTypeTag(rootMirror, tpec)
+    val loader: ClassLoader = try {
+      Thread.currentThread().getContextClassLoader()
+    } catch {
+      case se: SecurityException => null
+    }
+    val m = runtimeMirror(loader)
+    if (concrete) TypeTag(m, tpec)
+    else WeakTypeTag(m, tpec)
+  }
+}
+
+/* @group TypeTags */
+private class PredefTypeCreator[T](copyIn: Universe => Universe#TypeTag[T]) extends TypeCreator {
+  def apply[U <: Universe with Singleton](m: scala.reflect.api.Mirror[U]): U # Type = {
+    copyIn(m.universe).asInstanceOf[U # TypeTag[T]].tpe
   }
 }

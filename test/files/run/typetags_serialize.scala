@@ -4,6 +4,10 @@ import scala.reflect.runtime.{universe => ru}
 import scala.reflect.runtime.{currentMirror => cm}
 
 object Test extends App {
+  class C[A] {
+    def m(a: A): Int = 5
+  }
+
   def test(tag: TypeTag[_]) =
     try {
       val fout = new ByteArrayOutputStream()
@@ -26,4 +30,5 @@ object Test extends App {
 
   test(implicitly[TypeTag[Int]])
   test(implicitly[TypeTag[String]])
+  test(implicitly[TypeTag[C[Double]]])
 }
