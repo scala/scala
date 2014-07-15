@@ -35,7 +35,7 @@ abstract class Attachments { self =>
   def all: Set[Any] = Set.empty
 
   private def matchesTag[T: ClassTag](datum: Any) =
-    classTag[T].runtimeClass == datum.getClass
+    classTag[T].runtimeClass.isInstance(datum)
 
   /** An underlying payload of the given class type `T`. */
   def get[T: ClassTag]: Option[T] =
