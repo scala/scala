@@ -82,7 +82,8 @@ trait Adaptations {
       } else if (settings.warnAdaptedArgs)
         context.warning(t.pos, adaptWarningMessage(s"Adapting argument list by creating a ${args.size}-tuple: this may not be what you want."))
 
-      !settings.noAdaptedArgs || !(args.isEmpty && settings.future)
+      // return `true` if the adaptation should be kept
+      !(settings.noAdaptedArgs || (args.isEmpty && settings.future))
     }
   }
 }

@@ -3248,25 +3248,25 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
            * to that. This is the last thing which is tried (after
            * default arguments)
            */
-          def tryTupleApply: Tree = (
+          def tryTupleApply: Tree = {
             if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
               val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
               val savedUndetparams = context.undetparams
               silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)) map { t =>
-                  // Depending on user options, may warn or error here if
-                  // a Unit or tuple was inserted.
-                  val keepTree = (
-                       !mode.typingExprNotFun
-                    || t.symbol == null
-                    || checkValidAdaptation(t, args)
-                  )
-                  if (keepTree) t else EmptyTree
+                // Depending on user options, may warn or error here if
+                // a Unit or tuple was inserted.
+                val keepTree = (
+                     !mode.typingExprNotFun // why? introduced in 4e488a60, doc welcome
+                  || t.symbol == null       // ditto
+                  || checkValidAdaptation(t, args)
+                )
+                if (keepTree) t else EmptyTree
               } orElse { _ => context.undetparams = savedUndetparams ; EmptyTree }
             }
             else EmptyTree
-          )
+          }
 
           /* Treats an application which uses named or default arguments.
            * Also works if names + a vararg used: when names are used, the vararg
