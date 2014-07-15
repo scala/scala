@@ -129,7 +129,7 @@ trait Internals extends api.Internals {
     def typeBounds(lo: Type, hi: Type): TypeBounds = self.TypeBounds(lo, hi)
     def boundedWildcardType(bounds: TypeBounds): BoundedWildcardType = self.BoundedWildcardType(bounds)
 
-    def subpatterns(tree: Tree): Option[List[Tree]] = tree.attachments.get[SubpatternsAttachment].map(_.patterns.map(_.duplicate))
+    def subpatterns(tree: Tree): Option[List[Tree]] = tree.attachments.get[SubpatternsAttachment].map(_.patterns.map(duplicateAndKeepPositions))
 
     type Decorators = MacroDecoratorApi
     lazy val decorators: Decorators = new MacroDecoratorApi {
