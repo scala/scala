@@ -45,7 +45,7 @@ trait MemberLookup extends base.MemberLookupBase {
         sym.info.member(newTermName("package"))
       else sym
     Option(sym1.associatedFile) flatMap (_.underlyingSource) flatMap { src =>
-      val path = src.path
+      val path = src.canonicalPath
       settings.extUrlMapping get path map { url =>
         LinkToExternal(name, url + "#" + name)
       }
