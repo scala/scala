@@ -567,13 +567,12 @@ class MutableSettings(val errorFn: String => Unit)
     def badChoice(s: String, n: String) = errorFn(s"'$s' is not a valid choice for '$name'")
     def choosing = choices.nonEmpty
     def isChoice(s: String) = (s == "_") || (choices contains (s stripPrefix "-"))
-    def wildcards = choices // filter (!_.isSetByUser)
 
     override protected def tts(args: List[String], halting: Boolean) = {
-      val total = collection.mutable.ListBuffer.empty[String] ++ value
+      val added = collection.mutable.ListBuffer.empty[String]
       def tryArg(arg: String) = arg match {
-        case "_" if choosing               => wildcards foreach (total += _)
-        case s if !choosing || isChoice(s) => total += s
+        case "_" if choosing               => default()
+        case s if !choosing || isChoice(s) => added += s
         case s                             => badChoice(s, name)
       }
       def stoppingAt(arg: String) = (arg startsWith "-") || (choosing && !isChoice(arg))
@@ -584,7 +583,7 @@ class MutableSettings(val errorFn: String => Unit)
       }
       val rest = loop(args)
       if (rest.size == args.size) default()       // if no arg consumed, trigger default action
-      else value = total.toList                   // update once
+      else value = added.toList                   // update all new settings at once
       Some(rest)
     }
   }
