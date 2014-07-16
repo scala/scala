@@ -1,0 +1,7 @@
+Macros_1.scala:17: error: a parameter section with a `*'-parameter is not allowed to have default arguments
+  def bar(x: Int = 1, xs: Int*): Unit = macro bar_impl
+      ^
+Macros_1.scala:24: error: a parameter section with a `*'-parameter is not allowed to have default arguments
+  def baz(x: Int = 1, y: Int = 2, xs: Int*): Unit = macro baz_impl
+      ^
+two errors found
