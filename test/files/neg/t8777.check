@@ -1,0 +1,6 @@
+t8777.scala:3: error: type mismatch;
+ found   : Foo.this.TreePrinter(in trait Printers)
+ required: Foo.this.TreePrinter(in trait Printers)
+    super.newCodePrinter(out, tree, printRootPkg)
+                        ^
+one error found
