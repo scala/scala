@@ -190,7 +190,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
         typeParams.nonEmpty || version.nonEmpty || since.nonEmpty
       }
       def isDirty = unclean(unmooredParser parseComment doc)
-      if ((doc ne null) && (settings.lint || isDirty))
+      if ((doc ne null) && (settings.warnDocDetached || isDirty))
         reporter.warning(doc.pos, "discarding unmoored doc comment")
     }
 

@@ -50,7 +50,7 @@ trait TreeAndTypeAnalysis extends Debugging {
           // but the annotation didn't bubble up...
           // This is a pretty poor approximation.
           def unsoundAssumptionUsed = binder.name != nme.WILDCARD && !(pt <:< pat.tpe)
-          if (settings.lint && unsoundAssumptionUsed)
+          if (settings.warnUnsoundMatch && unsoundAssumptionUsed)
             reporter.warning(pat.pos,
               sm"""The value matched by $pat is bound to ${binder.name}, which may be used under the
                   |unsound assumption that it has type ${pat.tpe}, whereas we can only safely

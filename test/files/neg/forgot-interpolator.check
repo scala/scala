@@ -1,25 +1,25 @@
-forgot-interpolator.scala:4: warning: `$bippy` looks like an interpolated identifier! Did you forget the interpolator?
+forgot-interpolator.scala:4: warning: possible missing interpolator: detected interpolated identifier `$bippy`
   def f = "Put the $bippy in the $bippy!" // warn 1
           ^
-forgot-interpolator.scala:14: warning: That looks like an interpolated expression! Did you forget the interpolator?
+forgot-interpolator.scala:14: warning: possible missing interpolator: detected an interpolated expression
   def f = """Put the ${println("bippy")} in the bippy!""" // warn 2
           ^
-forgot-interpolator.scala:30: warning: `$beppo` looks like an interpolated identifier! Did you forget the interpolator?
+forgot-interpolator.scala:30: warning: possible missing interpolator: detected interpolated identifier `$beppo`
       def f = "$beppo was a marx bros who saw dollars."  // warn 3
               ^
-forgot-interpolator.scala:34: warning: `$aleppo` looks like an interpolated identifier! Did you forget the interpolator?
+forgot-interpolator.scala:34: warning: possible missing interpolator: detected interpolated identifier `$aleppo`
     def f = "$aleppo is a pepper and a city."     // warn 4
             ^
-forgot-interpolator.scala:47: warning: `$hippo` looks like an interpolated identifier! Did you forget the interpolator?
+forgot-interpolator.scala:47: warning: possible missing interpolator: detected interpolated identifier `$hippo`
     def h = "$hippo takes an implicit"  // warn 6
             ^
-forgot-interpolator.scala:88: warning: `$groucho` looks like an interpolated identifier! Did you forget the interpolator?
+forgot-interpolator.scala:88: warning: possible missing interpolator: detected interpolated identifier `$groucho`
     def f2 = "I salute $groucho" // warn 7
              ^
-forgot-interpolator.scala:89: warning: `$dingo` looks like an interpolated identifier! Did you forget the interpolator?
+forgot-interpolator.scala:89: warning: possible missing interpolator: detected interpolated identifier `$dingo`
     def f3 = "I even salute $dingo" // warn 8
              ^
-forgot-interpolator.scala:90: warning: `$calico` looks like an interpolated identifier! Did you forget the interpolator?
+forgot-interpolator.scala:90: warning: possible missing interpolator: detected interpolated identifier `$calico`
     def f4 = "I also salute $calico" // warn 9
              ^
 error: No warnings can be incurred under -Xfatal-warnings.

@@ -33,7 +33,7 @@ trait Plugins { global: Global =>
     }
     val maybes = Plugin.loadAllFrom(paths, dirs, settings.disable.value)
     val (goods, errors) = maybes partition (_.isSuccess)
-    // Explicit parameterization of recover to suppress -Xlint warning about inferred Any
+    // Explicit parameterization of recover to avoid -Xlint warning about inferred Any
     errors foreach (_.recover[Any] {
       // legacy behavior ignores altogether, so at least warn devs
       case e: MissingPluginException => if (global.isDeveloper) warning(e.getMessage)
