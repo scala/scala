@@ -71,8 +71,8 @@ trait Implicits {
       typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
-    if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.hasErrors) {
-      context.updateBuffer(implicitSearchContext.reportBuffer.errors.collect {
+    if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.reportBuffer.hasErrors) {
+      context.reportBuffer ++= (implicitSearchContext.reportBuffer.errors.collect {
         case dte: DivergentImplicitTypeError => dte
         case ate: AmbiguousImplicitTypeError => ate
       })
@@ -99,7 +99,7 @@ trait Implicits {
     def wrapper(inference: => SearchResult) = wrapper1(inference)
     val result = wrapper(inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos))
     if (result.isFailure && !silent) {
-      val err = context.firstError
+      val err = context.reportBuffer.firstError
       val errPos = err.map(_.errPos).getOrElse(pos)
       val errMsg = err.map(_.errMsg).getOrElse("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
       onError(errPos, errMsg)
@@ -635,7 +635,7 @@ trait Implicits {
             }
           case _ => fallback
         }
-        context.firstError match { // using match rather than foreach to avoid non local return.
+        context.reportBuffer.firstError match { // using match rather than foreach to avoid non local return.
           case Some(err) =>
             log("implicit adapt failed: " + err.errMsg)
             return fail(err.errMsg)
@@ -658,8 +658,8 @@ trait Implicits {
           }
         }
 
-        if (context.hasErrors)
-          fail("hasMatchingSymbol reported error: " + context.firstError.get.errMsg)
+        if (context.reportBuffer.hasErrors)
+          fail("hasMatchingSymbol reported error: " + context.reportBuffer.firstError.get.errMsg)
         else if (itree3.isErroneous)
           fail("error typechecking implicit candidate")
         else if (isLocalToCallsite && !hasMatchingSymbol(itree2))
@@ -677,7 +677,7 @@ trait Implicits {
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
             checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
-            context.firstError match {
+            context.reportBuffer.firstError match {
               case Some(err) =>
                 return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
               case None      =>
@@ -716,7 +716,7 @@ trait Implicits {
               case t                              => t
             }
 
-            context.firstError match {
+            context.reportBuffer.firstError match {
               case Some(err) =>
                 fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
               case None      =>
@@ -910,7 +910,7 @@ trait Implicits {
           // the first `DivergentImplicitTypeError` that is being propagated
           // from a nested implicit search; this one will be
           // re-issued if this level of the search fails.
-          DivergentImplicitRecovery(typedFirstPending, firstPending, context.errors) match {
+          DivergentImplicitRecovery(typedFirstPending, firstPending, context.reportBuffer.errors) match {
             case sr if sr.isDivergent => Nil
             case sr if sr.isFailure   => rankImplicits(otherPending, acc)
             case newBest              =>
@@ -1147,7 +1147,7 @@ trait Implicits {
 
         try {
           val tree1 = typedPos(pos.focus)(arg)
-          context.firstError match {
+          context.reportBuffer.firstError match {
             case Some(err) => processMacroExpansionError(err.errPos, err.errMsg)
             case None      => new SearchResult(tree1, EmptyTreeTypeSubstituter, Nil)
           }

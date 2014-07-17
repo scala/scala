@@ -779,7 +779,7 @@ trait Infer extends Checkable {
       def applicableExpectingPt(pt: Type): Boolean = {
         val silent = context.makeSilent(reportAmbiguousErrors = false)
         val result = newTyper(silent).infer.isApplicable(undetparams, ftpe, argtpes0, pt)
-        if (silent.hasErrors && !pt.isWildcard)
+        if (silent.reportBuffer.hasErrors && !pt.isWildcard)
           applicableExpectingPt(WildcardType) // second try
         else
           result
