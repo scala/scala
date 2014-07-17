@@ -480,16 +480,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     @inline
     final def typerWithLocalContext[T](c: Context)(f: Typer => T): T = {
       val res = f(newTyper(c))
-      if (c.hasErrors)
-        context.updateBuffer(c.flushAndReturnBuffer())
+      val errors = c.reportBuffer.errors
+      if (errors.nonEmpty) {
+        c.reportBuffer.clearAllErrors()
+        context.reportBuffer ++= errors
+      }
       res
     }
 
     @inline
     final def withSavedContext[T](c: Context)(f: => T) = {
-      val savedErrors = c.flushAndReturnBuffer()
+      val savedErrors = c.reportBuffer.errors
+      c.reportBuffer.clearAllErrors()
       val res = f
-      c.updateBuffer(savedErrors)
+      c.reportBuffer ++= savedErrors
       res
     }
 
@@ -702,14 +706,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             SilentTypeError(context1.reportBuffer.errors: _*)
           } else {
             // If we have a successful result, emit any warnings it created.
-            context1.flushAndIssueWarnings()
+            context1.reportBuffer.warnings foreach {
+              case (pos, msg) => reporter.warning(pos, msg)
+            }
+            context1.reportBuffer.clearAllWarnings()
             SilentResultValue(result)
           }
         } else {
           assert(context.bufferErrors || isPastTyper, "silent mode is not available past typer")
           withSavedContext(context){
             val res = op(this)
-            val errorsToReport = context.flushAndReturnBuffer()
+            val errorsToReport = context.reportBuffer.errors
+            context.reportBuffer.clearAllErrors()
             if (errorsToReport.isEmpty) SilentResultValue(res) else SilentTypeError(errorsToReport.head)
           }
         }

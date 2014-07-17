@@ -1359,7 +1359,8 @@ trait Implicits {
         if (Statistics.canEnable) Statistics.incCounter(inscopeImplicitHits)
       }
       if (result.isFailure) {
-        val previousErrs = context.flushAndReturnBuffer()
+        val previousErrs = context.reportBuffer.errors
+        context.reportBuffer.clearAllErrors()
         val failstart = if (Statistics.canEnable) Statistics.startTimer(oftypeFailNanos) else null
         val succstart = if (Statistics.canEnable) Statistics.startTimer(oftypeSucceedNanos) else null
 
@@ -1371,7 +1372,7 @@ trait Implicits {
           result = searchImplicit(implicitsOfExpectedType, isLocalToCallsite = false)
 
         if (result.isFailure) {
-          context.updateBuffer(previousErrs)
+          context.reportBuffer ++= previousErrs
           if (Statistics.canEnable) Statistics.stopTimer(oftypeFailNanos, failstart)
         } else {
           if (Statistics.canEnable) Statistics.stopTimer(oftypeSucceedNanos, succstart)
@@ -1428,9 +1429,8 @@ trait Implicits {
         // thus, start each type var off with a fresh for every typedImplicit
         resetTVars()
         // any previous errors should not affect us now
-        context.flushBuffer()
-
-            val res = typedImplicit(ii, ptChecked = false, isLocalToCallsite)
+        context.reportBuffer.clearAllErrors()
+        val res = typedImplicit(ii, ptChecked = false, isLocalToCallsite)
         if (res.tree ne EmptyTree) List((res, tvars map (_.constr)))
         else Nil
       }
