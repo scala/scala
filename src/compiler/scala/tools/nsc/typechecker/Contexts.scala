@@ -389,13 +389,14 @@ trait Contexts { self: Analyzer =>
           // first attempt fails we try with implicits on *and* clean
           // buffer but that would also flush any pre-tryTwice valid
           // errors, hence some manual buffer tweaking is necessary.
-          val errorsToRestore = flushAndReturnBuffer()
+          val errorsToRestore = reportBuffer.errors
+          reportBuffer.clearAllErrors()
           try {
             withImplicitsDisabled(tryOnce(false))
-            if (hasErrors) {
+            if (reportBuffer.hasErrors) {
               fallback = true
               contextMode = savedContextMode
-              flushBuffer()
+              reportBuffer.clearAllErrors()
               tryOnce(true)
             }
           } catch {
@@ -405,7 +406,7 @@ trait Contexts { self: Analyzer =>
               if (!fallback) tryOnce(true) else ()
           } finally {
             contextMode = savedContextMode
-            updateBuffer(errorsToRestore)
+            reportBuffer ++= errorsToRestore
           }
         }
         else tryOnce(true)
@@ -453,7 +454,7 @@ trait Contexts { self: Analyzer =>
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
       withMode() { // withMode with no arguments to restore the mode mutated by `setBufferErrors`.
         setBufferErrors()
-        try expr && !hasErrors
+        try expr && !reportBuffer.hasErrors
         finally reportBuffer.clearAll()
       }
     }
