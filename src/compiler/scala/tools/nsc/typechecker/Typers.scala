@@ -155,21 +155,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else {
             mkArg = gen.mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
             if (!param.hasDefault && !paramFailed) {
-              context.reportBuffer.errors.collectFirst {
-                case dte: DivergentImplicitTypeError => dte
-              } match {
-                case Some(divergent) =>
-                  // DivergentImplicit error has higher priority than "no implicit found"
-                  // no need to issue the problem again if we are still in silent mode
-                  if (context.reportErrors) {
-                    context.issue(divergent.withPt(paramTp))
-                    context.reportBuffer.clearErrors {
-                      case dte: DivergentImplicitTypeError => true
-                    }
-                  }
-                case _ =>
-                  NoImplicitFoundError(fun, param)
-              }
+              context.reportBuffer.reportFirstDivergentError(fun, param, paramTp)(context)
               paramFailed = true
             }
             /* else {

@@ -132,6 +132,23 @@ trait ContextErrors {
   def MacroCantExpandIncompatibleMacrosError(internalMessage: String) =
     MacroIncompatibleEngineError("macro cannot be expanded, because it was compiled by an incompatible macro engine", internalMessage)
 
+  def NoImplicitFoundError(tree: Tree, param: Symbol)(implicit context: Context): Unit = {
+    def errMsg = {
+      val paramName = param.name
+      val paramTp = param.tpe
+      def evOrParam = (
+        if (paramName startsWith nme.EVIDENCE_PARAM_PREFIX)
+          "evidence parameter of type"
+        else
+          s"parameter $paramName:")
+      paramTp.typeSymbolDirect match {
+        case ImplicitNotFoundMsg(msg) => msg.format(paramName, paramTp)
+        case _ => s"could not find implicit value for $evOrParam $paramTp"
+      }
+    }
+    issueNormalTypeError(tree, errMsg)
+  }
+
   trait TyperContextErrors {
     self: Typer =>
 
@@ -148,24 +165,6 @@ trait ContextErrors {
           "stable identifier required, but "+tree+" found." + (
           if (treeInfo.hasVolatileType(tree)) addendum else ""))
         setError(tree)
-      }
-
-      def NoImplicitFoundError(tree: Tree, param: Symbol) = {
-        def errMsg = {
-          val paramName = param.name
-          val paramTp   = param.tpe
-          def evOrParam = (
-            if (paramName startsWith nme.EVIDENCE_PARAM_PREFIX)
-              "evidence parameter of type"
-            else
-              s"parameter $paramName:"
-          )
-          paramTp.typeSymbolDirect match {
-            case ImplicitNotFoundMsg(msg) => msg.format(paramName, paramTp)
-            case _ => s"could not find implicit value for $evOrParam $paramTp"
-          }
-        }
-        issueNormalTypeError(tree, errMsg)
       }
 
       def AdaptTypeError(tree: Tree, found: Type, req: Type) = {

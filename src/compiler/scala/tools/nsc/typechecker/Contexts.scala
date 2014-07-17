@@ -1343,6 +1343,31 @@ trait Contexts { self: Analyzer =>
 
     def hasErrors     = errorBuffer.nonEmpty
     def firstError    = errorBuffer.headOption
+
+    // have to pass in context because multiple contexts may share the same ReportBuffer
+    def reportFirstDivergentError(fun: Tree, param: Symbol, paramTp: Type)(implicit context: Context): Unit =
+      errors.collectFirst {
+        case dte: DivergentImplicitTypeError => dte
+      } match {
+        case Some(divergent) =>
+          // DivergentImplicit error has higher priority than "no implicit found"
+          // no need to issue the problem again if we are still in silent mode
+          if (context.reportErrors) {
+            context.issue(divergent.withPt(paramTp))
+            errorBuffer.retain {
+              case dte: DivergentImplicitTypeError => false
+              case _ => true
+            }
+          }
+        case _ =>
+          NoImplicitFoundError(fun, param)(context)
+      }
+
+    def retainDivergentErrorsExcept(saved: DivergentImplicitTypeError) =
+      errorBuffer.retain {
+        case err: DivergentImplicitTypeError => err ne saved
+        case _ => false
+      }
   }
 
   class ImportInfo(val tree: Import, val depth: Int) {

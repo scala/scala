@@ -861,10 +861,7 @@ trait Implicits {
               // We don't want errors that occur while checking the implicit info
               // to influence the check of further infos, but we should retain divergent implicit errors
               // (except for the one we already squirreled away)
-              val saved = divergentError.getOrElse(null)
-              context.reportBuffer.retainErrors {
-                case err: DivergentImplicitTypeError => err ne saved
-              }
+              context.reportBuffer.retainDivergentErrorsExcept(divergentError.getOrElse(null))
             }
             search
           }
