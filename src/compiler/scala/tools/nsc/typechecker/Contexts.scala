@@ -331,16 +331,6 @@ trait Contexts { self: Analyzer =>
     private var _reportBuffer: ReportBuffer = new ReportBuffer
     /** A buffer for errors and warnings, used with `this.bufferErrors == true` */
     def reportBuffer = _reportBuffer
-    /** Discard the current report buffer, and replace with an empty one */
-    def useFreshReportBuffer() = _reportBuffer = new ReportBuffer
-    /** Discard the current report buffer, and replace with `other` */
-    def restoreReportBuffer(other: ReportBuffer) = _reportBuffer = other
-
-    /** The first error, if any, in the report buffer */
-    def firstError: Option[AbsTypeError] = reportBuffer.firstError
-    def errors: Seq[AbsTypeError] = reportBuffer.errors
-    /** Does the report buffer contain any errors? */
-    def hasErrors = reportBuffer.hasErrors
 
     def reportErrors    = this(ReportErrors)
     def bufferErrors    = this(BufferErrors)
@@ -351,25 +341,6 @@ trait Contexts { self: Analyzer =>
     private def setBufferErrors(): Unit                   = set(enable = BufferErrors, disable = ReportErrors | AmbiguousErrors)
     private def setThrowErrors(): Unit                    = this(ReportErrors | AmbiguousErrors | BufferErrors) = false
     private def setAmbiguousErrors(report: Boolean): Unit = this(AmbiguousErrors) = report
-
-    /** Append the given errors to the report buffer */
-    def updateBuffer(errors: Traversable[AbsTypeError]) = reportBuffer ++= errors
-    /** Clear all errors from the report buffer */
-    def flushBuffer() { reportBuffer.clearAllErrors() }
-    /** Return and clear all errors from the report buffer */
-    def flushAndReturnBuffer(): immutable.Seq[AbsTypeError] = {
-      val current = reportBuffer.errors
-      reportBuffer.clearAllErrors()
-      current
-    }
-
-    /** Issue and clear all warnings from the report buffer */
-    def flushAndIssueWarnings() {
-      reportBuffer.warnings foreach {
-        case (pos, msg) => reporter.warning(pos, msg)
-      }
-      reportBuffer.clearAllWarnings()
-    }
 
 
     /** Try inference twice, once without views and once with views,
@@ -1327,14 +1298,6 @@ trait Contexts { self: Analyzer =>
 
     def clearAllErrors(): this.type = {
       errorBuffer.clear()
-      this
-    }
-    def clearErrors(removeF: PartialFunction[AbsTypeError, Boolean]): this.type = {
-      errorBuffer.retain(!PartialFunction.cond(_)(removeF))
-      this
-    }
-    def retainErrors(leaveF: PartialFunction[AbsTypeError, Boolean]): this.type = {
-      errorBuffer.retain(PartialFunction.cond(_)(leaveF))
       this
     }
     def clearAllWarnings(): this.type = {
