@@ -98,7 +98,7 @@ trait Contexts { self: Analyzer =>
   }
 
 
-  def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree): Context = {
+  def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
     val rootImportsContext = (startContext /: rootImports(unit))((c, sym) => c.make(gen.mkWildcardImport(sym)))
 
     // there must be a scala.xml package when xml literals were parsed in this unit
@@ -113,16 +113,13 @@ trait Contexts { self: Analyzer =>
       else rootImportsContext.make(gen.mkImport(ScalaXmlPackage, nme.TopScope, nme.dollarScope))
 
     val c = contextWithXML.make(tree, unit = unit)
-    c.initRootContext()
+
+    c.initRootContext(throwing, checking)
     c
   }
 
-  def rootContextPostTyper(unit: CompilationUnit, tree: Tree = EmptyTree): Context = {
-    val c = rootContext(unit, tree)
-    c.initRootContextPostTyper()
-    c
-  }
-
+  def rootContextPostTyper(unit: CompilationUnit, tree: Tree = EmptyTree): Context =
+    rootContext(unit, tree, throwing = true)
 
   def resetContexts() {
     startContext.enclosingContextChain foreach { context =>
@@ -492,19 +489,13 @@ trait Contexts { self: Analyzer =>
     }
 
     /** Use reporter (possibly buffered) for errors/warnings and enable implicit conversion **/
-    def initRootContext(): Unit = {
-      setReportErrors()
-      setAmbiguousErrors(true)
-      this(EnrichmentEnabled | ImplicitsEnabled) = true
-    }
+    def initRootContext(throwing: Boolean = false, checking: Boolean = false): Unit = {
+      if (checking) this.checking = true
+      else if (throwing) setThrowErrors()
+      else setReportErrors()
 
-    /** Disable implicit conversion/enrichment, throw TypeError on error.
-     * TODO: can we phase out TypeError and uniformly rely on reporter?
-     */
-    def initRootContextPostTyper(): Unit = {
-      setThrowErrors()
-      setAmbiguousErrors(false)
-      this(EnrichmentEnabled | ImplicitsEnabled) = false
+      setAmbiguousErrors(!throwing)
+      this(EnrichmentEnabled | ImplicitsEnabled) = !throwing
     }
 
     def make(tree: Tree, owner: Symbol, scope: Scope): Context =
