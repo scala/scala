@@ -258,8 +258,6 @@ trait Contexts { self: Analyzer =>
     def macrosEnabled                         = this(MacrosEnabled)
     def enrichmentEnabled_=(value: Boolean)   = this(EnrichmentEnabled) = value
     def enrichmentEnabled                     = this(EnrichmentEnabled)
-    def checking_=(value: Boolean)            = this(Checking) = value
-    def checking                              = this(Checking)
     def retyping_=(value: Boolean)            = this(ReTyping) = value
     def retyping                              = this(ReTyping)
     def inSecondTry                           = this(SecondTry)
@@ -329,28 +327,16 @@ trait Contexts { self: Analyzer =>
     // TODO: start out with a regular reporter?
     private var _reportBuffer: ContextReporter = new ThrowingReporter
 
-    /** A buffer for errors and warnings, used with `this.bufferErrors == true` */
-    def reportBuffer = {
-      assert(
-             (bufferErrors == _reportBuffer.isInstanceOf[BufferingReporter])
-          && (throwErrors  == _reportBuffer.isInstanceOf[ThrowingReporter])
-          && (checking     == _reportBuffer.isInstanceOf[CheckingReporter])
-          && (reportErrors != (_reportBuffer.isInstanceOf[BufferingReporter]
-                               || _reportBuffer.isInstanceOf[ThrowingReporter]
-                               || _reportBuffer.isInstanceOf[CheckingReporter])),
-           s"INCONSISTENCY $contextMode != ${_reportBuffer.getClass}")
+    // the reporter for this context
+    def reportBuffer = _reportBuffer
 
-      _reportBuffer
-    }
+    // if set, errors will not be reporter/thrown
+    def bufferErrors    = reportBuffer.isBuffering
+    def reportErrors    = !bufferErrors
 
-    def reportErrors    = contextMode.inNone(ThrowErrors | BufferErrors)
-    def bufferErrors    = this(BufferErrors)
+    // whether to *report* (which is separate from buffering/throwing) ambiguity errors
     def ambiguousErrors = this(AmbiguousErrors)
-    private def throwErrors = this(ThrowErrors)
 
-    private def setReportErrors(): Unit                   = set(disable = BufferErrors | ThrowErrors)
-    private def setBufferErrors(): Unit                   = set(enable = BufferErrors, disable = ThrowErrors)
-    private def setThrowErrors(): Unit                    = set(enable = ThrowErrors, disable = BufferErrors)
     private def setAmbiguousErrors(report: Boolean): Unit = this(AmbiguousErrors) = report
 
 
@@ -366,7 +352,6 @@ trait Contexts { self: Analyzer =>
           val savedReporter = _reportBuffer
           var fallback = false
           _reportBuffer = (new BufferingReporter).sharingBuffersWith(reportBuffer)
-          setBufferErrors()
           setAmbiguousErrors(false)
           // We cache the current buffer because it is impossible to
           // distinguish errors that occurred before entering tryTwice
@@ -441,9 +426,8 @@ trait Contexts { self: Analyzer =>
     /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
       val savedReporter = _reportBuffer
-      withMode() { // withMode with no arguments to restore the mode mutated by `setBufferErrors`.
+      withMode() { // TODO: rework -- withMode with no arguments to restore the mode mutated by `setBufferErrors` (no longer mutated!)
         _reportBuffer = (new BufferingReporter).sharingBuffersWith(reportBuffer)
-        setBufferErrors()
         setAmbiguousErrors(false)
         try expr && !reportBuffer.hasErrors
         finally {
@@ -515,9 +499,9 @@ trait Contexts { self: Analyzer =>
     /** Use reporter (possibly buffered) for errors/warnings and enable implicit conversion **/
     def initRootContext(throwing: Boolean = false, checking: Boolean = false): Unit = {
       _reportBuffer =
-        if (checking) {this.checking = true ; new CheckingReporter}
-        else if (throwing) {setThrowErrors(); new ThrowingReporter}
-        else {setReportErrors() ; new ContextReporter} // TODO: this is likely redundant
+        if (checking) new CheckingReporter
+        else if (throwing) new ThrowingReporter
+        else new ContextReporter // TODO: this is likely redundant
 
       setAmbiguousErrors(!throwing)
       this(EnrichmentEnabled | ImplicitsEnabled) = !throwing
@@ -537,7 +521,6 @@ trait Contexts { self: Analyzer =>
     /** Make a child context that buffers errors and warnings into a fresh report buffer. */
     def makeSilent(reportAmbiguousErrors: Boolean = ambiguousErrors, newtree: Tree = tree): Context = {
       val c = make(newtree)
-      c.setBufferErrors()
       c.setAmbiguousErrors(reportAmbiguousErrors)
       // A fresh buffer so as not to leak errors/warnings into `this`.
       c._reportBuffer = new BufferingReporter
@@ -547,7 +530,6 @@ trait Contexts { self: Analyzer =>
     def makeNonSilent(newtree: Tree): Context = {
       val c = make(newtree)
       c._reportBuffer = (new ContextReporter).sharingBuffersWith(reportBuffer)
-      c.setReportErrors()
       c.setAmbiguousErrors(true)
       c
     }
@@ -1468,8 +1450,6 @@ object ContextMode {
   def apply(bits: Int): ContextMode = new ContextMode(bits)
   final val NOmode: ContextMode                   = 0
 
-  final val ThrowErrors: ContextMode              = 1 << 0
-  final val BufferErrors: ContextMode             = 1 << 1
   final val AmbiguousErrors: ContextMode          = 1 << 2
 
   /** Are we in a secondary constructor after the this constructor call? */
@@ -1492,8 +1472,6 @@ object ContextMode {
   /** To selectively allow enrichment in patterns, where other kinds of implicit conversions are not allowed */
   final val EnrichmentEnabled: ContextMode        = 1 << 8
 
-  /** Are we in a run of [[scala.tools.nsc.typechecker.TreeCheckers]]? */
-  final val Checking: ContextMode                 = 1 << 9
 
   /** Are we retypechecking arguments independently from the function applied to them? See `Typer.tryTypedApply`
    *  TODO - iron out distinction/overlap with SecondTry.
@@ -1530,17 +1508,14 @@ object ContextMode {
     PatternAlternative | StarPatterns | SuperInit | SecondTry | ReturnExpr | TypeConstructorAllowed
   )
 
-  final val DefaultMode: ContextMode      = MacrosEnabled | ThrowErrors
+  final val DefaultMode: ContextMode = MacrosEnabled
 
   private val contextModeNameMap = Map(
-    ThrowErrors            -> "ReportErrors",
-    BufferErrors           -> "BufferErrors",
     AmbiguousErrors        -> "AmbiguousErrors",
     ConstructorSuffix      -> "ConstructorSuffix",
     SelfSuperCall          -> "SelfSuperCall",
     ImplicitsEnabled       -> "ImplicitsEnabled",
     MacrosEnabled          -> "MacrosEnabled",
-    Checking               -> "Checking",
     ReTyping               -> "ReTyping",
     PatternAlternative     -> "PatternAlternative",
     StarPatterns           -> "StarPatterns",
