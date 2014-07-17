@@ -345,12 +345,12 @@ trait Contexts { self: Analyzer =>
     def reportErrors    = this(ReportErrors)
     def bufferErrors    = this(BufferErrors)
     def ambiguousErrors = this(AmbiguousErrors)
-    def throwErrors     = contextMode.inNone(ReportErrors | BufferErrors)
+    private def throwErrors = contextMode.inNone(ReportErrors | BufferErrors)
 
-    def setReportErrors(): Unit                   = set(enable = ReportErrors | AmbiguousErrors, disable = BufferErrors)
-    def setBufferErrors(): Unit                   = set(enable = BufferErrors, disable = ReportErrors | AmbiguousErrors)
-    def setThrowErrors(): Unit                    = this(ReportErrors | AmbiguousErrors | BufferErrors) = false
-    def setAmbiguousErrors(report: Boolean): Unit = this(AmbiguousErrors) = report
+    private def setReportErrors(): Unit                   = set(enable = ReportErrors | AmbiguousErrors, disable = BufferErrors)
+    private def setBufferErrors(): Unit                   = set(enable = BufferErrors, disable = ReportErrors | AmbiguousErrors)
+    private def setThrowErrors(): Unit                    = this(ReportErrors | AmbiguousErrors | BufferErrors) = false
+    private def setAmbiguousErrors(report: Boolean): Unit = this(AmbiguousErrors) = report
 
     /** Append the given errors to the report buffer */
     def updateBuffer(errors: Traversable[AbsTypeError]) = reportBuffer ++= errors
