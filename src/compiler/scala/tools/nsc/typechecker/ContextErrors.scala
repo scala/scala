@@ -27,6 +27,16 @@ trait ContextErrors {
     override def toString() = "[Type error at:" + errPos + "] " + errMsg
   }
 
+  abstract class AbsAmbiguousTypeError extends AbsTypeError
+
+  case class AmbiguousTypeError(errPos: Position, errMsg: String)
+    extends AbsAmbiguousTypeError
+
+  case class AmbiguousImplicitTypeError(underlyingTree: Tree, errMsg: String)
+    extends AbsAmbiguousTypeError {
+    def errPos = underlyingTree.pos
+  }
+
   sealed abstract class TreeTypeError extends AbsTypeError {
     def underlyingTree: Tree
     def errPos = underlyingTree.pos
@@ -37,9 +47,6 @@ trait ContextErrors {
 
   case class AccessTypeError(underlyingTree: Tree, errMsg: String)
     extends TreeTypeError
-
-  case class AmbiguousTypeError(errPos: Position, errMsg: String)
-    extends AbsTypeError
 
   case class SymbolTypeError(underlyingSym: Symbol, errMsg: String)
     extends AbsTypeError {
@@ -75,8 +82,6 @@ trait ContextErrors {
       s"diverging implicit expansion for type ${pt}\nstarting with ${sym.fullLocationString}"
   }
 
-  case class AmbiguousImplicitTypeError(underlyingTree: Tree, errMsg: String)
-    extends TreeTypeError
 
   case class PosAndMsgTypeError(errPos: Position, errMsg: String)
     extends AbsTypeError
