@@ -604,11 +604,6 @@ trait Contexts { self: Analyzer =>
     /** Issue/buffer/throw the given implicit ambiguity error according to the current mode for error reporting. */
     private[typechecker] def issueAmbiguousError(err: AbsTypeError) = issueCommon(err, ambiguousErrors)
 
-    /** Issue/throw the given `err` according to the current mode for error reporting. */
-    def error(pos: Position, err: Throwable) =
-      if (reportErrors) unitError(pos, addDiagString(err.getMessage()))
-      else throw err
-
     /** Issue/throw the given error message according to the current mode for error reporting. */
     def error(pos: Position, msg: String) = {
       val msg1 = addDiagString(msg)

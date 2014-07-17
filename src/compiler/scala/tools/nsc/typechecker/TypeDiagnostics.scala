@@ -629,7 +629,7 @@ trait TypeDiagnostics {
               throw new FatalError("cannot redefine root "+sym)
           }
         case _ =>
-          context0.error(ex.pos, ex)
+          context0.error(ex.pos, ex.msg)
       }
     }
   }
