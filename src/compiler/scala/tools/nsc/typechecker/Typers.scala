@@ -155,7 +155,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else {
             mkArg = gen.mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
             if (!param.hasDefault && !paramFailed) {
-              context.reportBuffer.reportFirstDivergentError(fun, param, paramTp)(context)
+              context.reporter.reportFirstDivergentError(fun, param, paramTp)(context)
               paramFailed = true
             }
             /* else {
@@ -466,20 +466,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     @inline
     final def typerWithLocalContext[T](c: Context)(f: Typer => T): T = {
       val res = f(newTyper(c))
-      val errors = c.reportBuffer.errors
+      val errors = c.reporter.errors
       if (errors.nonEmpty) {
-        c.reportBuffer.clearAllErrors()
-        context.reportBuffer ++= errors
+        c.reporter.clearAllErrors()
+        context.reporter ++= errors
       }
       res
     }
 
     @inline
     final def withSavedContext[T](c: Context)(f: => T) = {
-      val savedErrors = c.reportBuffer.errors
-      c.reportBuffer.clearAllErrors()
+      val savedErrors = c.reporter.errors
+      c.reporter.clearAllErrors()
       val res = f
-      c.reportBuffer ++= savedErrors
+      c.reporter ++= savedErrors
       res
     }
 
@@ -687,23 +687,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           context.undetparams = context1.undetparams
           context.savedTypeBounds = context1.savedTypeBounds
           context.namedApplyBlockInfo = context1.namedApplyBlockInfo
-          if (context1.reportBuffer.hasErrors) {
+          if (context1.reporter.hasErrors) {
             stopStats()
-            SilentTypeError(context1.reportBuffer.errors: _*)
+            SilentTypeError(context1.reporter.errors: _*)
           } else {
             // If we have a successful result, emit any warnings it created.
-            context1.reportBuffer.warnings foreach {
+            context1.reporter.warnings foreach {
               case (pos, msg) => reporter.warning(pos, msg)
             }
-            context1.reportBuffer.clearAllWarnings()
+            context1.reporter.clearAllWarnings()
             SilentResultValue(result)
           }
         } else {
           assert(context.bufferErrors || isPastTyper, "silent mode is not available past typer")
           withSavedContext(context){
             val res = op(this)
-            val errorsToReport = context.reportBuffer.errors
-            context.reportBuffer.clearAllErrors()
+            val errorsToReport = context.reporter.errors
+            context.reporter.clearAllErrors()
             if (errorsToReport.isEmpty) SilentResultValue(res) else SilentTypeError(errorsToReport.head)
           }
         }
@@ -810,14 +810,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         // avoid throwing spurious DivergentImplicit errors
-        if (context.reportBuffer.hasErrors)
+        if (context.reporter.hasErrors)
           setError(tree)
         else
           withCondConstrTyper(treeInfo.isSelfOrSuperConstrCall(tree))(typer1 =>
             if (original != EmptyTree && pt != WildcardType) (
               typer1 silent { tpr =>
                 val withImplicitArgs = tpr.applyImplicitArgs(tree)
-                if (tpr.context.reportBuffer.hasErrors) tree // silent will wrap it in SilentTypeError anyway
+                if (tpr.context.reporter.hasErrors) tree // silent will wrap it in SilentTypeError anyway
                 else tpr.typed(withImplicitArgs, mode, pt)
               }
               orElse { _ =>
@@ -1051,7 +1051,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val silentContext = context.makeImplicit(context.ambiguousErrors)
                 val res = newTyper(silentContext).typed(
                   new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
-                silentContext.reportBuffer.firstError match {
+                silentContext.reporter.firstError match {
                   case Some(err) => context.issue(err)
                   case None      => return res
                 }
@@ -3223,7 +3223,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   (arg1, arg1.tpe.deconst)
               }.unzip
             }
-            if (context.reportBuffer.hasErrors)
+            if (context.reporter.hasErrors)
               setError(tree)
             else {
               inferMethodAlternative(fun, undetparams, argTpes, pt)
@@ -4324,7 +4324,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         c.retyping = true
         try {
           val res = newTyper(c).typedArgs(args, mode)
-          if (c.reportBuffer.hasErrors) None else Some(res)
+          if (c.reporter.hasErrors) None else Some(res)
         } catch {
           case ex: CyclicReference =>
             throw ex

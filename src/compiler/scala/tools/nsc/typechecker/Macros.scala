@@ -622,7 +622,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
           // therefore we need to re-enable the conversions back temporarily
           val result = typer.context.withImplicitsEnabled(typer.typed(tree, mode, pt))
-          if (result.isErrorTyped && macroDebugVerbose) println(s"$label has failed: ${typer.context.reportBuffer.errors}")
+          if (result.isErrorTyped && macroDebugVerbose) println(s"$label has failed: ${typer.context.reporter.errors}")
           result
         }
       }

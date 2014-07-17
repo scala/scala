@@ -128,7 +128,7 @@ trait Contexts { self: Analyzer =>
         case Import(qual, _) => qual setType singleType(qual.symbol.owner.thisType, qual.symbol)
         case _               =>
       }
-      context.reportBuffer.clearAll()
+      context.reporter.clearAll()
     }
   }
 
@@ -324,14 +324,13 @@ trait Contexts { self: Analyzer =>
     // Error reporting policies and buffer.
     //
 
-    // TODO: start out with a regular reporter?
-    private var _reportBuffer: ContextReporter = new ThrowingReporter
+    private var _reporter: ContextReporter = new ThrowingReporter
 
     // the reporter for this context
-    def reportBuffer = _reportBuffer
+    def reporter = _reporter
 
     // if set, errors will not be reporter/thrown
-    def bufferErrors    = reportBuffer.isBuffering
+    def bufferErrors    = reporter.isBuffering
     def reportErrors    = !bufferErrors
 
     // whether to *report* (which is separate from buffering/throwing) ambiguity errors
@@ -349,9 +348,9 @@ trait Contexts { self: Analyzer =>
       def apply(): Unit =
         if (implicitsEnabled) {
           val savedContextMode = contextMode
-          val savedReporter = _reportBuffer
+          val savedReporter = _reporter
           var fallback = false
-          _reportBuffer = (new BufferingReporter).sharingBuffersWith(reportBuffer)
+          _reporter = (new BufferingReporter).sharingBuffersWith(reporter)
           setAmbiguousErrors(false)
           // We cache the current buffer because it is impossible to
           // distinguish errors that occurred before entering tryTwice
@@ -359,27 +358,27 @@ trait Contexts { self: Analyzer =>
           // first attempt fails we try with implicits on *and* clean
           // buffer but that would also flush any pre-tryTwice valid
           // errors, hence some manual buffer tweaking is necessary.
-          val errorsToRestore = reportBuffer.errors
-          reportBuffer.clearAllErrors()
+          val errorsToRestore = reporter.errors
+          reporter.clearAllErrors()
           try {
             withImplicitsDisabled(tryOnce(false))
-            if (reportBuffer.hasErrors) {
+            if (reporter.hasErrors) {
               fallback = true
               contextMode = savedContextMode
-              _reportBuffer = savedReporter
-              reportBuffer.clearAllErrors()
+              _reporter = savedReporter
+              reporter.clearAllErrors()
               tryOnce(true)
             }
           } catch {
             case ex: CyclicReference  => throw ex
             case ex: TypeError        => // recoverable cyclic references
               contextMode = savedContextMode
-              _reportBuffer = savedReporter
+              _reporter = savedReporter
               if (!fallback) tryOnce(true) else ()
           } finally {
             contextMode = savedContextMode
-            _reportBuffer = savedReporter
-            reportBuffer ++= errorsToRestore
+            _reporter = savedReporter
+            reporter ++= errorsToRestore
           }
         }
         else tryOnce(true)
@@ -425,14 +424,14 @@ trait Contexts { self: Analyzer =>
 
     /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
-      val savedReporter = _reportBuffer
+      val savedReporter = _reporter
       withMode() { // TODO: rework -- withMode with no arguments to restore the mode mutated by `setBufferErrors` (no longer mutated!)
-        _reportBuffer = (new BufferingReporter).sharingBuffersWith(reportBuffer)
+        _reporter = (new BufferingReporter).sharingBuffersWith(reporter)
         setAmbiguousErrors(false)
-        try expr && !reportBuffer.hasErrors
+        try expr && !reporter.hasErrors
         finally {
-          _reportBuffer = savedReporter
-          _reportBuffer.clearAll() // TODO: ???
+          _reporter = savedReporter
+          _reporter.clearAll() // TODO: ???
         }
       }
     }
@@ -481,7 +480,7 @@ trait Contexts { self: Analyzer =>
       c.diagUsedDefaults   = diagUsedDefaults
       c.openImplicits      = openImplicits
       c.contextMode        = contextMode // note: ConstructorSuffix, a bit within `mode`, is conditionally overwritten below.
-      c._reportBuffer      = _reportBuffer
+      c._reporter          = reporter
 
       // Fields that may take on a different value in the child
       c.prefix             = prefixInChild
@@ -498,7 +497,7 @@ trait Contexts { self: Analyzer =>
 
     /** Use reporter (possibly buffered) for errors/warnings and enable implicit conversion **/
     def initRootContext(throwing: Boolean = false, checking: Boolean = false): Unit = {
-      _reportBuffer =
+      _reporter =
         if (checking) new CheckingReporter
         else if (throwing) new ThrowingReporter
         else new ContextReporter // TODO: this is likely redundant
@@ -523,13 +522,13 @@ trait Contexts { self: Analyzer =>
       val c = make(newtree)
       c.setAmbiguousErrors(reportAmbiguousErrors)
       // A fresh buffer so as not to leak errors/warnings into `this`.
-      c._reportBuffer = new BufferingReporter
+      c._reporter = new BufferingReporter
       c
     }
 
     def makeNonSilent(newtree: Tree): Context = {
       val c = make(newtree)
-      c._reportBuffer = (new ContextReporter).sharingBuffersWith(reportBuffer)
+      c._reporter = (new ContextReporter).sharingBuffersWith(reporter)
       c.setAmbiguousErrors(true)
       c
     }
@@ -555,7 +554,7 @@ trait Contexts { self: Analyzer =>
       val baseContext = enclClass.outer.nextEnclosing(!_.tree.isInstanceOf[Template])
       val argContext = baseContext.makeNewScope(tree, owner)
       argContext.contextMode = contextMode
-      argContext._reportBuffer = _reportBuffer // caught by neg/t3649 TODO: make sure _reportBuffer is propagated wherever contextMode is
+      argContext._reporter = _reporter // caught by neg/t3649 TODO: make sure _reporter is propagated wherever contextMode is
       argContext.inSelfSuperCall = true
       def enterElems(c: Context) {
         def enterLocalElems(e: ScopeEntry) {
@@ -580,14 +579,14 @@ trait Contexts { self: Analyzer =>
     //
 
     /** Issue/buffer/throw the given type error according to the current mode for error reporting. */
-    private[typechecker] def issue(err: AbsTypeError)                        = reportBuffer.issue(err)(this)
+    private[typechecker] def issue(err: AbsTypeError)                        = reporter.issue(err)(this)
     /** Issue/buffer/throw the given implicit ambiguity error according to the current mode for error reporting. */
-    private[typechecker] def issueAmbiguousError(err: AbsAmbiguousTypeError) = reportBuffer.issueAmbiguousError(err)(this)
+    private[typechecker] def issueAmbiguousError(err: AbsAmbiguousTypeError) = reporter.issueAmbiguousError(err)(this)
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def error(pos: Position, msg: String)                                    = reportBuffer.error(pos, msg)
+    def error(pos: Position, msg: String)                                    = reporter.error(pos, msg)
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def warning(pos: Position, msg: String)                                  = reportBuffer.warning(pos, msg)
-    def echo(pos: Position, msg: String)                                     = reportBuffer.echo(pos, msg)
+    def warning(pos: Position, msg: String)                                  = reporter.warning(pos, msg)
+    def echo(pos: Position, msg: String)                                     = reporter.echo(pos, msg)
 
 
     def deprecationWarning(pos: Position, sym: Symbol, msg: String): Unit =
