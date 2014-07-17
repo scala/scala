@@ -1276,19 +1276,20 @@ trait Implicits {
         if (tagInScope.isEmpty) mot(tp, Nil, Nil)
         else {
           if (ReflectRuntimeUniverse == NoSymbol) {
-            // todo. write a test for this
-            context.error(pos,
+            // TODO: write a test for this (the next error message is already checked by neg/interop_typetags_without_classtags_arenot_manifests.scala)
+            // TODO: this was using context.error, and implicit search always runs in silent mode, thus it was actually throwing a TypeError
+            // with the new strategy-based reporting, a BufferingReporter buffers instead of throwing
+            // it would be good to rework this logic to fit into the regular context.error mechanism
+            throw new TypeError(pos,
               sm"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
                   |however typetag -> manifest conversion requires Scala reflection, which is not present on the classpath.
                   |to proceed put scala-reflect.jar on your compilation classpath and recompile.""")
-            return SearchFailure
           }
           if (resolveClassTag(pos, tp, allowMaterialization = true) == EmptyTree) {
-            context.error(pos,
+            throw new TypeError(pos,
               sm"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
                   |however typetag -> manifest conversion requires a class tag for the corresponding type to be present.
                   |to proceed add a class tag to the type `$tp` (e.g. by introducing a context bound) and recompile.""")
-            return SearchFailure
           }
           val cm = typed(Ident(ReflectRuntimeCurrentMirror))
           val internal = gen.mkAttributedSelect(gen.mkAttributedRef(ReflectRuntimeUniverse), UniverseInternal)
