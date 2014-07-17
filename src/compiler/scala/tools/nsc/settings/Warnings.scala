@@ -108,14 +108,19 @@ trait Warnings {
   // The Xlint warning group.
   private val xlint = new BooleanSetting("-Zunused", "True if -Xlint or -Xlint:_")
   // On -Xlint or -Xlint:_, set xlint, otherwise set the lint warning unless already set true
-  val lint =
-    MultiChoiceSetting(
+  val lint = {
+    val d = "Enable or disable specific warnings"
+    val s = new MultiChoiceSetting(
       name    = "-Xlint",
-      helpArg = "warning",
-      descr   = "Enable recommended additional warnings",
+      arg     = "warning",
+      descr   = d,
       choices = (lintWarnings map (_.name)).sorted,
       default = () => xlint.value = true
-    ) withPostSetHook { x =>
+    ) {
+      def helpline(n: String) = lintWarnings.find(_.name == n).map(w => f"  ${w.name}%-25s ${w.helpDescription}%n")
+      override def help = s"$d${ choices flatMap (helpline(_)) mkString (":\n", "", "\n") }"
+    }
+    val t = s withPostSetHook { x =>
       val Neg = "-"
       def setPolitely(b: BooleanSetting, v: Boolean) = if (!b.isSetByUser || !b) b.value = v
       def set(w: String, v: Boolean) = lintWarnings find (_.name == w) foreach (setPolitely(_, v))
@@ -125,6 +130,9 @@ trait Warnings {
       }
       propagate(x.value)
     }
+    add(t)
+    t
+  }
 
   // Lint warnings that are currently -Y, but deprecated in that usage
   @deprecated("Use warnAdaptedArgs", since="2.11.2")

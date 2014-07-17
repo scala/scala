@@ -201,7 +201,7 @@ class MutableSettings(val errorFn: String => Unit)
     }
 
   // a wrapper for all Setting creators to keep our list up to date
-  private def add[T <: Setting](s: T): T = {
+  private[nsc] def add[T <: Setting](s: T): T = {
     allSettings += s
     s
   }
@@ -552,7 +552,7 @@ class MutableSettings(val errorFn: String => Unit)
   }
 
   /** A setting that receives any combination of enumerated values,
-   *  including "_" to mean all values.
+   *  including "_" to mean all values and "help" for verbose info.
    *  In non-colonated mode, stops consuming args at the first
    *  non-value, instead of at the next option, as for a multi-string.
    */
@@ -562,16 +562,18 @@ class MutableSettings(val errorFn: String => Unit)
     descr: String,
     override val choices: List[String],
     val default: () => Unit
-  ) extends MultiStringSetting(name, arg, s"$descr${ choices.mkString(": ", ",", ".") }") {
+  ) extends MultiStringSetting(name, s"_,$arg,-$arg", s"$descr: `_' for all, `$name:help' to list") {
 
-    def badChoice(s: String, n: String) = errorFn(s"'$s' is not a valid choice for '$name'")
-    def choosing = choices.nonEmpty
-    def isChoice(s: String) = (s == "_") || (choices contains (s stripPrefix "-"))
+    private def badChoice(s: String, n: String) = errorFn(s"'$s' is not a valid choice for '$name'")
+    private def choosing = choices.nonEmpty
+    private def isChoice(s: String) = (s == "_") || (choices contains (s stripPrefix "-"))
+    private var sawHelp = false
 
     override protected def tts(args: List[String], halting: Boolean) = {
       val added = collection.mutable.ListBuffer.empty[String]
       def tryArg(arg: String) = arg match {
         case "_" if choosing               => default()
+        case "help" if choosing            => sawHelp = true
         case s if !choosing || isChoice(s) => added += s
         case s                             => badChoice(s, name)
       }
@@ -586,6 +588,9 @@ class MutableSettings(val errorFn: String => Unit)
       else value = added.toList                   // update all new settings at once
       Some(rest)
     }
+
+    def isHelping: Boolean = sawHelp
+    def help: String = s"$descr${ choices.mkString(":\n", "    \n", "\n") }"
   }
 
   /** A setting that accumulates all strings supplied to it,

@@ -44,8 +44,11 @@ trait ScalaSettings extends AbsScalaSettings
   /** If any of these settings is enabled, the compiler should print a message and exit.  */
   def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
 
+  /** Any -multichoice:help? Nicer if any option could report that it had help to offer. */
+  private def multihelp = allSettings exists { case s: MultiChoiceSetting => s.isHelping case _ => false }
+
   /** Is an info setting set? */
-  def isInfo = infoSettings exists (_.isSetByUser)
+  def isInfo = (infoSettings exists (_.isSetByUser)) || multihelp
 
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
@@ -68,7 +71,7 @@ trait ScalaSettings extends AbsScalaSettings
   // The two requirements: delay error checking until you have symbols, and let compiler command build option-specific help.
   val language      = {
     val features = List("dynamics", "postfixOps", "reflectiveCalls", "implicitConversions", "higherKinds", "existentials", "experimental.macros")
-    MultiChoiceSetting("-language", "feature", "Enable one or more language features", features)
+    MultiChoiceSetting("-language", "feature", "Enable or disable language features", features)
   }
 
   /*
