@@ -107,7 +107,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     else {
       val sb = new StringBuilder
       allSettings foreach {
-        case s: MultiChoiceSetting if s.isHelping => sb append s.help append "\n"
+        case s: MultiChoiceSetting if s.isHelping => sb append s.help
         case _ =>
       }
       sb.toString

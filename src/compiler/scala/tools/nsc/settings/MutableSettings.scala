@@ -201,7 +201,7 @@ class MutableSettings(val errorFn: String => Unit)
     }
 
   // a wrapper for all Setting creators to keep our list up to date
-  private[nsc] def add[T <: Setting](s: T): T = {
+  private def add[T <: Setting](s: T): T = {
     allSettings += s
     s
   }
@@ -211,8 +211,10 @@ class MutableSettings(val errorFn: String => Unit)
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
-  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: () => Unit = () => ()) =
-    add(new MultiChoiceSetting(name, helpArg, descr, choices, default))
+  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: () => Unit = () => ())(
+      helper: MultiChoiceSetting => String = _ => choices.mkString(f"$descr:%n", f"%n  ", f"%n")
+  ) =
+    add(new MultiChoiceSetting(name, helpArg, descr, choices, default, helper))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
@@ -561,7 +563,8 @@ class MutableSettings(val errorFn: String => Unit)
     arg: String,
     descr: String,
     override val choices: List[String],
-    val default: () => Unit
+    val default: () => Unit,
+    helper: MultiChoiceSetting => String
   ) extends MultiStringSetting(name, s"_,$arg,-$arg", s"$descr: `_' for all, `$name:help' to list") {
 
     private def badChoice(s: String, n: String) = errorFn(s"'$s' is not a valid choice for '$name'")
@@ -590,7 +593,7 @@ class MutableSettings(val errorFn: String => Unit)
     }
 
     def isHelping: Boolean = sawHelp
-    def help: String = s"$descr${ choices.mkString(":\n", "    \n", "\n") }"
+    def help: String = helper(this)
   }
 
   /** A setting that accumulates all strings supplied to it,
