@@ -127,7 +127,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
     def checkNonCyclic(pos: Position, seen: Set[Symbol], clazz: Symbol): Unit =
       if (seen contains clazz)
-        unit.error(pos, "value class may not unbox to itself")
+        reporter.error(pos, "value class may not unbox to itself")
       else {
         val unboxed = definitions.underlyingOfValueClass(clazz).typeSymbol
         if (unboxed.isDerivedValueClass) checkNonCyclic(pos, seen + clazz, unboxed)

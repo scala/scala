@@ -38,7 +38,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
       outputDirectory(csym)
     } catch {
       case ex: Throwable =>
-        cunit.error(cunit.body.pos, s"Couldn't create file for class $cName\n${ex.getMessage}")
+        reporter.error(cunit.body.pos, s"Couldn't create file for class $cName\n${ex.getMessage}")
         null
     }
   }
@@ -141,7 +141,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
      */
     def apply(sym: Symbol, csymCompUnit: CompilationUnit): Boolean = {
       def fail(msg: String, pos: Position = sym.pos) = {
-        csymCompUnit.warning(sym.pos,
+        reporter.warning(sym.pos,
           sym.name +
           s" has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.\n  Reason: $msg"
           // TODO: make this next claim true, if possible

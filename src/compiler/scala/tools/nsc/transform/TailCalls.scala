@@ -96,7 +96,7 @@ abstract class TailCalls extends Transform {
       val failReason  = failReasons(ctx)
       val failPos     = failPositions(ctx)
 
-      unit.error(failPos, s"could not optimize @tailrec annotated $method: $failReason")
+      reporter.error(failPos, s"could not optimize @tailrec annotated $method: $failReason")
     }
 
     /** Has the label been accessed? Then its symbol is in this set. */
@@ -268,14 +268,14 @@ abstract class TailCalls extends Transform {
       tree match {
         case ValDef(_, _, _, _) =>
           if (tree.symbol.isLazy && tree.symbol.hasAnnotation(TailrecClass))
-            unit.error(tree.pos, "lazy vals are not tailcall transformed")
+            reporter.error(tree.pos, "lazy vals are not tailcall transformed")
 
           super.transform(tree)
 
         case dd @ DefDef(_, name, _, vparamss0, _, rhs0) if isEligible(dd) =>
           val newCtx = new DefDefTailContext(dd)
           if (newCtx.isMandatory && !(newCtx containsRecursiveCall rhs0))
-            unit.error(tree.pos, "@tailrec annotated method contains no recursive calls")
+            reporter.error(tree.pos, "@tailrec annotated method contains no recursive calls")
 
           debuglog(s"Considering $name for tailcalls, with labels in tailpos: ${newCtx.tailLabels}")
           val newRHS = transform(rhs0, newCtx)

@@ -69,7 +69,7 @@ abstract class Pickler extends SubComponent {
             // OPT: do this only as a recovery after fatal error. Checking in advance was expensive.
             if (t.isErroneous) {
               if (settings.debug) e.printStackTrace()
-              unit.error(t.pos, "erroneous or inaccessible type")
+              reporter.error(t.pos, "erroneous or inaccessible type")
               return
             }
           }
@@ -186,7 +186,16 @@ abstract class Pickler extends SubComponent {
             val (locals, globals) = sym.children partition (_.isLocalClass)
             val children =
               if (locals.isEmpty) globals
-              else globals + sym.newClassWithInfo(tpnme.LOCAL_CHILD, List(sym.tpe), EmptyScope, pos = sym.pos)
+              else {
+                // The LOCAL_CHILD was introduced in 12a2b3b to fix Aladdin bug 1055. When a sealed
+                // class/trait has local subclasses, a single <local child> class symbol is added
+                // as pickled child (instead of a reference to the anonymous class; that was done
+                // initially, but seems not to work, as the bug shows).
+                // Adding the LOCAL_CHILD is necessary to retain exhaustivity warnings under separate
+                // compilation. See test neg/aladdin1055.
+                val parents = (if (sym.isTrait) List(definitions.ObjectTpe) else Nil) ::: List(sym.tpe)
+                globals + sym.newClassWithInfo(tpnme.LOCAL_CHILD, parents, EmptyScope, pos = sym.pos)
+              }
 
             putChildren(sym, children.toList sortBy (_.sealedSortName))
           }

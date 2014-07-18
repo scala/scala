@@ -87,7 +87,7 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
 }
 
 /** $factoryInfo
- *  The current default implementation of a $Coll is a `Vector`.
+ *  The current default implementation of a $Coll is a `List`.
  */
 object Traversable extends TraversableFactory[Traversable] { self =>
 

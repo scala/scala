@@ -182,7 +182,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
             // in other words: what's on the stack MUST conform to what's in the THROW(..)!
 
             if (!canReplaceHandler) {
-              currentClass.cunit.warning(NoPosition, "Unable to inline the exception handler inside incorrect" +
+              reporter.warning(NoPosition, "Unable to inline the exception handler inside incorrect" +
                 " block:\n" + bblock.iterator.mkString("\n") + "\nwith stack: " + typeInfo + " just " +
                 "before instruction index " + index)
             }
@@ -383,7 +383,7 @@ abstract class InlineExceptionHandlers extends SubComponent {
           Some((exceptionLocal, copy))
 
         case _ =>
-          currentClass.cunit.warning(NoPosition, "Unable to inline the exception handler due to incorrect format:\n" +
+          reporter.warning(NoPosition, "Unable to inline the exception handler due to incorrect format:\n" +
             handler.iterator.mkString("\n"))
           None
       }

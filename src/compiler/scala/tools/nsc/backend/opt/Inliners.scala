@@ -195,7 +195,7 @@ abstract class Inliners extends SubComponent {
 
     /** The current iclass */
     private var currentIClazz: IClass = _
-    private def warn(pos: Position, msg: String) = currentIClazz.cunit.inlinerWarning(pos, msg)
+    private def warn(pos: Position, msg: String) = currentRun.reporting.inlinerWarning(pos, msg)
 
     private def ownedName(sym: Symbol): String = exitingUncurry {
       val count = (

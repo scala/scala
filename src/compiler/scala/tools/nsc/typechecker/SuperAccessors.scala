@@ -12,21 +12,47 @@ import scala.collection.{ mutable, immutable }
 import mutable.ListBuffer
 import symtab.Flags._
 
-/** This phase adds super accessors for all super calls that either
- *  appear in a trait or have as a target a member of some outer class.
- *  It also replaces references to parameter accessors with aliases
- *  by super references to these aliases. The phase also checks that
- *  symbols accessed from super are not abstract, or are overridden by
- *  an abstract override. Finally, the phase also mangles the names
- *  of class-members which are private up to an enclosing non-package
- *  class, in order to avoid overriding conflicts.
+/** This phase performs the following functions, each of which could be split out in a
+ *  mini-phase:
  *
- *  This phase also sets SPECIALIZED flag on type parameters with
+ *  (1) Adds super accessors for all super calls that either
+ *  appear in a trait or have as a target a member of some outer class.
+ *
+ *  (2) Converts references to parameter fields that have the same name as a corresponding
+ *  public parameter field in a superclass to a reference to the superclass
+ *  field (corresponding = super class field is initialized with subclass field).
+ *  This info is pre-computed by the `alias` field in Typer. `dotc` follows a different
+ *  route; it computes everything in SuperAccessors and changes the subclass field
+ *  to a forwarder instead of manipulating references. This is more modular.
+ *
+ *  (3) Adds protected accessors if the access to the protected member happens
+ *  in a class which is not a subclass of the member's owner.
+ *
+ *  (4) Mangles the names of class-members which are
+ *  private up to an enclosing non-package class, in order to avoid overriding conflicts.
+ *  This is a dubious, and it would be better to deprecate class-qualified privates.
+ *
+ *  (5) This phase also sets SPECIALIZED flag on type parameters with
  *  `@specialized` annotation. We put this logic here because the
  *  flag must be set before pickling.
  *
- *  @author  Martin Odersky
- *  @version 1.0
+ *  It also checks that:
+ *
+ *  (1) Symbols accessed from super are not abstract, or are overridden by
+ *  an abstract override.
+ *
+ *  (2) If a symbol accessed accessed from super is defined in a real class (not a trait),
+ *  there are no abstract members which override this member in Java's rules
+ *  (see SI-4989; such an access would lead to illegal bytecode)
+ *
+ *  (3) Super calls do not go to some synthetic members of Any (see isDisallowed)
+ *
+ *  (4) Super calls do not go to synthetic field accessors
+ *
+ *  (5) A class and its companion object do not both define a class or module with the
+ *  same name.
+ *
+ *  TODO: Rename phase to "Accessors" because it handles more than just super accessors
  */
 abstract class SuperAccessors extends transform.Transform with transform.TypingTransformers {
   import global._
@@ -98,7 +124,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           if (other == NoSymbol)
             other = linked.info.decl(sym.name.toTermName).filter(_.isModule)
           if (other != NoSymbol)
-            unit.error(sym.pos, "name clash: "+sym.owner+" defines "+sym+
+            reporter.error(sym.pos, "name clash: "+sym.owner+" defines "+sym+
                        "\nand its companion "+sym.owner.companionModule+" also defines "+
                        other)
         }
@@ -113,14 +139,14 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         val member = sym.overridingSymbol(clazz)
         if (mix != tpnme.EMPTY || member == NoSymbol ||
             !(member.isAbstractOverride && member.isIncompleteIn(clazz)))
-          unit.error(sel.pos, ""+sym.fullLocationString+" is accessed from super. It may not be abstract "+
+          reporter.error(sel.pos, ""+sym.fullLocationString+" is accessed from super. It may not be abstract "+
                                "unless it is overridden by a member declared `abstract' and `override'")
       } else if (mix == tpnme.EMPTY && !sym.owner.isTrait){
         // SI-4989 Check if an intermediate class between `clazz` and `sym.owner` redeclares the method as abstract.
         val intermediateClasses = clazz.info.baseClasses.tail.takeWhile(_ != sym.owner)
         intermediateClasses.map(sym.overridingSymbol).find(s => s.isDeferred && !s.isAbstractOverride && !s.owner.isTrait).foreach {
           absSym =>
-            unit.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from ${clazz} because ${absSym.owner} redeclares it as abstract")
+            reporter.error(sel.pos, s"${sym.fullLocationString} cannot be directly accessed from ${clazz} because ${absSym.owner} redeclares it as abstract")
         }
       }
 
@@ -226,7 +252,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                   qual.symbol.ancestors foreach { parent =>
                     parent.info.decls filterNot (x => x.isPrivate || x.isLocalToThis) foreach { m2 =>
                       if (sym.name == m2.name && m2.isGetter && m2.accessed.isMutable) {
-                        unit.warning(sel.pos,
+                        reporter.warning(sel.pos,
                           sym.accessString + " " + sym.fullLocationString + " shadows mutable " + m2.name
                             + " inherited from " + m2.owner + ".  Changes to " + m2.name + " will not be visible within "
                             + sym.owner + " - you may want to give them distinct names.")
@@ -284,9 +310,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             case Super(_, mix) =>
               if (sym.isValue && !sym.isMethod || sym.hasAccessorFlag) {
                 if (!settings.overrideVars)
-                  unit.error(tree.pos, "super may be not be used on " + sym.accessedOrSelf)
+                  reporter.error(tree.pos, "super may be not be used on " + sym.accessedOrSelf)
               } else if (isDisallowed(sym)) {
-                unit.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")
+                reporter.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")
               }
               transformSuperSelect(sel)
 

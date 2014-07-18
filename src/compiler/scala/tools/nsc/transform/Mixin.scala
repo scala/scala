@@ -336,7 +336,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
           rebindSuper(clazz, mixinMember.alias, mixinClass) match {
             case NoSymbol =>
-              unit.error(clazz.pos, "Member %s of mixin %s is missing a concrete super implementation.".format(
+              reporter.error(clazz.pos, "Member %s of mixin %s is missing a concrete super implementation.".format(
                 mixinMember.alias, mixinClass))
             case alias1 =>
               superAccessor.asInstanceOf[TermSymbol] setAlias alias1

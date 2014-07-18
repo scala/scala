@@ -300,27 +300,33 @@ object UnrolledBuffer extends ClassTagTraversableFactory[UnrolledBuffer] {
       if (next eq null) true else false // checks if last node was thrown out
     } else false
 
-    @tailrec final def insertAll(idx: Int, t: scala.collection.Traversable[T], buffer: UnrolledBuffer[T]): Unit = if (idx < size) {
-      // divide this node at the appropriate position and insert all into head
-      // update new next
-      val newnextnode = new Unrolled[T](0, new Array(array.length), null, buff)
-      Array.copy(array, idx, newnextnode.array, 0, size - idx)
-      newnextnode.size = size - idx
-      newnextnode.next = next
+    @tailrec final def insertAll(idx: Int, t: scala.collection.Traversable[T], buffer: UnrolledBuffer[T]): Unit = {
+      if (idx < size) {
+	// divide this node at the appropriate position and insert all into head
+	// update new next
+	val newnextnode = new Unrolled[T](0, new Array(array.length), null, buff)
+	Array.copy(array, idx, newnextnode.array, 0, size - idx)
+	newnextnode.size = size - idx
+	newnextnode.next = next
 
-      // update this
-      nullout(idx, size)
-      size = idx
-      next = null
+	// update this
+	nullout(idx, size)
+	size = idx
+	next = null
 
-      // insert everything from iterable to this
-      var curr = this
-      for (elem <- t) curr = curr append elem
-      curr.next = newnextnode
+	// insert everything from iterable to this
+	var curr = this
+	for (elem <- t) curr = curr append elem
+	curr.next = newnextnode
 
-      // try to merge the last node of this with the newnextnode
-      if (curr.tryMergeWithNext()) buffer.lastPtr = curr
-    } else insertAll(idx - size, t, buffer)
+	// try to merge the last node of this with the newnextnode
+	if (curr.tryMergeWithNext()) buffer.lastPtr = curr
+      }
+      else if (idx == size) {
+	var curr = this
+	for (elem <- t) curr = curr append elem
+      } else insertAll(idx - size, t, buffer)
+    }
     private def nullout(from: Int, until: Int) {
       var idx = from
       while (idx < until) {

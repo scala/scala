@@ -51,7 +51,7 @@ trait TreeAndTypeAnalysis extends Debugging {
           // This is a pretty poor approximation.
           def unsoundAssumptionUsed = binder.name != nme.WILDCARD && !(pt <:< pat.tpe)
           if (settings.lint && unsoundAssumptionUsed)
-            global.currentUnit.warning(pat.pos,
+            reporter.warning(pat.pos,
               sm"""The value matched by $pat is bound to ${binder.name}, which may be used under the
                   |unsound assumption that it has type ${pat.tpe}, whereas we can only safely
                   |count on it having type $pt, as the pattern is matched using `==` (see SI-1503).""")
@@ -398,7 +398,7 @@ trait MatchAnalysis extends MatchApproximation {
   import global.definitions._
 
   trait MatchAnalyzer extends MatchApproximator  {
-    def uncheckedWarning(pos: Position, msg: String) = global.currentUnit.uncheckedWarning(pos, msg)
+    def uncheckedWarning(pos: Position, msg: String) = currentRun.reporting.uncheckedWarning(pos, msg)
     def warn(pos: Position, ex: AnalysisBudget.Exception, kind: String) = uncheckedWarning(pos, s"Cannot check match for $kind.\n${ex.advice}")
 
   // TODO: model dependencies between variables: if V1 corresponds to (x: List[_]) and V2 is (x.hd), V2 cannot be assigned when V1 = null or V1 = Nil

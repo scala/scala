@@ -29,7 +29,7 @@ trait Traversable[+A] extends scala.collection.Traversable[A]
 }
 
 /** $factoryInfo
- *  The current default implementation of a $Coll is a `Vector`.
+ *  The current default implementation of a $Coll is a `List`.
  *  @define coll immutable traversable collection
  *  @define Coll `immutable.Traversable`
  */

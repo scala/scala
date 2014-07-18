@@ -746,21 +746,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (!OK) {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
               featureTrait getAnnotation LanguageFeatureAnnot
-            val req     = if (required) "needs to" else "should"
-            val fqname  = "scala.language." + featureName
-            val explain = (
-              if (currentRun.reportedFeature contains featureTrait) "" else
-              s"""|
-                  |This can be achieved by adding the import clause 'import $fqname'
-                  |or by setting the compiler option -language:$featureName.
-                  |See the Scala docs for value $fqname for a discussion
-                  |why the feature $req be explicitly enabled.""".stripMargin
-            )
-            currentRun.reportedFeature += featureTrait
-
-            val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)
-            if (required) unit.error(pos, msg)
-            else currentRun.featureWarnings.warn(pos, msg)
+            context.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
           }
           OK
         }
@@ -955,10 +941,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
       def adaptConstant(value: Constant): Tree = {
         val sym = tree.symbol
-        if (sym != null && sym.isDeprecated) {
-          val msg = sym.toString + sym.locationString + " is deprecated: " + sym.deprecationMessage.getOrElse("")
-          unit.deprecationWarning(tree.pos, msg)
-        }
+        if (sym != null && sym.isDeprecated)
+          context.deprecationWarning(tree.pos, sym)
+
         treeCopy.Literal(tree, value)
       }
 
@@ -1066,7 +1051,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case coercion  =>
                 def msg = "inferred view from " + tree.tpe + " to " + pt + " = " + coercion + ":" + coercion.tpe
                 if (settings.logImplicitConv)
-                  unit.echo(tree.pos, msg)
+                  context.echo(tree.pos, msg)
 
                 debuglog(msg)
                 val silentContext = context.makeImplicit(context.ambiguousErrors)
@@ -1226,7 +1211,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case EmptyTree  => qual
           case coercion   =>
             if (settings.logImplicitConv)
-              unit.echo(qual.pos,
+              context.echo(qual.pos,
                 "applied implicit conversion from %s to %s = %s".format(
                   qual.tpe, searchTemplate, coercion.symbol.defString))
 
@@ -1291,7 +1276,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     private def validateNoCaseAncestor(clazz: Symbol) = {
       if (!phase.erasedTypes) {
         for (ancestor <- clazz.ancestors find (_.isCase)) {
-          unit.error(clazz.pos, (
+          context.error(clazz.pos, (
             "case %s has case ancestor %s, but case-to-case inheritance is prohibited."+
             " To overcome this limitation, use extractors to pattern match on non-leaf nodes."
           ).format(clazz, ancestor.fullName))
@@ -1308,7 +1293,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val isValueClass = !clazz.isTrait
       def where = if (isValueClass) "value class" else "universal trait extending from class Any"
       def implRestriction(tree: Tree, what: String) =
-        unit.error(tree.pos, s"implementation restriction: $what is not allowed in $where" +
+        context.error(tree.pos, s"implementation restriction: $what is not allowed in $where" +
            "\nThis restriction is planned to be removed in subsequent releases.")
       /**
        * Deeply traverses the tree in search of constructs that are not allowed
@@ -1337,7 +1322,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
       }
       for (stat <- body) {
-        def notAllowed(what: String) = unit.error(stat.pos, s"$what is not allowed in $where")
+        def notAllowed(what: String) = context.error(stat.pos, s"$what is not allowed in $where")
         stat match {
           // see https://issues.scala-lang.org/browse/SI-6444
           // see https://issues.scala-lang.org/browse/SI-6463
@@ -1365,9 +1350,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     private def validateDerivedValueClass(clazz: Symbol, body: List[Tree]) = {
       if (clazz.isTrait)
-        unit.error(clazz.pos, "only classes (not traits) are allowed to extend AnyVal")
+        context.error(clazz.pos, "only classes (not traits) are allowed to extend AnyVal")
       if (!clazz.isStatic)
-        unit.error(clazz.pos, "value class may not be a "+
+        context.error(clazz.pos, "value class may not be a "+
           (if (clazz.owner.isTerm) "local class" else "member of another class"))
       if (!clazz.isPrimitiveValueClass) {
         clazz.primaryConstructor.paramss match {
@@ -1375,26 +1360,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val decls = clazz.info.decls
             val paramAccessor = clazz.constrParamAccessors.head
             if (paramAccessor.isMutable)
-              unit.error(paramAccessor.pos, "value class parameter must not be a var")
+              context.error(paramAccessor.pos, "value class parameter must not be a var")
             val accessor = decls.toList.find(x => x.isMethod && x.accessedOrSelf == paramAccessor)
             accessor match {
               case None =>
-                unit.error(paramAccessor.pos, "value class parameter must be a val and not be private[this]")
+                context.error(paramAccessor.pos, "value class parameter must be a val and not be private[this]")
               case Some(acc) if acc.isProtectedLocal =>
-                unit.error(paramAccessor.pos, "value class parameter must not be protected[this]")
+                context.error(paramAccessor.pos, "value class parameter must not be protected[this]")
               case Some(acc) =>
                 if (acc.tpe.typeSymbol.isDerivedValueClass)
-                  unit.error(acc.pos, "value class may not wrap another user-defined value class")
+                  context.error(acc.pos, "value class may not wrap another user-defined value class")
                 checkEphemeral(clazz, body filterNot (stat => stat.symbol != null && stat.symbol.accessedOrSelf == paramAccessor))
             }
           case _ =>
-            unit.error(clazz.pos, "value class needs to have exactly one val parameter")
+            context.error(clazz.pos, "value class needs to have exactly one val parameter")
         }
       }
 
       for (tparam <- clazz.typeParams)
         if (tparam hasAnnotation definitions.SpecializedClass)
-          unit.error(tparam.pos, "type parameter of value class may not be specialized")
+          context.error(tparam.pos, "type parameter of value class may not be specialized")
     }
 
     /** Typechecks a parent type reference.
@@ -1690,7 +1675,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (!isPastTyper && psym.hasDeprecatedInheritanceAnnotation && !sameSourceFile) {
             val suffix = psym.deprecatedInheritanceMessage map (": " + _) getOrElse ""
             val msg = s"inheritance from ${psym.fullLocationString} is deprecated$suffix"
-            unit.deprecationWarning(parent.pos, msg)
+            context.deprecationWarning(parent.pos, psym, msg)
           }
 
           if (psym.isSealed && !phase.erasedTypes)
@@ -1757,7 +1742,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
         if (!clazz.owner.isPackageClass)
-          unit.error(clazz.pos, "inner classes cannot be classfile annotations")
+          context.error(clazz.pos, "inner classes cannot be classfile annotations")
         else restrictionWarning(cdef.pos, unit,
           """|subclassing Classfile does not
              |make your annotation visible at runtime.  If that is what
@@ -1812,7 +1797,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     private def ensurePredefParentsAreInSameSourceFile(template: Template) = {
       val parentSyms = template.parents map (_.symbol) filterNot (_ == AnyRefClass)
       if (parentSyms exists (_.associatedFile != PredefModule.associatedFile))
-        unit.error(template.pos, s"All parents of Predef must be defined in ${PredefModule.associatedFile}.")
+        context.error(template.pos, s"All parents of Predef must be defined in ${PredefModule.associatedFile}.")
     }
     /** In order to override this in the TreeCheckers Typer so synthetics aren't re-added
      *  all the time, it is exposed here the module/class typing methods go through it.
@@ -1883,7 +1868,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         ConstrArgsInParentOfTraitError(parents1.head, clazz)
 
       if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.isTopLevel)
-        unit.error(clazz.pos, "inner classes cannot be classfile annotations")
+        context.error(clazz.pos, "inner classes cannot be classfile annotations")
 
       if (!phase.erasedTypes && !clazz.info.resultType.isError) // @S: prevent crash for duplicated type members
         checkFinitary(clazz.info.resultType.asInstanceOf[ClassInfoType])
@@ -1911,7 +1896,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       if (clazz.isTrait) {
         for (decl <- clazz.info.decls if decl.isTerm && decl.isEarlyInitialized) {
-          unit.warning(decl.pos, "Implementation restriction: early definitions in traits are not initialized before the super class is initialized.")
+          context.warning(decl.pos, "Implementation restriction: early definitions in traits are not initialized before the super class is initialized.")
         }
       }
 
@@ -2099,7 +2084,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case xs  => xs.map(_.nameString).mkString(" (of ", " with ", ")")
       }
       def fail(pos: Position, msg: String): Boolean = {
-        unit.error(pos, msg)
+        context.error(pos, msg)
         false
       }
       /* Have to examine all parameters in all lists.
@@ -3680,7 +3665,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
 
           if (annType.typeSymbol == DeprecatedAttr && argss.flatten.size < 2)
-            unit.deprecationWarning(ann.pos, "@deprecated now takes two arguments; see the scaladoc.")
+            context.deprecationWarning(ann.pos, DeprecatedAttr, "@deprecated now takes two arguments; see the scaladoc.")
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
           else annInfo(typedAnn)
@@ -4254,7 +4239,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // it is non-Unit) so we have to retype it.  Fortunately it won't come up much
               // unless the warning is legitimate.
               if (typed(expr).tpe.typeSymbol != UnitClass)
-                unit.warning(tree.pos, "enclosing method " + name + " has result type Unit: return value discarded")
+                context.warning(tree.pos, "enclosing method " + name + " has result type Unit: return value discarded")
             }
             val res = treeCopy.Return(tree, checkDead(expr1)).setSymbol(enclMethod.owner)
             val tp = pluginsTypedReturn(NothingTpe, this, res, restpt.tpe)
@@ -4399,7 +4384,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (retry) {
             val Select(qual, name) = fun
             tryTypedArgs(args, forArgMode(fun, mode)) match {
-              case Some(args1) =>
+              case Some(args1) if !args1.exists(arg => arg.exists(_.isErroneous)) =>
                 val qual1 =
                   if (!pt.isError) adaptToArguments(qual, name, args1, pt, reportAmbiguous = true, saveErrors = true)
                   else qual
@@ -4712,10 +4697,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // temporarily use `filter` as an alternative for `withFilter`
       def tryWithFilterAndFilter(tree: Select, qual: Tree): Tree = {
-        def warn() = unit.deprecationWarning(tree.pos, s"`withFilter' method does not yet exist on ${qual.tpe.widen}, using `filter' method instead")
+        def warn(sym: Symbol) = context.deprecationWarning(tree.pos, sym, s"`withFilter' method does not yet exist on ${qual.tpe.widen}, using `filter' method instead")
         silent(_ => typedSelect(tree, qual, nme.withFilter)) orElse { _ =>
           silent(_ => typed1(Select(qual, nme.filter) setPos tree.pos, mode, pt)) match {
-            case SilentResultValue(res) => warn() ; res
+            case SilentResultValue(res) => warn(res.symbol) ; res
             case SilentTypeError(err)   => WithFilterError(tree, err)
           }
         }
@@ -5492,11 +5477,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val commonMessage = "macro defs must have explicitly specified return types"
         def reportFailure() = {
           ddef.symbol.setFlag(IS_ERROR)
-          unit.error(ddef.pos, commonMessage)
+          context.error(ddef.pos, commonMessage)
         }
         def reportWarning(inferredType: Type) = {
           val explanation = s"inference of $inferredType from macro impl's c.Expr[$inferredType] is deprecated and is going to stop working in 2.12"
-          unit.deprecationWarning(ddef.pos, s"$commonMessage ($explanation)")
+          context.deprecationWarning(ddef.pos, ddef.symbol, s"$commonMessage ($explanation)")
         }
         computeMacroDefTypeFromMacroImplRef(ddef, rhs1) match {
           case ErrorType => ErrorType

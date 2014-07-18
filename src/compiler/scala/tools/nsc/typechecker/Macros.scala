@@ -714,7 +714,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
 
   sealed abstract class MacroStatus(val result: Tree)
   case class Success(expanded: Tree) extends MacroStatus(expanded)
-  case class Fallback(fallback: Tree) extends MacroStatus(fallback) { currentRun.seenMacroExpansionsFallingBack = true }
+  case class Fallback(fallback: Tree) extends MacroStatus(fallback) { currentRun.reporting.seenMacroExpansionsFallingBack = true }
   case class Delayed(delayed: Tree) extends MacroStatus(delayed)
   case class Skipped(skipped: Tree) extends MacroStatus(skipped)
   case class Failure(failure: Tree) extends MacroStatus(failure)
@@ -788,7 +788,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           }
         } catch {
           case ex: Throwable =>
-            popMacroContext()
+            if (openMacros.nonEmpty) popMacroContext() // weirdly we started popping on an empty stack when refactoring fatalWarnings logic
             val realex = ReflectionUtils.unwrapThrowable(ex)
             realex match {
               case ex: AbortMacroException => MacroGeneratedAbort(expandee, ex)

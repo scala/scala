@@ -39,12 +39,12 @@ trait ScaladocAnalyzer extends Analyzer {
         for (useCase <- comment.useCases) {
           typer1.silent(_.asInstanceOf[ScaladocTyper].defineUseCases(useCase)) match {
             case SilentTypeError(err) =>
-              unit.warning(useCase.pos, err.errMsg)
+              reporter.warning(useCase.pos, err.errMsg)
             case _ =>
           }
           for (useCaseSym <- useCase.defined) {
             if (sym.name != useCaseSym.name)
-              unit.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode)
+              reporter.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode)
           }
         }
       }
@@ -191,7 +191,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       }
       def isDirty = unclean(unmooredParser parseComment doc)
       if ((doc ne null) && (settings.lint || isDirty))
-        unit.warning(doc.pos, "discarding unmoored doc comment")
+        reporter.warning(doc.pos, "discarding unmoored doc comment")
     }
 
     override def flushDoc(): DocComment = (try lastDoc finally lastDoc = null)
