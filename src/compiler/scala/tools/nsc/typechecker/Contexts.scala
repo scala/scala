@@ -329,14 +329,14 @@ trait Contexts { self: Analyzer =>
     /** A buffer for errors and warnings, used with `this.bufferErrors == true` */
     def reportBuffer = _reportBuffer
 
-    def reportErrors    = this(ReportErrors)
+    def reportErrors    = contextMode.inNone(ThrowErrors | BufferErrors)
     def bufferErrors    = this(BufferErrors)
     def ambiguousErrors = this(AmbiguousErrors)
-    private def throwErrors = contextMode.inNone(ReportErrors | BufferErrors)
+    private def throwErrors = this(ThrowErrors)
 
-    private def setReportErrors(): Unit                   = set(enable = ReportErrors, disable = BufferErrors)
-    private def setBufferErrors(): Unit                   = set(enable = BufferErrors, disable = ReportErrors)
-    private def setThrowErrors(): Unit                    = this(ReportErrors | BufferErrors) = false
+    private def setReportErrors(): Unit                   = set(disable = BufferErrors | ThrowErrors)
+    private def setBufferErrors(): Unit                   = set(enable = BufferErrors, disable = ThrowErrors)
+    private def setThrowErrors(): Unit                    = set(enable = ThrowErrors, disable = BufferErrors)
     private def setAmbiguousErrors(report: Boolean): Unit = this(AmbiguousErrors) = report
 
 
@@ -1417,7 +1417,7 @@ object ContextMode {
   def apply(bits: Int): ContextMode = new ContextMode(bits)
   final val NOmode: ContextMode                   = 0
 
-  final val ReportErrors: ContextMode             = 1 << 0
+  final val ThrowErrors: ContextMode              = 1 << 0
   final val BufferErrors: ContextMode             = 1 << 1
   final val AmbiguousErrors: ContextMode          = 1 << 2
 
@@ -1479,10 +1479,10 @@ object ContextMode {
     PatternAlternative | StarPatterns | SuperInit | SecondTry | ReturnExpr | TypeConstructorAllowed
   )
 
-  final val DefaultMode: ContextMode      = MacrosEnabled
+  final val DefaultMode: ContextMode      = MacrosEnabled | ThrowErrors
 
   private val contextModeNameMap = Map(
-    ReportErrors           -> "ReportErrors",
+    ThrowErrors            -> "ReportErrors",
     BufferErrors           -> "BufferErrors",
     AmbiguousErrors        -> "AmbiguousErrors",
     ConstructorSuffix      -> "ConstructorSuffix",
