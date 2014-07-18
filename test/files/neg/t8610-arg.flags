@@ -1,1 +1,1 @@
--Xfatal-warnings -Xlint warn-nullary-unit
+-Xfatal-warnings -Xlint nullary-unit

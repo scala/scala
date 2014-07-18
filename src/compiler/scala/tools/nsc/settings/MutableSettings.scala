@@ -211,8 +211,10 @@ class MutableSettings(val errorFn: String => Unit)
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
-  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: () => Unit = () => ()) =
-    add(new MultiChoiceSetting(name, helpArg, descr, choices, default))
+  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: () => Unit = () => ())(
+      helper: MultiChoiceSetting => String = _ => choices.mkString(f"$descr:%n", f"%n  ", f"%n")
+  ) =
+    add(new MultiChoiceSetting(name, helpArg, descr, choices, default, helper))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
@@ -552,7 +554,7 @@ class MutableSettings(val errorFn: String => Unit)
   }
 
   /** A setting that receives any combination of enumerated values,
-   *  including "_" to mean all values.
+   *  including "_" to mean all values and "help" for verbose info.
    *  In non-colonated mode, stops consuming args at the first
    *  non-value, instead of at the next option, as for a multi-string.
    */
@@ -561,19 +563,21 @@ class MutableSettings(val errorFn: String => Unit)
     arg: String,
     descr: String,
     override val choices: List[String],
-    val default: () => Unit
-  ) extends MultiStringSetting(name, arg, s"$descr${ choices.mkString(": ", ",", ".") }") {
+    val default: () => Unit,
+    helper: MultiChoiceSetting => String
+  ) extends MultiStringSetting(name, s"_,$arg,-$arg", s"$descr: `_' for all, `$name:help' to list") {
 
-    def badChoice(s: String, n: String) = errorFn(s"'$s' is not a valid choice for '$name'")
-    def choosing = choices.nonEmpty
-    def isChoice(s: String) = (s == "_") || (choices contains (s stripPrefix "-"))
-    def wildcards = choices // filter (!_.isSetByUser)
+    private def badChoice(s: String, n: String) = errorFn(s"'$s' is not a valid choice for '$name'")
+    private def choosing = choices.nonEmpty
+    private def isChoice(s: String) = (s == "_") || (choices contains (s stripPrefix "-"))
+    private var sawHelp = false
 
     override protected def tts(args: List[String], halting: Boolean) = {
-      val total = collection.mutable.ListBuffer.empty[String] ++ value
+      val added = collection.mutable.ListBuffer.empty[String]
       def tryArg(arg: String) = arg match {
-        case "_" if choosing               => wildcards foreach (total += _)
-        case s if !choosing || isChoice(s) => total += s
+        case "_" if choosing               => default()
+        case "help" if choosing            => sawHelp = true
+        case s if !choosing || isChoice(s) => added += s
         case s                             => badChoice(s, name)
       }
       def stoppingAt(arg: String) = (arg startsWith "-") || (choosing && !isChoice(arg))
@@ -584,9 +588,12 @@ class MutableSettings(val errorFn: String => Unit)
       }
       val rest = loop(args)
       if (rest.size == args.size) default()       // if no arg consumed, trigger default action
-      else value = total.toList                   // update once
+      else value = added.toList                   // update all new settings at once
       Some(rest)
     }
+
+    def isHelping: Boolean = sawHelp
+    def help: String = helper(this)
   }
 
   /** A setting that accumulates all strings supplied to it,
