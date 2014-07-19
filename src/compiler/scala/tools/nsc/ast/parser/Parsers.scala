@@ -1254,6 +1254,8 @@ self =>
         }
         if (in.token == STRINGLIT) partsBuf += literal()
 
+      // Documenting that it is intentional that the ident is not rooted for purposes of virtualization
+      //val t1 = atPos(o2p(start)) { Select(Select (Ident(nme.ROOTPKG), nme.scala_), nme.StringContext) }
         val t1 = atPos(o2p(start)) { Ident(nme.StringContext) }
         val t2 = atPos(start) { Apply(t1, partsBuf.toList) }
         t2 setPos t2.pos.makeTransparent
