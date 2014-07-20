@@ -113,7 +113,7 @@ trait Scanners extends ScannersCommon {
       case SU | CR | LF =>
       case _            => nextChar() ; skipLineComment()
     }
-    private def maybeOpen() {
+    private def maybeOpen(): Unit = {
       putCommentChar()
       if (ch == '*') {
         putCommentChar()
@@ -137,7 +137,7 @@ trait Scanners extends ScannersCommon {
     def skipDocComment(): Unit = skipNestedComments()
     def skipBlockComment(): Unit = skipNestedComments()
 
-    private def skipToCommentEnd(isLineComment: Boolean) {
+    private def skipToCommentEnd(isLineComment: Boolean): Unit = {
       nextChar()
       if (isLineComment) skipLineComment()
       else {
@@ -185,7 +185,7 @@ trait Scanners extends ScannersCommon {
 
     /** append Unicode character to "cbuf" buffer
      */
-    protected def putChar(c: Char) {
+    protected def putChar(c: Char): Unit = {
 //      assert(cbuf.size < 10000, cbuf)
       cbuf.append(c)
     }
@@ -196,7 +196,7 @@ trait Scanners extends ScannersCommon {
     protected def emitIdentifierDeprecationWarnings = true
 
     /** Clear buffer and set name and token */
-    private def finishNamed(idtoken: Token = IDENTIFIER) {
+    private def finishNamed(idtoken: Token = IDENTIFIER): Unit = {
       name = newTermName(cbuf.toString)
       cbuf.clear()
       token = idtoken
@@ -215,7 +215,7 @@ trait Scanners extends ScannersCommon {
     }
 
     /** Clear buffer and set string */
-    private def setStrVal() {
+    private def setStrVal(): Unit = {
       strVal = cbuf.toString
       cbuf.clear()
     }
@@ -270,7 +270,7 @@ trait Scanners extends ScannersCommon {
 
     /** Produce next token, filling TokenData fields of Scanner.
      */
-    def nextToken() {
+    def nextToken(): Unit = {
       val lastToken = token
       // Adapt sepRegions according to last token
       (lastToken: @switch) match {
@@ -341,7 +341,7 @@ trait Scanners extends ScannersCommon {
         prev copyFrom this
         val nextLastOffset = charOffset - 1
         fetchToken()
-        def resetOffset() {
+        def resetOffset(): Unit = {
           offset = prev.offset
           lastOffset = prev.lastOffset
         }
@@ -399,7 +399,7 @@ trait Scanners extends ScannersCommon {
 
     /** read next token, filling TokenData fields of Scanner.
      */
-    protected final def fetchToken() {
+    protected final def fetchToken(): Unit = {
       offset = charOffset - 1
       (ch: @switch) match {
 
@@ -604,7 +604,7 @@ trait Scanners extends ScannersCommon {
 
 // Identifiers ---------------------------------------------------------------
 
-    private def getBackquotedIdent() {
+    private def getBackquotedIdent(): Unit = {
       nextChar()
       getLitChars('`')
       if (ch == '`') {
@@ -664,7 +664,7 @@ trait Scanners extends ScannersCommon {
         else finishNamed()
     }
 
-    private def getIdentOrOperatorRest() {
+    private def getIdentOrOperatorRest(): Unit = {
       if (isIdentifierPart(ch))
         getIdentRest()
       else ch match {
@@ -859,7 +859,7 @@ trait Scanners extends ScannersCommon {
     /** read fractional part and exponent of floating point number
      *  if one is present.
      */
-    protected def getFraction() {
+    protected def getFraction(): Unit = {
       token = DOUBLELIT
       while ('0' <= ch && ch <= '9') {
         putChar(ch)
@@ -968,14 +968,13 @@ trait Scanners extends ScannersCommon {
 
     def floatVal: Double = floatVal(negated = false)
 
-    def checkNoLetter() {
+    def checkNoLetter(): Unit =  {
       if (isIdentifierPart(ch) && ch >= ' ')
         syntaxError("Invalid literal number")
     }
 
-    /** Read a number into strVal and set base
-    */
-    protected def getNumber() {
+    /** Read a number into strVal and set base */
+    protected def getNumber(): Unit =  {
       val base1 = if (base < 10) 10 else base
       // Read 8,9's even if format is octal, produce a malformed number error afterwards.
       // At this point, we have already read the first digit, so to tell an innocent 0 apart
@@ -1054,7 +1053,7 @@ trait Scanners extends ScannersCommon {
     /** Parse character literal if current character is followed by \',
      *  or follow with given op and return a symbol literal token
      */
-    def charLitOr(op: () => Unit) {
+    def charLitOr(op: () => Unit): Unit = {
       putChar(ch)
       nextChar()
       if (ch == '\'') {
@@ -1134,7 +1133,7 @@ trait Scanners extends ScannersCommon {
 
     /** Initialization method: read first char, then first token
      */
-    def init() {
+    def init(): Unit = {
       nextChar()
       nextToken()
     }
@@ -1490,6 +1489,6 @@ trait Scanners extends ScannersCommon {
     // when skimming through the source file trying to heal braces
     override def emitIdentifierDeprecationWarnings = false
 
-    override def error(offset: Offset, msg: String) {}
+    override def error(offset: Offset, msg: String): Unit = ()
   }
 }

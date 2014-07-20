@@ -154,8 +154,8 @@ self =>
     def unit = global.currentUnit
 
     // suppress warnings; silent abort on errors
-    def warning(offset: Offset, msg: String) {}
-    def deprecationWarning(offset: Offset, msg: String) {}
+    def warning(offset: Offset, msg: String): Unit = ()
+    def deprecationWarning(offset: Offset, msg: String): Unit = ()
 
     def syntaxError(offset: Offset, msg: String): Unit = throw new MalformedInput(offset, msg)
     def incompleteInputError(msg: String): Unit = throw new MalformedInput(source.content.length - 1, msg)
@@ -333,7 +333,7 @@ self =>
      */
     private var inScalaPackage = false
     private var currentPackage = ""
-    def resetPackage() {
+    def resetPackage(): Unit = {
       inScalaPackage = false
       currentPackage = ""
     }
@@ -512,7 +512,7 @@ self =>
       finally inFunReturnType = saved
     }
 
-    protected def skip(targetToken: Token) {
+    protected def skip(targetToken: Token): Unit = {
       var nparens = 0
       var nbraces = 0
       while (true) {
@@ -715,7 +715,7 @@ self =>
 
     /** Convert tree to formal parameter. */
     def convertToParam(tree: Tree): ValDef = atPos(tree.pos) {
-      def removeAsPlaceholder(name: Name) {
+      def removeAsPlaceholder(name: Name): Unit = {
         placeholderParams = placeholderParams filter (_.name != name)
       }
       def errorParam = makeParam(nme.ERROR, errorTypeTree setPos o2p(tree.pos.end))
@@ -1264,21 +1264,21 @@ self =>
 
 /* ------------- NEW LINES ------------------------------------------------- */
 
-    def newLineOpt() {
+    def newLineOpt(): Unit = {
       if (in.token == NEWLINE) in.nextToken()
     }
 
-    def newLinesOpt() {
+    def newLinesOpt(): Unit = {
       if (in.token == NEWLINE || in.token == NEWLINES)
         in.nextToken()
     }
 
-    def newLineOptWhenFollowedBy(token: Offset) {
+    def newLineOptWhenFollowedBy(token: Offset): Unit = {
       // note: next is defined here because current == NEWLINE
       if (in.token == NEWLINE && in.next.token == token) newLineOpt()
     }
 
-    def newLineOptWhenFollowing(p: Token => Boolean) {
+    def newLineOptWhenFollowing(p: Token => Boolean): Unit = {
       // note: next is defined here because current == NEWLINE
       if (in.token == NEWLINE && p(in.next.token)) newLineOpt()
     }
