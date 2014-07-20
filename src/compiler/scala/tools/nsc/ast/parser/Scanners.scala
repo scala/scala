@@ -688,8 +688,10 @@ trait Scanners extends ScannersCommon {
         setStrVal()
         nextChar()
         token = STRINGLIT
-      } else syntaxError("unclosed string literal")
+      } else unclosedStringLit()
     }
+
+    private def unclosedStringLit(): Unit = syntaxError("unclosed string literal")
 
     private def getRawStringLit(): Unit = {
       if (ch == '\"') {
@@ -764,7 +766,7 @@ trait Scanners extends ScannersCommon {
           if (multiLine)
             incompleteInputError("unclosed multi-line string literal")
           else
-            syntaxError("unclosed string literal")
+            unclosedStringLit()
         }
         else {
           putChar(ch)
@@ -1068,21 +1070,19 @@ trait Scanners extends ScannersCommon {
 
 // Errors -----------------------------------------------------------------
 
-    /** generate an error at the given offset
-    */
-    def syntaxError(off: Offset, msg: String) {
+    /** generate an error at the given offset */
+    def syntaxError(off: Offset, msg: String): Unit = {
       error(off, msg)
       token = ERROR
     }
 
-    /** generate an error at the current token offset
-    */
+    /** generate an error at the current token offset */
     def syntaxError(msg: String): Unit = syntaxError(offset, msg)
 
     def deprecationWarning(msg: String): Unit = deprecationWarning(offset, msg)
 
     /** signal an error where the input ended in the middle of a token */
-    def incompleteInputError(msg: String) {
+    def incompleteInputError(msg: String): Unit = {
       incompleteInputError(offset, msg)
       token = EOF
     }

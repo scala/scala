@@ -204,13 +204,11 @@ self =>
 
     override def newScanner() = new UnitScanner(unit, patches)
 
-    override def warning(offset: Offset, msg: String) {
+    override def warning(offset: Offset, msg: String): Unit =
       reporter.warning(o2p(offset), msg)
-    }
 
-    override def deprecationWarning(offset: Offset, msg: String) {
+    override def deprecationWarning(offset: Offset, msg: String): Unit =
       currentRun.reporting.deprecationWarning(o2p(offset), msg)
-    }
 
     private var smartParsing = false
     @inline private def withSmartParsing[T](body: => T): T = {
@@ -226,12 +224,12 @@ self =>
       for ((offset, msg) <- syntaxErrors)
         reporter.error(o2p(offset), msg)
 
-    override def syntaxError(offset: Offset, msg: String) {
+    override def syntaxError(offset: Offset, msg: String): Unit = {
       if (smartParsing) syntaxErrors += ((offset, msg))
       else reporter.error(o2p(offset), msg)
     }
 
-    override def incompleteInputError(msg: String) {
+    override def incompleteInputError(msg: String): Unit = {
       val offset = source.content.length - 1
       if (smartParsing) syntaxErrors += ((offset, msg))
       else currentRun.reporting.incompleteInputError(o2p(offset), msg)
@@ -544,27 +542,25 @@ self =>
     }
     def warning(offset: Offset, msg: String): Unit
     def incompleteInputError(msg: String): Unit
-    private def syntaxError(pos: Position, msg: String, skipIt: Boolean) {
-      syntaxError(pos pointOrElse in.offset, msg, skipIt)
-    }
     def syntaxError(offset: Offset, msg: String): Unit
-    def syntaxError(msg: String, skipIt: Boolean) {
-      syntaxError(in.offset, msg, skipIt)
-    }
 
-    def syntaxError(offset: Offset, msg: String, skipIt: Boolean) {
+    private def syntaxError(pos: Position, msg: String, skipIt: Boolean): Unit =
+      syntaxError(pos pointOrElse in.offset, msg, skipIt)
+    def syntaxError(msg: String, skipIt: Boolean): Unit =
+      syntaxError(in.offset, msg, skipIt)
+
+    def syntaxError(offset: Offset, msg: String, skipIt: Boolean): Unit = {
       if (offset > lastErrorOffset) {
         syntaxError(offset, msg)
-        // no more errors on this token.
-        lastErrorOffset = in.offset
+        lastErrorOffset = in.offset         // no more errors on this token.
       }
       if (skipIt)
         skip(UNDEF)
     }
 
-    def warning(msg: String) { warning(in.offset, msg) }
+    def warning(msg: String): Unit = warning(in.offset, msg)
 
-    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean) {
+    def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean): Unit = {
       if (in.token == EOF)
         incompleteInputError(msg)
       else
@@ -1233,15 +1229,15 @@ self =>
                                                      skipIt = true)(EmptyTree)
       // Like Swiss cheese, with holes
       def stringCheese: Tree = atPos(in.offset) {
-        val start = in.offset
+        val start        = in.offset
         val interpolator = in.name.encoded // ident() for INTERPOLATIONID
 
         val partsBuf = new ListBuffer[Tree]
-        val exprBuf = new ListBuffer[Tree]
+        val exprsBuf = new ListBuffer[Tree]
         in.nextToken()
         while (in.token == STRINGPART) {
           partsBuf += literal()
-          exprBuf += (
+          exprsBuf += (
             if (inPattern) dropAnyBraces(pattern())
             else in.token match {
               case IDENTIFIER => atPos(in.offset)(Ident(ident()))
@@ -1260,7 +1256,7 @@ self =>
         val t2 = atPos(start) { Apply(t1, partsBuf.toList) }
         t2 setPos t2.pos.makeTransparent
         val t3 = Select(t2, interpolator) setPos t2.pos
-        atPos(start) { Apply(t3, exprBuf.toList) }
+        atPos(start) { Apply(t3, exprsBuf.toList) }
       }
       if (inPattern) stringCheese
       else withPlaceholders(stringCheese, isAny = true) // strinterpolator params are Any* by definition
