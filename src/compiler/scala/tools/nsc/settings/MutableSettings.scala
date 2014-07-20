@@ -211,7 +211,7 @@ class MutableSettings(val errorFn: String => Unit)
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
-  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: () => Unit = () => ())(
+  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: Option[() => Unit] = None)(
       helper: MultiChoiceSetting => String = _ => choices.mkString(f"$descr:%n", f"%n  ", f"%n")
   ) =
     add(new MultiChoiceSetting(name, helpArg, descr, choices, default, helper))
@@ -563,19 +563,21 @@ class MutableSettings(val errorFn: String => Unit)
     arg: String,
     descr: String,
     override val choices: List[String],
-    val default: () => Unit,
+    val default: Option[() => Unit],
     helper: MultiChoiceSetting => String
   ) extends MultiStringSetting(name, s"_,$arg,-$arg", s"$descr: `_' for all, `$name:help' to list") {
 
     private def badChoice(s: String, n: String) = errorFn(s"'$s' is not a valid choice for '$name'")
     private def choosing = choices.nonEmpty
     private def isChoice(s: String) = (s == "_") || (choices contains (s stripPrefix "-"))
+
     private var sawHelp = false
+    private var sawAll  = false
 
     override protected def tts(args: List[String], halting: Boolean) = {
       val added = collection.mutable.ListBuffer.empty[String]
       def tryArg(arg: String) = arg match {
-        case "_" if choosing               => default()
+        case "_" if choosing               => addAll()
         case "help" if choosing            => sawHelp = true
         case s if !choosing || isChoice(s) => added += s
         case s                             => badChoice(s, name)
@@ -587,13 +589,18 @@ class MutableSettings(val errorFn: String => Unit)
         case Nil                                    => Nil
       }
       val rest = loop(args)
-      if (rest.size == args.size) default()       // if no arg consumed, trigger default action
-      else value = added.toList                   // update all new settings at once
+      if (rest.size == args.size) default foreach (_())  // if no arg consumed, trigger default action
+      else value ++= added.toList                        // update all new settings at once
       Some(rest)
     }
 
     def isHelping: Boolean = sawHelp
-    def help: String = helper(this)
+    def help: String       = helper(this)
+    private val adderAll   = Some(() => sawAll = true)
+    def addAll(): Unit     = default orElse adderAll foreach (_())
+
+    // the semantics is: s is enabled, i.e., either s or (_ but not -s)
+    override def contains(s: String) = isChoice(s) && (value contains s) || (sawAll && !(value contains s"-$s"))
   }
 
   /** A setting that accumulates all strings supplied to it,
