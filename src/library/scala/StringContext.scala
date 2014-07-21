@@ -112,8 +112,6 @@ case class StringContext(parts: String*) {
    *  @throws An `IllegalArgumentException`
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
-   *  @throws A `StringContext.InvalidEscapeException` if a `parts` string contains a backslash (`\`) character
-   *          that does not start a valid escape sequence.
    */
   def raw(args: Any*): String = standardInterpolator(identity, args)
 
