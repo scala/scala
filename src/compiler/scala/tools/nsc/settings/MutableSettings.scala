@@ -571,8 +571,10 @@ class MutableSettings(val errorFn: String => Unit)
     private def choosing = choices.nonEmpty
     private def isChoice(s: String) = (s == "_") || (choices contains (s stripPrefix "-"))
 
-    private var sawHelp = false
-    private var sawAll  = false
+    private var sawHelp  = false
+    private var sawAll   = false
+    private val adderAll = () => sawAll = true
+    private val noargs   = () => errorFn(s"'$name' requires an option. See '$name:help'.")
 
     override protected def tts(args: List[String], halting: Boolean) = {
       val added = collection.mutable.ListBuffer.empty[String]
@@ -589,15 +591,16 @@ class MutableSettings(val errorFn: String => Unit)
         case Nil                                    => Nil
       }
       val rest = loop(args)
-      if (rest.size == args.size) default foreach (_())  // if no arg consumed, trigger default action
-      else value ++= added.toList                        // update all new settings at once
+      if (rest.size == args.size)
+        (default getOrElse noargs)()   // if no arg consumed, trigger default action or error
+      else
+        value ++= added.toList         // update all new settings at once
       Some(rest)
     }
 
     def isHelping: Boolean = sawHelp
     def help: String       = helper(this)
-    private val adderAll   = Some(() => sawAll = true)
-    def addAll(): Unit     = default orElse adderAll foreach (_())
+    def addAll(): Unit     = (default getOrElse adderAll)()
 
     // the semantics is: s is enabled, i.e., either s or (_ but not -s)
     override def contains(s: String) = isChoice(s) && (value contains s) || (sawAll && !(value contains s"-$s"))
