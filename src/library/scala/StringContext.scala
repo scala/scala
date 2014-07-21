@@ -104,7 +104,7 @@ case class StringContext(parts: String*) {
    *  ''Note:'' Even when using the raw interpolator, Scala will preprocess unicode escapes.
    *  For example:
    *  {{{
-   *    scala> raw"\u005cu0025"
+   *    scala> raw"\u005cu0023"
    *    res0: String = #
    *  }}}
    *
