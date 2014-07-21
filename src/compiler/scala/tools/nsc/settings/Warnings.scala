@@ -116,7 +116,7 @@ trait Warnings {
       helpArg = "warning",
       descr   = description,
       choices = choices,
-      default = () => xlint.value = true
+      default = Some(() => xlint.value = true)
     ) { s =>
       def helpline(n: String) = lintWarnings.find(_.name == n).map(w => f"  ${w.name}%-25s ${w.helpDescription}%n")
       choices flatMap (helpline(_)) mkString (f"$description:%n", "", f"%n")
