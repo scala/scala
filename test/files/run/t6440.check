@@ -1,4 +1,5 @@
-pos: source-newSource1.scala,line-9,offset=109 bad symbolic reference to <root>.pack1 encountered in class file 'U.class'.
-Cannot access term pack1 in package <root>. The current classpath may be
-missing a definition for <root>.pack1, or U.class may have been compiled against a version that's
-incompatible with the one found on the current classpath. ERROR
+pos: source-newSource1.scala,line-9,offset=109 missing or invalid dependency detected while loading class file 'U.class'.
+Could not access term pack1 in package <root>,
+because it (or its dependencies) are missing. Check your build definition for
+missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
+A full rebuild may help if 'U.class' was compiled against an incompatible version of <root>. ERROR
