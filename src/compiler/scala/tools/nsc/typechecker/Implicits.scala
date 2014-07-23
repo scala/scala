@@ -71,13 +71,10 @@ trait Implicits {
       typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
-    if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.reporter.hasErrors) {
-      context.reporter ++= (implicitSearchContext.reporter.errors.collect {
-        case dte: DivergentImplicitTypeError => dte
-        case ate: AmbiguousImplicitTypeError => ate
-      })
-      debuglog("update buffer: " + implicitSearchContext.reporter.errors)
-    }
+
+    if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.reporter.hasErrors)
+      implicitSearchContext.reporter.propagateImplicitTypeErrorsTo(context.reporter)
+
     // SI-7944 undetermined type parameters that result from inference within typedImplicit land in
     //         `implicitSearchContext.undetparams`, *not* in `context.undetparams`
     //         Here, we copy them up to parent context (analogously to the way the errors are copied above),

@@ -182,7 +182,8 @@ trait Contexts { self: Analyzer =>
    * @param _outer The next outer context.
    */
   class Context private[typechecker](val tree: Tree, val owner: Symbol, val scope: Scope,
-                                     val unit: CompilationUnit, _outer: Context) {
+                                     val unit: CompilationUnit, _outer: Context,
+                                     private[this] var _reporter: ContextReporter = new ThrowingReporter) {
     private def outerIsNoContext = _outer eq null
     final def outer: Context = if (outerIsNoContext) NoContext else _outer
 
@@ -325,59 +326,50 @@ trait Contexts { self: Analyzer =>
     //
 
     // the reporter for this context
-    // TODO: start off with ImmediateReporter
-    private var _reporter: ContextReporter = new ThrowingReporter
-
-    def reporter = _reporter
+    def reporter: ContextReporter = _reporter
 
     // if set, errors will not be reporter/thrown
-    def bufferErrors    = reporter.isBuffering
-    def reportErrors    = !bufferErrors
+    def bufferErrors = reporter.isBuffering
+    def reportErrors = !bufferErrors
 
     // whether to *report* (which is separate from buffering/throwing) ambiguity errors
     def ambiguousErrors = this(AmbiguousErrors)
 
     private def setAmbiguousErrors(report: Boolean): Unit = this(AmbiguousErrors) = report
 
-
     /**
-     * Try inference twice, once without views and once with views,
+     * Try inference twice: once without views and once with views,
      *  unless views are already disabled.
      */
     abstract class TryTwice {
       def tryOnce(isLastTry: Boolean): Unit
 
-      def apply(): Unit = {
-        var doLastTry = !implicitsEnabled
-
-        // do first try if implicits are enabled
-        if (implicitsEnabled) {
-          val savedReporter = _reporter
-          val savedContextMode = contextMode
-
-          _reporter = new BufferingReporter
-          setAmbiguousErrors(false) // this means ambiguous errors will not be force-fed to the reporter
-
-          // We create a new BufferingReporter to
-          // distinguish errors that occurred before entering tryTwice
-          // and our first attempt in 'withImplicitsDisabled'. If the
-          // first attempt fails, we try with implicits on
-          // and the original reporter.
-          try {
-            withImplicitsDisabled(tryOnce(false))
-            doLastTry = reporter.hasErrors
-          } catch {
-            case ex: CyclicReference => throw ex
-            case ex: TypeError       => doLastTry = true // recoverable cyclic references?
-          } finally {
-            contextMode = savedContextMode
-            _reporter = savedReporter
-          }
-        }
+      final def apply(): Unit = {
+        val doLastTry =
+          // do first try if implicits are enabled
+          if (implicitsEnabled) {
+            // We create a new BufferingReporter to
+            // distinguish errors that occurred before entering tryTwice
+            // and our first attempt in 'withImplicitsDisabled'. If the
+            // first attempt fails, we try with implicits on
+            // and the original reporter.
+            // immediate reporting of ambiguous errors is suppressed, so that they are buffered
+            inSilentMode {
+              try {
+                set(disable = ImplicitsEnabled | EnrichmentEnabled) // restored by inSilentMode
+                tryOnce(false)
+                reporter.hasErrors
+              } catch {
+                case ex: CyclicReference => throw ex
+                case ex: TypeError => true // recoverable cyclic references?
+              }
+            }
+          } else true
 
         // do last try if try with implicits enabled failed
         // (or if it was not attempted because they were disabled)
-        if (doLastTry) tryOnce(true)
+        if (doLastTry)
+          tryOnce(true)
       }
     }
 
@@ -385,7 +377,7 @@ trait Contexts { self: Analyzer =>
     // Temporary mode adjustment
     //
 
-    @inline def withMode[T](enabled: ContextMode = NOmode, disabled: ContextMode = NOmode)(op: => T): T = {
+    @inline final def withMode[T](enabled: ContextMode = NOmode, disabled: ContextMode = NOmode)(op: => T): T = {
       val saved = contextMode
       set(enabled, disabled)
       try op
@@ -419,17 +411,18 @@ trait Contexts { self: Analyzer =>
     // See comment on FormerNonStickyModes.
     @inline final def withOnlyStickyModes[T](op: => T): T = withMode(disabled = FormerNonStickyModes)(op)
 
-    /** @return true if the `expr` evaluates to true within a silent Context that incurs no errors */
+    // inliner note: this has to be a simple method for inlining to work -- moved the `&& !reporter.hasErrors` out
     @inline final def inSilentMode(expr: => Boolean): Boolean = {
-      val savedReporter = _reporter
-      withMode() { // TODO: rework -- withMode with no arguments to restore the mode mutated by `setBufferErrors` (no longer mutated!)
-        _reporter = reporter.makeBuffering
-        setAmbiguousErrors(false)
-        try expr && !reporter.hasErrors
-        finally {
-          _reporter = savedReporter
-          _reporter.clearAll() // TODO: ???
-        }
+      val savedContextMode = contextMode
+      val savedReporter    = reporter
+
+      setAmbiguousErrors(false)
+      _reporter = new BufferingReporter
+
+      try expr
+      finally {
+        contextMode = savedContextMode
+        _reporter   = savedReporter
       }
     }
 
@@ -445,7 +438,8 @@ trait Contexts { self: Analyzer =>
      * `Context#imports`.
      */
     def make(tree: Tree = tree, owner: Symbol = owner,
-             scope: Scope = scope, unit: CompilationUnit = unit): Context = {
+             scope: Scope = scope, unit: CompilationUnit = unit,
+             reporter: ContextReporter = this.reporter): Context = {
       val isTemplateOrPackage = tree match {
         case _: Template | _: PackageDef => true
         case _                           => false
@@ -468,16 +462,15 @@ trait Contexts { self: Analyzer =>
 
       // The blank canvas
       val c = if (isImport)
-        new Context(tree, owner, scope, unit, this) with ImportContext
+        new Context(tree, owner, scope, unit, this, reporter) with ImportContext
       else
-        new Context(tree, owner, scope, unit, this)
+        new Context(tree, owner, scope, unit, this, reporter)
 
       // Fields that are directly propagated
       c.variance           = variance
       c.diagUsedDefaults   = diagUsedDefaults
       c.openImplicits      = openImplicits
       c.contextMode        = contextMode // note: ConstructorSuffix, a bit within `mode`, is conditionally overwritten below.
-      c._reporter          = reporter
 
       // Fields that may take on a different value in the child
       c.prefix             = prefixInChild
@@ -510,22 +503,19 @@ trait Contexts { self: Analyzer =>
       else make(tree, owner, scope, unit)
 
     /** Make a child context that represents a new nested scope */
-    def makeNewScope(tree: Tree, owner: Symbol): Context =
-      make(tree, owner, newNestedScope(scope))
-
+    def makeNewScope(tree: Tree, owner: Symbol, reporter: ContextReporter = this.reporter): Context =
+      make(tree, owner, newNestedScope(scope), reporter = reporter)
 
     /** Make a child context that buffers errors and warnings into a fresh report buffer. */
     def makeSilent(reportAmbiguousErrors: Boolean = ambiguousErrors, newtree: Tree = tree): Context = {
-      val c = make(newtree)
-      c.setAmbiguousErrors(reportAmbiguousErrors)
       // A fresh buffer so as not to leak errors/warnings into `this`.
-      c._reporter = new BufferingReporter
+      val c = make(newtree, reporter = new BufferingReporter)
+      c.setAmbiguousErrors(reportAmbiguousErrors)
       c
     }
 
     def makeNonSilent(newtree: Tree): Context = {
-      val c = make(newtree)
-      c._reporter = reporter.makeImmediate
+      val c = make(newtree, reporter = reporter.makeImmediate)
       c.setAmbiguousErrors(true)
       c
     }
@@ -549,9 +539,10 @@ trait Contexts { self: Analyzer =>
      */
     def makeConstructorContext = {
       val baseContext = enclClass.outer.nextEnclosing(!_.tree.isInstanceOf[Template])
-      val argContext = baseContext.makeNewScope(tree, owner)
+      // must propagate reporter!
+      // (caught by neg/t3649 when refactoring reporting to be specified only by this.reporter and not also by this.contextMode)
+      val argContext = baseContext.makeNewScope(tree, owner, reporter = this.reporter)
       argContext.contextMode = contextMode
-      argContext._reporter = _reporter // caught by neg/t3649 TODO: make sure _reporter is propagated wherever contextMode is
       argContext.inSelfSuperCall = true
       def enterElems(c: Context) {
         def enterLocalElems(e: ScopeEntry) {
@@ -1230,7 +1221,17 @@ trait Contexts { self: Analyzer =>
     override final def toString     = super.toString + " with " + s"ImportContext { $impInfo; outer.owner = ${outer.owner} }"
   }
 
-  /** A buffer for warnings and errors that are accumulated during speculative type checking. */
+  /** A reporter for use during type checking. It has multiple modes for handling errors.
+   *
+   *  The default (immediate mode) is to send the error to the global reporter.
+   *  When switched into buffering mode via makeBuffering, errors and warnings are buffered and not be reported
+   *  (there's a special case for ambiguity errors for some reason: those are force to the reporter when context.ambiguousErrors,
+   *   or else they are buffered -- TODO: can we simplify this?)
+   *
+   *  When using the type checker after typers, an error results in a TypeError being thrown. TODO: get rid of this mode.
+   *
+   *  To handle nested contexts, reporters share buffers. TODO: only buffer in BufferingReporter, emit immediately in ImmediateReporter
+   */
   abstract class ContextReporter(private[this] var _errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, private[this] var _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) extends Reporter {
     type Error = AbsTypeError
     type Warning = (Position, String)
@@ -1254,7 +1255,27 @@ trait Contexts { self: Analyzer =>
       if (context.ambiguousErrors) reporter.error(err.errPos, addDiagString(err.errMsg)) // force reporting... see TODO above
       else handleSuppressedAmbiguous(err)
 
-    def ++=(errors: Traversable[AbsTypeError]): Unit = errorBuffer ++= errors
+    @inline final def withFreshErrorBuffer[T](expr: => T): T = {
+      val previousBuffer = _errorBuffer
+      _errorBuffer = newBuffer
+      val res = expr // expr will read _errorBuffer
+      _errorBuffer = previousBuffer
+      res
+    }
+
+    @inline final def propagatingErrorsTo[T](target: ContextReporter)(expr: => T): T = {
+      val res = expr // TODO: make sure we're okay skipping the try/finally overhead
+      if ((this ne target) && hasErrors) { // `this eq target` in e.g., test/files/neg/divergent-implicit.scala
+        // assert(target.errorBuffer ne _errorBuffer)
+        target ++= errors
+        // TODO: is clearAllErrors necessary? (no tests failed when dropping it)
+        // NOTE: even though `this ne target`, it may still be that `target.errorBuffer eq _errorBuffer`,
+        // so don't clear the buffer, but null out the reference so that a new one will be created when necessary (should be never??)
+        // (we should refactor error buffering to avoid mutation on shared buffers)
+        clearAllErrors()
+      }
+      res
+    }
 
     protected final def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit =
       severity match {
@@ -1264,6 +1285,10 @@ trait Contexts { self: Analyzer =>
       }
 
     final override def hasErrors = super.hasErrors || errorBuffer.nonEmpty
+
+    // TODO: everything below should be pushed down to BufferingReporter (related to buffering)
+    // Implicit relies on this most heavily, but there you know reporter.isInstanceOf[BufferingReporter]
+    // can we encode this statically?
 
     // have to pass in context because multiple contexts may share the same ReportBuffer
     def reportFirstDivergentError(fun: Tree, param: Symbol, paramTp: Type)(implicit context: Context): Unit =
@@ -1290,13 +1315,28 @@ trait Contexts { self: Analyzer =>
         case _ => false
       }
 
+    def propagateImplicitTypeErrorsTo(target: ContextReporter) = {
+      errors foreach {
+        case err@(_: DivergentImplicitTypeError | _: AmbiguousImplicitTypeError) =>
+          target.errorBuffer += err
+        case _ =>
+      }
+      // debuglog("propagateImplicitTypeErrorsTo: " + errors)
+    }
+
     protected def addDiagString(msg: String)(implicit context: Context): String = {
       val diagUsedDefaultsMsg = "Error occurred in an application involving default arguments."
       if (context.diagUsedDefaults && !(msg endsWith diagUsedDefaultsMsg)) msg + "\n" + diagUsedDefaultsMsg
       else msg
     }
 
-    // TODO: deprecate everything below (related to buffering) and push down to BufferingReporter
+    final def emitWarnings() = if (_warningBuffer != null) {
+      _warningBuffer foreach {
+        case (pos, msg) => reporter.warning(pos, msg)
+      }
+      _warningBuffer = null
+    }
+
     // [JZ] Contexts, pre- the SI-7345 refactor, avoided allocating the buffers until needed. This
     // is replicated here out of conservatism.
     private def newBuffer[A]    = mutable.LinkedHashSet.empty[A] // Important to use LinkedHS for stable results.
@@ -1307,9 +1347,13 @@ trait Contexts { self: Analyzer =>
     final def warnings: immutable.Seq[Warning] = warningBuffer.toVector
     final def firstError: Option[AbsTypeError] = errorBuffer.headOption
 
-    final def clearAll(): Unit         = { clearAllErrors(); clearAllWarnings() }
-    final def clearAllErrors(): Unit   = errorBuffer.clear()
-    final def clearAllWarnings(): Unit = warningBuffer.clear()
+    // TODO: remove ++= and clearAll* entirely in favor of more high-level combinators like withFreshErrorBuffer
+    final private[typechecker] def ++=(errors: Traversable[AbsTypeError]): Unit = errorBuffer ++= errors
+
+    // null references to buffers instead of clearing them,
+    // as the buffers may be shared between different reporters
+    final def clearAll(): Unit       = { _errorBuffer = null; _warningBuffer = null }
+    final def clearAllErrors(): Unit = { _errorBuffer = null }
   }
 
   private[typechecker] class ImmediateReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {

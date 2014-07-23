@@ -464,24 +464,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (cond) typerWithLocalContext(c)(f) else f(this)
 
     @inline
-    final def typerWithLocalContext[T](c: Context)(f: Typer => T): T = {
-      val res = f(newTyper(c))
-      val errors = c.reporter.errors
-      if (errors.nonEmpty) {
-        c.reporter.clearAllErrors()
-        context.reporter ++= errors
-      }
-      res
-    }
-
-    @inline
-    final def withSavedContext[T](c: Context)(f: => T) = {
-      val savedErrors = c.reporter.errors
-      c.reporter.clearAllErrors()
-      val res = f
-      c.reporter ++= savedErrors
-      res
-    }
+    final def typerWithLocalContext[T](c: Context)(f: Typer => T): T =
+      c.reporter.propagatingErrorsTo(context.reporter)(f(newTyper(c)))
 
     /** The typer for a label definition. If this is part of a template we
      *  first have to enter the label definition.
@@ -692,19 +676,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             SilentTypeError(context1.reporter.errors: _*)
           } else {
             // If we have a successful result, emit any warnings it created.
-            context1.reporter.warnings foreach {
-              case (pos, msg) => reporter.warning(pos, msg)
-            }
-            context1.reporter.clearAllWarnings()
+            context1.reporter.emitWarnings()
             SilentResultValue(result)
           }
         } else {
           assert(context.bufferErrors || isPastTyper, "silent mode is not available past typer")
-          withSavedContext(context){
+
+          context.reporter.withFreshErrorBuffer {
             val res = op(this)
-            val errorsToReport = context.reporter.errors
-            context.reporter.clearAllErrors()
-            if (errorsToReport.isEmpty) SilentResultValue(res) else SilentTypeError(errorsToReport.head)
+            if (!context.reporter.hasErrors) SilentResultValue(res)
+            else SilentTypeError(context.reporter.firstError.get)
           }
         }
       } catch {

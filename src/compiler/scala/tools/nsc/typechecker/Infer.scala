@@ -1375,7 +1375,7 @@ trait Infer extends Checkable {
       // with and without views enabled, and bestForExpectedType will try again
       // with pt = WildcardType if it fails with pt != WildcardType.
       val c = context
-      class InferTwice extends c.TryTwice {
+      class InferMethodAlternativeTwice extends c.TryTwice {
         private[this] val OverloadedType(pre, alts) = tree.tpe
         private[this] var varargsStar = false
         private[this] val argtpes = argtpes0 mapConserve {
@@ -1384,12 +1384,12 @@ trait Infer extends Checkable {
         }
 
         private def followType(sym: Symbol) = followApply(pre memberType sym)
+        // separate method to help the inliner
+        private def isAltApplicable(pt: Type)(alt: Symbol) = context inSilentMode { isApplicable(undetparams, followType(alt), argtpes, pt) && !context.reporter.hasErrors }
+        private def rankAlternatives(sym1: Symbol, sym2: Symbol) = isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
         private def bestForExpectedType(pt: Type, isLastTry: Boolean): Unit = {
-          val applicable0 = alts filter (alt => context inSilentMode isApplicable(undetparams, followType(alt), argtpes, pt))
-          val applicable  = overloadsToConsiderBySpecificity(applicable0, argtpes, varargsStar)
-          val ranked      = bestAlternatives(applicable)((sym1, sym2) =>
-            isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
-          )
+          val applicable  = overloadsToConsiderBySpecificity(alts filter isAltApplicable(pt), argtpes, varargsStar)
+          val ranked      = bestAlternatives(applicable)(rankAlternatives)
           ranked match {
             case best :: competing :: _ => AmbiguousMethodAlternativeError(tree, pre, best, competing, argtpes, pt, isLastTry) // ambiguous
             case best :: Nil            => tree setSymbol best setType (pre memberType best)           // success
@@ -1405,7 +1405,7 @@ trait Infer extends Checkable {
         }
       }
 
-      (new InferTwice).apply()
+      (new InferMethodAlternativeTwice).apply()
     }
 
     /** Assign `tree` the type of all polymorphic alternatives
