@@ -509,13 +509,6 @@ abstract class TreeInfo {
     case _                                                                   => false
   }
 
-  /** The parameter ValDefs of a method definition that have vararg types of the form T*
-   */
-  def repeatedParams(tree: Tree): List[ValDef] = tree match {
-    case DefDef(_, _, _, vparamss, _, _)  => vparamss.flatten filter (vd => isRepeatedParamType(vd.tpt))
-    case _                                => Nil
-  }
-
   /** Is tpt a by-name parameter type of the form => T? */
   def isByNameParamType(tpt: Tree) = tpt match {
     case TypeTree()                                                 => definitions.isByNameParamType(tpt.tpe)
