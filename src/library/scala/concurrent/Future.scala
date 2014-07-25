@@ -102,7 +102,7 @@ trait Future[+T] extends Awaitable[T] {
 
   /* Callbacks */
 
-  /** When this future is completed successfully (i.e. with a value),
+  /** When this future is completed successfully (i.e., with a value),
    *  apply the provided partial function to the value if the partial function
    *  is defined at that value.
    *
@@ -118,7 +118,7 @@ trait Future[+T] extends Awaitable[T] {
     case _ =>
   }
 
-  /** When this future is completed with a failure (i.e. with a throwable),
+  /** When this future is completed with a failure (i.e., with a throwable),
    *  apply the provided callback to the throwable.
    *
    *  $caughtThrowables
