@@ -11,6 +11,7 @@ import reporters.Reporter
 import typechecker.Analyzer
 import scala.reflect.internal.util.{ BatchSourceFile, RangePosition }
 
+
 trait ScaladocGlobalTrait extends Global {
   outer =>
 

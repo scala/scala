@@ -59,14 +59,21 @@ trait DocComments { self: Global =>
     comment.defineVariables(sym)
   }
 
+
+  def replaceInheritDocToInheritdoc(docStr: String):String  = {
+    docStr.replaceAll("""\{@inheritDoc\p{Zs}*\}""", "@inheritdoc")
+  }
+
   /** The raw doc comment of symbol `sym`, minus usecase and define sections, augmented by
    *  missing sections of an inherited doc comment.
    *  If a symbol does not have a doc comment but some overridden version of it does,
    *  the doc comment of the overridden version is copied instead.
    */
   def cookedDocComment(sym: Symbol, docStr: String = ""): String = cookedDocComments.getOrElseUpdate(sym, {
-    val ownComment = if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
+    var ownComment = if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
                        else DocComment(docStr).template
+    ownComment = replaceInheritDocToInheritdoc(ownComment)
+
     superComment(sym) match {
       case None =>
         if (ownComment.indexOf("@inheritdoc") != -1)
