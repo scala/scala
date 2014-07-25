@@ -43,9 +43,9 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
       case FLOAT  => "F"
       case LONG   => "J"
       case DOUBLE => "D"
-      case c @ ClassBType(_, _)   => "L" + c.internalName + ";"
-      case ArrayBType(component)  => "[" + component
-      case MethodBType(args, res) => "(" + args.mkString + ")" + res
+      case ClassBType(internalName) => "L" + internalName + ";"
+      case ArrayBType(component)    => "[" + component
+      case MethodBType(args, res)   => "(" + args.mkString + ")" + res
     }
 
     /**
@@ -160,9 +160,9 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
       case FLOAT  => asm.Type.FLOAT_TYPE
       case LONG   => asm.Type.LONG_TYPE
       case DOUBLE => asm.Type.DOUBLE_TYPE
-      case c @ ClassBType(_, _)  => asm.Type.getObjectType(c.internalName) // (*)
-      case a @ ArrayBType(_)     => asm.Type.getObjectType(a.descriptor)
-      case m @ MethodBType(_, _) => asm.Type.getMethodType(m.descriptor)
+      case ClassBType(internalName) => asm.Type.getObjectType(internalName) // see (*) above
+      case a: ArrayBType            => asm.Type.getObjectType(a.descriptor)
+      case m: MethodBType           => asm.Type.getMethodType(m.descriptor)
     }
 
     def asRefBType  : RefBType   = this.asInstanceOf[RefBType]
@@ -227,39 +227,254 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
      * This can be verified for example using javap or ASMifier.
      */
     def classOrArrayType: String = this match {
-      case c: ClassBType => c.internalName
-      case a: ArrayBType => a.descriptor
+      case ClassBType(internalName) => internalName
+      case a: ArrayBType            => a.descriptor
     }
   }
 
   /**
+   * InnerClass and EnclosingMethod attributes (EnclosingMethod is displayed as OUTERCLASS in asm).
+   *
+   * In this summary, "class" means "class or interface".
+   *
+   * JLS: http://docs.oracle.com/javase/specs/jls/se8/html/index.html
+   * JVMS: http://docs.oracle.com/javase/specs/jvms/se8/html/index.html
+   *
+   * Terminology
+   * -----------
+   *
+   *  - Nested class (JLS 8): class whose declaration occurs within the body of another class
+   *
+   *  - Top-level class (JLS 8): non-nested class
+   *
+   *  - Inner class (JLS 8.1.3): nested class that is not (explicitly or implicitly) static
+   *
+   *  - Member class (JLS 8.5): class directly enclosed in the body of a class (and not, for
+   *    example, defined in a method). Member classes cannot be anonymous. May be static.
+   *
+   *  - Local class (JLS 14.3): nested, non-anonymous class that is not a member of a class
+   *    - cannot be static (therefore they are "inner" classes)
+   *    - can be defined in a method, a constructor or in an initializer block
+   *
+   *  - Initializer block (JLS 8.6 / 8.7): block of statements in a java class
+   *    - static initializer: executed before constructor body
+   *    - instance initializer: exectued when class is initialized (instance creation, static
+   *      field access, ...)
+   *
+   *
+   * InnerClass
+   * ----------
+   *
+   * The JVMS 4.7.6 requires an entry for every class mentioned in a CONSTANT_Class_info in the
+   * constant pool (CP) that is not a member of a package (JLS 7.1).
+   *
+   * The JLS 13.1, points 9. / 10. requires: a class must reference (in the CP)
+   *  - its immediately enclosing class
+   *  - all of its member classes
+   *  - all local and anonymous classes that appear elsewhere (method, constructor, initializer
+   *    block, field initializer)
+   *
+   * In a comment, the 4.7.6 spec says: this implies an entry in the InnerClass attribute for
+   *  - All enclosing classes (except the outermost, which is top-level)
+   *    - My comment: not sure how this is implied, below (*) a Java counter-example.
+   *      In any case, the Java compiler seems to add all enclosing classes, even if they are not
+   *      otherwise mentioned in the CP. So we should do the same.
+   *  - All nested classes (including anonymous and local, but not transitively)
+   *
+   * Fields in the InnerClass entries:
+   *  - inner class: the (nested) class C we are talking about
+   *  - outer class: the class of which C is a member. Has to be null for non-members, i.e. for
+   *                 local and anonymous classes.
+   *  - inner name:  A string with the simple name of the inner class. Null for anonymous classes.
+   *  - flags:       access property flags, details in JVMS, table in 4.7.6.
+   *
+   *
+   * Note 1: when a nested class is present in the InnerClass attribute, all of its enclosing
+   * classes have to be present as well (by the rules above). Example:
+   *
+   *   class Outer { class I1 { class I2 { } } }
+   *   class User { Outer.I1.I2 foo() { } }
+   *
+   * The return type "Outer.I1.I2" puts "Outer$I1$I2" in the CP, therefore the class is added to the
+   * InnerClass attribute. For this entry, the "outer class" field will be "Outer$I1". This in turn
+   * adds "Outer$I1" to the CP, which requires adding that class to the InnerClass attribute.
+   * (For local / anonymous classes this would not be the case, since the "outer class" attribute
+   *  would be empty. However, no class (other than the enclosing class) can refer to them, as they
+   *  have no name.)
+   *
+   * In the current implementation of the Scala compiler, when adding a class to the InnerClass
+   * attribute, all of its enclosing classes will be added as well. Javac seems to do the same,
+   * see (*).
+   *
+   *
+   * Note 2: If a class name is mentioned only in a CONSTANT_Utf8_info, but not in a
+   * CONSTANT_Class_info, the JVMS does not require an entry in the InnerClass attribute. However,
+   * the Java compiler seems to add such classes anyway. For example, when using an annotation, the
+   * annotation class is stored as a CONSTANT_Utf8_info in the CP:
+   *
+   *   @O.Ann void foo() { }
+   *
+   * adds "const #13 = Asciz LO$Ann;;" in the constant pool. The "RuntimeInvisibleAnnotations"
+   * attribute refers to that constant pool entry. Even though there is no other reference to
+   * `O.Ann`, the java compiler adds an entry for that class to the InnerClass attribute (which
+   * entails adding a CONSTANT_Class_info for the class).
+   *
+   *
+   *
+   * EnclosingMethod
+   * ---------------
+   *
+   * JVMS 4.7.7: the attribute must be present "if and only if it represents a local class
+   * or an anonymous class" (i.e. not for member classes).
+   *
+   * Fields:
+   *  - class:  the enclosing class
+   *  - method: the enclosing method (or constructor). Null if the class is not enclosed by a
+   *            method, i.e. for
+   *             - local or anonymous classes defined in (static or non-static) initializer blocks
+   *             - anonymous classes defined in initializer blocks or field initializers
+   *
+   *            Note: the field is required for anonymous classes defined within local variable
+   *            initializers (within a method), Java example below (**).
+   *
+   *            Currently, the Scala compiler sets "method" to the class constructor for classes
+   *            defined in initializer blocks or field initializers. This is probably OK, since the
+   *            Scala compiler desugars these statements into to the primary constructor.
+   *
+   *
+   * (*)
+   *   public class Test {
+   *     void foo() {
+   *       class Foo1 {
+   *         // constructor statement block
+   *         {
+   *           class Foo2 {
+   *             class Foo3 { }
+   *           }
+   *         }
+   *       }
+   *     }
+   *   }
+   *
+   * The class file Test$1Foo1$1Foo2$Foo3 has no reference to the class Test$1Foo1, however it
+   * still contains an InnerClass attribute for Test$1Foo1.
+   * Maybe this is just because the Java compiler follows the JVMS comment ("InnerClasses
+   * information for each enclosing class").
+   *
+   *
+   * (**)
+   *   void foo() {
+   *     // anonymous class defined in local variable initializer expression.
+   *     Runnable x = true ? (new Runnable() {
+   *       public void run() { return; }
+   *     }) : null;
+   *   }
+   *
+   * The EnclosingMethod attribute of the anonymous class mentions "foo" in the "method" field.
+   *
+   *
+   * Java Compatibility
+   * ------------------
+   *
+   * In the InnerClass entry for classes in top-level modules, the "outer class" is emitted as the
+   * mirror class (or the existing companion class), i.e. C1 is nested in T (not T$).
+   * For classes nested in a nested object, the "outer class" is the module class: C2 is nested in T$N$
+   * object T {
+   *   class C1
+   *   object N { class C2 }
+   * }
+   *
+   * Reason: java compat. It's a "best effort" "solution". If you want to use "C1" from Java, you
+   * can write "T.C1", and the Java compiler will translate that to the classfile T$C1.
+   *
+   * If we would emit the "outer class" of C1 as "T$", then in Java you'd need to write "T$.C1"
+   * because the java compiler looks at the InnerClass attribute to find if an inner class exists.
+   * However, the Java compiler would then translate the '.' to '$' and you'd get the class name
+   * "T$$C1". This class file obviously does not exist.
+   *
+   * Directly using the encoded class name "T$C1" in Java does not work: since the classfile
+   * describes a nested class, the Java compiler hides it from the classpath and will report
+   * "cannot find symbol T$C1". This means that the class T.N.C2 cannot be referenced from a
+   * Java source file in any way.
+   *
+   *
+   * STATIC flag
+   * -----------
+   *
+   * Java: static nested classes have the "static" flag in the InnerClass attribute. This is not the
+   * case for local classes defined within a static method, even though such classes, as they are
+   * defined in a static context, don't take an "outer" instance.
+   * Non-static nested classes (inner classes, including local classes defined in a non-static
+   * method) take an "outer" instance on construction.
+   *
+   * Scala: Explicitouter adds an "outer" parameter to nested classes, except for classes defined
+   * in a static context, i.e. when all outer classes are module classes.
+   *   package p
+   *   object O1 {
+   *     class C1 // static
+   *     object O2 {
+   *       def f = {
+   *         class C2 { // static
+   *           class C3 // non-static, needs outer
+   *         }
+   *       }
+   *     }
+   *   }
+   *
+   * Int the InnerClass attribute, the `static` flag is added for all classes defined in a static
+   * context, i.e. also for C2. This is different than in Java.
+   *
+   *
+   * Mirror Classes
+   * --------------
+   *
+   * TODO: innerclass attributes on mirror class, bean info class
+   */
+
+  /**
    * Class or Interface type.
    *
-   * Classes are represented using their name as a slice of the `chrs` array. This representation is
-   * efficient because the JVM class name is initially created using `classSymbol.javaBinaryName`.
-   * This already adds the necessary string to the `chrs` array, so it makes sense to reuse the same
-   * name table in the backend.
+   * The information for creating a ClassBType (superClass, interfaces, etc) is obtained
+   *   - either from a ClassSymbol, for classes being compiled or referenced from source (see
+   *     BCodeTypes)
+   *   - or, during inlining, from ASM ClassNodes that are parsed from class files.
+   *
+   * The class name is represented as a slice of the `chrs` array. This representation is efficient
+   * because the JVM class name is obtained through `classSymbol.javaBinaryName`. This already adds
+   * the necessary string to the `chrs` array, so it makes sense to reuse the same name table in the
+   * backend.
+   *
+   * Not a case class because that would expose the constructor that takes (offset, length)
+   * parameters (I didn't find a way to make it private, also the factory in the companion).
+   *
+   * @param offset     See below
+   * @param length     The class name is represented as offset and length in the `chrs` array.
+   *                   The (public) constructors of ClassBType take a BTypeName, which are
+   *                   hash-consed. This ensures that two ClassBType instances for the same name
+   *                   have the same offset and length.
    *
    * Not a case class because that would expose the (Int, Int) constructor (didn't find a way to
    * make it private, also the factory in the companion).
    */
   class ClassBType private(val offset: Int, val length: Int) extends RefBType {
     /**
-     * Construct a ClassBType for a given (intenred) class name.
+     * Construct a ClassBType from the (intenred) internal name of a class.
      *
-     * @param n The class name as a slice of the `chrs` array, without the surrounding 'L' and ';'.
-     *          Note that `classSymbol.javaBinaryName` returns exactly such a name.
+     * @param internalName The internal name as a slice of the `chrs` array. The internal name does
+     *                     not have the surrounding 'L' and ';'. Note that
+     *                     `classSymbol.javaBinaryName` returns exactly such a name.
      */
-    def this(n: BTypeName) = this(n.start, n.length)
+    def this(internalName: BTypeName) = this(internalName.start, internalName.length)
 
     /**
-     * Construct a ClassBType for a given java class name.
+     * Construct a ClassBType from the internal name of a class.
      *
-     * @param s A class name of the form "java/lang/String", without the surrounding 'L' and ';'.
+     * @param internalName The internal name of a class has the form "java/lang/String", without the
+     *                     surrounding 'L' and ';'.
      */
-    def this(s: String) = this({
-      assert(!(s.head == 'L' && s.last == ';'), s"Descriptor instead of internal name: $s")
-      createNewName(s)
+    def this(internalName: String) = this({
+      assert(!(internalName.head == 'L' && internalName.last == ';'), s"Descriptor instead of internal name: $internalName")
+      createNewName(internalName)
     })
 
     /**
@@ -277,7 +492,7 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
      * Custom equals / hashCode are needed because this is not a case class.
      */
     override def equals(o: Any): Boolean = (this eq o.asInstanceOf[Object]) || (o match {
-      case ClassBType(`offset`, `length`) => true
+      case c: ClassBType => c.offset == this.offset && c.length == this.length
       case _ => false
     })
 
@@ -291,12 +506,15 @@ abstract class BTypes[G <: Global](val __global_dont_use: G) {
   }
 
   object ClassBType {
-    def apply(n: BTypeName): ClassBType = new ClassBType(n)
-    def apply(s: String): ClassBType = new ClassBType(s)
+    def apply(internalName: BTypeName): ClassBType = new ClassBType(internalName)
+    def apply(internalName: String): ClassBType = new ClassBType(internalName)
 
-    def unapply(c: ClassBType): Option[(Int, Int)] =
+    /**
+     * Pattern matching on a ClassBType extracts the `internalName` of the class.
+     */
+    def unapply(c: ClassBType): Option[String] =
       if (c == null) None
-      else Some((c.offset, c.length))
+      else Some(c.internalName)
   }
 
   case class ArrayBType(componentType: BType) extends RefBType {

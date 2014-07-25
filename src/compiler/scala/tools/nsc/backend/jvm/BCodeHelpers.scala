@@ -460,6 +460,7 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
         // Can't call .toInterface (at this phase) or we trip an assertion.
         // See PackratParser#grow for a method which fails with an apparent mismatch
         // between "object PackratParsers$class" and "trait PackratParsers"
+        // TODO @lry do we have a test for that?
         if (sym.isImplClass) {
           // pos/spec-List.scala is the sole failure if we don't check for NoSymbol
           val traitSym = sym.owner.info.decl(tpnme.interfaceName(sym.name))
@@ -468,6 +469,8 @@ abstract class BCodeHelpers extends BCodeTypes with BytecodeWriters {
             return asmClassType(traitSym)
           }
         }
+
+        // TODO @lry: code duplication between here and method asmClassType.
 
         assert(hasInternalName(sym), s"Invoked for a symbol lacking JVM internal name: ${sym.fullName}")
         assert(!phantomTypeMap.contains(sym), "phantom types not supposed to reach here.")

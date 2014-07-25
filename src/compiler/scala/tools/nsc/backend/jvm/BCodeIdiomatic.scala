@@ -34,6 +34,7 @@ abstract class BCodeIdiomatic extends SubComponent {
     case "jvm-1.5"     => asm.Opcodes.V1_5
     case "jvm-1.6"     => asm.Opcodes.V1_6
     case "jvm-1.7"     => asm.Opcodes.V1_7
+    case "jvm-1.8"     => asm.Opcodes.V1_8
   }
 
   val majorVersion: Int = (classfileVersion & 0xFF)
