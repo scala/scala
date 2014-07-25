@@ -1,4 +1,5 @@
-pos: NoPosition bad symbolic reference to pack1.T encountered in class file 'U.class'.
-Cannot access type T in package pack1. The current classpath may be
-missing a definition for pack1.T, or U.class may have been compiled against a version that's
-incompatible with the one found on the current classpath. ERROR
+pos: NoPosition missing or invalid dependency detected while loading class file 'U.class'.
+Could not access type T in package pack1,
+because it (or its dependencies) are missing. Check your build definition for
+missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
+A full rebuild may help if 'U.class' was compiled against an incompatible version of pack1. ERROR
