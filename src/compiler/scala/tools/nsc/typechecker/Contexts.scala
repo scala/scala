@@ -1312,13 +1312,13 @@ trait Contexts { self: Analyzer =>
     final def clearAllWarnings(): Unit = warningBuffer.clear()
   }
 
-  private class ImmediateReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
+  private[typechecker] class ImmediateReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def makeBuffering: ContextReporter = new BufferingReporter(errorBuffer, warningBuffer)
     protected def handleError(pos: Position, msg: String): Unit = reporter.error(pos, msg)
  }
 
 
-  private class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
+  private[typechecker] class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def isBuffering = true
 
     override def issue(err: AbsTypeError)(implicit context: Context): Unit             = errorBuffer += err
@@ -1337,12 +1337,12 @@ trait Contexts { self: Analyzer =>
    *
    * TODO: get rid of it, use ImmediateReporter and a check for reporter.hasErrors where necessary
    */
-  private class ThrowingReporter extends ContextReporter {
+  private[typechecker] class ThrowingReporter extends ContextReporter {
     protected def handleError(pos: Position, msg: String): Unit = throw new TypeError(pos, msg)
   }
 
   /** Used during a run of [[scala.tools.nsc.typechecker.TreeCheckers]]? */
-  private class CheckingReporter extends ContextReporter {
+  private[typechecker] class CheckingReporter extends ContextReporter {
     protected def handleError(pos: Position, msg: String): Unit = onTreeCheckerError(pos, msg)
   }
 
