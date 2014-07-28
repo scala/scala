@@ -6,6 +6,7 @@
 package scala.tools.nsc.classpath
 
 import scala.reflect.io.AbstractFile
+import java.net.URL
 
 case class AggregateFlatClasspath(aggregates: Seq[FlatClasspath]) extends FlatClasspath {
 
@@ -40,7 +41,9 @@ case class AggregateFlatClasspath(aggregates: Seq[FlatClasspath]) extends FlatCl
   }
 
   override def findClassFile(className: String): Option[AbstractFile] = {
-	  val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
+    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
     classes(pkg).find(_.name == simpleClassName).map(_.file)
   }
+
+  override def asURLs: Seq[URL] = aggregates.flatMap(_.asURLs)
 }

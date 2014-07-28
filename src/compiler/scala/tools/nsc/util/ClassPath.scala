@@ -147,7 +147,7 @@ object ClassPath {
 /**
  * Represents a package which contains classes and other packages
  */
-abstract class ClassPath[T] extends ClassfileLookup {
+abstract class ClassPath[T] extends ClassFileLookup {
   type AnyClassRep = ClassPath[T]#ClassRep
 
   /**
@@ -160,10 +160,6 @@ abstract class ClassPath[T] extends ClassfileLookup {
    * For example, the path of the directory or jar.
    */
   def origin: Option[String] = None
-
-  /** A list of URLs representing this classpath.
-   */
-  def asURLs: List[URL]
 
   /** The whole classpath in the form of one String.
    */
@@ -214,7 +210,7 @@ abstract class ClassPath[T] extends ClassfileLookup {
         classes find (_.name == name)
     }
 
-  def findClassFile(name: String): Option[AbstractFile] =
+  override def findClassFile(name: String): Option[AbstractFile] =
     findClass(name) match {
       case Some(ClassRep(Some(x: AbstractFile), _)) => Some(x)
       case _                                        => None

@@ -6,7 +6,7 @@ import scala.tools.nsc.util._
 //import scala.tools.nsc.classpath.ZipFileIndex
 //import scala.tools.nsc.classpath.RelativePath
 
-object ZipArchiveBenchmark { // TODO fix this file - it didn't compile because part of classes doesn't exist
+object ZipArchiveBenchmark { // TODO fix or remove this file - it didn't compile because part of classes doesn't exist
 
   val scalaLibraryJarPath = "/Users/grek/scala/scala-master/build/pack/lib/scala-library.jar"
 

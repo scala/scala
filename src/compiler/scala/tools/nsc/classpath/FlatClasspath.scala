@@ -6,7 +6,7 @@
 package scala.tools.nsc.classpath
 
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.util.ClassfileLookup
+import scala.tools.nsc.util.ClassFileLookup
 
 /**
  * An interface for a flat classpath.
@@ -16,11 +16,15 @@ import scala.tools.nsc.util.ClassfileLookup
  *
  * This is an alternative design compared to scala.tools.nsc.util.ClassPath
  */
-trait FlatClasspath extends ClassfileLookup {
+trait FlatClasspath extends ClassFileLookup {
   /** Empty string represents root package */
   def packages(inPackage: String): Seq[PackageEntry]
   def classes(inPackage: String): Seq[ClassfileEntry]
-  def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry])
+  def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) // TODO check why do wee need this list?
+  //def sourcepath: Seq[SourceFileEntry?] // FIXME implement sourcepath
+
+  // FIXME implement this
+  //override def findClass(name: String): Option[ClassPath[AbstractFile]#AnyClassRep] = ??? //ClassRepresentation[AbstractFile]] = ???
 }
 
 object FlatClasspath {
@@ -28,11 +32,13 @@ object FlatClasspath {
 }
 
 sealed trait ClasspathEntry {
-    def name: String
-  }
+  def name: String
+}
+
 trait ClassfileEntry extends ClasspathEntry {
   def file: AbstractFile
 }
+
 trait PackageEntry extends ClasspathEntry
 
 case class PackageEntryImpl(name: String) extends PackageEntry

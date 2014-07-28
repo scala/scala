@@ -27,15 +27,17 @@ trait JavaPlatform extends Platform {
 
   def classPath: ClassPath[AbstractFile] = {
     assert(settings.YclasspathImpl.value == ClassPathImplementationType.Recursive)
-    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, flatClasspath).result)
+    // TODO why do we have flat classpath also here? Yes, it's called by name but it's still something wrong here.
+    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, flatClassPath).result)
     currentClassPath.get
   }
 
-  lazy val flatClasspath: FlatClasspath = {
+  lazy val flatClassPath: FlatClasspath = {
     assert(settings.YclasspathImpl.value == ClassPathImplementationType.Flat)
     DefaultFlatClasspathManager.createClasspath(settings)
   }
 
+  // FIXME delta for flat
   /** Update classpath with a substituted subentry */
   def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]]) =
     currentClassPath = Some(new DeltaClassPath(currentClassPath.get, subst))

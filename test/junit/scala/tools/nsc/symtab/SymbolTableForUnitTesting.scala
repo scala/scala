@@ -54,7 +54,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
       new PathResolver(settings).result
     }
 
-    lazy val flatClasspath: FlatClasspath = {
+    lazy val flatClassPath: FlatClasspath = {
       assert(settings.YclasspathImpl.value == ClassPathImplementationType.Flat)
       SymbolTableForUnitTesting.this.flatClasspath
     }

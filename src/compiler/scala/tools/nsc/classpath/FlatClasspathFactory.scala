@@ -25,7 +25,7 @@ class FlatClasspathFactory extends ClasspathFactory[FlatClasspath] {
       sys.error(s"Unsupported classpath element: $file")
 
   override def sourcesInPath(path: String): List[FlatClasspath] = {
-    // TODO: implement properly
+    // FIXME change Nil to real implementation
     Nil
   }
 }

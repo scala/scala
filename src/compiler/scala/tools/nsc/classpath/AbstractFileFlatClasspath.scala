@@ -9,6 +9,7 @@ import scala.reflect.io.AbstractFile
 import scala.tools.nsc.classpath.FlatClasspath._
 import FileUtils.AbstractFileOps
 import scala.Some
+import java.net.URL
 
 /**
  * AbstractFile-backed implementation of a classpath.
@@ -38,18 +39,21 @@ abstract class AbstractFileFlatClasspath(file: AbstractFile) extends FlatClasspa
     (packages(inPackage), classes(inPackage))
 
   override def findClassFile(className: String): Option[AbstractFile] = {
-	  val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
+    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
     classes(pkg).find(_.name == simpleClassName).map(_.file)
   }
 
-	private def getDirectory(forPackage: String): Option[AbstractFile] = {
-		if (forPackage == RootPackage) Some(file)
-		else {
-			val directoryPath = FileUtils.dirPath(forPackage)
-			// lookupName might return null but Option.apply will turn it into None
-			Option(file.lookupPathUnchecked(directoryPath, directory = true))
-		}
-	}
+  // FIXME implement this
+  override def asURLs: Seq[URL] = ???
+
+  private def getDirectory(forPackage: String): Option[AbstractFile] = {
+    if (forPackage == RootPackage) Some(file)
+    else {
+      val directoryPath = FileUtils.dirPath(forPackage)
+      // lookupName might return null but Option.apply will turn it into None
+      Option(file.lookupPathUnchecked(directoryPath, directory = true))
+    }
+  }
 
 }
 

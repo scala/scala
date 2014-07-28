@@ -160,7 +160,7 @@ abstract class SymbolLoaders {
 
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
-  def initializeFromClassPath(owner: Symbol, classRep: ClassPath[AbstractFile]#ClassRep) {
+  def initializeFromClassPath(owner: Symbol, classRep: ClassPath[AbstractFile]#ClassRep) { // FIXME abstract over this type
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
@@ -327,10 +327,12 @@ abstract class SymbolLoaders {
        *
        */
       private type SymbolLoadersRefined = SymbolLoaders { val symbolTable: classfileParser.symbolTable.type }
+
       val loaders = SymbolLoaders.this.asInstanceOf[SymbolLoadersRefined]
-      def classfileLookup: util.ClassfileLookup = settings.YclasspathImpl.value match {
+
+      override def classFileLookup: util.ClassFileLookup = settings.YclasspathImpl.value match {
         case ClassPathImplementationType.Recursive => platform.classPath
-        case ClassPathImplementationType.Flat => platform.flatClasspath
+        case ClassPathImplementationType.Flat => platform.flatClassPath
       }
     }
 

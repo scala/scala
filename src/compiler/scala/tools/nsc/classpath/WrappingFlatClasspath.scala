@@ -7,6 +7,7 @@ package scala.tools.nsc.classpath
 
 import scala.tools.nsc.util.ClassPath
 import scala.reflect.io.AbstractFile
+import java.net.URL
 
 class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends FlatClasspath {
 
@@ -32,7 +33,7 @@ class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends F
   
   override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = 
     (packages(inPackage), classes(inPackage))
-  
+
   def loadClassfile(classfile: String): Array[Byte] = {
     val binaryFile = wrappedClasspath.findClass(classfile).get.binary.get
     binaryFile.toByteArray
@@ -49,6 +50,9 @@ class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends F
   }
 
   override def findClassFile(name: String): Option[AbstractFile] = wrappedClasspath.findClassFile(name)
+
+  // FIXME implement this
+  override def asURLs: Seq[URL] = ???
 
   protected class WrappingPackageEntry(
       val name: String,

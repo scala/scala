@@ -12,7 +12,6 @@ object DefaultFlatClasspathManager extends FlatClasspathManager {
   override def createClasspath(settings: Settings): FlatClasspath = {
     val flatClasspathFactory = new FlatClasspathFactory
     val flatClasspathResolver = new FlatClasspathResolver(settings, flatClasspathFactory)
-    val aggregateFlatClasspath = new AggregateFlatClasspath(flatClasspathResolver.containers)
-    aggregateFlatClasspath
+    new AggregateFlatClasspath(flatClasspathResolver.containers)
   }
 }

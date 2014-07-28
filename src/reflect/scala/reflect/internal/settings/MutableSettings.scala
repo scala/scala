@@ -1,6 +1,10 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2013 LAMP/EPFL
  * @author  Martin Odersky
+ *
+ * Copyright (c) 2014 Contributor. All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Scala License which accompanies this distribution, and
+ * is available at http://www.scala-lang.org/license.html
  */
 // $Id$
 
@@ -31,6 +35,8 @@ abstract class MutableSettings extends AbsSettings {
       v = arg
       postSetHook()
     }
+
+    def valueSetByUser: Option[T] =  if (isSetByUser) Some(value) else None
   }
 
   def Xexperimental: BooleanSetting

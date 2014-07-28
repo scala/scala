@@ -8,8 +8,6 @@
  */
 // $Id$
 
-
-
 package scala
 package tools
 package nsc
@@ -193,7 +191,6 @@ trait ScalaSettings extends AbsScalaSettings
   val inferByName     = BooleanSetting    ("-Yinfer-by-name", "Allow inference of by-name types. This is a temporary option to ease transition. See SI-7899.").withDeprecationMessage(removalIn212)
   val YclasspathImpl  = ChoiceSetting     ("-YclasspathImpl", "implementation", "Choose classpath scanning", List(ClassPathImplementationType.Recursive, ClassPathImplementationType.Flat), ClassPathImplementationType.Recursive)
 
-  val Yinvalidate     = StringSetting     ("-Yinvalidate", "classpath-entry", "Invalidate classpath entry before run", "")
   val YvirtClasses    = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
   val YdisableUnreachablePrevention = BooleanSetting("-Ydisable-unreachable-prevention", "Disable the prevention of unreachable blocks in code generation.")
   val YnoLoadImplClass = BooleanSetting   ("-Yno-load-impl-class", "Do not load $class.class files.")
@@ -270,6 +267,7 @@ trait ScalaSettings extends AbsScalaSettings
   }
 }
 
+// we could decide whether to write ClassPath or Classpath and use created convention - right now codebase is very inconsistent
 object ClassPathImplementationType {
   val Flat = "flat"
   val Recursive = "recursive"

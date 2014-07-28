@@ -10,12 +10,13 @@ import java.io.File
 import java.io.FileFilter
 import scala.reflect.io.PlainFile
 import FileUtils.FileOps
+import java.net.URL
 
 case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
   import FlatClasspath.RootPackage
   import DirectoryFlatClasspath.ClassfileEntryImpl
   assert(dir != null)
-  
+
   private def getDirectory(forPackage: String): Option[File] = {
     if (forPackage == RootPackage) {
       Some(dir)
@@ -44,11 +45,11 @@ case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
     }
     entries
   }
-  
+
   private object classFileFileFilter extends FileFilter {
     def accept(pathname: File): Boolean = pathname.isClass
   }
-  
+
   override def classes(inPackage: String): Seq[ClassfileEntry] = {
     val dirForPackage = getDirectory(inPackage)
     val classfiles: Array[File] = dirForPackage match {
@@ -85,14 +86,17 @@ case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
     (packageBuf, classfileBuf)
   }
 
-	override def findClassFile(className: String): Option[AbstractFile] = {
-		val classfile = new File(dir, s"$className.class")
-		if (classfile.exists) {
-			val wrappedClassFile = new scala.reflect.io.File(classfile)
-			val abstractClassFile = new PlainFile(wrappedClassFile)
-			Some(abstractClassFile)
-		} else None
-	}
+  override def findClassFile(className: String): Option[AbstractFile] = {
+    val classfile = new File(dir, s"$className.class")
+    if (classfile.exists) {
+      val wrappedClassFile = new scala.reflect.io.File(classfile)
+      val abstractClassFile = new PlainFile(wrappedClassFile)
+      Some(abstractClassFile)
+    } else None
+  }
+
+  // FIXME change Nil to real implementation
+  override def asURLs: Seq[URL] = Nil
 }
 
 object DirectoryFlatClasspath {

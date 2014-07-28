@@ -172,7 +172,7 @@ object Main extends Main {
             .withOption("-help")
             .withOptionalArg("-classpath")
             .withOptionalArg("-cp")
-            .parse(args);
+            .parse(args)
 
     if (arguments contains "-version")
       Console.println(versionMsg)

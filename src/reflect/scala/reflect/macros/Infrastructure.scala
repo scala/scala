@@ -22,5 +22,5 @@ trait Infrastructure {
   def compilerSettings: List[String]
 
   /** Exposes current classpath. */
-  def classPath: List[java.net.URL]
+  def classPath: Seq[java.net.URL]
 }

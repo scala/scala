@@ -395,7 +395,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   )
 
   val replayQuestionMessage =
-    """|That entry seems to have slain the compiler.  Shall I replay
+    """|That entry seems to have slain the compiler. Shall I replay
        |your session? I can re-run each line except the last one.
        |[y/n]
     """.trim.stripMargin
