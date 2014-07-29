@@ -4,7 +4,7 @@
   <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
 
   <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
-
+  <title>{{ page.title }}</title>
 </head>
 
 <body>

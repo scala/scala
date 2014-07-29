@@ -25,7 +25,7 @@
   </script>
 
   <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
-
+  <title>{{ page.title }}</title>
 </head>
 
 <body>
