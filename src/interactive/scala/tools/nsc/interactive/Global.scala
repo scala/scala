@@ -19,6 +19,8 @@ import scala.annotation.{ elidable, tailrec }
 import scala.language.implicitConversions
 import scala.tools.nsc.typechecker.Typers
 import scala.util.control.Breaks._
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.JavaConverters.mapAsScalaMapConverter
 
 /**
  * This trait allows the IDE to have an instance of the PC that
@@ -160,19 +162,18 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
-  val unitOfFile = new LinkedHashMap[AbstractFile, RichCompilationUnit] with
-                       SynchronizedMap[AbstractFile, RichCompilationUnit] {
+  val unitOfFile = mapAsScalaMapConverter(new ConcurrentHashMap[AbstractFile, RichCompilationUnit] {
     override def put(key: AbstractFile, value: RichCompilationUnit) = {
       val r = super.put(key, value)
-      if (r.isEmpty) debugLog("added unit for "+key)
+      if (r == null) debugLog("added unit for "+key)
       r
     }
-    override def remove(key: AbstractFile) = {
+    override def remove(key: Any) = {
       val r = super.remove(key)
-      if (r.nonEmpty) debugLog("removed unit for "+key)
+      if (r != null) debugLog("removed unit for "+key)
       r
     }
-  }
+  }).asScala
 
   /** A set containing all those files that need to be removed
    *  Units are removed by getUnit, typically once a unit is finished compiled.
