@@ -89,10 +89,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   trait TemplateImpl extends EntityImpl with TemplateEntity {
     override def qualifiedName: String =
       if (inTemplate == null || inTemplate.isRootPackage) name else optimize(inTemplate.qualifiedName + "." + name)
-    def isPackage = sym.isPackage
+    def isPackage = sym.hasPackageFlag
     def isTrait = sym.isTrait
     def isClass = sym.isClass && !sym.isTrait
-    def isObject = sym.isModule && !sym.isPackage
+    def isObject = sym.isModule && !sym.hasPackageFlag
     def isCaseClass = sym.isCaseClass
     def isRootPackage = false
     def selfType = if (sym.thisSym eq sym) None else Some(makeType(sym.thisSym.typeOfThis, this))
@@ -250,7 +250,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def valueParams: List[List[ValueParam]] = Nil /** TODO, these are now only computed for DocTemplates */
 
     def parentTypes =
-      if (sym.isPackage || sym == AnyClass) List() else {
+      if (sym.hasPackageFlag || sym == AnyClass) List() else {
         val tps = (this match {
           case a: AliasType => sym.tpe.dealias.parents
           case a: AbstractType => sym.info.bounds match {
@@ -661,7 +661,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
               s != EmptyPackage && s != RootPackage
             }
         })
-      else if (bSym.isPackage) // (2)
+      else if (bSym.hasPackageFlag) // (2)
         if (settings.skipPackage(makeQualifiedName(bSym)))
           None
         else
@@ -772,7 +772,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         Some(new MemberTemplateImpl(bSym, inTpl) with AliasImpl with AliasType {
           override def isAliasType = true
         })
-      else if (!modelFinished && (bSym.isPackage || templateShouldDocument(bSym, inTpl)))
+      else if (!modelFinished && (bSym.hasPackageFlag || templateShouldDocument(bSym, inTpl)))
         modelCreation.createTemplate(bSym, inTpl)
       else
         None
