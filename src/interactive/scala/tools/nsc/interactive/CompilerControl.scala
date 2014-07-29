@@ -60,12 +60,12 @@ trait CompilerControl { self: Global =>
    *  Otherwise a new compilation unit is created, but not added to the set of loaded units.
    */
   def onUnitOf[T](source: SourceFile)(op: RichCompilationUnit => T): T =
-    op(unitOfFile.getOrElse(source.file, new RichCompilationUnit(source)))
+    op(Option(unitOfFile.get(source.file)).getOrElse(new RichCompilationUnit(source)))
 
   /** Removes the CompilationUnit corresponding to the given SourceFile
    *  from consideration for recompilation.
    */
-  def removeUnitOf(s: SourceFile): Option[RichCompilationUnit] = { toBeRemoved += s.file; unitOfFile get s.file }
+  def removeUnitOf(s: SourceFile): Option[RichCompilationUnit] = { toBeRemoved.add(s.file); Option(unitOfFile.get(s.file)) }
 
   /** Returns the top level classes and objects that were deleted
    * in the editor since last time recentlyDeleted() was called.
@@ -189,7 +189,7 @@ trait CompilerControl { self: Global =>
    * continues with current pass.
    * Waits until source is fully type checked and returns body in response.
    * @param source     The source file that needs to be fully typed.
-   * @param keepLoaded Whether to keep that file in the PC if it was not loaded before. If 
+   * @param keepLoaded Whether to keep that file in the PC if it was not loaded before. If
                        the file is already loaded, this flag is ignored.
    * @param response   The response, which is set to the fully attributed tree of `source`.
    *                   If the unit corresponding to `source` has been removed in the meantime
