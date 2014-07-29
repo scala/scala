@@ -21,4 +21,4 @@ scala> def foo[T]{
                           ^
 foo: [T]=> Unit
 
-scala> 
+scala> :quit

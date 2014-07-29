@@ -54,4 +54,4 @@ defined class BippyBungus
 scala> { new BippyBungus ; x1 }
 res2: Int = 4
 
-scala> 
+scala> :quit

@@ -32,7 +32,7 @@ java.lang.Exception
   at .f(<console>:7)
   ... 69 elided
 
-scala> """
+scala> :quit"""
 
   // normalize the "elided" lines because the frame count depends on test context
   lazy val elided = """(\s+\.{3} )\d+( elided)""".r

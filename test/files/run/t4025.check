@@ -14,4 +14,4 @@ scala>
 scala> def f(c: Any) = c match { case Red(_) => () }
 f: (c: Any)Unit
 
-scala> 
+scala> :quit

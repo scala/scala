@@ -12,4 +12,4 @@ scala> {
                                    ^
 TypeTag[x.type]
 
-scala> 
+scala> :quit

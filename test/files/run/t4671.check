@@ -43,4 +43,4 @@ println(s.mkString(""))
 }
 
 
-scala> 
+scala> :quit

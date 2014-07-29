@@ -14,4 +14,4 @@ res0: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[<?>]
 scala> scala.reflect.classTag[List[_]]
 res1: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List
 
-scala> 
+scala> :quit

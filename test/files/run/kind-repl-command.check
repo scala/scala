@@ -25,4 +25,4 @@ scala> :k Nonexisting
               Nonexisting
               ^
 
-scala> 
+scala> :quit

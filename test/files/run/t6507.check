@@ -21,4 +21,4 @@ scala> res0
 !
 res1: A = A
 
-scala> 
+scala> :quit

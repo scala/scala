@@ -58,4 +58,4 @@ scala> x.length + res5
 res3: Int = 129
 
 
-scala> 
+scala> :quit

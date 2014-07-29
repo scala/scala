@@ -14,6 +14,7 @@ object Properties extends scala.util.PropertiesTrait {
   // settings based on jar properties
   def residentPromptString = scalaPropOrElse("resident.prompt", "\nnsc> ")
   def shellPromptString    = scalaPropOrElse("shell.prompt", "\nscala> ")
+  def shellInterruptedString = scalaPropOrElse("shell.interrupted", ":quit\n")
 
   // derived values
   def isEmacsShell         = propOrEmpty("env.emacs") != ""

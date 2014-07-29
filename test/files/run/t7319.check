@@ -40,4 +40,4 @@ scala> Range(1,2).toArray: Seq[_]
 scala> 0
 res2: Int = 0
 
-scala> 
+scala> :quit

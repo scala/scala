@@ -5,4 +5,4 @@ scala> val c = { class C { override def toString = "C" }; ((new C, new C { def f
 warning: there was one feature warning; re-run with -feature for details
 c: (C, C{def f: Int}) forSome { type C <: AnyRef } = (C,C)
 
-scala> 
+scala> :quit

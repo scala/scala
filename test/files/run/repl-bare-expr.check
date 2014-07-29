@@ -47,4 +47,4 @@ Bovine.x: List[Any] = List(Ruminant(5), Cow, Moooooo)
 scala> Bovine.x
 res4: List[Any] = List(Ruminant(5), Cow, Moooooo)
 
-scala> 
+scala> :quit
