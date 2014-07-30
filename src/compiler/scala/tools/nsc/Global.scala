@@ -111,7 +111,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   type PlatformClassPath = ClassPath[AbstractFile]
 
-	def classPath: ClassFileLookup = settings.YclasspathImpl.value match {
+	def classPath: ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
 		case ClassPathImplementationType.Flat => flatClassPath
 		case ClassPathImplementationType.Recursive => recursiveClassPath
 	}

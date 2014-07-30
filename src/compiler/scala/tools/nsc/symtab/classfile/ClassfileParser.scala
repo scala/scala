@@ -44,7 +44,7 @@ abstract class ClassfileParser {
   protected def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol
 
   /** The compiler classpath. */
-  def classFileLookup: ClassFileLookup
+  def classFileLookup: ClassFileLookup[AbstractFile]
 
   import definitions._
   import scala.reflect.internal.ClassfileConstants._

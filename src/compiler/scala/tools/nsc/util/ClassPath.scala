@@ -147,9 +147,7 @@ object ClassPath {
 /**
  * Represents a package which contains classes and other packages
  */
-abstract class ClassPath[T] extends ClassFileLookup {
-  type AnyClassRep = ClassPath[T]#ClassRep
-
+abstract class ClassPath[T] extends ClassFileLookup[T] {
   /**
    * The short name of the package (without prefix)
    */
@@ -171,14 +169,14 @@ abstract class ClassPath[T] extends ClassFileLookup {
 
   /** Lists of entities.
    */
-  def classes: IndexedSeq[AnyClassRep]
+  def classes: IndexedSeq[ClassRepresentation[T]]
   def packages: IndexedSeq[ClassPath[T]]
   def sourcepaths: IndexedSeq[AbstractFile]
 
   /**
    * Represents classes which can be loaded with a ClassfileLoader and/or SourcefileLoader.
    */
-  case class ClassRep(binary: Option[T], source: Option[AbstractFile]) {
+  case class ClassRep(binary: Option[T], source: Option[AbstractFile]) extends ClassRepresentation[T] {
     def name: String = binary match {
       case Some(x)  => context.toBinaryName(x)
       case _        =>
@@ -197,14 +195,14 @@ abstract class ClassPath[T] extends ClassFileLookup {
    * Find a ClassRep given a class name of the form "package.subpackage.ClassName".
    * Does not support nested classes on .NET
    */
-  def findClass(name: String): Option[AnyClassRep] =
+  override def findClass(name: String): Option[ClassRepresentation[T]] =
     splitWhere(name, _ == '.', doDropIndex = true) match {
       case Some((pkgName, rest)) =>
         val pkg = packages find (_.name == pkgName)
         val rep = pkg flatMap (_ findClass rest)
         rep map {
-          case x: ClassRep  => x
-          case x            => throw new FatalError("Unexpected ClassRep '%s' found searching for name '%s'".format(x, name))
+          case x: ClassRepresentation[T] => x
+          case x => throw new FatalError("Unexpected ClassRep '%s' found searching for name '%s'".format(x, name))
         }
       case _ =>
         classes find (_.name == name)
@@ -212,8 +210,8 @@ abstract class ClassPath[T] extends ClassFileLookup {
 
   override def findClassFile(name: String): Option[AbstractFile] =
     findClass(name) match {
-      case Some(ClassRep(Some(x: AbstractFile), _)) => Some(x)
-      case _                                        => None
+      case Some(ClassRepresentation(Some(x: AbstractFile), _)) => Some(x)
+      case _ => None
     }
 
   def sortString = join(split(asClasspathString).sorted: _*)
@@ -315,10 +313,10 @@ extends ClassPath[T] {
   override def origin = Some(entries map (x => x.origin getOrElse x.name) mkString ("Merged(", ", ", ")"))
   override def asClasspathString: String = join(entries map (_.asClasspathString) : _*)
 
-  lazy val classes: IndexedSeq[AnyClassRep] = {
+  lazy val classes: IndexedSeq[ClassRepresentation[T]] = {
     var count   = 0
     val indices = mutable.HashMap[String, Int]()
-    val cls     = new mutable.ArrayBuffer[AnyClassRep](1024)
+    val cls     = new mutable.ArrayBuffer[ClassRepresentation[T]](1024)
 
     for (e <- entries; c <- e.classes) {
       val name = c.name
@@ -327,9 +325,9 @@ extends ClassPath[T] {
         val existing = cls(idx)
 
         if (existing.binary.isEmpty && c.binary.isDefined)
-          cls(idx) = existing.copy(binary = c.binary)
+          cls(idx) = ClassRep(binary = c.binary, source = existing.source)
         if (existing.source.isEmpty && c.source.isDefined)
-          cls(idx) = existing.copy(source = c.source)
+          cls(idx) = ClassRep(binary = existing.binary, source = c.source)
       }
       else {
         indices(name) = count
@@ -397,7 +395,7 @@ class JavaClassPath(containers: IndexedSeq[ClassPath[AbstractFile]],
 		flatClasspath
 	}
 
-	override def findClass(name: String): Option[AnyClassRep] =
+	override def findClass(name: String): Option[ClassRepresentation[AbstractFile]] =
 		if (flatClasspathEnabled) {
 			val classfile = cachedFlatClasspath.findClassFile(name)
 			val classRep = classfile.map(file => ClassRep(Some(file), None))

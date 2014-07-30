@@ -14,10 +14,10 @@ import java.net.URL
  */
 // TODO at the end, after removal of old classpath implementation, this class shouldn't be generic
 // T should be just changed to AbstractFile
-trait ClassFileLookup {
+trait ClassFileLookup[T] {
   def findClassFile(name: String): Option[AbstractFile]
 
-  //def findClass(name: String): Option[ClassPath[T]#AnyClassRep]//Option[ClassRepresentation[T]]
+  def findClass(name: String): Option[ClassRepresentation[T]]
 
   /**
    * A sequence of URLs representing this classpath.
@@ -28,6 +28,16 @@ trait ClassFileLookup {
 /**
  * Represents classes which can be loaded with a ClassfileLoader and/or SourcefileLoader.
  */
-//abstract class ClassRepresentation[T](val binary: Option[T], val source: Option[AbstractFile]) {
-//  def name: String
-//}
+// TODO at the end, after removal of old classpath implementation, this class shouldn't be generic
+// T should be just changed to AbstractFile
+trait ClassRepresentation[T] {
+  val binary: Option[T]
+  val source: Option[AbstractFile]
+
+  def name: String
+}
+
+object ClassRepresentation {
+  def unapply[T](classRep: ClassRepresentation[T]): Option[(Option[T], Option[AbstractFile])] =
+    Some((classRep.binary, classRep.source))
+}

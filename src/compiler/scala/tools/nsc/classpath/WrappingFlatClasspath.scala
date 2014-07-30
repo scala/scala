@@ -5,9 +5,10 @@
  */
 package scala.tools.nsc.classpath
 
-import scala.tools.nsc.util.ClassPath
-import scala.reflect.io.AbstractFile
 import java.net.URL
+import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.util.ClassRepresentation
+import scala.reflect.io.AbstractFile
 
 class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends FlatClasspath {
 
@@ -54,14 +55,14 @@ class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends F
   // FIXME implement this
   override def asURLs: Seq[URL] = ???
 
-  protected class WrappingPackageEntry(
+  protected class WrappingPackageEntry( // TODO what's that?
       val name: String,
       wrappedPackage: ClassPath[AbstractFile]) extends PackageEntry
 
-  protected class WrappingClassfileEntry(wrappedClassfileRep: ClassPath[AbstractFile]#AnyClassRep)
+  protected class WrappingClassfileEntry(wrappedClassFileRep: ClassRepresentation[AbstractFile])
     extends ClassfileEntry {
-    assert(wrappedClassfileRep.binary.isDefined)
-    override def name = wrappedClassfileRep.name
-    override def file: AbstractFile = wrappedClassfileRep.binary.get
+    assert(wrappedClassFileRep.binary.isDefined)
+    override def name = wrappedClassFileRep.name
+    override def file: AbstractFile = wrappedClassFileRep.binary.get
   }
 }

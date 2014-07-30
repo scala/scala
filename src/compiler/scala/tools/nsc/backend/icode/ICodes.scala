@@ -114,7 +114,7 @@ abstract class ICodes extends AnyRef
     lazy val symbolTable: global.type = global
     lazy val loaders: global.loaders.type = global.loaders
 
-    def classFileLookup: util.ClassFileLookup = ICodes.this.global.platform.classPath
+    def classFileLookup: util.ClassFileLookup[AbstractFile] = global.classPath
   }
 
   /** A phase which works on icode. */
