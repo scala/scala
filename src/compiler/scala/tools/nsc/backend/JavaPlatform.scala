@@ -13,8 +13,8 @@ package backend
 import io.AbstractFile
 import util.{ClassPath,MergedClassPath,DeltaClassPath}
 import scala.tools.util.PathResolver
-import scala.tools.nsc.classpath.FlatClasspath
-import scala.tools.nsc.classpath.DefaultFlatClasspathManager
+import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.classpath.DefaultFlatClassPathManager
 import scala.tools.nsc.settings.ClassPathImplementationType
 
 trait JavaPlatform extends Platform {
@@ -28,19 +28,16 @@ trait JavaPlatform extends Platform {
   def classPath: ClassPath[AbstractFile] = {
     assert(settings.YclasspathImpl.value == ClassPathImplementationType.Recursive)
     // TODO why do we have flat classpath also here? Yes, it's called by name but it's still something wrong here.
+    // I mean this method should be never used in the case of flat classpath
+    // I have to rethink this hack
     if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, flatClassPath).result)
     currentClassPath.get
   }
 
-  lazy val flatClassPath: FlatClasspath = {
+  lazy val flatClassPath: FlatClassPath = {
     assert(settings.YclasspathImpl.value == ClassPathImplementationType.Flat)
-    DefaultFlatClasspathManager.createClasspath(settings)
+    DefaultFlatClassPathManager.createClassPath(settings)
   }
-
-  // FIXME delta for flat
-  /** Update classpath with a substituted subentry */
-  def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]]) =
-    currentClassPath = Some(new DeltaClassPath(currentClassPath.get, subst))
 
   private def classEmitPhase =
     if (settings.isBCodeActive) genBCode

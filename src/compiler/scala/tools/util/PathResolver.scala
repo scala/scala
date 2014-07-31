@@ -19,8 +19,8 @@ import scala.reflect.runtime.ReflectionUtils
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps
-import scala.tools.nsc.classpath.ClasspathFactory
-import scala.tools.nsc.classpath.FlatClasspath
+import scala.tools.nsc.classpath.ClassPathFactory
+import scala.tools.nsc.classpath.FlatClassPath
 import scala.tools.nsc.settings.ClassPathImplementationType
 
 // Loosely based on the draft specification at:
@@ -204,7 +204,7 @@ object PathResolver {
   }
 }
 
-abstract class PathResolverBase[T](settings: Settings, classPathFactory: ClasspathFactory[T]) {
+abstract class PathResolverBase[T](settings: Settings, classPathFactory: ClassPathFactory[T]) {
   import PathResolver.{Defaults, ppcp, AsLines}
   protected def cmdLineOrElse(name: String, alt: String) = {
     (commandLineFor(name) match {
@@ -289,21 +289,21 @@ abstract class PathResolverBase[T](settings: Settings, classPathFactory: Classpa
   }
 }
 
-class PathResolver(settings: Settings, context: JavaContext, flatClasspath: => FlatClasspath) extends
+class PathResolver(settings: Settings, context: JavaContext, flatClassPath: => FlatClassPath) extends
   PathResolverBase[ClassPath[AbstractFile]](settings, context) {
   import PathResolver.{ Defaults, Environment, MkLines}
-  def this(settings: Settings, flatClasspath: => FlatClasspath) =
+  def this(settings: Settings, flatClassPath: => FlatClassPath) =
   this(settings,
       if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
       else DefaultJavaContext,
-      flatClasspath)
-  def this(settings: Settings, context: JavaContext) = this(settings, context, sys.error("Don't know how to construct FlatClasspath"))
-  def this(settings: Settings) = this(settings, sys.error("Don't know how to construct FlatClasspath"): FlatClasspath)
+      flatClassPath)
+  def this(settings: Settings, context: JavaContext) = this(settings, context, sys.error("Don't know how to construct FlatClassPath"))
+  def this(settings: Settings) = this(settings, sys.error("Don't know how to construct FlatClassPath"): FlatClassPath)
 
   def containers = Calculated.containers
 
   lazy val result = {
-    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings.YclasspathImpl.value == ClassPathImplementationType.Flat, flatClasspath)
+    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings.YclasspathImpl.value == ClassPathImplementationType.Flat, flatClassPath)
     if (settings.Ylogcp) {
       Console print f"Classpath built from ${settings.toConciseString} %n"
       Console print s"Defaults: ${PathResolver.Defaults}"
@@ -318,7 +318,7 @@ class PathResolver(settings: Settings, context: JavaContext, flatClasspath: => F
   def asURLs = result.asURLs
 }
 
-class FlatClasspathResolver(settings: Settings, flatClasspathFactory: ClasspathFactory[FlatClasspath]) extends
-  PathResolverBase[FlatClasspath](settings, flatClasspathFactory) {
+class FlatClassPathResolver(settings: Settings, flatClassPathFactory: ClassPathFactory[FlatClassPath]) extends
+  PathResolverBase[FlatClassPath](settings, flatClassPathFactory) {
   def containers = Calculated.containers
 }

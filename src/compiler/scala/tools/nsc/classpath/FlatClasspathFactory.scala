@@ -8,23 +8,24 @@ package scala.tools.nsc.classpath
 import scala.tools.nsc.util.ClassPath
 import FileUtils.AbstractFileOps
 import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.Settings
 
-class FlatClasspathFactory extends ClasspathFactory[FlatClasspath] {
+class FlatClassPathFactory(settings: Settings) extends ClassPathFactory[FlatClassPath] {
 
   override def expandPath(path: String, expandStar: Boolean = true): List[String] =
     ClassPath.expandPath(path, expandStar)
 
   override def expandDir(extdir: String): List[String] = ClassPath.expandDir(extdir)
 
-  override def createClassPath(file: AbstractFile): FlatClasspath =
+  override def createClassPath(file: AbstractFile): FlatClassPath =
     if (file.isJarOrZip)
-      ZipArchiveFlatClasspath.create(file.file)
+      ZipArchiveFlatClassPath.create(file.file, settings)
     else if (file.isDirectory)
-      new DirectoryFlatClasspath(file.file)
+      new DirectoryFlatClassPath(file.file)
     else
       sys.error(s"Unsupported classpath element: $file")
 
-  override def sourcesInPath(path: String): List[FlatClasspath] = {
+  override def sourcesInPath(path: String): List[FlatClassPath] = {
     // FIXME change Nil to real implementation
     Nil
   }

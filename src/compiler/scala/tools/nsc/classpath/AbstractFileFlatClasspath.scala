@@ -6,7 +6,7 @@
 package scala.tools.nsc.classpath
 
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.classpath.FlatClasspath._
+import scala.tools.nsc.classpath.FlatClassPath._
 import FileUtils.AbstractFileOps
 import scala.Some
 import java.net.URL
@@ -14,9 +14,9 @@ import java.net.URL
 /**
  * AbstractFile-backed implementation of a classpath.
  */
-abstract class AbstractFileFlatClasspath(file: AbstractFile) extends FlatClasspath {
+abstract class AbstractFileFlatClassPath(file: AbstractFile) extends FlatClassPath {
 
-  import AbstractFileFlatClasspath._
+  import AbstractFileFlatClassPath._
 
   override def packages(inPackage: String): Seq[PackageEntry] = {
     val dirForPackage = getDirectory(inPackage)
@@ -28,14 +28,14 @@ abstract class AbstractFileFlatClasspath(file: AbstractFile) extends FlatClasspa
     }
   }
 
-  override def classes(inPackage: String): Seq[ClassfileEntry] = {
+  override def classes(inPackage: String): Seq[ClassFileEntry] = {
     val dirForPackage = getDirectory(inPackage)
     val classfiles = dirForPackage.toList.flatMap(_.iterator.filter(file => file.isClass))
 
-    classfiles map ClassfileEntryImpl
+    classfiles map ClassFileEntryImpl
   }
 
-  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) =
+  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassFileEntry]) =
     (packages(inPackage), classes(inPackage))
 
   override def findClassFile(className: String): Option[AbstractFile] = {
@@ -57,9 +57,9 @@ abstract class AbstractFileFlatClasspath(file: AbstractFile) extends FlatClasspa
 
 }
 
-object AbstractFileFlatClasspath {
+object AbstractFileFlatClassPath {
 
-  private case class ClassfileEntryImpl(file: AbstractFile) extends ClassfileEntry {
+  private case class ClassFileEntryImpl(file: AbstractFile) extends ClassFileEntry {
     def name = {
       val className = FileUtils.stripClassExtension(file.name)
       className

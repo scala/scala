@@ -8,7 +8,7 @@ package backend
 
 import util.ClassPath
 import io.AbstractFile
-import scala.tools.nsc.classpath.FlatClasspath
+import scala.tools.nsc.classpath.FlatClassPath
 
 /** The platform dependent pieces of Global.
  */
@@ -21,11 +21,7 @@ trait Platform {
 
   // TODO finally this one should replace old implementation and be renamed to classPath
   /** New implementation of compiler's classpath. */
-  def flatClassPath: FlatClasspath
-
-  // FIXME this is related to concrete implementation (sic!) but we shoudl have such implementation for both classpath types
-  /** Update classpath with a substitution that maps entries to entries */
-  def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]])
+  def flatClassPath: FlatClassPath
 
   /** Any platform-specific phases. */
   def platformPhases: List[SubComponent]

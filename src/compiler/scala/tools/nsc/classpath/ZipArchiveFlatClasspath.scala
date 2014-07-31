@@ -10,18 +10,19 @@ import scala.reflect.io.AbstractFile
 import java.io.File
 import scala.reflect.io.FileZipArchive
 import java.net.URL
+import scala.tools.nsc.Settings
 
-case class ZipArchiveFlatClasspath private(zipFile: File) extends FlatClasspath {
+case class ZipArchiveFlatClassPath private(zipFile: File) extends FlatClassPath {
 
-  import ZipArchiveFlatClasspath._
+  import ZipArchiveFlatClassPath._
 
   val archive = new FileZipArchive(zipFile)
 
   override def packages(inPackage: String): Seq[PackageEntry] = list(inPackage)._1
 
-  override def classes(inPackage: String): Seq[ClassfileEntry] = list(inPackage)._2
+  override def classes(inPackage: String): Seq[ClassFileEntry] = list(inPackage)._2
 
-  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = {
+  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassFileEntry]) = {
     val dirName = s"${FileUtils.dirPath(inPackage)}/"
     val dirEntry = archive.allDirs.getOrElse(dirName, null)
 
@@ -29,13 +30,13 @@ case class ZipArchiveFlatClasspath private(zipFile: File) extends FlatClasspath 
       return (Seq.empty, Seq.empty)
 
     val pkgBuf = collection.mutable.ArrayBuffer.empty[PackageEntry]
-    val classfileBuf = collection.mutable.ArrayBuffer.empty[ClassfileEntry]
-    val prefix = if (inPackage == FlatClasspath.RootPackage) "" else inPackage + "."
+    val classfileBuf = collection.mutable.ArrayBuffer.empty[ClassFileEntry]
+    val prefix = if (inPackage == FlatClassPath.RootPackage) "" else inPackage + "."
     dirEntry.iterator foreach { entry =>
       if (entry.isDirectory) {
         pkgBuf += PackageEntryImpl(prefix + entry.name)
       } else {
-        classfileBuf += ClassfileEntryImpl(entry)
+        classfileBuf += ClassFileEntryImpl(entry)
       }
     }
     (pkgBuf, classfileBuf)
@@ -48,9 +49,9 @@ case class ZipArchiveFlatClasspath private(zipFile: File) extends FlatClasspath 
   override def asURLs: Seq[URL] = Nil
 }
 
-object ZipArchiveFlatClasspath {
+object ZipArchiveFlatClassPath {
 
-  private case class ClassfileEntryImpl(entry: FileZipArchive#Entry) extends ClassfileEntry {
+  private case class ClassFileEntryImpl(entry: FileZipArchive#Entry) extends ClassFileEntry {
     override def name = {
       val className = FileUtils.stripClassExtension(file.name)
       className
@@ -59,14 +60,20 @@ object ZipArchiveFlatClasspath {
     override def file: AbstractFile = entry
   }
 
-  private val cache: collection.mutable.Map[File, ZipArchiveFlatClasspath] =
-    collection.mutable.Map.empty[File, ZipArchiveFlatClasspath]
+  private val cache: collection.mutable.Map[File, ZipArchiveFlatClassPath] =
+    collection.mutable.Map.empty[File, ZipArchiveFlatClassPath]
 
-  def create(zipFile: File) = {
+  def create(zipFile: File, settings: Settings) = {
+    if (settings.YflatCpCaching) createUsingCache(zipFile, settings)
+    else new ZipArchiveFlatClassPath(zipFile)
+  }
+
+  private def createUsingCache(zipFile: File, settings: Settings) = {
     def newArchive = {
-      // TODO to remove when debugging won't be needed - or add some flag to force logging
-      println(s"Missed cache for $zipFile")
-      new ZipArchiveFlatClasspath(zipFile)
+      if (settings.verbose || settings.Ylogcp)
+      // TODO maybe use some logger instead of println?
+        println(s"Missed cache for $zipFile")
+      new ZipArchiveFlatClassPath(zipFile)
     }
     cache.getOrElseUpdate(zipFile, newArchive)
   }

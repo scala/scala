@@ -37,7 +37,7 @@ import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, Cl
 import backend.icode.analysis._
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
-import scala.tools.nsc.classpath.FlatClasspath
+import scala.tools.nsc.classpath.FlatClassPath
 import scala.tools.nsc.settings.ClassPathImplementationType
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
@@ -63,7 +63,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val universe: self.type = self
     def rootLoader: LazyType = {
       settings.YclasspathImpl.value match {
-        case ClassPathImplementationType.Flat => new loaders.PackageLoaderUsingFlatClasspath(FlatClasspath.RootPackage, flatClassPath)
+        case ClassPathImplementationType.Flat => new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClassPath)
         case ClassPathImplementationType.Recursive => new loaders.PackageLoader(recursiveClassPath)
       }
     }
@@ -109,16 +109,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   type ThisPlatform = JavaPlatform { val global: Global.this.type }
   lazy val platform: ThisPlatform  = new GlobalPlatform
 
-  type PlatformClassPath = ClassPath[AbstractFile]
-
 	def classPath: ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
 		case ClassPathImplementationType.Flat => flatClassPath
 		case ClassPathImplementationType.Recursive => recursiveClassPath
 	}
 
-  private def recursiveClassPath: PlatformClassPath = platform.classPath
+  private def recursiveClassPath: ClassPath[AbstractFile] = platform.classPath
 
-  private def flatClassPath: FlatClasspath = platform.flatClassPath
+  private def flatClassPath: FlatClassPath = platform.flatClassPath
 
   // sub-components --------------------------------------------------
 

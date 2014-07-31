@@ -8,21 +8,21 @@ package scala.tools.nsc.classpath
 import scala.reflect.io.AbstractFile
 import java.net.URL
 
-case class AggregateFlatClasspath(aggregates: Seq[FlatClasspath]) extends FlatClasspath {
+case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatClassPath {
 
   override def packages(inPackage: String): Seq[PackageEntry] = {
     val aggregatedPkgs = aggregates.map(_.packages(inPackage)).flatten.distinct
     aggregatedPkgs
   }
 
-  override def classes(inPackage: String): Seq[ClassfileEntry] = {
+  override def classes(inPackage: String): Seq[ClassFileEntry] = {
     val aggreagatedClasses = aggregates.map(_.classes(inPackage)).flatten
     aggreagatedClasses
   }
 
-  private def distinctClassEntries(classEntries: Seq[ClassfileEntry]): Seq[ClassfileEntry] = {
+  private def distinctClassEntries(classEntries: Seq[ClassFileEntry]): Seq[ClassFileEntry] = {
     val collectedClassNames = collection.mutable.Set.empty[String]
-    val collectedEntries = collection.mutable.ArrayBuffer.empty[ClassfileEntry]
+    val collectedEntries = collection.mutable.ArrayBuffer.empty[ClassFileEntry]
     classEntries foreach { classEntry =>
       val className = classEntry.name
       if (!collectedClassNames.contains(className)) {
@@ -33,7 +33,7 @@ case class AggregateFlatClasspath(aggregates: Seq[FlatClasspath]) extends FlatCl
     collectedEntries
   }
 
-  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = {
+  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassFileEntry]) = {
     val (packages, classes) = aggregates.map(_.list(inPackage)).unzip
     val distinctPackages = packages.flatten.distinct
     val distinctClasses = distinctClassEntries(classes.flatten)

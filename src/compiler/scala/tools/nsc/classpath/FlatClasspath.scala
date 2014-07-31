@@ -17,18 +17,18 @@ import scala.tools.nsc.util.ClassRepresentation
  *
  * This is an alternative design compared to scala.tools.nsc.util.ClassPath
  */
-trait FlatClasspath extends ClassFileLookup[AbstractFile] {
+trait FlatClassPath extends ClassFileLookup[AbstractFile] {
   /** Empty string represents root package */
   def packages(inPackage: String): Seq[PackageEntry]
-  def classes(inPackage: String): Seq[ClassfileEntry]
-  def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) // TODO check why do wee need this list?
+  def classes(inPackage: String): Seq[ClassFileEntry]
+  def list(inPackage: String): (Seq[PackageEntry], Seq[ClassFileEntry])
   //def sourcepath: Seq[SourceFileEntry?] // FIXME implement sourcepath
 
   // FIXME implement this
   override def findClass(name: String): Option[ClassRepresentation[AbstractFile]] = ???
 }
 
-object FlatClasspath {
+object FlatClassPath {
   val RootPackage = ""
 }
 
@@ -36,7 +36,7 @@ sealed trait ClasspathEntry {
   def name: String
 }
 
-trait ClassfileEntry extends ClasspathEntry {
+trait ClassFileEntry extends ClasspathEntry {
   def file: AbstractFile
 }
 

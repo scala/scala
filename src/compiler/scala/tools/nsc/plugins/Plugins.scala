@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package plugins
 
-import scala.reflect.io.{ File, Path }
+import scala.reflect.io.Path
 import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver.Defaults
 

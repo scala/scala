@@ -11,8 +11,8 @@ import scala.reflect.internal.{Phase, NoPhase, SomePhase}
 import scala.tools.util.PathResolver
 import util.ClassPath
 import io.AbstractFile
-import scala.tools.nsc.classpath.FlatClasspath
-import scala.tools.nsc.classpath.DefaultFlatClasspathManager
+import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.classpath.DefaultFlatClassPathManager
 import scala.tools.nsc.settings.ClassPathImplementationType
 
 /**
@@ -41,7 +41,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
 
   def classPath = platform.classPath
 
-  lazy val flatClasspath: FlatClasspath = DefaultFlatClasspathManager.createClasspath(settings)
+  lazy val flatClassPath: FlatClassPath = DefaultFlatClassPathManager.createClassPath(settings)
 
   object platform extends backend.Platform {
     val symbolTable: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
@@ -54,9 +54,9 @@ class SymbolTableForUnitTesting extends SymbolTable {
       new PathResolver(settings).result
     }
 
-    lazy val flatClassPath: FlatClasspath = {
+    lazy val flatClassPath: FlatClassPath = {
       assert(settings.YclasspathImpl.value == ClassPathImplementationType.Flat)
-      SymbolTableForUnitTesting.this.flatClasspath
+      SymbolTableForUnitTesting.this.flatClassPath
     }
 
     def isMaybeBoxed(sym: Symbol): Boolean = ???
@@ -83,7 +83,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
     val universe: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
 
     def rootLoader: LazyType = settings.YclasspathImpl.value match {
-      case ClassPathImplementationType.Flat => new loaders.PackageLoaderUsingFlatClasspath(FlatClasspath.RootPackage, flatClasspath)
+      case ClassPathImplementationType.Flat => new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClassPath)
       case ClassPathImplementationType.Recursive => new loaders.PackageLoader(classPath)
     }
 

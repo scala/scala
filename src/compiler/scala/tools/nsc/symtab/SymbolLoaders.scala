@@ -17,7 +17,7 @@ import classfile.ClassfileParser
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
-import scala.tools.nsc.classpath.{PackageNameUtils, FlatClasspath, ClassfileEntry}
+import scala.tools.nsc.classpath.{PackageNameUtils, FlatClassPath, ClassFileEntry}
 import scala.tools.nsc.settings.ClassPathImplementationType
 
 /** This class ...
@@ -176,7 +176,7 @@ abstract class SymbolLoaders {
   
   /** Initialize toplevel class and module symbols in `owner` from class name
    */
-  def initializeFromClassPath(owner: Symbol, classfileEntry: ClassfileEntry) {
+  def initializeFromClassPath(owner: Symbol, classfileEntry: ClassFileEntry) {
     enterClassAndModule(owner, classfileEntry.name, new ClassfileLoader(classfileEntry.file))
   }
 
@@ -280,9 +280,9 @@ abstract class SymbolLoaders {
   /**
    * Load contents of a package
    */
-  class PackageLoaderUsingFlatClasspath(packageName: String, classpath: FlatClasspath) extends SymbolLoader with FlagAgnosticCompleter {
+  class PackageLoaderUsingFlatClassPath(packageName: String, classpath: FlatClassPath) extends SymbolLoader with FlagAgnosticCompleter {
     protected def description = {
-	    val shownPackageName = if (packageName == FlatClasspath.RootPackage) "<root package>" else packageName
+	    val shownPackageName = if (packageName == FlatClassPath.RootPackage) "<root package>" else packageName
 	    s"package loader $shownPackageName"
     }
 
@@ -301,7 +301,7 @@ abstract class SymbolLoaders {
         for (pkg <- packages) {
           val fullName = pkg.name
 	        val name = PackageNameUtils.lastSubpackageNameForPackage(fullName)
-          val packageLoader = new PackageLoaderUsingFlatClasspath(fullName, classpath)
+          val packageLoader = new PackageLoaderUsingFlatClassPath(fullName, classpath)
           enterPackage(root, name, packageLoader)
         }
 

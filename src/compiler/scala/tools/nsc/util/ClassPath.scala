@@ -20,7 +20,7 @@ import File.pathSeparator
 import java.net.MalformedURLException
 import java.util.regex.PatternSyntaxException
 import ClassPath._
-import scala.tools.nsc.classpath.FlatClasspath
+import scala.tools.nsc.classpath.FlatClassPath
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -93,7 +93,7 @@ object ClassPath {
   /** A class modeling aspects of a ClassPath which should be
    *  propagated to any classpaths it creates.
    */
-  abstract class ClassPathContext[T] extends classpath.ClasspathFactory[ClassPath[T]] {
+  abstract class ClassPathContext[T] extends classpath.ClassPathFactory[ClassPath[T]] {
     def expandPath(path: String, expandStar: Boolean = true): List[String] = ClassPath.this.expandPath(path, expandStar)
     def expandDir(extdir: String): List[String] = ClassPath.this.expandDir(extdir)
     /** A filter which can be used to exclude entities from the classpath
@@ -383,21 +383,21 @@ class JavaClassPath(containers: IndexedSeq[ClassPath[AbstractFile]],
                     // this is required for sbt-interface compatibility because sbt calls findClass and
                     // we have to dispatch it to the correct classpath implementation
                     // Yes, I know, it's bat shit insane (GK)
-                    flatClasspathEnabled: Boolean, flatClasspath: => FlatClasspath)
+                    flatClassPathEnabled: Boolean, flatClassPath: => FlatClassPath)
 	extends MergedClassPath[AbstractFile](containers, context) {
 
 	def this(containers: IndexedSeq[ClassPath[AbstractFile]], context: JavaContext) =
-		this(containers, context, false, sys.error("FlatClasspath is disabled."))
+		this(containers, context, false, sys.error("Flat classpath is disabled."))
 
 	// it's a lazy val so if we do not use flat classpath we shouldn't be forcing this
-	lazy val cachedFlatClasspath = {
-		assert(flatClasspathEnabled, "Flat classpath has been forced (evaluated) unexpectedly")
-		flatClasspath
+	lazy val cachedFlatClassPath = {
+		assert(flatClassPathEnabled, "Flat classpath has been forced (evaluated) unexpectedly")
+		flatClassPath
 	}
 
 	override def findClass(name: String): Option[ClassRepresentation[AbstractFile]] =
-		if (flatClasspathEnabled) {
-			val classfile = cachedFlatClasspath.findClassFile(name)
+		if (flatClassPathEnabled) {
+			val classfile = cachedFlatClassPath.findClassFile(name)
 			val classRep = classfile.map(file => ClassRep(Some(file), None))
 			classRep
 		} else super.findClass(name)

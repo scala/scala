@@ -10,11 +10,11 @@ import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.util.ClassRepresentation
 import scala.reflect.io.AbstractFile
 
-class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends FlatClasspath {
+class WrappingFlatClassPath(wrappedClasspath: ClassPath[AbstractFile]) extends FlatClassPath {
 
   /** Empty string represents root package */
   override def packages(inPackage: String): Seq[PackageEntry] = {
-    if (inPackage == FlatClasspath.RootPackage) {
+    if (inPackage == FlatClassPath.RootPackage) {
       wrappedClasspath.packages.map(pkg => new WrappingPackageEntry(pkg.name, pkg))
     } else {
       val wrappedPackage = selectWrappedPackage(inPackage)
@@ -22,17 +22,17 @@ class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends F
     }
   }
 
-  override def classes(inPackage: String): Seq[ClassfileEntry] = {
-    if (inPackage == FlatClasspath.RootPackage) {
-      wrappedClasspath.classes.map(classRep => new WrappingClassfileEntry(classRep))
+  override def classes(inPackage: String): Seq[ClassFileEntry] = {
+    if (inPackage == FlatClassPath.RootPackage) {
+      wrappedClasspath.classes.map(classRep => new WrappingClassFileEntry(classRep))
     } else {
       val wrappedPackage = selectWrappedPackage(inPackage)
-      val classes = wrappedPackage.classes.map(classRep => new WrappingClassfileEntry(classRep))
+      val classes = wrappedPackage.classes.map(classRep => new WrappingClassFileEntry(classRep))
       classes
     }
   }
   
-  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = 
+  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassFileEntry]) =
     (packages(inPackage), classes(inPackage))
 
   def loadClassfile(classfile: String): Array[Byte] = {
@@ -55,12 +55,12 @@ class WrappingFlatClasspath(wrappedClasspath: ClassPath[AbstractFile]) extends F
   // FIXME implement this
   override def asURLs: Seq[URL] = ???
 
-  protected class WrappingPackageEntry( // TODO what's that?
+  protected class WrappingPackageEntry( // TODO what's that? why old implementation?
       val name: String,
       wrappedPackage: ClassPath[AbstractFile]) extends PackageEntry
 
-  protected class WrappingClassfileEntry(wrappedClassFileRep: ClassRepresentation[AbstractFile])
-    extends ClassfileEntry {
+  protected class WrappingClassFileEntry(wrappedClassFileRep: ClassRepresentation[AbstractFile])
+    extends ClassFileEntry {
     assert(wrappedClassFileRep.binary.isDefined)
     override def name = wrappedClassFileRep.name
     override def file: AbstractFile = wrappedClassFileRep.binary.get

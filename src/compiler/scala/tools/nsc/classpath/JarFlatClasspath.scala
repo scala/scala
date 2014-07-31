@@ -8,4 +8,4 @@ package scala.tools.nsc.classpath
 import scala.reflect.io.FileZipArchive
 import java.io.File
 
-case class JarFlatClasspath(val jarFile: File) extends AbstractFileFlatClasspath(new FileZipArchive(jarFile))
+case class JarFlatClassPath(val jarFile: File) extends AbstractFileFlatClassPath(new FileZipArchive(jarFile))

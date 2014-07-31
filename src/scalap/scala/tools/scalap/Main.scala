@@ -10,11 +10,12 @@ package tools.scalap
 
 import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
 import scala.reflect.NameTransformer
-import scalax.rules.scalasig._
-import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
-import scala.tools.util.PathResolver
-import ClassPath.DefaultJavaContext
 import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.util.ClassFileLookup
+import scala.tools.nsc.util.JavaClassPath
+import scala.tools.nsc.util.ClassPath.DefaultJavaContext
+import scala.tools.util.PathResolver
+import scalax.rules.scalasig._
 
 /**The main object used to execute scalap on the command-line.
  *
@@ -96,7 +97,7 @@ class Main {
   /** Executes scalap with the given arguments and classpath for the
    *  class denoted by `classname`.
    */
-  def process(args: Arguments, path: ClassPath[AbstractFile])(classname: String): Unit = {
+  def process(args: Arguments, path: ClassFileLookup[AbstractFile])(classname: String): Unit = {
     // find the classfile
     val encName = classname match {
       case "scala.AnyRef" => "java.lang.Object"
@@ -127,20 +128,6 @@ class Main {
     }
     else
       Console.println("class/object " + classname + " not found.")
-  }
-
-  object EmptyClasspath extends ClassPath[AbstractFile] {
-    /**
-     * The short name of the package (without prefix)
-     */
-    def name              = ""
-    def asURLs            = Nil
-    def asClasspathString = ""
-
-    val context     = DefaultJavaContext
-    val classes     = IndexedSeq()
-    val packages    = IndexedSeq()
-    val sourcepaths = IndexedSeq()
   }
 }
 

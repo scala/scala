@@ -12,9 +12,9 @@ import scala.reflect.io.PlainFile
 import FileUtils.FileOps
 import java.net.URL
 
-case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
-  import FlatClasspath.RootPackage
-  import DirectoryFlatClasspath.ClassfileEntryImpl
+case class DirectoryFlatClassPath(dir: File) extends FlatClassPath {
+  import FlatClassPath.RootPackage
+  import DirectoryFlatClassPath.ClassFileEntryImpl
   assert(dir != null)
 
   private def getDirectory(forPackage: String): Option[File] = {
@@ -50,7 +50,7 @@ case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
     def accept(pathname: File): Boolean = pathname.isClass
   }
 
-  override def classes(inPackage: String): Seq[ClassfileEntry] = {
+  override def classes(inPackage: String): Seq[ClassFileEntry] = {
     val dirForPackage = getDirectory(inPackage)
     val classfiles: Array[File] = dirForPackage match {
       case None => Array.empty
@@ -58,12 +58,12 @@ case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
     }
     val entries = classfiles map { file =>
       val wrappedFile = new scala.reflect.io.File(file)
-      ClassfileEntryImpl(new PlainFile(wrappedFile))
+      ClassFileEntryImpl(new PlainFile(wrappedFile))
     }
     entries
   }
 
-  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassfileEntry]) = {
+  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassFileEntry]) = {
     val dirForPackage = getDirectory(inPackage)
     val files: Array[File] = dirForPackage match {
       case None => Array.empty
@@ -71,7 +71,7 @@ case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
     }
     val packagePrefix = if (inPackage == RootPackage) "" else inPackage + "."
     val packageBuf = collection.mutable.ArrayBuffer.empty[PackageEntry]
-    val classfileBuf = collection.mutable.ArrayBuffer.empty[ClassfileEntry]
+    val classfileBuf = collection.mutable.ArrayBuffer.empty[ClassFileEntry]
     for (file <- files) {
       if (file.isPackage) {
         val pkgEntry = PackageEntryImpl(packagePrefix + file.getName)
@@ -79,7 +79,7 @@ case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
       } else if (file.isClass) {
         val wrappedClassFile = new scala.reflect.io.File(file)
         val abstractClassFile = new PlainFile(wrappedClassFile)
-        val classfileEntry = ClassfileEntryImpl(abstractClassFile)
+        val classfileEntry = ClassFileEntryImpl(abstractClassFile)
         classfileBuf += classfileEntry
       }
     }
@@ -99,9 +99,9 @@ case class DirectoryFlatClasspath(dir: File) extends FlatClasspath {
   override def asURLs: Seq[URL] = Nil
 }
 
-object DirectoryFlatClasspath {
+object DirectoryFlatClassPath {
 
-  private case class ClassfileEntryImpl(file: AbstractFile) extends ClassfileEntry {
+  private case class ClassFileEntryImpl(file: AbstractFile) extends ClassFileEntry {
     override def name = {
       val className = FileUtils.stripClassExtension(file.name)
       className
