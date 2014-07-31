@@ -1,0 +1,1 @@
+-Xlint:type-parameter-shadow -language:higherKinds -Xfatal-warnings

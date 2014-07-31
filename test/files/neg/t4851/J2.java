@@ -1,7 +1,7 @@
 public class J2<T> {
   T x;
 
-  public <T> J(T x) {
+  public J2(T x) {
     this.x = x;
   }
 
