@@ -12,19 +12,22 @@ package tools
 package util
 
 import scala.tools.reflect.WrappedProperties.AccessControl
-import scala.tools.nsc.{ Settings }
-import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
+import scala.tools.nsc.Settings
+import scala.tools.nsc.util.{ClassFileLookup, ClassPath, JavaClassPath}
 import scala.reflect.io.{ File, Directory, Path, AbstractFile }
 import scala.reflect.runtime.ReflectionUtils
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps
-import scala.tools.nsc.classpath.ClassPathFactory
 import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.classpath.ClassPathFactory
+import scala.tools.nsc.classpath.FlatClassPathFactory
 import scala.tools.nsc.settings.ClassPathImplementationType
+import java.net.URL
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SIW/Classpath
+// TODO this link doesn't work anymore
 
 object PathResolver {
   // Imports property/environment functions which suppress security exceptions.
@@ -178,10 +181,10 @@ object PathResolver {
   }
 
   // called from scalap
-  def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = {
+  def fromPathString(path: String, context: JavaContext = DefaultJavaContext): ClassFileLookup[AbstractFile] = {
     val s = new Settings()
     s.classpath.value = path
-    new PathResolver(s, context) result
+    new PathResolver(s, context) result // TODO maybe use proper PathResolver impl?
   }
 
   /** With no arguments, show the interesting values in Environment and Defaults.
@@ -196,15 +199,25 @@ object PathResolver {
     else {
       val settings = new Settings()
       val rest = settings.processArguments(args.toList, processAll = false)._2
-      val pr = new PathResolver(settings)
-      println(" COMMAND: 'scala %s'".format(args.mkString(" ")))
+      val pr = PathResolverFactory.create(settings)
+      println("COMMAND: 'scala %s'".format(args.mkString(" ")))
       println("RESIDUAL: 'scala %s'\n".format(rest.mkString(" ")))
-      pr.result.show()
+
+      pr.result match {
+        case cp: JavaClassPath => cp.show()
+        case cp: FlatClassPath => println("Printing flat classpath not supported yet") // TODO print also flat classpath
+      }
     }
   }
 }
 
-abstract class PathResolverBase[T](settings: Settings, classPathFactory: ClassPathFactory[T]) {
+trait PathResolverResult {
+  def result: ClassFileLookup[AbstractFile]
+
+  def resultAsURLs: Seq[URL] = result.asURLs
+}
+
+abstract class PathResolverBase[T](settings: Settings, classPathFactory: ClassPathFactory[T]) extends PathResolverResult {
   import PathResolver.{Defaults, ppcp, AsLines}
   protected def cmdLineOrElse(name: String, alt: String) = {
     (commandLineFor(name) match {
@@ -287,23 +300,25 @@ abstract class PathResolverBase[T](settings: Settings, classPathFactory: ClassPa
       |  sourcePath           = ${ppcp(sourcePath)}
       |}""".asLines
   }
-}
-
-class PathResolver(settings: Settings, context: JavaContext, flatClassPath: => FlatClassPath) extends
-  PathResolverBase[ClassPath[AbstractFile]](settings, context) {
-  import PathResolver.{ Defaults, Environment, MkLines}
-  def this(settings: Settings, flatClassPath: => FlatClassPath) =
-  this(settings,
-      if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
-      else DefaultJavaContext,
-      flatClassPath)
-  def this(settings: Settings, context: JavaContext) = this(settings, context, sys.error("Don't know how to construct FlatClassPath"))
-  def this(settings: Settings) = this(settings, sys.error("Don't know how to construct FlatClassPath"): FlatClassPath)
 
   def containers = Calculated.containers
+}
 
-  lazy val result = {
-    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings.YclasspathImpl.value == ClassPathImplementationType.Flat, flatClassPath)
+// TODO commented out incremental compiler compatibility hacks
+class PathResolver private(settings: Settings, context: JavaContext/*, flatClassPath: => FlatClassPath*/) extends
+  PathResolverBase[ClassPath[AbstractFile]](settings, context) {
+  import PathResolver.{ Defaults, Environment, MkLines}
+  def this(settings: Settings/*, flatClassPath: => FlatClassPath*/) =
+  this(settings,
+      if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
+      else DefaultJavaContext/*,
+      flatClassPath*/)
+
+//  def this(settings: Settings, context: JavaContext) = this(settings, context, sys.error("Don't know how to construct FlatClassPath"))
+//  def this(settings: Settings) = this(settings, sys.error("Don't know how to construct FlatClassPath"): FlatClassPath)
+
+  override lazy val result: JavaClassPath = {
+    val cp = new JavaClassPath(containers.toIndexedSeq, context/*, settings.YclasspathImpl.value == ClassPathImplementationType.Flat, flatClassPath*/) // TODO commented out sbt compiler interface hack
     if (settings.Ylogcp) {
       Console print f"Classpath built from ${settings.toConciseString} %n"
       Console print s"Defaults: ${PathResolver.Defaults}"
@@ -314,11 +329,19 @@ class PathResolver(settings: Settings, context: JavaContext, flatClassPath: => F
     }
     cp
   }
-
-  def asURLs = result.asURLs
 }
 
 class FlatClassPathResolver(settings: Settings, flatClassPathFactory: ClassPathFactory[FlatClassPath]) extends
   PathResolverBase[FlatClassPath](settings, flatClassPathFactory) {
-  def containers = Calculated.containers
+
+  override lazy val result: FlatClassPath = ???
+}
+
+object PathResolverFactory {
+
+  def create(settings: Settings): PathResolverResult =
+    settings.YclasspathImpl.value match {
+    case ClassPathImplementationType.Flat => new FlatClassPathResolver(settings, new FlatClassPathFactory(settings))
+    case ClassPathImplementationType.Recursive => new PathResolver(settings)
+  }
 }

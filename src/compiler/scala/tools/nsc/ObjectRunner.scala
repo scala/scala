@@ -18,14 +18,14 @@ trait CommonRunner {
    *  @throws NoSuchMethodException
    *  @throws InvocationTargetException
    */
-  def run(urls: List[URL], objectName: String, arguments: Seq[String]) {
+  def run(urls: Seq[URL], objectName: String, arguments: Seq[String]) {
     (ScalaClassLoader fromURLs urls).run(objectName, arguments)
   }
 
   /** Catches exceptions enumerated by run (in the case of InvocationTargetException,
    *  unwrapping it) and returns it any thrown in Left(x).
    */
-  def runAndCatch(urls: List[URL], objectName: String, arguments: Seq[String]): Either[Throwable, Boolean] = {
+  def runAndCatch(urls: Seq[URL], objectName: String, arguments: Seq[String]): Either[Throwable, Boolean] = {
     try   { run(urls, objectName, arguments) ; Right(true) }
     catch { case e: Throwable => Left(unwrap(e)) }
   }

@@ -3,8 +3,8 @@ package scala.tools.partest
 import scala.tools.nsc.util.JavaClassPath
 import scala.collection.JavaConverters._
 import scala.tools.asm.{ClassWriter, ClassReader}
-import scala.tools.asm.tree.{ClassNode, MethodNode, InsnList}
-import java.io.{FileOutputStream, FileInputStream, File => JFile, InputStream}
+import scala.tools.asm.tree.{ClassNode, MethodNode}
+import java.io.{File => JFile, InputStream}
 import AsmNode._
 
 /**
@@ -129,7 +129,7 @@ abstract class BytecodeTest extends ASMConverters {
     cn
   }
 
-  protected lazy val classpath: JavaClassPath = {
+  protected lazy val classpath: JavaClassPath = { // TODO maybe use here also flat classpath? (which could be enabled for tests when needed)
     import scala.tools.nsc.util.ClassPath.DefaultJavaContext
     import scala.tools.util.PathResolver.Defaults
     // logic inspired by scala.tools.util.PathResolver implementation

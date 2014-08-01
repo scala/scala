@@ -20,7 +20,13 @@ import File.pathSeparator
 import java.net.MalformedURLException
 import java.util.regex.PatternSyntaxException
 import ClassPath._
-import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.classpath.FileUtils
+
+import FileUtils.endsClass
+import FileUtils.endsJava
+import FileUtils.endsScala
+import FileUtils.stripClassExtension
+import FileUtils.stripJavaExtension
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -120,7 +126,7 @@ object ClassPath {
     override def toBinaryName(rep: AbstractFile) = {
       val name = rep.name
       assert(endsClass(name), name)
-      name.substring(0, name.length - 6)
+      stripClassExtension(name)
     }
 
     override def createClassPath(dir: AbstractFile): ClassPath[AbstractFile] =
@@ -129,17 +135,13 @@ object ClassPath {
 
   object DefaultJavaContext extends JavaContext
 
-  private def endsClass(s: String) = s.length > 6 && s.substring(s.length - 6) == ".class"
-  private def endsScala(s: String) = s.length > 6 && s.substring(s.length - 6) == ".scala"
-  private def endsJava(s: String)  = s.length > 5 && s.substring(s.length - 5) == ".java"
-
   /** From the source file to its identifier.
    */
   def toSourceName(f: AbstractFile): String = {
     val name = f.name
 
-    if (endsScala(name)) name.substring(0, name.length - 6)
-    else if (endsJava(name)) name.substring(0, name.length - 5)
+    if (endsScala(name)) stripClassExtension(name)
+    else if (endsJava(name)) stripJavaExtension(name)
     else throw new FatalError("Unexpected source file ending: " + name)
   }
 }
@@ -378,28 +380,30 @@ extends ClassPath[T] {
  * The classpath when compiling with target:jvm. Binary files (classfiles) are represented
  * as AbstractFile. nsc.io.ZipArchive is used to view zip/jar archives as directories.
  */
+// TODO commented out sbt compiler interface hacks
 class JavaClassPath(containers: IndexedSeq[ClassPath[AbstractFile]],
-                    context: JavaContext,
+                    context: JavaContext//,
                     // this is required for sbt-interface compatibility because sbt calls findClass and
                     // we have to dispatch it to the correct classpath implementation
                     // Yes, I know, it's bat shit insane (GK)
-                    flatClassPathEnabled: Boolean, flatClassPath: => FlatClassPath)
+                    /*flatClassPathEnabled: Boolean, flatClassPath: => FlatClassPath*/)
 	extends MergedClassPath[AbstractFile](containers, context) {
 
-	def this(containers: IndexedSeq[ClassPath[AbstractFile]], context: JavaContext) =
-		this(containers, context, false, sys.error("Flat classpath is disabled."))
+//	def this(containers: IndexedSeq[ClassPath[AbstractFile]], context: JavaContext) =
+//		this(containers, context, false, sys.error("Flat classpath is disabled."))
 
 	// it's a lazy val so if we do not use flat classpath we shouldn't be forcing this
-	lazy val cachedFlatClassPath = {
-		assert(flatClassPathEnabled, "Flat classpath has been forced (evaluated) unexpectedly")
-		flatClassPath
-	}
+//	lazy val cachedFlatClassPath = {
+//		assert(flatClassPathEnabled, "Flat classpath has been forced (evaluated) unexpectedly")
+//		flatClassPath
+//	}
 
 	override def findClass(name: String): Option[ClassRepresentation[AbstractFile]] =
-		if (flatClassPathEnabled) {
+		/*if (flatClassPathEnabled) {
 			val classfile = cachedFlatClassPath.findClassFile(name)
 			val classRep = classfile.map(file => ClassRep(Some(file), None))
 			classRep
-		} else super.findClass(name)
+		} else */
+    super.findClass(name)
 
 }

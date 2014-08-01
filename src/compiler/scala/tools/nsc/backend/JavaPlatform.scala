@@ -27,10 +27,7 @@ trait JavaPlatform extends Platform {
 
   def classPath: ClassPath[AbstractFile] = {
     assert(settings.YclasspathImpl.value == ClassPathImplementationType.Recursive)
-    // TODO why do we have flat classpath also here? Yes, it's called by name but it's still something wrong here.
-    // I mean this method should be never used in the case of flat classpath
-    // I have to rethink this hack
-    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, flatClassPath).result)
+    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings/*, flatClassPath*/).result) // TODO commented out incremental compiler hack
     currentClassPath.get
   }
 

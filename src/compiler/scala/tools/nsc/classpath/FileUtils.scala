@@ -13,23 +13,37 @@ import java.io.{ File => JFile }
  */
 object FileUtils {
   implicit class AbstractFileOps(val file: AbstractFile) extends AnyVal {
-    def isPackage = file.isDirectory && isValidPackage(file.name)
+    def isPackage: Boolean = file.isDirectory && isValidPackage(file.name)
 
-    def isClass = !file.isDirectory && file.hasExtension("class")
+    def isClass: Boolean = !file.isDirectory && file.hasExtension("class")
 
-	  // do we need to check also other files using magic number like in scala.tools.nsc.Jar.isJarOrZip?
-	  def isJarOrZip = file.hasExtension("jar") || file.hasExtension("zip")
+	  // TODO do we need to check also other files using magic number like in scala.tools.nsc.Jar.isJarOrZip?
+	  def isJarOrZip: Boolean = file.hasExtension("jar") || file.hasExtension("zip")
   }
 
 	implicit class FileOps(val file: JFile) extends AnyVal {
-		def isPackage = file.isDirectory && isValidPackage(file.getName)
+		def isPackage: Boolean = file.isDirectory && isValidPackage(file.getName)
 
-		def isClass = file.isFile && file.getName.endsWith(".class")
+		def isClass: Boolean = file.isFile && file.getName.endsWith(".class")
 	}
 
-	def dirPath(forPackage: String) = forPackage.replace('.', '/')
+  @inline def dirPath(forPackage: String) = forPackage.replace('.', '/')
 
-	def stripClassExtension(fileName: String) = fileName.substring(0, fileName.length - 6) // equivalent of fileName.length - ".class".length
+  @inline def endsClass(fileName: String): Boolean =
+    fileName.length > 6 && fileName.substring(fileName.length - 6) == ".class"
 
-	private def isValidPackage(dirName: String) = (dirName != "META-INF") && (dirName != "") && (dirName.charAt(0) != '.')
+  @inline def endsJava(fileName: String): Boolean =
+    fileName.length > 5 && fileName.substring(fileName.length - 5) == ".java"
+
+  @inline def endsScala(fileName: String): Boolean =
+    fileName.length > 6 && fileName.substring(fileName.length - 6) == ".scala"
+
+  @inline def stripClassExtension(fileName: String): String =
+    fileName.substring(0, fileName.length - 6) // equivalent of fileName.length - ".class".length
+
+  @inline def stripJavaExtension(fileName: String): String =
+    fileName.substring(0, fileName.length - 5)
+
+  private def isValidPackage(dirName: String): Boolean =
+    (dirName != "META-INF") && (dirName != "") && (dirName.charAt(0) != '.')
 }
