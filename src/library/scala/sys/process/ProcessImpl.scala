@@ -134,8 +134,6 @@ private[process] trait ProcessImpl {
       try {
         runInterruptible {
           val exit1 = first.exitValue()
-          currentSource put None
-          currentSink put None
           val exit2 = second.exitValue()
           // Since file redirection (e.g. #>) is implemented as a piped process,
           // we ignore its exit value so cmd #> file doesn't always return 0.
@@ -146,6 +144,8 @@ private[process] trait ProcessImpl {
         }
       }
       finally {
+        currentSource put None
+        currentSink put None
         BasicIO close pipeIn
         BasicIO close pipeOut
       }
