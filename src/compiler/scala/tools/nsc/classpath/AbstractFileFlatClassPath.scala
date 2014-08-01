@@ -44,7 +44,7 @@ abstract class AbstractFileFlatClassPath(file: AbstractFile) extends FlatClassPa
   }
 
   // FIXME implement this
-  override def asURLs: Seq[URL] = ???
+  override def asURLs: Seq[URL] = file.toURLs()
 
   private def getDirectory(forPackage: String): Option[AbstractFile] = {
     if (forPackage == RootPackage) Some(file)

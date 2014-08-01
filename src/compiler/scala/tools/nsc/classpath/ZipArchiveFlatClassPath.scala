@@ -46,7 +46,7 @@ case class ZipArchiveFlatClassPath private(zipFile: File) extends FlatClassPath 
   override def findClassFile(name: String): Option[AbstractFile] = ???
 
   // FIXME change Nil to real implementation
-  override def asURLs: Seq[URL] = Nil
+  override def asURLs: Seq[URL] = Seq(zipFile.toURI.toURL)
 }
 
 object ZipArchiveFlatClassPath {

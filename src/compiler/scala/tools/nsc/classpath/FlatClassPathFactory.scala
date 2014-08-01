@@ -25,8 +25,10 @@ class FlatClassPathFactory(settings: Settings) extends ClassPathFactory[FlatClas
     else
       sys.error(s"Unsupported classpath element: $file")
 
-  override def sourcesInPath(path: String): List[FlatClassPath] = {
-    // FIXME change Nil to real implementation
-    Nil
+  override def sourcesInPath(path: String): List[FlatClassPath] = { // TODO some attempts and tests
+    for {
+      file <- expandPath(path, expandStar = false)
+      dir <- Option(AbstractFile getDirectory file)
+    } yield new FlatSourcePath(dir)
   }
 }

@@ -23,7 +23,7 @@ trait JavaPlatform extends Platform {
   import global._
   import definitions._
 
-  private var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
+  private var currentClassPath: Option[ClassPath[AbstractFile]] = None
 
   def classPath: ClassPath[AbstractFile] = {
     assert(settings.YclasspathImpl.value == ClassPathImplementationType.Recursive)

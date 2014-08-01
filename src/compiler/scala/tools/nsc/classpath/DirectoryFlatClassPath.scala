@@ -96,7 +96,7 @@ case class DirectoryFlatClassPath(dir: File) extends FlatClassPath {
   }
 
   // FIXME change Nil to real implementation
-  override def asURLs: Seq[URL] = Nil
+  override def asURLs: Seq[URL] = Seq(dir.toURI.toURL)
 }
 
 object DirectoryFlatClassPath {

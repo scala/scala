@@ -19,9 +19,7 @@ import scala.reflect.runtime.ReflectionUtils
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps
-import scala.tools.nsc.classpath.FlatClassPath
-import scala.tools.nsc.classpath.ClassPathFactory
-import scala.tools.nsc.classpath.FlatClassPathFactory
+import scala.tools.nsc.classpath.{AggregateFlatClassPath, FlatClassPath, ClassPathFactory, FlatClassPathFactory}
 import scala.tools.nsc.settings.ClassPathImplementationType
 import java.net.URL
 
@@ -217,7 +215,7 @@ trait PathResolverResult {
   def resultAsURLs: Seq[URL] = result.asURLs
 }
 
-abstract class PathResolverBase[T](settings: Settings, classPathFactory: ClassPathFactory[T]) extends PathResolverResult {
+abstract class PathResolverBase[T <: ClassFileLookup[AbstractFile]](settings: Settings, classPathFactory: ClassPathFactory[T]) extends PathResolverResult {
   import PathResolver.{Defaults, ppcp, AsLines}
   protected def cmdLineOrElse(name: String, alt: String) = {
     (commandLineFor(name) match {
@@ -302,12 +300,27 @@ abstract class PathResolverBase[T](settings: Settings, classPathFactory: ClassPa
   }
 
   def containers = Calculated.containers
+
+  import PathResolver.MkLines
+  override def result: T = {
+    val cp = computeResult()
+    if (settings.Ylogcp) {
+      Console print f"Classpath built from ${settings.toConciseString} %n"
+      Console print s"Defaults: ${PathResolver.Defaults}"
+      Console print s"Calculated: $Calculated"
+
+      val xs = (Calculated.basis drop 2).flatten.distinct
+      Console print (xs mkLines(s"After java boot/extdirs classpath has ${xs.size} entries:", indented = true))
+    }
+    cp
+  }
+
+  protected def computeResult(): T
 }
 
 // TODO commented out incremental compiler compatibility hacks
 class PathResolver private(settings: Settings, context: JavaContext/*, flatClassPath: => FlatClassPath*/) extends
   PathResolverBase[ClassPath[AbstractFile]](settings, context) {
-  import PathResolver.{ Defaults, Environment, MkLines}
   def this(settings: Settings/*, flatClassPath: => FlatClassPath*/) =
   this(settings,
       if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
@@ -317,24 +330,15 @@ class PathResolver private(settings: Settings, context: JavaContext/*, flatClass
 //  def this(settings: Settings, context: JavaContext) = this(settings, context, sys.error("Don't know how to construct FlatClassPath"))
 //  def this(settings: Settings) = this(settings, sys.error("Don't know how to construct FlatClassPath"): FlatClassPath)
 
-  override lazy val result: JavaClassPath = {
-    val cp = new JavaClassPath(containers.toIndexedSeq, context/*, settings.YclasspathImpl.value == ClassPathImplementationType.Flat, flatClassPath*/) // TODO commented out sbt compiler interface hack
-    if (settings.Ylogcp) {
-      Console print f"Classpath built from ${settings.toConciseString} %n"
-      Console print s"Defaults: ${PathResolver.Defaults}"
-      Console print s"Calculated: $Calculated"
-
-      val xs = (Calculated.basis drop 2).flatten.distinct
-      Console print (xs mkLines (s"After java boot/extdirs classpath has ${xs.size} entries:", indented = true))
-    }
-    cp
-  }
+  override protected def computeResult(): JavaClassPath =
+  // TODO commented out sbt compiler interface hack
+    new JavaClassPath(containers.toIndexedSeq, context/*, settings.YclasspathImpl.value == ClassPathImplementationType.Flat, flatClassPath*/)
 }
 
 class FlatClassPathResolver(settings: Settings, flatClassPathFactory: ClassPathFactory[FlatClassPath]) extends
   PathResolverBase[FlatClassPath](settings, flatClassPathFactory) {
 
-  override lazy val result: FlatClassPath = ???
+  override protected def computeResult(): FlatClassPath = AggregateFlatClassPath(containers.toIndexedSeq)
 }
 
 object PathResolverFactory {

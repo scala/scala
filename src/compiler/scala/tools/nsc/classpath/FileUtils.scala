@@ -7,6 +7,7 @@ package scala.tools.nsc.classpath
 
 import scala.reflect.io.AbstractFile
 import java.io.{ File => JFile }
+import java.net.URL
 
 /**
  * Common methods related to Java Files and our Abstractfiles used in cotext of classpath
@@ -19,6 +20,12 @@ object FileUtils {
 
 	  // TODO do we need to check also other files using magic number like in scala.tools.nsc.Jar.isJarOrZip?
 	  def isJarOrZip: Boolean = file.hasExtension("jar") || file.hasExtension("zip")
+
+    /**
+     * Safe method returning sequence containing one URL representing this file, when underlying file exists,
+     * and returning given default value in other case
+     */
+    def toURLs(default: => Seq[URL] = Seq.empty): Seq[URL] = if (file.file == null) default else Seq(file.toURL)
   }
 
 	implicit class FileOps(val file: JFile) extends AnyVal {

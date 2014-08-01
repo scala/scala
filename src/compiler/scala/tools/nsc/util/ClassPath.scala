@@ -228,9 +228,11 @@ abstract class ClassPath[T] extends ClassFileLookup[T] {
  * A Classpath containing source files
  */
 class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends ClassPath[T] {
+  import FileUtils.AbstractFileOps
+
   def name = dir.name
   override def origin = dir.underlyingSource map (_.path)
-  def asURLs = if (dir.file == null) Nil else List(dir.toURL)
+  def asURLs = dir.toURLs()
   def asClasspathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq(dir)
 
@@ -254,9 +256,11 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
  * A directory (or a .jar file) containing classfiles and packages
  */
 class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends ClassPath[AbstractFile] {
+  import FileUtils.AbstractFileOps
+
   def name = dir.name
   override def origin = dir.underlyingSource map (_.path)
-  def asURLs = if (dir.file == null) List(new URL(name)) else List(dir.toURL)
+  def asURLs = dir.toURLs(default = Seq(new URL(name)))
   def asClasspathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq()
 
