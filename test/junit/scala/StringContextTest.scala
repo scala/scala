@@ -62,4 +62,17 @@ class StringContextTest {
     //assertEquals("????", s"????")
     assertEquals("!!!!", s"????") // OK to hijack core interpolator ids
   }
+
+  @Test def fIf() = {
+    val res = f"${if (true) 2.5 else 2.5}%.2f"
+    assertEquals("2.50", res)
+  }
+  @Test def fIfNot() = {
+    val res = f"${if (false) 2.5 else 3.5}%.2f"
+    assertEquals("3.50", res)
+  }
+  @Test def fHeteroArgs() = {
+    val res = f"${3.14}%.2f rounds to ${3}%d"
+    assertEquals("3.14 rounds to 3", res)
+  }
 }
