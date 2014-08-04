@@ -1342,36 +1342,47 @@ trait Implicits {
      *  If all fails return SearchFailure
      */
     def bestImplicit: SearchResult = {
-      val failstart = if (Statistics.canEnable) Statistics.startTimer(inscopeFailNanos) else null
-      val succstart = if (Statistics.canEnable) Statistics.startTimer(inscopeSucceedNanos) else null
+      val stats = Statistics.canEnable
+      val failstart = if (stats) Statistics.startTimer(inscopeFailNanos) else null
+      val succstart = if (stats) Statistics.startTimer(inscopeSucceedNanos) else null
 
       var result = searchImplicit(context.implicitss, isLocalToCallsite = true)
 
-      if (result.isFailure) {
-        if (Statistics.canEnable) Statistics.stopTimer(inscopeFailNanos, failstart)
-      } else {
-        if (Statistics.canEnable) Statistics.stopTimer(inscopeSucceedNanos, succstart)
-        if (Statistics.canEnable) Statistics.incCounter(inscopeImplicitHits)
+      if (stats) {
+        if (result.isFailure) Statistics.stopTimer(inscopeFailNanos, failstart)
+        else {
+          Statistics.stopTimer(inscopeSucceedNanos, succstart)
+          Statistics.incCounter(inscopeImplicitHits)
+        }
       }
+
       if (result.isFailure) {
+        val failstart = if (stats) Statistics.startTimer(oftypeFailNanos) else null
+        val succstart = if (stats) Statistics.startTimer(oftypeSucceedNanos) else null
+
+        // SI-6667, never search companions after an ambiguous error in in-scope implicits
+        val wasAmbigious = result.isAmbiguousFailure
+
+        // TODO: encapsulate
         val previousErrs = context.reporter.errors
         context.reporter.clearAllErrors()
-        val failstart = if (Statistics.canEnable) Statistics.startTimer(oftypeFailNanos) else null
-        val succstart = if (Statistics.canEnable) Statistics.startTimer(oftypeSucceedNanos) else null
 
-        val wasAmbigious = result.isAmbiguousFailure // SI-6667, never search companions after an ambiguous error in in-scope implicits
         result = materializeImplicit(pt)
+
         // `materializeImplicit` does some preprocessing for `pt`
         // is it only meant for manifests/tags or we need to do the same for `implicitsOfExpectedType`?
         if (result.isFailure && !wasAmbigious)
           result = searchImplicit(implicitsOfExpectedType, isLocalToCallsite = false)
 
-        if (result.isFailure) {
+        if (result.isFailure)
           context.reporter ++= previousErrs
-          if (Statistics.canEnable) Statistics.stopTimer(oftypeFailNanos, failstart)
-        } else {
-          if (Statistics.canEnable) Statistics.stopTimer(oftypeSucceedNanos, succstart)
-          if (Statistics.canEnable) Statistics.incCounter(oftypeImplicitHits)
+
+        if (stats) {
+          if (result.isFailure) Statistics.stopTimer(oftypeFailNanos, failstart)
+          else {
+            Statistics.stopTimer(oftypeSucceedNanos, succstart)
+            Statistics.incCounter(oftypeImplicitHits)
+          }
         }
       }
       if (result.isSuccess && isView) {
@@ -1384,12 +1395,13 @@ trait Implicits {
         }
         pt match {
           case Function1(_, out) =>
-            def prohibit(sym: Symbol) = if (sym.tpe <:< out) {
-               maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than ${sym.name}")
-              result = SearchFailure
+            // must inline to avoid capturing result
+            def prohibit(sym: Symbol) = (sym.tpe <:< out) && {
+              maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than ${sym.name}")
+              true
             }
-            prohibit(AnyRefClass)
-            if (settings.isScala211) prohibit(AnyValClass)
+            if (prohibit(AnyRefClass) || (settings.isScala211 && prohibit(AnyValClass)))
+              result = SearchFailure
           case _                 => false
         }
         if (settings.isScala211 && isInvalidConversionSource(pt)) {
@@ -1397,8 +1409,9 @@ trait Implicits {
           result = SearchFailure
         }
       }
-      if (result.isFailure)
-        debuglog("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+implicitsOfExpectedType)
+
+      if (result.isFailure && settings.debug) // debuglog is not inlined for some reason
+        log("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+implicitsOfExpectedType)
 
       result
     }
@@ -1420,19 +1433,19 @@ trait Implicits {
         val eligible = new ImplicitComputation(iss, isLocalToCallsite).eligible
         eligible.toList.flatMap {
           (ii: ImplicitInfo) =>
-        // each ImplicitInfo contributes a distinct set of constraints (generated indirectly by typedImplicit)
-        // thus, start each type var off with a fresh for every typedImplicit
-        resetTVars()
-        // any previous errors should not affect us now
-        context.reporter.clearAllErrors()
-        val res = typedImplicit(ii, ptChecked = false, isLocalToCallsite)
-        if (res.tree ne EmptyTree) List((res, tvars map (_.constr)))
-        else Nil
+          // each ImplicitInfo contributes a distinct set of constraints (generated indirectly by typedImplicit)
+          // thus, start each type var off with a fresh for every typedImplicit
+          resetTVars()
+          // any previous errors should not affect us now
+          context.reporter.clearAllErrors()
+          val res = typedImplicit(ii, ptChecked = false, isLocalToCallsite)
+          if (res.tree ne EmptyTree) List((res, tvars map (_.constr)))
+          else Nil
+        }
       }
-    }
       eligibleInfos(context.implicitss, isLocalToCallsite = true) ++
       eligibleInfos(implicitsOfExpectedType, isLocalToCallsite = false)
-  }
+    }
   }
 
   object ImplicitNotFoundMsg {
