@@ -12,7 +12,6 @@ package scala
 package collection
 package generic
 
-import scala.collection._
 import mutable.Builder
 
 /** @define coll collection
@@ -36,4 +35,3 @@ trait BitSetFactory[Coll <: BitSet with BitSetLike[Coll]] {
     def apply() = newBuilder
   }
 }
-

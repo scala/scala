@@ -28,4 +28,3 @@ extends GenSeqFactory[CC] with TraversableFactory[CC] {
   def unapplySeq[A](x: CC[A]): Some[CC[A]] = Some(x)
 
 }
-

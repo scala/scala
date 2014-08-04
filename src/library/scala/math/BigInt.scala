@@ -399,7 +399,7 @@ final class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNum
 
   /** Returns the decimal String representation of this BigInt.
    */
-  override def toString(): String = this.bigInteger.toString()
+  override def toString(): String = this.bigInteger.toString
 
   /** Returns the String representation in the specified radix of this BigInt.
    */
@@ -411,5 +411,5 @@ final class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNum
    *  minimum number of bytes required to represent this BigInt, including at
    *  least one sign bit.
    */
-  def toByteArray: Array[Byte] = this.bigInteger.toByteArray()
+  def toByteArray: Array[Byte] = this.bigInteger.toByteArray
 }

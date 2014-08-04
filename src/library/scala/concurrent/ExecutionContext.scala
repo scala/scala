@@ -11,7 +11,6 @@ package scala.concurrent
 
 import java.util.concurrent.{ ExecutorService, Executor }
 import scala.annotation.implicitNotFound
-import scala.util.Try
 
 /**
  * An `ExecutionContext` can execute program logic asynchronously,

@@ -10,18 +10,11 @@ package scala.concurrent
 
 import scala.language.higherKinds
 
-import java.util.concurrent.{ ConcurrentLinkedQueue, TimeUnit, Callable }
-import java.util.concurrent.TimeUnit.{ NANOSECONDS => NANOS, MILLISECONDS ⇒ MILLIS }
-import java.lang.{ Iterable => JIterable }
-import java.util.{ LinkedList => JLinkedList }
-import java.util.concurrent.atomic.{ AtomicReferenceFieldUpdater, AtomicInteger, AtomicLong, AtomicBoolean }
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.util.control.NonFatal
-import scala.Option
 import scala.util.{Try, Success, Failure}
 
-import scala.annotation.tailrec
-import scala.collection.mutable.Builder
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 
@@ -341,7 +334,7 @@ trait Future[+T] extends Awaitable[T] {
   def recoverWith[U >: T](pf: PartialFunction[Throwable, Future[U]])(implicit executor: ExecutionContext): Future[U] = {
     val p = Promise[U]()
     onComplete {
-      case Failure(t) => try pf.applyOrElse(t, (_: Throwable) => this).onComplete(p.complete)(internalExecutor) catch { case NonFatal(t) => p failure t }
+      case Failure(t) => try pf.applyOrElse(t, (_: Throwable) => this).onComplete(p.complete)(internalExecutor) catch { case NonFatal(tt) => p failure tt }
       case other => p complete other
     }
     p.future
