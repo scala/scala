@@ -81,8 +81,10 @@ self =>
 
   def remove(key: K): Option[V] = {
     val e = removeEntry(key)
-    if (e ne null) Some(e.value)
-    else None
+    if (e ne null) {
+      e.next = null               // remove link into hashmap to help tracing gcs
+      Some(e.value)
+    } else None
   }
 
   def += (kv: (K, V)): this.type = {
@@ -91,7 +93,11 @@ self =>
     this
   }
 
-  def -=(key: K): this.type = { removeEntry(key); this }
+  def -=(key: K): this.type = {
+    val e = removeEntry(key)
+    if (e ne null) e.next = null  // remove link into hashmap to help tracing gcs
+    this
+  }
 
   override def stringPrefix = "ParHashMap"
 

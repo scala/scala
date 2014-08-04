@@ -80,6 +80,11 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
       else e.earlier.later = e.later
       if (e.later eq null) lastEntry = e.earlier
       else e.later.earlier = e.earlier
+
+      // remove links into hashmap to help tracing gcs
+      e.earlier = null
+      e.later = null
+
       Some(e.value)
     }
   }
