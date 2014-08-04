@@ -67,8 +67,9 @@ identifiers under this rule, then, second, eligible are also all
 `implicit` members of some object that belongs to the implicit
 scope of the implicit parameter's type, $T$.
 
-The _implicit scope_ of a type $T$ consists of all [companion modules](05-classes-and-objects.html#object-definitions) of classes that are associated with the implicit parameter's type.
+The _implicit scope_ of a type $T$ consists of all [companion modules](05-classes-and-objects.html#object-definitions) of classes and [package objects](09-top-level-definitions.html#package-objects) that are associated with the implicit parameter's type.
 Here, we say a class $C$ is _associated_ with a type $T$ if it is a [base class](05-classes-and-objects.html#class-linearization) of some part of $T$.
+A package $p$ is associated with a type $T$ if its type is a part of $T$.
 
 The _parts_ of a type $T$ are:
 
