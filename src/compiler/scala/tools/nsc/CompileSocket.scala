@@ -32,7 +32,11 @@ trait HasCompileSocket {
           if (isErrorMessage(line))
             noErrors = false
 
-          compileSocket.echo(line)
+          // There is currently no way to separate full messages (not justs individual lines)
+          // intended for stdout from those for stderr, even on the sender side (ConsoleReporter).
+          // Even scalac doesn't try and sends everything to stderr, so let's at least
+          // be consistent and do the same here
+          compileSocket.warn(line)
           loop()
       }
       try loop()
