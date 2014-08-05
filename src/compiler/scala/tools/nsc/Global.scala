@@ -343,22 +343,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
   }
 
-  if (settings.verbose || settings.Ylogcp) {
-    def logClassPath(sourcesSearchPath: String, classesSearchPath: String): Unit = {
-      reporter.echo(
-        s"[search path for source files: $sourcesSearchPath]\n" +
-        s"[search path for class files: $classesSearchPath"
-      )
-    }
-
-    settings.YclasspathImpl.value match {
-      case ClassPathImplementationType.Flat =>
-        // FIXME add sourcepath and correct both values
-        logClassPath("flatClassPath.sourcepaths not yet implemented", flatClassPath.toString)
-      case ClassPathImplementationType.Recursive =>
-        logClassPath(recursiveClassPath.sourcepaths.mkString(","), recursiveClassPath.asClasspathString)
-    }
-  }
+  if (settings.verbose || settings.Ylogcp)
+    reporter.echo(
+      s"[search path for source files: ${classPath.asSourcePathString}]\n" +
+      s"[search path for class files: ${classPath.asClassPathString}]"
+    )
 
   // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
   // clunky.  It is often difficult to have a setting influence something without having

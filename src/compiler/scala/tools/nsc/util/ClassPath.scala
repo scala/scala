@@ -161,10 +161,6 @@ abstract class ClassPath[T] extends ClassFileLookup[T] {
    */
   def origin: Option[String] = None
 
-  /** The whole classpath in the form of one String.
-   */
-  def asClasspathString: String
-
   /** Info which should be propagated to any sub-classpaths.
    */
   def context: ClassPathContext[T]
@@ -216,7 +212,14 @@ abstract class ClassPath[T] extends ClassFileLookup[T] {
       case _ => None
     }
 
-  def sortString = join(split(asClasspathString).sorted: _*)
+  /** The whole classpath in the form of one String.
+    */
+  @deprecated("Use asClassPathString instead of this one")
+  def asClasspathString: String = asClassPathString
+
+  override def asSourcePathString: String = sourcepaths.mkString(pathSeparator)
+
+  def sortString = join(split(asClassPathString).sorted: _*)
   override def equals(that: Any) = that match {
     case x: ClassPath[_]  => this.sortString == x.sortString
     case _                => false
@@ -233,7 +236,7 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
   def name = dir.name
   override def origin = dir.underlyingSource map (_.path)
   def asURLs = dir.toURLs()
-  def asClasspathString = dir.path
+  def asClassPathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq(dir)
 
   private def traverse() = {
@@ -261,7 +264,7 @@ class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[Ab
   def name = dir.name
   override def origin = dir.underlyingSource map (_.path)
   def asURLs = dir.toURLs(default = Seq(new URL(name)))
-  def asClasspathString = dir.path
+  def asClassPathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq()
 
   // calculates (packages, classes) in one traversal.
@@ -317,7 +320,7 @@ extends ClassPath[T] {
   lazy val sourcepaths: IndexedSeq[AbstractFile] = entries flatMap (_.sourcepaths)
 
   override def origin = Some(entries map (x => x.origin getOrElse x.name) mkString ("Merged(", ", ", ")"))
-  override def asClasspathString: String = join(entries map (_.asClasspathString) : _*)
+  override def asClassPathString: String = join(entries map (_.asClassPathString) : _*)
 
   lazy val classes: IndexedSeq[ClassRepresentation[T]] = {
     var count   = 0
@@ -374,7 +377,7 @@ extends ClassPath[T] {
 
   def show() {
     println("ClassPath %s has %d entries and results in:\n".format(name, entries.size))
-    asClasspathString split ':' foreach (x => println("  " + x))
+    asClassPathString split ':' foreach (x => println("  " + x))
   }
 
   override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")

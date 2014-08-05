@@ -23,6 +23,14 @@ trait ClassFileLookup[T] {
    * A sequence of URLs representing this classpath.
    */
   def asURLs: Seq[URL]
+
+  /** The whole classpath in the form of one String.
+    */
+  def asClassPathString: String
+
+  /** The whole sourcepath in the form of one String.
+    */
+  def asSourcePathString: String
 }
 
 /**
@@ -30,9 +38,10 @@ trait ClassFileLookup[T] {
  */
 // TODO at the end, after removal of old classpath implementation, this class shouldn't be generic
 // T should be just changed to AbstractFile
+// or even better - we probably even don't need it. if class and source files can be separate
 trait ClassRepresentation[T] {
-  val binary: Option[T]
-  val source: Option[AbstractFile]
+  def binary: Option[T]
+  def source: Option[AbstractFile]
 
   def name: String
 }

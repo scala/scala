@@ -11,7 +11,9 @@ import scala.tools.nsc.util.ClassRepresentation
 import scala.reflect.io.AbstractFile
 
 // TODO why wrapping old implementation? when do we need that? (right now it's unused)
-class WrappingFlatClassPath(wrappedClasspath: ClassPath[AbstractFile]) extends FlatClassPath {
+class WrappingFlatClassPath(wrappedClasspath: ClassPath[AbstractFile])
+  extends FlatClassPath
+  with NoSourcePaths {
 
   /** Empty string represents root package */
   override def packages(inPackage: String): Seq[PackageEntry] = {
@@ -56,6 +58,8 @@ class WrappingFlatClassPath(wrappedClasspath: ClassPath[AbstractFile]) extends F
   // FIXME implement this
   override def asURLs: Seq[URL] = ???
 
+  override def asClassPathStrings: Seq[String] = Seq(wrappedClasspath.asClassPathString)
+
   protected class WrappingPackageEntry(
       val name: String,
       wrappedPackage: ClassPath[AbstractFile]) extends PackageEntry
@@ -66,4 +70,6 @@ class WrappingFlatClassPath(wrappedClasspath: ClassPath[AbstractFile]) extends F
     override def name = wrappedClassFileRep.name
     override def file: AbstractFile = wrappedClassFileRep.binary.get
   }
+
+  override def asSourcePathString: String = ???
 }

@@ -3,6 +3,10 @@
 **  __\ \/ /__/ __ |/ /__/ __ |/ ___/  (c) 2003-2013, LAMP/EPFL
 ** /____/\___/_/ |_/____/_/ |_/_/      http://scala-lang.org/
 **
+**
+ * Copyright (c) 2014 Contributor. All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Scala License which accompanies this distribution, and
+ * is available at http://www.scala-lang.org/license.html
 */
 
 package scala
@@ -10,12 +14,17 @@ package tools.scalap
 
 import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
 import scala.reflect.NameTransformer
+import scala.tools.nsc.classpath.AggregateFlatClassPath
+import scala.tools.nsc.classpath.FlatClassPathFactory
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.ClassFileLookup
+import scala.tools.nsc.util.ClassRepresentation
 import scala.tools.nsc.util.JavaClassPath
 import scala.tools.nsc.util.ClassPath.DefaultJavaContext
-import scala.tools.util.PathResolver
+import scala.tools.util.PathResolverFactory
 import scalax.rules.scalasig._
+import scala.tools.nsc.settings.ClassPathImplementationType
+import scala.tools.nsc.Settings
 
 /**The main object used to execute scalap on the command-line.
  *
@@ -64,13 +73,13 @@ class Main {
       case Some(p) if (p.name != "<empty>") => {
         val path = p.path
         if (!isPackageObject) {
-          stream.print("package ");
-          stream.print(path);
+          stream.print("package ")
+          stream.print(path)
           stream.print("\n")
         } else {
           val i = path.lastIndexOf(".")
           if (i > 0) {
-            stream.print("package ");
+            stream.print("package ")
             stream.print(path.substring(0, i))
             stream.print("\n")
           }
@@ -107,31 +116,45 @@ class Main {
         // we can afford allocations because this is not a performance critical code
         classname.split('.').map(NameTransformer.encode).mkString(".")
     }
-    val cls = path.findClass(encName)
-    if (cls.isDefined && cls.get.binary.isDefined) {
-      val cfile = cls.get.binary.get
-      if (verbose) {
-        Console.println(Console.BOLD + "FILENAME" + Console.RESET + " = " + cfile.path)
-      }
-      val bytes = cfile.toByteArray
-      if (isScalaFile(bytes)) {
-        Console.println(decompileScala(bytes, isPackageObjectFile(encName)))
-      } else {
-        // construct a reader for the classfile content
-        val reader = new ByteArrayReader(cfile.toByteArray)
-        // parse the classfile
-        val clazz = new Classfile(reader)
-        processJavaClassFile(clazz)
-      }
-      // if the class corresponds to the artificial class scala.Any.
-      // (see member list in class scala.tool.nsc.symtab.Definitions)
+
+    path.findClass(encName) match {
+      case Some(ClassRepresentation(Some(classFile), _)) =>
+        if (verbose) {
+          Console.println(Console.BOLD + "FILENAME" + Console.RESET + " = " + classFile.path)
+        }
+        val bytes = classFile.toByteArray
+        if (isScalaFile(bytes)) {
+          Console.println(decompileScala(bytes, isPackageObjectFile(encName)))
+        } else {
+          // construct a reader for the classfile content
+          val reader = new ByteArrayReader(classFile.toByteArray)
+          // parse the classfile
+          val clazz = new Classfile(reader)
+          processJavaClassFile(clazz)
+        }
+        // if the class corresponds to the artificial class scala.Any.
+        // (see member list in class scala.tool.nsc.symtab.Definitions)
+      case _ =>
+        Console.println(s"class/object $classname not found.")
     }
-    else
-      Console.println("class/object " + classname + " not found.")
   }
 }
 
 object Main extends Main {
+
+  private object opts {
+    val cp = "-cp"
+    val help = "-help"
+    val classpath = "-classpath"
+    val privates = "-private"
+    val verbose = "-verbose"
+    val version = "-version"
+
+    val classPathImplType = "-YclasspathImpl"
+    val flatClassPathCaching = "-YflatCpCaching"
+    val logClassPath = "-Ylog-classpath"
+  }
+
   /** Prints usage information for scalap. */
   def usage() {
     Console println """
@@ -152,33 +175,56 @@ object Main extends Main {
     if (args.isEmpty)
       return usage()
 
-    val arguments = Arguments.Parser('-')
-            .withOption("-private")
-            .withOption("-verbose")
-            .withOption("-version")
-            .withOption("-help")
-            .withOptionalArg("-classpath")
-            .withOptionalArg("-cp")
-            .parse(args)
+    val arguments = parseArguments(args)
 
-    if (arguments contains "-version")
+    if (arguments contains opts.version)
       Console.println(versionMsg)
-    if (arguments contains "-help")
+    if (arguments contains opts.help)
       usage()
 
-    verbose       = arguments contains "-verbose"
-    printPrivates = arguments contains "-private"
+    verbose       = arguments contains opts.verbose
+    printPrivates = arguments contains opts.privates
     // construct a custom class path
-    val cparg = List("-classpath", "-cp") map (arguments getArgument _) reduceLeft (_ orElse _)
-    val path = cparg match { // TODO maybe also flat classpath?
-      case Some(cp) => new JavaClassPath(DefaultJavaContext.classesInExpandedPath(cp), DefaultJavaContext)
-      case _        => PathResolver.fromPathString(".") // include '.' in the default classpath SI-6669
-    }
+    val cpArg = List(opts.classpath, opts.cp) map (arguments getArgument _) reduceLeft (_ orElse _)
+
+    val settings = new Settings()
+
+    arguments getArgument(opts.classPathImplType) foreach settings.YclasspathImpl.tryToSetFromPropertyValue
+    settings.YflatCpCaching.value = arguments contains opts.flatClassPathCaching
+    settings.Ylogcp.value = arguments contains opts.logClassPath
+
+    val path = createClassPath(cpArg, settings)
+
     // print the classpath if output is verbose
     if (verbose)
-      Console.println(Console.BOLD + "CLASSPATH" + Console.RESET + " = " + path)
+      Console.println(Console.BOLD + "CLASSPATH" + Console.RESET + " = " + path.asClassPathString)
 
     // process all given classes
     arguments.getOthers foreach process(arguments, path)
+  }
+
+  private def parseArguments(args: Array[String]) =
+    Arguments.Parser('-')
+      .withOption(opts.privates)
+      .withOption(opts.verbose)
+      .withOption(opts.version)
+      .withOption(opts.help)
+      .withOptionalArg(opts.classpath)
+      .withOptionalArg(opts.cp)
+      .withOptionalArg(opts.classPathImplType) // TODO three temporary, hidden options to be able to test new, experimental classpath implementation
+      .withOption(opts.flatClassPathCaching)
+      .withOption(opts.logClassPath)
+      .parse(args)
+
+  private def createClassPath(cpArg: Option[String], settings: Settings) = cpArg match {
+    case Some(cp) => settings.YclasspathImpl.value match {
+      case ClassPathImplementationType.Flat =>
+        AggregateFlatClassPath(new FlatClassPathFactory(settings).classesInExpandedPath(cp))
+      case ClassPathImplementationType.Recursive =>
+        new JavaClassPath(DefaultJavaContext.classesInExpandedPath(cp), DefaultJavaContext)
+    }
+    case _ =>
+      settings.classpath.value = "." // include '.' in the default classpath SI-6669
+      PathResolverFactory.create(settings).result
   }
 }

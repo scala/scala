@@ -12,7 +12,9 @@ import scala.reflect.io.FileZipArchive
 import java.net.URL
 import scala.tools.nsc.Settings
 
-case class ZipArchiveFlatClassPath private(zipFile: File) extends FlatClassPath {
+case class ZipArchiveFlatClassPath private(zipFile: File)
+  extends FlatClassPath
+  with NoSourcePaths {
 
   import ZipArchiveFlatClassPath._
 
@@ -20,9 +22,9 @@ case class ZipArchiveFlatClassPath private(zipFile: File) extends FlatClassPath 
 
   override def packages(inPackage: String): Seq[PackageEntry] = list(inPackage)._1
 
-  override def classes(inPackage: String): Seq[ClassFileEntry] = list(inPackage)._2
+  override def classes(inPackage: String): Seq[FileEntry] = list(inPackage)._2
 
-  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassFileEntry]) = {
+  override def list(inPackage: String): (Seq[PackageEntry], Seq[FileEntry]) = {
     val dirName = s"${FileUtils.dirPath(inPackage)}/"
     val dirEntry = archive.allDirs.getOrElse(dirName, null)
 
@@ -30,16 +32,16 @@ case class ZipArchiveFlatClassPath private(zipFile: File) extends FlatClassPath 
       return (Seq.empty, Seq.empty)
 
     val pkgBuf = collection.mutable.ArrayBuffer.empty[PackageEntry]
-    val classfileBuf = collection.mutable.ArrayBuffer.empty[ClassFileEntry]
+    val classFileBuf = collection.mutable.ArrayBuffer.empty[ClassFileEntry]
     val prefix = if (inPackage == FlatClassPath.RootPackage) "" else inPackage + "."
     dirEntry.iterator foreach { entry =>
       if (entry.isDirectory) {
         pkgBuf += PackageEntryImpl(prefix + entry.name)
       } else {
-        classfileBuf += ClassFileEntryImpl(entry)
+        classFileBuf += ClassFileEntryImpl(entry)
       }
     }
-    (pkgBuf, classfileBuf)
+    (pkgBuf, classFileBuf)
   }
 
   // FIXME implement this
@@ -47,16 +49,13 @@ case class ZipArchiveFlatClassPath private(zipFile: File) extends FlatClassPath 
 
   // FIXME change Nil to real implementation
   override def asURLs: Seq[URL] = Seq(zipFile.toURI.toURL)
+
+  override def asClassPathStrings: Seq[String] = Seq(zipFile.getPath)
 }
 
 object ZipArchiveFlatClassPath {
 
   private case class ClassFileEntryImpl(entry: FileZipArchive#Entry) extends ClassFileEntry {
-    override def name = {
-      val className = FileUtils.stripClassExtension(file.name)
-      className
-    }
-
     override def file: AbstractFile = entry
   }
 

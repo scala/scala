@@ -34,6 +34,7 @@ object PathResolver {
 
   implicit class MkLines(val t: TraversableOnce[_]) extends AnyVal {
     def mkLines: String = t.mkString("", EOL, EOL)
+
     def mkLines(header: String, indented: Boolean = false, embraced: Boolean = false): String = {
       val space = "\u0020"
       val sep = if (indented) EOL + space * 2 else EOL
@@ -41,6 +42,7 @@ object PathResolver {
       t.mkString(header + lbrace + sep, sep, rbrace + EOL)
     }
   }
+
   implicit class AsLines(val s: String) extends AnyVal {
     // sm"""...""" could do this in one pass
     def asLines = s.trim.stripMargin.lines.mkLines
@@ -112,13 +114,15 @@ object PathResolver {
       else if (scalaLibAsDir.isDirectory) scalaLibAsDir.path
       else ""
 
-    // XXX It must be time for someone to figure out what all these things
+    // TODO XXX It must be time for someone to figure out what all these things
     // are intended to do.  This is disabled here because it was causing all
     // the scala jars to end up on the classpath twice: one on the boot
     // classpath as set up by the runner (or regular classpath under -nobootcp)
     // and then again here.
-    def scalaBootClassPath  = ""
+    def scalaBootClassPath = ""
+
     def scalaExtDirs = Environment.scalaExtDirs
+
     def scalaPluginPath = (scalaHomeDir / "misc" / "scala-devel" / "plugins").path
 
     override def toString = s"""
@@ -166,6 +170,7 @@ object PathResolver {
       (home flatMap jarAt) orElse (install flatMap jarAt) orElse (install map (_.parent) flatMap jarAt) orElse
         (jdkDir flatMap deeply)
     }
+
     override def toString = s"""
       |object SupplementalLocations {
       |  platformTools        = $platformTools
@@ -176,13 +181,6 @@ object PathResolver {
   private object NoImplClassJavaContext extends JavaContext {
     override def isValidName(name: String): Boolean =
       !ReflectionUtils.scalacShouldntLoadClassfile(name)
-  }
-
-  // called from scalap
-  def fromPathString(path: String, context: JavaContext = DefaultJavaContext): ClassFileLookup[AbstractFile] = {
-    val s = new Settings()
-    s.classpath.value = path
-    new PathResolver(s, context) result // TODO maybe use proper PathResolver impl?
   }
 
   /** With no arguments, show the interesting values in Environment and Defaults.
@@ -202,8 +200,10 @@ object PathResolver {
       println("RESIDUAL: 'scala %s'\n".format(rest.mkString(" ")))
 
       pr.result match {
-        case cp: JavaClassPath => cp.show()
-        case cp: FlatClassPath => println("Printing flat classpath not supported yet") // TODO print also flat classpath
+        case cp: JavaClassPath =>
+          cp.show()
+        case cp: AggregateFlatClassPath =>
+          println(s"ClassPath has ${cp.aggregates.size} entries and results in:\n${cp.asClassPathStrings}")
       }
     }
   }
@@ -217,6 +217,7 @@ trait PathResolverResult {
 
 abstract class PathResolverBase[T <: ClassFileLookup[AbstractFile]](settings: Settings, classPathFactory: ClassPathFactory[T]) extends PathResolverResult {
   import PathResolver.{Defaults, ppcp, AsLines}
+
   protected def cmdLineOrElse(name: String, alt: String) = {
     (commandLineFor(name) match {
       case Some("") => None
@@ -245,6 +246,7 @@ abstract class PathResolverBase[T <: ClassFileLookup[AbstractFile]](settings: Se
     def javaUserClassPath   = if (useJavaClassPath) Defaults.javaUserClassPath else ""
     def scalaBootClassPath  = cmdLineOrElse("bootclasspath", Defaults.scalaBootClassPath)
     def scalaExtDirs        = cmdLineOrElse("extdirs", Defaults.scalaExtDirs)
+
     /** Scaladoc doesn't need any bootstrapping, otherwise will create errors such as:
      * [scaladoc] ../scala-trunk/src/reflect/scala/reflect/macros/Reifiers.scala:89: error: object api is not a member of package reflect
      * [scaladoc] case class ReificationException(val pos: reflect.api.PositionApi, val msg: String) extends Throwable(msg)
@@ -291,7 +293,7 @@ abstract class PathResolverBase[T <: ClassFileLookup[AbstractFile]](settings: Se
       |  javaBootClassPath    = ${ppcp(javaBootClassPath)}
       |  javaExtDirs          = ${ppcp(javaExtDirs)}
       |  javaUserClassPath    = ${ppcp(javaUserClassPath)}
-      |    useJavaClassPath   = $useJavaClassPath
+      |  useJavaClassPath     = $useJavaClassPath
       |  scalaBootClassPath   = ${ppcp(scalaBootClassPath)}
       |  scalaExtDirs         = ${ppcp(scalaExtDirs)}
       |  userClassPath        = ${ppcp(userClassPath)}
@@ -302,6 +304,7 @@ abstract class PathResolverBase[T <: ClassFileLookup[AbstractFile]](settings: Se
   def containers = Calculated.containers
 
   import PathResolver.MkLines
+
   override def result: T = {
     val cp = computeResult()
     if (settings.Ylogcp) {
@@ -319,24 +322,25 @@ abstract class PathResolverBase[T <: ClassFileLookup[AbstractFile]](settings: Se
 }
 
 // TODO commented out incremental compiler compatibility hacks
-class PathResolver private(settings: Settings, context: JavaContext/*, flatClassPath: => FlatClassPath*/) extends
-  PathResolverBase[ClassPath[AbstractFile]](settings, context) {
-  def this(settings: Settings/*, flatClassPath: => FlatClassPath*/) =
-  this(settings,
+class PathResolver private(settings: Settings, context: JavaContext /*, flatClassPath: => FlatClassPath*/)
+  extends PathResolverBase[ClassPath[AbstractFile]](settings, context) {
+
+  def this(settings: Settings /*, flatClassPath: => FlatClassPath*/) =
+    this(settings,
       if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
-      else DefaultJavaContext/*,
+      else DefaultJavaContext /*,
       flatClassPath*/)
 
-//  def this(settings: Settings, context: JavaContext) = this(settings, context, sys.error("Don't know how to construct FlatClassPath"))
-//  def this(settings: Settings) = this(settings, sys.error("Don't know how to construct FlatClassPath"): FlatClassPath)
+  //  def this(settings: Settings, context: JavaContext) = this(settings, context, sys.error("Don't know how to construct FlatClassPath"))
+  //  def this(settings: Settings) = this(settings, sys.error("Don't know how to construct FlatClassPath"): FlatClassPath)
 
   override protected def computeResult(): JavaClassPath =
   // TODO commented out sbt compiler interface hack
-    new JavaClassPath(containers.toIndexedSeq, context/*, settings.YclasspathImpl.value == ClassPathImplementationType.Flat, flatClassPath*/)
+    new JavaClassPath(containers.toIndexedSeq, context /*, settings.YclasspathImpl.value == ClassPathImplementationType.Flat, flatClassPath*/)
 }
 
-class FlatClassPathResolver(settings: Settings, flatClassPathFactory: ClassPathFactory[FlatClassPath]) extends
-  PathResolverBase[FlatClassPath](settings, flatClassPathFactory) {
+class FlatClassPathResolver(settings: Settings, flatClassPathFactory: ClassPathFactory[FlatClassPath])
+  extends PathResolverBase[FlatClassPath](settings, flatClassPathFactory) {
 
   override protected def computeResult(): FlatClassPath = AggregateFlatClassPath(containers.toIndexedSeq)
 }
@@ -345,7 +349,7 @@ object PathResolverFactory {
 
   def create(settings: Settings): PathResolverResult =
     settings.YclasspathImpl.value match {
-    case ClassPathImplementationType.Flat => new FlatClassPathResolver(settings, new FlatClassPathFactory(settings))
-    case ClassPathImplementationType.Recursive => new PathResolver(settings)
-  }
+      case ClassPathImplementationType.Flat => new FlatClassPathResolver(settings, new FlatClassPathFactory(settings))
+      case ClassPathImplementationType.Recursive => new PathResolver(settings)
+    }
 }

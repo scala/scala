@@ -6,8 +6,8 @@
 package scala.tools.nsc.classpath
 
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.util.ClassFileLookup
-import scala.tools.nsc.util.ClassRepresentation
+import scala.tools.nsc.util.{ClassPath, ClassFileLookup, ClassRepresentation}
+import scala.reflect.io.File._
 
 /**
  * An interface for a flat classpath.
@@ -20,26 +20,53 @@ import scala.tools.nsc.util.ClassRepresentation
 trait FlatClassPath extends ClassFileLookup[AbstractFile] {
   /** Empty string represents root package */
   def packages(inPackage: String): Seq[PackageEntry]
-  def classes(inPackage: String): Seq[ClassFileEntry]
-  def list(inPackage: String): (Seq[PackageEntry], Seq[ClassFileEntry])
-  //def sourcepath: Seq[SourceFileEntry?] // FIXME implement sourcepath
+  def classes(inPackage: String): Seq[FileEntry]
+  def list(inPackage: String): (Seq[PackageEntry], Seq[FileEntry])
 
-  // FIXME implement this
-  override def findClass(name: String): Option[ClassRepresentation[AbstractFile]] = ???
+  // TODO temporary solution - it's very inefficient and we loose benefits which we have from having specialised classes
+  override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = {
+    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
+    classes(pkg).find(_.name == simpleClassName)
+  }
+
+  override def asClassPathString: String = ClassPath.join(asClassPathStrings: _*)
+  def asClassPathStrings: Seq[String]
 }
 
 object FlatClassPath {
   val RootPackage = ""
 }
 
-sealed trait ClasspathEntry {
+sealed trait ClassPathEntry {
   def name: String
 }
 
-trait ClassFileEntry extends ClasspathEntry {
+trait FileEntry extends ClassPathEntry with ClassRepresentation[AbstractFile] {
   def file: AbstractFile
+
+  override def name = {
+    val className = FileUtils.stripClassExtension(file.name)
+    className
+  }
 }
 
-trait PackageEntry extends ClasspathEntry
+// TODO don't we have problems with some duplicated dirs in cp and sp when fir will be set in both places? Check that
+trait ClassFileEntry extends FileEntry {
+  override def binary: Option[AbstractFile] = Some(file) // TODO temporary solution due to compatibility with sbt's CompilerInterface which requires such methods
+  override def source: Option[AbstractFile] = None
+}
+
+trait SourceFileEntry extends FileEntry {
+  override def binary: Option[AbstractFile] = None
+  override def source: Option[AbstractFile] = Some(file)
+}
+
+case class SourceFileEntryImpl(file: AbstractFile) extends SourceFileEntry
+
+trait PackageEntry extends ClassPathEntry
 
 case class PackageEntryImpl(name: String) extends PackageEntry
+
+trait NoSourcePaths {
+  def asSourcePathString: String = ""
+}

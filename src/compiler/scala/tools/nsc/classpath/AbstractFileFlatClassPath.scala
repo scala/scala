@@ -14,7 +14,9 @@ import java.net.URL
 /**
  * AbstractFile-backed implementation of a classpath.
  */
-abstract class AbstractFileFlatClassPath(file: AbstractFile) extends FlatClassPath {
+abstract class AbstractFileFlatClassPath(file: AbstractFile)
+  extends FlatClassPath
+  with NoSourcePaths {
 
   import AbstractFileFlatClassPath._
 
@@ -28,14 +30,14 @@ abstract class AbstractFileFlatClassPath(file: AbstractFile) extends FlatClassPa
     }
   }
 
-  override def classes(inPackage: String): Seq[ClassFileEntry] = {
+  override def classes(inPackage: String): Seq[FileEntry] = {
     val dirForPackage = getDirectory(inPackage)
-    val classfiles = dirForPackage.toList.flatMap(_.iterator.filter(file => file.isClass))
+    val classFiles = dirForPackage.toList.flatMap(_.iterator.filter(file => file.isClass))
 
-    classfiles map ClassFileEntryImpl
+    classFiles map ClassFileEntryImpl
   }
 
-  override def list(inPackage: String): (Seq[PackageEntry], Seq[ClassFileEntry]) =
+  override def list(inPackage: String): (Seq[PackageEntry], Seq[FileEntry]) =
     (packages(inPackage), classes(inPackage))
 
   override def findClassFile(className: String): Option[AbstractFile] = {
@@ -45,6 +47,8 @@ abstract class AbstractFileFlatClassPath(file: AbstractFile) extends FlatClassPa
 
   // FIXME implement this
   override def asURLs: Seq[URL] = file.toURLs()
+
+  override def asClassPathStrings: Seq[String] = Seq(file.path)
 
   private def getDirectory(forPackage: String): Option[AbstractFile] = {
     if (forPackage == RootPackage) Some(file)
@@ -59,11 +63,5 @@ abstract class AbstractFileFlatClassPath(file: AbstractFile) extends FlatClassPa
 
 object AbstractFileFlatClassPath {
 
-  private case class ClassFileEntryImpl(file: AbstractFile) extends ClassFileEntry {
-    def name = {
-      val className = FileUtils.stripClassExtension(file.name)
-      className
-    }
-  }
-
+  private case class ClassFileEntryImpl(file: AbstractFile) extends ClassFileEntry
 }

@@ -9,7 +9,7 @@
 package scala.tools.scalap
 
 import scala.collection.mutable
-import mutable.{ Buffer, ListBuffer }
+import mutable.ListBuffer
 
 object Arguments {
   case class Parser(optionPrefix: Char) {
