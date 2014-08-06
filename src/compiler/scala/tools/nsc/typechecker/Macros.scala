@@ -576,7 +576,10 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
                 // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
                 val expanded1 = try onSuccess(duplicateAndKeepPositions(expanded)) finally popMacroContext()
                 if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
-                if (settings.Ymacroexpand.value == settings.MacroExpand.Discard) expandee.setType(expanded1.tpe)
+                if (settings.Ymacroexpand.value == settings.MacroExpand.Discard) {
+                  suppressMacroExpansion(expandee)
+                  expandee.setType(expanded1.tpe)
+                }
                 else expanded1
               case Fallback(fallback) => onFallback(fallback)
               case Delayed(delayed) => onDelayed(delayed)
