@@ -75,7 +75,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   //         at least indirectly. Currently, these are `ArrayOps` and `StringOps`.
   //         It is also implemented in `TraversableOnce[A]`.
   /** A version of this collection with all
-   *  of the operations implemented sequentially (i.e. in a single-threaded manner).
+   *  of the operations implemented sequentially (i.e., in a single-threaded manner).
    *
    *  This method returns a reference to this collection. In parallel collections,
    *  it is redefined to return a sequential implementation of this collection. In

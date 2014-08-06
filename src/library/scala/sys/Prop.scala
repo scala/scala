@@ -20,7 +20,7 @@ package sys
  *  @since   2.9
  */
 trait Prop[+T] {
-  /** The full name of the property, e.g. "java.awt.headless".
+  /** The full name of the property, e.g., "java.awt.headless".
    */
   def key: String
 
