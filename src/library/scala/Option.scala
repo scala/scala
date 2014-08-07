@@ -264,13 +264,13 @@ sealed abstract class Option[+A] extends Product with Serializable {
    *
    *  @example {{{
    *  // Returns Some(HTTP) because the partial function covers the case.
-   *  Some("http").collect({case "http" => "HTTP"})
+   *  Some("http") collect {case "http" => "HTTP"}
    *
    *  // Returns None because the partial function doesn't cover the case.
-   *  Some("ftp").collect({case "http" => "HTTP"})
+   *  Some("ftp") collect {case "http" => "HTTP"}
    *
    *  // Returns None because None is passed to the collect method.
-   *  None.collect({case value => value})
+   *  None collect {case value => value}
    *  }}}
    *
    *  @param  pf   the partial function.
