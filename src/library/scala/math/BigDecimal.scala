@@ -617,10 +617,10 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    */
   def abs: BigDecimal = if (signum < 0) unary_- else this
 
-  /** Returns the sign of this BigDecimal, i.e.
+  /** Returns the sign of this BigDecimal;
    *   -1 if it is less than 0,
-   *   +1 if it is greater than 0
-   *   0  if it is equal to 0
+   *   +1 if it is greater than 0,
+   *   0  if it is equal to 0.
    */
   def signum: Int = this.bigDecimal.signum()
 

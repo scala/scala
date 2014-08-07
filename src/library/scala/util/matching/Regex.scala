@@ -543,7 +543,7 @@ object Regex {
       if (start(i) >= 0) source.subSequence(start(i), end(i)).toString
       else null
 
-    /** All matched subgroups, i.e. not including group(0) */
+    /** All matched subgroups, i.e., not including group(0) */
     def subgroups: List[String] = (1 to groupCount).toList map group
 
     /** The char sequence before first character of match,

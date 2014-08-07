@@ -102,7 +102,7 @@ trait GenMapLike[A, +B, +Repr] extends GenIterableLike[(A, B), Repr] with Equals
    */
   def mapValues[C](f: B => C): GenMap[A, C]
 
-  /** Compares two maps structurally; i.e. checks if all mappings
+  /** Compares two maps structurally; i.e., checks if all mappings
    *  contained in this map are also contained in the other map,
    *  and vice versa.
    *

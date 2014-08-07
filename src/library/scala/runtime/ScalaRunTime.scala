@@ -62,7 +62,7 @@ object ScalaRunTime {
   }
 
   /** Return the class object representing an unboxed value type,
-   *  e.g. classOf[int], not classOf[java.lang.Integer].  The compiler
+   *  e.g., classOf[int], not classOf[java.lang.Integer].  The compiler
    *  rewrites expressions like 5.getClass to come here.
    */
   def anyValClass[T <: AnyVal : ClassTag](value: T): jClass[T] =
