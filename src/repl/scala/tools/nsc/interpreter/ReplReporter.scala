@@ -10,6 +10,7 @@ import reporters._
 import IMain._
 
 import scala.reflect.internal.util.Position
+import java.io.PrintWriter
 
 /** Like ReplGlobal, a layer for ensuring extra functionality.
  */
@@ -32,15 +33,16 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.i
   override def warning(pos: Position, msg: String): Unit = withoutTruncating(super.warning(pos, msg))
   override def error(pos: Position, msg: String): Unit   = withoutTruncating(super.error(pos, msg))
 
-  override def printMessage(msg: String) {
+  // intercepts all output to support total silencing
+  override protected def writeImpl(msg: String, writer: PrintWriter) {
     // Avoiding deadlock if the compiler starts logging before
     // the lazy val is complete.
     if (intp.isInitializeComplete) {
       if (intp.totalSilence) {
         if (isReplTrace)
-          super.printMessage("[silent] " + msg)
+          super.writeImpl("[silent] " + msg, writer)
       }
-      else super.printMessage(msg)
+      else super.writeImpl(msg, writer)
     }
     else Console.println("[init] " + msg)
   }
