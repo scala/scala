@@ -101,7 +101,7 @@ import java.util.regex.{ Pattern, Matcher }
  *  val copyright: Option[String] = for {
  *    dateP1(year, month, day) <- dateP1 findFirstIn "Last modified 2011-07-15"
  *  } yield year
-
+ *
  *  def getYears(text: String): Iterator[String] = for (dateP1(year, _, _) <- dateP1 findAllIn text) yield year
  *  def getFirstDay(text: String): Option[String] = for (m <- dateP2 findFirstMatchIn text) yield m group "day"
  *  }}}
@@ -154,7 +154,7 @@ import java.util.regex.{ Pattern, Matcher }
  *  interpreted as a reference to a group in the matched pattern, with numbers
  *  1 through 9 corresponding to the first nine groups, and 0 standing for the
  *  whole match. Any other character is an error. The backslash (`\`) character
- *  will be interpreted as an escape character, and can be used to escape the
+ *  will be interpreted as an escape character and can be used to escape the
  *  dollar sign. One can use [[scala.util.matching.Regex]]'s `quoteReplacement`
  *  to automatically escape these characters.
  */
@@ -178,7 +178,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *
    *  This method attempts to match the entire input by default; to find the next
    *  matching subsequence, use an unanchored Regex.
-
+   *
    *  For example:
    *
    *  {{{
@@ -202,10 +202,12 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  @param  s     The string to match
    *  @return       The matches
    */
-  def unapplySeq(s: CharSequence): Option[List[String]] = {
-    val m = pattern matcher s
-    if (runMatcher(m)) Some((1 to m.groupCount).toList map m.group)
-    else None
+  def unapplySeq(s: CharSequence): Option[List[String]] = s match {
+    case null => None
+    case _    =>
+      val m = pattern matcher s
+      if (runMatcher(m)) Some((1 to m.groupCount).toList map m.group)
+      else None
   }
 
   /** Tries to match the String representation of a [[scala.Char]].
@@ -253,7 +255,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  and the result of that match is used.
    */
   def unapplySeq(m: Match): Option[List[String]] =
-    if (m.matched == null) None
+    if (m == null || m.matched == null) None
     else if (m.matcher.pattern == this.pattern) Some((1 to m.groupCount).toList map m.group)
     else unapplySeq(m.matched)
 
@@ -296,7 +298,6 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  @example      {{{for (words <- """\w+""".r findAllIn "A simple example.") yield words}}}
    */
   def findAllIn(source: CharSequence) = new Regex.MatchIterator(source, this, groupNames)
-
 
   /** Return all non-overlapping matches of this regexp in given character sequence as a
    *  [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match]].
@@ -588,7 +589,7 @@ object Regex {
 
   }
 
-  /** Provides information about a succesful match.
+  /** Provides information about a successful match.
    */
   class Match(val source: CharSequence,
               private[matching] val matcher: Matcher,
