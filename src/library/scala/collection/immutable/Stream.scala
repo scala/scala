@@ -491,6 +491,8 @@ self =>
     else Stream.Empty
   }
 
+  override def filterNot(p: A => Boolean): Stream[A] = filter(!p(_))
+
   override final def withFilter(p: A => Boolean): StreamWithFilter = new StreamWithFilter(p)
 
   /** A lazier implementation of WithFilter than TraversableLike's.
