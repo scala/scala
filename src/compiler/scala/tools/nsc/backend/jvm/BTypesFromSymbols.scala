@@ -24,8 +24,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes with CoreBTyp
   import global._
   import definitions._
 
-  import global.TypeName
-
   def internalNameString(offset: Int, length: Int) = new String(global.chrs, offset, length)
 
   protected val classBTypeFromInternalNameMap = {

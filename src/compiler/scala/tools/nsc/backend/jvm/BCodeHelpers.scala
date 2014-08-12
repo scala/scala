@@ -330,12 +330,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       getClassBTypeAndRegisterInnerClass(classSym).internalName
     }
 
-    @inline private def assertClassNotArray(sym: Symbol): Unit = {
+    private def assertClassNotArray(sym: Symbol): Unit = {
       assert(sym.isClass, sym)
       assert(sym != definitions.ArrayClass || isCompilingArray, sym)
     }
 
-    @inline private def assertClassNotArrayNotPrimitive(sym: Symbol): Unit = {
+    private def assertClassNotArrayNotPrimitive(sym: Symbol): Unit = {
       assertClassNotArray(sym)
       assert(!primitiveTypeMap.contains(sym) || isCompilingPrimitive, sym)
     }

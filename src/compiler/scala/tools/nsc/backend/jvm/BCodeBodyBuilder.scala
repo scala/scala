@@ -949,7 +949,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     def genCallMethod(method: Symbol, style: InvokeStyle, hostClass0: Symbol = null, pos: Position = NoPosition) {
 
       val siteSymbol = claszSymbol
-      val   hostSymbol = if (hostClass0 == null) method.owner else hostClass0;
+      val hostSymbol = if (hostClass0 == null) method.owner else hostClass0
       val methodOwner = method.owner
       // info calls so that types are up to date; erasure may add lateINTERFACE to traits
       hostSymbol.info ; methodOwner.info
