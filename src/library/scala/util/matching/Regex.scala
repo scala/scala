@@ -62,11 +62,22 @@ import java.util.regex.{ Pattern, Matcher }
  *  }
  *  }}}
  *
- *  To check only whether the `Regex` matches, ignoring any groups:
+ *  To check only whether the `Regex` matches, ignoring any groups,
+ *  use a sequence wildcard:
  *
  *  {{{
  *  "2004-01-20" match {
  *    case date(_*) => "It's a date!"
+ *  }
+ *  }}}
+ *
+ *  That works because a `Regex` extractor produces a sequence of strings.
+ *  Extracting only the year from a date could also be expressed with
+ *  a sequence wildcard:
+ *
+ *  {{{
+ *  "2004-01-20" match {
+ *    case date(year, _*) => s"$year was a good year for PLs."
  *  }
  *  }}}
  *
@@ -107,6 +118,13 @@ import java.util.regex.{ Pattern, Matcher }
  *  {{{
  *  val mi = date findAllIn dates
  *  val oldies = mi filter (_ => (mi group 1).toInt < 1960) map (s => s"$s: An oldie but goodie.")
+ *  }}}
+ *
+ *  Note that `findAllIn` finds matches that don't overlap. (See [[findAllIn]] for more examples.)
+ *
+ *  {{{
+ *  val num = """(\d+)""".r
+ *  val all = (num findAllIn "123").toList  // List("123"), not List("123", "23", "3")
  *  }}}
  *
  *  Text replacement can be performed unconditionally or as a function of the current match:
@@ -187,22 +205,35 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  {{{
    *  val p1 = "ab*c".r
    *  val p1Matches = "abbbc" match {
-   *    case p1() => true
+   *    case p1() => true               // no groups
    *    case _    => false
    *  }
    *  val p2 = "a(b*)c".r
    *  val p2Matches = "abbbc" match {
-   *    case p2(_*) => true
+   *    case p2(_*) => true             // any groups
    *    case _      => false
    *  }
    *  val numberOfB = "abbbc" match {
-   *    case p2(b) => Some(b.length)
+   *    case p2(b) => Some(b.length)    // one group
    *    case _     => None
    *  }
    *  val p3 = "b*".r.unanchored
    *  val p3Matches = "abbbc" match {
-   *    case p3() => true
+   *    case p3() => true               // find the b's
    *    case _    => false
+   *  }
+   *  val p4 = "a(b*)(c+)".r
+   *  val p4Matches = "abbbcc" match {
+   *    case p4(_*) => true             // multiple groups
+   *    case _      => false
+   *  }
+   *  val allGroups = "abbbcc" match {
+   *    case p4(all @ _*) => all mkString "/" // "bbb/cc"
+   *    case _            => ""
+   *  }
+   *  val cGroup = "abbbcc" match {
+   *    case p4(_, c) => c
+   *    case _        => ""
    *  }
    *  }}}
    *
@@ -309,7 +340,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  }}}
    *
    *  To return overlapping matches, it is possible to formulate a regular expression
-   *  that does not consume the overlapping region.
+   *  with lookahead (`?=`) that does not consume the overlapping region.
    *
    *  {{{
    *  val madhatter = "(h)(?=(at[^a]+))".r
@@ -580,7 +611,8 @@ object Regex {
       else null
 
     /** The matched string in group `i`,
-     *  or `null` if nothing was matched */
+     *  or `null` if nothing was matched.
+     */
     def group(i: Int): String =
       if (start(i) >= 0) source.subSequence(start(i), end(i)).toString
       else null
@@ -589,32 +621,36 @@ object Regex {
     def subgroups: List[String] = (1 to groupCount).toList map group
 
     /** The char sequence before first character of match,
-     *  or `null` if nothing was matched */
+     *  or `null` if nothing was matched.
+     */
     def before: CharSequence =
       if (start >= 0) source.subSequence(0, start)
       else null
 
     /** The char sequence before first character of match in group `i`,
-     *  or `null` if nothing was matched for that group  */
+     *  or `null` if nothing was matched for that group.
+     */
     def before(i: Int): CharSequence =
       if (start(i) >= 0) source.subSequence(0, start(i))
       else null
 
     /** Returns char sequence after last character of match,
-     *  or `null` if nothing was matched */
+     *  or `null` if nothing was matched.
+     */
     def after: CharSequence =
       if (end >= 0) source.subSequence(end, source.length)
       else null
 
     /** The char sequence after last character of match in group `i`,
-     *  or `null` if nothing was matched for that group  */
+     *  or `null` if nothing was matched for that group.
+     */
     def after(i: Int): CharSequence =
       if (end(i) >= 0) source.subSequence(end(i), source.length)
       else null
 
     private lazy val nameToIndex: Map[String, Int] = Map[String, Int]() ++ ("" :: groupNames.toList).zipWithIndex
 
-    /** Returns the group with given name
+    /** Returns the group with given name.
      *
      *  @param id The group name
      *  @return   The requested group
@@ -625,24 +661,22 @@ object Regex {
       case Some(index) => group(index)
     }
 
-    /** The matched string; equivalent to `matched.toString` */
+    /** The matched string; equivalent to `matched.toString`. */
     override def toString = matched
-
   }
 
-  /** Provides information about a successful match.
-   */
+  /** Provides information about a successful match. */
   class Match(val source: CharSequence,
               private[matching] val matcher: Matcher,
               val groupNames: Seq[String]) extends MatchData {
 
-    /** The index of the first matched character */
+    /** The index of the first matched character. */
     val start = matcher.start
 
-    /** The index following the last matched character */
+    /** The index following the last matched character. */
     val end = matcher.end
 
-    /** The number of subgroups */
+    /** The number of subgroups. */
     def groupCount = matcher.groupCount
 
     private lazy val starts: Array[Int] =
@@ -650,19 +684,19 @@ object Regex {
     private lazy val ends: Array[Int] =
       ((0 to groupCount) map matcher.end).toArray
 
-    /** The index of the first matched character in group `i` */
+    /** The index of the first matched character in group `i`. */
     def start(i: Int) = starts(i)
 
-    /** The index following the last matched character in group `i` */
+    /** The index following the last matched character in group `i`. */
     def end(i: Int) = ends(i)
 
     /** The match itself with matcher-dependent lazy vals forced,
-     *  so that match is valid even once matcher is advanced
+     *  so that match is valid even once matcher is advanced.
      */
     def force: this.type = { starts; ends; this }
   }
 
-  /** An extractor object for Matches, yielding the matched string
+  /** An extractor object for Matches, yielding the matched string.
    *
    *  This can be used to help writing replacer functions when you
    *  are not interested in match data. For example:
@@ -714,7 +748,7 @@ object Regex {
       nextSeen
     }
 
-    /** The next matched substring of `source` */
+    /** The next matched substring of `source`. */
     def next(): String = {
       if (!hasNext) throw new NoSuchElementException
       nextSeen = false
@@ -723,28 +757,28 @@ object Regex {
 
     override def toString = super[AbstractIterator].toString
 
-    /** The index of the first matched character */
+    /** The index of the first matched character. */
     def start: Int = matcher.start
 
-    /** The index of the first matched character in group `i` */
+    /** The index of the first matched character in group `i`. */
     def start(i: Int): Int = matcher.start(i)
 
-    /** The index of the last matched character */
+    /** The index of the last matched character. */
     def end: Int = matcher.end
 
-    /** The index following the last matched character in group `i` */
+    /** The index following the last matched character in group `i`. */
     def end(i: Int): Int = matcher.end(i)
 
-    /** The number of subgroups */
+    /** The number of subgroups. */
     def groupCount = matcher.groupCount
 
-    /** Convert to an iterator that yields MatchData elements instead of Strings */
+    /** Convert to an iterator that yields MatchData elements instead of Strings. */
     def matchData: Iterator[Match] = new AbstractIterator[Match] {
       def hasNext = self.hasNext
       def next = { self.next(); new Match(source, matcher, groupNames).force }
     }
 
-    /** Convert to an iterator that yields MatchData elements instead of Strings and has replacement support */
+    /** Convert to an iterator that yields MatchData elements instead of Strings and has replacement support. */
     private[matching] def replacementData = new AbstractIterator[Match] with Replacement {
       def matcher = self.matcher
       def hasNext = self.hasNext
