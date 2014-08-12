@@ -10,38 +10,37 @@ import org.junit.Assert._
 
 @RunWith(classOf[JUnit4])
 class BTypesTest {
-  val g: Global = new Global(new Settings())
+  val settings = new Settings()
+  settings.processArgumentString("-usejavacp")
+  val g: Global = new Global(settings)
+  val run = new g.Run() // initializes some compiler internals
+  import g.{definitions => d, Symbol}
 
-  val btypes = new BTypes[g.type](g) {
-    def chrs = g.chrs
-    override type BTypeName = g.TypeName
-    override def createNewName(s: String) = g.newTypeName(s)
-  }
+  def duringBackend[T](f: => T) = g.exitingDelambdafy(f)
 
+  val btypes = new BTypesFromSymbols[g.type](g)
   import btypes._
+  duringBackend(btypes.intializeCoreBTypes())
 
-  val jls = "java/lang/String"
-  val jlo = "java/lang/Object"
+  def classBTypeFromSymbol(sym: Symbol) = duringBackend(btypes.classBTypeFromSymbol(sym))
 
-  val o = ClassBType(jlo)
-  val s = ClassBType(jls)
+  val jlo = d.ObjectClass
+  val jls = d.StringClass
+
+  val o = classBTypeFromSymbol(jlo)
+  val s = classBTypeFromSymbol(jls)
   val oArr = ArrayBType(o)
   val method = MethodBType(List(oArr, INT, DOUBLE, s), UNIT)
 
   @Test
   def classBTypesEquality() {
-    val s1 = ClassBType(jls)
-    val s2 = ClassBType(jls)
-    val o  = ClassBType(jlo)
+    val s1 = classBTypeFromSymbol(jls)
+    val s2 = classBTypeFromSymbol(jls)
+    val o  = classBTypeFromSymbol(jlo)
     assertEquals(s1, s2)
     assertEquals(s1.hashCode, s2.hashCode)
     assert(s1 != o)
     assert(s2 != o)
-  }
-
-  @Test
-  def classBTypeRequiresInternalName() {
-    assertThrows[AssertionError](ClassBType(s"L$jls;"), _ contains "Descriptor instead of internal name")
   }
 
   @Test
@@ -55,7 +54,7 @@ class BTypesTest {
     assert(FLOAT.typedOpcode(Opcodes.IALOAD)  == Opcodes.FALOAD)
     assert(LONG.typedOpcode(Opcodes.IALOAD)   == Opcodes.LALOAD)
     assert(DOUBLE.typedOpcode(Opcodes.IALOAD) == Opcodes.DALOAD)
-    assert(ClassBType(jls).typedOpcode(Opcodes.IALOAD) == Opcodes.AALOAD)
+    assert(classBTypeFromSymbol(jls).typedOpcode(Opcodes.IALOAD) == Opcodes.AALOAD)
 
     assert(UNIT.typedOpcode(Opcodes.IRETURN)   == Opcodes.RETURN)
     assert(BOOL.typedOpcode(Opcodes.IRETURN)   == Opcodes.IRETURN)
@@ -66,7 +65,7 @@ class BTypesTest {
     assert(FLOAT.typedOpcode(Opcodes.IRETURN)  == Opcodes.FRETURN)
     assert(LONG.typedOpcode(Opcodes.IRETURN)   == Opcodes.LRETURN)
     assert(DOUBLE.typedOpcode(Opcodes.IRETURN) == Opcodes.DRETURN)
-    assert(ClassBType(jls).typedOpcode(Opcodes.IRETURN)   == Opcodes.ARETURN)
+    assert(classBTypeFromSymbol(jls).typedOpcode(Opcodes.IRETURN)   == Opcodes.ARETURN)
   }
 
   @Test
@@ -84,21 +83,9 @@ class BTypesTest {
     }
   }
 
+  // TODO @lry do more tests
   @Test
-  def parseMethodDescriptorTest() {
-    val descriptors = List(
-      "()V",
-      "(ID)I",
-      "([[I[D)[D",
-      s"(L$jls;[L$jlo;)[[L$jls;",
-      s"(IL$jlo;)L$jls;"
-    )
-    for (d <- descriptors) {
-      assertEquals(d, MethodBType(d).descriptor)
-    }
+  def maxTypeTest() {
 
-    // class types in method descriptor need surrounding 'L' and ';'
-    assertThrows[MatchError](MethodBType("(java/lang/String)V"), _ == "j (of class java.lang.Character)")
-    assertThrows[AssertionError](MethodBType("I"), _ contains "Not a valid method descriptor")
   }
 }
