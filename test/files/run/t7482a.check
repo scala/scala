@@ -7,4 +7,4 @@ v: java.util.ArrayList[String] = []
 scala>   val v: java.util.ArrayList[String] = new java.util.ArrayList[String](5)
 v: java.util.ArrayList[String] = []
 
-scala> 
+scala> :quit

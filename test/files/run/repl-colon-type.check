@@ -218,4 +218,4 @@ Unit
 scala> :type println("side effect!")
 Unit
 
-scala> 
+scala> :quit

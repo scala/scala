@@ -13,4 +13,4 @@ f: Int => Int = <function1>
 scala> println(f(10))
 11
 
-scala> 
+scala> :quit

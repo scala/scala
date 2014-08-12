@@ -22,4 +22,4 @@ scala> {
                                  ^
 2
 
-scala> 
+scala> :quit

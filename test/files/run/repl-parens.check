@@ -81,4 +81,4 @@ scala>
 scala> List(1) ++ List('a')
 res16: List[AnyVal] = List(1, a)
 
-scala> 
+scala> :quit

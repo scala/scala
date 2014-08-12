@@ -70,4 +70,4 @@ defined object lookup
 scala> lookup("F") // this now works as a result of changing .typeSymbol to .typeSymbolDirect in IMain#Request#definedSymbols
 res0: $r.intp.global.Symbol = type F
 
-scala> 
+scala> :quit

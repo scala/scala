@@ -361,7 +361,7 @@ It would fail on the following inputs: Exp(), Term()
                        ^
 f: (e: Exp)Int
 
-scala> 
+scala> :quit
 plusOne: (x: Int)Int
 res0: Int = 6
 res0: String = after reset

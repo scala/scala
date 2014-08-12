@@ -14,4 +14,4 @@ foo: [T]=> Unit
 scala> foo[Int]
 WeakTypeTag[scala.List[T]]
 
-scala> 
+scala> :quit

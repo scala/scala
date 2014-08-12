@@ -25,4 +25,4 @@ scala.AnyRef {
   def foo: scala.Nothing
 }
 
-scala> 
+scala> :quit

@@ -34,4 +34,4 @@ scala.Null
 scala.Nothing
 scala.Singleton
 
-scala> 
+scala> :quit

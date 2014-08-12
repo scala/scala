@@ -13,4 +13,4 @@ x: Int = 12
 scala> y = 13
 y: Int = 13
 
-scala> 
+scala> :quit

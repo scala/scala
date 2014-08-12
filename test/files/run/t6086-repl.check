@@ -7,4 +7,4 @@ defined class X
 scala> scala.reflect.runtime.universe.typeOf[X]
 res0: reflect.runtime.universe.Type = X
 
-scala> 
+scala> :quit

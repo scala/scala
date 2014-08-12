@@ -22,5 +22,5 @@ object Test extends SessionTest {
     |               ^
     |b: String
     |
-    |scala> """
+    |scala> :quit"""
 }

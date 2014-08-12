@@ -29,4 +29,4 @@ res0: Any =
   }
 }
 
-scala> 
+scala> :quit

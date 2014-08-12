@@ -32,4 +32,4 @@ res6: scala.reflect.ClassTag[scala.collection.immutable.Set[_]] = scala.collecti
 scala> classTag[scala.collection.immutable.Set[_]]
 res7: scala.reflect.ClassTag[scala.collection.immutable.Set[_]] = scala.collection.immutable.Set
 
-scala> 
+scala> :quit

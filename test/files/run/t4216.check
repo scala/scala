@@ -34,4 +34,4 @@ res4: java.util.List[V] = [V@0]
 scala> o(new V(0))
 res5: java.util.List[Any] = [V@0]
 
-scala> 
+scala> :quit

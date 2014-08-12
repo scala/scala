@@ -25,4 +25,4 @@ m(scala.Symbol("s")).xxx: Any = 's
 scala> val `"` = 0
 ": Int = 0
 
-scala> 
+scala> :quit
