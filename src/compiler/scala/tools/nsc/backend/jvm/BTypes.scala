@@ -42,6 +42,12 @@ abstract class BTypes {
    */
   def classBTypeFromInternalName(internalName: String) = classBTypeFromInternalNameMap(internalName)
 
+  // Some core BTypes are required here, in class BType, where no Global instance is available.
+  // The Global is only available in the subclass BTypesFromSymbols. We cannot depend on the actual
+  // implementation (CoreBTypesProxy) here because it has members that refer to global.Symbol.
+  val coreBTypes: CoreBTypesProxyGlobalIndependent[this.type]
+  import coreBTypes._
+
   /**
    * A BType is either a primitve type, a ClassBType, an ArrayBType of one of these, or a MethodType
    * referring to BTypes.
@@ -834,14 +840,10 @@ abstract class BTypes {
    * They are defs (not vals) because they are implemented using vars (see comment on CoreBTypes).
    */
 
-  def boxedClasses: Set[ClassBType]
-
-  def RT_NOTHING : ClassBType
-  def RT_NULL    : ClassBType
-
-  def ObjectReference          : ClassBType
-  def jlCloneableReference     : ClassBType
-  def jioSerializableReference : ClassBType
+  /**
+   * Just a named pair, used in CoreBTypes.asmBoxTo/asmUnboxTo.
+   */
+  final case class MethodNameAndType(name: String, methodType: MethodBType)
 
   /**
    * True if the current compilation unit is of a primitive class (scala.Boolean et al).

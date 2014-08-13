@@ -21,6 +21,7 @@ import scala.tools.nsc.io.AbstractFile
 abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   import global._
   import bTypes._
+  import coreBTypes._
 
   /*
    * must-single-thread

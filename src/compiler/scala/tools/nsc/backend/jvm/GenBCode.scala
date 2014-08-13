@@ -47,6 +47,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
   import global._
 
   import bTypes._
+  import coreBTypes._
 
   val phaseName = "jvm"
 

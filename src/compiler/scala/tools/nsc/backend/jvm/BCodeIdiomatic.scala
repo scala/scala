@@ -25,6 +25,7 @@ abstract class BCodeIdiomatic extends SubComponent {
 
   import global._
   import bTypes._
+  import coreBTypes._
 
   val classfileVersion: Int = settings.target.value match {
     case "jvm-1.5"     => asm.Opcodes.V1_5

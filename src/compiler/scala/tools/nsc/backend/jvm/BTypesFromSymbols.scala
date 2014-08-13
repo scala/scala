@@ -20,9 +20,17 @@ import scala.tools.asm
  * of the core btypes. They are declared in BTypes as abstract members. Note that BTypes does
  * not have access to the compiler instance.
  */
-class BTypesFromSymbols[G <: Global](val global: G) extends BTypes with CoreBTypes[G] {
+class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   import global._
   import definitions._
+
+  // Why the proxy, see documentation of class [[CoreBTypes]].
+  val coreBTypes = new CoreBTypesProxy[this.type](this)
+  import coreBTypes._
+
+  final def intializeCoreBTypes(): Unit = {
+    coreBTypes.setBTypes(new CoreBTypes[this.type](this))
+  }
 
   def internalNameString(offset: Int, length: Int) = new String(global.chrs, offset, length)
 
