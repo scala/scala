@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Contributor.
+ * Copyright (c) 2014 Contributor. All rights reserved.
  */
 package scala.tools.nsc.util
 
