@@ -37,6 +37,15 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   /** the following two members override abstract members in Transform */
   val phaseName: String = "delambdafy"
 
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
+    if (settings.Ydelambdafy.value == "method") new Phase(prev)
+    else new SkipPhase(prev)
+  }
+
+  class SkipPhase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
+    def apply(unit: global.CompilationUnit): Unit = ()
+  }
+
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new DelambdafyTransformer(unit)
 
