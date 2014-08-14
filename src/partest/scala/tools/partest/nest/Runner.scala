@@ -248,7 +248,8 @@ class Runner(val testFile: File, val suiteRunner: SuiteRunner) {
     // use lines in block so labeled? Default to sorry, Charlie.
     def retainOn(expr: String) = {
       val f = expr.trim
-      def flagWasSet(f: String) = suiteRunner.scalacExtraArgs contains f
+      val allArgs = suiteRunner.scalacExtraArgs ++ PartestDefaults.scalacOpts.split(' ')
+      def flagWasSet(f: String) = allArgs contains f
       val (invert, token) =
         if (f startsWith "!") (true, f drop 1) else (false, f)
       val cond = token.trim match {
