@@ -32,4 +32,6 @@ object PackageNameUtils {
 		else
 			(fullClassName.substring(0, lastDotIndex), fullClassName.substring(lastDotIndex + 1))
 	}
+
+  def packagePrefix(inPackage: String): String = if (inPackage == RootPackage) "" else inPackage + "."
 }

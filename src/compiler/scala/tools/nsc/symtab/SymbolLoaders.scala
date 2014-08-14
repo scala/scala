@@ -171,12 +171,6 @@ abstract class SymbolLoaders {
         enterClassAndModule(owner, classRep.name, newClassLoader(bin))
     }
   }
-  
-  /** Initialize toplevel class and module symbols in `owner` from class name
-   */
-  def initializeFromClassPath(owner: Symbol, classfileEntry: ClassFileEntry) {
-    enterClassAndModule(owner, classfileEntry.name, new ClassfileLoader(classfileEntry.file))
-  }
 
   /** Create a new loader from a binary classfile.
    *  This is intented as a hook allowing to support loading symbols from
@@ -288,15 +282,13 @@ abstract class SymbolLoaders {
       assert(root.isPackageClass, root)
       root.setInfo(new PackageClassInfoType(newScope, root))
       
-      val (packages, classes) = classpath.list(packageName)
+      val classPathEntries = classpath.list(packageName)
 
       if (!root.isRoot) {
-        for (clazz <- classes) {
-          initializeFromClassPath(root, clazz)
-        }
+        for (entry <- classPathEntries.classesAndSources) initializeFromClassPath(root, entry)
       }
       if (!root.isEmptyPackageClass) {
-        for (pkg <- packages) {
+        for (pkg <- classPathEntries.packages) {
           val fullName = pkg.name
 	        val name = PackageNameUtils.lastSubpackageNameForPackage(fullName)
           val packageLoader = new PackageLoaderUsingFlatClassPath(fullName, classpath)

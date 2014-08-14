@@ -5,7 +5,6 @@ package scala.tools.nsc.classpath
 
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.util.{ClassPath, ClassFileLookup, ClassRepresentation}
-import scala.reflect.io.File._
 
 /**
  * An interface for a flat classpath.
@@ -17,22 +16,51 @@ import scala.reflect.io.File._
  */
 trait FlatClassPath extends ClassFileLookup[AbstractFile] {
   /** Empty string represents root package */
+  // TODO we probably don't need packages on this level anymore as we have list operation
   def packages(inPackage: String): Seq[PackageEntry]
-  def classes(inPackage: String): Seq[FileEntry]
-  def list(inPackage: String): (Seq[PackageEntry], Seq[FileEntry])
+  // TODO and also classes and sources could be then protected
+  def classes(inPackage: String): Seq[ClassFileEntry]
+  def sources(inPackage: String): Seq[SourceFileEntry]
 
-  // TODO temporary solution - it's very inefficient and we loose benefits which we have from having specialised classes
+  def list(inPackage: String): FlatClassPathEntries
+
   override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = {
     val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
-    classes(pkg).find(_.name == simpleClassName)
+
+    val foundClassFile = classes(pkg)
+      .find(_.name == simpleClassName)
+
+    def findSourceFile = sources(pkg)
+      .find(_.name == simpleClassName)
+
+    foundClassFile orElse findSourceFile
   }
 
   override def asClassPathString: String = ClassPath.join(asClassPathStrings: _*)
   def asClassPathStrings: Seq[String]
+
 }
 
 object FlatClassPath {
   val RootPackage = ""
+}
+
+case class FlatClassPathEntries(packages: Seq[PackageEntry], classesAndSources: Seq[FileEntry])
+
+object FlatClassPathEntries {
+  import scala.language.implicitConversions
+  // to have working unzip method
+  implicit def entry2Tuple(entry: FlatClassPathEntries) = (entry.packages, entry.classesAndSources)
+}
+
+trait NoSourcePaths {
+  def sources(inPackage: String): Seq[SourceFileEntry] = Seq.empty
+  def asSourcePathString: String = ""
+}
+
+trait NoClassPaths {
+  def classes(inPackage: String): Seq[ClassFileEntry] = Seq.empty
+  def findClassFile(className: String): Option[AbstractFile] = None
 }
 
 sealed trait ClassPathEntry {
@@ -48,7 +76,6 @@ trait FileEntry extends ClassPathEntry with ClassRepresentation[AbstractFile] {
   }
 }
 
-// TODO don't we have problems with some duplicated dirs in cp and sp when fir will be set in both places? Check that
 trait ClassFileEntry extends FileEntry {
   override def binary: Option[AbstractFile] = Some(file) // TODO temporary solution due to compatibility with sbt's CompilerInterface which requires such methods
   override def source: Option[AbstractFile] = None
@@ -64,7 +91,3 @@ case class SourceFileEntryImpl(file: AbstractFile) extends SourceFileEntry
 trait PackageEntry extends ClassPathEntry
 
 case class PackageEntryImpl(name: String) extends PackageEntry
-
-trait NoSourcePaths {
-  def asSourcePathString: String = ""
-}

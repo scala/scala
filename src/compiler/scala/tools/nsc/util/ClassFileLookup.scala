@@ -15,6 +15,10 @@ import java.net.URL
 trait ClassFileLookup[T] {
   def findClassFile(name: String): Option[AbstractFile]
 
+  /**
+   * It returns both classes and sources (as our base ClassRepresentation)
+   * due to the comptibility with old classpath implementation and its usage in SymbolLoaders.
+   */
   def findClass(name: String): Option[ClassRepresentation[T]]
 
   /**

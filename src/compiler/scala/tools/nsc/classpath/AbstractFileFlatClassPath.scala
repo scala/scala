@@ -3,47 +3,38 @@
  */
 package scala.tools.nsc.classpath
 
-import scala.reflect.io.AbstractFile
-import scala.tools.nsc.classpath.FlatClassPath._
-import FileUtils.AbstractFileOps
-import scala.Some
 import java.net.URL
+import scala.reflect.io.AbstractFile
+import scala.tools.nsc.classpath.FlatClassPath.RootPackage
+import FileUtils.AbstractFileOps
 
 /**
  * AbstractFile-backed implementation of a classpath.
  */
-abstract class AbstractFileFlatClassPath(file: AbstractFile)
-  extends FlatClassPath
-  with NoSourcePaths {
-
-  import AbstractFileFlatClassPath._
+trait AbstractFileFileLookup[FileEntryType <: FileEntry] extends FlatClassPath {
+  // FIXME check whether this class works at all!
+  protected val file: AbstractFile
 
   override def packages(inPackage: String): Seq[PackageEntry] = {
     val dirForPackage = getDirectory(inPackage)
     val packagesDirs = dirForPackage.toList.flatMap(_.iterator.filter(file => file.isPackage))
-    val prefix = if (inPackage == RootPackage) "" else inPackage + "."
+    val prefix = PackageNameUtils.packagePrefix(inPackage)
 
     packagesDirs map { file =>
       PackageEntryImpl(prefix + file.name)
     }
   }
 
-  override def classes(inPackage: String): Seq[FileEntry] = {
+  protected def files(inPackage: String): Seq[FileEntryType] = {
     val dirForPackage = getDirectory(inPackage)
-    val classFiles = dirForPackage.toList.flatMap(_.iterator.filter(file => file.isClass))
+    val files = dirForPackage.toList.flatMap(_.iterator filter isRequiredFileType)
 
-    classFiles map ClassFileEntryImpl
+    files map createFileEntry
   }
 
-  override def list(inPackage: String): (Seq[PackageEntry], Seq[FileEntry]) =
-    (packages(inPackage), classes(inPackage))
+  override def list(inPackage: String): FlatClassPathEntries =
+    FlatClassPathEntries(packages(inPackage), files(inPackage))
 
-  override def findClassFile(className: String): Option[AbstractFile] = {
-    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
-    classes(pkg).find(_.name == simpleClassName).map(_.file)
-  }
-
-  // FIXME implement this
   override def asURLs: Seq[URL] = file.toURLs()
 
   override def asClassPathStrings: Seq[String] = Seq(file.path)
@@ -57,9 +48,39 @@ abstract class AbstractFileFlatClassPath(file: AbstractFile)
     }
   }
 
+  protected def createFileEntry(file: AbstractFile): FileEntryType
+  protected def isRequiredFileType(file: AbstractFile): Boolean
+}
+
+import AbstractFileFlatClassPath.ClassFileEntryImpl
+trait AbstractFileFlatClassPath
+  extends AbstractFileFileLookup[ClassFileEntryImpl]
+  with NoSourcePaths {
+
+  override def findClassFile(className: String): Option[AbstractFile] = {
+    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
+    classes(pkg).find(_.name == simpleClassName).map(_.file)
+  }
+
+  override def classes(inPackage: String): Seq[ClassFileEntry] = files(inPackage)
+
+  override protected def createFileEntry(file: AbstractFile): ClassFileEntryImpl = ClassFileEntryImpl(file)
+  override protected def isRequiredFileType(file: AbstractFile): Boolean = file.isClass
 }
 
 object AbstractFileFlatClassPath {
 
-  private case class ClassFileEntryImpl(file: AbstractFile) extends ClassFileEntry
+  private[classpath] case class ClassFileEntryImpl(file: AbstractFile) extends ClassFileEntry
+}
+
+trait AbstractFileFlatSourcePath
+  extends AbstractFileFileLookup[SourceFileEntryImpl]
+  with NoClassPaths {
+
+  override def sources(inPackage: String): Seq[SourceFileEntry] = files(inPackage)
+
+  override def asSourcePathString: String = asClassPathString
+
+  override protected def createFileEntry(file: AbstractFile): SourceFileEntryImpl = SourceFileEntryImpl(file)
+  override protected def isRequiredFileType(file: AbstractFile): Boolean = file.isScalaOrJavaSource
 }

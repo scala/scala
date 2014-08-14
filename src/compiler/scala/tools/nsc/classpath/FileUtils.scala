@@ -3,9 +3,9 @@
  */
 package scala.tools.nsc.classpath
 
-import scala.reflect.io.AbstractFile
 import java.io.{ File => JFile }
 import java.net.URL
+import scala.reflect.io.AbstractFile
 
 /**
  * Common methods related to Java Files and our Abstractfiles used in cotext of classpath
@@ -15,6 +15,8 @@ object FileUtils {
     def isPackage: Boolean = file.isDirectory && isValidPackage(file.name)
 
     def isClass: Boolean = !file.isDirectory && file.hasExtension("class")
+
+    def isScalaOrJavaSource: Boolean = !file.isDirectory && (file.hasExtension("scala") || file.hasExtension("java"))
 
 	  // TODO do we need to check also other files using magic number like in scala.tools.nsc.Jar.isJarOrZip?
 	  def isJarOrZip: Boolean = file.hasExtension("jar") || file.hasExtension("zip")
@@ -26,16 +28,21 @@ object FileUtils {
     def toURLs(default: => Seq[URL] = Seq.empty): Seq[URL] = if (file.file == null) default else Seq(file.toURL)
   }
 
-	implicit class FileOps(val file: JFile) extends AnyVal {
-		def isPackage: Boolean = file.isDirectory && isValidPackage(file.getName)
+  implicit class FileOps(val file: JFile) extends AnyVal {
+    def isPackage: Boolean = file.isDirectory && isValidPackage(file.getName)
 
-		def isClass: Boolean = file.isFile && file.getName.endsWith(".class")
-	}
+    def isClass: Boolean = file.isFile && file.getName.endsWith(".class")
+
+    def isJar: Boolean = false // FIXME temporary value - file.getName.endsWith(".jar")
+  }
 
   @inline def dirPath(forPackage: String) = forPackage.replace('.', '/')
 
   @inline def endsClass(fileName: String): Boolean =
     fileName.length > 6 && fileName.substring(fileName.length - 6) == ".class"
+
+  @inline def endsScalaOrJava(fileName: String): Boolean =
+    endsScala(fileName) || endsJava(fileName)
 
   @inline def endsJava(fileName: String): Boolean =
     fileName.length > 5 && fileName.substring(fileName.length - 5) == ".java"

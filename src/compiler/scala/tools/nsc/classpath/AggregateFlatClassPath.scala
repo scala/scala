@@ -3,33 +3,54 @@
  */
 package scala.tools.nsc.classpath
 
-import scala.reflect.io.AbstractFile
 import java.net.URL
-import scala.tools.nsc.util.{ClassRepresentation, ClassPath}
+import scala.annotation.tailrec
+import scala.reflect.io.AbstractFile
+import scala.tools.nsc.util.ClassPath
 
 case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatClassPath {
-
   override def packages(inPackage: String): Seq[PackageEntry] = {
     val aggregatedPkgs = aggregates.flatMap(_.packages(inPackage)).distinct
     aggregatedPkgs
   }
 
-  override def classes(inPackage: String): Seq[FileEntry] = {
+  override def classes(inPackage: String): Seq[ClassFileEntry] = {
     val aggreagatedClasses = aggregates.flatMap(_.classes(inPackage))
     aggreagatedClasses
   }
 
-  override def list(inPackage: String): (Seq[PackageEntry], Seq[FileEntry]) = {
-    val (packages, classes) = aggregates.map(_.list(inPackage)).unzip
-    val distinctPackages = packages.flatten.distinct
-    val distinctClasses = distinctClassEntries(classes.flatten)
-    (distinctPackages, distinctClasses)
+  override def sources(inPackage: String): Seq[SourceFileEntry] = {
+    val aggreagatedSources = aggregates.flatMap(_.sources(inPackage))
+    aggreagatedSources
   }
 
-  override def findClassFile(className: String): Option[AbstractFile] = findClass(className).flatMap(_.binary)
+  override def list(inPackage: String): FlatClassPathEntries = {
+    val (packages, classesAndSources) = aggregates.map(_.list(inPackage)).unzip
+    val distinctPackages = packages.flatten.distinct
+    // FIXME do merge like in the case of old classpath!
+    // mergedClassesAndSources
+    val distinctClassesAndSources = distinctClassEntries(classesAndSources.flatten)
+    FlatClassPathEntries(distinctPackages, distinctClassesAndSources)
+  }
 
-//  override def findClass(name: String): Option[ClassRepresentation[AbstractFile]] =
-  // TODO temporary
+  override def findClassFile(className: String): Option[AbstractFile] = {
+    @tailrec
+    def find(aggregates: Seq[FlatClassPath]): Option[AbstractFile] =
+      if (aggregates.nonEmpty) {
+        val classFile = aggregates.head.findClassFile(className)
+        if (classFile.isDefined) classFile
+        else find(aggregates.tail)
+      } else None
+
+    find(aggregates)
+  }
+
+  // FIXME create better implementation - something like:
+  //  override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = {
+  //    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
+  //
+  //    mergedClassesAndSources(pkg).find(_.name == simpleClassName)
+  //  }
 
   override def asURLs: Seq[URL] = aggregates.flatMap(_.asURLs)
 
@@ -49,4 +70,7 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
     }
     collectedEntries
   }
+
+  private def mergedClassesAndSources(inPackage: String): Seq[FileEntry] = ???
 }
+
