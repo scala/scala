@@ -1,0 +1,5 @@
+IntOnly: should return an unboxed int
+Int: int
+IntAndDouble: should just box and return Anyval
+Double: class java.lang.Double
+Int: class java.lang.Integer

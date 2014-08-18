@@ -1,0 +1,6 @@
+t8764.scala:8: error: type mismatch;
+ found   : AnyVal
+ required: Double
+  val d: Double = a.productElement(0)
+                                  ^
+one error found

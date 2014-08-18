@@ -95,7 +95,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     // which they shouldn't.
     val accessorLub  = (
       if (settings.Xexperimental) {
-        global.weakLub(accessors map (_.tpe.finalResultType)) match {
+        global.lub(accessors map (_.tpe.finalResultType)) match {
           case RefinedType(parents, decls) if !decls.isEmpty => intersectionType(parents)
           case tp                                            => tp
         }
