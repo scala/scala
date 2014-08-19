@@ -116,7 +116,27 @@ class StandardCompileServer extends SocketServer {
     reporter = new ConsoleReporter(newSettings, in, out) {
       // disable prompts, so that compile server cannot block
       override def displayPrompt() = ()
+
+      // We have two destinations (stdout, stderr) to send to through a single pipe
+      // so we prefix every message with the destination.
+      // Messages can span several lines, so not every line starts with [err]/[out];
+      // the other side is supposed to be clever and handle that.
+
+      override def printMessage(msg: String): Unit = {
+        super.printMessage("[out]" + msg)
+      }
+
+      override def print(pos: Position, msg: String, severity: Severity): Unit = {
+        out.print(if (severity == INFO) "[out]" else "[err]")
+        super.print(pos, msg, severity)
+      }
+
+      override def printSummary(): Unit = {
+        out.print("[err]")
+        super.printSummary()
+      }
     }
+
     def isCompilerReusable: Boolean = {
       if (compiler == null) {
         info("[Creating new instance for compile server.]")

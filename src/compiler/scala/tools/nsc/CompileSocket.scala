@@ -21,10 +21,12 @@ trait HasCompileSocket {
 
   def compileOnServer(sock: Socket, args: Seq[String]): Boolean = {
     var noErrors = true
+    var stderr: Boolean = false
 
     sock.applyReaderAndWriter { (in, out) =>
       out println (compileSocket getPassword sock.getPort())
       out println (args mkString "\u0000")
+
 
       def loop(): Boolean = in.readLine() match {
         case null => noErrors
@@ -32,7 +34,15 @@ trait HasCompileSocket {
           if (isErrorMessage(line))
             noErrors = false
 
-          compileSocket.echo(line)
+          if (line.startsWith("[err]")) {
+            compileSocket.warn(line.substring(5))
+            stderr = true
+          } else if (line.startsWith("[out]")) {
+            compileSocket.echo(line.substring(5))
+            stderr = false
+          } else if (stderr) compileSocket.warn(line)
+            else compileSocket.echo(line)
+
           loop()
       }
       try loop()
