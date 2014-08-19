@@ -385,17 +385,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
        */
       def primitiveOrClassToBType(sym: Symbol): BType = {
         assertClassNotArray(sym)
-        primitiveTypeMap.getOrElse(sym, classOrImplClassToBType(sym))
-      }
-
-      /**
-       * The ClassBType for a class or interface reference. Asserts that `sym` is not an
-       * implementation class.
-       */
-      def classOrImplClassToBType(sym: Symbol): ClassBType = {
-        assertClassNotArrayNotPrimitive(sym)
-        assert(!sym.isImplClass, s"typeKind of implementation class $sym")
-        getClassBTypeAndRegisterInnerClass(sym)
+        assert(!sym.isImplClass, sym)
+        primitiveTypeMap.getOrElse(sym, getClassBTypeAndRegisterInnerClass(sym))
       }
 
       /**
