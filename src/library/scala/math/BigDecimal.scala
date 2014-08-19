@@ -10,7 +10,6 @@
 package scala
 package math
 
-import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
 import scala.collection.immutable.NumericRange
 import scala.language.implicitConversions
@@ -124,7 +123,7 @@ object BigDecimal {
    */
   def exact(s: String): BigDecimal = exact(new BigDec(s))
   
-  /** Constructs a 'BigDecimal` that exactly represents the number
+  /** Constructs a `BigDecimal` that exactly represents the number
    *  specified in base 10 in a character array.
    */
  def exact(cs: Array[Char]): BigDecimal = exact(new BigDec(cs))
@@ -435,7 +434,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    *  with large exponents.
    */
   override def hashCode(): Int = {
-    if (computedHashCode == BigDecimal.hashCodeNotComputed) computeHashCode
+    if (computedHashCode == BigDecimal.hashCodeNotComputed) computeHashCode()
     computedHashCode
   }
 
@@ -525,9 +524,9 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
     catch { case _: ArithmeticException => false }
   }
 
-  def isWhole() = scale <= 0 || bigDecimal.stripTrailingZeros.scale <= 0
+  def isWhole: Boolean = scale <= 0 || bigDecimal.stripTrailingZeros.scale <= 0
   
-  def underlying = bigDecimal
+  def underlying: BigDec = bigDecimal
   
 
   /** Compares this BigDecimal with the specified BigDecimal for equality.
@@ -670,21 +669,21 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigDecimal value as well as return a result with the opposite sign.
    */
-  override def byteValue   = intValue.toByte
+  override def byteValue: Byte = intValue.toByte
 
   /** Converts this BigDecimal to a Short.
    *  If the BigDecimal is too big to fit in a Short, only the low-order 16 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigDecimal value as well as return a result with the opposite sign.
    */
-  override def shortValue  = intValue.toShort
+  override def shortValue: Short = intValue.toShort
 
   /** Converts this BigDecimal to a Char.
    *  If the BigDecimal is too big to fit in a Char, only the low-order 16 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigDecimal value and that it always returns a positive result.
    */
-  def charValue   = intValue.toChar
+  def charValue: Char = intValue.toChar
 
   /** Converts this BigDecimal to an Int.
    *  If the BigDecimal is too big to fit in an Int, only the low-order 32 bits
@@ -692,7 +691,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    *  overall magnitude of the BigDecimal value as well as return a result with
    *  the opposite sign.
    */
-  def intValue    = this.bigDecimal.intValue
+  def intValue: Int = this.bigDecimal.intValue
 
   /** Converts this BigDecimal to a Long.
    *  If the BigDecimal is too big to fit in a Long, only the low-order 64 bits
@@ -700,49 +699,49 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
    *  overall magnitude of the BigDecimal value as well as return a result with
    *  the opposite sign.
    */
-  def longValue   = this.bigDecimal.longValue
+  def longValue: Long = this.bigDecimal.longValue
 
   /** Converts this BigDecimal to a Float.
    *  if this BigDecimal has too great a magnitude to represent as a float,
    *  it will be converted to `Float.NEGATIVE_INFINITY` or
    *  `Float.POSITIVE_INFINITY` as appropriate.
    */
-  def floatValue  = this.bigDecimal.floatValue
+  def floatValue: Float = this.bigDecimal.floatValue
 
   /** Converts this BigDecimal to a Double.
    *  if this BigDecimal has too great a magnitude to represent as a double,
    *  it will be converted to `Double.NEGATIVE_INFINITY` or
    *  `Double.POSITIVE_INFINITY` as appropriate.
    */
-  def doubleValue = this.bigDecimal.doubleValue
+  def doubleValue: Double = this.bigDecimal.doubleValue
 
   /** Converts this `BigDecimal` to a [[scala.Byte]], checking for lost information.
     * If this `BigDecimal` has a nonzero fractional part, or is out of the possible
     * range for a [[scala.Byte]] result, then a `java.lang.ArithmeticException` is
     * thrown.
     */
-  def toByteExact = bigDecimal.byteValueExact
+  def toByteExact: Byte = bigDecimal.byteValueExact
 
   /** Converts this `BigDecimal` to a [[scala.Short]], checking for lost information.
     * If this `BigDecimal` has a nonzero fractional part, or is out of the possible
     * range for a [[scala.Short]] result, then a `java.lang.ArithmeticException` is
     * thrown.
     */
-  def toShortExact = bigDecimal.shortValueExact
+  def toShortExact: Short = bigDecimal.shortValueExact
 
   /** Converts this `BigDecimal` to a [[scala.Int]], checking for lost information.
     * If this `BigDecimal` has a nonzero fractional part, or is out of the possible
     * range for an [[scala.Int]] result, then a `java.lang.ArithmeticException` is
     * thrown.
     */
-  def toIntExact = bigDecimal.intValueExact
+  def toIntExact: Int = bigDecimal.intValueExact
 
   /** Converts this `BigDecimal` to a [[scala.Long]], checking for lost information.
     * If this `BigDecimal` has a nonzero fractional part, or is out of the possible
     * range for a [[scala.Long]] result, then a `java.lang.ArithmeticException` is
     * thrown.
     */
-  def toLongExact = bigDecimal.longValueExact
+  def toLongExact: Long = bigDecimal.longValueExact
 
   /** Creates a partially constructed NumericRange[BigDecimal] in range
    *  `[start;end)`, where start is the target BigDecimal.  The step
@@ -772,20 +771,19 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
 
   /** Converts this `BigDecimal` to a scala.BigInt.
    */
-  def toBigInt(): BigInt = new BigInt(this.bigDecimal.toBigInteger())
+  def toBigInt(): BigInt = new BigInt(this.bigDecimal.toBigInteger)
 
   /** Converts this `BigDecimal` to a scala.BigInt if it
    *  can be done losslessly, returning Some(BigInt) or None.
    */
-  def toBigIntExact(): Option[BigInt] =
-    if (isWhole()) {
-      try Some(new BigInt(this.bigDecimal.toBigIntegerExact()))
+  def toBigIntExact: Option[BigInt] =
+    if (isWhole) {
+      try Some(new BigInt(this.bigDecimal.toBigIntegerExact))
       catch { case _: ArithmeticException => None }
     }
     else None
 
   /** Returns the decimal String representation of this BigDecimal.
    */
-  override def toString(): String = this.bigDecimal.toString()
-
+  override def toString: String = this.bigDecimal.toString
 }

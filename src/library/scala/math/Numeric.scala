@@ -218,10 +218,10 @@ trait Numeric[T] extends Ordering[T] {
     def unary_-() = negate(lhs)
     def abs(): T = Numeric.this.abs(lhs)
     def signum(): Int = Numeric.this.signum(lhs)
-    def toInt(): Int = Numeric.this.toInt(lhs)
-    def toLong(): Long = Numeric.this.toLong(lhs)
-    def toFloat(): Float = Numeric.this.toFloat(lhs)
-    def toDouble(): Double = Numeric.this.toDouble(lhs)
+    def toInt: Int = Numeric.this.toInt(lhs)
+    def toLong: Long = Numeric.this.toLong(lhs)
+    def toFloat: Float = Numeric.this.toFloat(lhs)
+    def toDouble: Double = Numeric.this.toDouble(lhs)
   }
   implicit def mkNumericOps(lhs: T): Ops = new Ops(lhs)
 }

@@ -9,8 +9,8 @@
 package scala
 package util
 
-import scala.reflect.{ ClassTag, classTag }
-import scala.math.{ Ordering, max, min }
+import scala.reflect.ClassTag
+import scala.math.Ordering
 
 /** The Sorting object provides functions that can sort various kinds of
   * objects. You can provide a comparison function, or you can request a sort
@@ -27,27 +27,27 @@ import scala.math.{ Ordering, max, min }
   */
 object Sorting {
   /** Quickly sort an array of Doubles. */
-  def quickSort(a: Array[Double]) { sort1(a, 0, a.length) }
+  def quickSort(a: Array[Double]): Unit = { sort1(a, 0, a.length) }
 
   /** Quickly sort an array of items with an implicit Ordering. */
-  def quickSort[K: Ordering](a: Array[K]) { sort1(a, 0, a.length) }
+  def quickSort[K: Ordering](a: Array[K]): Unit = { sort1(a, 0, a.length) }
 
   /** Quickly sort an array of Ints. */
-  def quickSort(a: Array[Int]) { sort1(a, 0, a.length) }
+  def quickSort(a: Array[Int]): Unit = { sort1(a, 0, a.length) }
 
   /** Quickly sort an array of Floats. */
-  def quickSort(a: Array[Float]) { sort1(a, 0, a.length) }
+  def quickSort(a: Array[Float]): Unit = { sort1(a, 0, a.length) }
 
   /** Sort an array of K where K is Ordered, preserving the existing order
     * where the values are equal. */
-  def stableSort[K: ClassTag: Ordering](a: Array[K]) {
-    stableSort(a, 0, a.length-1, new Array[K](a.length), Ordering[K].lt _)
+  def stableSort[K: ClassTag: Ordering](a: Array[K]): Unit = {
+    stableSort(a, 0, a.length-1, new Array[K](a.length), Ordering[K].lt)
   }
 
   /** Sorts an array of `K` given an ordering function `f`.
    *  `f` should return `true` iff its first parameter is strictly less than its second parameter.
    */
-  def stableSort[K: ClassTag](a: Array[K], f: (K, K) => Boolean) {
+  def stableSort[K: ClassTag](a: Array[K], f: (K, K) => Boolean): Unit = {
     stableSort(a, 0, a.length-1, new Array[K](a.length), f)
   }
 

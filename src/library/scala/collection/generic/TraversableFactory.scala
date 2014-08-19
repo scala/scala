@@ -38,4 +38,3 @@ import scala.language.higherKinds
  */
 trait TraversableFactory[CC[X] <: Traversable[X] with GenericTraversableTemplate[X, CC]]
   extends GenTraversableFactory[CC] with GenericSeqCompanion[CC]
-

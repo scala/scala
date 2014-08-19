@@ -334,7 +334,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       case (None, None)       => 0
       case (None, _)          => -1
       case (_, None)          => 1
-      case (Some(x), Some(y)) => optionOrdering.compare(x, y)
+      case (Some(xx), Some(yy)) => optionOrdering.compare(xx, yy)
     }
   }
   implicit def Option[T](implicit ord: Ordering[T]): Ordering[Option[T]] =
@@ -396,7 +396,7 @@ object Ordering extends LowPriorityOrderingImplicits {
 
   implicit def Tuple5[T1, T2, T3, T4, T5](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5]): Ordering[(T1, T2, T3, T4, T5)] =
     new Ordering[(T1, T2, T3, T4, T5)]{
-      def compare(x: (T1, T2, T3, T4, T5), y: Tuple5[T1, T2, T3, T4, T5]): Int = {
+      def compare(x: (T1, T2, T3, T4, T5), y: (T1, T2, T3, T4, T5)): Int = {
         val compare1 = ord1.compare(x._1, y._1)
         if (compare1 != 0) return compare1
         val compare2 = ord2.compare(x._2, y._2)

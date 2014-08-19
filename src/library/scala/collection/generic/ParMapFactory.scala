@@ -49,4 +49,3 @@ extends GenMapFactory[CC]
   }
 
 }
-

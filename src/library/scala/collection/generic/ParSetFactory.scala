@@ -10,7 +10,6 @@ package scala
 package collection
 package generic
 
-import scala.collection.mutable.Builder
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.ParSet
 import scala.collection.parallel.ParSetLike
@@ -33,4 +32,3 @@ abstract class ParSetFactory[CC[X] <: ParSet[X] with ParSetLike[X, CC[X], _] wit
     override def apply() = newCombiner[A]
   }
 }
-

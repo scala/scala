@@ -9,8 +9,6 @@
 package scala
 package compat
 
-import java.lang.System
-
 object Platform {
 
   /** Thrown when a stack overflow occurs because a method or function recurses too deeply.
@@ -41,13 +39,13 @@ object Platform {
     * @throws java.lang.ArrayStoreException If either `src` or `dest` are not of type
     *                [java.lang.Array]; or if the element type of `src` is not
     *                compatible with that of `dest`.
-    * @throws java.lang.IndexOutOfBoundsException If either srcPos` or `destPos` are
+    * @throws java.lang.IndexOutOfBoundsException If either `srcPos` or `destPos` are
     *                outside of the bounds of their respective arrays; or if `length`
     *                is negative; or if there are less than `length` elements available
     *                after `srcPos` or `destPos` in `src` and `dest` respectively.
     */
   @inline
-  def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int) {
+  def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = {
     System.arraycopy(src, srcPos, dest, destPos, length)
   }
 
@@ -83,7 +81,7 @@ object Platform {
     * @throws `java.lang.NullPointerException` If `arr` is `null`.
     */
   @inline
-  def arrayclear(arr: Array[Int]) { java.util.Arrays.fill(arr, 0) }
+  def arrayclear(arr: Array[Int]): Unit = { java.util.Arrays.fill(arr, 0) }
 
   /** Returns the `Class` object associated with the class or interface with the given string name using the current `ClassLoader`.
    *  On the JVM, invoking this method is equivalent to: `java.lang.Class.forName(name)`
