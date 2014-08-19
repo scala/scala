@@ -4,9 +4,6 @@ compile-time-only-a.scala:10: error: C3
 compile-time-only-a.scala:12: error: C4
 @compileTimeOnly("C4") case class C4(x: Int)
                                   ^
-compile-time-only-a.scala:17: error: C5
-  implicit class C5(val x: Int) {
-                 ^
 compile-time-only-a.scala:32: error: C1
   new C1()
       ^
@@ -76,4 +73,4 @@ compile-time-only-a.scala:75: error: placebo
 compile-time-only-a.scala:75: error: placebo
   @placebo def x = (2: @placebo)
                         ^
-26 errors found
+25 errors found
