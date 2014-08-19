@@ -72,7 +72,7 @@ trait RegexParsers extends Parsers {
    */
   protected def handleWhiteSpace(source: java.lang.CharSequence, offset: Int): Int =
     if (skipWhitespace)
-      (whiteSpace findPrefixMatchOf (source.subSequence(offset, source.length))) match {
+      (whiteSpace findPrefixMatchOf (new SubSequence(source, offset))) match {
         case Some(matched) => offset + matched.end
         case None => offset
       }
@@ -106,7 +106,7 @@ trait RegexParsers extends Parsers {
       val source = in.source
       val offset = in.offset
       val start = handleWhiteSpace(source, offset)
-      (r findPrefixMatchOf (source.subSequence(start, source.length))) match {
+      (r findPrefixMatchOf (new SubSequence(source, start))) match {
         case Some(matched) =>
           Success(source.subSequence(start, start + matched.end).toString,
                   in.drop(start + matched.end - offset))
