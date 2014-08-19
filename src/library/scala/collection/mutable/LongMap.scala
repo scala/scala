@@ -557,7 +557,7 @@ object LongMap {
   /** Creates a new `LongMap` from keys and values. 
    *  Equivalent to but more efficient than `LongMap((keys zip values): _*)`.
    */
-  def fromZip[V](keys: Iterable[Long], values: Iterable[V]): LongMap[V] = {
+  def fromZip[V](keys: collection.Iterable[Long], values: collection.Iterable[V]): LongMap[V] = {
     val sz = math.min(keys.size, values.size)
     val lm = new LongMap[V](sz * 2)
     val ki = keys.iterator
