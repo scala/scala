@@ -13,7 +13,7 @@ trait Quasiquotes { self: Universe =>
     protected trait api {
       // implementation is hardwired to `dispatch` method of `scala.tools.reflect.quasiquotes.Quasiquotes`
       // using the mechanism implemented in `scala.tools.reflect.FastTrack`
-      def apply[T](args: T*): Tree = macro ???
+      def apply[A >: Any](args: A*): Tree = macro ???
       def unapply(scrutinee: Any): Any = macro ???
     }
     object q extends api
