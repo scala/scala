@@ -121,14 +121,14 @@ self =>
   }
 
   /** Return all lines in this string in an iterator, excluding trailing line
-   *  end characters, i.e. apply `.stripLineEnd` to all lines
+   *  end characters, i.e., apply `.stripLineEnd` to all lines
    *  returned by `linesWithSeparators`.
    */
   def lines: Iterator[String] =
     linesWithSeparators map (line => new WrappedString(line).stripLineEnd)
 
   /** Return all lines in this string in an iterator, excluding trailing line
-   *  end characters, i.e. apply `.stripLineEnd` to all lines
+   *  end characters, i.e., apply `.stripLineEnd` to all lines
    *  returned by `linesWithSeparators`.
    */
   @deprecated("Use `lines` instead.","2.11.0")

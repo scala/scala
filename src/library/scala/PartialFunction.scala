@@ -20,6 +20,11 @@ package scala
  *  {{{
  *  val f: PartialFunction[Int, Any] = { case _ => 1/0 }
  *  }}}
+ * 
+ *  It is the responsibility of the caller to call `isDefinedAt` before
+ *  calling `apply`, because if `isDefinedAt` is false, it is not guaranteed
+ *  `apply` will throw an exception to indicate an error condition. If an
+ *  exception is not thrown, evaluation may result in an arbitrary value.
  *
  *  The main distinction between `PartialFunction` and [[scala.Function1]] is
  *  that the user of a `PartialFunction` may choose to do something different

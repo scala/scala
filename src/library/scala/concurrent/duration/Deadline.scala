@@ -25,15 +25,15 @@ package scala.concurrent.duration
  */
 case class Deadline private (time: FiniteDuration) extends Ordered[Deadline] {
   /**
-   * Return a deadline advanced (i.e. moved into the future) by the given duration.
+   * Return a deadline advanced (i.e., moved into the future) by the given duration.
    */
   def +(other: FiniteDuration): Deadline = copy(time = time + other)
   /**
-   * Return a deadline moved backwards (i.e. towards the past) by the given duration.
+   * Return a deadline moved backwards (i.e., towards the past) by the given duration.
    */
   def -(other: FiniteDuration): Deadline = copy(time = time - other)
   /**
-   * Calculate time difference between this and the other deadline, where the result is directed (i.e. may be negative).
+   * Calculate time difference between this and the other deadline, where the result is directed (i.e., may be negative).
    */
   def -(other: Deadline): FiniteDuration = time - other.time
   /**
