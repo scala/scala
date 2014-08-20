@@ -473,7 +473,7 @@ trait StdNames {
     )
 
     def localDummyName(clazz: Symbol): TermName = newTermName(LOCALDUMMY_PREFIX + clazz.name + ">")
-    def superName(name: Name): TermName         = newTermName(SUPER_PREFIX_STRING + name)
+    def superName(name: Name, mix: Name = EMPTY): TermName = newTermName(SUPER_PREFIX_STRING + name + (if (mix.isEmpty) "" else "$" + mix))
 
     /** The name of an accessor for protected symbols. */
     def protName(name: Name): TermName = newTermName(PROTECTED_PREFIX + name)
