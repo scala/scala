@@ -5,11 +5,13 @@
 
 package scala.tools.nsc
 
-import java.io.{ BufferedOutputStream, FileOutputStream, PrintStream }
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
-import scala.reflect.internal.util.FakePos //Position
+import java.io.PrintStream
+
+import scala.reflect.internal.util.FakePos
+import scala.tools.nsc.io.Directory
+import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
+import scala.tools.nsc.settings.FscSettings
 import scala.tools.util.SocketServer
-import settings.FscSettings
 
 /**
  *  The server part of the fsc offline compiler.  It awaits compilation
@@ -19,7 +21,7 @@ import settings.FscSettings
  *  @author Martin Odersky
  *  @version 1.0
  */
-class StandardCompileServer extends SocketServer {
+class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
   lazy val compileSocket: CompileSocket = CompileSocket
 
   private var compiler: Global = null
@@ -34,7 +36,7 @@ class StandardCompileServer extends SocketServer {
   val MaxCharge = 0.8
 
   private val runtime = Runtime.getRuntime()
-  import runtime.{ totalMemory, freeMemory, maxMemory }
+  import runtime.{freeMemory, maxMemory, totalMemory}
 
   /** Create a new compiler instance */
   def newGlobal(settings: Settings, reporter: Reporter) =
@@ -170,16 +172,16 @@ class StandardCompileServer extends SocketServer {
 }
 
 
-object CompileServer extends StandardCompileServer {
+object CompileServer {
   /** A directory holding redirected output */
-  private lazy val redirectDir = (compileSocket.tmpDir / "output-redirects").createDirectory()
+  //private lazy val redirectDir = (compileSocket.tmpDir / "output-redirects").createDirectory()
 
-  private def createRedirect(filename: String) =
-    new PrintStream((redirectDir / filename).createFile().bufferedOutput())
+  private def createRedirect(dir: Directory, filename: String) =
+    new PrintStream((dir / filename).createFile().bufferedOutput())
 
-  def main(args: Array[String]) = 
+  def main(args: Array[String]) =
     execute(() => (), args)
-  
+
   /**
    * Used for internal testing. The callback is called upon
    * server start, notifying the caller that the server is
@@ -191,21 +193,33 @@ object CompileServer extends StandardCompileServer {
    */
   def execute(startupCallback : () => Unit, args: Array[String]) {
     val debug = args contains "-v"
+    var port = 0
 
-    if (debug) {
-      echo("Starting CompileServer on port " + port)
-      echo("Redirect dir is " + redirectDir)
+    val i = args.indexOf("-p")
+    if (i >= 0 && args.length > i + 1) {
+    	scala.util.control.Exception.ignoring(classOf[NumberFormatException]) {
+    		port = args(i + 1).toInt
+    	}
     }
 
-    Console.withErr(createRedirect("scala-compile-server-err.log")) {
-      Console.withOut(createRedirect("scala-compile-server-out.log")) {
-        Console.err.println("...starting server on socket "+port+"...")
+    // Create instance rather than extend to pass a port parameter.
+    val server = new StandardCompileServer(port)
+    val redirectDir = (server.compileSocket.tmpDir / "output-redirects").createDirectory()
+
+    if (debug) {
+      server.echo("Starting CompileServer on port " + server.port)
+      server.echo("Redirect dir is " + redirectDir)
+    }
+
+    Console.withErr(createRedirect(redirectDir, "scala-compile-server-err.log")) {
+      Console.withOut(createRedirect(redirectDir, "scala-compile-server-out.log")) {
+        Console.err.println("...starting server on socket "+server.port+"...")
         Console.err.flush()
-        compileSocket setPort port
+        server.compileSocket setPort server.port
         startupCallback()
-        run()
-    
-        compileSocket deletePort port
+        server.run()
+
+        server.compileSocket deletePort server.port
       }
     }
   }
