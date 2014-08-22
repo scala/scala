@@ -39,7 +39,7 @@ class SettingsTest {
   }
 
   // for the given args, select the desired setting
-  private def check(args: String*)(b: MutableSettings => MutableSettings#BooleanSetting): MutableSettings#BooleanSetting = {
+  private def check(args: String*)(b: MutableSettings => Boolean): Boolean = {
     val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
     val (ok, residual) = s.processArguments(args.toList, processAll = true)
     assert(residual.isEmpty)
@@ -54,7 +54,68 @@ class SettingsTest {
   @Test def anonymousLintersCanBeNamed() {
     assertTrue(check("-Xlint")(_.warnMissingInterpolator)) // among Xlint
     assertFalse(check("-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
+
+    // positive overrides negative, but not the other way around
+    assertTrue(check("-Xlint:-missing-interpolator,missing-interpolator")(_.warnMissingInterpolator))
+    assertTrue(check("-Xlint:-missing-interpolator", "-Xlint:missing-interpolator")(_.warnMissingInterpolator))
+
+    assertTrue(check("-Xlint:missing-interpolator,-missing-interpolator")(_.warnMissingInterpolator))
+    assertTrue(check("-Xlint:missing-interpolator", "-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
+
+    // -Xlint:_ adds all possible choices, but explicit negative settings will override
+    assertFalse(check("-Xlint:-missing-interpolator,_")(_.warnMissingInterpolator))
+    assertFalse(check("-Xlint:-missing-interpolator", "-Xlint:_")(_.warnMissingInterpolator))
+    assertFalse(check("-Xlint:_", "-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
+    assertFalse(check("-Xlint:_,-missing-interpolator")(_.warnMissingInterpolator))
+
+    // -Xlint is the same as -Xlint:_
     assertFalse(check("-Xlint:-missing-interpolator", "-Xlint")(_.warnMissingInterpolator))
     assertFalse(check("-Xlint", "-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
+
+    // combination of positive, negative and _
+    assertTrue(check("-Xlint:_,-missing-interpolator,missing-interpolator")(_.warnMissingInterpolator))
+    assertTrue(check("-Xlint:-missing-interpolator,_,missing-interpolator")(_.warnMissingInterpolator))
+    assertTrue(check("-Xlint:-missing-interpolator,missing-interpolator,_")(_.warnMissingInterpolator))
+    assertTrue(check("-Xlint:missing-interpolator,-missing-interpolator,_")(_.warnMissingInterpolator))
+    assertTrue(check("-Xlint:missing-interpolator,_,-missing-interpolator")(_.warnMissingInterpolator))
+  }
+
+  @Test def xLintInvalidChoices(): Unit = {
+    assertThrows[IllegalArgumentException](check("-Xlint:-_")(_.warnAdaptedArgs))
+    assertThrows[IllegalArgumentException](check("-Xlint:-warn-adapted-args")(_.warnAdaptedArgs)) // "warn-" should not be there
+  }
+
+  @Test def xLintNonColonated(): Unit = {
+    assertTrue(check("-Xlint", "adapted-args", "-deprecation")(_.warnAdaptedArgs))
+    assertFalse(check("-Xlint", "adapted-args", "-deprecation")(_.warnMissingInterpolator))
+    assertTrue(check("-Xlint", "adapted-args", "missing-interpolator", "-deprecation")(s => s.warnMissingInterpolator && s.warnAdaptedArgs))
+    assertThrows[IllegalArgumentException](check("-Xlint", "adapted-args", "-missing-interpolator")(_.warnAdaptedArgs)) // non-colonated: cannot provide negative args
+  }
+
+  @Test def xLintContainsValues(): Unit = {
+    // make sure that lint.contains and lint.value.contains are consistent
+    def t(s: MutableSettings, v: String) = {
+      val r = s.lint.contains(v)
+      assertSame(r, s.lint.value.contains(v))
+      r
+    }
+
+    assertTrue(check("-Xlint")(t(_, "adapted-args")))
+    assertTrue(check("-Xlint:_")(t(_, "adapted-args")))
+    assertFalse(check("-Xlint:_,-adapted-args")(t(_, "adapted-args")))
+    assertFalse(check("-Xlint:-adapted-args,_")(t(_, "adapted-args")))
+    assertTrue(check("-Xlint:-adapted-args,_,adapted-args")(t(_, "adapted-args")))
+  }
+
+  @Test def xLintDeprecatedAlias(): Unit = {
+    assertTrue(check("-Ywarn-adapted-args")(_.warnAdaptedArgs))
+    assertTrue(check("-Xlint:_,-adapted-args", "-Ywarn-adapted-args")(_.warnAdaptedArgs))
+    assertTrue(check("-Xlint:-adapted-args", "-Ywarn-adapted-args")(_.warnAdaptedArgs))
+    assertTrue(check("-Ywarn-adapted-args", "-Xlint:-adapted-args,_")(_.warnAdaptedArgs))
+
+    assertFalse(check("-Ywarn-adapted-args:false")(_.warnAdaptedArgs))
+    assertFalse(check("-Ywarn-adapted-args:false", "-Xlint:_")(_.warnAdaptedArgs))
+    assertFalse(check("-Ywarn-adapted-args:false", "-Xlint:_,-adapted-args")(_.warnAdaptedArgs))
+    assertTrue(check("-Ywarn-adapted-args:false", "-Xlint:_,adapted-args")(_.warnAdaptedArgs))
   }
 }
