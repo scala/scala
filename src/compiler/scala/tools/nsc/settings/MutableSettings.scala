@@ -209,12 +209,11 @@ class MutableSettings(val errorFn: String => Unit)
   def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
   def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String) =
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
-  def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
+  def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) =
+    add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
-  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: Option[() => Unit] = None)(
-      helper: MultiChoiceSetting => String = _ => choices.mkString(f"$descr:%n", f"%n  ", f"%n")
-  ) =
-    add(new MultiChoiceSetting(name, helpArg, descr, choices, default, helper))
+  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], descriptions: List[String], default: Option[List[String]] = None) =
+    add(new MultiChoiceSetting(name, helpArg, descr, choices, descriptions, default))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
@@ -553,57 +552,132 @@ class MutableSettings(val errorFn: String => Unit)
       }
   }
 
-  /** A setting that receives any combination of enumerated values,
-   *  including "_" to mean all values and "help" for verbose info.
-   *  In non-colonated mode, stops consuming args at the first
-   *  non-value, instead of at the next option, as for a multi-string.
+  /**
+   * A setting that receives multiple values. There are two modes
+   *   - choosing: the setting has a list of allowed chioces.
+   *     - These choices can be positive or negative, for exmample "-option:positive,-negative"
+   *     - If an option is both enabled positively and negatively, the positive wins
+   *     - The choice "_" enables all choices that have not explicitly been disabled
+   *
+   *   - !choosing: the setting accumulates all arguments.
+   *
+   * Arguments can be provided in colonated or non-colonated mode, i.e. "-option a b" or
+   * "-option:a,b". Note that arguments starting with a "-" can only be provided in colonated mode,
+   * otherwise they are interpreted as a new option.
+   *
+   * In colonated and choosing mode, the setting stops consuming arguments at the first non-choice,
+   * i.e. "-option a b c" only consumes "a" and "b" if "c" is not a valid choice.
+   *
+   * @param name         command-line setting name, eg "-Xlint"
+   * @param arg          description of the kind of arguments that need to be passed, eg "warning"
+   * @param descr        description of the setting
+   * @param choices      a list of allowed arguments. if empty, accepts any argument that doesn't start with "-"
+   * @param descriptions a description for each choice (for the help message), may be empty if no descriptions are necessary
+   * @param default      default arguments, if none are provided
    */
   class MultiChoiceSetting private[nsc](
     name: String,
     arg: String,
     descr: String,
     override val choices: List[String],
-    val default: Option[() => Unit],
-    helper: MultiChoiceSetting => String
+    val descriptions: List[String],
+    val default: Option[List[String]]
   ) extends MultiStringSetting(name, s"_,$arg,-$arg", s"$descr: `_' for all, `$name:help' to list") {
 
     private def badChoice(s: String, n: String) = errorFn(s"'$s' is not a valid choice for '$name'")
-    private def choosing = choices.nonEmpty
+    private def choosing = choices.nonEmpty // choices are known, error on invalid args
     private def isChoice(s: String) = (s == "_") || (choices contains (s stripPrefix "-"))
 
     private var sawHelp  = false
     private var sawAll   = false
-    private val adderAll = () => sawAll = true
-    private val noargs   = () => errorFn(s"'$name' requires an option. See '$name:help'.")
+
+    private def pos(s: String) = s stripPrefix "-"
+
+    /**
+     * This override takes care of including all possible choices in case the "_" argument was
+     * passed. It adds the choices that have not explicitly been enabled or disabled. This ensures
+     * that "this contains x" is consistent with "this.value contains x".
+     *
+     * The explicitly enabled / disabled options are stored in the underlying value [[v]], disabled
+     * ones are stored as "-arg".
+     *
+     * The fact that value and v are not the same leaks in some cases. For example, you should never
+     * use "value += arg", because that expands to "value = value + arg". In case sawAll is true,
+     * this would propagate all choices enabled by sawAll into the underlying v.
+     *
+     * Instead of "value += arg", you should use "this.add(arg)". I haven't found a good way to
+     * enforce that.
+     */
+    override def value: List[String] = {
+      if (!sawAll) v
+      else {
+        // add only those choices which have not explicitly been enabled or disabled.
+        val fromAll = choices.filterNot(c => v.exists(pos(_) == c))
+        v ++ fromAll
+      }
+    }
+
+    /**
+     * Add an argument to the list of values.
+     */
+    def add(arg: String) = {
+      if (choosing && !isChoice(arg)) badChoice(arg, name)
+      if (arg == "_") {
+        sawAll = true
+        value = v // the value_= setter has side effects, make sure to execute them.
+      } else {
+        val posArg = pos(arg)
+        if (arg == posArg) {
+          // positive overrides existing negative. so we filter existing (pos or neg), and add the arg
+          value = v.filterNot(pos(_) == posArg) :+ arg
+        } else {
+          // negative arg is only added if the arg doesn't exist yet (pos or neg)
+          if (!v.exists(pos(_) == posArg)) value = v :+ arg // not value += arg, see doc of the "value" getter
+        }
+      }
+    }
 
     override protected def tts(args: List[String], halting: Boolean) = {
       val added = collection.mutable.ListBuffer.empty[String]
+
       def tryArg(arg: String) = arg match {
-        case "_" if choosing               => addAll()
         case "help" if choosing            => sawHelp = true
-        case s if !choosing || isChoice(s) => added += s
+        case s if !choosing || isChoice(s) => added += s // this case also adds "_"
         case s                             => badChoice(s, name)
       }
+
+      // if "halting" is true, the args were not specified as , separated after a :
+      // but space separated after a space. we stop consuming args when seeing
+      //   - an arg starting with a "-", that is a new option
+      //   - if the choices are known (choosing), on the first non-choice
       def stoppingAt(arg: String) = (arg startsWith "-") || (choosing && !isChoice(arg))
+
       def loop(args: List[String]): List[String] = args match {
         case arg :: _ if halting && stoppingAt(arg) => args
         case arg :: rest                            => tryArg(arg) ; loop(rest)
         case Nil                                    => Nil
       }
+
       val rest = loop(args)
-      if (rest.size == args.size)
-        (default getOrElse noargs)()   // if no arg consumed, trigger default action or error
-      else
-        value ++= added.toList         // update all new settings at once
+      if (rest.size == args.size) default match { // if no arg consumed, use defaults or error
+        case Some(defaults) => defaults foreach add
+        case None => errorFn(s"'$name' requires an option. See '$name:help'.")
+      } else {
+        added.toList foreach add
+      }
+
       Some(rest)
     }
 
     def isHelping: Boolean = sawHelp
-    def help: String       = helper(this)
-    def addAll(): Unit     = (default getOrElse adderAll)()
 
-    // the semantics is: s is enabled, i.e., either s or (_ but not -s)
-    override def contains(s: String) = isChoice(s) && (value contains s) || (sawAll && !(value contains s"-$s"))
+    def help: String = {
+      val choiceLength = choices.map(_.length).max + 1
+      val formatStr = s"  %-${choiceLength}s %s"
+      choices.zipAll(descriptions, "", "").map {
+        case (arg, descr) => formatStr.format(arg, descr)
+      } mkString (f"$descr%n", f"%n", "")
+    }
   }
 
   /** A setting that accumulates all strings supplied to it,
