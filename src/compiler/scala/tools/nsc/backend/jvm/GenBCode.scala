@@ -225,7 +225,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
           else {
             try {
               val dceStart = Statistics.startTimer(BackendStats.bcodeDceTimer)
-              opt.LocalOpt.removeUnreachableCode(item.plain)
+              if (settings.YoptUnreachableCode) opt.LocalOpt.removeUnreachableCode(item.plain)
               Statistics.stopTimer(BackendStats.bcodeDceTimer, dceStart)
               addToQ3(item)
           } catch {
