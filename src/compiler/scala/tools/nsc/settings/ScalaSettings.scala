@@ -211,7 +211,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   private def removalIn212 = "This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug."
 
-  object YstatisticsPhases extends MultiChoiceEnumeration { val parser, typer, patmat, erasure, cleanup = Value }
+  object YstatisticsPhases extends MultiChoiceEnumeration { val parser, typer, patmat, erasure, cleanup, jvm = Value }
   val Ystatistics = {
     val description = "Print compiler statistics for specific phases"
     MultiChoiceSetting(
