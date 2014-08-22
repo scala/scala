@@ -11,6 +11,7 @@ package jvm
 
 import scala.collection.{ mutable, immutable }
 import scala.annotation.switch
+import scala.reflect.internal.util.Statistics
 
 import scala.tools.asm
 
@@ -222,8 +223,12 @@ abstract class GenBCode extends BCodeSyncAndTry {
             return
           }
           else {
-            try   { addToQ3(item) }
-            catch {
+            try {
+              val dceStart = Statistics.startTimer(BackendStats.bcodeDceTimer)
+              opt.LocalOpt.removeUnreachableCode(item.plain)
+              Statistics.stopTimer(BackendStats.bcodeDceTimer, dceStart)
+              addToQ3(item)
+          } catch {
               case ex: Throwable =>
                 ex.printStackTrace()
                 error(s"Error while emitting ${item.plain.name}\n${ex.getMessage}")
@@ -272,10 +277,13 @@ abstract class GenBCode extends BCodeSyncAndTry {
      *
      */
     override def run() {
+      val bcodeStart = Statistics.startTimer(BackendStats.bcodeTimer)
 
+      val initStart = Statistics.startTimer(BackendStats.bcodeInitTimer)
       arrivalPos = 0 // just in case
       scalaPrimitives.init()
       bTypes.intializeCoreBTypes()
+      Statistics.stopTimer(BackendStats.bcodeInitTimer, initStart)
 
       // initBytecodeWriter invokes fullName, thus we have to run it before the typer-dependent thread is activated.
       bytecodeWriter  = initBytecodeWriter(cleanup.getEntryPoints)
@@ -287,6 +295,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
       // closing output files.
       bytecodeWriter.close()
+      Statistics.stopTimer(BackendStats.bcodeTimer, bcodeStart)
 
       /* TODO Bytecode can be verified (now that all classfiles have been written to disk)
        *
@@ -312,9 +321,15 @@ abstract class GenBCode extends BCodeSyncAndTry {
     private def buildAndSendToDisk(needsOutFolder: Boolean) {
 
       feedPipeline1()
+      val genStart = Statistics.startTimer(BackendStats.bcodeGenStat)
       (new Worker1(needsOutFolder)).run()
+      Statistics.stopTimer(BackendStats.bcodeGenStat, genStart)
+
       (new Worker2).run()
+
+      val writeStart = Statistics.startTimer(BackendStats.bcodeWriteTimer)
       drainQ3()
+      Statistics.stopTimer(BackendStats.bcodeWriteTimer, writeStart)
 
     }
 
