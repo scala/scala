@@ -1,7 +1,6 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.tools.testing.AssertUtil._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
