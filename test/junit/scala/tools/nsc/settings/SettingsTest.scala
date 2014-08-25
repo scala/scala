@@ -96,7 +96,7 @@ class SettingsTest {
     // make sure that lint.contains and lint.value.contains are consistent
     def t(s: MutableSettings, v: String) = {
       val r = s.lint.contains(v)
-      assertSame(r, s.lint.value.contains(v))
+      assertSame(r, s.lint.value.contains((s.LintWarnings withName v).asInstanceOf[s.lint.domain.Value]))
       r
     }
 
