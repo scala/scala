@@ -388,12 +388,14 @@ extends AbstractMap[Long, V]
         nextPair = anotherPair
         anotherPair = null
       }
-      nextPair = null
+      else nextPair = null
       ans
     }
   }
   
   override def foreach[A](f: ((Long,V)) => A) {
+    if ((extraKeys & 1) == 1) f((0L, zeroValue.asInstanceOf[V]))
+    if ((extraKeys & 2) == 2) f((Long.MinValue, minValue.asInstanceOf[V]))
     var i,j = 0
     while (i < _keys.length & j < _size) {
       val k = _keys(i)
@@ -403,8 +405,6 @@ extends AbstractMap[Long, V]
       }
       i += 1
     }
-    if ((extraKeys & 1) == 1) f((0L, zeroValue.asInstanceOf[V]))
-    if ((extraKeys & 2) == 2) f((Long.MinValue, minValue.asInstanceOf[V]))
   }
   
   override def clone(): LongMap[V] = {
@@ -417,6 +417,8 @@ extends AbstractMap[Long, V]
   
   /** Applies a function to all keys of this map. */
   def foreachKey[A](f: Long => A) {
+    if ((extraKeys & 1) == 1) f(0L)
+    if ((extraKeys & 2) == 2) f(Long.MinValue)
     var i,j = 0
     while (i < _keys.length & j < _size) {
       val k = _keys(i)
@@ -426,12 +428,12 @@ extends AbstractMap[Long, V]
       }
       i += 1
     }
-    if ((extraKeys & 1) == 1) f(0L)
-    if ((extraKeys & 2) == 2) f(Long.MinValue)
   }
 
   /** Applies a function to all values of this map. */
   def foreachValue[A](f: V => A) {
+    if ((extraKeys & 1) == 1) f(zeroValue.asInstanceOf[V])
+    if ((extraKeys & 2) == 2) f(minValue.asInstanceOf[V])
     var i,j = 0
     while (i < _keys.length & j < _size) {
       val k = _keys(i)
@@ -441,8 +443,6 @@ extends AbstractMap[Long, V]
       }
       i += 1
     }
-    if ((extraKeys & 1) == 1) f(zeroValue.asInstanceOf[V])
-    if ((extraKeys & 2) == 2) f(minValue.asInstanceOf[V])
   }
   
   /** Creates a new `LongMap` with different values.
@@ -450,6 +450,8 @@ extends AbstractMap[Long, V]
    *  collection immediately.
    */
   def mapValuesNow[V1](f: V => V1): LongMap[V1] = {
+    val zv = if ((extraKeys & 1) == 1) f(zeroValue.asInstanceOf[V]).asInstanceOf[AnyRef] else null
+    val mv = if ((extraKeys & 2) == 2) f(minValue.asInstanceOf[V]).asInstanceOf[AnyRef] else null
     val lm = new LongMap[V1](LongMap.exceptionDefault,  1,  false)
     val kz = java.util.Arrays.copyOf(_keys, _keys.length)
     val vz = new Array[AnyRef](_values.length)
@@ -462,8 +464,6 @@ extends AbstractMap[Long, V]
       }
       i += 1
     }
-    val zv = if ((extraKeys & 1) == 1) f(zeroValue.asInstanceOf[V]).asInstanceOf[AnyRef] else null
-    val mv = if ((extraKeys & 2) == 2) f(minValue.asInstanceOf[V]).asInstanceOf[AnyRef] else null
     lm.initializeTo(mask, extraKeys, zv, mv, _size, _vacant, kz, vz)
     lm
   }
@@ -472,6 +472,8 @@ extends AbstractMap[Long, V]
    *  Note: the default, if any,  is not transformed.
    */
   def transformValues(f: V => V): this.type = {
+    if ((extraKeys & 1) == 1) zeroValue = f(zeroValue.asInstanceOf[V]).asInstanceOf[AnyRef]
+    if ((extraKeys & 2) == 2) minValue = f(minValue.asInstanceOf[V]).asInstanceOf[AnyRef]
     var i,j = 0
     while (i < _keys.length & j < _size) {
       val k = _keys(i)
@@ -481,26 +483,8 @@ extends AbstractMap[Long, V]
       }
       i += 1
     }
-    if ((extraKeys & 1) == 1) zeroValue = f(zeroValue.asInstanceOf[V]).asInstanceOf[AnyRef]
-    if ((extraKeys & 2) == 2) minValue = f(minValue.asInstanceOf[V]).asInstanceOf[AnyRef]
     this
   }
-  
-  /*
-  override def toString = {
-    val sb = new StringBuilder("LongMap(")
-    var n = 0
-    foreach{ case (k,v) => 
-      if (n > 0) sb ++= ", "
-      sb ++= k.toString
-      sb ++= " -> "
-      sb ++= v.toString
-      n += 1
-    }
-    sb += ')'
-    sb.result
-  }
-  */
 }
 
 object LongMap {
