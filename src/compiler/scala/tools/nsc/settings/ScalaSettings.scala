@@ -45,7 +45,7 @@ trait ScalaSettings extends AbsScalaSettings
   def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
 
   /** Any -multichoice:help? Nicer if any option could report that it had help to offer. */
-  private def multihelp = allSettings exists { case s: MultiChoiceSetting => s.isHelping case _ => false }
+  private def multihelp = allSettings exists { case s: MultiChoiceSetting[_] => s.isHelping case _ => false }
 
   /** Is an info setting set? */
   def isInfo = (infoSettings exists (_.isSetByUser)) || multihelp
@@ -69,23 +69,22 @@ trait ScalaSettings extends AbsScalaSettings
 
   // Would be nice to build this dynamically from scala.languageFeature.
   // The two requirements: delay error checking until you have symbols, and let compiler command build option-specific help.
+  object languageFeatures extends MultiChoiceEnumeration {
+    val dynamics            = Choice("dynamics",            "Allow direct or indirect subclasses of scala.Dynamic")
+    val postfixOps          = Choice("postfixOps",          "Allow postfix operator notation, such as `1 to 10 toList'")
+    val reflectiveCalls     = Choice("reflectiveCalls",     "Allow reflective access to members of structural types")
+    val implicitConversions = Choice("implicitConversions", "Allow definition of implicit functions called views")
+    val higherKinds         = Choice("higherKinds",         "Allow higher-kinded types")
+    val existentials        = Choice("existentials",        "Existential types (besides wildcard types) can be written and inferred")
+    val macros              = Choice("experimental.macros", "Allow macro defintion (besides implementation and application)")
+  }
   val language      = {
-    val features = List(
-      "dynamics"            -> "Allow direct or indirect subclasses of scala.Dynamic",
-      "postfixOps"          -> "Allow postfix operator notation, such as `1 to 10 toList'",
-      "reflectiveCalls"     -> "Allow reflective access to members of structural types",
-      "implicitConversions" -> "Allow definition of implicit functions called views",
-      "higherKinds"         -> "Allow higher-kinded types",  // "Ask Adriaan, but if you have to ask..."
-      "existentials"        -> "Existential types (besides wildcard types) can be written and inferred",
-      "experimental.macros" -> "Allow macro defintion (besides implementation and application)"
-    )
     val description = "Enable or disable language features"
     MultiChoiceSetting(
       name    = "-language",
       helpArg = "feature",
       descr   = description,
-      choices = features map (_._1),
-      descriptions = features map (_._2)
+      domain  = languageFeatures
     )
   }
 
@@ -212,19 +211,19 @@ trait ScalaSettings extends AbsScalaSettings
 
   private def removalIn212 = "This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug."
 
-  val YstatisticsPhases = {
-    val phases = List("parser", "typer", "patmat", "erasure", "cleanup")
+  object YstatisticsPhases extends MultiChoiceEnumeration { val parser, typer, patmat, erasure, cleanup = Value }
+  val Ystatistics = {
     val description = "Print compiler statistics for specific phases"
     MultiChoiceSetting(
-      name = "-Ystatistics",
+      name    = "-Ystatistics",
       helpArg = "phase",
-      descr = description,
-      choices = phases,
-      descriptions = Nil,
-      default = Some(List("_"))) withPostSetHook { _ => scala.reflect.internal.util.Statistics.enabled = true }
+      descr   = description,
+      domain  = YstatisticsPhases,
+      default = Some(List("_"))
+    ) withPostSetHook { _ => scala.reflect.internal.util.Statistics.enabled = true }
   }
 
-  def YstatisticsEnabled = YstatisticsPhases.value.nonEmpty
+  def YstatisticsEnabled = Ystatistics.value.nonEmpty
 
   /** Area-specific debug output.
    */
