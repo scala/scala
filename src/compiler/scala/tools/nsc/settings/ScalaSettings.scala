@@ -70,22 +70,22 @@ trait ScalaSettings extends AbsScalaSettings
   // Would be nice to build this dynamically from scala.languageFeature.
   // The two requirements: delay error checking until you have symbols, and let compiler command build option-specific help.
   val language      = {
-    val features = List(
-      "dynamics"            -> "Allow direct or indirect subclasses of scala.Dynamic",
-      "postfixOps"          -> "Allow postfix operator notation, such as `1 to 10 toList'",
-      "reflectiveCalls"     -> "Allow reflective access to members of structural types",
-      "implicitConversions" -> "Allow definition of implicit functions called views",
-      "higherKinds"         -> "Allow higher-kinded types",  // "Ask Adriaan, but if you have to ask..."
-      "existentials"        -> "Existential types (besides wildcard types) can be written and inferred",
-      "experimental.macros" -> "Allow macro defintion (besides implementation and application)"
-    )
+    object features extends Enumeration {
+      case class Feature(name: String, help: String) extends Val(name) with MultiChoice
+      val dynamics            = Feature("dynamics",            "Allow direct or indirect subclasses of scala.Dynamic")
+      val postfixOps          = Feature("postfixOps",          "Allow postfix operator notation, such as `1 to 10 toList'")
+      val reflectiveCalls     = Feature("reflectiveCalls",     "Allow reflective access to members of structural types")
+      val implicitConversions = Feature("implicitConversions", "Allow definition of implicit functions called views")
+      val higherKinds         = Feature("higherKinds",         "Allow higher-kinded types")
+      val existentials        = Feature("existentials",        "Existential types (besides wildcard types) can be written and inferred")
+      val macros              = Feature("experimental.macros", "Allow macro defintion (besides implementation and application)")
+    }
     val description = "Enable or disable language features"
     MultiChoiceSetting(
       name    = "-language",
       helpArg = "feature",
       descr   = description,
-      choices = features map (_._1),
-      descriptions = features map (_._2)
+      domain  = features
     )
   }
 
@@ -213,15 +213,15 @@ trait ScalaSettings extends AbsScalaSettings
   private def removalIn212 = "This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug."
 
   val YstatisticsPhases = {
-    val phases = List("parser", "typer", "patmat", "erasure", "cleanup")
+    object phases extends Enumeration { val parser, typer, patmat, erasure, cleanup = Value }
     val description = "Print compiler statistics for specific phases"
     MultiChoiceSetting(
-      name = "-Ystatistics",
+      name    = "-Ystatistics",
       helpArg = "phase",
-      descr = description,
-      choices = phases,
-      descriptions = Nil,
-      default = Some(List("_"))) withPostSetHook { _ => scala.reflect.internal.util.Statistics.enabled = true }
+      descr   = description,
+      domain  = phases,
+      default = Some(List("_"))
+    ) withPostSetHook { _ => scala.reflect.internal.util.Statistics.enabled = true }
   }
 
   def YstatisticsEnabled = YstatisticsPhases.value.nonEmpty
