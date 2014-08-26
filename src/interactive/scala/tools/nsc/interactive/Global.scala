@@ -19,6 +19,9 @@ import scala.annotation.{ elidable, tailrec }
 import scala.language.implicitConversions
 import scala.tools.nsc.typechecker.Typers
 import scala.util.control.Breaks._
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.JavaConverters.asScalaSetConverter
+import scala.collection.JavaConverters.asJavaCollectionConverter
 
 /**
  * This trait allows the IDE to have an instance of the PC that
@@ -162,16 +165,15 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
-  val unitOfFile = new LinkedHashMap[AbstractFile, RichCompilationUnit] with
-                       SynchronizedMap[AbstractFile, RichCompilationUnit] {
+  val unitOfFile = new ConcurrentHashMap[AbstractFile, RichCompilationUnit] {
     override def put(key: AbstractFile, value: RichCompilationUnit) = {
       val r = super.put(key, value)
-      if (r.isEmpty) debugLog("added unit for "+key)
+      if (r == null) debugLog("added unit for "+key)
       r
     }
-    override def remove(key: AbstractFile) = {
+    override def remove(key: Any) = {
       val r = super.remove(key)
-      if (r.nonEmpty) debugLog("removed unit for "+key)
+      if (r != null) debugLog("removed unit for "+key)
       r
     }
   }
@@ -179,13 +181,11 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   /** A set containing all those files that need to be removed
    *  Units are removed by getUnit, typically once a unit is finished compiled.
    */
-  protected val toBeRemoved: mutable.Set[AbstractFile] =
-    new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
+  protected val toBeRemoved: java.util.Set[AbstractFile] = java.util.Collections.synchronizedSet(new java.util.HashSet[AbstractFile]())
 
   /** A set containing all those files that need to be removed after a full background compiler run
    */
-  protected val toBeRemovedAfterRun: mutable.Set[AbstractFile] =
-    new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
+  protected val toBeRemovedAfterRun: java.util.Set[AbstractFile] = java.util.Collections.synchronizedSet(new java.util.HashSet[AbstractFile]())
 
   class ResponseMap extends mutable.HashMap[SourceFile, Set[Response[Tree]]] {
     override def default(key: SourceFile): Set[Response[Tree]] = Set()
@@ -243,21 +243,21 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  Note: We want to remove this.
    */
   protected[interactive] def getOrCreateUnitOf(source: SourceFile): RichCompilationUnit =
-    unitOfFile.getOrElse(source.file, { println("precondition violated: "+source+" is not loaded"); new Exception().printStackTrace(); new RichCompilationUnit(source) })
+    Option(unitOfFile.get(source.file)) getOrElse { println("precondition violated: "+source+" is not loaded"); new Exception().printStackTrace(); new RichCompilationUnit(source) }
 
   /** Work through toBeRemoved list to remove any units.
    *  Then return optionally unit associated with given source.
    */
   protected[interactive] def getUnit(s: SourceFile): Option[RichCompilationUnit] = {
     toBeRemoved.synchronized {
-      for (f <- toBeRemoved) {
+      for (f <- toBeRemoved.asScala) {
         informIDE("removed: "+s)
-        unitOfFile -= f
+        unitOfFile.remove(f)
         allSources = allSources filter (_.file != f)
       }
       toBeRemoved.clear()
     }
-    unitOfFile get s.file
+    Option(unitOfFile.get(s.file))
   }
 
   /** A list giving all files to be typechecked in the order they should be checked.
@@ -598,7 +598,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
 
     // move units removable after this run to the "to-be-removed" buffer
-    toBeRemoved ++= toBeRemovedAfterRun
+    toBeRemoved.addAll(toBeRemovedAfterRun)
 
     // clean out stale waiting responses
     cleanAllResponses()
@@ -736,9 +736,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   private def reloadSource(source: SourceFile) {
     val unit = new RichCompilationUnit(source)
-    unitOfFile(source.file) = unit
-    toBeRemoved -= source.file
-    toBeRemovedAfterRun -= source.file
+    unitOfFile.put(source.file, unit)
+    toBeRemoved.remove(source.file)
+    toBeRemovedAfterRun.remove(source.file)
     reset(unit)
     //parseAndEnter(unit)
   }
@@ -779,7 +779,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  Calls to this method could probably be replaced by removeUnit once default parameters are handled more robustly.
    */
   private def afterRunRemoveUnitsOf(sources: List[SourceFile]) {
-    toBeRemovedAfterRun ++= sources map (_.file)
+    toBeRemovedAfterRun.addAll(sources.map(_.file).asJavaCollection)
   }
 
   /** A fully attributed tree located at position `pos` */
@@ -838,7 +838,11 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   private def withTempUnits[T](sources: List[SourceFile])(f: (SourceFile => RichCompilationUnit) => T): T = {
-    val unitOfSrc: SourceFile => RichCompilationUnit = src => unitOfFile(src.file)
+    val unitOfSrc: SourceFile => RichCompilationUnit = src => {
+      val unitCandidate = unitOfFile.get(src.file)
+      if (unitCandidate == null) throw new NoSuchElementException(s"key not found: ${src.file}")
+      unitCandidate
+    }
     sources filterNot (getUnit(_).isDefined) match {
       case Nil =>
         f(unitOfSrc)
@@ -1093,7 +1097,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
       val implicitlyAdded = viaView != NoSymbol
       members.add(sym, pre, implicitlyAdded) { (s, st) =>
         new TypeMember(s, st,
-          context.isAccessible(if (s.hasGetter) s.getter(s.owner) else s, pre, superAccess && !implicitlyAdded),
+          context.isAccessible(if (s.hasGetter) s.getterIn(s.owner) else s, pre, superAccess && !implicitlyAdded),
           inherited,
           viaView)
       }
