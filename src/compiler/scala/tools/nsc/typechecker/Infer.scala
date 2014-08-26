@@ -552,7 +552,7 @@ trait Infer extends Checkable {
         }
         case _ => context.tree.pos
       }
-      if (settings.warnInferAny.value && context.reportErrors && canWarnAboutAny) {
+      if (settings.warnInferAny && context.reportErrors && canWarnAboutAny) {
         foreachWithIndex(targs) ((targ, idx) =>
           targ.typeSymbol match {
             case sym @ (AnyClass | AnyValClass) =>
