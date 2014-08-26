@@ -282,10 +282,10 @@ final class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNum
    */
   def abs: BigInt = new BigInt(this.bigInteger.abs())
 
-  /** Returns the sign of this BigInt, i.e.
+  /** Returns the sign of this BigInt;
    *   -1 if it is less than 0,
-   *   +1 if it is greater than 0
-   *   0  if it is equal to 0
+   *   +1 if it is greater than 0,
+   *   0  if it is equal to 0.
    */
   def signum: Int = this.bigInteger.signum()
 

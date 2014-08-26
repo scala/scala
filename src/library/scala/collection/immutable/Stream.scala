@@ -469,7 +469,7 @@ self =>
     else super.flatMap(f)(bf)
 
   /** Returns all the elements of this `Stream` that satisfy the predicate `p`
-   * in a new `Stream` - i.e. it is still a lazy data structure. The order of
+   * in a new `Stream` - i.e., it is still a lazy data structure. The order of
    * the elements is preserved
    *
    *  @param p the predicate used to filter the stream.
