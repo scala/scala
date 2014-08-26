@@ -836,12 +836,18 @@ trait Definitions extends api.StandardDefinitions {
     def typeOfMemberNamedHead(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.head)())
     def typeOfMemberNamedApply(tp: Type) = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.apply)(IntTpe))
     def typeOfMemberNamedDrop(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.drop)(IntTpe))
-    def typesOfSelectors(tp: Type)       = getterMemberTypes(tp, productSelectors(tp))
+    def typesOfSelectors(tp: Type)       =
+      if (isTupleType(tp)) tp.typeArgs
+      else getterMemberTypes(tp, productSelectors(tp))
+
     // SI-8128 Still using the type argument of the base type at Seq/Option if this is an old-style (2.10 compatible)
     //         extractor to limit exposure to regressions like the reported problem with existentials.
     //         TODO fix the existential problem in the general case, see test/pending/pos/t8128.scala
     private def typeArgOfBaseTypeOr(tp: Type, baseClass: Symbol)(or: => Type): Type = (tp baseType baseClass).typeArgs match {
-      case x :: Nil => x
+      case x :: Nil =>
+        val x1 = x
+        val x2 = repackExistential(x1)
+        x2
       case _        => or
     }
 
