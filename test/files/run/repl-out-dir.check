@@ -46,4 +46,4 @@ repl-out-dir-run.obj
     Test$.class
     Test.class
 
-scala> 
+scala> :quit

@@ -23,4 +23,4 @@ defined class Dingus
 defined object Dingus
 x: Int = 110
 
-scala> 
+scala> :quit

@@ -48,4 +48,4 @@ res2: Boolean = true
 scala> t2 <:< t1
 res3: Boolean = true
 
-scala> 
+scala> :quit

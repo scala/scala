@@ -29,4 +29,4 @@ res1: List[Int] = List(1)
 scala> List("") collect { case x => x }
 res2: List[String] = List("")
 
-scala> 
+scala> :quit

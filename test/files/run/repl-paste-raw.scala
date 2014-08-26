@@ -15,6 +15,6 @@ s"""|Type in expressions to have them evaluated.
     |scala> favoriteThing.hasString
     |res0: Boolean = true
     |
-    |scala> """
+    |scala> :quit"""
   def pastie = testPath changeExtension "pastie"
 }

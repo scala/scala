@@ -104,20 +104,5 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       if (settings.fatalWarnings && reporter.hasWarnings)
         reporter.error(NoPosition, "No warnings can be incurred under -Xfatal-warnings.")
     }
-
-    // for repl
-    private[this] var incompleteHandler: (Position, String) => Unit = null
-    def withIncompleteHandler[T](handler: (Position, String) => Unit)(thunk: => T) = {
-      val saved = incompleteHandler
-      incompleteHandler = handler
-      try thunk
-      finally incompleteHandler = saved
-    }
-
-    def incompleteHandled = incompleteHandler != null
-    def incompleteInputError(pos: Position, msg: String): Unit =
-      if (incompleteHandled) incompleteHandler(pos, msg)
-      else reporter.error(pos, msg)
-
   }
 }

@@ -187,4 +187,4 @@ PolyType(
   )
 )
 
-scala> 
+scala> :quit

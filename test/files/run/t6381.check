@@ -16,4 +16,4 @@ defined term macro pos: String
 scala> pos
 res0: String = class scala.reflect.internal.util.RangePosition
 
-scala> 
+scala> :quit

@@ -14,4 +14,4 @@ scala> reify
               reify
               ^
 
-scala> 
+scala> :quit

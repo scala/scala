@@ -226,7 +226,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       val Apply(_, pickledPayload) = wrapped
       val payload = pickledPayload.map{ case Assign(k, v) => (unpickleAtom(k), unpickleAtom(v)) }.toMap
 
-      import typer.TyperErrorGen._
+      // TODO: refactor error handling: fail always throws a TypeError,
+      // and uses global state (analyzer.lastTreeToTyper) to determine the position for the error
       def fail(msg: String) = MacroCantExpandIncompatibleMacrosError(msg)
       def unpickle[T](field: String, clazz: Class[T]): T = {
         def failField(msg: String) = fail(s"$field $msg")
@@ -624,7 +625,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
           // therefore we need to re-enable the conversions back temporarily
           val result = typer.context.withImplicitsEnabled(typer.typed(tree, mode, pt))
-          if (result.isErrorTyped && macroDebugVerbose) println(s"$label has failed: ${typer.context.reportBuffer.errors}")
+          if (result.isErrorTyped && macroDebugVerbose) println(s"$label has failed: ${typer.context.reporter.errors}")
           result
         }
       }

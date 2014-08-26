@@ -572,11 +572,11 @@ trait TypeDiagnostics {
         } else f
       }
       def apply(tree: Tree): Tree = {
-        // Error suppression will squash some of these warnings unless we circumvent it.
+        // Error suppression (in context.warning) would squash some of these warnings.
         // It is presumed if you are using a -Y option you would really like to hear
-        // the warnings you've requested.
+        // the warnings you've requested; thus, use reporter.warning.
         if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && exprOK)
-          context.warning(tree.pos, "dead code following this construct", force = true)
+          reporter.warning(tree.pos, "dead code following this construct")
         tree
       }
 
@@ -629,7 +629,7 @@ trait TypeDiagnostics {
               throw new FatalError("cannot redefine root "+sym)
           }
         case _ =>
-          context0.error(ex.pos, ex)
+          context0.error(ex.pos, ex.msg)
       }
     }
   }

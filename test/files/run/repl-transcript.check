@@ -35,4 +35,4 @@ scala> res6.sum + res5
 res0: Int = 5273
 
 
-scala> 
+scala> :quit

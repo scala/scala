@@ -7,4 +7,4 @@ f: (x: => Int)Int
 scala> f _
 res0: (=> Int) => Int = <function1>
 
-scala> 
+scala> :quit
