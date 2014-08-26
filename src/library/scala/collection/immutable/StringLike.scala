@@ -146,7 +146,7 @@ self =>
     }
 
   /** Returns this string with the given `prefix` stripped. If this string does not
-   *  end with `prefix`, it is returned unchanged.
+   *  start with `prefix`, it is returned unchanged.
    */
   def stripPrefix(prefix: String) =
     if (toString.startsWith(prefix)) toString.substring(prefix.length)
