@@ -1726,6 +1726,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
              |you want, you must write the annotation class in Java.""".stripMargin)
       }
 
+      warnTypeParameterShadow(tparams1, clazz)
+
       if (!isPastTyper) {
         for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
           val m = companionSymbolOf(clazz, context)
@@ -2128,6 +2130,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val tparams1 = ddef.tparams mapConserve typedTypeDef
       val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
 
+      warnTypeParameterShadow(tparams1, meth)
+
       meth.annotations.map(_.completeInfo())
 
       for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
@@ -2203,6 +2207,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val tparams1 = tdef.tparams mapConserve typedTypeDef
       val typedMods = typedModifiers(tdef.mods)
       tdef.symbol.annotations.map(_.completeInfo())
+
+      warnTypeParameterShadow(tparams1, tdef.symbol)
 
       // @specialized should not be pickled when compiling with -no-specialize
       if (settings.nospecialization && currentRun.compiles(tdef.symbol)) {
