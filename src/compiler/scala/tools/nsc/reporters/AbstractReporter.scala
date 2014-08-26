@@ -30,6 +30,7 @@ abstract class AbstractReporter extends Reporter {
   private def isVerbose   = settings.verbose.value
   private def noWarnings  = settings.nowarnings.value
   private def isPromptSet = settings.prompt.value
+  private def isDebug     = settings.debug
 
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
     if (severity == INFO) {
@@ -46,7 +47,7 @@ abstract class AbstractReporter extends Reporter {
           severity.count += 1
           display(pos, msg, severity)
         }
-        else if (settings.debug) {
+        else if (isDebug) {
           severity.count += 1
           display(pos, "[ suppressed ] " + msg, severity)
         }
@@ -56,6 +57,7 @@ abstract class AbstractReporter extends Reporter {
       }
     }
   }
+
 
   /** Logs a position and returns true if it was already logged.
    *  @note  Two positions are considered identical for logging if they have the same point.

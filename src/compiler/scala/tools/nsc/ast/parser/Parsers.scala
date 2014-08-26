@@ -232,7 +232,7 @@ self =>
     override def incompleteInputError(msg: String): Unit = {
       val offset = source.content.length - 1
       if (smartParsing) syntaxErrors += ((offset, msg))
-      else currentRun.reporting.incompleteInputError(o2p(offset), msg)
+      else currentRun.parsing.incompleteInputError(o2p(offset), msg)
     }
 
     /** parse unit. If there are inbalanced braces,

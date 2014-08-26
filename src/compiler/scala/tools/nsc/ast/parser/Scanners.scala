@@ -1260,7 +1260,7 @@ trait Scanners extends ScannersCommon {
 
     override def deprecationWarning(off: Offset, msg: String)   = currentRun.reporting.deprecationWarning(unit.position(off), msg)
     override def error  (off: Offset, msg: String)              = reporter.error(unit.position(off), msg)
-    override def incompleteInputError(off: Offset, msg: String) = currentRun.reporting.incompleteInputError(unit.position(off), msg)
+    override def incompleteInputError(off: Offset, msg: String) = currentRun.parsing.incompleteInputError(unit.position(off), msg)
 
     private var bracePatches: List[BracePatch] = patches
 
