@@ -135,7 +135,7 @@ self =>
   def linesIterator: Iterator[String] =
     linesWithSeparators map (line => new WrappedString(line).stripLineEnd)
 
-  /** Returns this string with first character converted to upper case */
+  /** Returns this string with first character converted to upper case. */
   def capitalize: String =
     if (toString == null) null
     else if (toString.length == 0) ""
@@ -145,13 +145,16 @@ self =>
       new String(chars)
     }
 
-  /** Returns this string with the given `prefix` stripped. */
+  /** Returns this string with the given `prefix` stripped. If this string does not
+   *  end with `prefix`, it is returned unchanged.
+   */
   def stripPrefix(prefix: String) =
     if (toString.startsWith(prefix)) toString.substring(prefix.length)
     else toString
 
   /** Returns this string with the given `suffix` stripped. If this string does not
-    * end with `suffix`, it is returned unchanged. */
+   *  end with `suffix`, it is returned unchanged.
+   */
   def stripSuffix(suffix: String) =
     if (toString.endsWith(suffix)) toString.substring(0, toString.length() - suffix.length)
     else toString
