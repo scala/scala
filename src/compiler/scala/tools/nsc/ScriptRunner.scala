@@ -6,7 +6,7 @@
 package scala
 package tools.nsc
 
-import io.{ Directory, File, Path }
+import io.{ AbstractFile, Directory, File, Path }
 import java.io.IOException
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 import util.Exceptional.unwrap
@@ -111,6 +111,12 @@ class ScriptRunner extends HasCompileSocket {
       else None
     }
 
+    def hasClassToRun(d: Directory): Boolean = {
+      import util.ClassPath.{ DefaultJavaContext => ctx }
+      val cp = ctx.newClassPath(AbstractFile.getDirectory(d))
+      cp.findClass(mainClass).isDefined
+    }
+
     /* The script runner calls sys.exit to communicate a return value, but this must
      * not take place until there are no non-daemon threads running.  Tickets #1955, #2006.
      */
@@ -124,15 +130,21 @@ class ScriptRunner extends HasCompileSocket {
 
           compile match {
             case Some(compiledPath) =>
-              try io.Jar.create(jarFile, compiledPath, mainClass)
-              catch { case _: Exception => jarFile.delete() }
+              if (!hasClassToRun(compiledPath)) {
+                // it compiled ok, but there is nothing to run;
+                // running an empty script should succeed
+                true
+              } else {
+                try io.Jar.create(jarFile, compiledPath, mainClass)
+                catch { case _: Exception => jarFile.delete() }
 
-              if (jarOK) {
-                compiledPath.deleteRecursively()
-                handler(jarFile.toAbsolute.path)
+                if (jarOK) {
+                  compiledPath.deleteRecursively()
+                  handler(jarFile.toAbsolute.path)
+                }
+                // jar failed; run directly from the class files
+                else handler(compiledPath.path)
               }
-              // jar failed; run directly from the class files
-              else handler(compiledPath.path)
             case _  => false
           }
         }
@@ -140,8 +152,8 @@ class ScriptRunner extends HasCompileSocket {
         if (jarOK) handler(jarFile.toAbsolute.path) // pre-compiled jar is current
         else recompile()                            // jar old - recompile the script.
       }
-      // don't use a cache jar at all--just use the class files
-      else compile exists (cp => handler(cp.path))
+      // don't use a cache jar at all--just use the class files, if they exist
+      else compile exists (cp => !hasClassToRun(cp) || handler(cp.path))
     }
   }
 
