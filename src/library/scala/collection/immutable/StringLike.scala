@@ -135,7 +135,9 @@ self =>
   def linesIterator: Iterator[String] =
     linesWithSeparators map (line => new WrappedString(line).stripLineEnd)
 
-  /** Returns this string with first character converted to upper case. */
+  /** Returns this string with first character converted to upper case. If the first character 
+   *  is of the caller is capitalized, it is returned unchanged.
+   */
   def capitalize: String =
     if (toString == null) null
     else if (toString.length == 0) ""
