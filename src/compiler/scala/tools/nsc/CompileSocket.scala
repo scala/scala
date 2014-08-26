@@ -32,7 +32,8 @@ trait HasCompileSocket {
           if (isErrorMessage(line))
             noErrors = false
 
-          compileSocket.echo(line)
+          // be consistent with scalac: everything goes to stderr
+          compileSocket.warn(line)
           loop()
       }
       try loop()
