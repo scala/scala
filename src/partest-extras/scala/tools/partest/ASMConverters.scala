@@ -3,6 +3,7 @@ package scala.tools.partest
 import scala.collection.JavaConverters._
 import scala.tools.asm
 import asm.{tree => t}
+import scala.tools.asm.tree.LabelNode
 
 /** Makes using ASM from ByteCodeTests more convenient.
  *
@@ -22,8 +23,26 @@ object ASMConverters {
     asmToScala.convert(insns.iterator.asScala.toList)
   }
 
-  implicit class CompareInstructionLists(val self: List[Instruction]) {
+  implicit class RichInstructionLists(val self: List[Instruction]) extends AnyVal {
     def === (other: List[Instruction]) = equivalentBytecode(self, other)
+
+    def dropLinesFrames = self.filterNot(i => i.isInstanceOf[LineNumber] || i.isInstanceOf[FrameEntry])
+
+    private def referencedLabels(instruction: Instruction): Set[Instruction] = instruction match {
+      case Jump(op, label)                         => Set(label)
+      case LookupSwitch(op, dflt, keys, labels)    => (dflt :: labels).toSet
+      case TableSwitch(op, min, max, dflt, labels) => (dflt :: labels).toSet
+      case LineNumber(line, start)                 => Set(start)
+      case _ => Set.empty
+    }
+
+    def dropStaleLabels = {
+      val definedLabels: Set[Instruction] = self.filter(_.isInstanceOf[Label]).toSet
+      val usedLabels: Set[Instruction] = self.flatMap(referencedLabels)(collection.breakOut)
+      self.filterNot(definedLabels diff usedLabels)
+    }
+
+    def dropNonOp = dropLinesFrames.dropStaleLabels
   }
 
   sealed abstract class Instruction extends Product {
@@ -89,7 +108,7 @@ object ASMConverters {
       case i: t.LdcInsnNode            => Ldc          (op(i), i.cst: Any)
       case i: t.LookupSwitchInsnNode   => LookupSwitch (op(i), applyLabel(i.dflt), lst(i.keys) map (x => x: Int), lst(i.labels) map applyLabel)
       case i: t.TableSwitchInsnNode    => TableSwitch  (op(i), i.min, i.max, applyLabel(i.dflt), lst(i.labels) map applyLabel)
-      case i: t.MethodInsnNode         => Method       (op(i), i.desc, i.name, i.owner, i.itf)
+      case i: t.MethodInsnNode         => Method       (op(i), i.owner, i.name, i.desc, i.itf)
       case i: t.MultiANewArrayInsnNode => NewArray     (op(i), i.desc, i.dims)
       case i: t.TypeInsnNode           => TypeOp       (op(i), i.desc)
       case i: t.VarInsnNode            => VarOp        (op(i), i.`var`)
