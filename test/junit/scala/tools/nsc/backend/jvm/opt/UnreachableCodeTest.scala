@@ -18,6 +18,14 @@ import ASMConverters._
 class UnreachableCodeTest {
   import UnreachableCodeTest._
 
+  // jvm-1.6 enables emitting stack map frames, which impacts the code generation wrt dead basic blocks,
+  // see comment in BCodeBodyBuilder
+  val dceCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:unreachable-code")
+  val noOptCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:none")
+
+  // jvm-1.5 disables computing stack map frames, and it emits dead code as-is.
+  val noOptNoFramesCompiler = newCompiler(extraArgs = "-target:jvm-1.5 -Ybackend:GenBCode -Yopt:l:none")
+
   @Test
   def basicElimination(): Unit = {
     assertEliminateDead(
@@ -97,6 +105,36 @@ class UnreachableCodeTest {
   }
 
   @Test
+  def basicEliminationCompiler(): Unit = {
+    val code = "def f: Int = { return 1; 2 }"
+    val withDce = singleMethodInstructions(dceCompiler)(code)
+    assertSameCode(withDce.dropNonOp, List(Op(ICONST_1), Op(IRETURN)))
+
+    val noDce = singleMethodInstructions(noOptCompiler)(code)
+
+    // The emitted code is ICONST_1, IRETURN, ICONST_2, IRETURN. The latter two are dead.
+    //
+    // GenBCode puts the last IRETURN into a new basic block: it emits a label before the second
+    // IRETURN. This is an implementation detail, it may change; it affects the outcome of this test.
+    //
+    // During classfile writing with COMPUTE_FAMES (-target:jvm-1.6 or larger), the ClassfileWriter
+    // puts the ICONST_2 into a new basic block, because the preceding operation (IRETURN) ends
+    // the current block. We get something like
+    //
+    //   L1: ICONST_1; IRETURN
+    //   L2: ICONST_2            << dead
+    //   L3: IRETURN             << dead
+    //
+    // Finally, instructions in the dead basic blocks are replaced by ATHROW, as explained in
+    // a comment in BCodeBodyBuilder.
+    assertSameCode(noDce.dropNonOp, List(Op(ICONST_1), Op(IRETURN), Op(ATHROW), Op(ATHROW)))
+
+    // when NOT computing stack map frames, ASM's ClassWriter does not replace dead code by NOP/ATHROW
+    val noDceNoFrames = singleMethodInstructions(noOptNoFramesCompiler)(code)
+    assertSameCode(noDceNoFrames.dropNonOp, List(Op(ICONST_1), Op(IRETURN), Op(ICONST_2), Op(IRETURN)))
+  }
+
+  @Test
   def metaTest(): Unit = {
     assertEliminateDead() // no instructions
 
@@ -153,10 +191,11 @@ object UnreachableCodeTest {
     val cls = wrapInClass(genMethod()(code.map(_._1): _*))
     LocalOpt.removeUnreachableCode(cls)
     val nonEliminated = instructionsFromMethod(cls.methods.get(0))
-
     val expectedLive = code.filter(_._2).map(_._1).toList
-
-    assertTrue(s"\nExpected: $expectedLive\nActual  : $nonEliminated", nonEliminated === expectedLive)
+    assertSameCode(nonEliminated, expectedLive)
   }
 
+  def assertSameCode(actual: List[Instruction], expected: List[Instruction]): Unit = {
+    assertTrue(s"\nExpected: $expected\nActual  : $actual", actual === expected)
+  }
 }
