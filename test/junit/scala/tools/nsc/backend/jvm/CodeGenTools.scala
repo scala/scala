@@ -42,7 +42,7 @@ object CodeGenTools {
     compiler
   }
 
-  def compile(compiler: Global = newCompiler())(code: String): List[(String, Array[Byte])] = {
+  def compile(compiler: Global)(code: String): List[(String, Array[Byte])] = {
     compiler.reporter.reset()
     resetOutput(compiler)
     val run = new compiler.Run()
@@ -51,11 +51,16 @@ object CodeGenTools {
     (for (f <- outDir.iterator if !f.isDirectory) yield (f.name, f.toByteArray)).toList
   }
 
-  def compileClasses(compiler: Global = newCompiler())(code: String): List[ClassNode] = {
+  def compileClasses(compiler: Global)(code: String): List[ClassNode] = {
     compile(compiler)(code).map(p => AsmUtils.readClass(p._2)).sortBy(_.name)
   }
 
-  def compileMethods(compiler: Global = newCompiler())(code: String): List[MethodNode] = {
+  def compileMethods(compiler: Global)(code: String): List[MethodNode] = {
     compileClasses(compiler)(s"class C { $code }").head.methods.asScala.toList.filterNot(_.name == "<init>")
+  }
+
+  def singleMethodInstructions(compiler: Global)(code: String): List[Instruction] = {
+    val List(m) = compileMethods(compiler)(code)
+    instructionsFromMethod(m)
   }
 }
