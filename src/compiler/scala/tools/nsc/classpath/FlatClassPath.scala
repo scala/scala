@@ -46,7 +46,7 @@ object FlatClassPath {
   val RootPackage = ""
 }
 
-case class FlatClassPathEntries(packages: Seq[PackageEntry], classesAndSources: Seq[FileEntry])
+case class FlatClassPathEntries(packages: Seq[PackageEntry], classesAndSources: Seq[ClassRepClassPathEntry])
 
 object FlatClassPathEntries {
   import scala.language.implicitConversions
@@ -68,30 +68,33 @@ sealed trait ClassPathEntry {
   def name: String
 }
 
-trait FileEntry extends ClassPathEntry with ClassRepresentation[AbstractFile] {
+trait ClassRepClassPathEntry extends ClassPathEntry with ClassRepresentation[AbstractFile]
+
+trait ClassFileEntry extends ClassRepClassPathEntry {
   def file: AbstractFile
 
-  override def name = {
-    val className = FileUtils.stripClassExtension(file.name)
-    className
-  }
-}
+  override def name = FileUtils.stripClassExtension(file.name) // class name
 
-trait ClassFileEntry extends FileEntry {
   override def binary: Option[AbstractFile] = Some(file) // TODO temporary solution due to compatibility with sbt's CompilerInterface which requires such methods
   override def source: Option[AbstractFile] = None
 }
 
-trait SourceFileEntry extends FileEntry {
+trait SourceFileEntry extends ClassRepClassPathEntry {
+  def file: AbstractFile
+
+  override def name = FileUtils.stripSourceExtension(file.name) // class name
+
   override def binary: Option[AbstractFile] = None
   override def source: Option[AbstractFile] = Some(file)
 }
 
 case class SourceFileEntryImpl(file: AbstractFile) extends SourceFileEntry
 
-case class ClassAndSourceFilesEntry(file: AbstractFile, src: AbstractFile) extends FileEntry {
-  override def binary: Option[AbstractFile] = Some(file)
-  override def source: Option[AbstractFile] = Some(src)
+case class ClassAndSourceFilesEntry(classFile: AbstractFile, srcFile: AbstractFile) extends ClassRepClassPathEntry {
+  override def name = FileUtils.stripClassExtension(classFile.name) // class name
+
+  override def binary: Option[AbstractFile] = Some(classFile)
+  override def source: Option[AbstractFile] = Some(srcFile)
 }
 
 trait PackageEntry extends ClassPathEntry

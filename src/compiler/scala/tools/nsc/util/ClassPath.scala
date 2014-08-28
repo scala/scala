@@ -135,13 +135,7 @@ object ClassPath {
 
   /** From the source file to its identifier.
    */
-  def toSourceName(f: AbstractFile): String = {
-    val name = f.name
-
-    if (endsScala(name)) stripClassExtension(name)
-    else if (endsJava(name)) stripJavaExtension(name)
-    else throw new FatalError("Unexpected source file ending: " + name)
-  }
+  def toSourceName(f: AbstractFile): String = FileUtils.stripSourceExtension(f.name)
 }
 
 /**

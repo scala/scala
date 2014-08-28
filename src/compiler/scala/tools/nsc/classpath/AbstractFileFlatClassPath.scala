@@ -11,7 +11,7 @@ import FileUtils.AbstractFileOps
 /**
  * AbstractFile-backed implementation of a classpath.
  */
-trait AbstractFileFileLookup[FileEntryType <: FileEntry] extends FlatClassPath {
+trait AbstractFileFileLookup[FileEntryType <: ClassRepClassPathEntry] extends FlatClassPath {
   // FIXME check whether this class works at all! answer is No (at least not always)
   // it uses operations which are not supported by certain implementations of AbstactFile
   // and it's not always possible to just convert one implementation to other (e.g. there no underlying file

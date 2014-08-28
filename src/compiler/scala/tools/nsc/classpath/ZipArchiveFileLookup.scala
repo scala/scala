@@ -9,7 +9,7 @@ import scala.collection.Seq
 import scala.reflect.io.AbstractFile
 import scala.reflect.io.FileZipArchive
 
-trait ZipArchiveFileLookup[FileEntryType <: FileEntry] extends FlatClassPath {
+trait ZipArchiveFileLookup[FileEntryType <: ClassRepClassPathEntry] extends FlatClassPath {
   val zipFile: File
 
   assert(zipFile != null, "Zip file in ZipArchiveFileLookup cannot be null")

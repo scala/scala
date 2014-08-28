@@ -81,12 +81,12 @@ case class AggregateFlatClassPath(aggregates: Seq[FlatClassPath]) extends FlatCl
    * Returns only one entry for each name. If there's both souce and class entry,
    * it creates entry containing both of them.
    */
-  private def mergeClassesAndSources(entries: Seq[FileEntry]*): Seq[FileEntry] = {
+  private def mergeClassesAndSources(entries: Seq[ClassRepClassPathEntry]*): Seq[ClassRepClassPathEntry] = {
     // based on implementation from MergedClassPath
     import scala.collection.mutable._
     var count = 0
     val indices = HashMap[String, Int]()
-    val cls = new ArrayBuffer[FileEntry](1024)
+    val cls = new ArrayBuffer[ClassRepClassPathEntry](1024)
 
     for {
       entriesPart <- entries

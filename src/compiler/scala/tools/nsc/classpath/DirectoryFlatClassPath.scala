@@ -10,7 +10,7 @@ import scala.reflect.io.AbstractFile
 import scala.reflect.io.PlainFile
 import FileUtils._
 
-trait DirectoryFileLookup[FileEntryType <: FileEntry] extends FlatClassPath {
+trait DirectoryFileLookup[FileEntryType <: ClassRepClassPathEntry] extends FlatClassPath {
   val dir: File
   assert(dir != null, "Directory file in DirectoryFileLookup cannot be null")
 
