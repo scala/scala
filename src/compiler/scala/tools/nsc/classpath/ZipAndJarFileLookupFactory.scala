@@ -10,17 +10,16 @@ import FileUtils._
 
 trait ZipAndJarFileLookupFactory {
 
-  private val cache: collection.mutable.Map[File, FlatClassPath] =
-    collection.mutable.Map.empty[File, FlatClassPath]
+  private val cache = collection.mutable.Map.empty[AbstractFile, FlatClassPath]
 
-  def create(zipFile: File, settings: Settings): FlatClassPath = {
+  def create(zipFile: AbstractFile, settings: Settings): FlatClassPath = {
     if (settings.YflatCpCaching) createUsingCache(zipFile, settings)
     else createForZipFile(zipFile)
   }
 
-  protected def createForZipFile(zipFile: File): FlatClassPath
+  protected def createForZipFile(zipFile: AbstractFile): FlatClassPath
 
-  private def createUsingCache(zipFile: File, settings: Settings): FlatClassPath = {
+  private def createUsingCache(zipFile: AbstractFile, settings: Settings): FlatClassPath = {
     def newArchive = {
       if (settings.verbose || settings.Ylogcp)
       // TODO maybe use some logger instead of println?
@@ -32,10 +31,6 @@ trait ZipAndJarFileLookupFactory {
 }
 
 object ZipAndJarFlatClassPathFactory extends ZipAndJarFileLookupFactory {
-
-  case class JarFlatClassPath private[ZipAndJarFlatClassPathFactory](jarFile: File) extends AbstractFileFlatClassPath {
-    override protected val file = new FileZipArchive(jarFile)
-  }
 
   import ZipArchiveFlatClassPath.ClassFileEntryImpl
   case class ZipArchiveFlatClassPath private[ZipAndJarFlatClassPathFactory](zipFile: File)
@@ -60,17 +55,15 @@ object ZipAndJarFlatClassPathFactory extends ZipAndJarFileLookupFactory {
     }
   }
 
-  override protected def createForZipFile(zipFile: File): FlatClassPath =
-    if (zipFile.isJar) JarFlatClassPath(zipFile)
-    else ZipArchiveFlatClassPath(zipFile)
+  override protected def createForZipFile(zipFile: AbstractFile): FlatClassPath =
+  // FIXME e.g. ManifestResources - have to be handled in other way - unfortunately our implementation
+  // for abstract file didn't work here because it uses certain methods which are unsupported be given
+  // implementation of abstract file
+    if (zipFile.file == null) ???
+    else ZipArchiveFlatClassPath(zipFile.file)
 }
 
 object ZipAndJarFlatSourcePathFactory extends ZipAndJarFileLookupFactory {
-
-  // FIXME jars don't work
-  case class JarFlatSourcePath private[ZipAndJarFlatSourcePathFactory](jarFile: File) extends AbstractFileFlatSourcePath {
-    override protected val file = new FileZipArchive(jarFile)
-  }
 
   case class ZipArchiveFlatSourcePath private[ZipAndJarFlatSourcePathFactory](zipFile: File)
     extends ZipArchiveFileLookup[SourceFileEntryImpl]
@@ -84,7 +77,5 @@ object ZipAndJarFlatSourcePathFactory extends ZipAndJarFileLookupFactory {
     override protected def isRequiredFileType(file: AbstractFile): Boolean = file.isScalaOrJavaSource
   }
 
-  override protected def createForZipFile(zipFile: File): FlatClassPath =
-    if (zipFile.isJar) JarFlatSourcePath(zipFile)
-    else ZipArchiveFlatSourcePath(zipFile)
+  override protected def createForZipFile(zipFile: AbstractFile): FlatClassPath = ZipArchiveFlatSourcePath(zipFile.file)
 }

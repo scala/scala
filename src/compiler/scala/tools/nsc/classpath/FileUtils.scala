@@ -32,8 +32,6 @@ object FileUtils {
     def isPackage: Boolean = file.isDirectory && isValidPackage(file.getName)
 
     def isClass: Boolean = file.isFile && file.getName.endsWith(".class")
-
-    def isJar: Boolean = false // FIXME temporary value - file.getName.endsWith(".jar")
   }
 
   @inline def dirPath(forPackage: String) = forPackage.replace('.', '/')

@@ -18,7 +18,7 @@ class FlatClassPathFactory(settings: Settings) extends ClassPathFactory[FlatClas
 
   override def createClassPath(file: AbstractFile): FlatClassPath =
     if (file.isJarOrZip)
-      ZipAndJarFlatClassPathFactory.create(file.file, settings)
+      ZipAndJarFlatClassPathFactory.create(file, settings)
     else if (file.isDirectory)
       new DirectoryFlatClassPath(file.file)
     else
@@ -32,7 +32,7 @@ class FlatClassPathFactory(settings: Settings) extends ClassPathFactory[FlatClas
 
   private def createSourcePath(file: AbstractFile): FlatClassPath =
     if (file.isJarOrZip)
-      ZipAndJarFlatSourcePathFactory.create(file.file, settings)
+      ZipAndJarFlatSourcePathFactory.create(file, settings)
     else if (file.isDirectory)
       new DirectoryFlatSourcePath(file.file)
     else

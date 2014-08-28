@@ -24,6 +24,7 @@ trait FlatClassPath extends ClassFileLookup[AbstractFile] {
 
   def list(inPackage: String): FlatClassPathEntries
 
+  // TODO it would be nice to have some internal check for name - not after returning all classes/sources in pkg
   override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = {
     val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
 
@@ -87,6 +88,11 @@ trait SourceFileEntry extends FileEntry {
 }
 
 case class SourceFileEntryImpl(file: AbstractFile) extends SourceFileEntry
+
+case class ClassAndSourceFilesEntry(file: AbstractFile, src: AbstractFile) extends FileEntry {
+  override def binary: Option[AbstractFile] = Some(file)
+  override def source: Option[AbstractFile] = Some(src)
+}
 
 trait PackageEntry extends ClassPathEntry
 
