@@ -771,7 +771,7 @@ class SuiteRunner(
   s"""|Partest version:     ${Properties.versionNumberString}
       |Compiler under test: ${relativize(fileManager.compilerUnderTest.getAbsolutePath)}
       |Scala version is:    $versionMsg
-      |Scalac options are:  ${scalacExtraArgs.mkString(" ")}
+      |Scalac options are:  ${(scalacExtraArgs ++ PartestDefaults.scalacOpts.split(' ')).mkString(" ")}
       |Compilation Path:    ${relativize(joinPaths(fileManager.testClassPath))}
       |Java binaries in:    $vmBin
       |Java runtime is:     $vmName
