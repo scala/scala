@@ -146,31 +146,63 @@ trait Solving extends Logic {
 
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
     def findAllModelsFor(f: Formula): List[Model] = {
+
+      debug.patmat("find all models for\n"+ cnfString(f))
+
       val vars: Set[Sym] = f.flatMap(_ collect {case l: Lit => l.sym}).toSet
       // debug.patmat("vars "+ vars)
       // the negation of a model -(S1=True/False /\ ... /\ SN=True/False) = clause(S1=False/True, ...., SN=False/True)
       def negateModel(m: Model) = clause(m.toSeq.map{ case (sym, pos) => Lit(sym, !pos) } : _*)
 
-      def findAllModels(f: Formula, models: List[Model], recursionDepthAllowed: Int = 10): List[Model]=
-        if (recursionDepthAllowed == 0) models
-        else {
-          debug.patmat("find all models for\n"+ cnfString(f))
+      def findAllModels(f: Formula, models: List[Model], recursionDepthAllowed: Int = 20): List[Model]=
+        if (recursionDepthAllowed == 0) {
+          global.reporter.warning(scala.reflect.internal.util.NoPosition,
+            "DPLL reached max recursion depth, not all missing cases are reported.")
+          models
+        } else {
           val model = findModelFor(f)
           // if we found a solution, conjunct the formula with the model's negation and recurse
           if (model ne NoModel) {
             val unassigned = (vars -- model.keySet).toList
             debug.patmat("unassigned "+ unassigned +" in "+ model)
-            def force(lit: Lit) = {
-              val model = withLit(findModelFor(dropUnit(f, lit)), lit)
-              if (model ne NoModel) List(model)
+            def force(lit: Lit, model: Model) = {
+              val model0 = withLit(model, lit)
+              if (model0 ne NoModel) List(model0)
               else Nil
             }
-            val forced = unassigned flatMap { s =>
-              force(Lit(s, pos = true)) ++ force(Lit(s, pos = false))
+
+            def expandUnassigned(unassigned: List[Sym], model: Model): List[Model] = {
+              var current = mutable.ArrayBuffer[Model]()
+              var next = mutable.ArrayBuffer[Model]()
+              current.sizeHint(1 << unassigned.size)
+              next.sizeHint(1 << unassigned.size)
+
+              current += model
+
+              for {
+                s <- unassigned
+              } {
+                for {
+                  model <- current
+                } {
+                  next ++= force(Lit(s, pos = true), model)
+                  next ++= force(Lit(s, pos = false), model)
+                }
+
+                val tmp = current
+                current = next
+                next = tmp
+
+                next.clear()
+              }
+
+              current.toList
             }
+
+            val forced = expandUnassigned(unassigned, model)
             debug.patmat("forced "+ forced)
             val negated = negateModel(model)
-            findAllModels(f :+ negated, model :: (forced ++ models), recursionDepthAllowed - 1)
+            findAllModels(f :+ negated, forced ++ models, recursionDepthAllowed - 1)
           }
           else models
         }

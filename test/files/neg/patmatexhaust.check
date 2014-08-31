@@ -12,7 +12,7 @@ It would fail on the following inputs: (Kult(_), Kult(_)), (Qult(), Qult())
                       ^
 patmatexhaust.scala:49: warning: match may not be exhaustive.
 It would fail on the following inputs: Gp(), Gu
-    def ma4(x:Deep) = x match { // missing cases: Gu, Gp
+    def ma4(x:Deep) = x match { // missing cases: Gu, Gp which is not abstract so must be included
                       ^
 patmatexhaust.scala:55: warning: unreachable code
       case _ if 1 == 0 =>
