@@ -87,7 +87,7 @@ trait Logic extends Debugging  {
       def mayBeNull: Boolean
 
       // compute the domain and return it (call registerNull first!)
-      def domainSyms: Option[mutable.LinkedHashSet[Sym]]
+      def domainSyms: Option[Set[Sym]]
 
       // the symbol for this variable being equal to its statically known type
       // (only available if registerEquality has been called for that type before)
@@ -205,7 +205,7 @@ trait Logic extends Debugging  {
     def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Formula, List[Formula]) = {
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaVarEq) else null
 
-      val vars = mutable.LinkedHashSet[Var]()
+      val vars = new mutable.HashSet[Var]
 
       object gatherEqualities extends PropTraverser {
         override def apply(p: Prop) = p match {
@@ -292,7 +292,7 @@ trait Logic extends Debugging  {
     def eqFreePropToSolvable(p: Prop): Formula
     def cnfString(f: Formula): String
 
-    type Model = collection.immutable.SortedMap[Sym, Boolean]
+    type Model = Map[Sym, Boolean]
     val EmptyModel: Model
     val NoModel: Model
 
@@ -342,9 +342,9 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       // we enumerate the subtypes of the full type, as that allows us to filter out more types statically,
       // once we go to run-time checks (on Const's), convert them to checkable types
       // TODO: there seems to be bug for singleton domains (variable does not show up in model)
-      lazy val domain: Option[mutable.LinkedHashSet[Const]] = {
-        val subConsts: Option[mutable.LinkedHashSet[Const]] = enumerateSubtypes(staticTp).map { tps =>
-          mutable.LinkedHashSet(tps: _*).map{ tp =>
+      lazy val domain: Option[Set[Const]] = {
+        val subConsts = enumerateSubtypes(staticTp).map{ tps =>
+          tps.toSet[Type].map{ tp =>
             val domainC = TypeConst(tp)
             registerEquality(domainC)
             domainC
@@ -487,7 +487,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       }
 
       // accessing after calling registerNull will result in inconsistencies
-      lazy val domainSyms: Option[collection.mutable.LinkedHashSet[Sym]] = domain map { _ map symForEqualsTo }
+      lazy val domainSyms: Option[Set[Sym]] = domain map { _ map symForEqualsTo }
 
       lazy val symForStaticTp: Option[Sym]  = symForEqualsTo.get(TypeConst(staticTpCheckable))
 
