@@ -86,7 +86,10 @@ trait Logic extends Debugging  {
       def mayBeNull: Boolean
 
       // compute the domain and return it (call registerNull first!)
-      def domainSyms: Option[mutable.LinkedHashSet[Sym]]
+      def domainSyms: Option[Set[Sym]]
+
+      // contains (pairs of) domain symbols that are not in a subtype relation
+      def mutuallyExclusiveDomainSyms: Option[Seq[Seq[Sym]]]
 
       // the symbol for this variable being equal to its statically known type
       // (only available if registerEquality has been called for that type before)
@@ -204,7 +207,7 @@ trait Logic extends Debugging  {
     def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Formula, List[Formula]) = {
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaVarEq) else null
 
-      val vars = mutable.LinkedHashSet[Var]()
+      val vars = new scala.collection.mutable.HashSet[Var]
 
       object gatherEqualities extends PropTraverser {
         override def apply(p: Prop) = p match {
@@ -238,6 +241,15 @@ trait Logic extends Debugging  {
         // consider X ::= A | B | C, and A => B
         // coverage is formulated as: A \/ B \/ C and the implications are
         v.domainSyms foreach { dsyms => addAxiom(\/(dsyms)) }
+
+        // restrict solutions to only one of the possible subtypes of a domain
+        for {
+          dsyms <- v.mutuallyExclusiveDomainSyms
+          mutuallyExclusiveSyms <- dsyms
+        } {
+          val negated = mutuallyExclusiveSyms.map(Not)
+          addAxiom(\/(negated))
+        }
 
         // when this variable cannot be null the equality corresponding to the type test `(x: T)`, where T is x's static type,
         // is always true; when the variable may be null we use the implication `(x != null) => (x: T)` for the axiom
@@ -291,7 +303,7 @@ trait Logic extends Debugging  {
     def eqFreePropToSolvable(p: Prop): Formula
     def cnfString(f: Formula): String
 
-    type Model = collection.immutable.SortedMap[Sym, Boolean]
+    type Model = Map[Sym, Boolean]
     val EmptyModel: Model
     val NoModel: Model
 
@@ -341,9 +353,9 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       // we enumerate the subtypes of the full type, as that allows us to filter out more types statically,
       // once we go to run-time checks (on Const's), convert them to checkable types
       // TODO: there seems to be bug for singleton domains (variable does not show up in model)
-      lazy val domain: Option[mutable.LinkedHashSet[Const]] = {
-        val subConsts: Option[mutable.LinkedHashSet[Const]] = enumerateSubtypes(staticTp).map { tps =>
-          mutable.LinkedHashSet(tps: _*).map{ tp =>
+      lazy val domain: Option[Set[Const]] = {
+        val subConsts = enumerateSubtypes(staticTp).map{ tps =>
+          tps.toSet[Type].map{ tp =>
             val domainC = TypeConst(tp)
             registerEquality(domainC)
             domainC
@@ -486,7 +498,15 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       }
 
       // accessing after calling registerNull will result in inconsistencies
-      lazy val domainSyms: Option[collection.mutable.LinkedHashSet[Sym]] = domain map { _ map symForEqualsTo }
+      lazy val domainSyms: Option[Set[Sym]] = domain map { _ map symForEqualsTo }
+
+      lazy val mutuallyExclusiveDomainSyms: Option[Seq[Seq[Sym]]] = domainSyms map {
+        _.toSeq.combinations(2).toIndexedSeq.filterNot { case Seq(a, b) =>
+            val aIsSubTypeOfb = a.const.tp <:< b.const.tp
+            val bIsSubTypeOfa = b.const.tp <:< a.const.tp
+            aIsSubTypeOfb || bIsSubTypeOfa
+          }
+      }
 
       lazy val symForStaticTp: Option[Sym]  = symForEqualsTo.get(TypeConst(staticTpCheckable))
 

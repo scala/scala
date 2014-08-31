@@ -26,16 +26,9 @@ trait Solving extends Logic {
     type Formula = FormulaBuilder
     def formula(c: Clause*): Formula = ArrayBuffer(c: _*)
 
-    type Clause  = collection.Set[Lit]
+    type Clause  = Set[Lit]
     // a clause is a disjunction of distinct literals
-    def clause(l: Lit*): Clause = (
-      if (l.lengthCompare(1) <= 0) {
-        l.toSet // SI-8531 Avoid LinkedHashSet's bulk for 0 and 1 element clauses
-      } else {
-        // neg/t7020.scala changes output 1% of the time, the non-determinism is quelled with this linked set
-        mutable.LinkedHashSet(l: _*)
-      }
-    )
+    def clause(l: Lit*): Clause = l.toSet
 
     type Lit
     def Lit(sym: Sym, pos: Boolean = true): Lit
@@ -141,36 +134,68 @@ trait Solving extends Logic {
     def cnfString(f: Formula) = alignAcrossRows(f map (_.toList) toList, "\\/", " /\\\n")
 
     // adapted from http://lara.epfl.ch/w/sav10:simple_sat_solver (original by Hossein Hojjat)
-    val EmptyModel = collection.immutable.SortedMap.empty[Sym, Boolean]
+    val EmptyModel = Map.empty[Sym, Boolean]
     val NoModel: Model = null
 
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
     def findAllModelsFor(f: Formula): List[Model] = {
+
+      debug.patmat("find all models for\n"+ cnfString(f))
+
       val vars: Set[Sym] = f.flatMap(_ collect {case l: Lit => l.sym}).toSet
       // debug.patmat("vars "+ vars)
       // the negation of a model -(S1=True/False /\ ... /\ SN=True/False) = clause(S1=False/True, ...., SN=False/True)
       def negateModel(m: Model) = clause(m.toSeq.map{ case (sym, pos) => Lit(sym, !pos) } : _*)
 
-      def findAllModels(f: Formula, models: List[Model], recursionDepthAllowed: Int = 10): List[Model]=
-        if (recursionDepthAllowed == 0) models
-        else {
-          debug.patmat("find all models for\n"+ cnfString(f))
+      def findAllModels(f: Formula, models: List[Model], recursionDepthAllowed: Int = 20): List[Model]=
+        if (recursionDepthAllowed == 0) {
+          global.reporter.warning(scala.reflect.internal.util.NoPosition,
+            "DPLL reached max recursion depth, not all missing cases are reported.")
+          models
+        } else {
           val model = findModelFor(f)
           // if we found a solution, conjunct the formula with the model's negation and recurse
           if (model ne NoModel) {
             val unassigned = (vars -- model.keySet).toList
             debug.patmat("unassigned "+ unassigned +" in "+ model)
-            def force(lit: Lit) = {
-              val model = withLit(findModelFor(dropUnit(f, lit)), lit)
-              if (model ne NoModel) List(model)
+            def force(lit: Lit, model: Model) = {
+              val model0 = withLit(model, lit)
+              if (model0 ne NoModel) List(model0)
               else Nil
             }
-            val forced = unassigned flatMap { s =>
-              force(Lit(s, pos = true)) ++ force(Lit(s, pos = false))
+
+            def expandUnassigned(unassigned: List[Sym], model: Model): List[Model] = {
+              var current = mutable.ArrayBuffer[Model]()
+              var next = mutable.ArrayBuffer[Model]()
+              current.sizeHint(1 << unassigned.size)
+              next.sizeHint(1 << unassigned.size)
+
+              current += model
+
+              for {
+                s <- unassigned
+              } {
+                for {
+                  model <- current
+                } {
+                  next ++= force(Lit(s, pos = true), model)
+                  next ++= force(Lit(s, pos = false), model)
+                }
+
+                val tmp = current
+                current = next
+                next = tmp
+
+                next.clear()
+              }
+
+              current.toList
             }
+
+            val forced = expandUnassigned(unassigned, model)
             debug.patmat("forced "+ forced)
             val negated = negateModel(model)
-            findAllModels(f :+ negated, model :: (forced ++ models), recursionDepthAllowed - 1)
+            findAllModels(f :+ negated, forced ++ models, recursionDepthAllowed - 1)
           }
           else models
         }
@@ -210,15 +235,14 @@ trait Solving extends Logic {
             withLit(findModelFor(dropUnit(f, unitLit)), unitLit)
           case _ =>
             // partition symbols according to whether they appear in positive and/or negative literals
-            // SI-7020 Linked- for deterministic counter examples.
-            val pos = new mutable.LinkedHashSet[Sym]()
-            val neg = new mutable.LinkedHashSet[Sym]()
+            val pos = new mutable.HashSet[Sym]()
+            val neg = new mutable.HashSet[Sym]()
             mforeach(f)(lit => if (lit.pos) pos += lit.sym else neg += lit.sym)
 
             // appearing in both positive and negative
-            val impures: mutable.LinkedHashSet[Sym] = pos intersect neg
+            val impures = pos intersect neg
             // appearing only in either positive/negative positions
-            val pures: mutable.LinkedHashSet[Sym] = (pos ++ neg) -- impures
+            val pures = (pos ++ neg) -- impures
 
             if (pures nonEmpty) {
               val pureSym = pures.head
