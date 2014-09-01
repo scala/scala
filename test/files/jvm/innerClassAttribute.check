@@ -1,0 +1,54 @@
+#partest !-Ydelambdafy:method
+-- A4 --
+A4$$anonfun$f$1 / null / null / 17
+A4$$anonfun$f$1 / null / null / 17
+A4 / f / (Lscala/collection/immutable/List;)Lscala/collection/immutable/List;
+-- A19 --
+A19$$anonfun$1 / null / null / 17
+A19$$anonfun$2 / null / null / 17
+A19$$anonfun$3 / null / null / 17
+A19$$anonfun$1 / null / null / 17
+A19$$anonfun$2 / null / null / 17
+A19$$anonfun$3 / null / null / 17
+A19 / null / null
+A19 / null / null
+A19 / null / null
+-- A20 --
+A20$$anonfun$4 / null / null / 17
+fun1: attribute for itself and the two child closures `() => ()` and `() => () => 1`
+A20$$anonfun$4 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$1 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$3 / null / null / 17
+fun2 () => (): itself and the outer closure
+A20$$anonfun$4 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$1 / null / null / 17
+fun3 () => () => (): itself, the outer closure and its child closure
+A20$$anonfun$4 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$3 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$3$$anonfun$apply$2 / null / null / 17
+fun4: () => 1: itself and the two outer closures
+A20$$anonfun$4 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$3 / null / null / 17
+A20$$anonfun$4$$anonfun$apply$3$$anonfun$apply$2 / null / null / 17
+enclosing: nested closures have the apply method of the outer closure
+A20 / null / null
+A20$$anonfun$4 / apply / ()Lscala/Function0;
+A20$$anonfun$4 / apply / ()Lscala/Function0;
+A20$$anonfun$4$$anonfun$apply$3 / apply / ()Lscala/Function0;
+#partest -Ydelambdafy:method
+-- A4 --
+null / null / null
+-- A19 --
+null / null / null
+null / null / null
+null / null / null
+-- A20 --
+fun1: attribute for itself and the two child closures `() => ()` and `() => () => 1`
+fun2 () => (): itself and the outer closure
+fun3 () => () => (): itself, the outer closure and its child closure
+fun4: () => 1: itself and the two outer closures
+enclosing: nested closures have the apply method of the outer closure
+null / null / null
+null / null / null
+null / null / null
+null / null / null

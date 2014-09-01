@@ -19,16 +19,11 @@ import scala.collection.mutable
  *
  */
 abstract class BCodeIdiomatic extends SubComponent {
-  protected val bCodeICodeCommon: BCodeICodeCommon[global.type] = new BCodeICodeCommon(global)
-
-  val bTypes = new BTypes[global.type](global) {
-    def chrs = global.chrs
-    override type BTypeName = global.TypeName
-    override def createNewName(s: String) = global.newTypeName(s)
-  }
+  val bTypes = new BTypesFromSymbols[global.type](global)
 
   import global._
   import bTypes._
+  import coreBTypes._
 
   val classfileVersion: Int = settings.target.value match {
     case "jvm-1.5"     => asm.Opcodes.V1_5
@@ -40,9 +35,7 @@ abstract class BCodeIdiomatic extends SubComponent {
   val majorVersion: Int = (classfileVersion & 0xFF)
   val emitStackMapFrame = (majorVersion >= 50)
 
-  def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
-
-  val extraProc: Int = mkFlags(
+  val extraProc: Int = GenBCode.mkFlags(
     asm.ClassWriter.COMPUTE_MAXS,
     if (emitStackMapFrame) asm.ClassWriter.COMPUTE_FRAMES else 0
   )
@@ -51,15 +44,6 @@ abstract class BCodeIdiomatic extends SubComponent {
 
   val CLASS_CONSTRUCTOR_NAME    = "<clinit>"
   val INSTANCE_CONSTRUCTOR_NAME = "<init>"
-
-  val ObjectReference   = ClassBType("java/lang/Object")
-  val AnyRefReference   = ObjectReference
-  val objArrayReference = ArrayBType(ObjectReference)
-
-  val JAVA_LANG_OBJECT  = ObjectReference
-  val JAVA_LANG_STRING  = ClassBType("java/lang/String")
-
-  var StringBuilderReference: BType = null
 
   val EMPTY_STRING_ARRAY   = Array.empty[String]
   val EMPTY_INT_ARRAY      = Array.empty[Int]
@@ -239,7 +223,7 @@ abstract class BCodeIdiomatic extends SubComponent {
     final def genStringConcat(el: BType) {
 
       val jtype =
-        if (el.isArray || el.isClass) JAVA_LANG_OBJECT
+        if (el.isArray || el.isClass) ObjectReference
         else el
 
       val bt = MethodBType(List(jtype), StringBuilderReference)
@@ -266,7 +250,7 @@ abstract class BCodeIdiomatic extends SubComponent {
 
       assert(
         from.isNonVoidPrimitiveType && to.isNonVoidPrimitiveType,
-        s"Cannot emit primitive conversion from $from to $to"
+        s"Cannot emit primitive conversion from $from to $to - ${global.currentUnit}"
       )
 
           def pickOne(opcs: Array[Int]) { // TODO index on to.sort
@@ -537,7 +521,7 @@ abstract class BCodeIdiomatic extends SubComponent {
     final def emitTypeBased(opcs: Array[Int], tk: BType) {
       assert(tk != UNIT, tk)
       val opc = {
-        if (tk.isRef) {  opcs(0) }
+        if (tk.isRef) { opcs(0) }
         else if (tk.isIntSizedType) {
           (tk: @unchecked) match {
             case BOOL | BYTE     => opcs(1)
@@ -648,7 +632,7 @@ abstract class BCodeIdiomatic extends SubComponent {
    */
   final def coercionTo(code: Int): BType = {
     import scalaPrimitives._
-    (code: @scala.annotation.switch) match {
+    (code: @switch) match {
       case B2B | C2B | S2B | I2B | L2B | F2B | D2B => BYTE
       case B2C | C2C | S2C | I2C | L2C | F2C | D2C => CHAR
       case B2S | C2S | S2S | I2S | L2S | F2S | D2S => SHORT
@@ -657,21 +641,6 @@ abstract class BCodeIdiomatic extends SubComponent {
       case B2F | C2F | S2F | I2F | L2F | F2F | D2F => FLOAT
       case B2D | C2D | S2D | I2D | L2D | F2D | D2D => DOUBLE
     }
-  }
-
-  final val typeOfArrayOp: Map[Int, BType] = {
-    import scalaPrimitives._
-    Map(
-      (List(ZARRAY_LENGTH, ZARRAY_GET, ZARRAY_SET) map (_ -> BOOL))   ++
-      (List(BARRAY_LENGTH, BARRAY_GET, BARRAY_SET) map (_ -> BYTE))   ++
-      (List(SARRAY_LENGTH, SARRAY_GET, SARRAY_SET) map (_ -> SHORT))  ++
-      (List(CARRAY_LENGTH, CARRAY_GET, CARRAY_SET) map (_ -> CHAR))   ++
-      (List(IARRAY_LENGTH, IARRAY_GET, IARRAY_SET) map (_ -> INT))    ++
-      (List(LARRAY_LENGTH, LARRAY_GET, LARRAY_SET) map (_ -> LONG))   ++
-      (List(FARRAY_LENGTH, FARRAY_GET, FARRAY_SET) map (_ -> FLOAT))  ++
-      (List(DARRAY_LENGTH, DARRAY_GET, DARRAY_SET) map (_ -> DOUBLE)) ++
-      (List(OARRAY_LENGTH, OARRAY_GET, OARRAY_SET) map (_ -> ObjectReference)) : _*
-    )
   }
 
   /*
