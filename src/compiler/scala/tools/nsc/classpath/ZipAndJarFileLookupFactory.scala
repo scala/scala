@@ -7,6 +7,7 @@ import java.io.File
 import scala.reflect.io.{AbstractFile, FileZipArchive}
 import scala.tools.nsc.Settings
 import FileUtils._
+import java.net.URL
 
 trait ZipAndJarFileLookupFactory {
 
@@ -55,11 +56,28 @@ object ZipAndJarFlatClassPathFactory extends ZipAndJarFileLookupFactory {
     }
   }
 
+  class ZipJarWithoutFileFlatClassPathPlaceholder(file: AbstractFile)
+    extends FlatClassPath
+    with NoSourcePaths {
+
+    override def packages(inPackage: String): Seq[PackageEntry] = Seq.empty
+
+    override def classes(inPackage: String): Seq[ClassFileEntry] = Seq.empty
+
+    override def list(inPackage: String): FlatClassPathEntries = FlatClassPathEntries(Seq.empty, Seq.empty)
+
+    override def asClassPathStrings: Seq[String] = Seq(file.path)
+
+    override def findClassFile(name: String): Option[AbstractFile] = None
+
+    override def asURLs: Seq[URL] = file.toURLs()
+  }
+
   override protected def createForZipFile(zipFile: AbstractFile): FlatClassPath =
   // FIXME e.g. ManifestResources - have to be handled in other way - unfortunately our implementation
   // for abstract file didn't work here because it uses certain methods which are unsupported be given
   // implementation of abstract file
-    if (zipFile.file == null) ???
+    if (zipFile.file == null) new ZipJarWithoutFileFlatClassPathPlaceholder(zipFile) // TODO test
     else ZipArchiveFlatClassPath(zipFile.file)
 }
 

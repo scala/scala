@@ -1,15 +1,13 @@
 /*
  * Copyright (c) 2014 Contributor. All rights reserved.
  */
-package scala.tools.nsc.util
+package scala.tools.nsc
 
 import scala.io.StdIn.readLine
-import scala.tools.nsc.Settings
-import scala.tools.util.PathResolverFactory
 
 /**
  * Simple application to check out amount of memory used by chosen classpath implementation.
- * It allows us to create many classpath instances based on specified parameters.
+ * It allows us to create many scalac-like calls based on specified parameters, where each main retains Global.
  * And we need additional tool (e.g. profiler) to measure memory consumption itself.
  */
 object ClassPathMemoryConsumptionTester {
@@ -19,8 +17,15 @@ object ClassPathMemoryConsumptionTester {
       "Determine how many times classpath should be loaded", 10, Some((1, 10000)), (_: String) => None)
   }
 
-  def main(args: Array[String]): Unit = {
+  private class MainRetainsGlobal extends scala.tools.nsc.MainClass {
+    var retainedGlobal: Global = _
+    override def doCompile(compiler: Global) {
+      retainedGlobal = compiler
+      super.doCompile(compiler)
+    }
+  }
 
+  def main(args: Array[String]): Unit = {
     if (args contains "-help") usage()
     else doTest(args)
   }
@@ -28,10 +33,14 @@ object ClassPathMemoryConsumptionTester {
   private def doTest(args: Array[String]) = {
     val settings = loadSettings(args.toList)
 
+    val mains = (1 to settings.requiredInstances.value) map (_ => new MainRetainsGlobal)
+
+    val baseArgs = argsWithoutRequiredInstances(args)
+
     println(s"Loading classpath ${settings.requiredInstances.value} times")
     val startTime = System.currentTimeMillis()
 
-    val tmp = (1 to settings.requiredInstances.value) map (i => PathResolverFactory.create(settings).result)
+    mains map (_.process(baseArgs))
 
     val elapsed = System.currentTimeMillis() - startTime
     println(s"Operation finished - elapsed $elapsed ms")
@@ -40,8 +49,6 @@ object ClassPathMemoryConsumptionTester {
     var textFromStdIn = ""
     while (textFromStdIn.toLowerCase != "exit")
       textFromStdIn = readLine("Type 'exit' to close application: ")
-
-    tmp // just to skip warning about unused variable
   }
 
   /**
@@ -55,9 +62,15 @@ object ClassPathMemoryConsumptionTester {
 
   private def loadSettings(args: List[String]) = {
     val settings = new TestSettings()
-    settings.processArguments(args, true)
+    settings.processArguments(args, processAll = true)
     if (settings.classpath.isDefault)
       settings.classpath.value = sys.props("java.class.path")
     settings
+  }
+
+  private def argsWithoutRequiredInstances(args: Array[String]) = {
+    val instancesIndex = args.indexOf("-requiredInstances")
+    if (instancesIndex == -1) args
+    else args.dropRight(args.length - instancesIndex) ++ args.drop(instancesIndex + 2)
   }
 }

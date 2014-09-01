@@ -24,7 +24,6 @@ import FileUtils.endsClass
 import FileUtils.endsJava
 import FileUtils.endsScala
 import FileUtils.stripClassExtension
-import FileUtils.stripJavaExtension
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
