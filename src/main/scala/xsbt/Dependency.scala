@@ -102,6 +102,16 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
   }
 
   private class ExtractDependenciesByMemberRefTraverser extends ExtractDependenciesTraverser {
+
+    /*
+     * Some macros appear to contain themselves as original tree.
+     * We must check that we don't inspect the same tree over and over.
+     * See https://issues.scala-lang.org/browse/SI-8486
+     *     https://github.com/sbt/sbt/issues/1237
+     *     https://github.com/sbt/sbt/issues/1544
+     */
+    private val inspectedOriginalTrees = collection.mutable.Set.empty[Tree]
+
     override def traverse(tree: Tree): Unit = {
       tree match {
         case Import(expr, selectors) =>
@@ -118,13 +128,13 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
         case select: Select =>
           addDependency(select.symbol)
         /*
-				 * Idents are used in number of situations:
-				 *  - to refer to local variable
-				 *  - to refer to a top-level package (other packages are nested selections)
-				 *  - to refer to a term defined in the same package as an enclosing class;
-				 *    this looks fishy, see this thread:
-				 *    https://groups.google.com/d/topic/scala-internals/Ms9WUAtokLo/discussion
-				 */
+         * Idents are used in number of situations:
+         *  - to refer to local variable
+         *  - to refer to a top-level package (other packages are nested selections)
+         *  - to refer to a term defined in the same package as an enclosing class;
+         *    this looks fishy, see this thread:
+         *    https://groups.google.com/d/topic/scala-internals/Ms9WUAtokLo/discussion
+         */
         case ident: Ident =>
           addDependency(ident.symbol)
         case typeTree: TypeTree =>
@@ -136,13 +146,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
           deps.foreach(addDependency)
         case Template(parents, self, body) =>
           traverseTrees(body)
-        /*
-				 * Some macros appear to contain themselves as original tree
-				 * In this case, we don't need to inspect the original tree because
-				 * we already inspected its expansion, which is equal.
-				 * See https://issues.scala-lang.org/browse/SI-8486
-				 */
-        case MacroExpansionOf(original) if original != tree =>
+        case MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
           this.traverse(original)
         case other => ()
       }
