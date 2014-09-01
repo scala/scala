@@ -116,7 +116,7 @@ trait MemberHandlers {
           else any2stringOf(path, maxStringElements)
 
         val vidString =
-          if (replProps.vids) s"""" + " @ " + "%%8x".format(System.identityHashCode($path)) + " """.trim
+          if (replProps.vids) s"""" + f"@$${System.identityHashCode($path)}%8x" + """"
           else ""
 
         """ + "%s%s: %s = " + %s""".format(string2code(prettyName), vidString, string2code(req typeOf name), resultString)
