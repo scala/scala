@@ -32,14 +32,17 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       def warn(pos: Position, msg: String) =
         if (option) reporter.warning(pos, msg)
         else if (!(warnings contains pos)) warnings += ((pos, msg))
-      def summarize() =
-        if (warnings.nonEmpty && (option.isDefault || settings.fatalWarnings)) {
+      def summarize() = {
+        def turnedOff = option.isSetByUser && !option
+        def moreInfos = option.isDefault || settings.fatalWarnings
+        if (warnings.nonEmpty && !turnedOff && moreInfos) {
           val numWarnings  = warnings.size
           val warningVerb  = if (numWarnings == 1) "was" else "were"
           val warningCount = countElementsAsString(numWarnings, s"$what warning")
 
           reporter.warning(NoPosition, s"there $warningVerb $warningCount; re-run with ${option.name} for details")
         }
+      }
     }
 
     // This change broke sbt; I gave it the thrilling name of uncheckedWarnings0 so
