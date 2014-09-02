@@ -13,4 +13,4 @@ bar2: (c: scala.reflect.macros.whitebox.Context)Nothing
 scala> def foo2 = macro bar2
 defined term macro foo2: Nothing
 
-scala> 
+scala> :quit

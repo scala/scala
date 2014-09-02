@@ -13,4 +13,4 @@ res2: List[scala.collection.immutable.List.type] = List()
 scala> List[Set.type]()
 res3: List[Set.type] = List()
 
-scala> 
+scala> :quit

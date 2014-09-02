@@ -44,4 +44,4 @@ bar
 tp.typeParams.isEmpty: true
 throws[test.PolymorphicException[_]](classOf[test.PolymorphicException])
 
-scala> 
+scala> :quit

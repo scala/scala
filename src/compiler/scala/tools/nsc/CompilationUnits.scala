@@ -135,11 +135,8 @@ trait CompilationUnits { global: Global =>
     @deprecated("Call global.currentRun.reporting.uncheckedWarning directly instead.", "2.11.2")
     final def uncheckedWarning(pos: Position, msg: String): Unit   = currentRun.reporting.uncheckedWarning(pos, msg)
 
-    // called by ScalaDocAnalyzer, overridden by the IDE (in Reporter)
-    // TODO: don't use reporter to communicate comments from parser to IDE!
-    @deprecated("This method will be removed.", "2.11.2")
-    final def comment(pos: Position, msg: String): Unit = reporter.comment(pos, msg)
-
+    @deprecated("This method will be removed. It does nothing.", "2.11.2")
+    final def comment(pos: Position, msg: String): Unit = {}
 
     /** Is this about a .java source file? */
     lazy val isJava = source.file.name.endsWith(".java")

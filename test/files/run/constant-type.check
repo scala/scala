@@ -23,4 +23,4 @@ Class[String](classOf[java.lang.String])
 scala> { ConstantType(Constant(s)); exitingPhase(currentRun.erasurePhase)(println(ConstantType(Constant(s)))); }
 Class(classOf[java.lang.String])
 
-scala> 
+scala> :quit

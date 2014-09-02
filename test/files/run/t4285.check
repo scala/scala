@@ -10,4 +10,4 @@ y: scala.collection.mutable.WrappedArray[Int] = WrappedArray(2, 4, 6, 8, 10, 12,
 scala> println(y.sum)
 56
 
-scala> 
+scala> :quit

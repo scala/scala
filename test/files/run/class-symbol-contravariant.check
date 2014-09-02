@@ -33,4 +33,4 @@ res2: Boolean = true
 scala> sym.isContravariant // was true
 res3: Boolean = false
 
-scala> 
+scala> :quit

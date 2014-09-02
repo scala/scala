@@ -12,4 +12,4 @@ scala> val f = new Foo
                    ^
 f: Foo = Bippy
 
-scala> 
+scala> :quit

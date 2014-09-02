@@ -71,13 +71,10 @@ trait Implicits {
       typingStack.printTyping(tree, "typing implicit: %s %s".format(tree, context.undetparamsString))
     val implicitSearchContext = context.makeImplicit(reportAmbiguous)
     val result = new ImplicitSearch(tree, pt, isView, implicitSearchContext, pos).bestImplicit
-    if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.hasErrors) {
-      context.updateBuffer(implicitSearchContext.reportBuffer.errors.collect {
-        case dte: DivergentImplicitTypeError => dte
-        case ate: AmbiguousImplicitTypeError => ate
-      })
-      debuglog("update buffer: " + implicitSearchContext.reportBuffer.errors)
-    }
+
+    if (result.isFailure && saveAmbiguousDivergent && implicitSearchContext.reporter.hasErrors)
+      implicitSearchContext.reporter.propagateImplicitTypeErrorsTo(context.reporter)
+
     // SI-7944 undetermined type parameters that result from inference within typedImplicit land in
     //         `implicitSearchContext.undetparams`, *not* in `context.undetparams`
     //         Here, we copy them up to parent context (analogously to the way the errors are copied above),
@@ -99,7 +96,7 @@ trait Implicits {
     def wrapper(inference: => SearchResult) = wrapper1(inference)
     val result = wrapper(inferImplicit(tree, pt, reportAmbiguous = true, isView = isView, context = context, saveAmbiguousDivergent = !silent, pos = pos))
     if (result.isFailure && !silent) {
-      val err = context.firstError
+      val err = context.reporter.firstError
       val errPos = err.map(_.errPos).getOrElse(pos)
       val errMsg = err.map(_.errMsg).getOrElse("implicit search has failed. to find out the reason, turn on -Xlog-implicits")
       onError(errPos, errMsg)
@@ -635,7 +632,7 @@ trait Implicits {
             }
           case _ => fallback
         }
-        context.firstError match { // using match rather than foreach to avoid non local return.
+        context.reporter.firstError match { // using match rather than foreach to avoid non local return.
           case Some(err) =>
             log("implicit adapt failed: " + err.errMsg)
             return fail(err.errMsg)
@@ -658,8 +655,8 @@ trait Implicits {
           }
         }
 
-        if (context.hasErrors)
-          fail("hasMatchingSymbol reported error: " + context.firstError.get.errMsg)
+        if (context.reporter.hasErrors)
+          fail("hasMatchingSymbol reported error: " + context.reporter.firstError.get.errMsg)
         else if (itree3.isErroneous)
           fail("error typechecking implicit candidate")
         else if (isLocalToCallsite && !hasMatchingSymbol(itree2))
@@ -677,7 +674,7 @@ trait Implicits {
 
             // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
             checkBounds(itree3, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
-            context.firstError match {
+            context.reporter.firstError match {
               case Some(err) =>
                 return fail("type parameters weren't correctly instantiated outside of the implicit tree: " + err.errMsg)
               case None      =>
@@ -716,7 +713,7 @@ trait Implicits {
               case t                              => t
             }
 
-            context.firstError match {
+            context.reporter.firstError match {
               case Some(err) =>
                 fail("typing TypeApply reported errors for the implicit tree: " + err.errMsg)
               case None      =>
@@ -857,13 +854,11 @@ trait Implicits {
             SearchFailure
           } else {
             if (search.isFailure) {
-              // We don't want errors that occur during checking implicit info
+              // Discard the divergentError we saved (if any), as well as all errors that are not of type DivergentImplicitTypeError
+              // We don't want errors that occur while checking the implicit info
               // to influence the check of further infos, but we should retain divergent implicit errors
               // (except for the one we already squirreled away)
-              val saved = divergentError.getOrElse(null)
-              context.reportBuffer.retainErrors {
-                case err: DivergentImplicitTypeError => err ne saved
-              }
+              context.reporter.retainDivergentErrorsExcept(divergentError.getOrElse(null))
             }
             search
           }
@@ -909,7 +904,7 @@ trait Implicits {
           // the first `DivergentImplicitTypeError` that is being propagated
           // from a nested implicit search; this one will be
           // re-issued if this level of the search fails.
-          DivergentImplicitRecovery(typedFirstPending, firstPending, context.errors) match {
+          DivergentImplicitRecovery(typedFirstPending, firstPending, context.reporter.errors) match {
             case sr if sr.isDivergent => Nil
             case sr if sr.isFailure   => rankImplicits(otherPending, acc)
             case newBest              =>
@@ -1146,7 +1141,7 @@ trait Implicits {
 
         try {
           val tree1 = typedPos(pos.focus)(arg)
-          context.firstError match {
+          context.reporter.firstError match {
             case Some(err) => processMacroExpansionError(err.errPos, err.errMsg)
             case None      => new SearchResult(tree1, EmptyTreeTypeSubstituter, Nil)
           }
@@ -1278,19 +1273,20 @@ trait Implicits {
         if (tagInScope.isEmpty) mot(tp, Nil, Nil)
         else {
           if (ReflectRuntimeUniverse == NoSymbol) {
-            // todo. write a test for this
-            context.error(pos,
+            // TODO: write a test for this (the next error message is already checked by neg/interop_typetags_without_classtags_arenot_manifests.scala)
+            // TODO: this was using context.error, and implicit search always runs in silent mode, thus it was actually throwing a TypeError
+            // with the new strategy-based reporting, a BufferingReporter buffers instead of throwing
+            // it would be good to rework this logic to fit into the regular context.error mechanism
+            throw new TypeError(pos,
               sm"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
                   |however typetag -> manifest conversion requires Scala reflection, which is not present on the classpath.
                   |to proceed put scala-reflect.jar on your compilation classpath and recompile.""")
-            return SearchFailure
           }
           if (resolveClassTag(pos, tp, allowMaterialization = true) == EmptyTree) {
-            context.error(pos,
+            throw new TypeError(pos,
               sm"""to create a manifest here, it is necessary to interoperate with the type tag `$tagInScope` in scope.
                   |however typetag -> manifest conversion requires a class tag for the corresponding type to be present.
                   |to proceed add a class tag to the type `$tp` (e.g. by introducing a context bound) and recompile.""")
-            return SearchFailure
           }
           val cm = typed(Ident(ReflectRuntimeCurrentMirror))
           val internal = gen.mkAttributedSelect(gen.mkAttributedRef(ReflectRuntimeUniverse), UniverseInternal)
@@ -1346,52 +1342,66 @@ trait Implicits {
      *  If all fails return SearchFailure
      */
     def bestImplicit: SearchResult = {
-      val failstart = if (Statistics.canEnable) Statistics.startTimer(inscopeFailNanos) else null
-      val succstart = if (Statistics.canEnable) Statistics.startTimer(inscopeSucceedNanos) else null
+      val stats = Statistics.canEnable
+      val failstart = if (stats) Statistics.startTimer(inscopeFailNanos) else null
+      val succstart = if (stats) Statistics.startTimer(inscopeSucceedNanos) else null
 
       var result = searchImplicit(context.implicitss, isLocalToCallsite = true)
 
-      if (result.isFailure) {
-        if (Statistics.canEnable) Statistics.stopTimer(inscopeFailNanos, failstart)
-      } else {
-        if (Statistics.canEnable) Statistics.stopTimer(inscopeSucceedNanos, succstart)
-        if (Statistics.canEnable) Statistics.incCounter(inscopeImplicitHits)
+      if (stats) {
+        if (result.isFailure) Statistics.stopTimer(inscopeFailNanos, failstart)
+        else {
+          Statistics.stopTimer(inscopeSucceedNanos, succstart)
+          Statistics.incCounter(inscopeImplicitHits)
+        }
       }
-      if (result.isFailure) {
-        val previousErrs = context.flushAndReturnBuffer()
-        val failstart = if (Statistics.canEnable) Statistics.startTimer(oftypeFailNanos) else null
-        val succstart = if (Statistics.canEnable) Statistics.startTimer(oftypeSucceedNanos) else null
 
-        val wasAmbigious = result.isAmbiguousFailure // SI-6667, never search companions after an ambiguous error in in-scope implicits
+      if (result.isFailure) {
+        val failstart = if (stats) Statistics.startTimer(oftypeFailNanos) else null
+        val succstart = if (stats) Statistics.startTimer(oftypeSucceedNanos) else null
+
+        // SI-6667, never search companions after an ambiguous error in in-scope implicits
+        val wasAmbigious = result.isAmbiguousFailure
+
+        // TODO: encapsulate
+        val previousErrs = context.reporter.errors
+        context.reporter.clearAllErrors()
+
         result = materializeImplicit(pt)
+
         // `materializeImplicit` does some preprocessing for `pt`
         // is it only meant for manifests/tags or we need to do the same for `implicitsOfExpectedType`?
         if (result.isFailure && !wasAmbigious)
           result = searchImplicit(implicitsOfExpectedType, isLocalToCallsite = false)
 
-        if (result.isFailure) {
-          context.updateBuffer(previousErrs)
-          if (Statistics.canEnable) Statistics.stopTimer(oftypeFailNanos, failstart)
-        } else {
-          if (Statistics.canEnable) Statistics.stopTimer(oftypeSucceedNanos, succstart)
-          if (Statistics.canEnable) Statistics.incCounter(oftypeImplicitHits)
+        if (result.isFailure)
+          context.reporter ++= previousErrs
+
+        if (stats) {
+          if (result.isFailure) Statistics.stopTimer(oftypeFailNanos, failstart)
+          else {
+            Statistics.stopTimer(oftypeSucceedNanos, succstart)
+            Statistics.incCounter(oftypeImplicitHits)
+          }
         }
       }
       if (result.isSuccess && isView) {
         def maybeInvalidConversionError(msg: String) {
           // We have to check context.ambiguousErrors even though we are calling "issueAmbiguousError"
           // which ostensibly does exactly that before issuing the error. Why? I have no idea. Test is pos/t7690.
+          // AM: I would guess it's because ambiguous errors will be buffered in silent mode if they are not reported
           if (context.ambiguousErrors)
             context.issueAmbiguousError(AmbiguousImplicitTypeError(tree, msg))
         }
         pt match {
           case Function1(_, out) =>
-            def prohibit(sym: Symbol) = if (sym.tpe <:< out) {
-               maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than ${sym.name}")
-              result = SearchFailure
+            // must inline to avoid capturing result
+            def prohibit(sym: Symbol) = (sym.tpe <:< out) && {
+              maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than ${sym.name}")
+              true
             }
-            prohibit(AnyRefClass)
-            if (settings.isScala211) prohibit(AnyValClass)
+            if (prohibit(AnyRefClass) || (settings.isScala211 && prohibit(AnyValClass)))
+              result = SearchFailure
           case _                 => false
         }
         if (settings.isScala211 && isInvalidConversionSource(pt)) {
@@ -1399,8 +1409,9 @@ trait Implicits {
           result = SearchFailure
         }
       }
-      if (result.isFailure)
-        debuglog("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+implicitsOfExpectedType)
+
+      if (result.isFailure && settings.debug) // debuglog is not inlined for some reason
+        log("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+implicitsOfExpectedType)
 
       result
     }
@@ -1422,20 +1433,19 @@ trait Implicits {
         val eligible = new ImplicitComputation(iss, isLocalToCallsite).eligible
         eligible.toList.flatMap {
           (ii: ImplicitInfo) =>
-        // each ImplicitInfo contributes a distinct set of constraints (generated indirectly by typedImplicit)
-        // thus, start each type var off with a fresh for every typedImplicit
-        resetTVars()
-        // any previous errors should not affect us now
-        context.flushBuffer()
-
-            val res = typedImplicit(ii, ptChecked = false, isLocalToCallsite)
-        if (res.tree ne EmptyTree) List((res, tvars map (_.constr)))
-        else Nil
+          // each ImplicitInfo contributes a distinct set of constraints (generated indirectly by typedImplicit)
+          // thus, start each type var off with a fresh for every typedImplicit
+          resetTVars()
+          // any previous errors should not affect us now
+          context.reporter.clearAllErrors()
+          val res = typedImplicit(ii, ptChecked = false, isLocalToCallsite)
+          if (res.tree ne EmptyTree) List((res, tvars map (_.constr)))
+          else Nil
+        }
       }
-    }
       eligibleInfos(context.implicitss, isLocalToCallsite = true) ++
       eligibleInfos(implicitsOfExpectedType, isLocalToCallsite = false)
-  }
+    }
   }
 
   object ImplicitNotFoundMsg {

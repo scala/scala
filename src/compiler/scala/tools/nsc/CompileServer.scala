@@ -152,6 +152,7 @@ class StandardCompileServer extends SocketServer {
           clearCompiler()
         case ex: Throwable =>
           warn("Compile server encountered fatal condition: " + ex)
+          reporter.error(null, "Compile server encountered fatal condition: " + ex.getMessage)
           shutdown = true
           throw ex
       }

@@ -13,4 +13,4 @@ m2: M[Float] = mmm
 scala> val m3 = new M[String]()
 m3: M[String] = mmm
 
-scala> 
+scala> :quit

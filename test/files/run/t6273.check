@@ -12,4 +12,4 @@ x: String =
   y = 55
 "
 
-scala> 
+scala> :quit

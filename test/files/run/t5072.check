@@ -7,4 +7,4 @@ defined class C
 scala> Thread.currentThread.getContextClassLoader.loadClass(classOf[C].getName)
 res0: Class[_] = class C
 
-scala> 
+scala> :quit

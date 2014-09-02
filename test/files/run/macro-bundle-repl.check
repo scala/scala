@@ -21,4 +21,4 @@ defined term macro foo: Unit
 
 scala> foo
 
-scala> 
+scala> :quit

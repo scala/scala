@@ -23,4 +23,4 @@ and import x
               x
               ^
 
-scala> 
+scala> :quit

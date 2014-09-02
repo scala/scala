@@ -283,4 +283,4 @@ object $read extends $read {
 }
 res3: List[Product with Serializable] = List(BippyBups(), PuppyPups(), Bingo())
 
-scala> 
+scala> :quit

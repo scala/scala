@@ -8,4 +8,4 @@ import g.abort
 scala> class C(val a: Any) extends AnyVal
 defined class C
 
-scala> 
+scala> :quit

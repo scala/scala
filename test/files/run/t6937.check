@@ -19,4 +19,4 @@ apiru: scala.reflect.api.Universe = <lazy>
 scala>     apiru.typeTag[A].in(cm)
 res0: reflect.runtime.universe.TypeTag[A] = TypeTag[A]
 
-scala> 
+scala> :quit

@@ -30,4 +30,4 @@ scala>
 scala> mm(new A)
 res0: Any = 1
 
-scala> 
+scala> :quit

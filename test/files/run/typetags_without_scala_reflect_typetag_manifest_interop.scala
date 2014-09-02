@@ -40,8 +40,8 @@ object Test extends StoreReporterDirectTest {
     println(filteredInfos.mkString("\n"))
     storeReporter.infos.clear()
     compileApp();
-    // we should get bad symbolic reference errors, because we're trying to use an implicit that can't be unpickled
+    // we should get "missing or invalid dependency detected" errors, because we're trying to use an implicit that can't be unpickled
     // but we don't know the number of these errors and their order, so I just ignore them all
-    println(filteredInfos.filterNot (_.msg.contains("bad symbolic reference")).mkString("\n"))
+    println(filteredInfos.filterNot (_.msg.contains("missing or invalid dependency detected")).mkString("\n"))
   }
 }

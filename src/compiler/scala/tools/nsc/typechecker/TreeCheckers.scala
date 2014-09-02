@@ -208,8 +208,7 @@ abstract class TreeCheckers extends Analyzer {
   }
   def check(unit: CompilationUnit) {
     informProgress("checking "+unit)
-    val context = rootContext(unit)
-    context.checking = true
+    val context = rootContext(unit, checking = true)
     tpeOfTree.clear()
     SymbolTracker.check(phase, unit)
     val checker = new TreeChecker(context)

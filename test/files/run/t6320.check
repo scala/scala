@@ -10,4 +10,4 @@ defined class Dyn
 scala> new Dyn(Map("foo" -> 10)).foo[Int]
 res0: Int = 10
 
-scala> 
+scala> :quit

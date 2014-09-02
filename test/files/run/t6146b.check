@@ -60,4 +60,4 @@ res2: u.Type = O.S3
 scala> memType(S4, fTpe)
 res3: u.Type = S4
 
-scala> 
+scala> :quit

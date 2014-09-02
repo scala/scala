@@ -558,6 +558,7 @@ TODO:
       <echo message="scala-swing.version.number                 = ${scala-swing.version.number}"/>
       <echo message="akka-actor.version.number                  = ${akka-actor.version.number}"/>
       <echo message="actors-migration.version.number            = ${actors-migration.version.number}"/>
+      <echo message="jline.version                              = ${jline.version}"/>
       <echo message="partest.version.number                     = ${partest.version.number}"/>
       <echo message="scalacheck.version.number                  = ${scalacheck.version.number}"/>
 
@@ -572,6 +573,7 @@ TODO:
         <entry key="scala-swing.version.number"                 value="${scala-swing.version.number}"/>
         <entry key="akka-actor.version.number"                  value="${akka-actor.version.number}"/>
         <entry key="actors-migration.version.number"            value="${actors-migration.version.number}"/>
+        <entry key="jline.version"                              value="${jline.version}"/>
         <entry key="partest.version.number"                     value="${partest.version.number}"/>
         <entry key="scalacheck.version.number"                  value="${scalacheck.version.number}"/>
       </propertyfile>
@@ -1438,9 +1440,13 @@ TODO:
     <stopwatch name="test.junit.timer"/>
     <mkdir dir="${test.junit.classes}"/>
     <echo message="Note: details of failed tests will be output to ${build-junit.dir}"/>
+
+    <if><isset property="test.method" /><then><property name="test.methods" value="${test.method}" /></then></if>
     <junit fork="yes" haltonfailure="yes" printsummary="on">
       <classpath refid="test.junit.compiler.build.path"/>
-      <batchtest fork="yes" todir="${build-junit.dir}">
+      <test fork="yes" todir="${build-junit.dir}" if="test.class" unless="test.methods" name="${test.class}" />
+      <test fork="yes" todir="${build-junit.dir}" if="test.methods" name="${test.class}" methods="${test.methods}" />
+      <batchtest fork="yes" todir="${build-junit.dir}" unless="test.class">
         <fileset dir="${test.junit.classes}">
           <include name="**/*Test.class"/>
         </fileset>
