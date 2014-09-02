@@ -95,7 +95,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       claszSymbol       = cd.symbol
       isCZParcelable    = isAndroidParcelableClass(claszSymbol)
-      isCZStaticModule  = isStaticModule(claszSymbol)
+      isCZStaticModule  = isStaticModuleClass(claszSymbol)
       isCZRemote        = isRemote(claszSymbol)
       thisName          = internalName(claszSymbol)
 

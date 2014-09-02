@@ -11,5 +11,6 @@ public class JavaClass {
 	va.vi(1, 2, 3, 4);
         varargz(5, 1.0, 2.0, 3.0);
 	va.vt(16, "", "", "");
+	System.out.println(va.vt1(16, "a", "b", "c"));
     }
 }

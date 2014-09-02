@@ -1,1 +1,1 @@
--Xfatal-warnings -Ywarn-infer-any
+-Xfatal-warnings -Xlint:infer-any

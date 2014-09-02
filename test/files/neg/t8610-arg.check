@@ -1,0 +1,6 @@
+t8610-arg.scala:8: warning: side-effecting nullary methods are discouraged: suggest defining as `def u()` instead
+  def u: Unit = ()      // unitarian universalist
+      ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

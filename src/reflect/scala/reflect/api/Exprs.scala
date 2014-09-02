@@ -9,6 +9,7 @@ package api
 
 import scala.reflect.runtime.{universe => ru}
 import scala.annotation.compileTimeOnly
+import java.io.ObjectStreamException
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
@@ -157,23 +158,23 @@ trait Exprs { self: Universe =>
       |if you want to get a value of the underlying expression, add scala-compiler.jar to the classpath,
       |import `scala.tools.reflect.Eval` and call `<your expr>.eval` instead.""".trim.stripMargin)
 
+    @throws(classOf[ObjectStreamException])
     private def writeReplace(): AnyRef = new SerializedExpr(treec, implicitly[WeakTypeTag[T]].in(ru.rootMirror))
   }
 }
 
+@SerialVersionUID(1L)
 private[scala] class SerializedExpr(var treec: TreeCreator, var tag: ru.WeakTypeTag[_]) extends Serializable {
-  private def writeObject(out: java.io.ObjectOutputStream): Unit = {
-    out.writeObject(treec)
-    out.writeObject(tag)
-  }
+  import scala.reflect.runtime.universe.{Expr, runtimeMirror}
 
-  private def readObject(in: java.io.ObjectInputStream): Unit = {
-    treec = in.readObject().asInstanceOf[TreeCreator]
-    tag = in.readObject().asInstanceOf[ru.WeakTypeTag[_]]
-  }
-
+  @throws(classOf[ObjectStreamException])
   private def readResolve(): AnyRef = {
-    import ru._
-    Expr(rootMirror, treec)(tag)
+    val loader: ClassLoader = try {
+      Thread.currentThread().getContextClassLoader()
+    } catch {
+      case se: SecurityException => null
+    }
+    val m = runtimeMirror(loader)
+    Expr(m, treec)(tag.in(m))
   }
 }

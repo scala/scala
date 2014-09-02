@@ -3248,25 +3248,25 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
            * to that. This is the last thing which is tried (after
            * default arguments)
            */
-          def tryTupleApply: Tree = (
+          def tryTupleApply: Tree = {
             if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
               val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
               val savedUndetparams = context.undetparams
               silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)) map { t =>
-                  // Depending on user options, may warn or error here if
-                  // a Unit or tuple was inserted.
-                  val keepTree = (
-                       !mode.typingExprNotFun
-                    || t.symbol == null
-                    || checkValidAdaptation(t, args)
-                  )
-                  if (keepTree) t else EmptyTree
+                // Depending on user options, may warn or error here if
+                // a Unit or tuple was inserted.
+                val keepTree = (
+                     !mode.typingExprNotFun // why? introduced in 4e488a60, doc welcome
+                  || t.symbol == null       // ditto
+                  || checkValidAdaptation(t, args)
+                )
+                if (keepTree) t else EmptyTree
               } orElse { _ => context.undetparams = savedUndetparams ; EmptyTree }
             }
             else EmptyTree
-          )
+          }
 
           /* Treats an application which uses named or default arguments.
            * Also works if names + a vararg used: when names are used, the vararg
@@ -5099,7 +5099,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def isPlausible(m: Symbol) = m.alternatives exists (m => requiresNoArgs(m.info))
 
         def maybeWarn(s: String): Unit = {
-          def warn(message: String)         = context.warning(lit.pos, s"$message Did you forget the interpolator?")
+          def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
           def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
           def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
           def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(s drop 1))
@@ -5107,9 +5107,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // heuristics - no warning on e.g. a string with only "$asInstanceOf"
           if (s contains ' ') (
             if (suspiciousExpr.nonEmpty)
-              warn("That looks like an interpolated expression!") // "${...}"
+              warn("detected an interpolated expression") // "${...}"
             else
-              suspiciousIdents find isPlausible foreach (sym => warn(s"`$$${sym.name}` looks like an interpolated identifier!")) // "$id"
+              suspiciousIdents find isPlausible foreach (sym => warn(s"detected interpolated identifier `$$${sym.name}`")) // "$id"
           )
         }
         lit match {
@@ -5119,7 +5119,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedLiteral(tree: Literal) = {
-        if (settings.lint) warnMissingInterpolator(tree)
+        if (settings.warnMissingInterpolator) warnMissingInterpolator(tree)
 
         tree setType (if (tree.value.tag == UnitTag) UnitTpe else ConstantType(tree.value))
       }

@@ -44,8 +44,11 @@ trait ScalaSettings extends AbsScalaSettings
   /** If any of these settings is enabled, the compiler should print a message and exit.  */
   def infoSettings = List[Setting](version, help, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph)
 
+  /** Any -multichoice:help? Nicer if any option could report that it had help to offer. */
+  private def multihelp = allSettings exists { case s: MultiChoiceSetting => s.isHelping case _ => false }
+
   /** Is an info setting set? */
-  def isInfo = infoSettings exists (_.isSetByUser)
+  def isInfo = (infoSettings exists (_.isSetByUser)) || multihelp
 
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
@@ -67,8 +70,27 @@ trait ScalaSettings extends AbsScalaSettings
   // Would be nice to build this dynamically from scala.languageFeature.
   // The two requirements: delay error checking until you have symbols, and let compiler command build option-specific help.
   val language      = {
-    val features = List("dynamics", "postfixOps", "reflectiveCalls", "implicitConversions", "higherKinds", "existentials", "experimental.macros")
-    MultiChoiceSetting("-language", "feature", "Enable one or more language features", features)
+    val features = List(
+      "dynamics"            -> "Allow direct or indirect subclasses of scala.Dynamic",
+      "postfixOps"          -> "Allow postfix operator notation, such as `1 to 10 toList'",
+      "reflectiveCalls"     -> "Allow reflective access to members of structural types",
+      "implicitConversions" -> "Allow definition of implicit functions called views",
+      "higherKinds"         -> "Allow higher-kinded types",  // "Ask Adriaan, but if you have to ask..."
+      "existentials"        -> "Existential types (besides wildcard types) can be written and inferred",
+      "experimental.macros" -> "Allow macro defintion (besides implementation and application)"
+    )
+    val description = "Enable or disable language features"
+    MultiChoiceSetting(
+      name    = "-language",
+      helpArg = "feature",
+      descr   = description,
+      choices = features map (_._1)
+    ) { s =>
+      val helpline: ((String, String)) => String = {
+        case (name, text) => f"  $name%-25s $text%n"
+      }
+      features map helpline mkString (f"$description:%n", "", f"%n")
+    }
   }
 
   /*
@@ -185,7 +207,6 @@ trait ScalaSettings extends AbsScalaSettings
   val YmethodInfer    = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overriden methods.")
   val etaExpandKeepsStar = BooleanSetting ("-Yeta-expand-keeps-star", "Eta-expand varargs methods to T* rather than Seq[T].  This is a temporary option to ease transition.").withDeprecationMessage(removalIn212)
   val inferByName     = BooleanSetting    ("-Yinfer-by-name", "Allow inference of by-name types. This is a temporary option to ease transition. See SI-7899.").withDeprecationMessage(removalIn212)
-  val Yinvalidate     = StringSetting     ("-Yinvalidate", "classpath-entry", "Invalidate classpath entry before run", "")
   val YvirtClasses    = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
   val YdisableUnreachablePrevention = BooleanSetting("-Ydisable-unreachable-prevention", "Disable the prevention of unreachable blocks in code generation.")
   val YnoLoadImplClass = BooleanSetting   ("-Yno-load-impl-class", "Do not load $class.class files.")

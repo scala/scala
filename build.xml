@@ -187,8 +187,6 @@ TODO:
 
   <property name="copyright.string"        value="Copyright 2002-2013, LAMP/EPFL"/>
 
-  <property name="jline.version"           value="2.11"/>
-
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
   <property name="java.flags"              value="-Xmx256M -Xms32M"/>

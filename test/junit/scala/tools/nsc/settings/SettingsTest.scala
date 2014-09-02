@@ -26,7 +26,7 @@ class SettingsTest {
     assertThrows[IllegalArgumentException](check("-Ytest-setting:rubbish"))
   }
 
-  @Test def userSettingsHavePredecenceOverOptimize() {
+  @Test def userSettingsHavePrecedenceOverOptimize() {
     def check(args: String*): MutableSettings#BooleanSetting = {
       val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
       val (ok, residual) = s.processArguments(args.toList, processAll = true)
@@ -38,15 +38,23 @@ class SettingsTest {
     assertFalse(check("-Yinline:false", "-optimise").value)
   }
 
-  @Test def userSettingsHavePredecenceOverLint() {
-    def check(args: String*): MutableSettings#BooleanSetting = {
-      val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
-      val (ok, residual) = s.processArguments(args.toList, processAll = true)
-      assert(residual.isEmpty)
-      s.warnAdaptedArgs // among Xlint
-    }
-    assertTrue(check("-Xlint").value)
-    assertFalse(check("-Xlint", "-Ywarn-adapted-args:false").value)
-    assertFalse(check("-Ywarn-adapted-args:false", "-Xlint").value)
+  // for the given args, select the desired setting
+  private def check(args: String*)(b: MutableSettings => MutableSettings#BooleanSetting): MutableSettings#BooleanSetting = {
+    val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
+    val (ok, residual) = s.processArguments(args.toList, processAll = true)
+    assert(residual.isEmpty)
+    b(s)
+  }
+  @Test def userSettingsHavePrecedenceOverLint() {
+    assertTrue(check("-Xlint")(_.warnAdaptedArgs))
+    assertFalse(check("-Xlint", "-Ywarn-adapted-args:false")(_.warnAdaptedArgs))
+    assertFalse(check("-Ywarn-adapted-args:false", "-Xlint")(_.warnAdaptedArgs))
+  }
+
+  @Test def anonymousLintersCanBeNamed() {
+    assertTrue(check("-Xlint")(_.warnMissingInterpolator)) // among Xlint
+    assertFalse(check("-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
+    assertFalse(check("-Xlint:-missing-interpolator", "-Xlint")(_.warnMissingInterpolator))
+    assertFalse(check("-Xlint", "-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
   }
 }

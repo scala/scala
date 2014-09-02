@@ -381,6 +381,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
     case "jvm-1.5"     => asm.Opcodes.V1_5
     case "jvm-1.6"     => asm.Opcodes.V1_6
     case "jvm-1.7"     => asm.Opcodes.V1_7
+    case "jvm-1.8"     => asm.Opcodes.V1_8
   }
 
   private val majorVersion: Int = (classfileVersion & 0xFF)
@@ -636,6 +637,9 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
           innerSym.rawname + innerSym.moduleSuffix
 
       // add inner classes which might not have been referenced yet
+      // TODO @lry according to the spec, all nested classes should be added, also local and
+      // anonymous. This seems to add only member classes - or not? it's exitingErasure, so maybe
+      // local / anonymous classes have been lifted by lambdalift. are they in the "decls" though?
       exitingErasure {
         for (sym <- List(csym, csym.linkedClassOfClass); m <- sym.info.decls.map(innerClassSymbolFor) if m.isClass)
           innerClassBuffer += m

@@ -103,7 +103,15 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
       val components = global.phaseNames  // global.phaseDescriptors // one initializes
       s"Phase graph of ${components.size} components output to ${genPhaseGraph.value}*.dot."
     }
-    else                    ""
+    // would be nicer if we could ask all the options for their helpful messages
+    else {
+      val sb = new StringBuilder
+      allSettings foreach {
+        case s: MultiChoiceSetting if s.isHelping => sb append s.help
+        case _ =>
+      }
+      sb.toString
+    }
   }
 
   /**

@@ -165,7 +165,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
         // -------------- mirror class, if needed --------------
         val mirrorC =
-          if (isStaticModule(claszSymbol) && isTopLevelModule(claszSymbol)) {
+          if (isTopLevelModuleClass(claszSymbol)) {
             if (claszSymbol.companionClass == NoSymbol) {
               mirrorCodeGen.genMirrorClass(claszSymbol, cunit)
             } else {
@@ -271,7 +271,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
     override def run() {
 
       arrivalPos = 0 // just in case
-      scalaPrimitives.init
+      scalaPrimitives.init()
       initBCodeTypes()
 
       // initBytecodeWriter invokes fullName, thus we have to run it before the typer-dependent thread is activated.

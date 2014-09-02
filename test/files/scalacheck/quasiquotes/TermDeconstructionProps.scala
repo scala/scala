@@ -246,4 +246,11 @@ object TermDeconstructionProps extends QuasiquoteProperties("term deconstruction
     assert(f ≈ `new`)
     assert(argss.isEmpty)
   }
+
+  property("SI-8703 extract block with single expression") = test {
+    val q"{ $a }" = Block(Nil, q"1")
+    val Literal(Constant(1)) = a
+    val q"{ $b }" = q"2"
+    val Literal(Constant(2)) = b
+  }
 }

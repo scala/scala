@@ -69,7 +69,6 @@ abstract class UnCurry extends InfoTransform
     private val byNameArgs        = mutable.HashSet[Tree]()
     private val noApply           = mutable.HashSet[Tree]()
     private val newMembers        = mutable.Map[Symbol, mutable.Buffer[Tree]]()
-    private val repeatedParams    = mutable.Map[Symbol, List[ValDef]]()
 
     /** Add a new synthetic member for `currentOwner` */
     private def addNewMember(t: Tree): Unit =
@@ -428,7 +427,7 @@ abstract class UnCurry extends InfoTransform
               treeCopy.ValDef(p, p.mods, p.name, p.tpt, EmptyTree)
             })
 
-            if (dd.symbol hasAnnotation VarargsClass) saveRepeatedParams(dd)
+            if (dd.symbol hasAnnotation VarargsClass) validateVarargs(dd)
 
             withNeedLift(needLift = false) {
               if (dd.symbol.isClassConstructor) {
@@ -699,19 +698,12 @@ abstract class UnCurry extends InfoTransform
       }
     }
 
-
-    /* Analyzes repeated params if method is annotated as `varargs`.
-     * If the repeated params exist, it saves them into the `repeatedParams` map,
-     * which is used later.
-     */
-    private def saveRepeatedParams(dd: DefDef): Unit =
+    private def validateVarargs(dd: DefDef): Unit =
       if (dd.symbol.isConstructor)
         reporter.error(dd.symbol.pos, "A constructor cannot be annotated with a `varargs` annotation.")
-      else treeInfo.repeatedParams(dd) match {
-        case Nil  =>
-          reporter.error(dd.symbol.pos, "A method without repeated parameters cannot be annotated with the `varargs` annotation.")
-        case reps =>
-          repeatedParams(dd.symbol) = reps
+      else {
+        val hasRepeated = mexists(dd.symbol.paramss)(sym => definitions.isRepeatedParamType(sym.tpe))
+        if (!hasRepeated) reporter.error(dd.symbol.pos, "A method without repeated parameters cannot be annotated with the `varargs` annotation.")
       }
 
     /* Called during post transform, after the method argument lists have been flattened.
@@ -719,7 +711,7 @@ abstract class UnCurry extends InfoTransform
      * varargs forwarder.
      */
     private def addJavaVarargsForwarders(dd: DefDef, flatdd: DefDef): DefDef = {
-      if (!dd.symbol.hasAnnotation(VarargsClass) || !repeatedParams.contains(dd.symbol))
+      if (!dd.symbol.hasAnnotation(VarargsClass) || !enteringUncurry(mexists(dd.symbol.paramss)(sym => definitions.isRepeatedParamType(sym.tpe))))
         return flatdd
 
       def toArrayType(tp: Type): Type = {
@@ -735,19 +727,18 @@ abstract class UnCurry extends InfoTransform
         )
       }
 
-      val reps       = repeatedParams(dd.symbol)
-      val rpsymbols  = reps.map(_.symbol).toSet
       val theTyper   = typer.atOwner(dd, currentClass)
-      val flatparams = flatdd.vparamss.head
+      val flatparams = flatdd.symbol.paramss.head
+      val isRepeated = enteringUncurry(dd.symbol.info.paramss.flatten.map(sym => definitions.isRepeatedParamType(sym.tpe)))
 
       // create the type
-      val forwformals = flatparams map {
-        case p if rpsymbols(p.symbol) => toArrayType(p.symbol.tpe)
-        case p                        => p.symbol.tpe
+      val forwformals = map2(flatparams, isRepeated) {
+        case (p, true) => toArrayType(p.tpe)
+        case (p, false)=> p.tpe
       }
       val forwresult = dd.symbol.tpe_*.finalResultType
       val forwformsyms = map2(forwformals, flatparams)((tp, oldparam) =>
-        currentClass.newValueParameter(oldparam.name, oldparam.symbol.pos).setInfo(tp)
+        currentClass.newValueParameter(oldparam.name.toTermName, oldparam.pos).setInfo(tp)
       )
       def mono = MethodType(forwformsyms, forwresult)
       val forwtype = dd.symbol.tpe match {
@@ -761,13 +752,13 @@ abstract class UnCurry extends InfoTransform
 
       // create the tree
       val forwtree = theTyper.typedPos(dd.pos) {
-        val locals = map2(forwParams, flatparams) {
-          case (_, fp) if !rpsymbols(fp.symbol) => null
-          case (argsym, fp)                     =>
+        val locals = map3(forwParams, flatparams, isRepeated) {
+          case (_, fp, false)       => null
+          case (argsym, fp, true)   =>
             Block(Nil,
               gen.mkCast(
                 gen.mkWrapArray(Ident(argsym), elementType(ArrayClass, argsym.tpe)),
-                seqType(elementType(SeqClass, fp.symbol.tpe))
+                seqType(elementType(SeqClass, fp.tpe))
               )
             )
         }

@@ -21,8 +21,9 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   import global._
   import bTypes._
 
-  // when compiling the Scala library, some assertions don't hold (e.g., scala.Boolean has null superClass although it's not an interface)
-  val isCompilingStdLib = !(settings.sourcepath.isDefault)
+  // Used only for assertions. When compiling the Scala library, some assertions don't hold
+  // (e.g., scala.Boolean has null superClass although it's not an interface)
+  private val isCompilingStdLib = !(settings.sourcepath.isDefault)
 
   // special names
   var StringReference             : ClassBType = null
@@ -175,12 +176,21 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   // ------------------------------------------------
 
   /**
-   * TODO @lry should probably be a map form ClassBType to Tracked
+   * Type information for classBTypes.
+   *
+   * TODO rename Tracked
    */
-  val exemplars = new java.util.concurrent.ConcurrentHashMap[BType, Tracked]
+  val exemplars = new java.util.concurrent.ConcurrentHashMap[ClassBType, Tracked]
 
   /**
    * Maps class symbols to their corresponding `Tracked` instance.
+   *
+   * This map is only used during the first backend phase (Worker1) where ClassDef trees are
+   * transformed into ClassNode asm trees. In this phase, ClassBTypes and their Tracked are created
+   * and added to the `exemplars` map. The `symExemplars` map is only used to know if a symbol has
+   * already been visited.
+   *
+   * TODO move this map to the builder class. it's only used during building. can be gc'd with the builder.
    */
   val symExemplars = new java.util.concurrent.ConcurrentHashMap[Symbol, Tracked]
 
@@ -313,7 +323,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
   final def isDeprecated(sym: Symbol): Boolean = { sym.annotations exists (_ matches definitions.DeprecatedAttr) }
 
   /* must-single-thread */
-  final def hasInternalName(sym: Symbol) = { sym.isClass || (sym.isModule && !sym.isMethod) }
+  final def hasInternalName(sym: Symbol) = sym.isClass || sym.isModuleNotMethod
 
   /* must-single-thread */
   def getSuperInterfaces(csym: Symbol): List[Symbol] = {
@@ -617,19 +627,51 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     false
   }
 
-  /*
+  /**
    * must-single-thread
+   *
+   * True for module classes of package level objects. The backend will generate a mirror class for
+   * such objects.
    */
-  def isTopLevelModule(sym: Symbol): Boolean = {
-    exitingPickler { sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass }
+  def isTopLevelModuleClass(sym: Symbol): Boolean = exitingPickler {
+    // phase travel to pickler required for isNestedClass (looks at owner)
+    val r = sym.isModuleClass && !sym.isNestedClass
+    // The mixin phase adds the `lateMODULE` flag to trait implementation classes. Since the flag
+    // is late, it should not be visible here inside the time travel. We check this.
+    if (r) assert(!sym.isImplClass, s"isModuleClass should be false for impl class $sym")
+    r
   }
 
-  /*
+  /**
    * must-single-thread
+   *
+   * True for module classes of modules that are top-level or owned only by objects. Module classes
+   * for such objects will get a MODULE$ flag and a corresponding static initializer.
    */
-  def isStaticModule(sym: Symbol): Boolean = {
-    sym.isModuleClass && !sym.isImplClass && !sym.isLifted
+  def isStaticModuleClass(sym: Symbol): Boolean = {
+    /* The implementation of this method is tricky because it is a source-level property. Various
+     * phases changed the symbol's properties in the meantime.
+     *
+     * (1) Phase travel to to pickler is required to exclude implementation classes; they have the
+     * lateMODULEs after mixin, so isModuleClass would be true.
+     *
+     * (2) We cannot use `sym.isStatic` because lambdalift modified (destructively) the owner. For
+     * example, in
+     *   object T { def f { object U } }
+     * the owner of U is T, so UModuleClass.isStatic is true. Phase travel does not help here.
+     * So we basically re-implement `sym.isStaticOwner`, but using the original owner chain.
+     */
+
+    def isOriginallyStaticOwner(sym: Symbol): Boolean = {
+      sym.isPackageClass || sym.isModuleClass && isOriginallyStaticOwner(sym.originalOwner)
+    }
+
+    exitingPickler { // (1)
+      sym.isModuleClass &&
+      isOriginallyStaticOwner(sym.originalOwner) // (2)
+    }
   }
+
 
   // ---------------------------------------------------------------------
   // ---------------- InnerClasses attribute (JVMS 4.7.6) ----------------
@@ -702,6 +744,10 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     var x = ics
     while (x ne NoSymbol) {
       assert(x.isClass, s"not a class symbol: ${x.fullName}")
+      // Uses `rawowner` because `owner` reflects changes in the owner chain due to flattening.
+      // The owner chain of a class only contains classes. This is because the lambdalift phase
+      // changes the `rawowner` destructively to point to the enclosing class. Before, the owner
+      // might be for example a method.
       val isInner = !x.rawowner.isPackageClass
       if (isInner) {
         chain ::= x
@@ -729,7 +775,7 @@ abstract class BCodeTypes extends BCodeIdiomatic {
         null
       else {
         val outerName = innerSym.rawowner.javaBinaryName
-        if (isTopLevelModule(innerSym.rawowner)) nme.stripModuleSuffix(outerName)
+        if (isTopLevelModuleClass(innerSym.rawowner)) nme.stripModuleSuffix(outerName)
         else outerName
       }
     }
@@ -741,12 +787,23 @@ abstract class BCodeTypes extends BCodeIdiomatic {
         innerSym.rawname + innerSym.moduleSuffix
     }
 
-    val flagsWithFinal: Int = mkFlags(
+    // TODO @lry compare with table in spec: for example, deprecated should not be there it seems.
+    //   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.6-300-D.1-D.1
+    // including "deprecated" was added in the initial commit of GenASM, but it was never in GenJVM.
+    val flags: Int = mkFlags(
+      // TODO @lry adding "static" whenever the class is owned by a module seems wrong.
+      //   class C { object O { class I } }
+      // here, I is marked static in the InnerClass attribute. But the I constructor takes an outer instance.
+      // was added in 0469d41
+      // what should it be? check what would make sense for java reflection.
+      //  member of top-level object should be static? how about anonymous / local class that has
+      //    been lifted to a top-level object?
+      //  member that is only nested in objects should be static?
+      //  verify: will ICodeReader still work after that? the code was introduced because of icode reader.
       if (innerSym.rawowner.hasModuleFlag) asm.Opcodes.ACC_STATIC else 0,
       javaFlags(innerSym),
       if (isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
     ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
-    val flags = if (innerSym.isModuleClass) flagsWithFinal & ~asm.Opcodes.ACC_FINAL else flagsWithFinal // For SI-5676, object overriding.
 
     val jname = innerSym.javaBinaryName.toString // never null
     val oname = { // null when method-enclosed
@@ -794,14 +851,23 @@ abstract class BCodeTypes extends BCodeIdiomatic {
    * must-single-thread
    */
   def javaFlags(sym: Symbol): Int = {
-    // constructors of module classes should be private
-    // PP: why are they only being marked private at this stage and not earlier?
+    // constructors of module classes should be private. introduced in b06edbc, probably to prevent
+    // creating module instances from java. for nested modules, the constructor needs to be public
+    // since they are created by the outer class and stored in a field. a java client can create
+    // new instances via outerClassInstance.new InnerModuleClass$().
+    // TODO: do this early, mark the symbol private.
     val privateFlag =
-      sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModule(sym.owner))
+      sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModuleClass(sym.owner))
 
-    // Final: the only fields which can receive ACC_FINAL are eager vals.
-    // Neither vars nor lazy vals can, because:
+    // Symbols marked in source as `final` have the FINAL flag. (In the past, the flag was also
+    // added to modules and module classes, not anymore since 296b706).
+    // Note that the presence of the `FINAL` flag on a symbol does not correspond 1:1 to emitting
+    // ACC_FINAL in bytecode.
     //
+    // Top-level modules are marked ACC_FINAL in bytecode (even without the FINAL flag). Nested
+    // objects don't get the flag to allow overriding (under -Yoverride-objects, SI-5676).
+    //
+    // For fields, only eager val fields can receive ACC_FINAL. vars or lazy vals can't:
     // Source: http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.5.3
     // "Another problem is that the specification allows aggressive
     // optimization of final fields. Within a thread, it is permissible to
@@ -818,10 +884,9 @@ abstract class BCodeTypes extends BCodeIdiomatic {
     // we can exclude lateFINAL. Such symbols are eligible for inlining, but to
     // avoid breaking proxy software which depends on subclassing, we do not
     // emit ACC_FINAL.
-    // Nested objects won't receive ACC_FINAL in order to allow for their overriding.
 
     val finalFlag = (
-         (((sym.rawflags & symtab.Flags.FINAL) != 0) || isTopLevelModule(sym))
+         (((sym.rawflags & symtab.Flags.FINAL) != 0) || isTopLevelModuleClass(sym))
       && !sym.enclClass.isInterface
       && !sym.isClassConstructor
       && !sym.isMutable // lazy vals and vars both
@@ -845,6 +910,10 @@ abstract class BCodeTypes extends BCodeIdiomatic {
       if (sym.isVarargsMethod) ACC_VARARGS else 0,
       if (sym.hasFlag(symtab.Flags.SYNCHRONIZED)) ACC_SYNCHRONIZED else 0
     )
+    // TODO @lry should probably also check / add "deprectated"
+    // all call sites of "javaFlags" seem to check for deprecation rigth after.
+    // Exception: the call below in javaFieldFlags. However, the caller of javaFieldFlags then
+    // does the check.
   }
 
   /*
