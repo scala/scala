@@ -866,7 +866,7 @@ trait ReificationSupport { self: SymbolTable =>
 
     protected def mkCases(cases: List[Tree]): List[CaseDef] = cases.map {
       case c: CaseDef => c
-      case tree => throw new IllegalArgumentException("$tree is not valid representation of pattern match case")
+      case tree => throw new IllegalArgumentException(s"$tree is not valid representation of pattern match case")
     }
 
     object SyntacticPartialFunction extends SyntacticPartialFunctionExtractor {
