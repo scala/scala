@@ -97,7 +97,8 @@ case class DirectoryFlatClassPath(dir: File)
   override def classes(inPackage: String): Seq[ClassFileEntry] = files(inPackage)
 
   override def findClassFile(className: String): Option[AbstractFile] = {
-    val classFile = new File(dir, s"$className.class")
+    val relativePath = FileUtils.dirPath(className)
+    val classFile = new File(s"$dir/$relativePath.class")
     if (classFile.exists) {
       val wrappedClassFile = new scala.reflect.io.File(classFile)
       val abstractClassFile = new PlainFile(wrappedClassFile)

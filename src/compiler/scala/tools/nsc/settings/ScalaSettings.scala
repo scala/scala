@@ -187,7 +187,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YmethodInfer    = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overriden methods.")
   val etaExpandKeepsStar = BooleanSetting ("-Yeta-expand-keeps-star", "Eta-expand varargs methods to T* rather than Seq[T].  This is a temporary option to ease transition.").withDeprecationMessage(removalIn212)
   val inferByName     = BooleanSetting    ("-Yinfer-by-name", "Allow inference of by-name types. This is a temporary option to ease transition. See SI-7899.").withDeprecationMessage(removalIn212)
-  val YclasspathImpl  = ChoiceSetting     ("-YclasspathImpl", "implementation", "Choose classpath scanning", List(ClassPathImplementationType.Recursive, ClassPathImplementationType.Flat), ClassPathImplementationType.Recursive)
+  val YclasspathImpl  = ChoiceSetting     ("-YclasspathImpl", "implementation", "Choose classpath scanning", List(ClassPathImplementationType.Recursive, ClassPathImplementationType.Flat), ClassPathImplementationType.Flat)
   // TODO to test how global caches work together e.g. with closing unused presentation compilers in Scala IDE
   val YflatCpCaching  = BooleanSetting    ("-YflatCpCaching", "Use caches when flat classpath implementation is enabled")
 

@@ -9,7 +9,7 @@ package scala.tools.nsc
 package backend
 
 import io.AbstractFile
-import util.{ClassPath,MergedClassPath,DeltaClassPath}
+import util.ClassPath
 import scala.tools.util.PathResolver
 import scala.tools.nsc.classpath.FlatClassPath
 import scala.tools.nsc.classpath.DefaultFlatClassPathManager

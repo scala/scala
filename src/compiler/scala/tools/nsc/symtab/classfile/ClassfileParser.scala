@@ -1047,7 +1047,7 @@ abstract class ClassfileParser {
       // create a new class member for immediate inner classes
       if (entry.outerName == currentClass) {
         val file = classFileLookup.findClassFile(entry.externalName.toString) getOrElse {
-          throw new AssertionError(entry.externalName)
+          throw new AssertionError(s"Class file for ${entry.externalName} not found")
         }
         enterClassAndModule(entry, file)
       }
