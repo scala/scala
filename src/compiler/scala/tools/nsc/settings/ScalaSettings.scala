@@ -189,7 +189,7 @@ trait ScalaSettings extends AbsScalaSettings
   val inferByName     = BooleanSetting    ("-Yinfer-by-name", "Allow inference of by-name types. This is a temporary option to ease transition. See SI-7899.").withDeprecationMessage(removalIn212)
   val YclasspathImpl  = ChoiceSetting     ("-YclasspathImpl", "implementation", "Choose classpath scanning", List(ClassPathImplementationType.Recursive, ClassPathImplementationType.Flat), ClassPathImplementationType.Flat)
   // TODO to test how global caches work together e.g. with closing unused presentation compilers in Scala IDE
-  val YflatCpCaching  = BooleanSetting    ("-YflatCpCaching", "Use caches when flat classpath implementation is enabled")
+  val YdisableFlatCpCaching  = BooleanSetting    ("-YdisableFlatCpCaching", "Don't use caches when flat classpath implementation is enabled")
 
   val YvirtClasses    = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
   val YdisableUnreachablePrevention = BooleanSetting("-Ydisable-unreachable-prevention", "Disable the prevention of unreachable blocks in code generation.")

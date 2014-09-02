@@ -149,7 +149,7 @@ object Main extends Main {
     val version = "-version"
 
     val classPathImplType = "-YclasspathImpl"
-    val flatClassPathCaching = "-YflatCpCaching"
+    val disableFlatClassPathCaching = "-YdisableFlatCpCaching"
     val logClassPath = "-Ylog-classpath"
   }
 
@@ -188,7 +188,7 @@ object Main extends Main {
     val settings = new Settings()
 
     arguments getArgument(opts.classPathImplType) foreach settings.YclasspathImpl.tryToSetFromPropertyValue
-    settings.YflatCpCaching.value = arguments contains opts.flatClassPathCaching
+    settings.YdisableFlatCpCaching.value = arguments contains opts.disableFlatClassPathCaching
     settings.Ylogcp.value = arguments contains opts.logClassPath
 
     val path = createClassPath(cpArg, settings)
@@ -210,7 +210,7 @@ object Main extends Main {
       .withOptionalArg(opts.classpath)
       .withOptionalArg(opts.cp)
       .withOptionalArg(opts.classPathImplType) // TODO three temporary, hidden options to be able to test new, experimental classpath implementation
-      .withOption(opts.flatClassPathCaching)
+      .withOption(opts.disableFlatClassPathCaching)
       .withOption(opts.logClassPath)
       .parse(args)
 

@@ -2,7 +2,7 @@ Test for classpath implementations (covers directories, zips and jars both for c
 
 Run in terminal:
 
-..\..\..\build\pack\bin\scalac -YclasspathImpl:flat -YflatCpCaching -Ylog-classpath:true -d out -sourcepath c-src;zip-with-d-src.zip;commons-lang-2.6-sources.jar -classpath f-class;zip-with-h-class.zip;guava-18.0.jar Main.scala
+..\..\..\build\pack\bin\scalac -YclasspathImpl:flat -Ylog-classpath:true -d out -sourcepath c-src;zip-with-d-src.zip;commons-lang-2.6-sources.jar -classpath f-class;zip-with-h-class.zip;guava-18.0.jar Main.scala
 
 And then:
 

@@ -90,8 +90,7 @@ abstract class SymbolLoaders {
       // require yjp.jar at runtime. See SI-2089.
       if (settings.termConflict.isDefault)
         throw new TypeError(
-          root+" contains object and package with same name: "+
-          name+"\none of them needs to be removed from classpath"
+          s"$root contains object and package with same name: $name\none of them needs to be removed from classpath"
         )
       else if (settings.termConflict.value == "package") {
         warning(
@@ -290,7 +289,11 @@ abstract class SymbolLoaders {
       if (!root.isEmptyPackageClass) {
         for (pkg <- classPathEntries.packages) {
           val fullName = pkg.name
-	        val name = PackageNameUtils.lastSubpackageNameForPackage(fullName)
+
+          // we can't just get last subpackage from fullName because res tests from partest use directories with dots in names
+          val name =
+            if (packageName == FlatClassPath.RootPackage) fullName
+            else fullName.substring(packageName.length + 1)
           val packageLoader = new PackageLoaderUsingFlatClassPath(fullName, classpath)
           enterPackage(root, name, packageLoader)
         }
