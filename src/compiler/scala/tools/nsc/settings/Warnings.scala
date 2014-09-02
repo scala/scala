@@ -38,8 +38,9 @@ trait Warnings {
 
   // Lint warnings
 
-  object LintWarnings extends Enumeration {
-    case class LintWarning(name: String, help: String, yAliased: Boolean = false) extends Val(name) with MultiChoice
+  object LintWarnings extends MultiChoiceEnumeration {
+    class LintWarning(name: String, help: String, val yAliased: Boolean) extends Choice(name, help)
+    def LintWarning(name: String, help: String, yAliased: Boolean = false) = new LintWarning(name, help, yAliased)
 
     val AdaptedArgs            = LintWarning("adapted-args",              "Warn if an argument list is modified to match the receiver.",               true)
     val NullaryUnit            = LintWarning("nullary-unit",              "Warn when nullary methods return Unit.",                                    true)
@@ -90,13 +91,13 @@ trait Warnings {
   def YwarnInferAny = warnInferAny
 
   // The Xlint warning group.
-  val lint: MultiChoiceSetting = {
+  val lint: MultiChoiceSetting[LintWarnings.type] = {
     import LintWarnings._
 
     allWarnings.sortBy(_.name) foreach {
-      case LintWarning(name, text, yalias) if yalias =>
-        BooleanSetting(s"-Ywarn-$name", text) withPostSetHook { s =>
-          lint.add(if (s) name else s"-$name")
+      case l: LintWarning if l.yAliased =>
+        BooleanSetting(s"-Ywarn-${l.name}", {l.help}) withPostSetHook { s =>
+          lint.add(if (s) l.name else s"-${l.name}")
         } // withDeprecationMessage s"Enable -Xlint:${c._1}"
       case _ =>
     }

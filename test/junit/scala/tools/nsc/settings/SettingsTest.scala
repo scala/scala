@@ -118,4 +118,48 @@ class SettingsTest {
     assertFalse(check("-Ywarn-adapted-args:false", "-Xlint:_,-adapted-args")(_.warnAdaptedArgs))
     assertTrue(check("-Ywarn-adapted-args:false", "-Xlint:_,adapted-args")(_.warnAdaptedArgs))
   }
+
+  @Test def expandingMultichoice(): Unit = {
+    val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
+    object mChoices extends s.MultiChoiceEnumeration {
+      val a = Choice("a")
+      val b = Choice("b")
+      val c = Choice("c")
+      val d = Choice("d")
+
+      val ab = Choice("ab", expandsTo = List(a, b))
+      val ac = Choice("ac", expandsTo = List(a, c))
+      val uber = Choice("uber", expandsTo = List(ab, d))
+    }
+    val m = s.MultiChoiceSetting("-m", "args", "magic sauce", mChoices, Some(List("ac")))
+
+    def check(args: String*)(t: s.MultiChoiceSetting[mChoices.type] => Boolean): Boolean = {
+      m.clear()
+      val (ok, rest) = s.processArguments(args.toList, processAll = true)
+      assert(rest.isEmpty)
+      t(m)
+    }
+
+    import mChoices._
+
+    assertTrue(check("-m")(_.value == Set(a,c)))
+    assertTrue(check("-m:a,-b,c")(_.value == Set(a,c)))
+
+    // expanding options don't end up in the value set, only the terminal ones
+    assertTrue(check("-m:ab,ac")(_.value == Set(a,b,c)))
+    assertTrue(check("-m:_")(_.value == Set(a,b,c,d)))
+    assertTrue(check("-m:uber,ac")(_.value == Set(a,b,c,d))) // recursive expansion of uber
+
+    // explicit nays
+    assertTrue(check("-m:_,-b")(_.value == Set(a,c,d)))
+    assertTrue(check("-m:b,_,-b")(_.value == Set(a,b,c,d)))
+    assertTrue(check("-m:ac,-c")(_.value == Set(a)))
+    assertTrue(check("-m:ac,-a,-c")(_.value == Set()))
+    assertTrue(check("-m:-d,ac")(_.value == Set(a,c)))
+    assertTrue(check("-m:-b,ac,uber")(_.value == Set(a,c,d)))
+
+    assertThrows[IllegalArgumentException](check("-m:-_")(_ => true), _ contains "'-_' is not a valid choice")
+    assertThrows[IllegalArgumentException](check("-m:a,b,-ab")(_ => true), _ contains "'ab' cannot be negated")
+    assertThrows[IllegalArgumentException](check("-m:a,ac,-uber,uber")(_ => true), _ contains "'uber' cannot be negated")
+  }
 }
