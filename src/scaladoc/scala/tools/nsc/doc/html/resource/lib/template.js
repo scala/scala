@@ -147,19 +147,19 @@ $(document).ready(function(){
         filter();
     });
 
-    $("#mbrsel > div[id=ancestors] > ol > li.hideall").click(function() {
+    $("#mbrsel > div.ancestors > ol > li.hideall").click(function() {
         $("#linearization li.in").removeClass("in").addClass("out");
         $("#linearization li:first").removeClass("out").addClass("in");
         $("#implicits li.in").removeClass("in").addClass("out");
 
-        if ($(this).hasClass("out") && $("#mbrsel > div[id=ancestors] > ol > li.showall").hasClass("in")) {
+        if ($(this).hasClass("out") && $("#mbrsel > div.ancestors > ol > li.showall").hasClass("in")) {
             $(this).removeClass("out").addClass("in");
-            $("#mbrsel > div[id=ancestors] > ol > li.showall").removeClass("in").addClass("out");
+            $("#mbrsel > div.ancestors > ol > li.showall").removeClass("in").addClass("out");
         }
 
         filter();
     })
-    $("#mbrsel > div[id=ancestors] > ol > li.showall").click(function() {
+    $("#mbrsel > div.ancestors > ol > li.showall").click(function() {
         var filteredLinearization =
             $("#linearization li.out").filter(function() {
                 return ! isHiddenClass($(this).attr("name"));
@@ -172,9 +172,9 @@ $(document).ready(function(){
         });
         filteredImplicits.removeClass("out").addClass("in");
 
-        if ($(this).hasClass("out") && $("#mbrsel > div[id=ancestors] > ol > li.hideall").hasClass("in")) {
+        if ($(this).hasClass("out") && $("#mbrsel > div.ancestors > ol > li.hideall").hasClass("in")) {
             $(this).removeClass("out").addClass("in");
-            $("#mbrsel > div[id=ancestors] > ol > li.hideall").removeClass("in").addClass("out");
+            $("#mbrsel > div.ancestors > ol > li.hideall").removeClass("in").addClass("out");
         }
 
         filter();
@@ -275,7 +275,7 @@ function orderAlpha() {
     $("#order > ol > li.group").removeClass("in").addClass("out");
     $("#template > div.parent").hide();
     $("#template > div.conversion").hide();
-    $("#mbrsel > div[id=ancestors]").show();
+    $("#mbrsel > div.ancestors").show();
     filter();
 };
 
@@ -285,7 +285,7 @@ function orderInherit() {
     $("#order > ol > li.group").removeClass("in").addClass("out");
     $("#template > div.parent").show();
     $("#template > div.conversion").show();
-    $("#mbrsel > div[id=ancestors]").hide();
+    $("#mbrsel > div.ancestors").hide();
     filter();
 };
 
@@ -295,7 +295,7 @@ function orderGroup() {
     $("#order > ol > li.inherit").removeClass("in").addClass("out");
     $("#template > div.parent").hide();
     $("#template > div.conversion").hide();
-    $("#mbrsel > div[id=ancestors]").show();
+    $("#mbrsel > div.ancestors").show();
     filter();
 };
 
@@ -350,7 +350,7 @@ function initInherit() {
         }
     });
 
-    $("#values > ol > li").each(function(){
+    $(".values > ol > li").each(function(){
         var mbr = $(this);
         this.mbrText = mbr.find("> .fullcomment .cmt").text();
         var qualName = mbr.attr("name");
