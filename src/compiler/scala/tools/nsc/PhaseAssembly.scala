@@ -23,149 +23,170 @@ trait PhaseAssembly {
   private class DependencyGraph {
 
     /** Simple edge with to and from refs */
-    case class Edge(var frm: Node, var to: Node, var hard: Boolean)
+    class Edge(var frm: Node, var to: Node, var hard: Boolean)
 
     /**
      * Simple node with name and object ref for the phase object,
      * also sets of in and out going dependencies
      */
-    case class Node(name: String) {
-      val phasename = name
-      var phaseobj: Option[List[SubComponent]] = None
-      val after = new mutable.HashSet[Edge]()
-      var before = new mutable.HashSet[Edge]()
-      var visited = false
+    class Node(val phaseName: String) {
+      var phaseObjs: List[SubComponent] = Nil
+      val after : mutable.Set[Edge] = new mutable.HashSet()
+      val before : mutable.Set[Edge] = new mutable.HashSet()
       var level = 0
+      var color : Int = _ // DFS color, initialized in checkForCycles()
+      var unsat : Int = _ // # of unsatisfied deps, initialized in computePhaseOrder()
 
-      def allPhaseNames(): String = phaseobj match {
-        case None => phasename
-        case Some(lst) => lst.map(_.phaseName).reduceLeft(_+","+_)
+      def internal: Boolean = phaseObjs.exists(_.internal)
+      def allPhaseNames: String = phaseObjs.map(_.phaseName).mkString(",")
+    }
+
+    val nodes = mutable.Map.empty[String,Node]
+
+    /** Checks if the graph contains cycles by performing a DFS. If there
+     *  are cycles, a FatalError is thrown.
+     */
+    def checkForCycles() {
+      nodes.values.foreach(_.color = 0)
+      nodes.values.toList.sortBy(_.phaseName).foreach(dfs)
+    }
+
+    /* DFS implementation. */
+    private def dfs(n: Node) {
+      if (n.color == 1) {
+        dump("phase-cycle")
+        throw new FatalError(s"Cycle in phase dependencies detected at ${n.phaseName}, created phase-cycle.dot")
+      }
+      else if(n.color == 0) {
+        n.color = 1
+        n.after.toList.sortBy(_.to.phaseName).foreach(e => dfs(e.to))
+        n.color = 2
       }
     }
 
-    val nodes = new mutable.HashMap[String,Node]()
-    val edges = new mutable.HashSet[Edge]()
 
     /** Given a phase object, get the node for this phase object. If the
      *  node object does not exist, then create it.
      */
     def getNodeByPhase(phs: SubComponent): Node = {
       val node: Node = getNodeByPhase(phs.phaseName)
-      node.phaseobj match {
-        case None =>
-          node.phaseobj = Some(List[SubComponent](phs))
+      node.phaseObjs match {
+        case Nil =>
+          node.phaseObjs = List(phs)
         case _ =>
       }
       node
     }
 
-    /* Given the name of a phase object, get the node for that name. If the
-     * node object does not exits, then create it.
+    /** Given the name of a phase object, get the node for that name. If the
+     *  node object does not exits, then create it.
      */
     def getNodeByPhase(name: String): Node =
       nodes.getOrElseUpdate(name, new Node(name))
 
-    /* Connect the frm and to nodes with an edge and make it soft.
-     * Also add the edge object to the set of edges, and to the dependency
-     * list of the nodes
+    /** Connect the frm and to nodes with an edge and make it soft.
+     *  Also add the edge object to the set of edges, and to the dependency
+     *  list of the nodes
      */
     def softConnectNodes(frm: Node, to: Node) {
       val e = new Edge(frm, to, false)
-      this.edges += e
 
       frm.after += e
       to.before += e
     }
 
-    /* Connect the frm and to nodes with an edge and make it hard.
-     * Also add the edge object to the set of edges, and to the dependency
-     * list of the nodes
+    /** Connect the frm and to nodes with an edge and make it hard.
+     *  Also add the edge object to the set of edges, and to the dependency
+     *  list of the nodes
      */
     def hardConnectNodes(frm: Node, to: Node) {
       val e = new Edge(frm, to, true)
-      this.edges += e
 
       frm.after += e
       to.before += e
     }
 
-    /* Given the entire graph, collect the phase objects at each level, where the phase
-     * names are sorted alphabetical at each level, into the compiler phase list
+    /** Ensure that every node in the graph is a (transitive) successor of
+     *  in and a (transitive) predecessor of out.
      */
-    def compilerPhaseList(): List[SubComponent] =
-      nodes.values.toList filter (_.level > 0) sortBy (x => (x.level, x.phasename)) flatMap (_.phaseobj) flatten
-
-    /* Test if there are cycles in the graph, assign levels to the nodes
-     * and collapse hard links into nodes
-     */
-    def collapseHardLinksAndLevels(node: Node, lvl: Int) {
-      if (node.visited) {
-        dump("phase-cycle")
-        throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
-      }
-
-      if (node.level < lvl) node.level = lvl
-
-      var hls = Nil ++ node.before.filter(_.hard)
-      while (hls.size > 0) {
-        for (hl <- hls) {
-          node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
-          node.before = hl.frm.before
-          nodes -= hl.frm.phasename
-          edges -= hl
-          for (edge <- node.before) edge.to = node
-        }
-        hls = Nil ++ node.before.filter(_.hard)
-      }
-      node.visited = true
-
-      for (edge <- node.before) {
-        collapseHardLinksAndLevels( edge.frm, lvl + 1)
-      }
-
-      node.visited = false
+    def enclose(in: Node, out: Node) {
+      for (n <- nodes.values filter { n => n != in && n.before.isEmpty})
+        softConnectNodes(in, n)
+      for (n <- nodes.values filter { n => n != out && n.after.isEmpty })
+        softConnectNodes(n, out)
     }
 
-    /* Find all edges in the given graph that are hard links. For each hard link we
-     * need to check that its the only dependency. If not, then we will promote the
-     * other dependencies down
+    /** Computes the order of compiler phases by performing a topological sort.
+     *  As a side effect, also computes the level for each node (this is used
+     *  solely for rendering purposes).
      */
-    def validateAndEnforceHardlinks() {
-      var hardlinks = edges.filter(_.hard)
-      for (hl <- hardlinks) {
-        if (hl.frm.after.size > 1) {
-          dump("phase-order")
-          throw new FatalError(s"Phase ${hl.frm.phasename} can't follow ${hl.to.phasename}, created phase-order.dot")
-        }
+    def computePhaseOrder(): List[SubComponent] = {
+      var level = 1
+      // Initialize the unsat counter
+      for (n <- nodes.values) {
+        n.unsat = n.after.size
       }
+      var (next,remaining) = nodes.values.toList.partition(_.unsat == 0)
+      val out = mutable.ListBuffer.empty[SubComponent]
 
-      var rerun = true
-      while (rerun) {
-        rerun = false
-        hardlinks = edges.filter(_.hard)
-        for (hl <- hardlinks) {
-          val sanity = Nil ++ hl.to.before.filter(_.hard)
-          if (sanity.length == 0) {
-            throw new FatalError("There is no runs right after dependency, where there should be one! This is not supposed to happen!")
-          } else if (sanity.length > 1) {
-            dump("phase-order")
-            val following = (sanity map (_.frm.phasename)).sorted mkString ","
-            throw new FatalError(s"Multiple phases want to run right after ${sanity.head.to.phasename}; followers: $following; created phase-order.dot")
-          } else {
-
-            val promote = hl.to.before.filter(e => (!e.hard))
-            hl.to.before.clear()
-            sanity foreach (edge => hl.to.before += edge)
-            for (edge <- promote) {
-              rerun = true
-              informProgress(
-                "promote the dependency of " + edge.frm.phasename +
-                ": "  + edge.to.phasename + " => " + hl.frm.phasename)
-              edge.to = hl.frm
-              hl.frm.before += edge
-            }
+      // Process nodes at the next level
+      while (!next.isEmpty) {
+        // SID-2 mandates that phases at the same level are sorted alphabetically
+        out ++= next sortBy (_.phaseName) flatMap { _.phaseObjs }
+        for (n <- next) {
+          n.level = level
+          for (e <- n.before) {
+            e.frm.unsat -= 1
           }
         }
+        level += 1
+        // Continue with the next level
+        val (n,r) = remaining.partition(_.unsat == 0)
+        next = n
+        remaining = r
+      }
+      // Since the graph is acyclic, this should NOT happen
+      assert(remaining.isEmpty, "The following nodes in the phase dependency graph " +
+                                "have not been processed: " + remaining.mkString(","))
+
+      out toList
+    }
+
+    /** Verifies that there are no unsatisfiable rightAfter dependencies, and collapses maximal
+     *  chains of hardlinks into single nodes.
+     */
+    def collapseHardlinks() {
+      // Search for nodes that have 2 or more phases that want to run right after it
+      val hlnodes = nodes.values.map(n => (n, n.before.filter(_.hard))).filterNot(_._2.isEmpty)
+      hlnodes.find(_._2.size > 1) match {
+        case Some((n,hls)) =>
+          val following = hls.map(_.frm.phaseName).toList.sorted.mkString(",")
+          throw new FatalError(s"Multiple phases want to run right after ${n.phaseName}; followers: $following; created phase-order.dot")
+        case None =>
+      }
+
+      // Find a node with a rightAfter dependency
+      var hlnode = nodes.values.find(n => n.after.exists(_.hard))
+      for ((tgt,hllist) <- hlnodes) {
+        val n = hllist.head.frm
+        nodes -= n.phaseName
+        // Merge the next node into `tgt`
+        // This is critical. Since we only retain the node we merge into
+        // in the map, merging into the source might result in us losing
+        // the `parser` node.
+        tgt.phaseObjs = tgt.phaseObjs ++ n.phaseObjs
+        // Redirect edges
+        n.before foreach { _.to = tgt }
+        n.after foreach { _.frm = tgt }
+        tgt.before ++= n.before
+        tgt.after ++= n.after
+        // We have verified that the graph was cycle-free before, so every selfloop that might have
+        // been introduced by the above two lines can safely be removed
+        tgt.before.retain(e => e.frm != e.to)
+        tgt.after.retain(e => e.frm != e.to)
+
+        // Next iteration
+        hlnode = nodes.values.find(n => n.after.exists(_.hard))
       }
     }
 
@@ -175,15 +196,14 @@ trait PhaseAssembly {
      *  dependency on something that is dropped.
      */
     def removeDanglingNodes() {
-      for (node <- nodes.values filter (_.phaseobj.isEmpty)) {
-        val msg = "dropping dependency on node with no phase object: "+node.phasename
+      for (node <- nodes.values filter (_.phaseObjs.isEmpty)) {
+        val msg = "dropping dependency on node with no phase object: "+node.phaseName
         informProgress(msg)
-        nodes -= node.phasename
+        nodes -= node.phaseName
 
         for (edge <- node.before) {
-          edges -= edge
           edge.frm.after -= edge
-          if (edge.frm.phaseobj exists (lsc => !lsc.head.internal))
+          if (!edge.frm.internal)
             warning(msg)
         }
       }
@@ -199,6 +219,8 @@ trait PhaseAssembly {
     // Add all phases in the set to the graph
     val graph = phasesSetToDepGraph(phasesSet)
 
+    graph.checkForCycles()
+
     val dot = if (settings.genPhaseGraph.isSetByUser) Some(settings.genPhaseGraph.value) else None
 
     // Output the phase dependency graph at this stage
@@ -211,18 +233,24 @@ trait PhaseAssembly {
 
     dump(2)
 
-    // Validate and Enforce hardlinks / runsRightAfter and promote nodes down the tree
-    graph.validateAndEnforceHardlinks()
+    graph.collapseHardlinks()
+
+    // Second check for cycles, as collapsing nodes might have introduced cycles
+    // (this is the case if there is a component specifies to run after phase1
+    // and before phase2, and phase2 specifies to run right after phase1).
+    graph.checkForCycles()
 
     dump(3)
 
-    // test for cycles, assign levels and collapse hard links into nodes
-    graph.collapseHardLinksAndLevels(graph.getNodeByPhase("parser"), 1)
+    // Ensure that every node is on a path between terminal and parser
+    graph.enclose(graph.getNodeByPhase("terminal"), graph.getNodeByPhase("parser"))
+    
+    val phases = graph.computePhaseOrder
 
     dump(4)
 
-    // assemble the compiler
-    graph.compilerPhaseList()
+    // return the computed phase order
+    phases
   }
 
   /** Given the phases set, will build a dependency graph from the phases set
@@ -232,34 +260,31 @@ trait PhaseAssembly {
     val graph = new DependencyGraph()
 
     for (phs <- phsSet) {
-
       val fromnode = graph.getNodeByPhase(phs)
 
-      phs.runsRightAfter match {
-        case None =>
-          for (phsname <- phs.runsAfter) {
-            if (phsname != "terminal") {
-              val tonode = graph.getNodeByPhase(phsname)
-              graph.softConnectNodes(fromnode, tonode)
-            } else {
-              globalError("[phase assembly, after dependency on terminal phase not allowed: " + fromnode.phasename + " => "+ phsname + "]")
-            }
-          }
-          for (phsname <- phs.runsBefore) {
-            if (phsname != "parser") {
-              val tonode = graph.getNodeByPhase(phsname)
-              graph.softConnectNodes(tonode, fromnode)
-            } else {
-              globalError("[phase assembly, before dependency on parser phase not allowed: " + phsname + " => "+ fromnode.phasename + "]")
-            }
-          }
-        case Some(phsname) =>
-          if (phsname != "terminal") {
-            val tonode = graph.getNodeByPhase(phsname)
-            graph.hardConnectNodes(fromnode, tonode)
-          } else {
-            globalError("[phase assembly, right after dependency on terminal phase not allowed: " + fromnode.phasename + " => "+ phsname + "]")
-          }
+      for (phsname <- phs.runsRightAfter) {
+        if (phsname != "terminal") {
+          val tonode = graph.getNodeByPhase(phsname)
+          graph.hardConnectNodes(fromnode, tonode)
+        } else {
+          globalError(s"[phase assembly, right after dependency on terminal phase not allowed: ${fromnode.phaseName} => ${phsname}]")
+        }
+      }
+      for (phsname <- phs.runsAfter) {
+        if (phsname != "terminal") {
+          val tonode = graph.getNodeByPhase(phsname)
+          graph.softConnectNodes(fromnode, tonode)
+        } else {
+          globalError(s"[phase assembly, after dependency on terminal phase not allowed: ${fromnode.phaseName} => ${phsname}]")
+        }
+      }
+      for (phsname <- phs.runsBefore) {
+        if (phsname != "parser") {
+          val tonode = graph.getNodeByPhase(phsname)
+          graph.softConnectNodes(tonode, fromnode)
+        } else {
+          globalError(s"[phase assembly, before dependency on parser phase not allowed: ${phsname} => ${fromnode.phaseName}]")
+        }
       }
     }
     graph
@@ -270,23 +295,23 @@ trait PhaseAssembly {
    * Plug-in supplied phases are marked as green nodes and hard links are marked as blue edges.
    */
   private def graphToDotFile(graph: DependencyGraph, filename: String) {
+    def node2str(n: graph.Node) = {
+      val escaped = n.allPhaseNames.replace("\"", "\\\"")
+      s""""${escaped}(${n.level})""""
+    }
+
     val sbuf = new StringBuilder
-    val extnodes = new mutable.HashSet[graph.Node]()
-    val fatnodes = new mutable.HashSet[graph.Node]()
     sbuf.append("digraph G {\n")
-    for (edge <- graph.edges) {
-      sbuf.append("\"" + edge.frm.allPhaseNames + "(" + edge.frm.level + ")" + "\"->\"" + edge.to.allPhaseNames + "(" + edge.to.level + ")" + "\"")
-      if (!edge.frm.phaseobj.get.head.internal) extnodes += edge.frm
-      edge.frm.phaseobj foreach (phobjs => if (phobjs.tail.nonEmpty) fatnodes += edge.frm )
-      edge.to.phaseobj foreach (phobjs => if (phobjs.tail.nonEmpty) fatnodes += edge.to )
-      val color = if (edge.hard) "#0000ff" else "#000000"
-      sbuf.append(s""" [color="$color"]\n""")
-    }
-    for (node <- extnodes) {
-      sbuf.append("\"" + node.allPhaseNames + "(" + node.level + ")" + "\" [color=\"#00ff00\"]\n")
-    }
-    for (node <- fatnodes) {
-      sbuf.append("\"" + node.allPhaseNames + "(" + node.level + ")" + "\" [color=\"#0000ff\"]\n")
+    for (n <- graph.nodes.values) {
+      sbuf.append(node2str(n))
+      if (!n.internal) sbuf.append(""" [color="#00ff00"]""")
+      else if (n.phaseObjs.tail.nonEmpty) sbuf.append(""" [color="#0000ff"]""")
+      sbuf.append("\n")
+    } 
+    for (n <- graph.nodes.values; e <- n.after) {
+      sbuf.append(s"${node2str(e.frm)} -> ${node2str(e.to)}")
+      if (e.hard) sbuf.append(""" [color="#0000ff"]""")
+      sbuf.append("\n")
     }
     sbuf.append("}\n")
     import reflect.io._
