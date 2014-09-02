@@ -44,5 +44,10 @@ final class ArrayCharSequence(val xs: Array[Char], start: Int, end: Int) extends
       new ArrayCharSequence(xs, start1, start1 + newlen)
     }
   }
-  override def toString = xs drop start take length mkString ""
+  override def toString = {
+    val start = math.max(this.start, 0)
+    val end = math.min(xs.length, start + length)
+
+    if (start >= end) "" else new String(xs, start, end - start)
+  }
 }
