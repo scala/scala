@@ -388,11 +388,11 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         case Literal(const) => LiteralAnnotArg(const)
         case Apply(ArrayModule, args) => ArrayAnnotArg(args map encodeJavaArg toArray)
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) => NestedAnnotArg(treeToAnnotation(arg))
-        case _ => throw new Exception("unexpected java argument shape $arg: literals, arrays and nested annotations are supported")
+        case _ => throw new Exception(s"unexpected java argument shape $arg: literals, arrays and nested annotations are supported")
       }
       def encodeJavaArgs(args: List[Tree]): List[(Name, ClassfileAnnotArg)] = args match {
         case AssignOrNamedArg(Ident(name), arg) :: rest => (name, encodeJavaArg(arg)) :: encodeJavaArgs(rest)
-        case arg :: rest => throw new Exception("unexpected java argument shape $arg: only AssignOrNamedArg trees are supported")
+        case arg :: rest => throw new Exception(s"unexpected java argument shape $arg: only AssignOrNamedArg trees are supported")
         case Nil => Nil
       }
       val atp = tpt.tpe

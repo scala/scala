@@ -54,8 +54,8 @@ package test {
     }
   }
   import annotation._
-  @implicitNotFound("No Z in ${A}")   // no warn
-  class Z[A]
+  @implicitNotFound("No Z in ${T}")   // no warn
+  class Z[T]
 }
 
 

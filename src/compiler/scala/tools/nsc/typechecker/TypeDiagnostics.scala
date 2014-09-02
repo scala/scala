@@ -600,6 +600,23 @@ trait TypeDiagnostics {
         )
     }
 
+    // warn about class/method/type-members' type parameters that shadow types already in scope
+    def warnTypeParameterShadow(tparams: List[TypeDef], sym: Symbol): Unit =
+      if (settings.warnTypeParameterShadow && !isPastTyper && !sym.isSynthetic) {
+        def enclClassOrMethodOrTypeMember(c: Context): Context =
+          if (!c.owner.exists || c.owner.isClass || c.owner.isMethod || (c.owner.isType && !c.owner.isParameter)) c
+          else enclClassOrMethodOrTypeMember(c.outer)
+
+        val tt = tparams.filter(_.name != typeNames.WILDCARD).foreach { tp =>
+        // we don't care about type params shadowing other type params in the same declaration
+        enclClassOrMethodOrTypeMember(context).outer.lookupSymbol(tp.name, s => s != tp.symbol && s.hasRawInfo && reallyExists(s)) match {
+          case LookupSucceeded(_, sym2) => context.warning(tp.pos,
+            s"type parameter ${tp.name} defined in $sym shadows $sym2 defined in ${sym2.owner}. You may want to rename your type parameter, or possibly remove it.")
+          case _ =>
+        }
+      }
+    }
+
     /** Report a type error.
      *
      *  @param pos    The position where to report the error

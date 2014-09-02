@@ -38,6 +38,7 @@ trait Warnings {
     warnMissingInterpolator,
     warnDocDetached,
     warnPrivateShadow,
+    warnTypeParameterShadow,
     warnPolyImplicitOverload,
     warnOptionImplicit,
     warnDelayedInit,
@@ -83,6 +84,8 @@ trait Warnings {
                                 "A ScalaDoc comment appears to be detached from its element.")
   val warnPrivateShadow        = lintflag("private-shadow",
                                 "A private field (or class parameter) shadows a superclass field.")
+  val warnTypeParameterShadow  = lintflag("type-parameter-shadow",
+                                "A local type parameter shadows a type already in scope.")
   val warnPolyImplicitOverload = lintflag("poly-implicit-overload",
                                 "Parameterized overloaded implicit methods are not visible as view bounds")
   val warnOptionImplicit       = lintflag("option-implicit",
