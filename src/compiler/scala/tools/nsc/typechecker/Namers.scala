@@ -717,7 +717,7 @@ trait Namers extends MethodSynthesis {
         m.updateAttachment(new ConstructorDefaultsAttachment(tree, null))
       }
       val owner = tree.symbol.owner
-      if (settings.lint && owner.isPackageObjectClass && !mods.isImplicit) {
+      if (settings.warnPackageObjectClasses && owner.isPackageObjectClass && !mods.isImplicit) {
         reporter.warning(tree.pos,
           "it is not recommended to define classes/objects inside of package objects.\n" +
           "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
@@ -1494,8 +1494,7 @@ trait Namers extends MethodSynthesis {
           case defn: MemberDef =>
             val ainfos = defn.mods.annotations filterNot (_ eq null) map { ann =>
               val ctx    = typer.context
-              val annCtx = ctx.make(ann)
-              annCtx.setReportErrors()
+              val annCtx = ctx.makeNonSilent(ann)
               // need to be lazy, #1782. beforeTyper to allow inferView in annotation args, SI-5892.
               AnnotationInfo lazily {
                 enteringTyper(newTyper(annCtx) typedAnnotation ann)

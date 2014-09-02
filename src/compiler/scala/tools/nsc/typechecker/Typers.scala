@@ -155,21 +155,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           } else {
             mkArg = gen.mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
             if (!param.hasDefault && !paramFailed) {
-              context.reportBuffer.errors.collectFirst {
-                case dte: DivergentImplicitTypeError => dte
-              } match {
-                case Some(divergent) =>
-                  // DivergentImplicit error has higher priority than "no implicit found"
-                  // no need to issue the problem again if we are still in silent mode
-                  if (context.reportErrors) {
-                    context.issue(divergent.withPt(paramTp))
-                    context.reportBuffer.clearErrors {
-                      case dte: DivergentImplicitTypeError => true
-                    }
-                  }
-                case _ =>
-                  NoImplicitFoundError(fun, param)
-              }
+              context.reporter.reportFirstDivergentError(fun, param, paramTp)(context)
               paramFailed = true
             }
             /* else {
@@ -478,20 +464,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (cond) typerWithLocalContext(c)(f) else f(this)
 
     @inline
-    final def typerWithLocalContext[T](c: Context)(f: Typer => T): T = {
-      val res = f(newTyper(c))
-      if (c.hasErrors)
-        context.updateBuffer(c.flushAndReturnBuffer())
-      res
-    }
-
-    @inline
-    final def withSavedContext[T](c: Context)(f: => T) = {
-      val savedErrors = c.flushAndReturnBuffer()
-      val res = f
-      c.updateBuffer(savedErrors)
-      res
-    }
+    final def typerWithLocalContext[T](c: Context)(f: Typer => T): T =
+      c.reporter.propagatingErrorsTo(context.reporter)(f(newTyper(c)))
 
     /** The typer for a label definition. If this is part of a template we
      *  first have to enter the label definition.
@@ -684,6 +658,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (Statistics.canEnable) Statistics.stopCounter(subtypeFailed, subtypeStart)
         if (Statistics.canEnable) Statistics.stopTimer(failedSilentNanos, failedSilentStart)
       }
+      @inline def wrapResult(reporter: ContextReporter, result: T) =
+        if (reporter.hasErrors) {
+          stopStats()
+          SilentTypeError(reporter.errors: _*)
+        } else SilentResultValue(result)
+
       try {
         if (context.reportErrors ||
             reportAmbiguousErrors != context.ambiguousErrors ||
@@ -697,20 +677,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           context.undetparams = context1.undetparams
           context.savedTypeBounds = context1.savedTypeBounds
           context.namedApplyBlockInfo = context1.namedApplyBlockInfo
-          if (context1.hasErrors) {
-            stopStats()
-            SilentTypeError(context1.errors: _*)
-          } else {
-            // If we have a successful result, emit any warnings it created.
-            context1.flushAndIssueWarnings()
-            SilentResultValue(result)
-          }
+
+          // If we have a successful result, emit any warnings it created.
+          if (!context1.reporter.hasErrors)
+            context1.reporter.emitWarnings()
+
+          wrapResult(context1.reporter, result)
         } else {
           assert(context.bufferErrors || isPastTyper, "silent mode is not available past typer")
-          withSavedContext(context){
-            val res = op(this)
-            val errorsToReport = context.flushAndReturnBuffer()
-            if (errorsToReport.isEmpty) SilentResultValue(res) else SilentTypeError(errorsToReport.head)
+
+          context.reporter.withFreshErrorBuffer {
+            wrapResult(context.reporter, op(this))
           }
         }
       } catch {
@@ -816,14 +793,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         // avoid throwing spurious DivergentImplicit errors
-        if (context.hasErrors)
+        if (context.reporter.hasErrors)
           setError(tree)
         else
           withCondConstrTyper(treeInfo.isSelfOrSuperConstrCall(tree))(typer1 =>
             if (original != EmptyTree && pt != WildcardType) (
               typer1 silent { tpr =>
                 val withImplicitArgs = tpr.applyImplicitArgs(tree)
-                if (tpr.context.hasErrors) tree // silent will wrap it in SilentTypeError anyway
+                if (tpr.context.reporter.hasErrors) tree // silent will wrap it in SilentTypeError anyway
                 else tpr.typed(withImplicitArgs, mode, pt)
               }
               orElse { _ =>
@@ -1057,7 +1034,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val silentContext = context.makeImplicit(context.ambiguousErrors)
                 val res = newTyper(silentContext).typed(
                   new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
-                silentContext.firstError match {
+                silentContext.reporter.firstError match {
                   case Some(err) => context.issue(err)
                   case None      => return res
                 }
@@ -1749,6 +1726,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
              |you want, you must write the annotation class in Java.""".stripMargin)
       }
 
+      warnTypeParameterShadow(tparams1, clazz)
+
       if (!isPastTyper) {
         for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
           val m = companionSymbolOf(clazz, context)
@@ -2151,6 +2130,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val tparams1 = ddef.tparams mapConserve typedTypeDef
       val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
 
+      warnTypeParameterShadow(tparams1, meth)
+
       meth.annotations.map(_.completeInfo())
 
       for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
@@ -2226,6 +2207,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val tparams1 = tdef.tparams mapConserve typedTypeDef
       val typedMods = typedModifiers(tdef.mods)
       tdef.symbol.annotations.map(_.completeInfo())
+
+      warnTypeParameterShadow(tparams1, tdef.symbol)
 
       // @specialized should not be pickled when compiling with -no-specialize
       if (settings.nospecialization && currentRun.compiles(tdef.symbol)) {
@@ -2990,7 +2973,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     ConstructorsOrderError(stat)
                 }
 
-                if (treeInfo.isPureExprForWarningPurposes(result)) context.warning(stat.pos,
+                if (!isPastTyper && treeInfo.isPureExprForWarningPurposes(result)) context.warning(stat.pos,
                   "a pure expression does nothing in statement position; " +
                   "you may be omitting necessary parentheses"
                 )
@@ -3149,7 +3132,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Mode, pt: Type): Tree = {
       // TODO_NMT: check the assumption that args nonEmpty
       def duplErrTree = setError(treeCopy.Apply(tree, fun0, args))
-      def duplErrorTree(err: AbsTypeError) = { issue(err); duplErrTree }
+      def duplErrorTree(err: AbsTypeError) = { context.issue(err); duplErrTree }
 
       def preSelectOverloaded(fun: Tree): Tree = {
         if (fun.hasSymbolField && fun.symbol.isOverloaded) {
@@ -3229,7 +3212,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   (arg1, arg1.tpe.deconst)
               }.unzip
             }
-            if (context.hasErrors)
+            if (context.reporter.hasErrors)
               setError(tree)
             else {
               inferMethodAlternative(fun, undetparams, argTpes, pt)
@@ -3248,25 +3231,25 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
            * to that. This is the last thing which is tried (after
            * default arguments)
            */
-          def tryTupleApply: Tree = (
+          def tryTupleApply: Tree = {
             if (eligibleForTupleConversion(paramTypes, argslen) && !phase.erasedTypes) {
               val tupleArgs = List(atPos(tree.pos.makeTransparent)(gen.mkTuple(args)))
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
               val savedUndetparams = context.undetparams
               silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)) map { t =>
-                  // Depending on user options, may warn or error here if
-                  // a Unit or tuple was inserted.
-                  val keepTree = (
-                       !mode.typingExprNotFun
-                    || t.symbol == null
-                    || checkValidAdaptation(t, args)
-                  )
-                  if (keepTree) t else EmptyTree
+                // Depending on user options, may warn or error here if
+                // a Unit or tuple was inserted.
+                val keepTree = (
+                     !mode.typingExprNotFun // why? introduced in 4e488a60, doc welcome
+                  || t.symbol == null       // ditto
+                  || checkValidAdaptation(t, args)
+                )
+                if (keepTree) t else EmptyTree
               } orElse { _ => context.undetparams = savedUndetparams ; EmptyTree }
             }
             else EmptyTree
-          )
+          }
 
           /* Treats an application which uses named or default arguments.
            * Also works if names + a vararg used: when names are used, the vararg
@@ -3357,8 +3340,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   duplErrTree
                 } else if (lencmp2 == 0) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
-                  val note = "Error occurred in an application involving default arguments."
-                  if (!(context.diagnostic contains note)) context.diagnostic = note :: context.diagnostic
+                  context.diagUsedDefaults = true
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
                 } else {
                   rollbackNamesDefaultsOwnerChanges()
@@ -4331,7 +4313,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         c.retyping = true
         try {
           val res = newTyper(c).typedArgs(args, mode)
-          if (c.hasErrors) None else Some(res)
+          if (c.reporter.hasErrors) None else Some(res)
         } catch {
           case ex: CyclicReference =>
             throw ex
@@ -4395,7 +4377,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case _ => ()
             }
           }
-          typeErrors foreach issue
+          typeErrors foreach context.issue
           setError(treeCopy.Apply(tree, fun, args))
         }
 
@@ -4449,7 +4431,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               doTypedApply(tree, fun2, args, mode, pt)
           case err: SilentTypeError =>
             onError({
-              err.reportableErrors foreach issue
+              err.reportableErrors foreach context.issue
               args foreach (arg => typed(arg, mode, ErrorType))
               setError(tree)
             })
@@ -4686,7 +4668,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               else
                 // before failing due to access, try a dynamic call.
                 asDynamicCall getOrElse {
-                  issue(accessibleError.get)
+                  context.issue(accessibleError.get)
                   setError(tree)
                 }
             case _ =>
@@ -5099,7 +5081,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def isPlausible(m: Symbol) = m.alternatives exists (m => requiresNoArgs(m.info))
 
         def maybeWarn(s: String): Unit = {
-          def warn(message: String)         = context.warning(lit.pos, s"$message Did you forget the interpolator?")
+          def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
           def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
           def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
           def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(s drop 1))
@@ -5107,9 +5089,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // heuristics - no warning on e.g. a string with only "$asInstanceOf"
           if (s contains ' ') (
             if (suspiciousExpr.nonEmpty)
-              warn("That looks like an interpolated expression!") // "${...}"
+              warn("detected an interpolated expression") // "${...}"
             else
-              suspiciousIdents find isPlausible foreach (sym => warn(s"`$$${sym.name}` looks like an interpolated identifier!")) // "$id"
+              suspiciousIdents find isPlausible foreach (sym => warn(s"detected interpolated identifier `$$${sym.name}`")) // "$id"
           )
         }
         lit match {
@@ -5119,7 +5101,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedLiteral(tree: Literal) = {
-        if (settings.lint) warnMissingInterpolator(tree)
+        if (settings.warnMissingInterpolator) warnMissingInterpolator(tree)
 
         tree setType (if (tree.value.tag == UnitTag) UnitTpe else ConstantType(tree.value))
       }

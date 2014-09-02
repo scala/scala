@@ -27,4 +27,4 @@ m: $r.treedsl.global.Literal = 10
 scala> typed(m).tpe                              // typed is in scope
 res2: $r.treedsl.global.Type = Int(10)
 
-scala> 
+scala> :quit

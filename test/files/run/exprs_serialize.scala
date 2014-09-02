@@ -26,4 +26,14 @@ object Test extends App {
 
   test(reify(2))
   test(reify{def foo = "hello"; foo + "world!"})
+  test(reify {
+    def foo(x: Int) = {
+      class Local {
+        val f = 2
+      }
+      val obj = new Local
+      x % obj.f == 0
+    }
+    foo(5)
+  })
 }

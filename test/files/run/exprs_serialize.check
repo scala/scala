@@ -1,2 +1,19 @@
-java.io.NotSerializableException: Test$$treecreator1$1
-java.io.NotSerializableException: Test$$treecreator2$1
+Expr[Int(2)](2)
+Expr[java.lang.String]({
+  def foo = "hello";
+  foo.$plus("world!")
+})
+Expr[Boolean]({
+  def foo(x: Int) = {
+    class Local extends AnyRef {
+      def <init>() = {
+        super.<init>();
+        ()
+      };
+      val f = 2
+    };
+    val obj = new Local();
+    x.$percent(obj.f).$eq$eq(0)
+  };
+  foo(5)
+})

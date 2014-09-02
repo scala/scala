@@ -14,7 +14,7 @@ s"""|Type in expressions to have them evaluated.
     |scala> Foo(new Foo)
     |res0: Int = 7
     |
-    |scala> """
+    |scala> :quit"""
   def pastie = testPath changeExtension "pastie"
 }
 

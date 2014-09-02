@@ -29,7 +29,7 @@ trait AbsScalaSettings {
   def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String): ChoiceSetting
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]): IntSetting
   def MultiStringSetting(name: String, helpArg: String, descr: String): MultiStringSetting
-  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String]): MultiChoiceSetting
+  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: Option[() => Unit])(helper: MultiChoiceSetting => String): MultiChoiceSetting
   def OutputSetting(outputDirs: OutputDirs, default: String): OutputSetting
   def PathSetting(name: String, descr: String, default: String): PathSetting
   def PhasesSetting(name: String, descr: String, default: String): PhasesSetting

@@ -89,6 +89,9 @@ abstract class Reporter {
   def count(severity: Severity): Int
   def resetCount(severity: Severity): Unit
 
+  def errorCount: Int   = count(ERROR)
+  def warningCount: Int = count(WARNING)
+
   def hasErrors: Boolean   = count(ERROR) > 0
   def hasWarnings: Boolean = count(WARNING) > 0
 

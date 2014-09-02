@@ -254,12 +254,13 @@ abstract class UnPickler {
               // (4) Call the mirror's "missing" hook.
               adjust(mirrorThatLoaded(owner).missingHook(owner, name)) orElse {
                 // (5) Create a stub symbol to defer hard failure a little longer.
-                val fullName = s"${owner.fullName}.$name"
+                val advice = moduleAdvice(s"${owner.fullName}.$name")
                 val missingMessage =
-                  s"""|bad symbolic reference to $fullName encountered in class file '$filename'.
-                      |Cannot access ${name.longString} in ${owner.kindString} ${owner.fullName}. The current classpath may be
-                      |missing a definition for $fullName, or $filename may have been compiled against a version that's
-                      |incompatible with the one found on the current classpath.${moduleAdvice(fullName)}""".stripMargin
+                  s"""|missing or invalid dependency detected while loading class file '$filename'.
+                      |Could not access ${name.longString} in ${owner.kindString} ${owner.fullName},
+                      |because it (or its dependencies) are missing. Check your build definition for
+                      |missing or conflicting dependencies. (Re-run with `-Ylog-classpath` to see the problematic classpath.)
+                      |A full rebuild may help if '$filename' was compiled against an incompatible version of ${owner.fullName}.$advice""".stripMargin
                 owner.newStubSymbol(name, missingMessage)
               }
             }

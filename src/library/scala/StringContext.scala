@@ -104,7 +104,7 @@ case class StringContext(parts: String*) {
    *  ''Note:'' Even when using the raw interpolator, Scala will preprocess unicode escapes.
    *  For example:
    *  {{{
-   *    scala> raw"\u005cu0025"
+   *    scala> raw"\u005cu0023"
    *    res0: String = #
    *  }}}
    *
@@ -112,8 +112,6 @@ case class StringContext(parts: String*) {
    *  @throws An `IllegalArgumentException`
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
-   *  @throws A `StringContext.InvalidEscapeException` if a `parts` string contains a backslash (`\`) character
-   *          that does not start a valid escape sequence.
    */
   def raw(args: Any*): String = standardInterpolator(identity, args)
 
@@ -165,7 +163,7 @@ case class StringContext(parts: String*) {
    */
   // The implementation is hardwired to `scala.tools.reflect.MacroImplementations.macro_StringInterpolation_f`
   // Using the mechanism implemented in `scala.tools.reflect.FastTrack`
-  def f(args: Any*): String = macro ???
+  def f[A >: Any](args: A*): String = macro ???
 }
 
 object StringContext {
@@ -175,8 +173,13 @@ object StringContext {
    *  @param  str   The offending string
    *  @param  idx   The index of the offending backslash character in `str`.
    */
-  class InvalidEscapeException(str: String, @deprecatedName('idx) val index: Int)
-    extends IllegalArgumentException("invalid escape character at index "+index+" in \""+str+"\"")
+  class InvalidEscapeException(str: String, @deprecatedName('idx) val index: Int) extends IllegalArgumentException(
+    s"""invalid escape ${
+      require(index >= 0 && index < str.length)
+      val ok = """[\b, \t, \n, \f, \r, \\, \", \']"""
+      if (index == str.length - 1) "at terminal" else s"'\\${str(index + 1)}' not one of $ok at"
+    } index $index in "$str". Use \\\\ for literal \\."""
+  )
 
   /** Expands standard Scala escape sequences in a string.
    *  Escape sequences are:

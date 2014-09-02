@@ -1,0 +1,1 @@
+-feature -language:implicitConversions -language:higherKinds -language:-implicitConversions -Xfatal-warnings

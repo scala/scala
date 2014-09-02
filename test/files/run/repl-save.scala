@@ -16,7 +16,7 @@ s"""|Type in expressions to have them evaluated.
     |
     |scala> :save $saveto
     |
-    |scala> """
+    |scala> :quit"""
   def saveto = testOutput / "session.repl"
   override def show() = {
     super.show()

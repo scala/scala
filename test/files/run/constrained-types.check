@@ -148,4 +148,4 @@ scala> val x = 3 : Int @Annot(e+f+g+h) // should have a graceful error message
        val x = 3 : Int @Annot(e+f+g+h) // should have a graceful error message
                                     ^
 
-scala> 
+scala> :quit

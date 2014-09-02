@@ -76,8 +76,17 @@ abstract class Flatten extends InfoTransform {
             for (sym <- decls) {
               if (sym.isTerm && !sym.isStaticModule) {
                 decls1 enter sym
-                if (sym.isModule)
+                if (sym.isModule) {
+                  // Nested, non-static moduls are transformed to methods.
+                  assert(sym.isMethod, s"Non-static $sym should have the lateMETHOD flag from RefChecks")
+                  // Note that module classes are not entered into the 'decls' of the ClassInfoType
+                  // of the outer class, only the module symbols are. So the current loop does
+                  // not visit module classes. Therefore we set the LIFTED flag here for module
+                  // classes.
+                  // TODO: should we also set the LIFTED flag for static, nested module classes?
+                  // currently they don't get the flag, even though they are lifted to the package
                   sym.moduleClass setFlag LIFTED
+                }
               } else if (sym.isClass)
                 liftSymbol(sym)
             }

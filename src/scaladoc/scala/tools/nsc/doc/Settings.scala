@@ -249,7 +249,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     val idx = s.indexOf("#")
     if (idx > 0) {
       val (first, last) = s.splitAt(idx)
-      Some(new File(first).getAbsolutePath -> appendIndex(last.substring(1)))
+      Some(new File(first).getCanonicalPath -> appendIndex(last.substring(1)))
     } else {
       error(s"Illegal -doc-external-doc option; expected a pair with '#' separator, found: '$s'")
       None

@@ -1,0 +1,18 @@
+t8610.scala:5: warning: possible missing interpolator: detected interpolated identifier `$name`
+  def x = "Hi, $name"   // missing interp
+          ^
+t8610.scala:7: warning: Adapting argument list by creating a 2-tuple: this may not be what you want.
+        signature: X.f(p: (Int, Int)): Int
+  given arguments: 3, 4
+ after adaptation: X.f((3, 4): (Int, Int))
+  def g = f(3, 4)       // adapted
+           ^
+t8610.scala:9: warning: private[this] value name in class X shadows mutable name inherited from class Named.  Changes to name will not be visible within class X - you may want to give them distinct names.
+  override def toString = name // shadowing mutable var name
+                          ^
+t8610.scala:8: warning: side-effecting nullary methods are discouraged: suggest defining as `def u()` instead
+  def u: Unit = ()      // unitarian universalist
+      ^
+error: No warnings can be incurred under -Xfatal-warnings.
+four warnings found
+one error found

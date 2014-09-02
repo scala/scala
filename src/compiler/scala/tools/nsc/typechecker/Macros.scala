@@ -226,7 +226,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       val Apply(_, pickledPayload) = wrapped
       val payload = pickledPayload.map{ case Assign(k, v) => (unpickleAtom(k), unpickleAtom(v)) }.toMap
 
-      import typer.TyperErrorGen._
+      // TODO: refactor error handling: fail always throws a TypeError,
+      // and uses global state (analyzer.lastTreeToTyper) to determine the position for the error
       def fail(msg: String) = MacroCantExpandIncompatibleMacrosError(msg)
       def unpickle[T](field: String, clazz: Class[T]): T = {
         def failField(msg: String) = fail(s"$field $msg")
@@ -576,7 +577,10 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
                 // also see http://groups.google.com/group/scala-internals/browse_thread/thread/492560d941b315cc
                 val expanded1 = try onSuccess(duplicateAndKeepPositions(expanded)) finally popMacroContext()
                 if (!hasMacroExpansionAttachment(expanded1)) linkExpandeeAndExpanded(expandee, expanded1)
-                if (settings.Ymacroexpand.value == settings.MacroExpand.Discard) expandee.setType(expanded1.tpe)
+                if (settings.Ymacroexpand.value == settings.MacroExpand.Discard) {
+                  suppressMacroExpansion(expandee)
+                  expandee.setType(expanded1.tpe)
+                }
                 else expanded1
               case Fallback(fallback) => onFallback(fallback)
               case Delayed(delayed) => onDelayed(delayed)
@@ -621,7 +625,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           // `macroExpandApply` is called from `adapt`, where implicit conversions are disabled
           // therefore we need to re-enable the conversions back temporarily
           val result = typer.context.withImplicitsEnabled(typer.typed(tree, mode, pt))
-          if (result.isErrorTyped && macroDebugVerbose) println(s"$label has failed: ${typer.context.reportBuffer.errors}")
+          if (result.isErrorTyped && macroDebugVerbose) println(s"$label has failed: ${typer.context.reporter.errors}")
           result
         }
       }

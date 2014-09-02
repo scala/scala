@@ -65,10 +65,15 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   class LazyPackageType extends LazyType with FlagAgnosticCompleter {
     override def complete(sym: Symbol) {
       assert(sym.isPackageClass)
-      sym setInfo new ClassInfoType(List(), new PackageScope(sym), sym)
+      // Time travel to a phase before refchecks avoids an initialization issue. `openPackageModule`
+      // creates a module symbol and invokes invokes `companionModule` while the `infos` field is
+      // still null. This calls `isModuleNotMethod`, which forces the `info` if run after refchecks.
+      slowButSafeEnteringPhaseNotLaterThan(picklerPhase) {
+        sym setInfo new ClassInfoType(List(), new PackageScope(sym), sym)
         // override def safeToString = pkgClass.toString
-      openPackageModule(sym)
-      markAllCompleted(sym)
+        openPackageModule(sym)
+        markAllCompleted(sym)
+      }
     }
   }
 

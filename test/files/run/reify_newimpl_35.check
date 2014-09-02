@@ -10,4 +10,4 @@ foo: [T](implicit evidence$1: reflect.runtime.universe.TypeTag[T])reflect.runtim
 scala> println(foo)
 Expr[List[Nothing]](Nil)
 
-scala> 
+scala> :quit

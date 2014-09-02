@@ -379,18 +379,37 @@ trait NamesDefaults { self: Analyzer =>
 
   def makeNamedTypes(syms: List[Symbol]) = syms map (sym => NamedType(sym.name, sym.tpe))
 
-  def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name] = nameOfNamedArg _): (List[Symbol], Boolean) = {
-    val namedArgs = args.dropWhile(arg => {
-      val n = argName(arg)
-      n.isEmpty || params.forall(p => p.name != n.get)
-    })
-    val namedParams = params.drop(args.length - namedArgs.length)
-    // missing: keep those with a name which doesn't exist in namedArgs
-    val missingParams = namedParams.filter(p => namedArgs.forall(arg => {
+  /**
+   * Returns the parameter symbols of an invocation expression that are not defined by the list
+   * of arguments.
+   *
+   * @param args    The list of arguments
+   * @param params  The list of parameter sybols of the invoked method
+   * @param argName A function that extracts the name of an argument expression, if it is a named argument.
+   */
+  def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name]): (List[Symbol], Boolean) = {
+    // The argument list contains first a mix of positional args and named args that are on the
+    // right parameter position, and then a number or named args on different positions.
+
+    // collect all named arguments whose position does not match the parameter they define
+    val namedArgsOnChangedPosition = args.zip(params) dropWhile {
+      case (arg, param) =>
+        val n = argName(arg)
+        // drop the argument if
+        //  - it's not named, or
+        //  - it's named, but defines the parameter on its current position, or
+        //  - it's named, but none of the parameter names matches (treated as a positional argument, an assignment expression)
+        n.isEmpty || n.get == param.name || params.forall(_.name != n.get)
+    } map (_._1)
+
+    val paramsWithoutPositionalArg = params.drop(args.length - namedArgsOnChangedPosition.length)
+
+    // missing parameters: those with a name which is not specified in one of the namedArgsOnChangedPosition
+    val missingParams = paramsWithoutPositionalArg.filter(p => namedArgsOnChangedPosition.forall { arg =>
       val n = argName(arg)
       n.isEmpty || n.get != p.name
-    }))
-    val allPositional = missingParams.length == namedParams.length
+    })
+    val allPositional = missingParams.length == paramsWithoutPositionalArg.length
     (missingParams, allPositional)
   }
 
@@ -407,7 +426,7 @@ trait NamesDefaults { self: Analyzer =>
                   previousArgss: List[List[Tree]], params: List[Symbol],
                   pos: scala.reflect.internal.util.Position, context: Context): (List[Tree], List[Symbol]) = {
     if (givenArgs.length < params.length) {
-      val (missing, positional) = missingParams(givenArgs, params)
+      val (missing, positional) = missingParams(givenArgs, params, nameOfNamedArg)
       if (missing forall (_.hasDefault)) {
         val defaultArgs = missing flatMap (p => {
           val defGetter = defaultGetter(p, context)

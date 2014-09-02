@@ -430,7 +430,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     import scala.concurrent.duration._
     Await.ready(globalFuture, 60.seconds)
 
-    (line ne null) && (command(line) match {
+    if (line eq null) {
+      // SI-4563: this means the console was properly interrupted (Ctrl+D usually)
+      // so we display the output message (which by default ends with
+      // a newline so as not to break the user's terminal)
+      if (in.interactive) out.print(Properties.shellInterruptedString)
+
+      false
+    } else (command(line) match {
       case Result(false, _)      => false
       case Result(_, Some(line)) => addReplay(line) ; true
       case _                     => true

@@ -364,15 +364,16 @@ extends scala.collection.AbstractSeq[Int]
   override def equals(other: Any) = other match {
     case x: Range =>
       // Note: this must succeed for overfull ranges (length > Int.MaxValue)
-      (x canEqual this) && (
-        isEmpty ||                              // all empty sequences are equal
-        (start == x.start && {                  // Otherwise, must have same start
-          val l0 = last
-          (l0 == x.last && (                    // And same end
-            start == l0 || step == x.step       // And either the same step, or not take any steps
-          ))
-        })
-      )
+      (x canEqual this) && {
+        if (isEmpty) x.isEmpty                  // empty sequences are equal
+        else                                    // this is non-empty...
+          x.nonEmpty && start == x.start && {   // ...so other must contain something and have same start
+            val l0 = last
+            (l0 == x.last && (                    // And same end
+              start == l0 || step == x.step       // And either the same step, or not take any steps
+            ))
+          }
+      }
     case _ =>
       super.equals(other)
   }

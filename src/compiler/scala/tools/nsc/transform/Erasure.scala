@@ -468,8 +468,12 @@ abstract class Erasure extends AddInterfaces
       if (!bridgeNeeded)
         return
 
-      val newFlags = (member.flags | BRIDGE | ARTIFACT) & ~(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
-      val bridge   = other.cloneSymbolImpl(root, newFlags) setPos root.pos
+      var newFlags = (member.flags | BRIDGE | ARTIFACT) & ~(ACCESSOR | DEFERRED | LAZY | lateDEFERRED)
+      // If `member` is a ModuleSymbol, the bridge should not also be a ModuleSymbol. Otherwise we
+      // end up with two module symbols with the same name in the same scope, which is surprising
+      // when implementing later phases.
+      if (member.isModule) newFlags = (newFlags | METHOD) & ~(MODULE | lateMETHOD | STABLE)
+      val bridge = other.cloneSymbolImpl(root, newFlags) setPos root.pos
 
       debuglog("generating bridge from %s (%s): %s to %s: %s".format(
         other, flagsToString(newFlags),
@@ -1133,7 +1137,7 @@ abstract class Erasure extends AddInterfaces
         val tree2 = mixinTransformer.transform(tree1)
         // debuglog("tree after addinterfaces: \n" + tree2)
 
-        newTyper(rootContext(unit, tree, erasedTypes = true)).typed(tree2)
+        newTyper(rootContextPostTyper(unit, tree)).typed(tree2)
       }
     }
   }

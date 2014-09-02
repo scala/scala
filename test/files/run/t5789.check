@@ -7,4 +7,4 @@ n: Int = 2
 scala>     () => n
 res0: () => Int = <function0>
 
-scala> 
+scala> :quit

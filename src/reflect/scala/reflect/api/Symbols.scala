@@ -260,6 +260,9 @@ trait Symbols { self: Universe =>
      *  with an object definition (module class in scala compiler parlance).
      *  If yes, `isType` is also guaranteed to be true.
      *
+     *  Note to compiler developers: During the "mixin" phase, trait implementation class symbols
+     *  receive the `lateMODULE` flag, hence `isImplClass && isModuleClass` becomes true.
+     *
      *  @group Tests
      */
     def isModuleClass: Boolean = false

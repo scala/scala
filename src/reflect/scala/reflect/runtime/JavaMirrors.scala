@@ -807,31 +807,26 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       //         field containing the cache for structural calls.
       if (mods.isStatic) module.moduleClass.orElse(clazz) else clazz
 
-  /** Methods which need to be treated with care
-   *  because they either are getSimpleName or call getSimpleName:
+  /**
+   * Certain method of the Java reflection api cannot be used on classfiles created by Scala.
+   * See the comment in test/files/jvm/javaReflection/Test.scala. The methods are
    *
    *    public String getSimpleName()
    *    public boolean isAnonymousClass()
    *    public boolean isLocalClass()
    *    public String getCanonicalName()
-   *
-   *  A typical manifestation:
-   *
-   *    // java.lang.Error: sOwner(class Test$A$1) has failed
-   *    // Caused by: java.lang.InternalError: Malformed class name
-   *    //        at java.lang.Class.getSimpleName(Class.java:1133)
-   *    //        at java.lang.Class.isAnonymousClass(Class.java:1188)
-   *    //        at java.lang.Class.isLocalClass(Class.java:1199)
-   *    // (see t5256c.scala for more details)
+   *    public boolean isSynthetic()
    *
    *  TODO - find all such calls and wrap them.
    *  TODO - create mechanism to avoid the recurrence of unwrapped calls.
    */
    implicit class RichClass(jclazz: jClass[_]) {
-      // `jclazz.isLocalClass` doesn't work because of problems with `getSimpleName`
-      // hence we have to approximate by removing the `isAnonymousClass` check
-//      def isLocalClass0: Boolean = jclazz.isLocalClass
-      def isLocalClass0: Boolean = jclazz.getEnclosingMethod != null || jclazz.getEnclosingConstructor != null
+      // As explained in the javaReflection test, Class.isLocalClass is true for all non-member
+      // nested classes in Scala. This is fine per se, however the implementation may throw an
+      // InternalError. We therefore re-implement it here.
+      // TODO: this method should be renamed to `isLocalOrAnonymousClass`.
+      // due to bin compat that's only possible in 2.12, we cannot introduce a new alias in 2.11.
+      def isLocalClass0: Boolean = jclazz.getEnclosingClass != null && !jclazz.isMemberClass
     }
 
     /**

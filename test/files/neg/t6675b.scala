@@ -13,7 +13,7 @@ object NativelyTwo {
 }
 
 
-class A {
+class E {
   def f1 = (Left((0, 0)): Either[(Int, Int), (Int, Int)]) match { case LeftOrRight(a) => a  }          // warn
   def f2 = (Left((0, 0)): Either[(Int, Int), (Int, Int)]) match { case LeftOrRight((a, b)) => a  }     // no warn
   def f3 = (Left((0, 0)): Either[(Int, Int), (Int, Int)]) match { case LeftOrRight((a, b, c)) => a  }  // fail

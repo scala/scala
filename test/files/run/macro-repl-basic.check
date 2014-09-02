@@ -49,4 +49,4 @@ import Macros.Shmacros._
 scala> println(foo(2) + Macros.bar(2) * new Macros().quux(4))
 31
 
-scala> 
+scala> :quit

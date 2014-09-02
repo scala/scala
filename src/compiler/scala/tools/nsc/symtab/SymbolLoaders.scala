@@ -240,6 +240,12 @@ abstract class SymbolLoaders {
     }
   }
 
+  private def phaseBeforeRefchecks: Phase = {
+    var resPhase = phase
+    while (resPhase.refChecked) resPhase = resPhase.prev
+    resPhase
+  }
+
   /**
    * Load contents of a package
    */
@@ -248,19 +254,24 @@ abstract class SymbolLoaders {
 
     protected def doComplete(root: Symbol) {
       assert(root.isPackageClass, root)
-      root.setInfo(new PackageClassInfoType(newScope, root))
+      // Time travel to a phase before refchecks avoids an initialization issue. `openPackageModule`
+      // creates a module symbol and invokes invokes `companionModule` while the `infos` field is
+      // still null. This calls `isModuleNotMethod`, which forces the `info` if run after refchecks.
+      enteringPhase(phaseBeforeRefchecks) {
+        root.setInfo(new PackageClassInfoType(newScope, root))
 
-      if (!root.isRoot) {
-        for (classRep <- classpath.classes) {
-          initializeFromClassPath(root, classRep)
+        if (!root.isRoot) {
+          for (classRep <- classpath.classes) {
+            initializeFromClassPath(root, classRep)
+          }
         }
-      }
-      if (!root.isEmptyPackageClass) {
-        for (pkg <- classpath.packages) {
-          enterPackage(root, pkg.name, new PackageLoader(pkg))
-        }
+        if (!root.isEmptyPackageClass) {
+          for (pkg <- classpath.packages) {
+            enterPackage(root, pkg.name, new PackageLoader(pkg))
+          }
 
-        openPackageModule(root)
+          openPackageModule(root)
+        }
       }
     }
   }
@@ -290,7 +301,13 @@ abstract class SymbolLoaders {
 
     protected def doComplete(root: Symbol) {
       val start = if (Statistics.canEnable) Statistics.startTimer(classReadNanos) else null
-      classfileParser.parse(classfile, root)
+
+      // Running the classfile parser after refchecks can lead to "illegal class file dependency"
+      // errors. More concretely, the classfile parser calls "sym.companionModule", which calls
+      // "isModuleNotMethod" on the companion. After refchecks, this method forces the info, which
+      // may run the classfile parser. This produces the error.
+      enteringPhase(phaseBeforeRefchecks)(classfileParser.parse(classfile, root))
+
       if (root.associatedFile eq NoAbstractFile) {
         root match {
           // In fact, the ModuleSymbol forwards its setter to the module class

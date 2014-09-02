@@ -1,0 +1,24 @@
+t5691.scala:7: warning: type parameter D defined in method foobar shadows trait D defined in class B. You may want to rename your type parameter, or possibly remove it.
+  def foobar[D](in: D) = in.toString
+             ^
+t5691.scala:10: warning: type parameter D defined in type MySeq shadows trait D defined in class B. You may want to rename your type parameter, or possibly remove it.
+  type MySeq[D] = Seq[D]
+             ^
+t5691.scala:15: warning: type parameter T defined in method bar shadows type T defined in class Foo. You may want to rename your type parameter, or possibly remove it.
+    def bar[T](w: T) = w.toString
+            ^
+t5691.scala:13: warning: type parameter T defined in class Foo shadows type T defined in class B. You may want to rename your type parameter, or possibly remove it.
+  class Foo[T](t: T) {
+            ^
+t5691.scala:19: warning: type parameter List defined in type M shadows type List defined in package object scala. You may want to rename your type parameter, or possibly remove it.
+  class C[M[List[_]]]
+            ^
+t5691.scala:20: warning: type parameter List defined in type M shadows type List defined in package object scala. You may want to rename your type parameter, or possibly remove it.
+  type E[M[List[_]]] = Int
+           ^
+t5691.scala:21: warning: type parameter List defined in type M shadows type List defined in package object scala. You may want to rename your type parameter, or possibly remove it.
+  def foo[N[M[List[_]]]] = ???
+              ^
+error: No warnings can be incurred under -Xfatal-warnings.
+7 warnings found
+one error found

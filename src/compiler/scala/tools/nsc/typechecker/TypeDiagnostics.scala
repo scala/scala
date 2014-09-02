@@ -572,11 +572,11 @@ trait TypeDiagnostics {
         } else f
       }
       def apply(tree: Tree): Tree = {
-        // Error suppression will squash some of these warnings unless we circumvent it.
+        // Error suppression (in context.warning) would squash some of these warnings.
         // It is presumed if you are using a -Y option you would really like to hear
-        // the warnings you've requested.
+        // the warnings you've requested; thus, use reporter.warning.
         if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && exprOK)
-          context.warning(tree.pos, "dead code following this construct", force = true)
+          reporter.warning(tree.pos, "dead code following this construct")
         tree
       }
 
@@ -598,6 +598,23 @@ trait TypeDiagnostics {
           "\nNote: this is often due in part to a class depending on a definition nested within its companion." +
           "\nIf applicable, you may wish to try moving some members into another object."
         )
+    }
+
+    // warn about class/method/type-members' type parameters that shadow types already in scope
+    def warnTypeParameterShadow(tparams: List[TypeDef], sym: Symbol): Unit =
+      if (settings.warnTypeParameterShadow && !isPastTyper && !sym.isSynthetic) {
+        def enclClassOrMethodOrTypeMember(c: Context): Context =
+          if (!c.owner.exists || c.owner.isClass || c.owner.isMethod || (c.owner.isType && !c.owner.isParameter)) c
+          else enclClassOrMethodOrTypeMember(c.outer)
+
+        val tt = tparams.filter(_.name != typeNames.WILDCARD).foreach { tp =>
+        // we don't care about type params shadowing other type params in the same declaration
+        enclClassOrMethodOrTypeMember(context).outer.lookupSymbol(tp.name, s => s != tp.symbol && s.hasRawInfo && reallyExists(s)) match {
+          case LookupSucceeded(_, sym2) => context.warning(tp.pos,
+            s"type parameter ${tp.name} defined in $sym shadows $sym2 defined in ${sym2.owner}. You may want to rename your type parameter, or possibly remove it.")
+          case _ =>
+        }
+      }
     }
 
     /** Report a type error.
@@ -629,7 +646,7 @@ trait TypeDiagnostics {
               throw new FatalError("cannot redefine root "+sym)
           }
         case _ =>
-          context0.error(ex.pos, ex)
+          context0.error(ex.pos, ex.msg)
       }
     }
   }
