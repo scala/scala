@@ -659,6 +659,7 @@ object Test extends Properties("HtmlFactory") {
         s.contains("<pre>two lines, one useful</pre>") &&
         s.contains("<pre>line1\nline2\nline3\nline4</pre>") &&
         s.contains("<pre>a ragged example\na (condition)\n  the t h e n branch\nan alternative\n  the e l s e branch</pre>") &&
+        s.contains("<pre>Trait example {\n  Val x = a\n  Val y = b\n}</pre>") &&
         s.contains("<pre>l1\n\nl2\n\nl3\n\nl4\n\nl5</pre>")
       }
       case _ => false
@@ -683,7 +684,7 @@ object Test extends Properties("HtmlFactory") {
     oneAuthor match {
       case node: scala.xml.Node => {
         val s = node.toString
-        s.contains("<h6>Author:</h6>")
+        s.contains("<h6>Author:</h6>") &&
         s.contains("<p>The Only Author\n</p>")
       }
       case _ => false
@@ -696,8 +697,8 @@ object Test extends Properties("HtmlFactory") {
     twoAuthors match {
       case node: scala.xml.Node => {
         val s = node.toString
-        s.contains("<h6>Authors:</h6>")
-        s.contains("<p>The First Author\n</p>")
+        s.contains("<h6>Authors:</h6>") &&
+        s.contains("<p>The First Author</p>") &&
         s.contains("<p>The Second Author\n</p>")
       }
       case _ => false
