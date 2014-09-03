@@ -158,6 +158,8 @@ class SettingsTest {
     assertTrue(check("-m:-d,ac")(_.value == Set(a,c)))
     assertTrue(check("-m:-b,ac,uber")(_.value == Set(a,c,d)))
 
+    assertFalse(check("-m:uber")(_.contains("i-m-not-an-option")))
+
     assertThrows[IllegalArgumentException](check("-m:-_")(_ => true), _ contains "'-_' is not a valid choice")
     assertThrows[IllegalArgumentException](check("-m:a,b,-ab")(_ => true), _ contains "'ab' cannot be negated")
     assertThrows[IllegalArgumentException](check("-m:a,ac,-uber,uber")(_ => true), _ contains "'uber' cannot be negated")

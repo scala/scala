@@ -58,7 +58,7 @@ trait Warnings {
     val PackageObjectClasses   = LintWarning("package-object-classes",    "Class or object defined in package object.")
     val UnsoundMatch           = LintWarning("unsound-match",             "Pattern match may not be typesafe.")
 
-    def allWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
+    def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
   import LintWarnings._
 
@@ -91,24 +91,19 @@ trait Warnings {
   def YwarnInferAny = warnInferAny
 
   // The Xlint warning group.
-  val lint: MultiChoiceSetting[LintWarnings.type] = {
-    import LintWarnings._
+  val lint = MultiChoiceSetting(
+    name    = "-Xlint",
+    helpArg = "warning",
+    descr   = "Enable or disable specific warnings",
+    domain  = LintWarnings,
+    default = Some(List("_")))
 
-    allWarnings.sortBy(_.name) foreach {
-      case l: LintWarning if l.yAliased =>
-        BooleanSetting(s"-Ywarn-${l.name}", {l.help}) withPostSetHook { s =>
-          lint.add(if (s) l.name else s"-${l.name}")
-        } // withDeprecationMessage s"Enable -Xlint:${c._1}"
-      case _ =>
-    }
-
-    MultiChoiceSetting(
-      name    = "-Xlint",
-      helpArg = "warning",
-      descr   = "Enable or disable specific warnings",
-      domain  = LintWarnings,
-      default = Some(List("_"))
-    )
+  allLintWarnings foreach {
+    case w if w.yAliased =>
+      BooleanSetting(s"-Ywarn-${w.name}", {w.help}) withPostSetHook { s =>
+        lint.add(if (s) w.name else s"-${w.name}")
+      } // withDeprecationMessage s"Enable -Xlint:${c._1}"
+    case _ =>
   }
 
   private lazy val warnSelectNullable = BooleanSetting("-Xcheck-null", "This option is obsolete and does nothing.")

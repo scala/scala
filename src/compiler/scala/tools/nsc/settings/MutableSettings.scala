@@ -553,7 +553,7 @@ class MutableSettings(val errorFn: String => Unit)
   }
 
   /**
-   * Each [[MultiChoiceSetting]] takes a MultiChoiceEnumeration as domain. The enumartion may
+   * Each [[MultiChoiceSetting]] takes a MultiChoiceEnumeration as domain. The enumeration may
    * use the Choice class to define values, or simply use the default `Value` constructor:
    *
    *     object SettingDomain extends MultiChoiceEnumeration { val arg1, arg2 = Value }
@@ -572,7 +572,8 @@ class MutableSettings(val errorFn: String => Unit)
     case class Choice(name: String, help: String = "", expandsTo: List[Choice] = Nil) extends Val(name)
   }
 
-  /** A Setting that collects string-valued settings from an enumerated domain.
+  /**
+   * A Setting that collects string-valued settings from an enumerated domain.
    *  - These choices can be turned on or off: "-option:on,-off"
    *  - If an option is set both on and off, then the option is on
    *  - The choice "_" enables all choices that have not been explicitly disabled
@@ -744,7 +745,7 @@ class MutableSettings(val errorFn: String => Unit)
       sawHelp = false
     }
     def unparse: List[String] = value.toList map (s => s"$name:$s")
-    def contains(s: String)   = value contains (domain withName s)
+    def contains(s: String)   = domain.values.find(_.toString == s).exists(value.contains)
   }
 
   /** A setting that accumulates all strings supplied to it,
