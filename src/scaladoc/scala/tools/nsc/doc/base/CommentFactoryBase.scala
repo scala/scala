@@ -681,10 +681,10 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       jump("[[")
       val parens = 2 + repeatJump('[')
       val stop  = "]" * parens
-      val target = readUntil { check(stop) || check(" ") }
+      val target = readUntil { check(stop) || isWhitespaceOrNewLine(char) }
       val title =
         if (!check(stop)) Some({
-          jump(" ")
+          jumpWhitespaceOrNewLine()
           inline(check(stop))
         })
         else None
@@ -899,6 +899,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     def jumpWhitespace() = jumpUntil(!isWhitespace(char))
 
+    def jumpWhitespaceOrNewLine() = jumpUntil(!isWhitespaceOrNewLine(char))
+
     /* READERS */
 
     final def readUntil(c: Char): String = {
@@ -938,5 +940,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     /* CHARS CLASSES */
 
     def isWhitespace(c: Char) = c == ' ' || c == '\t'
+
+    def isWhitespaceOrNewLine(c: Char) = isWhitespace(c) || c == '\n'
   }
 }
