@@ -3,7 +3,6 @@ package scala.tools.partest
 import scala.collection.JavaConverters._
 import scala.tools.asm
 import asm.{tree => t}
-import scala.tools.asm.tree.LabelNode
 
 /** Makes using ASM from ByteCodeTests more convenient.
  *
@@ -15,13 +14,9 @@ object ASMConverters {
   /**
    * Transform the instructions of an ASM Method into a list of [[Instruction]]s.
    */
-  def instructionsFromMethod(meth: t.MethodNode): List[Instruction] = {
-    val insns = meth.instructions
-    val asmToScala = new AsmToScala {
-      def labelIndex(l: t.LabelNode) = insns.indexOf(l)
-    }
-    asmToScala.convert(insns.iterator.asScala.toList)
-  }
+  def instructionsFromMethod(meth: t.MethodNode): List[Instruction] = new AsmToScala(meth).instructions
+
+  def convertMethod(meth: t.MethodNode): Method = new AsmToScala(meth).method
 
   implicit class RichInstructionLists(val self: List[Instruction]) extends AnyVal {
     def === (other: List[Instruction]) = equivalentBytecode(self, other)
@@ -61,6 +56,8 @@ object ASMConverters {
     }
   }
 
+  case class Method(instructions: List[Instruction], handlers: List[ExceptionHandler], localVars: List[LocalVariable])
+
   case class Field       (opcode: Int, owner: String, name: String, desc: String)               extends Instruction
   case class Incr        (opcode: Int, `var`: Int, incr: Int)                                   extends Instruction
   case class Op          (opcode: Int)                                                          extends Instruction
@@ -69,7 +66,7 @@ object ASMConverters {
   case class Ldc         (opcode: Int, cst: Any)                                                extends Instruction
   case class LookupSwitch(opcode: Int, dflt: Label, keys: List[Int], labels: List[Label])       extends Instruction
   case class TableSwitch (opcode: Int, min: Int, max: Int, dflt: Label, labels: List[Label])    extends Instruction
-  case class Method      (opcode: Int, owner: String, name: String, desc: String, itf: Boolean) extends Instruction
+  case class Invoke      (opcode: Int, owner: String, name: String, desc: String, itf: Boolean) extends Instruction
   case class NewArray    (opcode: Int, desc: String, dims: Int)                                 extends Instruction
   case class TypeOp      (opcode: Int, desc: String)                                            extends Instruction
   case class VarOp       (opcode: Int, `var`: Int)                                              extends Instruction
@@ -77,13 +74,18 @@ object ASMConverters {
   case class FrameEntry  (`type`: Int, local: List[Any], stack: List[Any])                      extends Instruction { def opcode: Int = -1 }
   case class LineNumber  (line: Int, start: Label)                                              extends Instruction { def opcode: Int = -1 }
 
-  abstract class AsmToScala {
+  case class ExceptionHandler(start: Label, end: Label, handler: Label, desc: Option[String])
+  case class LocalVariable(name: String, desc: String, signature: Option[String], start: Label, end: Label, index: Int)
 
-    def labelIndex(l: t.LabelNode): Int
+  class AsmToScala(asmMethod: t.MethodNode) {
 
-    def op(i: t.AbstractInsnNode): Int = i.getOpcode
+    def instructions: List[Instruction] = asmMethod.instructions.iterator.asScala.toList map apply
 
-    def convert(instructions: List[t.AbstractInsnNode]): List[Instruction] = instructions map apply
+    def method: Method = Method(instructions, convertHandlers(asmMethod), convertLocalVars(asmMethod))
+
+    private def labelIndex(l: t.LabelNode): Int = asmMethod.instructions.indexOf(l)
+    
+    private def op(i: t.AbstractInsnNode): Int = i.getOpcode
 
     private def lst[T](xs: java.util.List[T]): List[T] = if (xs == null) Nil else xs.asScala.toList
 
@@ -108,13 +110,21 @@ object ASMConverters {
       case i: t.LdcInsnNode            => Ldc          (op(i), i.cst: Any)
       case i: t.LookupSwitchInsnNode   => LookupSwitch (op(i), applyLabel(i.dflt), lst(i.keys) map (x => x: Int), lst(i.labels) map applyLabel)
       case i: t.TableSwitchInsnNode    => TableSwitch  (op(i), i.min, i.max, applyLabel(i.dflt), lst(i.labels) map applyLabel)
-      case i: t.MethodInsnNode         => Method       (op(i), i.owner, i.name, i.desc, i.itf)
+      case i: t.MethodInsnNode         => Invoke       (op(i), i.owner, i.name, i.desc, i.itf)
       case i: t.MultiANewArrayInsnNode => NewArray     (op(i), i.desc, i.dims)
       case i: t.TypeInsnNode           => TypeOp       (op(i), i.desc)
       case i: t.VarInsnNode            => VarOp        (op(i), i.`var`)
       case i: t.LabelNode              => Label        (labelIndex(i))
       case i: t.FrameNode              => FrameEntry   (i.`type`, mapOverFrameTypes(lst(i.local)), mapOverFrameTypes(lst(i.stack)))
       case i: t.LineNumberNode         => LineNumber   (i.line, applyLabel(i.start))
+    }
+
+    private def convertHandlers(method: t.MethodNode): List[ExceptionHandler] = {
+      method.tryCatchBlocks.asScala.map(h => ExceptionHandler(applyLabel(h.start), applyLabel(h.end), applyLabel(h.handler), Option(h.`type`)))(collection.breakOut)
+    }
+
+    private def convertLocalVars(method: t.MethodNode): List[LocalVariable] = {
+      method.localVariables.asScala.map(v => LocalVariable(v.name, v.desc, Option(v.signature), applyLabel(v.start), applyLabel(v.end), v.index))(collection.breakOut)
     }
   }
 
@@ -159,13 +169,19 @@ object ASMConverters {
     }) && equivalentBytecode(as.tail, bs.tail, varMap, labelMap)
   }
 
-  /**
-   * Convert back a list of [[Instruction]]s to ASM land. The code is emitted into the parameter
-   * `method`.
-   */
   def applyToMethod(method: t.MethodNode, instructions: List[Instruction]): Unit = {
     val asmLabel = createLabelNodes(instructions)
     instructions.foreach(visitMethod(method, _, asmLabel))
+  }
+
+  /**
+   * Convert back a [[Method]] to ASM land. The code is emitted into the parameter `asmMethod`.
+   */
+  def applyToMethod(asmMethod: t.MethodNode, method: Method): Unit = {
+    val asmLabel = createLabelNodes(method.instructions)
+    method.instructions.foreach(visitMethod(asmMethod, _, asmLabel))
+    method.handlers.foreach(h => asmMethod.visitTryCatchBlock(asmLabel(h.start), asmLabel(h.end), asmLabel(h.handler), h.desc.orNull))
+    method.localVars.foreach(v => asmMethod.visitLocalVariable(v.name, v.desc, v.signature.orNull, asmLabel(v.start), asmLabel(v.end), v.index))
   }
 
   private def createLabelNodes(instructions: List[Instruction]): Map[Label, asm.Label] = {
@@ -190,7 +206,7 @@ object ASMConverters {
     case Ldc(op, cst)                            => method.visitLdcInsn(cst)
     case LookupSwitch(op, dflt, keys, labels)    => method.visitLookupSwitchInsn(asmLabel(dflt), keys.toArray, (labels map asmLabel).toArray)
     case TableSwitch(op, min, max, dflt, labels) => method.visitTableSwitchInsn(min, max, asmLabel(dflt), (labels map asmLabel).toArray: _*)
-    case Method(op, owner, name, desc, itf)      => method.visitMethodInsn(op, owner, name, desc, itf)
+    case Invoke(op, owner, name, desc, itf)      => method.visitMethodInsn(op, owner, name, desc, itf)
     case NewArray(op, desc, dims)                => method.visitMultiANewArrayInsn(desc, dims)
     case TypeOp(op, desc)                        => method.visitTypeInsn(op, desc)
     case VarOp(op, vr)                           => method.visitVarInsn(op, vr)

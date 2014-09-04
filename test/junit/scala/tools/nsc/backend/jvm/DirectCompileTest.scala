@@ -58,7 +58,7 @@ class DirectCompileTest {
       List(IntOp(BIPUSH, 10), Op(IRETURN)))
 
     assertTrue(instructionsFromMethod(g).dropNonOp ===
-      List(VarOp(ALOAD, 0), Method(INVOKEVIRTUAL, "C", "f", "()I", false), Op(IRETURN)))
+      List(VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "f", "()I", false), Op(IRETURN)))
   }
 
   @Test

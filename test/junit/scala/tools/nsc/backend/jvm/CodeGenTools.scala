@@ -1,5 +1,7 @@
 package scala.tools.nsc.backend.jvm
 
+import org.junit.Assert._
+
 import scala.reflect.internal.util.BatchSourceFile
 import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
@@ -16,9 +18,11 @@ object CodeGenTools {
                  name: String = "m",
                  descriptor: String = "()V",
                  genericSignature: String = null,
-                 throwsExceptions: Array[String] = null)(body: Instruction*): MethodNode = {
+                 throwsExceptions: Array[String] = null,
+                 handlers: List[ExceptionHandler] = Nil,
+                 localVars: List[LocalVariable] = Nil)(body: Instruction*): MethodNode = {
     val node = new MethodNode(flags, name, descriptor, genericSignature, throwsExceptions)
-    applyToMethod(node, body.toList)
+    applyToMethod(node, Method(body.toList, handlers, localVars))
     node
   }
 
@@ -62,5 +66,14 @@ object CodeGenTools {
   def singleMethodInstructions(compiler: Global)(code: String): List[Instruction] = {
     val List(m) = compileMethods(compiler)(code)
     instructionsFromMethod(m)
+  }
+
+  def singleMethod(compiler: Global)(code: String): Method = {
+    val List(m) = compileMethods(compiler)(code)
+    convertMethod(m)
+  }
+
+  def assertSameCode(actual: List[Instruction], expected: List[Instruction]): Unit = {
+    assertTrue(s"\nExpected: $expected\nActual  : $actual", actual === expected)
   }
 }

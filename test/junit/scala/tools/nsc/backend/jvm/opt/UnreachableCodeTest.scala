@@ -135,6 +135,26 @@ class UnreachableCodeTest {
   }
 
   @Test
+  def eliminateDeadCatchBlocks(): Unit = {
+    val code = "def f: Int = { return 0; try { 1 } catch { case _: Exception => 2 } }"
+    assertSameCode(singleMethodInstructions(dceCompiler)(code).dropNonOp,
+                   List(Op(ICONST_0), Op(IRETURN)))
+
+    val code2 = "def f: Unit = { try { } catch { case _: Exception => () }; () }"
+    // DCE only removes dead basic blocks, but not NOPs, and also not useless jumps
+    assertSameCode(singleMethodInstructions(dceCompiler)(code2).dropNonOp,
+                   List(Op(NOP), Jump(GOTO, Label(33)), Label(33), Op(RETURN)))
+
+    val code3 = "def f: Unit = { try { } catch { case _: Exception => try { } catch { case _: Exception => () } }; () }"
+    assertSameCode(singleMethodInstructions(dceCompiler)(code3).dropNonOp,
+      List(Op(NOP), Jump(GOTO, Label(33)), Label(33), Op(RETURN)))
+
+    val code4 = "def f: Unit = { try { try { } catch { case _: Exception => () } } catch { case _: Exception => () }; () }"
+    assertSameCode(singleMethodInstructions(dceCompiler)(code4).dropNonOp,
+      List(Op(NOP), Jump(GOTO, Label(4)), Label(4), Jump(GOTO, Label(7)), Label(7), Op(RETURN)))
+  }
+
+  @Test // test the dce-testing tools
   def metaTest(): Unit = {
     assertEliminateDead() // no instructions
 
@@ -193,9 +213,5 @@ object UnreachableCodeTest {
     val nonEliminated = instructionsFromMethod(cls.methods.get(0))
     val expectedLive = code.filter(_._2).map(_._1).toList
     assertSameCode(nonEliminated, expectedLive)
-  }
-
-  def assertSameCode(actual: List[Instruction], expected: List[Instruction]): Unit = {
-    assertTrue(s"\nExpected: $expected\nActual  : $actual", actual === expected)
   }
 }

@@ -14,6 +14,7 @@ import scala.annotation.switch
 import scala.reflect.internal.util.Statistics
 
 import scala.tools.asm
+import scala.tools.asm.tree.ClassNode
 
 /*
  *  Prepare in-memory representations of classfiles using the ASM Tree API, and serialize them to disk.
@@ -214,6 +215,14 @@ abstract class GenBCode extends BCodeSyncAndTry {
      *          - converting the plain ClassNode to byte array and placing it on queue-3
      */
     class Worker2 {
+      def localOptimizations(classNode: ClassNode): Unit = {
+        def dce(): Boolean = BackendStats.timed(BackendStats.bcodeDceTimer) {
+          if (settings.YoptUnreachableCode) opt.LocalOpt.removeUnreachableCode(classNode)
+          else false
+        }
+
+        dce()
+      }
 
       def run() {
         while (true) {
@@ -224,9 +233,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
           }
           else {
             try {
-              val dceStart = Statistics.startTimer(BackendStats.bcodeDceTimer)
-              if (settings.YoptUnreachableCode) opt.LocalOpt.removeUnreachableCode(item.plain)
-              Statistics.stopTimer(BackendStats.bcodeDceTimer, dceStart)
+              localOptimizations(item.plain)
               addToQ3(item)
           } catch {
               case ex: Throwable =>
