@@ -322,8 +322,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def drop(n: Int): Iterator[A] = {
     var j = 0
-    while (j < n && this.hasNext) {
-      this.next
+    while (j < n && hasNext) {
+      next()
       j += 1
     }
     this

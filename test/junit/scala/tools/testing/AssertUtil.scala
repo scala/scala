@@ -1,6 +1,11 @@
 package scala.tools
 package testing
 
+import org.junit.Assert
+import Assert.fail
+import scala.runtime.ScalaRunTime.stringOf
+import scala.collection.{ GenIterable, IterableLike }
+
 /** This module contains additional higher-level assert statements
  *  that are ultimately based on junit.Assert primitives.
  */
@@ -21,6 +26,19 @@ object AssertUtil {
           throw e
         else return
     }
-    throw new AssertionError("Expression did not throw!")
+    fail("Expression did not throw!")
   }
+
+  /** JUnit-style assertion for `IterableLike.sameElements`.
+   */
+  def assertSameElements[A, B >: A](expected: IterableLike[A, _], actual: GenIterable[B], message: String = ""): Unit =
+    if (!(expected sameElements actual))
+      fail(
+        f"${ if (message.nonEmpty) s"$message " else "" }expected:<${ stringOf(expected) }> but was:<${ stringOf(actual) }>"
+      )
+
+  /** Convenient for testing iterators.
+   */
+  def assertSameElements[A, B >: A](expected: IterableLike[A, _], actual: Iterator[B]): Unit =
+    assertSameElements(expected, actual.toList, "")
 }
