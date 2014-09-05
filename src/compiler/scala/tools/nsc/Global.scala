@@ -1372,7 +1372,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           runCheckers()
 
         // output collected statistics
-        if (settings.Ystatistics)
+        if (settings.YstatisticsEnabled)
           statistics.print(phase)
 
         advancePhase()
