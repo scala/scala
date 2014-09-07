@@ -1,0 +1,7 @@
+implicit-ambiguous-invalid.scala:5: warning: Invalid implicitAmbiguous message for method neqAmbig1 in object Test:
+The type parameter B referenced in the message of the @implicitAmbiguous annotation is not defined by method neqAmbig1.
+  implicit def neqAmbig1[A] : A =!= A = null
+               ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

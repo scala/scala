@@ -885,7 +885,7 @@ trait Implicits {
        *   - find the most likely one
        *   - if it matches, forget about all others it improves upon
        */
-      @tailrec private def rankImplicits(pending: Infos, acc: Infos): Infos = pending match {
+      @tailrec private def rankImplicits(pending: Infos, acc: List[(SearchResult, ImplicitInfo)]): List[(SearchResult, ImplicitInfo)] = pending match {
         case Nil                          => acc
         case firstPending :: otherPending =>
           def firstPendingImproves(alt: ImplicitInfo) =
@@ -912,7 +912,7 @@ trait Implicits {
               val pendingImprovingBest = undoLog undo {
                 otherPending filterNot firstPendingImproves
               }
-              rankImplicits(pendingImprovingBest, firstPending :: acc)
+              rankImplicits(pendingImprovingBest, (newBest, firstPending) :: acc)
           }
       }
 
@@ -928,14 +928,14 @@ trait Implicits {
         // So if there is any element not improved upon by the first it is an error.
         rankImplicits(eligible, Nil) match {
           case Nil            => ()
-          case chosen :: rest =>
-            rest find (alt => !improves(chosen, alt)) match {
-              case Some(competing)  =>
-                AmbiguousImplicitError(chosen, competing, "both", "and", "")(isView, pt, tree)(context)
+          case (chosenResult, chosenInfo) :: rest =>
+            rest find { case (_, alt) => !improves(chosenInfo, alt) } match {
+              case Some((competingResult, competingInfo))  =>
+                AmbiguousImplicitError(chosenInfo, chosenResult.tree, competingInfo, competingResult.tree, "both", "and", "")(isView, pt, tree)(context)
                 return AmbiguousSearchFailure // Stop the search once ambiguity is encountered, see t4457_2.scala
               case _                =>
-                if (isView) chosen.useCountView += 1
-                else chosen.useCountArg += 1
+                if (isView) chosenInfo.useCountView += 1
+                else chosenInfo.useCountArg += 1
             }
         }
 
@@ -1445,9 +1445,9 @@ trait Implicits {
     }
   }
 
-  object ImplicitNotFoundMsg {
-    def unapply(sym: Symbol): Option[(Message)] = sym.implicitNotFoundMsg match {
-      case Some(m) => Some(new Message(sym, m))
+  class ImplicitAnnotationMsg(f: Symbol => Option[String], clazz: Symbol, annotationName: String) {
+    def unapply(sym: Symbol): Option[(Message)] = f(sym) match {
+      case Some(m) => Some(new Message(sym, m, annotationName))
       case None if sym.isAliasType =>
         // perform exactly one step of dealiasing
         // this is necessary because ClassManifests are now aliased to ClassTags
@@ -1459,41 +1459,45 @@ trait Implicits {
     // check the message's syntax: should be a string literal that may contain occurrences of the string "${X}",
     // where `X` refers to a type parameter of `sym`
     def check(sym: Symbol): Option[String] =
-      sym.getAnnotation(ImplicitNotFoundClass).flatMap(_.stringArg(0) match {
-        case Some(m) => new Message(sym, m).validate
-        case None => Some("Missing argument `msg` on implicitNotFound annotation.")
+      sym.getAnnotation(clazz).flatMap(_.stringArg(0) match {
+        case Some(m) => new Message(sym, m, annotationName).validate
+        case None => Some(s"Missing argument `msg` on $annotationName annotation.")
       })
+  }
 
+  object ImplicitNotFoundMsg extends ImplicitAnnotationMsg(_.implicitNotFoundMsg, ImplicitNotFoundClass, "implicitNotFound")
+
+  object ImplicitAmbiguousMsg extends ImplicitAnnotationMsg(_.implicitAmbiguousMsg, ImplicitAmbiguousClass, "implicitAmbiguous")
+
+  class Message(sym: Symbol, msg: String, annotationName: String) {
     // http://dcsobral.blogspot.com/2010/01/string-interpolation-in-scala-with.html
     private val Intersobralator = """\$\{\s*([^}\s]+)\s*\}""".r
 
-    class Message(sym: Symbol, msg: String) {
-      private def interpolate(text: String, vars: Map[String, String]) =
-        Intersobralator.replaceAllIn(text, (_: Regex.Match) match {
-          case Regex.Groups(v) => Regex quoteReplacement vars.getOrElse(v, "")
+    private def interpolate(text: String, vars: Map[String, String]) =
+      Intersobralator.replaceAllIn(text, (_: Regex.Match) match {
+        case Regex.Groups(v) => Regex quoteReplacement vars.getOrElse(v, "")
           // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
-        })
+      })
 
-      private lazy val typeParamNames: List[String] = sym.typeParams.map(_.decodedName)
-      private def typeArgsAtSym(paramTp: Type) = paramTp.baseType(sym).typeArgs
+    private lazy val typeParamNames: List[String] = sym.typeParams.map(_.decodedName)
+    private def typeArgsAtSym(paramTp: Type) = paramTp.baseType(sym).typeArgs
 
-      def format(paramName: Name, paramTp: Type): String = format(typeArgsAtSym(paramTp) map (_.toString))
+    def format(paramName: Name, paramTp: Type): String = format(typeArgsAtSym(paramTp) map (_.toString))
 
-      def format(typeArgs: List[String]): String =
-        interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
+    def format(typeArgs: List[String]): String =
+      interpolate(msg, Map((typeParamNames zip typeArgs): _*)) // TODO: give access to the name and type of the implicit argument, etc?
 
-      def validate: Option[String] = {
-        val refs  = Intersobralator.findAllMatchIn(msg).map(_ group 1).toSet
-        val decls = typeParamNames.toSet
+    def validate: Option[String] = {
+      val refs  = Intersobralator.findAllMatchIn(msg).map(_ group 1).toSet
+      val decls = typeParamNames.toSet
 
-        (refs &~ decls) match {
-          case s if s.isEmpty => None
-          case unboundNames   =>
-            val singular = unboundNames.size == 1
-            val ess      = if (singular) "" else "s"
-            val bee      = if (singular) "is" else "are"
-            Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @implicitNotFound annotation $bee not defined by $sym.")
-        }
+      (refs &~ decls) match {
+        case s if s.isEmpty => None
+        case unboundNames   =>
+          val singular = unboundNames.size == 1
+          val ess      = if (singular) "" else "s"
+          val bee      = if (singular) "is" else "are"
+          Some(s"The type parameter$ess ${unboundNames mkString ", "} referenced in the message of the @$annotationName annotation $bee not defined by $sym.")
       }
     }
   }
