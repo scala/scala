@@ -19,6 +19,8 @@ object AssertUtil {
         val clazz = manifest.runtimeClass
         if (!clazz.isAssignableFrom(e.getClass))
           throw e
+        else return
     }
+    throw new AssertionError("Expression did not throw!")
   }
 }

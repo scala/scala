@@ -15,9 +15,13 @@ class StdNamesTest {
 
   @Test
   def testNewTermNameInvalid(): Unit = {
-    assertThrows[IllegalArgumentException](newTermName("foo".toCharArray, 0, -1))
-    assertThrows[IllegalArgumentException](newTermName("foo".toCharArray, 0, 0))
     assertThrows[IllegalArgumentException](newTermName("foo".toCharArray, -1, 1))
+  }
+
+  @Test
+  def testNewTermNameNegativeLenght(): Unit = {
+    assertEquals(nme.EMPTY, newTermName("foo".toCharArray, 0, -1))
+    assertEquals(nme.EMPTY, newTermName("foo".toCharArray, 0, 0))
   }
 
   @Test

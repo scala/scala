@@ -209,12 +209,11 @@ class MutableSettings(val errorFn: String => Unit)
   def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
   def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String) =
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
-  def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
+  def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) =
+    add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
-  def MultiChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: Option[() => Unit] = None)(
-      helper: MultiChoiceSetting => String = _ => choices.mkString(f"$descr:%n", f"%n  ", f"%n")
-  ) =
-    add(new MultiChoiceSetting(name, helpArg, descr, choices, default, helper))
+  def MultiChoiceSetting[E <: MultiChoiceEnumeration](name: String, helpArg: String, descr: String, domain: E, default: Option[List[String]] = None) =
+    add(new MultiChoiceSetting[E](name, helpArg, descr, domain, default))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
@@ -367,7 +366,7 @@ class MutableSettings(val errorFn: String => Unit)
     def withDeprecationMessage(msg: String): this.type = { _deprecationMessage = Some(msg) ; this }
   }
 
-  /** A setting represented by an integer */
+  /** A setting represented by an integer. */
   class IntSetting private[nsc](
     name: String,
     descr: String,
@@ -553,57 +552,193 @@ class MutableSettings(val errorFn: String => Unit)
       }
   }
 
-  /** A setting that receives any combination of enumerated values,
-   *  including "_" to mean all values and "help" for verbose info.
-   *  In non-colonated mode, stops consuming args at the first
-   *  non-value, instead of at the next option, as for a multi-string.
+  /**
+   * Each [[MultiChoiceSetting]] takes a MultiChoiceEnumeration as domain. The enumeration may
+   * use the Choice class to define values, or simply use the default `Value` constructor:
+   *
+   *     object SettingDomain extends MultiChoiceEnumeration { val arg1, arg2 = Value }
+   *
+   * Or
+   *
+   *     object SettingDomain extends MultiChoiceEnumeration {
+   *       val arg1 = Choice("arg1", "help")
+   *       val arg2 = Choice("arg2", "help")
+   *     }
+   *
+   * Choices with a non-empty `expandsTo` enable other options. Note that expanding choices are
+   * not present in the multiChoiceSetting.value set, only their expansion.
    */
-  class MultiChoiceSetting private[nsc](
+  abstract class MultiChoiceEnumeration extends Enumeration {
+    case class Choice(name: String, help: String = "", expandsTo: List[Choice] = Nil) extends Val(name)
+  }
+
+  /**
+   * A Setting that collects string-valued settings from an enumerated domain.
+   *  - These choices can be turned on or off: "-option:on,-off"
+   *  - If an option is set both on and off, then the option is on
+   *  - The choice "_" enables all choices that have not been explicitly disabled
+   *
+   *  Arguments can be provided in colonated or non-colonated mode, i.e. "-option a b" or
+   *  "-option:a,b". Note that arguments starting with a "-" can only be provided in colonated mode,
+   *  otherwise they are interpreted as a new option.
+   *
+   *  In non-colonated mode, the setting stops consuming arguments at the first non-choice,
+   *  i.e. "-option a b c" only consumes "a" and "b" if "c" is not a valid choice.
+   *
+   *  @param name         command-line setting name, eg "-Xlint"
+   *  @param helpArg      help description for the kind of arguments it takes, eg "warning"
+   *  @param descr        description of the setting
+   *  @param domain       enumeration of choices implementing MultiChoice, or the string value is
+   *                      taken for the name
+   *  @param default      If Some(args), the default options if none are provided. If None, an
+   *                      error is printed if there are no arguments.
+   */
+  class MultiChoiceSetting[E <: MultiChoiceEnumeration] private[nsc](
     name: String,
-    arg: String,
+    helpArg: String,
     descr: String,
-    override val choices: List[String],
-    val default: Option[() => Unit],
-    helper: MultiChoiceSetting => String
-  ) extends MultiStringSetting(name, s"_,$arg,-$arg", s"$descr: `_' for all, `$name:help' to list") {
+    val domain: E,
+    val default: Option[List[String]]
+  ) extends Setting(name, s"$descr: `_' for all, `$name:help' to list") with Clearable {
 
-    private def badChoice(s: String, n: String) = errorFn(s"'$s' is not a valid choice for '$name'")
-    private def choosing = choices.nonEmpty
-    private def isChoice(s: String) = (s == "_") || (choices contains (s stripPrefix "-"))
+    withHelpSyntax(s"$name:<_,$helpArg,-$helpArg>")
 
-    private var sawHelp  = false
-    private var sawAll   = false
-    private val adderAll = () => sawAll = true
-    private val noargs   = () => errorFn(s"'$name' requires an option. See '$name:help'.")
-
-    override protected def tts(args: List[String], halting: Boolean) = {
-      val added = collection.mutable.ListBuffer.empty[String]
-      def tryArg(arg: String) = arg match {
-        case "_" if choosing               => addAll()
-        case "help" if choosing            => sawHelp = true
-        case s if !choosing || isChoice(s) => added += s
-        case s                             => badChoice(s, name)
+    object ChoiceOrVal {
+      def unapply(a: domain.Value): Option[(String, String, List[domain.Choice])] = a match {
+        case c: domain.Choice => Some((c.name, c.help, c.expandsTo))
+        case v: domain.Value  => Some((v.toString, "", Nil))
       }
-      def stoppingAt(arg: String) = (arg startsWith "-") || (choosing && !isChoice(arg))
+    }
+
+    type T = domain.ValueSet
+    protected var v: T = domain.ValueSet.empty
+
+    // Explicitly enabled or disabled. Yeas may contain expanding options, nays may not.
+    private var yeas = domain.ValueSet.empty
+    private var nays = domain.ValueSet.empty
+
+    // Asked for help
+    private var sawHelp = false
+    // Wildcard _ encountered
+    private var sawAll  = false
+
+    private def badChoice(s: String) = errorFn(s"'$s' is not a valid choice for '$name'")
+    private def isChoice(s: String) = (s == "_") || (choices contains pos(s))
+
+    private def pos(s: String) = s stripPrefix "-"
+    private def isPos(s: String) = !(s startsWith "-")
+
+    override val choices: List[String] = domain.values.toList map {
+      case ChoiceOrVal(name, _, _) => name
+    }
+
+    def descriptions: List[String] = domain.values.toList map {
+      case ChoiceOrVal(_, "", x :: xs) => "Enables the options "+ (x :: xs).map(_.name).mkString(", ")
+      case ChoiceOrVal(_, descr, _)    => descr
+      case _                           => ""
+    }
+
+    /** (Re)compute from current yeas, nays, wildcard status. */
+    def compute() = {
+      def simple(v: domain.Value) = v match {
+        case ChoiceOrVal(_, _, Nil) => true
+        case _ => false
+      }
+
+      /**
+       * Expand an expanding option, if necessary recursively. Expanding options are not included in
+       * the result (consistent with "_", which is not in `value` either).
+       *
+       * Note: by precondition, options in nays are not expanding, they can only be leaves.
+       */
+      def expand(vs: domain.ValueSet): domain.ValueSet = vs flatMap {
+        case c @ ChoiceOrVal(_, _, Nil) => domain.ValueSet(c)
+        case ChoiceOrVal(_, _, others)  => expand(domain.ValueSet(others: _*))
+      }
+
+      // yeas from _ or expansions are weak: an explicit nay will disable them
+      val weakYeas = if (sawAll) domain.values filter simple else expand(yeas filterNot simple)
+      value = (yeas filter simple) | (weakYeas &~ nays)
+    }
+
+    /** Add a named choice to the multichoice value. */
+    def add(arg: String) = arg match {
+      case _ if !isChoice(arg) =>
+        badChoice(arg)
+      case "_" =>
+        sawAll = true
+        compute()
+      case _ if isPos(arg) =>
+        yeas += domain withName arg
+        compute()
+      case _ =>
+        val choice = domain withName pos(arg)
+        choice match {
+          case ChoiceOrVal(_, _, _ :: _) => errorFn(s"'${pos(arg)}' cannot be negated, it enables other arguments")
+          case _ =>
+        }
+        nays += choice
+        compute()
+    }
+
+    def tryToSet(args: List[String])                  = tryToSetArgs(args, halting = true)
+    override def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)
+    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
+
+    /** Try to set args, handling "help" and default.
+     *  The "halting" parameter means args were "-option a b c -else" so halt
+     *  on "-else" or other non-choice. Otherwise, args were "-option:a,b,c,d",
+     *  so process all and report non-choices as errors.
+     *  @param args args to process
+     *  @param halting stop on non-arg
+     */
+    private def tryToSetArgs(args: List[String], halting: Boolean) = {
+      val added = collection.mutable.ListBuffer.empty[String]
+
+      def tryArg(arg: String) = arg match {
+        case "help"           => sawHelp = true
+        case s if isChoice(s) => added += s // this case also adds "_"
+        case s                => badChoice(s)
+      }
       def loop(args: List[String]): List[String] = args match {
-        case arg :: _ if halting && stoppingAt(arg) => args
-        case arg :: rest                            => tryArg(arg) ; loop(rest)
-        case Nil                                    => Nil
+        case arg :: _ if halting && (!isPos(arg) || !isChoice(arg)) => args
+        case arg :: rest => tryArg(arg) ; loop(rest)
+        case Nil         => Nil
       }
       val rest = loop(args)
-      if (rest.size == args.size)
-        (default getOrElse noargs)()   // if no arg consumed, trigger default action or error
-      else
-        value ++= added.toList         // update all new settings at once
+
+      // if no arg consumed, use defaults or error; otherwise, add what they added
+      if (rest.size == args.size) default match {
+        case Some(defaults) => defaults foreach add
+        case None => errorFn(s"'$name' requires an option. See '$name:help'.")
+      } else {
+        added foreach add
+      }
+
       Some(rest)
     }
 
-    def isHelping: Boolean = sawHelp
-    def help: String       = helper(this)
-    def addAll(): Unit     = (default getOrElse adderAll)()
+    def contains(choice: domain.Value): Boolean = value contains choice
 
-    // the semantics is: s is enabled, i.e., either s or (_ but not -s)
-    override def contains(s: String) = isChoice(s) && (value contains s) || (sawAll && !(value contains s"-$s"))
+    def isHelping: Boolean = sawHelp
+
+    def help: String = {
+      val choiceLength = choices.map(_.length).max + 1
+      val formatStr = s"  %-${choiceLength}s %s"
+      choices.zipAll(descriptions, "", "").map {
+        case (arg, descr) => formatStr.format(arg, descr)
+      } mkString (f"$descr%n", f"%n", "")
+    }
+
+    def clear(): Unit         = {
+      v = domain.ValueSet.empty
+      yeas = domain.ValueSet.empty
+      nays = domain.ValueSet.empty
+      sawAll = false
+      sawHelp = false
+    }
+    def unparse: List[String] = value.toList map (s => s"$name:$s")
+    def contains(s: String)   = domain.values.find(_.toString == s).exists(value.contains)
   }
 
   /** A setting that accumulates all strings supplied to it,
@@ -619,15 +754,15 @@ class MutableSettings(val errorFn: String => Unit)
     def appendToValue(str: String) = value ++= List(str)
 
     // try to set. halting means halt at first non-arg
-    protected def tts(args: List[String], halting: Boolean) = {
+    protected def tryToSetArgs(args: List[String], halting: Boolean) = {
       def loop(args: List[String]): List[String] = args match {
         case arg :: rest => if (halting && (arg startsWith "-")) args else { appendToValue(arg) ; loop(rest) }
         case Nil         => Nil
       }
       Some(loop(args))
     }
-    def tryToSet(args: List[String])                  = tts(args, halting = true)
-    override def tryToSetColon(args: List[String])    = tts(args, halting = false)
+    def tryToSet(args: List[String])                  = tryToSetArgs(args, halting = true)
+    override def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)
     override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(',').toList) // used from ide
 
     def clear(): Unit         = (v = Nil)
