@@ -11,6 +11,7 @@ object Bippy {
   def hi(x: Bippy) = x.HI_COMPANION
   private val HI_INSTANCE: Int = 500      // no warn, accessed from instance
   private val HEY_INSTANCE: Int = 1000    // warn
+  private lazy val BOOL: Boolean = true   // warn
 }
 
 class A(val msg: String)
