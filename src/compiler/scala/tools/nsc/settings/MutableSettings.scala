@@ -604,10 +604,9 @@ class MutableSettings(val errorFn: String => Unit)
     withHelpSyntax(s"$name:<_,$helpArg,-$helpArg>")
 
     object ChoiceOrVal {
-      def unapply(a: Any): Option[(String, String, List[domain.Choice])] = a match {
+      def unapply(a: domain.Value): Option[(String, String, List[domain.Choice])] = a match {
         case c: domain.Choice => Some((c.name, c.help, c.expandsTo))
         case v: domain.Value  => Some((v.toString, "", Nil))
-        case _                => None
       }
     }
 
@@ -641,31 +640,25 @@ class MutableSettings(val errorFn: String => Unit)
 
     /** (Re)compute from current yeas, nays, wildcard status. */
     def compute() = {
-      def nonExpanding(vs: domain.ValueSet) = vs filter {
-        case ChoiceOrVal(_, _, others) => others.isEmpty
+      def simple(v: domain.Value) = v match {
+        case ChoiceOrVal(_, _, Nil) => true
+        case _ => false
       }
 
       /**
-       * Expand an option, if necessary recursively. Expanding options are not included in the
-       * result (consistent with "_", which is not in the values either). Explicitly excluded
-       * options (in nays) are not added.
+       * Expand an expanding option, if necessary recursively. Expanding options are not included in
+       * the result (consistent with "_", which is not in `value` either).
        *
        * Note: by precondition, options in nays are not expanding, they can only be leaves.
        */
       def expand(vs: domain.ValueSet): domain.ValueSet = vs flatMap {
-        // expand
-        case c @ ChoiceOrVal(_, _, others) if others.nonEmpty => expand(domain.ValueSet(others: _*))
-        case c @ ChoiceOrVal(_, _, _) if !nays(c)             => domain.ValueSet(c)
-        case _ => domain.ValueSet.empty
+        case c @ ChoiceOrVal(_, _, Nil) => domain.ValueSet(c)
+        case ChoiceOrVal(_, _, others)  => expand(domain.ValueSet(others: _*))
       }
-      val expandedYeas = expand(yeas)
 
-
-      // we include everything, except those explicitly disabled.
-      val expandedAll = if (sawAll) nonExpanding(domain.values) &~ nays
-                        else domain.ValueSet.empty
-
-      value = nonExpanding(yeas) | expandedYeas | expandedAll
+      // yeas from _ or expansions are weak: an explicit nay will disable them
+      val weakYeas = if (sawAll) domain.values filter simple else expand(yeas filterNot simple)
+      value = (yeas filter simple) | (weakYeas &~ nays)
     }
 
     /** Add a named choice to the multichoice value. */
