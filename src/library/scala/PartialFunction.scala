@@ -161,10 +161,10 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
 object PartialFunction {
   /** Composite function produced by `PartialFunction#orElse` method
    */
-  private class OrElse[-A, +B] (f1: PartialFunction[A, B], f2: PartialFunction[A, B]) extends PartialFunction[A, B] {
+  private class OrElse[-A, +B] (f1: PartialFunction[A, B], f2: PartialFunction[A, B]) extends scala.runtime.AbstractPartialFunction[A, B] {
     def isDefinedAt(x: A) = f1.isDefinedAt(x) || f2.isDefinedAt(x)
 
-    def apply(x: A): B = f1.applyOrElse(x, f2)
+    override def apply(x: A): B = f1.applyOrElse(x, f2)
 
     override def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 = {
       val z = f1.applyOrElse(x, checkFallback[B])

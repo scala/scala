@@ -143,7 +143,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         { if (tpl.linearizationTemplates.isEmpty && tpl.conversions.isEmpty) NodeSeq.Empty else
           {
             if (!tpl.linearizationTemplates.isEmpty)
-              <div id="ancestors">
+              <div class="ancestors">
                 <span class="filtertype">Inherited<br/>
                 </span>
                 <ol id="linearization">
@@ -153,7 +153,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             else NodeSeq.Empty
           } ++ {
             if (!tpl.conversions.isEmpty)
-              <div id="ancestors">
+              <div class="ancestors">
                 <span class="filtertype">Implicitly<br/>
                 </span>
                 <ol id="implicits"> {
@@ -167,7 +167,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
               </div>
             else NodeSeq.Empty
           } ++
-          <div id="ancestors">
+          <div class="ancestors">
             <span class="filtertype"></span>
             <ol>
               <li class="hideall out"><span>Hide All</span></li>
@@ -201,28 +201,28 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
         }
 
         { if (absValueMembers.isEmpty) NodeSeq.Empty else
-            <div id="values" class="values members">
+            <div class="values members">
               <h3>Abstract Value Members</h3>
               <ol>{ absValueMembers map (memberToHtml(_, tpl)) }</ol>
             </div>
         }
 
         { if (concValueMembers.isEmpty) NodeSeq.Empty else
-            <div id="values" class="values members">
+            <div class="values members">
               <h3>{ if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members" }</h3>
               <ol>{ concValueMembers map (memberToHtml(_, tpl)) }</ol>
             </div>
         }
 
         { if (shadowedImplicitMembers.isEmpty) NodeSeq.Empty else
-            <div id="values" class="values members">
+            <div class="values members">
               <h3>Shadowed Implicit Value Members</h3>
               <ol>{ shadowedImplicitMembers map (memberToHtml(_, tpl)) }</ol>
             </div>
         }
 
         { if (deprValueMembers.isEmpty) NodeSeq.Empty else
-            <div id="values" class="values members">
+            <div class="values members">
               <h3>Deprecated Value Members</h3>
               <ol>{ deprValueMembers map (memberToHtml(_, tpl)) }</ol>
             </div>
@@ -287,13 +287,19 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
   }
 
   def memberToHtml(mbr: MemberEntity, inTpl: DocTemplateEntity): NodeSeq = {
+    // Sometimes it's same, do we need signatureCompat still?
+    val sig = if (mbr.signature == mbr.signatureCompat) {
+      <a id={ mbr.signature }/>
+    } else {
+      <a id={ mbr.signature }/><a id={ mbr.signatureCompat }/>
+    }
+
     val memberComment = memberToCommentHtml(mbr, inTpl, isSelf = false)
     <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
       data-isabs={ mbr.isAbstract.toString }
       fullComment={ if(memberComment.filter(_.label=="div").isEmpty) "no" else "yes" }
       group={ mbr.group }>
-      <a id={ mbr.signature }/>
-      <a id={ mbr.signatureCompat }/>
+      { sig }
       { signature(mbr, isSelf = false) }
       { memberComment }
     </li>

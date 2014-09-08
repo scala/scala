@@ -177,7 +177,7 @@ trait DiagramDirectiveParser {
 
       def warning(message: String) = {
         // we need the position from the package object (well, ideally its comment, but yeah ...)
-        val sym = if (template.sym.isPackage) template.sym.info.member(global.nme.PACKAGE) else template.sym
+        val sym = if (template.sym.hasPackageFlag) template.sym.info.member(global.nme.PACKAGE) else template.sym
         assert((sym != global.NoSymbol) || (sym == global.rootMirror.RootPackage))
         global.reporter.warning(sym.pos, message)
       }
