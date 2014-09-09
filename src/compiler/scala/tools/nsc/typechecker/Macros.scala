@@ -713,7 +713,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
 
             var expectedTpe = expandee.tpe
             if (isNullaryInvocation(expandee)) expectedTpe = expectedTpe.finalResultType
-            if (settings.XfundepMaterialization.value) {
+            if (settings.YfundepMaterialization.value) {
               // approximation is necessary for whitebox macros to guide type inference
               // read more in the comments for onDelayed below
               val undetparams = expectedTpe collect { case tp if tp.typeSymbol.isTypeParameter => tp.typeSymbol }
@@ -785,7 +785,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
           // but is enabled by default in Scala 2.11.
           val shouldInstantiate = typer.context.undetparams.nonEmpty && !inPolyMode(mode)
           if (shouldInstantiate) {
-            if (settings.XfundepMaterialization.value) {
+            if (settings.YfundepMaterialization.value) {
               forced += delayed
               typer.infer.inferExprInstance(delayed, typer.context.extractUndetparams(), pt, keepNothings = false)
               macroExpand(typer, delayed, mode, pt)
@@ -912,7 +912,7 @@ trait Macros extends scala.tools.reflect.FastTrack with Traces {
   private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Int]]
   private def isDelayed(expandee: Tree) = delayed contains expandee
   private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Int] =
-    // !settings.XfundepMaterialization.value implies forced.isEmpty
+    // !settings.YfundepMaterialization.value implies forced.isEmpty
     if (forced(expandee)) scala.collection.mutable.Set[Int]()
     else delayed.getOrElse(expandee, {
       val calculated = scala.collection.mutable.Set[Symbol]()

@@ -111,7 +111,6 @@ trait ScalaSettings extends AbsScalaSettings
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
   val XfullLubs     = BooleanSetting    ("-Xfull-lubs", "Retains pre 2.10 behavior of less aggressive truncation of least upper bounds.")
   val Xdivergence211 = BooleanSetting   ("-Xdivergence211", "Turn on the 2.11 behavior of implicit divergence not terminating recursive implicit searches (SI-7291).")
-  val XfundepMaterialization = BooleanSetting("-Xfundep-materialization", "Turn on the 2.11 behavior of macro expansion being able to influence type inference in implicit searches")
 
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.
@@ -180,6 +179,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YvirtClasses    = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
 
   val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
+  val YfundepMaterialization = BooleanSetting("-Yfundep-materialization", "Turn on the 2.11 behavior of macro expansion being able to influence type inference in implicit searches")
 
   def stop = stopAfter
 
