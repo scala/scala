@@ -13,7 +13,7 @@ package immutable
 import generic._
 import mutable.{Builder, ListBuffer}
 import scala.annotation.tailrec
-import java.io._
+import java.io.{ObjectOutputStream, ObjectInputStream}
 
 /** A class for immutable linked lists representing ordered collections
  *  of elements of type.
@@ -85,7 +85,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
                                   with Product
                                   with GenericTraversableTemplate[A, List]
                                   with LinearSeqOptimized[A, List[A]]
-                                  with Serializable {
+                                  with scala.Serializable {
   override def companion: GenericCompanion[List] = List
 
   import scala.collection.{Iterable, Traversable, Seq, IndexedSeq}
