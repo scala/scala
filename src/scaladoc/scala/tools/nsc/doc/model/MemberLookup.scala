@@ -40,7 +40,7 @@ trait MemberLookup extends base.MemberLookupBase {
   override def findExternalLink(sym: Symbol, name: String): Option[LinkToExternal] = {
     val sym1 =
       if (sym == AnyClass || sym == AnyRefClass || sym == AnyValClass || sym == NothingClass) ListClass
-      else if (sym.isPackage) 
+      else if (sym.hasPackageFlag)
         /* Get package object which has associatedFile ne null */
         sym.info.member(newTermName("package"))
       else sym
