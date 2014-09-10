@@ -26,66 +26,87 @@ object Source {
    */
   def stdin = fromInputStream(System.in)
 
-  /** Creates a Source from an Iterable.
-   *
-   *  @param    iterable  the Iterable
-   *  @return   the Source
+  /** Creates a `Source` from an `Iterable`.
    */
   def fromIterable(iterable: Iterable[Char]): Source = new Source {
     val iter = iterable.iterator
   } withReset(() => fromIterable(iterable))
 
-  /** Creates a Source instance from a single character.
+  /** Creates a `Source` instance from a single character.
    */
   def fromChar(c: Char): Source = fromIterable(Array(c))
 
-  /** creates Source from array of characters, with empty description.
+  /** Creates `Source` from array of characters, with empty description.
    */
   def fromChars(chars: Array[Char]): Source = fromIterable(chars)
 
-  /** creates Source from a String, with no description.
+  /** Creates `Source` from a `String`, with no description.
    */
   def fromString(s: String): Source = fromIterable(s)
 
-  /** creates Source from file with given name, setting its description to
-   *  filename.
+  /** Creates `Source` from file with given name, setting its description to the
+   *  file's absolute path.
+   * 
+   *  @param name the pathname of the file. The format is dictated by the FileSystem.
    */
   def fromFile(name: String)(implicit codec: Codec): BufferedSource =
     fromFile(new JFile(name))(codec)
 
-  /** creates Source from file with given name, using given encoding, setting
-   *  its description to filename.
+  /** Creates `Source` from file with given name, using the given encoding, setting
+   *  its description to the file's absolute path.
+   * 
+   *  @param name the pathname of the file. The format is dictated by the FileSystem.
+   *  @param enc the name of the `Charset` encoding to open the file with. e.g US-ASCII, UTF-16
    */
   def fromFile(name: String, enc: String): BufferedSource =
     fromFile(name)(Codec(enc))
 
-  /** creates `ource` from file with given file `URI`.
+  /** Creates `Source` from file with given `URI`, setting its description to the
+   *  file's absolute path.
    */
   def fromFile(uri: URI)(implicit codec: Codec): BufferedSource =
     fromFile(new JFile(uri))(codec)
 
-  /** creates Source from file with given file: URI
+  /** Creates `Source` from file with given `URI`, using the given encoding, setting
+   *  its description to the file's absolute path.
+   * 
+   *  @param uri the URI referencing the file.
+   *  @param enc the name of the `Charset` encoding to open the file with. e.g US-ASCII, UTF-16
    */
   def fromFile(uri: URI, enc: String): BufferedSource =
     fromFile(uri)(Codec(enc))
 
-  /** creates Source from file, using default character encoding, setting its
-   *  description to filename.
+  /** Creates `Source` from a [[java.io.File]] setting its
+   *  description to the file's absolute path.
    */
   def fromFile(file: JFile)(implicit codec: Codec): BufferedSource =
     fromFile(file, Source.DefaultBufSize)(codec)
 
-  /** same as fromFile(file, enc, Source.DefaultBufSize)
+  /** Creates `Source` from a [[java.io.File]], using the given encoding, setting
+   *  its description to the file's absolute path.
+   * 
+   *  @param file the File object.
+   *  @param enc the name of the `Charset` encoding to open the file with. e.g US-ASCII, UTF-16
    */
   def fromFile(file: JFile, enc: String): BufferedSource =
     fromFile(file)(Codec(enc))
 
+  /** Creates `Source` from a [[java.io.File]], using the given encoding and buffer
+   *  size, setting its description to the file's absolute path.
+   * 
+   *  @param file the File object.
+   *  @param enc the name of the `Charset` encoding to open the file with. e.g US-ASCII, UTF-16
+   *  @param bufferSize The buffer size of the `Source`
+   */
   def fromFile(file: JFile, enc: String, bufferSize: Int): BufferedSource =
     fromFile(file, bufferSize)(Codec(enc))
 
-  /** Creates Source from `file`, using given character encoding, setting
-   *  its description to filename. Input is buffered in a buffer of size
-   *  `bufferSize`.
+  /** Creates `Source` from a [[java.io.File]], using the given encoding and buffer
+   *  size, setting its description to the file's absolute path.
+   * 
+   *  @param file the File object.
+   *  @param codec the encoding to open the file with.
+   *  @param bufferSize The buffer size of the `Source`
    */
   def fromFile(file: JFile, bufferSize: Int)(implicit codec: Codec): BufferedSource = {
     val inputStream = new FileInputStream(file)
@@ -100,12 +121,16 @@ object Source {
 
   /** Create a `Source` from array of bytes, decoding
    *  the bytes according to codec.
-   *
-   *  @return      the created `Source` instance.
    */
   def fromBytes(bytes: Array[Byte])(implicit codec: Codec): Source =
     fromString(new String(bytes, codec.name))
 
+  /** Create a `Source` from array of bytes, decoding
+   *  the bytes according to codec.
+   * 
+   *  @param bytes the bytes
+   *  @param enc the name of the `Charset` encoding to open the file with. e.g US-ASCII, UTF-16
+   */
   def fromBytes(bytes: Array[Byte], enc: String): Source =
     fromBytes(bytes)(Codec(enc))
 
@@ -115,27 +140,38 @@ object Source {
   def fromRawBytes(bytes: Array[Byte]): Source =
     fromString(new String(bytes, Codec.ISO8859.name))
 
-  /** creates `Source` from file with given file: URI
+  /** Creates `Source` from file with given file: `URI`
+   *  Same as fromFile(uri)
    */
   def fromURI(uri: URI)(implicit codec: Codec): BufferedSource =
     fromFile(new JFile(uri))(codec)
 
-  /** same as fromURL(new URL(s))(Codec(enc))
+  /** Creates `Source` from a given URL and encoding.
+   *  Same as fromURL(new URL(s))(Codec(enc))
+   * 
+   *  @param s the URL
+   *  @param enc the name of the `Charset` encoding to open the file with. e.g US-ASCII, UTF-16
    */
   def fromURL(s: String, enc: String): BufferedSource =
     fromURL(s)(Codec(enc))
 
-  /** same as fromURL(new URL(s))
+  /** Creates `Source` from a given URL
+   *  Same as fromURL(new URL(s))
    */
   def fromURL(s: String)(implicit codec: Codec): BufferedSource =
     fromURL(new URL(s))(codec)
 
-  /** same as fromInputStream(url.openStream())(Codec(enc))
+  /** Creates `Source` from a given URL and encoding.
+   *  Same as fromInputStream(url.openStream())(Codec(enc))
+   * 
+   *  @param url the URL
+   *  @param enc the name of the `Charset` encoding to open the file with. e.g US-ASCII, UTF-16
    */
   def fromURL(url: URL, enc: String): BufferedSource =
     fromURL(url)(Codec(enc))
 
-  /** same as fromInputStream(url.openStream())(codec)
+  /** Creates `Source` from a given URL and encoding.
+   *  Same as fromInputStream(url.openStream())(codec)
    */
   def fromURL(url: URL)(implicit codec: Codec): BufferedSource =
     fromInputStream(url.openStream())(codec)
@@ -162,9 +198,16 @@ object Source {
     new BufferedSource(inputStream, bufferSize)(codec) withReset resetFn withClose close
   }
 
+  /** Creates `Source` from an input stream and encoding.
+   * 
+   *  @param is the InputStream
+   *  @param enc the name of the `Charset` encoding to open the file with. e.g US-ASCII, UTF-16
+   */
   def fromInputStream(is: InputStream, enc: String): BufferedSource =
     fromInputStream(is)(Codec(enc))
 
+  /** Creates `Source` from an input stream and encoding.
+   */
   def fromInputStream(is: InputStream)(implicit codec: Codec): BufferedSource =
     createBufferedSource(is, reset = () => fromInputStream(is)(codec), close = () => is.close())(codec)
 }
