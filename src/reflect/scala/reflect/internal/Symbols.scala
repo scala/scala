@@ -789,6 +789,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       isMethod && owner.isDerivedValueClass && !isParamAccessor && !isConstructor && !hasFlag(SUPERACCESSOR) && !isMacro && !isSpecialized
 
     final def isAnonymousFunction = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
+    final def isDelambdafyFunction = isSynthetic && (name containsName tpnme.DELAMBDAFY_LAMBDA_CLASS_NAME)
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
     final def needsFlatClasses    = phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass
 
