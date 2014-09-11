@@ -179,6 +179,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YvirtClasses    = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
 
   val exposeEmptyPackage = BooleanSetting("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
+  val YfundepMaterialization = BooleanSetting("-Yfundep-materialization", "Turn on the 2.11 behavior of macro expansion being able to influence type inference in implicit searches")
 
   def stop = stopAfter
 
