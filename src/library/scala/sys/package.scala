@@ -61,8 +61,7 @@ package object sys {
   def env: immutable.Map[String, String] = immutable.Map(System.getenv().asScala.toSeq: _*)
 
   /** Register a shutdown hook to be run when the VM exits.
-   *  The newly created thread is marked as a daemon so it will not
-   *  interfere with VM shutdown.  The hook is automatically registered:
+   *  The hook is automatically registered:
    *  the returned value can be ignored, but is available in case the
    *  Thread requires further modification.  It can also be unregistered
    *  by calling ShutdownHookThread#remove().
