@@ -18,6 +18,7 @@ trait ScalacPatternExpanders {
   import global._
   import definitions._
   import treeInfo._
+  import analyzer._
 
   type PatternAligned = ScalacPatternExpander#Aligned
 
@@ -94,7 +95,7 @@ trait ScalacPatternExpanders {
     def tupleExtractor(extractor: Extractor): Extractor =
       extractor.copy(fixed = tupleType(extractor.fixed) :: Nil)
 
-    private def validateAligned(tree: Tree, aligned: Aligned): Aligned = {
+    private def validateAligned(context: Context, tree: Tree, aligned: Aligned): Aligned = {
       import aligned._
 
       def owner         = tree.symbol.owner
@@ -103,8 +104,8 @@ trait ScalacPatternExpanders {
       def offerString   = if (extractor.isErroneous) "" else s" offering $offering"
       def arityExpected = ( if (extractor.hasSeq) "at least " else "" ) + productArity
 
-      def err(msg: String)         = reporter.error(tree.pos, msg)
-      def warn(msg: String)        = reporter.warning(tree.pos, msg)
+      def err(msg: String)         = context.error(tree.pos, msg)
+      def warn(msg: String)        = context.warning(tree.pos, msg)
       def arityError(what: String) = err(s"$what patterns for $owner$offerString: expected $arityExpected, found $totalArity")
 
       if (isStar && !isSeq)
@@ -117,7 +118,7 @@ trait ScalacPatternExpanders {
       aligned
     }
 
-    def apply(sel: Tree, args: List[Tree]): Aligned = {
+    def apply(context: Context, sel: Tree, args: List[Tree]): Aligned = {
       val fn = sel match {
         case Unapplied(fn) => fn
         case _             => sel
@@ -145,12 +146,12 @@ trait ScalacPatternExpanders {
       }
 
       val normalizedExtractor = if (requiresTupling) tupleExtractor(extractor) else extractor
-      validateAligned(fn, Aligned(patterns, normalizedExtractor))
+      validateAligned(context, fn, Aligned(patterns, normalizedExtractor))
     }
 
-    def apply(tree: Tree): Aligned = tree match {
-      case Apply(fn, args)   => apply(fn, args)
-      case UnApply(fn, args) => apply(fn, args)
+    def apply(context: Context, tree: Tree): Aligned = tree match {
+      case Apply(fn, args)   => apply(context, fn, args)
+      case UnApply(fn, args) => apply(context, fn, args)
     }
   }
 }
