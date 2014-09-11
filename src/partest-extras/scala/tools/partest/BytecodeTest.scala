@@ -84,7 +84,7 @@ abstract class BytecodeTest {
   /**
    * Compare the bytecodes of two methods.
    *
-   * The for the `similar` function, you probably want to pass [[ASMConverters.equivalentBytecode]].
+   * For the `similar` function, you probably want to pass [[ASMConverters.equivalentBytecode]].
    */
   def similarBytecode(methA: MethodNode, methB: MethodNode, similar: (List[Instruction], List[Instruction]) => Boolean) = {
     val isa = instructionsFromMethod(methA)

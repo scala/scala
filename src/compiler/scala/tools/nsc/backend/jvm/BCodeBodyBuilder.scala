@@ -824,7 +824,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
          * the stack. "Phantom" because it never exists: such methods always throw, but the JVM does
          * not know that.
          *
-         * Note: The two verifiers (old: type inference, new: type checking) have differnet
+         * Note: The two verifiers (old: type inference, new: type checking) have different
          * requirements. Very briefly:
          *
          * Old (http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.2.1): at
@@ -832,7 +832,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
          *   - Stack is same size and has same typed values
          *   - Local and stack values need to have consistent types
          *   - In practice, the old verifier seems to ignore unreachable code and accept any
-         *     instrucitons after an ATHROW. For example, there can be another ATHROW (without
+         *     instructions after an ATHROW. For example, there can be another ATHROW (without
          *     loading another throwable first).
          *
          * New (http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.1)

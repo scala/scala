@@ -17,10 +17,8 @@ object BackendStats {
   val bcodeDceTimer   = newSubTimer("dead code elimination", bcodeTimer)
   val bcodeWriteTimer = newSubTimer("classfile writing", bcodeTimer)
 
-  def timed[T](timer: Statistics.Timer)(body: => T) = {
+  def timed[T](timer: Statistics.Timer)(body: => T): T = {
     val start = Statistics.startTimer(timer)
-    val res = body
-    Statistics.stopTimer(timer, start)
-    res
+    try body finally Statistics.stopTimer(timer, start)
   }
 }

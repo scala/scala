@@ -141,9 +141,9 @@ object ASMConverters {
     }
     def sameVar(v1: Int, v2: Int) = same(v1, v2, varMap)
     def sameLabel(l1: Label, l2: Label) = same(l1.offset, l2.offset, labelMap)
-    def sameLabels(ls1: List[Label], ls2: List[Label]) = ls1.length == ls2.length && (ls1, ls2).zipped.forall(sameLabel)
+    def sameLabels(ls1: List[Label], ls2: List[Label]) = (ls1 corresponds ls2)(sameLabel)
 
-    def sameFrameTypes(ts1: List[Any], ts2: List[Any]) = ts1.length == ts2.length && (ts1, ts2).zipped.forall {
+    def sameFrameTypes(ts1: List[Any], ts2: List[Any]) = (ts1 corresponds ts2) {
       case (t1: Label, t2: Label) => sameLabel(t1, t2)
       case (x, y) => x == y
     }
