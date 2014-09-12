@@ -5,7 +5,7 @@ import scala.reflect.reify.Taggers
 import scala.tools.nsc.typechecker.{ Analyzer, Macros }
 import scala.reflect.runtime.Macros.currentMirror
 import scala.reflect.api.Universe
-import scala.tools.reflect.quasiquotes.{ Quasiquotes => QuasiquoteImpls }
+import scala.reflect.quasiquotes.{ Quasiquotes => QuasiquoteImpls }
 
 /** Optimizes system macro expansions by hardwiring them directly to their implementations
  *  bypassing standard reflective load and invoke to avoid the overhead of Java/Scala reflection.
