@@ -75,6 +75,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def history = in.history
 
   // classpath entries added via :cp
+  @deprecated("Use reset, replay or require to update class path", since = "2.11")
   var addedClasspath: String = ""
 
   /** A reverse list of commands to replay if the user requests a :replay */
@@ -207,7 +208,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   /** Standard commands **/
   lazy val standardCommands = List(
-    cmd("cp", "<path>", "add a jar or directory to the classpath", addClasspath),
     cmd("edit", "<id>|<line>", "edit history", editCommand),
     cmd("help", "[command]", "print this summary or command-specific help", helpCommand),
     historyCommand,
@@ -221,6 +221,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     nullary("power", "enable power user mode", powerCmd),
     nullary("quit", "exit the interpreter", () => Result(keepRunning = false, None)),
     nullary("replay", "reset execution and replay all previous commands", replay),
+    //cmd("require", "<path>", "add a jar or directory to the classpath", require),  // TODO
     nullary("reset", "reset the repl to its initial state, forgetting all session entries", resetCommand),
     cmd("save", "<path>", "save replayable session to a file", saveCommand),
     shCommand,
@@ -482,6 +483,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       echo("")
     }
   }
+  /** `reset` the interpreter in an attempt to start fresh.
+   */
   def resetCommand() {
     echo("Resetting interpreter state.")
     if (replayCommandStack.nonEmpty) {
@@ -619,6 +622,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     else File(filename).printlnAll(replayCommands: _*)
   )
 
+  @deprecated("Use reset, replay or require to update class path", since = "2.11")
   def addClasspath(arg: String): Unit = {
     val f = File(arg).normalize
     if (f.exists) {
