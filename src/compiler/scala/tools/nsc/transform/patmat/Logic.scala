@@ -10,7 +10,6 @@ package tools.nsc.transform.patmat
 import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.HashSet
 
 trait Logic extends Debugging  {
@@ -71,6 +70,8 @@ trait Logic extends Debugging  {
       def apply(x: Tree): Var
       def unapply(v: Var): Some[Tree]
     }
+
+    def reportWarning(message: String): Unit
 
     // resets hash consing -- only supposed to be called by TreeMakersToProps
     def prepareNewAnalysis(): Unit

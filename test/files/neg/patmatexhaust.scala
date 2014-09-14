@@ -46,7 +46,7 @@ class TestSealedExhaustive { // compile only
       case _ =>
     }
 
-    def ma4(x:Deep) = x match { // missing cases: Gu, Gp
+    def ma4(x:Deep) = x match { // missing cases: Gu, Gp which is not abstract so must be included
       case Ga =>
     }
 
