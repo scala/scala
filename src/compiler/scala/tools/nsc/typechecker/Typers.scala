@@ -4804,7 +4804,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else {
           val decls = newScope
           //Console.println("Owner: " + context.enclClass.owner + " " + context.enclClass.owner.id)
-          val self = refinedType(parents1 map (_.tpe), context.enclClass.owner, decls, templ.pos)
+          val self = refinedType(parents1 map (_.tpe match {
+            case t if t =:= AnyRefTpe => t
+            case t => t.dealias
+          }), context.enclClass.owner, decls, templ.pos)
           newTyper(context.make(templ, self.typeSymbol, decls)).typedRefinement(templ)
           templ updateAttachment CompoundTypeTreeOriginalAttachment(parents1, Nil) // stats are set elsewhere
           tree setType (if (templ.exists(_.isErroneous)) ErrorType else self) // Being conservative to avoid SI-5361
