@@ -4,7 +4,6 @@ layout: default
 chapter: 14
 ---
 
-
 # References
 
 TODO (see comments in markdown source)
@@ -48,7 +47,6 @@ for syntactic definitions?",
   pages		= "822-823",
   month		= nov
 }
-
 
 %% Book
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,7 +114,6 @@ for syntactic definitions?",
   OPTannote =    {}
 }
 
-
 %% InProceedings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -130,7 +127,6 @@ for syntactic definitions?",
   note		= {\hspace*{\fill}\\
                   \verb@http://www.cis.upenn.edu/~bcpierce/FOOL/FOOL10.html@}
 }
-
 
 %% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -207,7 +203,5 @@ for syntactic definitions?",
   note = {FOOL-WOOD '07},
   short = {http://www.cis.upenn.edu/~bcpierce/papers/variance.pdf}
 }
-
-
 
 -->

@@ -23,7 +23,7 @@ A compilation unit consists of a sequence of packagings, import
 clauses, and class and object definitions, which may be preceded by a
 package clause.
 
-A compilation unit 
+A compilation unit
 
 ```scala
 package $p_1$;
@@ -34,7 +34,7 @@ $\mathit{stats}$
 
 starting with one or more package
 clauses is equivalent to a compilation unit consisting of the
-packaging 
+packaging
 
 ```scala
 package $p_1$ { $\ldots$
@@ -94,7 +94,6 @@ into a special empty package. That package cannot be named and
 therefore cannot be imported. However, members of the empty package
 are visible to each other without qualification.
 
-
 ## Package Objects
 
 ```ebnf
@@ -113,7 +112,6 @@ there is a name conflict, the behavior of the program is currently
 undefined. It is expected that this restriction will be lifted in a
 future version of Scala.
 
-
 ## Package References
 
 ```ebnf
@@ -121,12 +119,12 @@ QualId           ::=  id {‘.’ id}
 ```
 
 A reference to a package takes the form of a qualified identifier.
-Like all other references, package references are relative. That is, 
+Like all other references, package references are relative. That is,
 a package reference starting in a name $p$ will be looked up in the
 closest enclosing scope that defines a member named $p$.
 
 The special predefined name `_root_` refers to the
-outermost root package which contains all top-level packages.  
+outermost root package which contains all top-level packages.
 
 ###### Example
 Consider the following program:
@@ -149,7 +147,6 @@ omitted, the name `b` would instead resolve to the package
 `a.b`, and, provided that package does not also
 contain a class `B`, a compiler-time error would result.
 
-
 ## Programs
 
 A _program_ is a top-level object that has a member method
@@ -161,7 +158,7 @@ passed to the `main` method as a parameter of type
 The `main` method of a program can be directly defined in the
 object, or it can be inherited. The scala library defines a special class
 `scala.App` whose body acts as a `main` method.
-An objects $m$ inheriting from this class is thus a program, 
+An objects $m$ inheriting from this class is thus a program,
 which executes the initializaton code of the object $m$.
 
 ###### Example
@@ -198,4 +195,3 @@ object HelloWorld extends App {
   println("Hello World")
 }
 ```
-

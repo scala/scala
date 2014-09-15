@@ -15,7 +15,7 @@ chapter: 8
                     |  Pattern2
   Pattern2        ::=  varid [‘@’ Pattern3]
                     |  Pattern3
-  Pattern3        ::=  SimplePattern 
+  Pattern3        ::=  SimplePattern
                     |  SimplePattern {id [nl] SimplePattern}
   SimplePattern   ::=  ‘_’
                     |  varid
@@ -68,18 +68,17 @@ which is treated as if it was a fresh variable on each occurrence.
 
 ### Typed Patterns
 
-
 ```ebnf
   Pattern1        ::=  varid `:' TypePat
                     |  `_' `:' TypePat
 ```
 
 A typed pattern $x: T$ consists of a pattern variable $x$ and a
-type pattern $T$.  The type of $x$ is the type pattern $T$, where 
+type pattern $T$.  The type of $x$ is the type pattern $T$, where
 each type variable and wildcard is replaced by a fresh, unknown type.
-This pattern matches any value matched by the [type pattern](#type-patterns) 
+This pattern matches any value matched by the [type pattern](#type-patterns)
 $T$; it binds the variable name to
-that value.  
+that value.
 
 ### Pattern Binders
 
@@ -87,10 +86,10 @@ that value.
   Pattern2        ::=  varid `@' Pattern3
 ```
 
-A pattern binder `$x$@$p$` consists of a pattern variable $x$ and a 
+A pattern binder `$x$@$p$` consists of a pattern variable $x$ and a
 pattern $p$. The type of the variable $x$ is the static type $T$ of the pattern $p$.
-This pattern matches any value $v$ matched by the pattern $p$, 
-provided the run-time type of $v$ is also an instance of $T$, 
+This pattern matches any value $v$ matched by the pattern $p$,
+provided the run-time type of $v$ is also an instance of $T$,
 and it binds the variable name to that value.
 
 ### Literal Patterns
@@ -175,7 +174,7 @@ repeated parameter. This is further discussed [here](#pattern-sequences).
 ```
 
 A tuple pattern `($p_1 , \ldots , p_n$)` is an alias
-for the constructor pattern `scala.Tuple$n$($p_1 , \ldots , p_n$)`, 
+for the constructor pattern `scala.Tuple$n$($p_1 , \ldots , p_n$)`,
 where $n \geq 2$. The empty tuple
 `()` is the unique value of type `scala.Unit`.
 
@@ -196,14 +195,14 @@ $x(p_1 , \ldots , p_n)$ if it takes exactly one argument and one of
 the following applies:
 
 * $n=0$ and `unapply`'s result type is `Boolean`. In this case
-  the extractor pattern matches all values $v$ for which 
+  the extractor pattern matches all values $v$ for which
   `$x$.unapply($v$)` yields `true`.
 * $n=1$ and `unapply`'s result type is `Option[$T$]`, for some
   type $T$.  In this case, the (only) argument pattern $p_1$ is typed in
   turn with expected type $T$.  The extractor pattern matches then all
   values $v$ for which `$x$.unapply($v$)` yields a value of form
   `Some($v_1$)`, and $p_1$ matches $v_1$.
-* $n>1$ and `unapply`'s result type is 
+* $n>1$ and `unapply`'s result type is
   `Option[($T_1 , \ldots , T_n$)]`, for some
   types $T_1 , \ldots , T_n$.  In this case, the argument patterns $p_1
   , \ldots , p_n$ are typed in turn with expected types $T_1 , \ldots ,
@@ -250,7 +249,7 @@ First, in a constructor pattern $c(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$, whe
 Second, in an extractor pattern $x(q_1 , \ldots , q_m, p_1 , \ldots , p_n)$ if the extractor object $x$ does not have an `unapply` method,
 but it does define an `unapplySeq` method with a result type conforming to `Option[(T_1, ... , T_m, Seq[S])]` (if `m = 0`, the type `Option[Seq[S]]` is also accepted). The expected type for the patterns $p_i$ is $S$.
 
-The last pattern in a pattern sequence may be a _sequence wildcard_ `_*`. 
+The last pattern in a pattern sequence may be a _sequence wildcard_ `_*`.
 Each element pattern $p_i$ is type-checked with
 $S$ as expected type, unless it is a sequence wildcard. If a final
 sequence wildcard is present, the pattern matches all values $v$ that
@@ -268,7 +267,7 @@ p_n$.
 
 An infix operation pattern $p;\mathit{op};q$ is a shorthand for the
 constructor or extractor pattern $\mathit{op}(p, q)$.  The precedence and
-associativity of operators in patterns is the same as in 
+associativity of operators in patterns is the same as in
 [expressions](06-expressions.html#prefix-infix-and-postfix-operations).
 
 An infix operation pattern $p;\mathit{op};(q_1 , \ldots , q_n)$ is a
@@ -284,7 +283,7 @@ shorthand for the constructor or extractor pattern $\mathit{op}(p, q_1
 A pattern alternative `$p_1$ | $\ldots$ | $p_n$`
 consists of a number of alternative patterns $p_i$. All alternative
 patterns are type checked with the expected type of the pattern. They
-may no bind variables other than wildcards. The alternative pattern 
+may no bind variables other than wildcards. The alternative pattern
 matches a value $v$ if at least one its alternatives matches $v$.
 
 ### XML Patterns
@@ -315,7 +314,7 @@ A pattern $p$ is _irrefutable_ for a type $T$, if one of the following applies:
 1.  $p$ is a typed pattern $x: T'$, and $T <: T'$,
 1.  $p$ is a constructor pattern $c(p_1 , \ldots , p_n)$, the type $T$
     is an instance of class $c$, the [primary constructor](05-classes-and-objects.html#class-definitions)
-    of type $T$ has argument types $T_1 , \ldots , T_n$, and each $p_i$ is 
+    of type $T$ has argument types $T_1 , \ldots , T_n$, and each $p_i$ is
     irrefutable for $T_i$.
 
 ## Type Patterns
@@ -324,18 +323,18 @@ A pattern $p$ is _irrefutable_ for a type $T$, if one of the following applies:
   TypePat           ::=  Type
 ```
 
-Type patterns consist of types, type variables, and wildcards. 
+Type patterns consist of types, type variables, and wildcards.
 A type pattern $T$ is of one of the following  forms:
 
 * A reference to a class $C$, $p.C$, or `$T$#$C$`.  This
-  type pattern matches any non-null instance of the given class. 
+  type pattern matches any non-null instance of the given class.
   Note that the prefix of the class, if it is given, is relevant for determining
   class instances. For instance, the pattern $p.C$ matches only
   instances of classes $C$ which were created with the path $p$ as
   prefix.
 
   The bottom types `scala.Nothing` and `scala.Null` cannot
-  be used as type patterns, because they would match nothing in any case.  
+  be used as type patterns, because they would match nothing in any case.
 
 * A singleton type `$p$.type`. This type pattern matches only the value
   denoted by the path $p$ (that is, a pattern match involved a
@@ -346,7 +345,7 @@ A type pattern $T$ is of one of the following  forms:
   the type patterns $T_i$.
 
 * A parameterized type pattern $T[a_1 , \ldots , a_n]$, where the $a_i$
-  are type variable patterns or wildcards `_`. 
+  are type variable patterns or wildcards `_`.
   This type pattern matches all values which match $T$ for
   some arbitrary instantiation of the type variables and wildcards. The
   bounds or alias type of these type variable are determined as
@@ -356,8 +355,7 @@ A type pattern $T$ is of one of the following  forms:
   $T_1$ is a type pattern. This type pattern matches any non-null instance
   of type `scala.Array$[U_1]$`, where $U_1$ is a type matched by $T_1$.
 
-
-Types which are not of one of the forms described above are also 
+Types which are not of one of the forms described above are also
 accepted as type patterns. However, such type patterns will be translated to their
 [erasure](03-types.html#type-erasure).  The Scala
 compiler will issue an "unchecked" warning for these patterns to
@@ -373,7 +371,6 @@ bound type variables in a typed pattern or constructor
 pattern. Inference takes into account the expected type of the
 pattern.
 
-
 ### Type parameter inference for typed patterns.
 
 Assume a typed pattern $p: T'$. Let $T$ result from $T'$ where all wildcards in
@@ -386,7 +383,7 @@ the type variables $a_i$. The initial constraints set $\mathcal{C}\_0$ reflects
 just the bounds of these type variables. That is, assuming $T$ has
 bound type variables $a_1 , \ldots , a_n$ which correspond to class
 type parameters $a_1' , \ldots , a_n'$ with lower bounds $L_1, \ldots , L_n$
-and upper bounds $U_1 , \ldots , U_n$, $\mathcal{C}_0$ contains the constraints 
+and upper bounds $U_1 , \ldots , U_n$, $\mathcal{C}_0$ contains the constraints
 
 $$
 \begin{cases}
@@ -394,7 +391,6 @@ a_i &<: \sigma U_i & \quad (i = 1, \ldots , n) \\\\
 \sigma L_i &<: a_i & \quad (i = 1, \ldots , n)
 \end{cases}
 $$
-
 
 where $\sigma$ is the substitution $[a_1' := a_1 , \ldots , a_n' :=a_n]$.
 
@@ -432,7 +428,7 @@ We take $a_i >: L_i <: U_i$ where each $L_i$ is minimal and each $U_i$ is maxima
 ###### Case 2
 We take $a_i >: L_i <: U_i$ and $b\_i >: L_i' <: U_i' $ where each $L_i$
 and $L_j'$ is minimal and each $U_i$ and $U_j'$ is maximal such that
-$a_i >: L_i <: U_i$ for $i = 1 , \ldots , n$ and 
+$a_i >: L_i <: U_i$ for $i = 1 , \ldots , n$ and
 $b_j >: L_j' <: U_j'$ for $j = 1 , \ldots , m$
 implies $\mathcal{C}\_0 \wedge \mathcal{C}\_0' \wedge \mathcal{C}_2$.
 
@@ -497,7 +493,6 @@ list `x` contains elements other than strings.  The Scala
 compiler will flag this potential loss of type-safety with an
 "unchecked" warning message.
 
-
 ###### Example
 Consider the program fragment
 
@@ -521,7 +516,6 @@ the case clause as an abstract type with lower and upper bound
 `y.n`, of type `Int`, is found to conform to the
 function's declared result type, `Number`.
 
-
 ## Pattern Matching Expressions
 
 ```ebnf
@@ -539,12 +533,12 @@ e match { case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ }
 consists of a selector expression $e$ and a number $n > 0$ of
 cases. Each case consists of a (possibly guarded) pattern $p_i$ and a
 block $b_i$. Each $p_i$ might be complemented by a guard
-`if $e$` where $e$ is a boolean expression. 
+`if $e$` where $e$ is a boolean expression.
 The scope of the pattern
 variables in $p_i$ comprises the pattern's guard and the corresponding block $b_i$.
 
 Let $T$ be the type of the selector expression $e$ and let $a_1
-, \ldots , a_m$ be the type parameters of all methods enclosing 
+, \ldots , a_m$ be the type parameters of all methods enclosing
 the pattern matching expression.  For every $a_i$, let $L_i$ be its
 lower bound and $U_i$ be its higher bound.  Every pattern $p \in \{p_1, , \ldots , p_n\}$
 can be typed in two ways. First, it is attempted
@@ -597,7 +591,7 @@ If the selector of a pattern match is an instance of a
 [`sealed` class](05-classes-and-objects.html#modifiers),
 the compilation of pattern matching can emit warnings which diagnose
 that a given set of patterns is not exhaustive, i.e. that there is a
-possibility of a `MatchError` being raised at run-time. 
+possibility of a `MatchError` being raised at run-time.
 
 ### Example
 
@@ -639,14 +633,13 @@ Under the assumption `Int <: T <: Int` we can also
 verify that the type right hand side of the second case, `Int`
 conforms to its expected type, `T`.
 
-
 ## Pattern Matching Anonymous Functions
 
 ```ebnf
   BlockExpr ::= `{' CaseClauses `}'
 ```
 
-An anonymous function can be defined by a sequence of cases 
+An anonymous function can be defined by a sequence of cases
 
 ```scala
 { case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ }
@@ -663,8 +656,8 @@ If the expected type is `scala.Function$k$[$S_1 , \ldots , S_k$, $R$]`,
 the expression is taken to be equivalent to the anonymous function:
 
 ```scala
-($x_1: S_1 , \ldots , x_k: S_k$) => ($x_1 , \ldots , x_k$) match { 
-  case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ 
+($x_1: S_1 , \ldots , x_k: S_k$) => ($x_1 , \ldots , x_k$) match {
+  case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$
 }
 ```
 
@@ -721,4 +714,3 @@ anonymous function:
   case (a, (b, c)) => a + b * c
 }
 ```
-

@@ -12,18 +12,16 @@ We use redcarpet 3.1 and jekyll 2 (currently in alpha) to generate the html. Ess
 
 ## Building
 
-Travis CI builds the spec automatically on every commit to master and publishes to http://www.scala-lang.org/files/archive/spec/2.11/. 
+Travis CI builds the spec automatically on every commit to master and publishes to http://www.scala-lang.org/files/archive/spec/2.11/.
 
 To preview locally, run `bundle exec jekyll serve -d build/spec/ -s spec/ -w --baseurl=""` (in the root of your checkout of scala/scala),
 and open http://0.0.0.0:4000/. Jekyll will rebuild as you edit the markdown, but make sure to restart it when you change `_config.yml`.
-
 
 ## General Advice for editors
 
 - All files must be saved as UTF-8: ensure your editors are configured appropriately.
 - Use of the appropriate unicode characters instead of the latex modifiers for accents, etc. is necessary. For example, é instead of `\'e`.
 - MathJAX errors  will appear within the  rendered DOM as span  elements with class `mtext` and style attribute `color: red` applied. It is  possible to search for this combination in the development  tools of the browser of your choice. In chrome, CTRL+F / CMD+F within the inspect element panel allows you to do this.
-
 
 ### Macro replacements:
 
@@ -35,7 +33,6 @@ and open http://0.0.0.0:4000/. Jekyll will rebuild as you edit the markdown, but
 - The macro \URange{ABCD}{DCBA} used for unicode character ranges can be replaced with \\uABCD-\\uDBCA.
 - The macro \commadots can be replaced with ` , … , `.
 - There is no adequate replacement for `\textsc{...}`  (small caps) in pandoc markdown. While unicode contains a number of  small capital  letters, it  is notably  missing Q and  X as  these glyphs  are intended  for phonetic spelling, therefore these  cannot be reliably used. For now,  the best option is to use  underscore emphasis and capitalise the text manually, `_LIKE THIS_`.
-
 
 ### Unicode Character replacements
 
