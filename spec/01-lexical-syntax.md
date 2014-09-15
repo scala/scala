@@ -178,7 +178,7 @@ between the two tokens. However, if two tokens are separated by at
 least one completely blank line (i.e a line which contains no
 printable characters), then two `nl` tokens are inserted.
 
-The Scala grammar (given in full [here](#scala-syntax-summary))
+The Scala grammar (given in full [here](13-syntax-summary.html))
 contains productions where optional `nl` tokens, but not
 semicolons, are accepted. This has the effect that a newline in one of these
 positions does not terminate an expression or statement. These positions can
@@ -202,7 +202,7 @@ A single new line token is accepted
 
 - in front of an opening brace ‘{’, if that brace is a legal
   continuation of the current statement or expression,
-- after an [infix operator](06-expressions.html#prefix-infix-and-postfix-operations),
+- after an [infix operator](06-expressions.html#prefix,-infix,-and-postfix-operations),
   if the first token on the next line can start an expression,
 - in front of a [parameter clause](04-basic-declarations-and-definitions.html#function-declarations-and-definitions), and
 - after an [annotation](11-user-defined-annotations.html#user-defined-annotations).
@@ -498,7 +498,7 @@ lines.
 ```
 
 Method `stripMargin` is defined in class
-[scala.collection.immutable.StringLike](http://www.scala-lang.org/api/current/index.html#scala.collection.immutable.StringLike).
+[scala.collection.immutable.StringLike](http://www.scala-lang.org/api/current/#scala.collection.immutable.StringLike).
 Because there is a predefined
 [implicit conversion](06-expressions.html#implicit-conversions) from `String` to
 `StringLike`, the method is applicable to all strings.

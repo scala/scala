@@ -19,7 +19,7 @@ and can be used as implicit conversions called [views](#views).
 The `implicit` modifier is illegal for all
 type members, as well as for [top-level objects](09-top-level-definitions.html#packagings).
 
-### Example
+### Example Monoid
 The following code defines an abstract class of monoids and
 two concrete implementations, `StringMonoid` and
 `IntMonoid`. The two implementations are marked implicit.
@@ -189,7 +189,7 @@ core type is added to the stack, it is checked that this type does not
 dominate any of the other types in the set.
 
 Here, a core type $T$ _dominates_ a type $U$ if $T$ is
-[equivalent](03-types.html#type-equivalence)
+[equivalent](03-types.html#equivalence)
 to $U$, or if the top-level type constructors of $T$ and $U$ have a
 common element and $T$ is more complex than $U$.
 
@@ -284,7 +284,7 @@ As for implicit parameters, overloading resolution is applied
 if there are several possible candidates (of either the call-by-value
 or the call-by-name category).
 
-### Example
+### Example Ordered
 Class `scala.Ordered[A]` contains a method
 
 ```scala

@@ -220,7 +220,7 @@ Then the linearization of class `Iter` is
 Note that the linearization of a class refines the inheritance
 relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any
 linearization where both $C$ and $D$ occur.
-[Linearization](#definition-linearization) also satisfies the property that
+[Linearization](#definition:-linearization) also satisfies the property that
 a linearization of a class always contains the linearization of its direct superclass as a suffix.
 
 For instance, the linearization of `StringIterator` is
@@ -753,6 +753,7 @@ val c = new C(1, "abc", List())
 c.z = c.y :: c.z
 ```
 
+### Example Private Constructor
 The following class can be created only from its companion module.
 
 ```scala

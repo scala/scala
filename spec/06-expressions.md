@@ -108,11 +108,11 @@ A designator refers to a named term. It can be a _simple name_ or
 a _selection_.
 
 A simple name $x$ refers to a value as specified
-[here](02-identifiers-names-and-scopes.html#identifiers-names-and-scopes).
+[here](02-identifiers-names-and-scopes.html#identifiers,-names-and-scopes).
 If $x$ is bound by a definition or declaration in an enclosing class
 or object $C$, it is taken to be equivalent to the selection
 `$C$.this.$x$` where $C$ is taken to refer to the class containing $x$
-even if the type name $C$ is [shadowed](02-identifiers-names-and-scopes.html#identifiers-names-and-scopes) at the
+even if the type name $C$ is [shadowed](02-identifiers-names-and-scopes.html#identifiers,-names-and-scopes) at the
 occurrence of $x$.
 
 If $r$ is a [stable identifier](03-types.html#paths) of type $T$, the selection $r.x$ refers
@@ -802,7 +802,7 @@ Here are some assignment expressions and their equivalent expansions.
 |`x.f(i) = e`              | `x.f.update(i, e)`   |
 |`x.f(i, j) = e`           | `x.f.update(i, j, e)`|
 
-### Example
+### Example Imperative Matrix Multiplication
 
 Here is the usual imperative code for matrix multiplication.
 
@@ -1115,7 +1115,7 @@ Expr1 ::=  `try' `{' Block `}' [`catch' `{' CaseClauses `}']
 
 A try expression is of the form `try { $b$ } catch $h$`
 where the handler $h$ is a
-[pattern matching anonymous function](#pattern-matching-anonymous-functions)
+[pattern matching anonymous function](08-pattern-matching.html#pattern-matching-anonymous-functions)
 
 ```scala
 { case $p_1$ => $b_1$ $\ldots$ case $p_n$ => $b_n$ }

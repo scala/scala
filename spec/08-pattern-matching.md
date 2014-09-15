@@ -268,7 +268,7 @@ p_n$.
 An infix operation pattern $p;\mathit{op};q$ is a shorthand for the
 constructor or extractor pattern $\mathit{op}(p, q)$.  The precedence and
 associativity of operators in patterns is the same as in
-[expressions](06-expressions.html#prefix-infix-and-postfix-operations).
+[expressions](06-expressions.html#prefix,-infix,-and-postfix-operations).
 
 An infix operation pattern $p;\mathit{op};(q_1 , \ldots , q_n)$ is a
 shorthand for the constructor or extractor pattern $\mathit{op}(p, q_1

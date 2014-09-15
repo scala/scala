@@ -178,7 +178,7 @@ well-formed if each actual type parameter
 _conforms to its bounds_, i.e. $\sigma L_i <: T_i <: \sigma U_i$ where $\sigma$ is the
 substitution $[ a_1 := T_1 , \ldots , a_n := T_n ]$.
 
-### Example
+### Example Parameterized Types
 Given the partial type definitions:
 
 ```scala
@@ -204,7 +204,7 @@ G[S, String]
 
 ### Example
 
-Given the [above type definitions](example-parameterized-types),
+Given the [above type definitions](#example-parameterized-types),
 the following types are ill-formed:
 
 ```scala
@@ -349,7 +349,7 @@ $T_2$.  The type is equivalent to the type application
 arbitrary identifier.
 
 All type infix operators have the same precedence; parentheses have to
-be used for grouping. The [associativity](06-expressions.html#prefix-infix-and-postfix-operations)
+be used for grouping. The [associativity](06-expressions.html#prefix,-infix,-and-postfix-operations)
 of a type operator is determined as for term operators: type operators
 ending in a colon ‘:’ are right-associative; all other
 operators are left-associative.
