@@ -339,7 +339,8 @@ $M'$:
 - If $M$ is labeled `private[$C$]` for some enclosing class or package $C$,
   then $M'$ must be labeled `private[$C'$]` for some class or package $C'$ where
   $C'$ equals $C$ or $C'$ is contained in $C$.
-  <!-- TODO: check whether this is accurate -->
+
+<!-- TODO: check whether this is accurate -->
 - If $M$ is labeled `protected`, then $M'$ must also be
   labeled `protected`.
 - If $M'$ is not an abstract member, then $M$ must be labeled `override`.
@@ -699,7 +700,7 @@ ClassTemplateOpt  ::=  `extends' ClassTemplate | [[`extends'] TemplateBody]
 The most general form of class definition is 
 
 ```scala
-class $c$[$\mathit{tps}\,$] $as$ $m$($\mathit{ps}_1$)$\ldots$($\mathit{ps}_n$) extends $t$    $\gap(n \geq 0)$.
+class $c$[$\mathit{tps}\,$] $as$ $m$($\mathit{ps}_1$)$\ldots$($\mathit{ps}_n$) extends $t$    $\quad(n \geq 0)$.
 ```
 
 Here,
@@ -719,7 +720,7 @@ Here,
   - $m$ is an [access modifier](#modifiers) such as
     `private` or `protected`, possibly with a qualification.
     If such an access modifier is given it applies to the primary constructor of the class.
-  - $(\mathit{ps}_1)\ldots(\mathit{ps}_n)$ are formal value parameter clauses for
+  - $(\mathit{ps}\_1)\ldots(\mathit{ps}\_n)$ are formal value parameter clauses for
     the _primary constructor_ of the class. The scope of a formal value parameter includes
     all subsequent parameter sections and the template $t$. However, a formal 
     value parameter may not form part of the types of any of the parent classes or members of the class template $t$.
@@ -885,10 +886,10 @@ object $c$ {
 
 Here, $\mathit{Ts}$ stands for the vector of types defined in the type
 parameter section $\mathit{tps}$,
-each $\mathit{xs}_i$ denotes the parameter names of the parameter
-section $\mathit{ps}_i$, and
-$\mathit{xs}_{11}, \ldots , \mathit{xs}_{1k}$ denote the names of all parameters
-in the first parameter section $\mathit{xs}_1$.
+each $\mathit{xs}\_i$ denotes the parameter names of the parameter
+section $\mathit{ps}\_i$, and
+$\mathit{xs}\_{11}, \ldots , \mathit{xs}\_{1k}$ denote the names of all parameters
+in the first parameter section $\mathit{xs}\_1$.
 If a type parameter section is missing in the
 class, it is also missing in the `apply` and
 `unapply` methods.
@@ -919,9 +920,9 @@ def copy[$\mathit{tps}\,$]($\mathit{ps}'_1\,$)$\ldots$($\mathit{ps}'_n$): $c$[$\
 ```
 
 Again, `$\mathit{Ts}$` stands for the vector of types defined in the type parameter section `$\mathit{tps}$`
-and each `$\xs_i$` denotes the parameter names of the parameter section `$\ps'_i$`. The value
-parameters `$\ps'_{1,j}$` of first parameter list have the form `$x_{1,j}$:$T_{1,j}$=this.$x_{1,j}$`,
-the other parameters `$\ps'_{i,j}$` of the `copy` method are defined as `$x_{i,j}$:$T_{i,j}$`.
+and each `$xs_i$` denotes the parameter names of the parameter section `$ps'_i$`. The value
+parameters `$ps'_{1,j}$` of first parameter list have the form `$x_{1,j}$:$T_{1,j}$=this.$x_{1,j}$`,
+the other parameters `$ps'_{i,j}$` of the `copy` method are defined as `$x_{i,j}$:$T_{i,j}$`.
 In all cases `$x_{i,j}$` and `$T_{i,j}$` refer to the name and type of the corresponding class parameter
 `$\mathit{ps}_{i,j}$`.
 

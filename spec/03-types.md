@@ -231,7 +231,7 @@ SimpleType    ::=   ‘(’ Types ‘)’
 ```
 
 A tuple type $(T_1 , \ldots , T_n)$ is an alias for the
-class `scala.Tuple$_n$[$T_1$, … , $T_n$]`, where $n \geq 2$.
+class `scala.Tuple$n$[$T_1$, … , $T_n$]`, where $n \geq 2$.
 
 Tuple classes are case classes whose fields can be accessed using
 selectors `_1` , … , `_n`. Their functionality is
@@ -241,12 +241,12 @@ standard Scala library (they might also add other methods and
 implement other traits).
 
 ```scala
-case class Tuple$n$[+T1, … , +$T_n$](_1: T1, … , _n: $T_n$) 
-extends Product_n[T1, … , $T_n$]
+case class Tuple$n$[+$T_1$, … , +$T_n$](_1: $T_1$, … , _n: $T_n$)
+extends Product_n[$T_1$, … , $T_n$]
 
-trait Product_n[+T1, … , +$T_n$] {
+trait Product_n[+$T_1$, … , +$T_n$] {
   override def productArity = $n$
-  def _1: T1
+  def _1: $T_1$
   …
   def _n: $T_n$
 }
@@ -362,7 +362,7 @@ operators are left-associative.
 
 In a sequence of consecutive type infix operations 
 $t_0 \, \mathit{op} \, t_1 \, \mathit{op_2} \, \ldots \, \mathit{op_n} \, t_n$,
-all operators $\mathit{op}_1 , \ldots , \mathit{op}_n$ must have the same
+all operators $\mathit{op}\_1 , \ldots , \mathit{op}\_n$ must have the same
 associativity. If they are all left-associative, the sequence is
 interpreted as 
 $(\ldots (t_0 \mathit{op_1} t_1) \mathit{op_2} \ldots) \mathit{op_n} t_n$,
@@ -420,10 +420,10 @@ where $Q$ is a sequence of
 [type declarations](04-basic-declarations-and-definitions.html#type-declarations-and-type-aliases).
 
 Let 
-$t_1[\mathit{tps}_1] >: L_1 <: U_1 , \ldots , t_n[\mathit{tps}_n] >: L_n <: U_n$ 
-be the types declared in $Q$ (any of the 
+$t_1[\mathit{tps}\_1] >: L_1 <: U_1 , \ldots , t_n[\mathit{tps}\_n] >: L_n <: U_n$
+be the types declared in $Q$ (any of the
 type parameter sections `[ $\mathit{tps}_i$ ]` might be missing).
-The scope of each type $t_i$ includes the type $T$ and the existential clause 
+The scope of each type $t_i$ includes the type $T$ and the existential clause
 $Q$. 
 The type variables $t_i$ are said to be _bound_ in the type 
 `$T$ forSome { $Q$ }`.
@@ -438,7 +438,7 @@ is the union of the set of values of all its type instances.
 
 A _skolemization_ of `$T$ forSome { $Q$ }` is
 a type instance $\sigma T$, where $\sigma$ is the substitution
-$[t'_1/t_1 , \ldots , t'_n/t_n]$ and each $t'_i$ is a fresh abstract type
+$[t_1'/t_1 , \ldots , t_n'/t_n]$ and each $t_i'$ is a fresh abstract type
 with lower bound $\sigma L_i$ and upper bound $\sigma U_i$.
 
 #### Simplification Rules
@@ -579,8 +579,8 @@ represents named methods that take arguments named $p_1 , \ldots , p_n$
 of types $T_1 , \ldots , T_n$
 and that return a result of type $U$.
 
-Method types associate to the right: $(\mathit{Ps}_1)(\mathit{Ps}_2)U$ is
-treated as $(\mathit{Ps}_1)((\mathit{Ps}_2)U)$.
+Method types associate to the right: $(\mathit{Ps}\_1)(\mathit{Ps}\_2)U$ is
+treated as $(\mathit{Ps}\_1)((\mathit{Ps}\_2)U)$.
 
 A special case are types of methods without any parameters. They are
 written here `=> T`. Parameterless methods name expressions
@@ -634,7 +634,7 @@ produce the typings
 
 ```scala
 empty : [A >: Nothing <: Any] List[A]
-union : [A >: Nothing <: Comparable[A]] (x: Set[A], xs: Set[A]) Set[A]  .
+union : [A >: Nothing <: Comparable[A]] (x: Set[A], xs: Set[A]) Set[A]
 ```
 
 ### Type Constructors
@@ -893,7 +893,7 @@ transitive relation that satisfies the following conditions.
 - Type constructors $T$ and $T'$ follow a similar discipline. We characterize 
   $T$ and $T'$ by their type parameter clauses
   $[a_1 , \ldots , a_n]$ and
-  $[a'_1 , \ldots , a'_n ]$, where an $a_i$ or $a'_i$ may include a variance 
+  $[a_1' , \ldots , a_n']$, where an $a_i$ or $a_i'$ may include a variance 
   annotation, a higher-order type parameter clause, and bounds. Then, $T$ 
   conforms to $T'$ if any list $[t_1 , \ldots , t_n]$ -- with declared 
   variances, bounds and higher-order type parameter clauses -- of valid type 

@@ -86,8 +86,8 @@ class AnyRef extends Any {
 
   def synchronized[T](body: => T): T // execute `body` in while locking `this`.
 }                           
+```
 
-```scala
 The type test `$x$.isInstanceOf[$T$]` is equivalent to a typed
 pattern match
 

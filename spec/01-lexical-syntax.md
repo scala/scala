@@ -429,7 +429,7 @@ by an [escape sequence](#escape-sequences).
 
 Note that `'\u000A'` is _not_ a valid character literal because
 Unicode conversion is done before literal parsing and the Unicode
-character \\u000A (line feed) is not a printable
+character `\u000A` (line feed) is not a printable
 character. One can use instead the escape sequence `'\n'` or
 the octal escape `'\12'` ([see here](#escape-sequences)).
 
@@ -528,7 +528,7 @@ The following escape sequences are recognized in character and string literals.
 
 
 A character with Unicode between 0 and 255 may also be represented by
-an octal escape, i.e. a backslash ‘\’ followed by a
+an octal escape, i.e. a backslash `'\'` followed by a
 sequence of up to three octal characters.
 
 It is a compile time error if a backslash character in a character or

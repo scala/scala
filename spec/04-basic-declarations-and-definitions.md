@@ -111,7 +111,7 @@ ids          ::=  id {‘,’ id}
 ```
 
 A value declaration `val $x$: $T$` introduces $x$ as a name of a value of
-type $T$.  
+type $T$.
 
 A value definition `val $x$: $T$ = $e$` defines $x$ as a
 name of the value that results from the evaluation of $e$. 
@@ -152,7 +152,7 @@ $\ldots$
 val $x_n$ = $\$ x$._n  .
 ```
 
-Here, $\$ x$ is a fresh name.  
+Here, $\$ x$ is a fresh name.
 
 2. If $p$ has a unique bound variable $x$:
 
@@ -339,13 +339,13 @@ A _type alias_ `type $t$ = $T$` defines $t$ to be an alias
 name for the type $T$.  The left hand side of a type alias may
 have a type parameter clause, e.g. `type $t$[$\mathit{tps}\,$] = $T$`.  The scope
 of a type parameter extends over the right hand side $T$ and the
-type parameter clause $\mathit{tps}$ itself.  
+type parameter clause $\mathit{tps}$ itself.
 
 The scope rules for [definitions](#basic-declarations-and-definitions) 
 and [type parameters](#function-declarations-and-definitions)
 make it possible that a type name appears in its
 own bound or in its right-hand side.  However, it is a static error if
-a type alias refers recursively to the defined type constructor itself.  
+a type alias refers recursively to the defined type constructor itself.
 That is, the type $T$ in a type alias `type $t$[$\mathit{tps}\,$] = $T$` may not 
 refer directly or indirectly to the name $t$.  It is also an error if
 an abstract type is directly or indirectly its own upper or lower bound.
@@ -436,9 +436,9 @@ TODO: this is a pretty awkward description of scoping and distinctness of binder
 
 The names of all type parameters must be pairwise different in their enclosing type parameter clause.  The scope of a type parameter includes in each case the whole type parameter clause. Therefore it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause.  However, a type parameter may not be bounded directly or indirectly by itself.
 
-A type constructor parameter adds a nested type parameter clause to the type parameter. The most general form of a type constructor parameter is `$@a_1\ldots@a_n$ $\pm$ $t[\mathit{tps}\,]$ >: $L$ <: $U$`.  
+A type constructor parameter adds a nested type parameter clause to the type parameter. The most general form of a type constructor parameter is `$@a_1\ldots@a_n$ $\pm$ $t[\mathit{tps}\,]$ >: $L$ <: $U$`.
 
-The above scoping restrictions are generalized to the case of nested type parameter clauses, which declare higher-order type parameters. Higher-order type parameters (the type parameters of a type parameter $t$) are only visible in their immediately surrounding parameter clause (possibly including clauses at a deeper nesting level) and in the bounds of $t$. Therefore, their names must only be pairwise different from the names of other visible parameters. Since the names of higher-order type parameters are thus often irrelevant, they may be denoted with a ‘_’, which is nowhere visible.
+The above scoping restrictions are generalized to the case of nested type parameter clauses, which declare higher-order type parameters. Higher-order type parameters (the type parameters of a type parameter $t$) are only visible in their immediately surrounding parameter clause (possibly including clauses at a deeper nesting level) and in the bounds of $t$. Therefore, their names must only be pairwise different from the names of other visible parameters. Since the names of higher-order type parameters are thus often irrelevant, they may be denoted with a `‘_’`, which is nowhere visible.
 
 ###### Example
 Here are some well-formed type parameter clauses:
@@ -498,7 +498,7 @@ changes at the following constructs.
 - The variance position of a type parameter is the opposite of the
   variance position of the enclosing type parameter clause.
 - The variance position of the lower bound of a type declaration or type parameter 
-  is the opposite of the variance position of the type declaration or parameter.  
+  is the opposite of the variance position of the type declaration or parameter.
 - The type of a mutable variable is always in invariant position.
 - The right-hand side of a type alias is always in invariant position.
 - The prefix $S$ of a type selection `$S$#$T$` is always in invariant position.
@@ -628,7 +628,7 @@ A type parameter clause $\mathit{tps}$ consists of one or more
 [type declarations](#type-declarations-and-type-aliases), which introduce type 
 parameters, possibly with bounds.  The scope of a type parameter includes
 the whole signature, including any of the type parameter bounds as
-well as the function body, if it is present.  
+well as the function body, if it is present.
 
 A value parameter clause $\mathit{ps}$ consists of zero or more formal
 parameter bindings such as `$x$: $T$` or `$x: T = e$`, which bind value
@@ -708,7 +708,7 @@ ParamType          ::=  Type ‘*’
 ```
 
 The last value parameter of a parameter section may be suffixed by
-“*”, e.g. `(..., $x$:$T$*)`.  The type of such a
+`'*'`, e.g. `(..., $x$:$T$*)`.  The type of such a
 _repeated_ parameter inside the method is then the sequence type
 `scala.Seq[$T$]`.  Methods with repeated parameters
 `$T$*` take a variable number of arguments of type $T$.
@@ -878,7 +878,7 @@ The most general form of an import expression is a list of _import selectors_
 { $x_1$ => $y_1 , \ldots , x_n$ => $y_n$, _ } 
 ```
 
-for $n \geq 0$, where the final wildcard ‘_’ may be absent.  It
+for $n \geq 0$, where the final wildcard `‘_’` may be absent.  It
 makes available each importable member `$p$.$x_i$` under the unqualified name
 $y_i$. I.e. every import selector `$x_i$ => $y_i$` renames
 `$p$.$x_i$` to

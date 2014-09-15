@@ -203,14 +203,14 @@ the type:
 - For a singleton type,  $\mathit{ttcs}(p.type) ~=~ \mathit{ttcs}(T)$, provided $p$ has type $T$;
 - For a compound type, `$\mathit{ttcs}(T_1$ with $\ldots$ with $T_n)$` $~=~ \mathit{ttcs}(T_1) \cup \ldots \cup \mathit{ttcs}(T_n)$.
 
-The _complexity_ $\mathit{complexity}(T)$ of a core type is an integer which also depends on the form of
+The _complexity_ $\operatorname{complexity}(T)$ of a core type is an integer which also depends on the form of
 the type:
 
-- For a type designator, $\mathit{complexity}(p.c) ~=~ 1 + \mathit{complexity}(p)$
-- For a parameterized type, $\mathit{complexity}(p.c[\mathit{targs}]) ~=~ 1 + \Sigma \mathit{complexity}(\mathit{targs})$
-- For a singleton type denoting a package $p$, $\mathit{complexity}(p.type) ~=~ 0$
-- For any other singleton type, $\mathit{complexity}(p.type) ~=~ 1 + \mathit{complexity}(T)$, provided $p$ has type $T$;
-- For a compound type, `$\mathit{complexity}(T_1$ with $\ldots$ with $T_n)$` $= \Sigma\mathit{complexity}(T_i)$
+- For a type designator, $\operatorname{complexity}(p.c) ~=~ 1 + \operatorname{complexity}(p)$
+- For a parameterized type, $\operatorname{complexity}(p.c[\mathit{targs}]) ~=~ 1 + \Sigma \operatorname{complexity}(\mathit{targs})$
+- For a singleton type denoting a package $p$, $\operatorname{complexity}(p.type) ~=~ 0$
+- For any other singleton type, $\operatorname{complexity}(p.type) ~=~ 1 + \operatorname{complexity}(T)$, provided $p$ has type $T$;
+- For a compound type, `$\operatorname{complexity}(T_1$ with $\ldots$ with $T_n)$` $= \Sigma\operatorname{complexity}(T_i)$
 
 
 ###### Example

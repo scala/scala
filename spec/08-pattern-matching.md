@@ -63,7 +63,7 @@ patterns.
 A variable pattern $x$ is a simple identifier which starts with a
 lower case letter.  It matches any value, and binds the variable name
 to that value.  The type of $x$ is the expected type of the pattern as
-given from outside.  A special case is the wild-card pattern $\_$
+given from outside.  A special case is the wild-card pattern `_`
 which is treated as if it was a fresh variable on each occurrence.
 
 ### Typed Patterns
@@ -100,7 +100,7 @@ and it binds the variable name to that value.
 ```
 
 A literal pattern $L$ matches any value that is equal (in terms of
-$==$) to the literal $L$. The type of $L$ must conform to the
+`==`) to the literal $L$. The type of $L$ must conform to the
 expected type of the pattern.
 
 ### Stable Identifier Patterns
@@ -346,7 +346,7 @@ A type pattern $T$ is of one of the following  forms:
   the type patterns $T_i$.
 
 * A parameterized type pattern $T[a_1 , \ldots , a_n]$, where the $a_i$
-  are type variable patterns or wildcards $\_$. 
+  are type variable patterns or wildcards `_`. 
   This type pattern matches all values which match $T$ for
   some arbitrary instantiation of the type variables and wildcards. The
   bounds or alias type of these type variable are determined as
@@ -377,62 +377,64 @@ pattern.
 ### Type parameter inference for typed patterns.
 
 Assume a typed pattern $p: T'$. Let $T$ result from $T'$ where all wildcards in
-$T'$ are renamed to fresh variable names.  Let $a_1 , \ldots , a_n$ be
+$T'$ are renamed to fresh variable names. Let $a_1 , \ldots , a_n$ be
 the type variables in $T$. These type variables are considered bound
 in the pattern. Let the expected type of the pattern be $\mathit{pt}$.
 
 Type parameter inference constructs first a set of subtype constraints over
-the type variables $a_i$. The initial constraints set $\mathcal{C}_0$ reflects
+the type variables $a_i$. The initial constraints set $\mathcal{C}\_0$ reflects
 just the bounds of these type variables. That is, assuming $T$ has
 bound type variables $a_1 , \ldots , a_n$ which correspond to class
-type parameters $a'_1 , \ldots , a'_n$ with lower bounds $L_1, \ldots , L_n$
+type parameters $a_1' , \ldots , a_n'$ with lower bounds $L_1, \ldots , L_n$
 and upper bounds $U_1 , \ldots , U_n$, $\mathcal{C}_0$ contains the constraints 
 
-|             |      |               |                        |
-|-------------|------|---------------|------------------------|
-|$a_i$        | $<:$ | $\sigma U_i$  | $(i = 1, \ldots , n)$  |
-|$\sigma L_i$ | $<:$ | $a_i$         | $(i = 1 , \ldots , n)$ |
+$$
+\begin{cases}
+a_i &<: \sigma U_i & \quad (i = 1, \ldots , n) \\\\
+\sigma L_i &<: a_i & \quad (i = 1, \ldots , n)
+\end{cases}
+$$
 
 
-where $\sigma$ is the substitution $[a'_1 := a_1 , \ldots , a'_n :=
-a_n]$.
+where $\sigma$ is the substitution $[a_1' := a_1 , \ldots , a_n' :=a_n]$.
 
 The set $\mathcal{C}_0$ is then augmented by further subtype constraints. There are two
 cases.
 
 ###### Case 1
-If there exists a substitution $\sigma$ over the type variables $a_i , \ldots , a_n$ such that $\sigma T$ conforms to $\mathit{pt}$, one determines the weakest subtype constraints $\mathcal{C}_1$ over the type variables $a_1, \ldots , a_n$ such that $\mathcal{C}_0 \wedge \mathcal{C}_1$ implies that $T$ conforms to $\mathit{pt}$.
+If there exists a substitution $\sigma$ over the type variables $a_i , \ldots , a_n$ such that $\sigma T$ conforms to $\mathit{pt}$, one determines the weakest subtype constraints
+$\mathcal{C}\_1$ over the type variables $a_1, \ldots , a_n$ such that $\mathcal{C}\_0 \wedge \mathcal{C}_1$ implies that $T$ conforms to $\mathit{pt}$.
 
 ###### Case 2
 Otherwise, if $T$ can not be made to conform to $\mathit{pt}$ by
 instantiating its type variables, one determines all type variables in
 $\mathit{pt}$ which are defined as type parameters of a method enclosing
 the pattern. Let the set of such type parameters be $b_1 , \ldots ,
-b_m$. Let $\mathcal{C}'_0$ be the subtype constraints reflecting the bounds of the
+b_m$. Let $\mathcal{C}\_0'$ be the subtype constraints reflecting the bounds of the
 type variables $b_i$.  If $T$ denotes an instance type of a final
-class, let $\mathcal{C}_2$ be the weakest set of subtype constraints over the type
+class, let $\mathcal{C}\_2$ be the weakest set of subtype constraints over the type
 variables $a_1 , \ldots , a_n$ and $b_1 , \ldots , b_m$ such that
-$\mathcal{C}_0 \wedge \mathcal{C}'_0 \wedge \mathcal{C}_2$ implies that $T$ conforms to
+$\mathcal{C}\_0 \wedge \mathcal{C}\_0' \wedge \mathcal{C}\_2$ implies that $T$ conforms to
 $\mathit{pt}$.  If $T$ does not denote an instance type of a final class,
-let $\mathcal{C}_2$ be the weakest set of subtype constraints over the type variables
-$a_1 , \ldots , a_n$ and $b_1 , \ldots , b_m$ such that $\mathcal{C}_0 \wedge
-\mathcal{C}'_0 \wedge \mathcal{C}_2$ implies that it is possible to construct a type
+let $\mathcal{C}\_2$ be the weakest set of subtype constraints over the type variables
+$a_1 , \ldots , a_n$ and $b_1 , \ldots , b_m$ such that $\mathcal{C}\_0 \wedge
+\mathcal{C}\_0' \wedge \mathcal{C}\_2$ implies that it is possible to construct a type
 $T'$ which conforms to both $T$ and $\mathit{pt}$. It is a static error if
-there is no satisfiable set of constraints $\mathcal{C}_2$ with this property.
+there is no satisfiable set of constraints $\mathcal{C}\_2$ with this property.
 
 The final step consists in choosing type bounds for the type
 variables which imply the established constraint system. The process
 is different for the two cases above.
 
 ###### Case 1
-We take $a_i >: L_i <: U_i$ where each $L_i$ is minimal and each $U_i$ is maximal wrt $<:$ such that $a_i >: L_i <: U_i$ for $i = 1, \ldots, n$ implies $\mathcal{C}_0 \wedge \mathcal{C}_1$.
+We take $a_i >: L_i <: U_i$ where each $L_i$ is minimal and each $U_i$ is maximal wrt $<:$ such that $a_i >: L_i <: U_i$ for $i = 1, \ldots, n$ implies $\mathcal{C}\_0 \wedge \mathcal{C}\_1$.
 
 ###### Case 2
-We take $a_i >: L_i <: U_i$ and $b_i >: L'_i <: U'_i$ where each $L_i$
-and $L'_j$ is minimal and each $U_i$ and $U'_j$ is maximal such that
+We take $a_i >: L_i <: U_i$ and $b\_i >: L_i' <: U_i' $ where each $L_i$
+and $L_j'$ is minimal and each $U_i$ and $U_j'$ is maximal such that
 $a_i >: L_i <: U_i$ for $i = 1 , \ldots , n$ and 
-$b_j >: L'_j <: U'_j$ for $j = 1 , \ldots , m$
-implies $\mathcal{C}_0 \wedge \mathcal{C}'_0 \wedge \mathcal{C}_2$.
+$b_j >: L_j' <: U_j'$ for $j = 1 , \ldots , m$
+implies $\mathcal{C}\_0 \wedge \mathcal{C}\_0' \wedge \mathcal{C}_2$.
 
 In both cases, local type inference is permitted to limit the
 complexity of inferred bounds. Minimality and maximality of types have
@@ -552,16 +554,16 @@ $T$ by replacing every occurrence of a type parameter $a_i$ by
 \mbox{\sl undefined}.  If this second step fails also, a compile-time
 error results. If the second step succeeds, let $T_p$ be the type of
 pattern $p$ seen as an expression. One then determines minimal bounds
-$L'_1 , \ldots , L'_m$ and maximal bounds $U'_1 , \ldots , U'_m$ such
-that for all $i$, $L_i <: L'_i$ and $U'_i <: U_i$ and the following
+$L_11 , \ldots , L_m'$ and maximal bounds $U_1' , \ldots , U_m'$ such
+that for all $i$, $L_i <: L_i'$ and $U_i' <: U_i$ and the following
 constraint system is satisfied:
 
 $$L_1 <: a_1 <: U_1\;\wedge\;\ldots\;\wedge\;L_m <: a_m <: U_m \ \Rightarrow\ T_p <: T$$
 
 If no such bounds can be found, a compile time error results.  If such
 bounds are found, the pattern matching clause starting with $p$ is
-then typed under the assumption that each $a_i$ has lower bound $L'_i$
-instead of $L_i$ and has upper bound $U'_i$ instead of $U_i$.
+then typed under the assumption that each $a_i$ has lower bound $L_i'$
+instead of $L_i$ and has upper bound $U_i'$ instead of $U_i$.
 
 The expected type of every block $b_i$ is the expected type of the
 whole pattern matching expression.  The type of the pattern matching
@@ -571,7 +573,7 @@ $b_i$.
 
 When applying a pattern matching expression to a selector value,
 patterns are tried in sequence until one is found which matches the
-[selector value](#patterns). Say this case is `$case p_i \Rightarrow b_i$`.
+[selector value](#patterns). Say this case is `case $p_i \Rightarrow b_i$`.
 The result of the whole expression is the result of evaluating $b_i$,
 where all pattern variables of $p_i$ are bound to
 the corresponding parts of the selector value.  If no matching pattern

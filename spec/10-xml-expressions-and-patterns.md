@@ -37,10 +37,10 @@ Entity references are not resolved at runtime.
 Element       ::=    EmptyElemTag
                 |    STag Content ETag                                       
 
-EmptyElemTag  ::=    ‘<’ Name {S Attribute} [S] ‘/>’                         
+EmptyElemTag  ::=    ‘<’ Name {S Attribute} [S] ‘/>’
 
-STag          ::=    ‘<’ Name {S Attribute} [S] ‘>’                          
-ETag          ::=    ‘</’ Name [S] ‘>’                                        
+STag          ::=    ‘<’ Name {S Attribute} [S] ‘>’
+ETag          ::=    ‘</’ Name [S] ‘>’
 Content       ::=    [CharData] {Content1 [CharData]}
 Content1      ::=    XmlContent
                 |    Reference
@@ -68,7 +68,7 @@ character `\u0020`. This behavior can be changed to preserve all whitespace
 with a compiler option.
 
 ```ebnf
-Attribute  ::=    Name Eq AttValue                                    
+Attribute  ::=    Name Eq AttValue
 
 AttValue      ::=    ‘"’ {CharQ | CharRef} ‘"’
                 |    ‘'’ {CharA | CharRef} ‘'’
@@ -76,8 +76,8 @@ AttValue      ::=    ‘"’ {CharQ | CharRef} ‘"’
 
 ScalaExpr     ::=    Block
 
-CharData      ::=   { CharNoRef } $\mbox{\rm\em without}$ {CharNoRef}`{'CharB {CharNoRef} 
-                                  $\mbox{\rm\em and without}$ {CharNoRef}`]]>'{CharNoRef}
+CharData      ::=   { CharNoRef } $\textit{ without}$ {CharNoRef}`{'CharB {CharNoRef} 
+                                  $\textit{ and without}$ {CharNoRef}`]]>'{CharNoRef}
 ```
 
 <!-- {% raw  %} stupid liquid borks on the double brace below; brace yourself, liquid! -->
@@ -90,17 +90,17 @@ Thus, `{{` represents the XML text `{` and does not introduce an embedded Scala 
 
 ```ebnf
 BaseChar, Char, Comment, CombiningChar, Ideographic, NameChar, S, Reference
-              ::=  $\mbox{\rm\em “as in W3C XML”}$
+              ::=  $\textit{“as in W3C XML”}$
 
-Char1         ::=  Char $\mbox{\rm\em without}$ ‘<’ | ‘&’
-CharQ         ::=  Char1 $\mbox{\rm\em without}$ ‘"’
-CharA         ::=  Char1 $\mbox{\rm\em without}$ ‘'’
-CharB         ::=  Char1 $\mbox{\rm\em without}$ ‘{’
+Char1         ::=  Char $\textit{ without}$ ‘<’ | ‘&’
+CharQ         ::=  Char1 $\textit{ without}$ ‘"’
+CharA         ::=  Char1 $\textit{ without}$ ‘'’
+CharB         ::=  Char1 $\textit{ without}$ ‘{’
 
 Name          ::=  XNameStart {NameChar}
 
 XNameStart    ::= ‘_’ | BaseChar | Ideographic 
-                 $\mbox{\rm\em (as in W3C XML, but without }$ ‘:’
+                 $\textit{ (as in W3C XML, but without }$ ‘:’$)$
 ```
 
 ## XML patterns

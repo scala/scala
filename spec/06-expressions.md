@@ -62,12 +62,12 @@ $T$, then the type of the expression is assumed instead to be a
 [skolemization](03-types.html#existential-types) of $T$.
 
 Skolemization is reversed by type packing. Assume an expression $e$ of
-type $T$ and let $t_1[\mathit{tps}_1] >: L_1 <: U_1 , \ldots , t_n[\mathit{tps}_n] >: L_n <: U_n$ be
+type $T$ and let $t_1[\mathit{tps}\_1] >: L_1 <: U_1 , \ldots , t_n[\mathit{tps}\_n] >: L_n <: U_n$ be
 all the type variables created by skolemization of some part of $e$ which are free in $T$.
 Then the _packed type_ of $e$ is
 
 ```scala
-$T$ forSome { type $t_1[\mathit{tps}_1] >: L_1 <: U_1$; $\ldots$; type $t_n[\mathit{tps}_n] >: L_n <: U_n$ }.
+$T$ forSome { type $t_1[\mathit{tps}\_1] >: L_1 <: U_1$; $\ldots$; type $t_n[\mathit{tps}\_n] >: L_n <: U_n$ }.
 ```
 
 
@@ -269,7 +269,7 @@ it has the form $x_i=e'_i$ and $x_i$ is one of the parameter names
 $p_1 , \ldots , p_n$. The function $f$ is applicable if all of the following conditions
 hold:
 
-- For every named argument $x_i=e'_i$ the type $S_i$
+- For every named argument $x_i=e_i'$ the type $S_i$
   is compatible with the parameter type $T_j$ whose name $p_j$ matches $x_i$.
 - For every positional argument $e_i$ the type $S_i$
 is compatible with $T_i$.
@@ -388,7 +388,7 @@ the form
 }
 ```
 
-where every argument in $(\mathit{args}_1) , \ldots , (\mathit{args}_l)$ is a reference to
+where every argument in $(\mathit{args}\_1) , \ldots , (\mathit{args}\_l)$ is a reference to
 one of the values $x_1 , \ldots , x_k$. To integrate the current application
 into the block, first a value definition using a fresh name $y_i$ is created
 for every argument in $e_1 , \ldots , e_m$, which is initialised to $e_i$ for
@@ -700,18 +700,18 @@ parts of an expression as follows.
   expression, then operators with higher precedence bind more closely
   than operators with lower precedence.
 - If there are consecutive infix
-  operations $e_0; \mathit{op}_1; e_1; \mathit{op}_2 \ldots \mathit{op}_n; e_n$ 
-  with operators $\mathit{op}_1 , \ldots , \mathit{op}_n$ of the same precedence, 
+  operations $e_0; \mathit{op}\_1; e_1; \mathit{op}\_2 \ldots \mathit{op}\_n; e_n$ 
+  with operators $\mathit{op}\_1 , \ldots , \mathit{op}\_n$ of the same precedence, 
   then all these operators must
   have the same associativity. If all operators are left-associative,
   the sequence is interpreted as
-  $(\ldots(e_0;\mathit{op}_1;e_1);\mathit{op}_2\ldots);\mathit{op}_n;e_n$. 
+  $(\ldots(e_0;\mathit{op}\_1;e_1);\mathit{op}\_2\ldots);\mathit{op}\_n;e_n$. 
   Otherwise, if all operators are right-associative, the
   sequence is interpreted as
-  $e_0;\mathit{op}_1;(e_1;\mathit{op}_2;(\ldots \mathit{op}_n;e_n)\ldots)$.
+  $e_0;\mathit{op}\_1;(e_1;\mathit{op}\_2;(\ldots \mathit{op}\_n;e_n)\ldots)$.
 - Postfix operators always have lower precedence than infix
-  operators. E.g. $e_1;\mathit{op}_1;e_2;\mathit{op}_2$ is always equivalent to
-  $(e_1;\mathit{op}_1;e_2);\mathit{op}_2$.
+  operators. E.g. $e_1;\mathit{op}\_1;e_2;\mathit{op}\_2$ is always equivalent to
+  $(e_1;\mathit{op}\_1;e_2);\mathit{op}\_2$.
 
 The right-hand operand of a left-associative operator may consist of
 several arguments enclosed in parentheses, e.g. $e;\mathit{op};(e_1,\ldots,e_n)$.
@@ -817,12 +817,12 @@ the invocation of an `update` function defined by $f$.
 ###### Example
 Here are some assignment expressions and their equivalent expansions.
 
---------------------------    ---------------------
-`x.f = e`             x.f_=(e)
-`x.f() = e`           x.f.update(e)
-`x.f(i) = e`          x.f.update(i, e)
-`x.f(i, j) = e`       x.f.update(i, j, e)
---------------------------    ---------------------
+| assignment               | expansion            |
+|--------------------------|----------------------|
+|`x.f = e`                 | `x.f_=(e)`           |
+|`x.f() = e`               | `x.f.update(e)`      |
+|`x.f(i) = e`              | `x.f.update(i, e)`   |
+|`x.f(i, j) = e`           | `x.f.update(i, j, e)`|
 
 ### Example
 
