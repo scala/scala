@@ -13,15 +13,32 @@
   </script>
   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/2.3-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2/styles/default.min.css">
+  <script src="public/highlight/highlight.pack.js"></script>
 
   <!-- need to use include to see value of page.chapter variable -->
   <style type="text/css">
     {% include numbering.css %}
+
+    /* proper rendering of MathJax into highlighted code blocks */
+    .fixws { white-space: pre; }
+    .fixws .math { white-space: nowrap; }
   </style>
   <script type="text/javascript">
     // clear content of H3 nodes that start with "Example:"
     // the content is only there to determine ID of the H3 element (redcarpet doesn't let us set css id)
     $( document ).ready(function(){ $("h3[id*='example']").text("") })
+
+    // no language auto-detect so that EBDF isn't detected as scala
+    hljs.configure({
+      languages: []
+    });
+
+    // syntax highlighting after mathjax is loaded so that mathjax can be used in code blocks
+    MathJax.Hub.Queue(function () {
+      hljs.initHighlighting();
+      $("pre nobr").addClass("fixws");
+    })
   </script>
 
   <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
