@@ -1,4 +1,4 @@
-package scala.tools.reflect
+package scala.reflect
 package quasiquotes
 
 import scala.tools.nsc.ast.parser.{Parsers => ScalaParser}
