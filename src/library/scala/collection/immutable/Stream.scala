@@ -176,6 +176,12 @@ import scala.language.implicitConversions
  *    loop(1, 1)
  *  }
  *  }}}
+ * 
+ *  Note that `mkString` forces evaluation of a `Stream`, but `addString` does
+ *  not.  In both cases, a `Stream` that is or ends in a cycle 
+ *  (e.g. `lazy val s: Stream[Int] = 0 #:: s`) will convert additional trips
+ *  through the cycle to `...`.  Additionally, `addString` will display an
+ *  un-memoized tail as `?`.
  *
  *  @tparam A    the type of the elements contained in this stream.
  *
@@ -253,12 +259,22 @@ self =>
    * @note Often we use `Stream`s to represent an infinite set or series.  If
    * that's the case for your particular `Stream` then this function will never
    * return and will probably crash the VM with an `OutOfMemory` exception.
+   * This function will not hang on a finite cycle, however.
    *
    *  @return The fully realized `Stream`.
    */
   def force: Stream[A] = {
-    var these = this
-    while (!these.isEmpty) these = these.tail
+    // Use standard 2x 1x iterator trick for cycle detection ("those" is slow one)
+    var these, those = this
+    if (!these.isEmpty) these = these.tail
+    while (those ne these) {
+      if (these.isEmpty) return this
+      these = these.tail
+      if (these.isEmpty) return this
+      these = these.tail
+      if (these eq those) return this
+      those = those.tail
+    }
     this
   }
 
@@ -309,9 +325,24 @@ self =>
 
   override def toStream: Stream[A] = this
 
-  override def hasDefiniteSize = {
-    def loop(s: Stream[A]): Boolean = s.isEmpty || s.tailDefined && loop(s.tail)
-    loop(this)
+  override def hasDefiniteSize: Boolean = isEmpty || {
+    if (!tailDefined) false
+    else {
+      // Two-iterator trick (2x & 1x speed) for cycle detection.
+      var those = this
+      var these = tail
+      while (those ne these) {
+        if (these.isEmpty) return true
+        if (!these.tailDefined) return false
+        these = these.tail
+        if (these.isEmpty) return true
+        if (!these.tailDefined) return false
+        these = these.tail
+        if (those eq these) return false
+        those = those.tail
+      }
+      false  // Cycle detected
+    }
   }
 
   /** Create a new stream which contains all elements of this stream followed by
@@ -690,7 +721,8 @@ self =>
    *  `end`. Inside, the string representations of defined elements (w.r.t.
    *  the method `toString()`) are separated by the string `sep`. The method will
    *  not force evaluation of undefined elements. A tail of such elements will be
-   * represented by a `"?"` instead.
+   * represented by a `"?"` instead.  A cyclic stream is represented by a `"..."`
+   * at the point where the cycle repeats.
    *
    * @param b The [[collection.mutable.StringBuilder]] factory to which we need
    * to add the string elements.
@@ -701,16 +733,81 @@ self =>
    * resulting string.
    */
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
-    def loop(pre: String, these: Stream[A]) {
-      if (these.isEmpty) b append end
-      else {
-        b append pre append these.head
-        if (these.tailDefined) loop(sep, these.tail)
-        else b append sep append "?" append end
+    b append start
+    if (!isEmpty) {
+      b append head
+      var cursor = this
+      var n = 1
+      if (cursor.tailDefined) {  // If tailDefined, also !isEmpty
+        var scout = tail
+        if (scout.isEmpty) {
+          // Single element.  Bail out early.
+          b append end
+          return b
+        }
+        if ((cursor ne scout) && scout.tailDefined) {
+          cursor = scout
+          scout = scout.tail        
+          // Use 2x 1x iterator trick for cycle detection; slow iterator can add strings
+          while ((cursor ne scout) && scout.tailDefined) {
+            b append sep append cursor.head
+            n += 1
+            cursor = cursor.tail
+            scout = scout.tail
+            if (scout.tailDefined) scout = scout.tail
+          }
+        }
+        if (!scout.tailDefined) {  // Not a cycle, scout hit an end
+          while (cursor ne scout) {
+            b append sep append cursor.head
+            n += 1
+            cursor = cursor.tail
+          }
+        }
+        else {
+          // Cycle.
+          // If we have a prefix of length P followed by a cycle of length C,
+          // the scout will be at position (P%C) in the cycle when the cursor
+          // enters it at P.  They'll then collide when the scout advances another
+          // C - (P%C) ahead of the cursor.
+          // If we run the scout P farther, then it will be at the start of
+          // the cycle: (C - (P%C) + (P%C)) == C == 0.  So if another runner
+          // starts at the beginning of the prefix, they'll collide exactly at
+          // the start of the loop.
+          var runner = this
+          var k = 0
+          while (runner ne scout) {
+            runner = runner.tail
+            scout = scout.tail
+            k += 1
+          }
+          // Now runner and scout are at the beginning of the cycle.  Advance
+          // cursor, adding to string, until it hits; then we'll have covered
+          // everything once.  If cursor is already at beginning, we'd better
+          // advance one first unless runner didn't go anywhere (in which case
+          // we've already looped once).
+          if ((cursor eq scout) && (k > 0)) {
+            b append sep append cursor.head
+            n += 1
+            cursor = cursor.tail
+          }
+          while (cursor ne scout) {
+            b append sep append cursor.head
+            n += 1
+            cursor = cursor.tail
+          }
+          // Subtract prefix length from total length for cycle reporting.
+          // (Not currently used, but probably a good idea for the future.)
+          n -= k
+        }
+      }
+      if (!cursor.isEmpty) {
+        // Either undefined or cyclic; we can check with tailDefined
+        if (!cursor.tailDefined) b append sep append "?"
+        else b append sep append "..."
       }
     }
-    b append start
-    loop("", this)
+    b append end
     b
   }
 
