@@ -1,5 +1,5 @@
 ---
-title: Identifiers, Names and Scopes
+title: Identifiers, Names & Scopes
 layout: default
 chapter: 2
 ---
@@ -69,7 +69,7 @@ the member of the type $T$ of $e$ which has the name $x$ in the same
 namespace as the identifier. It is an error if $T$ is not a [value type](03-types.html#value-types).
 The type of $e.x$ is the member type of the referenced entity in $T$.
 
-### Example
+###### Example
 
 Assume the following two definitions of objects named `X` in packages `P` and `Q`.
 

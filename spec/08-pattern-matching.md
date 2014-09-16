@@ -371,7 +371,7 @@ bound type variables in a typed pattern or constructor
 pattern. Inference takes into account the expected type of the
 pattern.
 
-### Type parameter inference for typed patterns.
+### Type parameter inference for typed patterns
 
 Assume a typed pattern $p: T'$. Let $T$ result from $T'$ where all wildcards in
 $T'$ are renamed to fresh variable names. Let $a_1 , \ldots , a_n$ be
@@ -437,7 +437,7 @@ complexity of inferred bounds. Minimality and maximality of types have
 to be understood relative to the set of types of acceptable
 complexity.
 
-#### Type parameter inference for constructor patterns.
+### Type parameter inference for constructor patterns
 Assume a constructor pattern $C(p_1 , \ldots , p_n)$ where class $C$
 has type type parameters $a_1 , \ldots , a_n$.  These type parameters
 are inferred in the same way as for the typed pattern
@@ -593,7 +593,7 @@ the compilation of pattern matching can emit warnings which diagnose
 that a given set of patterns is not exhaustive, i.e. that there is a
 possibility of a `MatchError` being raised at run-time.
 
-### Example
+###### Example
 
 Consider the following definitions of arithmetic terms:
 
