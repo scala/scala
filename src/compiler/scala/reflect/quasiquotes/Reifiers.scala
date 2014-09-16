@@ -1,4 +1,4 @@
-package scala.tools.reflect
+package scala.reflect
 package quasiquotes
 
 import java.lang.UnsupportedOperationException

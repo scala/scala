@@ -532,7 +532,7 @@ trait TypeDiagnostics {
             if (sym.isDefaultGetter) "default argument"
             else if (sym.isConstructor) "constructor"
             else if (sym.isVar || sym.isGetter && sym.accessed.isVar) "var"
-            else if (sym.isVal || sym.isGetter && sym.accessed.isVal) "val"
+            else if (sym.isVal || sym.isGetter && sym.accessed.isVal || sym.isLazy) "val"
             else if (sym.isSetter) "setter"
             else if (sym.isMethod) "method"
             else if (sym.isModule) "object"
