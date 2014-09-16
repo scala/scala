@@ -33,7 +33,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
         if (option) reporter.warning(pos, msg)
         else if (!(warnings contains pos)) warnings += ((pos, msg))
       def summarize() =
-        if (warnings.nonEmpty && (option.isDefault || settings.fatalWarnings)) {
+        if (warnings.nonEmpty && (option.isDefault || option)) {
           val numWarnings  = warnings.size
           val warningVerb  = if (numWarnings == 1) "was" else "were"
           val warningCount = countElementsAsString(numWarnings, s"$what warning")

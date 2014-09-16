@@ -20,6 +20,12 @@
  *       an alternative
  *         the e l s e branch
  *    }}}
+ *    {{{
+ *    Trait example {
+ *      Val x = a
+ *      Val y = b
+ *    }
+ *    }}}
  *    NB: Trailing spaces are necessary for this test!
  *    {{{
  *       l1

@@ -36,7 +36,7 @@ class FreshNameExtractorTest {
     }
   }
 
-  @Test
+  @Test @org.junit.Ignore // SI-8818
   def extractionsFailsIfNameDoesntEndWithNumber = {
     val Creator = new FreshNameCreator(prefixes.head)
     val Extractor = new FreshNameExtractor(prefixes.head)

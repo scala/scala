@@ -82,11 +82,11 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       val buf = accDefs.getOrElse(clazz, sys.error("no acc def buf for "+clazz))
       buf += typers(clazz) typed tree
     }
-    private def ensureAccessor(sel: Select) = {
+    private def ensureAccessor(sel: Select, mixName: TermName = nme.EMPTY) = {
       val Select(qual, name) = sel
       val sym                = sel.symbol
       val clazz              = qual.symbol
-      val supername          = nme.superName(name)
+      val supername          = nme.superName(name, mixName)
       val superAcc = clazz.info.decl(supername).suchThat(_.alias == sym) orElse {
         debuglog(s"add super acc ${sym.fullLocationString} to $clazz")
         val acc = clazz.newMethod(supername, sel.pos, SUPERACCESSOR | PRIVATE | ARTIFACT) setAlias sym
@@ -150,8 +150,20 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         }
       }
 
-      if (name.isTermName && mix == tpnme.EMPTY && (clazz.isTrait || clazz != currentClass || !validCurrentOwner))
-        ensureAccessor(sel)
+      def mixIsTrait = sup.tpe match {
+        case SuperType(thisTpe, superTpe) => superTpe.typeSymbol.isTrait
+      }
+
+      val needAccessor = name.isTermName && {
+        mix.isEmpty && (clazz.isTrait || clazz != currentClass || !validCurrentOwner) ||
+        // SI-8803. If we access super[A] from an inner class (!= currentClass) or closure (validCurrentOwner),
+        // where A is the superclass we need an accessor. If A is a parent trait we don't: in this case mixin
+        // will re-route the super call directly to the impl class (it's statically known).
+        !mix.isEmpty && (clazz != currentClass || !validCurrentOwner) && !mixIsTrait
+      }
+
+      if (needAccessor)
+        ensureAccessor(sel, mix.toTermName)
       else sel
     }
 

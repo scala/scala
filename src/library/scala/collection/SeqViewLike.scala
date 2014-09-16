@@ -154,17 +154,27 @@ trait SeqViewLike[+A,
     }
   }
 
+  // Note--for this to work, must ensure 0 <= from and 0 <= replaced
+  // Must also take care to allow patching inside an infinite stream
+  // (patching in an infinite stream is not okay)
   trait Patched[B >: A] extends Transformed[B] {
     protected[this] val from: Int
     protected[this] val patch: GenSeq[B]
     protected[this] val replaced: Int
     private lazy val plen = patch.length
     override def iterator: Iterator[B] = self.iterator patch (from, patch.iterator, replaced)
-    def length: Int = self.length + plen - replaced
-    def apply(idx: Int): B =
-      if (idx < from) self.apply(idx)
-      else if (idx < from + plen) patch.apply(idx - from)
+    def length: Int = {
+      val len = self.length
+      val pre = math.min(from, len)
+      val post = math.max(0, len - pre - replaced)
+      pre + plen + post
+    }
+    def apply(idx: Int): B = {
+      val actualFrom = if (self.lengthCompare(from) < 0) self.length else from
+      if (idx < actualFrom) self.apply(idx)
+      else if (idx < actualFrom + plen) patch.apply(idx - actualFrom)
       else self.apply(idx - plen + replaced)
+    }
     final override protected[this] def viewIdentifier = "P"
   }
 
@@ -210,7 +220,10 @@ trait SeqViewLike[+A,
   override def reverse: This = newReversed.asInstanceOf[This]
 
   override def patch[B >: A, That](from: Int, patch: GenSeq[B], replaced: Int)(implicit bf: CanBuildFrom[This, B, That]): That = {
-    newPatched(from, patch, replaced).asInstanceOf[That]
+    // Be careful to not evaluate the entire sequence!  Patch should work (slowly, perhaps) on infinite streams.
+    val nonNegFrom = math.max(0,from)
+    val nonNegRep = math.max(0,replaced)
+    newPatched(nonNegFrom, patch, nonNegRep).asInstanceOf[That]
 // was:    val b = bf(repr)
 //    if (b.isInstanceOf[NoBuilder[_]]) newPatched(from, patch, replaced).asInstanceOf[That]
 //    else super.patch[B, That](from, patch, replaced)(bf)

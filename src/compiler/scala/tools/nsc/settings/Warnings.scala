@@ -17,145 +17,94 @@ trait Warnings {
   // Warning semantics.
   val fatalWarnings = BooleanSetting("-Xfatal-warnings", "Fail the compilation if there are any warnings.")
 
-  // These additional warnings are all so noisy as to be useless in their
-  // present form, but have the potential to offer useful info.
-  protected def allWarnings = lintWarnings ++ List(
-    warnDeadCode,
-    warnValueDiscard,
-    warnNumericWiden,
-    warnUnused,           // SI-7712, SI-7707 warnUnused not quite ready for prime-time
-    warnUnusedImport,     // currently considered too noisy for general use
-    warnValueOverrides    // currently turned off as experimental
-  )
-  // These warnings should be pretty quiet unless you're doing
-  // something inadvisable.
-  protected def lintWarnings = List(
-    warnInaccessible,
-    warnNullaryOverride,
-    warnNullaryUnit,
-    warnAdaptedArgs,
-    warnInferAny,
-    warnMissingInterpolator,
-    warnDocDetached,
-    warnPrivateShadow,
-    warnTypeParameterShadow,
-    warnPolyImplicitOverload,
-    warnOptionImplicit,
-    warnDelayedInit,
-    warnByNameRightAssociative,
-    warnPackageObjectClasses,
-    warnUnsoundMatch
-  )
+  // Non-lint warnings
 
-  // Individual warnings. They can be set with -Ywarn.
-  private def nonlintflag(name: String, text: String): BooleanSetting = BooleanSetting(name, text)
-
-  val warnDeadCode         = nonlintflag("-Ywarn-dead-code",
-                             "Warn when dead code is identified.")
-  val warnValueDiscard     = nonlintflag("-Ywarn-value-discard",
-                             "Warn when non-Unit expression results are unused.")
-  val warnNumericWiden     = nonlintflag("-Ywarn-numeric-widen",
-                             "Warn when numerics are widened.")
-  val warnUnused           = nonlintflag("-Ywarn-unused",
-                             "Warn when local and private vals, vars, defs, and types are are unused")
-  val warnUnusedImport     = nonlintflag("-Ywarn-unused-import",
-                             "Warn when imports are unused")
-
-  // Lint warnings that have no -Y avatar, created with new instead of the autoregistering factory method.
-  // They evaluate true if set to true or else are unset but -Xlint is true
-  private def lintflag(name: String, text: String): BooleanSetting =
-    new BooleanSetting(name, text) {
-      override def value = if (isSetByUser) super.value else xlint
-    }
-
-  val warnAdaptedArgs          = lintflag("adapted-args",
-                                 "Warn if an argument list is modified to match the receiver.")
-  val warnNullaryUnit          = lintflag("nullary-unit",
-                                 "Warn when nullary methods return Unit.")
-  val warnInaccessible         = lintflag("inaccessible",
-                                "Warn about inaccessible types in method signatures.")
-  val warnNullaryOverride      = lintflag("nullary-override",
-                                "Warn when non-nullary `def f()' overrides nullary `def f'.")
-  val warnInferAny             = lintflag("infer-any",
-                                "Warn when a type argument is inferred to be `Any`.")
-  val warnMissingInterpolator  = lintflag("missing-interpolator",
-                                "A string literal appears to be missing an interpolator id.")
-  val warnDocDetached          = lintflag("doc-detached",
-                                "A ScalaDoc comment appears to be detached from its element.")
-  val warnPrivateShadow        = lintflag("private-shadow",
-                                "A private field (or class parameter) shadows a superclass field.")
-  val warnTypeParameterShadow  = lintflag("type-parameter-shadow",
-                                "A local type parameter shadows a type already in scope.")
-  val warnPolyImplicitOverload = lintflag("poly-implicit-overload",
-                                "Parameterized overloaded implicit methods are not visible as view bounds")
-  val warnOptionImplicit       = lintflag("option-implicit",
-                                "Option.apply used implicit view.")
-  val warnDelayedInit          = lintflag("delayedinit-select",
-                                "Selecting member of DelayedInit")
-  val warnByNameRightAssociative = lintflag("by-name-right-associative",
-                                "By-name parameter of right associative operator")
-  val warnPackageObjectClasses = lintflag("package-object-classes",
-                                "Class or object defined in package object")
-  val warnUnsoundMatch         = lintflag("unsound-match",
-                                "Pattern match may not be typesafe")
+  val warnDeadCode         = BooleanSetting("-Ywarn-dead-code", "Warn when dead code is identified.")
+  val warnValueDiscard     = BooleanSetting("-Ywarn-value-discard", "Warn when non-Unit expression results are unused.")
+  val warnNumericWiden     = BooleanSetting("-Ywarn-numeric-widen", "Warn when numerics are widened.")
+  // SI-7712, SI-7707 warnUnused not quite ready for prime-time
+  val warnUnused           = BooleanSetting("-Ywarn-unused", "Warn when local and private vals, vars, defs, and types are are unused.")
+  // currently considered too noisy for general use
+  val warnUnusedImport     = BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.")
 
   // Experimental lint warnings that are turned off, but which could be turned on programmatically.
   // These warnings are said to blind those who dare enable them.
   // They are not activated by -Xlint and can't be enabled on the command line.
-  val warnValueOverrides = {
-    val flag = lintflag("value-overrides", "Generated value class method overrides an implementation")
+  val warnValueOverrides = { // currently turned off as experimental. creaded using constructor (new BS), so not available on the command line.
+  val flag = new BooleanSetting("value-overrides", "Generated value class method overrides an implementation")
     flag.value = false
     flag
   }
 
-  // The Xlint warning group.
-  private val xlint = new BooleanSetting("-Zunused", "True if -Xlint or -Xlint:_")
-  // On -Xlint or -Xlint:_, set xlint, otherwise set the lint warning unless already set true
-  val lint = {
-    val description = "Enable or disable specific warnings"
-    val choices     = (lintWarnings map (_.name)).sorted
-    MultiChoiceSetting(
-      name    = "-Xlint",
-      helpArg = "warning",
-      descr   = description,
-      choices = choices,
-      default = Some(() => xlint.value = true)
-    ) { s =>
-      def helpline(n: String) = lintWarnings.find(_.name == n).map(w => f"  ${w.name}%-25s ${w.helpDescription}%n")
-      choices flatMap (helpline(_)) mkString (f"$description:%n", "", f"%n")
-    } withPostSetHook { x =>
-      val Neg = "-"
-      def setPolitely(b: BooleanSetting, v: Boolean) = if (!b.isSetByUser || !b) b.value = v
-      def set(w: String, v: Boolean) = lintWarnings find (_.name == w) foreach (setPolitely(_, v))
-      def propagate(ss: List[String]): Unit = ss match {
-        case w :: rest => if (w startsWith Neg) set(w stripPrefix Neg, false) else set(w, true) ; propagate(rest)
-        case Nil       => ()
-      }
-      propagate(x.value)
-    }
+  // Lint warnings
+
+  object LintWarnings extends MultiChoiceEnumeration {
+    class LintWarning(name: String, help: String, val yAliased: Boolean) extends Choice(name, help)
+    def LintWarning(name: String, help: String, yAliased: Boolean = false) = new LintWarning(name, help, yAliased)
+
+    val AdaptedArgs            = LintWarning("adapted-args",              "Warn if an argument list is modified to match the receiver.",               true)
+    val NullaryUnit            = LintWarning("nullary-unit",              "Warn when nullary methods return Unit.",                                    true)
+    val Inaccessible           = LintWarning("inaccessible",              "Warn about inaccessible types in method signatures.",                       true)
+    val NullaryOverride        = LintWarning("nullary-override",          "Warn when non-nullary `def f()' overrides nullary `def f'.",                true)
+    val InferAny               = LintWarning("infer-any",                 "Warn when a type argument is inferred to be `Any`.",                        true)
+    val MissingInterpolator    = LintWarning("missing-interpolator",      "A string literal appears to be missing an interpolator id.")
+    val DocDetached            = LintWarning("doc-detached",              "A ScalaDoc comment appears to be detached from its element.")
+    val PrivateShadow          = LintWarning("private-shadow",            "A private field (or class parameter) shadows a superclass field.")
+    val TypeParameterShadow    = LintWarning("type-parameter-shadow",     "A local type parameter shadows a type already in scope.")
+    val PolyImplicitOverload   = LintWarning("poly-implicit-overload",    "Parameterized overloaded implicit methods are not visible as view bounds.")
+    val OptionImplicit         = LintWarning("option-implicit",           "Option.apply used implicit view.")
+    val DelayedInitSelect      = LintWarning("delayedinit-select",        "Selecting member of DelayedInit")
+    val ByNameRightAssociative = LintWarning("by-name-right-associative", "By-name parameter of right associative operator.")
+    val PackageObjectClasses   = LintWarning("package-object-classes",    "Class or object defined in package object.")
+    val UnsoundMatch           = LintWarning("unsound-match",             "Pattern match may not be typesafe.")
+
+    def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
+  import LintWarnings._
+
+  def warnAdaptedArgs            = lint contains AdaptedArgs
+  def warnNullaryUnit            = lint contains NullaryUnit
+  def warnInaccessible           = lint contains Inaccessible
+  def warnNullaryOverride        = lint contains NullaryOverride
+  def warnInferAny               = lint contains InferAny
+  def warnMissingInterpolator    = lint contains MissingInterpolator
+  def warnDocDetached            = lint contains DocDetached
+  def warnPrivateShadow          = lint contains PrivateShadow
+  def warnTypeParameterShadow    = lint contains TypeParameterShadow
+  def warnPolyImplicitOverload   = lint contains PolyImplicitOverload
+  def warnOptionImplicit         = lint contains OptionImplicit
+  def warnDelayedInit            = lint contains DelayedInitSelect
+  def warnByNameRightAssociative = lint contains ByNameRightAssociative
+  def warnPackageObjectClasses   = lint contains PackageObjectClasses
+  def warnUnsoundMatch           = lint contains UnsoundMatch
 
   // Lint warnings that are currently -Y, but deprecated in that usage
   @deprecated("Use warnAdaptedArgs", since="2.11.2")
-  val YwarnAdaptedArgs      = BooleanSetting("-Ywarn-adapted-args",
-                             "Warn if an argument list is modified to match the receiver.") enabling List(warnAdaptedArgs)
-                             //withDeprecationMessage "Enable -Xlint:adapted-args"
+  def YwarnAdaptedArgs = warnAdaptedArgs
   @deprecated("Use warnNullaryUnit", since="2.11.2")
-  val YwarnNullaryUnit      = BooleanSetting("-Ywarn-nullary-unit",
-                             "Warn when nullary methods return Unit.") enabling List(warnNullaryUnit)
-                             //withDeprecationMessage "Enable -Xlint:nullary-unit"
+  def YwarnNullaryUnit = warnNullaryUnit
   @deprecated("Use warnInaccessible", since="2.11.2")
-  val YwarnInaccessible     = BooleanSetting("-Ywarn-inaccessible",
-                             "Warn about inaccessible types in method signatures.") enabling List(warnInaccessible)
-                             //withDeprecationMessage "Enable -Xlint:inaccessible"
+  def YwarnInaccessible = warnInaccessible
   @deprecated("Use warnNullaryOverride", since="2.11.2")
-  val YwarnNullaryOverride  = BooleanSetting("-Ywarn-nullary-override",
-                             "Warn when non-nullary `def f()' overrides nullary `def f'.") enabling List(warnNullaryOverride)
-                             //withDeprecationMessage "Enable -Xlint:nullary-override"
+  def YwarnNullaryOverride = warnNullaryOverride
   @deprecated("Use warnInferAny", since="2.11.2")
-  val YwarnInferAny         = BooleanSetting("-Ywarn-infer-any",
-                             "Warn when a type argument is inferred to be `Any`.") enabling List(warnInferAny)
-                             //withDeprecationMessage "Enable -Xlint:infer-any"
+  def YwarnInferAny = warnInferAny
+
+  // The Xlint warning group.
+  val lint = MultiChoiceSetting(
+    name    = "-Xlint",
+    helpArg = "warning",
+    descr   = "Enable or disable specific warnings",
+    domain  = LintWarnings,
+    default = Some(List("_")))
+
+  allLintWarnings foreach {
+    case w if w.yAliased =>
+      BooleanSetting(s"-Ywarn-${w.name}", {w.help}) withPostSetHook { s =>
+        lint.add(if (s) w.name else s"-${w.name}")
+      } // withDeprecationMessage s"Enable -Xlint:${c._1}"
+    case _ =>
+  }
 
   private lazy val warnSelectNullable = BooleanSetting("-Xcheck-null", "This option is obsolete and does nothing.")
 

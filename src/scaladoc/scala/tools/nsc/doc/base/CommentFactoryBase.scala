@@ -681,10 +681,10 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       jump("[[")
       val parens = 2 + repeatJump('[')
       val stop  = "]" * parens
-      val target = readUntil { check(stop) || check(" ") }
+      val target = readUntil { check(stop) || isWhitespaceOrNewLine(char) }
       val title =
         if (!check(stop)) Some({
-          jump(" ")
+          jumpWhitespaceOrNewLine()
           inline(check(stop))
         })
         else None
@@ -723,49 +723,15 @@ trait CommentFactoryBase { this: MemberLookupBase =>
      */
     def normalizeIndentation(_code: String): String = {
 
-      val code = _code.trim
-      var maxSkip = Integer.MAX_VALUE
-      var crtSkip = 0
-      var wsArea = true
-      var index = 0
-      var firstLine = true
-      var emptyLine = true
+      val code = _code.replaceAll("\\s+$", "").dropWhile(_ == '\n') // right-trim + remove all leading '\n'
+      val lines = code.split("\n")
 
-      while (index < code.length) {
-        code(index) match {
-          case ' ' =>
-            if (wsArea)
-              crtSkip += 1
-          case c =>
-            wsArea = (c == '\n')
-            maxSkip = if (firstLine || emptyLine) maxSkip else if (maxSkip <= crtSkip) maxSkip else crtSkip
-            crtSkip = if (c == '\n') 0 else crtSkip
-            firstLine = if (c == '\n') false else firstLine
-            emptyLine = if (c == '\n') true else false
-        }
-        index += 1
-      }
+      // maxSkip - size of the longest common whitespace prefix of non-empty lines
+      val nonEmptyLines = lines.filter(_.trim.nonEmpty)
+      val maxSkip = if (nonEmptyLines.isEmpty) 0 else nonEmptyLines.map(line => line.prefixLength(_ == ' ')).min
 
-      if (maxSkip == 0)
-        code
-      else {
-        index = 0
-        val builder = new StringBuilder
-        while (index < code.length) {
-          builder.append(code(index))
-          if (code(index) == '\n') {
-            // we want to skip as many spaces are available, if there are less spaces (like on empty lines, do not
-            // over-consume them)
-            index += 1
-            val limit = index + maxSkip
-            while ((index < code.length) && (code(index) == ' ') && index < limit)
-              index += 1
-          }
-          else
-            index += 1
-        }
-        builder.toString
-      }
+      // remove common whitespace prefix
+      lines.map(line => if (line.trim.nonEmpty) line.substring(maxSkip) else line).mkString("\n")
     }
 
     def checkParaEnded(): Boolean = {
@@ -899,6 +865,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     def jumpWhitespace() = jumpUntil(!isWhitespace(char))
 
+    def jumpWhitespaceOrNewLine() = jumpUntil(!isWhitespaceOrNewLine(char))
+
     /* READERS */
 
     final def readUntil(c: Char): String = {
@@ -938,5 +906,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     /* CHARS CLASSES */
 
     def isWhitespace(c: Char) = c == ' ' || c == '\t'
+
+    def isWhitespaceOrNewLine(c: Char) = isWhitespace(c) || c == '\n'
   }
 }
