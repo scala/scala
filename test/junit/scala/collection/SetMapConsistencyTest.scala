@@ -514,4 +514,19 @@ class SetMapConsistencyTest {
     assert( hs.toList.toSet == hs )
     assert( hs == hs.toList.toSet )
   }
+
+  @Test
+  def testSI8815() {
+    val lm = new scala.collection.mutable.LongMap[String]
+    lm += (Long.MinValue, "min")
+    lm += (-1, "neg-one")
+    lm += (0, "zero")
+    lm += (Long.MaxValue, "max")
+    var nit = 0
+    lm.iterator.foreach(_ => nit += 1)
+    var nfe = 0
+    lm.foreach(_ => nfe += 1)
+    assert(nit == 4)
+    assert(nfe == 4)
+  }
 }
