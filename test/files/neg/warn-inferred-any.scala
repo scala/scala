@@ -17,3 +17,11 @@ trait Ys[+A] {
   { 1l to 5l contains 5d }
   { 1l to 5l contains 5l }
 }
+
+trait Zs {
+  def f[A](a: A*) = 42
+  def g[A >: Any](a: A*) = 42  // don't warn
+
+  def za = f(1, "one")
+  def zu = g(1, "one")
+}
