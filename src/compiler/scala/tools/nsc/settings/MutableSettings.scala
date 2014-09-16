@@ -125,13 +125,25 @@ class MutableSettings(val errorFn: String => Unit)
         case Some(cmd)  => setter(cmd)(args)
       }
 
-    // if arg is of form -Xfoo:bar,baz,quux
-    def parseColonArg(s: String): Option[List[String]] = {
-      val (p, args) = StringOps.splitWhere(s, _ == ':', doDropIndex = true) getOrElse (return None)
-
-      // any non-Nil return value means failure and we return s unmodified
-      tryToSetIfExists(p, (args split ",").toList, (s: Setting) => s.tryToSetColon _)
+    // -Xfoo: clears Clearables
+    def clearIfExists(cmd: String): Option[List[String]] = lookupSetting(cmd) match {
+      case Some(c: Clearable) => c.clear() ; Some(Nil)
+      case Some(s)            => s.errorAndValue(s"Missing argument to $cmd", None)
+      case None               => None
     }
+
+    // if arg is of form -Xfoo:bar,baz,quux
+    // the entire arg is consumed, so return None for failure
+    // any non-Nil return value means failure and we return s unmodified
+    def parseColonArg(s: String): Option[List[String]] =
+      if (s endsWith ":") {
+        clearIfExists(s.init)
+      } else {
+        for {
+          (p, args) <- StringOps.splitWhere(s, _ == ':', doDropIndex = true)
+          rest      <- tryToSetIfExists(p, (args split ",").toList, (s: Setting) => s.tryToSetColon _)
+        } yield rest
+      }
 
     // if arg is of form -Xfoo or -Xfoo bar (name = "-Xfoo")
     def parseNormalArg(p: String, args: List[String]): Option[List[String]] =
@@ -532,6 +544,7 @@ class MutableSettings(val errorFn: String => Unit)
     def prepend(s: String) = prependPath.value = join(s, prependPath.value)
     def append(s: String) = appendPath.value = join(appendPath.value, s)
 
+    override def isDefault = super.isDefault && prependPath.isDefault && appendPath.isDefault
     override def value = join(
       prependPath.value,
       super.value,

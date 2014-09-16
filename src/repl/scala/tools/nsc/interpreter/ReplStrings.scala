@@ -28,5 +28,8 @@ trait ReplStrings {
   def any2stringOf(x: Any, maxlen: Int) =
     "scala.runtime.ScalaRunTime.replStringOf(%s, %s)".format(x, maxlen)
 
-  def words(s: String) = (s.trim split "\\s+" filterNot (_ == "")).toList
+  // no escaped or nested quotes
+  private[this] val inquotes = """(['"])(.*?)\1""".r
+  def unquoted(s: String) = s match { case inquotes(_, w) => w ; case _ => s }
+  def words(s: String) = (s.trim split "\\s+" filterNot (_ == "") map unquoted).toList
 }
