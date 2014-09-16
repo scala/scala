@@ -3,7 +3,7 @@ package scala.tools.partest
 import scala.tools.nsc.util.JavaClassPath
 import scala.collection.JavaConverters._
 import scala.tools.asm.{ClassWriter, ClassReader}
-import scala.tools.asm.tree.{ClassNode, MethodNode, InsnList}
+import scala.tools.asm.tree._
 import java.io.{FileOutputStream, FileInputStream, File => JFile, InputStream}
 import AsmNode._
 
@@ -28,8 +28,8 @@ import AsmNode._
  * See test/files/jvm/bytecode-test-example for an example of bytecode test.
  *
  */
-abstract class BytecodeTest extends ASMConverters {
-  import instructions._
+abstract class BytecodeTest {
+  import ASMConverters._
 
   /** produce the output to be compared against a checkfile */
   protected def show(): Unit
@@ -38,8 +38,8 @@ abstract class BytecodeTest extends ASMConverters {
 
   // asserts
   def sameBytecode(methA: MethodNode, methB: MethodNode) = {
-    val isa = instructions.fromMethod(methA)
-    val isb = instructions.fromMethod(methB)
+    val isa = instructionsFromMethod(methA)
+    val isb = instructionsFromMethod(methB)
     if (isa == isb) println("bytecode identical")
     else diffInstructions(isa, isb)
   }
@@ -81,18 +81,16 @@ abstract class BytecodeTest extends ASMConverters {
     }
   }
 
-  // bytecode is equal modulo local variable numbering
-  def equalsModuloVar(a: Instruction, b: Instruction) = (a, b) match {
-    case _ if a == b => true
-    case (VarOp(op1, _), VarOp(op2, _)) if op1 == op2 => true
-    case _ => false
-  }
-
-  def similarBytecode(methA: MethodNode, methB: MethodNode, similar: (Instruction, Instruction) => Boolean) = {
-    val isa = fromMethod(methA)
-    val isb = fromMethod(methB)
+  /**
+   * Compare the bytecodes of two methods.
+   *
+   * For the `similar` function, you probably want to pass [[ASMConverters.equivalentBytecode]].
+   */
+  def similarBytecode(methA: MethodNode, methB: MethodNode, similar: (List[Instruction], List[Instruction]) => Boolean) = {
+    val isa = instructionsFromMethod(methA)
+    val isb = instructionsFromMethod(methB)
     if (isa == isb) println("bytecode identical")
-    else if ((isa, isb).zipped.forall { case (a, b) => similar(a, b) }) println("bytecode similar")
+    else if (similar(isa, isb)) println("bytecode similar")
     else diffInstructions(isa, isb)
   }
 
