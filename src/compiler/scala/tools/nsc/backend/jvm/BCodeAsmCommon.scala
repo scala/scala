@@ -22,14 +22,11 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
    * null.
    */
   def isAnonymousOrLocalClass(classSym: Symbol): Boolean = {
-    def isDelambdafyLambdaClass(classSym: Symbol): Boolean = {
-      classSym.isAnonymousFunction && (settings.Ydelambdafy.value == "method")
-    }
-
     assert(classSym.isClass, s"not a class: $classSym")
-
-    !isDelambdafyLambdaClass(classSym) &&
-      (classSym.isAnonymousClass || !classSym.originalOwner.isClass)
+    val res = (classSym.isAnonymousClass || !classSym.originalOwner.isClass)
+    // lambda classes are always top-level classes.
+    if (res) assert(!classSym.isDelambdafyFunction)
+    res
   }
 
   /**
@@ -81,7 +78,7 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
   final case class EnclosingMethodEntry(owner: String, name: String, methodDescriptor: String)
 
   /**
-   * If data for emitting an EnclosingMethod attribute. None if `classSym` is a member class (not
+   * Data for emitting an EnclosingMethod attribute. None if `classSym` is a member class (not
    * an anonymous or local class). See doc in BTypes.
    *
    * The class is parametrized by two functions to obtain a bytecode class descriptor for a class

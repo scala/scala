@@ -970,6 +970,7 @@ TODO:
       <pathelement location="${test.junit.classes}"/>
       <path refid="quick.compiler.build.path"/>
       <path refid="quick.repl.build.path"/>
+      <path refid="quick.partest-extras.build.path"/>
       <path refid="junit.classpath"/>
     </path>
 
@@ -1512,7 +1513,12 @@ TODO:
 <!-- ===========================================================================
                                   BINARY COMPATIBILITY TESTING
 ============================================================================ -->
-  <target name="bc.init" depends="init" unless="maven-deps-done-mima">
+  <target name="bc.init" depends="init" if="test.bc.skip">
+    <!-- if test.bc.skip is set, make sure that pc.prepare is not executed either -->
+    <property name="maven-deps-done-mima" value="true"/>
+  </target>
+
+  <target name="bc.prepare" depends="bc.init" unless="maven-deps-done-mima">
     <property name="bc-reference-version" value="2.11.0"/>
 
     <property name="bc-build.dir" value="${build.dir}/bc"/>
@@ -1530,10 +1536,10 @@ TODO:
   </target>
 
   <target name="test.bc-opt" description="Optimized version of test.bc."> <optimized name="test.bc"/></target>
-  <target name="test.bc" depends="bc.init, pack.lib, pack.reflect">
-    <echo message="binary compatibility testing disabled in the 2.12.x branch"/>
-    <!-- <bc.check project="library"/> -->
-    <!-- <bc.check project="reflect"/> -->
+  <target name="test.bc" depends="bc.prepare, pack.lib, pack.reflect" unless="test.bc.skip">
+      <echo message="binary compatibility testing disabled in the 2.12.x branch"/>
+      <!-- <bc.check project="library"/> -->
+      <!-- <bc.check project="reflect"/> -->
   </target>
 
 <!-- ===========================================================================

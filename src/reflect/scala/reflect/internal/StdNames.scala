@@ -99,17 +99,18 @@ trait StdNames {
 
     val SINGLETON_SUFFIX: String     = ".type"
 
-    val ANON_CLASS_NAME: NameType    = "$anon"
-    val ANON_FUN_NAME: NameType      = "$anonfun"
-    val EMPTY: NameType              = ""
-    val EMPTY_PACKAGE_NAME: NameType = "<empty>"
-    val IMPL_CLASS_SUFFIX            = "$class"
-    val IMPORT: NameType             = "<import>"
-    val MODULE_SUFFIX_NAME: NameType = MODULE_SUFFIX_STRING
-    val MODULE_VAR_SUFFIX: NameType  = "$module"
-    val PACKAGE: NameType            = "package"
-    val ROOT: NameType               = "<root>"
-    val SPECIALIZED_SUFFIX: NameType = "$sp"
+    val ANON_CLASS_NAME: NameType              = "$anon"
+    val DELAMBDAFY_LAMBDA_CLASS_NAME: NameType = "$lambda"
+    val ANON_FUN_NAME: NameType                = "$anonfun"
+    val EMPTY: NameType                        = ""
+    val EMPTY_PACKAGE_NAME: NameType           = "<empty>"
+    val IMPL_CLASS_SUFFIX                      = "$class"
+    val IMPORT: NameType                       = "<import>"
+    val MODULE_SUFFIX_NAME: NameType           = MODULE_SUFFIX_STRING
+    val MODULE_VAR_SUFFIX: NameType            = "$module"
+    val PACKAGE: NameType                      = "package"
+    val ROOT: NameType                         = "<root>"
+    val SPECIALIZED_SUFFIX: NameType           = "$sp"
 
     // value types (and AnyRef) are all used as terms as well
     // as (at least) arguments to the @specialize annotation.

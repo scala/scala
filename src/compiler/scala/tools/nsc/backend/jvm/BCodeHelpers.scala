@@ -782,14 +782,9 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     }
   } // end of trait BCClassGen
 
-  /* basic functionality for class file building of plain, mirror, and beaninfo classes. */
-  abstract class JBuilder extends BCInnerClassGen {
-
-  } // end of class JBuilder
-
   /* functionality for building plain and mirror classes */
   abstract class JCommonBuilder
-    extends JBuilder
+    extends BCInnerClassGen
     with    BCAnnotGen
     with    BCForwardersGen
     with    BCPickles { }
@@ -851,7 +846,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
   } // end of class JMirrorBuilder
 
   /* builder of bean info classes */
-  class JBeanInfoBuilder extends JBuilder {
+  class JBeanInfoBuilder extends BCInnerClassGen {
 
     /*
      * Generate a bean info class that describes the given class.
