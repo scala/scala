@@ -544,7 +544,14 @@ trait Infer extends Checkable {
       val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
       // Can warn about inferring Any/AnyVal as long as they don't appear
       // explicitly anywhere amongst the formal, argument, result, or expected type.
-      def canWarnAboutAny = !(pt :: restpe :: formals ::: argtpes exists (t => (t contains AnyClass) || (t contains AnyValClass)))
+      // ...or lower bound of a type param, since they're asking for it.
+      def canWarnAboutAny = {
+        val loBounds = tparams map (_.info.bounds.lo)
+        val hasAny = pt :: restpe :: formals ::: argtpes ::: loBounds exists (t =>
+          (t contains AnyClass) || (t contains AnyValClass)
+        )
+        !hasAny
+      }
       def argumentPosition(idx: Int): Position = context.tree match {
         case x: ValOrDefDef => x.rhs match {
           case Apply(fn, args) if idx < args.size => args(idx).pos

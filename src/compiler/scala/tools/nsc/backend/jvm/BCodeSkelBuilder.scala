@@ -346,6 +346,13 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
     /*
      * Bookkeeping for method-local vars and method-params.
+     *
+     * TODO: use fewer slots. local variable slots are never re-used in separate blocks.
+     * In the following example, x and y could use the same slot.
+     *   def foo() = {
+     *     { val x = 1 }
+     *     { val y = "a" }
+     *   }
      */
     object locals {
 

@@ -209,9 +209,35 @@ trait ScalaSettings extends AbsScalaSettings
   // the current standard is "inline" but we are moving towards "method"
   val Ydelambdafy        = ChoiceSetting     ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "inline")
 
+  object YoptChoices extends MultiChoiceEnumeration {
+    val unreachableCode = Choice("unreachable-code", "Eliminate unreachable code")
+
+    val lNone           = Choice("l:none",      "Don't enable any optimizations")
+
+    private val defaultChoices = List(unreachableCode)
+    val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString(","),                           expandsTo = defaultChoices)
+
+    private val methodChoices = List(lDefault)
+    val lMethod         = Choice("l:method",    "Intra-method optimizations: "+ methodChoices.mkString(","),                              expandsTo = methodChoices)
+
+    private val projectChoices = List(lMethod)
+    val lProject        = Choice("l:project",   "Cross-method optimizations within the current project: "+ projectChoices.mkString(","),  expandsTo = projectChoices)
+
+    private val classpathChoices = List(lProject)
+    val lClasspath      = Choice("l:classpath", "Cross-method optmizations across the entire classpath: "+ classpathChoices.mkString(","), expandsTo = classpathChoices)
+  }
+
+  val Yopt = MultiChoiceSetting(
+    name = "-Yopt",
+    helpArg = "optimization",
+    descr = "Enable optimizations",
+    domain = YoptChoices)
+
+  def YoptUnreachableCode: Boolean = !Yopt.isSetByUser || Yopt.contains(YoptChoices.unreachableCode)
+
   private def removalIn212 = "This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug."
 
-  object YstatisticsPhases extends MultiChoiceEnumeration { val parser, typer, patmat, erasure, cleanup = Value }
+  object YstatisticsPhases extends MultiChoiceEnumeration { val parser, typer, patmat, erasure, cleanup, jvm = Value }
   val Ystatistics = {
     val description = "Print compiler statistics for specific phases"
     MultiChoiceSetting(

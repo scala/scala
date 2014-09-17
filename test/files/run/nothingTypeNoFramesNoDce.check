@@ -1,0 +1,1 @@
+warning: -target:jvm-1.5 is deprecated: use target for Java 1.6 or above.

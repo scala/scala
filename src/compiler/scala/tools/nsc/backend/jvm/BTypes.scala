@@ -713,6 +713,8 @@ abstract class BTypes {
           // TODO @lry I don't really understand the reasoning here.
           // Both this and other are classes. The code takes (transitively) all superclasses and
           // finds the first common one.
+          // MOST LIKELY the answer can be found here, see the comments and links by Miguel:
+          //  - https://issues.scala-lang.org/browse/SI-3872
           firstCommonSuffix(this :: this.superClassesTransitive, other :: other.superClassesTransitive)
       }
 

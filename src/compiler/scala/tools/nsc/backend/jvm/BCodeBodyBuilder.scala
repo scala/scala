@@ -9,7 +9,6 @@ package tools.nsc
 package backend
 package jvm
 
-import scala.collection.{ mutable, immutable }
 import scala.annotation.switch
 
 import scala.tools.asm
@@ -283,9 +282,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val Local(tk, _, idx, isSynth) = locals.getOrMakeLocal(sym)
           if (rhs == EmptyTree) { emitZeroOf(tk) }
           else { genLoad(rhs, tk) }
+          val localVarStart = currProgramPoint()
           bc.store(idx, tk)
           if (!isSynth) { // there are case <synthetic> ValDef's emitted by patmat
-            varsInScope ::= (sym -> currProgramPoint())
+            varsInScope ::= (sym -> localVarStart)
           }
           generatedType = UNIT
 
@@ -815,7 +815,51 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           case _    => bc.emitT2T(from, to)
         }
       } else if (from.isNothingType) {
-        emit(asm.Opcodes.ATHROW) // ICode enters here into enterIgnoreMode, we'll rely instead on DCE at ClassNode level.
+        /* There are two possibilities for from.isNothingType: emitting a "throw e" expressions and
+         * loading a (phantom) value of type Nothing.
+         *
+         * The Nothing type in Scala's type system does not exist in the JVM. In bytecode, Nothing
+         * is mapped to scala.runtime.Nothing$. To the JVM, a call to Predef.??? looks like it would
+         * return an object of type Nothing$. We need to do something with that phantom object on
+         * the stack. "Phantom" because it never exists: such methods always throw, but the JVM does
+         * not know that.
+         *
+         * Note: The two verifiers (old: type inference, new: type checking) have different
+         * requirements. Very briefly:
+         *
+         * Old (http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.2.1): at
+         * each program point, no matter what branches were taken to get there
+         *   - Stack is same size and has same typed values
+         *   - Local and stack values need to have consistent types
+         *   - In practice, the old verifier seems to ignore unreachable code and accept any
+         *     instructions after an ATHROW. For example, there can be another ATHROW (without
+         *     loading another throwable first).
+         *
+         * New (http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.10.1)
+         *   - Requires consistent stack map frames. GenBCode generates stack frames if -target:jvm-1.6
+         *     or higher.
+         *   - In practice: the ASM library computes stack map frames for us (ClassWriter). Emitting
+         *     correct frames after an ATHROW is probably complex, so ASM uses the following strategy:
+         *       - Every time when generating an ATHROW, a new basic block is started.
+         *       - During classfile writing, such basic blocks are found to be dead: no branches go there
+         *       - Eliminating dead code would probably require complex shifts in the output byte buffer
+         *       - But there's an easy solution: replace all code in the dead block with with
+         *         `nop; nop; ... nop; athrow`, making sure the bytecode size stays the same
+         *       - The corresponding stack frame can be easily generated: on entering a dead the block,
+         *         the frame requires a single Throwable on the stack.
+         *       - Since there are no branches to the dead block, the frame requirements are never violated.
+         *
+         * To summarize the above: it does matter what we emit after an ATHROW.
+         *
+         * NOW: if we end up here because we emitted a load of a (phantom) value of type Nothing$,
+         * there was no ATHROW emitted. So, we have to make the verifier happy and do something
+         * with that value. Since Nothing$ extends Throwable, the easiest is to just emit an ATHROW.
+         *
+         * If we ended up here because we generated a "throw e" expression, we know the last
+         * emitted instruction was an ATHROW. As explained above, it is OK to emit a second ATHROW,
+         * the verifiers will be happy.
+         */
+        emit(asm.Opcodes.ATHROW)
       } else if (from.isNullType) {
         bc drop from
         emit(asm.Opcodes.ACONST_NULL)
