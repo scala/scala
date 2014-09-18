@@ -30,7 +30,7 @@ opchar           ::= // printableChar not matched by (whiteSpace | upper | lower
 printableChar    ::= // all characters in [\u0020, \u007F] inclusive
 charEscapeSeq    ::= ‘\‘ (‘b‘ | ‘t‘ | ‘n‘ | ‘f‘ | ‘r‘ | ‘"‘ | ‘'‘ | ‘\‘)
 
-op               ::=  opchar {opchar} 
+op               ::=  opchar {opchar}
 varid            ::=  lower idrest
 plainid          ::=  upper idrest
                  |  varid
@@ -45,7 +45,7 @@ hexNumeral       ::=  ‘0’ ‘x’ hexDigit {hexDigit}
 digit            ::=  ‘0’ | nonZeroDigit
 nonZeroDigit     ::=  ‘1’ | … | ‘9’
 
-floatingPointLiteral 
+floatingPointLiteral
                  ::=  digit {digit} ‘.’ digit {digit} [exponentPart] [floatType]
                  |  ‘.’ digit {digit} [exponentPart] [floatType]
                  |  digit {digit} exponentPart [floatType]
@@ -99,7 +99,7 @@ grammar.
   FunctionArgTypes  ::= InfixType
                       | ‘(’ [ ParamType {‘,’ ParamType } ] ‘)’
   ExistentialClause ::=  ‘forSome’ ‘{’ ExistentialDcl {semi ExistentialDcl} ‘}’
-  ExistentialDcl    ::=  ‘type’ TypeDcl 
+  ExistentialDcl    ::=  ‘type’ TypeDcl
                       |  ‘val’ ValDcl
   InfixType         ::=  CompoundType {id [nl] CompoundType}
   CompoundType      ::=  AnnotType {‘with’ AnnotType} [Refinement]
@@ -119,7 +119,7 @@ grammar.
   TypePat           ::=  Type
 
   Ascription        ::=  ‘:’ InfixType
-                      |  ‘:’ Annotation {Annotation} 
+                      |  ‘:’ Annotation {Annotation}
                       |  ‘:’ ‘_’ ‘*’
 
   Expr              ::=  (Bindings | [‘implicit’] id | ‘_’) ‘=>’ Expr
@@ -139,7 +139,7 @@ grammar.
   PostfixExpr       ::=  InfixExpr [id [nl]]
   InfixExpr         ::=  PrefixExpr
                       |  InfixExpr id [nl] InfixExpr
-  PrefixExpr        ::=  [‘-’ | ‘+’ | ‘~’ | ‘!’] SimpleExpr 
+  PrefixExpr        ::=  [‘-’ | ‘+’ | ‘~’ | ‘!’] SimpleExpr
   SimpleExpr        ::=  ‘new’ (ClassTemplate | TemplateBody)
                       |  BlockExpr
                       |  SimpleExpr1 [‘_’]
@@ -147,7 +147,7 @@ grammar.
                       |  Path
                       |  ‘_’
                       |  ‘(’ [Exprs] ‘)’
-                      |  SimpleExpr ‘.’ id 
+                      |  SimpleExpr ‘.’ id
                       |  SimpleExpr TypeArgs
                       |  SimpleExpr1 ArgumentExprs
                       |  XmlExpr
@@ -170,7 +170,7 @@ grammar.
   Generator         ::=  Pattern1 ‘<-’ Expr {[semi] Guard | semi Pattern1 ‘=’ Expr}
 
   CaseClauses       ::=  CaseClause { CaseClause }
-  CaseClause        ::=  ‘case’ Pattern [Guard] ‘=>’ Block 
+  CaseClause        ::=  ‘case’ Pattern [Guard] ‘=>’ Block
   Guard             ::=  ‘if’ PostfixExpr
 
   Pattern           ::=  Pattern1 { ‘|’ Pattern1 }
@@ -195,16 +195,16 @@ grammar.
   TypeParamClause   ::=  ‘[’ VariantTypeParam {‘,’ VariantTypeParam} ‘]’
   FunTypeParamClause::=  ‘[’ TypeParam {‘,’ TypeParam} ‘]’
   VariantTypeParam  ::=  {Annotation} [‘+’ | ‘-’] TypeParam
-  TypeParam         ::=  (id | ‘_’) [TypeParamClause] [‘>:’ Type] [‘<:’ Type] 
+  TypeParam         ::=  (id | ‘_’) [TypeParamClause] [‘>:’ Type] [‘<:’ Type]
                          {‘<%’ Type} {‘:’ Type}
   ParamClauses      ::=  {ParamClause} [[nl] ‘(’ ‘implicit’ Params ‘)’]
   ParamClause       ::=  [nl] ‘(’ [Params] ‘)’
   Params            ::=  Param {‘,’ Param}
   Param             ::=  {Annotation} id [‘:’ ParamType] [‘=’ Expr]
-  ParamType         ::=  Type 
-                      |  ‘=>’ Type 
+  ParamType         ::=  Type
+                      |  ‘=>’ Type
                       |  Type ‘*’
-  ClassParamClauses ::=  {ClassParamClause} 
+  ClassParamClauses ::=  {ClassParamClause}
                          [[nl] ‘(’ ‘implicit’ ClassParams ‘)’]
   ClassParamClause  ::=  [nl] ‘(’ [ClassParams] ‘)’
   ClassParams       ::=  ClassParam {‘,’ ClassParam}
@@ -213,7 +213,7 @@ grammar.
   Bindings          ::=  ‘(’ Binding {‘,’ Binding ‘)’
   Binding           ::=  (id | ‘_’) [‘:’ Type]
 
-  Modifier          ::=  LocalModifier 
+  Modifier          ::=  LocalModifier
                       |  AccessModifier
                       |  ‘override’
   LocalModifier     ::=  ‘abstract’
@@ -234,7 +234,7 @@ grammar.
                       |  Expr
                       |
   SelfType          ::=  id [‘:’ Type] ‘=>’
-                      |  ‘this’ ‘:’ Type ‘=>’ 
+                      |  ‘this’ ‘:’ Type ‘=>’
 
   Import            ::=  ‘import’ ImportExpr {‘,’ ImportExpr}
   ImportExpr        ::=  StableId ‘.’ (id | ‘_’ | ImportSelectors)
@@ -263,15 +263,15 @@ grammar.
                       |  ids ‘:’ Type ‘=’ ‘_’
   FunDef            ::=  FunSig [‘:’ Type] ‘=’ Expr
                       |  FunSig [nl] ‘{’ Block ‘}’
-                      |  ‘this’ ParamClause ParamClauses 
+                      |  ‘this’ ParamClause ParamClauses
                          (‘=’ ConstrExpr | [nl] ConstrBlock)
   TypeDef           ::=  id [TypeParamClause] ‘=’ Type
 
   TmplDef           ::=  [‘case’] ‘class’ ClassDef
                       |  [‘case’] ‘object’ ObjectDef
                       |  ‘trait’ TraitDef
-  ClassDef          ::=  id [TypeParamClause] {ConstrAnnotation} [AccessModifier] 
-                         ClassParamClauses ClassTemplateOpt 
+  ClassDef          ::=  id [TypeParamClause] {ConstrAnnotation} [AccessModifier]
+                         ClassParamClauses ClassTemplateOpt
   TraitDef          ::=  id [TypeParamClause] TraitTemplateOpt
   ObjectDef         ::=  id ClassTemplateOpt
   ClassTemplateOpt  ::=  ‘extends’ ClassTemplate | [[‘extends’] TemplateBody]
@@ -284,7 +284,7 @@ grammar.
   EarlyDefs         ::= ‘{’ [EarlyDef {semi EarlyDef}] ‘}’ ‘with’
   EarlyDef          ::=  {Annotation [nl]} {Modifier} PatVarDef
 
-  ConstrExpr        ::=  SelfInvocation 
+  ConstrExpr        ::=  SelfInvocation
                       |  ConstrBlock
   ConstrBlock       ::=  ‘{’ SelfInvocation {semi BlockStat} ‘}’
   SelfInvocation    ::=  ‘this’ ArgumentExprs {ArgumentExprs}
@@ -294,7 +294,7 @@ grammar.
                       |  Import
                       |  Packaging
                       |  PackageObject
-                      |  
+                      |
   Packaging         ::=  ‘package’ QualId [nl] ‘{’ TopStatSeq ‘}’
   PackageObject     ::=  ‘package’ ‘object’ ObjectDef
 

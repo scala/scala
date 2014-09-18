@@ -41,15 +41,15 @@ The signatures of these root classes are described by the following
 definitions.
 
 ```scala
-package scala 
+package scala
 /** The universal root class */
 abstract class Any {
 
   /** Defined equality; abstract here */
-  def equals(that: Any): Boolean 
+  def equals(that: Any): Boolean
 
   /** Semantic equality between values */
-  final def == (that: Any): Boolean  =  
+  final def == (that: Any): Boolean  =
     if (null eq this) null eq that else this equals that
 
   /** Semantic inequality between values */
@@ -73,11 +73,11 @@ abstract class Any {
 }
 
 /** The root class of all value types */
-final class AnyVal extends Any 
+final class AnyVal extends Any
 
 /** The root class of all reference types */
 class AnyRef extends Any {
-  def equals(that: Any): Boolean      = this eq that 
+  def equals(that: Any): Boolean      = this eq that
   final def eq(that: AnyRef): Boolean = $\ldots$ // reference equality
   final def ne(that: AnyRef): Boolean = !(this eq that)
 
@@ -85,9 +85,9 @@ class AnyRef extends Any {
   def toString: String  = $\ldots$ // toString computed from hashCode and class name
 
   def synchronized[T](body: => T): T // execute `body` in while locking `this`.
-}                           
+}
+```
 
-```scala
 The type test `$x$.isInstanceOf[$T$]` is equivalent to a typed
 pattern match
 
@@ -103,10 +103,9 @@ of the form $D$ or $D[\mathit{tps}]$ where $D$ is a type member of some outer cl
 In this case $T'$ is `$C$#$D$` (or `$C$#$D[tps]$`, respectively), whereas $T$ itself would expand to `$C$.this.$D[tps]$`.
 In other words, an `isInstanceOf` test does not check that types have the same enclosing instance.
 
-
 The test `$x$.asInstanceOf[$T$]` is treated specially if $T$ is a
 [numeric value type](#value-classes). In this case the cast will
-be translated to an application of a [conversion method](#numeric-value-types) 
+be translated to an application of a [conversion method](#numeric-value-types)
 `x.to$T$`. For non-numeric values $x$ the operation will raise a
 `ClassCastException`.
 
@@ -131,19 +130,19 @@ Subrange types, as well as `Int` and `Long` are called _integer types_, whereas 
 Numeric value types are ranked in the following partial order:
 
 ```scala
-Byte - Short 
+Byte - Short
              \
                Int - Long - Float - Double
-             / 
-        Char 
+             /
+        Char
 ```
 
-`Byte` and `Short` are the lowest-ranked types in this order, 
+`Byte` and `Short` are the lowest-ranked types in this order,
 whereas `Double` is the highest-ranked.  Ranking does _not_
 imply a [conformance relationship](03-types.html#conformance); for
 instance `Int` is not a subtype of `Long`.  However, object
 [`Predef`](#the-predef-object) defines [views](07-implicit-parameters-and-views.html#views)
-from every numeric value type to all higher-ranked numeric value types. 
+from every numeric value type to all higher-ranked numeric value types.
 Therefore, lower-ranked types are implicitly converted to higher-ranked types
 when required by the [context](06-expressions.html#implicit-conversions).
 
@@ -182,7 +181,7 @@ Any numeric value type $T$ supports the following methods.
     numeric value (as when going from `Long` to `Int` or from
     `Int` to `Byte`) or it might lose precision (as when going
     from `Double` to `Float` or when converting between
-    `Long` and `Float`). 
+    `Long` and `Float`).
 
 Integer numeric value types support in addition the following operations:
 
@@ -228,7 +227,7 @@ def equals(other: Any): Boolean = other match {
 ```
 
 The `hashCode` method returns an integer hashcode that maps equal
-numeric values to equal results. It is guaranteed to be the identity for 
+numeric values to equal results. It is guaranteed to be the identity for
 for type `Int` and for all subrange types.
 
 The `toString` method displays its receiver as an integer or
@@ -284,7 +283,6 @@ abstract sealed class Int extends AnyVal {
 }
 ```
 
-
 ### Class `Boolean`
 
 Class `Boolean` has only two values: `true` and
@@ -292,7 +290,7 @@ Class `Boolean` has only two values: `true` and
 class definition.
 
 ```scala
-package scala 
+package scala
 abstract sealed class Boolean extends AnyVal {
   def && (p: => Boolean): Boolean = // boolean and
     if (this) p else false
@@ -316,7 +314,7 @@ and `toString` from class `Any`.
 
 The `equals` method returns `true` if the argument is the
 same boolean value as the receiver, `false` otherwise.  The
-`hashCode` method returns a fixed, implementation-specific hash-code when invoked on `true`, 
+`hashCode` method returns a fixed, implementation-specific hash-code when invoked on `true`,
 and a different, fixed, implementation-specific hash-code when invoked on `false`. The `toString` method
 returns the receiver converted to a string, i.e. either `"true"` or `"false"`.
 
@@ -328,7 +326,7 @@ from class `Any`.
 
 The `equals` method returns `true` if the argument is the
 unit value `()`, `false` otherwise.  The
-`hashCode` method returns a fixed, implementation-specific hash-code, 
+`hashCode` method returns a fixed, implementation-specific hash-code,
 The `toString` method returns `"()"`.
 
 ## Standard Reference Classes
@@ -347,7 +345,7 @@ it). For Scala clients the class is taken to support in each case a
 method
 
 ```scala
-def + (that: Any): String 
+def + (that: Any): String
 ```
 
 which concatenates its left operand with the textual representation of its
@@ -359,7 +357,7 @@ Scala defines tuple classes `Tuple$n$` for $n = 2 , \ldots , 22$.
 These are defined as follows.
 
 ```scala
-package scala 
+package scala
 case class Tuple$n$[+T_1, ..., +T_n](_1: T_1, ..., _$n$: T_$n$) {
   def toString = "(" ++ _1 ++ "," ++ $\ldots$ ++ "," ++ _$n$ ++ ")"
 }
@@ -375,10 +373,10 @@ Scala defines function classes `Function$n$` for $n = 1 , \ldots , 22$.
 These are defined as follows.
 
 ```scala
-package scala 
+package scala
 trait Function$n$[-T_1, ..., -T_$n$, +R] {
   def apply(x_1: T_1, ..., x_$n$: T_$n$): R
-  def toString = "<function>" 
+  def toString = "<function>"
 }
 ```
 
@@ -391,7 +389,7 @@ class PartialFunction[-A, +B] extends Function1[A, B] {
 }
 ```
 
-The implicitly imported [`Predef`](#the-predef-object) object defines the name 
+The implicitly imported [`Predef`](#the-predef-object) object defines the name
 `Function` as an alias of `Function1`.
 
 ### Class `Array`
@@ -449,8 +447,8 @@ explained in the following.
 #### Variance
 
 Unlike arrays in Java, arrays in Scala are _not_
-co-variant; That is, $S <: T$ does not imply 
-`Array[$S$] $<:$ Array[$T$]` in Scala.  
+co-variant; That is, $S <: T$ does not imply
+`Array[$S$] $<:$ Array[$T$]` in Scala.
 However, it is possible to cast an array
 of $S$ to an array of $T$ if such a cast is permitted in the host
 environment.
@@ -505,7 +503,7 @@ over arrays and additional utility methods:
 
 ```scala
 package scala
-object Array { 
+object Array {
   /** copies array elements from `src` to `dest`. */
   def copy(src: AnyRef, srcPos: Int,
            dest: AnyRef, destPos: Int, length: Int): Unit = $\ldots$
@@ -557,36 +555,36 @@ object Array {
 ## Class Node
 
 ```scala
-package scala.xml 
+package scala.xml
 
 trait Node {
 
   /** the label of this node */
-  def label: String               
+  def label: String
 
   /** attribute axis */
-  def attribute: Map[String, String] 
+  def attribute: Map[String, String]
 
   /** child axis (all children of this node) */
-  def child: Seq[Node]          
+  def child: Seq[Node]
 
   /** descendant axis (all descendants of this node) */
-  def descendant: Seq[Node] = child.toList.flatMap { 
-    x => x::x.descendant.asInstanceOf[List[Node]] 
-  } 
+  def descendant: Seq[Node] = child.toList.flatMap {
+    x => x::x.descendant.asInstanceOf[List[Node]]
+  }
 
   /** descendant axis (all descendants of this node) */
-  def descendant_or_self: Seq[Node] = this::child.toList.flatMap { 
-    x => x::x.descendant.asInstanceOf[List[Node]] 
-  } 
+  def descendant_or_self: Seq[Node] = this::child.toList.flatMap {
+    x => x::x.descendant.asInstanceOf[List[Node]]
+  }
 
   override def equals(x: Any): Boolean = x match {
-    case that:Node => 
-      that.label == this.label && 
-        that.attribute.sameElements(this.attribute) && 
+    case that:Node =>
+      that.label == this.label &&
+        that.attribute.sameElements(this.attribute) &&
           that.child.sameElements(this.child)
     case _ => false
-  } 
+  }
 
  /** XPath style projection function. Returns all children of this node
   *  that are labeled with 'that'. The document order is preserved.
@@ -594,39 +592,38 @@ trait Node {
     def \(that: Symbol): NodeSeq = {
       new NodeSeq({
         that.name match {
-          case "_" => child.toList  
+          case "_" => child.toList
           case _ =>
-            var res:List[Node] = Nil 
+            var res:List[Node] = Nil
             for (x <- child.elements if x.label == that.name) {
-              res = x::res 
+              res = x::res
             }
             res.reverse
         }
-      }) 
+      })
     }
 
- /** XPath style projection function. Returns all nodes labeled with the 
+ /** XPath style projection function. Returns all nodes labeled with the
   *  name 'that' from the 'descendant_or_self' axis. Document order is preserved.
   */
   def \\(that: Symbol): NodeSeq = {
     new NodeSeq(
       that.name match {
-        case "_" => this.descendant_or_self 
+        case "_" => this.descendant_or_self
         case _ => this.descendant_or_self.asInstanceOf[List[Node]].
-        filter(x => x.label == that.name) 
+        filter(x => x.label == that.name)
       })
   }
 
   /** hashcode for this XML node */
-  override def hashCode = 
-    Utility.hashCode(label, attribute.toList.hashCode, child) 
+  override def hashCode =
+    Utility.hashCode(label, attribute.toList.hashCode, child)
 
   /** string representation of this node */
-  override def toString = Utility.toXML(this) 
+  override def toString = Utility.toXML(this)
 
 }
 ```
-
 
 ## The `Predef` Object
 
@@ -642,7 +639,7 @@ object Predef {
   // classOf ---------------------------------------------------------
 
   /** Returns the runtime representation of a class type. */
-  def classOf[T]: Class[T] = null  
+  def classOf[T]: Class[T] = null
    // this is a dummy, classOf is handled by compiler.
 
   // Standard type aliases ---------------------------------------------
@@ -651,7 +648,7 @@ object Predef {
   type Class[T]  = java.lang.Class[T]
 
   // Miscellaneous -----------------------------------------------------
-  
+
   type Function[-A, +B] = Function1[A, B]
 
   type Map[A, +B] = collection.immutable.Map[A, B]
@@ -668,7 +665,7 @@ object Predef {
   val ClassManifest     = scala.reflect.ClassManifest
   val Manifest          = scala.reflect.Manifest
   val NoManifest        = scala.reflect.NoManifest
-  
+
   def manifest[T](implicit m: Manifest[T])           = m
   def classManifest[T](implicit m: ClassManifest[T]) = m
   def optManifest[T](implicit m: OptManifest[T])     = m
@@ -710,7 +707,6 @@ object Predef {
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
 ```
-
 
 ```scala
   // tupling ---------------------------------------------------------
@@ -755,13 +751,12 @@ object Predef {
 }
 ```
 
-
 ### Predefined Implicit Definitions
 
 The `Predef` object also contains a number of implicit definitions, which are available by default (because `Predef` is implicitly imported).
-Implicit definitions come in two priorities. High-priority implicits are defined in the `Predef` class itself whereas low priority implicits are defined in a class inherited by `Predef`. The rules of 
+Implicit definitions come in two priorities. High-priority implicits are defined in the `Predef` class itself whereas low priority implicits are defined in a class inherited by `Predef`. The rules of
 static [overloading resolution](06-expressions.html#overloading-resolution)
-stipulate that, all other things being equal, implicit resolution 
+stipulate that, all other things being equal, implicit resolution
 prefers high-priority implicits over low-priority ones.
 
 The available low-priority implicits include definitions falling into the following categories.
@@ -777,13 +772,12 @@ The available low-priority implicits include definitions falling into the follow
 
 1.  An implicit conversion from `String` to `WrappedString`.
 
-
 The available high-priority implicits include definitions falling into the following categories.
 
-  * An implicit wrapper that adds `ensuring` methods 
+  * An implicit wrapper that adds `ensuring` methods
     with the following overloaded variants to type `Any`.
 
-    ``` 
+    ```
     def ensuring(cond: Boolean): A = { assert(cond); x }
     def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
     def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
@@ -793,7 +787,7 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit wrapper that adds a `->` method with the following implementation
     to type `Any`.
 
-    ``` 
+    ```
     def -> [B](y: B): (A, B) = (x, y)
     ```
 
@@ -807,12 +801,12 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit wrapper that adds `+` and `formatted` method with the following
     implementations to type `Any`.
 
-    ``` 
+    ```
     def +(other: String) = String.valueOf(self) + other
     def formatted(fmtstr: String): String = fmtstr format self
     ```
 
-  * Numeric primitive conversions that implement the transitive closure of the 
+  * Numeric primitive conversions that implement the transitive closure of the
     following mappings:
 
     ```
@@ -824,7 +818,7 @@ The available high-priority implicits include definitions falling into the follo
     Float -> Double
     ```
 
-  * Boxing and unboxing conversions between primitive types and their boxed 
+  * Boxing and unboxing conversions between primitive types and their boxed
     versions:
 
     ```
@@ -841,9 +835,8 @@ The available high-priority implicits include definitions falling into the follo
   * An implicit definition that generates instances of type `T <:< T`, for
     any type `T`. Here, `<:<` is a class defined as follows.
 
-    ``` 
+    ```
     sealed abstract class <:<[-From, +To] extends (From => To)
     ```
 
     Implicit parameters of `<:<` types are typically used to implement type constraints.
-

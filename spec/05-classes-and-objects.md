@@ -15,7 +15,6 @@ TmplDef          ::= [`case'] `class' ClassDef
 [Classes](#class-definitions) and [objects](#object-definitions)
 are both defined in terms of _templates_.
 
-
 ## Templates
 
 ```ebnf
@@ -31,8 +30,8 @@ SelfType        ::=  id [`:' Type] `=>'
 A template defines the type signature, behavior and initial state of a
 trait or class of objects or of a single object. Templates form part of
 instance creation expressions, class definitions, and object
-definitions.  A template 
-`$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\mathit{stats}$ }` 
+definitions.  A template
+`$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\mathit{stats}$ }`
 consists of a constructor invocation $sc$
 which defines the template's _superclass_, trait references
 `$mt_1 , \ldots , mt_n$` $(n \geq 0)$, which define the
@@ -61,7 +60,7 @@ superclass.
 
 The _least proper supertype_ of a template is the class type or
 [compound type](03-types.html#compound-types) consisting of all its parent
-class types. 
+class types.
 
 The statement sequence $\mathit{stats}$ contains member definitions that
 define new members or overwrite members in the parent classes.  If the
@@ -77,7 +76,7 @@ The sequence of template statements may be prefixed with a formal
 parameter definition and an arrow, e.g. `$x$ =>`, or
 `$x$:$T$ =>`.  If a formal parameter is given, it can be
 used as an alias for the reference `this` throughout the
-body of the template.  
+body of the template.
 If the formal parameter comes with a type $T$, this definition affects
 the _self type_ $S$ of the underlying class or object as follows:  Let $C$ be the type
 of the class or trait or object defining the template.
@@ -87,11 +86,11 @@ If no type $T$ is given, $S$ is just $C$.
 Inside the template, the type of `this` is assumed to be $S$.
 
 The self type of a class or object must conform to the self types of
-all classes which are inherited by the template $t$. 
+all classes which are inherited by the template $t$.
 
-A second form of self type annotation reads just 
+A second form of self type annotation reads just
 `this: $S$ =>`. It prescribes the type $S$ for `this`
-without introducing an alias name for it. 
+without introducing an alias name for it.
 
 ###### Example
 Consider the following class definitions:
@@ -108,21 +107,20 @@ In this case, the definition of `O` is expanded to:
 object O extends Base with Mixin {}
 ```
 
-
 <!-- TODO: Make all references to Java generic -->
 
 **Inheriting from Java Types** A template may have a Java class as its superclass and Java interfaces as its
-mixins. 
+mixins.
 
 **Template Evaluation** Consider a template `$sc$ with $mt_1$ with $mt_n$ { $\mathit{stats}$ }`.
 
-If this is the template of a [trait](#traits) then its _mixin-evaluation_ 
+If this is the template of a [trait](#traits) then its _mixin-evaluation_
 consists of an evaluation of the statement sequence $\mathit{stats}$.
 
 If this is not a template of a trait, then its _evaluation_
 consists of the following steps.
 
-- First, the superclass constructor $sc$ is 
+- First, the superclass constructor $sc$ is
   [evaluated](#constructor-invocations).
 - Then, all base classes in the template's [linearization](#class-linearization)
   up to the template's superclass denoted by $sc$ are
@@ -130,9 +128,8 @@ consists of the following steps.
   occurrence in the linearization.
 - Finally the statement sequence $\mathit{stats}\,$ is evaluated.
 
-
 ###### Delayed Initializaton
-The initialization code of an object or class (but not a trait) that follows 
+The initialization code of an object or class (but not a trait) that follows
 the superclass
 constructor invocation and the mixin-evaluation of the template's base
 classes is passed to a special hook, which is inaccessible from user
@@ -145,7 +142,6 @@ method, which is defined as follows:
 def delayedInit(body: => Unit)
 ```
 
-
 ### Constructor Invocations
 
 ```ebnf
@@ -156,7 +152,7 @@ Constructor invocations define the type, members, and initial state of
 objects created by an instance creation expression, or of parts of an
 object's definition which are inherited by a class or object
 definition. A constructor invocation is a function application
-`$x$.$c$[$\mathit{targs}$]($\mathit{args}_1$)$\ldots$($\mathit{args}_n$)`, where $x$ is a 
+`$x$.$c$[$\mathit{targs}$]($\mathit{args}_1$)$\ldots$($\mathit{args}_n$)`, where $x$ is a
 [stable identifier](03-types.html#paths), $c$ is a type name which either designates a
 class or defines an alias type for one, $\mathit{targs}$ is a type argument
 list, $\mathit{args}_1 , \ldots , \mathit{args}_n$ are argument lists, and there is a
@@ -171,12 +167,12 @@ it can be omitted, in which case a type argument list is synthesized
 using [local type inference](06-expressions.html#local-type-inference). If no explicit
 arguments are given, an empty list `()` is implicitly supplied.
 
-An evaluation of a constructor invocation 
+An evaluation of a constructor invocation
 `$x$.$c$[$\mathit{targs}$]($\mathit{args}_1$)$\ldots$($\mathit{args}_n$)`
 consists of the following steps:
 
 - First, the prefix $x$ is evaluated.
-- Then, the arguments $\mathit{args}_1 , \ldots , \mathit{args}_n$ are evaluated from 
+- Then, the arguments $\mathit{args}_1 , \ldots , \mathit{args}_n$ are evaluated from
   left to right.
 - Finally, the class being constructed is initialized by evaluating the
   template of the class referred to by $c$.
@@ -187,7 +183,6 @@ The classes reachable through transitive closure of the direct
 inheritance relation from a class $C$ are called the _base classes_ of $C$.  Because of mixins, the inheritance relationship
 on base classes forms in general a directed acyclic graph. A
 linearization of this graph is defined as follows.
-
 
 ###### Definition: linearization
 Let $C$ be a class with template
@@ -205,7 +200,6 @@ $$
                        &=& A \;\vec{+}\; B       &{\bf if} \; a \in B
 \end{array}
 $$
-
 
 ###### Example
 Consider the following class definitions.
@@ -226,7 +220,7 @@ Then the linearization of class `Iter` is
 Note that the linearization of a class refines the inheritance
 relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any
 linearization where both $C$ and $D$ occur.
-[Linearization](#definition-linearization) also satisfies the property that
+[Linearization](#definition:-linearization) also satisfies the property that
 a linearization of a class always contains the linearization of its direct superclass as a suffix.
 
 For instance, the linearization of `StringIterator` is
@@ -244,7 +238,6 @@ For instance, the linearization of `RichIterator` is
 ```
 
 which is not a suffix of the linearization of `Iter`.
-
 
 ### Class Members
 
@@ -294,8 +287,8 @@ $C_j \in \mathcal{L}(C)$ where $j < i$ which directly defines an abstract
 member $M'$ matching $M$.
 
 This definition also determines the [overriding](#overriding) relationships
-between matching members of a class $C$ and its parents.  
-First, a concrete definition always overrides an abstract definition. 
+between matching members of a class $C$ and its parents.
+First, a concrete definition always overrides an abstract definition.
 Second, for definitions $M$ and $M$' which are both concrete or both abstract,
 $M$ overrides $M'$ if $M$ appears in a class that precedes (in the
 linearization of $C$) the class in which $M'$ is defined.
@@ -305,7 +298,6 @@ is also an error if a template contains two members (directly defined
 or inherited) with the same name and the same [erased type](03-types.html#type-erasure).
 Finally, a template is not allowed to contain two methods (directly
 defined or inherited) with the same name which both define default arguments.
-
 
 ###### Example
 Consider the trait definitions:
@@ -321,12 +313,11 @@ Then trait `D` has a directly defined abstract member `h`. It
 inherits member `f` from trait `C` and member `g` from
 trait `B`.
 
-
 ### Overriding
 
 <!-- TODO: Explain that classes cannot override each other -->
 
-A member $M$ of class $C$ that [matches](#class-members) 
+A member $M$ of class $C$ that [matches](#class-members)
 a non-private member $M'$ of a
 base class of $C$ is said to _override_ that member.  In this case
 the binding of the overriding member $M$ must [subsume](03-types.html#conformance)
@@ -339,14 +330,15 @@ $M'$:
 - If $M$ is labeled `private[$C$]` for some enclosing class or package $C$,
   then $M'$ must be labeled `private[$C'$]` for some class or package $C'$ where
   $C'$ equals $C$ or $C'$ is contained in $C$.
-  <!-- TODO: check whether this is accurate -->
+
+<!-- TODO: check whether this is accurate -->
 - If $M$ is labeled `protected`, then $M'$ must also be
   labeled `protected`.
 - If $M'$ is not an abstract member, then $M$ must be labeled `override`.
   Furthermore, one of two possibilities must hold:
-    - either $M$ is defined in a subclass of the class where is $M'$ is defined, 
+    - either $M$ is defined in a subclass of the class where is $M'$ is defined,
     - or both $M$ and $M'$ override a third member $M''$ which is defined
-      in a base class of both the classes containing $M$ and $M'$ 
+      in a base class of both the classes containing $M$ and $M'$
 - If $M'$ is [incomplete](#modifiers) in $C$ then $M$ must be
   labeled `abstract override`.
 - If $M$ and $M'$ are both concrete value definitions, then either none
@@ -398,7 +390,6 @@ definition of type `T` in class `C`:
 class C extends A with B { type T <: C }
 ```
 
-
 ### Inheritance Closure
 
 Let $C$ be a class type. The _inheritance closure_ of $C$ is the
@@ -434,9 +425,9 @@ constructor is called. In a template
 ```
 
 The initial pattern definitions of $p_1 , \ldots , p_n$ are called
-_early definitions_. They define fields 
+_early definitions_. They define fields
 which form part of the template. Every early definition must define
-at least one variable. 
+at least one variable.
 
 An early definition is type-checked and evaluated in the scope which
 is in effect just before the template being defined, augmented by any
@@ -452,7 +443,6 @@ always refer to the value that's defined there, and do not take into account
 overriding definitions. In other words, a block of early definitions
 is evaluated exactly as if it was a local bock containing a number of value
 definitions.
- 
 
 Early definitions are evaluated in the order they are being defined
 before the superclass constructor of the template is called.
@@ -482,11 +472,10 @@ body, it would be initialized after the constructor of
 `Greeting`. In that case, `msg` would be initialized to
 `"How are you, <null>"`.
 
-
 ## Modifiers
 
 ```ebnf
-Modifier          ::=  LocalModifier 
+Modifier          ::=  LocalModifier
                     |  AccessModifier
                     |  `override'
 LocalModifier     ::=  `abstract'
@@ -629,7 +618,6 @@ initialization might lead to looping behavior. If an exception is
 thrown during initialization, the value is considered uninitialized,
 and a later access will retry to evaluate its right hand side.
 
-
 ###### Example
 The following code illustrates the use of qualified private:
 
@@ -651,7 +639,6 @@ Here, accesses to the method `f` can appear anywhere within
 package-private methods in Java. Finally, accesses to method
 `h` can appear anywhere within package `outerpkg`,
 including packages contained in it.
-
 
 ###### Example
 A useful idiom to prevent clients of a class from
@@ -680,14 +667,13 @@ new m.C(0) {} // **** error: illegal inheritance from sealed class.
 A similar access restriction can be achieved by marking the primary
 constructor `private` ([example](#example-private-constructor)).
 
-
 ## Class Definitions
 
 ```ebnf
-TmplDef           ::=  `class' ClassDef 
-ClassDef          ::=  id [TypeParamClause] {Annotation} 
-                       [AccessModifier] ClassParamClauses ClassTemplateOpt 
-ClassParamClauses ::=  {ClassParamClause} 
+TmplDef           ::=  `class' ClassDef
+ClassDef          ::=  id [TypeParamClause] {Annotation}
+                       [AccessModifier] ClassParamClauses ClassTemplateOpt
+ClassParamClauses ::=  {ClassParamClause}
                        [[nl] `(' implicit ClassParams `)']
 ClassParamClause  ::=  [nl] `(' [ClassParams] ')'
 ClassParams       ::=  ClassParam {`,' ClassParam}
@@ -696,10 +682,10 @@ ClassParam        ::=  {Annotation} {Modifier} [(`val' | `var')]
 ClassTemplateOpt  ::=  `extends' ClassTemplate | [[`extends'] TemplateBody]
 ```
 
-The most general form of class definition is 
+The most general form of class definition is
 
 ```scala
-class $c$[$\mathit{tps}\,$] $as$ $m$($\mathit{ps}_1$)$\ldots$($\mathit{ps}_n$) extends $t$    $\gap(n \geq 0)$.
+class $c$[$\mathit{tps}\,$] $as$ $m$($\mathit{ps}_1$)$\ldots$($\mathit{ps}_n$) extends $t$    $\quad(n \geq 0)$.
 ```
 
 Here,
@@ -712,16 +698,16 @@ Here,
     parameter section `[$\mathit{tps}\,$]` may be omitted. A class with a type
     parameter section is called _polymorphic_, otherwise it is called
     _monomorphic_.
-  - $as$ is a possibly empty sequence of 
+  - $as$ is a possibly empty sequence of
     [annotations](11-user-defined-annotations.html#user-defined-annotations).
-    If any annotations are given, they apply to the primary constructor of the 
+    If any annotations are given, they apply to the primary constructor of the
     class.
   - $m$ is an [access modifier](#modifiers) such as
     `private` or `protected`, possibly with a qualification.
     If such an access modifier is given it applies to the primary constructor of the class.
-  - $(\mathit{ps}_1)\ldots(\mathit{ps}_n)$ are formal value parameter clauses for
+  - $(\mathit{ps}\_1)\ldots(\mathit{ps}\_n)$ are formal value parameter clauses for
     the _primary constructor_ of the class. The scope of a formal value parameter includes
-    all subsequent parameter sections and the template $t$. However, a formal 
+    all subsequent parameter sections and the template $t$. However, a formal
     value parameter may not form part of the types of any of the parent classes or members of the class template $t$.
     It is illegal to define two formal value parameters with the same name.
 
@@ -741,18 +727,17 @@ Here,
 
   - $t$ is a [template](#templates) of the form
 
-    ``` 
+    ```
     $sc$ with $mt_1$ with $\ldots$ with $mt_m$ { $\mathit{stats}$ } // $m \geq 0$
     ```
 
     which defines the base classes, behavior and initial state of objects of
-    the class. The extends clause 
-    `extends $sc$ with $mt_1$ with $\ldots$ with $mt_m$` 
+    the class. The extends clause
+    `extends $sc$ with $mt_1$ with $\ldots$ with $mt_m$`
     can be omitted, in which case
     `extends scala.AnyRef` is assumed.  The class body
     `{ $\mathit{stats}$ }` may also be omitted, in which case the empty body
     `{}` is assumed.
-
 
 This class definition defines a type `$c$[$\mathit{tps}\,$]` and a constructor
 which when applied to parameters conforming to types $\mathit{ps}$
@@ -768,6 +753,7 @@ val c = new C(1, "abc", List())
 c.z = c.y :: c.z
 ```
 
+### Example Private Constructor
 The following class can be created only from its companion module.
 
 ```scala
@@ -781,11 +767,10 @@ class Sensitive private () {
 }
 ```
 
-
 ### Constructor Definitions
 
 ```ebnf
-FunDef         ::= `this' ParamClause ParamClauses 
+FunDef         ::= `this' ParamClause ParamClauses
                    (`=' ConstrExpr | [nl] ConstrBlock)
 ConstrExpr     ::= SelfInvocation
                 |  ConstrBlock
@@ -813,16 +798,16 @@ to instantiate formal type parameters.
 The signature and the self constructor invocation of a constructor
 definition are type-checked and evaluated in the scope which is in
 effect at the point of the enclosing class definition, augmented by
-any type parameters of the enclosing class and by any 
+any type parameters of the enclosing class and by any
 [early definitions](#early-definitions) of the enclosing template.
 The rest of the
 constructor expression is type-checked and evaluated as a function
 body in the current class.
-  
+
 If there are auxiliary constructors of a class $C$, they form together
 with $C$'s primary [constructor](#class-definitions)
 an overloaded constructor
-definition. The usual rules for 
+definition. The usual rules for
 [overloading resolution](06-expressions.html#overloading-resolution)
 apply for constructor invocations of $C$,
 including for the self constructor invocations in the constructor
@@ -831,8 +816,7 @@ are never inherited.  To prevent infinite cycles of constructor
 invocations, there is the restriction that every self constructor
 invocation must refer to a constructor definition which precedes it
 (i.e. it must refer to either a preceding auxiliary constructor or the
-primary constructor of the class).  
-
+primary constructor of the class).
 
 ###### Example
 Consider the class definition
@@ -851,7 +835,6 @@ This defines a class `LinkedList` with three constructors.  The
 second constructor constructs an singleton list, while the
 third one constructs a list with a given head and tail.
 
-
 ## Case Classes
 
 ```ebnf
@@ -859,7 +842,7 @@ TmplDef  ::=  `case' `class' ClassDef
 ```
 
 If a class definition is prefixed with `case`, the class is said
-to be a _case class_.  
+to be a _case class_.
 
 The formal parameters in the first parameter section of a case class
 are called _elements_; they are treated
@@ -885,10 +868,10 @@ object $c$ {
 
 Here, $\mathit{Ts}$ stands for the vector of types defined in the type
 parameter section $\mathit{tps}$,
-each $\mathit{xs}_i$ denotes the parameter names of the parameter
-section $\mathit{ps}_i$, and
-$\mathit{xs}_{11}, \ldots , \mathit{xs}_{1k}$ denote the names of all parameters
-in the first parameter section $\mathit{xs}_1$.
+each $\mathit{xs}\_i$ denotes the parameter names of the parameter
+section $\mathit{ps}\_i$, and
+$\mathit{xs}\_{11}, \ldots , \mathit{xs}\_{1k}$ denote the names of all parameters
+in the first parameter section $\mathit{xs}\_1$.
 If a type parameter section is missing in the
 class, it is also missing in the `apply` and
 `unapply` methods.
@@ -904,7 +887,7 @@ def unapply[$\mathit{tps}\,$]($x$: $c$[$\mathit{tps}\,$]) = x ne null
 ```
 
 The name of the `unapply` method is changed to `unapplySeq` if the first
-parameter section $\mathit{ps}_1$ of $c$ ends in a 
+parameter section $\mathit{ps}_1$ of $c$ ends in a
 [repeated parameter](04-basic-declarations-and-definitions.html#repeated-parameters).
 If a companion object $c$ exists already, no new object is created,
 but the `apply` and `unapply` methods are added to the existing
@@ -919,9 +902,9 @@ def copy[$\mathit{tps}\,$]($\mathit{ps}'_1\,$)$\ldots$($\mathit{ps}'_n$): $c$[$\
 ```
 
 Again, `$\mathit{Ts}$` stands for the vector of types defined in the type parameter section `$\mathit{tps}$`
-and each `$\xs_i$` denotes the parameter names of the parameter section `$\ps'_i$`. The value
-parameters `$\ps'_{1,j}$` of first parameter list have the form `$x_{1,j}$:$T_{1,j}$=this.$x_{1,j}$`,
-the other parameters `$\ps'_{i,j}$` of the `copy` method are defined as `$x_{i,j}$:$T_{i,j}$`.
+and each `$xs_i$` denotes the parameter names of the parameter section `$ps'_i$`. The value
+parameters `$ps'_{1,j}$` of first parameter list have the form `$x_{1,j}$:$T_{1,j}$=this.$x_{1,j}$`,
+the other parameters `$ps'_{i,j}$` of the `copy` method are defined as `$x_{i,j}$:$T_{i,j}$`.
 In all cases `$x_{i,j}$` and `$T_{i,j}$` refer to the name and type of the corresponding class parameter
 `$\mathit{ps}_{i,j}$`.
 
@@ -940,7 +923,6 @@ class different from `AnyRef`. In particular:
   too.
 - Method `toString: String` returns a string representation which
   contains the name of the class and its elements.
-
 
 ###### Example
 Here is the definition of abstract syntax for lambda calculus:
@@ -983,7 +965,6 @@ This form of extensibility can be excluded by declaring the base class
 `Expr` `sealed`; in this case, all classes that
 directly extend `Expr` must be in the same source file as
 `Expr`.
-
 
 ### Traits
 
@@ -1089,17 +1070,16 @@ methods are re-bound to refer to the corresponding implementations in
 `ListTable`, which is the actual supertype of `SynchronizedTable`
 in `MyTable`.
 
-
 ## Object Definitions
 
 ```ebnf
 ObjectDef       ::=  id ClassTemplate
 ```
 
-An object definition defines a single object of a new class. Its 
+An object definition defines a single object of a new class. Its
 most general form is
 `object $m$ extends $t$`. Here,
-$m$ is the name of the object to be defined, and 
+$m$ is the name of the object to be defined, and
 $t$ is a [template](#templates) of the form
 
 ```scala
@@ -1107,7 +1087,7 @@ $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\mathit{stats}$ }
 ```
 
 which defines the base classes, behavior and initial state of $m$.
-The extends clause `extends $sc$ with $mt_1$ with $\ldots$ with $mt_n$` 
+The extends clause `extends $sc$ with $mt_1$ with $\ldots$ with $mt_n$`
 can be omitted, in which case
 `extends scala.AnyRef` is assumed.  The class body
 `{ $\mathit{stats}$ }` may also be omitted, in which case the empty body
@@ -1127,7 +1107,7 @@ not at the point of the object definition, but is instead evaluated
 the first time $m$ is dereferenced during execution of the program
 (which might be never at all). An attempt to dereference $m$ again in
 the course of evaluation of the constructor leads to a infinite loop
-or run-time error.  
+or run-time error.
 Other threads trying to dereference $m$ while the
 constructor is being evaluated block until evaluation is complete.
 

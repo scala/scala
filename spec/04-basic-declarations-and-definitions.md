@@ -6,7 +6,6 @@ chapter: 4
 
 # Basic Declarations and Definitions
 
-
 ```ebnf
 Dcl         ::=  ‘val’ ValDcl
               |  ‘var’ VarDcl
@@ -39,7 +38,6 @@ between and including $s_i$ and $s_j$,
 
 - $s_k$ cannot be a variable definition.
 - If $s_k$ is a value definition, it must be lazy.
-
 
 <!--
 Every basic definition may introduce several defined names, separated
@@ -79,7 +77,6 @@ additional parts in the definition, then those parts are implicitly
 copied from the next subsequent sequence element which consists of
 more than just a defined name and parameters. Examples:
 
-
 - []
 The variable declaration `var x, y: Int`
 expands to `var x: Int; var y: Int`.
@@ -98,26 +95,24 @@ case object Blue extends Color .
 ```
 -->
 
-
-
 ## Value Declarations and Definitions
 
 ```ebnf
 Dcl          ::=  ‘val’ ValDcl
 ValDcl       ::=  ids ‘:’ Type
-PatVarDef    ::=  ‘val’ PatDef 
+PatVarDef    ::=  ‘val’ PatDef
 PatDef       ::=  Pattern2 {‘,’ Pattern2} [‘:’ Type] ‘=’ Expr
 ids          ::=  id {‘,’ id}
 ```
 
 A value declaration `val $x$: $T$` introduces $x$ as a name of a value of
-type $T$.  
+type $T$.
 
 A value definition `val $x$: $T$ = $e$` defines $x$ as a
-name of the value that results from the evaluation of $e$. 
+name of the value that results from the evaluation of $e$.
 If the value definition is not recursive, the type
 $T$ may be omitted, in which case the [packed type](06-expressions.html#expression-typing) of
-expression $e$ is assumed.  If a type $T$ is given, then $e$ is expected to 
+expression $e$ is assumed.  If a type $T$ is given, then $e$ is expected to
 conform to it.
 
 Evaluation of the value definition implies evaluation of its
@@ -152,7 +147,7 @@ $\ldots$
 val $x_n$ = $\$ x$._n  .
 ```
 
-Here, $\$ x$ is a fresh name.  
+Here, $\$ x$ is a fresh name.
 
 2. If $p$ has a unique bound variable $x$:
 
@@ -187,16 +182,14 @@ val x = x$\$$._1
 val xs = x$\$$._2
 ```
 
-
 The name of any declared or defined value may not end in `_=`.
 
-A value declaration `val $x_1 , \ldots , x_n$: $T$` is a shorthand for the 
+A value declaration `val $x_1 , \ldots , x_n$: $T$` is a shorthand for the
 sequence of value declarations `val $x_1$: $T$; ...; val $x_n$: $T$`.
-A value definition `val $p_1 , \ldots , p_n$ = $e$` is a shorthand for the 
+A value definition `val $p_1 , \ldots , p_n$ = $e$` is a shorthand for the
 sequence of value definitions `val $p_1$ = $e$; ...; val $p_n$ = $e$`.
-A value definition `val $p_1 , \ldots , p_n: T$ = $e$` is a shorthand for the 
+A value definition `val $p_1 , \ldots , p_n: T$ = $e$` is a shorthand for the
 sequence of value definitions `val $p_1: T$ = $e$; ...; val $p_n: T$ = $e$`.
-
 
 ## Variable Declarations and Definitions
 
@@ -212,7 +205,7 @@ A variable declaration `var $x$: $T$` is equivalent to the declarations
 of both a _getter function_ $x$ *and* a _setter function_ `$x$_=`:
 
 ```scala
-def $x$: $T$ 
+def $x$: $T$
 def $x$_= ($y$: $T$): Unit
 ```
 
@@ -222,13 +215,13 @@ using a variable definition, or by defining the corresponding setter and getter 
 A variable definition `var $x$: $T$ = $e$` introduces a
 mutable variable with type $T$ and initial value as given by the
 expression $e$. The type $T$ can be omitted, in which case the type of
-$e$ is assumed. If $T$ is given, then $e$ is expected to 
+$e$ is assumed. If $T$ is given, then $e$ is expected to
 [conform to it](06-expressions.html#expression-typing).
 
 Variable definitions can alternatively have a [pattern](08-pattern-matching.html#patterns)
 as left-hand side.  A variable definition
  `var $p$ = $e$` where $p$ is a pattern other
-than a simple name or a name followed by a colon and a type is expanded in the same way 
+than a simple name or a name followed by a colon and a type is expanded in the same way
 as a [value definition](#value-declarations-and-definitions)
 `val $p$ = $e$`, except that
 the free names in $p$ are introduced as mutable variables, not values.
@@ -248,7 +241,6 @@ The default value depends on the type $T$ as follows:
 |`false`   | `Boolean`                          |
 |`()`      | `Unit`                             |
 |`null`    | all other types                    |
-
 
 When they occur as members of a template, both forms of variable
 definition also introduce a getter function $x$ which returns the
@@ -291,13 +283,12 @@ d.hours = 8; d.minutes = 30; d.seconds = 0
 d.hours = 25                  // throws a DateError exception
 ```
 
-
-A variable declaration `var $x_1 , \ldots , x_n$: $T$` is a shorthand for the 
+A variable declaration `var $x_1 , \ldots , x_n$: $T$` is a shorthand for the
 sequence of variable declarations `var $x_1$: $T$; ...; var $x_n$: $T$`.
-A variable definition `var $x_1 , \ldots , x_n$ = $e$` is a shorthand for the 
+A variable definition `var $x_1 , \ldots , x_n$ = $e$` is a shorthand for the
 sequence of variable definitions `var $x_1$ = $e$; ...; var $x_n$ = $e$`.
-A variable definition `var $x_1 , \ldots , x_n: T$ = $e$` is a shorthand for 
-the sequence of variable definitions 
+A variable definition `var $x_1 , \ldots , x_n: T$ = $e$` is a shorthand for
+the sequence of variable definitions
 `var $x_1: T$ = $e$; ...; var $x_n: T$ = $e$`.
 
 ## Type Declarations and Type Aliases
@@ -339,14 +330,14 @@ A _type alias_ `type $t$ = $T$` defines $t$ to be an alias
 name for the type $T$.  The left hand side of a type alias may
 have a type parameter clause, e.g. `type $t$[$\mathit{tps}\,$] = $T$`.  The scope
 of a type parameter extends over the right hand side $T$ and the
-type parameter clause $\mathit{tps}$ itself.  
+type parameter clause $\mathit{tps}$ itself.
 
-The scope rules for [definitions](#basic-declarations-and-definitions) 
+The scope rules for [definitions](#basic-declarations-and-definitions)
 and [type parameters](#function-declarations-and-definitions)
 make it possible that a type name appears in its
 own bound or in its right-hand side.  However, it is a static error if
-a type alias refers recursively to the defined type constructor itself.  
-That is, the type $T$ in a type alias `type $t$[$\mathit{tps}\,$] = $T$` may not 
+a type alias refers recursively to the defined type constructor itself.
+That is, the type $T$ in a type alias `type $t$[$\mathit{tps}\,$] = $T$` may not
 refer directly or indirectly to the name $t$.  It is also an error if
 an abstract type is directly or indirectly its own upper or lower bound.
 
@@ -400,7 +391,6 @@ As a consequence, for any two types $S$ and $T$, the type
 val x: Pair[Int, String] = new Pair(1, "abc")
 ```
 
-
 ## Type Parameters
 
 ```ebnf
@@ -413,7 +403,7 @@ Type parameters appear in type definitions, class definitions, and
 function definitions.  In this section we consider only type parameter
 definitions with lower bounds `>: $L$` and upper bounds
 `<: $U$` whereas a discussion of context bounds
-`: $U$` and view bounds `<% $U$` 
+`: $U$` and view bounds `<% $U$`
 is deferred to [here](07-implicit-parameters-and-views.html#context-bounds-and-view-bounds).
 
 The most general form of a first-order type parameter is
@@ -436,9 +426,9 @@ TODO: this is a pretty awkward description of scoping and distinctness of binder
 
 The names of all type parameters must be pairwise different in their enclosing type parameter clause.  The scope of a type parameter includes in each case the whole type parameter clause. Therefore it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause.  However, a type parameter may not be bounded directly or indirectly by itself.
 
-A type constructor parameter adds a nested type parameter clause to the type parameter. The most general form of a type constructor parameter is `$@a_1\ldots@a_n$ $\pm$ $t[\mathit{tps}\,]$ >: $L$ <: $U$`.  
+A type constructor parameter adds a nested type parameter clause to the type parameter. The most general form of a type constructor parameter is `$@a_1\ldots@a_n$ $\pm$ $t[\mathit{tps}\,]$ >: $L$ <: $U$`.
 
-The above scoping restrictions are generalized to the case of nested type parameter clauses, which declare higher-order type parameters. Higher-order type parameters (the type parameters of a type parameter $t$) are only visible in their immediately surrounding parameter clause (possibly including clauses at a deeper nesting level) and in the bounds of $t$. Therefore, their names must only be pairwise different from the names of other visible parameters. Since the names of higher-order type parameters are thus often irrelevant, they may be denoted with a ‘_’, which is nowhere visible.
+The above scoping restrictions are generalized to the case of nested type parameter clauses, which declare higher-order type parameters. Higher-order type parameters (the type parameters of a type parameter $t$) are only visible in their immediately surrounding parameter clause (possibly including clauses at a deeper nesting level) and in the bounds of $t$. Therefore, their names must only be pairwise different from the names of other visible parameters. Since the names of higher-order type parameters are thus often irrelevant, they may be denoted with a `‘_’`, which is nowhere visible.
 
 ###### Example
 Here are some well-formed type parameter clauses:
@@ -464,7 +454,6 @@ The following type parameter clauses are illegal:
                           // not conform to upper bound `B'.
 ```
 
-
 ## Variance Annotations
 
 Variance annotations indicate how instances of parameterized types
@@ -475,17 +464,17 @@ missing variance indication indicates an invariant dependency.
 
 A variance annotation constrains the way the annotated type variable
 may appear in the type or class which binds the type parameter.  In a
-type definition `type $T$[$\mathit{tps}\,$] = $S$`, or a type 
+type definition `type $T$[$\mathit{tps}\,$] = $S$`, or a type
 declaration `type $T$[$\mathit{tps}\,$] >: $L$ <: $U$` type parameters labeled
 ‘+’ must only appear in covariant position whereas
 type parameters labeled ‘-’ must only appear in contravariant
 position. Analogously, for a class definition
-`class $C$[$\mathit{tps}\,$]($\mathit{ps}\,$) extends $T$ { $x$: $S$ => ...}`, 
+`class $C$[$\mathit{tps}\,$]($\mathit{ps}\,$) extends $T$ { $x$: $S$ => ...}`,
 type parameters labeled
 ‘+’ must only appear in covariant position in the
 self type $S$ and the template $T$, whereas type
 parameters labeled ‘-’ must only appear in contravariant
-position. 
+position.
 
 The variance position of a type parameter in a type or template is
 defined as follows.  Let the opposite of covariance be contravariance,
@@ -493,12 +482,12 @@ and the opposite of invariance be itself.  The top-level of the type
 or template is always in covariant position. The variance position
 changes at the following constructs.
 
-- The variance position of a method parameter is the opposite of the 
+- The variance position of a method parameter is the opposite of the
   variance position of the enclosing parameter clause.
 - The variance position of a type parameter is the opposite of the
   variance position of the enclosing type parameter clause.
-- The variance position of the lower bound of a type declaration or type parameter 
-  is the opposite of the variance position of the type declaration or parameter.  
+- The variance position of the lower bound of a type declaration or type parameter
+  is the opposite of the variance position of the type declaration or parameter.
 - The type of a mutable variable is always in invariant position.
 - The right-hand side of a type alias is always in invariant position.
 - The prefix $S$ of a type selection `$S$#$T$` is always in invariant position.
@@ -508,11 +497,11 @@ changes at the following constructs.
   contravariant, the variance position of $T$ is the opposite of
   the variance position of the enclosing type `$S$[$\ldots T \ldots$ ]`.
 
-<!-- TODO: handle type aliases --> 
+<!-- TODO: handle type aliases -->
 
-References to the type parameters in 
+References to the type parameters in
 [object-private or object-protected values, types, variables, or methods](05-classes-and-objects.html#modifiers) of the class are not
-checked for their variance position. In these members the type parameter may 
+checked for their variance position. In these members the type parameter may
 appear anywhere without restricting its legal variance annotations.
 
 ###### Example
@@ -588,22 +577,21 @@ That is, a
 channel on which one can write any object can substitute for a channel
 on which one can write only strings.
 
-
 ## Function Declarations and Definitions
 
 ```ebnf
 Dcl                ::=  ‘def’ FunDcl
 FunDcl             ::=  FunSig ‘:’ Type
 Def                ::=  ‘def’ FunDef
-FunDef             ::=  FunSig [‘:’ Type] ‘=’ Expr 
+FunDef             ::=  FunSig [‘:’ Type] ‘=’ Expr
 FunSig             ::=  id [FunTypeParamClause] ParamClauses
-FunTypeParamClause ::=  ‘[’ TypeParam {‘,’ TypeParam} ‘]’ 
+FunTypeParamClause ::=  ‘[’ TypeParam {‘,’ TypeParam} ‘]’
 ParamClauses       ::=  {ParamClause} [[nl] ‘(’ ‘implicit’ Params ‘)’]
-ParamClause        ::=  [nl] ‘(’ [Params] ‘)’} 
+ParamClause        ::=  [nl] ‘(’ [Params] ‘)’}
 Params             ::=  Param {‘,’ Param}
 Param              ::=  {Annotation} id [‘:’ ParamType] [‘=’ Expr]
-ParamType          ::=  Type 
-                     |  ‘=>’ Type 
+ParamType          ::=  Type
+                     |  ‘=>’ Type
                      |  Type ‘*’
 ```
 
@@ -624,11 +612,11 @@ result type, if one is given. If the function definition is not
 recursive, the result type may be omitted, in which case it is
 determined from the packed type of the function body.
 
-A type parameter clause $\mathit{tps}$ consists of one or more 
-[type declarations](#type-declarations-and-type-aliases), which introduce type 
+A type parameter clause $\mathit{tps}$ consists of one or more
+[type declarations](#type-declarations-and-type-aliases), which introduce type
 parameters, possibly with bounds.  The scope of a type parameter includes
 the whole signature, including any of the type parameter bounds as
-well as the function body, if it is present.  
+well as the function body, if it is present.
 
 A value parameter clause $\mathit{ps}$ consists of zero or more formal
 parameter bindings such as `$x$: $T$` or `$x: T = e$`, which bind value
@@ -647,7 +635,7 @@ declaration. These methods are parametrized by the type parameter clause
 The `$f\$$default$\$$n` methods are inaccessible for
 user programs.
 
-The scope of a formal value parameter name $x$ comprises all subsequent 
+The scope of a formal value parameter name $x$ comprises all subsequent
 parameter clauses, as well as the method return type and the function body, if
 they are given. Both type parameter names and value parameter names must
 be pairwise distinct.
@@ -669,9 +657,7 @@ def compare$\$$default$\$$1[T]: Int = 0
 def compare$\$$default$\$$2[T](a: T): T = a
 ```
 
-
 ### By-Name Parameters
-
 
 ```ebnf
 ParamType          ::=  ‘=>’ Type
@@ -687,7 +673,7 @@ function. That is, the argument is evaluated using _call-by-name_.
 The by-name modifier is disallowed for parameters of classes that
 carry a `val` or `var` prefix, including parameters of case
 classes for which a `val` prefix is implicitly generated. The
-by-name modifier is also disallowed for 
+by-name modifier is also disallowed for
 [implicit parameters](07-implicit-parameters-and-views.html#implicit-parameters).
 
 ###### Example
@@ -700,7 +686,6 @@ def whileLoop (cond: => Boolean) (stat: => Unit): Unit
 indicates that both parameters of `whileLoop` are evaluated using
 call-by-name.
 
-
 ### Repeated Parameters
 
 ```ebnf
@@ -708,21 +693,21 @@ ParamType          ::=  Type ‘*’
 ```
 
 The last value parameter of a parameter section may be suffixed by
-“*”, e.g. `(..., $x$:$T$*)`.  The type of such a
+`'*'`, e.g. `(..., $x$:$T$*)`.  The type of such a
 _repeated_ parameter inside the method is then the sequence type
 `scala.Seq[$T$]`.  Methods with repeated parameters
 `$T$*` take a variable number of arguments of type $T$.
-That is, if a method $m$ with type 
-`($p_1:T_1 , \ldots , p_n:T_n, p_s:S$*)$U$` is applied to arguments 
-$(e_1 , \ldots , e_k)$ where $k \geq n$, then $m$ is taken in that application 
-to have type $(p_1:T_1 , \ldots , p_n:T_n, p_s:S , \ldots , p_{s'}S)U$, with 
+That is, if a method $m$ with type
+`($p_1:T_1 , \ldots , p_n:T_n, p_s:S$*)$U$` is applied to arguments
+$(e_1 , \ldots , e_k)$ where $k \geq n$, then $m$ is taken in that application
+to have type $(p_1:T_1 , \ldots , p_n:T_n, p_s:S , \ldots , p_{s'}S)U$, with
 $k - n$ occurrences of type
-$S$ where any parameter names beyond $p_s$ are fresh. The only exception to 
+$S$ where any parameter names beyond $p_s$ are fresh. The only exception to
 this rule is if the last argument is
 marked to be a _sequence argument_ via a `_*` type
 annotation. If $m$ above is applied to arguments
 `($e_1 , \ldots , e_n, e'$: _*)`, then the type of $m$ in
-that application is taken to be 
+that application is taken to be
 `($p_1:T_1, \ldots , p_n:T_n,p_{s}:$scala.Seq[$S$])`.
 
 It is not allowed to define any default arguments in a parameter section
@@ -768,7 +753,6 @@ the result `6`:
 sum(xs: _*)
 ```
 
-
 ### Procedures
 
 ```ebnf
@@ -777,7 +761,7 @@ FunDef   ::=  FunSig [nl] ‘{’ Block ‘}’
 ```
 
 Special syntax exists for procedures, i.e. functions that return the
-`Unit` value `()`. 
+`Unit` value `()`.
 A procedure declaration is a function declaration where the result type
 is omitted. The result type is then implicitly completed to the
 `Unit` type. E.g., `def $f$($\mathit{ps}$)` is equivalent to
@@ -811,7 +795,6 @@ object Terminal extends Writer {
 }
 ```
 
-
 ### Method Return Type Inference
 
 A class member definition $m$ that overrides some other function $m'$
@@ -838,8 +821,6 @@ class C extends I {
 Here, it is OK to leave out the result type of `factorial`
 in `C`, even though the method is recursive.
 
-
-
 <!-- ## Overloaded Definitions
 \label{sec:overloaded-defs}
 \todo{change}
@@ -862,12 +843,12 @@ $T_j$ have the same erasure (\sref{sec:erasure}).
 ```ebnf
 Import          ::= ‘import’ ImportExpr {‘,’ ImportExpr}
 ImportExpr      ::= StableId ‘.’ (id | ‘_’ | ImportSelectors)
-ImportSelectors ::= ‘{’ {ImportSelector ‘,’} 
+ImportSelectors ::= ‘{’ {ImportSelector ‘,’}
                     (ImportSelector | ‘_’) ‘}’
 ImportSelector  ::= id [‘=>’ id | ‘=>’ ‘_’]
 ```
 
-An import clause has the form `import $p$.$I$` where $p$ is a 
+An import clause has the form `import $p$.$I$` where $p$ is a
 [stable identifier](03-types.html#paths) and $I$ is an import expression.
 The import expression determines a set of names of importable members of $p$
 which are made available without qualification.  A member $m$ of $p$ is
@@ -875,10 +856,10 @@ _importable_ if it is not [object-private](05-classes-and-objects.html#modifiers
 The most general form of an import expression is a list of _import selectors_
 
 ```scala
-{ $x_1$ => $y_1 , \ldots , x_n$ => $y_n$, _ } 
+{ $x_1$ => $y_1 , \ldots , x_n$ => $y_n$, _ }
 ```
 
-for $n \geq 0$, where the final wildcard ‘_’ may be absent.  It
+for $n \geq 0$, where the final wildcard `‘_’` may be absent.  It
 makes available each importable member `$p$.$x_i$` under the unqualified name
 $y_i$. I.e. every import selector `$x_i$ => $y_i$` renames
 `$p$.$x_i$` to
@@ -913,13 +894,13 @@ identifier or wildcard. The import clause `import $p$.$x$` is
 equivalent to `import $p$.{$x\,$}`, i.e. it makes available without
 qualification the member $x$ of $p$. The import clause
 `import $p$._` is equivalent to
-`import $p$.{_}`, 
+`import $p$.{_}`,
 i.e. it makes available without qualification all members of $p$
 (this is analogous to `import $p$.*` in Java).
 
 An import clause with multiple import expressions
 `import $p_1$.$I_1 , \ldots , p_n$.$I_n$` is interpreted as a
-sequence of import clauses 
+sequence of import clauses
 `import $p_1$.$I_1$; $\ldots$; import $p_n$.$I_n$`.
 
 ###### Example
