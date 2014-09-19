@@ -304,12 +304,18 @@ trait Positions extends api.Positions { self: SymbolTable =>
       tree
     }
     else {
-      if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
-        tree.setPos(pos)
-        val children = tree.children
-        if (children.nonEmpty) {
-          if (children.tail.isEmpty) atPos(pos)(children.head)
-          else setChildrenPos(pos, children)
+      if (!tree.isEmpty && tree.canHaveAttrs) {
+        if (tree.pos == NoPosition) {
+          tree.setPos(pos)
+          val children = tree.children
+          if (children.nonEmpty) {
+            if (children.tail.isEmpty) atPos(pos)(children.head)
+            else setChildrenPos(pos, children)
+          }
+        } else if (settings.Yrangepos) {
+          val currPos = tree.pos
+          val position = new RangePosition(currPos.source, currPos.start, currPos.point, pos.end)
+          tree.setPos(position)
         }
       }
       tree
