@@ -1336,7 +1336,7 @@ The following five implicit conversions can be applied to an
 expression $e$ which has some value type $T$ and which is type-checked with
 some expected type $\mathit{pt}$.
 
-#### Overloading Resolution
+###### Static Overloading Resolution
 If an expression denotes several possible members of a class,
 [overloading resolution](#overloading-resolution)
 is applied to pick a unique member.
