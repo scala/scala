@@ -12,7 +12,7 @@ Notable packages include:
     - [[scala.collection.immutable `scala.collection.immutable`]] - Immutable, sequential data-structures such as
       [[scala.collection.immutable.Vector `Vector`]], [[scala.collection.immutable.List `List`]],
       [[scala.collection.immutable.Range `Range`]], [[scala.collection.immutable.HashMap `HashMap`]] or
-      [[scala.collection.immutable.HashSet `HasSet`]]
+      [[scala.collection.immutable.HashSet `HashSet`]]
     - [[scala.collection.mutable `scala.collection.mutable`]] - Mutable, sequential data-structures such as
       [[scala.collection.mutable.ArrayBuffer `ArrayBuffer`]],
       [[scala.collection.mutable.StringBuilder `StringBuilder`]],
