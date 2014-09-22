@@ -14,7 +14,9 @@
   <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/2.3-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
   <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2/styles/default.min.css">
+  <link rel="stylesheet" href="public/octicons/octicons.css">
   <script src="public/highlight/highlight.pack.js"></script>
+  <script src="public/scripts/navigation.js"></script>
 
   <!-- need to use include to see value of page.chapter variable -->
   <style type="text/css">
@@ -39,6 +41,11 @@
       hljs.initHighlighting();
       $("pre nobr").addClass("fixws");
     })
+
+    // and finally TOC generation
+    $(document).ready(function() {
+      $('.toc').navigation();
+    })
   </script>
 
   <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
@@ -46,8 +53,29 @@
 </head>
 
 <body>
-
+<div id="container">
+<div id="navigation">
+<ol>
+  {% assign sorted_pages = site.pages | sort:"name" %}
+  {% for post in sorted_pages %}
+    {% if post.chapter >= 0 %}
+      {% if page.url == post.url %}
+      <li class="active-page">
+        <a href="{{site.baseurl}}{{ post.url }}"> {{ post.title }}</a>
+        <div class="toc"></div>
+      </li>
+      {% else %}
+      <li>
+        <a href="{{site.baseurl}}{{ post.url }}"> {{ post.title }}</a>
+      </li>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+</ol>
+</div>
+<div id="content-container">
 {{ content }}
-
+</div>
+</div>
 </body>
 </html>
