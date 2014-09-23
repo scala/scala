@@ -1,0 +1,15 @@
+/* This removes a few things from screen.css for printing */
+
+body {
+  padding: 0px;
+  margin: 0.5em;
+}
+
+.anchor, #navigation, .to_top {
+  display: none;
+}
+
+#content-container {
+  width: 100%;
+  float: none;
+}

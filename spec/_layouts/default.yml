@@ -49,6 +49,7 @@
   </script>
 
   <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
+  <link rel="stylesheet" type="text/css" media="print" href="public/stylesheets/print.css">
   <title>{{ page.title }}</title>
 </head>
 
