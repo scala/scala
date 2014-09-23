@@ -4,16 +4,16 @@ body {
   font-family: Helvetica, arial, sans-serif;
   font-size: 14px;
   line-height: 1.6;
-  padding-top: 10px;
+
   padding-bottom: 10px;
   background-color: white;
   padding-left: 30px;
 }
 
-body > *:first-child {
+#content-container > *:first-child {
   margin-top: 0 !important;
 }
-body > *:last-child {
+#content-container > *:last-child {
   margin-bottom: 0 !important;
 }
 
@@ -347,7 +347,6 @@ code {
 }
 
 #navigation {
-  margin-top: 120px;
   margin-right: 10px;
   float: right;
   width: 26%;
@@ -365,6 +364,7 @@ code {
 }
 
 #container {
+  padding-top: 10px;
   width: 100%;
 }
 
@@ -397,4 +397,32 @@ code {
 
 .to_top:hover {
   color: black;
+}
+
+#scala-logo {
+  float: left;
+  width: 168px;
+  height: 48px;
+  margin-right: 25px;
+}
+
+#header {
+  padding-top: 16px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  height: 64px;
+  border-bottom: 1px solid #cccccc;
+}
+
+#header a {
+  height: 100%;
+  display: block;
+  text-decoration: none;
+}
+
+#header h1 {
+  cursor: pointer;
+  padding-top: 6px;
+  margin-bottom: 0px;
+  font-size: 30px;
 }

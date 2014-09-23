@@ -54,3 +54,9 @@ h3[id*='example']:before {
   display: inline;
   margin-right: 1em;
 }
+
+.no-numbering, .no-numbering:before, .no-numbering:after {
+  content: normal;
+  counter-reset: none;
+  counter-increment: none;
+}
