@@ -98,6 +98,11 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
     var localTyper: analyzer.Typer = typer;
     var currentApplication: Tree = EmptyTree
     var inPattern: Boolean = false
+    @inline final def savingInPattern[A](body: => A): A = {
+      val saved = inPattern
+      try body finally inPattern = saved
+    }
+
     var checkedCombinations = Set[List[Type]]()
 
     // only one overloaded alternative is allowed to define default arguments
@@ -1822,19 +1827,33 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
           case _ => tree
         }
+
         // skip refchecks in patterns....
         result = result match {
           case CaseDef(pat, guard, body) =>
-            inPattern = true
-            val pat1 = transform(pat)
-            inPattern = false
+            val pat1 = savingInPattern {
+              inPattern = true
+              transform(pat)
+            }
             treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
           case LabelDef(_, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
-            val old = inPattern
-            inPattern = true
-            val res = deriveLabelDef(result)(transform) // TODO SI-7756 Too broad! The code from the original case body should be fully refchecked!
-            inPattern = old
-            res
+            savingInPattern {
+              inPattern = true
+              deriveLabelDef(result)(transform)
+            }
+          case Apply(fun, args) if fun.symbol.isLabel && treeInfo.isSynthCaseSymbol(fun.symbol) =>
+            savingInPattern {
+              // SI-7756 If we were in a translated pattern, we can now switch out of pattern mode, as the label apply signals
+              //         that we are in the user-supplied code in the case body.
+              //
+              //         Relies on the translation of:
+              //            (null: Any) match { case x: List[_] => x; x.reverse; case _ => }'
+              //         to:
+              //            <synthetic> val x2: List[_] = (x1.asInstanceOf[List[_]]: List[_]);
+              //                  matchEnd4({ x2; x2.reverse}) // case body is an argument to a label apply.
+              if (settings.future.value) inPattern = false // By default, bug compatibility with 2.10.[0-4]
+              super.transform(result)
+            }
           case ValDef(_, _, _, _) if treeInfo.hasSynthCaseSymbol(result) =>
             deriveValDef(result)(transform) // SI-7716 Don't refcheck the tpt of the synthetic val that holds the selector.
           case _ =>
