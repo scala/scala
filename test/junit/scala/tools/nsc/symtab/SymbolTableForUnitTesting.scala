@@ -33,7 +33,6 @@ class SymbolTableForUnitTesting extends SymbolTable {
     lazy val loaders: SymbolTableForUnitTesting.this.loaders.type = SymbolTableForUnitTesting.this.loaders
     def platformPhases: List[SubComponent] = Nil
     val classPath: ClassPath[AbstractFile] = new PathResolver(settings).result
-    def doLoad(cls: ClassPath[AbstractFile]#ClassRep): Boolean = true
     def isMaybeBoxed(sym: Symbol): Boolean = ???
     def needCompile(bin: AbstractFile, src: AbstractFile): Boolean = ???
     def externalEquals: Symbol = ???
