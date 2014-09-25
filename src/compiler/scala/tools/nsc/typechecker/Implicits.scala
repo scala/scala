@@ -1012,11 +1012,14 @@ trait Implicits {
               }
             case None =>
               if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
-                val companion = companionSymbolOf(sym, context)
+                val companion =
+                  if (sym.isPackageClass) sym.info.member(nme.PACKAGE) //companionSymbolOf(sym.member, context)
+                  else companionSymbolOf(sym, context)
                 companion.moduleClass match {
                   case mc: ModuleClassSymbol =>
+                    val pre1 = if (mc.isPackageObjectClass) mc.typeOfThis else singleType(pre, companion)
                     val infos =
-                      for (im <- mc.implicitMembers.toList) yield new ImplicitInfo(im.name, singleType(pre, companion), im)
+                      for (im <- mc.implicitMembers.toList) yield new ImplicitInfo(im.name, pre1, im)
                     if (infos.nonEmpty)
                       infoMap += (sym -> infos)
                   case _ =>

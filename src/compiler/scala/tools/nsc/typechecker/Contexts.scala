@@ -882,7 +882,13 @@ trait Contexts { self: Analyzer =>
         Some(collectImplicitImports(imports.head))
       } else if (owner.isPackageClass) {
         // the corresponding package object may contain implicit members.
-        Some(collectImplicits(owner.tpe.implicitMembers, owner.tpe))
+        owner.tpe.member(nme.PACKAGE) match {
+          case NoSymbol =>
+            None
+          case packageObject =>
+            val pre = packageObject.typeOfThis
+            Some(collectImplicits(pre.implicitMembers, pre))
+        }
       } else Some(Nil)
     }
 

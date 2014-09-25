@@ -3357,13 +3357,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def implicitMembers: Scope = {
       val tp = info
       if ((implicitMembersCacheKey1 ne tp) || (implicitMembersCacheKey2 ne tp.decls.elems)) {
-        // Skip a package object class, because the members are also in
-        // the package and we wish to avoid spurious ambiguities as in pos/t3999.
-        if (!isPackageObjectClass) {
-          implicitMembersCacheValue = tp.implicitMembers
-          implicitMembersCacheKey1 = tp
-          implicitMembersCacheKey2 = tp.decls.elems
-        }
+        implicitMembersCacheValue = tp.implicitMembers
+        implicitMembersCacheKey1 = tp
+        implicitMembersCacheKey2 = tp.decls.elems
       }
       implicitMembersCacheValue
     }
