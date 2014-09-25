@@ -130,6 +130,10 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   @inline def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world -- TODO: when dependent method types are on by default, give this result type `e.type`, so that inliner has better chance of knowing which method to inline in calls like `implicitly[MatchingStrategy[Option]].zero`
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
+  // Const functions
+  def const[A, B](x: A)(y: B): A   = x    // A -> B -> A
+  def cnst[A](x: A)(y: A): A       = x    // A -> A -> A
+  
   // errors and asserts -------------------------------------------------
 
   // !!! Remove this when possible - ideally for 2.11.
