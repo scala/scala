@@ -19,7 +19,7 @@ variances.scala:74: error: covariant type A occurs in contravariant position in 
 variances.scala:89: error: covariant type T occurs in invariant position in type T of type A
     type A = T
          ^
-variances.scala:90: error: covariant type T occurs in contravariant position in type => test.TestAlias.B[C.this.A] of method foo
+variances.scala:90: error: covariant type A occurs in contravariant position in type => test.TestAlias.B[C.this.A] of method foo
     def foo: B[A]
         ^
 8 errors found

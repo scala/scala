@@ -53,8 +53,7 @@ trait Variances {
     // return Bivariant if `sym` is local to a term
     // or is private[this] or protected[this]
     def isLocalOnly(sym: Symbol) = !sym.owner.isClass || (
-         sym.isTerm // ?? shouldn't this be sym.owner.isTerm according to the comments above?
-      && (sym.isLocalToThis || sym.isSuperAccessor) // super accessors are implicitly local #4345
+         (sym.isLocalToThis || sym.isSuperAccessor) // super accessors are implicitly local #4345
       && !escapedLocals(sym)
     )
 
@@ -66,7 +65,7 @@ trait Variances {
        *  Initially the state is covariant, but it might change along the search.
        *
        *  A local alias type is treated as Bivariant;
-       *  this is OK because we always expand aliases for variance checking.
+       *  this is OK because such aliases are expanded for variance checking.
        *  However, for an alias which might be externally visible, we must assume Invariant,
        *  because there may be references to the type parameter that are not checked,
        *  leading to unsoundness (see SI-6566).
@@ -126,7 +125,7 @@ trait Variances {
         tp match {
           case _ if isUncheckedVariance(tp)                    =>
           case _ if resultTypeOnly(tp)                         => this(tp.resultType)
-          case TypeRef(_, sym, _) if sym.isAliasType           => this(tp.normalize)
+          case TypeRef(_, sym, _) if shouldDealias(sym)        => this(tp.normalize)
           case TypeRef(_, sym, _) if !sym.variance.isInvariant => checkVarianceOfSymbol(sym) ; mapOver(tp)
           case RefinedType(_, _)                               => withinRefinement(mapOver(tp))
           case ClassInfoType(parents, _, _)                    => parents foreach this
@@ -137,6 +136,9 @@ trait Variances {
         // cloning during the recursion, it is important to return the input `tp`, rather
         // than the result of the pattern match above, which normalizes types.
         tp
+      }
+      private def shouldDealias(sym: Symbol): Boolean = {
+        sym.isAliasType && isLocalOnly(sym)
       }
       def validateDefinition(base: Symbol) {
         val saved = this.base

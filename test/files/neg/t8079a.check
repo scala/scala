@@ -1,0 +1,4 @@
+t8079a.scala:3: error: contravariant type I occurs in covariant position in type C.this.X of value b
+  def f2(b: X): Unit
+         ^
+one error found
