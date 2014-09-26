@@ -547,9 +547,8 @@ trait Infer extends Checkable {
       // ...or lower bound of a type param, since they're asking for it.
       def canWarnAboutAny = {
         val loBounds = tparams map (_.info.bounds.lo)
-        val hasAny = pt :: restpe :: formals ::: argtpes ::: loBounds exists (t =>
-          (t contains AnyClass) || (t contains AnyValClass)
-        )
+        def containsAny(t: Type) = (t contains AnyClass) || (t contains AnyValClass)
+        val hasAny = pt :: restpe :: formals ::: argtpes ::: loBounds exists (_.dealiasWidenChain exists containsAny)
         !hasAny
       }
       def argumentPosition(idx: Int): Position = context.tree match {
