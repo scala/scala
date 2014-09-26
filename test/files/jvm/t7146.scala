@@ -10,7 +10,7 @@ object Test {
       ExecutionContext.global.toString.startsWith("scala.concurrent.impl.ExecutionContextImpl"))
     val i = ExecutionContext.global.asInstanceOf[{ def executor: Executor }]
     println("should be scala.concurrent.forkjoin.ForkJoinPool == " +
-      i.executor.toString.startsWith("scala.concurrent.forkjoin.ForkJoinPool"))
+      (i.executor.getClass.getSuperclass.getName == "scala.concurrent.forkjoin.ForkJoinPool"))
     val u = i.executor.
              asInstanceOf[{ def getUncaughtExceptionHandler: Thread.UncaughtExceptionHandler }].
              getUncaughtExceptionHandler

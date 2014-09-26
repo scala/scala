@@ -7,14 +7,12 @@
 \*                                                                      */
 
 package scala.concurrent.util;
-
-
-
 import java.lang.reflect.Field;
 
 
-
+@Deprecated
 public final class Unsafe {
+    @Deprecated
     public final static sun.misc.Unsafe instance;
     static {
         try {
