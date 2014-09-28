@@ -19,8 +19,7 @@ Macros_Test_2.scala:7: warning: macro defs must have explicitly specified return
   def foo6 = macro Impls.foo6
       ^
 Macros_Test_2.scala:14: error: exception during macro expansion:
-scala.NotImplementedError: an implementation is missing
-	at scala.Predef$.$qmark$qmark$qmark(Predef.scala:225)
+java.lang.NullPointerException
 	at Impls$.foo3(Impls_1.scala:7)
 
   foo3
