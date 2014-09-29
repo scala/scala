@@ -4,16 +4,16 @@ body {
   font-family: Helvetica, arial, sans-serif;
   font-size: 14px;
   line-height: 1.6;
-  padding-top: 10px;
+
   padding-bottom: 10px;
   background-color: white;
-  padding: 30px;
+  padding-left: 30px;
 }
 
-body > *:first-child {
+#content-container > *:first-child {
   margin-top: 0 !important;
 }
-body > *:last-child {
+#content-container > *:last-child {
   margin-bottom: 0 !important;
 }
 
@@ -25,18 +25,23 @@ a.absent {
 }
 a.anchor {
   display: block;
-  padding-left: 30px;
-  margin-left: -30px;
+  margin-left: -35px;
+  padding-left: 10px;
   cursor: pointer;
   position: absolute;
   top: 0;
   left: 0;
   bottom: 0;
+  color: black;
+  width: 35px; height: 100%;
+}
+
+a.anchor span {
+  vertical-align: middle;
 }
 
 h1, h2, h3, h4, h5, h6 {
   margin: 20px 0 10px;
-  padding: 0;
   font-weight: bold;
   -webkit-font-smoothing: antialiased;
   cursor: text;
@@ -44,8 +49,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1:hover a.anchor, h2:hover a.anchor, h3:hover a.anchor, h4:hover a.anchor, h5:hover a.anchor, h6:hover a.anchor {
-  background: url("../../images/modules/styleguide/para.png") no-repeat 10px center;
   text-decoration: none;
+}
+
+h1:hover a.anchor span, h2:hover a.anchor span, h3:hover a.anchor span, h4:hover a.anchor span, h5:hover a.anchor span, h6:hover a.anchor span {
+  display: inline-block;
+}
+
+h1 a.anchor span, h2 a.anchor span, h3 a.anchor span, h4 a.anchor span, h5 a.anchor span, h6 a.anchor span {
+  display: none;
+}
+
+h1 a.anchor:hover span, h2 a.anchor:hover span, h3 a.anchor:hover span, h4 a.anchor:hover span, h5 a.anchor:hover span, h6 a.anchor:hover span {
+  display: inline-block;
 }
 
 h1 tt, h1 code {
@@ -330,3 +346,83 @@ code {
   font-size: 16px;
 }
 
+#navigation {
+  margin-right: 10px;
+  float: right;
+  width: 26%;
+  display: inline;
+  color: #8B8B8B;
+  font-size: 15px;
+  font-weight: bold;
+  background-color: #F3F4F4;
+}
+
+#content-container {
+  float: left;
+  width: 70%;
+  display: inline;
+}
+
+#container {
+  padding-top: 10px;
+  width: 100%;
+}
+
+#navigation a {
+  text-decoration: none;
+  color: #8B8B8B;
+}
+
+#navigation a:hover {
+  text-decoration: underline;
+}
+
+.active-page {
+  color: #171717;
+}
+
+.active-page a {
+  color: #171717 !important;
+}
+
+.to_top {
+  position: absolute;
+  margin-top: -35px;
+  right: 27%;
+  color: gray;
+  cursor: pointer;
+  width: 16px; height: 16px;
+  display: block;
+}
+
+.to_top:hover {
+  color: black;
+}
+
+#scala-logo {
+  float: left;
+  width: 168px;
+  height: 48px;
+  margin-right: 25px;
+}
+
+#header {
+  padding-top: 16px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  height: 64px;
+  border-bottom: 1px solid #cccccc;
+}
+
+#header a {
+  height: 100%;
+  display: block;
+  text-decoration: none;
+}
+
+#header h1 {
+  cursor: pointer;
+  padding-top: 6px;
+  margin-bottom: 0px;
+  font-size: 30px;
+}
