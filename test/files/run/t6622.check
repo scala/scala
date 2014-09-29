@@ -1,0 +1,10 @@
+ O1.resultVal isMemberClass = false, null
+class A$1
+ O1.resultDef isMemberClass = false, public void O1$.resultDef()
+class A$2
+ C2.resultVal isMemberClass = false, null
+class $B$1
+ O3.resultDef isMemberClass = false, public void O3$.resultDef()
+class C$1
+ O4.resultDefDefault isMemberClass = false, public java.lang.Object O4$.resultDefDefault$default$1()
+class C$2
