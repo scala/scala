@@ -76,4 +76,7 @@ object CodeGenTools {
   def assertSameCode(actual: List[Instruction], expected: List[Instruction]): Unit = {
     assertTrue(s"\nExpected: $expected\nActual  : $actual", actual === expected)
   }
+
+  def getSingleMethod(classNode: ClassNode, name: String): Method =
+    convertMethod(classNode.methods.asScala.toList.find(_.name == name).get)
 }

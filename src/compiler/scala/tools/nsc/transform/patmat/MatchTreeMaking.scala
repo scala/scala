@@ -550,8 +550,24 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
                 case _ => false
               }
               val suppression = Suppression(suppressExhaustive, supressUnreachable)
+              val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
               // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
-              val requireSwitch = treeInfo.isSwitchAnnotation(tpt.tpe) && casesNoSubstOnly.lengthCompare(2) > 0
+              // `case 1 | 2` is considered as two cases.
+              def exceedsTwoCasesOrAlts = {
+                // avoids traversing the entire list if there are more than 3 elements
+                def lengthMax3[T](l: List[T]): Int = l match {
+                  case a :: b :: c :: _ => 3
+                  case cases =>
+                    cases.map({
+                      case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
+                      case c => 1
+                    }).sum
+                }
+                lengthMax3(casesNoSubstOnly) > 2
+              }
+              val requireSwitch = hasSwitchAnnotation && exceedsTwoCasesOrAlts
+              if (hasSwitchAnnotation && !requireSwitch)
+                reporter.warning(scrut.pos, "matches with two cases or fewer are emitted using if-then-else instead of switch")
               (suppression, requireSwitch)
             case _ =>
               (Suppression.NoSuppression, false)
