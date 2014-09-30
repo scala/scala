@@ -459,7 +459,7 @@ abstract class UnCurry extends InfoTransform
           case UnApply(fn, args) =>
             val fn1   = transform(fn)
             val args1 = fn.symbol.name match {
-              case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, patmat.alignPatterns(tree).expectedTypes)
+              case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, patmat.alignPatterns(global.typer.context, tree).expectedTypes)
               case _              => args
             }
             treeCopy.UnApply(tree, fn1, args1)

@@ -309,7 +309,7 @@ trait PatternTypers {
         // the union of the expected type and the inferred type of the argument to unapply
         val glbType        = glb(ensureFullyDefined(pt) :: unapplyArg.tpe_* :: Nil)
         val wrapInTypeTest = canRemedy && !(fun1.symbol.owner isNonBottomSubClass ClassTagClass)
-        val formals        = patmat.alignPatterns(fun1, args).unexpandedFormals
+        val formals        = patmat.alignPatterns(context.asInstanceOf[analyzer.Context], fun1, args).unexpandedFormals
         val args1          = typedArgsForFormals(args, formals, mode)
         val result         = UnApply(fun1, args1) setPos tree.pos setType glbType
 

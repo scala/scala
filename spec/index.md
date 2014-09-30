@@ -25,7 +25,6 @@ layout: toc
   {% endfor %}
 </ol>
 
-
 ## Preface
 
 Scala is a Java-like programming language which unifies
@@ -68,4 +67,3 @@ the language through lively and inspiring discussions and comments on
 previous versions of this document.  The contributors to the Scala
 mailing list have also given very useful feedback that helped us
 improve the language and its tools.
-

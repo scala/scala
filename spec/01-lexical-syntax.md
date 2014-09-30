@@ -11,7 +11,7 @@ Scala programs are written using the Unicode Basic Multilingual Plane
 presently supported.  This chapter defines the two modes of Scala's
 lexical syntax, the Scala mode and the _XML mode_. If not
 otherwise mentioned, the following descriptions of Scala tokens refer
-to _Scala mode_, and literal characters ‘c’ refer to the ASCII fragment 
+to _Scala mode_, and literal characters ‘c’ refer to the ASCII fragment
 `\u0000` – `\u007F`.
 
 In Scala mode, _Unicode escapes_ are replaced by the corresponding
@@ -29,7 +29,7 @@ but I can't make it work nor can I imagine how this would make sense,
 so I removed it for now.
 -->
 
-To construct tokens, characters are distinguished according to the following 
+To construct tokens, characters are distinguished according to the following
 classes (Unicode general category given in parentheses):
 
 1. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`.
@@ -41,13 +41,13 @@ classes (Unicode general category given in parentheses):
 1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `.
 1. Delimiter characters ``‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’ ``.
 1. Operator characters. These consist of all printable ASCII characters
-   `\u0020` - `\u007F` which are in none of the sets above, mathematical 
+   `\u0020` - `\u007F` which are in none of the sets above, mathematical
    symbols (`Sm`) and other symbols (`So`).
 
 ## Identifiers
 
 ```ebnf
-op       ::=  opchar {opchar} 
+op       ::=  opchar {opchar}
 varid    ::=  lower idrest
 plainid  ::=  upper idrest
            |  varid
@@ -61,14 +61,14 @@ There are three ways to form an identifier. First, an identifier can
 start with a letter which can be followed by an arbitrary sequence of
 letters and digits. This may be followed by underscore ‘_’
 characters and another string composed of either letters and digits or
-of operator characters.  Second, an identifier can start with an operator 
+of operator characters.  Second, an identifier can start with an operator
 character followed by an arbitrary sequence of operator characters.
 The preceding two forms are called _plain_ identifiers.  Finally,
 an identifier may also be formed by an arbitrary string between
 back-quotes (host systems may impose some restrictions on which
 strings are legal for identifiers).  The identifier then is composed
 of all characters excluding the backquotes themselves.
- 
+
 As usual, a longest match rule applies. For instance, the string
 
 ```scala
@@ -92,8 +92,8 @@ do          else        extends     false       final
 finally     for         forSome     if          implicit
 import      lazy        match       new         null
 object      override    package     private     protected
-return      sealed      super       this        throw       
-trait       try         true        type        val         
+return      sealed      super       this        throw
+trait       try         true        type        val
 var         while       with        yield
 _    :    =    =>    <-    <:    <%     >:    #    @
 ```
@@ -115,7 +115,6 @@ For instance, the statement `Thread.yield()` is illegal, since
 `yield` is a reserved word in Scala. However, here's a
 work-around: `` Thread.`yield`() ``
 
-
 ## Newline Characters
 
 ```ebnf
@@ -134,7 +133,7 @@ The tokens that can terminate a statement are: literals, identifiers
 and the following delimiters and reserved words:
 
 ```scala
-this    null    true    false    return    type    <xml-start>    
+this    null    true    false    return    type    <xml-start>
 _       )       ]       }
 ```
 
@@ -142,8 +141,8 @@ The tokens that can begin a statement are all Scala tokens _except_
 the following delimiters and reserved words:
 
 ```scala
-catch    else    extends    finally    forSome    match        
-with    yield    ,    .    ;    :    =    =>    <-    <:    <%    
+catch    else    extends    finally    forSome    match
+with    yield    ,    .    ;    :    =    =>    <-    <:    <%
 >:    #    [    )    ]    }
 ```
 
@@ -169,7 +168,7 @@ Newlines are disabled in:
 1. Any regions analyzed in [XML mode](#xml-mode).
 
 Note that the brace characters of `{...}` escapes in XML and
-string literals are not tokens, 
+string literals are not tokens,
 and therefore do not enclose a region where newlines
 are enabled.
 
@@ -179,7 +178,7 @@ between the two tokens. However, if two tokens are separated by at
 least one completely blank line (i.e a line which contains no
 printable characters), then two `nl` tokens are inserted.
 
-The Scala grammar (given in full [here](#scala-syntax-summary))
+The Scala grammar (given in full [here](13-syntax-summary.html))
 contains productions where optional `nl` tokens, but not
 semicolons, are accepted. This has the effect that a newline in one of these
 positions does not terminate an expression or statement. These positions can
@@ -189,21 +188,21 @@ Multiple newline tokens are accepted in the following places (note
 that a semicolon in place of the newline would be illegal in every one
 of these cases):
 
-- between the condition of a 
+- between the condition of a
   [conditional expression](06-expressions.html#conditional-expressions)
   or [while loop](06-expressions.html#while-loop-expressions) and the next
   following expression,
-- between the enumerators of a 
+- between the enumerators of a
   [for-comprehension](06-expressions.html#for-comprehensions-and-for-loops)
   and the next following expression, and
-- after the initial `type` keyword in a 
+- after the initial `type` keyword in a
   [type definition or declaration](04-basic-declarations-and-definitions.html#type-declarations-and-type-aliases).
 
 A single new line token is accepted
 
 - in front of an opening brace ‘{’, if that brace is a legal
   continuation of the current statement or expression,
-- after an [infix operator](06-expressions.html#prefix-infix-and-postfix-operations),
+- after an [infix operator](06-expressions.html#prefix,-infix,-and-postfix-operations),
   if the first token on the next line can start an expression,
 - in front of a [parameter clause](04-basic-declarations-and-definitions.html#function-declarations-and-definitions), and
 - after an [annotation](11-user-defined-annotations.html#user-defined-annotations).
@@ -300,16 +299,15 @@ illegal).
 protected class Data { ... }
 ```
 
-
 ## Literals
 
 There are literals for integer numbers, floating point numbers,
 characters, booleans, symbols, strings.  The syntax of these literals is in
 each case as in Java.
 
-<!-- TODO 
+<!-- TODO
   say that we take values from Java, give examples of some lits in
-  particular float and double. 
+  particular float and double.
 -->
 
 ```ebnf
@@ -322,11 +320,10 @@ Literal  ::=  [‘-’] integerLiteral
            |  ‘null’
 ```
 
-
 ### Integer Literals
 
 ```ebnf
-integerLiteral  ::=  (decimalNumeral | hexNumeral | octalNumeral) 
+integerLiteral  ::=  (decimalNumeral | hexNumeral | octalNumeral)
                        [‘L’ | ‘l’]
 decimalNumeral  ::=  ‘0’ | nonZeroDigit {digit}
 hexNumeral      ::=  ‘0’ ‘x’ hexDigit {hexDigit}
@@ -356,13 +353,11 @@ is _pt_. The numeric ranges given by these types are:
 |`Short`         | $-2\^{15}$ to $2\^{15}-1$|
 |`Char`          | $0$ to $2\^{16}-1$       |
 
-
 ### Example
 
 ```scala
 0          21          0xFFFFFFFF       -42L
 ```
-
 
 ### Floating Point Literals
 
@@ -410,7 +405,6 @@ booleanLiteral  ::=  ‘true’ | ‘false’
 The boolean literals `true` and `false` are
 members of type `Boolean`.
 
-
 ### Character Literals
 
 ```ebnf
@@ -429,10 +423,9 @@ by an [escape sequence](#escape-sequences).
 
 Note that `'\u000A'` is _not_ a valid character literal because
 Unicode conversion is done before literal parsing and the Unicode
-character \\u000A (line feed) is not a printable
+character `\u000A` (line feed) is not a printable
 character. One can use instead the escape sequence `'\n'` or
 the octal escape `'\12'` ([see here](#escape-sequences)).
-
 
 ### String Literals
 
@@ -446,7 +439,7 @@ characters are either printable unicode character or are described by
 [escape sequences](#escape-sequences). If the string literal
 contains a double quote character, it must be escaped,
 i.e. `"\""`. The value of a string literal is an instance of
-class `String`. 
+class `String`.
 
 ### Example
 
@@ -500,16 +493,15 @@ evaluates to
 
 ```scala
 the present string
-spans three 
+spans three
 lines.
 ```
 
 Method `stripMargin` is defined in class
-[scala.collection.immutable.StringLike](http://www.scala-lang.org/api/current/index.html#scala.collection.immutable.StringLike). 
+[scala.collection.immutable.StringLike](http://www.scala-lang.org/api/current/#scala.collection.immutable.StringLike).
 Because there is a predefined
 [implicit conversion](06-expressions.html#implicit-conversions) from `String` to
 `StringLike`, the method is applicable to all strings.
-
 
 ### Escape Sequences
 
@@ -526,14 +518,12 @@ The following escape sequences are recognized in character and string literals.
 | `‘\‘ ‘'‘`     | `\u0027` | single quote    |  `'`   |
 | `‘\‘ ‘\‘`     | `\u005c` | backslash       |  `\`   |
 
-
 A character with Unicode between 0 and 255 may also be represented by
-an octal escape, i.e. a backslash ‘\’ followed by a
+an octal escape, i.e. a backslash `'\'` followed by a
 sequence of up to three octal characters.
 
 It is a compile time error if a backslash character in a character or
 string literal does not start a valid escape sequence.
-
 
 ### Symbol literals
 
@@ -557,7 +547,6 @@ caches weak references to `Symbol`s, thus ensuring that
 identical symbol literals are equivalent with respect to reference
 equality.
 
-
 ## Whitespace and Comments
 
 Tokens may be separated by whitespace characters
@@ -571,7 +560,6 @@ A multi-line comment is a sequence of characters between
 but are required to be properly nested.  Therefore, a comment like
 `/* /* */` will be rejected as having an unterminated
 comment.
-
 
 ## XML mode
 
@@ -589,10 +577,10 @@ brace and immediately followed by a character starting an XML name.
 
 The scanner switches from XML mode to Scala mode if either
 
-- the XML expression or the XML pattern started by the initial ‘<’ has been 
+- the XML expression or the XML pattern started by the initial ‘<’ has been
   successfully parsed, or if
-- the parser encounters an embedded Scala expression or pattern and 
-  forces the Scanner 
+- the parser encounters an embedded Scala expression or pattern and
+  forces the Scanner
   back to normal mode, until the Scala expression or pattern is
   successfully parsed. In this case, since code and XML fragments can be
   nested, the parser has to maintain a stack that reflects the nesting
