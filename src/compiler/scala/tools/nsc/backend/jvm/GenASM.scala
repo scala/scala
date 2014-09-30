@@ -104,12 +104,14 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       if (settings.debug)
         inform("[running phase " + name + " on icode]")
 
-      if (settings.Xdce)
-        for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym)) {
+      if (settings.Xdce) {
+        val classes = icodes.classes.keys.toList // copy to avoid mutating the map while iterating
+        for (sym <- classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym)) {
           log(s"Optimizer eliminated ${sym.fullNameString}")
           deadCode.elidedClosures += sym
           icodes.classes -= sym
         }
+      }
 
       // For predictably ordered error messages.
       var sortedClasses = classes.values.toList sortBy (_.symbol.fullName)
