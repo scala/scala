@@ -1,0 +1,7 @@
+t8869.scala:5: error: class Option takes type parameters
+  def value: TC[({type l1[x] = Option})#l1] = ??? // error not reported!
+                               ^
+t8869.scala:7: error: class Option takes type parameters
+  type l2[x] = Option // error correctly reported
+               ^
+two errors found
