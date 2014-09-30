@@ -15,11 +15,11 @@ ParamClauses   ::= {ParamClause} [nl] ‘(’ ‘implicit’ Params ‘)’
 
 Template members and parameters labeled with an `implicit`
 modifier can be passed to [implicit parameters](#implicit-parameters)
-and can be used as implicit conversions called [views](#views). 
+and can be used as implicit conversions called [views](#views).
 The `implicit` modifier is illegal for all
 type members, as well as for [top-level objects](09-top-level-definitions.html#packagings).
 
-### Example
+### Example Monoid
 The following code defines an abstract class of monoids and
 two concrete implementations, `StringMonoid` and
 `IntMonoid`. The two implementations are marked implicit.
@@ -41,7 +41,6 @@ object Monoids {
 }
 ```
 
-
 ## Implicit Parameters
 
 An implicit parameter list
@@ -57,7 +56,7 @@ parameters, such arguments will be automatically provided.
 The actual arguments that are eligible to be passed to an implicit
 parameter of type $T$ fall into two categories. First, eligible are
 all identifiers $x$ that can be accessed at the point of the method
-call without a prefix and that denote an 
+call without a prefix and that denote an
 [implicit definition](#the-implicit-modifier)
 or an implicit parameter.  An eligible
 identifier may thus be a local name, or a member of an enclosing
@@ -117,7 +116,6 @@ eligible object which matches the implicit formal parameter type
 `Monoid[Int]` is `intMonoid` so this object will
 be passed as implicit parameter.
 
-
 This discussion also shows that implicit parameters are inferred after
 any type arguments are [inferred](06-expressions.html#local-type-inference).
 
@@ -128,7 +126,7 @@ type of the list is also convertible to this type.
 
 ```scala
 implicit def list2ordered[A](x: List[A])
-  (implicit elem2ordered: A => Ordered[A]): Ordered[List[A]] = 
+  (implicit elem2ordered: A => Ordered[A]): Ordered[List[A]] =
   ...
 ```
 
@@ -145,8 +143,8 @@ define a `sort` method over ordered lists:
 def sort[A](xs: List[A])(implicit a2ordered: A => Ordered[A]) = ...
 ```
 
-We can apply `sort` to a list of lists of integers 
-`yss: List[List[Int]]` 
+We can apply `sort` to a list of lists of integers
+`yss: List[List[Int]]`
 as follows:
 
 ```scala
@@ -161,11 +159,11 @@ sort(yss)(xs: List[Int] => list2ordered[Int](xs)(int2ordered)) .
 
 The possibility of passing implicit arguments to implicit arguments
 raises the possibility of an infinite recursion.  For instance, one
-might try to define the following method, which injects _every_ type into the 
+might try to define the following method, which injects _every_ type into the
 `Ordered` class:
 
 ```scala
-implicit def magic[A](x: A)(implicit a2ordered: A => Ordered[A]): Ordered[A] = 
+implicit def magic[A](x: A)(implicit a2ordered: A => Ordered[A]): Ordered[A] =
   a2ordered(x)
 ```
 
@@ -178,7 +176,7 @@ expansion:
 sort(arg)(x => magic(x)(x => magic(x)(x => ... )))
 ```
 
-To prevent such infinite expansions, the compiler keeps track of 
+To prevent such infinite expansions, the compiler keeps track of
 a stack of “open implicit types” for which implicit arguments are currently being
 searched. Whenever an implicit argument for type $T$ is searched, the
 “core type” of $T$ is added to the stack. Here, the _core type_
@@ -190,8 +188,8 @@ the implicit argument either definitely fails or succeeds. Everytime a
 core type is added to the stack, it is checked that this type does not
 dominate any of the other types in the set.
 
-Here, a core type $T$ _dominates_ a type $U$ if $T$ is 
-[equivalent](03-types.html#type-equivalence)
+Here, a core type $T$ _dominates_ a type $U$ if $T$ is
+[equivalent](03-types.html#equivalence)
 to $U$, or if the top-level type constructors of $T$ and $U$ have a
 common element and $T$ is more complex than $U$.
 
@@ -203,15 +201,14 @@ the type:
 - For a singleton type,  $\mathit{ttcs}(p.type) ~=~ \mathit{ttcs}(T)$, provided $p$ has type $T$;
 - For a compound type, `$\mathit{ttcs}(T_1$ with $\ldots$ with $T_n)$` $~=~ \mathit{ttcs}(T_1) \cup \ldots \cup \mathit{ttcs}(T_n)$.
 
-The _complexity_ $\mathit{complexity}(T)$ of a core type is an integer which also depends on the form of
+The _complexity_ $\operatorname{complexity}(T)$ of a core type is an integer which also depends on the form of
 the type:
 
-- For a type designator, $\mathit{complexity}(p.c) ~=~ 1 + \mathit{complexity}(p)$
-- For a parameterized type, $\mathit{complexity}(p.c[\mathit{targs}]) ~=~ 1 + \Sigma \mathit{complexity}(\mathit{targs})$
-- For a singleton type denoting a package $p$, $\mathit{complexity}(p.type) ~=~ 0$
-- For any other singleton type, $\mathit{complexity}(p.type) ~=~ 1 + \mathit{complexity}(T)$, provided $p$ has type $T$;
-- For a compound type, `$\mathit{complexity}(T_1$ with $\ldots$ with $T_n)$` $= \Sigma\mathit{complexity}(T_i)$
-
+- For a type designator, $\operatorname{complexity}(p.c) ~=~ 1 + \operatorname{complexity}(p)$
+- For a parameterized type, $\operatorname{complexity}(p.c[\mathit{targs}]) ~=~ 1 + \Sigma \operatorname{complexity}(\mathit{targs})$
+- For a singleton type denoting a package $p$, $\operatorname{complexity}(p.type) ~=~ 0$
+- For any other singleton type, $\operatorname{complexity}(p.type) ~=~ 1 + \operatorname{complexity}(T)$, provided $p$ has type $T$;
+- For a compound type, `$\operatorname{complexity}(T_1$ with $\ldots$ with $T_n)$` $= \Sigma\operatorname{complexity}(T_i)$
 
 ###### Example
 When typing `sort(xs)` for some list `xs` of type `List[List[List[Int]]]`,
@@ -227,7 +224,6 @@ Int => Ordered[Int]
 All types share the common type constructor `scala.Function1`,
 but the complexity of the each new type is lower than the complexity of the previous types.
 Hence, the code typechecks.
-
 
 ###### Example
 Let `ys` be a list of some type which cannot be converted
@@ -249,7 +245,6 @@ Throwable => Ordered[Throwable],
 Since the second type in the sequence is equal to the first, the compiler
 will issue an error signalling a divergent implicit expansion.
 
-
 ## Views
 
 Implicit parameters and methods can also define implicit conversions
@@ -266,7 +261,7 @@ Views are applied in three situations:
     $\mathit{pt}$.  The search proceeds as in the case of implicit parameters,
     where the implicit scope is the one of `$T$ => $\mathit{pt}$`. If
     such a view is found, the expression $e$ is converted to
-    `$v$($e$)`. 
+    `$v$($e$)`.
 1.  In a selection $e.m$ with $e$ of type $T$, if the selector $m$ does
     not denote an accessible member of $T$.  In this case, a view $v$ is searched
     which is applicable to $e$ and whose result contains a member named
@@ -275,12 +270,11 @@ Views are applied in three situations:
     selection $e.m$ is converted to `$v$($e$).$m$`.
 1.  In a selection $e.m(\mathit{args})$ with $e$ of type $T$, if the selector
     $m$ denotes some member(s) of $T$, but none of these members is applicable to the arguments
-    $\mathit{args}$. In this case a view $v$ is searched which is applicable to $e$ 
+    $\mathit{args}$. In this case a view $v$ is searched which is applicable to $e$
     and whose result contains a method $m$ which is applicable to $\mathit{args}$.
     The search proceeds as in the case of implicit parameters, where
     the implicit scope is the one of $T$.  If such a view is found, the
     selection $e.m$ is converted to `$v$($e$).$m(\mathit{args})$`.
-
 
 The implicit view, if it is found, can accept is argument $e$ as a
 call-by-value or as a call-by-name parameter. However, call-by-value
@@ -290,7 +284,7 @@ As for implicit parameters, overloading resolution is applied
 if there are several possible candidates (of either the call-by-value
 or the call-by-name category).
 
-### Example
+### Example Ordered
 Class `scala.Ordered[A]` contains a method
 
 ```scala
@@ -319,17 +313,16 @@ The first application of `list2ordered` converts the list
 occurrence is part of an implicit parameter passed to the `<=`
 method.
 
-
 ## Context Bounds and View Bounds
 
 ```ebnf
-  TypeParam ::= (id | ‘_’) [TypeParamClause] [‘>:’ Type] [‘<:’ Type] 
+  TypeParam ::= (id | ‘_’) [TypeParamClause] [‘>:’ Type] [‘<:’ Type]
                 {‘<%’ Type} {‘:’ Type}
 ```
 
 A type parameter $A$ of a method or non-trait class may have one or more view
 bounds `$A$ <% $T$`. In this case the type parameter may be
-instantiated to any type $S$ which is convertible by application of a 
+instantiated to any type $S$ which is convertible by application of a
 view to the bound $T$.
 
 A type parameter $A$ of a method or non-trait class may also have one
@@ -375,10 +368,9 @@ def <= [B >: A <% Ordered[B]](that: B): Boolean
 
 ## Manifests
 
-
 Manifests are type descriptors that can be automatically generated by
 the Scala compiler as arguments to implicit parameters. The Scala
-standard library contains a hierarchy of four manifest classes, 
+standard library contains a hierarchy of four manifest classes,
 with `OptManifest`
 at the top. Their signatures follow the outline below.
 
@@ -399,7 +391,7 @@ argument is selected.
 Otherwise, let $\mathit{Mobj}$ be the companion object `scala.reflect.Manifest`
 if $M$ is trait `Manifest`, or be
 the companion object `scala.reflect.ClassManifest` otherwise. Let $M'$ be the trait
-`Manifest` if $M$ is trait `Manifest`, or be the trait `OptManifest` otherwise.  
+`Manifest` if $M$ is trait `Manifest`, or be the trait `OptManifest` otherwise.
 Then the following rules apply.
 
 1.  If $T$ is a value class or one of the classes `Any`, `AnyVal`, `Object`,
@@ -416,26 +408,25 @@ Then the following rules apply.
     where $m_0$ is the manifest determined for $M'[S]$ and $ms$ are the
     manifests determined for $M'[U_1], \ldots, M'[U_n]$.
 1.  If $T$ is some other class type with type arguments $U_1 , \ldots , U_n$,
-    a manifest is generated 
+    a manifest is generated
     with the invocation `$\mathit{Mobj}$.classType[T](classOf[T], $ms$)`
     where $ms$ are the
     manifests determined for $M'[U_1] , \ldots , M'[U_n]$.
 1.  If $T$ is a singleton type `$p$.type`, a manifest is generated with
-    the invocation `$\mathit{Mobj}$.singleType[T]($p$)` 
+    the invocation `$\mathit{Mobj}$.singleType[T]($p$)`
 1.  If $T$ is a refined type $T' \{ R \}$, a manifest is generated for $T'$.
     (That is, refinements are never reflected in manifests).
 1.  If $T$ is an intersection type
     `$T_1$ with $, \ldots ,$ with $T_n$`
     where $n > 1$, the result depends on whether a full manifest is
-    to be determined or not. 
+    to be determined or not.
     If $M$ is trait `Manifest`, then
     a manifest is generated with the invocation
     `Manifest.intersectionType[T]($ms$)` where $ms$ are the manifests
     determined for $M[T_1] , \ldots , M[T_n]$.
-    Otherwise, if $M$ is trait `ClassManifest`, 
+    Otherwise, if $M$ is trait `ClassManifest`,
     then a manifest is generated for the [intersection dominator](03-types.html#type-erasure)
     of the types $T_1 , \ldots , T_n$.
 1.  If $T$ is some other type, then if $M$ is trait `OptManifest`,
     a manifest is generated from the designator `scala.reflect.NoManifest`.
     If $M$ is a type different from `OptManifest`, a static error results.
-

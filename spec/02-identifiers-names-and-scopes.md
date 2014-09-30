@@ -17,13 +17,12 @@ which are collectively called _bindings_.
 Bindings of different kinds have a precedence defined on them:
 
 1. Definitions and declarations that are local, inherited, or made
-   available by a package clause in the same compilation unit where the 
-   definition occurs have highest precedence. 
+   available by a package clause in the same compilation unit where the
+   definition occurs have highest precedence.
 1. Explicit imports have next highest precedence.
 1. Wildcard imports  have next highest precedence.
 1. Definitions made available by a package clause not in the
    compilation unit where the definition occurs have lowest precedence.
-
 
 There are two different name spaces, one for [types](03-types.html#types)
 and one for [terms](06-expressions.html#expressions). The same name may designate a
@@ -33,7 +32,7 @@ A binding has a _scope_ in which the entity defined by a single
 name can be accessed using a simple name. Scopes are nested.  A binding
 in some inner scope _shadows_ bindings of lower precedence in the
 same scope as well as bindings of the same or lower precedence in outer
-scopes. 
+scopes.
 
 <!-- TODO: either the example, the spec, or the compiler is wrong
 
@@ -55,7 +54,7 @@ A reference to an unqualified (type- or term-) identifier $x$ is bound
 by the unique binding, which
 
 - defines an entity with name $x$ in the same namespace as the identifier, and
-- shadows all other bindings that define entities with name $x$ in that 
+- shadows all other bindings that define entities with name $x$ in that
   namespace.
 
 It is an error if no such binding exists.  If $x$ is bound by an
@@ -69,7 +68,6 @@ A reference to a qualified (type- or term-) identifier $e.x$ refers to
 the member of the type $T$ of $e$ which has the name $x$ in the same
 namespace as the identifier. It is an error if $T$ is not a [value type](03-types.html#value-types).
 The type of $e.x$ is the member type of the referenced entity in $T$.
-
 
 ### Example
 
@@ -111,4 +109,3 @@ object A {
           println("L20: "+x) // `x' refers to string "abc" here
 }}}}}}
 ```
-

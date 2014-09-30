@@ -231,7 +231,7 @@ abstract class ClassPath[T] {
         classes find (_.name == name)
     }
 
-  def findSourceFile(name: String): Option[AbstractFile] =
+  def findClassFile(name: String): Option[AbstractFile] =
     findClass(name) match {
       case Some(ClassRep(Some(x: AbstractFile), _)) => Some(x)
       case _                                        => None

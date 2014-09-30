@@ -3,12 +3,25 @@
 <head>
   <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
 
-  <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
+  <link rel="icon" type="image/png" href="public/favicon.ico">
+  <link rel="shortcut icon" type="image/png" href="public/favicon.ico">
 
+  <link rel="stylesheet" type="text/css" href="public/stylesheets/screen.css">
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <title>{{ page.title }}</title>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      $('#the-scala-language-specification').css('display','none');
+    })
+  </script>
 </head>
 
 <body>
-
+<div id="header">
+<a alt="The Scala Language Specification" href="{{site.baseurl}}/"><img id="scala-logo" src="public/images/scala-logo-red-spiral-dark.png" />
+<h1 class="no-numbering">Language Specification</h1></a>
+</div>
 {{ content }}
 
 </body>

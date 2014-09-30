@@ -14,7 +14,7 @@ chapter: 11
 User-defined annotations associate meta-information with definitions.
 A simple annotation has the form `@$c$` or `@$c(a_1 , \ldots , a_n)$`.
 Here, $c$ is a constructor of a class $C$, which must conform
-to the class `scala.Annotation`. 
+to the class `scala.Annotation`.
 
 Annotations may apply to definitions or declarations, types, or
 expressions.  An annotation of a definition or declaration appears in
@@ -122,7 +122,6 @@ Java platform, the following annotations have a standard meaning.
     When applied to value declarations or definitions that have non-volatile
     types, the annotation has no effect.
 
-
   * `@specialized` When applied to the definition of a type parameter, this annotation causes
     the compiler
     to generate specialized definitions for primitive types. An optional list of
@@ -141,7 +140,6 @@ Java platform, the following annotations have a standard meaning.
     Whenever the static type of an expression matches a specialized variant of
     a definition, the compiler will instead use the specialized version.
     See the [specialization sid](http://docs.scala-lang.org/sips/completed/scala-specialization.html) for more details of the implementation.
-
 
 Other annotations may be interpreted by platform- or
 application-dependent tools. Class `scala.Annotation` has two
@@ -163,4 +161,3 @@ mapped to the host environment. In particular, on both the Java and
 the .NET platforms, such classes must be toplevel; i.e. they may not
 be contained in another class or object.  Additionally, on both
 Java and .NET, all constructor arguments must be constant expressions.
-

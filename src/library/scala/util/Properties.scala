@@ -62,10 +62,10 @@ private[scala] trait PropertiesTrait {
 
   def envOrSome(name: String, alt: Option[String])       = envOrNone(name) orElse alt
 
-  // for values based on propFilename
-  def scalaPropOrElse(name: String, alt: String): String = scalaProps.getProperty(name, alt)
+  // for values based on propFilename, falling back to System properties
+  def scalaPropOrElse(name: String, alt: String): String = scalaPropOrNone(name).getOrElse(alt)
   def scalaPropOrEmpty(name: String): String             = scalaPropOrElse(name, "")
-  def scalaPropOrNone(name: String): Option[String]      = Option(scalaProps.getProperty(name))
+  def scalaPropOrNone(name: String): Option[String]      = Option(scalaProps.getProperty(name)).orElse(propOrNone("scala." + name))
 
   /** The numeric portion of the runtime Scala version, if this is a final
    *  release.  If for instance the versionString says "version 2.9.0.final",

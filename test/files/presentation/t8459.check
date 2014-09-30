@@ -1,0 +1,14 @@
+reload: IncompleteDynamicSelect.scala
+
+askType at IncompleteDynamicSelect.scala(12,2)
+================================================================================
+[response] askTypeAt (12,2)
+scala.AnyRef {
+  def <init>(): Foo = {
+    Foo.super.<init>();
+    ()
+  };
+  private[this] val bar: F = new F();
+  Foo.this.bar.<selectDynamic: error>("<error>")
+}
+================================================================================
