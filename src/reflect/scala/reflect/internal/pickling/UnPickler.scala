@@ -243,8 +243,14 @@ abstract class UnPickler {
            } getOrElse "")
         }
 
+        def localDummy = {
+          if (nme.isLocalDummyName(name))
+            owner.newLocalDummy(NoPosition)
+          else NoSymbol
+        }
+
         // (1) Try name.
-        fromName(name) orElse {
+        localDummy orElse fromName(name) orElse {
           // (2) Try with expanded name.  Can happen if references to private
           // symbols are read from outside: for instance when checking the children
           // of a class.  See #1722.
@@ -298,6 +304,7 @@ abstract class UnPickler {
          * (.) ...
          * (1) `local child` represents local child classes, see comment in Pickler.putSymbol.
          *     Since it is not a member, it should not be entered in the owner's scope.
+         * (2) Similarly, we ignore local dummy symbols, as seen in SI-8868
          */
         def shouldEnterInOwnerScope = {
           sym.owner.isClass &&
@@ -307,7 +314,8 @@ abstract class UnPickler {
             !sym.isRefinementClass &&
             !sym.isTypeParameter &&
             !sym.isExistentiallyBound &&
-            sym.rawname != tpnme.LOCAL_CHILD // (1)
+            sym.rawname != tpnme.LOCAL_CHILD && // (1)
+            !nme.isLocalDummyName(sym.rawname)  // (2)
         }
 
         markFlagsCompleted(sym)(mask = AllFlags)
