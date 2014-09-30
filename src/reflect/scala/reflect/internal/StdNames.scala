@@ -128,6 +128,7 @@ trait StdNames {
     final val AnyRef: NameType        = "AnyRef"
     final val Array: NameType         = "Array"
     final val List: NameType          = "List"
+    final val Option: NameType        = "Option"
     final val Seq: NameType           = "Seq"
     final val Symbol: NameType        = "Symbol"
     final val WeakTypeTag: NameType   = "WeakTypeTag"
