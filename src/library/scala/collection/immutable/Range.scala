@@ -33,7 +33,13 @@ import scala.collection.parallel.immutable.ParRange
  *  `init`) are also permitted on overfull ranges.
  *
  *  @param start      the start of this range.
- *  @param end        the exclusive end of the range.
+ *  @param end        the end of the range.  For exclusive ranges, e.g. 
+ *                    `Range(0,3)` or `(0 until 3)`, this is one
+ *                    step past the last one in the range.  For inclusive
+ *                    ranges, e.g. `Range.inclusive(0,3)` or `(0 to 3)`,
+ *                    it may be in the range if it is not skipped by the step size.
+ *                    To find the last element inside a non-empty range,
+                      use `last` instead.
  *  @param step       the step for the range.
  *
  *  @author Martin Odersky
