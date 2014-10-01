@@ -126,5 +126,11 @@ self =>
     for ((key, value) <- this) b += ((key, f(key, value)))
     b.result()
   }
+
+  /**
+   * Converts this $coll to an immutable sequence.
+   * @return an immutable sequence containing all elements of this $coll.
+   */
+  override def toSeq: scala.collection.Seq[(A, B)] = Seq(toBuffer[(A, B)]:_*)
 }
 
