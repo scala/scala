@@ -1,4 +1,4 @@
-package symtab
+package scala.reflect.internal
 
 import scala.tools.nsc.symtab
 

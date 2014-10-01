@@ -1,13 +1,10 @@
 
 package scala.util
-package test
 
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-
-import scala.util.PropertiesTrait
 
 /** The java version property uses the spec version
  *  and must work for all "major.minor" and fail otherwise.
@@ -24,6 +21,7 @@ class SpecVersionTest {
     override lazy val scalaProps = new java.util.Properties
   }
 
+  // SI-7265
   @Test
   def comparesCorrectly(): Unit = {
     assert(sut isJavaAtLeast "1.5")

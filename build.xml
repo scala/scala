@@ -1437,7 +1437,7 @@ TODO:
     <stopwatch name="test.junit.compiler.timer" action="total"/>
   </target>
 
-  <target name="test.junit" depends="test.junit.comp">
+  <target name="test.junit" depends="test.junit.comp, test.junit.init">
     <stopwatch name="test.junit.timer"/>
     <mkdir dir="${test.junit.classes}"/>
     <echo message="Note: details of failed tests will be output to ${build-junit.dir}"/>
