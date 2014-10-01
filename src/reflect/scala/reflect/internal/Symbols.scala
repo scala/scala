@@ -2023,12 +2023,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       info.decls.filter(sym => !sym.isMethod && sym.isParamAccessor).toList
 
     /** The symbol accessed by this accessor (getter or setter) function. */
-    final def accessed: Symbol = accessed(owner.info)
-
-    /** The symbol accessed by this accessor function, but with given owner type. */
-    final def accessed(ownerTp: Type): Symbol = {
+    final def accessed: Symbol = {
       assert(hasAccessorFlag, this)
-      ownerTp decl localName
+      val localField = owner.info decl localName
+
+      if (localField == NoSymbol && this.hasFlag(MIXEDIN)) {
+        // SI-8087: private[this] fields don't have a `localName`. When searching the accessed field
+        // for a mixin accessor of such a field, we need to look for `name` instead.
+        // The phase travel ensures that the field is found (`owner` is the trait class symbol, the
+        // field gets removed from there in later phases).
+        enteringPhase(picklerPhase)(owner.info).decl(name).suchThat(!_.isAccessor)
+      } else {
+        localField
+      }
     }
 
     /** The module corresponding to this module class (note that this
