@@ -16,6 +16,11 @@ import generic._
  *  To prioritize elements of type A there must be an implicit
  *  Ordering[A] available at creation.
  *
+ *  Only the `dequeue` and `dequeueAll` methods will return methods in priority
+ *  order (while removing elements from the heap).  Standard collection methods
+ *  including `drop` and `iterator` will remove or traverse the heap in whichever
+ *  order seems most convenient.
+ *
  *  @tparam A    type of the elements in this priority queue.
  *  @param ord   implicit ordering used to compare the elements of type `A`.
  *
