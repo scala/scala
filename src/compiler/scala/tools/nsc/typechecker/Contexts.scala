@@ -480,6 +480,8 @@ trait Contexts { self: Analyzer =>
       // SI-8245 `isLazy` need to skip lazy getters to ensure `return` binds to the right place
       c.enclMethod         = if (isDefDef && !owner.isLazy) c else enclMethod
 
+      if (tree != outer.tree) c(TypeConstructorAllowed) = false
+
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
       c
