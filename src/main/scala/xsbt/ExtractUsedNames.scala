@@ -49,6 +49,16 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
 
   private def extractByTreeWalk(tree: Tree): Set[String] = {
     val namesBuffer = collection.mutable.ListBuffer.empty[String]
+
+    /*
+     * Some macros appear to contain themselves as original tree.
+     * We must check that we don't inspect the same tree over and over.
+     * See https://issues.scala-lang.org/browse/SI-8486
+     *     https://github.com/sbt/sbt/issues/1237
+     *     https://github.com/sbt/sbt/issues/1544
+     */
+    val inspectedOriginalTrees = collection.mutable.Set.empty[Tree]
+
     def addSymbol(symbol: Symbol): Unit = {
       val symbolNameAsString = symbol.name.decode.trim
       namesBuffer += symbolNameAsString
@@ -56,12 +66,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
 
     def handleTreeNode(node: Tree): Unit = {
       def handleMacroExpansion(original: Tree): Unit = {
-        // Some macros seem to be their own orignal tree, or appear in the children of their
-        // original tree. To prevent infinite loops, we need to filter out nodes that we already
-        // handled.
-        // This is only relevant for Scala 2.10.4
-        // See https://issues.scala-lang.org/browse/SI-8486
-        original.filter(_ ne node).foreach(handleTreeNode)
+        original.foreach(handleTreeNode)
       }
 
       def handleClassicTreeNode(node: Tree): Unit = node match {
@@ -90,7 +95,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType) ext
       }
 
       node match {
-        case MacroExpansionOf(original) =>
+        case MacroExpansionOf(original) if inspectedOriginalTrees.add(original) =>
           handleClassicTreeNode(node)
           handleMacroExpansion(original)
         case _ =>
