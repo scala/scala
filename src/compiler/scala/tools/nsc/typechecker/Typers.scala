@@ -1726,7 +1726,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
         if (!clazz.owner.isPackageClass)
           context.error(clazz.pos, "inner classes cannot be classfile annotations")
-        else restrictionWarning(cdef.pos, unit,
+        // Ignore @SerialVersionUID, because it is special-cased and handled completely differently.
+        // It only extends ClassfileAnnotationClass instead of StaticAnnotation to get the enforcement
+        // of constant argument values "for free". Related to SI-7041.
+        else if (clazz != SerialVersionUIDAttr) restrictionWarning(cdef.pos, unit,
           """|subclassing Classfile does not
              |make your annotation visible at runtime.  If that is what
              |you want, you must write the annotation class in Java.""".stripMargin)
