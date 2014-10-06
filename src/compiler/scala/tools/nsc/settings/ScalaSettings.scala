@@ -262,6 +262,8 @@ trait ScalaSettings extends AbsScalaSettings
   val Yreifydebug             = BooleanSetting("-Yreify-debug", "Trace reification.")
   val Ytyperdebug             = BooleanSetting("-Ytyper-debug", "Trace all type assignments.")
   val Ypatmatdebug            = BooleanSetting("-Ypatmat-debug", "Trace pattern matching translation.")
+  val YpatmatExhaustdepth     = IntSetting("-Ypatmat-exhaust-depth", "off", 20, Some((10, Int.MaxValue)),
+    str => Some(if(str.equalsIgnoreCase("off")) Int.MaxValue else str.toInt))
   val Yquasiquotedebug        = BooleanSetting("-Yquasiquote-debug", "Trace quasiquote-related activities.")
 
   // TODO 2.12 Remove

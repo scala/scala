@@ -26,16 +26,9 @@ trait Solving extends Logic {
     type Formula = FormulaBuilder
     def formula(c: Clause*): Formula = ArrayBuffer(c: _*)
 
-    type Clause  = collection.Set[Lit]
+    type Clause  = Set[Lit]
     // a clause is a disjunction of distinct literals
-    def clause(l: Lit*): Clause = (
-      if (l.lengthCompare(1) <= 0) {
-        l.toSet // SI-8531 Avoid LinkedHashSet's bulk for 0 and 1 element clauses
-      } else {
-        // neg/t7020.scala changes output 1% of the time, the non-determinism is quelled with this linked set
-        mutable.LinkedHashSet(l: _*)
-      }
-    )
+    def clause(l: Lit*): Clause = l.toSet
 
     type Lit
     def Lit(sym: Sym, pos: Boolean = true): Lit
@@ -115,7 +108,6 @@ trait Solving extends Logic {
 
       if (Statistics.canEnable) Statistics.stopTimer(patmatCNF, start)
 
-      //
       if (Statistics.canEnable) patmatCNFSizes(res.size).value += 1
 
 //      debug.patmat("cnf for\n"+ p +"\nis:\n"+cnfString(res))
@@ -141,36 +133,83 @@ trait Solving extends Logic {
     def cnfString(f: Formula) = alignAcrossRows(f map (_.toList) toList, "\\/", " /\\\n")
 
     // adapted from http://lara.epfl.ch/w/sav10:simple_sat_solver (original by Hossein Hojjat)
-    val EmptyModel = collection.immutable.SortedMap.empty[Sym, Boolean]
+    val EmptyModel = Map.empty[Sym, Boolean]
     val NoModel: Model = null
 
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
     def findAllModelsFor(f: Formula): List[Model] = {
+
+      debug.patmat("find all models for\n"+ cnfString(f))
+
       val vars: Set[Sym] = f.flatMap(_ collect {case l: Lit => l.sym}).toSet
       // debug.patmat("vars "+ vars)
       // the negation of a model -(S1=True/False /\ ... /\ SN=True/False) = clause(S1=False/True, ...., SN=False/True)
       def negateModel(m: Model) = clause(m.toSeq.map{ case (sym, pos) => Lit(sym, !pos) } : _*)
 
-      def findAllModels(f: Formula, models: List[Model], recursionDepthAllowed: Int = 10): List[Model]=
-        if (recursionDepthAllowed == 0) models
-        else {
-          debug.patmat("find all models for\n"+ cnfString(f))
+      /**
+       * The DPLL procedure only returns a minimal mapping from literal to value
+       * such that the CNF formula is satisfied.
+       * E.g. for:
+       * `(a \/ b)`
+       * The DPLL procedure will find either {a = true} or {b = true}
+       * as solution.
+       *
+       * The expansion step will amend both solutions with the unassigned variable
+       * i.e., {a = true} will be expanded to {a = true, b = true} and {a = true, b = false}.
+       */
+      def expandUnassigned(unassigned: List[Sym], model: Model): List[Model] = {
+        // the number of solutions is doubled for every unassigned variable
+        val expandedModels = 1 << unassigned.size
+        var current = mutable.ArrayBuffer[Model]()
+        var next = mutable.ArrayBuffer[Model]()
+        current.sizeHint(expandedModels)
+        next.sizeHint(expandedModels)
+
+        current += model
+
+        // we use double buffering:
+        // read from `current` and create a two models for each model in `next`
+        for {
+          s <- unassigned
+        } {
+          for {
+            model <- current
+          } {
+            def force(l: Lit) = model + (l.sym -> l.pos)
+
+            next += force(Lit(s, pos = true))
+            next += force(Lit(s, pos = false))
+          }
+
+          val tmp = current
+          current = next
+          next = tmp
+
+          next.clear()
+        }
+
+        current.toList
+      }
+
+      def findAllModels(f: Formula,
+                        models: List[Model],
+                        recursionDepthAllowed: Int = global.settings.YpatmatExhaustdepth.value): List[Model]=
+        if (recursionDepthAllowed == 0) {
+          val maxDPLLdepth = global.settings.YpatmatExhaustdepth.value
+          reportWarning("(Exhaustivity analysis reached max recursion depth, not all missing cases are reported. " +
+              s"Please try with scalac -Ypatmat-exhaust-depth ${maxDPLLdepth * 2} or -Ypatmat-exhaust-depth off.)")
+          models
+        } else {
           val model = findModelFor(f)
           // if we found a solution, conjunct the formula with the model's negation and recurse
           if (model ne NoModel) {
             val unassigned = (vars -- model.keySet).toList
             debug.patmat("unassigned "+ unassigned +" in "+ model)
-            def force(lit: Lit) = {
-              val model = withLit(findModelFor(dropUnit(f, lit)), lit)
-              if (model ne NoModel) List(model)
-              else Nil
-            }
-            val forced = unassigned flatMap { s =>
-              force(Lit(s, pos = true)) ++ force(Lit(s, pos = false))
-            }
+
+            val forced = expandUnassigned(unassigned, model)
             debug.patmat("forced "+ forced)
             val negated = negateModel(model)
-            findAllModels(f :+ negated, model :: (forced ++ models), recursionDepthAllowed - 1)
+            findAllModels(f :+ negated, forced ++ models, recursionDepthAllowed - 1)
           }
           else models
         }
@@ -210,15 +249,14 @@ trait Solving extends Logic {
             withLit(findModelFor(dropUnit(f, unitLit)), unitLit)
           case _ =>
             // partition symbols according to whether they appear in positive and/or negative literals
-            // SI-7020 Linked- for deterministic counter examples.
-            val pos = new mutable.LinkedHashSet[Sym]()
-            val neg = new mutable.LinkedHashSet[Sym]()
+            val pos = new mutable.HashSet[Sym]()
+            val neg = new mutable.HashSet[Sym]()
             mforeach(f)(lit => if (lit.pos) pos += lit.sym else neg += lit.sym)
 
             // appearing in both positive and negative
-            val impures: mutable.LinkedHashSet[Sym] = pos intersect neg
+            val impures = pos intersect neg
             // appearing only in either positive/negative positions
-            val pures: mutable.LinkedHashSet[Sym] = (pos ++ neg) -- impures
+            val pures = (pos ++ neg) -- impures
 
             if (pures nonEmpty) {
               val pureSym = pures.head
