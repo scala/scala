@@ -428,7 +428,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   // return false if repl should exit
   def processLine(line: String): Boolean = {
     import scala.concurrent.duration._
-    Await.ready(globalFuture, 60.seconds)
+    Await.ready(globalFuture, 10.minutes) // Long timeout here to avoid test failures under heavy load.
 
     if (line eq null) {
       // SI-4563: this means the console was properly interrupted (Ctrl+D usually)
