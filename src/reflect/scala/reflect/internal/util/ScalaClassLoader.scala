@@ -53,8 +53,10 @@ trait ScalaClassLoader extends JClassLoader {
   }
 
   /** An InputStream representing the given class name, or null if not found. */
-  def classAsStream(className: String) =
-    getResourceAsStream(className.replaceAll("""\.""", "/") + ".class")
+  def classAsStream(className: String) = getResourceAsStream {
+    if (className endsWith ".class") className
+    else s"${className.replace('.', '/')}.class"  // classNameToPath
+  }
 
   /** Run the main method of a class to be loaded by this classloader */
   def run(objectName: String, arguments: Seq[String]) {

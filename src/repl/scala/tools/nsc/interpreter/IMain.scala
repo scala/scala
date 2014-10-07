@@ -295,22 +295,38 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def originalPath(name: Name): String   = typerOp path name
   def originalPath(sym: Symbol): String  = typerOp path sym
   def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
+
   def translatePath(path: String) = {
     val sym = if (path endsWith "$") symbolOfTerm(path.init) else symbolOfIdent(path)
     sym.toOption map flatPath
   }
+
+  /** If path represents a class resource in the default package,
+   *  see if the corresponding symbol has a class file that is a REPL artifact
+   *  residing at a different resource path. Translate X.class to $line3/$read$$iw$$iw$X.class.
+   */
+  def translateSimpleResource(path: String): Option[String] = {
+    if (!(path contains '/') && (path endsWith ".class")) {
+      val name = path stripSuffix ".class"
+      val sym = if (name endsWith "$") symbolOfTerm(name.init) else symbolOfIdent(name)
+      def pathOf(s: String) = s"${s.replace('.', '/')}.class"
+      sym.toOption map (s => pathOf(flatPath(s)))
+    } else {
+      None
+    }
+  }
   def translateEnclosingClass(n: String) = symbolOfTerm(n).enclClass.toOption map flatPath
 
+  /** If unable to find a resource foo.class, try taking foo as a symbol in scope
+   *  and use its java class name as a resource to load.
+   *
+   *  $intp.classLoader classBytes "Bippy" or $intp.classLoader getResource "Bippy.class" just work.
+   */
   private class TranslatingClassLoader(parent: ClassLoader) extends util.AbstractFileClassLoader(replOutput.dir, parent) {
-    /** Overridden here to try translating a simple name to the generated
-     *  class name if the original attempt fails.  This method is used by
-     *  getResourceAsStream as well as findClass.
-     */
-    override protected def findAbstractFile(name: String): AbstractFile =
-      super.findAbstractFile(name) match {
-        case null if _initializeComplete => translatePath(name) map (super.findAbstractFile(_)) orNull
-        case file => file
-      }
+    override protected def findAbstractFile(name: String): AbstractFile = super.findAbstractFile(name) match {
+      case null if _initializeComplete => translateSimpleResource(name) map super.findAbstractFile orNull
+      case file => file
+    }
   }
   private def makeClassLoader(): util.AbstractFileClassLoader =
     new TranslatingClassLoader(parentClassLoader match {
