@@ -7,126 +7,203 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import scala.annotation.switch
 import scala.tools.asm.{Opcodes, MethodWriter, ClassWriter}
 import scala.tools.asm.tree.analysis.{Analyzer, BasicValue, BasicInterpreter}
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
-import scala.collection.{ mutable => m }
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
+import scala.tools.nsc.settings.ScalaSettings
 
 /**
- * Intra-Method optimizations.
+ * Optimizations within a single method.
+ *
+ * unreachable code
+ *   - removes instrucions of basic blocks to which no branch instruction points
+ *   + enables eliminating some exception handlers and local variable descriptors
+ *     > eliminating them is required for correctness, as explained in `removeUnreachableCode`
+ *
+ * empty exception handlers
+ *   - removes exception handlers whose try block is empty
+ *   + eliminating a handler where the try block is empty and reachable will turn the catch block
+ *     unreachble. in this case "unreachable code" is invoked recursively until reaching a fixpiont.
+ *     > for try blocks that are unreachable, "unreachable code" removes also the instructions of the
+ *       catch block, and the recrusive invocation is not necessary.
+ *
+ * simplify jumps
+ *   - various simplifications, see doc domments of individual optimizations
+ *   + changing or eliminating jumps may render some code unreachable, therefore "simplify jumps" is
+ *     executed in a loop with "unreachable code"
+ *
+ * empty local variable descriptors
+ *   - removes entries from the local variable table where the variable is not actually used
+ *   + enables eliminating labels that the entry points to (if they are not otherwise referenced)
+ *
+ * empty line numbers
+ *   - eliminates line number nodes that describe no executable instructions
+ *   + enables eliminating the label of the line number node (if it's not otherwise referenced)
+ *
+ * stale labels
+ *   - eliminate labels that are not referenced, merge sequences of label definitions.
  */
-object LocalOpt {
+class LocalOpt(settings: ScalaSettings) {
   /**
-   * Remove unreachable instructions from all (non-abstract) methods.
+   * Remove unreachable instructions from all (non-abstract) methods and apply various other
+   * cleanups to the bytecode.
    *
    * @param clazz The class whose methods are optimized
    * @return      `true` if unreachable code was elminated in some method, `false` otherwise.
    */
-  def removeUnreachableCode(clazz: ClassNode): Boolean = {
-    clazz.methods.asScala.foldLeft(false) {
-      case (changed, method) => removeUnreachableCode(method, clazz.name) || changed
+  def methodOptimizations(clazz: ClassNode): Boolean = {
+    settings.Yopt.value.nonEmpty && clazz.methods.asScala.foldLeft(false) {
+      case (changed, method) => methodOptimizations(method, clazz.name) || changed
     }
   }
 
   /**
    * Remove unreachable code from a method.
+   *
    * We rely on dead code elimination provided by the ASM framework, as described in the ASM User
    * Guide (http://asm.ow2.org/index.html), Section 8.2.1. It runs a data flow analysis, which only
    * computes Frame information for reachable instructions. Instructions for which no Frame data is
    * available after the analyis are unreachable.
    *
-   * TODO doc: it also removes empty handlers, unused local vars
+   * Also simplifies branching instructions, removes unused local variable descriptors, empty
+   * exception handlers, unnecessary label declarations and empty line number nodes.
    *
-   * Returns `true` if dead code in `method` has been eliminated.
+   * Returns `true` if the bytecode of `method` was changed.
    */
-  private def removeUnreachableCode(method: MethodNode, ownerClassName: String): Boolean = {
+  private def methodOptimizations(method: MethodNode, ownerClassName: String): Boolean = {
     if (method.instructions.size == 0) return false // fast path for abstract methods
 
-    val codeRemoved = removeUnreachableCodeImpl(method, ownerClassName)
-
     // unreachable-code also removes unused local variable nodes and empty exception handlers.
-    // This is required for correctness: such nodes are not allowed to refer to instruction offsets
-    // that don't exist (because they have been eliminated).
-    val localsRemoved = removeUnusedLocalVariableNodes(method)
-    val handlersRemoved = removeEmptyExceptionHandlers(method)
+    // This is required for correctness, for example:
+    //
+    //   def f = { return 0; try { 1 } catch { case _ => 2 } }
+    //
+    // The result after removeUnreachableCodeImpl:
+    //
+    //   TRYCATCHBLOCK L0 L1 L2 java/lang/Exception
+    //   L4
+    //     ICONST_0
+    //     IRETURN
+    //   L0
+    //   L1
+    //   L2
+    //
+    // If we don't eliminate the handler, the ClassWriter emits:
+    //
+    //   TRYCATCHBLOCK L0 L0 L0 java/lang/Exception
+    //   L1
+    //     ICONST_0
+    //     IRETURN
+    //   L0
+    //
+    // This triggers "ClassFormatError: Illegal exception table range in class file C". Similar
+    // for local variables in dead blocks. Maybe that's a bug in the ASM framework.
 
-    // When eliminating a handler, the catch block becomes unreachable. The recursive invocation
-    // removes these blocks.
-    // Note that invoking removeUnreachableCode*Impl* a second time is not enough: removing the dead
-    // catch block can render other handlers empty, which also have to be removed in turn.
-    if (handlersRemoved) removeUnreachableCode(method, ownerClassName)
+    var recurse = true
+    var codeHandlersOrJumpsChanged = false
+    while (recurse) {
+      // unreachable-code, empty-handlers and simplify-jumps run until reaching a fixpoint (see doc on class LocalOpt)
+      val (codeRemoved, handlersRemoved, liveHandlerRemoved) = if (settings.YoptUnreachableCode) {
+        val (codeRemoved, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
+        val removedHandlers = removeEmptyExceptionHandlers(method)
+        (codeRemoved, removedHandlers.nonEmpty, removedHandlers.exists(h => liveLabels(h.start)))
+      } else {
+        (false, false, false)
+      }
 
-    // assert that we can leave local variable annotations as-is
+      val jumpsChanged = if (settings.YoptSimplifyJumps) simplifyJumps(method) else false
+
+      codeHandlersOrJumpsChanged ||= (codeRemoved || handlersRemoved || jumpsChanged)
+
+      // The doc comment of class LocalOpt explains why we recurse if jumpsChanged || liveHandlerRemoved
+      recurse = settings.YoptRecurseUnreachableJumps && (jumpsChanged || liveHandlerRemoved)
+    }
+
+    // Removing stale local variable descriptors is required for correctness of unreachable-code, therefore no dedicated setting
+    val localsRemoved = if (settings.YoptUnreachableCode) removeUnusedLocalVariableNodes(method) else false
+
+    val lineNumbersRemoved = if (settings.YoptEmptyLineNumbers) removeEmptyLineNumbers(method) else false
+
+    val labelsRemoved = if (settings.YoptEmptyLabels) removeEmptyLabelNodes(method) else false
+
+    // assert that local variable annotations are empty (we don't emit them) - otherwise we'd have
+    // to eliminate those covering an empty range, similar to removeUnusedLocalVariableNodes.
     def nullOrEmpty[T](l: java.util.List[T]) = l == null || l.isEmpty
     assert(nullOrEmpty(method.visibleLocalVariableAnnotations), method.visibleLocalVariableAnnotations)
     assert(nullOrEmpty(method.invisibleLocalVariableAnnotations), method.invisibleLocalVariableAnnotations)
 
-    codeRemoved || localsRemoved || handlersRemoved
+    codeHandlersOrJumpsChanged || localsRemoved || lineNumbersRemoved || labelsRemoved
   }
 
-  private def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: String): Boolean = {
-    val initialSize = method.instructions.size
-    if (initialSize == 0) return false
-
+  /**
+   * Removes unreachable basic blocks.
+   *
+   * TODO: rewrite, don't use computeMaxLocalsMaxStack (runs a ClassWriter) / Analyzer. Too slow.
+   */
+  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: String): (Boolean, Set[LabelNode]) = {
     // The data flow analysis requires the maxLocals / maxStack fields of the method to be computed.
     computeMaxLocalsMaxStack(method)
     val a = new Analyzer[BasicValue](new BasicInterpreter)
     a.analyze(ownerClassName, method)
     val frames = a.getFrames
 
+    val initialSize = method.instructions.size
     var i = 0
+    var liveLabels = Set.empty[LabelNode]
     val itr = method.instructions.iterator()
     while (itr.hasNext) {
-      val ins = itr.next()
-      // Don't remove label nodes: they might be referenced for example in a LocalVariableNode
-      if (frames(i) == null && !ins.isInstanceOf[LabelNode]) {
-        // Instruction iterators allow removing during iteration.
-        // Removing is O(1): instructions are doubly linked list elements.
-        itr.remove()
+      itr.next() match {
+        case l: LabelNode =>
+          if (frames(i) != null) liveLabels += l
+
+        case ins =>
+          // label nodes are not removed: they might be referenced for example in a LocalVariableNode
+          if (frames(i) == null || ins.getOpcode == Opcodes.NOP) {
+            // Instruction iterators allow removing during iteration.
+            // Removing is O(1): instructions are doubly linked list elements.
+            itr.remove()
+          }
       }
       i += 1
     }
-
-    method.instructions.size != initialSize
-  }
-
-  /**
-   * Remove exception handlers that cover empty code blocks from all methods of `clazz`.
-   * Returns `true` if any exception handler was eliminated.
-   */
-  def removeEmptyExceptionHandlers(clazz: ClassNode): Boolean = {
-    clazz.methods.asScala.foldLeft(false) {
-      case (changed, method) => removeEmptyExceptionHandlers(method) || changed
-    }
+    (method.instructions.size != initialSize, liveLabels)
   }
 
   /**
    * Remove exception handlers that cover empty code blocks. A block is considered empty if it
    * consist only of labels, frames, line numbers, nops and gotos.
    *
+   * There are no executable instructions that we can assume don't throw (eg ILOAD). The JVM spec
+   * basically says that a VirtualMachineError may be thrown at any time:
+   *   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.3
+   *
    * Note that no instructions are eliminated.
    *
-   * @return `true` if some exception handler was eliminated.
+   * @return the set of removed handlers
    */
-  def removeEmptyExceptionHandlers(method: MethodNode): Boolean = {
+  def removeEmptyExceptionHandlers(method: MethodNode): Set[TryCatchBlockNode] = {
     /** True if there exists code between start and end. */
     def containsExecutableCode(start: AbstractInsnNode, end: LabelNode): Boolean = {
-      start != end && (start.getOpcode match {
+      start != end && ((start.getOpcode : @switch) match {
         // FrameNode, LabelNode and LineNumberNode have opcode == -1.
-        case -1 | Opcodes.NOP | Opcodes.GOTO => containsExecutableCode(start.getNext, end)
+        case -1 | Opcodes.GOTO => containsExecutableCode(start.getNext, end)
         case _ => true
       })
     }
 
-    val initialNumberHandlers = method.tryCatchBlocks.size
+    var removedHandlers = Set.empty[TryCatchBlockNode]
     val handlersIter = method.tryCatchBlocks.iterator()
     while(handlersIter.hasNext) {
       val handler = handlersIter.next()
-      if (!containsExecutableCode(handler.start, handler.end)) handlersIter.remove()
+      if (!containsExecutableCode(handler.start, handler.end)) {
+        removedHandlers += handler
+        handlersIter.remove()
+      }
     }
-    method.tryCatchBlocks.size != initialNumberHandlers
+    removedHandlers
   }
 
   /**
@@ -136,13 +213,11 @@ object LocalOpt {
    * Note that each entry in the local variable table has a start, end and index. Two entries with
    * the same index, but distinct start / end ranges are different variables, they may have not the
    * same type or name.
-   *
-   * TODO: also re-allocate locals to occupy fewer slots after eliminating unused ones
    */
   def removeUnusedLocalVariableNodes(method: MethodNode): Boolean = {
     def variableIsUsed(start: AbstractInsnNode, end: LabelNode, varIndex: Int): Boolean = {
       start != end && (start match {
-        case v: VarInsnNode =>  v.`var` == varIndex
+        case v: VarInsnNode if v.`var` == varIndex => true
         case _ => variableIsUsed(start.getNext, end, varIndex)
       })
     }
@@ -162,9 +237,8 @@ object LocalOpt {
       if (!used)
         localsIter.remove()
     }
-    method.localVariables.size == initialNumVars
+    method.localVariables.size != initialNumVars
   }
-
 
   /**
    * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM

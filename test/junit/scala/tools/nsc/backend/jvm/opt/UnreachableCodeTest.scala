@@ -16,12 +16,20 @@ import ASMConverters._
 
 @RunWith(classOf[JUnit4])
 class UnreachableCodeTest {
-  import UnreachableCodeTest._
+
+  def assertEliminateDead(code: (Instruction, Boolean)*): Unit = {
+    val method = genMethod()(code.map(_._1): _*)
+    localOpt.removeUnreachableCodeImpl(method, "C")
+    val nonEliminated = instructionsFromMethod(method)
+    val expectedLive = code.filter(_._2).map(_._1).toList
+    assertSameCode(nonEliminated, expectedLive)
+  }
 
   // jvm-1.6 enables emitting stack map frames, which impacts the code generation wrt dead basic blocks,
   // see comment in BCodeBodyBuilder
-  val dceCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:unreachable-code")
-  val noOptCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:none")
+  val methodOptCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:method")
+  val dceCompiler       = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:unreachable-code")
+  val noOptCompiler     = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:none")
 
   // jvm-1.5 disables computing stack map frames, and it emits dead code as-is.
   val noOptNoFramesCompiler = newCompiler(extraArgs = "-target:jvm-1.5 -Ybackend:GenBCode -Yopt:l:none")
@@ -48,8 +56,8 @@ class UnreachableCodeTest {
   @Test
   def eliminateNop(): Unit = {
     assertEliminateDead(
-      // not dead, since visited by data flow analysis. need a different opt to eliminate it.
-      Op(NOP),
+      // reachable, but removed anyway.
+      Op(NOP).dead,
       Op(RETURN),
       Op(NOP).dead
     )
@@ -136,28 +144,31 @@ class UnreachableCodeTest {
 
   @Test
   def eliminateDeadCatchBlocks(): Unit = {
+    // the Label(1) is live: it's used in the local variable descriptor table (local variable "this" has a range from 0 to 1).
+    def wrapInDefault(code: Instruction*) = List(Label(0), LineNumber(1, Label(0))) ::: code.toList ::: List(Label(1))
+
     val code = "def f: Int = { return 0; try { 1 } catch { case _: Exception => 2 } }"
-    assertSameCode(singleMethodInstructions(dceCompiler)(code).dropNonOp,
-                   List(Op(ICONST_0), Op(IRETURN)))
+    val m = singleMethod(dceCompiler)(code)
+    assertTrue(m.handlers.isEmpty) // redundant (if code is gone, handler is gone), but done once here for extra safety
+    assertSameCode(m.instructions,
+      wrapInDefault(Op(ICONST_0), Op(IRETURN)))
 
     val code2 = "def f: Unit = { try { } catch { case _: Exception => () }; () }"
-    // DCE only removes dead basic blocks, but not NOPs, and also not useless jumps
-    assertSameCode(singleMethodInstructions(dceCompiler)(code2).dropNonOp,
-                   List(Op(NOP), Jump(GOTO, Label(33)), Label(33), Op(RETURN)))
+    // requires fixpoint optimization of methodOptCompiler (dce alone is not enough): first the handler is eliminated, then it's dead catch block.
+    assertSameCode(singleMethodInstructions(methodOptCompiler)(code2), wrapInDefault(Op(RETURN)))
 
     val code3 = "def f: Unit = { try { } catch { case _: Exception => try { } catch { case _: Exception => () } }; () }"
-    assertSameCode(singleMethodInstructions(dceCompiler)(code3).dropNonOp,
-      List(Op(NOP), Jump(GOTO, Label(33)), Label(33), Op(RETURN)))
+    assertSameCode(singleMethodInstructions(methodOptCompiler)(code3), wrapInDefault(Op(RETURN)))
 
+    // this example requires two iterations to get rid of the outer handler.
+    // the first iteration of DCE cannot remove the inner handler. then the inner (empty) handler is removed.
+    // then the second iteration of DCE removes the inner catch block, and then the outer handler is removed.
     val code4 = "def f: Unit = { try { try { } catch { case _: Exception => () } } catch { case _: Exception => () }; () }"
-    assertSameCode(singleMethodInstructions(dceCompiler)(code4).dropNonOp,
-      List(Op(NOP), Jump(GOTO, Label(4)), Label(4), Jump(GOTO, Label(7)), Label(7), Op(RETURN)))
+    assertSameCode(singleMethodInstructions(methodOptCompiler)(code4), wrapInDefault(Op(RETURN)))
   }
 
   @Test // test the dce-testing tools
   def metaTest(): Unit = {
-    assertEliminateDead() // no instructions
-
     assertThrows[AssertionError](
       assertEliminateDead(Op(RETURN).dead),
       _.contains("Expected: List()\nActual  : List(Op(RETURN))")
@@ -196,22 +207,5 @@ class UnreachableCodeTest {
 
     assertTrue(List(FrameEntry(F_FULL, List(INTEGER, DOUBLE, Label(3)), List("java/lang/Object", Label(4))), Label(3), Label(4)) ===
                List(FrameEntry(F_FULL, List(INTEGER, DOUBLE, Label(1)), List("java/lang/Object", Label(3))), Label(1), Label(3)))
-  }
-}
-
-object UnreachableCodeTest {
-  import scala.language.implicitConversions
-  implicit def aliveInstruction(ins: Instruction): (Instruction, Boolean) = (ins, true)
-
-  implicit class MortalInstruction(val ins: Instruction) extends AnyVal {
-    def dead: (Instruction, Boolean) = (ins, false)
-  }
-
-  def assertEliminateDead(code: (Instruction, Boolean)*): Unit = {
-    val cls = wrapInClass(genMethod()(code.map(_._1): _*))
-    LocalOpt.removeUnreachableCode(cls)
-    val nonEliminated = instructionsFromMethod(cls.methods.get(0))
-    val expectedLive = code.filter(_._2).map(_._1).toList
-    assertSameCode(nonEliminated, expectedLive)
   }
 }

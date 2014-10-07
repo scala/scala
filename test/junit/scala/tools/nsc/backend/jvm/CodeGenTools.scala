@@ -7,6 +7,8 @@ import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, LabelNode, ClassNode, MethodNode}
 import scala.tools.cmd.CommandLineParser
+import scala.tools.nsc.backend.jvm.opt.LocalOpt
+import scala.tools.nsc.settings.{MutableSettings, ScalaSettings}
 import scala.tools.nsc.{Settings, Global}
 import scala.tools.partest.ASMConverters
 import scala.collection.JavaConverters._
@@ -79,4 +81,18 @@ object CodeGenTools {
 
   def getSingleMethod(classNode: ClassNode, name: String): Method =
     convertMethod(classNode.methods.asScala.toList.find(_.name == name).get)
+
+  val localOpt = {
+    val settings = new MutableSettings(msg => throw new IllegalArgumentException(msg))
+    settings.processArguments(List("-Yopt:l:method"), processAll = true)
+    new LocalOpt(settings)
+  }
+
+  import scala.language.implicitConversions
+
+  implicit def aliveInstruction(ins: Instruction): (Instruction, Boolean) = (ins, true)
+
+  implicit class MortalInstruction(val ins: Instruction) extends AnyVal {
+    def dead: (Instruction, Boolean) = (ins, false)
+  }
 }

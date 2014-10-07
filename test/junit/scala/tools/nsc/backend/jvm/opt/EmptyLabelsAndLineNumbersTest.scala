@@ -15,8 +15,6 @@ import ASMConverters._
 
 @RunWith(classOf[JUnit4])
 class EmptyLabelsAndLineNumbersTest {
-  import UnreachableCodeTest._ // ".dead" extension method on instructions
-
   @Test
   def removeEmptyLineNumbers(): Unit = {
     val ops = List[(Instruction, Boolean)](
@@ -44,14 +42,14 @@ class EmptyLabelsAndLineNumbersTest {
     )
 
     val method = genMethod()(ops.map(_._1): _*)
-    assertTrue(LocalOpt.removeEmptyLineNumbers(method))
+    assertTrue(localOpt.removeEmptyLineNumbers(method))
     assertSameCode(instructionsFromMethod(method), ops.filter(_._2).map(_._1))
   }
 
   @Test
   def badlyLocatedLineNumbers(): Unit = {
     def t(ops: Instruction*) =
-      assertThrows[AssertionError](LocalOpt.removeEmptyLineNumbers(genMethod()(ops: _*)))
+      assertThrows[AssertionError](localOpt.removeEmptyLineNumbers(genMethod()(ops: _*)))
 
     // line numbers have to be right after their referenced label node
     t(LineNumber(0, Label(1)), Label(1))
@@ -90,7 +88,7 @@ class EmptyLabelsAndLineNumbersTest {
     )
 
     val method = genMethod(handlers = handler)(ops(2, 3, 8, 8, 9, 11).map(_._1): _*)
-    assertTrue(LocalOpt.removeEmptyLabelNodes(method))
+    assertTrue(localOpt.removeEmptyLabelNodes(method))
     val m = convertMethod(method)
     assertSameCode(m.instructions, ops(1, 1, 7, 7, 7, 10).filter(_._2).map(_._1))
     assertTrue(m.handlers match {
