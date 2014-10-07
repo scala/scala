@@ -1437,6 +1437,10 @@ trait Definitions extends api.StandardDefinitions {
       lazy val isUnbox          = unboxMethod.values.toSet[Symbol]
       lazy val isBox            = boxMethod.values.toSet[Symbol]
 
+      lazy val Boolean_and = definitions.Boolean_and
+      lazy val Boolean_or = definitions.Boolean_or
+      lazy val Boolean_not = definitions.Boolean_not
+
       lazy val Option_apply = getMemberMethod(OptionModule, nme.apply)
       lazy val List_apply = DefinitionsClass.this.List_apply
 

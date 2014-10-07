@@ -265,6 +265,10 @@ abstract class TailCalls extends Transform {
         !(sym.hasAccessorFlag || sym.isConstructor)
       }
 
+      // intentionally shadowing imports from definitions for performance
+      val runDefinitions = currentRun.runDefinitions
+      import runDefinitions.{Boolean_or, Boolean_and}
+
       tree match {
         case ValDef(_, _, _, _) =>
           if (tree.symbol.isLazy && tree.symbol.hasAnnotation(TailrecClass))
@@ -420,6 +424,10 @@ abstract class TailCalls extends Transform {
 
     def traverseNoTail(tree: Tree) = traverse(tree, maybeTailNew = false)
     def traverseTreesNoTail(trees: List[Tree]) = trees foreach traverseNoTail
+
+    // intentionally shadowing imports from definitions for performance
+    private val runDefinitions = currentRun.runDefinitions
+    import runDefinitions.{Boolean_or, Boolean_and}
 
     override def traverse(tree: Tree) = tree match {
       // we're looking for label(x){x} in tail position, since that means `a` is in tail position in a call `label(a)`
