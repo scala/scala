@@ -188,6 +188,64 @@ object LocalOpt {
     method.maxLocals = mw.getMaxLocals
     method.maxStack = mw.getMaxStack
   }
+
+  /**
+   * Removes LineNumberNodes that don't describe any executable instructions.
+   *
+   * This method expects (and asserts) that the `start` label of each LineNumberNode is the
+   * lexically preceeding label declaration.
+   */
+  def removeEmptyLineNumbers(method: MethodNode): Boolean = {
+    def isEmpty(node: AbstractInsnNode): Boolean = node.getNext match {
+      case null => true
+      case l: LineNumberNode => true
+      case n if n.getOpcode >= 0 => false
+      case n => isEmpty(n)
+    }
+
+    val initialSize = method.instructions.size
+    val iterator = method.instructions.iterator()
+    var previousLabel: LabelNode = null
+    while (iterator.hasNext) {
+      iterator.next match {
+        case label: LabelNode => previousLabel = label
+        case line: LineNumberNode if isEmpty(line) =>
+          assert(line.start == previousLabel)
+          iterator.remove()
+        case _ =>
+      }
+    }
+    method.instructions.size != initialSize
+  }
+
+  /**
+   * Removes unreferenced label declarations, also squashes sequences of label definitions.
+   *
+   *      [ops];              Label(a); Label(b);  [ops];
+   *   => subs([ops], b, a);  Label(a);            subs([ops], b, a);
+   */
+  def removeEmptyLabelNodes(method: MethodNode): Boolean = {
+    val references = labelReferences(method)
+
+    val initialSize = method.instructions.size
+    val iterator = method.instructions.iterator()
+    var prev: LabelNode = null
+    while (iterator.hasNext) {
+      iterator.next match {
+        case label: LabelNode =>
+          if (!references.contains(label)) iterator.remove()
+          else if (prev != null) {
+            references(label).foreach(substituteLabel(_, label, prev))
+            iterator.remove()
+          } else prev = label
+
+        case instruction =>
+          if (instruction.getOpcode >= 0) prev = null
+      }
+    }
+    method.instructions.size != initialSize
+  }
+
   /**
    * Apply various simplifications to branching instructions.
    */

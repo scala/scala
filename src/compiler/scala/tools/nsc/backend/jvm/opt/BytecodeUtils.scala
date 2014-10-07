@@ -120,4 +120,46 @@ object BytecodeUtils {
     val op = if (size == 1) Opcodes.POP else Opcodes.POP2
     new InsnNode(op)
   }
+
+  def labelReferences(method: MethodNode): Map[LabelNode, Set[AnyRef]] = {
+    val res = mutable.Map.empty[LabelNode, Set[AnyRef]]
+    def add(l: LabelNode, ref: AnyRef) = if (res contains l) res(l) = res(l) + ref else res(l) = Set(ref)
+
+    method.instructions.iterator().asScala foreach {
+      case jump: JumpInsnNode           => add(jump.label, jump)
+      case line: LineNumberNode         => add(line.start, line)
+      case switch: LookupSwitchInsnNode => switch.labels.asScala.foreach(add(_, switch)); add(switch.dflt, switch)
+      case switch: TableSwitchInsnNode  => switch.labels.asScala.foreach(add(_, switch)); add(switch.dflt, switch)
+      case _ =>
+    }
+    if (method.localVariables != null) {
+      method.localVariables.iterator().asScala.foreach(l => { add(l.start, l); add(l.end, l) })
+    }
+    if (method.tryCatchBlocks != null) {
+      method.tryCatchBlocks.iterator().asScala.foreach(l => { add(l.start, l); add(l.handler, l); add(l.end, l) })
+    }
+
+    res.toMap
+  }
+
+  def substituteLabel(reference: AnyRef, from: LabelNode, to: LabelNode): Unit = {
+    def substList(list: java.util.List[LabelNode]) = {
+      list.asScala.zipWithIndex.foreach { case (l, i) =>
+        if (l == from) list.set(i, to)
+      }
+    }
+    reference match {
+      case jump: JumpInsnNode           => jump.label = to
+      case line: LineNumberNode         => line.start = to
+      case switch: LookupSwitchInsnNode => substList(switch.labels); if (switch.dflt == from) switch.dflt = to
+      case switch: TableSwitchInsnNode  => substList(switch.labels); if (switch.dflt == from) switch.dflt = to
+      case local: LocalVariableNode     =>
+        if (local.start == from) local.start = to
+        if (local.end == from) local.end = to
+      case handler: TryCatchBlockNode   =>
+        if (handler.start == from) handler.start = to
+        if (handler.handler == from) handler.handler = to
+        if (handler.end == from) handler.end = to
+    }
+  }
 }
