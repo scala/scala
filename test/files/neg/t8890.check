@@ -1,0 +1,4 @@
+t8890.scala:6: error: not found: type Str
+  def bar(x: Str): Unit = ???
+             ^
+one error found
