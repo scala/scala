@@ -109,12 +109,17 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param n  the index which refers to the first element to remove.
    *  @param count  the number of elements to remove.
-   *  @throws   IndexOutOfBoundsException if the index `n` is not in the valid range
-   *            `0 <= n <= length - count`.
+   *  @throws   IndexOutOfBoundsException if any of the indices `n` to `n+count-1` (inclusive) are not in the valid range
+   *            `0 <= i < length`.
    *  @throws   IllegalArgumentException if `count < 0`.
    */
   def remove(n: Int, count: Int) {
-    for (i <- 0 until count) remove(n)
+    if (count != 0) {
+      require(count >= 0, "removing negative number of elements")
+      if (lengthCompare(n + count) < 0) throw new IndexOutOfBoundsException((n + count - 1).toString)
+      var k = count
+      while (k > 0) { k -=1; remove(n) }
+    }
   }
 
   /** Removes a single element from this buffer, at its first occurrence.

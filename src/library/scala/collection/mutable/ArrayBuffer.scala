@@ -145,18 +145,21 @@ class ArrayBuffer[A](override protected val initialSize: Int)
     size0 += len
   }
 
-  /** Removes the element on a given index position. It takes time linear in
+  /** Removes zero or more elements at a given index position. It takes time linear in
    *  the buffer size.
    *
    *  @param n       the index which refers to the first element to delete.
    *  @param count   the number of elements to delete
-   *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
+   *  @throws Predef.IndexOutOfBoundsException if any of `n` to `n+count-1`, inclusive, are out of bounds
+   *  @throws   IllegalArgumentException if `count < 0`.
    */
   override def remove(n: Int, count: Int) {
-    require(count >= 0, "removing negative number of elements")
-    if (n < 0 || n > size0 - count) throw new IndexOutOfBoundsException(n.toString)
-    copy(n + count, n, size0 - (n + count))
-    reduceToSize(size0 - count)
+    if (count != 0) {
+      require(count >= 0, "removing negative number of elements")
+      if (n < 0 || n+count > size0) throw new IndexOutOfBoundsException((n+count-1).toString)
+      if (n+count < size0) copy(n + count, n, size0 - (n + count))
+      reduceToSize(size0 - count)
+    }
   }
 
   /** Removes the element at a given index position.
