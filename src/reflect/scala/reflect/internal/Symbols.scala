@@ -173,7 +173,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
              with HasFlags
              with Annotatable[Symbol]
              with Attachable {
-
     // makes sure that all symbols that runtime reflection deals with are synchronized
     private def isSynchronized = this.isInstanceOf[scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol]
     private def isAprioriThreadsafe = isThreadsafe(AllOps)
@@ -1592,13 +1591,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       assert(isCompilerUniverse)
       if (infos == null || runId(infos.validFrom) == currentRunId) {
         infos
-      } else if (isPackageClass) {
-        // SI-7801 early phase package scopes are mutated in new runs (Namers#enterPackage), so we have to
-        //         discard transformed infos, rather than just marking them as from this run.
-        val oldest = infos.oldest
-        oldest.validFrom = validTo
-        this.infos = oldest
-        oldest
+      } else if (infos ne infos.oldest) {
+        // SI-8871 Discard all but the first element of type history. Specialization only works in the resident
+        // compiler / REPL if re-run its info transformer in this run to correctly populate its
+        // per-run caches, e.g. typeEnv
+        adaptInfos(infos.oldest)
       } else {
         val prev1 = adaptInfos(infos.prev)
         if (prev1 ne infos.prev) prev1

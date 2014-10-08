@@ -861,11 +861,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           debuglog("%s expands to %s in %s".format(sym, specMember.name.decode, pp(env)))
           info(specMember) = NormalizedMember(sym)
           newOverload(sym, specMember, env)
-          // if this is a class, we insert the normalized member in scope,
-          // if this is a method, there's no attached scope for it (EmptyScope)
-          val decls = owner.info.decls
-          if (decls != EmptyScope)
-            decls.enter(specMember)
           specMember
         }
       }
