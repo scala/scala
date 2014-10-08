@@ -115,7 +115,7 @@ type of the pattern. The pattern matches any value $v$ such that
 
 To resolve the syntactic overlap with a variable pattern, a
 stable identifier pattern may not be a simple name starting with a lower-case
-letter. However, it is possible to enclose a such a variable name in
+letter. However, it is possible to enclose such a variable name in
 backquotes; then it is treated as a stable identifier pattern.
 
 ###### Example
@@ -283,7 +283,7 @@ shorthand for the constructor or extractor pattern $\mathit{op}(p, q_1
 A pattern alternative `$p_1$ | $\ldots$ | $p_n$`
 consists of a number of alternative patterns $p_i$. All alternative
 patterns are type checked with the expected type of the pattern. They
-may no bind variables other than wildcards. The alternative pattern
+may not bind variables other than wildcards. The alternative pattern
 matches a value $v$ if at least one its alternatives matches $v$.
 
 ### XML Patterns
