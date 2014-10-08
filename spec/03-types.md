@@ -821,7 +821,7 @@ the following holds:
   parameters by another, the result types as well as variances, lower and upper
   bounds of corresponding type parameters are equivalent.
 
-[^congruence]: A congruence is an equivalence relation which is closed under formation of contexts
+[^congruence]: A congruence is an equivalence relation which is closed under formation of contexts.
 [^implicit]: A method type is implicit if the parameter section that defines it starts with the `implicit` keyword.
 
 ### Conformance
