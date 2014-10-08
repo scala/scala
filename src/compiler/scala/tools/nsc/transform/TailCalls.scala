@@ -320,8 +320,13 @@ abstract class TailCalls extends Transform {
           // the assumption is once we encounter a case, the remainder of the block will consist of cases
           // the prologue may be empty, usually it is the valdef that stores the scrut
           val (prologue, cases) = stats span (s => !s.isInstanceOf[LabelDef])
+          val transformedPrologue = noTailTransforms(prologue)
+          val transformedCases = transformTrees(cases)
+          val transformedStats =
+            if ((prologue eq transformedPrologue) && (cases eq transformedCases)) stats // allow reuse of `tree` if the subtransform was an identity
+            else transformedPrologue ++ transformedCases
           treeCopy.Block(tree,
-            noTailTransforms(prologue) ++ transformTrees(cases),
+            transformedStats,
             transform(expr)
           )
 
