@@ -219,7 +219,7 @@ abstract class TailCalls extends Transform {
 
     override def transform(tree: Tree): Tree = {
       /* A possibly polymorphic apply to be considered for tail call transformation. */
-      def rewriteApply(target: Tree, fun: Tree, targs: List[Tree], args: List[Tree]) = {
+      def rewriteApply(target: Tree, fun: Tree, targs: List[Tree], args: List[Tree], mustTransformArgs: Boolean = true) = {
         val receiver: Tree = fun match {
           case Select(qual, _)  => qual
           case _                => EmptyTree
@@ -227,7 +227,7 @@ abstract class TailCalls extends Transform {
         def receiverIsSame    = ctx.enclosingType.widen =:= receiver.tpe.widen
         def receiverIsSuper   = ctx.enclosingType.widen <:< receiver.tpe.widen
         def isRecursiveCall   = (ctx.method eq fun.symbol) && ctx.tailPos
-        def transformArgs     = noTailTransforms(args)
+        def transformArgs     = if (mustTransformArgs) noTailTransforms(args) else args
         def matchesTypeArgs   = ctx.tparams sameElements (targs map (_.tpe.typeSymbol))
 
         /* Records failure reason in Context for reporting.
@@ -393,7 +393,7 @@ abstract class TailCalls extends Transform {
           if (res ne arg)
             treeCopy.Apply(tree, fun, res :: Nil)
           else
-            rewriteApply(fun, fun, Nil, args)
+            rewriteApply(fun, fun, Nil, args, mustTransformArgs = false)
 
         case Apply(fun, args) =>
           rewriteApply(fun, fun, Nil, args)
