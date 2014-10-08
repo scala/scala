@@ -939,7 +939,7 @@ limit [^4].
 
 The least upper bound or greatest lower bound might also not be
 unique. For instance `A with B` and `B with A` are both
-greatest lower of `A` and `B`. If there are several
+greatest lower bounds of `A` and `B`. If there are several
 least upper bounds or greatest lower bounds, the Scala compiler is
 free to pick any one of them.
 
