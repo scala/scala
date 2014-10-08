@@ -726,7 +726,7 @@ def sum(args: Int*) = {
 ```
 
 The following applications of this method yield `0`, `1`,
-`6`, in that order.
+`14`, in that order.
 
 ```scala
 sum()
@@ -747,7 +747,7 @@ sum(xs)       // ***** error: expected: Int, found: List[Int]
 ```
 
 By contrast, the following application is well formed and yields again
-the result `6`:
+the result `14`:
 
 ```scala
 sum(xs: _*)
