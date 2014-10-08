@@ -1499,20 +1499,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val residualTargs = symbol.info.typeParams zip baseTargs collect {
           case (tvar, targ) if !env.contains(tvar) || !isPrimitiveValueClass(env(tvar).typeSymbol) => targ
         }
-        // See SI-5583.  Don't know why it happens now if it didn't before.
-        if (specMember.info.typeParams.isEmpty && residualTargs.nonEmpty) {
-          devWarning("Type args to be applied, but symbol says no parameters: " + ((specMember.defString, residualTargs)))
-          baseTree
-        }
-        else {
-          ifDebug(assert(residualTargs.length == specMember.info.typeParams.length,
-            "residual: %s, tparams: %s, env: %s".format(residualTargs, specMember.info.typeParams, env))
-          )
+        ifDebug(assert(residualTargs.length == specMember.info.typeParams.length,
+          "residual: %s, tparams: %s, env: %s".format(residualTargs, specMember.info.typeParams, env))
+        )
 
-          val tree1 = gen.mkTypeApply(specTree, residualTargs)
-          debuglog("rewrote " + tree + " to " + tree1)
-          localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
-        }
+        val tree1 = gen.mkTypeApply(specTree, residualTargs)
+        debuglog("rewrote " + tree + " to " + tree1)
+        localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
       }
 
       curTree = tree
