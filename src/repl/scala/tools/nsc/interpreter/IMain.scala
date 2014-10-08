@@ -18,9 +18,13 @@ import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
 import scala.tools.util.PathResolver
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
-import scala.tools.nsc.util.{ ScalaClassLoader, stringFromReader, stringFromWriter, StackTraceOps }
+import scala.tools.nsc.util.{ ScalaClassLoader, stringFromReader, stringFromWriter, StackTraceOps, ClassPath, MergedClassPath }
+import ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.util.Exceptional.unwrap
+import scala.tools.nsc.backend.JavaPlatform
 import javax.script.{AbstractScriptEngine, Bindings, ScriptContext, ScriptEngine, ScriptEngineFactory, ScriptException, CompiledScript, Compilable}
+import java.net.URL
+import java.io.File
 
 /** An interpreter for Scala code.
  *
@@ -81,6 +85,9 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
    */
   private var _classLoader: util.AbstractFileClassLoader = null                              // active classloader
   private val _compiler: ReplGlobal                 = newCompiler(settings, reporter)   // our private compiler
+
+  private trait ExposeAddUrl extends URLClassLoader { def addNewUrl(url: URL) = this.addURL(url) }
+  private var _runtimeClassLoader: URLClassLoader with ExposeAddUrl = null              // wrapper exposing addURL
 
   def compilerClasspath: Seq[java.net.URL] = (
     if (isInitializeComplete) global.classPath.asURLs
@@ -237,6 +244,50 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     new Global(settings, reporter) with ReplGlobal { override def toString: String = "<global>" }
   }
 
+  /**
+   * Adds all specified jars to the compile and runtime classpaths.
+   *
+   * @note  Currently only supports jars, not directories.
+   * @param urls The list of items to add to the compile and runtime classpaths.
+   */
+  def addUrlsToClassPath(urls: URL*): Unit = {
+    new Run //  force some initialization
+    urls.foreach(_runtimeClassLoader.addNewUrl) // Add jars to runtime classloader
+    extendCompilerClassPath(urls: _*)           // Add jars to compile-time classpath
+  }
+
+  /** Extend classpath of global.platform and force `global` to rescan updated packages. */
+  protected def extendCompilerClassPath(urls: URL*): Unit = {
+    val newClassPath = mergeUrlsIntoClassPath(global.platform, urls: _*)
+    global.platform.currentClassPath = Some(newClassPath)
+    // Reload all specified jars into the current compiler instance (global)
+    global.invalidateClassPathEntries(urls.map(_.getPath): _*)
+  }
+
+  /** Merge classpath of `platform` and `urls` into merged classpath */
+  protected def mergeUrlsIntoClassPath(platform: JavaPlatform, urls: URL*): MergedClassPath[AbstractFile] = {
+    // Collect our new jars/directories and add them to the existing set of classpaths
+    val prevEntries = platform.classPath match {
+      case mcp: MergedClassPath[AbstractFile] => mcp.entries
+      case cp:  ClassPath[AbstractFile]       => List(cp)
+    }
+    val allEntries = (prevEntries ++
+      urls.map(url => platform.classPath.context.newClassPath(
+          if (url.getProtocol == "file") {
+            val f = new File(url.getPath)
+            if (f.isDirectory) io.AbstractFile.getDirectory(f)
+            else io.AbstractFile.getFile(f)
+          } else {
+            io.AbstractFile.getURL(url)
+          }
+        )
+      )
+    ).distinct
+
+    // Combine all of our classpaths (old and new) into one merged classpath
+    new MergedClassPath(allEntries, platform.classPath.context)
+  }
+
   /** Parent classloader.  Overridable. */
   protected def parentClassLoader: ClassLoader =
     settings.explicitParentLoader.getOrElse( this.getClass.getClassLoader() )
@@ -329,9 +380,9 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     }
   }
   private def makeClassLoader(): util.AbstractFileClassLoader =
-    new TranslatingClassLoader(parentClassLoader match {
-      case null   => ScalaClassLoader fromURLs compilerClasspath
-      case p      => new ScalaClassLoader.URLClassLoader(compilerClasspath, p)
+    new TranslatingClassLoader({
+      _runtimeClassLoader = new URLClassLoader(compilerClasspath, parentClassLoader) with ExposeAddUrl
+      _runtimeClassLoader
     })
 
   // Set the current Java "context" class loader to this interpreter's class loader

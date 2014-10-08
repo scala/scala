@@ -13,7 +13,7 @@ import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, StatisticsInfo, returning, stackTraceString }
+import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString }
 import scala.reflect.ClassTag
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
@@ -839,6 +839,147 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       if (res.nonEmpty && res.head._2 == value) res
       else ((ph, value)) :: res
     } reverse
+  }
+
+  // ------------ Invalidations ---------------------------------
+
+  /** Is given package class a system package class that cannot be invalidated?
+   */
+  private def isSystemPackageClass(pkg: Symbol) =
+    pkg == RootClass ||
+    pkg == definitions.ScalaPackageClass || {
+      val pkgname = pkg.fullName
+      (pkgname startsWith "scala.") && !(pkgname startsWith "scala.tools")
+    }
+
+  /** Invalidates packages that contain classes defined in a classpath entry, and
+   *  rescans that entry.
+   *
+   *  First, the classpath entry referred to by one of the `paths` is rescanned,
+   *  so that any new files or changes in subpackages are picked up.
+   *  Second, any packages for which one of the following conditions is met is invalidated:
+   *   - the classpath entry contained during the last compilation run now contains classfiles
+   *     that represent a member in the package;
+   *   - the classpath entry now contains classfiles that represent a member in the package;
+   *   - the set of subpackages has changed.
+   *
+   *  The invalidated packages are reset in their entirety; all member classes and member packages
+   *  are re-accessed using the new classpath.
+   *
+   *  System packages that the compiler needs to access as part of standard definitions
+   *  are not invalidated. A system package is:
+   *  Any package rooted in "scala", with the exception of packages rooted in "scala.tools".
+   *
+   *  @param paths  Fully-qualified names that refer to directories or jar files that are
+   *                entries on the classpath.
+   *
+   *  @return A pair consisting of
+   *    - a list of invalidated packages
+   *    - a list of of packages that should have been invalidated but were not because
+   *      they are system packages.
+   */
+  def invalidateClassPathEntries(paths: String*): (List[ClassSymbol], List[ClassSymbol]) = {
+    val invalidated, failed = new mutable.ListBuffer[ClassSymbol]
+    classPath match {
+      case cp: MergedClassPath[_] =>
+        def assoc(path: String): List[(PlatformClassPath, PlatformClassPath)] = {
+          val dir = AbstractFile.getDirectory(path)
+          val canonical = dir.canonicalPath
+          def matchesCanonical(e: ClassPath[_]) = e.origin match {
+            case Some(opath) =>
+              AbstractFile.getDirectory(opath).canonicalPath == canonical
+            case None =>
+              false
+          }
+          cp.entries find matchesCanonical match {
+            case Some(oldEntry) =>
+              List(oldEntry -> cp.context.newClassPath(dir))
+            case None =>
+              error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
+              List()
+          }
+        }
+        val subst = Map(paths flatMap assoc: _*)
+        if (subst.nonEmpty) {
+          platform updateClassPath subst
+          informProgress(s"classpath updated on entries [${subst.keys mkString ","}]")
+          def mkClassPath(elems: Iterable[PlatformClassPath]): PlatformClassPath =
+            if (elems.size == 1) elems.head
+            else new MergedClassPath(elems, classPath.context)
+          val oldEntries = mkClassPath(subst.keys)
+          val newEntries = mkClassPath(subst.values)
+          mergeNewEntries(newEntries, RootClass, Some(classPath), Some(oldEntries), invalidated, failed)
+        }
+    }
+    def show(msg: String, syms: scala.collection.Traversable[Symbol]) =
+      if (syms.nonEmpty)
+        informProgress(s"$msg: ${syms map (_.fullName) mkString ","}")
+    show("invalidated packages", invalidated)
+    show("could not invalidate system packages", failed)
+    (invalidated.toList, failed.toList)
+  }
+
+  /** Merges new classpath entries into the symbol table
+   *
+   *  @param newEntries   The new classpath entries
+   *  @param root         The root symbol to be resynced (a package class)
+   *  @param allEntries   Optionally, the corresponding package in the complete current classpath
+   *  @param oldEntries   Optionally, the corresponding package in the old classpath entries
+   *  @param invalidated  A listbuffer collecting the invalidated package classes
+   *  @param failed       A listbuffer collecting system package classes which could not be invalidated
+   *
+   * The merging strategy is determined by the absence or presence of classes and packages.
+   *
+   * If either oldEntries or newEntries contains classes, root is invalidated provided that a corresponding package
+   * exists in allEntries. Otherwise it is removed.
+   * Otherwise, the action is determined by the following matrix, with columns:
+   *
+   *      old sym   action
+   *       +   +    recurse into all child packages of newEntries
+   *       -   +    invalidate root
+   *       -   -    create and enter root
+   *
+   *  Here, old means classpath, and sym means symboltable. + is presence of an entry in its column, - is absence.
+   */
+  private def mergeNewEntries(newEntries: PlatformClassPath, root: ClassSymbol,
+             allEntries: OptClassPath, oldEntries: OptClassPath,
+             invalidated: mutable.ListBuffer[ClassSymbol], failed: mutable.ListBuffer[ClassSymbol]) {
+    ifDebug(informProgress(s"syncing $root, $oldEntries -> $newEntries"))
+
+    val getName: ClassPath[AbstractFile] => String = (_.name)
+    def hasClasses(cp: OptClassPath) = cp.isDefined && cp.get.classes.nonEmpty
+    def invalidateOrRemove(root: ClassSymbol) = {
+      allEntries match {
+        case Some(cp) => root setInfo new loaders.PackageLoader(cp)
+        case None => root.owner.info.decls unlink root.sourceModule
+      }
+      invalidated += root
+    }
+    def subPackage(cp: PlatformClassPath, name: String): OptClassPath =
+      cp.packages find (cp1 => getName(cp1) == name)
+
+    val classesFound = hasClasses(oldEntries) || newEntries.classes.nonEmpty
+    if (classesFound && !isSystemPackageClass(root)) {
+      invalidateOrRemove(root)
+    } else {
+      if (classesFound) {
+        if (root.isRoot) invalidateOrRemove(EmptyPackageClass)
+        else failed += root
+      }
+      if (!oldEntries.isDefined) invalidateOrRemove(root)
+      else
+        for (pstr <- newEntries.packages.map(getName)) {
+          val pname = newTermName(pstr)
+          val pkg = (root.info decl pname) orElse {
+            // package does not exist in symbol table, create symbol to track it
+            assert(!subPackage(oldEntries.get, pstr).isDefined)
+            loaders.enterPackage(root, pstr, new loaders.PackageLoader(allEntries.get))
+          }
+          mergeNewEntries(subPackage(newEntries, pstr).get, pkg.moduleClass.asClass,
+                          subPackage(allEntries.get, pstr), subPackage(oldEntries.get, pstr),
+                          invalidated, failed)
+        }
+    }
   }
 
   // ----------- Runs ---------------------------------------

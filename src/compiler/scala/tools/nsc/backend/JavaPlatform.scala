@@ -16,7 +16,7 @@ trait JavaPlatform extends Platform {
   import global._
   import definitions._
 
-  private var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
+  private[nsc] var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
 
   def classPath: ClassPath[AbstractFile] = {
     if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
