@@ -129,6 +129,13 @@ abstract class TailCalls extends Transform {
       }
       override def toString = s"${method.name} tparams=$tparams tailPos=$tailPos label=$label label info=${label.info}"
 
+      final def noTailContext() = clonedTailContext(false)
+      final def yesTailContext() = clonedTailContext(true)
+      protected def clonedTailContext(tailPos: Boolean): TailContext = this match {
+        case _ if this.tailPos == tailPos => this
+        case clone: ClonedTailContext => clone.that.clonedTailContext(tailPos)
+        case _ => new ClonedTailContext(this, tailPos)
+      }
     }
 
     object EmptyTailContext extends TailContext {
@@ -174,7 +181,7 @@ abstract class TailCalls extends Transform {
       }
       def containsRecursiveCall(t: Tree) = t exists isRecursiveCall
     }
-    class ClonedTailContext(that: TailContext, override val tailPos: Boolean) extends TailContext {
+    class ClonedTailContext(val that: TailContext, override val tailPos: Boolean) extends TailContext {
       def method     = that.method
       def tparams    = that.tparams
       def methodPos  = that.methodPos
@@ -183,9 +190,6 @@ abstract class TailCalls extends Transform {
     }
 
     private var ctx: TailContext = EmptyTailContext
-    private def noTailContext()  = new ClonedTailContext(ctx, tailPos = false)
-    private def yesTailContext() = new ClonedTailContext(ctx, tailPos = true)
-
 
     override def transformUnit(unit: CompilationUnit): Unit = {
       try {
@@ -206,11 +210,11 @@ abstract class TailCalls extends Transform {
       finally this.ctx = saved
     }
 
-    def yesTailTransform(tree: Tree): Tree = transform(tree, yesTailContext())
-    def noTailTransform(tree: Tree): Tree = transform(tree, noTailContext())
+    def yesTailTransform(tree: Tree): Tree = transform(tree, ctx.yesTailContext())
+    def noTailTransform(tree: Tree): Tree = transform(tree, ctx.noTailContext())
     def noTailTransforms(trees: List[Tree]) = {
-      val nctx = noTailContext()
-      trees map (t => transform(t, nctx))
+      val nctx = ctx.noTailContext()
+      trees mapConserve (t => transform(t, nctx))
     }
 
     override def transform(tree: Tree): Tree = {
