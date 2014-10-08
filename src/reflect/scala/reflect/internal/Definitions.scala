@@ -653,6 +653,7 @@ trait Definitions extends api.StandardDefinitions {
     // tends to change the course of events by forcing types.
     def isFunctionType(tp: Type)       = isFunctionTypeDirect(tp.dealiasWiden)
     def isTupleType(tp: Type)          = isTupleTypeDirect(tp.dealiasWiden)
+    def tupleComponents(tp: Type)      = tp.dealiasWiden.typeArgs
 
     lazy val ProductRootClass: ClassSymbol = requiredClass[scala.Product]
       def Product_productArity          = getMemberMethod(ProductRootClass, nme.productArity)
@@ -837,7 +838,7 @@ trait Definitions extends api.StandardDefinitions {
     def typeOfMemberNamedApply(tp: Type) = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.apply)(IntTpe))
     def typeOfMemberNamedDrop(tp: Type)  = typeArgOfBaseTypeOr(tp, SeqClass)(resultOfMatchingMethod(tp, nme.drop)(IntTpe))
     def typesOfSelectors(tp: Type)       =
-      if (isTupleType(tp)) tp.typeArgs
+      if (isTupleType(tp)) tupleComponents(tp)
       else getterMemberTypes(tp, productSelectors(tp))
 
     // SI-8128 Still using the type argument of the base type at Seq/Option if this is an old-style (2.10 compatible)
