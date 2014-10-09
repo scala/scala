@@ -420,6 +420,7 @@ abstract class Inliners extends SubComponent {
           || isApply
           || isMonadicMethod(concreteMethod)
           || receiver.enclosingPackage == definitions.RuntimePackage
+          || concreteMethod.hasAnnotation(ScalaInlineClass)
         )   // only count non-closures
 
         debuglog("Treating " + i
