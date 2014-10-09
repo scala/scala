@@ -117,7 +117,7 @@ object ExecutionContext {
    *
    * @return the global `ExecutionContext`
    */
-  def global: ExecutionContextExecutor = Implicits.global
+  def global: ExecutionContextExecutor = Implicits.global.asInstanceOf[ExecutionContextExecutor]
 
   object Implicits {
     /**
@@ -127,7 +127,7 @@ object ExecutionContext {
      * The default `ExecutionContext` implementation is backed by a port of
      * [[http://gee.cs.oswego.edu/dl/jsr166/dist/jsr166-4jdk7docs/java/util/concurrent/ForkJoinPool.html java.util.concurrent.ForkJoinPool]].
      */
-    implicit lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
+    implicit lazy val global: ExecutionContext = impl.ExecutionContextImpl.fromExecutor(null: Executor)
   }
 
   /** Creates an `ExecutionContext` from the given `ExecutorService`.
