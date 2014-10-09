@@ -885,22 +885,31 @@ trait ContextErrors {
         val WrongNumber, NoParams, ArgsDoNotConform = Value
       }
 
-      private def issueAmbiguousTypeErrorUnlessErroneous(pos: Position, pre: Type, sym1: Symbol, sym2: Symbol, rest: String): Unit =
-        if (!(pre.isErroneous || sym1.isErroneous || sym2.isErroneous)) {
-          if (sym1.hasDefault && sym2.hasDefault && sym1.enclClass == sym2.enclClass) {
-            val methodName = nme.defaultGetterToMethod(sym1.name)
-            context.issueAmbiguousError(AmbiguousTypeError(sym1.enclClass.pos,
-             "in "+ sym1.enclClass +", multiple overloaded alternatives of " + methodName +
-                       " define default arguments"))
-          } else {
-            context.issueAmbiguousError(AmbiguousTypeError(pos,
-              ("ambiguous reference to overloaded definition,\n" +
-               "both " + sym1 + sym1.locationString + " of type " + pre.memberType(sym1) +
-               "\nand  " + sym2 + sym2.locationString + " of type " + pre.memberType(sym2) +
-               "\nmatch " + rest)
-            ))
-          }
-        }
+      private def issueAmbiguousTypeErrorUnlessErroneous(pos: Position, pre: Type, sym1: Symbol, sym2: Symbol, rest: String): Unit = {
+        // To avoid stack overflows (SI-8890), we MUST (at least) report when either `validTargets` OR `ambiguousSuppressed`
+        // More details:
+        // If `!context.ambiguousErrors`, `reporter.issueAmbiguousError` (which `context.issueAmbiguousError` forwards to)
+        // buffers ambiguous errors. In this case, to avoid looping, we must issue even if `!validTargets`. (TODO: why?)
+        // When not buffering (and thus reporting to the user), we shouldn't issue unless `validTargets`,
+        // otherwise we report two different errors that trace back to the same root cause,
+        // and unless `validTargets`, we don't know for sure the ambiguity is real anyway.
+        val validTargets = !(pre.isErroneous || sym1.isErroneous || sym2.isErroneous)
+        val ambiguousBuffered = !context.ambiguousErrors
+        if (validTargets || ambiguousBuffered)
+          context.issueAmbiguousError(
+            if (sym1.hasDefault && sym2.hasDefault && sym1.enclClass == sym2.enclClass) {
+              val methodName = nme.defaultGetterToMethod(sym1.name)
+              AmbiguousTypeError(sym1.enclClass.pos,
+                s"in ${sym1.enclClass}, multiple overloaded alternatives of $methodName define default arguments")
+
+            } else {
+              AmbiguousTypeError(pos,
+                 "ambiguous reference to overloaded definition,\n" +
+                s"both ${sym1.fullLocationString} of type ${pre.memberType(sym1)}\n" +
+                s"and  ${sym2.fullLocationString} of type ${pre.memberType(sym2)}\n" +
+                s"match $rest")
+            })
+      }
 
       def AccessError(tree: Tree, sym: Symbol, ctx: Context, explanation: String): AbsTypeError =
         AccessError(tree, sym, ctx.enclClass.owner.thisType, ctx.enclClass.owner, explanation)
