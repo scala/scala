@@ -720,7 +720,7 @@ variable number of integer arguments.
 ```scala
 def sum(args: Int*) = {
   var result = 0
-  for (arg <- args) result += arg * arg
+  for (arg <- args) result += arg
   result
 }
 ```
