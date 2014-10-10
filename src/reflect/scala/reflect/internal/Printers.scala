@@ -761,7 +761,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
             val build.SyntacticClassDef(_, _, _, ctorMods, vparamss, earlyDefs, parents, selfType, body) = cl
 
             // constructor's modifier
-            if (ctorMods.hasFlag(AccessFlags)) {
+            if (ctorMods.hasFlag(AccessFlags) || ctorMods.hasAccessBoundary) {
               print(" ")
               printModifiers(ctorMods, primaryCtorParam = false)
             }
