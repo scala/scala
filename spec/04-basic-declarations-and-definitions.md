@@ -720,13 +720,13 @@ variable number of integer arguments.
 ```scala
 def sum(args: Int*) = {
   var result = 0
-  for (arg <- args) result += arg * arg
+  for (arg <- args) result += arg
   result
 }
 ```
 
 The following applications of this method yield `0`, `1`,
-`14`, in that order.
+`6`, in that order.
 
 ```scala
 sum()
@@ -747,7 +747,7 @@ sum(xs)       // ***** error: expected: Int, found: List[Int]
 ```
 
 By contrast, the following application is well formed and yields again
-the result `14`:
+the result `6`:
 
 ```scala
 sum(xs: _*)
