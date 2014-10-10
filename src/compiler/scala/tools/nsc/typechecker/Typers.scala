@@ -1516,7 +1516,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val cbody1 = treeCopy.Block(cbody, preSuperStats, superCall1)
           val clazz = context.owner
             assert(clazz != NoSymbol, templ)
-          val cscope = context.outer.makeNewScope(ctor, context.outer.owner)
+          val dummy = context.outer.owner.newLocalDummy(templ.pos)
+          val cscope = context.outer.makeNewScope(ctor, dummy)
+          if (dummy.isTopLevel) currentRun.symSource(dummy) = currentUnit.source.file
           val cbody2 = { // called both during completion AND typing.
             val typer1 = newTyper(cscope)
             // XXX: see about using the class's symbol....

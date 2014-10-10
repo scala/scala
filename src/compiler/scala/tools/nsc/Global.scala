@@ -1232,13 +1232,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
     /** does this run compile given class, module, or case factory? */
     // NOTE: Early initialized members temporarily typechecked before the enclosing class, see typedPrimaryConstrBody!
-    //       Here we work around that wrinkle by claiming that a top-level, early-initialized member is compiled in
+    //       Here we work around that wrinkle by claiming that a early-initialized member is compiled in
     //       *every* run. This approximation works because this method is exclusively called with `this` == `currentRun`.
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
       else if (symSource.isDefinedAt(sym)) true
-      else if (sym.isTopLevel && sym.isEarlyInitialized) true
-      else if (!sym.isTopLevel) compiles(sym.enclosingTopLevelClass)
+      else if (!sym.isTopLevel) compiles(sym.enclosingTopLevelClassOrDummy)
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
 
