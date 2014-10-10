@@ -82,6 +82,11 @@ object CodeGenTools {
   def getSingleMethod(classNode: ClassNode, name: String): Method =
     convertMethod(classNode.methods.asScala.toList.find(_.name == name).get)
 
+  def assertHandlerLabelPostions(h: ExceptionHandler, instructions: List[Instruction], startIndex: Int, endIndex: Int, handlerIndex: Int): Unit = {
+    val insVec = instructions.toVector
+    assertTrue(h.start == insVec(startIndex) && h.end == insVec(endIndex) && h.handler == insVec(handlerIndex))
+  }
+
   val localOpt = {
     val settings = new MutableSettings(msg => throw new IllegalArgumentException(msg))
     settings.processArguments(List("-Yopt:l:method"), processAll = true)
