@@ -12,7 +12,7 @@ object Test extends DirectTest {
   }
 
   def isExempt(sym: Symbol) = {
-    val exempt = Set("view", "repr", "sliceWithKnownDelta", "sliceWithKnownBound", "transform", "filterImpl")
+    val exempt = Set("view", "repr", "sliceWithKnownDelta", "sliceWithKnownBound", "transform")
     (exempt contains sym.name.decoded)
   }
 
