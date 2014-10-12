@@ -30,10 +30,10 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
    */
   def isAnonymousOrLocalClass(classSym: Symbol): Boolean = {
     assert(classSym.isClass, s"not a class: $classSym")
-    val res = (classSym.isAnonymousClass || !classSym.originalOwner.isClass)
-    // lambda classes are always top-level classes.
-    if (res) assert(!classSym.isDelambdafyFunction)
-    res
+    // Here used to be an `assert(!classSym.isDelambdafyFunction)`: delambdafy lambda classes are
+    // always top-level. However, SI-8900 shows an example where the weak name-based implementation
+    // of isDelambdafyFunction failed (for a function declared in a package named "lambda").
+    classSym.isAnonymousClass || !classSym.originalOwner.isClass
   }
 
   /**
