@@ -122,8 +122,11 @@ class LocalOpt(settings: ScalaSettings) {
       recurse = settings.YoptRecurseUnreachableJumps && (jumpsChanged || liveHandlerRemoved)
     }
 
-    // Removing stale local variable descriptors is required for correctness of unreachable-code, therefore no dedicated setting
-    val localsRemoved = if (settings.YoptUnreachableCode) removeUnusedLocalVariableNodes(method) else false
+    // (*) Removing stale local variable descriptors is required for correctness of unreachable-code
+    val localsRemoved =
+      if (settings.YoptCompactLocals) compactLocalVariables(method)
+      else if (settings.YoptUnreachableCode) removeUnusedLocalVariableNodes(method)() // (*)
+      else false
 
     val lineNumbersRemoved = if (settings.YoptEmptyLineNumbers) removeEmptyLineNumbers(method) else false
 
@@ -214,7 +217,7 @@ class LocalOpt(settings: ScalaSettings) {
    * the same index, but distinct start / end ranges are different variables, they may have not the
    * same type or name.
    */
-  def removeUnusedLocalVariableNodes(method: MethodNode): Boolean = {
+  def removeUnusedLocalVariableNodes(method: MethodNode)(fistLocalIndex: Int = parametersSize(method), renumber: Int => Int = identity): Boolean = {
     def variableIsUsed(start: AbstractInsnNode, end: LabelNode, varIndex: Int): Boolean = {
       start != end && (start match {
         case v: VarInsnNode if v.`var` == varIndex => true
@@ -224,20 +227,95 @@ class LocalOpt(settings: ScalaSettings) {
 
     val initialNumVars = method.localVariables.size
     val localsIter = method.localVariables.iterator()
-    // The parameters and `this` (for instance methods) have the lowest indices in the local variables
-    // table. Note that double / long fields occupy two slots, so we sum up the sizes. Since getSize
-    // returns 0 for void, we have to add `max 1`.
-    val paramsSize = scala.tools.asm.Type.getArgumentTypes(method.desc).map(_.getSize max 1).sum
-    val thisSize = if ((method.access & Opcodes.ACC_STATIC) == 0) 1 else 0
-    val endParamIndex = paramsSize + thisSize
     while (localsIter.hasNext) {
       val local = localsIter.next()
-      // parameters and `this` have the lowest indices, starting at 0
-      val used = local.index < endParamIndex || variableIsUsed(local.start, local.end, local.index)
-      if (!used)
-        localsIter.remove()
+      val index = local.index
+      // parameters and `this` (the lowest indices, starting at 0) are never removed or renumbered
+      if (index >= fistLocalIndex) {
+        if (!variableIsUsed(local.start, local.end, index)) localsIter.remove()
+        else if (renumber(index) != index) local.index = renumber(index)
+      }
     }
     method.localVariables.size != initialNumVars
+  }
+
+  /**
+   * The number of local varialbe slots used for parameters and for the `this` reference.
+   */
+  private def parametersSize(method: MethodNode): Int = {
+    // Double / long fields occupy two slots, so we sum up the sizes. Since getSize returns 0 for
+    // void, we have to add `max 1`.
+    val paramsSize = scala.tools.asm.Type.getArgumentTypes(method.desc).map(_.getSize max 1).sum
+    val thisSize   = if ((method.access & Opcodes.ACC_STATIC) == 0) 1 else 0
+    paramsSize + thisSize
+  }
+
+  /**
+   * Compact the local variable slots used in the method's implementation. This prevents having
+   * unused slots for example after eliminating unreachable code.
+   *
+   * This transformation reduces the size of the frame for invoking the method. For example, if the
+   * method has an ISTORE instruction to the local variable 3, the maxLocals of the method is at
+   * least 4, even if some local variable slots below 3 are not used by any instruction.
+   *
+   * This could be improved by doing proper register allocation.
+   */
+  def compactLocalVariables(method: MethodNode): Boolean = {
+    // This array is built up to map local variable indices from old to new.
+    val renumber = collection.mutable.ArrayBuffer.empty[Int]
+
+    // Add the index of the local variable used by `varIns` to the `renumber` array.
+    def addVar(varIns: VarInsnNode): Unit = {
+      val index = varIns.`var`
+      val isWide = (varIns.getOpcode: @switch) match {
+        case Opcodes.LLOAD | Opcodes.DLOAD | Opcodes.LSTORE | Opcodes.DSTORE => true
+        case _ => false
+      }
+
+      // Ensure the length of `renumber`. Unused variable indices are mapped to -1.
+      val minLenght = if (isWide) index + 2 else index + 1
+      for (i <- renumber.length until minLenght) renumber += -1
+
+      renumber(index) = index
+      if (isWide) renumber(index + 1) = index
+    }
+
+    // first phase: collect all used local variables. if the variable at index x is used, set
+    // renumber(x) = x, otherwsie renumber(x) = -1. if the variable is wide (long or doulbe), set
+    // renumber(x+1) = x.
+
+    val firstLocalIndex = parametersSize(method)
+    for (i <- 0 until firstLocalIndex) renumber += i // parameters and `this` are always used.
+    method.instructions.iterator().asScala foreach {
+      case VarInstruction(varIns) => addVar(varIns)
+      case _ =>
+    }
+
+    // assign the next free slot to each used local variable.
+    // for example, rewrite (0, 1, -1, 3, -1, 5) to (0, 1, -1, 2, -1, 3).
+
+    var nextIndex = firstLocalIndex
+    for (i <- firstLocalIndex until renumber.length if renumber(i) != -1) {
+      renumber(i) = nextIndex
+      nextIndex += 1
+    }
+
+    // Update the local variable descriptors according to the renumber table, and eliminate stale entries
+    val removedLocalVariableDescriptors = removeUnusedLocalVariableNodes(method)(firstLocalIndex, renumber)
+
+    if (nextIndex == renumber.length) removedLocalVariableDescriptors
+    else {
+      // update variable instructions according to the renumber table
+      method.maxLocals = nextIndex
+      method.instructions.iterator().asScala.foreach {
+        case VarInstruction(varIns) =>
+          val oldIndex = varIns.`var`
+          if (oldIndex >= firstLocalIndex && renumber(oldIndex) != oldIndex)
+            varIns.`var` = renumber(varIns.`var`)
+        case _ =>
+      }
+      true
+    }
   }
 
   /**

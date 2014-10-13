@@ -36,6 +36,14 @@ object BytecodeUtils {
     }
   }
 
+  object VarInstruction {
+    def unapply(instruction: AbstractInsnNode): Option[VarInsnNode] = {
+      if (isVarInstruction(instruction)) Some(instruction.asInstanceOf[VarInsnNode])
+      else None
+    }
+
+  }
+
   def isJumpNonJsr(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
     // JSR is deprecated in classfile version 50, disallowed in 51. historically, it was used to implement finally.
@@ -45,6 +53,11 @@ object BytecodeUtils {
   def isConditionalJump(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
     (op >= Opcodes.IFEQ && op <= Opcodes.IF_ACMPNE) || op == Opcodes.IFNULL || op == Opcodes.IFNONNULL
+  }
+
+  def isVarInstruction(instruction: AbstractInsnNode): Boolean = {
+    val op = instruction.getOpcode
+    (op >= Opcodes.ILOAD  && op <= Opcodes.ALOAD) || (op >= Opcodes.ISTORE && op <= Opcodes.ASTORE)
   }
 
   def isExecutable(instruction: AbstractInsnNode): Boolean = instruction.getOpcode >= 0
