@@ -124,7 +124,6 @@ trait ScalacPatternExpanders {
         case _             => sel
       }
       val patterns  = newPatterns(args)
-      val isSeq = sel.symbol.name == nme.unapplySeq
       val isUnapply = sel.symbol.name == nme.unapply
       val extractor = sel.symbol.name match {
         case nme.unapply    => unapplyMethodTypes(fn.tpe, isSeq = false)

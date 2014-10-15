@@ -18,7 +18,7 @@ import scala.reflect.ClassTag
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
 import scala.reflect.io.VirtualFile
-import symtab.{ Flags, SymbolTable, SymbolLoaders, SymbolTrackers }
+import symtab.{ Flags, SymbolTable, SymbolTrackers }
 import symtab.classfile.Pickler
 import plugins.Plugins
 import ast._

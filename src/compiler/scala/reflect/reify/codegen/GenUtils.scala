@@ -5,7 +5,6 @@ trait GenUtils {
   self: Reifier =>
 
   import global._
-  private val runDefinitions = currentRun.runDefinitions
 
   def reifyList(xs: List[Any]): Tree =
     mkList(xs map reify)
