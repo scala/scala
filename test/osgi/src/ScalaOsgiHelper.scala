@@ -20,19 +20,19 @@ trait ScalaOsgiHelper {
 
   def standardOptions: Array[exam.Option]  = {
     val bundles = (allBundleFiles map makeBundle)
-    bundles ++ Array[exam.Option](felix(), equinox(), junitBundles())
+    bundles ++ Array[exam.Option](junitBundles())
     // to change the local repo used (for some operations, but not all -- which is why I didn't bother):
     // systemProperty("org.ops4j.pax.url.mvn.localRepository").value(sys.props("maven.repo.local")))
   }
 
   def justReflectionOptions: Array[exam.Option]  = {
     val bundles = filteredBundleFiles("scala-library", "scala-reflect")
-    bundles ++ Array[exam.Option](felix(), equinox(), junitBundles())
+    bundles ++ Array[exam.Option](junitBundles())
   }
 
   def justCoreLibraryOptions: Array[exam.Option]  = {
     val bundles = filteredBundleFiles("scala-library")
-    bundles ++ Array[exam.Option](felix(), equinox(), junitBundles())
+    bundles ++ Array[exam.Option](junitBundles())
   }
 
 }
