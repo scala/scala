@@ -19,6 +19,7 @@ import scala.reflect.internal.util.{ BatchSourceFile, ScalaClassLoader }
 import ScalaClassLoader._
 import scala.reflect.io.{ File, Directory }
 import scala.tools.util._
+import io.AbstractFile
 import scala.collection.generic.Clearable
 import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
@@ -221,7 +222,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     nullary("power", "enable power user mode", powerCmd),
     nullary("quit", "exit the interpreter", () => Result(keepRunning = false, None)),
     cmd("replay", "[options]", "reset the repl and replay all previous commands", replayCommand),
-    cmd("require", "<path>", "add a jar or directory to the classpath", require),
+    cmd("require", "<path>", "add a jar to the classpath", require),
     cmd("reset", "[options]", "reset the repl to its initial state, forgetting all session entries", resetCommand),
     cmd("save", "<path>", "save replayable session to a file", saveCommand),
     shCommand,
@@ -613,7 +614,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     if (f.exists) {
       addedClasspath = ClassPath.join(addedClasspath, f.path)
       intp.addUrlsToClassPath(f.toURI.toURL)
-      echo("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClasspathString))
+      echo("Added '%s' to classpath.".format(f.path, intp.global.classPath.asClasspathString))
+      repldbg("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClasspathString))
     }
     else echo("The path '" + f + "' doesn't seem to exist.")
   }
@@ -647,21 +649,28 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       echo("Adding directories to the classpath is not supported. Add a jar instead.")
       return
     }
-    val jarFile = new java.util.jar.JarFile(arg)
-    val entries = jarFile.entries
+
+    val jarFile = AbstractFile.getDirectory(new java.io.File(arg))
+
+    def flatten(f: AbstractFile): Iterator[AbstractFile] = 
+      if (f.isClassContainer) f.iterator.flatMap(flatten) 
+      else Iterator(f)
+
+    val entries = flatten(jarFile)
     val cloader = new InfoClassLoader
     var exists = false
 
-    while (entries.hasMoreElements()) {
-      val entry = entries.nextElement()
+    while (entries.hasNext) {
+      val entry = entries.next()
       // skip directories and manifests
-      if (!entry.isDirectory() && !entry.getName().endsWith("MF")) {
+      if (!entry.isDirectory && entry.name.endsWith(".class")) {
         // for each entry get InputStream
-        val is = jarFile.getInputStream(entry)
+        val is = entry.input
         // read InputStream into Array[Byte]
         val arr = readFully(is)
         val clazz = cloader.classOf(arr)
         try {
+          // pass initialize = false because we don't want to execute class initializers:
           Class.forName(clazz.getName(), false, intp.classLoader)
           exists = true
         } catch {
@@ -673,7 +682,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     if (f.exists && !exists) {
       addedClasspath = ClassPath.join(addedClasspath, f.path)
       intp.addUrlsToClassPath(f.toURI.toURL)
-      echo("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClasspathString))
+      echo("Added '%s' to classpath.".format(f.path, intp.global.classPath.asClasspathString))
+      repldbg("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClasspathString))
     } else if (exists) {
       echo("The path '" + f + "' cannot be loaded, because existing classpath entries conflict.")
     } else echo("The path '" + f + "' doesn't seem to exist.")

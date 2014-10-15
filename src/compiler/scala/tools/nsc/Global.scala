@@ -845,12 +845,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Is given package class a system package class that cannot be invalidated?
    */
-  private def isSystemPackageClass(pkg: Symbol) =
-    pkg == RootClass ||
-    pkg == definitions.ScalaPackageClass || {
-      val pkgname = pkg.fullName
-      (pkgname startsWith "scala.") && !(pkgname startsWith "scala.tools")
-    }
+  private def isSystemPackageClass(pkg: Symbol) = 
+    pkg == RootClass || (pkg.hasTransOwner(definitions.ScalaPackageClass) && !pkg.hasTransOwner(this.rootMirror.staticPackage("scala.tools").moduleClass.asClass))
 
   /** Invalidates packages that contain classes defined in a classpath entry, and
    *  rescans that entry.
@@ -872,13 +868,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *
    *  @param paths  Fully-qualified names that refer to directories or jar files that are
    *                entries on the classpath.
-   *
-   *  @return A pair consisting of
-   *    - a list of invalidated packages
-   *    - a list of of packages that should have been invalidated but were not because
-   *      they are system packages.
    */
-  def invalidateClassPathEntries(paths: String*): (List[ClassSymbol], List[ClassSymbol]) = {
+  def invalidateClassPathEntries(paths: String*): Unit = {
+    implicit object ClassPathOrdering extends Ordering[PlatformClassPath] {
+      def compare(a:PlatformClassPath, b:PlatformClassPath) = a.asClasspathString compare b.asClasspathString
+    }
     val invalidated, failed = new mutable.ListBuffer[ClassSymbol]
     classPath match {
       case cp: MergedClassPath[_] =>
@@ -899,7 +893,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
               List()
           }
         }
-        val subst = Map(paths flatMap assoc: _*)
+        val subst = immutable.TreeMap(paths flatMap assoc: _*)
         if (subst.nonEmpty) {
           platform updateClassPath subst
           informProgress(s"classpath updated on entries [${subst.keys mkString ","}]")
@@ -916,7 +910,6 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
         informProgress(s"$msg: ${syms map (_.fullName) mkString ","}")
     show("invalidated packages", invalidated)
     show("could not invalidate system packages", failed)
-    (invalidated.toList, failed.toList)
   }
 
   /** Merges new classpath entries into the symbol table
