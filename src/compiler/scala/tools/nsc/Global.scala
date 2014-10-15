@@ -9,12 +9,11 @@ package nsc
 
 import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
-import java.util.UUID._
 import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString }
+import util.{ ClassPath, StatisticsInfo, returning, stackTraceString }
 import scala.reflect.ClassTag
 import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
@@ -28,7 +27,7 @@ import typechecker._
 import transform.patmat.PatternMatching
 import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
-import backend.{ ScalaPrimitives, Platform, JavaPlatform }
+import backend.{ ScalaPrimitives, JavaPlatform }
 import backend.jvm.GenBCode
 import backend.jvm.GenASM
 import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, ClosureElimination, DeadCodeElimination }

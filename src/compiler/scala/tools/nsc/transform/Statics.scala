@@ -1,9 +1,6 @@
 package scala.tools.nsc
 package transform
 
-import symtab._
-import Flags._
-
 import collection.mutable.Buffer
 
 abstract class Statics extends Transform with ast.TreeDSL {

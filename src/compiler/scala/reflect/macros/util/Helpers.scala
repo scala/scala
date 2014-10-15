@@ -56,7 +56,6 @@ trait Helpers {
    */
   def increaseMetalevel(pre: Type, tp: Type): Type = {
     val runDefinitions = currentRun.runDefinitions
-    import runDefinitions._
 
     transparentShallowTransform(RepeatedParamClass, tp) {
       case tp => typeRef(pre, MacroContextExprClass, List(tp))

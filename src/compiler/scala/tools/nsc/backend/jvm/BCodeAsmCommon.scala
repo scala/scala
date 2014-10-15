@@ -6,7 +6,6 @@
 package scala.tools.nsc.backend.jvm
 
 import scala.tools.nsc.Global
-import PartialFunction._
 
 /**
  * This trait contains code shared between GenBCode and GenASM that depends on types defined in

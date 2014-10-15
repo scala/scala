@@ -7,7 +7,6 @@ package scala
 package tools.nsc
 package backend.opt
 
-import scala.tools.nsc.backend.icode.analysis.LubException
 import scala.annotation.tailrec
 
 /**

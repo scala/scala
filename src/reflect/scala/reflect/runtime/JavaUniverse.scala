@@ -5,7 +5,7 @@ package runtime
 import scala.reflect.internal.{TreeInfo, SomePhase}
 import scala.reflect.internal.{SymbolTable => InternalSymbolTable}
 import scala.reflect.runtime.{SymbolTable => RuntimeSymbolTable}
-import scala.reflect.api.{TreeCreator, TypeCreator, Universe}
+import scala.reflect.api.{TypeCreator, Universe}
 
 /** An implementation of [[scala.reflect.api.Universe]] for runtime reflection using JVM classloaders.
  *

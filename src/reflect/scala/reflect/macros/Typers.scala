@@ -2,8 +2,6 @@ package scala
 package reflect
 package macros
 
-import scala.reflect.internal.{Mode => InternalMode}
-
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
  *

@@ -8,7 +8,6 @@ package reflect
 package internal
 
 import scala.collection.mutable
-import Flags._
 import util.HashSet
 import scala.annotation.tailrec
 

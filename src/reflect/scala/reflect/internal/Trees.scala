@@ -8,7 +8,6 @@ package reflect
 package internal
 
 import Flags._
-import pickling.PickleFormat._
 import scala.collection.{ mutable, immutable }
 import util.Statistics
 
