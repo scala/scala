@@ -86,8 +86,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   private var _classLoader: util.AbstractFileClassLoader = null                              // active classloader
   private val _compiler: ReplGlobal                 = newCompiler(settings, reporter)   // our private compiler
 
-  private trait ExposeAddUrl extends URLClassLoader { def addNewUrl(url: URL) = this.addURL(url) }
-  private var _runtimeClassLoader: URLClassLoader with ExposeAddUrl = null              // wrapper exposing addURL
+  private var _runtimeClassLoader: URLClassLoader = null              // wrapper exposing addURL
 
   def compilerClasspath: Seq[java.net.URL] = (
     if (isInitializeComplete) global.classPath.asURLs
@@ -252,7 +251,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
    */
   def addUrlsToClassPath(urls: URL*): Unit = {
     new Run //  force some initialization
-    urls.foreach(_runtimeClassLoader.addNewUrl) // Add jars to runtime classloader
+    urls.foreach(_runtimeClassLoader.addURL) // Add jars to runtime classloader
     extendCompilerClassPath(urls: _*)           // Add jars to compile-time classpath
   }
 
@@ -381,7 +380,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   }
   private def makeClassLoader(): util.AbstractFileClassLoader =
     new TranslatingClassLoader({
-      _runtimeClassLoader = new URLClassLoader(compilerClasspath, parentClassLoader) with ExposeAddUrl
+      _runtimeClassLoader = new URLClassLoader(compilerClasspath, parentClassLoader)
       _runtimeClassLoader
     })
 
