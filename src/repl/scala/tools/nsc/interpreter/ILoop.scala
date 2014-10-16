@@ -652,8 +652,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
     val jarFile = AbstractFile.getDirectory(new java.io.File(arg))
 
-    def flatten(f: AbstractFile): Iterator[AbstractFile] = 
-      if (f.isClassContainer) f.iterator.flatMap(flatten) 
+    def flatten(f: AbstractFile): Iterator[AbstractFile] =
+      if (f.isClassContainer) f.iterator.flatMap(flatten)
       else Iterator(f)
 
     val entries = flatten(jarFile)
@@ -669,13 +669,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         // read InputStream into Array[Byte]
         val arr = readFully(is)
         val clazz = cloader.classOf(arr)
-        try {
-          // pass initialize = false because we don't want to execute class initializers:
-          Class.forName(clazz.getName(), false, intp.classLoader)
-          exists = true
-        } catch {
-          case _: ClassNotFoundException => /* do nothing */
-        }
+        if ((intp.classLoader tryToLoadClass clazz.getName).isDefined) exists = true
       }
     }
 
