@@ -392,23 +392,23 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       true
   }
 
+  // after process line, OK continue, ERR break, or EOF all done
+  object LineResults extends Enumeration {
+    type LineResult = Value
+    val EOF, ERR, OK = Value
+  }
+  import LineResults.LineResult
+
   // return false if repl should exit
   def processLine(line: String): Boolean = {
     import scala.concurrent.duration._
     Await.ready(globalFuture, 10.minutes) // Long timeout here to avoid test failures under heavy load.
 
-    if (line eq null) {
-      // SI-4563: this means the console was properly interrupted (Ctrl+D usually)
-      // so we display the output message (which by default ends with
-      // a newline so as not to break the user's terminal)
-      if (in.interactive) out.print(Properties.shellInterruptedString)
-
-      false
-    } else (command(line) match {
+    command(line) match {
       case Result(false, _)      => false
       case Result(_, Some(line)) => addReplay(line) ; true
       case _                     => true
-    })
+    }
   }
 
   private def readOneLine() = {
@@ -426,18 +426,22 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
    *  command() for each line of input, and stops when
    *  command() returns false.
    */
-  @tailrec final def loop() {
-    if ( try processLine(readOneLine()) catch crashRecovery )
-      loop()
+  @tailrec final def loop(): LineResult = {
+    import LineResults._
+    readOneLine() match {
+      case null => EOF
+      case line => if (try processLine(line) catch crashRecovery) loop() else ERR
+    }
   }
 
   /** interpret all lines from a specified file */
-  def interpretAllFrom(file: File) {
+  def interpretAllFrom(file: File, verbose: Boolean = false) {
     savingReader {
       savingReplayStack {
         file applyReader { reader =>
-          in = SimpleReader(reader, out, interactive = false)
-          echo("Loading " + file + "...")
+          in = if (verbose) new SimpleReader(reader, out, interactive = true) with EchoReader
+               else SimpleReader(reader, out, interactive = false)
+          echo(s"Loading $file...")
           loop()
         }
       }
@@ -592,13 +596,17 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     res
   }
 
-  def loadCommand(arg: String) = {
-    var shouldReplay: Option[String] = None
-    withFile(arg)(f => {
-      interpretAllFrom(f)
-      shouldReplay = Some(":load " + arg)
-    })
-    Result(keepRunning = true, shouldReplay)
+  def loadCommand(arg: String): Result = {
+    def run(file: String, verbose: Boolean) = withFile(file) { f =>
+      interpretAllFrom(f, verbose)
+      Result recording s":load $arg"
+    } getOrElse Result.default
+
+    words(arg) match {
+      case "-v" :: file :: Nil => run(file, verbose = true)
+      case file :: Nil         => run(file, verbose = false)
+      case _                   => echo("usage: :load -v file") ; Result.default
+    }
   }
 
   def saveCommand(filename: String): Result = (
@@ -685,13 +693,13 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       }
     val code = file match {
       case Some(name) =>
-        withFile(name)(f => {
+        withFile(name) { f =>
           shouldReplay = Some(s":paste $arg")
           val s = f.slurp.trim
           if (s.isEmpty) echo(s"File contains no code: $f")
           else echo(s"Pasting file $f...")
           s
-        }) getOrElse ""
+        } getOrElse ""
       case None =>
         echo("// Entering paste mode (ctrl-D to finish)\n")
         val text = (readWhile(_ => true) mkString "\n").trim
@@ -820,7 +828,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     )
     catch {
       case ex @ (_: Exception | _: NoClassDefFoundError) =>
-        echo("Failed to created JLineReader: " + ex + "\nFalling back to SimpleReader.")
+        echo(f"Failed to created JLineReader: ${ex}%nFalling back to SimpleReader.")
         SimpleReader()
     }
   }
@@ -847,6 +855,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       case _              =>
     }
   }
+
+  // start an interpreter with the given settings
   def process(settings: Settings): Boolean = savingContextLoader {
     this.settings = settings
     createInterpreter()
@@ -861,7 +871,10 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     loadFiles(settings)
     printWelcome()
 
-    try loop()
+    try loop() match {
+      case LineResults.EOF => out print Properties.shellInterruptedString
+      case _               =>
+    }
     catch AbstractOrMissingHandler()
     finally closeInterpreter()
 
