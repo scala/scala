@@ -1,0 +1,38 @@
+#! /bin/bash
+#
+# Adds Copyright headers to files that appear to be missing them.
+# Assumes copyright for LAMP/EPFL from first date the file was
+# committed to the current year. If the file is not in version
+# control, the copyright period starts in the current year.
+#
+# Must be run from the base directory of the Scala checkout.
+#
+function commit-year() {
+  git log --follow --oneline --pretty="format:%ci" "$1" \
+    | perl -p -e 's/^(....).*?$/$1/g'                   \
+    | tail -n 1
+}
+
+function header() {
+  thisyear=$(date +"%Y")
+  commityear=$(commit-year $1)
+  year=${commityear:-$thisyear}
+
+  cat <<- EOF
+/* NSC -- new Scala compiler
+ * Copyright $year-$thisyear LAMP/EPFL
+ * @author  Martin Odersky
+ */
+
+EOF
+}
+
+headerless=$(gawk 'FNR>1 {nextfile} /^package/ { print FILENAME ; nextfile }' $(find src -name '*.scala'))
+
+for f in $headerless; do
+  fileheader=$(header $f)
+  mv "$f" "$f.old"
+  header "$f" > "$f"
+  cat "$f.old" >> "$f"
+  rm "$f.old"
+done;

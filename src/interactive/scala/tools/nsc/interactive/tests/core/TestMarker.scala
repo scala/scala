@@ -1,3 +1,8 @@
+/* NSC -- new Scala compiler
+ * Copyright 2011-2014 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+
 package scala.tools.nsc.interactive.tests.core
 
 case class DuplicateTestMarker(msg: String) extends Exception(msg)
