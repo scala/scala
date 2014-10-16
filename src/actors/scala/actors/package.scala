@@ -1,3 +1,8 @@
+/* NSC -- new Scala compiler
+ * Copyright 2009-2014 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+
 package scala
 
 /**

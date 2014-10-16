@@ -1,3 +1,8 @@
+/* NSC -- new Scala compiler
+ * Copyright 2014-2014 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+
 package scala.tools.reflect
 
 import scala.reflect.macros.runtime.Context

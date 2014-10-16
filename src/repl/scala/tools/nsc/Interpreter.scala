@@ -1,3 +1,8 @@
+/* NSC -- new Scala compiler
+ * Copyright 2005-2014 LAMP/EPFL
+ * @author  Martin Odersky
+ */
+
 package scala.tools.nsc
 
 import interpreter._
