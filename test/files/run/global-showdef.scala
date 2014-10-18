@@ -1,8 +1,6 @@
 import scala.tools.nsc._
-import scala.reflect.io.AbstractFile
 import scala.tools.nsc.util.stringFromStream
 import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
-import scala.tools.nsc.reporters.ConsoleReporter
 
 object Test {
   val src: SourceFile = new BatchSourceFile("src", """
@@ -36,7 +34,8 @@ object Bippy {
 
   def mkCompiler(args: String*) = {
     val settings             = new Settings()
-    val command              = new CompilerCommand("-usejavacp" :: args.toList, settings)
+    val testOutputPath       = sys.props("partest.output")
+    val command              = new CompilerCommand("-usejavacp" :: "-d" :: testOutputPath :: args.toList, settings)
 
     new Global(settings)
   }
