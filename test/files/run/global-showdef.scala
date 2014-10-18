@@ -1,11 +1,10 @@
-import scala.tools.nsc._
-import scala.reflect.io.AbstractFile
+import scala.tools.partest.DirectTest
 import scala.tools.nsc.util.stringFromStream
-import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
-import scala.tools.nsc.reporters.ConsoleReporter
 
-object Test {
-  val src: SourceFile = new BatchSourceFile("src", """
+object Test extends DirectTest {
+  override def extraSettings: String = "-usejavacp -Yshow:typer"
+
+  override def code = """
 package foo.bar
 
 class Bippy {
@@ -32,39 +31,26 @@ object Bippy {
 
   def showdefTestMemberObject2 = "abc"
 }
-  """)
+  """
 
-  def mkCompiler(args: String*) = {
-    val settings             = new Settings()
-    val command              = new CompilerCommand("-usejavacp" :: args.toList, settings)
+  override def show(): Unit = {
+    val classes = List("Bippy", "Bippy#BippyType", "Bippy.BippyType", "Bippy#Boppity", "Bippy#Boppity#Boo")
+    val objects = List("Bippy", "Bippy#Boppity#Boo")
 
-    new Global(settings)
+    def interesting(line: String) = (line contains "def showdefTestMember") || (line startsWith "<<-- ")
+
+    def run(args: String*) = slurp(args: _*).lines filter interesting foreach println
+
+    classes foreach (x => run("-Xshow-class", x))
+    objects foreach (x => run("-Xshow-object", x))
   }
 
-  def slurp(body: => Unit): String = stringFromStream { stream =>
+  // slurp the compilation result
+  def slurp(args: String*): String = stringFromStream { stream =>
     Console.withOut(stream) {
       Console.withErr(stream) {
-        body
+        compile(args: _*)
       }
     }
-  }
-  def lines(args: String*): List[String] = {
-    val output = slurp {
-      val compiler = mkCompiler(args: _*)
-      val run = new compiler.Run()
-      run.compileSources(List(src))
-    }
-    output.lines.toList
-  }
-  def showClass(name: String) = lines("-Yshow:typer", "-Xshow-class", name)
-  def showObject(name: String) = lines("-Yshow:typer", "-Xshow-object", name)
-
-  def show(xs: List[String]) = {
-    xs filter (x => (x contains "def showdefTestMember") || (x startsWith "<<-- ")) foreach println
-  }
-
-  def main(args: Array[String]) {
-    show(List("Bippy", "Bippy#BippyType", "Bippy.BippyType", "Bippy#Boppity", "Bippy#Boppity#Boo") flatMap showClass)
-    show(List("Bippy", "Bippy#Boppity#Boo") flatMap showObject)
   }
 }
