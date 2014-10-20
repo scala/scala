@@ -19,6 +19,7 @@ import sbt.testing.OptionalThrowable
 import sbt.testing.SuiteSelector
 import sbt.testing.TestSelector
 import java.net.URLClassLoader
+import TestState._
 
 // called reflectively from scala-partest-test-interface
 class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
@@ -42,11 +43,19 @@ class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, log
           def fullyQualifiedName: String = testFile.testIdent
           def fingerprint: Fingerprint = partestFingerprint
           def selector: Selector = new TestSelector(testFile.testIdent)
-          def status: Status = if (result.isOk) Status.Success else Status.Failure
-          def throwable: OptionalThrowable = new OptionalThrowable
+          val (status, throwable) = makeStatus(result)
           def duration: Long = -1
         })
         result
       }
     }
+
+  def makeStatus(t: TestState): (Status, OptionalThrowable) = t match {
+    case _: Uninitialized => (Status.Pending, new OptionalThrowable)
+    case _: Pass => (Status.Success, new OptionalThrowable)
+    case _: Updated => (Status.Success, new OptionalThrowable)
+    case _: Skip => (Status.Skipped, new OptionalThrowable)
+    case _: Fail => (Status.Failure, new OptionalThrowable)
+    case Crash(_,e,_) => (Status.Error, new OptionalThrowable(e))
+  }
 }
