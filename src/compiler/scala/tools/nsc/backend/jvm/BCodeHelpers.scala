@@ -648,25 +648,24 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     private lazy val AnnotationRetentionPolicyClassValue   = AnnotationRetentionPolicyModule.tpe.member(TermName("CLASS"))
     private lazy val AnnotationRetentionPolicyRuntimeValue = AnnotationRetentionPolicyModule.tpe.member(TermName("RUNTIME"))
 
-    /** Whether an annotation should be emitted as a Java annotation
+    /** Whether an annotation usage should be emitted as a Java annotation usage
       * .initialize: if 'annot' is read from pickle, atp might be uninitialized
       */
-    private def shouldEmitAnnotation(annot: AnnotationInfo) = {
-      annot.symbol.initialize.isJavaDefined &&
-        annot.matches(ClassfileAnnotationClass) &&
+    private def shouldEmitAnnotation(annot: AnnotationInfo): Boolean = {
+      annot.symbol.initialize
+      val result = annot.matches(PlatformAnnotationClass) &&
         retentionPolicyOf(annot) != AnnotationRetentionPolicySourceValue &&
         annot.args.isEmpty
+      //warning(annot.pos, s"shouldEmit for $annot: $result")
+      result
     }
 
     private def isRuntimeVisible(annot: AnnotationInfo): Boolean = {
-      annot.atp.typeSymbol.getAnnotation(AnnotationRetentionAttr) match {
-        case Some(retentionAnnot) =>
-          retentionAnnot.assocs.contains(nme.value -> LiteralAnnotArg(Constant(AnnotationRetentionPolicyRuntimeValue)))
-        case _ =>
-          // SI-8926: if the annotation class symbol doesn't have a @RetentionPolicy annotation, the
-          // annotation is emitted with visibility `RUNTIME`
-          true
-      }
+      val result = annot.matches(RuntimeAnnotationClass) ||
+      annot.atp.typeSymbol.getAnnotation(AnnotationRetentionAttr)
+        .exists(_.assocs.contains((nme.value -> LiteralAnnotArg(Constant(AnnotationRetentionPolicyRuntimeValue)))))
+      //warning(annot.pos, s"isRuntimeVisible for $annot: $result")
+      result
     }
 
     private def retentionPolicyOf(annot: AnnotationInfo): Symbol =
@@ -750,6 +749,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
               case ClazzTag   => av.visit(name, typeToBType(const.typeValue).toASMType)
               case EnumTag =>
                 val edesc  = descriptor(const.tpe) // the class descriptor of the enumeration class.
+                // name ... is that the encoded or decoded one?
                 val evalue = const.symbolValue.name.toString // value the actual enumeration value.
                 av.visitEnum(name, edesc, evalue)
             }
@@ -783,10 +783,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
     /*
      * In general,
      *   must-single-thread
-     * but not  necessarily always.
+     * but not necessarily always.
      */
     def emitAssocs(av: asm.AnnotationVisitor, assocs: List[(Name, ClassfileAnnotArg)]) {
       for ((name, value) <- assocs) {
+        if (!name.containsName("bytes"))
+          warning(s"BCodeHelpers#emitAssocs: Writing $assocs")
         emitArgument(av, name.toString(), value)
       }
       av.visitEnd()

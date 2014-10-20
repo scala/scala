@@ -265,6 +265,7 @@ trait StdNames {
     final val Liftable: NameType            = "Liftable"
     final val Unliftable: NameType          = "Unliftable"
     final val Name: NameType                = "Name"
+    final val PlatformAnnotation: NameType  = "PlatformAnnotation"
     final val Tree: NameType                = "Tree"
     final val Text: NameType                = "Text"
     final val TermName: NameType            = "TermName"

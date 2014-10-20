@@ -435,7 +435,7 @@ abstract class ClassfileParser {
                         else pool.getSuperClass(u2).tpe_*
         val ifaceCount = u2
         var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(u2).tpe_*
-        if (jflags.isAnnotation) ifaces ::= ClassfileAnnotationClass.tpe
+        if (jflags.isAnnotation) ifaces ::= PlatformAnnotationClass.tpe
         superType :: ifaces
       }
     }
@@ -830,21 +830,17 @@ abstract class ClassfileParser {
           in.skip(attrLen)
         // Java annotations on classes / methods / fields with RetentionPolicy.RUNTIME
         case tpnme.RuntimeAnnotationATTR =>
-          if (isScalaAnnot || !isScala) {
-            val scalaSigAnnot = parseAnnotations(attrLen)
-            if (isScalaAnnot)
-              scalaSigAnnot match {
-                case Some(san: AnnotationInfo) =>
-                  val bytes =
-                    san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
-                  unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.name)
-                case None =>
-                  throw new RuntimeException("Scala class file does not contain Scala annotation")
-              }
-            debuglog("[class] << " + sym.fullName + sym.annotationsString)
-          }
-          else
-            in.skip(attrLen)
+          val scalaSigAnnot = parseAnnotations(attrLen)
+          if (isScalaAnnot)
+            scalaSigAnnot match {
+              case Some(san: AnnotationInfo) =>
+                val bytes =
+                  san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
+                unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.name)
+              case None =>
+                throw new RuntimeException("Scala class file does not contain Scala annotation")
+            }
+          debuglog("[class] << " + sym.fullName + sym.annotationsString)
 
         // TODO 1: parse runtime visible annotations on parameters
         // case tpnme.RuntimeParamAnnotationATTR
