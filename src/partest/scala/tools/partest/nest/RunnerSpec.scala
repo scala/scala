@@ -4,8 +4,8 @@ import language.postfixOps
 
 import scala.tools.cmd.{ CommandLine, Interpolation, Meta, Reference, Spec }
 
-trait ConsoleRunnerSpec extends Spec with Meta.StdOpts with Interpolation {
-  def referenceSpec       = ConsoleRunnerSpec
+trait RunnerSpec extends Spec with Meta.StdOpts with Interpolation {
+  def referenceSpec       = RunnerSpec
   def programInfo         = Spec.Info(
       "console-runner",
       "Usage: ConsoleRunner [options] [test test ...]",
@@ -47,7 +47,7 @@ trait ConsoleRunnerSpec extends Spec with Meta.StdOpts with Interpolation {
 
 }
 
-object ConsoleRunnerSpec extends ConsoleRunnerSpec with Reference {
+object RunnerSpec extends RunnerSpec with Reference {
   type ThisCommandLine = CommandLine
-  def creator(args: List[String]): ThisCommandLine = new CommandLine(ConsoleRunnerSpec, args)
+  def creator(args: List[String]): ThisCommandLine = new CommandLine(RunnerSpec, args)
 }

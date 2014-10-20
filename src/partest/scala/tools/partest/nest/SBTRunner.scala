@@ -22,30 +22,31 @@ import java.net.URLClassLoader
 
 // called reflectively from scala-partest-test-interface
 class SBTRunner(partestFingerprint: Fingerprint, eventHandler: EventHandler, loggers: Array[Logger],
-    srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String])
-    extends AntRunner(srcDir, testClassLoader, javaCmd, javacCmd, scalacArgs, None) {
-  override def error(msg: String): Nothing = sys.error(msg)
-  def echo(msg: String): Unit = loggers foreach { l => l.info(msg) }
-  def log(msg: String): Unit = loggers foreach { l => l.debug(msg) }
-  def onFinishKind(kind: String, passed: Array[TestState], failed: Array[TestState]): Unit =
-    eventHandler.handle(new Event {
-      def fullyQualifiedName: String = kind
-      def fingerprint: Fingerprint = partestFingerprint
-      def selector: Selector = new SuiteSelector
-      def status: Status = if (failed.isEmpty) Status.Success else Status.Failure
-      def throwable: OptionalThrowable = new OptionalThrowable
-      def duration: Long = -1
-    })
+    srcDir: String, testClassLoader: URLClassLoader, javaCmd: File, javacCmd: File, scalacArgs: Array[String], args: Array[String])
+    extends AbstractRunner(args.mkString(" ")) {
 
-  override def onFinishTest(testFile: File, result: TestState): TestState = {
-    eventHandler.handle(new Event {
-      def fullyQualifiedName: String = testFile.testIdent
-      def fingerprint: Fingerprint = partestFingerprint
-      def selector: Selector = new TestSelector(testFile.testIdent)
-      def status: Status = if (result.isOk) Status.Success else Status.Failure
-      def throwable: OptionalThrowable = new OptionalThrowable
-      def duration: Long = -1
-    })
-    result
-  }
+  // no summary, SBT will do that for us
+  summarizing = true
+
+  override val suiteRunner = new SuiteRunner(
+    testSourcePath = Option(srcDir) getOrElse PartestDefaults.sourcePath,
+    new FileManager(testClassLoader = testClassLoader),
+    updateCheck = optUpdateCheck,
+    failed  = optFailed,
+    javaCmdPath = Option(javaCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javaCmd,
+    javacCmdPath = Option(javacCmd).map(_.getAbsolutePath) getOrElse PartestDefaults.javacCmd,
+    scalacExtraArgs = scalacArgs) {
+
+      override def onFinishTest(testFile: File, result: TestState): TestState = {
+        eventHandler.handle(new Event {
+          def fullyQualifiedName: String = testFile.testIdent
+          def fingerprint: Fingerprint = partestFingerprint
+          def selector: Selector = new TestSelector(testFile.testIdent)
+          def status: Status = if (result.isOk) Status.Success else Status.Failure
+          def throwable: OptionalThrowable = new OptionalThrowable
+          def duration: Long = -1
+        })
+        result
+      }
+    }
 }

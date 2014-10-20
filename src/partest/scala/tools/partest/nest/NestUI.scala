@@ -144,8 +144,8 @@ object NestUI {
   }
 
   def usage() {
-    println(ConsoleRunnerSpec.programInfo.usage)
-    println(ConsoleRunnerSpec.helpMsg)
+    println(RunnerSpec.programInfo.usage)
+    println(RunnerSpec.helpMsg)
     sys.exit(1)
   }
 
