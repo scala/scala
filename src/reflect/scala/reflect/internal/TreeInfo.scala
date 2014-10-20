@@ -479,7 +479,7 @@ abstract class TreeInfo {
   } getOrElse EmptyTree
 
   /** The arguments to the first constructor in `stats`. */
-  def firstConstructorArgs(stats: List[Tree]): List[Tree] = firstConstructor(stats) match {
+  def firstConstructorArgs(stats: List[Tree]): List[ValDef] = firstConstructor(stats) match {
     case DefDef(_, _, _, args :: _, _, _) => args
     case _                                => Nil
   }

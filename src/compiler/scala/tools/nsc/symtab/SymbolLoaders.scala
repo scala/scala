@@ -50,7 +50,7 @@ abstract class SymbolLoaders {
     if (settings.debug) ex.printStackTrace()
     globalError(ex.getMessage() match {
       case null => "i/o error while loading " + root.name
-      case msg  => "error while loading " + root.name + ", " + msg
+      case _    => "error while loading " + root.name + ", " + ex.toString()
     })
   }
 

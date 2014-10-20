@@ -21,7 +21,7 @@
   ()
 }
 {
-  class ann extends scala.annotation.Annotation with scala.annotation.StaticAnnotation {
+  class ann extends StaticAnnotation {
     <paramaccessor> private[this] val bar: List[String] = _;
     def <init>(bar: List[String]): ann = {
       ann.super.<init>();

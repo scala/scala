@@ -1061,10 +1061,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       // info calls so that types are up to date; erasure may add lateINTERFACE to traits
       hostSymbol.info ; methodOwner.info
 
-      def needsInterfaceCall(sym: Symbol) = (
-           sym.isTraitOrInterface
-        || sym.isJavaDefined && sym.isNonBottomSubClass(definitions.ClassfileAnnotationClass)
-      )
+      def needsInterfaceCall(sym: Symbol) =
+           sym.isTraitOrInterface || sym.isNonBottomSubClass(definitions.PlatformAnnotationClass)
 
       val isTraitCallToObjectMethod =
         hostSymbol != methodOwner && methodOwner.isTraitOrInterface && ObjectTpe.decl(method.name) != NoSymbol && method.overrideChain.last.owner == ObjectClass

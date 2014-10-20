@@ -102,7 +102,7 @@ trait PatternExpander[Pattern, Type] {
       * scala> "" match { case Extractor(xy : (Int, String)) => }
       * warning: there was one deprecation warning; re-run with -deprecation for details
       * }}}
-      * */
+      */
     def asSinglePattern: Extractor = copy(fixed = List(typeOfSinglePattern))
 
     def productArity = fixed.length

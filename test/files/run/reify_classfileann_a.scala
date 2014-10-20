@@ -3,12 +3,12 @@ import scala.reflect.runtime.{universe => ru}
 import scala.reflect.runtime.{currentMirror => cm}
 import scala.tools.reflect.ToolBox
 
-class ann(bar: String, quux: Array[String] = Array(), baz: ann = null) extends annotation.ClassfileAnnotation
+class ann(bar: String = "bar", quux: Array[String] = Array()) extends annotation.ClassfileAnnotation
 
 object Test extends App {
   // test 1: reify
   val tree = reify{
-    @ann(bar="1", quux=Array("2", "3"), baz = new ann(bar = "4")) class C
+    @ann(bar="1", quux=Array("2", "3")) class C
   }.tree
   println(tree.toString)
 
