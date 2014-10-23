@@ -41,7 +41,7 @@ package scala.concurrent
 trait BlockContext {
 
   /** Used internally by the framework;
-   * Designates (and eventually executes) a thunk which potentially blocks the calling `Thread`.
+   * Designates (and eventually executes) a thunk which potentially blocks the calling `java.lang.Thread`.
    *
    * Clients must use `scala.concurrent.blocking` or `scala.concurrent.Await` instead.
    */
@@ -53,9 +53,16 @@ object BlockContext {
     override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = thunk
   }
 
+  /**
+   * @return the `BlockContext` that will be used if no other is found.
+   **/
+  def defaultBlockContext: BlockContext = DefaultBlockContext
+
   private val contextLocal = new ThreadLocal[BlockContext]()
 
-  /** Obtain the current thread's current `BlockContext`. */
+  /**
+    @return the `BlockContext` that would be used for the current `java.lang.Thread` at this point
+   **/
   def current: BlockContext = contextLocal.get match {
     case null => Thread.currentThread match {
       case ctx: BlockContext => ctx
@@ -64,7 +71,9 @@ object BlockContext {
     case some => some
   }
 
-  /** Pushes a current `BlockContext` while executing `body`. */
+  /**
+   * Installs a current `BlockContext` around executing `body`.
+   **/
   def withBlockContext[T](blockContext: BlockContext)(body: => T): T = {
     val old = contextLocal.get // can be null
     try {

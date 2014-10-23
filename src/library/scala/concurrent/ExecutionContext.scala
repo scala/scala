@@ -72,22 +72,24 @@ trait ExecutionContext {
    */
   def reportFailure(@deprecatedName('t) cause: Throwable): Unit
 
-  /** Prepares for the execution of a task. Returns the prepared execution context.
-   *
-   *  `prepare` should be called at the site where an `ExecutionContext` is received (for
-   *  example, through an implicit method parameter). The returned execution context may
-   *  then be used to execute tasks. The role of `prepare` is to save any context relevant
-   *  to an execution's ''call site'', so that this context may be restored at the
-   *  ''execution site''. (These are often different: for example, execution may be
-   *  suspended through a `Promise`'s future until the `Promise` is completed, which may
-   *  be done in another thread, on another stack.)
-   *
-   *  Note: a valid implementation of `prepare` is one that simply returns `this`.
-   *
-   *  @return the prepared execution context
-   */
+  /** Prepares for the execution of a task. Returns the prepared
+     *  execution context. The recommended implementation of
+     *  `prepare` is to return `this`.
+     * 
+     *  This method should no longer be overridden or called. It was
+     *  originally expected that `prepare` would be called by
+     *  all libraries that consume ExecutionContexts, in order to
+     *  capture thread local context. However, this usage has proven
+     *  difficult to implement in practice and instead it is
+     *  now better to avoid using `prepare` entirely.
+     *
+     *  Instead, if an `ExecutionContext` needs to capture thread
+     *  local context, it should capture that context when it is
+     *  constructed, so that it doesn't need any additional
+     *  preparation later.
+     */
+  @deprecated("Preparation of ExecutionContexts will be removed.", "2.12")
   def prepare(): ExecutionContext = this
-
 }
 
 /**
@@ -115,7 +117,7 @@ object ExecutionContext {
    *
    * @return the global `ExecutionContext`
    */
-  def global: ExecutionContextExecutor = Implicits.global
+  def global: ExecutionContextExecutor = Implicits.global.asInstanceOf[ExecutionContextExecutor]
 
   object Implicits {
     /**
@@ -125,7 +127,7 @@ object ExecutionContext {
      * The default `ExecutionContext` implementation is backed by a port of
      * [[http://gee.cs.oswego.edu/dl/jsr166/dist/jsr166-4jdk7docs/java/util/concurrent/ForkJoinPool.html java.util.concurrent.ForkJoinPool]].
      */
-    implicit lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
+    implicit lazy val global: ExecutionContext = impl.ExecutionContextImpl.fromExecutor(null: Executor)
   }
 
   /** Creates an `ExecutionContext` from the given `ExecutorService`.

@@ -180,6 +180,7 @@ import java.lang.reflect.Constructor;
  * @since 1.7
  * @author Doug Lea
  */
+@Deprecated
 public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
 
     /*
@@ -391,6 +392,7 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
      * any ForkJoinPool will call helpExpungeStaleExceptions when its
      * pool becomes isQuiescent.
      */
+    @Deprecated
     static final class ExceptionNode extends WeakReference<ForkJoinTask<?>> {
         final Throwable ex;
         ExceptionNode next;
@@ -1330,6 +1332,7 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
      * to be compliant with AbstractExecutorService constraints
      * when used in ForkJoinPool.
      */
+    @Deprecated
     static final class AdaptedRunnable<T> extends ForkJoinTask<T>
         implements RunnableFuture<T> {
         final Runnable runnable;
@@ -1349,6 +1352,7 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
     /**
      * Adaptor for Runnables without results
      */
+    @Deprecated
     static final class AdaptedRunnableAction extends ForkJoinTask<Void>
         implements RunnableFuture<Void> {
         final Runnable runnable;
@@ -1366,6 +1370,7 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
     /**
      * Adaptor for Callables
      */
+    @Deprecated
     static final class AdaptedCallable<T> extends ForkJoinTask<T>
         implements RunnableFuture<T> {
         final Callable<? extends T> callable;
