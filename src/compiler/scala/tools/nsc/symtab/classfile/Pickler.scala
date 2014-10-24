@@ -223,6 +223,8 @@ abstract class Pickler extends SubComponent {
         case SingleType(pre, sym) =>
           putType(pre)
           putSymbol(sym)
+        case LiteralType(value) =>
+          putConstant(value)
         case SuperType(thistpe, supertpe) =>
           putType(thistpe)
           putType(supertpe)
@@ -452,6 +454,7 @@ abstract class Pickler extends SubComponent {
         case NoType | NoPrefix                   =>
         case ThisType(sym)                       => writeRef(sym)
         case SingleType(pre, sym)                => writeRef(pre) ; writeRef(sym)
+        case LiteralType(value)                  => writeRef(value)
         case SuperType(thistpe, supertpe)        => writeRef(thistpe) ; writeRef(supertpe)
         case ConstantType(value)                 => writeRef(value)
         case TypeBounds(lo, hi)                  => writeRef(lo) ; writeRef(hi)

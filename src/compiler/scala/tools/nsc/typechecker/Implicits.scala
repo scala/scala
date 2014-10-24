@@ -1160,6 +1160,7 @@ trait Implicits {
           // necessary only to compile typetags used inside the Universe cake
           case ThisType(thisSym) =>
             gen.mkAttributedThis(thisSym)
+          // TODO SIP-23: TypeTag for LiteralType
           case _ =>
             // if `pre` is not a PDT, e.g. if someone wrote
             //   implicitly[scala.reflect.macros.blackbox.Context#TypeTag[Int]]

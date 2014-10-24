@@ -77,6 +77,8 @@ abstract class TreeGen {
         else mkAttributedThis(clazz)
       case SingleType(pre, sym) =>
         mkApplyIfNeeded(mkAttributedStableRef(pre, sym))
+      case LiteralType(value) =>
+        Literal(value) setType tpe
       case TypeRef(pre, sym, args) =>
         if (sym.isRoot) {
           mkAttributedThis(sym)

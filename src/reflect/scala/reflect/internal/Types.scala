@@ -34,6 +34,8 @@ import TypeConstants._
     // super references
   case SingleType(pre, sym) =>
     // pre.sym.type
+  case LiteralType(value) =>
+    // value.type
   case ConstantType(value) =>
     // Int(2)
   case TypeRef(pre, sym, args) =>
@@ -1263,6 +1265,28 @@ trait Types
     }
   }
 
+  /** A class representing a literal type. Conceptually, a SingleType where the path is a literal.
+   *
+   * Along with ConstantType (which triggers constant folding), the most precise type for a literal.
+   *
+   * This type is created by `deconst`ing the corresponding `ConstantType` (see typedLiteral and widenIfNecessary);
+   * it `widen`s to the type of `value`.
+   *
+   * NOTE: `()` is not a literal, and neither are `Symbol`s (`'a`)
+   */
+  abstract case class LiteralType(value: Constant) extends SingletonType with LiteralTypeApi {
+    override def underlying: Type     = value.tpe
+    override def isTrivial: Boolean   = true
+    override def safeToString: String = value.escapedStringValue
+    override def kind                 = "LiteralType"
+  }
+
+  final class UniqueLiteralType(value: Constant) extends LiteralType(value)
+
+  object LiteralType extends LiteralTypeExtractor {
+    def apply(value: Constant) = unique(new UniqueLiteralType(value))
+  }
+
   abstract case class SuperType(thistpe: Type, supertpe: Type) extends SingletonType with SuperTypeApi {
     private var trivial: ThreeValue = UNKNOWN
     override def isTrivial: Boolean = {
@@ -1811,15 +1835,17 @@ trait Types
   class PackageClassInfoType(decls: Scope, clazz: Symbol)
   extends ClassInfoType(List(), decls, clazz)
 
-  /** A class representing a constant type.
+  /** A class representing a constant type. Constant types are constant-folded during type checking.
+   *  To avoid constant folding, use the type returned by `deconst` instead.
    */
   abstract case class ConstantType(value: Constant) extends SingletonType with ConstantTypeApi {
-    override def underlying: Type = value.tpe
     assert(underlying.typeSymbol != UnitClass)
+
+    override def underlying: Type = if (sip23 && value.isSuitableLiteralType) LiteralType(value) else value.tpe // SIP-23
     override def isTrivial: Boolean = true
     override def deconst: Type = underlying.deconst
     override def safeToString: String =
-      underlying.toString + "(" + value.escapedStringValue + ")"
+      underlying.widen.toString + "(" + value.escapedStringValue + ")"
     override def kind = "ConstantType"
   }
 
@@ -3988,7 +4014,7 @@ trait Types
    *  except it excludes ConstantTypes.
    */
   def isSingleType(tp: Type) = tp match {
-    case ThisType(_) | SuperType(_, _) | SingleType(_, _) => true
+    case ThisType(_) | SuperType(_, _) | SingleType(_, _) | LiteralType(_) => true
     case _                                                => false
   }
 

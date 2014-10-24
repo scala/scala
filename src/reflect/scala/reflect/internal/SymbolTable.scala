@@ -52,6 +52,7 @@ abstract class SymbolTable extends macros.Universe
   val gen = new InternalTreeGen { val global: SymbolTable.this.type = SymbolTable.this }
 
   def log(msg: => AnyRef): Unit
+  def sip23: Boolean = false // temporary, overriden in Global
 
   protected def elapsedMessage(msg: String, start: Long) =
     msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start) + "ms"

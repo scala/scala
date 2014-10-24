@@ -904,7 +904,7 @@ abstract class Erasure extends AddInterfaces
                     List(TypeTree(tp) setPos targ.pos)) setPos fn.pos,
                   List()) setPos tree.pos
               targ.tpe match {
-                case SingleType(_, _) | ThisType(_) | SuperType(_, _) =>
+                case SingleType(_, _) | LiteralType(_) | ThisType(_) | SuperType(_, _) =>
                   val cmpOp = if (targ.tpe <:< AnyValTpe) Any_equals else Object_eq
                   atPos(tree.pos) {
                     Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))

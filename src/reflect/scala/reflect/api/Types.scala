@@ -528,12 +528,17 @@ trait Types {
      */
     def supertpe: Type
   }
-  /** The `ConstantType` type is not directly written in user programs, but arises as the type of a constant.
-   *  The REPL expresses constant types like `Int(11)`. Here are some constants with their types:
+
+  /** A `ConstantType` type cannot be expressed in user programs; it is inferred as the type of a constant.
+   *  Here are some constants with their types and the internal string representation:
    *  {{{
-   *     1           ConstantType(Constant(1))
-   *     "abc"       ConstantType(Constant("abc"))
+   *     1           ConstantType(Constant(1))       Int(1)
+   *     "abc"       ConstantType(Constant("abc"))   String("abc")
    *  }}}
+   *
+   *  ConstantTypes denote values that may safely be constant folded during type checking.
+   *  The `deconst` operation returns the equivalent type that will not be constant folded.
+   *
    *  @template
    *  @group Types
    */
@@ -561,6 +566,36 @@ trait Types {
    *  @group API
    */
   trait ConstantTypeApi extends TypeApi { this: ConstantType =>
+    /** The compile-time constant underlying this type. */
+    def value: Constant
+  }
+
+  /** The `LiteralType` type represent a singleton type with a literal for its path.
+   *  Examples: "a".type or 42.type, which may be abbreviated to "a" or 42.
+   *
+   *  @template
+   *  @group Types
+   */
+  type LiteralType >: Null <: LiteralTypeApi with SingletonType
+
+  /** The constructor/extractor for `ConstantType` instances.
+   *  @group Extractors
+   */
+  val LiteralType: LiteralTypeExtractor
+
+  /** An extractor class to create and pattern match with syntax `LiteralType(constant)`
+   *  Here, `constant` is the constant value represented by the type.
+   *  @group Extractors
+   */
+  abstract class LiteralTypeExtractor {
+    def unapply(tpe: LiteralType): Option[Constant]
+  }
+
+  /** The API that all literal types support.
+   *  The main source of information about types is the [[scala.reflect.api.Types]] page.
+   *  @group API
+   */
+  trait LiteralTypeApi extends TypeApi { this: LiteralType =>
     /** The compile-time constant underlying this type. */
     def value: Constant
   }

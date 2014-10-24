@@ -383,6 +383,7 @@ trait TypeKinds { self: ICodes =>
     case ThisType(ArrayClass)            => ObjectReference
     case ThisType(sym)                   => REFERENCE(sym)
     case SingleType(_, sym)              => primitiveOrRefType(sym)
+    case LiteralType(_)                  => toTypeKind(t.underlying)
     case ConstantType(_)                 => toTypeKind(t.underlying)
     case TypeRef(_, sym, args)           => primitiveOrClassType(sym, args)
     case ClassInfoType(_, _, ArrayClass) => abort("ClassInfoType to ArrayClass!")

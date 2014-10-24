@@ -137,6 +137,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.NoPrefix
     this.ThisType
     this.SingleType
+    this.LiteralType
     this.SuperType
     this.TypeBounds
     this.CompoundType

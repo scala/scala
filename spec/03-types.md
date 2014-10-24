@@ -23,6 +23,7 @@ chapter: 3
                       |  SimpleType ‘#’ id
                       |  StableId
                       |  Path ‘.’ ‘type’
+                      |  Literal
                       |  ‘(’ Types ‘)’
   TypeArgs          ::=  ‘[’ Types ‘]’
   Types             ::=  Type {‘,’ Type}
@@ -102,16 +103,40 @@ forms.
 ### Singleton Types
 
 ```ebnf
-SimpleType  ::=  Path ‘.’ type
+SimpleType  ::=  Path ‘.’ ‘type’
 ```
 
 A singleton type is of the form $p.$`type`, where $p$ is a
 path pointing to a value expected to [conform](06-expressions.html#expression-typing)
 to `scala.AnyRef`. The type denotes the set of values
-consisting of `null` and the value denoted by $p$.
+consisting of `null` and the value denoted by $p$
+(i.e., the value $v$ for which `v eq p`).
 
-A _stable type_ is either a singleton type or a type which is
-declared to be a subtype of trait `scala.Singleton`.
+<!-- a pattern match/type test against a singleton type `p.type` desugars to `_ eq p` -->
+
+### Literal Types
+
+```ebnf
+SimpleType  ::=  Literal
+```
+
+A literal type `lit` is a special kind of singleton type which denotes the single literal value `lit`.
+Thus, the type ascription `1: 1` gives the most precise type to the literal value `1`:  the literal type `1`.
+
+At run time, an expression `e` is considered to have literal type `lit` if `e == lit`.
+Concretely, the result of `e.isInstanceOf[lit]` and `e match { case _ : lit => }` is determined by evaluating `e == lit`.
+
+<!-- TODO: use eq when we lift it up to Any -->
+
+<!-- TODO: relate to constant types, which trigger constant folding
+  ConstantType(1).deconst =:= LiteralType(1)
+  LiteralType(1).widen =:= IntClass.tpe
+-->
+
+
+### Stable Types
+A _stable type_ is a singleton type, a literal type,
+or a type that is declared to be a subtype of trait `scala.Singleton`.
 
 ### Type Projection
 

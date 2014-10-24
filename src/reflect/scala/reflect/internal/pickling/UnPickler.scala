@@ -414,6 +414,7 @@ abstract class UnPickler {
         case SINGLEtpe                 => SingleType(readTypeRef(), readSymbolRef().filter(_.isStable)) // SI-7596 account for overloading
         case SUPERtpe                  => SuperType(readTypeRef(), readTypeRef())
         case CONSTANTtpe               => ConstantType(readConstantRef())
+        case LITERALtpe                => LiteralType(readConstantRef())
         case TYPEREFtpe                => TypeRef(readTypeRef(), readSymbolRef(), readTypes())
         case TYPEBOUNDStpe             => TypeBounds(readTypeRef(), readTypeRef())
         case REFINEDtpe | CLASSINFOtpe => CompoundType(readSymbolRef(), readTypes())

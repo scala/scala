@@ -131,6 +131,7 @@ object PickleFormat {
   final val NOPREFIXtpe = 12
   final val THIStpe = 13
   final val SINGLEtpe = 14
+  final val LITERALtpe = LITERAL // TODO SIP-23
   final val CONSTANTtpe = 15
   final val TYPEREFtpe = 16
   final val TYPEBOUNDStpe = 17

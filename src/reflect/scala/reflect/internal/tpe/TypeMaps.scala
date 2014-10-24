@@ -124,6 +124,7 @@ private[internal] trait TypeMaps {
           if (pre1 eq pre) tp
           else singleType(pre1, sym)
         }
+      case LiteralType(_) => tp
       case MethodType(params, result) =>
         val params1 = flipped(mapOver(params))
         val result1 = this(result)

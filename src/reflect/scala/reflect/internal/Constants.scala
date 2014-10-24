@@ -60,6 +60,7 @@ trait Constants extends api.Constants {
     def isFloatRange: Boolean = ByteTag <= tag && tag <= FloatTag
     def isNumeric: Boolean    = ByteTag <= tag && tag <= DoubleTag
     def isNonUnitAnyVal       = BooleanTag <= tag && tag <= DoubleTag
+    def isSuitableLiteralType = BooleanTag <= tag && tag <= NullTag
     def isAnyVal              = UnitTag <= tag && tag <= DoubleTag
 
     def tpe: Type = tag match {

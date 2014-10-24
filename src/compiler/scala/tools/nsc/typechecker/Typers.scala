@@ -5221,15 +5221,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def typedSingletonTypeTree(tree: SingletonTypeTree) = {
+        // SIP-23: don't require AnyRef for 1.type etc
+        val pt = if (sip23) WildcardType else AnyRefTpe
         val refTyped =
           context.withImplicitsDisabled {
-            typed(tree.ref, MonoQualifierModes | mode.onlyTypePat, AnyRefTpe)
+            typed(tree.ref, MonoQualifierModes | mode.onlyTypePat, pt)
           }
 
         if (refTyped.isErrorTyped) {
           setError(tree)
         } else {
-          tree setType refTyped.tpe.resultType
+          // .resultType unwraps NullaryMethodType (accessor of a path)
+          // .deconst unwraps the ConstantType to a LiteralType (for literal-based singleton types)
+          tree setType refTyped.tpe.resultType.deconst
           if (refTyped.isErrorTyped || treeInfo.admitsTypeSelection(refTyped)) tree
           else UnstableTreeError(tree)
         }

@@ -66,6 +66,7 @@ trait Translations {
     case NoPrefix                      => NOPREFIXtpe
     case _: ThisType                   => THIStpe
     case _: SingleType                 => SINGLEtpe
+    case _: LiteralType                => LITERALtpe
     case _: SuperType                  => SUPERtpe
     case _: ConstantType               => CONSTANTtpe
     case _: TypeBounds                 => TYPEBOUNDStpe

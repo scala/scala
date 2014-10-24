@@ -435,6 +435,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
             case ThisType(ArrayClass)               => ObjectReference // was introduced in 9b17332f11 to fix SI-999, but this code is not reached in its test, or any other test
             case ThisType(sym)                      => getClassBTypeAndRegisterInnerClass(sym)
             case SingleType(_, sym)                 => primitiveOrClassToBType(sym)
+            case LiteralType(_)                     => toTypeKind(t.underlying)
             case ConstantType(_)                    => toTypeKind(t.underlying)
             case RefinedType(parents, _)            => parents.map(toTypeKind(_).asClassBType).reduceLeft((a, b) => a.jvmWiseLUB(b))
           }
