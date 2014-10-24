@@ -9,22 +9,23 @@
 package scala
 
 
-/** A partial function of type `PartialFunction[A, B]` is a unary function
- *  where the domain does not necessarily include all values of type `A`.
- *  The function `isDefinedAt` allows to test dynamically if a value is in
- *  the domain of the function.
+/** A partial function `pf` of type `PartialFunction[A, B]` is a unary function
+ *  that allows testing dynamically which values belong to its domain, through
+ *  the `isDefinedAt` method.
  *
- *  Even if `isDefinedAt` returns true for an `a: A`, calling `apply(a)` may
+ *  If `pf.isDefinedAt(a)` for an `a: A`, calling `pf.apply(a)` may
  *  still throw an exception, so the following code is legal:
  *
  *  {{{
  *  val f: PartialFunction[Int, Any] = { case _ => 1/0 }
  *  }}}
- * 
- *  It is the responsibility of the caller to call `isDefinedAt` before
- *  calling `apply`, because if `isDefinedAt` is false, it is not guaranteed
- *  `apply` will throw an exception to indicate an error condition. If an
- *  exception is not thrown, evaluation may result in an arbitrary value.
+
+ *  If `pf.isDefinedAt(a) = false` for an `a: A`, calling `pf.apply(a)` is not
+ *  required to throw an exception. However, evaluation might produce an
+ *  arbitrary value. Hence, it is the responsibility of the caller to call
+ *  `isDefinedAt` before calling `apply`, because if `isDefinedAt` is false, it
+ *  is not guaranteed `apply` will throw an exception to indicate an error
+ *  condition.
  *
  *  The main distinction between `PartialFunction` and [[scala.Function1]] is
  *  that the user of a `PartialFunction` may choose to do something different
