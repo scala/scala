@@ -634,15 +634,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
         super.defineClass(null, arr, 0, arr.length)
     }
 
-    def readFully(is: InputStream): Array[Byte] = {
-      val dis = new java.io.DataInputStream(is)
-      val len = dis.available()
-      val arr = Array.ofDim[Byte](len)
-      dis.readFully(arr)
-      dis.close()
-      arr
-    }
-
     val f = File(arg).normalize
 
     if (f.isDirectory) {
@@ -658,29 +649,19 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
     val entries = flatten(jarFile)
     val cloader = new InfoClassLoader
-    var exists = false
 
-    while (entries.hasNext) {
-      val entry = entries.next()
-      // skip directories and manifests
-      if (!entry.isDirectory && entry.name.endsWith(".class")) {
-        // for each entry get InputStream
-        val is = entry.input
-        // read InputStream into Array[Byte]
-        val arr = readFully(is)
-        val clazz = cloader.classOf(arr)
-        if ((intp.classLoader tryToLoadClass clazz.getName).isDefined) exists = true
-      }
-    }
+    def classNameOf(classFile: AbstractFile): String = cloader.classOf(classFile.toByteArray).getName
+    def alreadyDefined(clsName: String) = intp.classLoader.tryToLoadClass(clsName).isDefined
+    val exists = entries.filter(_.hasExtension("class")).map(classNameOf).exists(alreadyDefined)
 
-    if (f.exists && !exists) {
+    if (!f.exists) echo(s"The path '$f' doesn't seem to exist.")
+    else if (exists) echo(s"The path '$f' cannot be loaded, because existing classpath entries conflict.") // TODO tell me which one
+    else {
       addedClasspath = ClassPath.join(addedClasspath, f.path)
       intp.addUrlsToClassPath(f.toURI.toURL)
       echo("Added '%s' to classpath.".format(f.path, intp.global.classPath.asClasspathString))
       repldbg("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClasspathString))
-    } else if (exists) {
-      echo("The path '" + f + "' cannot be loaded, because existing classpath entries conflict.")
-    } else echo("The path '" + f + "' doesn't seem to exist.")
+    }
   }
 
   def powerCmd(): Result = {
