@@ -11,7 +11,6 @@ import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 import scala.reflect.internal.util.HashSet
-import scala.annotation.tailrec
 
 trait Logic extends Debugging  {
   import PatternMatchingStats._
@@ -104,21 +103,16 @@ trait Logic extends Debugging  {
       def implications: List[(Sym, List[Sym], List[Sym])]
     }
 
-    private def propToLinkedHashSet(ops: Seq[Prop]) = {
-      val set = new mutable.LinkedHashSet[Prop]()
-      ops.foreach(set += _)
-      set
-    }
-
     // would be nice to statically check whether a prop is equational or pure,
     // but that requires typing relations like And(x: Tx, y: Ty) : (if(Tx == PureProp && Ty == PureProp) PureProp else Prop)
-    final case class And(ops: mutable.LinkedHashSet[Prop]) extends Prop
+    final case class And(ops: Set[Prop]) extends Prop
     object And {
-      def apply(ops: Prop*) = new And(propToLinkedHashSet(ops))
+      def apply(ops: Prop*) = new And(ops.toSet)
     }
-    final case class Or(ops: mutable.LinkedHashSet[Prop]) extends Prop
+
+    final case class Or(ops: Set[Prop]) extends Prop
     object Or {
-      def apply(ops: Prop*) = new Or(propToLinkedHashSet(ops))
+      def apply(ops: Prop*) = new Or(ops.toSet)
     }
 
     final case class Not(a: Prop) extends Prop
@@ -146,6 +140,98 @@ trait Logic extends Debugging  {
     def /\(props: Iterable[Prop]) = if (props.isEmpty) True else And(props.toSeq: _*)
     def \/(props: Iterable[Prop]) = if (props.isEmpty) False else Or(props.toSeq: _*)
 
+    /**
+     * Simplifies propositional formula according to the following rules:
+     * - eliminate double negation (avoids unnecessary Tseitin variables)
+     * - flatten trees of same connectives (avoids unnecessary Tseitin variables)
+     * - removes constants and connectives that are in fact constant because of their operands
+     * - eliminates duplicate operands
+     * - convert formula into NNF: all sub-expressions have a positive polarity
+     * which makes them amenable for the subsequent Plaisted transformation
+     * and increases chances to figure out that the formula is already in CNF
+     *
+     * Complexity: DFS over formula tree
+     *
+     * See http://www.decision-procedures.org/slides/propositional_logic-2x3.pdf
+     */
+    def simplify(f: Prop): Prop = {
+
+      // limit size to avoid blow up
+      def hasImpureAtom(ops: Seq[Prop]): Boolean = ops.size < 10 &&
+        ops.combinations(2).exists {
+          case Seq(a, Not(b)) if a == b => true
+          case Seq(Not(a), b) if a == b => true
+          case _                        => false
+        }
+
+      // push negation inside formula
+      def negationNormalFormNot(p: Prop): Prop = p match {
+        case And(ops) => Or(ops.map(negationNormalFormNot)) // De'Morgan
+        case Or(ops)  => And(ops.map(negationNormalFormNot)) // De'Morgan
+        case Not(p)   => negationNormalForm(p)
+        case True     => False
+        case False    => True
+        case s: Sym   => Not(s)
+      }
+
+      def negationNormalForm(p: Prop): Prop = p match {
+        case And(ops)     => And(ops.map(negationNormalForm))
+        case Or(ops)      => Or(ops.map(negationNormalForm))
+        case Not(negated) => negationNormalFormNot(negated)
+        case True
+             | False
+             | (_: Sym)   => p
+      }
+
+      def simplifyProp(p: Prop): Prop = p match {
+        case And(fv)     =>
+          // recurse for nested And (pulls all Ands up)
+          val ops = fv.map(simplifyProp) - True // ignore `True`
+
+          // build up Set in order to remove duplicates
+          val opsFlattened = ops.flatMap {
+            case And(fv) => fv
+            case f       => Set(f)
+          }.toSeq
+
+          if (hasImpureAtom(opsFlattened) || opsFlattened.contains(False)) {
+            False
+          } else {
+            opsFlattened match {
+              case Seq()  => True
+              case Seq(f) => f
+              case ops    => And(ops: _*)
+            }
+          }
+        case Or(fv)      =>
+          // recurse for nested Or (pulls all Ors up)
+          val ops = fv.map(simplifyProp) - False // ignore `False`
+
+          val opsFlattened = ops.flatMap {
+            case Or(fv) => fv
+            case f      => Set(f)
+          }.toSeq
+
+          if (hasImpureAtom(opsFlattened) || opsFlattened.contains(True)) {
+            True
+          } else {
+            opsFlattened match {
+              case Seq()  => False
+              case Seq(f) => f
+              case ops    => Or(ops: _*)
+            }
+          }
+        case Not(Not(a)) =>
+          simplify(a)
+        case Not(p)      =>
+          Not(simplify(p))
+        case p           =>
+          p
+      }
+
+      val nnf = negationNormalForm(f)
+      simplifyProp(nnf)
+    }
 
     trait PropTraverser {
       def apply(x: Prop): Unit = x match {
@@ -153,10 +239,12 @@ trait Logic extends Debugging  {
         case Or(ops) => ops foreach apply
         case Not(a) => apply(a)
         case Eq(a, b) => applyVar(a); applyConst(b)
+        case s: Sym => applySymbol(s)
         case _ =>
       }
       def applyVar(x: Var): Unit = {}
       def applyConst(x: Const): Unit = {}
+      def applySymbol(x: Sym): Unit = {}
     }
 
     def gatherVariables(p: Prop): Set[Var] = {
@@ -165,6 +253,14 @@ trait Logic extends Debugging  {
         override def applyVar(v: Var) = vars += v
       })(p)
       vars.toSet
+    }
+
+    def gatherSymbols(p: Prop): Set[Sym] = {
+      val syms = new mutable.HashSet[Sym]()
+      (new PropTraverser {
+        override def applySymbol(s: Sym) = syms += s
+      })(p)
+      syms.toSet
     }
 
     trait PropMap {
@@ -176,27 +272,10 @@ trait Logic extends Debugging  {
       }
     }
 
-    // to govern how much time we spend analyzing matches for unreachability/exhaustivity
-    object AnalysisBudget {
-      private val budgetProp = scala.sys.Prop[String]("scalac.patmat.analysisBudget")
-      private val budgetOff = "off"
-      val max: Int = {
-        val DefaultBudget = 256
-        budgetProp.option match {
-          case Some(`budgetOff`) =>
-            Integer.MAX_VALUE
-          case Some(x) =>
-            x.toInt
-          case None =>
-            DefaultBudget
-        }
-      }
-
-      abstract class Exception(val advice: String) extends RuntimeException("CNF budget exceeded")
-
-      object exceeded extends Exception(
-          s"(The analysis required more space than allowed. Please try with scalac -D${budgetProp.key}=${AnalysisBudget.max*2} or -D${budgetProp.key}=${budgetOff}.)")
-
+    // TODO: remove since deprecated
+    val budgetProp = scala.sys.Prop[String]("scalac.patmat.analysisBudget")
+    if (budgetProp.isSet) {
+      reportWarning(s"Please remove -D${budgetProp.key}, it is ignored.")
     }
 
     // convert finite domain propositional logic with subtyping to pure boolean propositional logic
@@ -217,7 +296,7 @@ trait Logic extends Debugging  {
     // TODO: for V1 representing x1 and V2 standing for x1.head, encode that
     //       V1 = Nil implies -(V2 = Ci) for all Ci in V2's domain (i.e., it is unassignable)
     // may throw an AnalysisBudget.Exception
-    def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Formula, List[Formula]) = {
+    def removeVarEq(props: List[Prop], modelNull: Boolean = false): (Prop, List[Prop]) = {
       val start = if (Statistics.canEnable) Statistics.startTimer(patmatAnaVarEq) else null
 
       val vars = new mutable.HashSet[Var]
@@ -241,10 +320,10 @@ trait Logic extends Debugging  {
       props foreach gatherEqualities.apply
       if (modelNull) vars foreach (_.registerNull())
 
-      val pure = props map (p => eqFreePropToSolvable(rewriteEqualsToProp(p)))
+      val pure = props map (p => rewriteEqualsToProp(p))
 
-      val eqAxioms = formulaBuilder
-      @inline def addAxiom(p: Prop) = addFormula(eqAxioms, eqFreePropToSolvable(p))
+      val eqAxioms = mutable.ArrayBuffer[Prop]()
+      @inline def addAxiom(p: Prop) = eqAxioms += p
 
       debug.patmat("removeVarEq vars: "+ vars)
       vars.foreach { v =>
@@ -270,49 +349,30 @@ trait Logic extends Debugging  {
         }
       }
 
-      debug.patmat(s"eqAxioms:\n$eqAxioms")
+      debug.patmat(s"eqAxioms:\n${eqAxioms.mkString("\n")}")
       debug.patmat(s"pure:${pure.mkString("\n")}")
 
       if (Statistics.canEnable) Statistics.stopTimer(patmatAnaVarEq, start)
 
-      (toFormula(eqAxioms), pure)
+      (And(eqAxioms: _*), pure)
     }
 
+    type Solvable
 
-    // an interface that should be suitable for feeding a SAT solver when the time comes
-    type Formula
-    type FormulaBuilder
-
-    // creates an empty formula builder to which more formulae can be added
-    def formulaBuilder: FormulaBuilder
-
-    // val f = formulaBuilder; addFormula(f, f1); ... addFormula(f, fN)
-    // toFormula(f) == andFormula(f1, andFormula(..., fN))
-    def addFormula(buff: FormulaBuilder, f: Formula): Unit
-    def toFormula(buff: FormulaBuilder): Formula
-
-    // the conjunction of formulae `a` and `b`
-    def andFormula(a: Formula, b: Formula): Formula
-
-    // equivalent formula to `a`, but simplified in a lightweight way (drop duplicate clauses)
-    def simplifyFormula(a: Formula): Formula
-
-    // may throw an AnalysisBudget.Exception
-    def propToSolvable(p: Prop): Formula = {
-      val (eqAxioms, pure :: Nil) = removeVarEq(List(p), modelNull = false)
-      andFormula(eqAxioms, pure)
+    def propToSolvable(p: Prop): Solvable = {
+      val (eqAxiom, pure :: Nil) = removeVarEq(List(p), modelNull = false)
+      eqFreePropToSolvable(And(eqAxiom, pure))
     }
 
-    // may throw an AnalysisBudget.Exception
-    def eqFreePropToSolvable(p: Prop): Formula
-    def cnfString(f: Formula): String
+    def eqFreePropToSolvable(f: Prop): Solvable
 
     type Model = Map[Sym, Boolean]
     val EmptyModel: Model
     val NoModel: Model
 
-    def findModelFor(f: Formula): Model
-    def findAllModelsFor(f: Formula): List[Model]
+    def findModelFor(solvable: Solvable): Model
+
+    def findAllModelsFor(solvable: Solvable): List[Model]
   }
 }
 
