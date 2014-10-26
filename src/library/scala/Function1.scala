@@ -10,7 +10,7 @@
 package scala
 
 
-/** A function of 1 parameter.
+/** A partial function of 1 parameter.
  *  
  *  In the following example, the definition of succ is a
  *  shorthand for the anonymous class definition anonfun1:
@@ -25,11 +25,10 @@ package scala
  * }
  *  }}}
  *
- *  Note that `Function1` does not define a total function, as might
+ *  `Function1` does not define a total function, as might
  *  be suggested by the existence of [[scala.PartialFunction]]. The only
  *  distinction between `Function1` and `PartialFunction` is that the
  *  latter can specify inputs which it will not handle.
-
  */
 @annotation.implicitNotFound(msg = "No implicit view available from ${T1} => ${R}.")
 trait Function1[@specialized(scala.Int, scala.Long, scala.Float, scala.Double) -T1, @specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) +R] extends AnyRef { self =>
