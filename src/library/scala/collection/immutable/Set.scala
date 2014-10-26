@@ -36,6 +36,12 @@ trait Set[A] extends Iterable[A]
   
   
   override def toSet[B >: A]: Set[B] = to[({type l[a] = immutable.Set[B]})#l] // for bincompat; remove in dev
+
+  /**
+   * Converts this $coll to an immutable sequence.
+   * @return an immutable sequence containing all elements of this $coll.
+   */
+  override def toSeq: scala.collection.Seq[A] = Seq(toBuffer[A]:_*)
   
   override def seq: Set[A] = this
   protected override def parCombiner = ParSet.newCombiner[A] // if `immutable.SetLike` gets introduced, please move this there!
