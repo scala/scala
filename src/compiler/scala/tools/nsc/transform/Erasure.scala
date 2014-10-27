@@ -185,6 +185,25 @@ abstract class Erasure extends AddInterfaces
 
   private def isErasedValueType(tpe: Type) = tpe.isInstanceOf[ErasedValueType]
 
+  /* Drop redundant interfaces (ones which are implemented by some other parent) from the immediate parents.
+   * This is important on Android because there is otherwise an interface explosion.
+   */
+  def minimizeInterfaces(lstIfaces: List[Type]): List[Type] = {
+    var rest   = lstIfaces
+    var leaves = List.empty[Type]
+    while(!rest.isEmpty) {
+      val candidate = rest.head
+      val nonLeaf = leaves exists { t => t.typeSymbol isSubClass candidate.typeSymbol }
+      if(!nonLeaf) {
+        leaves = candidate :: (leaves filterNot { t => candidate.typeSymbol isSubClass t.typeSymbol })
+      }
+      rest = rest.tail
+    }
+
+    leaves.reverse
+  }
+
+
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
@@ -192,16 +211,24 @@ abstract class Erasure extends AddInterfaces
     val isTraitSignature = sym0.enclClass.isTrait
 
     def superSig(parents: List[Type]) = {
-      val ps = (
-        if (isTraitSignature) {
+      def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
+
+      // a signature should always start with a class
+      def ensureClassAsFirstParent(tps: List[Type]) = tps match {
+        case Nil => ObjectTpe :: Nil
+        case head :: tail if isInterfaceOrTrait(head.typeSymbol) => ObjectTpe :: tps
+        case _ => tps
+      }
+
+      val minParents = minimizeInterfaces(parents)
+      val validParents =
+        if (isTraitSignature)
           // java is unthrilled about seeing interfaces inherit from classes
-          val ok = parents filter (p => p.typeSymbol.isTrait || p.typeSymbol.isInterface)
-          // traits should always list Object.
-          if (ok.isEmpty || ok.head.typeSymbol != ObjectClass) ObjectTpe :: ok
-          else ok
-        }
-        else parents
-      )
+          minParents filter (p => isInterfaceOrTrait(p.typeSymbol))
+        else minParents
+
+      val ps = ensureClassAsFirstParent(validParents)
+
       (ps map boxedSig).mkString
     }
     def boxedSig(tp: Type) = jsig(tp, primitiveOK = false)
