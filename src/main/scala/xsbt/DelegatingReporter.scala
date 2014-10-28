@@ -81,6 +81,12 @@ private final class DelegatingReporter(warnFatal: Boolean, noWarn: Boolean, priv
       val sourceFile = o2m(sourceFile0)
       val pointer = o2mi(pointer0)
       val pointerSpace = o2m(pointerSpace0)
+      override def toString =
+        (sourcePath0, line0) match {
+          case (Some(s), Some(l)) => s + ":" + l
+          case (Some(s), _)       => s + ":"
+          case _                  => ""
+        }
     }
 
   import xsbti.Severity.{ Info, Warn, Error }
