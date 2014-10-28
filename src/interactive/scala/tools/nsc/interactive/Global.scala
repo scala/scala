@@ -64,7 +64,7 @@ trait InteractiveAnalyzer extends Analyzer {
     // that case the definitions that were already attributed as
     // well as any default parameters of such methods need to be
     // re-entered in the current scope.
-    override def enterExistingSym(sym: Symbol): Context = {
+    override def enterExistingSym(sym: Symbol, tree: Tree): Context = {
       if (sym != null && sym.owner.isTerm) {
         enterIfNotThere(sym)
         if (sym.isLazy)
@@ -72,8 +72,13 @@ trait InteractiveAnalyzer extends Analyzer {
 
         for (defAtt <- sym.attachments.get[DefaultsOfLocalMethodAttachment])
           defAtt.defaultGetters foreach enterIfNotThere
+      } else if (sym != null && sym.isClass && sym.isImplicit) {
+        val owningInfo = sym.owner.info
+        val existingDerivedSym = owningInfo.decl(sym.name.toTermName).filter(sym => sym.isSynthetic && sym.isMethod)
+        existingDerivedSym.alternatives foreach (owningInfo.decls.unlink)
+        enterImplicitWrapper(tree.asInstanceOf[ClassDef])
       }
-      super.enterExistingSym(sym)
+      super.enterExistingSym(sym, tree)
     }
     override def enterIfNotThere(sym: Symbol) {
       val scope = context.scope

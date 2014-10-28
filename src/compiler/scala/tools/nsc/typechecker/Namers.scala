@@ -296,7 +296,7 @@ trait Namers extends MethodSynthesis {
       }
       tree.symbol match {
         case NoSymbol => try dispatch() catch typeErrorHandler(tree, this.context)
-        case sym      => enterExistingSym(sym)
+        case sym      => enterExistingSym(sym, tree)
       }
     }
 
@@ -736,7 +736,9 @@ trait Namers extends MethodSynthesis {
     }
 
     // Hooks which are overridden in the presentation compiler
-    def enterExistingSym(sym: Symbol): Context = this.context
+    def enterExistingSym(sym: Symbol, tree: Tree): Context = {
+      this.context
+    }
     def enterIfNotThere(sym: Symbol) { }
 
     def enterSyntheticSym(tree: Tree): Symbol = {
