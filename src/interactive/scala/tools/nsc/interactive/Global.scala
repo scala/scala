@@ -64,6 +64,8 @@ trait InteractiveAnalyzer extends Analyzer {
     // that case the definitions that were already attributed as
     // well as any default parameters of such methods need to be
     // re-entered in the current scope.
+    //
+    // Tested in test/files/presentation/t8941b
     override def enterExistingSym(sym: Symbol, tree: Tree): Context = {
       if (sym != null && sym.owner.isTerm) {
         enterIfNotThere(sym)
@@ -737,7 +739,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
   }
 
-  private def reloadSource(source: SourceFile) {
+  private[interactive] def reloadSource(source: SourceFile) {
     val unit = new RichCompilationUnit(source)
     unitOfFile(source.file) = unit
     toBeRemoved -= source.file
@@ -786,7 +788,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** A fully attributed tree located at position `pos` */
-  private def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
+  private[interactive] def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
     case None =>
       reloadSources(List(pos.source))
       try typedTreeAt(pos)
