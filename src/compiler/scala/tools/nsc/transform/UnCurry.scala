@@ -326,7 +326,7 @@ abstract class UnCurry extends InfoTransform
         args.take(formals.length - 1) :+ (suffix setType formals.last)
       }
 
-      val args1 = if (isVarArgTypes(formals)) transformVarargs(formals.last.typeArgs.head) else args
+      val args1 = if (isVarArgTypes(formals)) transformVarargs(formals.last.typeArgs.head.widen) else args
 
       map2(formals, args1) { (formal, arg) =>
         if (!isByNameParamType(formal))
