@@ -174,6 +174,31 @@ sealed abstract class Try[+T] extends Product with Serializable {
    *  `s` if this is a `Success`.
    */
   def transform[U](s: T => Try[U], f: Throwable => Try[U]): Try[U]
+
+  /**
+   * Returns `Left` with `Throwable` if this is a `Failure`, otherwise returns `Right` with `Success` value.
+   */
+  def toEither: Either[Throwable, T]
+
+  /**
+   * Applies `fa` if this is a `Failure` or `fb` if this is a `Success`.
+   * If `fb` is initially applied and throws an exception,
+   * then `fa` is applied with this exception.
+   *
+   * @example {{{
+   * val result: Try[Throwable, Int] = Try { string.toInt }
+   * log(result.fold(
+   *   ex => "Operation failed with " + ex,
+   *   v => "Operation produced value: " + v
+   * ))
+   * }}}
+   *
+   * @param fa the function to apply if this is a `Failure`
+   * @param fb the function to apply if this is a `Success`
+   * @return the results of applying the function
+   */
+  def fold[U](fa: Throwable => U, fb: T => U): U
+
 }
 
 object Try {
@@ -208,6 +233,8 @@ final case class Failure[+T](exception: Throwable) extends Try[T] {
     try { if (pf isDefinedAt exception) pf(exception) else this } catch { case NonFatal(e) => Failure(e) }
   override def failed: Try[Throwable] = Success(exception)
   override def toOption: Option[T] = None
+  override def toEither: Either[Throwable, T] = Left(exception)
+  override def fold[U](fa: Throwable => U, fb: T => U): U = fa(exception)
 }
 
 
@@ -236,4 +263,7 @@ final case class Success[+T](value: T) extends Try[T] {
   override def recoverWith[U >: T](@deprecatedName('f) pf: PartialFunction[Throwable, Try[U]]): Try[U] = this
   override def failed: Try[Throwable] = Failure(new UnsupportedOperationException("Success.failed"))
   override def toOption: Option[T] = Some(value)
+  override def toEither: Either[Throwable, T] = Right(value)
+  override def fold[U](fa: Throwable => U, fb: T => U): U =
+    try { fb(value) } catch { case NonFatal(e) => fa(e) }
 }
