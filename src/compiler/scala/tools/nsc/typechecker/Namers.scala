@@ -413,6 +413,7 @@ trait Namers extends MethodSynthesis {
         if (isRedefinition) {
           updatePosFlags(existing, tree.pos, tree.mods.flags)
           setPrivateWithin(tree, existing)
+          clearRenamedCaseAccessors(existing)
           existing
         }
         else assignAndEnterSymbol(tree) setFlag inConstructorFlag
