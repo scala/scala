@@ -761,12 +761,12 @@ trait MatchAnalysis extends MatchApproximation {
     }
 
     def analyzeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, suppression: Suppression): Unit = {
-      if (!suppression.unreachable) {
+      if (!suppression.suppressUnreachable) {
         unreachableCase(prevBinder, cases, pt) foreach { caseIndex =>
           reportUnreachable(cases(caseIndex).last.pos)
         }
       }
-      if (!suppression.exhaustive) {
+      if (!suppression.suppressExhaustive) {
         val counterExamples = exhaustive(prevBinder, cases, pt)
         if (counterExamples.nonEmpty)
           reportMissingCases(prevBinder.pos, counterExamples)
