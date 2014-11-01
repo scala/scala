@@ -182,7 +182,7 @@ object Iterator {
       }
     }
     def hasNext = (current ne null) && (current.hasNext || advance())
-    def next()  = if (hasNext) current.next else Iterator.empty.next
+    def next()  = if (hasNext) current.next() else Iterator.empty.next()
 
     override def ++[B >: A](that: => GenTraversableOnce[B]): Iterator[B] =
       new ConcatIterator(current, queue :+ (() => that.toIterator))
@@ -191,10 +191,54 @@ object Iterator {
   private[scala] final class JoinIterator[+A](lhs: Iterator[A], that: => GenTraversableOnce[A]) extends Iterator[A] {
     private[this] lazy val rhs: Iterator[A] = that.toIterator
     def hasNext = lhs.hasNext || rhs.hasNext
-    def next    = if (lhs.hasNext) lhs.next else rhs.next
+    def next()  = if (lhs.hasNext) lhs.next() else rhs.next()
 
     override def ++[B >: A](that: => GenTraversableOnce[B]) =
       new ConcatIterator(this, Vector(() => that.toIterator))
+  }
+
+  /** Creates a delegating iterator capped by a limit count. Negative limit means unbounded.
+   *  Lazily skip to start on first evaluation.  Avoids daisy-chained iterators due to slicing.
+   */
+  private[scala] final class SliceIterator[A](val underlying: Iterator[A], start: Int, limit: Int) extends AbstractIterator[A] {
+    private var remaining = limit
+    private var dropping  = start
+    @inline private def unbounded = remaining < 0
+    private def skip(): Unit =
+      while (dropping > 0) {
+        if (underlying.hasNext) {
+          underlying.next()
+          dropping -= 1
+        } else
+          dropping = 0
+      }
+    def hasNext = { skip(); remaining != 0 && underlying.hasNext }
+    def next()  = {
+      skip()
+      if (remaining > 0) {
+        remaining -= 1
+        underlying.next()
+      }
+      else if (unbounded) underlying.next()
+      else empty.next()
+    }
+    override protected def sliceIterator(from: Int, until: Int): Iterator[A] = {
+      val lo = from max 0
+      def adjustedBound =
+        if (unbounded) -1
+        else 0 max (remaining - lo)
+      val rest =
+        if (until < 0) adjustedBound          // respect current bound, if any
+        else if (until <= lo) 0               // empty
+        else if (unbounded) until - lo        // now finite
+        else adjustedBound min (until - lo)   // keep lesser bound
+      if (rest == 0) empty
+      else {
+        dropping += lo
+        remaining = rest
+        this
+      }
+    }
   }
 }
 
@@ -307,11 +351,11 @@ trait Iterator[+A] extends TraversableOnce[A] {
   /** Selects first ''n'' values of this iterator.
    *
    *  @param  n    the number of values to take
-   *  @return an iterator producing only of the first `n` values of this iterator, or else the
+   *  @return an iterator producing only the first `n` values of this iterator, or else the
    *          whole iterator, if it produces fewer than `n` values.
    *  @note   Reuse: $consumesAndProducesIterator
    */
-  def take(n: Int): Iterator[A] = slice(0, n)
+  def take(n: Int): Iterator[A] = sliceIterator(0, n max 0)
 
   /** Advances this iterator past the first ''n'' elements, or the length of the iterator, whichever is smaller.
    *
@@ -320,34 +364,29 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *           it omits the first `n` values.
    *  @note    Reuse: $consumesAndProducesIterator
    */
-  def drop(n: Int): Iterator[A] = slice(n, Int.MaxValue)
+  def drop(n: Int): Iterator[A] = sliceIterator(n, -1)
 
   /** Creates an iterator returning an interval of the values produced by this iterator.
    *
    *  @param from   the index of the first element in this iterator which forms part of the slice.
-   *  @param until  the index of the first element following the slice.
+   *                If negative, the slice starts at zero.
+   *  @param until  the index of the first element following the slice. If negative, the slice is empty.
    *  @return an iterator which advances this iterator past the first `from` elements using `drop`,
    *  and then takes `until - from` elements, using `take`.
    *  @note         Reuse: $consumesAndProducesIterator
    */
-  def slice(from: Int, until: Int): Iterator[A] = {
-    val lo = from max 0
-    var toDrop = lo
-    while (toDrop > 0 && self.hasNext) {
-      self.next()
-      toDrop -= 1
-    }
+  def slice(from: Int, until: Int): Iterator[A] = sliceIterator(from, until max 0)
 
-    new AbstractIterator[A] {
-      private var remaining = until - lo
-      def hasNext = remaining > 0 && self.hasNext
-      def next(): A =
-        if (remaining > 0) {
-          remaining -= 1
-          self.next()
-        }
-        else empty.next()
-    }
+  /** Creates an optionally bounded slice, unbounded if `until` is negative. */
+  protected def sliceIterator(from: Int, until: Int): Iterator[A] = {
+    val lo = from max 0
+    val rest =
+      if (until < 0) -1            // unbounded
+      else if (until <= lo) 0      // empty
+      else until - lo              // finite
+
+    if (rest == 0) empty
+    else new Iterator.SliceIterator(this, lo, rest)
   }
 
   /** Creates a new iterator that maps all produced values of this iterator
