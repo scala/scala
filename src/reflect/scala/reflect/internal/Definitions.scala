@@ -905,12 +905,14 @@ trait Definitions extends api.StandardDefinitions {
         )
     }
 
-    def EnumType(sym: Symbol) =
+    def EnumType(sym: Symbol) = {
       // given (in java): "class A { enum E { VAL1 } }"
       //  - sym: the symbol of the actual enumeration value (VAL1)
       //  - .owner: the ModuleClassSymbol of the enumeration (object E)
       //  - .linkedClassOfClass: the ClassSymbol of the enumeration (class E)
-      sym.owner.linkedClassOfClass.tpe
+      // SI-6613 Subsequent runs of the resident compiler demand the phase discipline here.
+      enteringPhaseNotLaterThan(picklerPhase)(sym.owner.linkedClassOfClass).tpe
+    }
 
     /** Given a class symbol C with type parameters T1, T2, ... Tn
      *  which have upper/lower bounds LB1/UB1, LB1/UB2, ..., LBn/UBn,
