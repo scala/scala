@@ -54,6 +54,9 @@ trait SyntheticMethods extends ast.TreeDSL {
   /** Does not force the info of `caseclazz` */
   final def caseAccessorName(caseclazz: Symbol, paramName: TermName) =
     (renamedCaseAccessors get caseclazz).fold(paramName)(_(paramName))
+  final def clearRenamedCaseAccessors(caseclazz: Symbol): Unit = {
+    renamedCaseAccessors -= caseclazz
+  }
 
   /** Add the synthetic methods to case classes.
    */
