@@ -64,7 +64,9 @@ trait InteractiveAnalyzer extends Analyzer {
     // that case the definitions that were already attributed as
     // well as any default parameters of such methods need to be
     // re-entered in the current scope.
-    override def enterExistingSym(sym: Symbol): Context = {
+    //
+    // Tested in test/files/presentation/t8941b
+    override def enterExistingSym(sym: Symbol, tree: Tree): Context = {
       if (sym != null && sym.owner.isTerm) {
         enterIfNotThere(sym)
         if (sym.isLazy)
@@ -72,8 +74,13 @@ trait InteractiveAnalyzer extends Analyzer {
 
         for (defAtt <- sym.attachments.get[DefaultsOfLocalMethodAttachment])
           defAtt.defaultGetters foreach enterIfNotThere
+      } else if (sym != null && sym.isClass && sym.isImplicit) {
+        val owningInfo = sym.owner.info
+        val existingDerivedSym = owningInfo.decl(sym.name.toTermName).filter(sym => sym.isSynthetic && sym.isMethod)
+        existingDerivedSym.alternatives foreach (owningInfo.decls.unlink)
+        enterImplicitWrapper(tree.asInstanceOf[ClassDef])
       }
-      super.enterExistingSym(sym)
+      super.enterExistingSym(sym, tree)
     }
     override def enterIfNotThere(sym: Symbol) {
       val scope = context.scope
@@ -732,7 +739,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
   }
 
-  private def reloadSource(source: SourceFile) {
+  private[interactive] def reloadSource(source: SourceFile) {
     val unit = new RichCompilationUnit(source)
     unitOfFile(source.file) = unit
     toBeRemoved -= source.file
@@ -781,7 +788,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   }
 
   /** A fully attributed tree located at position `pos` */
-  private def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
+  private[interactive] def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
     case None =>
       reloadSources(List(pos.source))
       try typedTreeAt(pos)
