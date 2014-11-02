@@ -4,7 +4,7 @@ t7636.scala:3: error: illegal inheritance;
                   ^
 t7636.scala:3: error: type mismatch;
  found   : Either[_$2,_$3(in constructor C)] where type _$3(in constructor C), type _$2
- required: Either[_, _$3(in object Main)] where type _$3(in object Main)
+ required: Either[_, _$3(in value <local Main>)] where type _$3(in value <local Main>)
   class C extends ResultTable(Left(5):Either[_,_])(5)
                                      ^
 two errors found
