@@ -39,9 +39,9 @@
 # eclipse, intellij
 /.classpath
 /.project
-/src/intellij/*.iml
-/src/intellij/*.ipr
-/src/intellij/*.iws
+/src/intellij*/*.iml
+/src/intellij*/*.ipr
+/src/intellij*/*.iws
 **/.cache
 /.idea
 /.settings
