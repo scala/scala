@@ -589,7 +589,12 @@ trait Types
     def nonPrivateMembersAdmitting(admit: Long): Scope = membersBasedOnFlags(BridgeAndPrivateFlags & ~admit, 0)
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
-    def implicitMembers: Scope = membersBasedOnFlags(BridgeFlags, IMPLICIT)
+    def implicitMembers: Scope = {
+      typeSymbolDirect match {
+        case sym: ModuleClassSymbol => sym.implicitMembers
+        case _ => membersBasedOnFlags(BridgeFlags, IMPLICIT)
+      }
+    }
 
     /** A list of all deferred symbols of this type  (defined or inherited) */
     def deferredMembers: Scope = membersBasedOnFlags(BridgeFlags, DEFERRED)
@@ -605,6 +610,8 @@ trait Types
      */
     def nonPrivateMember(name: Name): Symbol =
       memberBasedOnName(name, BridgeAndPrivateFlags)
+
+    def packageObject: Symbol = member(nme.PACKAGE)
 
     /** The non-private member with given name, admitting members with given flags `admit`.
      *  "Admitting" refers to the fact that members with a PRIVATE, BRIDGE, or VBRIDGE

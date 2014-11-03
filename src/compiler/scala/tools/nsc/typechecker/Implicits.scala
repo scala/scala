@@ -1012,18 +1012,12 @@ trait Implicits {
               }
             case None =>
               if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
-                val companion =
-                  if (sym.isPackageClass) sym.info.member(nme.PACKAGE) //companionSymbolOf(sym.member, context)
-                  else companionSymbolOf(sym, context)
-                companion.moduleClass match {
-                  case mc: ModuleClassSymbol =>
-                    val pre1 = if (mc.isPackageObjectClass) mc.typeOfThis else singleType(pre, companion)
-                    val infos =
-                      for (im <- mc.implicitMembers.toList) yield new ImplicitInfo(im.name, pre1, im)
-                    if (infos.nonEmpty)
-                      infoMap += (sym -> infos)
-                  case _ =>
-                }
+                val pre1 =
+                  if (sym.isPackageClass) sym.packageObject.typeOfThis
+                  else singleType(pre, companionSymbolOf(sym, context))
+                val infos = pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem)).toList
+                if (infos.nonEmpty)
+                  infoMap += (sym -> infos)
               }
               val bts = tp.baseTypeSeq
               var i = 1
