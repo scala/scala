@@ -123,7 +123,7 @@ trait ReificationSupport { self: SymbolTable =>
         if (vd.rhs.nonEmpty) newmods |= DEFAULTPARAM
         copyValDef(vd)(mods = newmods | extraFlags)
       case _ =>
-        throw new IllegalArgumentException(s"$tree is not valid represenation of a parameter, " +
+        throw new IllegalArgumentException(s"$tree is not valid representation of a parameter, " +
                                             """consider reformatting it into q"val $name: $T = $default" shape""")
     }
 
