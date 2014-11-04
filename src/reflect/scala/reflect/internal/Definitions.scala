@@ -1359,7 +1359,7 @@ trait Definitions extends api.StandardDefinitions {
       else boxedClass.map(kvp => (kvp._2: Symbol, kvp._1)).getOrElse(sym, NoSymbol)
 
     /** Is type's symbol a numeric value class? */
-    def isNumericValueType(tp: Type): Boolean = tp match {
+    def isNumericValueType(tp: Type): Boolean = tp.widen match {
       case TypeRef(_, sym, _) => isNumericValueClass(sym)
       case _                  => false
     }
