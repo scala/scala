@@ -149,6 +149,7 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
     val args = Array.empty[String]
     object output extends SingleOutput {
       def outputDirectory: File = outputDir
+      override def toString = s"SingleOutput($outputDirectory)"
     }
     val weakLog = new WeakLog(ConsoleLogger(), ConsoleReporter)
     val cachedCompiler = new CachedCompiler0(args, output, weakLog, false)
