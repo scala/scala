@@ -34,7 +34,7 @@ case object NoScalaVersion extends ScalaVersion {
  * to segregate builds
  */
 case class SpecificScalaVersion(major: Int, minor: Int, rev: Int, build: ScalaBuild) extends ScalaVersion {
-  def unparse = s"${major}.${minor}.${rev}.${build.unparse}"
+  def unparse = s"${major}.${minor}.${rev}${build.unparse}"
 
   def compare(that: ScalaVersion): Int =  that match {
     case SpecificScalaVersion(thatMajor, thatMinor, thatRev, thatBuild) =>
