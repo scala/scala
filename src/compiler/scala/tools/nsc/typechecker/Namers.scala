@@ -828,7 +828,28 @@ trait Namers extends MethodSynthesis {
       }
     }
 
-    /** This method has a big impact on the eventual compiled code.
+    private def refersToSymbolLessAccessibleThan(tp: Type, sym: Symbol): Boolean = {
+      val accessibilityReference =
+        if (sym.isValue && sym.owner.isClass && sym.isPrivate)
+          sym.getterIn(sym.owner)
+        else sym
+
+      @tailrec def loop(tp: Type): Boolean = tp match {
+        case SingleType(pre, sym) =>
+          (sym isLessAccessibleThan accessibilityReference) || loop(pre)
+        case ThisType(sym) =>
+          sym isLessAccessibleThan accessibilityReference
+        case p: SimpleTypeProxy =>
+          loop(p.underlying)
+        case _ =>
+          false
+      }
+
+      loop(tp)
+    }
+
+    /**
+     * This method has a big impact on the eventual compiled code.
      *  At this point many values have the most specific possible
      *  type (e.g. in val x = 42, x's type is Int(42), not Int) but
      *  most need to be widened to avoid undesirable propagation of
@@ -841,35 +862,39 @@ trait Namers extends MethodSynthesis {
      *  value should not be widened, so it has a use even in situations
      *  whether it is otherwise redundant (such as in a singleton.)
      */
-    private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
-      val getter =
-        if (sym.isValue && sym.owner.isClass && sym.isPrivate)
-          sym.getter(sym.owner)
-        else sym
-      def isHidden(tp: Type): Boolean = tp match {
-        case SingleType(pre, sym) =>
-          (sym isLessAccessibleThan getter) || isHidden(pre)
-        case ThisType(sym) =>
-          sym isLessAccessibleThan getter
-        case p: SimpleTypeProxy =>
-          isHidden(p.underlying)
-        case _ =>
-          false
-      }
-      val shouldWiden = (
-           !tpe.typeSymbolDirect.isModuleClass // Infer Foo.type instead of "object Foo"
-        && (tpe.widen <:< pt)                  // Don't widen our way out of conforming to pt
-        && (   sym.isVariable
-            || sym.isMethod && !sym.hasAccessorFlag
-            || isHidden(tpe)
-           )
-      )
-      dropIllegalStarTypes(
+    private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type =
+      if (sip23) { // SIP-23
+        // TODO: spec -- this is a crucial part of type inference
+        // NOTES:
+        //  - Can we widen less? (E.g., for local definitions.)
+        //  - Do we need to check tpe.deconst <:< pt?
+        //  - We don't need to call dropIllegalStarTypes on a ref to a module class, do we? Where would the stars be? In the prefix?
+
+        // We're inferring the result type of a stable symbol, and the type doesn't refer to a hidden symbol
+        val mayKeepSingletonType = sym.isStable && !refersToSymbolLessAccessibleThan(tpe, sym)
+
+        // (OPT: 99.99% of the time, pt will be WildcardType)
+        @inline def cannotWiden  = (pt ne WildcardType) && !(tpe.widen <:< pt)
+
+        // If the definition can keep its inferred singleton type,
+        // or widening would mean no longer conforming to the expected type,
+        // we must still deconst unless it's a final val. Otherwise, widen.
+        if (mayKeepSingletonType || cannotWiden) { if (sym.isFinal) tpe else tpe.deconst }
+        else tpe.widen
+      } else {
+        val shouldWiden = (
+             !tpe.typeSymbolDirect.isModuleClass // Infer Foo.type instead of "object Foo"
+          && (tpe.widen <:< pt)                  // Don't widen our way out of conforming to pt
+          && (   sym.isVariable
+              || sym.isMethod && !sym.hasAccessorFlag
+              || refersToSymbolLessAccessibleThan(tpe, sym)
+             )
+        )
         if (shouldWiden) tpe.widen
         else if (sym.isFinal) tpe    // "final val" allowed to retain constant type
         else tpe.deconst
-      )
-    }
+      }
+
     /** Computes the type of the body in a ValDef or DefDef, and
      *  assigns the type to the tpt's node.  Returns the type.
      */
@@ -879,7 +904,7 @@ trait Namers extends MethodSynthesis {
         case _ => defnTyper.computeType(tree.rhs, pt)
       }
 
-      val defnTpe = widenIfNecessary(tree.symbol, rhsTpe, pt)
+      val defnTpe = dropIllegalStarTypes(widenIfNecessary(tree.symbol, rhsTpe, pt))
       tree.tpt defineType defnTpe setPos tree.pos.focus
       tree.tpt.tpe
     }
