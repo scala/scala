@@ -605,7 +605,7 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
             <dd>{
               val exceptionsXml: List[NodeSeq] =
                 for((name, body) <- comment.throws.toList.sortBy(_._1) ) yield
-                  <span class="cmt">{Text(name) ++ bodyToHtml(body)}</span>
+                  <span class="cmt">{bodyToHtml(body)}</span>
               exceptionsXml.reduceLeft(_ ++ Text("") ++ _)
             }</dd>
           }
