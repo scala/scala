@@ -1,7 +1,6 @@
 package scala.tools.nsc
 package transform
 
-import scala.reflect.internal._
 import scala.tools.nsc.ast.TreeDSL
 import scala.tools.nsc.Global
 

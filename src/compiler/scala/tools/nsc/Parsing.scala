@@ -7,7 +7,6 @@ package scala
 package tools.nsc
 
 import scala.reflect.internal.Positions
-import scala.tools.nsc.reporters.Reporter
 
 /** Similar to Reporting: gather global functionality specific to parsing.
  */

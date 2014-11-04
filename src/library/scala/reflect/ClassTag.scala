@@ -2,8 +2,7 @@ package scala
 package reflect
 
 import java.lang.{ Class => jClass }
-import scala.language.{implicitConversions, existentials}
-import scala.runtime.ScalaRunTime.{ arrayClass, arrayElementClass }
+import scala.runtime.ScalaRunTime.arrayElementClass
 
 /**
  *

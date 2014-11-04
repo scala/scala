@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package transform
 
-import symtab.Flags._
 import scala.reflect.internal.SymbolPairs
 
 /** A class that yields a kind of iterator (`Cursor`),

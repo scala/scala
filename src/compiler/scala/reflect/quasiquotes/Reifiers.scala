@@ -8,7 +8,6 @@ import scala.reflect.internal.Flags._
 trait Reifiers { self: Quasiquotes =>
   import global._
   import global.build._
-  import global.treeInfo._
   import global.definitions._
   import Rank._
   import universeTypes._

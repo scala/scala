@@ -5,7 +5,6 @@ package transform
 trait PostErasure {
   val global: SymbolTable
   import global._
-  import definitions._
 
   object elimErasedValueType extends TypeMap {
     def apply(tp: Type) = tp match {

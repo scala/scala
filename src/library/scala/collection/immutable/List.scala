@@ -290,7 +290,6 @@ sealed abstract class List[+A] extends AbstractSeq[A]
       if (this eq Nil) Nil.asInstanceOf[That] else {
         var rest = this
         var h: ::[B] = null
-        var x: A = null.asInstanceOf[A]
         // Special case for first element
         do {
           val x: Any = pf.applyOrElse(rest.head, List.partialNotApplied)

@@ -98,7 +98,7 @@ abstract class Erasure extends AddInterfaces
     val len = sig.length
     val copy: Array[Char] = sig.toCharArray
     var changed = false
-    while (i < sig.length) {
+    while (i < len) {
       val ch = copy(i)
       if (ch == '.' && last != '>') {
          copy(i) = '$'
@@ -410,7 +410,6 @@ abstract class Erasure extends AddInterfaces
       def fulldef(sym: Symbol) =
         if (sym == NoSymbol) sym.toString
         else s"$sym: ${sym.tpe} in ${sym.owner}"
-      var noclash = true
       val clashErrors = mutable.Buffer[(Position, String)]()
       def clashError(what: String) = {
         val pos = if (member.owner == root) member.pos else root.pos

@@ -7,7 +7,6 @@ import util._
 
 trait ReificationSupport { self: SymbolTable =>
   import definitions._
-  import internal._
 
   class ReificationSupportImpl extends ReificationSupportApi {
     def selectType(owner: Symbol, name: String): TypeSymbol =

@@ -1,18 +1,12 @@
 package scala.reflect.macros
 package compiler
 
-import scala.reflect.internal.Flags._
-import scala.reflect.macros.TypecheckException
-
 trait Resolvers {
   self: DefaultMacroCompiler =>
 
   import global._
   import analyzer._
-  import definitions._
   import treeInfo._
-  import gen._
-  import runDefinitions._
 
   trait Resolver {
     self: MacroImplRefCompiler =>

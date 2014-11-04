@@ -8,7 +8,6 @@ package scala.tools.nsc
 import scala.reflect.internal.util.{ SourceFile, NoSourceFile, FreshNameCreator }
 import scala.collection.mutable
 import scala.collection.mutable.{ LinkedHashSet, ListBuffer }
-import scala.tools.nsc.reporters.Reporter
 
 trait CompilationUnits { global: Global =>
 
