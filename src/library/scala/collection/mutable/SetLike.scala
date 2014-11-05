@@ -208,7 +208,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   /** Send a message to this scriptable object.
    *
    *  @param cmd  the message to send.
-   *  @throws `Predef.UnsupportedOperationException`
+   *  @throws UnsupportedOperationException
    *  if the message was not understood.
    */
   @deprecated("Scripting is deprecated.", "2.11.0")

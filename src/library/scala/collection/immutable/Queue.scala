@@ -53,7 +53,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    *
    *  @param  n index of the element to return
    *  @return   the element at position `n` in this queue.
-   *  @throws Predef.NoSuchElementException if the queue is too short.
+   *  @throws java.util.NoSuchElementException if the queue is too short.
    */
   override def apply(n: Int): A = {
     val len = out.length
@@ -120,7 +120,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.
    *
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    *  @return the first element of the queue.
    */
   def dequeue: (A, Queue[A]) = out match {
@@ -139,7 +139,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
   /** Returns the first element in the queue, or throws an error if there
    *  is no element contained in the queue.
    *
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    *  @return the first element.
    */
   def front: A = head

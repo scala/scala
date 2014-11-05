@@ -47,7 +47,7 @@ trait GenSeqLike[+A, +Repr] extends Any with GenIterableLike[A, Repr] with Equal
    *
    *  @param  idx  The index to select.
    *  @return the element of this $coll at index `idx`, where `0` indicates the first element.
-   *  @throws `IndexOutOfBoundsException` if `idx` does not satisfy `0 <= idx < length`.
+   *  @throws IndexOutOfBoundsException if `idx` does not satisfy `0 <= idx < length`.
    */
   def apply(idx: Int): A
 

@@ -159,7 +159,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    *             op( op( ... op(x_1, x_2) ..., x_{n-1}), x_n)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
-   *  @throws `UnsupportedOperationException` if this $coll is empty.   */
+   *  @throws UnsupportedOperationException if this $coll is empty.   */
   def reduceLeft[B >: A](op: (B, A) => B): B = {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.reduceLeft")

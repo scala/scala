@@ -111,7 +111,7 @@ class ListSet[A] extends AbstractSet[A]
 
   /** Creates a new iterator over all elements contained in this set.
    *
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    *  @return the new iterator
    */
   def iterator: Iterator[A] = new AbstractIterator[A] {
@@ -127,12 +127,12 @@ class ListSet[A] extends AbstractSet[A]
   }
 
   /**
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    */
   override def head: A = throw new NoSuchElementException("Set has no elements")
 
   /**
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    */
   override def tail: ListSet[A] = throw new NoSuchElementException("Next of an empty set")
 

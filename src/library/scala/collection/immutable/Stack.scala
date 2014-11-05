@@ -95,7 +95,7 @@ class Stack[+A] protected (protected val elems: List[A])
   /** Returns the top element of the stack. An error is signaled if
    *  there is no element on the stack.
    *
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    *  @return the top element.
    */
   def top: A =
@@ -105,7 +105,7 @@ class Stack[+A] protected (protected val elems: List[A])
   /** Removes the top element from the stack.
    *  Note: should return `(A, Stack[A])` as for queues (mics)
    *
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    *  @return the new stack without the former top element.
    */
   def pop: Stack[A] =

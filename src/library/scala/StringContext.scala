@@ -58,7 +58,7 @@ case class StringContext(parts: String*) {
   /** Checks that the length of the given argument `args` is one less than the number
    *  of `parts` supplied to the enclosing `StringContext`.
    *  @param `args` The arguments to be checked.
-   *  @throws An `IllegalArgumentException` if this is not the case.
+   *  @throws IllegalArgumentException  if this is not the case.
    */
   def checkLengths(args: Seq[Any]): Unit =
     if (parts.length != args.length + 1)
@@ -85,10 +85,11 @@ case class StringContext(parts: String*) {
    *  will print the string `1 + 1 = 2`.
    *
    *  @param `args` The arguments to be inserted into the resulting string.
-   *  @throws An `IllegalArgumentException`
+   *  @throws IllegalArgumentException
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
-   *  @throws A `StringContext.InvalidEscapeException` if a `parts` string contains a backslash (`\`) character
+   *  @throws StringContext.InvalidEscapeException
+   *          if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
    */
   def s(args: Any*): String = standardInterpolator(treatEscapes, args)
@@ -109,7 +110,7 @@ case class StringContext(parts: String*) {
    *  }}}
    *
    *  @param `args` The arguments to be inserted into the resulting string.
-   *  @throws An `IllegalArgumentException`
+   *  @throws IllegalArgumentException
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
    */
@@ -144,10 +145,11 @@ case class StringContext(parts: String*) {
    *  }}}
    *
    *  @param `args` The arguments to be inserted into the resulting string.
-   *  @throws An `IllegalArgumentException`
+   *  @throws IllegalArgumentException
    *          if the number of `parts` in the enclosing `StringContext` does not exceed
    *          the number of arguments `arg` by exactly 1.
-   *  @throws A `StringContext.InvalidEscapeException` if a `parts` string contains a backslash (`\`) character
+   *  @throws StringContext.InvalidEscapeException
+   *          if a `parts` string contains a backslash (`\`) character
    *          that does not start a valid escape sequence.
    *
    *  Note: The `f` method works by assembling a format string from all the `parts` strings and using

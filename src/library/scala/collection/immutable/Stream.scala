@@ -225,7 +225,7 @@ self =>
    * }}}
    *
    *  @return The first element of the `Stream`.
-   *  @throws Predef.NoSuchElementException if the stream is empty.
+   *  @throws java.util.NoSuchElementException if the stream is empty.
    */
   def head: A
 
@@ -236,7 +236,7 @@ self =>
    *  returns the lazy result.
    *
    *  @return The tail of the `Stream`.
-   *  @throws Predef.UnsupportedOperationException if the stream is empty.
+   *  @throws UnsupportedOperationException if the stream is empty.
    */
   def tail: Stream[A]
 
@@ -876,7 +876,7 @@ self =>
    * @return A new `Stream` containing everything but the last element.  If your
    * `Stream` represents an infinite series, this method will not return.
    *
-   *  @throws `Predef.UnsupportedOperationException` if the stream is empty.
+   *  @throws UnsupportedOperationException if the stream is empty.
    */
   override def init: Stream[A] =
     if (isEmpty) super.init
