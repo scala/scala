@@ -252,39 +252,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
   def addUrlsToClassPath(urls: URL*): Unit = {
     new Run //  force some initialization
     urls.foreach(_runtimeClassLoader.addURL) // Add jars to runtime classloader
-    extendCompilerClassPath(urls: _*)           // Add jars to compile-time classpath
-  }
-
-  /** Extend classpath of global.platform and force `global` to rescan updated packages. */
-  protected def extendCompilerClassPath(urls: URL*): Unit = {
-    val newClassPath = mergeUrlsIntoClassPath(global.platform, urls: _*)
-    global.platform.currentClassPath = Some(newClassPath)
-    // Reload all specified jars into the current compiler instance (global)
-    global.invalidateClassPathEntries(urls.map(_.getPath): _*)
-  }
-
-  /** Merge classpath of `platform` and `urls` into merged classpath */
-  protected def mergeUrlsIntoClassPath(platform: JavaPlatform, urls: URL*): MergedClassPath[AbstractFile] = {
-    // Collect our new jars/directories and add them to the existing set of classpaths
-    val prevEntries = platform.classPath match {
-      case mcp: MergedClassPath[AbstractFile] => mcp.entries
-      case cp:  ClassPath[AbstractFile]       => List(cp)
-    }
-    val allEntries = (prevEntries ++
-      urls.map(url => platform.classPath.context.newClassPath(
-          if (url.getProtocol == "file") {
-            val f = new File(url.getPath)
-            if (f.isDirectory) io.AbstractFile.getDirectory(f)
-            else io.AbstractFile.getFile(f)
-          } else {
-            io.AbstractFile.getURL(url)
-          }
-        )
-      )
-    ).distinct
-
-    // Combine all of our classpaths (old and new) into one merged classpath
-    new MergedClassPath(allEntries, platform.classPath.context)
+    global.extendCompilerClassPath(urls: _*) // Add jars to compile-time classpath
   }
 
   /** Parent classloader.  Overridable. */
