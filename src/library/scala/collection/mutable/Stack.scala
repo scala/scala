@@ -125,7 +125,7 @@ extends AbstractSeq[A]
    *  the element from the stack. An error is signaled if there is no
    *  element on the stack.
    *
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    *  @return the top element
    */
   def top: A =
@@ -133,7 +133,7 @@ extends AbstractSeq[A]
 
   /** Removes the top element from the stack.
    *
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    *  @return the top element
    */
   def pop(): A = {

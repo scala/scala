@@ -133,7 +133,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *
    *  @param n     the index where a new element will be inserted.
    *  @param seq   the traversable object providing all elements to insert.
-   *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
+   *  @throws IndexOutOfBoundsException if `n` is out of bounds.
    */
   def insertAll(n: Int, seq: Traversable[A]) {
     if (n < 0 || n > size0) throw new IndexOutOfBoundsException(n.toString)
@@ -150,7 +150,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *
    *  @param n       the index which refers to the first element to delete.
    *  @param count   the number of elements to delete
-   *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
+   *  @throws IndexOutOfBoundsException if `n` is out of bounds.
    */
   override def remove(n: Int, count: Int) {
     require(count >= 0, "removing negative number of elements")

@@ -63,7 +63,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
   /** Selects the first element of this $coll.
    *  $orderDependent
    *  @return  the first element of this $coll.
-   *  @throws `NoSuchElementException` if the $coll is empty.
+   *  @throws NoSuchElementException if the $coll is empty.
    */
   def head: A
 
@@ -83,7 +83,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *  $orderDependent
    *  @return  a $coll consisting of all elements of this $coll
    *           except the first one.
-   *  @throws `UnsupportedOperationException` if the $coll is empty.
+   *  @throws UnsupportedOperationException if the $coll is empty.
    */
   def tail: Repr
 
@@ -105,7 +105,7 @@ trait GenTraversableLike[+A, +Repr] extends Any with GenTraversableOnce[A] with 
    *  $orderDependent
    *  @return  a $coll consisting of all elements of this $coll
    *           except the last one.
-   *  @throws `UnsupportedOperationException` if the $coll is empty.
+   *  @throws UnsupportedOperationException if the $coll is empty.
    */
   def init: Repr
 

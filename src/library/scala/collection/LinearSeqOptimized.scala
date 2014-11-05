@@ -44,7 +44,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
 
   /** Selects an element by its index in the $coll.
    *  Note: the execution of `apply` may take time proportial to the index value.
-   *  @throws `IndexOutOfBoundsException` if `idx` does not satisfy `0 <= idx < length`.
+   *  @throws IndexOutOfBoundsException if `idx` does not satisfy `0 <= idx < length`.
    */
   def apply(n: Int): A = {
     val rest = drop(n)

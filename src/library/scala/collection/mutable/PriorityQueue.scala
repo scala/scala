@@ -126,7 +126,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
   /** Returns the element with the highest priority in the queue,
    *  and removes this element from the queue.
    *
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    *  @return   the element with the highest priority.
    */
   def dequeue(): A =

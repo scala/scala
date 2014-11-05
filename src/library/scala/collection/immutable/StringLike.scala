@@ -230,31 +230,31 @@ self =>
   def r(groupNames: String*): Regex = new Regex(toString, groupNames: _*)
 
   /**
-   * @throws `java.lang.IllegalArgumentException` - If the string does not contain a parsable boolean.
+   * @throws java.lang.IllegalArgumentException - If the string does not contain a parsable boolean.
    */
   def toBoolean: Boolean = parseBoolean(toString)
   /**
-   * @throws `java.lang.NumberFormatException` - If the string does not contain a parsable byte.
+   * @throws java.lang.NumberFormatException - If the string does not contain a parsable byte.
    */
   def toByte: Byte       = java.lang.Byte.parseByte(toString)
   /**
-   * @throws `java.lang.NumberFormatException` - If the string does not contain a parsable short.
+   * @throws java.lang.NumberFormatException - If the string does not contain a parsable short.
    */
   def toShort: Short     = java.lang.Short.parseShort(toString)
   /**
-   * @throws `java.lang.NumberFormatException`  - If the string does not contain a parsable int.
+   * @throws java.lang.NumberFormatException  - If the string does not contain a parsable int.
    */
   def toInt: Int         = java.lang.Integer.parseInt(toString)
   /**
-   * @throws `java.lang.NumberFormatException`  - If the string does not contain a parsable long.
+   * @throws java.lang.NumberFormatException  - If the string does not contain a parsable long.
    */
   def toLong: Long       = java.lang.Long.parseLong(toString)
   /**
-   * @throws `java.lang.NumberFormatException` - If the string does not contain a parsable float.
+   * @throws java.lang.NumberFormatException - If the string does not contain a parsable float.
    */
   def toFloat: Float     = java.lang.Float.parseFloat(toString)
   /**
-   * @throws `java.lang.NumberFormatException` - If the string does not contain a parsable double.
+   * @throws java.lang.NumberFormatException - If the string does not contain a parsable double.
    */
   def toDouble: Double   = java.lang.Double.parseDouble(toString)
 
@@ -287,7 +287,7 @@ self =>
    *    understands.
    *
    *  @param args the arguments used to instantiating the pattern.
-   *  @throws `java.lang.IllegalArgumentException`
+   *  @throws java.lang.IllegalArgumentException
    */
   def format(args : Any*): String =
     java.lang.String.format(toString, args map unwrapArg: _*)
@@ -304,7 +304,7 @@ self =>
    *
    *  @param l    an instance of `java.util.Locale`
    *  @param args the arguments used to instantiating the pattern.
-   *  @throws `java.lang.IllegalArgumentException`
+   *  @throws java.lang.IllegalArgumentException
    */
   def formatLocal(l: java.util.Locale, args: Any*): String =
     java.lang.String.format(l, toString, args map unwrapArg: _*)

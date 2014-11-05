@@ -70,9 +70,9 @@ object Platform {
    *  @param elemClass the `Class` object of the component type of the array
    *  @param length    the length of the new array.
    *  @return          an array of the given component type as an `AnyRef`.
-   *  @throws `java.lang.NullPointerException` If `elemClass` is `null`.
-   *  @throws `java.lang.IllegalArgumentException` if componentType is [[scala.Unit]] or `java.lang.Void.TYPE`
-   *  @throws `java.lang.NegativeArraySizeException` if the specified length is negative
+   *  @throws java.lang.NullPointerException If `elemClass` is `null`.
+   *  @throws java.lang.IllegalArgumentException if componentType is [[scala.Unit]] or `java.lang.Void.TYPE`
+   *  @throws java.lang.NegativeArraySizeException if the specified length is negative
    */
   @inline
   def createArray(elemClass: Class[_], length: Int): AnyRef =
@@ -80,7 +80,7 @@ object Platform {
 
   /** Assigns the value of 0 to each element in the array.
     * @param arr     A non-null Array[Int].
-    * @throws `java.lang.NullPointerException` If `arr` is `null`.
+    * @throws java.lang.NullPointerException If `arr` is `null`.
     */
   @inline
   def arrayclear(arr: Array[Int]) { java.util.Arrays.fill(arr, 0) }
@@ -92,9 +92,9 @@ object Platform {
    *
    * @param    name the fully qualified name of the desired class.
    * @return   the `Class` object for the class with the specified name.
-   * @throws `java.lang.LinkageError` if the linkage fails
-   * @throws `java.lang.ExceptionInInitializerError` if the initialization provoked by this method fails
-   * @throws `java.lang.ClassNotFoundException` if the class cannot be located
+   * @throws java.lang.LinkageError if the linkage fails
+   * @throws java.lang.ExceptionInInitializerError if the initialization provoked by this method fails
+   * @throws java.lang.ClassNotFoundException if the class cannot be located
    *  @example {{{
    *  val a = scala.compat.Platform.getClassForName("java.lang.Integer")  // returns the Class[_] for java.lang.Integer
    *  }}}

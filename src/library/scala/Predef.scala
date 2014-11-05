@@ -220,7 +220,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   }
 
   /** `???` can be used for marking methods that remain to be implemented.
-   *  @throws  A `NotImplementedError`
+   *  @throws NotImplementedError
    */
   def ??? : Nothing = throw new NotImplementedError
 
