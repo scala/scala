@@ -9,7 +9,7 @@ package interpreter
 
 import java.lang.{ ClassLoader => JavaClassLoader, Iterable => JIterable }
 import scala.tools.nsc.util.ScalaClassLoader
-import java.io.{ ByteArrayInputStream, CharArrayWriter, FileNotFoundException, PrintWriter, Writer }
+import java.io.{ ByteArrayInputStream, CharArrayWriter, FileNotFoundException, PrintWriter, StringWriter, Writer }
 import java.util.{ Locale }
 import java.util.concurrent.ConcurrentLinkedQueue
 import javax.tools.{ Diagnostic, DiagnosticCollector, DiagnosticListener,
@@ -18,39 +18,47 @@ import javax.tools.{ Diagnostic, DiagnosticCollector, DiagnosticListener,
 import scala.reflect.io.{ AbstractFile, Directory, File, Path }
 import scala.io.Source
 import scala.util.{ Try, Success, Failure }
-import scala.util.Properties.lineSeparator
+import scala.util.Properties.{ lineSeparator => EOL }
 import scala.util.matching.Regex
-import scala.collection.JavaConverters
+import scala.collection.JavaConverters._
 import scala.collection.generic.Clearable
 import java.net.URL
 import scala.language.reflectiveCalls
+import PartialFunction.{ cond => when }
 import Javap._
 
+/** Javap command implementation. Supports platform tool for Java 6 or 7+.
+ *  Adds a few options for REPL world, to show bodies of `App` classes and closures.
+ */
 class JavapClass(
   val loader: ScalaClassLoader,
   val printWriter: PrintWriter,
   intp: Option[IMain] = None
-) extends scala.tools.util.Javap {
+) extends Javap {
   import JavapTool.ToolArgs
   import JavapClass._
 
   lazy val tool = JavapTool()
 
-  /** Run the tool. Option args start with "-".
+  /** Run the tool. Option args start with "-", except that "-" itself
+   *  denotes the last REPL result.
    *  The default options are "-protected -verbose".
    *  Byte data for filename args is retrieved with findBytes.
+   *  @return results for invoking JpResult.show()
    */
   def apply(args: Seq[String]): List[JpResult] = {
     val (options, classes) = args partition (s => (s startsWith "-") && s.length > 1)
-    val (flags, upgraded) = upgrade(options)
+    val (flags, upgraded)  = upgrade(options)
     import flags.{ app, fun, help, raw }
+
     val targets = if (fun && !help) FunFinder(loader, intp).funs(classes) else classes
+
     if (help || classes.isEmpty)
       List(JpResult(JavapTool.helper(printWriter)))
     else if (targets.isEmpty)
-      List(JpResult("No anonfuns found."))
+      List(JpResult("No closures found."))
     else
-      tool(raw, upgraded)(targets map (klass => targeted(klass, app)))
+      tool(raw, upgraded)(targets map (targeted(_, app)))   // JavapTool.apply
   }
 
   /** Cull our tool options. */
@@ -79,8 +87,10 @@ class JavapClass(
       case s                                      => s
     }
     val targetedBytes = if (app) findAppBody(req) else (path, findBytes(req))
-    if (targetedBytes._2.isEmpty) throw new FileNotFoundException(s"Could not find class bytes for '$path'")
-    targetedBytes
+    targetedBytes match {
+      case (_, bytes) if bytes.isEmpty => throw new FileNotFoundException(s"Could not find class bytes for '$path'")
+      case ok                          => ok
+    }
   }
 
   private def findAppBody(path: String): (String, Array[Byte]) = {
@@ -89,16 +99,12 @@ class JavapClass(
     // assumes only the first match is of interest (because only one endpoint is generated).
     def findNewStyle(bytes: Array[Byte]) = {
       import scala.tools.asm.ClassReader
-      import scala.tools.asm.tree.ClassNode
-      import PartialFunction.cond
-      import JavaConverters._
-      val rdr = new ClassReader(bytes)
-      val nod = new ClassNode
-      rdr.accept(nod, 0)
       //foo/Bar.delayedEndpoint$foo$Bar$1
       val endpoint = "delayedEndpoint".r.unanchored
-      def isEndPoint(s: String) = (s contains '$') && cond(s) { case endpoint() => true }
-      nod.methods.asScala collectFirst { case m if isEndPoint(m.name) => m.name }
+      def isEndPoint(s: String) = (s contains '$') && when(s) { case endpoint() => true }
+      new ClassReader(bytes) withMethods { methods =>
+        methods collectFirst { case m if isEndPoint(m.name) => m.name }
+      }
     }
     // try new style, and add foo#delayedEndpoint$bar$1 to filter on the endpoint
     def asNewStyle(bytes: Array[Byte]) = Some(bytes) filter (_.nonEmpty) flatMap { bs =>
@@ -122,8 +128,7 @@ class JavapClass(
 
   def findBytes(path: String): Array[Byte] = tryFile(path) getOrElse tryClass(path)
 
-  /** Assume the string is a path and try to find the classfile
-   *  it represents.
+  /** Assume the string is a path and try to find the classfile it represents.
    */
   def tryFile(path: String): Option[Array[Byte]] =
     (Try (File(path.asClassResource)) filter (_.exists) map (_.toByteArray())).toOption
@@ -202,55 +207,67 @@ class JavapClass(
       w
     }
 
+    def filterLines(target: String, text: String): String = {
+      // take Foo# as Foo#apply for purposes of filtering. Useful for -fun Foo#;
+      // if apply is added here, it's for other than -fun: javap Foo#, perhaps m#?
+      val filterOn  = target.splitHashMember._2 map { s => if (s.isEmpty) "apply" else s }
+      var filtering = false   // true if in region matching filter
+      // turn filtering on/off given the pattern of interest
+      def filterStatus(line: String, pattern: String) = {
+        def isSpecialized(method: String) = (method startsWith pattern+"$") && (method endsWith "$sp")
+        def isAnonymized(method: String)  = (pattern == "$anonfun") && (method startsWith "$anonfun$")
+        // cheap heuristic, todo maybe parse for the java sig.
+        // method sigs end in paren semi
+        def isAnyMethod = line endsWith ");"
+        // take the method name between the space char and left paren.
+        // accept exact match or something that looks like what we might be asking for.
+        def isOurMethod = {
+          val lparen = line lastIndexOf '('
+          val blank  = line.lastIndexOf(' ', lparen)
+          if (blank < 0) false
+          else {
+            val method = line.substring(blank+1, lparen)
+            (method == pattern || isSpecialized(method) || isAnonymized(method))
+          }
+        }
+        filtering =
+          if (filtering) {
+            // next blank line terminates section
+            // in non-verbose mode, next line is next method, more or less
+            line.trim.nonEmpty && (!isAnyMethod || isOurMethod)
+          } else {
+            isAnyMethod && isOurMethod
+          }
+        filtering
+      }
+      // do we output this line?
+      def checkFilter(line: String) = filterOn map (filterStatus(line, _)) getOrElse true
+      val sw = new StringWriter
+      val pw = new PrintWriter(sw)
+      for {
+        line <- Source.fromString(text).getLines()
+        if checkFilter(line)
+      } pw println line
+      pw.flush()
+      sw.toString
+    }
+
     /** Create a Showable with output massage.
      *  @param raw show ugly repl names
      *  @param target attempt to filter output to show region of interest
      *  @param preamble other messages to output
      */
-    def showWithPreamble(raw: Boolean, target: String, preamble: String = ""): Showable = new Showable {
-      // ReplStrippingWriter clips and scrubs on write(String)
-      // circumvent it by write(mw, 0, mw.length) or wrap it in withoutUnwrapping
-      def show() =
-        if (raw && intp.isDefined) intp.get withoutUnwrapping { writeLines() }
-        else writeLines()
-      private def writeLines() {
-        // take Foo# as Foo#apply for purposes of filtering. Useful for -fun Foo#;
-        // if apply is added here, it's for other than -fun: javap Foo#, perhaps m#?
-        val filterOn = target.splitHashMember._2 map { s => if (s.isEmpty) "apply" else s }
-        var filtering = false   // true if in region matching filter
-        // turn filtering on/off given the pattern of interest
-        def filterStatus(line: String, pattern: String) = {
-          // cheap heuristic, todo maybe parse for the java sig.
-          // method sigs end in paren semi
-          def isAnyMethod = line.endsWith(");")
-          def isOurMethod = {
-            val lparen = line.lastIndexOf('(')
-            val blank = line.lastIndexOf(' ', lparen)
-            if (blank < 0) false
-            else {
-              val method = line.substring(blank+1, lparen)
-              (method == pattern || ((method startsWith pattern+"$") && (method endsWith "$sp")))
-            }
-          }
-          filtering =
-            if (filtering) {
-              // next blank line terminates section
-              // for -public, next line is next method, more or less
-              line.trim.nonEmpty && !isAnyMethod
-            } else {
-              isAnyMethod && isOurMethod
-            }
-          filtering
-        }
-        // do we output this line?
-        def checkFilter(line: String) = filterOn map (filterStatus(line, _)) getOrElse true
-        for {
-          line <- Source.fromString(preamble + written).getLines()
-          if checkFilter(line)
-        } printWriter write f"$line%n"
-        printWriter.flush()
+    def showWithPreamble(raw: Boolean, target: String, preamble: String = ""): Showable =
+      new Showable {
+        private def writeLines() = filterLines(target, preamble + written)
+        val output = writeLines()
+
+        // ReplStrippingWriter clips and scrubs on write(String)
+        // circumvent it by write(mw, 0, mw.length) or wrap it in withoutUnwrapping
+        def show() =
+          if (raw && intp.isDefined) intp.get withoutUnwrapping { printWriter.write(output, 0, output.length) }
+          else intp.get withoutTruncating(printWriter write output)
       }
-    }
   }
 
   class JavapTool6 extends JavapTool {
@@ -291,6 +308,7 @@ class JavapClass(
   }
 
   class JavapTool7 extends JavapTool {
+    import JavapTool._
     type Task = {
       def call(): Boolean                             // true = ok
       //def run(args: Array[String]): Int             // all args
@@ -322,19 +340,14 @@ class JavapClass(
       /** All diagnostic messages.
        *  @param locale Locale for diagnostic messages, null by default.
        */
-      def messages(implicit locale: Locale = null) = {
-        import JavaConverters._
-        diagnostics.asScala.map(_ getMessage locale).toList
-      }
+      def messages(implicit locale: Locale = null) = diagnostics.asScala.map(_ getMessage locale).toList
 
+      // don't filter this message if raw, since the names are likely to differ
+      private val container = "Binary file .* contains .*".r
       def reportable(raw: Boolean): String = {
-        // don't filter this message if raw, since the names are likely to differ
-        val container = "Binary file .* contains .*".r
-        val m = if (raw) messages
-                else messages filter (_ match { case container() => false case _ => true })
+        val m = if (raw) messages else messages filterNot (when(_) { case container() => true })
         clear()
-        if (m.nonEmpty) m mkString ("", lineSeparator, lineSeparator)
-        else ""
+        if (m.nonEmpty) m mkString ("", EOL, EOL) else ""
       }
     }
     val reporter = new JavaReporter
@@ -396,7 +409,6 @@ class JavapClass(
     def task(options: Seq[String], classes: Seq[String], inputs: Seq[Input]): Task = {
       //ServiceLoader.load(classOf[javax.tools.DisassemblerTool]).
       //getTask(writer, fileManager, reporter, options.asJava, classes.asJava)
-      import JavaConverters.asJavaIterableConverter
       TaskCtor.newInstance(writer, fileManager(inputs), reporter, options.asJava, classes.asJava)
         .orFailed (throw new IllegalStateException)
     }
@@ -476,7 +488,7 @@ class JavapClass(
     object ToolArgs {
       def fromArgs(args: Seq[String]): (ToolArgs, Seq[String]) = ((ToolArgs(), Seq[String]()) /: (args flatMap massage)) {
         case ((t,others), s) => s match {
-          case "-fun"   => (t copy (fun=true), others)
+          case "-fun"   => (t copy (fun=true), others :+ "-private")
           case "-app"   => (t copy (app=true), others)
           case "-help"  => (t copy (help=true), others)
           case "-raw"   => (t copy (raw=true), others)
@@ -542,24 +554,26 @@ class JavapClass(
 
     val DefaultOptions = List("-protected", "-verbose")
 
-    def isAvailable = Seq(Env, Tool) exists (cn => hasClass(loader, cn))
-
     private def hasClass(cl: ScalaClassLoader, cn: String) = cl.tryToInitializeClass[AnyRef](cn).isDefined
 
-    private def isTaskable(cl: ScalaClassLoader) = hasClass(cl, Tool)
+    def isAvailable = Seq(Env, Tool) exists (hasClass(loader, _))
 
     /** Select the tool implementation for this platform. */
-    def apply() = if (isTaskable(loader)) new JavapTool7 else new JavapTool6
+    def apply() = if (hasClass(loader, Tool)) new JavapTool7 else new JavapTool6
   }
 }
 
 object JavapClass {
+  import scala.tools.asm.ClassReader
+  import scala.tools.asm.tree.{ ClassNode, MethodNode }
+
   def apply(
     loader: ScalaClassLoader = ScalaClassLoader.appLoader,
     printWriter: PrintWriter = new PrintWriter(System.out, true),
     intp: Option[IMain] = None
   ) = new JavapClass(loader, printWriter, intp)
 
+  /** Match foo#bar, both groups are optional (may be null). */
   val HashSplit = "([^#]+)?(?:#(.+)?)?".r
 
   // We enjoy flexibility in specifying either a fully-qualified class name com.acme.Widget
@@ -580,9 +594,9 @@ object JavapClass {
       else (s take i, Some(s drop i+1))
     }
   }
-  implicit class ClassLoaderOps(val cl: ClassLoader) extends AnyVal {
+  implicit class ClassLoaderOps(val loader: ScalaClassLoader) extends AnyVal {
     private def parentsOf(x: ClassLoader): List[ClassLoader] = if (x == null) Nil else x :: parentsOf(x.getParent)
-    def parents: List[ClassLoader] = parentsOf(cl)
+    def parents: List[ClassLoader] = parentsOf(loader)
     /* all file locations */
     def locations = {
       def alldirs = parents flatMap (_ match {
@@ -596,7 +610,7 @@ object JavapClass {
     /* only the file location from which the given class is loaded */
     def locate(k: String): Option[Path] = {
       Try {
-        val klass = try cl loadClass k catch {
+        val klass = try loader loadClass k catch {
           case _: NoClassDefFoundError => null    // let it snow
         }
         // cf ScalaClassLoader.originOfClass
@@ -608,11 +622,30 @@ object JavapClass {
       }
     }
     /* would classBytes succeed with a nonempty array */
-    def resourceable(className: String): Boolean = cl.getResource(className.asClassResource) != null
+    def resourceable(className: String): Boolean = loader.getResource(className.asClassResource) != null
+
+    /* class reader of class bytes */
+    def classReader(resource: String): ClassReader = new ClassReader(loader classBytes resource)
+  }
+  implicit class `class reader convenience`(val reader: ClassReader) extends AnyVal {
+    def withMethods[A](f: Seq[MethodNode] => A): A = {
+      val cls = new ClassNode
+      reader.accept(cls, 0)
+      f(cls.methods.asScala)
+    }
   }
   implicit class PathOps(val p: Path) extends AnyVal {
     import scala.tools.nsc.io.Jar
     def isJar = Jar isJarOrZip p
+  }
+  implicit class `fun with files`(val f: AbstractFile) extends AnyVal {
+    def descend(path: Seq[String]): Option[AbstractFile] = {
+      def lookup(f: AbstractFile, path: Seq[String]): Option[AbstractFile] = path match {
+        case p if p.isEmpty => Option(f)
+        case p => Option(f.lookupName(p.head, directory = true)) flatMap (lookup(_, p.tail))
+      }
+      lookup(f, path)
+    }
   }
   implicit class URLOps(val url: URL) extends AnyVal {
     def isFile: Boolean = url.getProtocol == "file"
@@ -620,32 +653,35 @@ object JavapClass {
   object FunFinder {
     def apply(loader: ScalaClassLoader, intp: Option[IMain]) = new FunFinder(loader, intp)
   }
+  // FunFinder.funs(ks) finds anonfuns
   class FunFinder(loader: ScalaClassLoader, intp: Option[IMain]) {
 
+    // manglese for closure: typename, $anonfun or lamba, opt method, digits
+    val closure = """(.*)\$(\$anonfun|lambda)(?:\$+([^$]+))?\$(\d+)""".r
+
+    // manglese for closure
+    val cleese = "(?:anonfun|lambda)"
+
     // class k, candidate f without prefix
-    def isFunOfClass(k: String, f: String) = {
-      val p = (s"${Regex quote k}\\$$+anonfun").r
-      (p findPrefixOf f).nonEmpty
-    }
+    def isFunOfClass(k: String, f: String) = (s"${Regex quote k}\\$$+$cleese".r findPrefixOf f).nonEmpty
+
     // class k, candidate f without prefix, method m
-    def isFunOfMethod(k: String, m: String, f: String) = {
-      val p = (s"${Regex quote k}\\$$+anonfun\\$$${Regex quote m}\\$$").r
-      (p findPrefixOf f).nonEmpty
-    }
-    def isFunOfTarget(k: String, m: Option[String], f: String) =
-      if (m.isEmpty) isFunOfClass(k, f)
-      else isFunOfMethod(k, m.get, f)
-    def listFunsInAbsFile(k: String, m: Option[String], d: AbstractFile) = {
-      for (f <- d; if !f.isDirectory && isFunOfTarget(k, m, f.name)) yield f.name
-    }
-    // path prefix p, class k, dir d
-    def listFunsInDir(p: String, k: String, m: Option[String])(d: Directory) = {
-      val subdir  = Path(p)
-      for (f <- (d / subdir).toDirectory.list; if f.isFile && isFunOfTarget(k, m, f.name))
+    def isFunOfMethod(k: String, m: String, f: String) =
+      (s"${Regex quote k}\\$$+$cleese\\$$+${Regex quote m}\\$$".r findPrefixOf f).nonEmpty
+
+    def isFunOfTarget(target: Target, f: String) =
+      target.member map (isFunOfMethod(target.name, _, f)) getOrElse isFunOfClass(target.name, f)
+
+    def listFunsInAbsFile(target: Target)(d: AbstractFile) =
+      for (f <- d; if !f.isDirectory && isFunOfTarget(target, f.name)) yield f.name
+
+    def listFunsInDir(target: Target)(d: Directory) = {
+      val subdir = Path(target.prefix)
+      for (f <- (d / subdir).toDirectory.list; if f.isFile && isFunOfTarget(target, f.name))
         yield f.name
     }
-    // path prefix p, class k, jar file f
-    def listFunsInJar(p: String, k: String, m: Option[String])(f: File) = {
+
+    def listFunsInJar(target: Target)(f: File) = {
       import java.util.jar.JarEntry
       import scala.tools.nsc.io.Jar
       def maybe(e: JarEntry) = {
@@ -654,65 +690,120 @@ object JavapClass {
           if (parts.length < 2) ("", e.getName)
           else (parts.init mkString "/", parts.last)
         }
-        if (path == p && isFunOfTarget(k, m, name)) Some(name) else None
+        if (path == target.prefix && isFunOfTarget(target, name)) Some(name) else None
       }
       (new Jar(f) map maybe).flatten
     }
     def loadable(name: String) = loader resourceable name
-    // translated class, optional member, opt member to filter on, whether it is repl output
-    def translate(s: String): (String, Option[String], Option[String], Boolean) = {
+    case class Target(path: String, member: Option[String], filter: Option[String], isRepl: Boolean, isModule: Boolean) {
+      val splat  = path split "\\."
+      val name   = splat.last
+      val prefix = if (splat.length > 1) splat.init mkString "/" else ""
+      val pkg    = if (splat.length > 1) splat.init mkString "." else ""
+      val targetName = s"$name${ if (isModule) "$" else "" }"
+    }
+    // translated class, optional member, opt member to filter on, whether it is repl output and a module
+    def translate(s: String): Target = {
       val (k0, m0) = s.splitHashMember
-      val k = k0.asClassName
+      val isModule = k0 endsWith "$"
+      val k = (k0 stripSuffix "$").asClassName
       val member = m0 filter (_.nonEmpty)  // take Foo# as no member, not ""
       val filter = m0 flatMap { case "" => Some("apply") case _ => None }   // take Foo# as filter on apply
       // class is either something replish or available to loader
       // $line.$read$$etc$Foo#member
-      ((intp flatMap (_ translatePath k) filter (loadable) map ((_, member, filter, true)))
+      ((intp flatMap (_ translatePath k) filter (loadable) map (x => Target(x stripSuffix "$", member, filter, true, isModule)))
       // s = "f" and $line.$read$$etc$#f is what we're after,
       // ignoring any #member (except take # as filter on #apply)
-      orElse (intp flatMap (_ translateEnclosingClass k) map ((_, Some(k), filter, true)))
-      getOrElse ((k, member, filter, false)))
+      orElse (intp flatMap (_ translateEnclosingClass k) map (x => Target(x stripSuffix "$", Some(k), filter, true, isModule)))
+      getOrElse (Target(k, member, filter, false, isModule)))
     }
     /** Find the classnames of anonfuns associated with k,
      *  where k may be an available class or a symbol in scope.
      */
-    def funsOf(k0: String): Seq[String] = {
+    def funsOf(selection: String): Seq[String] = {
       // class is either something replish or available to loader
-      val (k, member, filter, isReplish) = translate(k0)
-      val splat   = k split "\\."
-      val name    = splat.last
-      val prefix  = if (splat.length > 1) splat.init mkString "/" else ""
-      val pkg     = if (splat.length > 1) splat.init mkString "." else ""
+      val target = translate(selection)
+
       // reconstitute an anonfun with a package
       // if filtered, add the hash back, e.g. pkg.Foo#bar, pkg.Foo$anon$1#apply
       def packaged(s: String) = {
-        val p = if (pkg.isEmpty) s else s"$pkg.$s"
-        val pm = filter map (p + "#" + _)
-        pm getOrElse p
+        val p = if (target.pkg.isEmpty) s else s"${target.pkg}.$s"
+        target.filter map (p + "#" + _) getOrElse p
       }
-      // is this translated path in (usually virtual) repl outdir? or loadable from filesystem?
-      val fs = if (isReplish) {
-        def outed(d: AbstractFile, p: Seq[String]): Option[AbstractFile] = {
-          if (p.isEmpty) Option(d)
-          else Option(d.lookupName(p.head, directory = true)) flatMap (f => outed(f, p.tail))
-        }
-        outed(intp.get.replOutput.dir, splat.init) map { d =>
-          listFunsInAbsFile(name, member, d) map packaged
-        }
-      } else {
-        loader locate k map { w =>
-          if (w.isDirectory) listFunsInDir(prefix, name, member)(w.toDirectory) map packaged
-          else if (w.isJar) listFunsInJar(prefix, name, member)(w.toFile) map packaged
-          else Nil
+      // find closure classes in repl outdir or try asking the classloader where to look
+      val fs =
+        if (target.isRepl)
+          (intp.get.replOutput.dir descend target.splat.init) map { d =>
+            listFunsInAbsFile(target)(d) map (_.asClassName) map packaged
+          }
+        else
+          loader locate target.path map {
+            case d if d.isDirectory => listFunsInDir(target)(d.toDirectory) map packaged
+            case j if j.isJar       => listFunsInJar(target)(j.toFile) map packaged
+            case _                  => Nil
+          }
+      val res = fs map (_.to[Seq]) getOrElse Seq()
+      // on second thought, we don't care about lamba method classes, just the impl methods
+      val rev =
+      res flatMap {
+        case x @ closure(_, "lambda", _, _) => labdaMethod(x, target)
+          //target.member flatMap (_ => labdaMethod(x, target)) getOrElse s"${target.name}#$$anonfun"
+        case x                              => Some(x)
+      }
+      rev
+    }
+    // given C$lambda$$g$n for member g and n in 1..N, find the C.accessor$x
+    // and the C.$anonfun$x it forwards to.
+    def labdaMethod(lambda: String, target: Target): Option[String] = {
+      import scala.tools.asm.ClassReader
+      import scala.tools.asm.Opcodes.INVOKESTATIC
+      import scala.tools.asm.tree.{ ClassNode, MethodInsnNode }
+      // the accessor methods invoked statically by the apply of the given closure class
+      def accesses(s: String): Seq[(String, String)] = {
+        val accessor = """accessor\$\d+""".r
+        loader classReader s withMethods { ms =>
+          ms filter (_.name == "apply") flatMap (_.instructions.toArray.collect {
+            case i: MethodInsnNode if i.getOpcode == INVOKESTATIC && when(i.name) { case accessor(_*) => true } => (i.owner, i.name)
+          })
         }
       }
-      fs match {
-        case Some(xs) => xs.to[Seq]     // maybe empty
-        case None     => Seq()          // nothing found, e.g., junk input
+      // get the k.$anonfun for the accessor k.m
+      def anonOf(k: String, m: String): String = {
+        val res = 
+          loader classReader k withMethods { ms =>
+            ms filter (_.name == m) flatMap (_.instructions.toArray.collect {
+              case i: MethodInsnNode if i.getOpcode == INVOKESTATIC && i.name.startsWith("$anonfun") => i.name
+            })
+          }
+        assert(res.size == 1)
+        res.head
+      }
+      // the lambdas invoke accessors that call the anonfuns of interest. Filter k on the k#$anonfuns.
+      val ack = accesses(lambda)
+      assert(ack.size == 1)  // There can be only one.
+      ack.head match {
+        case (k, _) if target.isModule && !(k endsWith "$") => None
+        case (k, m)                                         => Some(s"${k}#${anonOf(k, m)}")
       }
     }
-    def funs(ks: Seq[String]) = ks flatMap funsOf _
+    /** Translate the supplied targets to patterns for anonfuns.
+     *  Pattern is typename $ label [[$]$func] $n where label is $anonfun or lamba,
+     *  and lambda includes the extra dollar, func is a method name, and n is an int.
+     *  The typename for a nested class is dollar notation, Betty$Bippy.
+     *
+     *  If C has anonfun closure classes, then use C$$anonfun$f$1 (various names, C# filters on apply).
+     *  If C has lambda closure classes, then use C#$anonfun (special-cased by output filter).
+     */
+    def funs(ks: Seq[String]): Seq[String] = ks flatMap funsOf
   }
+}
+
+trait Javap {
+  def loader: ScalaClassLoader
+  def printWriter: PrintWriter
+  def apply(args: Seq[String]): List[Javap.JpResult]
+  def tryFile(path: String): Option[Array[Byte]]
+  def tryClass(path: String): Array[Byte]
 }
 
 object Javap {
@@ -721,11 +812,11 @@ object Javap {
   def apply(path: String): Unit      = apply(Seq(path))
   def apply(args: Seq[String]): Unit = JavapClass() apply args foreach (_.show())
 
-  trait Showable {
+  private[interpreter] trait Showable {
     def show(): Unit
   }
 
-  sealed trait JpResult extends scala.tools.util.JpResult {
+  sealed trait JpResult {
     type ResultType
     def isError: Boolean
     def value: ResultType
@@ -751,8 +842,13 @@ object Javap {
     def isError = false
     def show() = value.show()   // output to tool's PrintWriter
   }
-  implicit class Lastly[A](val t: Try[A]) extends AnyVal {
-    private def effect[X](last: =>Unit)(a: X): Try[A] = { last; t }
-    def lastly(last: =>Unit): Try[A] = t transform (effect(last) _, effect(last) _)
-  }
+}
+
+object NoJavap extends Javap {
+  import Javap._
+  def loader: ScalaClassLoader                   = getClass.getClassLoader
+  def printWriter: PrintWriter                   = new PrintWriter(System.err, true)
+  def apply(args: Seq[String]): List[JpResult]   = Nil
+  def tryFile(path: String): Option[Array[Byte]] = None
+  def tryClass(path: String): Array[Byte]        = Array()
 }

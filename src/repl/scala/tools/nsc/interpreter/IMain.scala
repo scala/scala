@@ -1190,6 +1190,8 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
     finally isettings.unwrapStrings = saved
   }
 
+  def withoutTruncating[A](body: => A): A = reporter withoutTruncating body
+
   def symbolDefString(sym: Symbol) = {
     TypeStrings.quieter(
       exitingTyper(sym.defString),

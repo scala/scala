@@ -1,10 +1,9 @@
 import scala.tools.partest.JavapTest
 import scala.tools.nsc.Settings
 
-// see repl-javap-lambdas.scala for the complementary version
+// see repl-javap-memfun.java for the complementary version
 object Test extends JavapTest {
-  // asserting the default
-  override def transformSettings(s: Settings) = { s.Ydelambdafy.value = "inline" ; s }
+  override def transformSettings(s: Settings) = { s.Ydelambdafy.value = "method" ; s }
   def code = """
     |object Betty {
     | List(1,2,3) count (_ % 2 != 0)
@@ -16,7 +15,9 @@ object Test extends JavapTest {
 
   // three anonfuns of Betty#g
   override def yah(res: Seq[String]) = {
-    def filtered = res filter (_ contains "public final class Betty")
+    import PartialFunction.{ cond => when }
+    val r = """\s*private static final .* \$anonfun\$\d+\(.*""".r
+    def filtered = res filter (when(_) { case r(_*) => true })
     3 == filtered.size
   }
 }
