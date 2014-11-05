@@ -101,20 +101,26 @@ private[concurrent] object ExecutionContextImpl {
     }
 
     def range(floor: Int, desired: Int, ceiling: Int) = scala.math.min(scala.math.max(floor, desired), ceiling)
-
+    val numThreads = getInt("scala.concurrent.context.numThreads", "x1")
+    // The hard limit on the number of active threads that the thread factory will produce
+    // SI-8955 Deadlocks can happen if maxNoOfThreads is too low, although we're currently not sure
+    //         about what the exact threshhold is. numThreads + 256 is conservatively high.
     val maxNoOfThreads = getInt("scala.concurrent.context.maxThreads", "x1")
 
     val desiredParallelism = range(
       getInt("scala.concurrent.context.minThreads", "1"),
-      getInt("scala.concurrent.context.numThreads", "x1"),
+      numThreads,
       maxNoOfThreads)
+
+    // The thread factory must provide additional threads to support managed blocking.
+    val maxExtraThreads = getInt("scala.concurrent.context.maxExtraThreads", "256")
 
     val uncaughtExceptionHandler: Thread.UncaughtExceptionHandler = new Thread.UncaughtExceptionHandler {
       override def uncaughtException(thread: Thread, cause: Throwable): Unit = reporter(cause)
     }
 
     val threadFactory = new ExecutionContextImpl.DefaultThreadFactory(daemonic = true,
-                                                                      maxThreads = maxNoOfThreads,
+                                                                      maxThreads = maxNoOfThreads + maxExtraThreads,
                                                                       prefix = "scala-execution-context-global",
                                                                       uncaught = uncaughtExceptionHandler)
 
