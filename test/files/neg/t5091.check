@@ -1,0 +1,9 @@
+t5091.scala:8: error: recursive value xxx needs type
+    val param = bar(xxx)
+                    ^
+t5091.scala:7: warning: type-checking the invocation of method foo checks if the named argument expression 'param = ...' is a valid assignment
+in the current scope. The resulting type inference error (see above) can be fixed by providing an explicit type in the local definition for param.
+    val xxx = foo(param = null)
+                        ^
+one warning found
+one error found
