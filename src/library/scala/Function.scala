@@ -24,6 +24,7 @@ object Function {
   def chain[a](fs: Seq[a => a]): a => a = { x => (x /: fs) ((x, f) => f(x)) }
 
   /** The constant function */
+  @deprecated("Use `scala.Predef.constantly` instead", "2.12.0")
   def const[T, U](x: T)(y: U): T = x
 
   /** Turns a function `A => Option[B]` into a `PartialFunction[A, B]`.
