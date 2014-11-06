@@ -2700,7 +2700,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  `{
      *    def apply$body(p1: T1, ..., pN: TN): T = body
      *    new S {
-     *     def apply(p1: T1, ..., pN: TN): T = apply$body(p1,..., pN)
+     *     def apply(p1: T1', ..., pN: TN'): T' = apply$body(p1,..., pN)
      *    }
      *  }`
      *
@@ -2710,6 +2710,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *
      * The `apply` method is identified by the argument `sam`; `S` corresponds to the argument `samClassTp`,
      * and `resPt` is derived from `samClassTp` -- it may be fully defined, or not...
+     * If it is not fully defined, we derive `samClassTpFullyDefined` by inferring any unknown type parameters.
+     *
+     * The types T1' ... TN' and T' are derived from the method signature of the sam method,
+     * as seen from the fully defined `samClassTpFullyDefined`.
      *
      * The function's body is put in a method outside of the class definition to enforce scoping.
      * S's members should not be in scope in `body`.
@@ -2721,6 +2725,35 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      * However T must be fully defined before we type the instantiation, as it'll end up as a parent type,
      * which must be fully defined. Would be nice to have some kind of mechanism to insert type vars in a block of code,
      * and have the instantiation of the first occurrence propagate to the rest of the block.
+     *
+     * TODO: repeated and by-name params
+     *  scala> trait LazySink { def accept(a: => Any): Unit }
+     *  defined trait LazySink
+     *
+     *  scala> val f: LazySink = (a) => (a, a)
+     *  f: LazySink = $anonfun$1@1fb26910
+     *
+     *  scala> f(println("!"))
+     *  <console>:10: error: LazySink does not take parameters
+     *                f(println("!"))
+     *                 ^
+     *
+     *  scala> f.accept(println("!"))
+     *  !
+     *  !
+     *  This looks like a bug:
+     *
+     *  scala> trait RepeatedSink { def accept(a: Any*): Unit }
+     *  defined trait RepeatedSink
+     *
+     *  scala> val f: RepeatedSink = (a) => println(a)
+     *  f: RepeatedSink = $anonfun$1@4799abc2
+     *
+     *  scala> f.accept(1)
+     *  WrappedArray(WrappedArray(1))
+     *
+     *  scala> f.accept(1, 2)
+     *  WrappedArray(WrappedArray(1, 2))
      */
     def synthesizeSAMFunction(sam: Symbol, fun: Function, resPt: Type, samClassTp: Type, mode: Mode): Tree = {
       // assert(fun.vparams forall (vp => isFullyDefined(vp.tpt.tpe))) -- by construction, as we take them from sam's info
@@ -2801,13 +2834,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             samClassTp
         }
 
-      // `final override def ${sam.name}($p1: $T1, ..., $pN: $TN): $resPt = ${sam.name}\$body'($p1, ..., $pN)`
+      // what's the signature of the method that we should actually be overriding?
+      val samMethTp = samClassTpFullyDefined memberInfo sam
+      // Before the mutation, `tp <:< vpar.tpt.tpe` should hold.
+      // TODO: error message when this is not the case, as the expansion won't type check
+      //  - Ti' <:< Ti and T <: T' must hold for the samDef body to type check
+      val funArgTps = foreach2(samMethTp.paramTypes, fun.vparams)((tp, vpar) => vpar.tpt setType tp)
+
+      // `final override def ${sam.name}($p1: $T1', ..., $pN: $TN'): ${samMethTp.finalResultType} = ${sam.name}\$body'($p1, ..., $pN)`
       val samDef =
         DefDef(Modifiers(FINAL | OVERRIDE | SYNTHETIC),
           sam.name.toTermName,
           Nil,
           List(fun.vparams),
-          TypeTree(samBodyDef.tpt.tpe) setPos sampos.focus,
+          TypeTree(samMethTp.finalResultType) setPos sampos.focus,
           Apply(Ident(bodyName), fun.vparams map (p => Ident(p.name)))
         )
 
@@ -2837,6 +2877,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             Apply(Select(New(Ident(tpnme.ANON_FUN_NAME)), nme.CONSTRUCTOR), Nil)
           )
         }
+
+      // TODO: improve error reporting -- when we're in silent mode (from `silent(_.doTypedApply(tree, fun, args, mode, pt)) orElse onError`)
+      // the errors in the function don't get out...
+      if (block exists (_.isErroneous))
+        context.error(fun.pos, s"Could not derive subclass of $samClassTp\n (with SAM `def $sam$samMethTp`)\n based on: $fun.")
 
       classDef.symbol addAnnotation SerialVersionUIDAnnotation
       block

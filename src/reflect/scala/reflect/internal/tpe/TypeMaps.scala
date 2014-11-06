@@ -432,7 +432,7 @@ private[internal] trait TypeMaps {
   object wildcardExtrapolation extends TypeMap(trackVariance = true) {
     def apply(tp: Type): Type =
       tp match {
-        case BoundedWildcardType(TypeBounds(lo, AnyTpe))  if variance.isContravariant =>lo
+        case BoundedWildcardType(TypeBounds(lo, AnyTpe)) if variance.isContravariant => lo
         case BoundedWildcardType(TypeBounds(NothingTpe, hi)) if variance.isCovariant => hi
         case tp => mapOver(tp)
       }

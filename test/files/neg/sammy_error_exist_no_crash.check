@@ -1,0 +1,6 @@
+sammy_error_exist_no_crash.scala:5: error: Could not derive subclass of F[? >: String]
+ (with SAM `def method apply(s: String)Int`)
+ based on: ((x$1: String) => x$1.<parseInt: error>).
+  bar(_.parseInt)
+        ^
+one error found

@@ -9,16 +9,9 @@ class S[T](x: T) { def map[R](f: Fun[_ >: T, _ <: R]): R = f(x) }
 
 class Bla { def foo: Bla = this }
 
+// NOTE: inferred types show unmoored skolems, should pack them to display properly as bounded wildcards
 object T {
-  val aBlaSAM = (new S(new Bla)).map(_.foo) // : Bla should be inferred, when running under -Xexperimental [TODO]
+  val aBlaSAM = (new S(new Bla)).map(_.foo)
   val fun: Fun[Bla, Bla] = (x: Bla) => x
-  val aBlaSAMX = (new S(new Bla)).map(fun) // : Bla should be inferred, when running under -Xexperimental [TODO]
+  val aBlaSAMX = (new S(new Bla)).map(fun)
 }
-//
-// // or, maybe by variance-cast?
-// import annotation.unchecked.{uncheckedVariance => uv}
-// type SFun[-A, +B] = Fun[_ >: A, _ <: B @uv]
-//
-// def jf[T, R](f: T => R): SFun[T, R] = (x: T) => f(x): R
-//
-// val aBlaSAM = (new S(new Bla)).map(jf(_.foo)) // : Bla should be inferred [type checks, but existential inferred]
