@@ -330,7 +330,7 @@ trait Contexts { self: Analyzer =>
 
     // if set, errors will not be reporter/thrown
     def bufferErrors = reporter.isBuffering
-    def reportErrors = !bufferErrors
+    def reportErrors = !(bufferErrors || reporter.isThrowing)
 
     // whether to *report* (which is separate from buffering/throwing) ambiguity errors
     def ambiguousErrors = this(AmbiguousErrors)
@@ -1247,6 +1247,7 @@ trait Contexts { self: Analyzer =>
     def makeImmediate: ContextReporter = this
     def makeBuffering: ContextReporter = this
     def isBuffering: Boolean           = false
+    def isThrowing: Boolean            = false
 
     /** Emit an ambiguous error according to context.ambiguousErrors
      *
@@ -1384,6 +1385,7 @@ trait Contexts { self: Analyzer =>
    * TODO: get rid of it, use ImmediateReporter and a check for reporter.hasErrors where necessary
    */
   private[typechecker] class ThrowingReporter extends ContextReporter {
+    override def isThrowing = true
     protected def handleError(pos: Position, msg: String): Unit = throw new TypeError(pos, msg)
   }
 
