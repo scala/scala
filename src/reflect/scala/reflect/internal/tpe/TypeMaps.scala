@@ -422,6 +422,22 @@ private[internal] trait TypeMaps {
     }
   }
 
+  /**
+   * Get rid of BoundedWildcardType where variance allows us to do so.
+   * Invariant: `wildcardExtrapolation(tp) =:= tp`
+   *
+   * For example, the MethodType given by `def bla(x: (_ >: String)): (_ <: Int)`
+   * is both a subtype and a supertype of `def bla(x: String): Int`.
+   */
+  object wildcardExtrapolation extends TypeMap(trackVariance = true) {
+    def apply(tp: Type): Type =
+      tp match {
+        case BoundedWildcardType(TypeBounds(lo, AnyTpe))  if variance.isContravariant =>lo
+        case BoundedWildcardType(TypeBounds(NothingTpe, hi)) if variance.isCovariant => hi
+        case tp => mapOver(tp)
+      }
+  }
+
   /** Might the given symbol be important when calculating the prefix
     *  of a type? When tp.asSeenFrom(pre, clazz) is called on `tp`,
     *  the result will be `tp` unchanged if `pre` is trivial and `clazz`

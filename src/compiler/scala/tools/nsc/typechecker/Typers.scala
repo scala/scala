@@ -741,6 +741,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case _ =>
     }
 
+    /**
+     * Convert a SAM type to the corresponding FunctionType,
+     * extrapolating BoundedWildcardTypes in the process
+     * (no type precision is lost by the extrapolation,
+     *  but this facilitates dealing with the types arising from Java's use-site variance).
+     */
+    def samToFunctionType(tp: Type, sam: Symbol = NoSymbol): Type = {
+      val samSym = sam orElse samOf(tp)
+
+      def correspondingFunctionSymbol = {
+        val numVparams = samSym.info.params.length
+        if (numVparams > definitions.MaxFunctionArity) NoSymbol
+        else FunctionClass(numVparams)
+      }
+
+      if (samSym.exists && samSym.owner != correspondingFunctionSymbol) // don't treat Functions as SAMs
+        wildcardExtrapolation(normalize(tp memberInfo samSym))
+      else NoType
+    }
+
     /** Perform the following adaptations of expression, pattern or type `tree` wrt to
      *  given mode `mode` and given prototype `pt`:
      *  (-1) For expressions with annotated types, let AnnotationCheckers decide what to do
@@ -824,7 +844,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case Block(_, tree1) => tree1.symbol
           case _               => tree.symbol
         }
-        if (!meth.isConstructor && isFunctionType(pt)) { // (4.2)
+        if (!meth.isConstructor && (isFunctionType(pt) || samOf(pt).exists)) { // (4.2)
           debuglog(s"eta-expanding $tree: ${tree.tpe} to $pt")
           checkParamsConvertible(tree, tree.tpe)
           val tree0 = etaExpand(context.unit, tree, this)
@@ -2838,7 +2858,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * as `(a => a): Int => Int` should not (yet) get the sam treatment.
        */
       val sam =
-        if (!settings.Xexperimental || pt.typeSymbol == FunctionSymbol) NoSymbol
+        if (pt.typeSymbol == FunctionSymbol) NoSymbol
         else samOf(pt)
 
       /* The SAM case comes first so that this works:
@@ -2848,15 +2868,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * Note that the arity of the sam must correspond to the arity of the function.
        */
       val samViable = sam.exists && sameLength(sam.info.params, fun.vparams)
+      val ptNorm = if (samViable) samToFunctionType(pt, sam) else pt
       val (argpts, respt) =
-        if (samViable) {
-          val samInfo = pt memberInfo sam
-          (samInfo.paramTypes, samInfo.resultType)
-        } else {
-          pt baseType FunctionSymbol match {
-            case TypeRef(_, FunctionSymbol, args :+ res) => (args, res)
-            case _                                       => (fun.vparams map (_ => if (pt == ErrorType) ErrorType else NoType), WildcardType)
-          }
+        ptNorm baseType FunctionSymbol match {
+          case TypeRef(_, FunctionSymbol, args :+ res) => (args, res)
+          case _                                       => (fun.vparams map (_ => if (pt == ErrorType) ErrorType else NoType), WildcardType)
         }
 
       if (!FunctionSymbol.exists)
