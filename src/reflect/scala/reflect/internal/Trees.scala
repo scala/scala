@@ -1078,9 +1078,10 @@ trait Trees extends api.Trees {
 
     // We silently ignore attempts to add attachments to `EmptyTree`. See SI-8947 for an
     // example of a bug in macro expansion that this solves.
-    override def setAttachments(attachments: Attachments {type Pos = Position}): this.type = this
-    override def updateAttachment[T: ClassTag](attachment: T): this.type = this
-    override def removeAttachment[T: ClassTag]: this.type = this
+    override def setAttachments(attachments: Attachments {type Pos = Position}): this.type = attachmentWarning()
+    override def updateAttachment[T: ClassTag](attachment: T): this.type = attachmentWarning()
+    override def removeAttachment[T: ClassTag]: this.type = attachmentWarning()
+    private def attachmentWarning(): this.type = {devWarning(s"Attempt to mutate attachments on $self ignored"); this}
 
     private def requireLegal(value: Any, allowed: Any, what: String) = (
       if (value != allowed) {

@@ -61,7 +61,7 @@ trait StdAttachments {
     val metadata = MacroExpansionAttachment(expandee, expanded)
     expandee updateAttachment metadata
     expanded match {
-      case expanded: Tree => expanded updateAttachment metadata
+      case expanded: Tree if !expanded.isEmpty => expanded updateAttachment metadata
       case _ => // do nothing
     }
   }
