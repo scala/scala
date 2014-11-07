@@ -41,7 +41,7 @@ object Test extends StoreReporterDirectTest {
     assert(tClass.delete())
     assert(pack1.delete())
 
-    // bad symbolic reference error expected (but no stack trace!)
+    // should report ambiguous import, despite the fact that a parent of pack2.U is absent
     compileCode(app)
     println(filteredInfos.mkString("\n"))
   }
