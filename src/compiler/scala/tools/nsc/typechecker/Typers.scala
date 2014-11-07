@@ -2726,7 +2726,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      * which must be fully defined. Would be nice to have some kind of mechanism to insert type vars in a block of code,
      * and have the instantiation of the first occurrence propagate to the rest of the block.
      *
-     * TODO: repeated and by-name params
+     * TODO: by-name params
      *  scala> trait LazySink { def accept(a: => Any): Unit }
      *  defined trait LazySink
      *
@@ -2741,19 +2741,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  scala> f.accept(println("!"))
      *  !
      *  !
-     *  This looks like a bug:
-     *
-     *  scala> trait RepeatedSink { def accept(a: Any*): Unit }
-     *  defined trait RepeatedSink
-     *
-     *  scala> val f: RepeatedSink = (a) => println(a)
-     *  f: RepeatedSink = $anonfun$1@4799abc2
-     *
-     *  scala> f.accept(1)
-     *  WrappedArray(WrappedArray(1))
-     *
-     *  scala> f.accept(1, 2)
-     *  WrappedArray(WrappedArray(1, 2))
      */
     def synthesizeSAMFunction(sam: Symbol, fun: Function, resPt: Type, samClassTp: Type, mode: Mode): Tree = {
       // assert(fun.vparams forall (vp => isFullyDefined(vp.tpt.tpe))) -- by construction, as we take them from sam's info
@@ -2848,7 +2835,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           Nil,
           List(fun.vparams),
           TypeTree(samMethTp.finalResultType) setPos sampos.focus,
-          Apply(Ident(bodyName), fun.vparams map (p => Ident(p.name)))
+          Apply(Ident(bodyName), fun.vparams map gen.paramToArg)
         )
 
       val serializableParentAddendum =
