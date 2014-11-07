@@ -1559,7 +1559,7 @@ self =>
     }
 
     /** {{{
-     *  PrefixExpr   ::= [`-' | `+' | `~' | `!' | `&'] SimpleExpr
+     *  PrefixExpr   ::= [`-' | `+' | `~' | `!'] SimpleExpr
      *  }}}
      */
     def prefixExpr(): Tree = {
