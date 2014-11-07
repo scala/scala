@@ -195,32 +195,13 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       case _          => NoSymbol
     }
 
-    /**
-     * Drop redundant interfaces (which are implemented by some other parent) from the immediate
-     * parents. In other words, no two interfaces in the result are related by subtyping.
-     */
-    def dropRedundantInterfaces(lstIfaces: List[Symbol]): List[Symbol] = {
-      var rest   = lstIfaces
-      var leaves = List.empty[Symbol]
-      while (!rest.isEmpty) {
-        val candidate = rest.head
-        val nonLeaf = leaves exists { lsym => lsym isSubClass candidate }
-        if (!nonLeaf) {
-          leaves = candidate :: (leaves filterNot { lsym => candidate isSubClass lsym })
-        }
-        rest = rest.tail
-      }
-
-      leaves
-    }
-
     val superInterfaces0: List[Symbol] = classSym.mixinClasses
     val superInterfaces = existingSymbols(superInterfaces0 ++ classSym.annotations.map(newParentForAnnotation)).distinct
 
     assert(!superInterfaces.contains(NoSymbol), s"found NoSymbol among: ${superInterfaces.mkString(", ")}")
     assert(superInterfaces.forall(s => s.isInterface || s.isTrait), s"found non-interface among: ${superInterfaces.mkString(", ")}")
 
-    dropRedundantInterfaces(superInterfaces)
+    erasure.minimizeInterfaces(superInterfaces.map(_.info)).map(_.typeSymbol)
   }
 
   private def buildNestedInfo(innerClassSym: Symbol): Option[NestedInfo] = {
