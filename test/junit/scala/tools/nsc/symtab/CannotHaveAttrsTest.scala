@@ -64,4 +64,16 @@ class CannotHaveAttrsTest {
       assertThrows[IllegalArgumentException] { t.setType(tpe) }
     }
   }
+
+  class Attach
+  @Test
+  def attachmentsAreIgnored = {
+    attrlessTrees.foreach { t =>
+      t.setAttachments(NoPosition.update(new Attach))
+      assert(t.attachments == NoPosition)
+      t.updateAttachment(new Attach)
+      assert(t.attachments == NoPosition)
+      t.removeAttachment[Attach] // no exception
+    }
+  }
 }
