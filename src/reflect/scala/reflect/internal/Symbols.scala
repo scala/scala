@@ -3428,10 +3428,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   trait StubSymbol extends Symbol {
     devWarning("creating stub symbol to defer error: " + missingMessage)
 
-    protected def missingMessage: String
+    def missingMessage: String
 
     /** Fail the stub by throwing a [[scala.reflect.internal.MissingRequirementError]]. */
-    override final def failIfStub() = {MissingRequirementError.signal(missingMessage)} //
+    override final def failIfStub() =
+      MissingRequirementError.signal(missingMessage)
 
     /** Fail the stub by reporting an error to the reporter, setting the IS_ERROR flag
       * on this symbol, and returning the dummy value `alt`.
@@ -3456,8 +3457,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def rawInfo         = fail(NoType)
     override def companionSymbol = fail(NoSymbol)
   }
-  class StubClassSymbol(owner0: Symbol, name0: TypeName, protected val missingMessage: String) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
-  class StubTermSymbol(owner0: Symbol, name0: TermName, protected val missingMessage: String) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
+  class StubClassSymbol(owner0: Symbol, name0: TypeName, val missingMessage: String) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
+  class StubTermSymbol(owner0: Symbol, name0: TermName, val missingMessage: String) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
 
   trait FreeSymbol extends Symbol {
     def origin: String
