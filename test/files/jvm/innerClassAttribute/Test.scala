@@ -256,9 +256,9 @@ object Test extends BytecodeTest {
     printInnerClassNodes("A20")
 
     val fun1 = lambdaClass("A20$$anonfun$4", "A20$lambda$1")
-    val fun2 = lambdaClass("A20$$anonfun$4$$anonfun$apply$1", "A20$lambda$$$anonfun$5$1")
-    val fun3 = lambdaClass("A20$$anonfun$4$$anonfun$apply$3", "A20$lambda$$$anonfun$5$2")
-    val fun4 = lambdaClass("A20$$anonfun$4$$anonfun$apply$3$$anonfun$apply$2", "A20$lambda$$$anonfun$7$1")
+    val fun2 = lambdaClass("A20$$anonfun$4$$anonfun$apply$1", "A20$lambda$$$nestedInAnonfun$5$1")
+    val fun3 = lambdaClass("A20$$anonfun$4$$anonfun$apply$3", "A20$lambda$$$nestedInAnonfun$5$2")
+    val fun4 = lambdaClass("A20$$anonfun$4$$anonfun$apply$3$$anonfun$apply$2", "A20$lambda$$$nestedInAnonfun$7$1")
 
     println("fun1: attribute for itself and the two child closures `() => ()` and `() => () => 1`")
     printInnerClassNodes(fun1)
