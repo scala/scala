@@ -245,7 +245,7 @@ class LocalOpt(settings: ScalaSettings) {
   private def parametersSize(method: MethodNode): Int = {
     // Double / long fields occupy two slots, so we sum up the sizes. Since getSize returns 0 for
     // void, we have to add `max 1`.
-    val paramsSize = scala.tools.asm.Type.getArgumentTypes(method.desc).map(_.getSize max 1).sum
+    val paramsSize = scala.tools.asm.Type.getArgumentTypes(method.desc).iterator.map(_.getSize max 1).sum
     val thisSize   = if ((method.access & Opcodes.ACC_STATIC) == 0) 1 else 0
     paramsSize + thisSize
   }
@@ -273,15 +273,15 @@ class LocalOpt(settings: ScalaSettings) {
       }
 
       // Ensure the length of `renumber`. Unused variable indices are mapped to -1.
-      val minLenght = if (isWide) index + 2 else index + 1
-      for (i <- renumber.length until minLenght) renumber += -1
+      val minLength = if (isWide) index + 2 else index + 1
+      for (i <- renumber.length until minLength) renumber += -1
 
       renumber(index) = index
       if (isWide) renumber(index + 1) = index
     }
 
     // first phase: collect all used local variables. if the variable at index x is used, set
-    // renumber(x) = x, otherwsie renumber(x) = -1. if the variable is wide (long or doulbe), set
+    // renumber(x) = x, otherwise renumber(x) = -1. if the variable is wide (long or double), set
     // renumber(x+1) = x.
 
     val firstLocalIndex = parametersSize(method)
@@ -404,7 +404,7 @@ class LocalOpt(settings: ScalaSettings) {
   def simplifyJumps(method: MethodNode): Boolean = {
     var changed = false
 
-    val allHanlders = method.tryCatchBlocks.asScala.toSet
+    val allHandlers = method.tryCatchBlocks.asScala.toSet
 
     // A set of all exception handlers that guard the current instruction, required for simplifyGotoReturn
     var activeHandlers = Set.empty[TryCatchBlockNode]
@@ -420,7 +420,7 @@ class LocalOpt(settings: ScalaSettings) {
 
       instruction match {
         case l: LabelNode =>
-          activeHandlers ++= allHanlders.filter(_.start == l)
+          activeHandlers ++= allHandlers.filter(_.start == l)
           activeHandlers = activeHandlers.filter(_.end != l)
         case _ =>
       }
@@ -550,8 +550,7 @@ class LocalOpt(settings: ScalaSettings) {
     case Goto(jump) =>
       nextExecutableInstruction(jump.label) match {
         case Some(target) =>
-          val op = target.getOpcode
-          if ((op >= Opcodes.IRETURN && op <= Opcodes.RETURN) || op == Opcodes.ATHROW) {
+          if (isReturn(target) || target.getOpcode == Opcodes.ATHROW) {
             method.instructions.set(jump, target.clone(null))
             true
           } else false

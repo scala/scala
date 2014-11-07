@@ -9,6 +9,7 @@ package opt
 
 import scala.annotation.{tailrec, switch}
 import scala.collection.mutable
+import scala.reflect.internal.util.Collections._
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
@@ -53,6 +54,11 @@ object BytecodeUtils {
   def isConditionalJump(instruction: AbstractInsnNode): Boolean = {
     val op = instruction.getOpcode
     (op >= Opcodes.IFEQ && op <= Opcodes.IF_ACMPNE) || op == Opcodes.IFNULL || op == Opcodes.IFNONNULL
+  }
+
+  def isReturn(instruction: AbstractInsnNode): Boolean = {
+    val op = instruction.getOpcode
+    op >= Opcodes.IRETURN && op <= Opcodes.RETURN
   }
 
   def isVarInstruction(instruction: AbstractInsnNode): Boolean = {
@@ -157,7 +163,7 @@ object BytecodeUtils {
 
   def substituteLabel(reference: AnyRef, from: LabelNode, to: LabelNode): Unit = {
     def substList(list: java.util.List[LabelNode]) = {
-      list.asScala.zipWithIndex.foreach { case (l, i) =>
+      foreachWithIndex(list.asScala.toList) { case (l, i) =>
         if (l == from) list.set(i, to)
       }
     }

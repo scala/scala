@@ -36,7 +36,7 @@ class MethodLevelOpts {
   }
 
   @Test
-  def inlineThrowInCachtNotTry(): Unit = {
+  def inlineThrowInCatchNotTry(): Unit = {
     // the try block does not contain the `ATHROW` instruction, but in the catch block, `ATHROW` is inlined
     val code = "def f(e: Exception) = throw { try e catch { case _: Throwable => e } }"
     val m = singleMethod(methodOptCompiler)(code)
