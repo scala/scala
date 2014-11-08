@@ -1,0 +1,4 @@
+t8534b.scala:3: error: stable identifier required, but foo.type found.
+  type T = foo.type#Foo
+              ^
+one error found
