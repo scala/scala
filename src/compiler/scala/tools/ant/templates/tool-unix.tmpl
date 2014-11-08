@@ -86,10 +86,14 @@ fi
 TOOL_CLASSPATH="@classpath@"
 if [[ -z "$TOOL_CLASSPATH" ]]; then
     for ext in "$SCALA_HOME"/lib/* ; do
-        if [[ -z "$TOOL_CLASSPATH" ]]; then
-            TOOL_CLASSPATH="$ext"
-        else
-            TOOL_CLASSPATH="${TOOL_CLASSPATH}${SEP}${ext}"
+        file_extension="${ext##*.}"
+        # SI-8967 Only consider directories and files named '*.jar'
+        if [[ -d "$ext" || $file_extension == "jar" ]]; then
+          if [[ -z "$TOOL_CLASSPATH" ]]; then
+              TOOL_CLASSPATH="$ext"
+          else
+              TOOL_CLASSPATH="${TOOL_CLASSPATH}${SEP}${ext}"
+          fi
         fi
     done
 fi
