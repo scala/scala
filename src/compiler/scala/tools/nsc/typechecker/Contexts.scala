@@ -798,7 +798,7 @@ trait Contexts { self: Analyzer =>
       isAccessible(sym, pre) &&
       !(imported && {
         val e = scope.lookupEntry(name)
-        (e ne null) && (e.owner == scope) && e.sym.exists
+        (e ne null) && (e.owner == scope) && (!settings.isScala212 || e.sym.exists)
       })
 
     private def collectImplicits(syms: Scope, pre: Type, imported: Boolean = false): List[ImplicitInfo] =
