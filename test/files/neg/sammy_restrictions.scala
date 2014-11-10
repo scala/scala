@@ -1,28 +1,28 @@
-class NoAbstract
+abstract class NoAbstract
 
-class TwoAbstract { def ap(a: Int): Int; def pa(a: Int): Int }
+abstract class TwoAbstract { def ap(a: Int): Int; def pa(a: Int): Int }
 
-class Base // check that the super class constructor isn't considered.
-class NoEmptyConstructor(a: Int) extends Base { def this(a: String) = this(0); def ap(a: Int): Int }
+abstract class Base // check that the super class constructor isn't considered.
+abstract class NoEmptyConstructor(a: Int) extends Base { def this(a: String) = this(0); def ap(a: Int): Int }
 
-class OneEmptyConstructor() { def this(a: Int) = this(); def ap(a: Int): Int }
+abstract class OneEmptyConstructor() { def this(a: Int) = this(); def ap(a: Int): Int }
 
-class OneEmptySecondaryConstructor(a: Int) { def this() = this(0); def ap(a: Int): Int }
+abstract class OneEmptySecondaryConstructor(a: Int) { def this() = this(0); def ap(a: Int): Int }
 
-class MultipleConstructorLists()() { def ap(a: Int): Int }
+abstract class MultipleConstructorLists()() { def ap(a: Int): Int }
 
-class MultipleMethodLists()() { def ap(a: Int)(): Int }
+abstract class MultipleMethodLists()() { def ap(a: Int)(): Int }
 
-class ImplicitConstructorParam()(implicit a: String) { def ap(a: Int): Int }
+abstract class ImplicitConstructorParam()(implicit a: String) { def ap(a: Int): Int }
 
-class ImplicitMethodParam() { def ap(a: Int)(implicit b: String): Int }
+abstract class ImplicitMethodParam() { def ap(a: Int)(implicit b: String): Int }
 
-class PolyClass[T] { def ap(a: T): T }
+abstract class PolyClass[T] { def ap(a: T): T }
 
-class PolyMethod { def ap[T](a: T): T }
+abstract class PolyMethod { def ap[T](a: T): T }
 
-class OneAbstract { def ap(a: Any): Any }
-class DerivedOneAbstract extends OneAbstract
+abstract class OneAbstract { def ap(a: Int): Any }
+abstract class DerivedOneAbstract extends OneAbstract
 
 object Test {
   implicit val s: String = ""
