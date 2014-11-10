@@ -48,14 +48,16 @@ object AbstractFile {
     else null
 
   /**
-   * If the specified URL exists and is a readable zip or jar archive,
-   * returns an abstract directory backed by it. Otherwise, returns
-   * `null`.
+   * If the specified URL exists and is a regular file or a directory, returns an
+   * abstract regular file or an abstract directory, respectively, backed by it.
+   * Otherwise, returns `null`.
    */
-  def getURL(url: URL): AbstractFile = {
-    if (url == null || !Path.isExtensionJarOrZip(url.getPath)) null
-    else ZipArchive fromURL url
-  }
+  def getURL(url: URL): AbstractFile =
+    if (url.getProtocol == "file") {
+      val f = new java.io.File(url.getPath)
+      if (f.isDirectory) getDirectory(f)
+      else getFile(f)
+    } else null
 
   def getResources(url: URL): AbstractFile = ZipArchive fromManifestURL url
 }
