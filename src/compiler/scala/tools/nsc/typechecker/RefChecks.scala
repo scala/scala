@@ -543,7 +543,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
         }
 
         def checkOverrideDeprecated() {
-          if (other.hasDeprecatedOverridingAnnotation) {
+          if (other.hasDeprecatedOverridingAnnotation && !member.ownerChain.exists(x => x.isDeprecated || x.hasBridgeAnnotation)) {
             val suffix = other.deprecatedOverridingMessage map (": " + _) getOrElse ""
             val msg = s"overriding ${other.fullLocationString} is deprecated$suffix"
             currentRun.reporting.deprecationWarning(member.pos, other, msg)
@@ -1404,7 +1404,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
       if (symbol.isDeprecated) {
         val concrOvers =
           symbol.allOverriddenSymbols.filter(sym =>
-            !sym.isDeprecated && !sym.isDeferred)
+            !sym.isDeprecated && !sym.isDeferred && !sym.hasDeprecatedOverridingAnnotation && !sym.enclClass.hasDeprecatedInheritanceAnnotation)
         if(!concrOvers.isEmpty)
           currentRun.reporting.deprecationWarning(
             tree.pos,
