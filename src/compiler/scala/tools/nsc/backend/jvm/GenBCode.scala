@@ -9,12 +9,12 @@ package tools.nsc
 package backend
 package jvm
 
-import scala.collection.{ mutable, immutable }
-import scala.annotation.switch
+import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
 
 import scala.tools.asm
 import scala.tools.asm.tree.ClassNode
+import scala.tools.nsc.backend.jvm.opt.LocalOpt
 
 /*
  *  Prepare in-memory representations of classfiles using the ASM Tree API, and serialize them to disk.
@@ -215,13 +215,10 @@ abstract class GenBCode extends BCodeSyncAndTry {
      *          - converting the plain ClassNode to byte array and placing it on queue-3
      */
     class Worker2 {
-      def localOptimizations(classNode: ClassNode): Unit = {
-        def dce(): Boolean = BackendStats.timed(BackendStats.bcodeDceTimer) {
-          if (settings.YoptUnreachableCode) opt.LocalOpt.removeUnreachableCode(classNode)
-          else false
-        }
+      lazy val localOpt = new LocalOpt(settings)
 
-        dce()
+      def localOptimizations(classNode: ClassNode): Unit = {
+        BackendStats.timed(BackendStats.methodOptTimer)(localOpt.methodOptimizations(classNode))
       }
 
       def run() {
