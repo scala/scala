@@ -520,7 +520,9 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       * And, finally, be advised - Scala's Symbol literal (scala.Symbol) and the Symbol class of the compiler
       * have little in common.
       */
-      case Apply(fn, (arg @ Literal(Constant(symname: String))) :: Nil) if fn.symbol == Symbol_apply =>
+      case Apply(fn @ Select(qual, _), (arg @ Literal(Constant(symname: String))) :: Nil)
+        if treeInfo.isQualifierSafeToElide(qual) && fn.symbol == Symbol_apply && !currentClass.isTrait =>
+
         def transformApply = {
           // add the symbol name to a map if it's not there already
           val rhs = gen.mkMethodCall(Symbol_apply, arg :: Nil)
