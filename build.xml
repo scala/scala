@@ -848,8 +848,7 @@ TODO:
     -->
 
     <path id="pack.reflect.files">    <fileset dir="${build-quick.dir}/classes/reflect"/> </path>
-    <path id="pack.scalap.files">     <fileset dir="${build-quick.dir}/classes/scalap"/>
-                                      <fileset file="${src.dir}/scalap/decoder.properties"/> </path>
+    <path id="pack.scalap.files">     <fileset dir="${build-quick.dir}/classes/scalap"/>  </path>
 
     <path id="pack.partest-extras.files"> <fileset dir="${build-quick.dir}/classes/partest-extras"/> </path>
     <path id="pack.partest-javaagent.files"> <fileset dir="${build-quick.dir}/classes/partest-javaagent"/> </path>
