@@ -1784,9 +1784,9 @@ MAIN DISTRIBUTION PACKAGING
   </target>
 
   <target name="publish-core"   depends="pack-maven.core, init.maven">
-    <deploy-one name="scala-compiler" />
-    <deploy-one name="scala-library"  />
-    <deploy-one name="scala-reflect"  />
+    <deploy-one name="scala-compiler" signed="true"/>
+    <deploy-one name="scala-library"  signed="true"/>
+    <deploy-one name="scala-reflect"  signed="true"/>
   </target>
 
   <target name="publish-core-local" depends="pack-maven.core, init.maven">
