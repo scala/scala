@@ -255,7 +255,8 @@ TODO:
     </if>
 
     <!-- Add our maven ant tasks -->
-    <path id="maven-ant-tasks.classpath" path="${lib-ant.dir}/maven-ant-tasks-2.1.1.jar" />
+    <property name="maven.anttasks.version" value="2.1.3"/>
+    <path id="maven-ant-tasks.classpath" path="${lib-ant.dir}/maven-ant-tasks-${maven.anttasks.version}.jar" />
     <typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="urn:maven-artifact-ant" classpathref="maven-ant-tasks.classpath" />
 
     <!-- Resolve maven dependencies -->
