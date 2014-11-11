@@ -55,11 +55,42 @@ object Test {
   }
 
   def check_drop: Int = {
-    val it1 = Iterator.from(0)
-    val it2 = it1 map { 2 * _ }
-    val n1 = it1 drop 2 next
-    val n2 = it2 drop 2 next;
-    n1 + n2
+    val tests = Array(
+      Iterator.from(0).take(5).drop(1).toSeq sameElements Seq(1, 2, 3, 4),
+      Iterator.from(0).take(5).drop(3).toSeq sameElements Seq(3, 4),
+
+      Iterator.from(0).take(5).drop(5).toSeq sameElements Seq(),
+      Iterator.from(0).take(5).drop(10).toSeq sameElements Seq(),
+
+      Iterator.from(0).take(5).drop(0).toSeq sameElements Seq(0, 1, 2, 3, 4),
+      Iterator.from(0).take(5).drop(-1).toSeq sameElements Seq(0, 1, 2, 3, 4),
+
+      Iterator.from(0).take(5).drop(1).map(2 * _).toSeq sameElements Seq(2, 4, 6, 8),
+      Iterator.from(0).take(5).map(2 * _).drop(1).toSeq sameElements Seq(2, 4, 6, 8),
+
+      Iterator.from(0).take(5).drop(1).drop(2).toSeq sameElements Seq(3, 4),
+      Iterator.from(0).take(5).drop(2).drop(1).toSeq sameElements Seq(3, 4)
+    )
+    tests.count(result => result)
+  }
+
+  def check_slice: Int = {
+    val tests = Array(
+      Iterator.from(0).slice(3, 7).toSeq sameElements Seq(3, 4, 5, 6),
+      Iterator.from(0).slice(3, 3).toSeq sameElements Seq(),
+      Iterator.from(0).slice(-1, 3).toSeq sameElements Seq(0, 1, 2),
+      Iterator.from(0).slice(3, -1).toSeq sameElements Seq(),
+
+      Iterator.from(0).slice(3, 7).map(2 * _).toSeq sameElements Seq(6, 8, 10, 12),
+      Iterator.from(0).map(2 * _).slice(3, 7).toSeq sameElements Seq(6, 8, 10, 12),
+
+      Iterator.from(0).slice(3, 7).drop(1).toSeq sameElements Seq(4, 5, 6),
+      Iterator.from(0).drop(1).slice(3, 7).toSeq sameElements Seq(4, 5, 6, 7),
+
+      Iterator.from(0).slice(3, 7).slice(1, 3).toSeq sameElements Seq(4, 5),
+      Iterator.from(0).slice(3, 7).slice(1, 10).toSeq sameElements Seq(4, 5, 6)
+    )
+    tests.count(result => result)
   }
 
   def check_foreach: Int = {
@@ -122,7 +153,8 @@ object Test {
     check_success("check_range2",   check_range2,    26)
     check_success("check_range3",   check_range3,     3)
     check_success("check_take",     check_take,      10)
-    check_success("check_drop",     check_drop,      12)
+    check_success("check_drop",     check_drop,      10)
+    check_success("check_slice",    check_slice,     10)
     check_success("check_foreach",  check_foreach,  190)
     check_success("check_forall",   check_forall,     0)
     check_success("check_fromArray",check_fromArray, 14)
