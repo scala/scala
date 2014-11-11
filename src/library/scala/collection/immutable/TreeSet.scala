@@ -87,8 +87,8 @@ class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Orderin
     else newSet(RB.slice(tree, from, until))
   }
 
-  override def dropRight(n: Int) = take(size - n)
-  override def takeRight(n: Int) = drop(size - n)
+  override def dropRight(n: Int) = take(size - math.max(n, 0))
+  override def takeRight(n: Int) = drop(size - math.max(n, 0))
   override def splitAt(n: Int) = (take(n), drop(n))
 
   private[this] def countWhile(p: A => Boolean): Int = {

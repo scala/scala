@@ -141,10 +141,10 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
   def drop(n: Int): Repr = slice(n, length)
 
   override /*IterableLike*/
-  def takeRight(n: Int): Repr = slice(length - n, length)
+  def takeRight(n: Int): Repr = slice(length - math.max(n, 0), length)
 
   override /*IterableLike*/
-  def dropRight(n: Int): Repr = slice(0, length - n)
+  def dropRight(n: Int): Repr = slice(0, length - math.max(n, 0))
 
   override /*TraversableLike*/
   def splitAt(n: Int): (Repr, Repr) = (take(n), drop(n))
