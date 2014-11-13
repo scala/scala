@@ -8,6 +8,8 @@ import org.junit.runners.JUnit4
 
 import scala.tools.testing.AssertUtil._
 
+import Seq.empty
+
 @RunWith(classOf[JUnit4])
 class IteratorTest {
 
@@ -34,23 +36,23 @@ class IteratorTest {
   }
 
   @Test def dropIsChainable(): Unit = {
-    assertSameElements(1 to 4, Iterator.from(0).take(5).drop(1).toList)
-    assertSameElements(3 to 4, Iterator.from(0).take(5).drop(3).toList)
-    assertSameElements(Seq.empty, Iterator.from(0).take(5).drop(5).toList)
-    assertSameElements(Seq.empty, Iterator.from(0).take(5).drop(10).toList)
-    assertSameElements(0 to 4, Iterator.from(0).take(5).drop(0).toList)
-    assertSameElements(0 to 4, Iterator.from(0).take(5).drop(-1).toList)
-    assertSameElements(2 to 8 by 2, (Iterator from 0 take 5 drop 1 map (2 * _)).toList)
-    assertSameElements(2 to 8 by 2, (Iterator from 0 take 5 map (2 * _) drop 1).toList)
-    assertSameElements(3 to 4, (Iterator from 0 take 5 drop 1 drop 2).toList)
-    assertSameElements(3 to 4, (Iterator from 0 take 5 drop 2 drop 1).toList)
+    assertSameElements(1 to 4, Iterator from 0 take 5 drop 1)
+    assertSameElements(3 to 4, Iterator from 0 take 5 drop 3)
+    assertSameElements(empty,  Iterator from 0 take 5 drop 5)
+    assertSameElements(empty,  Iterator from 0 take 5 drop 10)
+    assertSameElements(0 to 4, Iterator from 0 take 5 drop 0)
+    assertSameElements(0 to 4, Iterator from 0 take 5 drop -1)
+    assertSameElements(2 to 8 by 2, Iterator from 0 take 5 drop 1 map (2 * _))
+    assertSameElements(2 to 8 by 2, Iterator from 0 take 5 map (2 * _) drop 1)
+    assertSameElements(3 to 4, Iterator from 0 take 5 drop 1 drop 2)
+    assertSameElements(3 to 4, Iterator from 0 take 5 drop 2 drop 1)
   }
 
   @Test def sliceIsChainable(): Unit = {
     assertSameElements(3 to 6, Iterator from 0 slice (3, 7))
-    assertSameElements(Seq.empty, Iterator from 0 slice (3, 3))
+    assertSameElements(empty,  Iterator from 0 slice (3, 3))
     assertSameElements(0 to 2, Iterator from 0 slice (-1, 3))
-    assertSameElements(Seq.empty, Iterator from 0 slice (3, -1))
+    assertSameElements(empty,  Iterator from 0 slice (3, -1))
     assertSameElements(6 to 12 by 2, Iterator from 0 slice (3, 7) map (2 * _))
     assertSameElements(6 to 12 by 2, Iterator from 0 map (2 * _) slice (3, 7))
     assertSameElements(4 to 6, Iterator from 0 slice (3, 7) drop 1)
@@ -78,43 +80,33 @@ class IteratorTest {
   @Test def from(): Unit = {
     val it1 = Iterator.from(-1)
     val it2 = Iterator.from(0, -1)
-    assertEquals(-1, it1.next() + it2.next())
+    assertEquals(-1, it1.next())
+    assertEquals(0,  it2.next())
   }
   @Test def range(): Unit = {
-    val xs1 = Iterator.range(0, 10,  2)
-    val xs2 = Iterator.range(0, 10, -2)
-    val xs3 = Iterator.range(10, 0, -2)
-    val xs4 = Iterator.range(10, 0,  2)
-    val xs5 = Iterator.range(0, 10, 11)
-    assertEquals(11, xs1.size + xs2.size + xs3.size + xs4.size + xs5.size)
-  }
-  @Test def range2(): Unit = {
-    val r1start = 0
-    val r1end = 10
-    val r1step = 1
-    val r1 = Iterator.range(r1start, r1end, r1step)
-    val r2 = Iterator.range(r1start, r1end, r1step + 1)
-    val r3 = Iterator.range(r1end, r1start, -r1step)
-    val r4 = Iterator.range(0, 10, 11)
-    // 10 + 5 + 10 + 1
-    assertEquals(10 + 5 + 10 + 1, r1.size + r2.size + r3.size + r4.size)
+    assertEquals(5, Iterator.range(0, 10, 2).size)
+    assertEquals(0, Iterator.range(0, 10, -2).size)
+    assertEquals(5, Iterator.range(10, 0, -2).size)
+    assertEquals(0, Iterator.range(10, 0, 2).size)
+    assertEquals(1, Iterator.range(0, 10, 11).size)
+    assertEquals(10, Iterator.range(0, 10, 1).size)
+    assertEquals(10, Iterator.range(10, 0, -1).size)
   }
   @Test def range3(): Unit = {
-    def trues(xs: List[Boolean]) = xs.foldLeft(0)((a, b) => if (b) a+1 else a)
     val r1 = Iterator.range(0, 10)
-    val xs1 = List(r1 contains 5, r1 contains 6)
+    assertTrue(r1 contains 5)
+    assertTrue(r1 contains 6)
+    assertFalse(r1 contains 4)
     val r2a = Iterator.range(0, 10, 2)
+    assertFalse(r2a contains 5)
     val r2b = Iterator.range(0, 10, 2)
-    val xs2 = List(r2a contains 5, r2b contains 6)
+    assertTrue(r2b contains 6)
     val r3 = Iterator.range(0, 10, 11)
-    val xs3 = List(r3 contains 5, r3 contains 6)
-    // 2 + 1 + 0
-    assertEquals(2 + 1 + 0, trues(xs1) + trues(xs2) + trues(xs3))
+    assertFalse(r3 contains 5)
+    assertTrue(r3.isEmpty)
   }
   @Test def take(): Unit = {
-    val it1 = Iterator.from(0)
-    val xs1 = it1 take 10
-    assertEquals(10, xs1.size)
+    assertEquals(10, (Iterator from 0 take 10).size)
   }
   @Test def foreach(): Unit = {
     val it1 = Iterator.from(0) take 20
@@ -122,13 +114,6 @@ class IteratorTest {
     it1 foreach { n += _ }
     assertEquals(190, n)
   }
-  /* ???
-  @Test def forall(): Unit = {
-    val it1 = Iterator.from(0)
-    val it2 = Iterator.from(1)
-    0
-  }
-  */
   // ticket #429
   @Test def fromArray(): Unit = {
     val a = List(1, 2, 3, 4).toArray
@@ -143,12 +128,12 @@ class IteratorTest {
     assertEquals("1x2x3x4x5", List(1, 2, 3, 4, 5).iterator.mkString("x"))
   }
   @Test def indexOf(): Unit = {
-    assertEquals(3, List(1, 2, 3, 4, 5).indexOf(4))
-    assertEquals(-1, List(1, 2, 3, 4, 5).indexOf(16))
+    assertEquals(3, List(1, 2, 3, 4, 5).iterator.indexOf(4))
+    assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexOf(16))
   }
   @Test def indexWhere(): Unit = {
-    assertEquals(3, List(1, 2, 3, 4, 5).indexWhere { x: Int => x >= 4 })
-    assertEquals(-1, List(1, 2, 3, 4, 5).indexWhere { x: Int => x >= 16 })
+    assertEquals(3, List(1, 2, 3, 4, 5).iterator.indexWhere { x: Int => x >= 4 })
+    assertEquals(-1, List(1, 2, 3, 4, 5).iterator.indexWhere { x: Int => x >= 16 })
   }
   // iterator-iterate-lazy.scala
   // was java.lang.UnsupportedOperationException: tail of empty list
