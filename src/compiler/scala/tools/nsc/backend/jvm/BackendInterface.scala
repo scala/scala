@@ -7,7 +7,11 @@ import scala.tools.nsc.Global
 import scala.language.implicitConversions
 import scala.tools.asm
 
-abstract class BackendInterface {
+
+/* Interface to abstract over frontend inside backend.
+ * Intended to be implemented by both scalac and dotc
+ */
+trait BackendInterface extends BackendInterfaceDefinitions{
   type Flags      = Long
 
   type Symbol     >: Null <: AnyRef
@@ -63,10 +67,6 @@ abstract class BackendInterface {
   val primitives: Primitives
 
 
-
-
-  val NoSymbol: Symbol
-  val NoPosition: Position
   val nme_This: Name
   val nme_EMPTY_PACKAGE_NAME: Name
   val nme_CONSTRUCTOR: Name
@@ -74,67 +74,8 @@ abstract class BackendInterface {
   val nme_THIS: Name
   val nme_PACKAGE: Name
   val nme_EQEQ_LOCAL_VAR: Name
-  val NothingClass: Symbol
-  val NullClass: Symbol
-  val ObjectClass: Symbol
-  val RemoteAttr: Symbol
-  val BeanInfoAttr: Symbol
-  val NativeAttr: Symbol
-  val TransientAttr: Symbol
-  val VolatileAttr: Symbol
-  val ScalaSignatureATTR: Symbol
-  val ScalaSignatureATTRName: String
-  val UnitClass: Symbol
-  val BooleanClass: Symbol
-  val CharClass: Symbol
-  val ShortClass: Symbol
-  val ClassClass: Symbol
-  val ByteClass: Symbol
-  val IntClass: Symbol
-  val LongClass: Symbol
-  val FloatClass: Symbol
-  val DoubleClass: Symbol
-  val BoxedBooleanClass: Symbol
-  val BoxedByteClass: Symbol
-  val BoxedShortClass: Symbol
-  val BoxedCharacterClass: Symbol
-  val BoxedIntClass: Symbol
-  val BoxedLongClass: Symbol
-  val BoxedFloatClass: Symbol
-  val BoxedDoubleClass: Symbol
-  val StringClass: Symbol
-  val StringModule: Symbol
-  val StringBuilderClass: Symbol
-  val ThrowableClass: Symbol
-  val JavaCloneableClass: Symbol
-  val NullPointerExceptionClass: Symbol
-  val JavaSerializableClass: Symbol
-  val SerializableClass: Symbol
-  val ClassCastExceptionClass: Symbol
-  val ArrayClass: Symbol
-  val ClassfileAnnotationClass: Symbol
-  val BoxedNumberClass: Symbol
-  val ScalaRunTimeModule: Symbol
-  val RemoteExceptionClass: Symbol
-  val ThrowsClass: Symbol
 
-  val EmptyTree: Tree
-
-  val Object_isInstanceOf: Symbol
-  val Object_asInstanceOf: Symbol
-  val Array_clone: Symbol
-  val Object_equals: Symbol
-  val hashMethodSym: Symbol
-  val externalEqualsNumNum: Symbol
-  val externalEqualsNumChar: Symbol
-  val externalEqualsNumObject: Symbol
-  val externalEquals: Symbol
-
-  val MaxFunctionArity: Int
-  def FunctionClass(i: Int): Symbol
-  def AbstractFunctionClass(i: Int): Symbol
-  val PartialFunctionClass: Symbol
-  val AbstractPartialFunctionClass: Symbol
+  /* methods used to box&unbox primitives ?and value classes? */
   def boxMethods: Map[Symbol, Symbol] // (class, method)
   def unboxMethods: Map[Symbol, Symbol]
 
@@ -147,44 +88,44 @@ abstract class BackendInterface {
    */
   def getLabelDefOwners(t: Tree): Map[Tree, List[LabelDef]]
 
+  /*
+   * Implementation of those methods is very specific to how annotations are represented
+   *  representations for Dotc and Scalac are to different to abstract over them
+   */
   def emitAnnotations(cw: asm.ClassVisitor, annotations: List[Annotation], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen): Unit
   def emitAnnotations(mw: asm.MethodVisitor, annotations: List[Annotation], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen): Unit
   def emitAnnotations(fw: asm.FieldVisitor, annotations: List[Annotation], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen): Unit
   def emitParamAnnotations(jmethod: asm.MethodVisitor, pannotss: List[List[Annotation]], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen): Unit
 
-  def requiredClass[T: ClassTag] : Symbol
+  /* means of getting class symbols from compiler */
+  def requiredClass[T: ClassTag]: Symbol
+  def requiredModule[T: ClassTag]: Symbol
   def getRequiredClass(fullname: String): Symbol
   def getClassIfDefined(fullname: String): Symbol
 
   def isQualifierSafeToElide(qual: Tree): Boolean
 
-  def AndroidParcelableInterface : Symbol
-  def AndroidCreatorClass        : Symbol
-
-  def String_valueOf: Symbol
-
+  /* various configuration options used by backend */
   def emitAsmp: Option[String]
   def dumpClasses: Option[String]
   def mainClass: Option[String]
   def noForwarders: Boolean
   def debuglevel: Int
   def settings_debug: Boolean
-  def target:String
+  def targetPlatform: String
   def sourceFileFor(cu: CompilationUnit): String
-
   def setMainClass(name: String): Unit
   def informProgress(msg: String): Unit
+
+  /* backend actually uses free names to generate stuff. This should NOT mangled */
   def newTermName(prefix: String): Name
 
   def getGenericSignature(sym: Symbol, owner:Symbol): String
-
   def getStaticForwarderGenericSignature(sym: Symbol, moduleClass: Symbol): String
 
   def isBox(sym: Symbol): Boolean
   def isUnbox(sym: Symbol): Boolean
   def isMaybeBoxed(sym: Symbol): Boolean
-
-  def memberClassesOf(classSymbol: Symbol): List[Symbol] // todo: move to helpers
 
   /** Whether an annotation should be emitted as a Java annotation
     * .initialize: if 'annot' is read from pickle, atp might be un-initialized
@@ -199,16 +140,10 @@ abstract class BackendInterface {
   implicit def typeHelper(tp: Type): TypeHelper
   implicit def nameHelper(n: Name): NameHelper
   implicit def annotHelper(a: Annotation): AnnotationHelper
-  implicit def applyHelper(a: Apply): ApplyHelper
   implicit def treeHelper(a: Tree): TreeHelper
-  implicit def classDefHelper(c: ClassDef): ClassDefHelper
-  implicit def assignHelper(a: Assign): AssignHelper
-  implicit def tryHelper(a: Try): TryHelper
+
   implicit def constantHelper(a: Constant): ConstantHelper
-  implicit def labelDefHelper(a: LabelDef): LabelDefHelper
-  implicit def matchHelper(a: Match): MatchHelper
   implicit def positionHelper(a: Position): PositionHelper
-  implicit def defDefHelper(a: DefDef): DefDefHelper
 
 
   val Assign: AssignDeconstructor
@@ -239,12 +174,17 @@ abstract class BackendInterface {
   val ModuleDef: ModuleDefDeconstructor
   val Template: TemplateDeconstructor
   val Bind: BindDeconstructor
+  val ClassDef: ClassDefDeconstructor
+
+  trait ClassDefDeconstructor{
+    def unapply(a: Tree): Option[(Any /*Modifiers*/, Name, List[TypeDef], Template)]
+  }
 
   trait BindDeconstructor{
     def unapply(a: Tree): Option[(Name, Tree)]
   }
 
-  trait TemplateDeconstructor{
+  trait TemplateDeconstructor {
     def unapply(a: Tree): Option[(List[Tree], ValDef, List[Tree])]
   }
 
@@ -359,10 +299,6 @@ abstract class BackendInterface {
     def line: Int
   }
 
-  trait DefDefHelper {
-    def rhs: Tree
-  }
-
   trait ConstantHelper {
     def tag: ConstantTag
     def longValue: Long
@@ -379,20 +315,6 @@ abstract class BackendInterface {
     def symbolValue: Symbol
   }
 
-  trait MatchHelper {
-    def selector: Tree
-    def cases: List[CaseDef]
-  }
-
-  trait AssignHelper{
-    def lhs: Tree
-    def rhs: Tree
-  }
-
-  trait ClassDefHelper{
-    def impl: Tree
-  }
-
   trait TreeHelper{
     def symbol: Symbol
     def tpe: Type
@@ -400,24 +322,7 @@ abstract class BackendInterface {
     def pos: Position
     def exists(pred: Tree => Boolean): Boolean
   }
-
-  trait ApplyHelper {
-    def fun: Tree
-    def args: List[Tree]
-  }
-
-  trait TryHelper {
-    def expr: Tree
-    def catches: List[Tree]
-    def finalizer: Tree
-  }
-
-  trait LabelDefHelper {
-    def rhs: Tree
-    def params: List[Ident]
-  }
-
-
+  
   trait SymbolHelper {
     def info: Type
     def isClass: Boolean
@@ -466,7 +371,7 @@ abstract class BackendInterface {
     def isGetClass: Boolean
     def getter(clz: Symbol): Symbol
     def setter(clz: Symbol): Symbol
-
+    def memberClasses: List[Symbol]
     def linkedClassOfClass: Symbol
 
     def companionModuleMembers: List[Symbol]
@@ -554,6 +459,7 @@ abstract class BackendInterface {
     def summaryString: String
     def typeSymbol: Symbol
     def member(string: Name): Symbol
+    def members(string: Name): List[Symbol]
     /**
      * This method returns the BType for a type reference, for example a parameter type.
      *
@@ -601,9 +507,9 @@ abstract class BackendInterface {
   def warning(pos: Position, msg: String): Unit // reporter.warning
   def abort(msg: String): Nothing
 
-  def ExcludedForwarderFlags: Flags
-  def METHODFlag: Flags
-  def Flags_SYNTHETIC: Flags
+  val ExcludedForwarderFlags: Flags
+  val Flag_METHOD: Flags
+  val Flag_SYNTHETIC: Flags
 
   /** Some useful equality helpers. */
   def isNull(t: Tree): Boolean
@@ -653,4 +559,88 @@ abstract class BackendInterface {
   def getAnnotPickle(jclassName: String, sym: Symbol): Option[Annotation]
 }
 
+trait BackendInterfaceDefinitions { self: BackendInterface =>
+  val nme_valueOf: Name
 
+  /* magic instances */
+  val NoPosition: Position
+  val NoSymbol: Symbol
+  val EmptyTree: Tree
+  val NothingClass: Symbol
+  val NullClass: Symbol
+  val ObjectClass: Symbol
+  val Object_isInstanceOf: Symbol
+  val Object_asInstanceOf: Symbol
+  val Object_equals: Symbol
+
+
+  val UnitClass: Symbol = requiredClass[scala.Unit]
+  val BooleanClass: Symbol = requiredClass[scala.Boolean]
+  val CharClass: Symbol  = requiredClass[scala.Char]
+  val ShortClass: Symbol = requiredClass[scala.Short]
+  val ClassClass: Symbol = requiredClass[java.lang.Class[_]]
+  val ByteClass: Symbol  = requiredClass[scala.Byte]
+  val IntClass: Symbol = requiredClass[scala.Int]
+  val LongClass: Symbol = requiredClass[scala.Long]
+  val FloatClass: Symbol = requiredClass[scala.Float]
+  val DoubleClass: Symbol  = requiredClass[scala.Double]
+
+  // Class symbols used in backend.
+  // Vals becouse they are to frequent in scala programs so that they are already loaded by backend
+
+  lazy val RemoteAttr: Symbol = requiredClass[scala.remote]
+  lazy val BeanInfoAttr: Symbol = requiredClass[scala.beans.BeanInfo]
+  lazy val NativeAttr: Symbol = requiredClass[scala.native]
+  lazy val TransientAttr = requiredClass[scala.transient]
+  lazy val VolatileAttr = requiredClass[scala.volatile]
+  val ScalaSignatureATTRName: String = "ScalaSig"
+
+  val BoxedBooleanClass: Symbol = requiredClass[java.lang.Boolean]
+  val BoxedByteClass: Symbol = requiredClass[java.lang.Byte]
+  val BoxedShortClass: Symbol = requiredClass[java.lang.Short]
+  val BoxedCharacterClass: Symbol = requiredClass[java.lang.Character]
+  val BoxedIntClass: Symbol  = requiredClass[java.lang.Integer]
+  val BoxedLongClass: Symbol = requiredClass[java.lang.Long]
+  val BoxedFloatClass: Symbol = requiredClass[java.lang.Float]
+  val BoxedDoubleClass: Symbol = requiredClass[java.lang.Double]
+  val StringClass: Symbol = requiredClass[java.lang.String]
+  val StringBuilderClass: Symbol = requiredClass[java.lang.StringBuilder]
+  val ThrowableClass: Symbol = requiredClass[java.lang.Throwable]
+  val JavaCloneableClass: Symbol = requiredClass[java.lang.Cloneable]
+  val NullPointerExceptionClass: Symbol  = requiredClass[java.lang.NullPointerException]
+  val JavaSerializableClass: Symbol = requiredClass[java.io.Serializable]
+  val SerializableClass: Symbol = requiredClass[scala.Serializable]
+  val ClassCastExceptionClass: Symbol = requiredClass[java.lang.ClassCastException]
+  val ArrayClass: Symbol = requiredClass[scala.Array[_]]
+  val ClassfileAnnotationClass: Symbol = requiredClass[scala.annotation.ClassfileAnnotation]
+  val BoxedNumberClass: Symbol = requiredClass[java.lang.Number]
+  val RemoteExceptionClass: Symbol = requiredClass[java.rmi.RemoteException]
+  val ThrowsClass: Symbol = requiredClass[scala.throws[_]]
+
+  // Module symbols used in backend
+  val StringModule: Symbol = StringClass.linkedClassOfClass
+  val ScalaRunTimeModule: Symbol = requiredModule[scala.runtime.ScalaRunTime.type]
+
+  // methods used in backend
+
+  val Array_clone: Symbol
+  val hashMethodSym: Symbol
+  val externalEqualsNumNum: Symbol
+  val externalEqualsNumChar: Symbol
+  val externalEqualsNumObject: Symbol
+  val externalEquals: Symbol
+
+  val MaxFunctionArity: Int
+  val FunctionClass: Array[Symbol]
+  val AbstractFunctionClass: Array[Symbol]
+  val PartialFunctionClass: Symbol
+  val AbstractPartialFunctionClass: Symbol
+
+  /* The Object => String overload. */
+  lazy val String_valueOf: Symbol = {
+    StringModule.info.members(nme_valueOf).filter(sym => sym.info.paramTypes match {
+      case List(pt) => pt.typeSymbol == ObjectClass
+      case _        => false
+    }).head
+  }
+}
