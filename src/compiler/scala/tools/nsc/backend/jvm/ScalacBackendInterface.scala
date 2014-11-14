@@ -1,18 +1,26 @@
 package scala.tools.nsc.backend.jvm
 
+import scala.collection.generic.Clearable
+import scala.collection.mutable
+import scala.reflect.ClassTag
+import scala.reflect.internal.util.WeakHashSet
 import scala.tools.nsc.Global
 import scala.tools.asm
 import scala.reflect.io.AbstractFile
+import scala.reflect.internal.{Flags => IFlags}
 
 
+/* Uses pre-allocated objects to not allocate objects during pattern matching and during implicit conversion.
+ * Due to this every instance in not threadsafe, but multiple instances could be used in parrallel if underlying compiler
+ * supports this
+ */
 
-abstract class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterface{
+abstract class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterface with BackendInterfaceDefinitions{
   import global._
   import definitions._
   type Symbol = global.Symbol
   type Type = global.Type
   type Annotation = global.AnnotationInfo
-  type Flags = Long
   type Tree = global.Tree
   type CompilationUnit = global.CompilationUnit
   type Constant = global.Constant
@@ -21,42 +29,86 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   type Name = global.Name
   type LabelDef = global.LabelDef
   type ClassDef = global.ClassDef
+  type TypeDef = global.TypeDef
+  type Apply = global.Apply
+  type TypeApply = global.TypeApply
+  type Try = global.Try
+  type Assign = global.Assign
+  type Ident = global.Ident
+  type If = global.If
+  type ValDef = global.ValDef
+  type Throw = global.Throw
+  type Return = global.Return
+  type Block = global.Block
+  type Typed = global.Typed
+  type ArrayValue = global.ArrayValue
+  type Match = global.Match
+  type This = global.This
+  type CaseDef = global.CaseDef
+  type Alternative = global.Alternative
+  type DefDef = global.DefDef
+  type ModuleDef = global.ModuleDef
+  type Template = global.Template
 
   val NoSymbol = global.NoSymbol
 
   import scala.tools.nsc.symtab._
 
-  // TODO @lry avoiding going through through missingHook for every line in the REPL: https://github.com/scala/scala/commit/8d962ed4ddd310cc784121c426a2e3f56a112540
-  lazy val AndroidParcelableInterface : Symbol = getClassIfDefined("android.os.Parcelable")
-  lazy val AndroidCreatorClass        : Symbol = getClassIfDefined("android.os.Parcelable$Creator")
+  val UnitTag: ConstantTag = global.UnitTag
+  val IntTag: ConstantTag = global.IntTag
+  val FloatTag: ConstantTag = global.FloatTag
+  val NullTag: ConstantTag = global.NullTag
+  val BooleanTag: ConstantTag = global.BooleanTag
+  val ByteTag: ConstantTag = global.ByteTag
+  val ShortTag: ConstantTag = global.ShortTag
+  val CharTag: ConstantTag = global.CharTag
+  val DoubleTag: ConstantTag = global.DoubleTag
+  val LongTag: ConstantTag = global.LongTag
+  val StringTag: ConstantTag = global.StringTag
+  val ClazzTag: ConstantTag = global.ClazzTag
+  val EnumTag: ConstantTag = global.EnumTag
 
-  val BeanInfoAttr: Symbol = requiredClass[scala.beans.BeanInfo]
+  val hashMethodSym: Symbol = getMember(ScalaRunTimeModule, nme.hash_)
 
-  /* The Object => String overload. */
-  lazy val String_valueOf: Symbol = {
-    getMember(StringModule, nme.valueOf) filter (sym => sym.info.paramTypes match {
-      case List(pt) => pt.typeSymbol == ObjectClass
-      case _        => false
-    })
+  object ScalacPrimitives extends Primitives {
+    def getPrimitive(methodSym: Symbol, reciever: Type): Int = global.scalaPrimitives.getPrimitive(methodSym, reciever)
+
+    def getPrimitive(sym: Symbol): Int = global.scalaPrimitives.getPrimitive(sym)
+
+    def isPrimitive(sym: Symbol): Boolean = global.scalaPrimitives.isPrimitive(sym)
   }
 
+  val primitives: Primitives = ScalacPrimitives
 
+  val nme_This: Name = nme.This
+  val nme_EMPTY_PACKAGE_NAME: Name = nme.EMPTY_PACKAGE_NAME
+  val nme_CONSTRUCTOR: Name = nme.CONSTRUCTOR
+  val nme_WILDCARD: Name = nme.WILDCARD
+  val nme_THIS: Name = nme.THIS
+  val nme_PACKAGE: Name = nme.PACKAGE
+  val nme_EQEQ_LOCAL_VAR: Name = nme.EQEQ_LOCAL_VAR
+
+
+  val Flag_METHOD: Flags = IFlags.METHOD
+  val Flag_SYNTHETIC: Flags = IFlags.SYNTHETIC
+
+
+  def debuglog(msg: => String): Unit = global.debuglog(msg)
+  def error(pos: Position, msg: String): Unit = global.reporter.error(pos, msg)
+  def warning(pos: Position, msg: String): Unit = global.reporter.warning(pos, msg)
+  def abort(msg: String): Nothing = global.abort(msg)
   def debuglevel: Int = settings.debuginfo.indexOfChoice
   def settings_debug: Boolean = settings.debug
 
-  /**
-   * The member classes of a class symbol. Note that the result of this method depends on the
-   * current phase, for example, after lambdalift, all local classes become member of the enclosing
-   * class.
-   */
-  def memberClassesOf(classSymbol: Symbol): List[Symbol] = classSymbol.info.decls.collect({
-    case sym if sym.isClass =>
-      sym
-    case sym if sym.isModule =>
-      val r = exitingPickler(sym.moduleClass)
-      assert(r != NoSymbol, sym.fullLocationString)
-      r
-  })(collection.breakOut)
+
+
+  /* means of getting class symbols from compiler */
+  def requiredClass[T: ClassTag]: Symbol = rootMirror.requiredClass(implicitly[ClassTag[T]])
+  def requiredModule[T: ClassTag]: Symbol = rootMirror.requiredModule(implicitly[ClassTag[T]])
+
+  def getRequiredClass(fullname: String): Symbol = rootMirror.getRequiredClass(fullname)
+
+  def getClassIfDefined(fullname: String): Symbol = rootMirror.getClassIfDefined(fullname)
 
   def shouldEmitAnnotation(annot: Annotation): Boolean = {
     annot.symbol.initialize.isJavaDefined &&
@@ -89,7 +141,7 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
 
   def informProgress(msg: String): Unit = if (settings.verbose) inform("[" + msg + "]")
 
-  def ExcludedForwarderFlags: Flags = {
+  val ExcludedForwarderFlags: Flags = {
     import scala.tools.nsc.symtab.Flags._
     // Should include DEFERRED but this breaks findMember.
     SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags | MACRO
@@ -136,6 +188,10 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   def internalNameString(offset: Int, length: Int) = new String(global.chrs, offset, length)
 
 
+  def targetPlatform: String = settings.target.value
+
+  def setMainClass(name: String): Unit = settings.mainClass.value = name
+
   override def emitAsmp = if (settings.Ygenasmp.isSetByUser) Some(settings.Ygenasmp.value) else None
 
   override def dumpClasses: Option[String] = if(settings.Ydumpclasses.isSetByUser) Some(settings.Ydumpclasses.value) else None
@@ -145,17 +201,48 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
     else Some(settings.mainClass.value)
   }
 
+  object scalacCaches extends Caches{
+    def recordCache[T <: Clearable](cache: T): T = global.perRunCaches.recordCache(cache)
+    def newAnyRefMap[K <: AnyRef, V](): mutable.AnyRefMap[K, V] = global.perRunCaches.newAnyRefMap()
+    def newWeakMap[K, V](): mutable.WeakHashMap[K, V] = global.perRunCaches.newWeakMap()
+    def newWeakSet[K <: AnyRef](): WeakHashSet[K] = global.perRunCaches.newWeakSet()
+    def newMap[K, V](): mutable.HashMap[K, V] = global.perRunCaches.newMap()
+    def newSet[K](): mutable.Set[K] = global.perRunCaches.newSet()
+  }
+
+  def perRunCaches: Caches = scalacCaches
+
+
+
+  /* backend actually uses free names to generate stuff. This should NOT mangled */
+  def newTermName(prefix: String): Name = global.newTermName(prefix)
+
+  def isMaybeBoxed(sym: Symbol): Boolean = global.platform.isMaybeBoxed(sym)
+
+  def getSingleOutput: Option[AbstractFile] = settings.outputDirs.getSingleOutput
+  
 
   override def boxMethods = currentRun.runDefinitions.boxMethod
 
   // (class, method)
   override def unboxMethods = currentRun.runDefinitions.boxMethod
 
-  val hashMethodSym: Symbol = getMember(ScalaRunTimeModule, nme.hash_)
-
   abstract class ScalacSymbolHelper(sym: Symbol) extends SymbolHelper{
-     def nestedClasses: List[Symbol] = exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(sym))
+     def nestedClasses: List[Symbol] = exitingPhase(currentRun.lambdaliftPhase)(sym.memberClasses)
 
+    /**
+     * The member classes of a class symbol. Note that the result of this method depends on the
+     * current phase, for example, after lambdalift, all local classes become member of the enclosing
+     * class.
+     */
+    def memberClasses: List[Symbol] = sym.info.decls.collect({
+      case sym if sym.isClass =>
+        sym
+      case sym if sym.isModule =>
+        val r = exitingPickler(sym.moduleClass)
+        assert(r != NoSymbol, sym.fullLocationString)
+        r
+    })(collection.breakOut)
 
     def isGetClass: Boolean = definitions.isGetClass(sym)
 
@@ -169,7 +256,7 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
      def companionModuleMembers: List[Symbol] = {
       // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
       // not local classes of the companion module (E in the exmaple) that were lifted by lambdalift.
-      if (linkedClass.isTopLevelModuleClass) exitingPickler(memberClassesOf(linkedClass))
+      if (linkedClass.isTopLevelModuleClass) exitingPickler(linkedClass.memberClasses)
       else Nil
     }
 
@@ -572,7 +659,7 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   /*
    * must-single-thread
    */
-  def emitAnnotations(cw: asm.ClassVisitor, annotations: List[Annotation], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen) {
+  override def emitAnnotations(cw: asm.ClassVisitor, annotations: List[Annotation], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen) {
     for(annot <- annotations; if shouldEmitAnnotation(annot)) {
       val AnnotationInfo(typ, args, assocs) = annot
       assert(args.isEmpty, args)
@@ -584,7 +671,7 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   /*
    * must-single-thread
    */
-  def emitAnnotations(mw: asm.MethodVisitor, annotations: List[AnnotationInfo], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen) {
+  override def emitAnnotations(mw: asm.MethodVisitor, annotations: List[AnnotationInfo], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen) {
     for(annot <- annotations; if shouldEmitAnnotation(annot)) {
       val AnnotationInfo(typ, args, assocs) = annot
       assert(args.isEmpty, args)
@@ -596,7 +683,7 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   /*
    * must-single-thread
    */
-  def emitAnnotations(fw: asm.FieldVisitor, annotations: List[AnnotationInfo], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen) {
+  override def emitAnnotations(fw: asm.FieldVisitor, annotations: List[AnnotationInfo], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen) {
     for(annot <- annotations; if shouldEmitAnnotation(annot)) {
       val AnnotationInfo(typ, args, assocs) = annot
       assert(args.isEmpty, args)
@@ -608,7 +695,7 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   /*
    * must-single-thread
    */
-  def emitParamAnnotations(jmethod: asm.MethodVisitor, pannotss: List[List[AnnotationInfo]], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen) {
+  override def emitParamAnnotations(jmethod: asm.MethodVisitor, pannotss: List[List[AnnotationInfo]], bcodeStore: BCodeHelpers)(innerClasesStore: bcodeStore.BCInnerClassGen) {
     val annotationss = pannotss map (_ filter shouldEmitAnnotation)
     if (annotationss forall (_.isEmpty)) return
     for ((annots, idx) <- annotationss.zipWithIndex;
