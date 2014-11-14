@@ -492,7 +492,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       // no need to call index() over lblDf.params, on first access that magic happens (moreover, no LocalVariableTable entries needed for them).
       markProgramPoint(programPoint(lblDf.symbol))
       lineNumber(lblDf)
-      genLoad(lblDf.rhs, expectedType)
+      val LabelDef(_, _, rhs) = lblDf
+      genLoad(rhs, expectedType)
     }
 
     private def genReturn(r: Return) {
@@ -751,8 +752,9 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
      * On a second pass, we emit the switch blocks, one for each different target.
      */
     private def genMatch(tree: Match): BType = {
+      val Match(selector, cases) = tree
       lineNumber(tree)
-      genLoad(tree.selector, INT)
+      genLoad(selector, INT)
       val generatedType = tpeTK(tree)
 
       var flatKeys: List[Int]       = Nil
@@ -761,7 +763,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       var switchBlocks: List[Tuple2[asm.Label, Tree]] = Nil
 
       // collect switch blocks and their keys, but don't emit yet any switch-block.
-      for (caze @ CaseDef(pat, guard, body) <- tree.cases) {
+      for (caze @ CaseDef(pat, guard, body) <- cases) {
         assert(guard == EmptyTree, guard)
         val switchBlockPoint = new asm.Label
         switchBlocks ::= (switchBlockPoint, body)
@@ -885,9 +887,10 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
 
     /* Generate code that loads args into label parameters. */
     def genLoadLabelArguments(args: List[Tree], lblDef: LabelDef, gotoPos: Position) {
+      val LabelDef(_, param, _) = lblDef
 
       val aps = {
-        val params: List[Symbol] = lblDef.params.map(_.symbol)
+        val params: List[Symbol] = param.map(_.symbol)
         assert(args.length == params.length, s"Wrong number of arguments in call to label at: $gotoPos")
 
         def isTrivial(kv: (Tree, Symbol)) = kv match {

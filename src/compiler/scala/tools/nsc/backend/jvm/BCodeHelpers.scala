@@ -410,7 +410,7 @@ trait BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       }
       debuglog(s"Potentially conflicting names for forwarders: $conflictingNames")
 
-      for (m <- moduleClass.info.membersBasedOnFlags(ExcludedForwarderFlags, METHODFlag)) {
+      for (m <- moduleClass.info.membersBasedOnFlags(ExcludedForwarderFlags, Flag_METHOD)) {
         if (m.isType || m.isDeferred || (m.owner eq ObjectClass) || m.isConstructor)
           debuglog(s"No forwarder for '$m' from $jclassName to '$moduleClass'")
         else if (conflictingNames(m.name))
@@ -651,6 +651,9 @@ trait BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
      *  which is an object implementing the `Parcelable.Creator` interface.
      */
     val androidFieldName = newTermName("CREATOR")
+
+    lazy val AndroidParcelableInterface : Symbol = getClassIfDefined("android.os.Parcelable")
+    lazy val AndroidCreatorClass        : Symbol = getClassIfDefined("android.os.Parcelable$Creator")
 
     /*
      * must-single-thread
