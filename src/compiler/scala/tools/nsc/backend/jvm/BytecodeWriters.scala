@@ -19,11 +19,8 @@ class FileConflictException(msg: String, val file: AbstractFile) extends IOExcep
  *  files, jars, and disassembled/javap output.
  */
 trait BytecodeWriters {
-  val global: Global
-  import global._
-
-  def outputDirectory(sym: Symbol): AbstractFile =
-    settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
+  val int: BackendInterface
+  import int._
 
   /**
    * @param clsName cls.getName
@@ -38,12 +35,12 @@ trait BytecodeWriters {
     ensureDirectory(dir) fileNamed pathParts.last + suffix
   }
   def getFile(sym: Symbol, clsName: String, suffix: String): AbstractFile =
-    getFile(outputDirectory(sym), clsName, suffix)
+    getFile(sym.outputDirectory, clsName, suffix)
 
   def factoryNonJarBytecodeWriter(): BytecodeWriter = {
-    val emitAsmp  = settings.Ygenasmp.isSetByUser
-    val doDump    = settings.Ydumpclasses.isSetByUser
-    (emitAsmp, doDump) match {
+    val emitAsmp  = int.emitAsmp
+    val doDump    = int.dumpClasses
+    (emitAsmp.isDefined, doDump.isDefined) match {
       case (false, false) => new ClassBytecodeWriter { }
       case (false, true ) => new ClassBytecodeWriter with DumpBytecodeWriter { }
       case (true,  false) => new ClassBytecodeWriter with AsmpBytecodeWriter
@@ -57,10 +54,8 @@ trait BytecodeWriters {
   }
 
   class DirectToJarfileWriter(jfile: JFile) extends BytecodeWriter {
-    val jarMainAttrs = (
-      if (settings.mainClass.isDefault) Nil
-      else List(Name.MAIN_CLASS -> settings.mainClass.value)
-    )
+    val jarMainAttrs = mainClass.map(nm => List(Name.MAIN_CLASS -> nm)).getOrElse(Nil)
+
     val writer = new Jar(jfile).jarWriter(jarMainAttrs: _*)
 
     def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
@@ -88,7 +83,7 @@ trait BytecodeWriters {
   trait AsmpBytecodeWriter extends BytecodeWriter {
     import scala.tools.asm
 
-    private val baseDir = Directory(settings.Ygenasmp.value).createDirectory()
+    private val baseDir = Directory(int.emitAsmp.get).createDirectory()
 
     private def emitAsmp(jclassBytes: Array[Byte], asmpFile: io.File) {
       val pw = asmpFile.printWriter()
@@ -127,7 +122,7 @@ trait BytecodeWriters {
   }
 
   trait DumpBytecodeWriter extends BytecodeWriter {
-    val baseDir = Directory(settings.Ydumpclasses.value).createDirectory()
+    val baseDir = Directory(int.dumpClasses.get).createDirectory()
 
     abstract override def writeClass(label: String, jclassName: String, jclassBytes: Array[Byte], outfile: AbstractFile) {
       super.writeClass(label, jclassName, jclassBytes, outfile)

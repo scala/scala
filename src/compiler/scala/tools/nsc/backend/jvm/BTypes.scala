@@ -18,6 +18,9 @@ import asm.Opcodes
  * be queried by concurrent threads.
  */
 abstract class BTypes {
+
+  val int: BackendInterface
+  import int._
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
    * construction.
@@ -35,7 +38,7 @@ abstract class BTypes {
    * The string represented by the `offset` / `length` values of a ClassBType, see comment of that
    * class.
    */
-  protected def internalNameString(offset: Int, lenght: Int): String
+  def internalNameString(offset: Int, length: Int): String = int.internalNameString(offset, length)
 
   /**
    * Obtain a previously constructed ClassBType for a given internal name.
@@ -617,7 +620,7 @@ abstract class BTypes {
       assert(!ClassBType.isInternalPhantomType(internalName), s"Cannot create ClassBType for phantom type $this")
 
       assert(
-        if (info.superClass.isEmpty) { isJLO(this) || (isCompilingPrimitive && ClassBType.hasNoSuper(internalName)) }
+        if (info.superClass.isEmpty) { isJLO(this) || (int.isCompilingPrimitive && ClassBType.hasNoSuper(internalName)) }
         else if (isInterface) isJLO(info.superClass.get)
         else !isJLO(this) && ifInit(info.superClass.get)(!_.isInterface),
         s"Invalid superClass in $this: ${info.superClass}"
@@ -866,10 +869,4 @@ abstract class BTypes {
    * Just a named pair, used in CoreBTypes.asmBoxTo/asmUnboxTo.
    */
   final case class MethodNameAndType(name: String, methodType: MethodBType)
-
-  /**
-   * True if the current compilation unit is of a primitive class (scala.Boolean et al).
-   * Used only in assertions. Abstract here because its implementation depends on global.
-   */
-  def isCompilingPrimitive: Boolean
 }

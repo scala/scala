@@ -9,7 +9,7 @@ package backend
 package icode
 
 import scala.reflect.internal.util.{Position,NoPosition}
-
+import Primitives._
 /*
   A pattern match
 
@@ -66,6 +66,7 @@ import scala.reflect.internal.util.{Position,NoPosition}
  */
 trait Opcodes { self: ICodes =>
   import global.{Symbol, NoSymbol, Name, Constant}
+  import Opcodes._
 
   // categories of ICode instructions
   final val localsCat =  1
@@ -307,30 +308,30 @@ trait Opcodes { self: ICodes =>
       override def produced = 1
 
       override def consumedTypes = primitive match {
-        case Negation(kind)        => kind :: Nil
-        case Test(_, kind, true)   => kind :: Nil
-        case Test(_, kind, false)  => kind :: kind :: Nil
-        case Comparison(_, kind)   => kind :: kind :: Nil
-        case Arithmetic(NOT, kind) => kind :: Nil
-        case Arithmetic(_, kind)   => kind :: kind :: Nil
-        case Logical(_, kind)      => kind :: kind :: Nil
-        case Shift(_, kind)        => kind :: INT :: Nil
-        case Conversion(from, _)   => from :: Nil
-        case ArrayLength(kind)     => ARRAY(kind) :: Nil
-        case StringConcat(kind)    => ConcatClass :: kind :: Nil
+        case Negation(kind: Opcodes.this.TypeKind)        => kind :: Nil
+        case Test(_, kind: Opcodes.this.TypeKind, true)   => kind :: Nil
+        case Test(_, kind: Opcodes.this.TypeKind, false)  => kind :: kind :: Nil
+        case Comparison(_, kind: Opcodes.this.TypeKind)   => kind :: kind :: Nil
+        case Arithmetic(NOT, kind: Opcodes.this.TypeKind) => kind :: Nil
+        case Arithmetic(_, kind: Opcodes.this.TypeKind)   => kind :: kind :: Nil
+        case Logical(_, kind: Opcodes.this.TypeKind)      => kind :: kind :: Nil
+        case Shift(_, kind: Opcodes.this.TypeKind)        => kind :: INT :: Nil
+        case Conversion(from: Opcodes.this.TypeKind, _)   => from :: Nil
+        case ArrayLength(kind: Opcodes.this.TypeKind)     => ARRAY(kind) :: Nil
+        case StringConcat(kind: Opcodes.this.TypeKind)    => ConcatClass :: kind :: Nil
         case StartConcat           => Nil
         case EndConcat             => ConcatClass :: Nil
       }
 
       override def producedTypes = primitive match {
-        case Negation(kind)      => kind :: Nil
+        case Negation(kind: Opcodes.this.TypeKind)      => kind :: Nil
         case Test(_, _, true)    => BOOL :: Nil
         case Test(_, _, false)   => BOOL :: Nil
         case Comparison(_, _)    => INT :: Nil
-        case Arithmetic(_, kind) => kind :: Nil
-        case Logical(_, kind)    => kind :: Nil
-        case Shift(_, kind)      => kind :: Nil
-        case Conversion(_, to)   => to :: Nil
+        case Arithmetic(_, kind: Opcodes.this.TypeKind) => kind :: Nil
+        case Logical(_, kind: Opcodes.this.TypeKind)    => kind :: Nil
+        case Shift(_, kind: Opcodes.this.TypeKind)      => kind :: Nil
+        case Conversion(_, to: Opcodes.this.TypeKind)   => to :: Nil
         case ArrayLength(_)      => INT :: Nil
         case StringConcat(_)     => ConcatClass :: Nil
         case StartConcat         => ConcatClass :: Nil
@@ -716,52 +717,56 @@ trait Opcodes { self: ICodes =>
       override def producedTypes = REFERENCE(clasz) :: Nil
       override def category = stackCat
     }
+  }
+}
 
-    /** This class represents a method invocation style. */
-    sealed abstract class InvokeStyle {
-      /** Is this a dynamic method call? */
-      def isDynamic: Boolean = false
+object Opcodes{
 
-      /** Is this a static method call? */
-      def isStatic: Boolean = false
+  /** This class represents a method invocation style. */
+  sealed abstract class InvokeStyle {
+    /** Is this a dynamic method call? */
+    def isDynamic: Boolean = false
 
-      def isSuper: Boolean = false
+    /** Is this a static method call? */
+    def isStatic: Boolean = false
 
-      /** Is this an instance method call? */
-      def hasInstance: Boolean = true
+    def isSuper: Boolean = false
 
-      /** Returns a string representation of this style. */
-      override def toString(): String
-    }
+    /** Is this an instance method call? */
+    def hasInstance: Boolean = true
 
-    /** Virtual calls.
-     *  On JVM, translated to either `invokeinterface` or `invokevirtual`.
-     */
-    case object Dynamic extends InvokeStyle {
-      override def isDynamic = true
-      override def toString(): String = "dynamic"
-    }
+    /** Returns a string representation of this style. */
+    override def toString(): String
+  }
 
-    /**
-     * Special invoke:
-     *   Static(true)  is used for calls to private members, ie `invokespecial` on JVM.
-     *   Static(false) is used for calls to class-level instance-less static methods, ie `invokestatic` on JVM.
-     */
-    case class Static(onInstance: Boolean) extends InvokeStyle {
-      override def isStatic    = true
-      override def hasInstance = onInstance
-      override def toString(): String = {
-        if(onInstance) "static-instance"
-        else           "static-class"
-      }
-    }
+  /** Virtual calls.
+    *  On JVM, translated to either `invokeinterface` or `invokevirtual`.
+    */
+  case object Dynamic extends InvokeStyle {
+    override def isDynamic = true
+    override def toString(): String = "dynamic"
+  }
 
-    /** Call through super[mix].
-     *  On JVM, translated to `invokespecial`.
-     */
-    case class SuperCall(mix: Name) extends InvokeStyle {
-      override def isSuper = true
-      override def toString(): String = { "super(" + mix + ")" }
+  /**
+   * Special invoke:
+   *   Static(true)  is used for calls to private members, ie `invokespecial` on JVM.
+   *   Static(false) is used for calls to class-level instance-less static methods, ie `invokestatic` on JVM.
+   */
+  case class Static(onInstance: Boolean) extends InvokeStyle {
+    override def isStatic    = true
+    override def hasInstance = onInstance
+    override def toString(): String = {
+      if(onInstance) "static-instance"
+      else           "static-class"
     }
   }
+
+  /** Call through super[mix].
+    *  On JVM, translated to `invokespecial`.
+    */
+  case class SuperCall(mix: String) extends InvokeStyle {
+    override def isSuper = true
+    override def toString(): String = { "super(" + mix + ")" }
+  }
+
 }

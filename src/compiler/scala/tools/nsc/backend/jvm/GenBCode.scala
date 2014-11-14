@@ -45,8 +45,11 @@ import scala.tools.nsc.backend.jvm.opt.LocalOpt
  *  @version 1.0
  *
  */
-abstract class GenBCode extends BCodeSyncAndTry {
+abstract class GenBCode extends SubComponent with BCodeSyncAndTry {
+  val global: Global
   import global._
+  val int: ScalacBackendInterface[global.type] = ???
+  import int.{symHelper, BeanInfoAttr}
 
   import bTypes._
   import coreBTypes._
@@ -170,7 +173,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
 
         // -------------- mirror class, if needed --------------
         val mirrorC =
-          if (isTopLevelModuleClass(claszSymbol)) {
+          if (claszSymbol.isTopLevelModuleClass) {
             if (claszSymbol.companionClass == NoSymbol) {
               mirrorCodeGen.genMirrorClass(claszSymbol, cunit)
             } else {
@@ -182,7 +185,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
         // -------------- "plain" class --------------
         val pcb = new PlainClassBuilder(cunit)
         pcb.genPlainClass(cd)
-        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisName, cunit) else null;
+        val outF = if (needsOutFolder) getOutFolder(claszSymbol, pcb.thisName) else null;
         val plainC = pcb.cnode
 
         // -------------- bean info class, if needed --------------
@@ -190,8 +193,8 @@ abstract class GenBCode extends BCodeSyncAndTry {
           if (claszSymbol hasAnnotation BeanInfoAttr) {
             beanInfoCodeGen.genBeanInfoClass(
               claszSymbol, cunit,
-              fieldSymbols(claszSymbol),
-              methodSymbols(cd)
+              claszSymbol.fieldSymbols,
+              claszSymbol.methodSymbols
             )
           } else null
 

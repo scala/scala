@@ -5,21 +5,15 @@
 
 package scala.tools.nsc.backend.jvm
 
+import scala.reflect.internal.AnnotationInfos
 import scala.tools.nsc.Global
 
 /**
  * This trait contains code shared between GenBCode and GenASM that depends on types defined in
  * the compiler cake (Global).
  */
-final class BCodeAsmCommon[G <: Global](val global: G) {
-  import global._
-  import definitions._
-
-  val ExcludedForwarderFlags = {
-    import scala.tools.nsc.symtab.Flags._
-    // Should include DEFERRED but this breaks findMember.
-    SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags | MACRO
-  }
+final class BCodeAsmCommon[I <: BackendInterface](interface: I) {
+import interface._
 
   /**
    * True if `classSym` is an anonymous class or a local class. I.e., false if `classSym` is a
@@ -103,63 +97,58 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
       None
     }
   }
+}
 
-  /**
-   * This is basically a re-implementation of sym.isStaticOwner, but using the originalOwner chain.
-   *
-   * The problem is that we are interested in a source-level property. Various phases changed the
-   * symbol's properties in the meantime, mostly lambdalift modified (destructively) the owner.
-   * Therefore, `sym.isStatic` is not what we want. For example, in
-   *   object T { def f { object U } }
-   * the owner of U is T, so UModuleClass.isStatic is true. Phase travel does not help here.
-   */
-  def isOriginallyStaticOwner(sym: Symbol): Boolean = {
-    sym.isPackageClass || sym.isModuleClass && isOriginallyStaticOwner(sym.originalOwner)
-  }
-
-  /**
-   * The member classes of a class symbol. Note that the result of this method depends on the
-   * current phase, for example, after lambdalift, all local classes become member of the enclosing
-   * class.
-   */
-  def memberClassesOf(classSymbol: Symbol): List[Symbol] = classSymbol.info.decls.collect({
-    case sym if sym.isClass =>
-      sym
-    case sym if sym.isModule =>
-      val r = exitingPickler(sym.moduleClass)
-      assert(r != NoSymbol, sym.fullLocationString)
-      r
-  })(collection.breakOut)
-
-  lazy val AnnotationRetentionPolicyModule       = AnnotationRetentionPolicyAttr.companionModule
-  lazy val AnnotationRetentionPolicySourceValue  = AnnotationRetentionPolicyModule.tpe.member(TermName("SOURCE"))
-  lazy val AnnotationRetentionPolicyClassValue   = AnnotationRetentionPolicyModule.tpe.member(TermName("CLASS"))
-  lazy val AnnotationRetentionPolicyRuntimeValue = AnnotationRetentionPolicyModule.tpe.member(TermName("RUNTIME"))
-
-  /** Whether an annotation should be emitted as a Java annotation
-    * .initialize: if 'annot' is read from pickle, atp might be un-initialized
-    */
-  def shouldEmitAnnotation(annot: AnnotationInfo) = {
-    annot.symbol.initialize.isJavaDefined &&
-      annot.matches(ClassfileAnnotationClass) &&
-      retentionPolicyOf(annot) != AnnotationRetentionPolicySourceValue &&
-      annot.args.isEmpty
-  }
-
-  def isRuntimeVisible(annot: AnnotationInfo): Boolean = {
-    annot.atp.typeSymbol.getAnnotation(AnnotationRetentionAttr) match {
-      case Some(retentionAnnot) =>
-        retentionAnnot.assocs.contains(nme.value -> LiteralAnnotArg(Constant(AnnotationRetentionPolicyRuntimeValue)))
-      case _ =>
-        // SI-8926: if the annotation class symbol doesn't have a @RetentionPolicy annotation, the
-        // annotation is emitted with visibility `RUNTIME`
-        true
+object BCodeAsmCommon{
+  def ubytesToCharArray(bytes: Array[Byte]): Array[Char] = {
+    val ca = new Array[Char](bytes.length)
+    var idx = 0
+    while(idx < bytes.length) {
+      val b: Byte = bytes(idx)
+      assert((b & ~0x7f) == 0)
+      ca(idx) = b.asInstanceOf[Char]
+      idx += 1
     }
+
+    ca
   }
 
-  private def retentionPolicyOf(annot: AnnotationInfo): Symbol =
-    annot.atp.typeSymbol.getAnnotation(AnnotationRetentionAttr).map(_.assocs).map(assoc =>
-      assoc.collectFirst {
-        case (`nme`.value, LiteralAnnotArg(Constant(value: Symbol))) => value
-      }).flatten.getOrElse(AnnotationRetentionPolicyClassValue)
+  final def arrEncode(sb: AnnotationInfos#ScalaSigBytes): Array[String] = {
+    var strs: List[String]  = Nil
+    val bSeven: Array[Byte] = sb.sevenBitsMayBeZero
+    // chop into slices of at most 65535 bytes, counting 0x00 as taking two bytes (as per JVMS 4.4.7 The CONSTANT_Utf8_info Structure)
+    var prevOffset = 0
+    var offset     = 0
+    var encLength  = 0
+    while(offset < bSeven.length) {
+      val deltaEncLength = (if(bSeven(offset) == 0) 2 else 1)
+      val newEncLength = encLength.toLong + deltaEncLength
+      if(newEncLength >= 65535) {
+        val ba     = bSeven.slice(prevOffset, offset)
+        strs     ::= new java.lang.String(ubytesToCharArray(ba))
+        encLength  = 0
+        prevOffset = offset
+      } else {
+        encLength += deltaEncLength
+        offset    += 1
+      }
+    }
+    if(prevOffset < offset) {
+      assert(offset == bSeven.length)
+      val ba = bSeven.slice(prevOffset, offset)
+      strs ::= new java.lang.String(ubytesToCharArray(ba))
+    }
+    assert(strs.size > 1, "encode instead as one String via strEncode()") // TODO too strict?
+    strs.reverse.toArray
+  }
+
+
+  def strEncode(sb: AnnotationInfos#ScalaSigBytes): String = {
+    val ca = ubytesToCharArray(sb.sevenBitsMayBeZero)
+    new java.lang.String(ca)
+    // debug val bvA = new asm.ByteVector; bvA.putUTF8(s)
+    // debug val enc: Array[Byte] = scala.reflect.internal.pickling.ByteCodecs.encode(bytes)
+    // debug assert(enc(idx) == bvA.getByte(idx + 2))
+    // debug assert(bvA.getLength == enc.size + 2)
+  }
 }

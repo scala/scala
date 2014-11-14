@@ -23,13 +23,13 @@ abstract class ICodes extends AnyRef
                                  with TypeStacks
                                  with TypeKinds
                                  with ExceptionHandlers
-                                 with Primitives
                                  with Linearizers
                                  with Printers
                                  with Repository
 {
   val global: Global
   import global.{ log, definitions, settings, perRunCaches, devWarning }
+  import Primitives._
 
   /** The ICode representation of classes */
   val classes = perRunCaches.newMap[global.Symbol, IClass]()

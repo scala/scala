@@ -10,6 +10,9 @@ package backend.jvm
 import scala.tools.asm
 import scala.annotation.switch
 import scala.collection.mutable
+import scala.tools.nsc.backend.ScalaPrimitives
+import scala.tools.nsc.backend.icode.Primitives
+import scala.tools.nsc.backend.icode.Primitives.{NE, EQ, TestOp, ArithmeticOp}
 
 /*
  *  A high-level facade to the ASM API for bytecode generation.
@@ -18,14 +21,15 @@ import scala.collection.mutable
  *  @version 1.0
  *
  */
-abstract class BCodeIdiomatic extends SubComponent {
-  val bTypes = new BTypesFromSymbols[global.type](global)
+trait BCodeIdiomatic {
+  val int: BackendInterface
+  val bTypes = new BTypesFromSymbols[int.type](int)
 
-  import global._
+  import int._
   import bTypes._
   import coreBTypes._
 
-  val classfileVersion: Int = settings.target.value match {
+  val classfileVersion: Int = target match {
     case "jvm-1.5"     => asm.Opcodes.V1_5
     case "jvm-1.6"     => asm.Opcodes.V1_6
     case "jvm-1.7"     => asm.Opcodes.V1_7
@@ -110,16 +114,16 @@ abstract class BCodeIdiomatic extends SubComponent {
     def jmethod: asm.MethodVisitor
 
     import asm.Opcodes;
-    import icodes.opcodes.{ Static, Dynamic,  SuperCall }
+    import backend.icode.Opcodes._
 
     final def emit(opc: Int) { jmethod.visitInsn(opc) }
 
     /*
      * can-multi-thread
      */
-    final def genPrimitiveArithmetic(op: icodes.ArithmeticOp, kind: BType) {
+    final def genPrimitiveArithmetic(op: ArithmeticOp, kind: BType) {
 
-      import icodes.{ ADD, SUB, MUL, DIV, REM, NOT }
+      import Primitives.{ ADD, SUB, MUL, DIV, REM, NOT }
 
       op match {
 
@@ -151,7 +155,7 @@ abstract class BCodeIdiomatic extends SubComponent {
      */
     final def genPrimitiveLogical(op: /* LogicalOp */ Int, kind: BType) {
 
-      import scalaPrimitives.{ AND, OR, XOR }
+      import ScalaPrimitives.{ AND, OR, XOR }
 
       ((op, kind): @unchecked) match {
         case (AND, LONG) => emit(Opcodes.LAND)
@@ -180,7 +184,7 @@ abstract class BCodeIdiomatic extends SubComponent {
      */
     final def genPrimitiveShift(op: /* ShiftOp */ Int, kind: BType) {
 
-      import scalaPrimitives.{ LSL, ASR, LSR }
+      import ScalaPrimitives.{ LSL, ASR, LSR }
 
       ((op, kind): @unchecked) match {
         case (LSL, LONG) => emit(Opcodes.LSHL)
@@ -250,7 +254,7 @@ abstract class BCodeIdiomatic extends SubComponent {
 
       assert(
         from.isNonVoidPrimitiveType && to.isNonVoidPrimitiveType,
-        s"Cannot emit primitive conversion from $from to $to - ${global.currentUnit}"
+        s"Cannot emit primitive conversion from $from to $to"
       )
 
           def pickOne(opcs: Array[Int]) { // TODO index on to.sort
@@ -410,13 +414,13 @@ abstract class BCodeIdiomatic extends SubComponent {
     // can-multi-thread
     final def goTo(label: asm.Label) { jmethod.visitJumpInsn(Opcodes.GOTO, label) }
     // can-multi-thread
-    final def emitIF(cond: icodes.TestOp, label: asm.Label)      { jmethod.visitJumpInsn(cond.opcodeIF,     label) }
+    final def emitIF(cond: TestOp, label: asm.Label)      { jmethod.visitJumpInsn(cond.opcodeIF,     label) }
     // can-multi-thread
-    final def emitIF_ICMP(cond: icodes.TestOp, label: asm.Label) { jmethod.visitJumpInsn(cond.opcodeIFICMP, label) }
+    final def emitIF_ICMP(cond: TestOp, label: asm.Label) { jmethod.visitJumpInsn(cond.opcodeIFICMP, label) }
     // can-multi-thread
-    final def emitIF_ACMP(cond: icodes.TestOp, label: asm.Label) {
-      assert((cond == icodes.EQ) || (cond == icodes.NE), cond)
-      val opc = (if (cond == icodes.EQ) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE)
+    final def emitIF_ACMP(cond: TestOp, label: asm.Label) {
+      assert((cond == EQ) || (cond == NE), cond)
+      val opc = (if (cond == EQ) Opcodes.IF_ACMPEQ else Opcodes.IF_ACMPNE)
       jmethod.visitJumpInsn(opc, label)
     }
     // can-multi-thread
@@ -614,7 +618,7 @@ abstract class BCodeIdiomatic extends SubComponent {
    * can-multi-thread
    */
   final def coercionFrom(code: Int): BType = {
-    import scalaPrimitives._
+    import ScalaPrimitives._
     (code: @switch) match {
       case B2B | B2C | B2S | B2I | B2L | B2F | B2D => BYTE
       case S2B | S2S | S2C | S2I | S2L | S2F | S2D => SHORT
@@ -631,7 +635,7 @@ abstract class BCodeIdiomatic extends SubComponent {
    * can-multi-thread
    */
   final def coercionTo(code: Int): BType = {
-    import scalaPrimitives._
+    import ScalaPrimitives._
     (code: @switch) match {
       case B2B | C2B | S2B | I2B | L2B | F2B | D2B => BYTE
       case B2C | C2C | S2C | I2C | L2C | F2C | D2C => CHAR
@@ -640,39 +644,6 @@ abstract class BCodeIdiomatic extends SubComponent {
       case B2L | C2L | S2L | I2L | L2L | F2L | D2L => LONG
       case B2F | C2F | S2F | I2F | L2F | F2F | D2F => FLOAT
       case B2D | C2D | S2D | I2D | L2D | F2D | D2D => DOUBLE
-    }
-  }
-
-  /*
-   * Collects (in `result`) all LabelDef nodes enclosed (directly or not) by each node it visits.
-   *
-   * In other words, this traverser prepares a map giving
-   * all labelDefs (the entry-value) having a Tree node (the entry-key) as ancestor.
-   * The entry-value for a LabelDef entry-key always contains the entry-key.
-   *
-   */
-  class LabelDefsFinder extends Traverser {
-    val result = mutable.Map.empty[Tree, List[LabelDef]]
-    var acc: List[LabelDef] = Nil
-
-    /*
-     * can-multi-thread
-     */
-    override def traverse(tree: Tree) {
-      val saved = acc
-      acc = Nil
-      super.traverse(tree)
-      // acc contains all LabelDefs found under (but not at) `tree`
-      tree match {
-        case lblDf: LabelDef => acc ::= lblDf
-        case _               => ()
-      }
-      if (acc.isEmpty) {
-        acc = saved
-      } else {
-        result += (tree -> acc)
-        acc = acc ::: saved
-      }
     }
   }
 

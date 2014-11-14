@@ -18,18 +18,18 @@ import scala.tools.asm
  *  @version 1.0
  *
  */
-abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
-  import global._
+trait BCodeSyncAndTry extends BCodeBodyBuilder {
+  import int._
   import bTypes._
   import coreBTypes._
-
   /*
    * Functionality to lower `synchronized` and `try` expressions.
    */
   abstract class SyncAndTryBuilder(cunit: CompilationUnit) extends PlainBodyBuilder(cunit) {
 
     def genSynchronized(tree: Apply, expectedType: BType): BType = {
-      val Apply(fun, args) = tree
+      val fun = tree.fun
+      val args = tree.args
       val monitor = locals.makeLocal(ObjectReference, "monitor")
       val monCleanup = new asm.Label
 
@@ -177,14 +177,16 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
      */
     def genLoadTry(tree: Try): BType = {
 
-      val Try(block, catches, finalizer) = tree
+      val block = tree.expr
+      val catches = tree.catches
+      val finalizer = tree.finalizer
       val kind = tpeTK(tree)
 
       val caseHandlers: List[EHClause] =
         for (CaseDef(pat, _, caseBody) <- catches) yield {
           pat match {
-            case Typed(Ident(nme.WILDCARD), tpt)  => NamelessEH(tpeTK(tpt).asClassBType, caseBody)
-            case Ident(nme.WILDCARD)              => NamelessEH(ThrowableReference,  caseBody)
+            case Typed(Ident(nme_WILDCARD), tpt)  => NamelessEH(tpeTK(tpt).asClassBType, caseBody)
+            case Ident(nme_WILDCARD)              => NamelessEH(ThrowableReference,  caseBody)
             case Bind(_, _)                       => BoundEH   (pat.symbol, caseBody)
           }
         }
@@ -383,7 +385,11 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
     }
 
     /* Does this tree have a try-catch block? */
-    def mayCleanStack(tree: Tree): Boolean = tree exists { t => t.isInstanceOf[Try] }
+    def mayCleanStack(tree: Tree): Boolean = tree exists { t => t match {
+        case Try(_, _, _) => true
+        case _ => false
+      }
+    }
 
     trait EHClause
     case class NamelessEH(typeToDrop: ClassBType,  caseBody: Tree) extends EHClause
