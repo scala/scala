@@ -210,7 +210,7 @@ grammar.
   ClassParams       ::=  ClassParam {‘,’ ClassParam}
   ClassParam        ::=  {Annotation} {Modifier} [(`val' | `var')]
                          id ‘:’ ParamType [‘=’ Expr]
-  Bindings          ::=  ‘(’ Binding {‘,’ Binding ‘)’
+  Bindings          ::=  ‘(’ Binding {‘,’ Binding} ‘)’
   Binding           ::=  (id | ‘_’) [‘:’ Type]
 
   Modifier          ::=  LocalModifier
