@@ -324,91 +324,112 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   }
   
   trait SymbolHelper {
-    def info: Type
-    def isClass: Boolean
-    def isType: Boolean
-    def isAnonymousClass: Boolean
-    def isConstructor: Boolean
-    def primaryConstructor: Symbol
-    def tpe: Type // todo whats the differentce between tpe and info?
-    def thisType: Type
-
-    def freshLocal(name: String, pos: Position, flags: Flags): Symbol
-
-    def isAnonymousFunction: Boolean
-    def originalOwner: Symbol
-    def parentSymbols: List[Symbol]
-    def isMethod: Boolean
-    def isPublic: Boolean
-    def isSynthetic: Boolean
-    def enclClass: Symbol
-    def isPackageClass: Boolean
-    def isModuleClass: Boolean
-    def isModule: Boolean
-    def isStrictFP: Boolean
-    def isLabel: Boolean
-    def hasPackageFlag: Boolean
+    // names
     def fullName(sep: Char): String
     def fullName: String
     def simpleName: String
     def javaSimpleName: Name
     def javaBinaryName: Name
     def javaClassName: String
+    def name: Name
+    def rawname: Name // todo ????
+
+    // types
+    def info: Type
+    def tpe: Type // todo whats the differentce between tpe and info?
+    def thisType: Type
+
+    // tests
+    def isClass: Boolean
+    def isType: Boolean
+    def isAnonymousClass: Boolean
+    def isConstructor: Boolean
+    def isAnonymousFunction: Boolean
+    def isMethod: Boolean
+    def isPublic: Boolean
+    def isSynthetic: Boolean
+    def isPackageClass: Boolean
+    def isModuleClass: Boolean
+    def isModule: Boolean
+    def isStrictFP: Boolean
+    def isLabel: Boolean
+    def hasPackageFlag: Boolean
     def isImplClass: Boolean
-    def superClass: Symbol
     def isInterface: Boolean
-    def nestedClasses: List[Symbol]
-    def linkedClass: Symbol
-    def companionClass: Symbol
-    def companionModule: Symbol
-    def companionSymbol: Symbol
-    def annotations: List[Annotation]
-    def moduleClass: Symbol
-    def shouldEmitForwarders: Boolean
     def hasGetter: Boolean
     def isGetter: Boolean
     def isSetter: Boolean
     def isGetClass: Boolean
-    def getter(clz: Symbol): Symbol
-    def setter(clz: Symbol): Symbol
-    def memberClasses: List[Symbol]
-    def linkedClassOfClass: Symbol
-
-    def companionModuleMembers: List[Symbol]
     def isJavaDefined: Boolean
     def isDeferred: Boolean
     def isPrivate: Boolean
     def isFinal: Boolean
     def isStaticMember: Boolean
     def isBottomClass: Boolean
-    def isNonBottomSubClass(sym: Symbol): Boolean
     def isBridge: Boolean
     def isArtifact: Boolean
     def hasEnumFlag: Boolean
     def hasAccessBoundary: Boolean
     def isVarargsMethod: Boolean
     def isDeprecated: Boolean
-    def isSynchronized: Boolean
-    def name: Name
-    def rawname: Name // todo ????
-    def owner: Symbol
-    def rawowner: Symbol // todo ???
-    def enclosingClassSym: Symbol
-    def hasAnnotation(sym: Symbol): Boolean
     def isMutable: Boolean
     def hasAbstractFlag: Boolean
     def hasModuleFlag: Boolean
+    def isSynchronized: Boolean
+    def isNonBottomSubClass(sym: Symbol): Boolean
+    def hasAnnotation(sym: Symbol): Boolean
+    def shouldEmitForwarders: Boolean
+    def isJavaEntryPoint: Boolean
     def isClassConstructor: Boolean
+
+    /**
+     * True for module classes of modules that are top-level or owned only by objects. Module classes
+     * for such objects will get a MODULE$ flag and a corresponding static initializer.
+     */
+    def isStaticModuleClass: Boolean
+
+    def isStaticConstructor: Boolean
+
+
+    // navigation
+    def owner: Symbol
+    def rawowner: Symbol // todo ???
+    def originalOwner: Symbol
+    def parentSymbols: List[Symbol]
+    def superClass: Symbol
+    def enclClass: Symbol
+    def linkedClassOfClass: Symbol
+    def linkedClass: Symbol
+    def companionClass: Symbol
+    def companionModule: Symbol
+    def companionSymbol: Symbol
+    def moduleClass: Symbol
+    def enclosingClassSym: Symbol
+
+
+
+    // members
+    def primaryConstructor: Symbol
+    def nestedClasses: List[Symbol]
+    def memberClasses: List[Symbol]
+    def annotations: List[Annotation]
+    def companionModuleMembers: List[Symbol]
+    def fieldSymbols: List[Symbol]
+    def methodSymbols: List[Symbol]
+    def serialVUID: Option[Long]
+
+
+    def freshLocal(name: String, pos: Position, flags: Flags): Symbol
+
+    def getter(clz: Symbol): Symbol
+    def setter(clz: Symbol): Symbol
+
     def moduleSuffix: String
     def outputDirectory: AbstractFile
-    def isJavaEntryPoint: Boolean
-    def serialVUID: Option[Long]
     def pos: Position
 
-    def fieldSymbols: List[Symbol]
     def throwsAnnotations: List[Symbol]
 
-    def methodSymbols: List[Symbol]
     /**
      * All interfaces implemented by a class, except for those inherited through the superclass.
      *
