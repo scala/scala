@@ -5183,16 +5183,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             typed(tree.ref, MonoQualifierModes | mode.onlyTypePat, AnyRefTpe)
           }
 
-        if (!refTyped.isErrorTyped)
+        if (refTyped.isErrorTyped) {
+          setError(tree)
+        } else {
           tree setType refTyped.tpe.resultType
-
-        if (treeInfo.admitsTypeSelection(refTyped)) tree
-        else UnstableTreeError(refTyped)
+          if (refTyped.isErrorTyped || treeInfo.admitsTypeSelection(refTyped)) tree
+          else UnstableTreeError(tree)
+        }
       }
 
       def typedSelectFromTypeTree(tree: SelectFromTypeTree) = {
         val qual1 = typedType(tree.qualifier, mode)
-        if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual1)
+        if (qual1.isErrorTyped) setError(treeCopy.SelectFromTypeTree(tree, qual1, tree.name))
+        else if (qual1.tpe.isVolatile) TypeSelectionFromVolatileTypeError(tree, qual1)
         else typedSelect(tree, qual1, tree.name)
       }
 
