@@ -128,7 +128,7 @@ if defined _JAVA_PARAMS set _JAVA_OPTS=%_JAVA_OPTS% %_JAVA_PARAMS%
 
 set _TOOL_CLASSPATH=@classpath@
 if "%_TOOL_CLASSPATH%"=="" (
-  for %%f in ("!_SCALA_HOME!\lib\*") do call :add_cpath "%%f"
+  for %%f in ("!_SCALA_HOME!\lib\*.jar") do call :add_cpath "%%f"
   for /d %%f in ("!_SCALA_HOME!\lib\*") do call :add_cpath "%%f"
 )
 
