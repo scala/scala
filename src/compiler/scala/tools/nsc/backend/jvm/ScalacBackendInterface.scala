@@ -65,19 +65,34 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
 
   import scala.tools.nsc.symtab._
 
+  // todo: always use same helper instances
   implicit def symHelper(s: Symbol): SymbolHelper = new ScalacSymbolHelper {
     def sym: Symbol = s
   }
-  implicit def typeHelper(tp: Type): TypeHelper = ???
-  implicit def nameHelper(n: Name): NameHelper = ???
 
-  implicit def annotHelper(a: Annotation): AnnotationHelper = ???
+  implicit def typeHelper(tp: Type): TypeHelper = new ScalaCTypeHelper {
+    val t = tp
+  }
 
-  implicit def treeHelper(a: Tree): TreeHelper = ???
+  implicit def nameHelper(nm: Name): NameHelper = new ScalacNameHelper {
+    val n: Name = nm
+  }
 
-  implicit def constantHelper(a: Constant): ConstantHelper = ???
+  implicit def annotHelper(a: Annotation): AnnotationHelper = new ScalacAnnotationHelper {
+    val t: Annotation = a
+  }
 
-  implicit def positionHelper(a: Position): PositionHelper = ???
+  implicit def treeHelper(a: Tree): TreeHelper = new ScalacTreeHelper {
+    val t: Tree = a
+  }
+
+  implicit def constantHelper(a: Constant): ConstantHelper = new ScalacConstantHelper {
+    val c: Constant = a
+  }
+
+  implicit def positionHelper(a: Position): PositionHelper = new ScalacPositionHelper {
+    val p: Position = a
+  }
 
   val UnitTag: ConstantTag = global.UnitTag
   val IntTag: ConstantTag = global.IntTag
@@ -225,7 +240,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def unapply(a: Constant): Option[Any] = Some(a.value)
   }
   object ThrownException extends ThrownException {
-    def unapply(a: Annotation): Option[Symbol] = ??? // todo
+    def unapply(a: Annotation): Option[Symbol] = None // todo
   }
   object DefDef extends DefDefDeconstructor {
     def _1: Modifiers = field.mods
@@ -791,7 +806,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
 
     def t: Type
 
-
+    def members: List[Symbol] = t.members.toList
     def <:<(other: Type): Boolean = t <:< other
     def isFinalType: Boolean = t.isFinalType
     def member(string: Name): Symbol = t.member(string)
@@ -819,7 +834,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
      * See also comment on getClassBTypeAndRegisterInnerClass, which is invoked for implementation
      * classes.
      */
-    final def toTypeKind(ctx: BCodeHelpers)(storage: ctx.BCInnerClassGen): ctx.bTypes.BType = {
+    def toTypeKind(ctx: BCodeHelpers)(storage: ctx.BCInnerClassGen): ctx.bTypes.BType = {
       import ctx.bTypes._
       import coreBTypes._
       /**
@@ -883,6 +898,74 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
           }
       }
     }
+  }
+
+  trait ScalacNameHelper extends NameHelper{
+    val n: Name
+    import global.AnyNameOps
+    def offset: Int = n.offset
+
+    def toTypeName: Name = n.toTypeName
+
+    def isTypeName: Boolean = n.isTypeName
+
+    def toTermName: Name = n.toTermName
+
+    def dropModule: Name = AnyNameOps(n).dropModule
+
+    def len: Int = n.len
+
+    def isTermName: Boolean = n.isTermName
+
+    def startsWith(s: String): Boolean = n.startsWith(s)
+  }
+
+  trait ScalacTreeHelper extends TreeHelper{
+    val t: Tree
+    def symbol: Symbol = t.symbol
+
+    def pos: Position = t.pos
+
+    def isEmpty: Boolean = t.isEmpty
+
+    def tpe: Type = t.tpe
+
+    def exists(pred: (Tree) => Boolean): Boolean = t.exists(pred)
+  }
+
+  trait ScalacAnnotationHelper extends AnnotationHelper {
+    val t: Annotation
+
+    def atp: Type = t.atp
+    def assocs: List[(Name, Object)] = t.assocs
+    def symbol: Symbol = t.symbol
+    def args: List[Tree] = t.args
+  }
+
+  trait ScalacConstantHelper extends ConstantHelper{
+    val c: Constant
+    def tag: ConstantTag = c.tag
+
+    def booleanValue: Boolean = c.booleanValue
+    def longValue: Long = c.longValue
+    def byteValue: Byte = c.byteValue
+    def stringValue: String = c.stringValue
+    def symbolValue: Symbol = c.symbolValue
+    def floatValue: Float = c.floatValue
+    def value: Any = c.value
+    def typeValue: Type = c.typeValue
+    def shortValue: Short = c.shortValue
+    def intValue: Int = c.intValue
+    def doubleValue: Double = c.doubleValue
+    def charValue: Char = c.charValue
+  }
+
+  trait ScalacPositionHelper extends PositionHelper{
+    val p: Position
+
+    def isDefined: Boolean = p.isDefined
+    def line: Int = p.line
+    def finalPosition: Position = p.finalPosition
   }
 
   def isQualifierSafeToElide(qual: Tree): Boolean = treeInfo isQualifierSafeToElide qual
