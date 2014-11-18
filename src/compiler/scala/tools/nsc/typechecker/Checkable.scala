@@ -11,12 +11,28 @@ import scala.language.postfixOps
 
 /** On pattern matcher checkability:
  *
+ *  The spec says that case _: List[Int] should be always issue
+ *  an unchecked warning:
+ *
+ *  > Types which are not of one of the forms described above are
+ *  > also accepted as type patterns. However, such type patterns
+ *  > will be translated to their erasure (§3.7). The Scala compiler
+ *  > will issue an “unchecked” warning for these patterns to flag
+ *  > the possible loss of type-safety.
+ *
+ *  But the implementation goes a little further to omit warnings
+ *  based on the static type of the scrutinee. As a trivial example:
+ *
+ *    def foo(s: Seq[Int]) = s match { case _: List[Int] => }
+ *
+ *  need not issue this warning.
+ *
  *  Consider a pattern match of this form: (x: X) match { case _: P => }
  *
  *  There are four possibilities to consider:
  *     [P1] X will always conform to P
  *     [P2] x will never conform to P
- *     [P3] X <: P if some runtime test is true
+ *     [P3] X will conform to P if some runtime test is true
  *     [P4] X cannot be checked against P
  *
  *  The first two cases correspond to those when there is enough
@@ -27,6 +43,11 @@ import scala.language.postfixOps
  *  The third case is the interesting one.  We designate another type, XR,
  *  which is essentially the intersection of X and |P|, where |P| is
  *  the erasure of P.  If XR <: P, then no warning is emitted.
+ *
+ *  We evaluate "X with conform to P" by checking `X <: P_wild, where
+ *  P_wild is the result of substituting wildcard types in place of
+ *  pattern type variables. This is intentionally stricter than
+ *  (X matchesPattern P), see SI-8597 for motivating test cases.
  *
  *  Examples of how this info is put to use:
  *  sealed trait A[T] ; class B[T] extends A[T]
