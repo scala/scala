@@ -176,82 +176,69 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   val Bind: BindDeconstructor
   val ClassDef: ClassDefDeconstructor
 
-  trait ClassDefDeconstructor{
-    def unapply(a: Tree): Option[(Any /*Modifiers*/, Name, List[TypeDef], Template)]
+  trait ClassDefDeconstructor {
+    def get: ClassDefDeconstructor
+    def _1: Any // modifiers
+    def _2: Name
+    def _3: List[TypeDef]
+    def _4: Template
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(a: Tree): ClassDefDeconstructor //Option[(Any /*Modifiers*/, Name, List[TypeDef], Template)]
   }
 
   trait BindDeconstructor{
-    def unapply(a: Tree): Option[(Name, Tree)]
+    def get: BindDeconstructor
+    def _1: Name
+    def _2: Tree
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+    def unapply(a: Tree): BindDeconstructor
   }
 
   trait TemplateDeconstructor {
-    def unapply(a: Tree): Option[(List[Tree], ValDef, List[Tree])]
+    def get: TemplateDeconstructor
+    def _1: List[Tree]
+    def _2: ValDef
+    def _3: List[Tree]
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(a: Tree): TemplateDeconstructor
   }
 
   trait ModuleDefDeconstructor{
-    def unapply(a: Tree): Option[(/*Modifiers*/ Any, Name, Tree)]
+    def get: ModuleDefDeconstructor
+    def _1: Any // modifiers
+    def _2: Name
+    def _3: Tree
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(a: Tree): ModuleDefDeconstructor
   }
 
   trait DefDefDeconstructor{
+    def get: DefDefDeconstructor
+    def _1: Any // modifiers
+    def _2: Name
+    def _3: List[TypeDef]
+    def _4: List[List[ValDef]]
+    def _5: Tree
+    def _6: Tree
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
     def unapply(a: Tree): Option[(/*Modifiers*/ Any, Name, List[TypeDef], List[List[ValDef]], Tree, Tree)]
   }
 
-  trait ThrownException{
-    def unapply(a: Annotation): Option[Symbol]
-  }
-
-  trait ConstantDeconstructor{
-    def unapply(a: Any): Option[Any]
-  }
-
-  trait BlockDeconstructor{
-    def unapply(a: Tree): Option[(List[Tree], Tree)]
-  }
-
-  trait CaseDeconstructor{
-    def unapply(a: Tree): Option[(Tree, Tree, Tree)]
-  }
-
-  trait MatchDeconstructor{
-    def unapply(a: Tree): Option[(Tree, List[Tree])]
-  }
-
-  trait LiteralDeconstructor{
-    def unapply(a: Tree): Option[Constant]
-  }
-
-  trait AssignDeconstructor{
-    def unapply(a: Tree): Option[(Tree, Tree)]
-  }
-
-  trait SelectDeconstructor{
-    def unapply(s: Tree): Option[(Tree, Name)]
-  }
-
-  trait ApplyDeconstructor {
-    def unapply(s: Tree): Option[(Tree, List[Tree])]
-  }
-
-  trait IfDeconstructor{
-    def unapply(s: Tree): Option[(Tree, Tree, Tree)]
-  }
-
-  trait ValDefDeconstructor{
-    def unapply(s: Tree): Option[(Nothing /* Modifiers*/, Name, Tree, Tree)]
-  }
-
-  trait ThrowDeconstructor{
-    def unapply(s: Tree): Option[Tree]
-  }
-
-  trait NewDeconstructor{
-    def unapply(s: Tree): Option[Type]
-  }
-
-  trait ApplyDynamicDeconstructor{
-    def unapply(s: Tree): Option[(Tree, List[Tree])]
-  }
-
+  // todo do something with product1
   trait ThisDeconstructor{
     def unapply(s: Tree): Option[Name]
     def apply(s: Symbol): This
@@ -261,36 +248,207 @@ trait BackendInterface extends BackendInterfaceDefinitions{
     def unapply(s: Tree): Option[Name]
   }
 
-  trait TryDeconstructor{
-    def unapply(s: Tree): Option[(Tree, List[Tree], Tree)]
-  }
-
   trait ReturnDeconstructor {
     def unapply(s: Tree): Option[Tree]
   }
 
-  trait LabelDeconstructor {
-    def unapply(s: Tree): Option[(Name, List[Ident], Tree)]
+  trait ThrownException{
+    def unapply(a: Annotation): Option[Symbol]
   }
 
-  trait TypedDeconstrutor {
-    def unapply(s: Tree): Option[(Tree, Tree)]
+  trait ThrowDeconstructor{
+    def unapply(s: Tree): Option[Tree]
   }
 
-  trait SuperDeconstructor{
-    def unapply(s: Tree): Option[(Tree, Name)]
+  trait ConstantDeconstructor{
+    def unapply(a: Any): Option[Any]
   }
 
-  trait ArrayValueDeconstructor {
-    def unapply(s: Tree): Option[(Tree, List[Tree])]
-  }
-
-  trait TypeApplyDeconstructor {
-    def unapply(s: Tree): Option[(Tree, List[Tree])]
+  trait NewDeconstructor{
+    def unapply(s: Tree): Option[Type]
   }
 
   trait AlternativeDeconstructor {
     def unapply(S: Tree): Option[List[Tree]]
+  }
+
+  trait BlockDeconstructor{
+    def get: BlockDeconstructor
+    def _1: List[Tree]
+    def _2: Tree
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(a: Tree): Option[(List[Tree], Tree)]
+  }
+
+  trait CaseDeconstructor{
+    def get: CaseDeconstructor
+    def _1: Tree
+    def _2: Tree
+    def _3: Tree
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(a: Tree): CaseDeconstructor
+  }
+
+  trait MatchDeconstructor{
+    def get: MatchDeconstructor
+    def _1: Tree
+    def _2: List[Tree]
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(a: Tree): MatchDeconstructor
+  }
+
+  trait LiteralDeconstructor{
+    def unapply(a: Tree): Option[Constant]
+  }
+
+  trait AssignDeconstructor{
+    def get: AssignDeconstructor
+    def _1: Tree
+    def _2: Tree
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(a: Tree): AssignDeconstructor
+  }
+
+  trait SelectDeconstructor{
+    def get: SelectDeconstructor
+    def _1: Tree
+    def _2: Name
+
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(s: Tree): SelectDeconstructor
+  }
+
+  trait ApplyDeconstructor {
+    def get: ApplyDeconstructor
+    def _1: Tree
+    def _2: List[Tree]
+
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(s: Tree): ApplyDeconstructor
+  }
+
+  trait IfDeconstructor{
+    def get: IfDeconstructor
+    def _1: Tree
+    def _2: Tree
+    def _3: Tree
+
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(s: Tree): IfDeconstructor
+  }
+
+  trait ValDefDeconstructor{
+    def get: ValDefDeconstructor
+    def _1: Any // Modifiers
+    def _2: Name
+    def _3: Tree
+    def _4: Tree
+
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(s: Tree): ValDefDeconstructor
+  }
+
+
+  trait ApplyDynamicDeconstructor{
+    def get: ApplyDynamicDeconstructor
+    def _1: Tree
+    def _2: List[Tree]
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+    def unapply(s: Tree): ApplyDynamicDeconstructor
+  }
+
+
+  trait TryDeconstructor{
+    def get: TryDeconstructor
+    def _1: Tree
+    def _2: List[Tree]
+    def _3: Tree
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+    def unapply(s: Tree): TryDeconstructor
+  }
+
+  trait LabelDeconstructor {
+    def get: LabelDeconstructor
+    def _1: Name
+    def _2: List[Ident]
+    def _3: Tree
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(s: Tree): LabelDeconstructor
+  }
+
+  trait TypedDeconstrutor {
+    def get: TypedDeconstrutor
+    def _1: Tree
+    def _2: Tree
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(s: Tree): TypedDeconstrutor
+  }
+
+  trait SuperDeconstructor{
+    def get: SuperDeconstructor
+    def _1: Tree
+    def _2: Name
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(s: Tree): SuperDeconstructor
+  }
+
+  trait ArrayValueDeconstructor {
+    def get: ArrayValueDeconstructor
+    def _1: Tree
+    def _2: List[Tree]
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(s: Tree): ArrayValueDeconstructor
+  }
+
+  trait TypeApplyDeconstructor {
+    def get: TypeApplyDeconstructor
+    def _1: Tree
+    def _2: List[Tree]
+
+    def isEmpty: Boolean
+    def isDefined = !isEmpty
+
+    def unapply(s: Tree): TypeApplyDeconstructor
   }
 
   trait PositionHelper {
@@ -441,14 +599,6 @@ trait BackendInterface extends BackendInterfaceDefinitions{
      * such objects.
      */
     def isTopLevelModuleClass: Boolean
-
-    /**
-     * True for module classes of modules that are top-level or owned only by objects. Module classes
-     * for such objects will get a MODULE$ flag and a corresponding static initializer.
-     */
-    def isStaticModuleClass: Boolean
-
-    def isStaticConstructor: Boolean
 
     /**
      * This is basically a re-implementation of sym.isStaticOwner, but using the originalOwner chain.

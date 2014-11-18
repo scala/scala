@@ -220,7 +220,7 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   def isMaybeBoxed(sym: Symbol): Boolean = global.platform.isMaybeBoxed(sym)
 
   def getSingleOutput: Option[AbstractFile] = settings.outputDirs.getSingleOutput
-  
+
 
   override def boxMethods = currentRun.runDefinitions.boxMethod
 
