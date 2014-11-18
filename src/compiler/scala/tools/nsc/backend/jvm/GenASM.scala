@@ -33,7 +33,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
   val int: ScalacBackendInterface[global.type] = ???
 
   val bCodeAsmCommon: BCodeAsmCommon[int.type] = new BCodeAsmCommon(int)
-  import int.{memberClassesOf, symHelper, shouldEmitAnnotation, isRuntimeVisible, ExcludedForwarderFlags}
+  import int.{symHelper, shouldEmitAnnotation, isRuntimeVisible, ExcludedForwarderFlags}
   import bCodeAsmCommon._
 
   // Strangely I can't find this in the asm code
@@ -707,14 +707,14 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
       // This collects all inner classes of csym, including local and anonymous: lambdalift makes
       // them members of their enclosing class.
-      innerClassBuffer ++= exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(csym))
+      innerClassBuffer ++= exitingPhase(currentRun.lambdaliftPhase)(csym.memberClasses)
 
       // Add members of the companion object (if top-level). why, see comment in BTypes.scala.
       val linkedClass = exitingPickler(csym.linkedClassOfClass) // linkedCoC does not work properly in late phases
       if (isTopLevelModule(linkedClass)) {
         // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
         // not local classes that were lifted by lambdalift.
-        innerClassBuffer ++= exitingPickler(memberClassesOf(linkedClass))
+        innerClassBuffer ++= exitingPickler(linkedClass.memberClasses)
       }
 
       val allInners: List[Symbol] = innerClassBuffer.toList filterNot deadCode.elidedClosures

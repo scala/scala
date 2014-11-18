@@ -24,6 +24,8 @@ abstract class ICodeReader extends ClassfileParser {
   val loaders: global.loaders.type
   import global._
   import icodes._
+  import scala.tools.nsc.backend.icode.Primitives._
+  import scala.tools.nsc.backend.icode.Opcodes._
 
   var instanceCode: IClass = null          // the ICode class for the current symbol
   var staticCode:   IClass = null          // the ICode class static members
@@ -584,7 +586,7 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.invokespecial   =>
           val m = pool.getMemberSymbol(u2, static = false); size += 2
           val style = if (m.name == nme.CONSTRUCTOR || m.isPrivate) Static(onInstance = true)
-                      else SuperCall(m.owner.name)
+                      else SuperCall(m.owner.name.toString)
           code.emit(CALL_METHOD(m, style))
           method.updateRecursive(m)
         case JVM.invokestatic    =>

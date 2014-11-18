@@ -41,6 +41,9 @@ abstract class Inliners extends SubComponent {
   import global._
   import icodes._
   import icodes.opcodes._
+  import scala.tools.nsc.backend.icode.Primitives._
+  import scala.tools.nsc.backend.icode.Opcodes._
+
   import definitions.{
     NullClass, NothingClass, ObjectClass,
     PredefModule, RuntimePackage, ScalaInlineClass, ScalaNoInlineClass,

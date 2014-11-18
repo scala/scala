@@ -16,6 +16,8 @@ abstract class DeadCodeElimination extends SubComponent {
   import icodes._
   import icodes.opcodes._
   import definitions.RuntimePackage
+  import scala.tools.nsc.backend.icode.Primitives._
+  import scala.tools.nsc.backend.icode.Opcodes._
 
   /** The block and index where an instruction is located */
   type InstrLoc = (BasicBlock, Int)

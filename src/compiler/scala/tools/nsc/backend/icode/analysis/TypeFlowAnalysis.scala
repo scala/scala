@@ -10,6 +10,8 @@ package backend.icode.analysis
 import scala.collection.{mutable, immutable}
 import java.util.concurrent.TimeUnit
 
+import scala.tools.nsc.backend.icode.Primitives
+
 /** A data-flow analysis on types, that works on `ICode`.
  *
  *  @author Iulian Dragos
@@ -18,6 +20,8 @@ abstract class TypeFlowAnalysis {
   val global: Global
   import global._
   import definitions.{ ObjectClass, NothingClass, AnyRefClass, StringClass, ThrowableClass }
+  import Primitives._
+  import scala.tools.nsc.backend.icode.Opcodes._
 
   /** The lattice of ICode types.
    */
@@ -204,16 +208,16 @@ abstract class TypeFlowAnalysis {
 
         case CALL_PRIMITIVE(primitive) =>
           primitive match {
-            case Negation(kind) => stack.pop; stack.push(kind)
+            case Negation(kind: TypeKind) => stack.pop; stack.push(kind)
 
-            case Test(_, kind, zero) =>
+            case Test(_, kind: TypeKind, zero) =>
               stack.pop
               if (!zero) { stack.pop }
               stack push BOOL
 
             case Comparison(_, _) => stack.pop2; stack push INT
 
-            case Arithmetic(op, kind) =>
+            case Arithmetic(op, kind: TypeKind) =>
               stack.pop
               if (op != NOT) { stack.pop }
               val k = kind match {
@@ -222,10 +226,10 @@ abstract class TypeFlowAnalysis {
               }
               stack push k
 
-            case Logical(op, kind)    => stack.pop2; stack push kind
-            case Shift(op, kind)      => stack.pop2; stack push kind
-            case Conversion(src, dst) => stack.pop;  stack push dst
-            case ArrayLength(kind)    => stack.pop;  stack push INT
+            case Logical(op, kind: TypeKind)    => stack.pop2; stack push kind
+            case Shift(op, kind: TypeKind)      => stack.pop2; stack push kind
+            case Conversion(src, dst: TypeKind) => stack.pop;  stack push dst
+            case ArrayLength(kind: TypeKind)    => stack.pop;  stack push INT
             case StartConcat          => stack.push(ConcatClass)
             case EndConcat            => stack.pop;  stack.push(STRING)
             case StringConcat(el)     => stack.pop2; stack push ConcatClass

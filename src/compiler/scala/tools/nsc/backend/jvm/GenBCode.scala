@@ -56,6 +56,8 @@ abstract class GenBCode extends SubComponent with BCodeSyncAndTry {
 
   val phaseName = "jvm"
 
+  def isJavaEntryPoint(sym: Symbol) = sym.isJavaEntryPoint
+
   override def newPhase(prev: Phase) = new BCodePhase(prev)
 
   final class PlainClassBuilder(cunit: CompilationUnit) extends SyncAndTryBuilder(cunit)

@@ -11,6 +11,7 @@ package icode
 
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.{ ListBuffer, Buffer }
+import scala.tools.nsc.backend.jvm.ScalacBackendInterface
 import scala.tools.nsc.symtab._
 import scala.annotation.switch
 
@@ -21,15 +22,17 @@ import scala.annotation.switch
 abstract class GenICode extends SubComponent {
   import global._
   import icodes._
+  import Primitives._
   import icodes.opcodes._
+  import Opcodes._
   import definitions._
-  import scalaPrimitives.{
+  import ScalaPrimitives.{
     isArrayOp, isComparisonOp, isLogicalOp,
     isUniversalEqualityOp, isReferenceEqualityOp
   }
   import platform.isMaybeBoxed
-
-  private val bCodeICodeCommon: jvm.BCodeICodeCommon[global.type] = new jvm.BCodeICodeCommon(global)
+  private val int: ScalacBackendInterface[global.type] = ???
+  private val bCodeICodeCommon: jvm.BCodeICodeCommon[int.type] = new jvm.BCodeICodeCommon(int)
   import bCodeICodeCommon._
 
   val phaseName = "icode"
@@ -212,11 +215,11 @@ abstract class GenICode extends SubComponent {
         case Nil =>
           ctx1 = genLoad(larg, ctx1, resKind)
           code match {
-            case scalaPrimitives.POS =>
+            case ScalaPrimitives.POS =>
               () // nothing
-            case scalaPrimitives.NEG =>
+            case ScalaPrimitives.NEG =>
               ctx1.bb.emit(CALL_PRIMITIVE(Negation(resKind)), larg.pos)
-            case scalaPrimitives.NOT =>
+            case ScalaPrimitives.NOT =>
               ctx1.bb.emit(CALL_PRIMITIVE(Arithmetic(NOT, resKind)), larg.pos)
             case _ =>
               abort("Unknown unary operation: " + fun.symbol.fullName +
@@ -226,27 +229,27 @@ abstract class GenICode extends SubComponent {
         // binary operation
         case rarg :: Nil =>
           resKind = getMaxType(larg.tpe :: rarg.tpe :: Nil)
-          if (scalaPrimitives.isShiftOp(code) || scalaPrimitives.isBitwiseOp(code))
+          if (ScalaPrimitives.isShiftOp(code) || ScalaPrimitives.isBitwiseOp(code))
             assert(resKind.isIntegralType | resKind == BOOL,
                  resKind.toString() + " incompatible with arithmetic modulo operation: " + ctx1)
 
           ctx1 = genLoad(larg, ctx1, resKind)
           ctx1 = genLoad(rarg,
                          ctx1, // check .NET size of shift arguments!
-                         if (scalaPrimitives.isShiftOp(code)) INT else resKind)
+                         if (ScalaPrimitives.isShiftOp(code)) INT else resKind)
 
           val primitiveOp = code match {
-            case scalaPrimitives.ADD    => Arithmetic(ADD, resKind)
-            case scalaPrimitives.SUB    => Arithmetic(SUB, resKind)
-            case scalaPrimitives.MUL    => Arithmetic(MUL, resKind)
-            case scalaPrimitives.DIV    => Arithmetic(DIV, resKind)
-            case scalaPrimitives.MOD    => Arithmetic(REM, resKind)
-            case scalaPrimitives.OR     => Logical(OR, resKind)
-            case scalaPrimitives.XOR    => Logical(XOR, resKind)
-            case scalaPrimitives.AND    => Logical(AND, resKind)
-            case scalaPrimitives.LSL    => Shift(LSL, resKind)
-            case scalaPrimitives.LSR    => Shift(LSR, resKind)
-            case scalaPrimitives.ASR    => Shift(ASR, resKind)
+            case ScalaPrimitives.ADD    => Arithmetic(ADD, resKind)
+            case ScalaPrimitives.SUB    => Arithmetic(SUB, resKind)
+            case ScalaPrimitives.MUL    => Arithmetic(MUL, resKind)
+            case ScalaPrimitives.DIV    => Arithmetic(DIV, resKind)
+            case ScalaPrimitives.MOD    => Arithmetic(REM, resKind)
+            case ScalaPrimitives.OR     => Logical(OR, resKind)
+            case ScalaPrimitives.XOR    => Logical(XOR, resKind)
+            case ScalaPrimitives.AND    => Logical(AND, resKind)
+            case ScalaPrimitives.LSL    => Shift(LSL, resKind)
+            case ScalaPrimitives.LSR    => Shift(LSR, resKind)
+            case ScalaPrimitives.ASR    => Shift(ASR, resKind)
             case _                      => abort("Unknown primitive: " + fun.symbol + "[" + code + "]")
           }
           ctx1.bb.emit(CALL_PRIMITIVE(primitiveOp), tree.pos)
@@ -269,7 +272,7 @@ abstract class GenICode extends SubComponent {
 
       var generatedType = expectedType
 
-      if (scalaPrimitives.isArrayGet(code)) {
+      if (ScalaPrimitives.isArrayGet(code)) {
         // load argument on stack
         debugassert(args.length == 1,
                  "Too many arguments for array get operation: " + tree)
@@ -282,7 +285,7 @@ abstract class GenICode extends SubComponent {
         // probably isn't common enough to figure out an optimization
         adaptNullRef(generatedType, expectedType, ctx1, tree.pos)
       }
-      else if (scalaPrimitives.isArraySet(code)) {
+      else if (ScalaPrimitives.isArraySet(code)) {
         debugassert(args.length == 2,
                  "Too many arguments for array set operation: " + tree)
         ctx1 = genLoad(args.head, ctx1, INT)
@@ -428,11 +431,11 @@ abstract class GenICode extends SubComponent {
       val Apply(fun @ Select(receiver, _), _) = tree
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
-      if (scalaPrimitives.isArithmeticOp(code))
+      if (ScalaPrimitives.isArithmeticOp(code))
         genArithmeticOp(tree, ctx, code)
-      else if (code == scalaPrimitives.CONCAT)
+      else if (code == ScalaPrimitives.CONCAT)
         (genStringConcat(tree, ctx), StringReference)
-      else if (code == scalaPrimitives.HASH)
+      else if (code == ScalaPrimitives.HASH)
         (genScalaHash(receiver, ctx), INT)
       else if (isArrayOp(code))
         genArrayOp(tree, ctx, code, expectedType)
@@ -450,9 +453,9 @@ abstract class GenICode extends SubComponent {
         )
         (afterCtx, BOOL)
       }
-      else if (code == scalaPrimitives.SYNCHRONIZED)
+      else if (code == ScalaPrimitives.SYNCHRONIZED)
         genSynchronized(tree, ctx, expectedType)
-      else if (scalaPrimitives.isCoercion(code)) {
+      else if (ScalaPrimitives.isCoercion(code)) {
         val ctx1 = genLoad(receiver, ctx, toTypeKind(receiver.tpe))
         genCoercion(tree, ctx1, code)
         (ctx1, scalaPrimitives.generatedKind(code))
@@ -646,7 +649,7 @@ abstract class GenICode extends SubComponent {
         case Apply(fun @ Select(Super(_, mix), _), args) =>
           def genLoadApply2 = {
             debuglog("Call to super: " + tree)
-            val invokeStyle = SuperCall(mix)
+            val invokeStyle = SuperCall(mix.toString)
             // if (fun.symbol.isConstructor) Static(true) else SuperCall(mix);
 
             ctx.bb.emit(THIS(ctx.clazz.symbol), tree.pos)
@@ -1186,6 +1189,8 @@ abstract class GenICode extends SubComponent {
      */
     def genCoercion(tree: Tree, ctx: Context, code: Int) = {
       import scalaPrimitives._
+      import ScalaPrimitives._
+      import Primitives._
       (code: @switch) match {
         case B2B => ()
         case B2C => ctx.bb.emit(CALL_PRIMITIVE(Conversion(BYTE, CHAR)), tree.pos)
@@ -1320,7 +1325,7 @@ abstract class GenICode extends SubComponent {
     def liftStringConcat(tree: Tree): List[Tree] = tree match {
       case Apply(fun @ Select(larg, method), rarg) =>
         if (isPrimitive(fun.symbol) &&
-            scalaPrimitives.getPrimitive(fun.symbol) == scalaPrimitives.CONCAT)
+            scalaPrimitives.getPrimitive(fun.symbol) == ScalaPrimitives.CONCAT)
           liftStringConcat(larg) ::: rarg
         else
           List(tree)
@@ -1369,12 +1374,12 @@ abstract class GenICode extends SubComponent {
        */
       def genComparisonOp(l: Tree, r: Tree, code: Int): Boolean = {
         val op: TestOp = code match {
-          case scalaPrimitives.LT => LT
-          case scalaPrimitives.LE => LE
-          case scalaPrimitives.GT => GT
-          case scalaPrimitives.GE => GE
-          case scalaPrimitives.ID | scalaPrimitives.EQ => EQ
-          case scalaPrimitives.NI | scalaPrimitives.NE => NE
+          case ScalaPrimitives.LT => LT
+          case ScalaPrimitives.LE => LE
+          case ScalaPrimitives.GT => GT
+          case ScalaPrimitives.GE => GE
+          case ScalaPrimitives.ID | ScalaPrimitives.EQ => EQ
+          case ScalaPrimitives.NI | ScalaPrimitives.NE => NE
 
           case _ => abort("Unknown comparison primitive: " + code)
         }
@@ -1415,7 +1420,8 @@ abstract class GenICode extends SubComponent {
       tree match {
         // The comparison symbol is in ScalaPrimitives's "primitives" map
         case Apply(fun, args) if isPrimitive(fun.symbol) =>
-          import scalaPrimitives.{ ZNOT, ZAND, ZOR, EQ, getPrimitive }
+          import ScalaPrimitives.{ ZNOT, ZAND, ZOR, EQ}
+          import scalaPrimitives.getPrimitive
 
           // lhs and rhs of test
           lazy val Select(lhs, _) = fun
