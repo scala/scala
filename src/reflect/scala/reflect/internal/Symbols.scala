@@ -810,6 +810,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      */
     def skipPackageObject: Symbol = this
 
+    /** The package object symbol corresponding to this package or package class symbol, or NoSymbol otherwise */
+    def packageObject: Symbol =
+      if (isPackageClass) tpe.packageObject
+      else if (isPackage) moduleClass.packageObject
+      else NoSymbol
+
     /** If this is a constructor, its owner: otherwise this.
      */
     final def skipConstructor: Symbol = if (isConstructor) owner else this
@@ -3357,13 +3363,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def implicitMembers: Scope = {
       val tp = info
       if ((implicitMembersCacheKey1 ne tp) || (implicitMembersCacheKey2 ne tp.decls.elems)) {
-        // Skip a package object class, because the members are also in
-        // the package and we wish to avoid spurious ambiguities as in pos/t3999.
-        if (!isPackageObjectClass) {
-          implicitMembersCacheValue = tp.implicitMembers
-          implicitMembersCacheKey1 = tp
-          implicitMembersCacheKey2 = tp.decls.elems
-        }
+        implicitMembersCacheValue = tp.membersBasedOnFlags(BridgeFlags, IMPLICIT)
+        implicitMembersCacheKey1 = tp
+        implicitMembersCacheKey2 = tp.decls.elems
       }
       implicitMembersCacheValue
     }

@@ -806,10 +806,11 @@ trait Contexts { self: Analyzer =>
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
       val qual = imp.qual
 
+      val qualSym = qual.tpe.typeSymbol
       val pre =
-        if (qual.tpe.typeSymbol.isPackageClass)
+        if (qualSym.isPackageClass)
           // SI-6225 important if the imported symbol is inherited by the the package object.
-          singleType(qual.tpe, qual.tpe member nme.PACKAGE)
+          qualSym.packageObject.typeOfThis
         else
           qual.tpe
       def collect(sels: List[ImportSelector]): List[ImplicitInfo] = sels match {
@@ -882,7 +883,8 @@ trait Contexts { self: Analyzer =>
         Some(collectImplicitImports(imports.head))
       } else if (owner.isPackageClass) {
         // the corresponding package object may contain implicit members.
-        Some(collectImplicits(owner.tpe.implicitMembers, owner.tpe))
+        val pre = owner.packageObject.typeOfThis
+        Some(collectImplicits(pre.implicitMembers, pre))
       } else Some(Nil)
     }
 
@@ -952,52 +954,11 @@ trait Contexts { self: Analyzer =>
     private def importedAccessibleSymbol(imp: ImportInfo, name: Name, requireExplicit: Boolean): Symbol =
       imp.importedSymbol(name, requireExplicit) filter (s => isAccessible(s, imp.qual.tpe, superAccess = false))
 
-    /** Is `sym` defined in package object of package `pkg`?
-     *  Since sym may be defined in some parent of the package object,
-     *  we cannot inspect its owner only; we have to go through the
-     *  info of the package object.  However to avoid cycles we'll check
-     *  what other ways we can before pushing that way.
+    /** Must `sym` defined in package object of package `pkg`, if
+     *  it selected from a prefix with `pkg` as its type symbol?
      */
-    def isInPackageObject(sym: Symbol, pkg: Symbol): Boolean = {
-      def uninitialized(what: String) = {
-        log(s"Cannot look for $sym in package object of $pkg; $what is not initialized.")
-        false
-      }
-      def pkgClass = if (pkg.isTerm) pkg.moduleClass else pkg
-      def matchesInfo = (
-        // need to be careful here to not get a cyclic reference during bootstrap
-        if (pkg.isInitialized) {
-          val module = pkg.info member nme.PACKAGEkw
-          if (module.isInitialized)
-            module.info.member(sym.name).alternatives contains sym
-          else
-            uninitialized("" + module)
-        }
-        else uninitialized("" + pkg)
-      )
-      def inPackageObject(sym: Symbol) = (
-        // To be in the package object, one of these must be true:
-        //   1) sym.owner is a package object class, and sym.owner.owner is the package class for `pkg`
-        //   2) sym.owner is inherited by the correct package object class
-        // We try to establish 1) by inspecting the owners directly, and then we try
-        // to rule out 2), and only if both those fail do we resort to looking in the info.
-        !sym.hasPackageFlag && sym.owner.exists && (
-          if (sym.owner.isPackageObjectClass)
-            sym.owner.owner == pkgClass
-          else
-            !sym.owner.isPackageClass && matchesInfo
-        )
-      )
-
-      // An overloaded symbol might not have the expected owner!
-      // The alternatives must be inspected directly.
-      pkgClass.isPackageClass && (
-        if (sym.isOverloaded)
-          sym.alternatives forall (isInPackageObject(_, pkg))
-        else
-          inPackageObject(sym)
-      )
-    }
+    def isInPackageObject(sym: Symbol, pkg: Symbol): Boolean =
+      pkg.isPackage && sym.owner != pkg
 
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
 
