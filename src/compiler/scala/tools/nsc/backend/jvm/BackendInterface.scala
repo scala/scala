@@ -18,8 +18,10 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   type Type       >: Null <: AnyRef
   type Annotation >: Null <: AnyRef
   type Tree       >: Null <: AnyRef
+  type Modifiers  >: Null <: AnyRef
   type TypeDef    >: Null <: Tree
   type Apply      >: Null <: Tree
+  type Select      >: Null <: Tree
   type TypeApply  >: Null <: Tree
   type ClassDef   >: Null <: Tree
   type Try        >: Null <: Tree
@@ -30,21 +32,57 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   type ValDef     >: Null <: Tree
   type Throw      >: Null <: Tree
   type Return     >: Null <: Tree
-  type Literal >: Null <: Tree
-  type Block >: Null <: Tree
-  type Typed >: Null <: Tree
+  type Literal    >: Null <: Tree
+  type Block      >: Null <: Tree
+  type Typed      >: Null <: Tree
   type ArrayValue >: Null <: Tree
-  type Match >: Null <: Tree
-  type This >: Null <: Tree
-  type CaseDef >: Null <: Tree
+  type Match      >: Null <: Tree
+  type This       >: Null <: Tree
+  type CaseDef    >: Null <: Tree
   type Alternative >: Null <: Tree
-  type DefDef >: Null <: Tree
-  type ModuleDef >: Null <: Tree
-  type Template >: Null <: Tree
-  type Name
+  type DefDef     >: Null <: Tree
+  type ModuleDef  >: Null <: Tree
+  type Template   >: Null <: Tree
+  type Name       >: Null <: AnyRef
   type Position
   type CompilationUnit <: AnyRef
+  type Bind        >: Null <: Tree
+  type New         >: Null <: Tree
+  type ApplyDynamic >: Null <: Tree
+  type Super >: Null <: Tree
 
+
+  implicit val TypeDefTag: ClassTag[TypeDef]
+  implicit val ApplyTag: ClassTag[Apply]
+  implicit val SelectTag: ClassTag[Select]
+
+  implicit val TypeApplyTag: ClassTag[TypeApply]
+  implicit val ClassDefTag: ClassTag[ClassDef]
+  implicit val TryTag: ClassTag[Try]
+  implicit val AssignTag: ClassTag[Assign]
+  implicit val IdentTag: ClassTag[Ident]
+  implicit val IfTag: ClassTag[If]
+  implicit val LabelDefTag: ClassTag[LabelDef]
+  implicit val ValDefTag: ClassTag[ValDef]
+  implicit val ThrowTag: ClassTag[Throw]
+  implicit val ReturnTag: ClassTag[Return]
+  implicit val LiteralTag: ClassTag[Literal]
+  implicit val BlockTag: ClassTag[Block]
+  implicit val TypedTag: ClassTag[Typed]
+  implicit val ArrayValueTag: ClassTag[ArrayValue]
+  implicit val MatchTag: ClassTag[Match]
+  implicit val CaseDefTag: ClassTag[CaseDef]
+  implicit val ThisTag: ClassTag[This]
+  implicit val AlternativeTag: ClassTag[Alternative]
+  implicit val DefDefTag: ClassTag[DefDef]
+  implicit val ModuleDefTag: ClassTag[ModuleDef]
+  implicit val NameTag: ClassTag[Name]
+  implicit val TemplateTag: ClassTag[Template]
+  implicit val BindTag: ClassTag[Bind]
+  implicit val NewTag: ClassTag[New]
+  implicit val ApplyDynamicTag: ClassTag[ApplyDynamic]
+  implicit val SuperTag: ClassTag[Super]
+  implicit val ConstantClassTag: ClassTag[Constant]
 
 
   type Constant
@@ -176,80 +214,62 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   val Bind: BindDeconstructor
   val ClassDef: ClassDefDeconstructor
 
-  trait ClassDefDeconstructor {
-    def get: ClassDefDeconstructor
-    def _1: Any // modifiers
+  trait DeconstructorCommon[T >: Null <: Tree] {
+    var field: T = null
+    def get: this.type = this
+    def isEmpty: Boolean = field eq null
+    def isDefined = !isEmpty
+    def unapply(s: T): this.type ={
+      field = s
+      this
+    }
+  }
+
+  trait ClassDefDeconstructor extends DeconstructorCommon[ClassDef] {
+    def _1: Modifiers
     def _2: Name
     def _3: List[TypeDef]
     def _4: Template
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(a: Tree): ClassDefDeconstructor //Option[(Any /*Modifiers*/, Name, List[TypeDef], Template)]
   }
 
-  trait BindDeconstructor{
-    def get: BindDeconstructor
+  trait BindDeconstructor extends DeconstructorCommon[Bind]{
     def _1: Name
     def _2: Tree
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-    def unapply(a: Tree): BindDeconstructor
   }
 
-  trait TemplateDeconstructor {
-    def get: TemplateDeconstructor
+  trait TemplateDeconstructor extends DeconstructorCommon[Template]{
     def _1: List[Tree]
     def _2: ValDef
     def _3: List[Tree]
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(a: Tree): TemplateDeconstructor
   }
 
-  trait ModuleDefDeconstructor{
-    def get: ModuleDefDeconstructor
-    def _1: Any // modifiers
+  trait ModuleDefDeconstructor extends DeconstructorCommon[ModuleDef]{
+    def _1: Modifiers
     def _2: Name
     def _3: Tree
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(a: Tree): ModuleDefDeconstructor
   }
 
-  trait DefDefDeconstructor{
-    def get: DefDefDeconstructor
-    def _1: Any // modifiers
+  trait DefDefDeconstructor extends DeconstructorCommon[DefDef]{
+    def _1: Modifiers
     def _2: Name
     def _3: List[TypeDef]
     def _4: List[List[ValDef]]
     def _5: Tree
     def _6: Tree
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(a: Tree): Option[(/*Modifiers*/ Any, Name, List[TypeDef], List[List[ValDef]], Tree, Tree)]
   }
 
   // todo do something with product1
   trait ThisDeconstructor{
-    def unapply(s: Tree): Option[Name]
-    def apply(s: Symbol): This
+    def unapply(s: This): Option[Name]
+    def apply(s: Symbol): Tree
   }
 
   trait IdentDeconstructor{
-    def unapply(s: Tree): Option[Name]
+    def unapply(s: Ident): Option[Name]
   }
 
   trait ReturnDeconstructor {
-    def unapply(s: Tree): Option[Tree]
+    def unapply(s: Return): Option[Tree]
   }
 
   trait ThrownException{
@@ -257,198 +277,106 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   }
 
   trait ThrowDeconstructor{
-    def unapply(s: Tree): Option[Tree]
+    def unapply(s: Throw): Option[Tree]
   }
 
   trait ConstantDeconstructor{
-    def unapply(a: Any): Option[Any]
+    def unapply(a: Constant): Option[Any]
   }
 
   trait NewDeconstructor{
-    def unapply(s: Tree): Option[Type]
+    def unapply(s: New): Option[Type]
   }
 
   trait AlternativeDeconstructor {
-    def unapply(S: Tree): Option[List[Tree]]
+    def unapply(s: Alternative): Option[List[Tree]]
   }
 
-  trait BlockDeconstructor{
-    def get: BlockDeconstructor
+  trait BlockDeconstructor extends DeconstructorCommon[Block]{
     def _1: List[Tree]
     def _2: Tree
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(a: Tree): Option[(List[Tree], Tree)]
   }
 
-  trait CaseDeconstructor{
-    def get: CaseDeconstructor
+  trait CaseDeconstructor extends DeconstructorCommon[CaseDef]{
     def _1: Tree
     def _2: Tree
     def _3: Tree
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(a: Tree): CaseDeconstructor
   }
 
-  trait MatchDeconstructor{
-    def get: MatchDeconstructor
+  trait MatchDeconstructor extends DeconstructorCommon[Match]{
     def _1: Tree
     def _2: List[Tree]
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(a: Tree): MatchDeconstructor
   }
 
   trait LiteralDeconstructor{
-    def unapply(a: Tree): Option[Constant]
+    def unapply(a: Literal): Option[Constant]
   }
 
-  trait AssignDeconstructor{
-    def get: AssignDeconstructor
+  trait AssignDeconstructor extends DeconstructorCommon[Assign]{
     def _1: Tree
     def _2: Tree
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(a: Tree): AssignDeconstructor
   }
 
-  trait SelectDeconstructor{
-    def get: SelectDeconstructor
+  trait SelectDeconstructor extends DeconstructorCommon[Select]{
     def _1: Tree
     def _2: Name
-
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(s: Tree): SelectDeconstructor
   }
 
-  trait ApplyDeconstructor {
-    def get: ApplyDeconstructor
+  trait ApplyDeconstructor extends DeconstructorCommon[Apply] {
     def _1: Tree
     def _2: List[Tree]
-
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(s: Tree): ApplyDeconstructor
   }
 
-  trait IfDeconstructor{
-    def get: IfDeconstructor
+  trait IfDeconstructor extends DeconstructorCommon[If]{
     def _1: Tree
     def _2: Tree
     def _3: Tree
-
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(s: Tree): IfDeconstructor
   }
 
-  trait ValDefDeconstructor{
-    def get: ValDefDeconstructor
-    def _1: Any // Modifiers
+  trait ValDefDeconstructor extends DeconstructorCommon[ValDef]{
+    def _1: Modifiers
     def _2: Name
     def _3: Tree
     def _4: Tree
-
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(s: Tree): ValDefDeconstructor
   }
 
 
-  trait ApplyDynamicDeconstructor{
-    def get: ApplyDynamicDeconstructor
+  trait ApplyDynamicDeconstructor extends DeconstructorCommon[ApplyDynamic]{
     def _1: Tree
     def _2: List[Tree]
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-    def unapply(s: Tree): ApplyDynamicDeconstructor
   }
 
 
-  trait TryDeconstructor{
-    def get: TryDeconstructor
+  trait TryDeconstructor extends DeconstructorCommon[Try]{
     def _1: Tree
     def _2: List[Tree]
     def _3: Tree
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-    def unapply(s: Tree): TryDeconstructor
   }
 
-  trait LabelDeconstructor {
-    def get: LabelDeconstructor
+  trait LabelDeconstructor extends DeconstructorCommon[LabelDef]{
     def _1: Name
     def _2: List[Ident]
     def _3: Tree
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(s: Tree): LabelDeconstructor
   }
 
-  trait TypedDeconstrutor {
-    def get: TypedDeconstrutor
+  trait TypedDeconstrutor extends DeconstructorCommon[Typed]{
     def _1: Tree
     def _2: Tree
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(s: Tree): TypedDeconstrutor
   }
 
-  trait SuperDeconstructor{
-    def get: SuperDeconstructor
+  trait SuperDeconstructor extends DeconstructorCommon[Super]{
     def _1: Tree
     def _2: Name
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(s: Tree): SuperDeconstructor
   }
 
-  trait ArrayValueDeconstructor {
-    def get: ArrayValueDeconstructor
+  trait ArrayValueDeconstructor extends DeconstructorCommon[ArrayValue]{
     def _1: Tree
     def _2: List[Tree]
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(s: Tree): ArrayValueDeconstructor
   }
 
-  trait TypeApplyDeconstructor {
-    def get: TypeApplyDeconstructor
+  trait TypeApplyDeconstructor extends DeconstructorCommon[TypeApply]{
     def _1: Tree
     def _2: List[Tree]
-
-    def isEmpty: Boolean
-    def isDefined = !isEmpty
-
-    def unapply(s: Tree): TypeApplyDeconstructor
   }
 
   trait PositionHelper {
@@ -485,7 +413,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
     // names
     def fullName(sep: Char): String
     def fullName: String
-    def simpleName: String
+    def simpleName: Name
     def javaSimpleName: Name
     def javaBinaryName: Name
     def javaClassName: String
@@ -630,7 +558,6 @@ trait BackendInterface extends BackendInterfaceDefinitions{
     def summaryString: String
     def typeSymbol: Symbol
     def member(string: Name): Symbol
-    def members(string: Name): List[Symbol]
     /**
      * This method returns the BType for a type reference, for example a parameter type.
      *
@@ -745,16 +672,16 @@ trait BackendInterfaceDefinitions { self: BackendInterface =>
   val Object_equals: Symbol
 
 
-  val UnitClass: Symbol = requiredClass[scala.Unit]
-  val BooleanClass: Symbol = requiredClass[scala.Boolean]
-  val CharClass: Symbol  = requiredClass[scala.Char]
-  val ShortClass: Symbol = requiredClass[scala.Short]
-  val ClassClass: Symbol = requiredClass[java.lang.Class[_]]
-  val ByteClass: Symbol  = requiredClass[scala.Byte]
-  val IntClass: Symbol = requiredClass[scala.Int]
-  val LongClass: Symbol = requiredClass[scala.Long]
-  val FloatClass: Symbol = requiredClass[scala.Float]
-  val DoubleClass: Symbol  = requiredClass[scala.Double]
+  val UnitClass: Symbol
+  val BooleanClass: Symbol
+  val CharClass: Symbol
+  val ShortClass: Symbol
+  val ClassClass: Symbol
+  val ByteClass: Symbol
+  val IntClass: Symbol
+  val LongClass: Symbol
+  val FloatClass: Symbol
+  val DoubleClass: Symbol
 
   // Class symbols used in backend.
   // Vals becouse they are to frequent in scala programs so that they are already loaded by backend
@@ -808,10 +735,5 @@ trait BackendInterfaceDefinitions { self: BackendInterface =>
   val AbstractPartialFunctionClass: Symbol
 
   /* The Object => String overload. */
-  lazy val String_valueOf: Symbol = {
-    StringModule.info.members(nme_valueOf).filter(sym => sym.info.paramTypes match {
-      case List(pt) => pt.typeSymbol == ObjectClass
-      case _        => false
-    }).head
-  }
+  val String_valueOf: Symbol
 }
