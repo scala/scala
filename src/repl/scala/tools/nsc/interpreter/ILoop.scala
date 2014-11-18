@@ -19,6 +19,7 @@ import scala.reflect.internal.util.{ BatchSourceFile, ScalaClassLoader }
 import ScalaClassLoader._
 import scala.reflect.io.{ File, Directory }
 import scala.tools.util._
+import io.AbstractFile
 import scala.collection.generic.Clearable
 import scala.concurrent.{ ExecutionContext, Await, Future, future }
 import ExecutionContext.Implicits._
@@ -221,7 +222,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     nullary("power", "enable power user mode", powerCmd),
     nullary("quit", "exit the interpreter", () => Result(keepRunning = false, None)),
     cmd("replay", "[options]", "reset the repl and replay all previous commands", replayCommand),
-    //cmd("require", "<path>", "add a jar or directory to the classpath", require),  // TODO
+    cmd("require", "<path>", "add a jar to the classpath", require),
     cmd("reset", "[options]", "reset the repl to its initial state, forgetting all session entries", resetCommand),
     cmd("save", "<path>", "save replayable session to a file", saveCommand),
     shCommand,
@@ -620,11 +621,55 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     val f = File(arg).normalize
     if (f.exists) {
       addedClasspath = ClassPath.join(addedClasspath, f.path)
-      val totalClasspath = ClassPath.join(settings.classpath.value, addedClasspath)
-      echo("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, totalClasspath))
-      replay()
+      intp.addUrlsToClassPath(f.toURI.toURL)
+      echo("Added '%s' to classpath.".format(f.path, intp.global.classPath.asClasspathString))
+      repldbg("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClasspathString))
     }
     else echo("The path '" + f + "' doesn't seem to exist.")
+  }
+
+  /** Adds jar file to the current classpath. Jar will only be added if it
+   *  does not contain classes that already exist on the current classpath.
+   *
+   *  Importantly, `require` adds jars to the classpath ''without'' resetting
+   *  the state of the interpreter. This is in contrast to `replay` which can
+   *  be used to add jars to the classpath and which creates a new instance of
+   *  the interpreter and replays all interpreter expressions.
+   */
+  def require(arg: String): Unit = {
+    class InfoClassLoader extends java.lang.ClassLoader {
+      def classOf(arr: Array[Byte]): Class[_] =
+        super.defineClass(null, arr, 0, arr.length)
+    }
+
+    val f = File(arg).normalize
+
+    if (f.isDirectory) {
+      echo("Adding directories to the classpath is not supported. Add a jar instead.")
+      return
+    }
+
+    val jarFile = AbstractFile.getDirectory(new java.io.File(arg))
+
+    def flatten(f: AbstractFile): Iterator[AbstractFile] =
+      if (f.isClassContainer) f.iterator.flatMap(flatten)
+      else Iterator(f)
+
+    val entries = flatten(jarFile)
+    val cloader = new InfoClassLoader
+
+    def classNameOf(classFile: AbstractFile): String = cloader.classOf(classFile.toByteArray).getName
+    def alreadyDefined(clsName: String) = intp.classLoader.tryToLoadClass(clsName).isDefined
+    val exists = entries.filter(_.hasExtension("class")).map(classNameOf).exists(alreadyDefined)
+
+    if (!f.exists) echo(s"The path '$f' doesn't seem to exist.")
+    else if (exists) echo(s"The path '$f' cannot be loaded, because existing classpath entries conflict.") // TODO tell me which one
+    else {
+      addedClasspath = ClassPath.join(addedClasspath, f.path)
+      intp.addUrlsToClassPath(f.toURI.toURL)
+      echo("Added '%s' to classpath.".format(f.path, intp.global.classPath.asClasspathString))
+      repldbg("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClasspathString))
+    }
   }
 
   def powerCmd(): Result = {

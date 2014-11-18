@@ -197,6 +197,23 @@ abstract class ClassPath[T] {
   def packages: IndexedSeq[ClassPath[T]]
   def sourcepaths: IndexedSeq[AbstractFile]
 
+  /** The entries this classpath is composed of. In class `ClassPath` it's just the singleton list containing `this`.
+   *  Subclasses such as `MergedClassPath` typically return lists with more elements.
+   */
+  def entries: IndexedSeq[ClassPath[T]] = IndexedSeq(this)
+
+  /** Merge classpath of `platform` and `urls` into merged classpath */
+  def mergeUrlsIntoClassPath(urls: URL*): MergedClassPath[T] = {
+    // Collect our new jars/directories and add them to the existing set of classpaths
+    val allEntries =
+      (entries ++
+       urls.map(url => context.newClassPath(io.AbstractFile.getURL(url)))
+      ).distinct
+
+    // Combine all of our classpaths (old and new) into one merged classpath
+    new MergedClassPath(allEntries, context)
+  }
+
   /**
    * Represents classes which can be loaded with a ClassfileLoader and/or SourcefileLoader.
    */
@@ -322,7 +339,7 @@ extends MergedClassPath[T](original.entries map (e => subst getOrElse (e, e)), o
  * A classpath unifying multiple class- and sourcepath entries.
  */
 class MergedClassPath[T](
-  val entries: IndexedSeq[ClassPath[T]],
+  override val entries: IndexedSeq[ClassPath[T]],
   val context: ClassPathContext[T])
 extends ClassPath[T] {
   def this(entries: TraversableOnce[ClassPath[T]], context: ClassPathContext[T]) =
