@@ -7,6 +7,7 @@ import scala.reflect.internal.util.WeakHashSet
 import scala.tools.nsc.Global
 import scala.tools.asm
 import scala.reflect.io.AbstractFile
+import scala.language.implicitConversions
 import scala.reflect.internal.{Flags => IFlags}
 
 
@@ -15,7 +16,7 @@ import scala.reflect.internal.{Flags => IFlags}
  * supports this
  */
 
-abstract class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterface with BackendInterfaceDefinitions{
+class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterface with BackendInterfaceDefinitions{
   import global._
   import definitions._
   type Symbol = global.Symbol
@@ -49,10 +50,34 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   type DefDef = global.DefDef
   type ModuleDef = global.ModuleDef
   type Template = global.Template
+  type Select = global.Select
+  type Bind = global.Bind
+  type New = global.New
+  type ApplyDynamic = global.ApplyDynamic
+  type Super = global.Super
+  type Modifiers = global.Modifiers
 
   val NoSymbol = global.NoSymbol
+  val NoPosition: Position = global.NoPosition
+  val EmptyTree: Tree = global.EmptyTree
+
+
 
   import scala.tools.nsc.symtab._
+
+  implicit def symHelper(s: Symbol): SymbolHelper = new ScalacSymbolHelper {
+    def sym: Symbol = s
+  }
+  implicit def typeHelper(tp: Type): TypeHelper = ???
+  implicit def nameHelper(n: Name): NameHelper = ???
+
+  implicit def annotHelper(a: Annotation): AnnotationHelper = ???
+
+  implicit def treeHelper(a: Tree): TreeHelper = ???
+
+  implicit def constantHelper(a: Constant): ConstantHelper = ???
+
+  implicit def positionHelper(a: Position): PositionHelper = ???
 
   val UnitTag: ConstantTag = global.UnitTag
   val IntTag: ConstantTag = global.IntTag
@@ -69,6 +94,167 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   val EnumTag: ConstantTag = global.EnumTag
 
   val hashMethodSym: Symbol = getMember(ScalaRunTimeModule, nme.hash_)
+
+
+  val String_valueOf: Symbol = getMember(StringModule, nme.valueOf).filter(sym => sym.info.paramTypes match {
+    case List(pt) => pt.typeSymbol == ObjectClass
+    case _        => false
+  })
+
+  val UnitClass: Symbol = global.definitions.UnitClass
+  val BooleanClass: Symbol = global.definitions.BooleanClass
+  val CharClass: Symbol  = global.definitions.CharClass
+  val ShortClass: Symbol = global.definitions.ShortClass
+  val ClassClass: Symbol = global.definitions.ClassClass
+  val ByteClass: Symbol  = global.definitions.ByteClass
+  val IntClass: Symbol = global.definitions.IntClass
+  val LongClass: Symbol = global.definitions.LongClass
+  val FloatClass: Symbol = global.definitions.FloatClass
+  val DoubleClass: Symbol  = global.definitions.DoubleClass
+
+  val NothingClass: Symbol = global.definitions.NothingClass
+  val NullClass: Symbol = global.definitions.NullClass
+  val ObjectClass: Symbol = global.definitions.ObjectClass
+  val Object_isInstanceOf: Symbol = global.definitions.Object_isInstanceOf
+  val Object_asInstanceOf: Symbol = global.definitions.Object_asInstanceOf
+  val Object_equals: Symbol = global.definitions.Object_equals
+  val Array_clone: Symbol = global.definitions.Array_clone
+  lazy val externalEqualsNumNum: Symbol = platform.externalEqualsNumNum
+  lazy val externalEqualsNumChar: Symbol = platform.externalEqualsNumChar
+  lazy val externalEqualsNumObject: Symbol = platform.externalEqualsNumObject
+  lazy val externalEquals: Symbol = platform.externalEquals
+  val MaxFunctionArity: Int = global.definitions.MaxFunctionArity
+  val FunctionClass: Array[Symbol] = global.definitions.FunctionClass.seq.toArray
+  val AbstractFunctionClass: Array[Symbol] = global.definitions.AbstractFunctionClass.seq.toArray
+  val PartialFunctionClass: Symbol = global.definitions.PartialFunctionClass
+  val AbstractPartialFunctionClass: Symbol = global.definitions.AbstractPartialFunctionClass
+
+
+  object Assign extends AssignDeconstructor {
+    def _1: Tree = field.lhs
+    def _2: Tree = field.rhs
+  }
+
+  object Select extends SelectDeconstructor {
+    def _1: Tree = field.qualifier
+    def _2: Name = field.name
+  }
+
+  object Apply extends ApplyDeconstructor {
+    def _1: Tree = field.fun
+    def _2: List[Tree] = field.args
+  }
+  object If extends IfDeconstructor {
+    def _1: Tree = field.cond
+    def _2: Tree = field.thenp
+    def _3: Tree = field.elsep
+  }
+  object ValDef extends ValDefDeconstructor {
+    def _1: Modifiers = field.mods
+    def _2: Name = field.name
+    def _3: Tree = field.tpt
+    def _4: Tree = field.rhs
+  }
+  object Throw extends ThrowDeconstructor {
+    def unapply(s: Throw): Option[Tree] = Some(s.expr)
+  }
+  object New extends NewDeconstructor {
+    def unapply(s: New): Option[Type] = Some(s.tpt.tpe)
+  }
+  object ApplyDynamic extends ApplyDynamicDeconstructor {
+    def _1: Tree = field.qual
+    def _2: List[Tree] = field.args
+  }
+  object This extends ThisDeconstructor {
+    def unapply(s: This): Option[Name] = Some(s.qual)
+
+    def apply(s: global.Symbol): This = global.This(s.name.toTypeName) setSymbol s
+  }
+  object Ident extends IdentDeconstructor {
+    def unapply(s: Ident): Option[Name] = Some(s.name)
+  }
+  object Try extends TryDeconstructor {
+    def _1: Tree = field.block
+    def _2: List[Tree] = field.catches
+    def _3: Tree = field.finalizer
+  }
+  object Return extends ReturnDeconstructor {
+    def unapply(s: Return): Option[Tree] = Some(s.expr)
+  }
+  object LabelDef extends LabelDeconstructor {
+    def _1: Name = field.name
+    def _2: List[Ident] = field.params
+    def _3: Tree = field.rhs
+  }
+  object Literal extends LiteralDeconstructor {
+    def unapply(a: Literal): Option[Constant] = Some(a.value)
+  }
+  object Typed extends TypedDeconstrutor {
+    def _1: Tree = field.expr
+    def _2: Tree = field.tpt
+  }
+  object Super extends SuperDeconstructor {
+    def _1: Tree = field.qual
+    def _2: Name = field.mix
+  }
+  object ArrayValue extends ArrayValueDeconstructor {
+    def _1: Tree = field.elemtpt
+    def _2: List[Tree] = field.elems
+  }
+  object Match extends MatchDeconstructor {
+    def _1: Tree = field.selector
+    def _2: List[Tree] = field.cases
+  }
+  object Block extends BlockDeconstructor {
+    def _1: List[Tree] = field.stats
+    def _2: Tree = field.expr
+  }
+  object TypeApply extends TypeApplyDeconstructor {
+    def _1: Tree = field.fun
+    def _2: List[Tree] = field.args
+  }
+  object CaseDef extends CaseDeconstructor {
+    def _1: Tree = field.pat
+    def _2: Tree = field.guard
+    def _3: Tree = field.body
+  }
+  object Alternative extends AlternativeDeconstructor {
+    def unapply(s: Alternative): Option[List[Tree]] = Some(s.trees)
+  }
+  object Constant extends ConstantDeconstructor {
+    def unapply(a: Constant): Option[Any] = Some(a.value)
+  }
+  object ThrownException extends ThrownException {
+    def unapply(a: Annotation): Option[Symbol] = ??? // todo
+  }
+  object DefDef extends DefDefDeconstructor {
+    def _1: Modifiers = field.mods
+    def _2: Name = field.name
+    def _3: List[TypeDef] = field.tparams
+    def _4: List[List[ValDef]] = field.vparamss
+    def _5: Tree = field.tpt
+    def _6: Tree = field.rhs
+  }
+  object ModuleDef extends ModuleDefDeconstructor {
+    def _1: Modifiers = field.mods
+    def _2: Name = field.name
+    def _3: Tree = field.impl
+  }
+  object Template extends TemplateDeconstructor {
+    def _1: List[Tree] = field.parents
+    def _2: ValDef = field.self
+    def _3: List[Tree] = field.body
+  }
+  object Bind extends BindDeconstructor {
+    def _1: Name = field.name
+    def _2: Tree = field.body
+  }
+  object ClassDef extends ClassDefDeconstructor {
+    def _1: Modifiers = field.mods
+    def _2: Name = field.name
+    def _4: Template = field.impl
+    def _3: List[TypeDef] = field.tparams
+  }
 
   object ScalacPrimitives extends Primitives {
     def getPrimitive(methodSym: Symbol, reciever: Type): Int = global.scalaPrimitives.getPrimitive(methodSym, reciever)
@@ -87,7 +273,7 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   val nme_THIS: Name = nme.THIS
   val nme_PACKAGE: Name = nme.PACKAGE
   val nme_EQEQ_LOCAL_VAR: Name = nme.EQEQ_LOCAL_VAR
-
+  val nme_valueOf: Name = nme.valueOf
 
   val Flag_METHOD: Flags = IFlags.METHOD
   val Flag_SYNTHETIC: Flags = IFlags.SYNTHETIC
@@ -213,7 +399,6 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   def perRunCaches: Caches = scalacCaches
 
 
-
   /* backend actually uses free names to generate stuff. This should NOT mangled */
   def newTermName(prefix: String): Name = global.newTermName(prefix)
 
@@ -227,8 +412,107 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
   // (class, method)
   override def unboxMethods = currentRun.runDefinitions.boxMethod
 
-  abstract class ScalacSymbolHelper(sym: Symbol) extends SymbolHelper{
-     def nestedClasses: List[Symbol] = exitingPhase(currentRun.lambdaliftPhase)(sym.memberClasses)
+  trait ScalacSymbolHelper extends SymbolHelper {
+
+    def sym: Symbol
+
+     // names
+    def fullName(sep: Char): String = sym.fullName(sep)
+    def fullName: String = sym.fullName
+    def simpleName: Name = sym.simpleName
+    def javaSimpleName: Name = sym.javaSimpleName
+    def javaBinaryName: Name = sym.javaBinaryName
+    def javaClassName: String = sym.javaClassName
+    def name: Name = sym.name
+    def rawname: Name = sym.rawname
+    def nestedClasses: List[Symbol] = exitingPhase(currentRun.lambdaliftPhase)(sym.memberClasses)
+
+
+
+    // types
+    def info: Type = sym.info
+    def tpe: Type = sym.tpe
+    def thisType: Type = sym.thisType
+
+
+
+
+    // tests
+    def isClass: Boolean = sym.isClass
+    def isType: Boolean = sym.isType
+    def isAnonymousClass: Boolean = sym.isAnonymousClass
+    def isConstructor: Boolean = sym.isConstructor
+    def isAnonymousFunction: Boolean = sym.isAnonymousFunction
+    def isMethod: Boolean = sym.isMethod
+    def isPublic: Boolean = sym.isPublic
+    def isSynthetic: Boolean = sym.isSynthetic
+    def isPackageClass: Boolean = sym.isPackageClass
+    def isModuleClass: Boolean = sym.isModuleClass
+    def isModule: Boolean = sym.isModule
+    def isStrictFP: Boolean = sym.isStrictFP
+    def isLabel: Boolean = sym.isLabel
+    def hasPackageFlag: Boolean = sym.hasPackageFlag
+    def isImplClass: Boolean = sym.isImplClass
+    def isInterface: Boolean = sym.isInterface
+    def hasGetter: Boolean = sym.hasGetter
+    def isGetter: Boolean = sym.isGetter
+    def isSetter: Boolean = sym.isSetter
+    def isJavaDefined: Boolean = sym.isJavaDefined
+    def isDeferred: Boolean = sym.isDeferred
+    def isStaticMember: Boolean = sym.isStaticMember
+    def isBottomClass: Boolean = sym.isBottomClass
+    def isBridge: Boolean = sym.isBridge
+    def isArtifact: Boolean = sym.isArtifact
+    def hasEnumFlag: Boolean = sym.hasEnumFlag
+    def hasAccessBoundary: Boolean = sym.hasAccessBoundary
+    def isVarargsMethod: Boolean = sym.isVarargsMethod
+    def isDeprecated: Boolean = sym.isDeprecated
+    def isMutable: Boolean = sym.isMutable
+    def hasAbstractFlag: Boolean = sym.hasAbstractFlag
+    def hasModuleFlag: Boolean = sym.hasModuleFlag
+    def isNonBottomSubClass(sym2: Symbol): Boolean = sym.isNonBottomSubClass(sym2)
+    def isGetClass: Boolean = definitions.isGetClass(sym)
+    def hasAnnotation(sym2: Symbol): Boolean = sym.hasAnnotation(sym2)
+    def isClassConstructor: Boolean = sym.isClassConstructor
+    def isStaticConstructor: Boolean = sym.isStaticConstructor
+
+
+
+    // navigation
+    def owner: Symbol = sym.owner
+    def rawowner: Symbol = sym.rawowner
+    def originalOwner: Symbol = sym.originalOwner
+    def parentSymbols: List[Symbol] = sym.parentSymbols
+    def superClass: Symbol = sym.superClass
+    def enclClass: Symbol = sym.enclClass
+    def linkedClassOfClass: Symbol = sym.linkedClassOfClass
+    def companionClass: Symbol = sym.companionClass
+    def companionModule: Symbol = sym.companionModule
+    def companionSymbol: Symbol = sym.companionSymbol
+    def moduleClass: Symbol = sym.moduleClass
+    def primaryConstructor: Symbol = sym.primaryConstructor
+
+
+    def annotations: List[Annotation] = sym.annotations
+
+    def moduleSuffix: String = sym.moduleSuffix
+
+    def getter(clz: Symbol): Symbol = sym.getterIn(clz)
+
+    def outputDirectory: AbstractFile = settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
+
+
+    def freshLocal(name: String, pos: Position, flags: Flags): Symbol = sym.freshLocal(name, pos, flags)
+
+    def setter(clz: Symbol): Symbol = sym.setterIn(clz)
+
+    def serialVUID: Option[Long] = sym getAnnotation definitions.SerialVersionUIDAttr collect {
+      case AnnotationInfo(_, _, (_, LiteralAnnotArg(const)) :: Nil) => const.longValue
+    }
+
+    def pos: Position = sym.pos
+
+    def throwsAnnotations: List[Symbol] = sym.throwsAnnotations()
 
     /**
      * The member classes of a class symbol. Note that the result of this method depends on the
@@ -244,7 +528,6 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
         r
     })(collection.breakOut)
 
-    def isGetClass: Boolean = definitions.isGetClass(sym)
 
     def addRemoteRemoteExceptionAnnotation: Unit = {
       val c   = new Constant(RemoteExceptionClass.tpe)
@@ -317,7 +600,7 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
      * the owner of U is T, so UModuleClass.isStatic is true. Phase travel does not help here.
      */
     def isOriginallyStaticOwner: Boolean = {
-      sym.isPackageClass || sym.isModuleClass && sym.isOriginallyStaticOwner
+      sym.isPackageClass || sym.isModuleClass && sym.originalOwner.isOriginallyStaticOwner
     }
 
      def isSynchronized: Boolean = sym.hasFlag(Flags.SYNCHRONIZED)
@@ -368,9 +651,6 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
       sym.isPrivate || (sym.isPrimaryConstructor && sym.owner.isTopLevelModuleClass)
     }
 
-    def outputDirectory(sym: Symbol): AbstractFile =
-      settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
-
      def isFinal: Boolean = {
       // Symbols marked in source as `final` have the FINAL flag. (In the past, the flag was also
       // added to modules and module classes, not anymore since 296b706).
@@ -403,10 +683,6 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
           && !sym.isClassConstructor
           && !sym.isMutable // lazy vals and vars both
         )
-    }
-
-    def serialVUID(csym: Symbol): Option[Long] = csym getAnnotation definitions.SerialVersionUIDAttr collect {
-      case AnnotationInfo(_, _, (_, LiteralAnnotArg(const)) :: Nil) => const.longValue
     }
 
     def isJavaEntryPoint: Boolean = {
@@ -511,7 +787,29 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
     }
   }
 
-  abstract class ScalaCTypeHelper(t: Type) extends TypeHelper {
+  trait ScalaCTypeHelper extends TypeHelper {
+
+    def t: Type
+
+
+    def <:<(other: Type): Boolean = t <:< other
+    def isFinalType: Boolean = t.isFinalType
+    def member(string: Name): Symbol = t.member(string)
+    def paramTypes: List[Type] = t.paramTypes
+    def underlying: Type = t.underlying
+    def memberInfo(s: Symbol): Type = t.memberInfo(s)
+    def decls: List[Symbol] = t.decls.toList
+    def typeSymbol: Symbol = t.typeSymbol
+    def =:=(other: Type): Boolean = t =:= other
+    def membersBasedOnFlags(excludedFlags: Flags, requiredFlags: Flags): List[Symbol] = t.membersBasedOnFlags(excludedFlags, requiredFlags).toList
+    def resultType: Type = t.resultType
+
+    def summaryString: String = t.summaryString
+
+    def parents: List[Type] = t.parents
+
+    def params: List[Symbol] = t.params
+
     /**
      * This method returns the BType for a type reference, for example a parameter type.
      *
@@ -741,4 +1039,35 @@ abstract class ScalacBackendInterface[G <: Global](val global: G) extends Backen
     ldf.traverse(t)
     ldf.result.toMap
   }
+
+  implicit val TypeDefTag: ClassTag[TypeDef] = global.TypeDefTag
+  implicit val ApplyTag: ClassTag[Apply] = global.ApplyTag
+  implicit val SelectTag: ClassTag[Select] = global.SelectTag
+  implicit val TypeApplyTag: ClassTag[TypeApply] = global.TypeApplyTag
+  implicit val ClassDefTag: ClassTag[ClassDef] = global.ClassDefTag
+  implicit val TryTag: ClassTag[Try] = global.TryTag
+  implicit val AssignTag: ClassTag[Assign] = global.AssignTag
+  implicit val IdentTag: ClassTag[Ident] = global.IdentTag
+  implicit val IfTag: ClassTag[If] = global.IfTag
+  implicit val LabelDefTag: ClassTag[LabelDef] = global.LabelDefTag
+  implicit val ValDefTag: ClassTag[ValDef] = global.ValDefTag
+  implicit val ThrowTag: ClassTag[Throw] = global.ThrowTag
+  implicit val ReturnTag: ClassTag[Return] = global.ReturnTag
+  implicit val LiteralTag: ClassTag[Literal] = global.LiteralTag
+  implicit val BlockTag: ClassTag[Block] = global.BlockTag
+  implicit val TypedTag: ClassTag[Typed] = global.TypedTag
+  implicit val ArrayValueTag: ClassTag[ArrayValue] = ClassTag[ArrayValue](classOf[ArrayValue])
+  implicit val MatchTag: ClassTag[Match] = global.MatchTag
+  implicit val CaseDefTag: ClassTag[CaseDef] = global.CaseDefTag
+  implicit val ThisTag: ClassTag[This] = global.ThisTag
+  implicit val AlternativeTag: ClassTag[Alternative] = global.AlternativeTag
+  implicit val DefDefTag: ClassTag[DefDef] = global.DefDefTag
+  implicit val ModuleDefTag: ClassTag[ModuleDef] = global.ModuleDefTag
+  implicit val NameTag: ClassTag[Name] = global.NameTag
+  implicit val TemplateTag: ClassTag[Template] = global.TemplateTag
+  implicit val BindTag: ClassTag[Bind] = global.BindTag
+  implicit val NewTag: ClassTag[New] = global.NewTag
+  implicit val ApplyDynamicTag: ClassTag[ApplyDynamic] = ClassTag[ApplyDynamic](classOf[ApplyDynamic])
+  implicit val SuperTag: ClassTag[Super] = global.SuperTag
+  implicit val ConstantClassTag: ClassTag[Constant] = global.ConstantTag
 }
