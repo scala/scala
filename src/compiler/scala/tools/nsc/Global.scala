@@ -629,10 +629,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   // phaseName = "bcode"
   object genBCode extends {
     val global: Global.this.type = Global.this
-    val int = new ScalacBackendInterface[global.type](global)
     val runsAfter = List("dce")
     val runsRightAfter = None
-  } with GenBCode
+  } with GenBCode {
+    lazy val int = new ScalacBackendInterface[global.type](global)
+  }
 
   // phaseName = "terminal"
   object terminal extends {

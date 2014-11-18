@@ -31,8 +31,8 @@ abstract class GenICode extends SubComponent {
     isUniversalEqualityOp, isReferenceEqualityOp
   }
   import platform.isMaybeBoxed
-  private val int: ScalacBackendInterface[global.type] = new ScalacBackendInterface[global.type](global)
-  private val bCodeICodeCommon: jvm.BCodeICodeCommon[int.type] = new jvm.BCodeICodeCommon(int)
+  private lazy val int: ScalacBackendInterface[global.type] = new ScalacBackendInterface[global.type](global)
+  private lazy val bCodeICodeCommon: jvm.BCodeICodeCommon[int.type] = new jvm.BCodeICodeCommon(int)
   import bCodeICodeCommon._
 
   val phaseName = "icode"
