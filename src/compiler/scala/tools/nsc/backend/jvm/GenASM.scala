@@ -30,7 +30,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
   import icodes.opcodes._
   import definitions._
 
-  val int: ScalacBackendInterface[global.type] = ???
+  val int: ScalacBackendInterface[global.type] = new ScalacBackendInterface[global.type](global)
 
   val bCodeAsmCommon: BCodeAsmCommon[int.type] = new BCodeAsmCommon(int)
   import int.{symHelper, shouldEmitAnnotation, isRuntimeVisible, ExcludedForwarderFlags}

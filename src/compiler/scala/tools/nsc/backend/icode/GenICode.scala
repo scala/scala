@@ -31,7 +31,7 @@ abstract class GenICode extends SubComponent {
     isUniversalEqualityOp, isReferenceEqualityOp
   }
   import platform.isMaybeBoxed
-  private val int: ScalacBackendInterface[global.type] = ???
+  private val int: ScalacBackendInterface[global.type] = new ScalacBackendInterface[global.type](global)
   private val bCodeICodeCommon: jvm.BCodeICodeCommon[int.type] = new jvm.BCodeICodeCommon(int)
   import bCodeICodeCommon._
 

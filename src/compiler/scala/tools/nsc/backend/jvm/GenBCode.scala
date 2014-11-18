@@ -48,7 +48,7 @@ import scala.tools.nsc.backend.jvm.opt.LocalOpt
 abstract class GenBCode extends SubComponent with BCodeSyncAndTry {
   val global: Global
   import global._
-  val int: ScalacBackendInterface[global.type] = ???
+  val int: ScalacBackendInterface[global.type]
   import int.{symHelper, BeanInfoAttr}
 
   import bTypes._
