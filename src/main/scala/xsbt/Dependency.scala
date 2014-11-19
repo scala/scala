@@ -6,6 +6,8 @@ package xsbt
 import scala.tools.nsc.{ io, symtab, Phase }
 import io.{ AbstractFile, PlainFile, ZipArchive }
 import symtab.Flags
+import xsbti.DependencyContext
+import xsbti.DependencyContext._
 
 import java.io.File
 
@@ -41,22 +43,22 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
         if (global.callback.nameHashing) {
           val dependenciesByMemberRef = extractDependenciesByMemberRef(unit)
           for (on <- dependenciesByMemberRef)
-            processDependency(on, inherited = false)
+            processDependency(on, context = DependencyByMemberRef)
 
           val dependenciesByInheritance = extractDependenciesByInheritance(unit)
           for (on <- dependenciesByInheritance)
-            processDependency(on, inherited = true)
+            processDependency(on, context = DependencyByInheritance)
         } else {
-          for (on <- unit.depends) processDependency(on, inherited = false)
-          for (on <- inheritedDependencies.getOrElse(sourceFile, Nil: Iterable[Symbol])) processDependency(on, inherited = true)
+          for (on <- unit.depends) processDependency(on, context = DependencyByMemberRef)
+          for (on <- inheritedDependencies.getOrElse(sourceFile, Nil: Iterable[Symbol])) processDependency(on, context = DependencyByInheritance)
         }
         /**
          * Handles dependency on given symbol by trying to figure out if represents a term
          * that is coming from either source code (not necessarily compiled in this compilation
          * run) or from class file and calls respective callback method.
          */
-        def processDependency(on: Symbol, inherited: Boolean) {
-          def binaryDependency(file: File, className: String) = callback.binaryDependency(file, className, sourceFile, inherited)
+        def processDependency(on: Symbol, context: DependencyContext) {
+          def binaryDependency(file: File, className: String) = callback.binaryDependency(file, className, sourceFile, context)
           val onSource = on.sourceFile
           if (onSource == null) {
             classFile(on) match {
@@ -70,7 +72,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
               case None => ()
             }
           } else if (onSource.file != sourceFile)
-            callback.sourceDependency(onSource.file, sourceFile, inherited)
+            callback.sourceDependency(onSource.file, sourceFile, context)
         }
       }
     }

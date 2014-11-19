@@ -12,6 +12,7 @@ import xsbti.api.Definition
 import xsbti.api.Def
 import xsbt.api.SameAPI
 import sbt.ConsoleLogger
+import xsbti.DependencyContext._
 
 import ScalaCompilerForUnitTesting.ExtractedSourceDependencies
 
@@ -68,11 +69,11 @@ class ScalaCompilerForUnitTesting(nameHashing: Boolean = false) {
 
     val memberRefFileDeps = testCallback.sourceDependencies collect {
       // false indicates that those dependencies are not introduced by inheritance
-      case (target, src, false) => (src, target)
+      case (target, src, DependencyByMemberRef) => (src, target)
     }
     val inheritanceFileDeps = testCallback.sourceDependencies collect {
       // true indicates that those dependencies are introduced by inheritance
-      case (target, src, true) => (src, target)
+      case (target, src, DependencyByInheritance) => (src, target)
     }
     def toSymbols(src: File, target: File): (Symbol, Symbol) = (fileToSymbol(src), fileToSymbol(target))
     val memberRefDeps = memberRefFileDeps map { case (src, target) => toSymbols(src, target) }
