@@ -14,11 +14,10 @@ import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString }
+import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning }
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
-import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
-import scala.reflect.io.VirtualFile
+import scala.reflect.internal.util.{ SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
+import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{ Flags, SymbolTable, SymbolTrackers }
 import symtab.classfile.Pickler
 import plugins.Plugins
@@ -36,6 +35,7 @@ import backend.icode.analysis._
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.settings.ClassPathImplementationType
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
@@ -61,8 +61,8 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val universe: self.type = self
     def rootLoader: LazyType = {
       settings.YclasspathImpl.value match {
-        case "flat" => new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClasspath)
-        case "recursive" => new loaders.PackageLoader(classPath)
+        case ClassPathImplementationType.Flat => new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClassPath)
+        case ClassPathImplementationType.Recursive => new loaders.PackageLoader(classPath)
       }
     }
     override def toString = "compiler mirror"
@@ -112,7 +112,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   def classPath: PlatformClassPath = platform.classPath
 
-  def flatClasspath: FlatClassPath = platform.flatClasspath
+  def flatClassPath: FlatClassPath = platform.flatClassPath
 
   // sub-components --------------------------------------------------
 
@@ -347,7 +347,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
   }
 
-  if ((settings.verbose || settings.Ylogcp) && (settings.YclasspathImpl.value != "flat")) {
+  if ((settings.verbose || settings.Ylogcp) && (settings.YclasspathImpl.value != ClassPathImplementationType.Flat)) {
     reporter.echo(
       s"[search path for source files: ${classPath.sourcepaths.mkString(",")}]\n"+
       s"[search path for class files: ${classPath.asClasspathString}")
@@ -906,7 +906,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           }
           cp.entries find matchesCanonical match {
             case Some(oldEntry) =>
-              List(oldEntry -> cp.context.newClassPath(dir))
+              List(oldEntry -> cp.context.createClassPath(dir))
             case None =>
               error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
               List()

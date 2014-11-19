@@ -9,15 +9,13 @@ package util
 
 import java.net.URL
 import scala.collection.{ mutable, immutable }
-import io.{ File, Directory, Path, Jar, AbstractFile }
+import io.{ File, Directory, Jar, AbstractFile }
 import scala.reflect.internal.util.StringOps.splitWhere
 import Jar.isJarOrZip
 import File.pathSeparator
 import java.net.MalformedURLException
 import java.util.regex.PatternSyntaxException
-import scala.reflect.runtime.ReflectionUtils
 import ClassPath._
-import scala.reflect.io.FileZipArchive
 import scala.tools.nsc.classpath.FlatClassPath
 
 /** <p>
@@ -109,18 +107,19 @@ object ClassPath {
      */
     def toBinaryName(rep: T): String
 
-    def sourcesInPath(path: String): List[ClassPath[T]] =
+    override def sourcesInPath(path: String): List[ClassPath[T]] =
       for (file <- expandPath(path, expandStar = false) ; dir <- Option(AbstractFile getDirectory file)) yield
         new SourcePath[T](dir, this)
   }
 
   class JavaContext extends ClassPathContext[AbstractFile] {
-    def toBinaryName(rep: AbstractFile) = {
+    override def toBinaryName(rep: AbstractFile) = {
       val name = rep.name
       assert(endsClass(name), name)
       name.substring(0, name.length - 6)
     }
-    def newClassPath(dir: AbstractFile): ClassPath[AbstractFile] = new DirectoryClassPath(dir, this)
+
+    override def createClassPath(dir: AbstractFile): ClassPath[AbstractFile] = new DirectoryClassPath(dir, this)
   }
 
   object DefaultJavaContext extends JavaContext
@@ -185,7 +184,7 @@ abstract class ClassPath[T] extends ClassFileLookup {
     // Collect our new jars/directories and add them to the existing set of classpaths
     val allEntries =
       (entries ++
-       urls.map(url => context.newClassPath(io.AbstractFile.getURL(url)))
+       urls.map(url => context.createClassPath(io.AbstractFile.getURL(url)))
       ).distinct
 
     // Combine all of our classpaths (old and new) into one merged classpath
@@ -321,6 +320,7 @@ class MergedClassPath[T](
   override val entries: IndexedSeq[ClassPath[T]],
   val context: ClassPathContext[T])
 extends ClassPath[T] {
+
   def this(entries: TraversableOnce[ClassPath[T]], context: ClassPathContext[T]) =
     this(entries.toIndexedSeq, context)
 
@@ -383,10 +383,12 @@ extends ClassPath[T] {
     }
     new MergedClassPath[T](newEntries, context)
   }
+
   def show() {
     println("ClassPath %s has %d entries and results in:\n".format(name, entries.size))
     asClasspathString split ':' foreach (x => println("  " + x))
   }
+
   override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")
 }
 

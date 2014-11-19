@@ -17,6 +17,7 @@ import PartialFunction.condOpt
 import scala.language.postfixOps
 import scala.tools.nsc.classpath.ClassPathFactory
 import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.settings.ClassPathImplementationType
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SIW/Classpath
@@ -298,7 +299,7 @@ class PathResolver(settings: Settings, context: JavaContext, flatClasspath: => F
   def containers = Calculated.containers
 
   lazy val result = {
-    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings.YclasspathImpl.value == "flat", flatClasspath)
+    val cp = new JavaClassPath(containers.toIndexedSeq, context, settings.YclasspathImpl.value == ClassPathImplementationType.Flat, flatClasspath)
     if (settings.Ylogcp) {
       Console print f"Classpath built from ${settings.toConciseString} %n"
       Console print s"Defaults: ${PathResolver.Defaults}"

@@ -11,6 +11,7 @@ import util.{ClassPath,MergedClassPath,DeltaClassPath}
 import scala.tools.util.PathResolver
 import scala.tools.nsc.classpath.FlatClassPath
 import scala.tools.nsc.classpath.DefaultFlatClassPathManager
+import scala.tools.nsc.settings.ClassPathImplementationType
 
 trait JavaPlatform extends Platform {
   val global: Global
@@ -21,12 +22,13 @@ trait JavaPlatform extends Platform {
   private[nsc] var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
 
   def classPath: ClassPath[AbstractFile] = {
-    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, flatClasspath).result)
+    assert(settings.YclasspathImpl.value == ClassPathImplementationType.Recursive)
+    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, flatClassPath).result)
     currentClassPath.get
   }
 
-  lazy val flatClasspath: FlatClassPath = {
-    assert(settings.YclasspathImpl.value == "flat")
+  lazy val flatClassPath: FlatClassPath = {
+    assert(settings.YclasspathImpl.value == ClassPathImplementationType.Flat)
     DefaultFlatClassPathManager.createClassPath(settings)
   }
 

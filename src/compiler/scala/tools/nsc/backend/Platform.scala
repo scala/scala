@@ -20,7 +20,7 @@ trait Platform {
   /** The compiler classpath. */
   def classPath: ClassPath[AbstractFile]
 
-  def flatClasspath: FlatClassPath
+  def flatClassPath: FlatClassPath
 
   /** Update classpath with a substitution that maps entries to entries */
   def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]])

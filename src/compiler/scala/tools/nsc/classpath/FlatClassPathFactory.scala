@@ -7,7 +7,7 @@ class FlatClassPathFactory extends ClassPathFactory[FlatClassPath] {
   def expandPath(path: String, expandStar: Boolean = true): List[String] = ClassPath.expandPath(path, expandStar)
   def expandDir(extdir: String): List[String] = ClassPath.expandDir(extdir)
 
-  def newClassPath(file: AbstractFile): FlatClassPath = {
+  def createClassPath(file: AbstractFile): FlatClassPath = {
     if (file.hasExtension("jar") || file.hasExtension("zip")) {
       ZipArchiveFlatClassPath.create(file.file)
     } else if (file.isDirectory) {

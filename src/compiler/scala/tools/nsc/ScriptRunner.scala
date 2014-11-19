@@ -113,7 +113,7 @@ class ScriptRunner extends HasCompileSocket {
 
     def hasClassToRun(d: Directory): Boolean = {
       import util.ClassPath.{ DefaultJavaContext => ctx }
-      val cp = ctx.newClassPath(AbstractFile.getDirectory(d))
+      val cp = ctx.createClassPath(AbstractFile.getDirectory(d))
       cp.findClass(mainClass).isDefined
     }
 

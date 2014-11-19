@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2014 Contributor. All rights reserved.
+ */
 package scala.tools.nsc.classpath
 
 import scala.reflect.io.AbstractFile
