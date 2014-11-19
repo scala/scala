@@ -130,7 +130,7 @@ object ExecutionContext {
 
   /** Creates an `ExecutionContext` from the given `ExecutorService`.
    *
-   *  @param e         the `ExecutorService` to use
+   *  @param e         the `ExecutorService` to use. If `null`, a new Fork/Join based `ExecutorService` will be created with default configuration.
    *  @param reporter  a function for error reporting
    *  @return          the `ExecutionContext` using the given `ExecutorService`
    */
@@ -147,14 +147,14 @@ object ExecutionContext {
    *  val ec = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor())
    *  }}}
    *
-   *  @param e the `ExecutorService` to use
+   *  @param e the `ExecutorService` to use. If `null`, a new Fork/Join based `ExecutorService` will be created with default configuration.
    *  @return  the `ExecutionContext` using the given `ExecutorService`
    */
   def fromExecutorService(e: ExecutorService): ExecutionContextExecutorService = fromExecutorService(e, defaultReporter)
 
   /** Creates an `ExecutionContext` from the given `Executor`.
    *
-   *  @param e         the `Executor` to use
+   *  @param e         the `Executor` to use. If `null`, a new Fork/Join based `ExecutorService` will be created with default configuration.
    *  @param reporter  a function for error reporting
    *  @return          the `ExecutionContext` using the given `Executor`
    */
@@ -163,7 +163,7 @@ object ExecutionContext {
 
   /** Creates an `ExecutionContext` from the given `Executor` with the [[scala.concurrent.ExecutionContext$.defaultReporter default reporter]].
    *
-   *  @param e the `Executor` to use
+   *  @param e the `Executor` to use. If `null`, a new Fork/Join based `ExecutorService` will be created with default configuration.
    *  @return  the `ExecutionContext` using the given `Executor`
    */
   def fromExecutor(e: Executor): ExecutionContextExecutor = fromExecutor(e, defaultReporter)
