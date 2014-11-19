@@ -15,7 +15,7 @@ import scala.concurrent.{ Future, ExecutionContext }
 import scala.reflect.runtime.{ universe => ru }
 import scala.reflect.{ ClassTag, classTag }
 import scala.reflect.internal.util.{ BatchSourceFile, SourceFile }
-import scala.tools.util.PathResolver
+import scala.tools.util.PathResolverFactory
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.typechecker.{ TypeStrings, StructuredTypeStrings }
 import scala.tools.nsc.util.{ ScalaClassLoader, stringFromReader, stringFromWriter, StackTraceOps, ClassPath, MergedClassPath }
@@ -90,7 +90,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
   def compilerClasspath: Seq[java.net.URL] = (
     if (isInitializeComplete) global.classPath.asURLs
-    else new PathResolver(settings).result.asURLs  // the compiler's classpath
+    else PathResolverFactory.create(settings).resultAsURLs  // the compiler's classpath
   )
   def settings = initialSettings
   // Run the code body with the given boolean settings flipped to true.
@@ -1282,9 +1282,11 @@ object IMain {
 
     def getProgram(statements: String*): String = null
 
-    def getScriptEngine: ScriptEngine = new IMain(this, new Settings() {
-      usemanifestcp.value = true
-    })
+    def getScriptEngine: ScriptEngine = {
+      val settings = new Settings()
+      settings.usemanifestcp.value = true
+      new IMain(this, settings)
+    }
   }
 
   // The two name forms this is catching are the two sides of this assignment:

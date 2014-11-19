@@ -7,7 +7,7 @@ package scala.tools.nsc
 package backend
 
 import io.AbstractFile
-import util.{ClassPath,MergedClassPath,DeltaClassPath}
+import scala.tools.nsc.util.{MergedClassPath, ClassPath, DeltaClassPath}
 import scala.tools.util.PathResolver
 import scala.tools.nsc.classpath.FlatClassPath
 import scala.tools.nsc.classpath.DefaultFlatClassPathManager
@@ -23,7 +23,7 @@ trait JavaPlatform extends Platform {
 
   def classPath: ClassPath[AbstractFile] = {
     assert(settings.YclasspathImpl.value == ClassPathImplementationType.Recursive)
-    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings, flatClassPath).result)
+    if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
     currentClassPath.get
   }
 

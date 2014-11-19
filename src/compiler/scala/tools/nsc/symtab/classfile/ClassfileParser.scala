@@ -16,7 +16,6 @@ import scala.annotation.switch
 import scala.reflect.internal.{ JavaAccFlags }
 import scala.reflect.internal.pickling.{PickleBuffer, ByteCodecs}
 import scala.tools.nsc.io.AbstractFile
-import util.ClassPath
 import scala.tools.nsc.util.ClassFileLookup
 
 /** This abstract class implements a class file parser.
@@ -44,7 +43,7 @@ abstract class ClassfileParser {
   protected def lookupMemberAtTyperPhaseIfPossible(sym: Symbol, name: Name): Symbol
 
   /** The compiler classpath. */
-  def classFileLookup: ClassFileLookup
+  def classFileLookup: ClassFileLookup[AbstractFile]
 
   import definitions._
   import scala.reflect.internal.ClassfileConstants._
@@ -352,7 +351,7 @@ abstract class ClassfileParser {
   }
 
   private def loadClassSymbol(name: Name): Symbol = {
-    val file = classFileLookup findClassFile ("" +name) getOrElse {
+    val file = classFileLookup findClassFile name.toString getOrElse {
       // SI-5593 Scaladoc's current strategy is to visit all packages in search of user code that can be documented
       // therefore, it will rummage through the classpath triggering errors whenever it encounters package objects
       // that are not in their correct place (see bug for details)
@@ -1048,7 +1047,7 @@ abstract class ClassfileParser {
       // create a new class member for immediate inner classes
       if (entry.outerName == currentClass) {
         val file = classFileLookup.findClassFile(entry.externalName.toString) getOrElse {
-          throw new AssertionError(entry.externalName)
+          throw new AssertionError(s"Class file for ${entry.externalName} not found")
         }
         enterClassAndModule(entry, file)
       }

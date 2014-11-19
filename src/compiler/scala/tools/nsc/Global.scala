@@ -14,7 +14,7 @@ import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning }
+import scala.tools.nsc.util.{ClassFileLookup, ClassPath, MergedClassPath, StatisticsInfo, returning}
 import scala.reflect.ClassTag
 import scala.reflect.internal.util.{ SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
 import scala.reflect.internal.pickling.PickleBuffer
@@ -62,7 +62,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     def rootLoader: LazyType = {
       settings.YclasspathImpl.value match {
         case ClassPathImplementationType.Flat => new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClassPath)
-        case ClassPathImplementationType.Recursive => new loaders.PackageLoader(classPath)
+        case ClassPathImplementationType.Recursive => new loaders.PackageLoader(recursiveClassPath)
       }
     }
     override def toString = "compiler mirror"
@@ -110,9 +110,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   type PlatformClassPath = ClassPath[AbstractFile]
   type OptClassPath = Option[PlatformClassPath]
 
-  def classPath: PlatformClassPath = platform.classPath
+  def classPath: ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
+    case ClassPathImplementationType.Flat => flatClassPath
+    case ClassPathImplementationType.Recursive => recursiveClassPath
+  }
 
-  def flatClassPath: FlatClassPath = platform.flatClassPath
+  private def recursiveClassPath: ClassPath[AbstractFile] = platform.classPath
+
+  private def flatClassPath: FlatClassPath = platform.flatClassPath
 
   // sub-components --------------------------------------------------
 
@@ -327,7 +332,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           None
       }
 
-    val charset = ( if (settings.encoding.isSetByUser) Some(settings.encoding.value) else None ) flatMap loadCharset getOrElse {
+    val charset = settings.encoding.valueSetByUser flatMap loadCharset getOrElse {
       settings.encoding.value = defaultEncoding // A mandatory charset
       Charset.forName(defaultEncoding)
     }
@@ -342,16 +347,16 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    ( if (settings.sourceReader.isSetByUser) Some(settings.sourceReader.value) else None ) flatMap loadReader getOrElse {
+    settings.sourceReader.valueSetByUser flatMap loadReader getOrElse {
       new SourceReader(charset.newDecoder(), reporter)
     }
   }
 
-  if ((settings.verbose || settings.Ylogcp) && (settings.YclasspathImpl.value != ClassPathImplementationType.Flat)) {
+  if (settings.verbose || settings.Ylogcp)
     reporter.echo(
-      s"[search path for source files: ${classPath.sourcepaths.mkString(",")}]\n"+
-      s"[search path for class files: ${classPath.asClasspathString}")
-  }
+      s"[search path for source files: ${classPath.asSourcePathString}]\n" +
+      s"[search path for class files: ${classPath.asClassPathString}]"
+    )
 
   // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
   // clunky.  It is often difficult to have a setting influence something without having
@@ -854,6 +859,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Extend classpath of `platform` and rescan updated packages. */
   def extendCompilerClassPath(urls: URL*): Unit = {
+    if (settings.YclasspathImpl.value == ClassPathImplementationType.Flat)
+      throw new UnsupportedOperationException("Flat classpath doesn't support extending the compiler classpath")
+
     val newClassPath = platform.classPath.mergeUrlsIntoClassPath(urls: _*)
     platform.currentClassPath = Some(newClassPath)
     // Reload all specified jars into this compiler instance
@@ -889,8 +897,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *                entries on the classpath.
    */
   def invalidateClassPathEntries(paths: String*): Unit = {
+    if (settings.YclasspathImpl.value == ClassPathImplementationType.Flat)
+      throw new UnsupportedOperationException("Flat classpath doesn't support the classpath invalidation")
+
     implicit object ClassPathOrdering extends Ordering[PlatformClassPath] {
-      def compare(a:PlatformClassPath, b:PlatformClassPath) = a.asClasspathString compare b.asClasspathString
+      def compare(a:PlatformClassPath, b:PlatformClassPath) = a.asClassPathString compare b.asClassPathString
     }
     val invalidated, failed = new mutable.ListBuffer[ClassSymbol]
     classPath match {
@@ -918,10 +929,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           informProgress(s"classpath updated on entries [${subst.keys mkString ","}]")
           def mkClassPath(elems: Iterable[PlatformClassPath]): PlatformClassPath =
             if (elems.size == 1) elems.head
-            else new MergedClassPath(elems, classPath.context)
+            else new MergedClassPath(elems, recursiveClassPath.context)
           val oldEntries = mkClassPath(subst.keys)
           val newEntries = mkClassPath(subst.values)
-          mergeNewEntries(newEntries, RootClass, Some(classPath), Some(oldEntries), invalidated, failed)
+          mergeNewEntries(newEntries, RootClass, Some(recursiveClassPath), Some(oldEntries), invalidated, failed)
         }
     }
     def show(msg: String, syms: scala.collection.Traversable[Symbol]) =

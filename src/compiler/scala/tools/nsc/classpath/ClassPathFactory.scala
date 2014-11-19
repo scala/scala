@@ -11,7 +11,7 @@ import scala.reflect.io.AbstractFile
  * The logic has been abstract from ClassPath#ClassPathContext so it's possible
  * to have common trait that supports both old and new classpath implementation.
  *
- * Therefore, we expect that T will be either ClassPath[U] or FlatClasspath.
+ * Therefore, we expect that T will be either ClassPath[U] or FlatClassPath.
  */
 trait ClassPathFactory[T] {
 

@@ -363,7 +363,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   )
 
   val replayQuestionMessage =
-    """|That entry seems to have slain the compiler.  Shall I replay
+    """|That entry seems to have slain the compiler. Shall I replay
        |your session? I can re-run each line except the last one.
        |[y/n]
     """.trim.stripMargin
@@ -622,8 +622,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     if (f.exists) {
       addedClasspath = ClassPath.join(addedClasspath, f.path)
       intp.addUrlsToClassPath(f.toURI.toURL)
-      echo("Added '%s' to classpath.".format(f.path, intp.global.classPath.asClasspathString))
-      repldbg("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClasspathString))
+      echo("Added '%s' to classpath.".format(f.path, intp.global.classPath.asClassPathString))
+      repldbg("Added '%s'. Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClassPathString))
     }
     else echo("The path '" + f + "' doesn't seem to exist.")
   }
@@ -667,8 +667,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     else {
       addedClasspath = ClassPath.join(addedClasspath, f.path)
       intp.addUrlsToClassPath(f.toURI.toURL)
-      echo("Added '%s' to classpath.".format(f.path, intp.global.classPath.asClasspathString))
-      repldbg("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClasspathString))
+      echo("Added '%s' to classpath.".format(f.path, intp.global.classPath.asClassPathString))
+      repldbg("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, intp.global.classPath.asClassPathString))
     }
   }
 

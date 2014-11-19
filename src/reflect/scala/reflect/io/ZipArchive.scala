@@ -247,17 +247,16 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
 final class ManifestResources(val url: URL) extends ZipArchive(null) {
   def lookupName(name: String, directory: Boolean) = unsupported()
   def lookupNameUnchecked(name: String, directory: Boolean) = unsupported()
+
   def iterator = {
     val root     = new DirEntry("/")
     val dirs     = mutable.HashMap[String, DirEntry]("/" -> root)
     val manifest = new Manifest(input)
     val iter     = manifest.getEntries().keySet().iterator().filter(_.endsWith(".class")).map(new ZipEntry(_))
 
-    while (iter.hasNext) {
-      val zipEntry = iter.next()
+    for (zipEntry <- iter) {
       val dir = getDir(dirs, zipEntry)
-      if (zipEntry.isDirectory) dir
-      else {
+      if (!zipEntry.isDirectory) {
         class FileEntry() extends Entry(zipEntry.getName) {
           override def lastModified = zipEntry.getTime()
           override def input        = resourceInputStream(path)
@@ -293,14 +292,14 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
   private def resourceInputStream(path: String): InputStream = {
     new FilterInputStream(null) {
       override def read(): Int = {
-        if(in == null) in = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
+        if(in == null) in = Thread.currentThread().getContextClassLoader().getResourceAsStream(path)
         if(in == null) throw new RuntimeException(path + " not found")
-        super.read();
+        super.read()
       }
 
       override def close(): Unit = {
-        super.close();
-        in = null;
+        super.close()
+        in = null
       }
     }
   }

@@ -31,6 +31,8 @@ abstract class MutableSettings extends AbsSettings {
       v = arg
       postSetHook()
     }
+
+    def valueSetByUser: Option[T] =  if (isSetByUser) Some(value) else None
   }
 
   def Xexperimental: BooleanSetting

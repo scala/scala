@@ -8,7 +8,7 @@ package symtab
 
 import java.io.IOException
 import scala.compat.Platform.currentTime
-import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.util.{ClassRepresentation, ClassPath}
 import classfile.ClassfileParser
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
@@ -88,8 +88,7 @@ abstract class SymbolLoaders {
       // require yjp.jar at runtime. See SI-2089.
       if (settings.termConflict.isDefault)
         throw new TypeError(
-          root+" contains object and package with same name: "+
-          name+"\none of them needs to be removed from classpath"
+          s"$root contains object and package with same name: $name\none of them needs to be removed from classpath"
         )
       else if (settings.termConflict.value == "package") {
         warning(
@@ -156,7 +155,7 @@ abstract class SymbolLoaders {
 
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
    */
-  def initializeFromClassPath(owner: Symbol, classRep: ClassPath[AbstractFile]#ClassRep) {
+  def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation[AbstractFile]) {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
       if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
@@ -168,12 +167,6 @@ abstract class SymbolLoaders {
       case (Some(bin), _) =>
         enterClassAndModule(owner, classRep.name, newClassLoader(bin))
     }
-  }
-  
-  /** Initialize toplevel class and module symbols in `owner` from class name
-   */
-  def initializeFromClassPath(owner: Symbol, classFileEntry: ClassFileEntry) {
-    enterClassAndModule(owner, classFileEntry.name, new ClassfileLoader(classFileEntry.file))
   }
 
   /** Create a new loader from a binary classfile.
@@ -297,17 +290,19 @@ abstract class SymbolLoaders {
       assert(root.isPackageClass, root)
       root.setInfo(new PackageClassInfoType(newScope, root))
       
-      val (packages, classes) = classPath.list(packageName)
+      val classPathEntries = classPath.list(packageName)
 
       if (!root.isRoot) {
-        for (clazz <- classes) {
-          initializeFromClassPath(root, clazz)
+        for (entry <- classPathEntries.classesAndSources) initializeFromClassPath(root, entry)
         }
-      }
       if (!root.isEmptyPackageClass) {
-        for (pkg <- packages) {
+        for (pkg <- classPathEntries.packages) {
           val fullName = pkg.name
-          val name = PackageNameUtils.lastSubpackageNameForPackage(fullName)
+
+          // we can't just get last subpackage from fullName because res tests from partest use directories with dots in names
+          val name =
+            if (packageName == FlatClassPath.RootPackage) fullName
+            else fullName.substring(packageName.length + 1)
           val packageLoader = new PackageLoaderUsingFlatClassPath(fullName, classPath)
           enterPackage(root, name, packageLoader)
         }
@@ -334,8 +329,10 @@ abstract class SymbolLoaders {
        *
        */
       private type SymbolLoadersRefined = SymbolLoaders { val symbolTable: classfileParser.symbolTable.type }
+
       val loaders = SymbolLoaders.this.asInstanceOf[SymbolLoadersRefined]
-      def classFileLookup: util.ClassFileLookup = settings.YclasspathImpl.value match {
+
+      override def classFileLookup: util.ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
         case ClassPathImplementationType.Recursive => platform.classPath
         case ClassPathImplementationType.Flat => platform.flatClassPath
       }
