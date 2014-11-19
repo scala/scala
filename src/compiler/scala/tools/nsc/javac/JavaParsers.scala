@@ -272,7 +272,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           // SelectFromTypeTree otherwise. See #3567.
           // Select nodes can be later
           // converted in the typechecker to SelectFromTypeTree if the class
-          // turns out to be an instance ionner class instead of a static inner class.
+          // turns out to be an instance inner class instead of a static inner class.
           def typeSelect(t: Tree, name: Name) = t match {
             case Ident(_) | Select(_, _) => Select(t, name)
             case _ => SelectFromTypeTree(t, name.toTypeName)
@@ -440,11 +440,16 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
      varDecl(in.currentPos, Modifiers(Flags.JAVA | Flags.PARAM), t, ident().toTermName)
     }
 
-    def optThrows() {
+    def optThrows(): List[Tree] = {
       if (in.token == THROWS) {
         in.nextToken()
-        repsep(typ, COMMA)
-      }
+        repsep(throwsAnnot, COMMA)
+      } else Nil
+    }
+
+    def throwsAnnot(): Tree = {
+      val t = convertToTypeId(qualId)
+      New(AppliedTypeTree(scalaDot(TypeName("throws")), List(t)), Nil)
     }
 
     def methodBody(): Tree = {
@@ -472,10 +477,10 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       if (in.token == LPAREN && rtptName != nme.EMPTY && !inInterface) {
         // constructor declaration
         val vparams = formalParams()
-        optThrows()
+        val throwsAnnots = optThrows()
         List {
           atPos(pos) {
-            DefDef(mods, nme.CONSTRUCTOR, tparams, List(vparams), TypeTree(), methodBody())
+            DefDef(mods withAnnotations throwsAnnots, nme.CONSTRUCTOR, tparams, List(vparams), TypeTree(), methodBody())
           }
         }
       } else {
@@ -487,7 +492,8 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           // method declaration
           val vparams = formalParams()
           if (!isVoid) rtpt = optArrayBrackets(rtpt)
-          optThrows()
+          val throwsAnnots = optThrows()
+          mods1 = mods1 withAnnotations throwsAnnots
           val isStatic = mods hasFlag Flags.STATIC
           val bodyOk = !inInterface || ((mods hasFlag Flags.DEFAULTMETHOD) || isStatic)
           val body =
