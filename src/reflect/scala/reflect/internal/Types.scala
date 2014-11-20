@@ -187,6 +187,7 @@ trait Types
     override def widen = maybeRewrap(underlying.widen)
     override def narrow = underlying.narrow
     override def deconst = maybeRewrap(underlying.deconst)
+    override def deconstWiden = maybeRewrap(underlying.deconstWiden)
     override def resultType = maybeRewrap(underlying.resultType)
     override def resultType(actuals: List[Type]) = maybeRewrap(underlying.resultType(actuals))
     override def paramSectionCount = 0
@@ -352,6 +353,11 @@ trait Types
      *  identity for all other types.
      */
     def deconst: Type = this
+
+    /** Map a constant type or not-null-type to its underlying base type,
+      *  identity for all other types.
+      */
+    def deconstWiden: Type = this
 
     /** The type of `this` of a class type or reference type. */
     def typeOfThis: Type = typeSymbol.typeOfThis
@@ -1844,6 +1850,7 @@ trait Types
     override def underlying: Type = if (sip23 && value.isSuitableLiteralType) LiteralType(value) else value.tpe // SIP-23
     override def isTrivial: Boolean = true
     override def deconst: Type = underlying.deconst
+    override def deconstWiden: Type = if (value.isSuitableLiteralType) underlying.widen else deconst
     override def safeToString: String =
       underlying.widen.toString + "(" + value.escapedStringValue + ")"
     override def kind = "ConstantType"

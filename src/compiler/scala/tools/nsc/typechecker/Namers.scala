@@ -879,7 +879,10 @@ trait Namers extends MethodSynthesis {
         // If the definition can keep its inferred singleton type,
         // or widening would mean no longer conforming to the expected type,
         // we must still deconst unless it's a final val. Otherwise, widen.
-        if (mayKeepSingletonType || cannotWiden) { if (sym.isFinal) tpe else tpe.deconst }
+        if (mayKeepSingletonType || cannotWiden) {
+          if (sym.isFinal || sym.isLocalToBlock || sym.isPrivate) tpe
+          else tpe.deconstWiden
+        }
         else tpe.widen
       } else {
         val shouldWiden = (
