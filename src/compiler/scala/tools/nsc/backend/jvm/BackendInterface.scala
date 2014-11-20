@@ -670,7 +670,7 @@ trait BackendInterfaceDefinitions { self: BackendInterface =>
   val Object_isInstanceOf: Symbol
   val Object_asInstanceOf: Symbol
   val Object_equals: Symbol
-
+  val ArrayClass: Symbol
 
   val UnitClass: Symbol
   val BooleanClass: Symbol
@@ -709,7 +709,7 @@ trait BackendInterfaceDefinitions { self: BackendInterface =>
   val JavaSerializableClass: Symbol = requiredClass[java.io.Serializable]
   val SerializableClass: Symbol = requiredClass[scala.Serializable]
   val ClassCastExceptionClass: Symbol = requiredClass[java.lang.ClassCastException]
-  val ArrayClass: Symbol = requiredClass[scala.Array[_]]
+
   val ClassfileAnnotationClass: Symbol = requiredClass[scala.annotation.ClassfileAnnotation]
   val BoxedNumberClass: Symbol = requiredClass[java.lang.Number]
   val RemoteExceptionClass: Symbol = requiredClass[java.rmi.RemoteException]

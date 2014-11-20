@@ -276,14 +276,15 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       tree match {
         case lblDf @ LabelDef(_, _, _) => genLabelDef(lblDf.asInstanceOf[LabelDef], expectedType)
 
-        case ValDef(_, nme_THIS, _, _) =>
+        case ValDef(_, `nme_THIS`, _, _) =>
           debuglog("skipping trivial assign to _$this: " + tree)
 
         case ValDef(_, _, _, rhs) =>
           val sym = tree.symbol
           /* most of the time, !locals.contains(sym), unless the current activation of genLoad() is being called
              while duplicating a finalizer that contains this ValDef. */
-          val Local(tk, _, idx, isSynth) = locals.getOrMakeLocal(sym)
+          val loc = locals.getOrMakeLocal(sym)
+          val Local(tk, _, idx, isSynth) = loc
           if (rhs == EmptyTree) { emitZeroOf(tk) }
           else { genLoad(rhs, tk) }
           val localVarStart = currProgramPoint()

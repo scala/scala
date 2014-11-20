@@ -127,6 +127,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   val FloatClass: Symbol = global.definitions.FloatClass
   val DoubleClass: Symbol  = global.definitions.DoubleClass
 
+
+  val ArrayClass: Symbol = global.definitions.ArrayClass
   val NothingClass: Symbol = global.definitions.NothingClass
   val NullClass: Symbol = global.definitions.NullClass
   val ObjectClass: Symbol = global.definitions.ObjectClass
@@ -903,7 +905,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   trait ScalacNameHelper extends NameHelper{
     val n: Name
     import global.AnyNameOps
-    def offset: Int = n.offset
+    def offset: Int = n.start
 
     def toTypeName: Name = n.toTypeName
 
@@ -913,7 +915,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
 
     def dropModule: Name = AnyNameOps(n).dropModule
 
-    def len: Int = n.len
+    def len: Int = n.length
 
     def isTermName: Boolean = n.isTermName
 
