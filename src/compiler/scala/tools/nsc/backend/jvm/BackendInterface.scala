@@ -505,7 +505,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
     def serialVUID: Option[Long]
 
 
-    def freshLocal(name: String, pos: Position, flags: Flags): Symbol
+    def freshLocal(cunit: CompilationUnit, name: String, pos: Position, flags: Flags): Symbol
 
     def getter(clz: Symbol): Symbol
     def setter(clz: Symbol): Symbol
@@ -702,7 +702,7 @@ trait BackendInterfaceDefinitions { self: BackendInterface =>
   val BoxedFloatClass: Symbol = requiredClass[java.lang.Float]
   val BoxedDoubleClass: Symbol = requiredClass[java.lang.Double]
   val StringClass: Symbol = requiredClass[java.lang.String]
-  val StringBuilderClass: Symbol = requiredClass[java.lang.StringBuilder]
+  val StringBuilderClass: Symbol = requiredClass[scala.collection.mutable.StringBuilder]
   val ThrowableClass: Symbol = requiredClass[java.lang.Throwable]
   val JavaCloneableClass: Symbol = requiredClass[java.lang.Cloneable]
   val NullPointerExceptionClass: Symbol  = requiredClass[java.lang.NullPointerException]

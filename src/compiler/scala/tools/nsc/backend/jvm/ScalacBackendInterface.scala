@@ -427,10 +427,9 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   override def boxMethods = currentRun.runDefinitions.boxMethod
 
   // (class, method)
-  override def unboxMethods = currentRun.runDefinitions.boxMethod
+  override def unboxMethods = currentRun.runDefinitions.unboxMethod
 
   trait ScalacSymbolHelper extends SymbolHelper {
-
     def sym: Symbol
 
      // names
@@ -519,7 +518,9 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def outputDirectory: AbstractFile = settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
 
 
-    def freshLocal(name: String, pos: Position, flags: Flags): Symbol = sym.freshLocal(name, pos, flags)
+    def freshLocal(cunit: CompilationUnit, name: String, pos: Position, flags: Flags): Symbol = {
+      sym.newVariable(cunit.freshTermName(name), pos, flags)
+    }
 
     def setter(clz: Symbol): Symbol = sym.setterIn(clz)
 
