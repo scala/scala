@@ -1147,6 +1147,7 @@ trait StdNames {
     final val GetClassLoader: TermName   = newTermName("getClassLoader")
     final val GetMethod: TermName        = newTermName("getMethod")
     final val Invoke: TermName           = newTermName("invoke")
+    final val InvokeExact: TermName      = newTermName("invokeExact")
 
     val Boxed = immutable.Map[TypeName, TypeName](
       tpnme.Boolean -> BoxedBoolean,

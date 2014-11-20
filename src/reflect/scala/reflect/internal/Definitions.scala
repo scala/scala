@@ -514,6 +514,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
+    lazy val MethodHandle = getClassIfDefined("java.lang.invoke.MethodHandle")
+
     // Option classes
     lazy val OptionClass: ClassSymbol   = requiredClass[Option[_]]
     lazy val OptionModule: ModuleSymbol = requiredModule[scala.Option.type]
@@ -1508,6 +1510,9 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
       lazy val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
+
+      def isPolymorphicSignature(sym: Symbol) = PolySigMethods(sym)
+      private lazy val PolySigMethods: Set[Symbol] = Set[Symbol](MethodHandle.info.decl(sn.Invoke), MethodHandle.info.decl(sn.InvokeExact)).filter(_.exists)
     }
   }
 }
