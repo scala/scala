@@ -1,0 +1,40 @@
+
+<sample xmlns='ns1'/>
+{
+  var $tmpscope: _root_.scala.xml.NamespaceBinding = $scope;
+  $tmpscope = new _root_.scala.xml.NamespaceBinding(null, "ns1", $tmpscope);
+  {
+    val $scope: _root_.scala.xml.NamespaceBinding = $tmpscope;
+    new _root_.scala.xml.Elem(null, "sample", _root_.scala.xml.Null, $scope, true)
+  }
+}
+
+<sample xmlns={identity(ns1)}/>
+{
+  var $tmpscope: _root_.scala.xml.NamespaceBinding = $scope;
+  $tmpscope = new _root_.scala.xml.NamespaceBinding(null, ns1, $tmpscope);
+  {
+    val $scope: _root_.scala.xml.NamespaceBinding = $tmpscope;
+    new _root_.scala.xml.Elem(null, "sample", _root_.scala.xml.Null, $scope, true)
+  }
+}
+
+<sample xmlns:foo='ns1'/>
+{
+  var $tmpscope: _root_.scala.xml.NamespaceBinding = $scope;
+  $tmpscope = new _root_.scala.xml.NamespaceBinding("foo", "ns1", $tmpscope);
+  {
+    val $scope: _root_.scala.xml.NamespaceBinding = $tmpscope;
+    new _root_.scala.xml.Elem(null, "sample", _root_.scala.xml.Null, $scope, true)
+  }
+}
+
+<sample xmlns:foo={identity(ns1)}/>
+{
+  var $tmpscope: _root_.scala.xml.NamespaceBinding = $scope;
+  $tmpscope = new _root_.scala.xml.NamespaceBinding("foo", ns1, $tmpscope);
+  {
+    val $scope: _root_.scala.xml.NamespaceBinding = $tmpscope;
+    new _root_.scala.xml.Elem(null, "sample", _root_.scala.xml.Null, $scope, true)
+  }
+}
