@@ -140,7 +140,15 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     if (isEmpty) Iterator(repr)
     else new PermutationsItr
 
-  /** Iterates over combinations.
+  /** Iterates over combinations.  A _combination_ of length `n` is a subsequence of
+   *  the original sequence, with the elements taken in order.  Thus, `"xy"` and `"yy"`
+   *  are both length-2 combinations of `"xyy"`, but `"yx"` is not.  If there is
+   *  more than one way to generate the same subsequence, only one will be returned.
+   *
+   *  For example, `"xyyy"` has three different ways to generate `"xy"` depending on
+   *  whether the first, second, or third `"y"` is selected.  However, since all are 
+   *  identical, only one will be chosen.  Which of the three will be taken is an
+   *  implementation detail that is not defined.
    *
    *  @return   An Iterator which traverses the possible n-element combinations of this $coll.
    *  @example  `"abbbc".combinations(2) = Iterator(ab, ac, bb, bc)`
