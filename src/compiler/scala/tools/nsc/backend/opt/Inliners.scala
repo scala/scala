@@ -26,7 +26,7 @@ import scala.reflect.internal.util.NoSourceFile
  *                where `p` is defined in a library L, and is accessed from a library C (for Client),
  *                where C was compiled against L', an optimized version of L where the inliner made `p` public at the bytecode level.
  *                The only such members are fields, either synthetic or isParamAccessor, and thus having a dollar sign in their name
- *                (the accesibility of methods and constructors isn't touched by the inliner).
+ *                (the accessibility of methods and constructors isn't touched by the inliner).
  *
  * Thus we add one more goal to our list:
  *   (c) Compile C (either optimized or not) against any of L or L',
