@@ -222,4 +222,10 @@ class BigDecimalTest {
     for (a <- different; b <- different if (a ne b))
       assert(a != b, "BigDecimal representations of Double mistakenly conflated")
   }
+
+  // Make sure hash code agrees with decimal representation of Double
+  @Test
+  def test_SI8970() {
+    assert((0.1).## == BigDecimal(0.1).##)
+  }
 }
