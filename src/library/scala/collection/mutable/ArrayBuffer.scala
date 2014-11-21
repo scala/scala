@@ -30,8 +30,8 @@ import parallel.mutable.ParArray
  *
  *  @tparam A    the type of this arraybuffer's elements.
  *
- *  @define Coll `ArrayBuffer`
- *  @define coll arraybuffer
+ *  @define Coll `mutable.ArrayBuffer`
+ *  @define coll array buffer
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
  *    `That` is always `ArrayBuffer[B]` because an implicit of type `CanBuildFrom[ArrayBuffer, B, ArrayBuffer[B]]`
  *    is defined in object `ArrayBuffer`.

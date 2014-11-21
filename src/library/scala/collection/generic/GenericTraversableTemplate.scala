@@ -25,7 +25,7 @@ import scala.language.higherKinds
  *  @author Martin Odersky
  *  @since 2.8
  *  @define coll  collection
- *  @define Coll  CC
+ *  @define Coll  Traversable
  */
 trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
 

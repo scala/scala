@@ -17,6 +17,10 @@ import scala.language.{ higherKinds, implicitConversions }
 /** This interface is intended as a minimal interface, not complicated
  *  by the requirement to resolve type constructors, for implicit search (which only
  *  needs to find an implicit conversion to Traversable for our purposes.)
+ *  @define Coll `ZippedTraversable2`
+ *  @define coll collection
+ *  @define collectExample
+ *  @define willNotTerminateInf
  */
 trait ZippedTraversable2[+El1, +El2] extends Any {
   def foreach[U](f: (El1, El2) => U): Unit

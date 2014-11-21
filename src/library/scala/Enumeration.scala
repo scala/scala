@@ -239,6 +239,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
    *
    *  @param nnIds The set of ids of values (adjusted so that the lowest value does
    *    not fall below zero), organized as a `BitSet`.
+   *  @define Coll `collection.immutable.SortedSet`
    */
   class ValueSet private[ValueSet] (private[this] var nnIds: immutable.BitSet)
   extends AbstractSet[Value]

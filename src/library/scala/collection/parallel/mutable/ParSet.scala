@@ -14,9 +14,6 @@ import scala.collection.parallel.Combiner
 
 /** A mutable variant of `ParSet`.
  *
- *  @define Coll `mutable.ParSet`
- *  @define coll mutable parallel set
- *
  *  @author Aleksandar Prokopec
  */
 trait ParSet[T]
