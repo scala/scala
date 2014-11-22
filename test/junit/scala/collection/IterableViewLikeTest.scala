@@ -1,5 +1,7 @@
 package scala.collection
 
+import language.postfixOps
+
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
