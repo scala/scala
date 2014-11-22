@@ -158,7 +158,7 @@ extends scala.collection.AbstractSeq[T]
    *  @note Calling this method will force the entire sequence to be read.
    */
   def length: Int = {
-    while (!latest.isLast) addMore()
+    while (!latest.isLast && latest.end < end) addMore()
     (latest.end min end) - start
   }
 
@@ -175,7 +175,8 @@ extends scala.collection.AbstractSeq[T]
    */
   override def isDefinedAt(index: Int) =
     index >= 0 && index < end - start && {
-      val p = page(index + start); index + start < p.end
+      val absidx = index + start
+      absidx >= 0 && absidx < page(absidx).end
     }
 
    /** The subsequence from index `start` up to `end -1` if `end`
@@ -192,6 +193,9 @@ extends scala.collection.AbstractSeq[T]
       if (f.next eq null) f.addMore(more)
       f = f.next
     }
+    // Warning -- not refining `more` means that slices can freely request and obtain
+    // data outside of their slice.  This is part of the design of PagedSeq
+    // (to read pages!) but can be surprising.
     new PagedSeq(more, f, s, e)
   }
 
