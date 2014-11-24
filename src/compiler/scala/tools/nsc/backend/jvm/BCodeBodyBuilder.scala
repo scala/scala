@@ -103,8 +103,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Generate code for primitive arithmetic operations. */
-    def genArithmeticOp(tree: Tree, code: Int): BType = {
-      val Apply(fun @ Select(larg, _), args) = tree
+    def genArithmeticOp(tree: Tree, code: Int): BType = tree match{
+      case Apply(fun @ Select(larg, _), args) =>
       var resKind = tpeTK(larg)
 
       assert(resKind.isNumericType || (resKind == BOOL),
@@ -157,10 +157,10 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Generate primitive array operations. */
-    def genArrayOp(tree: Tree, code: Int, expectedType: BType): BType = {
-      import ScalaPrimitives._
+    def genArrayOp(tree: Tree, code: Int, expectedType: BType): BType = tree match{
 
-      val Apply(Select(arrayObj, _), args) = tree
+      case Apply(Select(arrayObj, _), args) =>
+      import ScalaPrimitives._
       val k = tpeTK(arrayObj)
       genLoad(arrayObj, k)
       val elementType = typeOfArrayOp.getOrElse[bTypes.BType](code, abort(s"Unknown operation on arrays: $tree code: $code"))
@@ -196,8 +196,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       generatedType
     }
 
-    def genLoadIf(tree: If, expectedType: BType): BType = {
-      val If(condp, thenp, elsep) = tree
+    def genLoadIf(tree: If, expectedType: BType): BType = tree match{
+      case If(condp, thenp, elsep) =>
 
       val success = new asm.Label
       val failure = new asm.Label
@@ -224,9 +224,10 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       resKind
     }
 
-    def genPrimitiveOp(tree: Apply, expectedType: BType): BType = {
+    def genPrimitiveOp(tree: Apply, expectedType: BType): BType = tree match {
+      case Apply(fun @ Select(receiver, _), _) =>
       val sym = tree.symbol
-      val Apply(fun @ Select(receiver, _), _) = tree
+
       val code = primitives.getPrimitive(sym, receiver.tpe)
 
       import ScalaPrimitives._
@@ -488,17 +489,17 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       }
     }
 
-    private def genLabelDef(lblDf: LabelDef, expectedType: BType) {
+    private def genLabelDef(lblDf: LabelDef, expectedType: BType) = lblDf match {
+      case LabelDef(_, _, rhs) =>
       // duplication of LabelDefs contained in `finally`-clauses is handled when emitting RETURN. No bookkeeping for that required here.
       // no need to call index() over lblDf.params, on first access that magic happens (moreover, no LocalVariableTable entries needed for them).
       markProgramPoint(programPoint(lblDf.symbol))
       lineNumber(lblDf)
-      val LabelDef(_, _, rhs) = lblDf
       genLoad(rhs, expectedType)
     }
 
-    private def genReturn(r: Return) {
-      val Return(expr) = r
+    private def genReturn(r: Return) = r match{
+      case Return(expr) =>
       val returnedKind = tpeTK(expr)
       genLoad(expr, returnedKind)
       adapt(returnedKind, returnType)
@@ -533,7 +534,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       lineNumber(app)
       app match {
 
-        case Apply(TypeApply(fun, targs), _) =>
+        case Apply(TypeApply(fun @ Select(obj, _), targs), _) =>
 
           val sym = fun.symbol
           val cast = sym match {
@@ -542,7 +543,6 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
             case _                    => abort(s"Unexpected type application $fun[sym: ${sym.fullName}] in: $app")
           }
 
-          val Select(obj, _) = fun
           val l = tpeTK(obj)
           val r = tpeTK(targs.head)
 
@@ -718,7 +718,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       generatedType
     } // end of genApply()
 
-    private def genArrayValue(av: ArrayValue): BType = {
+    private def genArrayValue(av: ArrayValue): BType = av match {
+      case ArrayValue(tpt, elems) =>
       val ArrayValue(tpt, elems) = av
 
       val elmKind       = tpeTK(tpt)
@@ -752,8 +753,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
      *
      * On a second pass, we emit the switch blocks, one for each different target.
      */
-    private def genMatch(tree: Match): BType = {
-      val Match(selector, cases) = tree
+    private def genMatch(tree: Match): BType = tree match {
+      case Match(selector, cases) =>
       lineNumber(tree)
       genLoad(selector, INT)
       val generatedType = tpeTK(tree)
@@ -802,8 +803,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       generatedType
     }
 
-    def genBlock(tree: Block, expectedType: BType) {
-      val Block(stats, expr) = tree
+    def genBlock(tree: Block, expectedType: BType) = tree match {
+      case Block(stats, expr) =>
       val savedScope = varsInScope
       varsInScope = Nil
       stats foreach genStat
@@ -887,8 +888,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Generate code that loads args into label parameters. */
-    def genLoadLabelArguments(args: List[Tree], lblDef: LabelDef, gotoPos: Position) {
-      val LabelDef(_, param, _) = lblDef
+    def genLoadLabelArguments(args: List[Tree], lblDef: LabelDef, gotoPos: Position) = lblDef match {
+      case LabelDef(_, param, _) =>
 
       val aps = {
         val params: List[Symbol] = param.map(_.symbol)

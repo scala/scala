@@ -27,8 +27,8 @@ trait BCodeSyncAndTry extends BCodeBodyBuilder {
    */
   abstract class SyncAndTryBuilder(cunit: CompilationUnit) extends PlainBodyBuilder(cunit) {
 
-    def genSynchronized(tree: Apply, expectedType: BType): BType = {
-      val Apply(fun, args) = tree
+    def genSynchronized(tree: Apply, expectedType: BType): BType = tree match {
+      case Apply(fun, args) =>
       val monitor = locals.makeLocal(ObjectReference, "monitor")
       val monCleanup = new asm.Label
 
@@ -174,8 +174,8 @@ trait BCodeSyncAndTry extends BCodeBodyBuilder {
      *    - "exception-handler-version-of-finally-block" respectively.
      *
      */
-    def genLoadTry(tree: Try): BType = {
-      val Try(block, catches, finalizer) = tree
+    def genLoadTry(tree: Try): BType = tree match {
+      case Try(block, catches, finalizer) =>
       val kind = tpeTK(tree)
 
       val caseHandlers: List[EHClause] =

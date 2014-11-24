@@ -71,8 +71,8 @@ trait BCodeSkelBuilder extends BCodeHelpers {
 
     /* ---------------- idiomatic way to ask questions to typer ---------------- */
 
-    def paramTKs(app: Apply): List[BType] = {
-      val Apply(fun, _) = app
+    def paramTKs(app: Apply): List[BType] = app match {
+      case Apply(fun, _) =>
       val funSym = fun.symbol
       (funSym.info.paramTypes map toTypeKind) // this tracks mentioned inner classes (in innerClassBufferASM)
     }
@@ -87,7 +87,8 @@ trait BCodeSkelBuilder extends BCodeHelpers {
 
     /* ---------------- helper utils for generating classes and fiels ---------------- */
 
-    def genPlainClass(cd: ClassDef) {
+    def genPlainClass(cd: ClassDef) = cd match {
+      case ClassDef(_, _, _, impl) =>
       assert(cnode == null, "GenBCode detected nested methods.")
       innerClassBufferASM.clear()
 
@@ -115,7 +116,6 @@ trait BCodeSkelBuilder extends BCodeHelpers {
       addClassFields()
 
       innerClassBufferASM ++= classBTypeFromSymbol(claszSymbol).info.memberClasses
-      val ClassDef(_, _, _, impl) = cd
       gen(impl)
       addInnerClassesASM(cnode, innerClassBufferASM.toList)
 
@@ -471,8 +471,8 @@ trait BCodeSkelBuilder extends BCodeHelpers {
     }
 
     // on entering a method
-    def resetMethodBookkeeping(dd: DefDef) {
-      val DefDef(_, _, _, _, _, rhs) = dd
+    def resetMethodBookkeeping(dd: DefDef) = dd match {
+      case DefDef(_, _, _, _, _, rhs) =>
       locals.reset(isStaticMethod = methSymbol.isStaticMember)
       jumpDest = immutable.Map.empty[ /* LabelDef */ Symbol, asm.Label ]
       // populate labelDefsAtOrUnder
@@ -540,7 +540,8 @@ trait BCodeSkelBuilder extends BCodeHelpers {
     } // end of method initJMethod
 
 
-    def genDefDef(dd: DefDef) {
+    def genDefDef(dd: DefDef): Unit = dd match {
+      case DefDef(_, _, _, vparamss, _, rhs) =>
       // the only method whose implementation is not emitted: getClass()
       if (dd.symbol.isGetClass) { return }
       assert(mnode == null, "GenBCode detected nested method.")
@@ -553,7 +554,7 @@ trait BCodeSkelBuilder extends BCodeHelpers {
       resetMethodBookkeeping(dd)
 
       // add method-local vars for params
-      val DefDef(_, _, _, vparamss, _, rhs) = dd
+
       assert(vparamss.isEmpty || vparamss.tail.isEmpty, s"Malformed parameter list: $vparamss")
       val params = if (vparamss.isEmpty) Nil else vparamss.head
       for (p <- params) { locals.makeLocal(p.symbol) }
