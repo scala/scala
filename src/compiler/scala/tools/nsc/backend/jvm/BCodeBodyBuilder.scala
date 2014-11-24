@@ -596,7 +596,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
         // thought to return an instance of what they construct,
         // we have to 'simulate' it by DUPlicating the freshly created
         // instance (on JVM, <init> methods return VOID).
-        case Apply(fun @ Select(New(tpt), nme_CONSTRUCTOR), args) =>
+        case Apply(fun @ Select(New(tpt), `nme_CONSTRUCTOR`), args) =>
           val ctor = fun.symbol
           assert(ctor.isClassConstructor, s"'new' call to non-constructor: ${ctor.name}")
 
