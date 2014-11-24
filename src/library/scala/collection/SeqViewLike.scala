@@ -95,6 +95,14 @@ trait SeqViewLike[+A,
       if (idx < self.length) self(idx) else restSeq(idx - self.length)
   }
 
+  trait Prepended[B >: A] extends super.Prepended[B] with Transformed[B] {
+    protected[this] lazy val fstSeq = fst.toSeq
+    def length: Int = fstSeq.length + self.length
+    def apply(idx: Int): B =
+      if (idx < fstSeq.length) fstSeq(idx)
+      else self.apply(idx - fstSeq.length)
+  }
+
   trait Filtered extends super.Filtered with Transformed[A] {
     protected[this] lazy val index = {
       var len = 0
@@ -178,21 +186,12 @@ trait SeqViewLike[+A,
     final override protected[this] def viewIdentifier = "P"
   }
 
-  trait Prepended[B >: A] extends Transformed[B] {
-    protected[this] val fst: B
-    override def iterator: Iterator[B] = Iterator.single(fst) ++ self.iterator
-    def length: Int = 1 + self.length
-    def apply(idx: Int): B =
-      if (idx == 0) fst
-      else self.apply(idx - 1)
-    final override protected[this] def viewIdentifier = "A"
-  }
-
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
   protected override def newForced[B](xs: => GenSeq[B]): Transformed[B] = new { val forced = xs } with AbstractTransformed[B] with Forced[B]
   protected override def newAppended[B >: A](that: GenTraversable[B]): Transformed[B] = new { val rest = that } with AbstractTransformed[B] with Appended[B]
+  protected override def newPrepended[B >: A](that: GenTraversable[B]): Transformed[B] = new { protected[this] val fst = that } with AbstractTransformed[B] with Prepended[B]
   protected override def newMapped[B](f: A => B): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with Mapped[B]
   protected override def newFlatMapped[B](f: A => GenTraversableOnce[B]): Transformed[B] = new { val mapping = f } with AbstractTransformed[B] with FlatMapped[B]
   protected override def newFiltered(p: A => Boolean): Transformed[A] = new { val pred = p } with AbstractTransformed[A] with Filtered
@@ -211,7 +210,6 @@ trait SeqViewLike[+A,
     val patch = _patch
     val replaced = _replaced
   } with AbstractTransformed[B] with Patched[B]
-  protected def newPrepended[B >: A](elem: B): Transformed[B] = new { protected[this] val fst = elem } with AbstractTransformed[B] with Prepended[B]
 
   // see comment in IterableViewLike.
   protected override def newTaken(n: Int): Transformed[A] = newSliced(SliceInterval(0, n))
@@ -241,7 +239,7 @@ trait SeqViewLike[+A,
   }
 
   override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[This, B, That]): That =
-    newPrepended(elem).asInstanceOf[That]
+    newPrepended(elem :: Nil).asInstanceOf[That]
 
   override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[This, B, That]): That =
     ++(Iterator.single(elem))(bf)
