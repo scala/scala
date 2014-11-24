@@ -609,17 +609,6 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   val Flag_METHOD: Flags
   val Flag_SYNTHETIC: Flags
 
-  /** Some useful equality helpers. */
-  def isNull(t: Tree): Boolean
-  def isLiteral(t: Tree): Boolean
-  def isNonNullExpr(t: Tree): Boolean
-
-  /** If l or r is constant null, returns the other ; otherwise null */
-  def ifOneIsNull(l: Tree, r: Tree): Tree
-
-  def isCompilingPrimitive: Boolean
-  def isCompilingArray: Boolean
-
   trait Caches {
     def recordCache[T <: Clearable](cache: T): T
     def newWeakMap[K, V](): collection.mutable.WeakHashMap[K, V]
@@ -736,4 +725,41 @@ trait BackendInterfaceDefinitions { self: BackendInterface =>
 
   /* The Object => String overload. */
   val String_valueOf: Symbol
+
+  def isNull(t: Tree): Boolean = t match {
+    case Literal(Constant(null)) => true
+    case _ => false
+  }
+  def isLiteral(t: Tree): Boolean = t match {
+    case Literal(_) => true
+    case _ => false
+  }
+  def isNonNullExpr(t: Tree): Boolean = isLiteral(t) || ((t.symbol ne null) && t.symbol.isModule)
+  def ifOneIsNull(l: Tree, r: Tree): Tree = if (isNull(l)) r else if (isNull(r)) l else null
+
+  private val primitiveCompilationUnits = Set(
+    "Unit.scala",
+    "Boolean.scala",
+    "Char.scala",
+    "Byte.scala",
+    "Short.scala",
+    "Int.scala",
+    "Float.scala",
+    "Long.scala",
+    "Double.scala"
+  )
+
+  def currentUnit: CompilationUnit
+
+  /**
+   * True if the current compilation unit is of a primitive class (scala.Boolean et al).
+   * Used only in assertions.
+   */
+  def isCompilingPrimitive = {
+    primitiveCompilationUnits(sourceFileFor(currentUnit))
+  }
+
+  def isCompilingArray = {
+    sourceFileFor(currentUnit) == "Array.scala"
+  }
 }

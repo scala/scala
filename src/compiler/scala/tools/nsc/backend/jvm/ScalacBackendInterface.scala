@@ -63,7 +63,10 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
 
 
 
+
   import scala.tools.nsc.symtab._
+
+  def currentUnit: CompilationUnit = global.currentUnit
 
   // todo: always use same helper instances
   implicit def symHelper(s: Symbol): SymbolHelper = new ScalacSymbolHelper {
@@ -348,43 +351,6 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     import scala.tools.nsc.symtab.Flags._
     // Should include DEFERRED but this breaks findMember.
     SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags | MACRO
-  }
-
-
-
-  def isNull(t: Tree): Boolean = t match {
-    case Literal(Constant(null)) => true
-    case _ => false
-  }
-  def isLiteral(t: Tree): Boolean = t match {
-    case Literal(_) => true
-    case _ => false
-  }
-  def isNonNullExpr(t: Tree): Boolean = isLiteral(t) || ((t.symbol ne null) && t.symbol.isModule)
-  def ifOneIsNull(l: Tree, r: Tree): Tree = if (isNull(l)) r else if (isNull(r)) l else null
-
-  private val primitiveCompilationUnits = Set(
-    "Unit.scala",
-    "Boolean.scala",
-    "Char.scala",
-    "Byte.scala",
-    "Short.scala",
-    "Int.scala",
-    "Float.scala",
-    "Long.scala",
-    "Double.scala"
-  )
-
-  /**
-   * True if the current compilation unit is of a primitive class (scala.Boolean et al).
-   * Used only in assertions.
-   */
-  def isCompilingPrimitive = {
-    primitiveCompilationUnits(currentUnit.source.file.name)
-  }
-
-  def isCompilingArray = {
-    currentUnit.source.file.name == "Array.scala"
   }
 
   val MODULE_INSTANCE_FIELD = nme.MODULE_INSTANCE_FIELD.toString
