@@ -181,7 +181,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
 
-    // TODO - don't allow names to be renamed in this unstructured a fashion.
+    // TODO - don't allow names to be renamed in this unstructured fashion.
     // Rename as little as possible.  Enforce invariants on all renames.
     type TypeOfClonedSymbol >: Null <: Symbol { type NameType = Symbol.this.NameType }
 
@@ -1457,11 +1457,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def info: Type = try {
       var cnt = 0
       while (validTo == NoPeriod) {
-        //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
         assert(infos ne null, this.name)
         assert(infos.prev eq null, this.name)
         val tp = infos.info
-        //if (settings.debug.value) System.out.println("completing " + this.rawname + tp.getClass());//debug
 
         if ((_rawflags & LOCKED) != 0L) { // rolled out once for performance
           lock {
@@ -1470,6 +1468,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           }
         } else {
           _rawflags |= LOCKED
+          // TODO another commented out lines - this should be solved in one way on another
 //          activeLocks += 1
  //         lockedSyms += this
         }

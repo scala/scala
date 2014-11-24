@@ -199,7 +199,7 @@ trait PhaseAssembly {
     // Add all phases in the set to the graph
     val graph = phasesSetToDepGraph(phasesSet)
 
-    val dot = if (settings.genPhaseGraph.isSetByUser) Some(settings.genPhaseGraph.value) else None
+    val dot = settings.genPhaseGraph.valueSetByUser
 
     // Output the phase dependency graph at this stage
     def dump(stage: Int) = dot foreach (n => graphToDotFile(graph, s"$n-$stage.dot"))
