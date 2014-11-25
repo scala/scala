@@ -323,14 +323,12 @@ Literal  ::=  [‘-’] integerLiteral
 ### Integer Literals
 
 ```ebnf
-integerLiteral  ::=  (decimalNumeral | hexNumeral | octalNumeral)
+integerLiteral  ::=  (decimalNumeral | hexNumeral)
                        [‘L’ | ‘l’]
 decimalNumeral  ::=  ‘0’ | nonZeroDigit {digit}
 hexNumeral      ::=  ‘0’ ‘x’ hexDigit {hexDigit}
-octalNumeral    ::=  ‘0’ octalDigit {octalDigit}
 digit           ::=  ‘0’ | nonZeroDigit
 nonZeroDigit    ::=  ‘1’ | … | ‘9’
-octalDigit      ::=  ‘0’ | … | ‘7’
 ```
 
 Integer literals are usually of type `Int`, or of type
