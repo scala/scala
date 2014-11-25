@@ -103,7 +103,7 @@ private[collection] trait Wrappers {
   }
 
   // Note various overrides to avoid performance gotchas.
-  class SetWrapper[A](underlying: Set[A]) extends ju.AbstractSet[A] {
+  class SetWrapper[A](underlying: Set[A]) extends ju.AbstractSet[A] with Serializable {
     self =>
     override def contains(o: Object): Boolean = {
       try { underlying.contains(o.asInstanceOf[A]) }
@@ -165,7 +165,7 @@ private[collection] trait Wrappers {
       new JSetWrapper[A](new ju.LinkedHashSet[A](underlying))
   }
 
-  class MapWrapper[A, B](underlying: Map[A, B]) extends ju.AbstractMap[A, B] { self =>
+  class MapWrapper[A, B](underlying: Map[A, B]) extends ju.AbstractMap[A, B] with Serializable { self =>
     override def size = underlying.size
 
     override def get(key: AnyRef): B = try {
