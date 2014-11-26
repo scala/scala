@@ -196,7 +196,24 @@ extends scala.collection.AbstractSeq[Int]
       copy(locationAfterN(n), end, step)
     }
   )
-
+  
+  /** Creates a new range containing the elements starting at `from` up to but not including `until`.
+   *
+   *  $doesNotUseBuilders
+   *
+   *  @param from  the element at which to start
+   *  @param until  the element at which to end (not included in the range)
+   *  @return   a new range consisting of a contiguous interval of values in the old range
+   */
+  override def slice(from: Int, until: Int): Range =
+    if (from <= 0) take(until)
+    else if (until >= numRangeElements && numRangeElements >= 0) drop(from)
+    else {
+      val fromValue = locationAfterN(from)
+      if (from >= until) newEmptyRange(fromValue)
+      else new Range.Inclusive(fromValue, locationAfterN(until-1), step)
+    }
+    
   /** Creates a new range containing all the elements of this range except the last one.
    *
    *  $doesNotUseBuilders
