@@ -773,7 +773,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
           case Literal(value) =>
             flatKeys ::= value.intValue
             targets  ::= switchBlockPoint
-          case Ident(nme_WILDCARD) =>
+          case Ident(`nme_WILDCARD`) =>
             assert(default == null, s"multiple default targets in a Match node, at ${tree.pos}")
             default = switchBlockPoint
           case Alternative(alts) =>

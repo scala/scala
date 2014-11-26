@@ -181,8 +181,8 @@ trait BCodeSyncAndTry extends BCodeBodyBuilder {
       val caseHandlers: List[EHClause] =
         for (CaseDef(pat, _, caseBody) <- catches) yield {
           pat match {
-            case Typed(Ident(nme_WILDCARD), tpt)  => NamelessEH(tpeTK(tpt).asClassBType, caseBody)
-            case Ident(nme_WILDCARD)              => NamelessEH(ThrowableReference,  caseBody)
+            case Typed(Ident(`nme_WILDCARD`), tpt)  => NamelessEH(tpeTK(tpt).asClassBType, caseBody)
+            case Ident(`nme_WILDCARD`)              => NamelessEH(ThrowableReference,  caseBody)
             case Bind(_, _)                       => BoundEH   (pat.symbol, caseBody)
           }
         }
