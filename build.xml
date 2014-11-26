@@ -1385,6 +1385,7 @@ TODO:
       <echo message="Test pass 1 of 2 using Apache Felix ${osgi.felix.version}"/>
       <junit fork="yes" haltonfailure="yes">
         <classpath refid="test.osgi.compiler.build.path.felix"/>
+        <jvmarg value="-Duser.home=${user.home}"/>
         <batchtest fork="yes" todir="${build-osgi.dir}">
           <fileset dir="${test.osgi.classes}">
             <include name="**/*Test.class"/>
@@ -1396,6 +1397,7 @@ TODO:
       <echo message="Test pass 2 of 2 using Eclipse Equinox ${osgi.equinox.version}"/>
       <junit fork="yes" haltonfailure="yes">
         <classpath refid="test.osgi.compiler.build.path.equinox"/>
+        <jvmarg value="-Duser.home=${user.home}"/>
         <batchtest fork="yes" todir="${build-osgi.dir}">
           <fileset dir="${test.osgi.classes}">
             <include name="**/*Test.class"/>
