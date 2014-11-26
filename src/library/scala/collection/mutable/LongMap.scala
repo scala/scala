@@ -415,6 +415,24 @@ extends AbstractMap[Long, V]
     lm
   }
   
+  override def +[V1 >: V](kv: (Long, V1)): LongMap[V1] = {
+    val lm = clone().asInstanceOf[LongMap[V1]]
+    lm += kv
+    lm
+  }
+  
+  override def ++[V1 >: V](xs: GenTraversableOnce[(Long, V1)]): LongMap[V1] = {
+    val lm = clone().asInstanceOf[LongMap[V1]]
+    xs.foreach(kv => lm += kv)
+    lm
+  }
+  
+  override def updated[V1 >: V](key: Long, value: V1): LongMap[V1] = {
+    val lm = clone().asInstanceOf[LongMap[V1]]
+    lm += (key, value)
+    lm
+  }
+
   /** Applies a function to all keys of this map. */
   def foreachKey[A](f: Long => A) {
     if ((extraKeys & 1) == 1) f(0L)
