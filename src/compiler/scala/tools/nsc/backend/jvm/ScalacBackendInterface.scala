@@ -61,40 +61,43 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   val NoPosition: Position = global.NoPosition
   val EmptyTree: Tree = global.EmptyTree
 
-
-
-
   import scala.tools.nsc.symtab._
 
   def currentUnit: CompilationUnit = global.currentUnit
 
-  // todo: always use same helper instances
-  implicit def symHelper(s: Symbol): SymbolHelper = new ScalacSymbolHelper {
-    def sym: Symbol = s
+  implicit def symHelper(s: Symbol): SymbolHelper = {
+    ScalacSymbolHelper.sym = s
+    ScalacSymbolHelper
   }
 
-  implicit def typeHelper(tp: Type): TypeHelper = new ScalaCTypeHelper {
-    val t = tp
+  implicit def typeHelper(tp: Type): TypeHelper = {
+    ScalaCTypeHelper.t = tp
+    ScalaCTypeHelper
   }
 
-  implicit def nameHelper(nm: Name): NameHelper = new ScalacNameHelper {
-    val n: Name = nm
+  implicit def nameHelper(nm: Name): NameHelper = {
+    ScalacNameHelper.n = nm
+    ScalacNameHelper
   }
 
-  implicit def annotHelper(a: Annotation): AnnotationHelper = new ScalacAnnotationHelper {
-    val t: Annotation = a
+  implicit def annotHelper(a: Annotation): AnnotationHelper = {
+    ScalacAnnotationHelper.t = a
+    ScalacAnnotationHelper
   }
 
-  implicit def treeHelper(a: Tree): TreeHelper = new ScalacTreeHelper {
-    val t: Tree = a
+  implicit def treeHelper(a: Tree): TreeHelper = {
+    ScalacTreeHelper.t = a
+    ScalacTreeHelper
   }
 
-  implicit def constantHelper(a: Constant): ConstantHelper = new ScalacConstantHelper {
-    val c: Constant = a
+  implicit def constantHelper(a: Constant): ConstantHelper = {
+    ScalacConstantHelper.c = a
+    ScalacConstantHelper
   }
 
-  implicit def positionHelper(a: Position): PositionHelper = new ScalacPositionHelper {
-    val p: Position = a
+  implicit def positionHelper(a: Position): PositionHelper = {
+    ScalacPositionHelper.p = a
+    ScalacPositionHelper
   }
 
   val UnitTag: ConstantTag = global.UnitTag
@@ -395,8 +398,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   // (class, method)
   override def unboxMethods = currentRun.runDefinitions.unboxMethod
 
-  trait ScalacSymbolHelper extends SymbolHelper {
-    def sym: Symbol
+  object ScalacSymbolHelper extends SymbolHelper {
+    var sym: Symbol = _
 
      // names
     def fullName(sep: Char): String = sym.fullName(sep)
@@ -771,9 +774,9 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     }
   }
 
-  trait ScalaCTypeHelper extends TypeHelper {
+  object ScalaCTypeHelper extends TypeHelper {
 
-    def t: Type
+    var t: Type = _
 
     def members: List[Symbol] = t.members.toList
     def <:<(other: Type): Boolean = t <:< other
@@ -869,8 +872,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     }
   }
 
-  trait ScalacNameHelper extends NameHelper{
-    val n: Name
+  object ScalacNameHelper extends NameHelper {
+    var n: Name = _
     import global.AnyNameOps
     def offset: Int = n.start
 
@@ -889,8 +892,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def startsWith(s: String): Boolean = n.startsWith(s)
   }
 
-  trait ScalacTreeHelper extends TreeHelper{
-    val t: Tree
+  object ScalacTreeHelper extends TreeHelper{
+    var t: Tree = _
     def symbol: Symbol = t.symbol
 
     def pos: Position = t.pos
@@ -902,8 +905,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def exists(pred: (Tree) => Boolean): Boolean = t.exists(pred)
   }
 
-  trait ScalacAnnotationHelper extends AnnotationHelper {
-    val t: Annotation
+  object ScalacAnnotationHelper extends AnnotationHelper {
+    var t: Annotation = _
 
     def atp: Type = t.atp
     def assocs: List[(Name, Object)] = t.assocs
@@ -911,8 +914,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def args: List[Tree] = t.args
   }
 
-  trait ScalacConstantHelper extends ConstantHelper{
-    val c: Constant
+  object ScalacConstantHelper extends ConstantHelper {
+    var c: Constant = _
     def tag: ConstantTag = c.tag
 
     def booleanValue: Boolean = c.booleanValue
@@ -929,8 +932,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def charValue: Char = c.charValue
   }
 
-  trait ScalacPositionHelper extends PositionHelper{
-    val p: Position
+  object ScalacPositionHelper extends PositionHelper {
+    var p: Position = _
 
     def isDefined: Boolean = p.isDefined
     def line: Int = p.line
