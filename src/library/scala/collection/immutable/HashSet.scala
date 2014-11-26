@@ -194,7 +194,7 @@ class HashSet[A] extends AbstractSet[A]
 
   protected def get0(key: A, hash: Int, level: Int): Boolean = false
 
-  def updated0(key: A, hash: Int, level: Int): HashSet[A] =
+  private[collection] def updated0(key: A, hash: Int, level: Int): HashSet[A] =
     new HashSet.HashSet1(key, hash)
 
   protected def removed0(key: A, hash: Int, level: Int): HashSet[A] = this
@@ -256,10 +256,10 @@ object HashSet extends ImmutableSetFactory[HashSet] {
   class HashSet1[A](private[HashSet] val key: A, private[HashSet] val hash: Int) extends LeafHashSet[A] {
     override def size = 1
 
-    override def get0(key: A, hash: Int, level: Int): Boolean =
+    override protected def get0(key: A, hash: Int, level: Int): Boolean =
       (hash == this.hash && key == this.key)
 
-    override def subsetOf0(that: HashSet[A], level: Int) = {
+    override protected def subsetOf0(that: HashSet[A], level: Int) = {
       // check if that contains this.key
       // we use get0 with our key and hash at the correct level instead of calling contains,
       // which would not work since that might not be a top-level HashSet
@@ -267,7 +267,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       that.get0(key, hash, level)
     }
 
-    override def updated0(key: A, hash: Int, level: Int): HashSet[A] =
+    override private[collection] def updated0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash && key == this.key) this
       else {
         if (hash != this.hash) {
@@ -312,7 +312,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override private[immutable] def diff0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] =
       if (that.get0(key, hash, level)) null else this
 
-    override def removed0(key: A, hash: Int, level: Int): HashSet[A] =
+    override protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash && key == this.key) null else this
 
     override protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] =
@@ -326,10 +326,10 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
     override def size = ks.size
 
-    override def get0(key: A, hash: Int, level: Int): Boolean =
+    override protected def get0(key: A, hash: Int, level: Int): Boolean =
       if (hash == this.hash) ks.contains(key) else false
 
-    override def subsetOf0(that: HashSet[A], level: Int) = {
+    override protected def subsetOf0(that: HashSet[A], level: Int) = {
       // we have to check each element
       // we use get0 with our hash at the correct level instead of calling contains,
       // which would not work since that might not be a top-level HashSet
@@ -337,11 +337,11 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       ks.forall(key => that.get0(key, hash, level))
     }
 
-    override def updated0(key: A, hash: Int, level: Int): HashSet[A] =
+    override private[collection] def updated0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash) new HashSetCollision1(hash, ks + key)
       else makeHashTrieSet(this.hash, this, hash, new HashSet1(key, hash), level)
 
-    override def union0(that: LeafHashSet[A], level: Int): HashSet[A] = that match {
+    override private[immutable] def union0(that: LeafHashSet[A], level: Int): HashSet[A] = that match {
       case that if that.hash != this.hash =>
         // different hash code, so there is no need to investigate further.
         // Just create a branch node containing the two.
@@ -374,7 +374,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         }
     }
 
-    override def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
+    override private[immutable] def union0(that: HashSet[A], level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = that match {
       case that: LeafHashSet[A] =>
         // switch to the simpler Tree/Leaf implementation
         this.union0(that, level)
@@ -431,7 +431,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       }
     }
 
-    override def removed0(key: A, hash: Int, level: Int): HashSet[A] =
+    override protected def removed0(key: A, hash: Int, level: Int): HashSet[A] =
       if (hash == this.hash) {
         val ks1 = ks - key
         ks1.size match {
@@ -528,7 +528,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
     override def size = size0
 
-    override def get0(key: A, hash: Int, level: Int): Boolean = {
+    override protected def get0(key: A, hash: Int, level: Int): Boolean = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       if (bitmap == - 1) {
@@ -540,7 +540,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         false
     }
 
-    override def updated0(key: A, hash: Int, level: Int): HashSet[A] = {
+    override private[collection] def updated0(key: A, hash: Int, level: Int): HashSet[A] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
@@ -842,7 +842,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       case _ => this
     }
 
-    override def removed0(key: A, hash: Int, level: Int): HashSet[A] = {
+    override protected def removed0(key: A, hash: Int, level: Int): HashSet[A] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
@@ -879,7 +879,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       }
     }
 
-    override def subsetOf0(that: HashSet[A], level: Int): Boolean = if (that eq this) true else that match {
+    override protected def subsetOf0(that: HashSet[A], level: Int): Boolean = if (that eq this) true else that match {
       case that: HashTrieSet[A] if this.size0 <= that.size0 =>
         // create local mutable copies of members
         var abm = this.bitmap
