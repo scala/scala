@@ -21,7 +21,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   type Modifiers  >: Null <: AnyRef
   type TypeDef    >: Null <: Tree
   type Apply      >: Null <: Tree
-  type Select      >: Null <: Tree
+  type Select     >: Null <: Tree
   type TypeApply  >: Null <: Tree
   type ClassDef   >: Null <: Tree
   type Try        >: Null <: Tree

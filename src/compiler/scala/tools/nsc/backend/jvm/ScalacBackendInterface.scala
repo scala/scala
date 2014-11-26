@@ -19,43 +19,43 @@ import scala.reflect.internal.{Flags => IFlags}
 class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterface with BackendInterfaceDefinitions{
   import global._
   import definitions._
-  type Symbol = global.Symbol
-  type Type = global.Type
-  type Annotation = global.AnnotationInfo
-  type Tree = global.Tree
+  type Symbol          = global.Symbol
+  type Type            = global.Type
+  type Annotation      = global.AnnotationInfo
+  type Tree            = global.Tree
   type CompilationUnit = global.CompilationUnit
-  type Constant = global.Constant
-  type Literal = global.Literal
-  type Position = global.Position
-  type Name = global.Name
-  type LabelDef = global.LabelDef
-  type ClassDef = global.ClassDef
-  type TypeDef = global.TypeDef
-  type Apply = global.Apply
-  type TypeApply = global.TypeApply
-  type Try = global.Try
-  type Assign = global.Assign
-  type Ident = global.Ident
-  type If = global.If
-  type ValDef = global.ValDef
-  type Throw = global.Throw
-  type Return = global.Return
-  type Block = global.Block
-  type Typed = global.Typed
-  type ArrayValue = global.ArrayValue
-  type Match = global.Match
-  type This = global.This
-  type CaseDef = global.CaseDef
-  type Alternative = global.Alternative
-  type DefDef = global.DefDef
-  type ModuleDef = global.ModuleDef
-  type Template = global.Template
-  type Select = global.Select
-  type Bind = global.Bind
-  type New = global.New
-  type ApplyDynamic = global.ApplyDynamic
-  type Super = global.Super
-  type Modifiers = global.Modifiers
+  type Constant        = global.Constant
+  type Literal         = global.Literal
+  type Position        = global.Position
+  type Name            = global.Name
+  type LabelDef        = global.LabelDef
+  type ClassDef        = global.ClassDef
+  type TypeDef         = global.TypeDef
+  type Apply           = global.Apply
+  type TypeApply       = global.TypeApply
+  type Try             = global.Try
+  type Assign          = global.Assign
+  type Ident           = global.Ident
+  type If              = global.If
+  type ValDef          = global.ValDef
+  type Throw           = global.Throw
+  type Return          = global.Return
+  type Block           = global.Block
+  type Typed           = global.Typed
+  type ArrayValue      = global.ArrayValue
+  type Match           = global.Match
+  type This            = global.This
+  type CaseDef         = global.CaseDef
+  type Alternative     = global.Alternative
+  type DefDef          = global.DefDef
+  type ModuleDef       = global.ModuleDef
+  type Template        = global.Template
+  type Select          = global.Select
+  type Bind            = global.Bind
+  type New             = global.New
+  type ApplyDynamic    = global.ApplyDynamic
+  type Super           = global.Super
+  type Modifiers       = global.Modifiers
 
   val NoSymbol = global.NoSymbol
   val NoPosition: Position = global.NoPosition
@@ -167,51 +167,73 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def _1: Tree = field.fun
     def _2: List[Tree] = field.args
   }
+
   object If extends IfDeconstructor {
     def _1: Tree = field.cond
     def _2: Tree = field.thenp
     def _3: Tree = field.elsep
   }
+
   object ValDef extends ValDefDeconstructor {
     def _1: Modifiers = field.mods
     def _2: Name = field.name
     def _3: Tree = field.tpt
     def _4: Tree = field.rhs
   }
-  object Throw extends ThrowDeconstructor {
-    def unapply(s: Throw): Option[Tree] = Some(s.expr)
-  }
-  object New extends NewDeconstructor {
-    def unapply(s: New): Option[Type] = Some(s.tpt.tpe)
-  }
+
   object ApplyDynamic extends ApplyDynamicDeconstructor {
     def _1: Tree = field.qual
     def _2: List[Tree] = field.args
   }
+
+  // todo: this product1s should also eventually become name-based pattn matching
+  object Literal extends LiteralDeconstructor {
+    def unapply(a: Literal): Option[Constant] = Some(a.value)
+  }
+
+  object Throw extends ThrowDeconstructor {
+    def unapply(s: Throw): Option[Tree] = Some(s.expr)
+  }
+
+  object New extends NewDeconstructor {
+    def unapply(s: New): Option[Type] = Some(s.tpt.tpe)
+  }
+
   object This extends ThisDeconstructor {
     def unapply(s: This): Option[Name] = Some(s.qual)
-
     def apply(s: global.Symbol): This = global.This(s.name.toTypeName) setSymbol s
   }
+
+  object Return extends ReturnDeconstructor {
+    def unapply(s: Return): Option[Tree] = Some(s.expr)
+  }
+
   object Ident extends IdentDeconstructor {
     def unapply(s: Ident): Option[Name] = Some(s.name)
   }
+
+  object Alternative extends AlternativeDeconstructor {
+    def unapply(s: Alternative): Option[List[Tree]] = Some(s.trees)
+  }
+  object Constant extends ConstantDeconstructor {
+    def unapply(a: Constant): Option[Any] = Some(a.value)
+  }
+  object ThrownException extends ThrownException {
+    def unapply(a: Annotation): Option[Symbol] = None // todo
+  }
+
   object Try extends TryDeconstructor {
     def _1: Tree = field.block
     def _2: List[Tree] = field.catches
     def _3: Tree = field.finalizer
   }
-  object Return extends ReturnDeconstructor {
-    def unapply(s: Return): Option[Tree] = Some(s.expr)
-  }
+
   object LabelDef extends LabelDeconstructor {
     def _1: Name = field.name
     def _2: List[Ident] = field.params
     def _3: Tree = field.rhs
   }
-  object Literal extends LiteralDeconstructor {
-    def unapply(a: Literal): Option[Constant] = Some(a.value)
-  }
+
   object Typed extends TypedDeconstrutor {
     def _1: Tree = field.expr
     def _2: Tree = field.tpt
@@ -241,15 +263,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def _2: Tree = field.guard
     def _3: Tree = field.body
   }
-  object Alternative extends AlternativeDeconstructor {
-    def unapply(s: Alternative): Option[List[Tree]] = Some(s.trees)
-  }
-  object Constant extends ConstantDeconstructor {
-    def unapply(a: Constant): Option[Any] = Some(a.value)
-  }
-  object ThrownException extends ThrownException {
-    def unapply(a: Annotation): Option[Symbol] = None // todo
-  }
+
   object DefDef extends DefDefDeconstructor {
     def _1: Modifiers = field.mods
     def _2: Name = field.name
@@ -258,20 +272,24 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def _5: Tree = field.tpt
     def _6: Tree = field.rhs
   }
+
   object ModuleDef extends ModuleDefDeconstructor {
     def _1: Modifiers = field.mods
     def _2: Name = field.name
     def _3: Tree = field.impl
   }
+
   object Template extends TemplateDeconstructor {
     def _1: List[Tree] = field.parents
     def _2: ValDef = field.self
     def _3: List[Tree] = field.body
   }
+
   object Bind extends BindDeconstructor {
     def _1: Name = field.name
     def _2: Tree = field.body
   }
+
   object ClassDef extends ClassDefDeconstructor {
     def _1: Modifiers = field.mods
     def _2: Name = field.name
