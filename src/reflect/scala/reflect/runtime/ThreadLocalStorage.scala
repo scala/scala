@@ -11,12 +11,16 @@ private[reflect] trait ThreadLocalStorage {
   trait ThreadLocalStorage[T] { def get: T; def set(newValue: T): Unit }
   private class MyThreadLocalStorage[T](initialValue: => T) extends ThreadLocalStorage[T] {
     // TODO: how do we use org.cliffc.high_scale_lib.NonBlockingHashMap here?
-    val values = new java.util.concurrent.ConcurrentHashMap[Thread, T]()
+    //       (we would need a version that uses weak keys)
+    private val values = java.util.Collections.synchronizedMap(new java.util.WeakHashMap[Thread, T]())
     def get: T = {
       if (values containsKey currentThread) values.get(currentThread)
       else {
         val value = initialValue
-        values.putIfAbsent(currentThread, value)
+        // since the key is currentThread, and `values` is private, it
+        // would be impossible for a value to have been set after the
+        // above containsKey check. `putIfAbsent` is not necessary.
+        values.put(currentThread, value)
         value
       }
     }
