@@ -230,11 +230,15 @@ self =>
   protected class FilteredKeys(p: A => Boolean) extends AbstractMap[A, B] with DefaultMap[A, B] {
     override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
     def iterator = self.iterator.filter(kv => p(kv._1))
-    override def contains(key: A) = self.contains(key) && p(key)
+    override def contains(key: A) = p(key) && self.contains(key)
     def get(key: A) = if (!p(key)) None else self.get(key)
   }
 
   /** Filters this map by retaining only keys satisfying a predicate.
+   *
+   *  '''Note''': the predicate must accept any key of type `A`, not just those already
+   *  present in the map, as the predicate is tested before the underlying map is queried.
+   *
    *  @param  p   the predicate used to test keys
    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
