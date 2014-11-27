@@ -727,10 +727,14 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       case ArrayValue(tpt, elems) =>
       val ArrayValue(tpt, elems) = av
 
-      val elmKind       = tpeTK(tpt)
+      lineNumber(av)
+      genArray(elems, tpt)
+    }
+
+    private def genArray(elems: List[Tree], elemType: Tree): BType = {
+      val elmKind       = tpeTK(elemType)
       val generatedType = ArrayBType(elmKind)
 
-      lineNumber(av)
       bc iconst   elems.length
       bc newarray elmKind
 
