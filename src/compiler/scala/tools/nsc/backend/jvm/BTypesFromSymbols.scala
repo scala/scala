@@ -34,14 +34,14 @@ class BTypesFromSymbols[I <: BackendInterface](val int: I) extends BTypes {
     coreBTypes.setBTypes(new CoreBTypes[this.type](this))
   }
 
-  protected val classBTypeFromInternalNameMap = {
+  protected lazy val classBTypeFromInternalNameMap = {
     perRunCaches.recordCache(collection.concurrent.TrieMap.empty[String, ClassBType])
   }
 
   /**
    * Cache for the method classBTypeFromSymbol.
    */
-  private val convertedClasses = perRunCaches.newMap[Symbol, ClassBType]()
+  private lazy val convertedClasses = perRunCaches.newMap[Symbol, ClassBType]()
 
   /**
    * The ClassBType for a class symbol `sym`.

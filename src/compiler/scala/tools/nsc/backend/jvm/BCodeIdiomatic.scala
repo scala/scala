@@ -23,21 +23,21 @@ import scala.tools.nsc.backend.icode.Primitives.{NE, EQ, TestOp, ArithmeticOp}
  */
 trait BCodeIdiomatic {
   val int: BackendInterface
-  val bTypes = new BTypesFromSymbols[int.type](int)
+  lazy val bTypes = new BTypesFromSymbols[int.type](int)
 
   import int._
   import bTypes._
   import coreBTypes._
 
-  val classfileVersion: Int = targetPlatform match {
+  lazy val classfileVersion: Int = targetPlatform match {
     case "jvm-1.5"     => asm.Opcodes.V1_5
     case "jvm-1.6"     => asm.Opcodes.V1_6
     case "jvm-1.7"     => asm.Opcodes.V1_7
     case "jvm-1.8"     => asm.Opcodes.V1_8
   }
 
-  val majorVersion: Int = (classfileVersion & 0xFF)
-  val emitStackMapFrame = (majorVersion >= 50)
+  lazy val majorVersion: Int = (classfileVersion & 0xFF)
+  lazy val emitStackMapFrame = (majorVersion >= 50)
 
   val extraProc: Int = GenBCode.mkFlags(
     asm.ClassWriter.COMPUTE_MAXS,
