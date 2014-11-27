@@ -361,8 +361,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
           val sym = tree.symbol
           if (!sym.hasPackageFlag) {
             val tk = symInfoTK(sym)
-            if (sym.isModule) { genLoadModule(tree) }
-            else { locals.load(sym) }
+            loadSym(sym)
             generatedType = tk
           }
 
@@ -816,6 +815,13 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       varsInScope = savedScope
     }
 
+    def loadSym(sym: Symbol) =
+      if (sym.isModule) { genLoadModule(sym) }
+      else {
+          if(sym.owner.isClass) fieldLoad(sym)// dotty specific, field access
+          else locals.load(sym)
+      }
+
     def adapt(from: BType, to: BType) {
       if (!from.conformsTo(to)) {
         to match {
@@ -883,6 +889,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       lineNumber(tree)
       tree match {
         case Select(qualifier, _) => genLoad(qualifier)
+        case t:Ident              => loadSym(t.symbol.owner) // Happens only in Dotty
         case _                    => abort(s"Unknown qualifier $tree")
       }
     }
