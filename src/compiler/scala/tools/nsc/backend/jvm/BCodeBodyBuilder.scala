@@ -391,6 +391,10 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
 
         case EmptyTree => if (expectedType != UNIT) { emitZeroOf(expectedType) }
 
+
+        case t: TypeApply => // dotty specific
+          generatedType = genTypeApply(t)
+
         case _ => abort(s"Unexpected tree in genLoad: $tree/${tree.getClass} at: ${tree.pos}")
       }
 
@@ -528,54 +532,56 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
 
     } // end of genReturn()
 
+    def genTypeApply(t: TypeApply): BType = t match {
+      case TypeApply(fun@Select(obj, _), targs) =>
+
+        val sym = fun.symbol
+        val cast = sym match {
+          case Object_isInstanceOf => false
+          case Object_asInstanceOf => true
+          case _ => abort(s"Unexpected type application $fun[sym: ${sym.fullName}] in: $t")
+        }
+
+        val l = tpeTK(obj)
+        val r = tpeTK(targs.head)
+        genLoadQualifier(fun)
+
+        // TODO @lry make pattern match
+        if (l.isPrimitive && r.isPrimitive)
+          genConversion(l, r, cast)
+        else if (l.isPrimitive) {
+          bc drop l
+          if (cast) {
+            mnode.visitTypeInsn(asm.Opcodes.NEW, classCastExceptionReference.internalName)
+            bc dup ObjectReference
+            emit(asm.Opcodes.ATHROW)
+          } else {
+            bc boolconst false
+          }
+        }
+        else if (r.isPrimitive && cast) {
+          abort(s"Erasure should have added an unboxing operation to prevent this cast. Tree: $t")
+        }
+        else if (r.isPrimitive) {
+          bc isInstance boxedClassOfPrimitive(r.asPrimitiveBType)
+        }
+        else {
+          assert(r.isRef, r) // ensure that it's not a method
+          genCast(r.asRefBType, cast)
+        }
+
+        if (cast) r else BOOL
+    } // end of genTypeApply()
+
+
     private def genApply(app: Apply, expectedType: BType): BType = {
       var generatedType = expectedType
       lineNumber(app)
       app match {
 
-        case Apply(TypeApply(fun @ Select(obj, _), targs), _) =>
+        case Apply(t :TypeApply, _) =>
 
-          val sym = fun.symbol
-          val cast = sym match {
-            case Object_isInstanceOf  => false
-            case Object_asInstanceOf  => true
-            case _                    => abort(s"Unexpected type application $fun[sym: ${sym.fullName}] in: $app")
-          }
-
-          val l = tpeTK(obj)
-          val r = tpeTK(targs.head)
-
-          def genTypeApply(): BType = {
-            genLoadQualifier(fun)
-
-            // TODO @lry make pattern match
-            if (l.isPrimitive && r.isPrimitive)
-              genConversion(l, r, cast)
-            else if (l.isPrimitive) {
-              bc drop l
-              if (cast) {
-                mnode.visitTypeInsn(asm.Opcodes.NEW, classCastExceptionReference.internalName)
-                bc dup ObjectReference
-                emit(asm.Opcodes.ATHROW)
-              } else {
-                bc boolconst false
-              }
-            }
-            else if (r.isPrimitive && cast) {
-              abort(s"Erasure should have added an unboxing operation to prevent this cast. Tree: $app")
-            }
-            else if (r.isPrimitive) {
-              bc isInstance boxedClassOfPrimitive(r.asPrimitiveBType)
-            }
-            else {
-              assert(r.isRef, r) // ensure that it's not a method
-              genCast(r.asRefBType, cast)
-            }
-
-            if (cast) r else BOOL
-          } // end of genTypeApply()
-
-          generatedType = genTypeApply()
+          generatedType = genTypeApply(t)
 
         // 'super' call: Note: since constructors are supposed to
         // return an instance of what they construct, we have to take
