@@ -5207,7 +5207,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       def typedExistentialTypeTree(tree: ExistentialTypeTree) = {
         val tree1 = typerWithLocalContext(context.makeNewScope(tree, context.owner)){
-          _.typedExistentialTypeTree(tree, mode)
+          typer =>
+            if (context.inTypeConstructorAllowed)
+              typer.context.withinTypeConstructorAllowed(typer.typedExistentialTypeTree(tree, mode))
+            else
+              typer.typedExistentialTypeTree(tree, mode)
         }
         checkExistentialsFeature(tree1.pos, tree1.tpe, "the existential type")
         tree1
