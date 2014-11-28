@@ -11,7 +11,7 @@ package tools.scalap
 import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
 import scala.reflect.NameTransformer
 import scalax.rules.scalasig._
-import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
+import scala.tools.nsc.util.{ ClassFileLookup, ClassPath, JavaClassPath }
 import scala.tools.util.PathResolver
 import ClassPath.DefaultJavaContext
 import scala.tools.nsc.io.AbstractFile
@@ -96,7 +96,7 @@ class Main {
   /** Executes scalap with the given arguments and classpath for the
    *  class denoted by `classname`.
    */
-  def process(args: Arguments, path: ClassPath[AbstractFile])(classname: String): Unit = {
+  def process(args: Arguments, path: ClassFileLookup[AbstractFile])(classname: String): Unit = {
     // find the classfile
     val encName = classname match {
       case "scala.AnyRef" => "java.lang.Object"

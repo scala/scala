@@ -12,5 +12,5 @@ trait Infrastructure {
 
   def compilerSettings: List[String] = universe.settings.recreateArgs
 
-  def classPath: List[java.net.URL] = global.classPath.asURLs
+  def classPath: List[java.net.URL] = global.classPath.asURLs.toList
 }
