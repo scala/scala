@@ -13,10 +13,24 @@ import mutable.ListBuffer
 import immutable.List
 import scala.annotation.tailrec
 
-/** A template trait for linear sequences of type `LinearSeq[A]`  which optimizes
- *  the implementation of several methods under the assumption of fast linear access.
+/** A template trait for linear sequences of type `LinearSeq[A]` which optimizes
+ *  the implementation of various methods under the assumption of fast linear access.
  *
- *  $linearSeqInfo
+ *  $linearSeqOptim
+ *
+ *  @define  linearSeqOptim
+ *  Linear-optimized sequences implement most operations in in terms of three methods,
+ *  which are assumed to have efficient implementations. These are:
+ *  {{{
+ *     def isEmpty: Boolean
+ *     def head: A
+ *     def tail: Repr
+ *  }}}
+ *  Here, `A` is the type of the sequence elements and `Repr` is the type of the sequence itself.
+ *  Note that default implementations are provided via inheritance, but these
+ *  should be overridden for performance.
+ *
+ *
  */
 trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends LinearSeqLike[A, Repr] { self: Repr =>
 

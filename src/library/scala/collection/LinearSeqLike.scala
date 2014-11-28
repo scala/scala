@@ -14,21 +14,9 @@ import scala.annotation.tailrec
 
 /** A template trait for linear sequences of type `LinearSeq[A]`.
  *
- *  $linearSeqInfo
- *
- *  This trait just implements `iterator` in terms of `isEmpty, ``head`, and `tail`.
- *  However, see `LinearSeqOptimized` for an implementation trait that overrides operations
+ *  This trait just implements `iterator` and `corresponds` in terms of `isEmpty, ``head`, and `tail`.
+ *  However, see `LinearSeqOptimized` for an implementation trait that overrides many more operations
  *  to make them run faster under the assumption of fast linear access with `head` and `tail`.
- *
- *  @define  linearSeqInfo
- *  Linear sequences are defined in terms of three abstract methods, which are assumed
- *  to have efficient implementations. These are:
- *  {{{
- *     def isEmpty: Boolean
- *     def head: A
- *     def tail: Repr
- *  }}}
- *  Here, `A` is the type of the sequence elements and `Repr` is the type of the sequence itself.
  *
  *  Linear sequences do not add any new methods to `Seq`, but promise efficient implementations
  *  of linear access patterns.
