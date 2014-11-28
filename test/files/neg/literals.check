@@ -1,0 +1,40 @@
+literals.scala:6: error: missing integer number
+  def missingHex: Int    = { 0x }        // line 4: was: not reported, taken as zero
+                             ^
+literals.scala:8: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
+  def leadingZeros: Int  = { 01 }        // line 6: no leading zero
+                             ^
+literals.scala:10: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
+  def tooManyZeros: Int  = { 00 }        // line 8: no leading zero
+                             ^
+literals.scala:12: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
+  def zeroOfNine: Int    = { 09 }        // line 10: no leading zero
+                             ^
+literals.scala:16: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
+  def zeroOfNineDot: Int = { 09. }       // line 14: malformed integer, ident expected
+                             ^
+literals.scala:23: error: missing integer number
+  def missingHex: Int    = 0x            // line 22: was: not reported, taken as zero
+                           ^
+literals.scala:27: error: Decimal integer literals may not have a leading zero. (Octal syntax is obsolete.)
+  def tooManyZeros: Int  = 00            // line 26: no leading zero
+                           ^
+literals.scala:14: error: identifier expected but '}' found.
+  def orphanDot: Int     = { 9. }        // line 12: ident expected
+                                ^
+literals.scala:16: error: identifier expected but '}' found.
+  def zeroOfNineDot: Int = { 09. }       // line 14: malformed integer, ident expected
+                                 ^
+literals.scala:18: error: ';' expected but double literal found.
+  def noHexFloat: Double = { 0x1.2 }     // line 16: ';' expected but double literal found.
+                                ^
+literals.scala:25: error: ';' expected but 'def' found.
+  def leadingZeros: Int  = 01            // line 24: no leading zero
+  ^
+literals.scala:29: error: ';' expected but 'def' found.
+  def zeroOfNine: Int    = 09            // line 28: no leading zero
+  ^
+literals.scala:33: error: identifier expected but 'def' found.
+  def zeroOfNineDot: Int = 09.           // line 32: malformed integer, ident expected
+  ^
+13 errors found

@@ -1,57 +1,12 @@
-warning: there were 5 deprecation warnings; re-run with -deprecation for details
-test '\u0024' == '$' was successful
-test '\u005f' == '_' was successful
-test 65.asInstanceOf[Char] == 'A' was successful
-test "\141\142" == "ab" was successful
-test "\0x61\0x62".trim() == "x61\0x62" was successful
-
-test (65 : Byte) == 'A' was successful
-
-test 0X01 == 1 was successful
-test 0x01 == 1 was successful
-test 0x10 == 16 was successful
-test 0xa == 10 was successful
-test 0x0a == 10 was successful
-test +0x01 == 1 was successful
-test +0x10 == 16 was successful
-test +0xa == 10 was successful
-test +0x0a == 10 was successful
-test -0x01 == -1 was successful
-test -0x10 == -16 was successful
-test -0xa == -10 was successful
-test -0x0a == -10 was successful
-test 0x7fffffff == 2147483647 was successful
-test 0x80000000 == -2147483648 was successful
-test 0xffffffff == -1 was successful
-
-test 1l == 1L was successful
-test 1L == 1l was successful
-test 1.asInstanceOf[Long] == 1l was successful
-test 0x7fffffffffffffffL == 9223372036854775807L was successful
-test 0x8000000000000000L == -9223372036854775808L was successful
-test 0xffffffffffffffffL == -1L was successful
-
-test 1e1f == 10.0f was successful
-test .3f == 0.3f was successful
-test 0f == 0.0f was successful
-test 01.23f == 1.23f was successful
-test 3.14f == 3.14f was successful
-test 6.022e23f == 6.022e23f was successful
-test 09f == 9.0f was successful
-test 1.asInstanceOf[Float] == 1.0 was successful
-test 1l.asInstanceOf[Float] == 1.0 was successful
-
-test 1e1 == 10.0 was successful
-test .3 == 0.3 was successful
-test 0.0 == 0.0 was successful
-test 0d == 0.0 was successful
-test 01.23 == 1.23 was successful
-test 01.23d == 1.23d was successful
-test 3.14 == 3.14 was successful
-test 1e-9d == 1.0e-9 was successful
-test 1e137 == 1.0e137 was successful
-test 1.asInstanceOf[Double] == 1.0 was successful
-test 1l.asInstanceOf[Double] == 1.0 was successful
-
-test "".length() was successful
-test ggg == 3 was successful
+literals.scala:34: warning: Octal escape literals are deprecated, use \u0061 instead.
+    check_success("\"\\141\\142\" == \"ab\"", "\141\142", "ab")
+                                               ^
+literals.scala:34: warning: Octal escape literals are deprecated, use \u0062 instead.
+    check_success("\"\\141\\142\" == \"ab\"", "\141\142", "ab")
+                                                   ^
+literals.scala:37: warning: Octal escape literals are deprecated, use \u0000 instead.
+      "\0x61\0x62".getBytes(io.Codec.UTF8.charSet) sameElements Array[Byte](0, 120, 54, 49, 0, 120, 54, 50),
+       ^
+literals.scala:37: warning: Octal escape literals are deprecated, use \u0000 instead.
+      "\0x61\0x62".getBytes(io.Codec.UTF8.charSet) sameElements Array[Byte](0, 120, 54, 49, 0, 120, 54, 50),
+            ^
