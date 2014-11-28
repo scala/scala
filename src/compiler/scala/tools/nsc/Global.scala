@@ -339,11 +339,11 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
   }
 
-  if (settings.verbose || settings.Ylogcp) {
+  if (settings.verbose || settings.Ylogcp)
     reporter.echo(
-      s"[search path for source files: ${classPath.sourcepaths.mkString(",")}]\n"+
-      s"[search path for class files: ${classPath.asClasspathString}")
-  }
+      s"[search path for source files: ${classPath.asSourcePathString}]\n" +
+      s"[search path for class files: ${classPath.asClassPathString}]"
+    )
 
   // The current division between scala.reflect.* and scala.tools.nsc.* is pretty
   // clunky.  It is often difficult to have a setting influence something without having
@@ -882,7 +882,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    */
   def invalidateClassPathEntries(paths: String*): Unit = {
     implicit object ClassPathOrdering extends Ordering[PlatformClassPath] {
-      def compare(a:PlatformClassPath, b:PlatformClassPath) = a.asClasspathString compare b.asClasspathString
+      def compare(a:PlatformClassPath, b:PlatformClassPath) = a.asClassPathString compare b.asClassPathString
     }
     val invalidated, failed = new mutable.ListBuffer[ClassSymbol]
     classPath match {

@@ -135,7 +135,7 @@ class Main {
      */
     def name              = ""
     def asURLs            = Nil
-    def asClasspathString = ""
+    def asClassPathString = ""
 
     val context     = DefaultJavaContext
     val classes     = IndexedSeq()

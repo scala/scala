@@ -7,16 +7,19 @@
 package scala.tools.nsc
 package util
 
-import java.net.URL
-import scala.collection.{ mutable, immutable }
-import io.{ File, Directory, Path, Jar, AbstractFile }
-import scala.reflect.internal.util.StringOps.splitWhere
-import Jar.isJarOrZip
-import File.pathSeparator
-import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
+import io.{ AbstractFile, Directory, File, Jar }
 import java.net.MalformedURLException
+import java.net.URL
 import java.util.regex.PatternSyntaxException
-import scala.reflect.runtime.ReflectionUtils
+import scala.collection.{ mutable, immutable }
+import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
+import scala.reflect.internal.util.StringOps.splitWhere
+import scala.tools.nsc.classpath.FileUtils
+
+import File.pathSeparator
+import FileUtils.endsClass
+import FileUtils.endsScalaOrJava
+import Jar.isJarOrZip
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -99,7 +102,7 @@ object ClassPath {
      */
     def validClassFile(name: String)  = endsClass(name) && isValidName(name)
     def validPackage(name: String)    = (name != "META-INF") && (name != "") && (name.charAt(0) != '.')
-    def validSourceFile(name: String) = endsScala(name) || endsJava(name)
+    def validSourceFile(name: String) = endsScalaOrJava(name)
 
     /** From the representation to its identifier.
      */
@@ -139,27 +142,19 @@ object ClassPath {
     def toBinaryName(rep: AbstractFile) = {
       val name = rep.name
       assert(endsClass(name), name)
-      name.substring(0, name.length - 6)
+      FileUtils.stripClassExtension(name)
     }
+
     def newClassPath(dir: AbstractFile) = new DirectoryClassPath(dir, this)
   }
 
   object DefaultJavaContext extends JavaContext
 
-  private def endsClass(s: String) = s.length > 6 && s.substring(s.length - 6) == ".class"
-  private def endsScala(s: String) = s.length > 6 && s.substring(s.length - 6) == ".scala"
-  private def endsJava(s: String)  = s.length > 5 && s.substring(s.length - 5) == ".java"
-
   /** From the source file to its identifier.
    */
-  def toSourceName(f: AbstractFile): String = {
-    val name = f.name
-
-    if (endsScala(name)) name.substring(0, name.length - 6)
-    else if (endsJava(name)) name.substring(0, name.length - 5)
-    else throw new FatalError("Unexpected source file ending: " + name)
-  }
+  def toSourceName(f: AbstractFile): String = FileUtils.stripSourceExtension(f.name)
 }
+
 import ClassPath._
 
 /**
@@ -176,10 +171,6 @@ abstract class ClassPath[T] extends ClassFileLookup[T] {
    * For example, the path of the directory or jar.
    */
   def origin: Option[String] = None
-
-  /** The whole classpath in the form of one String.
-   */
-  def asClasspathString: String
 
   /** Info which should be propagated to any sub-classpaths.
    */
@@ -248,11 +239,9 @@ abstract class ClassPath[T] extends ClassFileLookup[T] {
       case _                                        => None
     }
 
-  override def asClassPathString: String = asClasspathString
-
   override def asSourcePathString: String = sourcepaths.mkString(pathSeparator)
 
-  def sortString = join(split(asClasspathString).sorted: _*)
+  def sortString = join(split(asClassPathString).sorted: _*)
   override def equals(that: Any) = that match {
     case x: ClassPath[_]  => this.sortString == x.sortString
     case _                => false
@@ -264,10 +253,12 @@ abstract class ClassPath[T] extends ClassFileLookup[T] {
  * A Classpath containing source files
  */
 class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends ClassPath[T] {
+  import FileUtils.AbstractFileOps
+
   def name = dir.name
   override def origin = dir.underlyingSource map (_.path)
-  def asURLs = if (dir.file == null) Nil else List(dir.toURL)
-  def asClasspathString = dir.path
+  def asURLs = dir.toURLs()
+  def asClassPathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq(dir)
 
   private def traverse() = {
@@ -290,10 +281,12 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
  * A directory (or a .jar file) containing classfiles and packages
  */
 class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends ClassPath[AbstractFile] {
+  import FileUtils.AbstractFileOps
+
   def name = dir.name
   override def origin = dir.underlyingSource map (_.path)
-  def asURLs = if (dir.file == null) List(new URL(name)) else List(dir.toURL)
-  def asClasspathString = dir.path
+  def asURLs = dir.toURLs(default = Seq(new URL(name)))
+  def asClassPathString = dir.path
   val sourcepaths: IndexedSeq[AbstractFile] = IndexedSeq()
 
   // calculates (packages, classes) in one traversal.
@@ -340,6 +333,7 @@ class MergedClassPath[T](
   override val entries: IndexedSeq[ClassPath[T]],
   val context: ClassPathContext[T])
 extends ClassPath[T] {
+
   def this(entries: TraversableOnce[ClassPath[T]], context: ClassPathContext[T]) =
     this(entries.toIndexedSeq, context)
 
@@ -348,7 +342,7 @@ extends ClassPath[T] {
   lazy val sourcepaths: IndexedSeq[AbstractFile] = entries flatMap (_.sourcepaths)
 
   override def origin = Some(entries map (x => x.origin getOrElse x.name) mkString ("Merged(", ", ", ")"))
-  override def asClasspathString: String = join(entries map (_.asClasspathString) : _*)
+  override def asClassPathString: String = join(entries map (_.asClassPathString) : _*)
 
   lazy val classes: IndexedSeq[ClassRepresentation[T]] = {
     var count   = 0
@@ -402,10 +396,12 @@ extends ClassPath[T] {
     }
     new MergedClassPath[T](newEntries, context)
   }
+
   def show() {
     println("ClassPath %s has %d entries and results in:\n".format(name, entries.size))
-    asClasspathString split ':' foreach (x => println("  " + x))
+    asClassPathString split ':' foreach (x => println("  " + x))
   }
+
   override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")
 }
 

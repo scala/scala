@@ -30,6 +30,10 @@ trait ClassFileLookup[T] {
     */
   def asClassPathString: String
 
+  // for compatibility purposes
+  @deprecated("Use asClassPathString instead of this one", "2.11.5")
+  def asClasspathString: String = asClassPathString
+
   /** The whole sourcepath in the form of one String.
     */
   def asSourcePathString: String
