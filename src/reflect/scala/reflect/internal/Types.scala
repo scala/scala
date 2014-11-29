@@ -247,7 +247,7 @@ trait Types
 
     def companion = {
       val sym = typeSymbolDirect
-      if (sym.isModule && !sym.isPackage) sym.companionSymbol.tpe
+      if (sym.isModule && !sym.hasPackageFlag) sym.companionSymbol.tpe
       else if (sym.isModuleClass && !sym.isPackageClass) sym.sourceModule.companionSymbol.tpe
       else if (sym.isClass && !sym.isModuleClass && !sym.isPackageClass) sym.companionSymbol.info
       else NoType
