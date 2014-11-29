@@ -1998,7 +1998,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (mexists(vparamss)(_.symbol == superArg.symbol)) {
             val alias = (
               superAcc.initialize.alias
-                orElse (superAcc getter superAcc.owner)
+                orElse (superAcc getterIn superAcc.owner)
                 filter (alias => superClazz.info.nonPrivateMember(alias.name) == alias)
             )
             if (alias.exists && !alias.accessed.isVariable && !isRepeatedParamType(alias.accessed.info)) {
@@ -4260,7 +4260,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def narrowRhs(tp: Type) = { val sym = context.tree.symbol
           context.tree match {
             case ValDef(mods, _, _, Apply(Select(`tree`, _), _)) if !mods.isMutable && sym != null && sym != NoSymbol =>
-              val sym1 = if (sym.owner.isClass && sym.getter(sym.owner) != NoSymbol) sym.getter(sym.owner)
+              val sym1 = if (sym.owner.isClass && sym.getterIn(sym.owner) != NoSymbol) sym.getterIn(sym.owner)
                 else sym.lazyAccessorOrSelf
               val pre = if (sym1.owner.isClass) sym1.owner.thisType else NoPrefix
               intersectionType(List(tp, singleType(pre, sym1)))
@@ -5268,7 +5268,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def runTyper(): Tree = {
         if (retypingOk) {
           tree.tpe = null
-          if (tree.hasSymbol) tree.symbol = NoSymbol
+          if (tree.hasSymbolField) tree.symbol = NoSymbol
         }
         val alreadyTyped = tree.tpe ne null
         val shouldPrint = !alreadyTyped && !phase.erasedTypes

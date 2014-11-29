@@ -463,7 +463,7 @@ trait Namers extends MethodSynthesis {
     def enterModuleSymbol(tree : ModuleDef): Symbol = {
       var m: Symbol = context.scope lookupModule tree.name
       val moduleFlags = tree.mods.flags | MODULE
-      if (m.isModule && !m.isPackage && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
+      if (m.isModule && !m.hasPackageFlag && inCurrentScope(m) && (currentRun.canRedefine(m) || m.isSynthetic)) {
         // This code accounts for the way the package objects found in the classpath are opened up
         // early by the completer of the package itself. If the `packageobjects` phase then finds
         // the same package object in sources, we have to clean the slate and remove package object
@@ -486,7 +486,7 @@ trait Namers extends MethodSynthesis {
         m.moduleClass setFlag moduleClassFlags(moduleFlags)
         setPrivateWithin(tree, m.moduleClass)
       }
-      if (m.isTopLevel && !m.isPackage) {
+      if (m.isTopLevel && !m.hasPackageFlag) {
         m.moduleClass.associatedFile = contextFile
         currentRun.symSource(m) = m.moduleClass.sourceFile
         registerTopLevelSym(m)
@@ -841,7 +841,7 @@ trait Namers extends MethodSynthesis {
     private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
       val getter =
         if (sym.isValue && sym.owner.isClass && sym.isPrivate)
-          sym.getter(sym.owner)
+          sym.getterIn(sym.owner)
         else sym
       def isHidden(tp: Type): Boolean = tp match {
         case SingleType(pre, sym) =>

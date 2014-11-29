@@ -2829,8 +2829,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters with GenJVMASM {
       var fieldList = List[String]()
 
       for (f <- clasz.fields if f.symbol.hasGetter;
-	         g = f.symbol.getter(clasz.symbol);
-	         s = f.symbol.setter(clasz.symbol)
+	         g = f.symbol.getterIn(clasz.symbol);
+	         s = f.symbol.setterIn(clasz.symbol)
            if g.isPublic && !(f.symbol.name startsWith "$")
           ) {
              // inserting $outer breaks the bean
