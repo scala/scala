@@ -13,6 +13,7 @@ import classfile.ClassfileParser
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
+import scala.tools.nsc.classpath.FlatClassPath
 
 /** This class ...
  *
@@ -272,6 +273,39 @@ abstract class SymbolLoaders {
 
           openPackageModule(root)
         }
+      }
+    }
+  }
+
+  /**
+   * Loads contents of a package
+   */
+  class PackageLoaderUsingFlatClassPath(packageName: String, classPath: FlatClassPath) extends SymbolLoader with FlagAgnosticCompleter {
+    protected def description = {
+      val shownPackageName = if (packageName == FlatClassPath.RootPackage) "<root package>" else packageName
+      s"package loader $shownPackageName"
+    }
+
+    protected def doComplete(root: Symbol) {
+      assert(root.isPackageClass, root)
+      root.setInfo(new PackageClassInfoType(newScope, root))
+
+      val classPathEntries = classPath.list(packageName)
+
+      if (!root.isRoot)
+        for (entry <- classPathEntries.classesAndSources) initializeFromClassPath(root, entry)
+      if (!root.isEmptyPackageClass) {
+        for (pkg <- classPathEntries.packages) {
+          val fullName = pkg.name
+
+          val name =
+            if (packageName == FlatClassPath.RootPackage) fullName
+            else fullName.substring(packageName.length + 1)
+          val packageLoader = new PackageLoaderUsingFlatClassPath(fullName, classPath)
+          enterPackage(root, name, packageLoader)
+        }
+
+        openPackageModule(root)
       }
     }
   }
