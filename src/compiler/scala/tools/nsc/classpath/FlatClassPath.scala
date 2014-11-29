@@ -47,6 +47,12 @@ object FlatClassPath {
 
 case class FlatClassPathEntries(packages: Seq[PackageEntry], classesAndSources: Seq[ClassRepClassPathEntry])
 
+object FlatClassPathEntries {
+  import scala.language.implicitConversions
+  // to have working unzip method
+  implicit def entry2Tuple(entry: FlatClassPathEntries) = (entry.packages, entry.classesAndSources)
+}
+
 sealed trait ClassRepClassPathEntry extends ClassRepresentation[AbstractFile]
 
 trait ClassFileEntry extends ClassRepClassPathEntry {
