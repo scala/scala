@@ -8,7 +8,7 @@ object Test extends App {
   try {
     lb0.remove(5, 0)
   } catch {
-    // Not thrown in 2.10, will be thrown in 2.11
+    // Should not be thrown--nothing is deleted so nothing to do
     case ex: IndexOutOfBoundsException => println(ex)
   }
   checkNotCorrupted(lb0)
@@ -17,8 +17,8 @@ object Test extends App {
   println("Trying lb1 ...")
   try {
     lb1.remove(6, 6)
-  } catch {
-    // Not thrown in 2.10, will be thrown in 2.11
+ } catch {
+    // Not thrown in 2.11, is thrown in 2.12
     case ex: IndexOutOfBoundsException => println(ex)
   }
   checkNotCorrupted(lb1)
@@ -28,7 +28,7 @@ object Test extends App {
   try {
     lb2.remove(99, 6)
   } catch {
-    // Not thrown in 2.10, will be thrown in 2.11
+    // Not thrown in 2.11, is thrown in 2.12
     case ex: IndexOutOfBoundsException => println(ex)
   }
   checkNotCorrupted(lb2)
@@ -38,26 +38,27 @@ object Test extends App {
   try {
     lb3.remove(1, 9)
   } catch {
-    // Not thrown in 2.10, will be thrown in 2.11
-    case ex: IllegalArgumentException => println(ex)
+    // Not thrown in 2.11, is thrown in 2.12
+    case ex: IndexOutOfBoundsException => println(ex)
   }
-  checkNotCorrupted(lb3, "ListBuffer('a)", 1)
+  checkNotCorrupted(lb3)
 
   val lb4 = newLB
   println("Trying lb4 ...")
   try {
     lb4.remove(-1, 1)
   } catch {
-    // Not thrown in 2.10, will be thrown in 2.11
+    // Not thrown in 2.11, is thrown in 2.12
     case ex: IndexOutOfBoundsException => println(ex)
   }
-  checkNotCorrupted(lb4, "ListBuffer('b, 'c, 'd, 'e)", 4)
+  checkNotCorrupted(lb4)
 
   val lb5 = newLB
   println("Trying lb5 ...")
   try {
     lb5.remove(1, -1)
   } catch {
+    // Was thrown prior to 2.12 also
     case ex: IllegalArgumentException => println(ex)
   }
   checkNotCorrupted(lb5)
