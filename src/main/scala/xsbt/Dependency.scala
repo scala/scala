@@ -137,7 +137,9 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile {
          */
         case ident: Ident =>
           addDependency(ident.symbol)
-        case typeTree: TypeTree =>
+        // In some cases (eg. macro annotations), `typeTree.tpe` may be null.
+        // See sbt/sbt#1593 and sbt/sbt#1655.
+        case typeTree: TypeTree if typeTree.tpe != null =>
           val typeSymbolCollector = new CollectTypeTraverser({
             case tpe if !tpe.typeSymbol.isPackage => tpe.typeSymbol
           })
