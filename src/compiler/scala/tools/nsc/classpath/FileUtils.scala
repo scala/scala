@@ -3,12 +3,13 @@
  */
 package scala.tools.nsc.classpath
 
+import java.io.{ File => JFile }
 import java.net.URL
 import scala.reflect.internal.FatalError
 import scala.reflect.io.AbstractFile
 
 /**
- * Common methods related to files used in the context of classpath
+ * Common methods related to Java files and abstract files used in the context of classpath
  */
 object FileUtils {
   implicit class AbstractFileOps(val file: AbstractFile) extends AnyVal {
@@ -20,11 +21,19 @@ object FileUtils {
     def toURLs(default: => Seq[URL] = Seq.empty): Seq[URL] = if (file.file == null) default else Seq(file.toURL)
   }
 
+  implicit class FileOps(val file: JFile) extends AnyVal {
+    def isPackage: Boolean = file.isDirectory && mayBeValidPackage(file.getName)
+
+    def isClass: Boolean = file.isFile && file.getName.endsWith(".class")
+  }
+
   def stripSourceExtension(fileName: String): String = {
     if (endsScala(fileName)) stripClassExtension(fileName)
     else if (endsJava(fileName)) stripJavaExtension(fileName)
     else throw new FatalError("Unexpected source file ending: " + fileName)
   }
+
+  def dirPath(forPackage: String) = forPackage.replace('.', '/')
 
   def endsClass(fileName: String): Boolean =
     fileName.length > 6 && fileName.substring(fileName.length - 6) == ".class"
@@ -43,4 +52,9 @@ object FileUtils {
 
   def stripJavaExtension(fileName: String): String =
     fileName.substring(0, fileName.length - 5)
+
+  // probably it should match a pattern like [a-z_]{1}[a-z0-9_]* but it cannot be changed
+  // because then some tests in partest don't pass
+  private def mayBeValidPackage(dirName: String): Boolean =
+    (dirName != "META-INF") && (dirName != "") && (dirName.charAt(0) != '.')
 }

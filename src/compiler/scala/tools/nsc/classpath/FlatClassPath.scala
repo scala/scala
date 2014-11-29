@@ -89,3 +89,13 @@ private[nsc] case class ClassAndSourceFilesEntry(classFile: AbstractFile, srcFil
 }
 
 private[nsc] case class PackageEntryImpl(name: String) extends PackageEntry
+
+private[nsc] trait NoSourcePaths {
+  def asSourcePathString: String = ""
+  private[nsc] def sources(inPackage: String): Seq[SourceFileEntry] = Seq.empty
+}
+
+private[nsc] trait NoClassPaths {
+  def findClassFile(className: String): Option[AbstractFile] = None
+  private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] = Seq.empty
+}
