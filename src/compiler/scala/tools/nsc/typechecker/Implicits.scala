@@ -276,7 +276,7 @@ trait Implicits {
   /** An extractor for types of the form ? { name: (? >: argtpe <: Any*)restp }
    */
   object HasMethodMatching {
-    val dummyMethod = NoSymbol.newTermSymbol("typer$dummy") setInfo NullaryMethodType(AnyTpe)
+    val dummyMethod = NoSymbol.newTermSymbol(TermName("typer$dummy")) setInfo NullaryMethodType(AnyTpe)
 
     def templateArgType(argtpe: Type) = new BoundedWildcardType(TypeBounds.lower(argtpe))
 

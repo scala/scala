@@ -33,10 +33,10 @@ class SymbolTableTest {
     import symbolTable._
     symbolTable.definitions.init()
     val rootClass = symbolTable.rootMirror.RootClass
-    val fooSymbol = rootClass.newClassSymbol("Foo": TypeName, NoPosition, 0)
+    val fooSymbol = rootClass.newClassSymbol(TypeName("Foo"), NoPosition, 0)
     val fooType = new ClassInfoType(Nil, EmptyScope, fooSymbol)
     fooSymbol.info = fooType
-    val barSymbol = rootClass.newClassSymbol("Bar": TypeName, NoPosition, 0)
+    val barSymbol = rootClass.newClassSymbol(TypeName("Bar"), NoPosition, 0)
     val fooTypeRef = TypeRef(fooSymbol.owner.tpe, fooSymbol, Nil)
     val barType = new ClassInfoType(List(fooTypeRef), EmptyScope, barSymbol)
     barSymbol.info = barType
