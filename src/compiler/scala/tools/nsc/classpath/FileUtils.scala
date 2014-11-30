@@ -13,6 +13,11 @@ import scala.reflect.io.AbstractFile
  */
 object FileUtils {
   implicit class AbstractFileOps(val file: AbstractFile) extends AnyVal {
+    def isPackage: Boolean = file.isDirectory && mayBeValidPackage(file.name)
+
+    def isClass: Boolean = !file.isDirectory && file.hasExtension("class")
+
+    def isScalaOrJavaSource: Boolean = !file.isDirectory && (file.hasExtension("scala") || file.hasExtension("java"))
 
     /**
      * Safe method returning a sequence containing one URL representing this file, when underlying file exists,
