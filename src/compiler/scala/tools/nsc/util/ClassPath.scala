@@ -12,7 +12,6 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.regex.PatternSyntaxException
 import scala.collection.{ mutable, immutable }
-import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
 import scala.reflect.internal.util.StringOps.splitWhere
 import scala.tools.nsc.classpath.FileUtils
 
@@ -92,7 +91,7 @@ object ClassPath {
   /** A class modeling aspects of a ClassPath which should be
    *  propagated to any classpaths it creates.
    */
-  abstract class ClassPathContext[T] {
+  abstract class ClassPathContext[T] extends classpath.ClassPathFactory[ClassPath[T]] {
     /** A filter which can be used to exclude entities from the classpath
      *  based on their name.
      */
@@ -108,35 +107,17 @@ object ClassPath {
      */
     def toBinaryName(rep: T): String
 
-    /** Create a new classpath based on the abstract file.
-     */
-    def newClassPath(file: AbstractFile): ClassPath[T]
-
-    /** Creators for sub classpaths which preserve this context.
-     */
     def sourcesInPath(path: String): List[ClassPath[T]] =
       for (file <- expandPath(path, expandStar = false) ; dir <- Option(AbstractFile getDirectory file)) yield
         new SourcePath[T](dir, this)
-
-    def contentsOfDirsInPath(path: String): List[ClassPath[T]] =
-      for (dir <- expandPath(path, expandStar = false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
-        newClassPath(entry)
-
-    def classesInExpandedPath(path: String): IndexedSeq[ClassPath[T]] =
-      classesInPathImpl(path, expand = true).toIndexedSeq
-
-    def classesInPath(path: String) = classesInPathImpl(path, expand = false)
-
-    // Internal
-    private def classesInPathImpl(path: String, expand: Boolean) =
-      for (file <- expandPath(path, expand) ; dir <- Option(AbstractFile getDirectory file)) yield
-        newClassPath(dir)
-
-    def classesInManifest(used: Boolean) =
-      if (used) for (url <- manifests) yield newClassPath(AbstractFile getResources url) else Nil
   }
 
-  def manifests = Thread.currentThread().getContextClassLoader().getResources("META-INF/MANIFEST.MF").filter(_.getProtocol() == "jar").toList
+  def manifests: List[java.net.URL] = {
+    import scala.collection.convert.WrapAsScala.enumerationAsScalaIterator
+    Thread.currentThread().getContextClassLoader()
+      .getResources("META-INF/MANIFEST.MF")
+      .filter(_.getProtocol == "jar").toList
+  }
 
   class JavaContext extends ClassPathContext[AbstractFile] {
     def toBinaryName(rep: AbstractFile) = {
