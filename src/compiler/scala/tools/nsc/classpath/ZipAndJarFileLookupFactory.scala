@@ -11,7 +11,7 @@ import scala.tools.nsc.Settings
 import FileUtils._
 
 /**
- * A trait providing a cache for classpath entries obtained from zip and jar files.
+ * A trait providing an optional cache for classpath entries obtained from zip and jar files.
  * It's possible to create such a cache assuming that entries in such files won't change (at
  * least will be the same each time we'll load classpath during the lifetime of JVM process)
  * - unlike class and source files in directories, which can be modified and recompiled.
@@ -22,7 +22,14 @@ trait ZipAndJarFileLookupFactory {
 
   private val cache = collection.mutable.Map.empty[AbstractFile, FlatClassPath]
 
-  def create(zipFile: AbstractFile, settings: Settings): FlatClassPath = cache.synchronized {
+  def create(zipFile: AbstractFile, settings: Settings): FlatClassPath = {
+    if (settings.YdisableFlatCpCaching) createForZipFile(zipFile)
+    else createUsingCache(zipFile, settings)
+  }
+
+  protected def createForZipFile(zipFile: AbstractFile): FlatClassPath
+
+  private def createUsingCache(zipFile: AbstractFile, settings: Settings): FlatClassPath = cache.synchronized {
     def newClassPathInstance = {
       if (settings.verbose || settings.Ylogcp)
         println(s"$zipFile is not yet in the classpath cache")
@@ -30,8 +37,6 @@ trait ZipAndJarFileLookupFactory {
     }
     cache.getOrElseUpdate(zipFile, newClassPathInstance)
   }
-
-  protected def createForZipFile(zipFile: AbstractFile): FlatClassPath
 }
 
 /**
