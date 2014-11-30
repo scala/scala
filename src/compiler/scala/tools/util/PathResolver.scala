@@ -7,14 +7,16 @@ package scala
 package tools
 package util
 
+import java.net.URL
 import scala.tools.reflect.WrappedProperties.AccessControl
 import scala.tools.nsc.{ Settings }
-import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
+import scala.tools.nsc.util.{ ClassFileLookup, ClassPath, JavaClassPath }
 import scala.reflect.io.{ File, Directory, Path, AbstractFile }
 import scala.reflect.runtime.ReflectionUtils
 import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps
+import scala.tools.nsc.classpath.{ AggregateFlatClassPath, ClassPathFactory, FlatClassPath, FlatClassPathFactory }
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SIW/Classpath
@@ -197,12 +199,10 @@ object PathResolver {
   }
 }
 
-class PathResolver(settings: Settings, context: JavaContext) {
-  import PathResolver.{ Defaults, Environment, AsLines, MkLines, ppcp }
+abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFile], ResultClassPathType <: BaseClassPathType]
+(settings: Settings, classPathFactory: ClassPathFactory[BaseClassPathType]) {
 
-  def this(settings: Settings) = this(settings,
-      if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
-      else DefaultJavaContext)
+  import PathResolver.{ AsLines, Defaults, ppcp }
 
   private def cmdLineOrElse(name: String, alt: String) = {
     (commandLineFor(name) match {
@@ -232,6 +232,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
     def javaUserClassPath   = if (useJavaClassPath) Defaults.javaUserClassPath else ""
     def scalaBootClassPath  = cmdLineOrElse("bootclasspath", Defaults.scalaBootClassPath)
     def scalaExtDirs        = cmdLineOrElse("extdirs", Defaults.scalaExtDirs)
+
     /** Scaladoc doesn't need any bootstrapping, otherwise will create errors such as:
      * [scaladoc] ../scala-trunk/src/reflect/scala/reflect/macros/Reifiers.scala:89: error: object api is not a member of package reflect
      * [scaladoc] case class ReificationException(val pos: reflect.api.PositionApi, val msg: String) extends Throwable(msg)
@@ -256,10 +257,10 @@ class PathResolver(settings: Settings, context: JavaContext) {
       else sys.env.getOrElse("CLASSPATH", ".")
     )
 
-    import context._
+    import classPathFactory._
 
     // Assemble the elements!
-    def basis = List[Traversable[ClassPath[AbstractFile]]](
+    def basis = List[Traversable[BaseClassPathType]](
       classesInPath(javaBootClassPath),             // 1. The Java bootstrap class path.
       contentsOfDirsInPath(javaExtDirs),            // 2. The Java extension class path.
       classesInExpandedPath(javaUserClassPath),     // 3. The Java application class path.
@@ -288,8 +289,10 @@ class PathResolver(settings: Settings, context: JavaContext) {
 
   def containers = Calculated.containers
 
-  lazy val result = {
-    val cp = new JavaClassPath(containers.toIndexedSeq, context)
+  import PathResolver.MkLines
+
+  def result: ResultClassPathType = {
+    val cp = computeResult()
     if (settings.Ylogcp) {
       Console print f"Classpath built from ${settings.toConciseString} %n"
       Console print s"Defaults: ${PathResolver.Defaults}"
@@ -301,5 +304,27 @@ class PathResolver(settings: Settings, context: JavaContext) {
     cp
   }
 
-  def asURLs = result.asURLs
+  def asURLs: List[URL] = result.asURLs.toList
+
+  protected def computeResult(): ResultClassPathType
+}
+
+class PathResolver(settings: Settings, context: JavaContext)
+  extends PathResolverBase[ClassPath[AbstractFile], JavaClassPath](settings, context) {
+
+  def this(settings: Settings) =
+    this(settings,
+      if (settings.YnoLoadImplClass) PathResolver.NoImplClassJavaContext
+      else DefaultJavaContext)
+
+  override protected def computeResult(): JavaClassPath =
+    new JavaClassPath(containers.toIndexedSeq, context)
+}
+
+class FlatClassPathResolver(settings: Settings, flatClassPathFactory: ClassPathFactory[FlatClassPath])
+  extends PathResolverBase[FlatClassPath, AggregateFlatClassPath](settings, flatClassPathFactory) {
+
+  def this(settings: Settings) = this(settings, new FlatClassPathFactory(settings))
+
+  override protected def computeResult(): AggregateFlatClassPath = AggregateFlatClassPath(containers.toIndexedSeq)
 }
