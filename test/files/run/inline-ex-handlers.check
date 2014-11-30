@@ -123,12 +123,12 @@
      300	RETURN(UNIT)
 @@ -583,6 +603,6 @@
        with finalizer: null
--    catch (Throwable) in ArrayBuffer(7, 9, 10) starting at: 6
-+    catch (Throwable) in ArrayBuffer(7, 9, 10, 11) starting at: 6
+-    catch (Throwable) in Vector(7, 9, 10) starting at: 6
++    catch (Throwable) in Vector(7, 9, 10, 11) starting at: 6
        consisting of blocks: List(6)
        with finalizer: null
--    catch (Throwable) in ArrayBuffer(4, 6, 7, 9, 10) starting at: 3
-+    catch (Throwable) in ArrayBuffer(4, 6, 7, 9, 10, 11, 12) starting at: 3
+-    catch (Throwable) in Vector(4, 6, 7, 9, 10) starting at: 3
++    catch (Throwable) in Vector(4, 6, 7, 9, 10, 11, 12) starting at: 3
        consisting of blocks: List(3)
 @@ -618,3 +638,3 @@
    startBlock: 1
@@ -171,8 +171,8 @@
    }
 @@ -690,3 +730,3 @@
        with finalizer: null
--    catch (<none>) in ArrayBuffer(4, 5, 6, 8) starting at: 3
-+    catch (<none>) in ArrayBuffer(4, 5, 6, 8, 10) starting at: 3
+-    catch (<none>) in Vector(4, 5, 6, 8) starting at: 3
++    catch (<none>) in Vector(4, 5, 6, 8, 10) starting at: 3
        consisting of blocks: List(3)
 @@ -714,5 +754,5 @@
    def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
@@ -276,12 +276,12 @@
    }
 @@ -852,6 +918,6 @@
        with finalizer: null
--    catch (Throwable) in ArrayBuffer(13, 14, 15, 18, 20, 21, 23) starting at: 4
-+    catch (Throwable) in ArrayBuffer(13, 14, 15, 18, 20, 21, 23, 25) starting at: 4
+-    catch (Throwable) in Vector(13, 14, 15, 18, 20, 21, 23) starting at: 4
++    catch (Throwable) in Vector(13, 14, 15, 18, 20, 21, 23, 25) starting at: 4
        consisting of blocks: List(9, 8, 6, 5, 4)
        with finalizer: null
--    catch (<none>) in ArrayBuffer(4, 5, 6, 9, 13, 14, 15, 18, 20, 21, 23) starting at: 3
-+    catch (<none>) in ArrayBuffer(4, 5, 6, 9, 13, 14, 15, 18, 20, 21, 23, 25, 26) starting at: 3
+-    catch (<none>) in Vector(4, 5, 6, 9, 13, 14, 15, 18, 20, 21, 23) starting at: 3
++    catch (<none>) in Vector(4, 5, 6, 9, 13, 14, 15, 18, 20, 21, 23, 25, 26) starting at: 3
        consisting of blocks: List(3)
 @@ -879,5 +945,5 @@
    def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
@@ -317,8 +317,8 @@
      127	CALL_METHOD scala.Predef.println (dynamic)
 @@ -964,3 +1034,3 @@
        with finalizer: null
--    catch (IllegalArgumentException) in ArrayBuffer(6, 7, 8, 11, 13, 14, 16) starting at: 3
-+    catch (IllegalArgumentException) in ArrayBuffer(6, 7, 8, 11, 13, 14, 16, 17) starting at: 3
+-    catch (IllegalArgumentException) in Vector(6, 7, 8, 11, 13, 14, 16) starting at: 3
++    catch (IllegalArgumentException) in Vector(6, 7, 8, 11, 13, 14, 16, 17) starting at: 3
        consisting of blocks: List(3)
 @@ -988,5 +1058,5 @@
    def main(args: Array[String] (ARRAY[REF(class String)])): Unit {
