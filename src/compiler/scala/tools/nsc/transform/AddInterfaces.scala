@@ -351,6 +351,7 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
           while (owner != sym && owner != impl) owner = owner.owner;
           if (owner == impl) This(impl) setPos tree.pos
           else tree
+        //TODO what about this commented out code?
 /* !!!
         case Super(qual, mix) =>
           val mix1 = mix

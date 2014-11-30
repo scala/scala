@@ -332,7 +332,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           None
       }
 
-    val charset = ( if (settings.encoding.isSetByUser) Some(settings.encoding.value) else None ) flatMap loadCharset getOrElse {
+    val charset = settings.encoding.valueSetByUser flatMap loadCharset getOrElse {
       settings.encoding.value = defaultEncoding // A mandatory charset
       Charset.forName(defaultEncoding)
     }
@@ -347,7 +347,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    ( if (settings.sourceReader.isSetByUser) Some(settings.sourceReader.value) else None ) flatMap loadReader getOrElse {
+    settings.sourceReader.valueSetByUser flatMap loadReader getOrElse {
       new SourceReader(charset.newDecoder(), reporter)
     }
   }

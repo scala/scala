@@ -88,8 +88,7 @@ abstract class SymbolLoaders {
       // require yjp.jar at runtime. See SI-2089.
       if (settings.termConflict.isDefault)
         throw new TypeError(
-          root+" contains object and package with same name: "+
-          name+"\none of them needs to be removed from classpath"
+          s"$root contains object and package with same name: $name\none of them needs to be removed from classpath"
         )
       else if (settings.termConflict.value == "package") {
         warning(
@@ -252,7 +251,7 @@ abstract class SymbolLoaders {
    * Load contents of a package
    */
   class PackageLoader(classpath: ClassPath[AbstractFile]) extends SymbolLoader with FlagAgnosticCompleter {
-    protected def description = "package loader "+ classpath.name
+    protected def description = s"package loader ${classpath.name}"
 
     protected def doComplete(root: Symbol) {
       assert(root.isPackageClass, root)

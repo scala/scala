@@ -1282,9 +1282,11 @@ object IMain {
 
     def getProgram(statements: String*): String = null
 
-    def getScriptEngine: ScriptEngine = new IMain(this, new Settings() {
-      usemanifestcp.value = true
-    })
+    def getScriptEngine: ScriptEngine = {
+      val settings = new Settings()
+      settings.usemanifestcp.value = true
+      new IMain(this, settings)
+    }
   }
 
   // The two name forms this is catching are the two sides of this assignment:

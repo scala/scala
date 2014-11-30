@@ -51,9 +51,8 @@ object PathResolver {
   /** Values found solely by inspecting environment or property variables.
    */
   object Environment {
-    private def searchForBootClasspath = (
+    private def searchForBootClasspath =
       systemProperties find (_._1 endsWith ".boot.class.path") map (_._2) getOrElse ""
-    )
 
     /** Environment variables which java pays attention to so it
      *  seems we do as well.
@@ -107,7 +106,7 @@ object PathResolver {
       else if (scalaLibAsDir.isDirectory) scalaLibAsDir.path
       else ""
 
-    // XXX It must be time for someone to figure out what all these things
+    // TODO It must be time for someone to figure out what all these things
     // are intended to do.  This is disabled here because it was causing all
     // the scala jars to end up on the classpath twice: one on the boot
     // classpath as set up by the runner (or regular classpath under -nobootcp)
@@ -177,7 +176,7 @@ object PathResolver {
   def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = {
     val s = new Settings()
     s.classpath.value = path
-    new PathResolver(s, context) result
+    new PathResolver(s, context).result
   }
 
   /** With no arguments, show the interesting values in Environment and Defaults.
@@ -263,11 +262,9 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
      *  - Otherwise, if CLASSPATH is set, it is that
      *  - If neither of those, then "." is used.
      */
-    def userClassPath = (
-      if (!settings.classpath.isDefault)
-        settings.classpath.value
+    def userClassPath =
+      if (!settings.classpath.isDefault) settings.classpath.value
       else sys.env.getOrElse("CLASSPATH", ".")
-    )
 
     import classPathFactory._
 
@@ -291,7 +288,7 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
       |  javaBootClassPath    = ${ppcp(javaBootClassPath)}
       |  javaExtDirs          = ${ppcp(javaExtDirs)}
       |  javaUserClassPath    = ${ppcp(javaUserClassPath)}
-      |    useJavaClassPath   = $useJavaClassPath
+      |  useJavaClassPath     = $useJavaClassPath
       |  scalaBootClassPath   = ${ppcp(scalaBootClassPath)}
       |  scalaExtDirs         = ${ppcp(scalaExtDirs)}
       |  userClassPath        = ${ppcp(userClassPath)}

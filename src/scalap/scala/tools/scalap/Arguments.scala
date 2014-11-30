@@ -9,7 +9,7 @@
 package scala.tools.scalap
 
 import scala.collection.mutable
-import mutable.{ Buffer, ListBuffer }
+import mutable.ListBuffer
 
 object Arguments {
   case class Parser(optionPrefix: Char) {
@@ -47,7 +47,7 @@ object Arguments {
     }
 
     def parseBinding(str: String, separator: Char): (String, String) = (str indexOf separator) match {
-      case -1   => argumentError("missing '" + separator + "' in binding '" + str + "'") ; ("", "")
+      case -1   => argumentError(s"missing '$separator' in binding '$str'") ; ("", "")
       case idx  => ((str take idx).trim, (str drop (idx + 1)).trim)
     }
 
@@ -71,7 +71,7 @@ object Arguments {
             i += 1
           } else if (optionalArgs contains args(i)) {
             if ((i + 1) == args.length) {
-              argumentError("missing argument for '" + args(i) + "'")
+              argumentError(s"missing argument for '${args(i)}'")
               i += 1
             } else {
               res.addArgument(args(i), args(i + 1))
@@ -79,11 +79,11 @@ object Arguments {
             }
           } else if (optionalBindings contains args(i)) {
             if ((i + 1) == args.length) {
-              argumentError("missing argument for '" + args(i) + "'")
+              argumentError(s"missing argument for '${args(i)}'")
               i += 1
             } else {
               res.addBinding(args(i),
-                parseBinding(args(i + 1), optionalBindings(args(i))));
+                parseBinding(args(i + 1), optionalBindings(args(i))))
               i += 2
             }
           } else {
@@ -92,23 +92,23 @@ object Arguments {
             while ((i == j) && iter.hasNext) {
               val prefix = iter.next
               if (args(i) startsWith prefix) {
-                res.addPrefixed(prefix, args(i).substring(prefix.length()).trim());
+                res.addPrefixed(prefix, args(i).substring(prefix.length()).trim())
                 i += 1
               }
             }
             if (i == j) {
-              val iter = prefixedBindings.keysIterator;
+              val iter = prefixedBindings.keysIterator
               while ((i == j) && iter.hasNext) {
                 val prefix = iter.next
                 if (args(i) startsWith prefix) {
                   val arg = args(i).substring(prefix.length()).trim()
                   i = i + 1
                   res.addBinding(prefix,
-                    parseBinding(arg, prefixedBindings(prefix)));
+                    parseBinding(arg, prefixedBindings(prefix)))
                 }
               }
               if (i == j) {
-                argumentError("unknown option '" + args(i) + "'")
+                argumentError(s"unknown option '${args(i)}'")
                 i = i + 1
               }
             }
@@ -119,7 +119,7 @@ object Arguments {
 
   def parse(options: String*)(args: Array[String]): Arguments = {
     val parser = new Parser('-')
-    options foreach (parser withOption _)
+    options foreach parser.withOption
     parser parse args
   }
 }
@@ -142,7 +142,7 @@ class Arguments {
     if (key.length > 0)
       bindings.getOrElseUpdate(tag, new mutable.HashMap)(key) = value
 
-  def addBinding(tag: String, binding: Tuple2[String, String]): Unit =
+  def addBinding(tag: String, binding: (String, String)): Unit =
     addBinding(tag, binding._1, binding._2)
 
   def addOther(arg: String): Unit = others += arg

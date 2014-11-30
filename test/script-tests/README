@@ -6,3 +6,8 @@ depend on all the platform stars aligning all the time. Feel free to
 join me.
 
 -- extempore, Nov 21 2011
+
+But there's a problem that probably nobody would run such tests so they would become outdated quite quickly.
+And therefore they wouldn't work (and even compile) after some time - like this one existing currently.
+
+-- mpociecha, Oct 9 2014

@@ -178,7 +178,7 @@ object Main extends Main {
       verbose = arguments contains opts.verbose
       printPrivates = arguments contains opts.showPrivateDefs
       // construct a custom class path
-      val cpArg = List(opts.classpath, opts.cp) map (arguments getArgument) reduceLeft (_ orElse _)
+      val cpArg = List(opts.classpath, opts.cp) map arguments.getArgument reduceLeft (_ orElse _)
 
       val settings = new Settings()
 
