@@ -37,8 +37,8 @@ import convert._
  *    val sl2 : scala.collection.mutable.Buffer[Int] = jl.asScala
  *    assert(sl eq sl2)
  *  }}}
- *  The following conversions also are supported, but the
- *  direction Scala to Java is done my a more specifically named method:
+ *  The following conversions are also supported, but the
+ *  direction from Scala to Java is done by the more specifically named methods:
  *  `asJavaCollection`, `asJavaEnumeration`, `asJavaDictionary`.
  *
  *  - `scala.collection.Iterable` <=> `java.util.Collection`
