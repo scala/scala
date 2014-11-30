@@ -10,11 +10,15 @@ package tools.scalap
 
 import java.io.{ PrintStream, OutputStreamWriter, ByteArrayOutputStream }
 import scala.reflect.NameTransformer
+import scala.tools.nsc.Settings
+import scala.tools.nsc.classpath.AggregateFlatClassPath
+import scala.tools.nsc.classpath.FlatClassPathFactory
 import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.settings.ClassPathRepresentationType
 import scala.tools.nsc.util.ClassFileLookup
-import scala.tools.nsc.util.JavaClassPath
 import scala.tools.nsc.util.ClassPath.DefaultJavaContext
-import scala.tools.util.PathResolver
+import scala.tools.nsc.util.JavaClassPath
+import scala.tools.util.PathResolverFactory
 import scalax.rules.scalasig._
 
 /**The main object used to execute scalap on the command-line.
@@ -139,6 +143,9 @@ object Main extends Main {
     val showPrivateDefs = "-private"
     val verbose = "-verbose"
     val version = "-version"
+
+    val classPathImplType = "-YclasspathImpl"
+    val logClassPath = "-Ylog-classpath"
   }
 
   /** Prints usage information for scalap. */
@@ -170,11 +177,14 @@ object Main extends Main {
       verbose = arguments contains opts.verbose
       printPrivates = arguments contains opts.showPrivateDefs
       // construct a custom class path
-      val cpArg = List(opts.classpath, opts.cp) map (arguments getArgument _) reduceLeft (_ orElse _)
-      val path = cpArg match {
-        case Some(cp) => new JavaClassPath(DefaultJavaContext.classesInExpandedPath(cp), DefaultJavaContext)
-        case _        => PathResolver.fromPathString(".") // include '.' in the default classpath SI-6669
-      }
+      val cpArg = List(opts.classpath, opts.cp) map (arguments getArgument) reduceLeft (_ orElse _)
+
+      val settings = new Settings()
+
+      arguments getArgument opts.classPathImplType foreach settings.YclasspathImpl.tryToSetFromPropertyValue
+      settings.Ylogcp.value = arguments contains opts.logClassPath
+
+      val path = createClassPath(cpArg, settings)
 
       // print the classpath if output is verbose
       if (verbose)
@@ -192,5 +202,20 @@ object Main extends Main {
       .withOption(opts.help)
       .withOptionalArg(opts.classpath)
       .withOptionalArg(opts.cp)
+      // TODO two temporary, hidden options to be able to test different classpath representations
+      .withOptionalArg(opts.classPathImplType)
+      .withOption(opts.logClassPath)
       .parse(args)
+
+  private def createClassPath(cpArg: Option[String], settings: Settings) = cpArg match {
+    case Some(cp) => settings.YclasspathImpl.value match {
+      case ClassPathRepresentationType.Flat =>
+        AggregateFlatClassPath(new FlatClassPathFactory(settings).classesInExpandedPath(cp))
+      case ClassPathRepresentationType.Recursive =>
+        new JavaClassPath(DefaultJavaContext.classesInExpandedPath(cp), DefaultJavaContext)
+    }
+    case _ =>
+      settings.classpath.value = "." // include '.' in the default classpath SI-6669
+      PathResolverFactory.create(settings).result
+  }
 }

@@ -9,7 +9,7 @@ package util
 
 import java.net.URL
 import scala.tools.reflect.WrappedProperties.AccessControl
-import scala.tools.nsc.{ Settings }
+import scala.tools.nsc.Settings
 import scala.tools.nsc.util.{ ClassFileLookup, ClassPath, JavaClassPath }
 import scala.reflect.io.{ File, Directory, Path, AbstractFile }
 import scala.reflect.runtime.ReflectionUtils
@@ -17,6 +17,7 @@ import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 import scala.language.postfixOps
 import scala.tools.nsc.classpath.{ AggregateFlatClassPath, ClassPathFactory, FlatClassPath, FlatClassPathFactory }
+import scala.tools.nsc.settings.ClassPathRepresentationType
 
 // Loosely based on the draft specification at:
 // https://wiki.scala-lang.org/display/SIW/Classpath
@@ -172,7 +173,7 @@ object PathResolver {
       !ReflectionUtils.scalacShouldntLoadClassfile(name)
   }
 
-  // called from scalap
+  @deprecated("This method is no longer used be scalap and will be deleted", "2.11.5")
   def fromPathString(path: String, context: JavaContext = DefaultJavaContext): JavaClassPath = {
     val s = new Settings()
     s.classpath.value = path
@@ -183,24 +184,35 @@ object PathResolver {
    *  If there are arguments, show those in Calculated as if those options had been
    *  given to a scala runner.
    */
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     if (args.isEmpty) {
       println(Environment)
       println(Defaults)
-    }
-    else {
+    } else {
       val settings = new Settings()
       val rest = settings.processArguments(args.toList, processAll = false)._2
-      val pr = new PathResolver(settings)
-      println(" COMMAND: 'scala %s'".format(args.mkString(" ")))
+      val pr = PathResolverFactory.create(settings)
+      println("COMMAND: 'scala %s'".format(args.mkString(" ")))
       println("RESIDUAL: 'scala %s'\n".format(rest.mkString(" ")))
-      pr.result.show()
+
+      pr.result match {
+        case cp: JavaClassPath =>
+          cp.show()
+        case cp: AggregateFlatClassPath =>
+          println(s"ClassPath has ${cp.aggregates.size} entries and results in:\n${cp.asClassPathStrings}")
+      }
     }
-  }
+}
+
+trait PathResolverResult {
+  def result: ClassFileLookup[AbstractFile]
+
+  def resultAsURLs: Seq[URL] = result.asURLs
 }
 
 abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFile], ResultClassPathType <: BaseClassPathType]
-(settings: Settings, classPathFactory: ClassPathFactory[BaseClassPathType]) {
+(settings: Settings, classPathFactory: ClassPathFactory[BaseClassPathType])
+  extends PathResolverResult {
 
   import PathResolver.{ AsLines, Defaults, ppcp }
 
@@ -304,7 +316,8 @@ abstract class PathResolverBase[BaseClassPathType <: ClassFileLookup[AbstractFil
     cp
   }
 
-  def asURLs: List[URL] = result.asURLs.toList
+  @deprecated("Use resultAsURLs instead of this one", "2.11.5")
+  def asURLs: List[URL] = resultAsURLs.toList
 
   protected def computeResult(): ResultClassPathType
 }
@@ -327,4 +340,13 @@ class FlatClassPathResolver(settings: Settings, flatClassPathFactory: ClassPathF
   def this(settings: Settings) = this(settings, new FlatClassPathFactory(settings))
 
   override protected def computeResult(): AggregateFlatClassPath = AggregateFlatClassPath(containers.toIndexedSeq)
+}
+
+object PathResolverFactory {
+
+  def create(settings: Settings): PathResolverResult =
+    settings.YclasspathImpl.value match {
+      case ClassPathRepresentationType.Flat => new FlatClassPathResolver(settings)
+      case ClassPathRepresentationType.Recursive => new PathResolver(settings)
+    }
 }

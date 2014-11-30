@@ -8,6 +8,7 @@ package transform
 
 import symtab._
 import Flags._
+import scala.tools.nsc.util.ClassPath
 
 abstract class AddInterfaces extends InfoTransform { self: Erasure =>
   import global._                  // the global environment
@@ -67,25 +68,30 @@ abstract class AddInterfaces extends InfoTransform { self: Erasure =>
     val implName  = tpnme.implClassName(iface.name)
     val implFlags = (iface.flags & ~(INTERFACE | lateINTERFACE)) | IMPLCLASS
 
-    val impl0 = (
+    val impl0 = {
       if (!inClass) NoSymbol
-      else iface.owner.info.decl(implName) match {
-        case NoSymbol => NoSymbol
-        case implSym  =>
-          // Unlink a pre-existing symbol only if the implementation class is
-          // visible on the compilation classpath.  In general this is true under
-          // -optimise and not otherwise, but the classpath can use arbitrary
-          // logic so the classpath must be queried.
-          if (classPath.context.isValidName(implName + ".class")) {
-            iface.owner.info.decls unlink implSym
-            NoSymbol
-          }
-          else {
-            log(s"not unlinking $iface's existing implClass ${implSym.name} because it is not on the classpath.")
-            implSym
-          }
+      else {
+        val typeInfo = iface.owner.info
+        typeInfo.decl(implName) match {
+          case NoSymbol => NoSymbol
+          case implSym =>
+            // Unlink a pre-existing symbol only if the implementation class is
+            // visible on the compilation classpath. In general this is true under
+            // -optimise and not otherwise, but the classpath can use arbitrary
+            // logic so the classpath must be queried.
+            // TODO this is not taken into account by flat classpath yet
+            classPath match {
+              case cp: ClassPath[_] if !cp.context.isValidName(implName + ".class") =>
+                log(s"not unlinking $iface's existing implClass ${implSym.name} because it is not on the classpath.")
+                implSym
+              case _ =>
+                typeInfo.decls unlink implSym
+                NoSymbol
+            }
+        }
       }
-    )
+    }
+
     val impl = impl0 orElse {
       val impl = iface.owner.newImplClass(implName, iface.pos, implFlags)
       if (iface.thisSym != iface) {

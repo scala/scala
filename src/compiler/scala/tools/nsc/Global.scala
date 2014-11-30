@@ -14,11 +14,10 @@ import scala.compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, MergedClassPath, StatisticsInfo, returning, stackTraceString }
+import util.{ ClassFileLookup, ClassPath, MergedClassPath, StatisticsInfo, returning }
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{ OffsetPosition, SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
-import scala.reflect.internal.pickling.{ PickleBuffer, PickleFormat }
-import scala.reflect.io.VirtualFile
+import scala.reflect.internal.util.{ SourceFile, NoSourceFile, BatchSourceFile, ScriptSourceFile }
+import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{ Flags, SymbolTable, SymbolTrackers }
 import symtab.classfile.Pickler
 import plugins.Plugins
@@ -35,6 +34,8 @@ import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, Cl
 import backend.icode.analysis._
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
+import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.settings.ClassPathRepresentationType
 
 class Global(var currentSettings: Settings, var reporter: Reporter)
     extends SymbolTable
@@ -58,7 +59,12 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   class GlobalMirror extends Roots(NoSymbol) {
     val universe: self.type = self
-    def rootLoader: LazyType = new loaders.PackageLoader(classPath)
+    def rootLoader: LazyType = {
+      settings.YclasspathImpl.value match {
+        case ClassPathRepresentationType.Flat => new loaders.PackageLoaderUsingFlatClassPath(FlatClassPath.RootPackage, flatClassPath)
+        case ClassPathRepresentationType.Recursive => new loaders.PackageLoader(recursiveClassPath)
+      }
+    }
     override def toString = "compiler mirror"
   }
   implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[GlobalMirror])
@@ -104,7 +110,14 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
   type PlatformClassPath = ClassPath[AbstractFile]
   type OptClassPath = Option[PlatformClassPath]
 
-  def classPath: PlatformClassPath = platform.classPath
+  def classPath: ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
+    case ClassPathRepresentationType.Flat => flatClassPath
+    case ClassPathRepresentationType.Recursive => recursiveClassPath
+  }
+
+  private def recursiveClassPath: ClassPath[AbstractFile] = platform.classPath
+
+  private def flatClassPath: FlatClassPath = platform.flatClassPath
 
   // sub-components --------------------------------------------------
 
@@ -846,6 +859,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Extend classpath of `platform` and rescan updated packages. */
   def extendCompilerClassPath(urls: URL*): Unit = {
+    if (settings.YclasspathImpl.value == ClassPathRepresentationType.Flat)
+      throw new UnsupportedOperationException("Flat classpath doesn't support extending the compiler classpath")
+
     val newClassPath = platform.classPath.mergeUrlsIntoClassPath(urls: _*)
     platform.currentClassPath = Some(newClassPath)
     // Reload all specified jars into this compiler instance
@@ -881,6 +897,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
    *                entries on the classpath.
    */
   def invalidateClassPathEntries(paths: String*): Unit = {
+    if (settings.YclasspathImpl.value == ClassPathRepresentationType.Flat)
+      throw new UnsupportedOperationException("Flat classpath doesn't support the classpath invalidation")
+
     implicit object ClassPathOrdering extends Ordering[PlatformClassPath] {
       def compare(a:PlatformClassPath, b:PlatformClassPath) = a.asClassPathString compare b.asClassPathString
     }
@@ -910,10 +929,10 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
           informProgress(s"classpath updated on entries [${subst.keys mkString ","}]")
           def mkClassPath(elems: Iterable[PlatformClassPath]): PlatformClassPath =
             if (elems.size == 1) elems.head
-            else new MergedClassPath(elems, classPath.context)
+            else new MergedClassPath(elems, recursiveClassPath.context)
           val oldEntries = mkClassPath(subst.keys)
           val newEntries = mkClassPath(subst.values)
-          mergeNewEntries(newEntries, RootClass, Some(classPath), Some(oldEntries), invalidated, failed)
+          mergeNewEntries(newEntries, RootClass, Some(recursiveClassPath), Some(oldEntries), invalidated, failed)
         }
     }
     def show(msg: String, syms: scala.collection.Traversable[Symbol]) =

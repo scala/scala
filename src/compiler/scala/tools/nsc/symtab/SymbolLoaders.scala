@@ -6,14 +6,15 @@
 package scala.tools.nsc
 package symtab
 
+import classfile.ClassfileParser
 import java.io.IOException
 import scala.compat.Platform.currentTime
-import scala.tools.nsc.util.{ ClassPath, ClassRepresentation }
-import classfile.ClassfileParser
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.internal.util.Statistics
 import scala.reflect.io.{ AbstractFile, NoAbstractFile }
 import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.settings.ClassPathRepresentationType
+import scala.tools.nsc.util.{ ClassPath, ClassRepresentation }
 
 /** This class ...
  *
@@ -327,8 +328,13 @@ abstract class SymbolLoaders {
        *
        */
       private type SymbolLoadersRefined = SymbolLoaders { val symbolTable: classfileParser.symbolTable.type }
+
       val loaders = SymbolLoaders.this.asInstanceOf[SymbolLoadersRefined]
-      override def classFileLookup: util.ClassFileLookup[AbstractFile] = platform.classPath
+
+      override def classFileLookup: util.ClassFileLookup[AbstractFile] = settings.YclasspathImpl.value match {
+        case ClassPathRepresentationType.Recursive => platform.classPath
+        case ClassPathRepresentationType.Flat => platform.flatClassPath
+      }
     }
 
     protected def description = "class file "+ classfile.toString

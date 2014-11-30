@@ -8,6 +8,7 @@ package backend
 
 import util.ClassPath
 import io.AbstractFile
+import scala.tools.nsc.classpath.FlatClassPath
 
 /** The platform dependent pieces of Global.
  */
@@ -15,8 +16,11 @@ trait Platform {
   val symbolTable: symtab.SymbolTable
   import symbolTable._
 
-  /** The compiler classpath. */
+  /** The old, recursive implementation of compiler classpath. */
   def classPath: ClassPath[AbstractFile]
+
+  /** The new implementation of compiler classpath. */
+  private[nsc] def flatClassPath: FlatClassPath
 
   /** Update classpath with a substitution that maps entries to entries */
   def updateClassPath(subst: Map[ClassPath[AbstractFile], ClassPath[AbstractFile]])
