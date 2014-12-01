@@ -230,7 +230,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
 
   object LabelDef extends LabelDeconstructor {
     def _1: Name = field.name
-    def _2: List[Ident] = field.params
+    def _2: List[Symbol] = field.params.map(_.symbol)
     def _3: Tree = field.rhs
   }
 
@@ -336,6 +336,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   def getRequiredClass(fullname: String): Symbol = rootMirror.getRequiredClass(fullname)
 
   def getClassIfDefined(fullname: String): Symbol = rootMirror.getClassIfDefined(fullname)
+
+  def shouldEmitJumpAfterLabels: Boolean = false
 
   def shouldEmitAnnotation(annot: Annotation): Boolean = {
     annot.symbol.initialize.isJavaDefined &&
@@ -541,7 +543,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     }
 
     def linkedClass: Symbol = exitingPickler(sym.linkedClassOfClass) // linkedCoC does not work properly in late phases
-     def companionModuleMembers: List[Symbol] = {
+    def companionModuleMembers: List[Symbol] = {
       // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
       // not local classes of the companion module (E in the exmaple) that were lifted by lambdalift.
       if (linkedClass.isTopLevelModuleClass) exitingPickler(linkedClass.memberClasses)

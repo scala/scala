@@ -154,6 +154,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   def sourceFileFor(cu: CompilationUnit): String
   def setMainClass(name: String): Unit
   def informProgress(msg: String): Unit
+  def shouldEmitJumpAfterLabels: Boolean // see comment on dotty.tools.backend.jvm.LabelDefs
 
   /* backend actually uses free names to generate stuff. This should NOT mangled */
   def newTermName(prefix: String): Name
@@ -355,7 +356,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
 
   trait LabelDeconstructor extends DeconstructorCommon[LabelDef]{
     def _1: Name
-    def _2: List[Ident]
+    def _2: List[Symbol]
     def _3: Tree
   }
 

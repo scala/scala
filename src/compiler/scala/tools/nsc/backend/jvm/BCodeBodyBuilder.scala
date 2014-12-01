@@ -12,6 +12,7 @@ package jvm
 import scala.annotation.switch
 
 import scala.tools.asm
+import scala.tools.asm.Label
 import scala.tools.nsc.backend.icode.{Opcodes, Primitives}
 
 /*
@@ -492,13 +493,17 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       }
     }
 
-    private def genLabelDef(lblDf: LabelDef, expectedType: BType) = lblDf match {
+    private def genLabelDef(lblDf: LabelDef, expectedType: BType, jumpTo: asm.Label = null): Unit = lblDf match {
       case LabelDef(_, _, rhs) =>
       // duplication of LabelDefs contained in `finally`-clauses is handled when emitting RETURN. No bookkeeping for that required here.
       // no need to call index() over lblDf.params, on first access that magic happens (moreover, no LocalVariableTable entries needed for them).
       markProgramPoint(programPoint(lblDf.symbol))
       lineNumber(lblDf)
       genLoad(rhs, expectedType)
+      if(jumpTo ne null) { // dotty
+        bc goTo jumpTo
+      }
+      else assert(!int.shouldEmitJumpAfterLabels) // scalac
     }
 
     private def genReturn(r: Return) = r match{
@@ -814,15 +819,45 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
 
     def genBlock(tree: Block, expectedType: BType) = tree match {
       case Block(stats, expr) =>
-      val savedScope = varsInScope
-      varsInScope = Nil
-      stats foreach genStat
-      genLoad(expr, expectedType)
-      val end = currProgramPoint()
-      if (emitVars) { // add entries to LocalVariableTable JVM attribute
-        for ((sym, start) <- varsInScope.reverse) { emitLocalVarScope(sym, start, end) }
+
+
+      def genNormalBlock =  {
+        val savedScope = varsInScope
+        varsInScope = Nil
+        stats foreach genStat
+        genLoad(expr, expectedType)
+        val end = currProgramPoint()
+        if (emitVars) {
+          // add entries to LocalVariableTable JVM attribute
+          for ((sym, start) <- varsInScope.reverse) {
+            emitLocalVarScope(sym, start, end)
+          }
+        }
+        varsInScope = savedScope
       }
-      varsInScope = savedScope
+
+      if(!int.shouldEmitJumpAfterLabels) genNormalBlock
+      else {
+        val (prefixLabels, stats1) = stats.span {
+          case t@LabelDef(_, _, _) => true
+          case _ => false
+        }
+        assert(stats1.isEmpty || prefixLabels.isEmpty)
+        if (!prefixLabels.isEmpty) {
+          val startLocation = new asm.Label
+          val breakLocation = new asm.Label
+          bc goTo startLocation
+          prefixLabels.foreach{ lblDf => labelDef.+=(lblDf.symbol -> lblDf.asInstanceOf[LabelDef])}
+          prefixLabels.foreach{ lblDf => genLabelDef(lblDf.asInstanceOf[LabelDef], tpeTK(lblDf), breakLocation)}
+          markProgramPoint(startLocation)
+          val generated = tpeTK(expr)
+          genLoad(expr, generated)
+          markProgramPoint(breakLocation)
+          if (generated != expectedType)
+            adapt(generated, expectedType)
+        }
+        else genNormalBlock
+      }
     }
 
     def loadSym(sym: Symbol) =
@@ -909,7 +944,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       case LabelDef(_, param, _) =>
 
       val aps = {
-        val params: List[Symbol] = param.map(_.symbol)
+        val params: List[Symbol] = param
         assert(args.length == params.length, s"Wrong number of arguments in call to label at: $gotoPos")
 
         def isTrivial(kv: (Tree, Symbol)) = kv match {
