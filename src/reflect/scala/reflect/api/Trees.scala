@@ -2104,9 +2104,6 @@ trait Trees { self: Universe =>
    */
   val noSelfType: ValDef
 
-  @deprecated("Use `noSelfType` instead", "2.11.0")
-  val emptyValDef: ValDef
-
   /** An empty superclass constructor call corresponding to:
    *    super.<init>()
    *  This is used as a placeholder in the primary constructor body in class templates

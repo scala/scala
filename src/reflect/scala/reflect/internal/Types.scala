@@ -209,7 +209,7 @@ trait Types
 
   case object UnmappableTree extends TermTree {
     override def toString = "<unmappable>"
-    super.tpe_=(NoType)
+    super.setType(NoType)
     override def tpe_=(t: Type) = if (t != NoType) {
       throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
     }

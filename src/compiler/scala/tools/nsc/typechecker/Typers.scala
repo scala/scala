@@ -2792,7 +2792,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         ClassDef(Modifiers(FINAL), tpnme.ANON_FUN_NAME, tparams = Nil,
           gen.mkTemplate(
             parents    = TypeTree(samClassTpFullyDefined) :: serializableParentAddendum,
-            self       = emptyValDef,
+            self       = noSelfType,
             constrMods = NoMods,
             vparamss   = ListOfNil,
             body       = List(samDef),

@@ -87,7 +87,7 @@ trait Trees extends api.Trees {
 
     private[scala] def copyAttrs(tree: Tree): this.type = {
       rawatt = tree.rawatt
-      tpe = tree.tpe
+      setType(tree.tpe)
       if (hasSymbolField) symbol = tree.symbol
       this
     }
@@ -1087,8 +1087,6 @@ trait Trees extends api.Trees {
   case object EmptyTree extends TermTree with CannotHaveAttrs { override def isEmpty = true; val asList = List(this) }
   object noSelfType extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) with CannotHaveAttrs
   object pendingSuperCall extends Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List()) with CannotHaveAttrs
-
-  @deprecated("Use `noSelfType` instead", "2.11.0") lazy val emptyValDef = noSelfType
 
   def newValDef(sym: Symbol, rhs: Tree)(
     mods: Modifiers = Modifiers(sym.flags),
