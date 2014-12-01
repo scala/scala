@@ -229,7 +229,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       case Apply(fun @ Select(receiver, _), _) =>
       val sym = tree.symbol
 
-      val code = primitives.getPrimitive(sym, receiver.tpe)
+      val code = primitives.getPrimitive(tree, receiver.tpe)
 
       import ScalaPrimitives._
 
@@ -579,11 +579,37 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
     } // end of genTypeApply()
 
 
+    private def mkArrayConstructorCall(arr: ArrayBType, app: Apply, args: List[Tree]) = {
+      genLoadArguments(args, paramTKs(app))
+      val dims     = arr.dimension
+      var elemKind = arr.elementType
+      val argsSize = args.length
+      if (argsSize > dims) {
+        error(app.pos, s"too many arguments for array constructor: found ${args.length} but array has only $dims dimension(s)")
+      }
+      if (argsSize < dims) {
+        /* In one step:
+         *   elemKind = new BType(BType.ARRAY, arr.off + argsSize, arr.len - argsSize)
+         * however the above does not enter a TypeName for each nested arrays in chrs.
+         */
+        for (i <- args.length until dims) elemKind = ArrayBType(elemKind)
+      }
+      (argsSize : @switch) match {
+        case 1 => bc newarray elemKind
+        case _ =>
+          val descr = ('[' * argsSize) + elemKind.descriptor // denotes the same as: arrayN(elemKind, argsSize).descriptor
+          mnode.visitMultiANewArrayInsn(descr, argsSize)
+      }
+    }
+
+
     private def genApply(app: Apply, expectedType: BType): BType = {
       var generatedType = expectedType
       lineNumber(app)
       app match {
-
+        case Apply(_, args) if syntheticArrayConstructors(app.symbol) =>
+          generatedType = toTypeKind(app.tpe)
+          mkArrayConstructorCall(generatedType.asArrayBType, app, args)
         case Apply(t :TypeApply, _) =>
 
           generatedType = genTypeApply(t)
@@ -614,27 +640,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
           assert(generatedType.isRef, s"Non reference type cannot be instantiated: $generatedType")
 
           generatedType match {
-            case arr @ ArrayBType(componentType) =>
-              genLoadArguments(args, paramTKs(app))
-              val dims     = arr.dimension
-              var elemKind = arr.elementType
-              val argsSize = args.length
-              if (argsSize > dims) {
-                error(app.pos, s"too many arguments for array constructor: found ${args.length} but array has only $dims dimension(s)")
-              }
-              if (argsSize < dims) {
-                /* In one step:
-                 *   elemKind = new BType(BType.ARRAY, arr.off + argsSize, arr.len - argsSize)
-                 * however the above does not enter a TypeName for each nested arrays in chrs.
-                 */
-                for (i <- args.length until dims) elemKind = ArrayBType(elemKind)
-              }
-              (argsSize : @switch) match {
-                case 1 => bc newarray elemKind
-                case _ =>
-                  val descr = ('[' * argsSize) + elemKind.descriptor // denotes the same as: arrayN(elemKind, argsSize).descriptor
-                  mnode.visitMultiANewArrayInsn(descr, argsSize)
-              }
+            case arr: ArrayBType =>
+              mkArrayConstructorCall(arr, app, args)
 
             case rt: ClassBType =>
               assert(classBTypeFromSymbol(ctor.owner) == rt, s"Symbol ${ctor.owner.fullName} is different from $rt")
@@ -1015,7 +1022,9 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Is the given symbol a primitive operation? */
-    def isPrimitive(fun: Symbol): Boolean = primitives.isPrimitive(fun)
+    def isPrimitive(fun: Symbol): Boolean = {
+      primitives.isPrimitive(fun)
+    }
 
     /* Generate coercion denoted by "code" */
     def genCoercion(code: Int) {

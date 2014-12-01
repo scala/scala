@@ -298,7 +298,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   }
 
   object ScalacPrimitives extends Primitives {
-    def getPrimitive(methodSym: Symbol, reciever: Type): Int = global.scalaPrimitives.getPrimitive(methodSym, reciever)
+    def getPrimitive(app: Apply, reciever: Type): Int = global.scalaPrimitives.getPrimitive(app.symbol, reciever)
 
     def getPrimitive(sym: Symbol): Int = global.scalaPrimitives.getPrimitive(sym)
 

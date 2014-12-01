@@ -117,6 +117,9 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   def boxMethods: Map[Symbol, Symbol] // (class, method)
   def unboxMethods: Map[Symbol, Symbol]
 
+  /* dotty specific, see dotty.runtime.Arrays */
+  def syntheticArrayConstructors: Set[Symbol] = Set.empty
+
   /*
    * Collects all LabelDef nodes enclosed (directly or not) by each node.
    *
@@ -574,7 +577,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   }
 
   trait Primitives {
-    def getPrimitive(methodSym: Symbol, reciever: Type): Int
+    def getPrimitive(app: Apply, reciever: Type): Int
     def isPrimitive(sym: Symbol): Boolean
     def getPrimitive(sym: Symbol): Int
   }
