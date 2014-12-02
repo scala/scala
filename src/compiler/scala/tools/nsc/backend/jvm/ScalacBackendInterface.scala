@@ -186,40 +186,39 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def _2: List[Tree] = field.args
   }
 
-  // todo: this product1s should also eventually become name-based pattn matching
   object Literal extends LiteralDeconstructor {
-    def unapply(a: Literal): Option[Constant] = Some(a.value)
+    def get = field.value
   }
 
   object Throw extends ThrowDeconstructor {
-    def unapply(s: Throw): Option[Tree] = Some(s.expr)
+    def get = field.expr
   }
 
   object New extends NewDeconstructor {
-    def unapply(s: New): Option[Type] = Some(s.tpt.tpe)
+    def get = field.tpt.tpe
   }
 
   object This extends ThisDeconstructor {
-    def unapply(s: This): Option[Name] = Some(s.qual)
+    def get = field.qual
     def apply(s: global.Symbol): This = global.This(s.name.toTypeName) setSymbol s
   }
 
   object Return extends ReturnDeconstructor {
-    def unapply(s: Return): Option[Tree] = Some(s.expr)
+    def get = field.expr
   }
 
   object Ident extends IdentDeconstructor {
-    def unapply(s: Ident): Option[Name] = Some(s.name)
+    def get = field.name
   }
 
   object Alternative extends AlternativeDeconstructor {
-    def unapply(s: Alternative): Option[List[Tree]] = Some(s.trees)
+    def get = field.trees
   }
   object Constant extends ConstantDeconstructor {
-    def unapply(a: Constant): Option[Any] = Some(a.value)
+    def get = field.value
   }
   object ThrownException extends ThrownException {
-    def unapply(a: Annotation): Option[Symbol] = None // todo
+    def unapply(a: Annotation): Option[Symbol] = global.ThrownException.unapply(a)
   }
 
   object Try extends TryDeconstructor {

@@ -14,6 +14,7 @@ import scala.tools.asm
 trait BackendInterface extends BackendInterfaceDefinitions{
   type Flags      = Long
 
+  type Constant   >: Null <: AnyRef
   type Symbol     >: Null <: AnyRef
   type Type       >: Null <: AnyRef
   type Annotation >: Null <: AnyRef
@@ -46,10 +47,10 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   type Name       >: Null <: AnyRef
   type Position
   type CompilationUnit <: AnyRef
-  type Bind        >: Null <: Tree
-  type New         >: Null <: Tree
+  type Bind         >: Null <: Tree
+  type New          >: Null <: Tree
   type ApplyDynamic >: Null <: Tree
-  type Super >: Null <: Tree
+  type Super       >: Null <: Tree
 
 
   implicit val TypeDefTag: ClassTag[TypeDef]
@@ -84,8 +85,6 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   implicit val SuperTag: ClassTag[Super]
   implicit val ConstantClassTag: ClassTag[Constant]
 
-
-  type Constant
   type ConstantTag = Int
 
   val UnitTag: ConstantTag
@@ -218,9 +217,20 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   val Bind: BindDeconstructor
   val ClassDef: ClassDefDeconstructor
 
-  trait DeconstructorCommon[T >: Null <: Tree] {
+  trait DeconstructorCommon[T >: Null <: AnyRef] {
     var field: T = null
     def get: this.type = this
+    def isEmpty: Boolean = field eq null
+    def isDefined = !isEmpty
+    def unapply(s: T): this.type ={
+      field = s
+      this
+    }
+  }
+
+  trait Deconstructor1Common[T >: Null <: AnyRef, R]{
+    var field: T = _
+    def get: R
     def isEmpty: Boolean = field eq null
     def isDefined = !isEmpty
     def unapply(s: T): this.type ={
@@ -262,38 +272,30 @@ trait BackendInterface extends BackendInterfaceDefinitions{
     def _6: Tree
   }
 
-  // todo do something with product1
-  trait ThisDeconstructor{
-    def unapply(s: This): Option[Name]
+  trait ThisDeconstructor extends Deconstructor1Common[This, Name]{
     def apply(s: Symbol): Tree
   }
 
-  trait IdentDeconstructor{
-    def unapply(s: Ident): Option[Name]
+  trait IdentDeconstructor extends Deconstructor1Common[Ident, Name]{
   }
 
-  trait ReturnDeconstructor {
-    def unapply(s: Return): Option[Tree]
+  trait ReturnDeconstructor extends Deconstructor1Common[Return, Tree]{
   }
 
-  trait ThrownException{
+  trait ThrownException {
     def unapply(a: Annotation): Option[Symbol]
   }
 
-  trait ThrowDeconstructor{
-    def unapply(s: Throw): Option[Tree]
+    trait ThrowDeconstructor extends Deconstructor1Common[Throw, Tree]{
   }
 
-  trait ConstantDeconstructor{
-    def unapply(a: Constant): Option[Any]
+  trait ConstantDeconstructor extends Deconstructor1Common[Constant, Any]{
   }
 
-  trait NewDeconstructor{
-    def unapply(s: New): Option[Type]
+  trait NewDeconstructor extends Deconstructor1Common[New, Type]{
   }
 
-  trait AlternativeDeconstructor {
-    def unapply(s: Alternative): Option[List[Tree]]
+  trait AlternativeDeconstructor extends Deconstructor1Common[Alternative, List[Tree]]{
   }
 
   trait BlockDeconstructor extends DeconstructorCommon[Block]{
@@ -312,8 +314,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
     def _2: List[Tree]
   }
 
-  trait LiteralDeconstructor{
-    def unapply(a: Literal): Option[Constant]
+  trait LiteralDeconstructor extends Deconstructor1Common[Literal, Constant]{
   }
 
   trait AssignDeconstructor extends DeconstructorCommon[Assign]{
