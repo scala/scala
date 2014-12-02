@@ -27,7 +27,7 @@ package api
  *    scala> class C[T] { def test[U](x: T)(y: U): Int = ??? }
  *    defined class C
  *
- *    scala> val test = typeOf[C[Int]].member(newTermName("test")).asMethod
+ *    scala> val test = typeOf[C[Int]].member(TermName("test")).asMethod
  *    test: reflect.runtime.universe.MethodSymbol = method test
  *
  *    scala> test.info

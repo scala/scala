@@ -84,7 +84,7 @@ trait Exprs { self: Universe =>
      *
      * It is equivalent to
      * {{{
-     *   Select( expr.tree, newTermName("foo") )
+     *   Select( expr.tree, TermName("foo") )
      * }}}
      *
      * The following example code however does not compile
