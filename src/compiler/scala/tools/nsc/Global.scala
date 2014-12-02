@@ -1590,10 +1590,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
       }
     }
 
-    /** Reset package class to state at typer (not sure what this
-     *  is needed for?)
+    /** Reset package class to state at typer (not sure what this is needed for?)
      */
-    private def resetPackageClass(pclazz: Symbol) {
+    private def resetPackageClass(pclazz: Symbol): Unit = if (typerPhase != NoPhase) {
       enteringPhase(firstPhase) {
         pclazz.setInfo(enteringPhase(typerPhase)(pclazz.info))
       }
