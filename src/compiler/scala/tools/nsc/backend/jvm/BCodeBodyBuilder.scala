@@ -313,6 +313,15 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
           abort(s"Unexpected New(${tpt.summaryString}/$tpt) reached GenBCode.\n" +
                 "  Call was genLoad" + ((tree, expectedType)))
 
+        case app @ Closure(env, call, functionalInterface) =>
+          val (fun, args) = call match {
+            case Apply(fun, args) => (fun, args)
+            case t@Ident(_) => (t, Nil)
+          }
+
+          genLoadArguments(env, fun.symbol.info.paramTypes map toTypeKind)
+          genInvokeDynamicLambda(NoSymbol, fun.symbol, env.size, functionalInterface)
+
         case app @ Apply(_, _) =>
           generatedType = genApply(app.asInstanceOf[Apply], expectedType)
 
@@ -1356,6 +1365,38 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
     def genSynchronized(tree: Apply, expectedType: BType): BType
     def genLoadTry(tree: Try): BType
 
+    def genInvokeDynamicLambda(ctor: Symbol, lambdaTarget: Symbol, environmentSize: Int, functionalInterface: Symbol) {
+      debuglog(s"Using invokedynamic rather than `new ${ctor.owner}`")
+      val targetHandle =
+        new asm.Handle(asm.Opcodes.H_INVOKESTATIC,
+          classBTypeFromSymbol(lambdaTarget.owner).internalName,
+          lambdaTarget.name.toString,
+          asmMethodType(lambdaTarget).descriptor)
+
+      val (a,b) = lambdaTarget.info.paramTypes.splitAt(environmentSize)
+      val (capturedParamsTypes, lambdaParamTypes) = if(int.doLabmdasFollowJVMMetafactoryOrder) (a,b) else (b,a)
+
+      // Requires https://github.com/scala/scala-java8-compat on the runtime classpath
+      val returnUnit = lambdaTarget.info.resultType.typeSymbol == UnitClass
+      val functionalInterfaceDesc: String = classBTypeFromSymbol(functionalInterface).descriptor
+      val desc = capturedParamsTypes.map(tpe => toTypeKind(tpe)).mkString(("("), "", ")") + functionalInterfaceDesc
+      // TODO specialization
+      val constrainedType = new MethodBType(lambdaParamTypes.map(p => toTypeKind(p)), toTypeKind(lambdaTarget.tpe.resultType)).toASMType
+      val abstractMethod = functionalInterface.info.decls.find(_.isDeferred).getOrElse(functionalInterface.info.member(nme_apply))
+      val methodName = abstractMethod.name.toString
+      val applyN = {
+        val mt = asmMethodType(abstractMethod)
+        mt.toASMType
+      }
+      bc.jmethod.visitInvokeDynamicInsn(methodName, desc, lambdaMetaFactoryBootstrapHandle,
+        // boostrap args
+        applyN, targetHandle, constrainedType
+      )
+    }
   }
+  val lambdaMetaFactoryBootstrapHandle =
+    new asm.Handle(asm.Opcodes.H_INVOKESTATIC,
+      int.LambdaMetaFactory.javaBinaryName.toString, int.MetafactoryName,
+      "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;")
 
 }

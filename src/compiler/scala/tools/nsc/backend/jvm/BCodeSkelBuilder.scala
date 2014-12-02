@@ -71,7 +71,7 @@ trait BCodeSkelBuilder extends BCodeHelpers {
 
     /* ---------------- idiomatic way to ask questions to typer ---------------- */
 
-    def paramTKs(app: Apply): List[BType] = app match {
+    def paramTKs(app: Apply, take: Int = -1): List[BType] = app match {
       case Apply(fun, _) =>
       val funSym = fun.symbol
       (funSym.info.paramTypes map toTypeKind) // this tracks mentioned inner classes (in innerClassBufferASM)

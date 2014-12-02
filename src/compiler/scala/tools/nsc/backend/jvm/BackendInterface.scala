@@ -51,6 +51,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   type New          >: Null <: Tree
   type ApplyDynamic >: Null <: Tree
   type Super       >: Null <: Tree
+  type Closure     >: Null <: Tree
 
 
   implicit val TypeDefTag: ClassTag[TypeDef]
@@ -84,6 +85,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   implicit val ApplyDynamicTag: ClassTag[ApplyDynamic]
   implicit val SuperTag: ClassTag[Super]
   implicit val ConstantClassTag: ClassTag[Constant]
+  implicit val ClosureTag: ClassTag[Closure]
 
   type ConstantTag = Int
 
@@ -111,6 +113,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   val nme_THIS: Name
   val nme_PACKAGE: Name
   val nme_EQEQ_LOCAL_VAR: Name
+  val nme_apply: Name
 
   /* methods used to box&unbox primitives ?and value classes? */
   def boxMethods: Map[Symbol, Symbol] // (class, method)
@@ -216,6 +219,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   val Template: TemplateDeconstructor
   val Bind: BindDeconstructor
   val ClassDef: ClassDefDeconstructor
+  val Closure: ClosureDeconstructor
 
   trait DeconstructorCommon[T >: Null <: AnyRef] {
     var field: T = null
@@ -270,6 +274,12 @@ trait BackendInterface extends BackendInterfaceDefinitions{
     def _4: List[List[ValDef]]
     def _5: Tree
     def _6: Tree
+  }
+
+  trait ClosureDeconstructor extends DeconstructorCommon[Closure]{
+    def _1: List[Tree] // environment
+    def _2: Tree // meth
+    def _3: Symbol // functionalInterface
   }
 
   trait ThisDeconstructor extends Deconstructor1Common[This, Name]{
@@ -685,7 +695,13 @@ trait BackendInterfaceDefinitions { self: BackendInterface =>
   lazy val NativeAttr: Symbol = requiredClass[scala.native]
   lazy val TransientAttr = requiredClass[scala.transient]
   lazy val VolatileAttr = requiredClass[scala.volatile]
+  lazy val LambdaMetaFactory = requiredClass[java.lang.invoke.LambdaMetafactory]
+  lazy val MethodHandle = requiredClass[java.lang.invoke.MethodHandle]
+
   val ScalaSignatureATTRName: String = "ScalaSig"
+  val MetafactoryName: String = "metafactory"
+
+  def doLabmdasFollowJVMMetafactoryOrder: Boolean = true
 
   val BoxedBooleanClass: Symbol = requiredClass[java.lang.Boolean]
   val BoxedByteClass: Symbol = requiredClass[java.lang.Byte]

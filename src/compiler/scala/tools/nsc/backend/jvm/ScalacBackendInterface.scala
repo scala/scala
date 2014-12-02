@@ -19,6 +19,13 @@ import scala.reflect.internal.{Flags => IFlags}
 class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterface with BackendInterfaceDefinitions{
   import global._
   import definitions._
+
+  class NonExistentTree extends global.Tree {
+    def productElement(n: Int): Any = ???
+    def productArity: Int = ???
+    def canEqual(that: Any): Boolean = ???
+  }
+
   type Symbol          = global.Symbol
   type Type            = global.Type
   type Annotation      = global.AnnotationInfo
@@ -56,6 +63,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   type ApplyDynamic    = global.ApplyDynamic
   type Super           = global.Super
   type Modifiers       = global.Modifiers
+  type Closure         = NonExistentTree
 
   val NoSymbol = global.NoSymbol
   val NoPosition: Position = global.NoPosition
@@ -296,6 +304,13 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def _3: List[TypeDef] = field.tparams
   }
 
+  object Closure extends ClosureDeconstructor {
+    def _1 = ???
+    def _2 = ???
+    def _3 = ???
+    override def isEmpty = true
+  }
+
   object ScalacPrimitives extends Primitives {
     def getPrimitive(app: Apply, reciever: Type): Int = global.scalaPrimitives.getPrimitive(app.symbol, reciever)
 
@@ -314,6 +329,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   val nme_PACKAGE: Name = nme.PACKAGE
   val nme_EQEQ_LOCAL_VAR: Name = nme.EQEQ_LOCAL_VAR
   val nme_valueOf: Name = nme.valueOf
+  val nme_apply: Name = nme.apply
+
 
   val Flag_METHOD: Flags = IFlags.METHOD
   val Flag_SYNTHETIC: Flags = IFlags.SYNTHETIC
@@ -1144,4 +1161,5 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   implicit val ApplyDynamicTag: ClassTag[ApplyDynamic] = ClassTag[ApplyDynamic](classOf[ApplyDynamic])
   implicit val SuperTag: ClassTag[Super] = global.SuperTag
   implicit val ConstantClassTag: ClassTag[Constant] = global.ConstantTag
+  implicit val ClosureTag: ClassTag[Closure] = ClassTag[Closure](classOf[Closure])
 }
