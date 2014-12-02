@@ -296,8 +296,10 @@ trait Logic extends Debugging  {
     val EmptyModel: Model
     val NoModel: Model
 
+    final case class Solution(model: Model, unassigned: List[Sym])
+
     def findModelFor(f: Formula): Model
-    def findAllModelsFor(f: Formula): List[Model]
+    def findAllModelsFor(f: Formula): List[Solution]
   }
 }
 
