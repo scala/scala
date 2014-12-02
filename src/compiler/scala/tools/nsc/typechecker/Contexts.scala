@@ -104,7 +104,7 @@ trait Contexts { self: Analyzer =>
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)
-      reporter.error(unit.firstXmlPos, "To compile XML syntax, the scala.xml package must be on the classpath.\nPlease see http://docs.scala-lang.org/overviews/core/scala-2.11.html#scala-xml.")
+      reporter.error(unit.firstXmlPos, "To compile XML syntax, the scala.xml package must be on the classpath.\nPlease see https://github.com/scala/scala-xml for details.")
 
     // scala-xml needs `scala.xml.TopScope` to be in scope globally as `$scope`
     // We detect `scala-xml` by looking for `scala.xml.TopScope` and
