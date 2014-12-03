@@ -192,13 +192,14 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
     case class ExtractorTreeMaker(extractor: Tree, extraCond: Option[Tree], nextBinder: Symbol)(
           val subPatBinders: List[Symbol],
           val subPatRefs: List[Tree],
+          val potentiallyMutableBinders: Set[Symbol],
           extractorReturnsBoolean: Boolean,
           val checkedLength: Option[Int],
           val prevBinder: Symbol,
           val ignoredSubPatBinders: Set[Symbol]
           ) extends FunTreeMaker with PreserveSubPatBinders {
 
-      def extraStoredBinders: Set[Symbol] = Set()
+      def extraStoredBinders: Set[Symbol] = potentiallyMutableBinders
 
       debug.patmat(s"""
         |ExtractorTreeMaker($extractor, $extraCond, $nextBinder) {
