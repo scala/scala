@@ -146,6 +146,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   val NothingClass: Symbol = global.definitions.NothingClass
   val NullClass: Symbol = global.definitions.NullClass
   val ObjectClass: Symbol = global.definitions.ObjectClass
+  val Object_Type: Type = global.definitions.ObjectTpe
+  val Throwable_Type: Type = global.definitions.ThrowableTpe
   val Object_isInstanceOf: Symbol = global.definitions.Object_isInstanceOf
   val Object_asInstanceOf: Symbol = global.definitions.Object_asInstanceOf
   val Object_equals: Symbol = global.definitions.Object_equals
@@ -522,9 +524,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
 
     def outputDirectory: AbstractFile = settings.outputDirs outputDirFor enteringFlatten(sym.sourceFile)
 
-
-    def freshLocal(cunit: CompilationUnit, name: String, pos: Position, flags: Flags): Symbol = {
-      sym.newVariable(cunit.freshTermName(name), pos, flags)
+    def freshLocal(cunit: CompilationUnit, name: String, tpe: Type, pos: Position, flags: Flags): Symbol = {
+      sym.newVariable(cunit.freshTermName(name), pos, flags).setInfo(tpe)
     }
 
     def setter(clz: Symbol): Symbol = sym.setterIn(clz)

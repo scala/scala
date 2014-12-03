@@ -367,9 +367,9 @@ trait BCodeSkelBuilder extends BCodeHelpers {
       /* Make a fresh local variable, ensuring a unique name.
        * The invoker must make sure inner classes are tracked for the sym's tpe.
        */
-      def makeLocal(tk: BType, name: String): Symbol = {
+      def makeLocal(tk: BType, name: String, tpe: Type, pos: Position): Symbol = {
 
-        val locSym = methSymbol.freshLocal(cunit, name, NoPosition, Flag_SYNTHETIC) // setInfo tpe
+        val locSym = methSymbol.freshLocal(cunit, name, tpe, pos, Flag_SYNTHETIC) // setInfo tpe
         makeLocal(locSym, tk)
         locSym
       }

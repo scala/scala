@@ -520,7 +520,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
     def serialVUID: Option[Long]
 
 
-    def freshLocal(cunit: CompilationUnit, name: String, pos: Position, flags: Flags): Symbol
+    def freshLocal(cunit: CompilationUnit, name: String, tpe: Type, pos: Position, flags: Flags): Symbol
 
     def getter(clz: Symbol): Symbol
     def setter(clz: Symbol): Symbol
@@ -695,8 +695,8 @@ trait BackendInterfaceDefinitions { self: BackendInterface =>
   lazy val NativeAttr: Symbol = requiredClass[scala.native]
   lazy val TransientAttr = requiredClass[scala.transient]
   lazy val VolatileAttr = requiredClass[scala.volatile]
-  lazy val LambdaMetaFactory = requiredClass[java.lang.invoke.LambdaMetafactory]
-  lazy val MethodHandle = requiredClass[java.lang.invoke.MethodHandle]
+  lazy val LambdaMetaFactory = getClassIfDefined("java.lang.invoke.LambdaMetafactory")
+  lazy val MethodHandle = getClassIfDefined("java.lang.invoke.MethodHandle")
 
   val ScalaSignatureATTRName: String = "ScalaSig"
   val MetafactoryName: String = "metafactory"
@@ -729,6 +729,11 @@ trait BackendInterfaceDefinitions { self: BackendInterface =>
   val StringModule: Symbol = StringClass.linkedClassOfClass
   val ScalaRunTimeModule: Symbol = requiredModule[scala.runtime.ScalaRunTime.type]
 
+
+  // types used in backend
+
+  val Object_Type: Type
+  val Throwable_Type: Type
   // methods used in backend
 
   val Array_clone: Symbol
