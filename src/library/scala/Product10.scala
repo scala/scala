@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -23,7 +23,7 @@ trait Product10[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10] extends Any w
    */
   override def productArity = 10
 
-  
+
   /** Returns the n-th projection of this product if 0 < n <= productArity,
    *  otherwise throws an `IndexOutOfBoundsException`.
    *
@@ -33,7 +33,7 @@ trait Product10[+T1, +T2, +T3, +T4, +T5, +T6, +T7, +T8, +T9, +T10] extends Any w
    */
 
   @throws(classOf[IndexOutOfBoundsException])
-  override def productElement(n: Int) = n match { 
+  override def productElement(n: Int) = n match {
     case 0 => _1
     case 1 => _2
     case 2 => _3

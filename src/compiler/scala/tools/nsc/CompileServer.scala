@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2015 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -193,14 +193,14 @@ object CompileServer {
     val i = args.indexOf("-p")
     if (i >= 0 && args.length > i + 1) {
     	scala.util.control.Exception.ignoring(classOf[NumberFormatException]) {
-    		port = args(i + 1).toInt 
+    		port = args(i + 1).toInt
     	}
     }
-    
+
     // Create instance rather than extend to pass a port parameter.
     val server = new StandardCompileServer(port)
     val redirectDir = (server.compileSocket.tmpDir / "output-redirects").createDirectory()
-    
+
     if (debug) {
       server.echo("Starting CompileServer on port " + server.port)
       server.echo("Redirect dir is " + redirectDir)

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -146,7 +146,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    *  more than one way to generate the same subsequence, only one will be returned.
    *
    *  For example, `"xyyy"` has three different ways to generate `"xy"` depending on
-   *  whether the first, second, or third `"y"` is selected.  However, since all are 
+   *  whether the first, second, or third `"y"` is selected.  However, since all are
    *  identical, only one will be chosen.  Which of the three will be taken is an
    *  implementation detail that is not defined.
    *

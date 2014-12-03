@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -289,8 +289,8 @@ private[collection] trait Wrappers {
   }
 
   /** Wraps a Java map as a Scala one.  If the map is to support concurrent access,
-    * use [[JConcurrentMapWrapper]] instead.  If the wrapped map is synchronized 
-    * (e.g. from `java.util.Collections.synchronizedMap`), it is your responsibility 
+    * use [[JConcurrentMapWrapper]] instead.  If the wrapped map is synchronized
+    * (e.g. from `java.util.Collections.synchronizedMap`), it is your responsibility
     * to wrap all non-atomic operations with `underlying.synchronized`.
     * This includes `get`, as `java.util.Map`'s API does not allow for an
     * atomic `get` when `null` values may be present.

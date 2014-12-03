@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -20,7 +20,7 @@ package scala
  *  {{{
  *  val f: PartialFunction[Int, Any] = { case _ => 1/0 }
  *  }}}
- * 
+ *
  *  It is the responsibility of the caller to call `isDefinedAt` before
  *  calling `apply`, because if `isDefinedAt` is false, it is not guaranteed
  *  `apply` will throw an exception to indicate an error condition. If an

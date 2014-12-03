@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -20,7 +20,7 @@ import mutable.Builder
  *
  *  @define  linearSeqInfo
  *  Linear sequences have reasonably efficient `head`, `tail`, and `isEmpty` methods.
- *  If these methods provide the fastest way to traverse the collection, a 
+ *  If these methods provide the fastest way to traverse the collection, a
  *  collection `Coll` that extends this trait should also extend
  *  `LinearSeqOptimized[A, Coll[A]]`.
  */

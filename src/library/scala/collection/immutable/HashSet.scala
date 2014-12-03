@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -163,7 +163,7 @@ class HashSet[A] extends AbstractSet[A]
     nullToEmpty(removed0(e, computeHash(e), 0))
 
   /** Returns this $coll as an immutable set.
-   *  
+   *
    *  A new set will not be built; lazy collections will stay lazy.
    */
   @deprecatedOverriding("Immutable sets should do nothing on toSet but return themselves cast as a Set.", "2.11.0")
@@ -221,7 +221,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
   private object EmptyHashSet extends HashSet[Any] { }
   private[collection] def emptyInstance: HashSet[Any] = EmptyHashSet
-  
+
   // utility method to create a HashTrieSet from two leaf HashSets (HashSet1 or HashSetCollision1) with non-colliding hash code)
   private def makeHashTrieSet[A](hash0:Int, elem0:HashSet[A], hash1:Int, elem1:HashSet[A], level:Int) : HashTrieSet[A] = {
     val index0 = (hash0 >>> level) & 0x1f

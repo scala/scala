@@ -3,7 +3,7 @@
 rem ##########################################################################
 rem # Scala code runner 2.9.1.final
 rem ##########################################################################
-rem # (c) 2002-2013 LAMP/EPFL
+rem # (c) 2002-2015 LAMP/EPFL
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -53,7 +53,7 @@ if "%_EXTENSION_CLASSPATH%"=="" (
     for %%f in ("%_SCALA_HOME%\build\pack\lib\*") do call :add_cpath "%%f"
     if "%OS%"=="Windows_NT" (
       for /d %%f in ("%_SCALA_HOME%\build\pack\lib\*") do call :add_cpath "%%f"
-    )  
+    )
   )
 )
 

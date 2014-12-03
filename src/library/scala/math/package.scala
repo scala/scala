@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -103,7 +103,7 @@ package object math {
    *  @return the value of the argument rounded to the nearest `Int` value.
    */
   def round(x: Float): Int = java.lang.Math.round(x)
-  
+
   /** Returns the closest `Long` to the argument.
    *
    *  @param  x a floating-point value to be rounded to a `Long`.

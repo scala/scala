@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -625,7 +625,7 @@ trait TraversableLike[+A, +Repr] extends Any
 
   @deprecatedOverriding("Enforce contract of toTraversable that if it is Traversable it returns itself.", "2.11.0")
   def toTraversable: Traversable[A] = thisCollection
-  
+
   def toIterator: Iterator[A] = toStream.iterator
   def toStream: Stream[A] = toBuffer.toStream
   // Override to provide size hint.

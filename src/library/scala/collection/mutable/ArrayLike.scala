@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -10,7 +10,7 @@ package scala
 package collection
 package mutable
 
-/** A common supertrait of `ArrayOps` and `WrappedArray` that factors out the 
+/** A common supertrait of `ArrayOps` and `WrappedArray` that factors out the
  * `deep` method for arrays and wrapped arrays and serves as a marker trait
  * for array wrappers.
  *

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2007-2013 LAMP/EPFL
+ * Copyright 2007-2015 LAMP/EPFL
  * @author  Paul Phillips
  */
 
@@ -275,7 +275,7 @@ import scala.language.implicitConversions"""
 trait AnyValTemplates {
   def headerTemplate = """/*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **

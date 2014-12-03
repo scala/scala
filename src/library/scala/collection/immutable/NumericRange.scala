@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -266,7 +266,7 @@ object NumericRange {
       // Numbers may be big.
       val one = num.one
       val limit = num.fromInt(Int.MaxValue)
-      def check(t: T): T = 
+      def check(t: T): T =
         if (num.gt(t, limit)) throw new IllegalArgumentException("More than Int.MaxValue elements.")
         else t
       // If the range crosses zero, it might overflow when subtracted

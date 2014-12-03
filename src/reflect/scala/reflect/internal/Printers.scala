@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2015 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -73,10 +73,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
     def indent() = indentMargin += indentStep
     def undent() = indentMargin -= indentStep
 
-    def printPosition(tree: Tree) = 
+    def printPosition(tree: Tree) =
       if (printPositions) comment(print(tree.pos.show))
-    
-    protected def printTypesInfo(tree: Tree) = 
+
+    protected def printTypesInfo(tree: Tree) =
       if (printTypes && tree.isTerm && tree.canHaveAttrs)
         comment{
           print("{", if (tree.tpe eq null) "<null>" else tree.tpe.toString, "}")
@@ -313,7 +313,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
     protected def printBlock(stats: List[Tree], expr: Tree) =
       printColumn(stats ::: List(expr), "{", ";", "}")
-    
+
     def printTree(tree: Tree) = {
       tree match {
         case EmptyTree =>
@@ -638,14 +638,14 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case _ => true
       }
 
-    protected def syntheticToRemove(tree: Tree) = 
+    protected def syntheticToRemove(tree: Tree) =
       tree match {
         case _: ValDef | _: TypeDef => false // don't remove ValDef and TypeDef
         case md: MemberDef if md.mods.isSynthetic => true
         case _ => false
       }
 
-    override def printOpt(prefix: String, tree: Tree) = 
+    override def printOpt(prefix: String, tree: Tree) =
       if (!isEmptyTree(tree)) super.printOpt(prefix, tree)
 
     override def printColumn(ts: List[Tree], start: String, sep: String, end: String) = {
@@ -999,7 +999,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
               }
             case _ => print(fun)
           }
-          printRow(args, "(", ", ", ")")  
+          printRow(args, "(", ", ", ")")
 
         case st @ Super(This(qual), mix) =>
           printSuper(st, printedName(qual), checkSymbol = false)
@@ -1015,7 +1015,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
           print(qual)
 
         case Select(qual, name) =>
-          def checkRootPackage(tr: Tree): Boolean = 
+          def checkRootPackage(tr: Tree): Boolean =
             (currentParent match { //check that Select is not for package def name
               case Some(_: PackageDef) => false
               case _ => true

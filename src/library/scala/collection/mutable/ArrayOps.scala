@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -107,9 +107,9 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
       bb.result()
     }
   }
-  
+
   /** Converts an array of pairs into an array of first elements and an array of second elements.
-   *  
+   *
    *  @tparam T1    the type of the first half of the element pairs
    *  @tparam T2    the type of the second half of the element pairs
    *  @param asPair an implicit conversion which asserts that the element type
@@ -135,9 +135,9 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
     }
     (a1, a2)
   }
-  
+
   /** Converts an array of triples into three arrays, one containing the elements from each position of the triple.
-   *  
+   *
    *  @tparam T1      the type of the first of three elements in the triple
    *  @tparam T2      the type of the second of three elements in the triple
    *  @tparam T3      the type of the third of three elements in the triple
@@ -169,7 +169,7 @@ trait ArrayOps[T] extends Any with ArrayLike[T, Array[T]] with CustomParalleliza
     }
     (a1, a2, a3)
   }
-  
+
 
   def seq = thisCollection
 

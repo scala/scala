@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -21,7 +21,7 @@ case class Tuple2[@specialized(Int, Long, Double, Char, Boolean/*, AnyRef*/) +T1
   extends Product2[T1, T2]
 {
   override def toString() = "(" + _1 + "," + _2 + ")"
-  
+
   /** Swaps the elements of this `Tuple`.
    * @return a new Tuple where the first element is the second element of this Tuple and the
    * second element is the first element of this Tuple.

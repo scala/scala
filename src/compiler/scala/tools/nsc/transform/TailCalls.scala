@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2015 LAMP/EPFL
  * @author Iulian Dragos
  */
 
@@ -263,7 +263,7 @@ abstract class TailCalls extends Transform {
         else if (!receiverIsSame)       failHere("it changes type of 'this' on a polymorphic recursive call")
         else                            rewriteTailCall(receiver)
       }
-      
+
       def isEligible(tree: DefDef) = {
         val sym = tree.symbol
         !(sym.hasAccessorFlag || sym.isConstructor)

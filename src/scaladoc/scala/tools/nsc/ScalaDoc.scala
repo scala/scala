@@ -1,5 +1,5 @@
 /* scaladoc, a documentation generator for Scala
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2015 LAMP/EPFL
  * @author  Martin Odersky
  * @author  Geoffrey Washburn
  */

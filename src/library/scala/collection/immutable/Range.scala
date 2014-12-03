@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -33,7 +33,7 @@ import scala.collection.parallel.immutable.ParRange
  *  `init`) are also permitted on overfull ranges.
  *
  *  @param start      the start of this range.
- *  @param end        the end of the range.  For exclusive ranges, e.g. 
+ *  @param end        the end of the range.  For exclusive ranges, e.g.
  *                    `Range(0,3)` or `(0 until 3)`, this is one
  *                    step past the last one in the range.  For inclusive
  *                    ranges, e.g. `Range.inclusive(0,3)` or `(0 to 3)`,
@@ -92,7 +92,7 @@ extends scala.collection.AbstractSeq[Int]
     }
   }
   @deprecated("This method will be made private, use `last` instead.", "2.11")
-  final val lastElement = 
+  final val lastElement =
     if (isEmpty) start - step
     else step match {
       case 1  => if (isInclusive) end else end-1
@@ -103,7 +103,7 @@ extends scala.collection.AbstractSeq[Int]
         else if (isInclusive) end
         else end - step
     }
-    
+
   @deprecated("This method will be made private.", "2.11")
   final val terminalElement = lastElement + step
 
