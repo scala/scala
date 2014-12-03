@@ -21,8 +21,20 @@ final class Depth private (val depth: Int) extends AnyVal with Ordered[Depth] {
 
 object Depth {
   // A don't care value for the depth parameter in lubs/glbs and related operations.
-  final val AnyDepth = new Depth(Int.MinValue)
+  // When passed this value, the recursion budget will be inferred from the shape of
+  // the `typeDepth` of the list of types.
+  final val AnyDepthValue = -3
+  final val AnyDepth = new Depth(AnyDepthValue)
+
   final val Zero     = new Depth(0)
 
-  @inline final def apply(depth: Int): Depth = if (depth < 0) AnyDepth else new Depth(depth)
+  // SI-9018: A negative depth is used to signal that we have breached the recursion limit.
+  // The LUB/GLB implementation will then truncate to Any/Nothing.
+  //
+  // We only really need one of these, but we allow representation of Depth(-1) and Depth(-2)
+  // to mimic the historical choice of 2.10.4.
+  @inline final def apply(depth: Int): Depth = {
+    if (depth < AnyDepthValue) AnyDepth
+    else new Depth(depth)
+  }
 }
