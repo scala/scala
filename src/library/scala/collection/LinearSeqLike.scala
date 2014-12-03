@@ -46,12 +46,11 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
         val result = these.head; these = these.tail; result
       } else Iterator.empty.next()
 
-    /** Have to clear `these` so the iterator is exhausted like
-     *  it would be without the optimization.
-     */
     override def toList: List[A] = {
       val xs = these.toList
-      these = newBuilder.result()
+      // exhaust the iterator. Also, don't hold outer ref to self (SI-8924). This gets an empty Repr.
+      // TODO in 2.12, move this anon class to private member of companion, for extra protection from ourselves.
+      these = these take 0
       xs
     }
   }
