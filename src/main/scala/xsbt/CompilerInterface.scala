@@ -141,7 +141,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     final class Compat { def allConditionalWarnings = List[CondWarnCompat]() }
 
     val warnings = run.allConditionalWarnings
-    if (!warnings.isEmpty)
+    if (warnings.nonEmpty)
       compiler.logUnreportedWarnings(warnings.map(cw => ("" /*cw.what*/ , cw.warnings.toList)))
   }
 
