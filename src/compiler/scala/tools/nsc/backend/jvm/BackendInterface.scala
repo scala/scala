@@ -464,7 +464,9 @@ trait BackendInterface extends BackendInterfaceDefinitions{
     def isJavaDefined: Boolean
     def isDeferred: Boolean
     def isPrivate: Boolean
+    def getsJavaPrivateFlag: Boolean
     def isFinal: Boolean
+    def getsJavaFinalFlag: Boolean
     def isStaticMember: Boolean
     def isBottomClass: Boolean
     def isBridge: Boolean

@@ -201,9 +201,10 @@ class BTypesFromSymbols[I <: BackendInterface](val int: I) extends BTypes {
    */
   final def javaFlags(sym: Symbol): Int = {
 
-    val privateFlag = sym.isPrivate
 
-    val finalFlag = sym.isFinal
+    val privateFlag = sym.getsJavaPrivateFlag
+
+    val finalFlag = sym.getsJavaFinalFlag
 
     // Primitives are "abstract final" to prohibit instantiation
     // without having to provide any implementations, but that is an

@@ -666,7 +666,9 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
       exitingPickler { !(sym.name.toString contains '$') && sym.hasModuleFlag && !sym.isImplClass && !sym.isNestedClass }
     }
 
-    def isPrivate: Boolean = {
+    def isPrivate = sym.isPrivate
+
+    def getsJavaPrivateFlag: Boolean = {
       // constructors of module classes should be private. introduced in b06edbc, probably to prevent
       // creating module instances from java. for nested modules, the constructor needs to be public
       // since they are created by the outer class and stored in a field. a java client can create
@@ -675,7 +677,9 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
       sym.isPrivate || (sym.isPrimaryConstructor && sym.owner.isTopLevelModuleClass)
     }
 
-     def isFinal: Boolean = {
+    def isFinal = sym.isFinal
+
+    def getsJavaFinalFlag: Boolean = {
       // Symbols marked in source as `final` have the FINAL flag. (In the past, the flag was also
       // added to modules and module classes, not anymore since 296b706).
       // Note that the presence of the `FINAL` flag on a symbol does not correspond 1:1 to emitting
