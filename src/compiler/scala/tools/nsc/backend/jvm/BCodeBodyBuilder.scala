@@ -276,7 +276,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       lineNumber(tree)
 
       tree match {
-        case lblDf @ LabelDef(_, _, _) => genLabelDef(lblDf.asInstanceOf[LabelDef], expectedType)
+        case lblDf @ LabelDef(_, _, _) => genLabelDef(lblDf, expectedType)
 
         case ValDef(_, `nme_THIS`, _, _) =>
           debuglog("skipping trivial assign to _$this: " + tree)
@@ -297,14 +297,14 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
           generatedType = UNIT
 
         case t @ If(_, _, _) =>
-          generatedType = genLoadIf(t.asInstanceOf[If], expectedType)
+          generatedType = genLoadIf(t, expectedType)
 
         case r @ Return(_) =>
-          genReturn(r.asInstanceOf[Return])
+          genReturn(r)
           generatedType = expectedType
 
         case t @ Try(_, _, _) =>
-          generatedType = genLoadTry(t.asInstanceOf[Try])
+          generatedType = genLoadTry(t)
 
         case Throw(expr) =>
           generatedType = genThrow(expr)
@@ -323,7 +323,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
           genInvokeDynamicLambda(NoSymbol, fun.symbol, env.size, functionalInterface)
 
         case app @ Apply(_, _) =>
-          generatedType = genApply(app.asInstanceOf[Apply], expectedType)
+          generatedType = genApply(app, expectedType)
 
         case ApplyDynamic(qual, args) => sys.error("No invokedynamic support yet.")
 
@@ -383,7 +383,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
             case _                  => genConstant(value);               generatedType = tpeTK(tree)
           }
 
-        case blck @ Block(_, _) => genBlock(blck.asInstanceOf[Block], expectedType)
+        case blck @ Block(_, _) => genBlock(blck, expectedType)
 
         case Typed(Super(_, _), _) => genLoad(This(claszSymbol), expectedType)
 
@@ -394,10 +394,10 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
           genStat(tree)
 
         case av @ ArrayValue(_, _) =>
-          generatedType = genArrayValue(av.asInstanceOf[ArrayValue])
+          generatedType = genArrayValue(av)
 
         case mtch @ Match(_, _) =>
-          generatedType = genMatch(mtch.asInstanceOf[Match])
+          generatedType = genMatch(mtch)
 
         case EmptyTree => if (expectedType != UNIT) { emitZeroOf(expectedType) }
 
@@ -854,7 +854,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
 
       if(!int.shouldEmitJumpAfterLabels) genNormalBlock
       else {
-        val (prefixLabels, stats1) = stats.span {
+        val (prefixLabels: List[LabelDef], stats1) = stats.span {
           case t@LabelDef(_, _, _) => true
           case _ => false
         }
@@ -863,8 +863,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
           val startLocation = new asm.Label
           val breakLocation = new asm.Label
           bc goTo startLocation
-          prefixLabels.foreach{ lblDf => labelDef.+=(lblDf.symbol -> lblDf.asInstanceOf[LabelDef])}
-          prefixLabels.foreach{ lblDf => genLabelDef(lblDf.asInstanceOf[LabelDef], tpeTK(lblDf), breakLocation)}
+          prefixLabels.foreach{ lblDf => labelDef.+=(lblDf.symbol -> lblDf)}
+          prefixLabels.foreach{ lblDf => genLabelDef(lblDf, tpeTK(lblDf), breakLocation)}
           markProgramPoint(startLocation)
           val generated = tpeTK(expr)
           genLoad(expr, generated)

@@ -22,6 +22,7 @@ abstract class ICodes extends AnyRef
                                  with Opcodes
                                  with TypeStacks
                                  with TypeKinds
+                                 with Primitives
                                  with ExceptionHandlers
                                  with Linearizers
                                  with Printers
