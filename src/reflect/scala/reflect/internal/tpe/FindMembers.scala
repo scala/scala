@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL
+ * Copyright 2005-2015 LAMP/EPFL
  * @author  Jason Zaugg
  */
 package scala.reflect.internal
