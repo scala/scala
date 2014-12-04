@@ -879,7 +879,11 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
     def loadSym(sym: Symbol) =
       if (sym.isModule) { genLoadModule(sym) }
       else {
-          if(sym.owner.isClass) fieldLoad(sym)// dotty specific, field access
+          if(sym.isClass) { // dotty specific. ThisRef in type
+            assert(sym eq methSymbol.owner)
+            mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
+          }
+          else if(sym.owner.isClass) fieldLoad(sym)// dotty specific, field access
           else locals.load(sym)
       }
 

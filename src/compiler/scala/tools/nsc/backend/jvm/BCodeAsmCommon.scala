@@ -26,7 +26,7 @@ import interface._
     // Here used to be an `assert(!classSym.isDelambdafyFunction)`: delambdafy lambda classes are
     // always top-level. However, SI-8900 shows an example where the weak name-based implementation
     // of isDelambdafyFunction failed (for a function declared in a package named "lambda").
-    classSym.isAnonymousClass || !classSym.originalOwner.isClass
+    classSym.isAnonymousClass || (classSym.originalOwner != NoSymbol && !classSym.originalOwner.isClass)
   }
 
   /**
