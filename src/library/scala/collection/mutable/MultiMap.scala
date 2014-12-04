@@ -65,10 +65,9 @@ trait MultiMap[A, B] extends Map[A, Set[B]] {
    */
   protected def makeSet: Set[B] = new HashSet[B]
 
-  /** Assigns the specified `value` to a specified `key`, replacing
-   *  the existing value assigned to that `key` if it is equal to
-   *  the specified value. Otherwise, simply adds another binding to
-   *  the `key`.
+  /** Assigns the specified `value` to a specified `key`.  If the key
+   *  already has a binding to equal to `value`, nothing is changed;
+   *  otherwise a new binding is added for that `key`.
    *
    *  @param key    The key to which to bind the new value.
    *  @param value  The value to bind to the key.
