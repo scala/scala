@@ -349,13 +349,12 @@ trait MarkupParsers {
         content_LT(ts)
 
         // parse more XML ?
-        if (charComingAfter(xSpaceOpt) == '<') {
-          xSpaceOpt
-          while (ch == '<') {
-            nextch
+        if (charComingAfter(xSpaceOpt()) == '<') {
+          do {
+            xSpaceOpt()
+            nextch()
             ts append element
-            xSpaceOpt
-          }
+          } while (charComingAfter(xSpaceOpt()) == '<')
           handle.makeXMLseq(r2p(start, start, curOffset), ts)
         }
         else {
