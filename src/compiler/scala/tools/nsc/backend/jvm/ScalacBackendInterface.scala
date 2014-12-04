@@ -252,7 +252,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def _2: Name = field.mix
   }
   object ArrayValue extends ArrayValueDeconstructor {
-    def _1: Tree = field.elemtpt
+    def _1: Type = field.elemtpt.tpe
     def _2: List[Tree] = field.elems
   }
   object Match extends MatchDeconstructor {

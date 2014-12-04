@@ -385,7 +385,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   }
 
   trait ArrayValueDeconstructor extends DeconstructorCommon[ArrayValue]{
-    def _1: Tree
+    def _1: Type
     def _2: List[Tree]
   }
 

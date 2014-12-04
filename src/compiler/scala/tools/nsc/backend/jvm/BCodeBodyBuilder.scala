@@ -752,8 +752,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       genArray(elems, tpt)
     }
 
-    private def genArray(elems: List[Tree], elemType: Tree): BType = {
-      val elmKind       = tpeTK(elemType)
+    private def genArray(elems: List[Tree], elemType: Type): BType = {
+      val elmKind       = toTypeKind(elemType)
       val generatedType = ArrayBType(elmKind)
 
       bc iconst   elems.length
