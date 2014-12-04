@@ -481,6 +481,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
     def isGetter: Boolean = sym.isGetter
     def isSetter: Boolean = sym.isSetter
     def isJavaDefined: Boolean = sym.isJavaDefined
+    def isJavaDefaultMethod: Boolean = false
     def isDeferred: Boolean = sym.isDeferred
     def isStaticMember: Boolean = sym.isStaticMember
     def isBottomClass: Boolean = sym.isBottomClass

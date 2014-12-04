@@ -567,10 +567,10 @@ trait BCodeSkelBuilder extends BCodeHelpers {
       }
 
       val isNative         = methSymbol.hasAnnotation(NativeAttr)
-      val isAbstractMethod = (methSymbol.isDeferred || methSymbol.owner.isInterface)
+      val isAbstractMethod = (methSymbol.isDeferred || (methSymbol.owner.isInterface && !methSymbol.isJavaDefaultMethod))
       val flags = GenBCode.mkFlags(
         javaFlags(methSymbol),
-        if (claszSymbol.isInterface) asm.Opcodes.ACC_ABSTRACT   else 0,
+        if (isAbstractMethod)        asm.Opcodes.ACC_ABSTRACT   else 0,
         if (methSymbol.isStrictFP)   asm.Opcodes.ACC_STRICT     else 0,
         if (isNative)                asm.Opcodes.ACC_NATIVE     else 0  // native methods of objects are generated in mirror classes
       )

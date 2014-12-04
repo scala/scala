@@ -483,6 +483,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
     def hasAnnotation(sym: Symbol): Boolean
     def shouldEmitForwarders: Boolean
     def isJavaEntryPoint: Boolean
+    def isJavaDefaultMethod: Boolean
     def isClassConstructor: Boolean
 
     /**
