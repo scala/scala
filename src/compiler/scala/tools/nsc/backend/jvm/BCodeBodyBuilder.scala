@@ -316,7 +316,8 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
         case app @ Closure(env, call, functionalInterface) =>
           val (fun, args) = call match {
             case Apply(fun, args) => (fun, args)
-            case t@Ident(_) => (t, Nil)
+            case t @ Select(_, _) => (t, Nil)
+            case t @ Ident(_) => (t, Nil)
           }
 
           genLoadArguments(env, fun.symbol.info.paramTypes map toTypeKind)
