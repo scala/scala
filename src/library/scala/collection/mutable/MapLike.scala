@@ -59,6 +59,18 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   override protected[this] def newBuilder: Builder[(A, B), This] = empty
 
   protected[this] override def parCombiner = ParMap.newCombiner[A, B]
+  
+  /** Converts this $coll to a sequence.
+    *
+    * ```Note```: assumes a fast `size` method.  Subclasses should override if this is not true.
+    */
+  override def toSeq: collection.Seq[(A, B)] = {
+    // ArrayBuffer for efficiency, preallocated to the right size.
+    val result = new ArrayBuffer[(A, B)](size)
+    foreach(result += _)
+    result
+  }
+
 
   /** Adds a new key/value pair to this map and optionally returns previously bound value.
    *  If the map already contains a

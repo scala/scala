@@ -323,11 +323,20 @@ self =>
     res
   }
 
-  /* Overridden for efficiency. */
-  override def toSeq: Seq[(A, B)] = toBuffer[(A, B)]
+  override def toSeq: Seq[(A, B)] = {
+    if (isEmpty) Vector.empty[(A, B)]
+    else {
+      // Default appropriate for immutable collections; mutable collections override this
+      val vb = Vector.newBuilder[(A, B)]
+      foreach(vb += _)
+      vb.result
+    }
+  }  
+  
   override def toBuffer[C >: (A, B)]: mutable.Buffer[C] = {
     val result = new mutable.ArrayBuffer[C](size)
-    copyToBuffer(result)
+    // Faster to let the map iterate itself than to defer through copyToBuffer
+    foreach(result += _)
     result
   }
 
