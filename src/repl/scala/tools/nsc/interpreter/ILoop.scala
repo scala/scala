@@ -126,22 +126,18 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   /** print a friendly help message */
-  def helpCommand(line: String): Result = {
-    if (line == "") helpSummary()
-    else uniqueCommand(line) match {
-      case Some(lc) => echo("\n" + lc.help)
-      case _        => ambiguousError(line)
-    }
+  def helpCommand(line: String): Result = line match {
+    case ""                => helpSummary()
+    case CommandMatch(cmd) => echo(f"%n${cmd.help}")
+    case _                 => ambiguousError(line)
   }
   private def helpSummary() = {
-    val usageWidth  = commands map (_.usageMsg.length) max
-    val formatStr   = "%-" + usageWidth + "s %s"
+    val usageWidth = commands map (_.usageMsg.length) max
+    val formatStr  = s"%-${usageWidth}s %s"
 
-    echo("All commands can be abbreviated, e.g. :he instead of :help.")
+    echo("All commands can be abbreviated, e.g., :he instead of :help.")
 
-    commands foreach { cmd =>
-      echo(formatStr.format(cmd.usageMsg, cmd.help))
-    }
+    for (cmd <- commands) echo(formatStr.format(cmd.usageMsg, cmd.help))
   }
   private def ambiguousError(cmd: String): Result = {
     matchingCommands(cmd) match {
@@ -150,14 +146,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     }
     Result(keepRunning = true, None)
   }
+  // this lets us add commands willy-nilly and only requires enough command to disambiguate
   private def matchingCommands(cmd: String) = commands filter (_.name startsWith cmd)
-  private def uniqueCommand(cmd: String): Option[LoopCommand] = {
-    // this lets us add commands willy-nilly and only requires enough command to disambiguate
-    matchingCommands(cmd) match {
-      case List(x)  => Some(x)
-      // exact match OK even if otherwise appears ambiguous
-      case xs       => xs find (_.name == cmd)
-    }
+  private object CommandMatch {
+    def unapply(name: String): Option[LoopCommand] =
+      matchingCommands(name) match {
+        case x :: Nil => Some(x)
+        case xs       => xs find (_.name == name)  // accept an exact match
+      }
   }
 
   /** Show the history */
@@ -701,18 +697,21 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   /** Run one command submitted by the user.  Two values are returned:
-    * (1) whether to keep running, (2) the line to record for replay,
-    * if any. */
+   *  (1) whether to keep running, (2) the line to record for replay, if any.
+   */
   def command(line: String): Result = {
-    if (line startsWith ":") {
-      val cmd = line.tail takeWhile (x => !x.isWhitespace)
-      uniqueCommand(cmd) match {
-        case Some(lc) => lc(line.tail stripPrefix cmd dropWhile (_.isWhitespace))
-        case _        => ambiguousError(cmd)
-      }
-    }
+    if (line startsWith ":") colonCommand(line.tail)
     else if (intp.global == null) Result(keepRunning = false, None)  // Notice failure to create compiler
     else Result(keepRunning = true, interpretStartingWith(line))
+  }
+
+  private val commandish = """(\S+)(?:\s+)?(.*)""".r
+
+  private def colonCommand(line: String): Result = line.trim match {
+    case ""                                  => helpSummary()
+    case commandish(CommandMatch(cmd), rest) => cmd(rest)
+    case commandish(name, _)                 => ambiguousError(name)
+    case _                                   => echo("?")
   }
 
   private def readWhile(cond: String => Boolean) = {
