@@ -376,6 +376,7 @@ TODO:
 
       <echo message="Using Scala ${starr.version} for STARR."/>
       <artifact:dependencies pathId="starr.compiler.path" filesetId="starr.fileset">
+        <artifact:remoteRepository refid="sonatype-snapshot"/>
         <artifact:remoteRepository refid="extra-repo"/>
         <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
         <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>
