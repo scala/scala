@@ -1,0 +1,4 @@
+t9008.scala:2: error: type M takes type parameters
+  def x: List[M forSome { type M[_] }] = ???
+              ^
+one error found

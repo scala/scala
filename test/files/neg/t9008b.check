@@ -1,0 +1,4 @@
+t9008b.scala:2: error: type M takes type parameters
+  type T = M forSome { type M[_] }
+           ^
+one error found
