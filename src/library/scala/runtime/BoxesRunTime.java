@@ -183,7 +183,7 @@ public final class BoxesRunTime
         return xc.equals(y);
     }
 
-    private static boolean equalsNumChar(java.lang.Number xn, java.lang.Character yc) {
+    public static boolean equalsNumChar(java.lang.Number xn, java.lang.Character yc) {
         if (yc == null)
             return xn == null;
 
