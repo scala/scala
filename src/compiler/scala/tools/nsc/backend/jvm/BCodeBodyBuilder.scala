@@ -368,12 +368,20 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
             fieldLoad(sym, hostClass)
           }
 
-        case Ident(name) =>
+        case t @ Ident(name) =>
           val sym = tree.symbol
-          if (!sym.hasPackageFlag) {
-            val tk = symInfoTK(sym)
-            loadSym(sym)
-            generatedType = tk
+          val tk = symInfoTK(sym)
+          generatedType = tk
+
+          val desugared = desugarIdent(t)
+          desugared match {
+            case None =>
+              if (!sym.hasPackageFlag) {
+                if (sym.isModule) genLoadModule(sym)
+                else locals.load(sym)
+              }
+            case Some(t) =>
+              genLoad(t, generatedType)
           }
 
         case Literal(value) =>
@@ -877,17 +885,6 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       }
     }
 
-    def loadSym(sym: Symbol) =
-      if (sym.isModule) { genLoadModule(sym) }
-      else {
-          if(sym.isClass) { // dotty specific. ThisRef in type
-            assert(sym eq methSymbol.owner)
-            mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
-          }
-          else if(sym.owner.isClass) fieldLoad(sym)// dotty specific, field access
-          else locals.load(sym)
-      }
-
     def adapt(from: BType, to: BType) {
       if (!from.conformsTo(to)) {
         to match {
@@ -955,7 +952,12 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       lineNumber(tree)
       tree match {
         case Select(qualifier, _) => genLoad(qualifier)
-        case t:Ident              => loadSym(t.symbol.owner) // Happens only in Dotty
+        case t: Ident             => // dotty specific
+          desugarIdent(t) match {
+            case Some(sel) => genLoadQualifier(sel)
+            case None =>
+              ???
+          }
         case _                    => abort(s"Unknown qualifier $tree")
       }
     }

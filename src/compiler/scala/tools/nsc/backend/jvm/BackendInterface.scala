@@ -147,6 +147,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
   def getClassIfDefined(fullname: String): Symbol
 
   def isQualifierSafeToElide(qual: Tree): Boolean
+  def desugarIdent(i: Ident): Option[Select]
 
   /* various configuration options used by backend */
   def emitAsmp: Option[String]

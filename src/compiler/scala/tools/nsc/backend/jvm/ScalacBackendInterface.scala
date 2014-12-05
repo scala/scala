@@ -983,6 +983,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   }
 
   def isQualifierSafeToElide(qual: Tree): Boolean = treeInfo isQualifierSafeToElide qual
+  def desugarIdent(i: Ident): Option[Select] = None // dotty specific
 
   def isBox(sym: Symbol): Boolean = currentRun.runDefinitions.isBox(sym)
 
