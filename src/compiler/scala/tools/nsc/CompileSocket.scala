@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2015 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -46,7 +46,7 @@ trait HasCompileSocket {
 class CompileSocket extends CompileOutputCommon {
   protected lazy val compileClient: StandardCompileClient = CompileClient
   def verbose = compileClient.verbose
-  
+
   /* Fixes the port where to start the server, 0 yields some free port */
   var fixPort = 0
 
@@ -67,7 +67,7 @@ class CompileSocket extends CompileOutputCommon {
 
   /** The class name of the scala compile server */
   protected val serverClass     = "scala.tools.nsc.CompileServer"
-  protected def serverClassArgs = (if (verbose) List("-v") else Nil) ::: (if (fixPort > 0) List("-p", fixPort.toString) else Nil) 
+  protected def serverClassArgs = (if (verbose) List("-v") else Nil) ::: (if (fixPort > 0) List("-p", fixPort.toString) else Nil)
 
   /** A temporary directory to use */
   val tmpDir = {
@@ -196,7 +196,7 @@ class CompileSocket extends CompileOutputCommon {
     catch { case _: NumberFormatException => None }
 
   def getSocket(serverAdr: String): Option[Socket] = (
-    for ((name, portStr) <- splitWhere(serverAdr, _ == ':', doDropIndex = true) ; port <- parseInt(portStr)) yield    	
+    for ((name, portStr) <- splitWhere(serverAdr, _ == ':', doDropIndex = true) ; port <- parseInt(portStr)) yield
       getSocket(name, port)
   ) getOrElse fatal("Malformed server address: %s; exiting" format serverAdr)
 
@@ -205,7 +205,7 @@ class CompileSocket extends CompileOutputCommon {
     if (sock.isEmpty) warn("Unable to establish connection to server %s:%d".format(hostName, port))
     sock
   }
-  
+
   def getPassword(port: Int): String = {
     val ff  = portFile(port)
     val f   = ff.bufferedReader()

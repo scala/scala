@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -118,7 +118,7 @@ extends AbstractMap[Key, Value]
 
   @deprecatedOverriding("+= should not be overridden in order to maintain consistency with put.", "2.11.0")
   def += (kv: (Key, Value)): this.type = { put(kv._1, kv._2); this }
-  
+
   @deprecatedOverriding("-= should not be overridden in order to maintain consistency with remove.", "2.11.0")
   def -= (key: Key): this.type = { remove(key); this }
 

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2015 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
@@ -60,7 +60,7 @@ trait ContextTrees { self: Global =>
 
   /** Returns the ContextTree containing `pos`, or the ContextTree positioned just before `pos`,
    *  or None if `pos` is located before all ContextTrees.
-   */ 
+   */
   def locateContextTree(contexts: Contexts, pos: Position): Option[ContextTree] = {
     if (contexts.isEmpty) None
     else {

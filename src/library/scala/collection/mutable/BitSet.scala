@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -56,7 +56,7 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
 
   @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nwords = elems.length
-  
+
   @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def word(idx: Int): Long =
     if (idx < nwords) elems(idx) else 0L
@@ -100,7 +100,7 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
 
   @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
   def += (elem: Int): this.type = { add(elem); this }
-  
+
   @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
   def -= (elem: Int): this.type = { remove(elem); this }
 

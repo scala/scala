@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2015 LAMP/EPFL
  * @author Paul Phillips
  */
 
@@ -769,7 +769,7 @@ object JavapClass {
       }
       // get the k.$anonfun for the accessor k.m
       def anonOf(k: String, m: String): String = {
-        val res = 
+        val res =
           loader classReader k withMethods { ms =>
             ms filter (_.name == m) flatMap (_.instructions.toArray.collect {
               case i: MethodInsnNode if i.getOpcode == INVOKESTATIC && i.name.startsWith("$anonfun") => i.name

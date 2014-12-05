@@ -1,7 +1,7 @@
 @@echo off
 
 rem ##########################################################################
-rem # Copyright 2002-2013 LAMP/EPFL
+rem # Copyright 2002-2015 LAMP/EPFL
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
@@ -71,7 +71,7 @@ shift
 
 if [%1]==[] goto param_afterloop
 set _TEST_PARAM=%~1
-if not "%_TEST_PARAM:~0,1%"=="-" goto param_afterloop 
+if not "%_TEST_PARAM:~0,1%"=="-" goto param_afterloop
 
 rem ignore -e "scala code"
 if "%_TEST_PARAM:~0,2%"=="-e" (

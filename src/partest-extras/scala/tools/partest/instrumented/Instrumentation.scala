@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2013 LAMP/EPFL
+ * Copyright 2007-2015 LAMP/EPFL
  * @author Grzegorz Kossakowski
  */
 

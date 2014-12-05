@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -526,7 +526,7 @@ private[parallel] final class FutureTasks(executor: ExecutionContext) extends Ta
 }
 
 /** This tasks implementation uses execution contexts to spawn a parallel computation.
- *  
+ *
  *  As an optimization, it internally checks whether the execution context is the
  *  standard implementation based on fork/join pools, and if it is, creates a
  *  `ForkJoinTaskSupport` that shares the same pool to forward its request to it.
@@ -540,7 +540,7 @@ trait ExecutionContextTasks extends Tasks {
   val environment: ExecutionContext
 
   /** A driver serves as a target for this proxy `Tasks` object.
-   *  
+   *
    *  If the execution context has the standard implementation and uses fork/join pools,
    *  the driver is `ForkJoinTaskSupport` with the same pool, as an optimization.
    *  Otherwise, the driver will be a Scala `Future`-based implementation.

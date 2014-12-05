@@ -1,5 +1,5 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2013 LAMP/EPFL
+ * Copyright 2005-2015 LAMP/EPFL
  */
 
 package scala.tools.nsc

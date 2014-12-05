@@ -1,6 +1,6 @@
 /* NSC -- new Scala compiler
  *
- * Copyright 2011-2013 LAMP/EPFL
+ * Copyright 2011-2015 LAMP/EPFL
  * @author Adriaan Moors
  */
 
@@ -755,7 +755,7 @@ trait MatchAnalysis extends MatchApproximation {
               // then we can safely ignore these counter examples since we will eventually encounter
               // both counter examples separately
               case _ if inSameDomain => None
-                
+
               // not a valid counter-example, possibly since we have a definite type but there was a field mismatch
               // TODO: improve reasoning -- in the mean time, a false negative is better than an annoying false positive
               case _ => Some(NoExample)

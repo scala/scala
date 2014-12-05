@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2014 LAMP/EPFL, Typesafe Inc.
+ * Copyright 2005-2015 LAMP/EPFL, Typesafe Inc.
  * @author  Adriaan Moors
  */
 

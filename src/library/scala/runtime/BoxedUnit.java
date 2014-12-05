@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2013, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2015, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -17,7 +17,7 @@ public final class BoxedUnit implements java.io.Serializable {
     public final static BoxedUnit UNIT = new BoxedUnit();
 
     public final static Class<Void> TYPE = java.lang.Void.TYPE;
-    
+
     private Object readResolve() { return UNIT; }
 
     private BoxedUnit() { }

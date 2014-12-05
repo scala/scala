@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2009-2013 Typesafe/Scala Solutions and LAMP/EPFL
+ * Copyright 2009-2015 Typesafe/Scala Solutions and LAMP/EPFL
  * @author Martin Odersky
  */
 package scala.tools.nsc
@@ -189,7 +189,7 @@ trait CompilerControl { self: Global =>
    * continues with current pass.
    * Waits until source is fully type checked and returns body in response.
    * @param source     The source file that needs to be fully typed.
-   * @param keepLoaded Whether to keep that file in the PC if it was not loaded before. If 
+   * @param keepLoaded Whether to keep that file in the PC if it was not loaded before. If
                        the file is already loaded, this flag is ignored.
    * @param response   The response, which is set to the fully attributed tree of `source`.
    *                   If the unit corresponding to `source` has been removed in the meantime
