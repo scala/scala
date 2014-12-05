@@ -1495,7 +1495,7 @@ abstract class GenICode extends SubComponent {
           if (!settings.optimise) {
             if (l.tpe <:< BoxedNumberClass.tpe) {
               if (r.tpe <:< BoxedNumberClass.tpe) platform.externalEqualsNumNum
-              else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumChar
+              else if (r.tpe <:< BoxedCharacterClass.tpe) platform.externalEqualsNumObject // will be externalEqualsNumChar in 2.12, SI-9030
               else platform.externalEqualsNumObject
             } else platform.externalEquals
           } else {
