@@ -18,7 +18,7 @@ import FileUtils._
  * It allows us to e.g. reduce significantly memory used by PresentationCompilers in Scala IDE
  * when there are a lot of projects having a lot of common dependencies.
  */
-trait ZipAndJarFileLookupFactory {
+sealed trait ZipAndJarFileLookupFactory {
 
   private val cache = collection.mutable.Map.empty[AbstractFile, FlatClassPath]
 
