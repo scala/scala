@@ -151,6 +151,8 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
   val Object_isInstanceOf: Symbol = global.definitions.Object_isInstanceOf
   val Object_asInstanceOf: Symbol = global.definitions.Object_asInstanceOf
   val Object_equals: Symbol = global.definitions.Object_equals
+
+  def isArrayClone(fun: Tree) = fun.symbol eq Array_clone
   val Array_clone: Symbol = global.definitions.Array_clone
   lazy val externalEqualsNumNum: Symbol = platform.externalEqualsNumNum
   lazy val externalEqualsNumChar: Symbol = platform.externalEqualsNumChar
@@ -318,7 +320,7 @@ class ScalacBackendInterface[G <: Global](val global: G) extends BackendInterfac
 
     def getPrimitive(sym: Symbol): Int = global.scalaPrimitives.getPrimitive(sym)
 
-    def isPrimitive(sym: Symbol): Boolean = global.scalaPrimitives.isPrimitive(sym)
+    def isPrimitive(app: Tree): Boolean = global.scalaPrimitives.isPrimitive(app.symbol)
   }
 
   val primitives: Primitives = ScalacPrimitives

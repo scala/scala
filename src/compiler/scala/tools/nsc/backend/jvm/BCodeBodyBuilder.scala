@@ -692,7 +692,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
           if (sym.isLabel) {  // jump to a label
             genLoadLabelArguments(args, labelDef(sym), app.pos)
             bc goTo programPoint(sym)
-          } else if (isPrimitive(sym)) { // primitive method call
+          } else if (isPrimitive(fun)) { // primitive method call
             generatedType = genPrimitiveOp(app, expectedType)
           } else {  // normal method call
 
@@ -711,41 +711,33 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
 
               // In "a couple cases", squirrel away a extra information (hostClass, targetTypeKind). TODO Document what "in a couple cases" refers to.
               var hostClass:      Symbol = null
-              var targetTypeKind: BType  = null
+
               fun match {
+                case Select(qual, _) if isArrayClone(fun) && invokeStyle.isDynamic =>
+                  val targetTypeKind = tpeTK(qual)
+                  val target: String = targetTypeKind.asRefBType.classOrArrayType
+                  bc.invokevirtual(target, "clone", "()Ljava/lang/Object;")
+                  generatedType = targetTypeKind
+
                 case Select(qual, _) =>
                   val qualSym = findHostClass(qual.tpe, sym)
-                  if (qualSym == ArrayClass) {
-                    targetTypeKind = tpeTK(qual)
-                    log(s"Stored target type kind for ${sym.fullName} as $targetTypeKind")
-                  }
-                  else {
-                    hostClass = qualSym
-                    if (qual.tpe.typeSymbol != qualSym) {
+
+                  hostClass = qualSym
+                  if (qual.tpe.typeSymbol != qualSym) {
                       log(s"Precisified host class for $sym from ${qual.tpe.typeSymbol.fullName} to ${qualSym.fullName}")
                     }
-                  }
+                  genCallMethod(sym, invokeStyle, hostClass, app.pos)
+                  generatedType = asmMethodType(sym).returnType
 
                 case _ =>
-              }
-              if ((targetTypeKind != null) && (sym == Array_clone) && invokeStyle.isDynamic) {
-                // An invokevirtual points to a CONSTANT_Methodref_info which in turn points to a
-                // CONSTANT_Class_info of the receiver type.
-                // The JVMS is not explicit about this, but that receiver type may be an array type
-                // descriptor (instead of a class internal name):
-                //   invokevirtual  #2; //Method "[I".clone:()Ljava/lang/Object
-                val target: String = targetTypeKind.asRefBType.classOrArrayType
-                bc.invokevirtual(target, "clone", "()Ljava/lang/Object;")
-              }
-              else {
-                genCallMethod(sym, invokeStyle, hostClass, app.pos)
-              }
+                  genCallMethod(sym, invokeStyle, hostClass, app.pos)
+                  generatedType = asmMethodType(sym).returnType
 
+              }
             } // end of genNormalMethodCall()
 
             genNormalMethodCall()
 
-            generatedType = asmMethodType(sym).returnType
           }
 
       }
@@ -956,7 +948,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
           desugarIdent(t) match {
             case Some(sel) => genLoadQualifier(sel)
             case None =>
-              ???
+              assert(t.symbol.owner == this.claszSymbol)
           }
         case _                    => abort(s"Unknown qualifier $tree")
       }
@@ -1038,7 +1030,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
     }
 
     /* Is the given symbol a primitive operation? */
-    def isPrimitive(fun: Symbol): Boolean = {
+    def isPrimitive(fun: Tree): Boolean = {
       primitives.isPrimitive(fun)
     }
 
@@ -1151,7 +1143,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
      */
     def liftStringConcat(tree: Tree): List[Tree] = tree match {
       case Apply(fun @ Select(larg, method), rarg) =>
-        if (isPrimitive(fun.symbol) &&
+        if (isPrimitive(fun) &&
             primitives.getPrimitive(fun.symbol) == ScalaPrimitives.CONCAT)
           liftStringConcat(larg) ::: rarg
         else
@@ -1254,7 +1246,7 @@ trait BCodeBodyBuilder extends BCodeSkelBuilder {
       lineNumber(tree)
       tree match {
 
-        case Apply(fun, args) if isPrimitive(fun.symbol) =>
+        case Apply(fun, args) if isPrimitive(fun) =>
           import ScalaPrimitives.{ ZNOT, ZAND, ZOR, EQ }
 
           // lhs and rhs of test

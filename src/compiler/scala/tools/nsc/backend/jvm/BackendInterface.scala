@@ -593,7 +593,7 @@ trait BackendInterface extends BackendInterfaceDefinitions{
 
   trait Primitives {
     def getPrimitive(app: Apply, reciever: Type): Int
-    def isPrimitive(sym: Symbol): Boolean
+    def isPrimitive(fun: Tree): Boolean
     def getPrimitive(sym: Symbol): Int
   }
 
@@ -740,7 +740,7 @@ trait BackendInterfaceDefinitions { self: BackendInterface =>
   val Throwable_Type: Type
   // methods used in backend
 
-  val Array_clone: Symbol
+  def isArrayClone(fun: Tree): Boolean
   val hashMethodSym: Symbol
   val externalEqualsNumNum: Symbol
   val externalEqualsNumChar: Symbol
