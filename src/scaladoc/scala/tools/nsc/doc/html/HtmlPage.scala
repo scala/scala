@@ -228,6 +228,26 @@ abstract class HtmlPage extends Page { thisPage =>
       </a>
     </span>
 
+  def companionAndPackage(tpl: DocTemplateEntity): Elem =
+    <span class="morelinks">{
+      tpl.companion match {
+        case Some(companionTpl) =>
+          val objClassTrait =
+            if (companionTpl.isObject) s"object ${tpl.name}"
+            else if (companionTpl.isTrait) s"trait ${companionTpl.name}"
+            else s"class ${companionTpl.name}"
+          <div>
+            Related Docs:
+            <a href={relativeLinkTo(tpl.companion.get)} title="See companion">{objClassTrait}</a>
+            | {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
+          </div>
+        case None =>
+          <div>Related Doc:
+            {templateToHtml(tpl.inTemplate, s"package ${tpl.inTemplate.name}")}
+          </div>
+      }
+    }</span>
+
   def memberToUrl(template: Entity, isSelf: Boolean = true): String = {
     val (signature: Option[String], containingTemplate: TemplateEntity) = template match {
       case dte: DocTemplateEntity if (!isSelf) => (Some(dte.signature), dte.inTemplate)

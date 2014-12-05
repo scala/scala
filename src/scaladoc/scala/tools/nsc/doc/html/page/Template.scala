@@ -110,7 +110,9 @@ class Template(universe: doc.Universe, generator: DiagramGenerator, tpl: DocTemp
               <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
         }}
         { owner }
-        <h1>{ displayName }</h1> { permalink(tpl) }
+        <h1>{ displayName }</h1>{
+          if (tpl.isPackage) NodeSeq.Empty else <h3>{companionAndPackage(tpl)}</h3>
+        }{ permalink(tpl) }
       </div>
 
       { signature(tpl, isSelf = true) }
