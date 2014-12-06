@@ -55,7 +55,7 @@ trait SeqViewLike[+A,
   trait Sliced extends super.Sliced with Transformed[A] {
     def length = iterator.size
     def apply(idx: Int): A =
-      if (idx + from < until) self.apply(idx + from)
+      if (idx >= 0 && idx + from < until) self.apply(idx + from)
       else throw new IndexOutOfBoundsException(idx.toString)
 
     override def foreach[U](f: A => U) = iterator foreach f
