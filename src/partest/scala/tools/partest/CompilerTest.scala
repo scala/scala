@@ -49,7 +49,7 @@ abstract class CompilerTest extends DirectTest {
   }
 
   class SymsInPackage(pkgName: String) {
-    def pkg     = rootMirror.getPackage(pkgName)
+    def pkg     = rootMirror.getPackage(TermName(pkgName))
     def classes = allMembers(pkg) filter (_.isClass)
     def modules = allMembers(pkg) filter (_.isModule)
     def symbols = classes ++ terms filterNot (_ eq NoSymbol)
