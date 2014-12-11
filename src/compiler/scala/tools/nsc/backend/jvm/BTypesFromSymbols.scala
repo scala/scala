@@ -41,11 +41,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     global.perRunCaches.recordCache(collection.concurrent.TrieMap.empty[InternalName, ClassBType])
   }
 
-  /**
-   * Cache for the method classBTypeFromSymbol.
-   */
-  private val convertedClasses = perRunCaches.newMap[Symbol, ClassBType]()
-
   // helpers that need access to global.
   // TODO @lry create a separate component, they don't belong to BTypesFromSymbols
 
@@ -88,13 +83,11 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       (classSym != NothingClass && classSym != NullClass),
       s"Cannot create ClassBType for special class symbol ${classSym.fullName}")
 
-    convertedClasses.getOrElse(classSym, {
-      val internalName = classSym.javaBinaryName.toString
-      // We first create and add the ClassBType to the hash map before computing its info. This
-      // allows initializing cylic dependencies, see the comment on variable ClassBType._info.
-      val classBType = ClassBType(internalName)
-      convertedClasses(classSym) = classBType
-      setClassInfo(classSym, classBType)
+    val internalName = classSym.javaBinaryName.toString
+    classBTypeFromInternalNameMap.getOrElse(internalName, {
+      // The new ClassBType is added to the map in its constructor, before we set its info. This
+      // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
+      setClassInfo(classSym, ClassBType(internalName))
     })
   }
 
