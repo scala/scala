@@ -7,4 +7,21 @@ Note that implicit conversions are not applicable because they are ambiguous:
  are possible conversion functions from Long to ?T[Long]
   insertCell(Foo(5))
             ^
-one error found
+t8463.scala:5: error: no type parameters for method apply: (activity: T[Long])Test.Foo[T] in object Foo exist so that it can be applied to arguments (Long)
+ --- because ---
+argument expression's type is not compatible with formal parameter type;
+ found   : Long
+ required: ?T[Long]
+  insertCell(Foo(5))
+             ^
+t8463.scala:5: error: type mismatch;
+ found   : Long(5L)
+ required: T[Long]
+  insertCell(Foo(5))
+                 ^
+t8463.scala:5: error: type mismatch;
+ found   : Test.Foo[T]
+ required: Test.Foo[Test.Cell]
+  insertCell(Foo(5))
+                ^
+four errors found
