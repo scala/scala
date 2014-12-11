@@ -32,12 +32,6 @@ abstract class BTypes {
   protected val classBTypeFromInternalNameMap: collection.concurrent.Map[String, ClassBType]
 
   /**
-   * The string represented by the `offset` / `length` values of a ClassBType, see comment of that
-   * class.
-   */
-  protected def internalNameString(offset: Int, lenght: Int): String
-
-  /**
    * Obtain a previously constructed ClassBType for a given internal name.
    */
   def classBTypeFromInternalName(internalName: String) = classBTypeFromInternalNameMap(internalName)
@@ -52,7 +46,7 @@ abstract class BTypes {
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
    * referring to BTypes.
    */
-  /*sealed*/ trait BType { // Not sealed for now due to SI-8546
+  sealed trait BType {
     final override def toString: String = this match {
       case UNIT   => "V"
       case BOOL   => "Z"
@@ -171,6 +165,9 @@ abstract class BTypes {
         assert(other.isRef, s"Cannot compute maxType: $this, $other")
         // Approximate `lub`. The common type of two references is always ObjectReference.
         ObjectReference
+
+      case _: MethodBType =>
+        throw new AssertionError(s"unexpected method type when computing maxType: $this")
     }
 
     /**
@@ -568,22 +565,8 @@ abstract class BTypes {
   /**
    * A ClassBType represents a class or interface type. The necessary information to build a
    * ClassBType is extracted from compiler symbols and types, see BTypesFromSymbols.
-   *
-   * The `offset` and `length` fields are used to represent the internal name of the class. They
-   * are indices into some character array. The internal name can be obtained through the method
-   * `internalNameString`, which is abstract in this component. Name creation is assumed to be
-   * hash-consed, so if two ClassBTypes have the same internal name, they NEED to have the same
-   * `offset` and `length`.
-   *
-   * The actual implementation in subclass BTypesFromSymbols uses the global `chrs` array from the
-   * name table. This representation is efficient because the JVM class name is obtained through
-   * `classSymbol.javaBinaryName`. This already adds the necessary string to the `chrs` array,
-   * so it makes sense to reuse the same name table in the backend.
-   *
-   * ClassBType is not a case class because we want a custom equals method, and because the
-   * extractor extracts the internalName, which is what you typically need.
    */
-  final class ClassBType(val offset: Int, val length: Int) extends RefBType {
+  final case class ClassBType(internalName: String) extends RefBType {
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -629,12 +612,6 @@ abstract class BTypes {
 
       assert(info.memberClasses.forall(c => ifInit(c)(_.isNestedClass)), info.memberClasses)
     }
-
-    /**
-     * The internal name of a class is the string returned by java.lang.Class.getName, with all '.'
-     * replaced by '/'. For example "java/lang/String".
-     */
-    def internalName: String = internalNameString(offset, length)
 
     /**
      * @return The class name without the package prefix
@@ -736,32 +713,9 @@ abstract class BTypes {
       } while (fcs == null)
       fcs
     }
-
-    /**
-     * Custom equals / hashCode: we only compare the name (offset / length)
-     */
-    override def equals(o: Any): Boolean = (this eq o.asInstanceOf[Object]) || (o match {
-      case c: ClassBType => c.offset == this.offset && c.length == this.length
-      case _ => false
-    })
-
-    override def hashCode: Int = {
-      import scala.runtime.Statics
-      var acc: Int = -889275714
-      acc = Statics.mix(acc, offset)
-      acc = Statics.mix(acc, length)
-      Statics.finalizeHash(acc, 2)
-    }
   }
 
   object ClassBType {
-    /**
-     * Pattern matching on a ClassBType extracts the `internalName` of the class.
-     */
-    def unapply(c: ClassBType): Option[String] =
-      if (c == null) None
-      else Some(c.internalName)
-
     /**
      * Valid flags for InnerClass attribute entry.
      * See http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.7.6
@@ -839,9 +793,9 @@ abstract class BTypes {
    * @param innerName The simple name of the inner class, may be null.
    * @param flags     The flags for this class in the InnerClass entry.
    */
-  case class InnerClassEntry(name: String, outerName: String, innerName: String, flags: Int)
+  final case class InnerClassEntry(name: String, outerName: String, innerName: String, flags: Int)
 
-  case class ArrayBType(componentType: BType) extends RefBType {
+  final case class ArrayBType(componentType: BType) extends RefBType {
     def dimension: Int = componentType match {
       case a: ArrayBType => 1 + a.dimension
       case _ => 1
@@ -853,7 +807,7 @@ abstract class BTypes {
     }
   }
 
-  case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType
+  final case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType
 
   /* Some definitions that are required for the implementation of BTypes. They are abstract because
    * initializing them requires information from types / symbols, which is not accessible here in

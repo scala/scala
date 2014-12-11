@@ -36,8 +36,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     coreBTypes.setBTypes(new CoreBTypes[this.type](this))
   }
 
-  def internalNameString(offset: Int, length: Int) = new String(global.chrs, offset, length)
-
   protected val classBTypeFromInternalNameMap = {
     global.perRunCaches.recordCache(collection.concurrent.TrieMap.empty[String, ClassBType])
   }
@@ -90,10 +88,10 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       s"Cannot create ClassBType for special class symbol ${classSym.fullName}")
 
     convertedClasses.getOrElse(classSym, {
-      val internalName = classSym.javaBinaryName.toTypeName
+      val internalName = classSym.javaBinaryName.toString
       // We first create and add the ClassBType to the hash map before computing its info. This
       // allows initializing cylic dependencies, see the comment on variable ClassBType._info.
-      val classBType = new ClassBType(internalName.start, internalName.length)
+      val classBType = ClassBType(internalName)
       convertedClasses(classSym) = classBType
       setClassInfo(classSym, classBType)
     })
