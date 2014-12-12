@@ -544,10 +544,17 @@ trait MatchTranslation {
         // wrong when isSeq, and resultInMonad should always be correct since it comes
         // directly from the extractor's result type
         val binder         = freshSym(pos, pureType(resultInMonad))
+        val potentiallyMutableBinders: Set[Symbol] =
+          if (extractorApply.tpe.typeSymbol.isNonBottomSubClass(OptionClass) && !aligner.isSeq)
+            Set.empty
+          else
+            // Ensures we capture unstable bound variables eagerly. These can arise under name based patmat or by indexing into mutable Seqs. See run t9003.scala
+            subPatBinders.toSet
 
         ExtractorTreeMaker(extractorApply, lengthGuard(binder), binder)(
           subPatBinders,
           subPatRefs(binder),
+          potentiallyMutableBinders,
           aligner.isBool,
           checkedLength,
           patBinderOrCasted,
