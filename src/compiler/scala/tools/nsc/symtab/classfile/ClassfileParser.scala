@@ -587,7 +587,7 @@ abstract class ClassfileParser {
 
               info = MethodType(newParams, clazz.tpe)
           }
-        // Note: the info may be overrwritten later with a generic signature
+        // Note: the info may be overwritten later with a generic signature
         // parsed from SignatureATTR
         sym setInfo info
         propagatePackageBoundary(jflags, sym)
@@ -768,7 +768,7 @@ abstract class ClassfileParser {
         classTParams = tparams
         val parents = new ListBuffer[Type]()
         while (index < end) {
-          parents += sig2type(tparams, skiptvs = false)  // here the variance doesnt'matter
+          parents += sig2type(tparams, skiptvs = false)  // here the variance doesn't matter
         }
         ClassInfoType(parents.toList, instanceScope, sym)
       }

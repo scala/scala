@@ -187,7 +187,7 @@ object LiterateExistentials {
 //
 
   implicitly[Int <:< (M forSome { type M >: Nothing <: String })] // fails
-// The preceeding line causes the compiler to generate an error message.
+// The preceding line causes the compiler to generate an error message.
 
 
 

@@ -682,7 +682,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  to fix the core of the compiler risk stability a few weeks before the final release.
      *  upd. Haha, "a few weeks before the final release". This surely sounds familiar :)
      *
-     *  However we do need to fix this for runtime reflection, since this idionsynchrazy is not something
+     *  However we do need to fix this for runtime reflection, since this idiosyncrasy is not something
      *  we'd like to expose to reflection users. Therefore a proposed solution is to check whether we're in a
      *  runtime reflection universe, and if yes and if we've not yet loaded the requested info, then to commence initialization.
      */
@@ -740,7 +740,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      * Note: the lateMETHOD flag is added lazily in the info transformer of the RefChecks phase.
      * This means that forcing the `sym.info` may change the value of `sym.isMethod`. Forcing the
-     * info is in the responsability of the caller. Doing it eagerly here was tried (0ccdb151f) but
+     * info is in the responsibility of the caller. Doing it eagerly here was tried (0ccdb151f) but
      * has proven to lead to bugs (SI-8907).
      *
      * Here's an example where one can see all four of FF FT TF TT for (isStatic, isMethod) at
@@ -2812,7 +2812,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def outerSource: Symbol =
       // SI-6888 Approximate the name to workaround the deficiencies in `nme.originalName`
-      //         in the face of clases named '$'. SI-2806 remains open to address the deeper problem.
+      //         in the face of classes named '$'. SI-2806 remains open to address the deeper problem.
       if (originalName endsWith (nme.OUTER)) initialize.referenced
       else NoSymbol
 
@@ -3570,7 +3570,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  @param    syms    the prototypical symbols
    *  @param    symFn   the function to create new symbols
    *  @param    tpe     the prototypical type
-   *  @return           the new symbol-subsituted type
+   *  @return           the new symbol-substituted type
    */
   def deriveType(syms: List[Symbol], symFn: Symbol => Symbol)(tpe: Type): Type = {
     val syms1 = deriveSymbols(syms, symFn)
@@ -3585,7 +3585,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  @param    as      arguments to be passed to symFn together with symbols from syms (must be same length)
    *  @param    symFn   the function to create new symbols based on `as`
    *  @param    tpe     the prototypical type
-   *  @return           the new symbol-subsituted type
+   *  @return           the new symbol-substituted type
    */
   def deriveType2[A](syms: List[Symbol], as: List[A], symFn: (Symbol, A) => Symbol)(tpe: Type): Type = {
     val syms1 = deriveSymbols2(syms, as, symFn)

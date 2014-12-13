@@ -332,13 +332,13 @@ abstract class TypeFlowAnalysis {
     `remainingCALLs` also caches info about the typestack just before the callsite, so as to spare computing them again at inlining time.
 
     Besides caching, a further optimization involves skipping those basic blocks whose in-flow and out-flow isn't needed anyway (as explained next).
-    A basic block lacking a callsite in `remainingCALLs`, when visisted by the standard algorithm, won't cause any inlining.
+    A basic block lacking a callsite in `remainingCALLs`, when visited by the standard algorithm, won't cause any inlining.
     But as we know from the way type-flows are computed, computing the in- and out-flow for a basic block relies in general on those of other basic blocks.
     In detail, we want to focus on that sub-graph of the CFG such that control flow may reach a remaining candidate callsite.
     Those basic blocks not in that subgraph can be skipped altogether. That's why:
        - `forwardAnalysis()` in `MTFAGrowable` now checks for inclusion of a basic block in `relevantBBs`
        - same check is performed before adding a block to the worklist, and as part of choosing successors.
-    The bookkeeping supporting on-the-fly pruning of irrelevant blocks requires overridding most methods of the dataflow-analysis.
+    The bookkeeping supporting on-the-fly pruning of irrelevant blocks requires overriding most methods of the dataflow-analysis.
 
     The rest of the story takes place in Inliner, which does not visit all of the method's basic blocks but only on those represented in `remainingCALLs`.
 

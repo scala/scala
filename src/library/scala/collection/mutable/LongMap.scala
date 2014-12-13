@@ -19,7 +19,7 @@ import generic.CanBuildFrom
  *  on a map that will no longer have elements removed but will be
  *  used heavily may save both time and storage space.
  * 
- *  This map is not indended to contain more than 2^29 entries (approximately
+ *  This map is not intended to contain more than 2^29 entries (approximately
  *  500 million).  The maximum capacity is 2^30, but performance will degrade
  *  rapidly as 2^30 is approached.
  *

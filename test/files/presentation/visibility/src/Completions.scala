@@ -11,7 +11,7 @@ package accessibility {
     def secretPublic(): Unit
 
     def someTests(other: Foo) {
-      other./*!*/secretPrivate // should be all but scretThis
+      other./*!*/secretPrivate // should be all but secretThis
 
       this./*!*/secretProtected // should hit five completions
     }
@@ -25,7 +25,7 @@ package accessibility {
 
   class UnrelatedClass {
     def someTests(foo: Foo) {
-      foo./*!*/ // should list public and protected[accessiblity]
+      foo./*!*/ // should list public and protected[accessibility]
     }
   }
 

@@ -8,7 +8,7 @@ package util
 
 import scala.reflect.internal.Chars._
 
-/** Utilitity methods for doc comment strings
+/** Utility methods for doc comment strings
  */
 object DocStrings {
 

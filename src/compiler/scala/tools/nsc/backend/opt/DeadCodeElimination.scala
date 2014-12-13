@@ -223,7 +223,7 @@ abstract class DeadCodeElimination extends SubComponent {
         debuglog("Marking instr: \tBB_" + bb + ": " + idx + " " + bb(idx))
 
         val instr = bb(idx)
-        // adds the instrutions that define the stack values about to be consumed to the work list to
+        // adds the instructions that define the stack values about to be consumed to the work list to
         // be marked useful
         def addDefs() = for ((bb1, idx1) <- rdef.findDefs(bb, idx, instr.consumed) if !useful(bb1)(idx1)) {
           debuglog(s"\t${bb1(idx1)} is consumed by $instr")

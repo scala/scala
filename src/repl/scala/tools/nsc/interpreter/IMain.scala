@@ -45,7 +45,7 @@ import java.io.File
  *  all variables defined by that code.  To extract the result of an
  *  interpreted line to show the user, a second "result object" is created
  *  which imports the variables exported by the above object and then
- *  exports members called "$eval" and "$print". To accomodate user expressions
+ *  exports members called "$eval" and "$print". To accommodate user expressions
  *  that read from variables or methods defined in previous statements, "import"
  *  statements are used.
  *

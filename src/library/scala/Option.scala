@@ -125,8 +125,8 @@ sealed abstract class Option[+A] extends Product with Serializable {
    * Although the use of null is discouraged, code written to use
    * $option must often interface with code that expects and returns nulls.
    * @example {{{
-   * val initalText: Option[String] = getInitialText
-   * val textField = new JComponent(initalText.orNull,20)
+   * val initialText: Option[String] = getInitialText
+   * val textField = new JComponent(initialText.orNull,20)
    * }}}
    */
   @inline final def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this getOrElse ev(null)

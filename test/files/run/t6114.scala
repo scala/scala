@@ -51,7 +51,7 @@ object Test extends App {
     val next = list.asScala ++ List(4,5,6)
     assert(next != list.asScala)
 
-    // Note: Clone is hidden at this level, so no overriden cloning.
+    // Note: Clone is hidden at this level, so no overridden cloning.
   }
 
   testList

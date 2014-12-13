@@ -338,7 +338,7 @@ trait Mirrors { self: Universe =>
      *  with getting a field or invoking a getter method of the field.
      *
      *  If `symbol` represents a field of a base class with respect to the class of the receiver,
-     *  and this base field is overriden in the class of the receiver, then this method will retrieve
+     *  and this base field is overridden in the class of the receiver, then this method will retrieve
      *  the value of the base field. To achieve overriding behavior, use reflectMethod on an accessor.
      */
     def get: Any
@@ -352,7 +352,7 @@ trait Mirrors { self: Universe =>
      *  with setting a field or invoking a setter method of the field.
      *
      *  If `symbol` represents a field of a base class with respect to the class of the receiver,
-     *  and this base field is overriden in the class of the receiver, then this method will set
+     *  and this base field is overridden in the class of the receiver, then this method will set
      *  the value of the base field. To achieve overriding behavior, use reflectMethod on an accessor.
      */
     def set(value: Any): Unit

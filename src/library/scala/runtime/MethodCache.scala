@@ -16,7 +16,7 @@ import java.lang.{ Class => JClass }
 import scala.annotation.tailrec
 
 /** An element of a polymorphic object cache.
- *  This class is refered to by the `CleanUp` phase. Each `PolyMethodCache` chain
+ *  This class is referred to by the `CleanUp` phase. Each `PolyMethodCache` chain
  *  must only relate to one method as `PolyMethodCache` does not identify
  *  the method name and argument types. In practice, one variable will be
  *  generated per call point, and will uniquely relate to the method called

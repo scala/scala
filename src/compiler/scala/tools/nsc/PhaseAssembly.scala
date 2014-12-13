@@ -18,7 +18,7 @@ trait PhaseAssembly {
 
   /**
    * Aux datastructure for solving the constraint system
-   * The depency graph container with helper methods for node and edge creation
+   * The dependency graph container with helper methods for node and edge creation
    */
   private class DependencyGraph {
 

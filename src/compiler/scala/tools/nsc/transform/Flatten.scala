@@ -77,7 +77,7 @@ abstract class Flatten extends InfoTransform {
               if (sym.isTerm && !sym.isStaticModule) {
                 decls1 enter sym
                 if (sym.isModule) {
-                  // In theory, we could assert(sym.isMethod), because nested, non-static moduls are
+                  // In theory, we could assert(sym.isMethod), because nested, non-static modules are
                   // transformed to methods (lateMETHOD flag added in RefChecks). But this requires
                   // forcing sym.info (see comment on isModuleNotMethod), which forces stub symbols
                   // too eagerly (SI-8907).

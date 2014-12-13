@@ -2947,7 +2947,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
   } // end of class JBeanInfoBuilder
 
   /** A namespace for utilities to normalize the code of an IMethod, over and beyond what IMethod.normalize() strives for.
-   * In particualr, IMethod.normalize() doesn't collapseJumpChains().
+   * In particular, IMethod.normalize() doesn't collapseJumpChains().
    *
    * TODO Eventually, these utilities should be moved to IMethod and reused from normalize() (there's nothing JVM-specific about them).
    */
@@ -3162,7 +3162,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         }
       }
 
-      // remove the unusued exception handler references
+      // remove the unused exception handler references
       if (settings.debug)
         for (exh <- unusedExceptionHandlers) debuglog(s"eliding exception handler $exh because it does not cover any reachable blocks")
       m.exh = m.exh filterNot unusedExceptionHandlers

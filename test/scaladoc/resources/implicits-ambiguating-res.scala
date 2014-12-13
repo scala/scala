@@ -1,5 +1,5 @@
 /**
- *  Test scaladoc implicits distinguishing -- supress all members by implicit conversion that are shadowed by the
+ *  Test scaladoc implicits distinguishing -- suppress all members by implicit conversion that are shadowed by the
  *  class' own members
  *
  *  {{{

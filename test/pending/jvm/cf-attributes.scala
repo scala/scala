@@ -62,7 +62,7 @@ object anonymousClasses {
   //InnerClass:
   // public final #_; //class anonymousClasses$$anon$1 of class anonymousClasses$
   val x = new Foo() {
-    override def foo() { println("foo (overriden)"); }
+    override def foo() { println("foo (overridden)"); }
     def dummy = 0
   }
 }

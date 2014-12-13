@@ -78,7 +78,7 @@ trait Bench extends Benchmark {
   }
   
   /**
-   * Prints results of the benchmark. May be overidden in benchmarks.
+   * Prints results of the benchmark. May be overridden in benchmarks.
    */
   def printResults {}
   

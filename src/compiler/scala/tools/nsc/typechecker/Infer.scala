@@ -1017,7 +1017,7 @@ trait Infer extends Checkable {
     /** Substitute free type variables `undetparams` of type constructor
      *  `tree` in pattern, given prototype `pt`.
      *
-     *  @param tree        the constuctor that needs to be instantiated
+     *  @param tree        the constructor that needs to be instantiated
      *  @param undetparams the undetermined type parameters
      *  @param pt0         the expected result type of the instance
      */

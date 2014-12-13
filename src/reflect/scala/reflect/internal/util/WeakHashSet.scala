@@ -7,13 +7,13 @@ import scala.collection.generic.Clearable
 import scala.collection.mutable.{Set => MSet}
 
 /**
- * A HashSet where the elements are stored weakly. Elements in this set are elligible for GC if no other
+ * A HashSet where the elements are stored weakly. Elements in this set are eligible for GC if no other
  * hard references are associated with them. Its primary use case is as a canonical reference
  * identity holder (aka "hash-consing") via findEntryOrUpdate
  *
  * This Set implementation cannot hold null. Any attempt to put a null in it will result in a NullPointerException
  *
- * This set implmeentation is not in general thread safe without external concurrency control. However it behaves
+ * This set implementation is not in general thread safe without external concurrency control. However it behaves
  * properly when GC concurrently collects elements in this set.
  */
 final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: Double) extends Set[A] with Function1[A, Boolean] with MSet[A] {
@@ -26,7 +26,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
 
   /**
    * queue of Entries that hold elements scheduled for GC
-   * the removeStaleEntries() method works through the queue to remeove
+   * the removeStaleEntries() method works through the queue to remove
    * stale entries from the table
    */
   private[this] val queue = new ReferenceQueue[A]
@@ -62,7 +62,7 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   private[this] def computeThreshHold: Int = (table.size * loadFactor).ceil.toInt
 
   /**
-   * find the bucket associated with an elements's hash code
+   * find the bucket associated with an element's hash code
    */
   private[this] def bucketFor(hash: Int): Int = {
     // spread the bits around to try to avoid accidental collisions using the

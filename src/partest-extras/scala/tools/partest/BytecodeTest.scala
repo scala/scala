@@ -136,7 +136,7 @@ abstract class BytecodeTest {
 
 object BytecodeTest {
   /** Parse `file` as a class file, transforms the ASM representation with `f`,
-   *  and overwrites the orginal file.
+   *  and overwrites the original file.
    */
   def modifyClassFile(file: JFile)(f: ClassNode => ClassNode) {
     val rfile = new reflect.io.File(file)

@@ -35,7 +35,7 @@ class DerivedC extends Base {
 
 class DerivedD extends Base {
   /**
-   * @tparam T The overriden type parameter comment
+   * @tparam T The overridden type parameter comment
    */
   override def function[T](arg1: T, arg2: String): Double = 3.0d
 }

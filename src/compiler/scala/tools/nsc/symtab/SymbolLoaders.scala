@@ -170,7 +170,7 @@ abstract class SymbolLoaders {
   }
 
   /** Create a new loader from a binary classfile.
-   *  This is intented as a hook allowing to support loading symbols from
+   *  This is intended as a hook allowing to support loading symbols from
    *  files other than .class files.
    */
   protected def newClassLoader(bin: AbstractFile): SymbolLoader =

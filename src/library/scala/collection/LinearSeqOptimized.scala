@@ -44,7 +44,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
    *
    *  $willNotTerminateInf
    *
-   *  Note: the execution of `length` may take time proportial to the length of the sequence.
+   *  Note: the execution of `length` may take time proportional to the length of the sequence.
    */
   def length: Int = {
     var these = self
@@ -57,7 +57,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
   }
 
   /** Selects an element by its index in the $coll.
-   *  Note: the execution of `apply` may take time proportial to the index value.
+   *  Note: the execution of `apply` may take time proportional to the index value.
    *  @throws IndexOutOfBoundsException if `idx` does not satisfy `0 <= idx < length`.
    */
   def apply(n: Int): A = {

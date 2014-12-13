@@ -731,7 +731,7 @@ trait Types
      * `substThis(from, to).substSym(symsFrom, symsTo)`.
      *
      * `SubstThisAndSymMap` performs a breadth-first map over this type, which meant that
-     * symbol substitution occured before `ThisType` substitution. Consequently, in substitution
+     * symbol substitution occurred before `ThisType` substitution. Consequently, in substitution
      * of a `SingleType(ThisType(`from`), sym), symbols were rebound to `from` rather than `to`.
      */
     def substThisAndSym(from: Symbol, to: Type, symsFrom: List[Symbol], symsTo: List[Symbol]): Type =
@@ -1687,7 +1687,7 @@ trait Types
      */
     private var refs: Array[RefMap] = _
 
-    /** The initialization state of the class: UnInialized --> Initializing --> Initialized
+    /** The initialization state of the class: UnInitialized --> Initializing --> Initialized
      *  Syncnote: This var need not be protected with synchronized, because
      *  it is accessed only from expansiveRefs, which is called only from
      *  Typer.
@@ -1972,7 +1972,7 @@ trait Types
     require(sym.isNonClassType, sym)
 
     /* Syncnote: These are pure caches for performance; no problem to evaluate these
-     * several times. Hence, no need to protected with synchronzied in a mutli-threaded
+     * several times. Hence, no need to protected with synchronized in a multi-threaded
      * usage scenario.
      */
     private var relativeInfoCache: Type = _
@@ -2643,7 +2643,7 @@ trait Types
      *     nowhere inside a type argument
      *   - no quantified type argument contains a quantified variable in its bound
      *   - the typeref's symbol is not itself quantified
-     *   - the prefix is not quanitified
+     *   - the prefix is not quantified
      */
     def isRepresentableWithWildcards = {
       val qset = quantified.toSet
@@ -3101,7 +3101,7 @@ trait Types
       // addressed here: all lower bounds are retained and their intersection calculated when the
       // bounds are solved.
       //
-      // In a side-effect free universe, checking tp and tp.parents beofre checking tp.baseTypeSeq
+      // In a side-effect free universe, checking tp and tp.parents before checking tp.baseTypeSeq
       // would be pointless. In this case, each check we perform causes us to lose specificity: in
       // the end the best we'll do is the least specific type we tested against, since the typevar
       // does not see these checks as "probes" but as requirements to fulfill.
@@ -3332,7 +3332,7 @@ trait Types
    *
    *  SI-6385 Erasure's creation of bridges considers method signatures `exitingErasure`,
    *          which contain `ErasedValueType`-s. In order to correctly consider the overriding
-   *          and overriden signatures as equivalent in `run/t6385.scala`, it is critical that
+   *          and overridden signatures as equivalent in `run/t6385.scala`, it is critical that
    *          this type contains the erasure of the wrapped type, rather than the unerased type
    *          of the value class itself, as was originally done.
    *

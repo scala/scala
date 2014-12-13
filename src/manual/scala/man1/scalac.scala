@@ -360,7 +360,7 @@ object scalac extends Command {
           "ANF pre-transform for " & MItalic("@cps") & " (CPS plugin)"),
 	Definition(
           MItalic("selectivecps"),
-          MItalic("@cps") & "-driven transform of selectiveanf assignements (CPS plugin)"),
+          MItalic("@cps") & "-driven transform of selectiveanf assignments (CPS plugin)"),
 	Definition(
           MItalic("uncurry"),
           "uncurry, translate function values to anonymous classes"),

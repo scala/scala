@@ -485,7 +485,7 @@ object Test extends Properties("HtmlFactory") {
           """, true),
       (Some("DerivedD"),
        """def function[T](arg1: T, arg2: String): Double
-          T The overriden type parameter comment
+          T The overridden type parameter comment
           arg1 The T term comment
           arg2 The string comment
           returns The return comment

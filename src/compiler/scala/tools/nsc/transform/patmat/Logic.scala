@@ -622,7 +622,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
         if (!t.symbol.isStable) {
           // Create a fresh type for each unstable value, since we can never correlate it to another value.
-          // For example `case X => case X =>` should not complaing about the second case being unreachable,
+          // For example `case X => case X =>` should not complain about the second case being unreachable,
           // if X is mutable.
           freshExistentialSubtype(t.tpe)
         }

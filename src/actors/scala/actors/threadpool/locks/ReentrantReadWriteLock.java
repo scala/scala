@@ -20,13 +20,13 @@ import scala.actors.threadpool.helpers.*;
  *
  * <p>The order of entry
  * to the read and write lock is unspecified, subject to reentrancy
- * constraints.  A nonfair lock that is continously contended may
+ * constraints.  A nonfair lock that is continuously contended may
  * indefinitely postpone one or more reader or writer threads, but
  * will normally have higher throughput than a fair lock.
  * <p>
  *
  * DEPARTURE FROM java.util.concurrent: this implementation impose
- * a writer-preferrence and thus its acquisition order may be different
+ * a writer-preference and thus its acquisition order may be different
  * than in java.util.concurrent.
  *
  * <li><b>Reentrancy</b>

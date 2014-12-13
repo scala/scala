@@ -171,7 +171,7 @@ trait Namers extends MethodSynthesis {
       val newFlags = (sym.flags & LOCKED) | flags
       sym.rawInfo match {
         case tr: TypeRef =>
-          // !!! needed for: pos/t5954d; the uniques type cache will happilly serve up the same TypeRef
+          // !!! needed for: pos/t5954d; the uniques type cache will happily serve up the same TypeRef
           // over this mutated symbol, and we witness a stale cache for `parents`.
           tr.invalidateCaches()
         case _ =>

@@ -713,7 +713,7 @@ abstract class TreeGen {
 
       val rhsUnchecked = mkUnchecked(rhs)
 
-      // TODO: clean this up -- there is too much information packked into mkPatDef's `pat` argument
+      // TODO: clean this up -- there is too much information packed into mkPatDef's `pat` argument
       // when it's a simple identifier (case Some((name, tpt)) -- above),
       // pat should have the type ascription that was specified by the user
       // however, in `case None` (here), we must be careful not to generate illegal pattern trees (such as `(a, b): Tuple2[Int, String]`)

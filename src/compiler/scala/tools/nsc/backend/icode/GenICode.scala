@@ -1077,7 +1077,7 @@ abstract class GenICode extends SubComponent {
           ()
         case (_, UNIT) =>
           ctx.bb.emit(DROP(from), pos)
-        // otherwise we'd better be doing a primtive -> primitive coercion or there's a problem
+        // otherwise we'd better be doing a primitive -> primitive coercion or there's a problem
         case _ if !from.isRefOrArrayType && !to.isRefOrArrayType =>
           coerce(from, to)
         case _ =>

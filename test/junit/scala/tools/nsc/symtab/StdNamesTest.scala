@@ -19,7 +19,7 @@ class StdNamesTest {
   }
 
   @Test
-  def testNewTermNameNegativeLenght(): Unit = {
+  def testNewTermNameNegativeLength(): Unit = {
     assertEquals(nme.EMPTY, newTermName("foo".toCharArray, 0, -1))
     assertEquals(nme.EMPTY, newTermName("foo".toCharArray, 0, 0))
   }

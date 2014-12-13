@@ -82,7 +82,7 @@ public abstract class Interpreter<V extends Value> {
      *            the bytecode instruction to be interpreted.
      * @return the result of the interpretation of the given instruction.
      * @throws AnalyzerException
-     *             if an error occured during the interpretation.
+     *             if an error occurred during the interpretation.
      */
     public abstract V newOperation(AbstractInsnNode insn)
             throws AnalyzerException;
@@ -101,7 +101,7 @@ public abstract class Interpreter<V extends Value> {
      * @return the result of the interpretation of the given instruction. The
      *         returned value must be <tt>equal</tt> to the given value.
      * @throws AnalyzerException
-     *             if an error occured during the interpretation.
+     *             if an error occurred during the interpretation.
      */
     public abstract V copyOperation(AbstractInsnNode insn, V value)
             throws AnalyzerException;
@@ -122,7 +122,7 @@ public abstract class Interpreter<V extends Value> {
      *            the argument of the instruction to be interpreted.
      * @return the result of the interpretation of the given instruction.
      * @throws AnalyzerException
-     *             if an error occured during the interpretation.
+     *             if an error occurred during the interpretation.
      */
     public abstract V unaryOperation(AbstractInsnNode insn, V value)
             throws AnalyzerException;
@@ -146,7 +146,7 @@ public abstract class Interpreter<V extends Value> {
      *            the second argument of the instruction to be interpreted.
      * @return the result of the interpretation of the given instruction.
      * @throws AnalyzerException
-     *             if an error occured during the interpretation.
+     *             if an error occurred during the interpretation.
      */
     public abstract V binaryOperation(AbstractInsnNode insn, V value1, V value2)
             throws AnalyzerException;
@@ -167,7 +167,7 @@ public abstract class Interpreter<V extends Value> {
      *            the third argument of the instruction to be interpreted.
      * @return the result of the interpretation of the given instruction.
      * @throws AnalyzerException
-     *             if an error occured during the interpretation.
+     *             if an error occurred during the interpretation.
      */
     public abstract V ternaryOperation(AbstractInsnNode insn, V value1,
             V value2, V value3) throws AnalyzerException;
@@ -185,7 +185,7 @@ public abstract class Interpreter<V extends Value> {
      *            the arguments of the instruction to be interpreted.
      * @return the result of the interpretation of the given instruction.
      * @throws AnalyzerException
-     *             if an error occured during the interpretation.
+     *             if an error occurred during the interpretation.
      */
     public abstract V naryOperation(AbstractInsnNode insn,
             List<? extends V> values) throws AnalyzerException;
@@ -203,7 +203,7 @@ public abstract class Interpreter<V extends Value> {
      * @param expected
      *            the expected return type of the analyzed method.
      * @throws AnalyzerException
-     *             if an error occured during the interpretation.
+     *             if an error occurred during the interpretation.
      */
     public abstract void returnOperation(AbstractInsnNode insn, V value,
             V expected) throws AnalyzerException;
