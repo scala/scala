@@ -196,10 +196,10 @@ object ByteCodecs {
    *
    * Sometimes returns (length+1) of the decoded array. Example:
    *
-   *   scala> val enc = scala.reflect.generic.ByteCodecs.encode(Array(1,2,3))
+   *   scala> val enc = scala.reflect.internal.pickling.ByteCodecs.encode(Array(1,2,3))
    *   enc: Array[Byte] = Array(2, 5, 13, 1)
    *
-   *   scala> scala.reflect.generic.ByteCodecs.decode(enc)
+   *   scala> scala.reflect.internal.pickling.ByteCodecs.decode(enc)
    *   res43: Int = 4
    *
    *   scala> enc
