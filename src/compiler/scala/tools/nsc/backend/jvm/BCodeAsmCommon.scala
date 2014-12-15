@@ -162,4 +162,32 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
       assoc.collectFirst {
         case (`nme`.value, LiteralAnnotArg(Constant(value: Symbol))) => value
       }).flatten.getOrElse(AnnotationRetentionPolicyClassValue)
+
+  def implementedInterfaces(classSym: Symbol): List[Symbol] = {
+    // Additional interface parents based on annotations and other cues
+    def newParentForAnnotation(ann: AnnotationInfo): Option[Type] = ann.symbol match {
+      case RemoteAttr => Some(RemoteInterfaceClass.tpe)
+      case _          => None
+    }
+
+    def isInterfaceOrTrait(sym: Symbol) = sym.isInterface || sym.isTrait
+
+    val allParents = classSym.info.parents ++ classSym.annotations.flatMap(newParentForAnnotation)
+
+    // We keep the superClass when computing minimizeParents to eliminate more interfaces.
+    // Example: T can be eliminated from D
+    //   trait T
+    //   class C extends T
+    //   class D extends C with T
+    val interfaces = erasure.minimizeParents(allParents) match {
+      case superClass :: ifs if !isInterfaceOrTrait(superClass.typeSymbol) =>
+        ifs
+      case ifs =>
+        // minimizeParents removes the superclass if it's redundant, for example:
+        //  trait A
+        //  class C extends Object with A  // minimizeParents removes Object
+        ifs
+    }
+    interfaces.map(_.typeSymbol)
+  }
 }

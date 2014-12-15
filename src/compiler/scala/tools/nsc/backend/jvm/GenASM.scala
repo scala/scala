@@ -1206,22 +1206,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
     def serialVUID: Option[Long] = genBCode.serialVUID(clasz.symbol)
 
-    private def getSuperInterfaces(c: IClass): Array[String] = {
-
-        // Additional interface parents based on annotations and other cues
-        def newParentForAttr(ann: AnnotationInfo): Symbol = ann.symbol match {
-          case RemoteAttr       => RemoteInterfaceClass
-          case _                => NoSymbol
-        }
-
-      val ps = c.symbol.info.parents
-      val superInterfaces0: List[Symbol] = if(ps.isEmpty) Nil else c.symbol.mixinClasses
-      val superInterfaces = existingSymbols(superInterfaces0 ++ c.symbol.annotations.map(newParentForAttr)).distinct
-
-      if(superInterfaces.isEmpty) EMPTY_STRING_ARRAY
-      else mkArray(erasure.minimizeInterfaces(superInterfaces.map(_.info)).map(t => javaName(t.typeSymbol)))
-    }
-
     var clasz:    IClass = _           // this var must be assigned only by genClass()
     var jclass:   asm.ClassWriter = _  // the classfile being emitted
     var thisName: String = _           // the internal name of jclass
@@ -1242,7 +1226,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       val ps = c.symbol.info.parents
       val superClass: String = if(ps.isEmpty) JAVA_LANG_OBJECT.getInternalName else javaName(ps.head.typeSymbol)
 
-      val ifaces = getSuperInterfaces(c)
+      val ifaces: Array[String] = implementedInterfaces(c.symbol).map(javaName)(collection.breakOut)
 
       val thisSignature = getGenericSignature(c.symbol, c.symbol.owner)
       val flags = mkFlags(
