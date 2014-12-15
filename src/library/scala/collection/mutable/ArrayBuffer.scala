@@ -128,7 +128,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   override def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
 
   /** Inserts new elements at the index `n`. Opposed to method
-   *  `update`, this method will not replace an element with a
+   *  `update`, this method will not replace an element with a new
    *  one. Instead, it will insert a new element at index `n`.
    *
    *  @param n     the index where a new element will be inserted.
@@ -137,12 +137,13 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    */
   def insertAll(n: Int, seq: Traversable[A]) {
     if (n < 0 || n > size0) throw new IndexOutOfBoundsException(n.toString)
-    val xs = seq.toList
-    val len = xs.length
-    ensureSize(size0 + len)
+    val len = seq.size
+    val newSize = size0 + len
+    ensureSize(newSize)
+
     copy(n, n + len, size0 - n)
-    xs.copyToArray(array.asInstanceOf[scala.Array[Any]], n)
-    size0 += len
+    seq.copyToArray(array.asInstanceOf[Array[Any]], n)
+    size0 = newSize
   }
 
   /** Removes the element on a given index position. It takes time linear in
