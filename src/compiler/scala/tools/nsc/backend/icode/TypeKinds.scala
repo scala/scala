@@ -7,6 +7,8 @@ package scala.tools.nsc
 package backend
 package icode
 
+import scala.tools.nsc.backend.jvm.BackendInterface
+
 /* A type case
 
     case UNIT            =>

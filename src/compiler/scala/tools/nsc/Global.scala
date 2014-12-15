@@ -28,8 +28,7 @@ import transform.patmat.PatternMatching
 import transform._
 import backend.icode.{ ICodes, GenICode, ICodeCheckers }
 import backend.{ ScalaPrimitives, JavaPlatform }
-import backend.jvm.GenBCode
-import backend.jvm.GenASM
+import scala.tools.nsc.backend.jvm.{ScalacBackendInterface, GenBCode, GenASM}
 import backend.opt.{ Inliners, InlineExceptionHandlers, ConstantOptimization, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 import scala.language.postfixOps
@@ -646,7 +645,9 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     val global: Global.this.type = Global.this
     val runsAfter = List("dce")
     val runsRightAfter = None
-  } with GenBCode
+  } with GenBCode {
+    lazy val int = new ScalacBackendInterface[global.type](global)
+  }
 
   // phaseName = "terminal"
   object terminal extends {

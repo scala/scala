@@ -11,11 +11,7 @@ package icode
 import java.io.PrintWriter
 
 trait Primitives { self: ICodes =>
-
-  /** This class represents a primitive operation. */
-  class Primitive {
-  }
-
+  import Primitives._
 
   // type : (type) => type
   // range: type <- { BOOL, Ix, Ux, Rx }
@@ -26,7 +22,7 @@ trait Primitives { self: ICodes =>
   // range: type <- { BOOL, Ix, Ux, Rx, REF }
   // jvm  : if{eq, ne, lt, ge, le, gt}, if{null, nonnull}
   //        if_icmp{eq, ne, lt, ge, le, gt}, if_acmp{eq,ne}
-  case class Test(op: TestOp, kind: TypeKind,  zero: Boolean)  extends Primitive
+  case class Test(op: TestOp, kind: TypeKind,  zero: Boolean) extends Primitive
 
   // type : (type,type) => I4
   // range: type <- { Ix, Ux, Rx }
@@ -62,47 +58,12 @@ trait Primitives { self: ICodes =>
   // range: lf,rg <- { BOOL, Ix, Ux, Rx, REF, STR }
   // jvm  : It should call the appropiate 'append' method on StringBuffer
   case class StringConcat(el: TypeKind) extends Primitive
+}
 
-  /** Signals the beginning of a series of concatenations.
-   *  On the JVM platform, it should create a new StringBuffer
-   */
-  case object StartConcat extends Primitive
-
-  /**
-   * type: (buf) => STR
-   * jvm : It should turn the StringBuffer into a String.
-   */
-  case object EndConcat extends Primitive
-
-  /** Pretty printer for primitives */
-  class PrimitivePrinter(out: PrintWriter) {
-    def print(s: String): PrimitivePrinter = {
-      out.print(s)
-      this
-    }
+object Primitives {
+  /** This class represents a primitive operation. */
+  class Primitive {
   }
-
-  /** This class represents a comparison operation. */
-  class ComparisonOp {
-
-    /** Returns a string representation of this operation. */
-    override def toString(): String = this match {
-      case CMPL => "CMPL"
-      case CMP  => "CMP"
-      case CMPG => "CMPG"
-      case _ => throw new RuntimeException("ComparisonOp unknown case")
-    }
-  }
-
-  /** A comparison operation with -1 default for NaNs */
-  case object CMPL extends ComparisonOp
-
-  /** A comparison operation with no default for NaNs */
-  case object CMP extends ComparisonOp
-
-    /** A comparison operation with +1 default for NaNs */
-  case object CMPG extends ComparisonOp
-
 
   /** This class represents a test operation. */
   sealed abstract class TestOp {
@@ -243,5 +204,44 @@ trait Primitives { self: ICodes =>
 
   /** A bitwise XOR operation */
   case object XOR extends LogicalOp
-}
 
+  /** Signals the beginning of a series of concatenations.
+    *  On the JVM platform, it should create a new StringBuffer
+    */
+  case object StartConcat extends Primitive
+
+  /**
+   * type: (buf) => STR
+   * jvm : It should turn the StringBuffer into a String.
+   */
+  case object EndConcat extends Primitive
+
+  /** Pretty printer for primitives */
+  class PrimitivePrinter(out: PrintWriter) {
+    def print(s: String): PrimitivePrinter = {
+      out.print(s)
+      this
+    }
+  }
+
+  /** This class represents a comparison operation. */
+  class ComparisonOp {
+
+    /** Returns a string representation of this operation. */
+    override def toString(): String = this match {
+      case CMPL => "CMPL"
+      case CMP  => "CMP"
+      case CMPG => "CMPG"
+      case _ => throw new RuntimeException("ComparisonOp unknown case")
+    }
+  }
+
+  /** A comparison operation with -1 default for NaNs */
+  case object CMPL extends ComparisonOp
+
+  /** A comparison operation with no default for NaNs */
+  case object CMP extends ComparisonOp
+
+  /** A comparison operation with +1 default for NaNs */
+  case object CMPG extends ComparisonOp
+}

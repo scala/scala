@@ -304,6 +304,7 @@ TODO:
       </artifact:dependencies>
 
       <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
+      <artifact:remoteRepository id="sonatype-snapshot" url="https://oss.sonatype.org/content/repositories/snapshots"/>
       <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
 
       <!-- prepare, for each of the names below, the property "@{name}.cross", set to the
@@ -375,6 +376,7 @@ TODO:
 
       <echo message="Using Scala ${starr.version} for STARR."/>
       <artifact:dependencies pathId="starr.compiler.path" filesetId="starr.fileset">
+        <artifact:remoteRepository refid="sonatype-snapshot"/>
         <artifact:remoteRepository refid="extra-repo"/>
         <dependency groupId="org.scala-lang" artifactId="scala-library" version="${starr.version}"/>
         <dependency groupId="org.scala-lang" artifactId="scala-reflect" version="${starr.version}"/>

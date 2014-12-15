@@ -1234,6 +1234,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       && !isImplClass
       && !isJavaDefined
     )
+
     /** These should be moved somewhere like JavaPlatform.
      */
     def javaSimpleName: Name = addModuleSuffix(simpleName.dropLocal)

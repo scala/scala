@@ -9,6 +9,8 @@ package backend.icode.analysis
 
 import scala.collection.{ mutable, immutable }
 
+import scala.tools.nsc.backend.icode.Primitives
+
 /** A modified copy-propagation like analysis. It
  *  is augmented with a record-like value which is used
  *  to represent closures.
@@ -19,6 +21,8 @@ abstract class CopyPropagation {
   val global: Global
   import global._
   import icodes._
+  import Primitives._
+  import scala.tools.nsc.backend.icode.Opcodes._
 
   /** Locations can be local variables, this, and fields. */
   abstract sealed class Location

@@ -8,6 +8,7 @@ package tools.nsc
 package backend.opt
 
 import scala.annotation.tailrec
+import scala.tools.nsc.backend.icode.Primitives
 
 /**
  * ConstantOptimization uses abstract interpretation to approximate for
@@ -27,6 +28,8 @@ abstract class ConstantOptimization extends SubComponent {
   import global._
   import icodes._
   import icodes.opcodes._
+  import scala.tools.nsc.backend.icode.Primitives._
+  import scala.tools.nsc.backend.icode.Opcodes._
 
   val phaseName = "constopt"
 

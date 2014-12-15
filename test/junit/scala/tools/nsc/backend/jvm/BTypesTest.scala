@@ -9,15 +9,17 @@ import org.junit.Assert._
 
 @RunWith(classOf[JUnit4])
 class BTypesTest {
+
   val settings = new Settings()
   settings.processArgumentString("-usejavacp")
   val g: Global = new Global(settings)
+  lazy val int = new ScalacBackendInterface[g.type](g)
   val run = new g.Run() // initializes some compiler internals
   import g.{definitions => d, Symbol}
 
   def duringBackend[T](f: => T) = g.exitingDelambdafy(f)
 
-  val btypes = new BTypesFromSymbols[g.type](g)
+  lazy val btypes = new BTypesFromSymbols[int.type](int)
   import btypes._
   duringBackend(btypes.intializeCoreBTypes())
 

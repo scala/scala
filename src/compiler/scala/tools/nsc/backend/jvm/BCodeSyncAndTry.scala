@@ -18,25 +18,24 @@ import scala.tools.asm
  *  @version 1.0
  *
  */
-abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
-  import global._
+trait BCodeSyncAndTry extends BCodeBodyBuilder {
+  import int._
   import bTypes._
   import coreBTypes._
-
   /*
    * Functionality to lower `synchronized` and `try` expressions.
    */
   abstract class SyncAndTryBuilder(cunit: CompilationUnit) extends PlainBodyBuilder(cunit) {
 
-    def genSynchronized(tree: Apply, expectedType: BType): BType = {
-      val Apply(fun, args) = tree
-      val monitor = locals.makeLocal(ObjectReference, "monitor")
+    def genSynchronized(tree: Apply, expectedType: BType): BType = tree match {
+      case Apply(fun, args) =>
+      val monitor = locals.makeLocal(ObjectReference, "monitor", Object_Type, tree.pos)
       val monCleanup = new asm.Label
 
       // if the synchronized block returns a result, store it in a local variable.
       // Just leaving it on the stack is not valid in MSIL (stack is cleaned when leaving try-blocks).
       val hasResult = (expectedType != UNIT)
-      val monitorResult: Symbol = if (hasResult) locals.makeLocal(tpeTK(args.head), "monitorResult") else null;
+      val monitorResult: Symbol = if (hasResult) locals.makeLocal(tpeTK(args.head), "monitorResult", Object_Type, tree.pos) else null;
 
       /* ------ (1) pushing and entering the monitor, also keeping a reference to it in a local var. ------ */
       genLoadQualifier(fun)
@@ -175,16 +174,15 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
      *    - "exception-handler-version-of-finally-block" respectively.
      *
      */
-    def genLoadTry(tree: Try): BType = {
-
-      val Try(block, catches, finalizer) = tree
+    def genLoadTry(tree: Try): BType = tree match {
+      case Try(block, catches, finalizer) =>
       val kind = tpeTK(tree)
 
       val caseHandlers: List[EHClause] =
         for (CaseDef(pat, _, caseBody) <- catches) yield {
           pat match {
-            case Typed(Ident(nme.WILDCARD), tpt)  => NamelessEH(tpeTK(tpt).asClassBType, caseBody)
-            case Ident(nme.WILDCARD)              => NamelessEH(ThrowableReference,  caseBody)
+            case Typed(Ident(`nme_WILDCARD`), tpt)  => NamelessEH(tpeTK(tpt).asClassBType, caseBody)
+            case Ident(`nme_WILDCARD`)              => NamelessEH(ThrowableReference,  caseBody)
             case Bind(_, _)                       => BoundEH   (pat.symbol, caseBody)
           }
         }
@@ -213,7 +211,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
        * please notice `tmp` has type tree.tpe, while `earlyReturnVar` has the method return type.
        * Because those two types can be different, dedicated vars are needed.
        */
-      val tmp          = if (guardResult) locals.makeLocal(tpeTK(tree), "tmp") else null;
+      val tmp          = if (guardResult) locals.makeLocal(tpeTK(tree), "tmp", tree.tpe, tree.pos) else null;
 
       /*
        * upon early return from the try-body or one of its EHs (but not the EH-version of the finally-clause)
@@ -290,7 +288,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
         nopIfNeeded(startTryBody)
         val finalHandler = currProgramPoint() // version of the finally-clause reached via unhandled exception.
         protect(startTryBody, finalHandler, finalHandler, null)
-        val Local(eTK, _, eIdx, _) = locals(locals.makeLocal(ThrowableReference, "exc"))
+        val Local(eTK, _, eIdx, _) = locals(locals.makeLocal(ThrowableReference, "exc", Throwable_Type, finalizer.pos))
         bc.store(eIdx, eTK)
         emitFinalizer(finalizer, null, isDuplicate = true)
         bc.load(eIdx, eTK)
@@ -383,7 +381,11 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
     }
 
     /* Does this tree have a try-catch block? */
-    def mayCleanStack(tree: Tree): Boolean = tree exists { t => t.isInstanceOf[Try] }
+    def mayCleanStack(tree: Tree): Boolean = tree exists { t => t match {
+        case Try(_, _, _) => true
+        case _ => false
+      }
+    }
 
     trait EHClause
     case class NamelessEH(typeToDrop: ClassBType,  caseBody: Tree) extends EHClause

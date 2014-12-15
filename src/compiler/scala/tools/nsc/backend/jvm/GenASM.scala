@@ -9,10 +9,14 @@ package backend.jvm
 
 import scala.collection.{ mutable, immutable }
 import scala.reflect.internal.pickling.{ PickleFormat, PickleBuffer }
+import scala.tools.nsc.backend.icode.{TypeKinds, Primitives}
 import scala.tools.nsc.symtab._
 import scala.tools.asm
 import asm.Label
 import scala.annotation.tailrec
+import BCodeAsmCommon._
+import scala.tools.nsc.backend.icode.Opcodes._
+import Primitives._
 
 /**
  *  @author  Iulian Dragos (version 1.0, FJBG-based implementation)
@@ -26,7 +30,10 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
   import icodes.opcodes._
   import definitions._
 
-  val bCodeAsmCommon: BCodeAsmCommon[global.type] = new BCodeAsmCommon(global)
+  lazy val int: ScalacBackendInterface[global.type] = new ScalacBackendInterface[global.type](global)
+
+  lazy val bCodeAsmCommon: BCodeAsmCommon[int.type] = new BCodeAsmCommon(int)
+  import int.{symHelper, shouldEmitAnnotation, isRuntimeVisible, ExcludedForwarderFlags}
   import bCodeAsmCommon._
 
   // Strangely I can't find this in the asm code
@@ -637,7 +644,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
     def descriptor(k: TypeKind): String = { javaType(k).getDescriptor }
     def descriptor(s: Symbol):   String = { javaType(s).getDescriptor }
 
-    def javaType(tk: TypeKind): asm.Type = {
+    def javaType(tk: TypeKinds#TypeKind): asm.Type = {
       if(tk.isValueType) {
         if(tk.isIntSizedType) {
           (tk: @unchecked) match {
@@ -700,14 +707,14 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
       // This collects all inner classes of csym, including local and anonymous: lambdalift makes
       // them members of their enclosing class.
-      innerClassBuffer ++= exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(csym))
+      innerClassBuffer ++= exitingPhase(currentRun.lambdaliftPhase)(csym.memberClasses)
 
       // Add members of the companion object (if top-level). why, see comment in BTypes.scala.
       val linkedClass = exitingPickler(csym.linkedClassOfClass) // linkedCoC does not work properly in late phases
       if (isTopLevelModule(linkedClass)) {
         // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
         // not local classes that were lifted by lambdalift.
-        innerClassBuffer ++= exitingPickler(memberClassesOf(linkedClass))
+        innerClassBuffer ++= exitingPickler(linkedClass.memberClasses)
       }
 
       val allInners: List[Symbol] = innerClassBuffer.toList filterNot deadCode.elidedClosures
@@ -722,7 +729,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         for (innerSym <- allInners sortBy (_.name.length)) { // TODO why not sortBy (_.name.toString()) ??
           val flagsWithFinal: Int = mkFlags(
             // See comment in BTypes, when is a class marked static in the InnerClass table.
-            if (isOriginallyStaticOwner(innerSym.originalOwner)) asm.Opcodes.ACC_STATIC else 0,
+            if (innerSym.originalOwner.isOriginallyStaticOwner) asm.Opcodes.ACC_STATIC else 0,
             javaFlags(innerSym),
             if(isDeprecated(innerSym)) asm.Opcodes.ACC_DEPRECATED else 0 // ASM pseudo-access flag
           ) & (INNER_CLASSES_FLAGS | asm.Opcodes.ACC_DEPRECATED)
@@ -866,7 +873,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
     def getCurrentCUnit(): CompilationUnit
 
-    def getGenericSignature(sym: Symbol, owner: Symbol) = self.getGenericSignature(sym, owner, getCurrentCUnit())
+    def getGenericSignature(sym: Symbol, owner: Symbol) = self.getGenericSignature(sym, owner)
 
     def emitArgument(av:   asm.AnnotationVisitor,
                      name: String,
@@ -1000,7 +1007,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       )
 
       // TODO needed? for(ann <- m.annotations) { ann.symbol.initialize }
-      val jgensig = staticForwarderGenericSignature(m, module, getCurrentCUnit())
+      val jgensig = staticForwarderGenericSignature(m, module)
       addRemoteExceptionAnnot(isRemoteClass, hasPublicBitSet(flags), m)
       val (throws, others) = m.annotations partition (_.symbol == ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(throws)
@@ -1154,7 +1161,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
     DOUBLE -> asm.Type.getObjectType("java/lang/Double")
   )
 
-  def isNonUnitValueTK(tk: TypeKind): Boolean = { tk.isValueType && tk != UNIT }
+  def isNonUnitValueTK(tk: TypeKinds#TypeKind): Boolean = { tk.isValueType && tk != UNIT }
 
   case class MethodNameAndType(mname: String, mdesc: String)
 
@@ -1204,7 +1211,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
     def isParcelableClass = isAndroidParcelableClass(clasz.symbol)
 
-    def serialVUID: Option[Long] = genBCode.serialVUID(clasz.symbol)
+    def serialVUID: Option[Long] = clasz.symbol.serialVUID
 
     private def getSuperInterfaces(c: IClass): Array[String] = {
 
@@ -1659,18 +1666,18 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       }
 
 
-      def load( idx: Int, tk: TypeKind) { emitVarInsn(Opcodes.ILOAD,  idx, tk) }
-      def store(idx: Int, tk: TypeKind) { emitVarInsn(Opcodes.ISTORE, idx, tk) }
+      def load( idx: Int, tk: TypeKinds#TypeKind) { emitVarInsn(Opcodes.ILOAD,  idx, tk) }
+      def store(idx: Int, tk: TypeKinds#TypeKind) { emitVarInsn(Opcodes.ISTORE, idx, tk) }
 
-      def aload( tk: TypeKind) { emitTypeBased(aloadOpcodes,  tk) }
-      def astore(tk: TypeKind) { emitTypeBased(astoreOpcodes, tk) }
+      def aload( tk: TypeKinds#TypeKind) { emitTypeBased(aloadOpcodes,  tk) }
+      def astore(tk: TypeKinds#TypeKind) { emitTypeBased(astoreOpcodes, tk) }
 
-      def neg(tk: TypeKind) { emitPrimitive(negOpcodes, tk) }
-      def add(tk: TypeKind) { emitPrimitive(addOpcodes, tk) }
-      def sub(tk: TypeKind) { emitPrimitive(subOpcodes, tk) }
-      def mul(tk: TypeKind) { emitPrimitive(mulOpcodes, tk) }
-      def div(tk: TypeKind) { emitPrimitive(divOpcodes, tk) }
-      def rem(tk: TypeKind) { emitPrimitive(remOpcodes, tk) }
+      def neg(tk: TypeKinds#TypeKind) { emitPrimitive(negOpcodes, tk) }
+      def add(tk: TypeKinds#TypeKind) { emitPrimitive(addOpcodes, tk) }
+      def sub(tk: TypeKinds#TypeKind) { emitPrimitive(subOpcodes, tk) }
+      def mul(tk: TypeKinds#TypeKind) { emitPrimitive(mulOpcodes, tk) }
+      def div(tk: TypeKinds#TypeKind) { emitPrimitive(divOpcodes, tk) }
+      def rem(tk: TypeKinds#TypeKind) { emitPrimitive(remOpcodes, tk) }
 
       def invokespecial(owner: String, name: String, desc: String) {
         jmethod.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, name, desc, false)
@@ -1777,7 +1784,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       // internal helpers -- not part of the public API of `jcode`
       // don't make private otherwise inlining will suffer
 
-      def emitVarInsn(opc: Int, idx: Int, tk: TypeKind) {
+      def emitVarInsn(opc: Int, idx: Int, tk: TypeKinds#TypeKind) {
         assert((opc == Opcodes.ILOAD) || (opc == Opcodes.ISTORE), opc)
         jmethod.visitVarInsn(javaType(tk).getOpcode(opc), idx)
       }
@@ -1789,7 +1796,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
       val returnOpcodes = { import Opcodes._; Array(ARETURN, IRETURN, IRETURN, IRETURN, IRETURN, LRETURN, FRETURN, DRETURN) }
 
-      def emitTypeBased(opcs: Array[Int], tk: TypeKind) {
+      def emitTypeBased(opcs: Array[Int], tk: TypeKinds#TypeKind) {
         assert(tk != UNIT, tk)
         val opc = {
           if(tk.isRefOrArrayType) {   opcs(0) }
@@ -1820,7 +1827,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       val divOpcodes: Array[Int] = { import Opcodes._; Array(IDIV, LDIV, FDIV, DDIV) }
       val remOpcodes: Array[Int] = { import Opcodes._; Array(IREM, LREM, FREM, DREM) }
 
-      def emitPrimitive(opcs: Array[Int], tk: TypeKind) {
+      def emitPrimitive(opcs: Array[Int], tk: TypeKinds#TypeKind) {
         val opc = {
           if(tk.isIntSizedType) { opcs(0) }
           else {
@@ -2506,7 +2513,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
        * @param from The type of the value to be converted into another type.
        * @param to   The type the value will be converted into.
        */
-      def emitT2T(from: TypeKind, to: TypeKind) {
+      def emitT2T(from: TypeKinds#TypeKind, to: TypeKinds#TypeKind) {
         assert(isNonUnitValueTK(from) && isNonUnitValueTK(to), s"Cannot emit primitive conversion from $from to $to")
 
             def pickOne(opcs: Array[Int]) {
@@ -3200,7 +3207,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
     || (sym.ownerChain exists (_.isImplClass))
   )
 
-  final def staticForwarderGenericSignature(sym: Symbol, moduleClass: Symbol, unit: CompilationUnit): String = {
+  final def staticForwarderGenericSignature(sym: Symbol, moduleClass: Symbol): String = {
     if (sym.isDeferred) null // only add generic signature if method concrete; bug #1745
     else {
       // SI-3452 Static forwarder generation uses the same erased signature as the method if forwards to.
@@ -3211,7 +3218,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       val memberTpe = enteringErasure(moduleClass.thisType.memberInfo(sym))
       val erasedMemberType = erasure.erasure(sym)(memberTpe)
       if (erasedMemberType =:= sym.info)
-        getGenericSignature(sym, moduleClass, memberTpe, unit)
+        getGenericSignature(sym, moduleClass, memberTpe)
       else null
     }
   }
@@ -3220,11 +3227,11 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
    *   - `null` if no Java signature is to be added (`null` is what ASM expects in these cases).
    *   - otherwise the signature in question
    */
-  def getGenericSignature(sym: Symbol, owner: Symbol, unit: CompilationUnit): String = {
+  def getGenericSignature(sym: Symbol, owner: Symbol): String = {
     val memberTpe = enteringErasure(owner.thisType.memberInfo(sym))
-    getGenericSignature(sym, owner, memberTpe, unit)
+    getGenericSignature(sym, owner, memberTpe)
   }
-  def getGenericSignature(sym: Symbol, owner: Symbol, memberTpe: Type, unit: CompilationUnit): String = {
+  def getGenericSignature(sym: Symbol, owner: Symbol, memberTpe: Type): String = {
     if (!needsGenericSignature(sym)) { return null }
 
     val jsOpt: Option[String] = erasure.javaSig(sym, memberTpe)
@@ -3275,56 +3282,5 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
     }
 
     sig
-  }
-
-  def ubytesToCharArray(bytes: Array[Byte]): Array[Char] = {
-    val ca = new Array[Char](bytes.length)
-    var idx = 0
-    while(idx < bytes.length) {
-      val b: Byte = bytes(idx)
-      assert((b & ~0x7f) == 0)
-      ca(idx) = b.asInstanceOf[Char]
-      idx += 1
-    }
-
-    ca
-  }
-
-  final def arrEncode(sb: ScalaSigBytes): Array[String] = {
-    var strs: List[String]  = Nil
-    val bSeven: Array[Byte] = sb.sevenBitsMayBeZero
-    // chop into slices of at most 65535 bytes, counting 0x00 as taking two bytes (as per JVMS 4.4.7 The CONSTANT_Utf8_info Structure)
-    var prevOffset = 0
-    var offset     = 0
-    var encLength  = 0
-    while(offset < bSeven.length) {
-      val deltaEncLength = (if(bSeven(offset) == 0) 2 else 1)
-      val newEncLength = encLength.toLong + deltaEncLength
-      if(newEncLength >= 65535) {
-        val ba     = bSeven.slice(prevOffset, offset)
-        strs     ::= new java.lang.String(ubytesToCharArray(ba))
-        encLength  = 0
-        prevOffset = offset
-      } else {
-        encLength += deltaEncLength
-        offset    += 1
-      }
-    }
-    if(prevOffset < offset) {
-      assert(offset == bSeven.length)
-      val ba = bSeven.slice(prevOffset, offset)
-      strs ::= new java.lang.String(ubytesToCharArray(ba))
-    }
-    assert(strs.size > 1, "encode instead as one String via strEncode()") // TODO too strict?
-    strs.reverse.toArray
-  }
-
-  private def strEncode(sb: ScalaSigBytes): String = {
-    val ca = ubytesToCharArray(sb.sevenBitsMayBeZero)
-    new java.lang.String(ca)
-    // debug val bvA = new asm.ByteVector; bvA.putUTF8(s)
-    // debug val enc: Array[Byte] = scala.reflect.internal.pickling.ByteCodecs.encode(bytes)
-    // debug assert(enc(idx) == bvA.getByte(idx + 2))
-    // debug assert(bvA.getLength == enc.size + 2)
   }
 }

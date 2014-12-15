@@ -13,6 +13,8 @@ import scala.collection.mutable.ListBuffer
 abstract class ICodeCheckers {
   val global: Global
   import global._
+  import Primitives._
+  import Opcodes._
 
   /** <p>
    *    This class performs a set of checks similar to what the bytecode
@@ -520,23 +522,23 @@ abstract class ICodeCheckers {
          case CALL_PRIMITIVE(primitive) =>
            checkStack(instr.consumed)
            primitive match {
-             case Negation(kind) =>
+             case Negation(kind: TypeKind) =>
                checkType(kind, BOOL, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)
                checkType(popStack, kind)
                pushStack(kind)
 
-             case Test(op, kind, zero) =>
+             case Test(op, kind: TypeKind, zero) =>
                if (zero) checkType(popStack, kind)
                else checkBinop(kind)
 
                pushStack(BOOL)
 
-             case Comparison(op, kind) =>
+             case Comparison(op, kind: TypeKind) =>
                checkNumeric(kind)
                checkBinop(kind)
                pushStack(INT)
 
-             case Arithmetic(op, kind) =>
+             case Arithmetic(op, kind: TypeKind) =>
                checkNumeric(kind)
                if (op == NOT)
                  checkType(popStack, kind)
@@ -544,25 +546,25 @@ abstract class ICodeCheckers {
                  checkBinop(kind)
                pushStack(kind)
 
-             case Logical(op, kind) =>
+             case Logical(op, kind: TypeKind) =>
                checkType(kind, BOOL, BYTE, CHAR, SHORT, INT, LONG)
                checkBinop(kind)
                pushStack(kind)
 
-             case Shift(op, kind) =>
+             case Shift(op, kind: TypeKind) =>
                checkType(kind, BYTE, CHAR, SHORT, INT, LONG)
                val (a, b) = popStack2
                checkType(a, INT)
                checkType(b, kind)
                pushStack(kind)
 
-             case Conversion(src, dst) =>
+             case Conversion(src: TypeKind, dst: TypeKind) =>
                checkNumeric(src)
                checkNumeric(dst)
                checkType(popStack, src)
                pushStack(dst)
 
-             case ArrayLength(kind) =>
+             case ArrayLength(kind: TypeKind) =>
                popStack match {
                  case ARRAY(elem) => checkType(elem, kind)
                  case arr         => icodeError(" array reference expected, but " + arr + " found")
@@ -576,7 +578,7 @@ abstract class ICodeCheckers {
                checkType(popStack, ConcatClass)
                pushStack(StringReference)
 
-             case StringConcat(el) =>
+             case StringConcat(el: TypeKind) =>
                checkType(popStack, el)
                checkType(popStack, ConcatClass)
                pushStack(ConcatClass)

@@ -26,17 +26,19 @@ import scala.annotation.switch
  * added when the ClassBTypes are created. The per run cache removes them, so they would be missing
  * in the second run.
  */
-class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
+class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: BackendInterface]](val bTypes: BTFS) {
   import bTypes._
-  import global._
-  import rootMirror.{requiredClass, getClassIfDefined}
-  import definitions._
+  import int._
+
+  //import global._
+  //import rootMirror.{requiredClass, getClassIfDefined}
+  //import definitions._
 
   /**
    * Maps primitive types to their corresponding PrimitiveBType. The map is defined lexically above
    * the first use of `classBTypeFromSymbol` because that method looks at the map.
    */
-  lazy val primitiveTypeMap: Map[Symbol, PrimitiveBType] = Map(
+  lazy val primitiveTypeMap: Map[BackendInterface#Symbol, PrimitiveBType] = Map(
     UnitClass    -> UNIT,
     BooleanClass -> BOOL,
     CharClass    -> CHAR,
@@ -81,7 +83,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
    * method symbol for `Byte.box()` is mapped to the ClassBType `java/lang/Byte`.
    */
   lazy val boxResultType: Map[Symbol, ClassBType] = {
-    for ((valueClassSym, boxMethodSym) <- currentRun.runDefinitions.boxMethod)
+    for ((valueClassSym, boxMethodSym) <- boxMethods)
     yield boxMethodSym -> boxedClassOfPrimitive(primitiveTypeMap(valueClassSym))
   }
 
@@ -89,7 +91,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
    * Maps the method symbol for an unbox method to the primitive type of the result.
    * For example, the method symbol for `Byte.unbox()`) is mapped to the PrimitiveBType BYTE. */
   lazy val unboxResultType: Map[Symbol, PrimitiveBType] = {
-    for ((valueClassSym, unboxMethodSym) <- currentRun.runDefinitions.unboxMethod)
+    for ((valueClassSym, unboxMethodSym) <- unboxMethods)
     yield unboxMethodSym -> primitiveTypeMap(valueClassSym)
   }
 
@@ -101,8 +103,8 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
    * names of NothingClass and NullClass can't be emitted as-is.
    * TODO @lry Once there's a 2.11.3 starr, use the commented argument list. The current starr crashes on the type literal `scala.runtime.Nothing$`
    */
-  lazy val RT_NOTHING : ClassBType = classBTypeFromSymbol(rootMirror.getRequiredClass("scala.runtime.Nothing$")) // (requiredClass[scala.runtime.Nothing$])
-  lazy val RT_NULL    : ClassBType = classBTypeFromSymbol(rootMirror.getRequiredClass("scala.runtime.Null$"))    // (requiredClass[scala.runtime.Null$])
+  lazy val RT_NOTHING : ClassBType = classBTypeFromSymbol(getRequiredClass("scala.runtime.Nothing$")) // (requiredClass[scala.runtime.Nothing$])
+  lazy val RT_NULL    : ClassBType = classBTypeFromSymbol(getRequiredClass("scala.runtime.Null$"))    // (requiredClass[scala.runtime.Null$])
 
   lazy val ObjectReference   : ClassBType = classBTypeFromSymbol(ObjectClass)
   lazy val objArrayReference : ArrayBType = ArrayBType(ObjectReference)
@@ -123,22 +125,6 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   lazy val srLongRef    : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.LongRef])
   lazy val srFloatRef   : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.FloatRef])
   lazy val srDoubleRef  : ClassBType = classBTypeFromSymbol(requiredClass[scala.runtime.DoubleRef])
-
-  lazy val hashMethodSym: Symbol = getMember(ScalaRunTimeModule, nme.hash_)
-
-  // TODO @lry avoiding going through through missingHook for every line in the REPL: https://github.com/scala/scala/commit/8d962ed4ddd310cc784121c426a2e3f56a112540
-  lazy val AndroidParcelableInterface : Symbol = getClassIfDefined("android.os.Parcelable")
-  lazy val AndroidCreatorClass        : Symbol = getClassIfDefined("android.os.Parcelable$Creator")
-
-  lazy val BeanInfoAttr: Symbol = requiredClass[scala.beans.BeanInfo]
-
-  /* The Object => String overload. */
-  lazy val String_valueOf: Symbol = {
-    getMember(StringModule, nme.valueOf) filter (sym => sym.info.paramTypes match {
-      case List(pt) => pt.typeSymbol == ObjectClass
-      case _        => false
-    })
-  }
 
   // scala.FunctionX and scala.runtim.AbstractFunctionX
   lazy val FunctionReference         : Vector[ClassBType]   = (0 to MaxFunctionArity).map(i => classBTypeFromSymbol(FunctionClass(i)))(collection.breakOut)
@@ -176,7 +162,7 @@ class CoreBTypes[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) {
   )
 
   lazy val typeOfArrayOp: Map[Int, BType] = {
-    import scalaPrimitives._
+    import scala.tools.nsc.backend.ScalaPrimitives._
     Map(
         (List(ZARRAY_LENGTH, ZARRAY_GET, ZARRAY_SET) map (_ -> BOOL))   ++
         (List(BARRAY_LENGTH, BARRAY_GET, BARRAY_SET) map (_ -> BYTE))   ++
@@ -216,16 +202,16 @@ trait CoreBTypesProxyGlobalIndependent[BTS <: BTypes] {
 /**
  * See comment in class [[CoreBTypes]].
  */
-final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: BTFS) extends CoreBTypesProxyGlobalIndependent[BTFS] {
+final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: BackendInterface]](val bTypes: BTFS) extends CoreBTypesProxyGlobalIndependent[BTFS] {
   import bTypes._
-  import global._
+  import bTypes.int._
 
   private[this] var _coreBTypes: CoreBTypes[bTypes.type] = _
   def setBTypes(coreBTypes: CoreBTypes[BTFS]): Unit = {
     _coreBTypes = coreBTypes.asInstanceOf[CoreBTypes[bTypes.type]]
   }
 
-  def primitiveTypeMap: Map[Symbol, PrimitiveBType] = _coreBTypes.primitiveTypeMap
+  def primitiveTypeMap: Map[BackendInterface#Symbol, PrimitiveBType] = _coreBTypes.primitiveTypeMap
 
   def BOXED_UNIT    : ClassBType = _coreBTypes.BOXED_UNIT
   def BOXED_BOOLEAN : ClassBType = _coreBTypes.BOXED_BOOLEAN
@@ -267,15 +253,6 @@ final class CoreBTypesProxy[BTFS <: BTypesFromSymbols[_ <: Global]](val bTypes: 
   def srLongRef    : ClassBType = _coreBTypes.srLongRef
   def srFloatRef   : ClassBType = _coreBTypes.srFloatRef
   def srDoubleRef  : ClassBType = _coreBTypes.srDoubleRef
-
-  def hashMethodSym: Symbol = _coreBTypes.hashMethodSym
-
-  def AndroidParcelableInterface : Symbol = _coreBTypes.AndroidParcelableInterface
-  def AndroidCreatorClass        : Symbol = _coreBTypes.AndroidCreatorClass
-
-  def BeanInfoAttr: Symbol = _coreBTypes.BeanInfoAttr
-
-  def String_valueOf: Symbol = _coreBTypes.String_valueOf
 
   def FunctionReference         : Vector[ClassBType]   = _coreBTypes.FunctionReference
   def AbstractFunctionReference : Vector[ClassBType]   = _coreBTypes.AbstractFunctionReference

@@ -12,14 +12,12 @@ import PartialFunction._
  * This trait contains code shared between GenBCode and GenICode that depends on types defined in
  * the compiler cake (Global).
  */
-final class BCodeICodeCommon[G <: Global](val global: G) {
+final class BCodeICodeCommon[I <: BackendInterface](val global: I) {
   import global._
 
-  /** Some useful equality helpers. */
-  def isNull(t: Tree) = cond(t) { case Literal(Constant(null)) => true }
-  def isLiteral(t: Tree) = cond(t) { case Literal(_) => true }
-  def isNonNullExpr(t: Tree) = isLiteral(t) || ((t.symbol ne null) && t.symbol.isModule)
+  def isNull(t: Tree) = global.isNull(t)
+  def isLiteral(t: Tree) = global.isLiteral(t)
+  def isNonNullExpr(t: Tree) = global.isNonNullExpr(t)
 
-  /** If l or r is constant null, returns the other ; otherwise null */
-  def ifOneIsNull(l: Tree, r: Tree) = if (isNull(l)) r else if (isNull(r)) l else null
+  def ifOneIsNull(l: Tree, r: Tree) = global.ifOneIsNull(l,r)
 }
