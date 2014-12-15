@@ -53,4 +53,34 @@ class SourceTest {
     s.reportError(s.pos, "That doesn't sound right.", ps)
     assertEquals("0030: THAT DOESN'T SOUND RIGHT.", out.toString(charSet))
   }
+  @Test def canAltCustomizeReporting() = {
+    class CapitalReporting(is: InputStream)(implicit codec: Codec) extends Source {
+      override val iter = {
+        val r = new InputStreamReader(is, codec.decoder)
+        Iterator continually (codec wrap r.read()) takeWhile (_ != -1) map (_.toChar)
+      }
+      override def report(pos: Int, msg: String, out: PrintStream): Unit = {
+        out print f"$pos%04x: ${msg.toUpperCase}"
+      }
+      private[this] var _pos: Int = _
+      override def pos = _pos
+      private[this] var _ch: Char = _
+      override def ch = _ch
+      override def next = {
+        _ch = iter.next()
+        _pos += 1
+        _ch
+      }
+    }
+    val s = new CapitalReporting(in)
+    // skip to next line and report an error
+    do {
+      val c = s.next()
+    } while (s.ch != '\n')
+    s.next()
+    val out = new ByteArrayOutputStream
+    val ps  = new PrintStream(out, true, charSet)
+    s.reportError(s.pos, "That doesn't sound right.", ps)
+    assertEquals("0030: THAT DOESN'T SOUND RIGHT.", out.toString(charSet))
+  }
 }
