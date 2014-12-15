@@ -825,6 +825,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               }
               orElse { _ =>
                 val resetTree = resetAttrs(original)
+                resetTree match {
+                  case treeInfo.Applied(fun, targs, args) =>
+                    if (fun.symbol != null && fun.symbol.isError)
+                      // SI-9041 Without this, we leak error symbols past the typer!
+                      // because the fallback typechecking notices the error-symbol,
+                      // refuses to re-attempt typechecking, and presumes that someone
+                      // else was responsible for issuing the related type error!
+                      fun.setSymbol(NoSymbol)
+                  case _ =>
+                }
                 debuglog(s"fallback on implicits: ${tree}/$resetTree")
                 val tree1 = typed(resetTree, mode)
                 // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
