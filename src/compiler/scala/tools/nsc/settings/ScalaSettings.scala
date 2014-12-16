@@ -242,6 +242,7 @@ trait ScalaSettings extends AbsScalaSettings
     descr = "Enable optimizations",
     domain = YoptChoices)
 
+  def YoptNone                    = Yopt.isSetByUser && Yopt.value.isEmpty
   def YoptUnreachableCode         = !Yopt.isSetByUser || Yopt.contains(YoptChoices.unreachableCode)
   def YoptSimplifyJumps           = Yopt.contains(YoptChoices.simplifyJumps)
   def YoptRecurseUnreachableJumps = Yopt.contains(YoptChoices.recurseUnreachableJumps)
