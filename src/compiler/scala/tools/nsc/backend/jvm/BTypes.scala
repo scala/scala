@@ -8,6 +8,9 @@ package backend.jvm
 
 import scala.tools.asm
 import asm.Opcodes
+import scala.tools.asm.tree.{InnerClassNode, ClassNode}
+import opt.CodeRepository
+import scala.collection.convert.decorateAsScala._
 
 /**
  * The BTypes component defines The BType class hierarchy. BTypes encapsulate all type information
@@ -20,6 +23,17 @@ import asm.Opcodes
 abstract class BTypes {
   import BTypes.InternalName
 
+  // Some core BTypes are required here, in class BType, where no Global instance is available.
+  // The Global is only available in the subclass BTypesFromSymbols. We cannot depend on the actual
+  // implementation (CoreBTypesProxy) here because it has members that refer to global.Symbol.
+  val coreBTypes: CoreBTypesProxyGlobalIndependent[this.type]
+  import coreBTypes._
+
+  /**
+   * Tools for parsing classfiles, used by the inliner.
+   */
+  val codeRepository: CodeRepository
+
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
    * construction.
@@ -31,18 +45,77 @@ abstract class BTypes {
    * Concurrent because stack map frames are computed when in the class writer, which might run
    * on multiple classes concurrently.
    */
-  protected val classBTypeFromInternalNameMap: collection.concurrent.Map[InternalName, ClassBType]
+  val classBTypeFromInternalName: collection.concurrent.Map[InternalName, ClassBType]
 
   /**
-   * Obtain a previously constructed ClassBType for a given internal name.
+   * Parse the classfile for `internalName` and construct the [[ClassBType]].
    */
-  def classBTypeFromInternalName(internalName: InternalName) = classBTypeFromInternalNameMap(internalName)
+  def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
+    classBTypeFromClassNode(codeRepository.classNode(internalName))
+  }
 
-  // Some core BTypes are required here, in class BType, where no Global instance is available.
-  // The Global is only available in the subclass BTypesFromSymbols. We cannot depend on the actual
-  // implementation (CoreBTypesProxy) here because it has members that refer to global.Symbol.
-  val coreBTypes: CoreBTypesProxyGlobalIndependent[this.type]
-  import coreBTypes._
+  /**
+   * Construct the [[ClassBType]] for a parsed classfile.
+   */
+  def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
+    classBTypeFromInternalName.getOrElse(classNode.name, {
+      setClassInfo(classNode, ClassBType(classNode.name))
+    })
+  }
+
+  private def setClassInfo(classNode: ClassNode, classBType: ClassBType): ClassBType = {
+    val superClass = classNode.superName match {
+      case null =>
+        assert(classNode.name == ObjectReference.internalName, s"class with missing super type: ${classNode.name}")
+        None
+      case superName =>
+        Some(classBTypeFromParsedClassfile(superName))
+    }
+
+    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
+
+    val flags = classNode.access
+
+    /**
+     * Find all nested classes of classNode. The innerClasses attribute contains all nested classes
+     * that are declared inside classNode or used in the bytecode of classNode. So some of them are
+     * nested in some other class than classNode, and we need to filter them.
+     *
+     * For member classes, innerClassNode.outerName is defined, so we compare that to classNode.name.
+     *
+     * For local and anonymous classes, innerClassNode.outerName is null. Such classes are required
+     * to have an EnclosingMethod attribute declaring the outer class. So we keep those local and
+     * anonymous classes whose outerClass is classNode.name.
+     *
+     */
+    def nestedInCurrentClass(innerClassNode: InnerClassNode): Boolean = {
+      (innerClassNode.outerName != null && innerClassNode.outerName == classNode.name) ||
+      (innerClassNode.outerName == null && codeRepository.classNode(innerClassNode.name).outerClass == classNode.name)
+    }
+
+    val nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({
+      case i if nestedInCurrentClass(i) => classBTypeFromParsedClassfile(i.name)
+    })(collection.breakOut)
+
+    // if classNode is a nested class, it has an innerClass attribute for itself. in this
+    // case we build the NestedInfo.
+    val nestedInfo = classNode.innerClasses.asScala.find(_.name == classNode.name) map {
+      case innerEntry =>
+        val enclosingClass =
+          if (innerEntry.outerName != null) {
+            // if classNode is a member class, the outerName is non-null
+            classBTypeFromParsedClassfile(innerEntry.outerName)
+          } else {
+            // for anonymous or local classes, the outerName is null, but the enclosing class is
+            // stored in the EnclosingMethod attribute (which ASM encodes in classNode.outerClass).
+            classBTypeFromParsedClassfile(classNode.outerClass)
+          }
+        val staticFlag = (innerEntry.access & Opcodes.ACC_STATIC) != 0
+        NestedInfo(enclosingClass, Option(innerEntry.outerName), Option(innerEntry.innerName), staticFlag)
+    }
+    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo)
+    classBType
+  }
 
   /**
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
@@ -574,7 +647,7 @@ abstract class BTypes {
      * nested classes. Example: for the definition `class A { class B }` we have
      *
      *   B.info.nestedInfo.outerClass == A
-     *   A.info.memberClasses contains B
+     *   A.info.nestedClasses contains B
      */
     private var _info: ClassInfo = null
 
@@ -589,7 +662,7 @@ abstract class BTypes {
       checkInfoConsistency()
     }
 
-    classBTypeFromInternalNameMap(internalName) = this
+    classBTypeFromInternalName(internalName) = this
 
     private def checkInfoConsistency(): Unit = {
       // we assert some properties. however, some of the linked ClassBType (members, superClass,
@@ -597,7 +670,7 @@ abstract class BTypes {
       // best-effort verification.
       def ifInit(c: ClassBType)(p: ClassBType => Boolean): Boolean = c._info == null || p(c)
 
-      def isJLO(t: ClassBType) = t.internalName == "java/lang/Object"
+      def isJLO(t: ClassBType) = t.internalName == ObjectReference.internalName
 
       assert(!ClassBType.isInternalPhantomType(internalName), s"Cannot create ClassBType for phantom type $this")
 
@@ -612,7 +685,7 @@ abstract class BTypes {
         s"Invalid interfaces in $this: ${info.interfaces}"
       )
 
-      assert(info.memberClasses.forall(c => ifInit(c)(_.isNestedClass)), info.memberClasses)
+      assert(info.nestedClasses.forall(c => ifInit(c)(_.isNestedClass)), info.nestedClasses)
     }
 
     /**
@@ -640,8 +713,9 @@ abstract class BTypes {
           outerName.orNull,
           innerName.orNull,
           GenBCode.mkFlags(
-            info.flags,
-            if (isStaticNestedClass) asm.Opcodes.ACC_STATIC else 0
+            // the static flag in the InnerClass table has a special meaning, see InnerClass comment
+            info.flags & ~Opcodes.ACC_STATIC,
+            if (isStaticNestedClass) Opcodes.ACC_STATIC else 0
           ) & ClassBType.INNER_CLASSES_FLAGS
         )
     }
@@ -757,12 +831,12 @@ abstract class BTypes {
    *                      through the superclass.
    * @param flags         The java flags, obtained through `javaFlags`. Used also to derive
    *                      the flags for InnerClass entries.
-   * @param memberClasses Classes nested in this class. Those need to be added to the
+   * @param nestedClasses Classes nested in this class. Those need to be added to the
    *                      InnerClass table, see the InnerClass spec summary above.
    * @param nestedInfo    If this describes a nested class, information for the InnerClass table.
    */
-  case class ClassInfo(superClass: Option[ClassBType], interfaces: List[ClassBType], flags: Int,
-                       memberClasses: List[ClassBType], nestedInfo: Option[NestedInfo])
+  final case class ClassInfo(superClass: Option[ClassBType], interfaces: List[ClassBType], flags: Int,
+                             nestedClasses: List[ClassBType], nestedInfo: Option[NestedInfo])
 
   /**
    * Information required to add a class to an InnerClass table.
@@ -779,10 +853,10 @@ abstract class BTypes {
    * a source-level property: if the class is in a static context (does not have an outer pointer).
    * This is checked when building the NestedInfo.
    */
-  case class NestedInfo(enclosingClass: ClassBType,
-                        outerName: Option[String],
-                        innerName: Option[String],
-                        isStaticNestedClass: Boolean)
+  final case class NestedInfo(enclosingClass: ClassBType,
+                              outerName: Option[String],
+                              innerName: Option[String],
+                              isStaticNestedClass: Boolean)
 
   /**
    * This class holds the data for an entry in the InnerClass table. See the InnerClass summary

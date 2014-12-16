@@ -677,7 +677,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
     def isDeprecated(sym: Symbol): Boolean = { sym.annotations exists (_ matches definitions.DeprecatedAttr) }
 
-    def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor) {
+    def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor, isMirror: Boolean = false) {
       /* The outer name for this inner class. Note that it returns null
        * when the inner class should not get an index in the constant pool.
        * That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
@@ -698,11 +698,19 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         else
           innerSym.rawname + innerSym.moduleSuffix
 
-      // This collects all inner classes of csym, including local and anonymous: lambdalift makes
-      // them members of their enclosing class.
-      innerClassBuffer ++= exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(csym))
+      innerClassBuffer ++= {
+        val members = exitingPickler(memberClassesOf(csym))
+        // lambdalift makes all classes (also local, anonymous) members of their enclosing class
+        val allNested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(csym))
 
-      // Add members of the companion object (if top-level). why, see comment in BTypes.scala.
+        // for the mirror class, we take the members of the companion module class (Java compat,
+        // see doc in BTypes.scala). for module classes, we filter out those members.
+        if (isMirror)  members
+        else if (isTopLevelModule(csym)) allNested diff members
+        else allNested
+      }
+
+      // If this is a top-level class, add members of the companion object.
       val linkedClass = exitingPickler(csym.linkedClassOfClass) // linkedCoC does not work properly in late phases
       if (isTopLevelModule(linkedClass)) {
         // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
@@ -2796,7 +2804,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
       addForwarders(isRemote(modsym), mirrorClass, mirrorName, modsym)
 
-      addInnerClasses(modsym, mirrorClass)
+      addInnerClasses(modsym, mirrorClass, isMirror = true)
       mirrorClass.visitEnd()
       writeIfNotTooBig("" + modsym.name, mirrorName, mirrorClass, modsym)
     }

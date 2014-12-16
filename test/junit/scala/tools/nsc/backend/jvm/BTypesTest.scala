@@ -19,7 +19,7 @@ class BTypesTest {
 
   val btypes = new BTypesFromSymbols[g.type](g)
   import btypes._
-  duringBackend(btypes.intializeCoreBTypes())
+  duringBackend(btypes.initializeCoreBTypes())
 
   def classBTypeFromSymbol(sym: Symbol) = duringBackend(btypes.classBTypeFromSymbol(sym))
 
