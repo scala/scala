@@ -55,7 +55,7 @@ class LocalOpt(settings: ScalaSettings) {
    * @return      `true` if unreachable code was elminated in some method, `false` otherwise.
    */
   def methodOptimizations(clazz: ClassNode): Boolean = {
-    settings.Yopt.value.nonEmpty && clazz.methods.asScala.foldLeft(false) {
+    !settings.YoptNone && clazz.methods.asScala.foldLeft(false) {
       case (changed, method) => methodOptimizations(method, clazz.name) || changed
     }
   }
