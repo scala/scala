@@ -21,9 +21,10 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
   import global._
   import definitions._
 
-  final case class Suppression(exhaustive: Boolean, unreachable: Boolean)
+  final case class Suppression(suppressExhaustive: Boolean, suppressUnreachable: Boolean)
   object Suppression {
     val NoSuppression = Suppression(false, false)
+    val FullSuppression = Suppression(true, true)
   }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -542,7 +543,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
         val (suppression, requireSwitch): (Suppression, Boolean) =
-          if (settings.XnoPatmatAnalysis) (Suppression.NoSuppression, false)
+          if (settings.XnoPatmatAnalysis) (Suppression.FullSuppression, false)
           else scrut match {
             case Typed(tree, tpt) =>
               val suppressExhaustive = tpt.tpe hasAnnotation UncheckedClass
@@ -574,7 +575,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
               (Suppression.NoSuppression, false)
           }
 
-        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, suppression.exhaustive).getOrElse{
+        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked = suppression.suppressExhaustive).getOrElse{
           if (requireSwitch) reporter.warning(scrut.pos, "could not emit switch for @switch annotated match")
 
           if (casesNoSubstOnly nonEmpty) {

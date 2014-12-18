@@ -208,7 +208,7 @@ trait MatchTranslation {
         case _                                                    => (cases, None)
       }
 
-      checkMatchVariablePatterns(nonSyntheticCases)
+      if (!settings.XnoPatmatAnalysis) checkMatchVariablePatterns(nonSyntheticCases)
 
       // we don't transform after uncurry
       // (that would require more sophistication when generating trees,
