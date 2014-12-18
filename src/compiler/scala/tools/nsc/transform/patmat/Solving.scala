@@ -288,7 +288,7 @@ trait Solving extends Logic {
     val NoTseitinModel: TseitinModel = null
 
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
-    def findAllModelsFor(solvable: Solvable): List[Model] = {
+    def findAllModelsFor(solvable: Solvable): List[Solution] = {
       debug.patmat("find all models for\n"+ cnfString(solvable.cnf))
 
       // we must take all vars from non simplified formula
@@ -305,54 +305,12 @@ trait Solving extends Logic {
         relevantLits.map(lit => -lit)
       }
 
-      /**
-       * The DPLL procedure only returns a minimal mapping from literal to value
-       * such that the CNF formula is satisfied.
-       * E.g. for:
-       * `(a \/ b)`
-       * The DPLL procedure will find either {a = true} or {b = true}
-       * as solution.
-       *
-       * The expansion step will amend both solutions with the unassigned variable
-       * i.e., {a = true} will be expanded to {a = true, b = true} and {a = true, b = false}.
-       */
-      def expandUnassigned(unassigned: List[Int], model: TseitinModel): List[TseitinModel] = {
-        // the number of solutions is doubled for every unassigned variable
-        val expandedModels = 1 << unassigned.size
-        var current = mutable.ArrayBuffer[TseitinModel]()
-        var next = mutable.ArrayBuffer[TseitinModel]()
-        current.sizeHint(expandedModels)
-        next.sizeHint(expandedModels)
-
-        current += model
-
-        // we use double buffering:
-        // read from `current` and create a two models for each model in `next`
-        for {
-          s <- unassigned
-        } {
-          for {
-            model <- current
-          } {
-            def force(l: Lit) = model + l
-
-            next += force(Lit(s))
-            next += force(Lit(-s))
-          }
-
-          val tmp = current
-          current = next
-          next = tmp
-
-          next.clear()
-        }
-
-        current.toList
+      final case class TseitinSolution(model: TseitinModel, unassigned: List[Int]) {
+        def projectToSolution(symForVar: Map[Int, Sym]) = Solution(projectToModel(model, symForVar), unassigned map symForVar)
       }
-
       def findAllModels(clauses: Array[Clause],
-                        models: List[TseitinModel],
-                        recursionDepthAllowed: Int = global.settings.YpatmatExhaustdepth.value): List[TseitinModel]=
+                        models: List[TseitinSolution],
+                        recursionDepthAllowed: Int = global.settings.YpatmatExhaustdepth.value): List[TseitinSolution]=
         if (recursionDepthAllowed == 0) {
           val maxDPLLdepth = global.settings.YpatmatExhaustdepth.value
           reportWarning("(Exhaustivity analysis reached max recursion depth, not all missing cases are reported. " +
@@ -368,17 +326,15 @@ trait Solving extends Logic {
             val unassigned: List[Int] = (relevantVars -- model.map(lit => lit.variable)).toList
             debug.patmat("unassigned "+ unassigned +" in "+ model)
 
-            val forced = expandUnassigned(unassigned, model)
-            debug.patmat("forced "+ forced)
+            val solution = TseitinSolution(model, unassigned)
             val negated = negateModel(model)
-            findAllModels(clauses :+ negated, forced ++ models, recursionDepthAllowed - 1)
+            findAllModels(clauses :+ negated, solution :: models, recursionDepthAllowed - 1)
           }
           else models
         }
 
-      val tseitinModels: List[TseitinModel] = findAllModels(solvable.cnf, Nil)
-      val models: List[Model] = tseitinModels.map(projectToModel(_, solvable.symbolMapping.symForVar))
-      models
+      val tseitinSolutions = findAllModels(solvable.cnf, Nil)
+      tseitinSolutions.map(_.projectToSolution(solvable.symbolMapping.symForVar))
     }
 
     private def withLit(res: TseitinModel, l: Lit): TseitinModel = {
