@@ -3776,8 +3776,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case TypeRef(pre, sym, args) =>
             if (sym.isAliasType && containsLocal(tp) && (tp.dealias ne tp)) apply(tp.dealias)
             else {
-              if (pre.isVolatile)
-                InferTypeWithVolatileTypeSelectionError(tree, pre)
+              if (pre.isVolatile) pre match {
+                case SingleType(_, sym) if sym.isSynthetic && isPastTyper =>
+                  debuglog(s"ignoring volatility of prefix in pattern matcher generated inferred type: $tp") // See pos/t7459c.scala
+                case _ =>
+                  InferTypeWithVolatileTypeSelectionError(tree, pre)
+              }
               mapOver(tp)
             }
           case _ =>
