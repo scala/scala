@@ -410,6 +410,19 @@ The final result of the transformation is a block of the form
 }
 ```
 
+### Signature Polymorphic Methods
+
+For invocations of signature polymorphic methods of the target platform `$f$($e_1 , \ldots , e_m$)`,
+the invoked function has a different method type `($p_1$:$T_1 , \ldots , p_n$:$T_n$)$U$` at each call
+site. The parameter types `$T_ , \ldots , T_n$` are the types of the argument expressions
+`$e_1 , \ldots , e_m$` and `$U$` is the expected type at the call site. If the expected type is
+undefined then `$U$` is `scala.AnyRef`. The parameter names `$p_1 , \ldots , p_n$` are fresh.
+
+###### Note
+
+On the Java platform version 7 and later, the methods `invoke` and `invokeExact` in class
+`java.lang.invoke.MethodHandle` are signature polymorphic.
+
 ## Method Values
 
 ```ebnf
