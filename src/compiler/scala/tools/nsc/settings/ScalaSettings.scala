@@ -264,6 +264,18 @@ trait ScalaSettings extends AbsScalaSettings
     ) withPostSetHook { _ => scala.reflect.internal.util.Statistics.enabled = true }
   }
 
+  // XML parsing options (transitional in 2.11)
+  object YxmlSettings extends MultiChoiceEnumeration {
+    val coalescing   = Value
+    def isCoalescing = Yxml contains coalescing
+  }
+  val Yxml = MultiChoiceSetting(
+    name    = "-Yxml",
+    helpArg = "property",
+    descr   = "Configure XML parsing",
+    domain  = YxmlSettings
+  )
+
   def YstatisticsEnabled = Ystatistics.value.nonEmpty
 
   /** Area-specific debug output.

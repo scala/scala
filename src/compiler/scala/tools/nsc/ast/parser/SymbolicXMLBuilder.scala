@@ -35,6 +35,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     val _MetaData: NameType            = "MetaData"
     val _NamespaceBinding: NameType    = "NamespaceBinding"
     val _NodeBuffer: NameType          = "NodeBuffer"
+    val _PCData: NameType              = "PCData"
     val _PrefixedAttribute: NameType   = "PrefixedAttribute"
     val _ProcInstr: NameType           = "ProcInstr"
     val _Text: NameType                = "Text"
@@ -45,6 +46,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   private object xmlterms extends TermNames {
     val _Null: NameType     = "Null"
     val __Elem: NameType    = "Elem"
+    val _PCData: NameType   = "PCData"
     val __Text: NameType    = "Text"
     val _buf: NameType      = "$buf"
     val _md: NameType       = "$md"
@@ -54,10 +56,15 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
     val _xml: NameType      = "xml"
   }
 
-  import xmltypes.{_Comment, _Elem, _EntityRef, _Group, _MetaData, _NamespaceBinding, _NodeBuffer,
-    _PrefixedAttribute, _ProcInstr, _Text, _Unparsed, _UnprefixedAttribute}
+  import xmltypes.{
+    _Comment, _Elem, _EntityRef, _Group, _MetaData, _NamespaceBinding, _NodeBuffer,
+    _PCData, _PrefixedAttribute, _ProcInstr, _Text, _Unparsed, _UnprefixedAttribute
+  }
 
-  import xmlterms.{_Null, __Elem, __Text, _buf, _md, _plus, _scope, _tmpscope, _xml}
+  import xmlterms.{ _Null, __Elem, __Text, _buf, _md, _plus, _scope, _tmpscope, _xml }
+
+  /** Attachment for trees deriving from text nodes (Text, CData, entities). Used for coalescing. */
+  case class TextAttache(pos: Position, text: String)
 
   // convenience methods
   private def LL[A](x: A*): List[List[A]] = List(List(x:_*))
@@ -107,16 +114,22 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   final def entityRef(pos: Position, n: String) =
     atPos(pos)( New(_scala_xml_EntityRef, LL(const(n))) )
 
+  private def coalescing = settings.YxmlSettings.isCoalescing
+
   // create scala.xml.Text here <: scala.xml.Node
   final def text(pos: Position, txt: String): Tree = atPos(pos) {
-    if (isPattern) makeTextPat(const(txt))
-    else makeText1(const(txt))
+    val t = if (isPattern) makeTextPat(const(txt)) else makeText1(const(txt))
+    if (coalescing) t updateAttachment TextAttache(pos, txt) else t
   }
 
   def makeTextPat(txt: Tree)                = Apply(_scala_xml__Text, List(txt))
   def makeText1(txt: Tree)                  = New(_scala_xml_Text, LL(txt))
   def comment(pos: Position, text: String)  = atPos(pos)( Comment(const(text)) )
-  def charData(pos: Position, txt: String)  = atPos(pos)( makeText1(const(txt)) )
+  def charData(pos: Position, txt: String)  = atPos(pos) {
+    val t = if (isPattern) Apply(_scala_xml(xmlterms._PCData), List(const(txt)))
+            else New(_scala_xml(_PCData), LL(const(txt)))
+    if (coalescing) t updateAttachment TextAttache(pos, txt) else t
+  }
 
   def procInstr(pos: Position, target: String, txt: String) =
     atPos(pos)( ProcInstr(const(target), const(txt)) )
