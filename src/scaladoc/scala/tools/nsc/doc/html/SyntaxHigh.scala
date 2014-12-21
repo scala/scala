@@ -52,7 +52,7 @@ private[html] object SyntaxHigh {
     "Triple", "TypeTag", "Unit")
 
   def apply(data: String): NodeSeq = {
-    val buf = data.getBytes
+    val buf = data.toCharArray
     val out = new StringBuilder
 
     def compare(offset: Int, key: String): Int = {
@@ -60,7 +60,7 @@ private[html] object SyntaxHigh {
       var j = 0
       val l = key.length
       while (i < buf.length && j < l) {
-        val bch = buf(i).toChar
+        val bch = buf(i)
         val kch = key charAt j
         if (bch < kch) return -1
         else if (bch > kch) return 1
@@ -94,13 +94,13 @@ private[html] object SyntaxHigh {
       def line(i: Int): Int =
         if (i == buf.length || buf(i) == '\n') i
         else {
-          out append buf(i).toChar
+          out append buf(i)
           line(i+1)
         }
       var level = 0
       def multiline(i: Int, star: Boolean): Int = {
         if (i == buf.length) return i
-        val ch = buf(i).toChar
+        val ch = buf(i)
         out append ch
         ch match {
           case '*' =>
@@ -127,7 +127,7 @@ private[html] object SyntaxHigh {
         if (i == buf.length) i
         else if (i > j+6) { out setLength 0; j }
         else {
-          val ch = buf(i).toChar
+          val ch = buf(i)
           out append ch
           ch match {
             case '\\' =>
@@ -148,7 +148,7 @@ private[html] object SyntaxHigh {
       val out = new StringBuilder("\"")
       def strlit0(i: Int, bslash: Boolean): Int = {
         if (i == buf.length) return i
-        val ch = buf(i).toChar
+        val ch = buf(i)
         out append ch
         ch match {
           case '\\' =>
@@ -167,7 +167,7 @@ private[html] object SyntaxHigh {
       val out = new StringBuilder
       def intg(i: Int): Int = {
         if (i == buf.length) return i
-        val ch = buf(i).toChar
+        val ch = buf(i)
         ch match {
           case '.' =>
             out append ch
@@ -181,7 +181,7 @@ private[html] object SyntaxHigh {
       }
       def frac(i: Int): Int = {
         if (i == buf.length) return i
-        val ch = buf(i).toChar
+        val ch = buf(i)
         ch match {
           case 'e' | 'E' =>
             out append ch
@@ -195,7 +195,7 @@ private[html] object SyntaxHigh {
       }
       def expo(i: Int, signed: Boolean): Int = {
         if (i == buf.length) return i
-        val ch = buf(i).toChar
+        val ch = buf(i)
         ch match {
           case '+' | '-' if !signed =>
             out append ch
@@ -222,7 +222,7 @@ private[html] object SyntaxHigh {
         case '&' =>
           parse("&amp;", i+1)
         case '<' if i+1 < buf.length =>
-          val ch = buf(i+1).toChar
+          val ch = buf(i+1)
           if (ch == '-' || ch == ':' || ch == '%')
             parse("<span class=\"kw\">&lt;"+ch+"</span>", i+2)
           else
@@ -236,19 +236,19 @@ private[html] object SyntaxHigh {
           if (i+1 < buf.length && buf(i+1) == '>')
             parse("<span class=\"kw\">=&gt;</span>", i+2)
           else
-            parse(buf(i).toChar.toString, i+1)
+            parse(buf(i).toString, i+1)
         case '/' =>
           if (i+1 < buf.length && (buf(i+1) == '/' || buf(i+1) == '*')) {
             val c = comment(i+1)
             parse("<span class=\"cmt\">"+c+"</span>", i+c.length)
           } else
-            parse(buf(i).toChar.toString, i+1)
+            parse(buf(i).toString, i+1)
         case '\'' =>
           val s = charlit(i+1)
           if (s.length > 0)
             parse("<span class=\"lit\">"+s+"</span>", i+s.length)
           else
-            parse(buf(i).toChar.toString, i+1)
+            parse(buf(i).toString, i+1)
         case '"' =>
           val s = strlit(i+1)
           parse("<span class=\"lit\">"+s+"</span>", i+s.length)
@@ -257,9 +257,9 @@ private[html] object SyntaxHigh {
           if (k >= 0)
             parse("<span class=\"ano\">@"+annotations(k)+"</span>", i+annotations(k).length+1)
           else
-            parse(buf(i).toChar.toString, i+1)
+            parse(buf(i).toString, i+1)
         case _ =>
-          if (i == 0 || (i >= 1 && !Character.isJavaIdentifierPart(buf(i-1).toChar))) {
+          if (i == 0 || (i >= 1 && !Character.isJavaIdentifierPart(buf(i-1)))) {
             if (Character.isDigit(buf(i).toInt) ||
                 (buf(i) == '.' && i + 1 < buf.length && Character.isDigit(buf(i+1).toInt))) {
               val s = numlit(i)
@@ -273,11 +273,11 @@ private[html] object SyntaxHigh {
                 if (k >= 0)
                   parse("<span class=\"std\">"+standards(k)+"</span>", i+standards(k).length)
                 else
-                  parse(buf(i).toChar.toString, i+1)
+                  parse(buf(i).toString, i+1)
               }
             }
           } else
-            parse(buf(i).toChar.toString, i+1)
+            parse(buf(i).toString, i+1)
       }
     }
 
