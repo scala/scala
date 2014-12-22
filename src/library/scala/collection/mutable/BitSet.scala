@@ -167,6 +167,15 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
     Array.copy(elems, 0, elems1, 0, elems.length)
     new BitSet(elems1)
   }
+
+  override def equals(that: Any): Boolean = that match {
+    case that: BitSet =>
+      that.elems.sameElements(this.elems)
+    case _ =>
+      false
+  }
+
+  override def hashCode() = scala.util.hashing.MurmurHash3.arrayHash(elems)
 }
 
 /** $factoryInfo
@@ -194,4 +203,5 @@ object BitSet extends BitSetFactory[BitSet] {
    *  array without copying.
    */
   def fromBitMaskNoCopy(elems: Array[Long]): BitSet = new BitSet(elems)
+
 }
