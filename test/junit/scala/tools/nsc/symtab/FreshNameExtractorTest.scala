@@ -32,16 +32,16 @@ class FreshNameExtractorTest {
     val Creator = new FreshNameCreator(prefixes.head)
     val Extractor = new FreshNameExtractor(prefixes.tail.head)
     assertThrows[MatchError] {
-      val Extractor(_) = TermName(Creator.newName("foo"))
+      TermName(Creator.newName("foo")) match { case Extractor(_) => }
     }
   }
 
-  @Test @org.junit.Ignore // SI-8818
-  def extractionsFailsIfNameDoesntEndWithNumber = {
-    val Creator = new FreshNameCreator(prefixes.head)
+  @Test
+  def `no numeric suffix? no problem!` = {
+    val Creator   = new FreshNameCreator(prefixes.head)
     val Extractor = new FreshNameExtractor(prefixes.head)
-    assertThrows[MatchError] {
-      val Extractor(_) = TermName(Creator.newName("foo") + "bar")
+    TermName(Creator.newName("foo") + "bar") match {
+      case Extractor(_) =>
     }
   }
 }
