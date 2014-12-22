@@ -36,21 +36,20 @@ object AssertUtil {
     }
   }
 
-  /** Check if throwable T (or a subclass) was thrown during evaluation of f, and that its message
-   *  satisfies the `checkMessage` predicate. If any other exception will be re-thrown.
+  /** Check that throwable T (or a subclass) was thrown during evaluation of `body`,
+   *  and that its message satisfies the `checkMessage` predicate.
+   *  Any other exception is propagated.
    */
-  def assertThrows[T <: Throwable](f: => Any,
+  def assertThrows[T <: Throwable](body: => Any,
                                    checkMessage: String => Boolean = s => true)
                                   (implicit manifest: Manifest[T]): Unit = {
-    try f
-    catch {
-      case e: Throwable if checkMessage(e.getMessage) =>
-        val clazz = manifest.runtimeClass
-        if (!clazz.isAssignableFrom(e.getClass))
-          throw e
-        else return
+    try {
+      body
+      fail("Expression did not throw!")
+    } catch {
+      case e: Throwable if (manifest.runtimeClass isAssignableFrom e.getClass) &&
+                            checkMessage(e.getMessage) =>
     }
-    fail("Expression did not throw!")
   }
 
   /** JUnit-style assertion for `IterableLike.sameElements`.
