@@ -8,12 +8,12 @@
     #   <username>jenkinside</username>
     #   <password></password>
     # </server>
-# - ~/.ivy2/.credentials (for sonatype)
+# - ~/.credentials (for sonatype)
     # realm=Sonatype Nexus Repository Manager
     # host=oss.sonatype.org
     # user=lamp
     # password=
-# - ~/.ivy2/.credentials-private-repo for private-repo.typesafe.com, as follows:
+# - ~/.credentials-private-repo for private-repo.typesafe.com, as follows:
     # realm=Artifactory Realm
     # host=private-repo.typesafe.com
     # user=jenkinside
@@ -46,7 +46,7 @@
 # Rebuild modules with this Scala build, and stage them on sonatype as well
 # This script can be run in multiple modes. It is design to work without any input,
 # so that it could be run in Travis CI. In that mode, it'll build a release when
-# the current HEAD of $SCALA_REF is tagged, and stage to sonatype. Otherwise,
+# the current HEAD of the checkout in $WORKSPACE is tagged, and stage to sonatype. Otherwise,
 # it'll build a nightly.
 #
 # Since the nightlies are intended to be a drop in replacement, all modules are built with the
@@ -56,18 +56,17 @@
 # The other way to trigger a release is by setting the SCALA_VER_BASE env var.
 #
 # By default, we build the versions of the modules as specified by versions.properties
-# (as specified in the $SCALA_REF commit). Set moduleVersioning to something random
+# (as specified in the HEAD commit). Set moduleVersioning to something random
 # to trigger building HEAD of each module, generating a fresh -$(git describe)-nightly version for each.
 #
 # PS: set publishToSonatype to anything but "yes" to avoid publishing to sonatype
-# (publishing only done when $SCALA_REF's HEAD is tagged / SCALA_VER_BASE is set.)
+# (publishing only done when $WORKSPACE checkout's HEAD is tagged / SCALA_VER_BASE is set.)
 
-SCALA_REF=${SCALA_REF-"2.11.x"}
 
 # set to something besides the default to build nightly snapshots of the modules instead of some tagged version
 moduleVersioning=${moduleVersioning-"versions.properties"}
 
-baseDir=${baseDir-`pwd`}
+baseDir=${WORKSPACE-`pwd`}
 publishPrivateTask=${publishPrivateTask-"publish"}
 publishSonatypeTaskCore=${publishSonatypeTaskCore-"publish-signed"}
 publishSonatypeTaskModules=${publishSonatypeTaskModules-"publish-signed"}
@@ -86,12 +85,70 @@ forceRebuild=${forceRebuild-no}
 # overridden to "no" when no SCALA_VER_BASE is passed and HEAD is not tagged with a valid version tag
 #
 
-antBuildTask="${antBuildTask-nightly}" # TESTING leave empty to avoid the sanity check
+antBuildTask="${antBuildTask-nightly}" # TESTING leave empty to avoid the sanity check (don't set it to "init" because ant will croak)
 clean="clean" # TESTING leave empty to speed up testing
 
-scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
-. $scriptsDir/common
-. $scriptsDir/pr-scala-common
+scriptsDir="$WORKSPACE/scripts"
+
+# This is for forcibly stopping the job from a subshell (see test
+# below).
+trap "exit 1" TERM
+export TOP_PID=$$
+set -e
+
+# Known problems : does not fare well with interrupted, partial
+# compilations. We should perhaps have a multi-dependency version
+# of do_i_have below
+
+LOGGINGDIR="$WORKSPACE/logs"
+mkdir -p $LOGGINGDIR
+
+unset SBT_HOME
+SBT_HOME="$WORKSPACE/.sbt"
+mkdir -p $SBT_HOME
+IVY_CACHE="$WORKSPACE/.ivy2"
+mkdir -p $IVY_CACHE
+rm -rf $IVY_CACHE/cache/org.scala-lang
+
+# temp dir where all 'non-build' operation are performed
+TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
+TMP_DIR="${TMP_ROOT_DIR}/tmp"
+mkdir "${TMP_DIR}"
+
+
+# detect sed version and how to enable extended regexes
+SEDARGS="-n$(if (echo "a" | sed -nE "s/a/b/" &> /dev/null); then echo E; else echo r; fi)"
+
+
+
+# :docstring test:
+# Usage: test <argument ..>
+# Executes <argument ..>, logging the launch of the command to the
+# main log file, and kills global script execution with the TERM
+# signal if the commands ends up failing.
+# DO NOT USE ON FUNCTIONS THAT DECLARE VARIABLES,
+# AS YOU'LL BE RUNNING IN A SUBSHELL AND VARIABLE DECLARATIONS WILL BE LOST
+# :end docstring:
+
+function test() {
+    echo "### $@"
+    "$@"
+    status=$?
+    if [ $status -ne 0 ]; then
+        say "### ERROR with $1"
+        kill -s TERM $TOP_PID
+    fi
+}
+
+# :docstring say:
+# Usage: say <argument ..>
+# Prints <argument ..> to both console and the main log file.
+# :end docstring:
+
+function say(){
+    (echo "$@") | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
+}
+
 
 # we must change ivy home to get a fresh ivy cache, otherwise we get half-bootstrapped scala
 # rm it in case it existed (and there's no ivy2-shadow, which indicates we're running in a TESTING environment)...
@@ -102,15 +159,12 @@ mkdir -p $baseDir/ivy2
 rm -rf $baseDir/resolutionScratch_
 mkdir -p $baseDir/resolutionScratch_
 
-mkdir -p $baseDir/logs
-
-
 # repo used to publish "locker" scala to (to start the bootstrap)
 privateCred="private-repo"
 privateRepo="http://private-repo.typesafe.com/typesafe/scala-release-temp/"
 
 function parseScalaProperties(){
-  propFile="$baseDir/scala/$1"
+  propFile="$baseDir/$1"
   if [ ! -f $propFile ]; then
     echo "Property file $propFile not found."
     exit 1
@@ -206,7 +260,7 @@ buildXML() {
   then echo "Found scala-xml $XML_VER; not building."
   else
     update scala scala-xml "$XML_REF" && gfxd
-    sbtBuild 'set version := "'$XML_VER'-DOC"' $clean doc  'set version := "'$XML_VER'"' "${buildTasks[@]}"
+    sbtBuild 'set version := "'$XML_VER'-DOC"' $clean doc  'set version := "'$XML_VER'"' test "${buildTasks[@]}"
     XML_BUILT="yes" # ensure the module is built and published when buildXML is invoked for the second time, see comment above
   fi
 }
@@ -216,7 +270,7 @@ buildParsers() {
   then echo "Found scala-parser-combinators $PARSERS_VER; not building."
   else
     update scala scala-parser-combinators "$PARSERS_REF" && gfxd
-    sbtBuild 'set version := "'$PARSERS_VER'-DOC"' $clean doc 'set version := "'$PARSERS_VER'"' "${buildTasks[@]}"
+    sbtBuild 'set version := "'$PARSERS_VER'-DOC"' $clean doc 'set version := "'$PARSERS_VER'"' test "${buildTasks[@]}"
     PARSERS_BUILT="yes"
   fi
 }
@@ -226,7 +280,7 @@ buildPartest() {
   then echo "Found scala-partest $PARTEST_VER; not building."
   else
     update scala scala-partest "$PARTEST_REF" && gfxd
-    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' 'set VersionKeys.scalaCheckVersion := "'$SCALACHECK_VER'"' $clean "${buildTasks[@]}"
+    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' 'set VersionKeys.scalaCheckVersion := "'$SCALACHECK_VER'"' $clean test "${buildTasks[@]}"
     PARTEST_BUILT="yes"
   fi
 }
@@ -247,7 +301,7 @@ buildContinuations() {
     update scala scala-continuations $CONTINUATIONS_REF && gfxd
 
     $sbtCmd $sbtArgs 'project plugin' "${scalaVersionTasks[@]}" "${publishTasks[@]}" \
-      'set version := "'$CONTINUATIONS_VER'"' $clean "compile:package" "${buildTasks[@]}" # https://github.com/scala/scala-continuations/pull/4
+      'set version := "'$CONTINUATIONS_VER'"' $clean "compile:package" test "${buildTasks[@]}" # https://github.com/scala/scala-continuations/pull/4
     CONT_PLUG_BUILT="yes"
   fi
 
@@ -256,7 +310,7 @@ buildContinuations() {
   else
     update scala scala-continuations $CONTINUATIONS_REF && gfxd
     $sbtCmd $sbtArgs 'project library' "${scalaVersionTasks[@]}" "${publishTasks[@]}" \
-      'set version := "'$CONTINUATIONS_VER'"' $clean "${buildTasks[@]}"
+      'set version := "'$CONTINUATIONS_VER'"' $clean test "${buildTasks[@]}"
     CONT_LIB_BUILT="yes"
   fi
 }
@@ -266,7 +320,7 @@ buildSwing() {
   then echo "Found scala-swing $SWING_VER; not building."
   else
     update scala scala-swing "$SWING_REF" && gfxd
-    sbtBuild 'set version := "'$SWING_VER'"' $clean "${buildTasks[@]}"
+    sbtBuild 'set version := "'$SWING_VER'"' $clean test "${buildTasks[@]}"
     SWING_BUILT="yes"
   fi
 }
@@ -276,6 +330,8 @@ buildActorsMigration(){
   then echo "Found scala-actors-migration $ACTORS_MIGRATION_VER; not building."
   else
     update scala actors-migration "$ACTORS_MIGRATION_REF" && gfxd
+    # not running tests because
+    # [error] Test scala.actors.migration.NestedReact.testNestedReactAkka failed: java.util.concurrent.TimeoutException: Futures timed out after [20 seconds]
     sbtBuild 'set version := "'$ACTORS_MIGRATION_VER'"' 'set VersionKeys.continuationsVersion := "'$CONTINUATIONS_VER'"' $clean "${buildTasks[@]}"
     ACTORS_MIGRATION_BUILT="yes"
   fi
@@ -307,7 +363,7 @@ buildModules() {
 ## BUILD STEPS:
 
 determineScalaVersion() {
-  update scala scala $SCALA_REF
+  cd $WORKSPACE
   parseScalaProperties "versions.properties"
 
   if [ -z "$SCALA_VER_BASE" ]; then
@@ -327,7 +383,7 @@ determineScalaVersion() {
 
       # TODO: publish nightly snapshot using this script
       publishToSonatype="no"
-      echo "dist_ref=2.11.x" >> $baseDir/jenkins.properties # for the -dist downstream jobs that build the actual archives
+      echo "repo_ref=2.11.x" >> $baseDir/jenkins.properties # for the -dist downstream jobs that build the actual archives
     else
       echo "HEAD is tagged as $scalaTag."
       # borrowed from https://github.com/cloudflare/semver_bash/blob/master/semver.sh
@@ -452,7 +508,7 @@ constructUpdatedModuleVersions() {
 bootstrap() {
   echo "### Bootstrapping"
 
-  update scala scala $SCALA_REF && gfxd
+  cd $WORKSPACE
 
   #### LOCKER
 
@@ -480,7 +536,7 @@ bootstrap() {
   # we only need to build the modules necessary to build Scala itself
   # since the version of locker and quick are the same
   publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-private-repo")' "set every publishTo := Some(\"private-repo\" at \"$privateRepo\")")
-  buildTasks=(test $publishPrivateTask)
+  buildTasks=($publishPrivateTask)
   buildModules
 
   constructUpdatedModuleVersions
@@ -497,8 +553,9 @@ bootstrap() {
   # Sanity check: make sure the Scala test suite passes / docs can be generated with these modules.
   # don't skip locker (-Dlocker.skip=1), or stability will fail
   # overwrite "locker" version of scala at private-repo with bootstrapped version
-  cd $baseDir/scala
-  gfxd
+  cd $baseDir
+  rm -rf build/ # must leave everything else in $baseDir for downstream jobs
+
   ant -Dstarr.version=$SCALA_VER\
       -Dextra.repo.url=$privateRepo\
       -Dmaven.version.suffix=$SCALA_VER_SUFFIX\
@@ -518,7 +575,7 @@ bootstrap() {
   # git commit versions.properties -m"Bump versions.properties for $SCALA_VER."
 }
 
-# assumes we just bootstrapped, and current directory is $baseDir/scala
+# assumes we just bootstrapped, and current directory is $baseDir
 # publishes locker to sonatype, then builds modules again (those for which version numbers were provided),
 # and publishes those to sonatype as well
 # finally, the staging repos are closed
@@ -534,7 +591,7 @@ publishSonatype() {
   # NOTE: only publish those for which versions are set
   # test and publish to sonatype, assuming you have ~/.sbt/0.13/sonatype.sbt and ~/.sbt/0.13/plugin/gpg.sbt
   publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-sonatype")' "set pgpPassphrase := Some(Array.empty)")
-  buildTasks=(test $publishSonatypeTaskModules)
+  buildTasks=($publishSonatypeTaskModules)
   buildModules
 
   open=$(st_stagingReposOpen)
@@ -561,7 +618,7 @@ if [ "$publishToSonatype" == "yes" ]
   then publishSonatype
   else # build modules one more time, just to mimic the regular build as much when running as nightly
     echo "### Rebuilding modules with quick, publishing to $baseDir/ivy/local"
-    buildTasks=(test publish-local)
+    buildTasks=(publish-local)
     # buildScalacheck always uses publishPrivateTask (not buildTasks). we override it to avoid publishing to private-repo.
     publishPrivateTask="publish-local"
     forceRebuild="yes"
