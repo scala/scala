@@ -114,7 +114,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val superClass = if (superClassSym == NoSymbol) None
                      else Some(classBTypeFromSymbol(superClassSym))
 
-    val interfaces = getSuperInterfaces(classSym).map(classBTypeFromSymbol)
+    val interfaces = implementedInterfaces(classSym).map(classBTypeFromSymbol)
 
     val flags = javaFlags(classSym)
 
@@ -180,28 +180,6 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     classBType.info = ClassInfo(superClass, interfaces, flags, memberClasses, nestedInfo)
     classBType
-  }
-
-  /**
-   * All interfaces implemented by a class, except for those inherited through the superclass.
-   *
-   * TODO @lry share code with GenASM
-   */
-  private def getSuperInterfaces(classSym: Symbol): List[Symbol] = {
-
-    // Additional interface parents based on annotations and other cues
-    def newParentForAnnotation(ann: AnnotationInfo): Symbol = ann.symbol match {
-      case RemoteAttr => RemoteInterfaceClass
-      case _          => NoSymbol
-    }
-
-    val superInterfaces0: List[Symbol] = classSym.mixinClasses
-    val superInterfaces = existingSymbols(superInterfaces0 ++ classSym.annotations.map(newParentForAnnotation)).distinct
-
-    assert(!superInterfaces.contains(NoSymbol), s"found NoSymbol among: ${superInterfaces.mkString(", ")}")
-    assert(superInterfaces.forall(s => s.isInterface || s.isTrait), s"found non-interface among: ${superInterfaces.mkString(", ")}")
-
-    erasure.minimizeInterfaces(superInterfaces.map(_.info)).map(_.typeSymbol)
   }
 
   private def buildNestedInfo(innerClassSym: Symbol): Option[NestedInfo] = {
