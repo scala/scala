@@ -58,8 +58,9 @@ private[scala] trait MarkupParserCommon extends TokenTests {
    @param endCh either `'` or `"`
    */
   def xAttributeValue(endCh: Char): String = {
+    require(endCh == '\'' || endCh == '"', s"Expected single or double quote, found $endCh")
     val buf = new StringBuilder
-    while (ch != endCh) {
+    while (ch != endCh && !eof) {
       // well-formedness constraint
       if (ch == '<') return errorAndResult("'<' not allowed in attrib value", "")
       else if (ch == SU) truncatedError("")
