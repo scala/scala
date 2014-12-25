@@ -367,7 +367,9 @@ trait Scanners extends ScannersCommon {
             val last = if (charOffset >= 2) buf(charOffset - 2) else ' '
             nextChar()
             last match {
-              case ' ' | '\t' | '\n' | '{' | '(' | '>' if isNameStart(ch) || ch == '!' || ch == '?' =>
+              // exclude valid xml names that happen to be Scala operator chars
+              case ' ' | '\t' | '\n' | '{' | '(' | '>' if (isNameStart(ch) && ch != ':' && !isSpecial(ch))
+                  || ch == '!' || ch == '?' =>
                 token = XMLSTART
               case _ =>
                 // Console.println("found '<', but last is '"+in.last+"'"); // DEBUG

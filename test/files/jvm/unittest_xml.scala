@@ -62,7 +62,9 @@ object Test {
   object UtilityTest {
     def run() {
       assert(Utility.isNameStart('b'))
-      assert(!Utility.isNameStart(':'))
+
+      // no longer: this was a convenience for the implementation, not to spec.
+      //assert(!Utility.isNameStart(':'))
 
       val x = <foo>
                  <toomuchws/>
