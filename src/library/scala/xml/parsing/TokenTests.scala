@@ -30,43 +30,25 @@ trait TokenTests {
   def isAlpha(c: Char) = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
   def isAlphaDigit(c: Char) = isAlpha(c) || (c >= '0' && c <= '9')
 
-  /** {{{
-   *  NameChar ::= Letter | Digit | '.' | '-' | '_' | ':'
-   *             | CombiningChar | Extender
-   *  }}}
-   *  See [4] and Appendix B of XML 1.0 specification.
-  */
-  def isNameChar(ch: Char) = {
-    import java.lang.Character._
-    // The constants represent groups Mc, Me, Mn, Lm, and Nd.
-
-    isNameStart(ch) || (getType(ch).toByte match {
-      case COMBINING_SPACING_MARK |
-              ENCLOSING_MARK | NON_SPACING_MARK |
-              MODIFIER_LETTER | DECIMAL_DIGIT_NUMBER => true
-      case _                                         => ".-:" contains ch
-    })
-  }
-
-  /** {{{
-   *  NameStart ::= ( Letter | '_' )
-   *  }}}
-   *  where Letter means in one of the Unicode general
-   *  categories `{ Ll, Lu, Lo, Lt, Nl }`.
-   *
-   *  We do not allow a name to start with `:`.
-   *  See [3] and Appendix B of XML 1.0 specification
-   */
-  def isNameStart(ch: Char) = {
-    import java.lang.Character._
-
-    getType(ch).toByte match {
-      case LOWERCASE_LETTER |
-              UPPERCASE_LETTER | OTHER_LETTER |
-              TITLECASE_LETTER | LETTER_NUMBER => true
-      case _                                   => ch == '_'
-    }
-  }
+  def isNameChar(c: Char): Boolean = (
+    isNameStart(c) ||
+    (c >= '0' && c <= '9') ||
+    c == '-' ||
+    c == '.' ||
+    c == 0xB7 ||
+    (c >= 0x300 && c <= 0x36F) ||
+    (c >= 0x203F && c <= 0x2040)
+  )
+  def isNameStart(c: Char): Boolean = (
+         if (c < 0x00C0)  isAlpha(c) || c == ':' || c == '_'
+    else if (c < 0x0300)  c != 0xD7 && c != 0xF7
+    else if (c < 0x2000)  c >= 0x370 && c != 0x37E
+    else if (c < 0x3001)  c == 0x200C || c == 0x200D || (0x2070 to 0x218F contains c) ||
+                          (0x2C00 to 0x2FEF contains c)
+    else if (c < 0xD800)  true
+    else if (c < 0x10000) (0xF900 to 0xFDCF contains c) || (0xFDF0 to 0xFFFD contains c)
+    else                  false // codepoint < 0xF0000
+  )
 
   /** {{{
    *  Name ::= ( Letter | '_' ) (NameChar)*
