@@ -478,7 +478,7 @@ trait Scanners extends ScannersCommon {
                   nextRawChar()                        // now eat it
                   offset += 3
                   nextRawChar()
-                  getStringPart(multiLine = true)
+                  getStringPart(multiLine = true, escaped = false)
                   sepRegions = STRINGPART :: sepRegions // indicate string part
                   sepRegions = STRINGLIT :: sepRegions // once more to indicate multi line string part
                 } else {
@@ -488,7 +488,7 @@ trait Scanners extends ScannersCommon {
                 }
               } else {
                 offset += 1
-                getStringPart(multiLine = false)
+                getStringPart(multiLine = false, escaped = false)
                 sepRegions = STRINGLIT :: sepRegions // indicate single line string part
               }
             } else {
@@ -688,7 +688,14 @@ trait Scanners extends ScannersCommon {
       } else unclosedStringLit()
     }
 
-    private def unclosedStringLit(): Unit = syntaxError("unclosed string literal")
+    private def unclosedStringLit(): Unit = {
+      val message    = "unclosed string literal"
+      val supplement = """ (\" is an escaped quote, not the end of string)"""
+      syntaxError {
+        if (cbuf contains '"') message + supplement
+        else message
+      }
+    }
 
     private def getRawStringLit(): Unit = {
       if (ch == '\"') {
@@ -707,75 +714,80 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    @scala.annotation.tailrec private def getStringPart(multiLine: Boolean): Unit = {
+    @tailrec private def getStringPart(multiLine: Boolean, escaped: Boolean): Unit = {
       def finishStringPart() = {
         setStrVal()
         token = STRINGPART
         next.lastOffset = charOffset - 1
         next.offset = charOffset - 1
       }
-      if (ch == '"') {
-        if (multiLine) {
+      ch match {
+        case '\\' if !multiLine =>
+          putChar(ch)
+          nextRawChar()
+          getStringPart(multiLine, escaped = !escaped)
+        case '"' if multiLine =>
           nextRawChar()
           if (isTripleQuote()) {
             setStrVal()
             token = STRINGLIT
           } else
-            getStringPart(multiLine)
-        } else {
-          nextChar()
-          setStrVal()
-          token = STRINGLIT
-        }
-      } else if (ch == '$') {
-        nextRawChar()
-        if (ch == '$') {
-          putChar(ch)
-          nextRawChar()
-          getStringPart(multiLine)
-        } else if (ch == '{') {
-          finishStringPart()
-          nextRawChar()
-          next.token = LBRACE
-        } else if (ch == '_') {
-          finishStringPart()
-          nextRawChar()
-          next.token = USCORE
-        } else if (Character.isUnicodeIdentifierStart(ch)) {
-          finishStringPart()
-          do {
+            getStringPart(multiLine, escaped = false)
+        case '"' =>
+          if (escaped) {
             putChar(ch)
             nextRawChar()
-          } while (ch != SU && Character.isUnicodeIdentifierPart(ch))
-          next.token = IDENTIFIER
-          next.name = newTermName(cbuf.toString)
-          cbuf.clear()
-          val idx = next.name.start - kwOffset
-          if (idx >= 0 && idx < kwArray.length) {
-            next.token = kwArray(idx)
+            getStringPart(multiLine, escaped = false)
+          } else {
+            nextChar()
+            setStrVal()
+            token = STRINGLIT
           }
-        } else {
-          syntaxError("invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected")
-        }
-      } else {
-        val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
-        if (isUnclosedLiteral) {
+        case '$' =>
+          nextRawChar()
+          if (ch == '$') {
+            putChar(ch)
+            nextRawChar()
+            getStringPart(multiLine, escaped = false) // ignore escape of dollar?
+          } else if (ch == '{') {
+            finishStringPart()
+            nextRawChar()
+            next.token = LBRACE
+          } else if (ch == '_') {
+            finishStringPart()
+            nextRawChar()
+            next.token = USCORE
+          } else if (Character.isUnicodeIdentifierStart(ch)) {
+            finishStringPart()
+            do {
+              putChar(ch)
+              nextRawChar()
+            } while (ch != SU && Character.isUnicodeIdentifierPart(ch))
+            next.token = IDENTIFIER
+            next.name = newTermName(cbuf.toString)
+            cbuf.clear()
+            val idx = next.name.start - kwOffset
+            if (idx >= 0 && idx < kwArray.length) {
+              next.token = kwArray(idx)
+            }
+          } else {
+            syntaxError("invalid string interpolation: `$$', `$'ident or `$'BlockExpr expected")
+          }
+        case _ if !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF))) =>
           if (multiLine)
             incompleteInputError("unclosed multi-line string literal")
           else
             unclosedStringLit()
-        }
-        else {
+        case _ =>
           putChar(ch)
           nextRawChar()
-          getStringPart(multiLine)
-        }
+          getStringPart(multiLine, escaped = false)
       }
     }
 
     private def fetchStringPart() = {
       offset = charOffset - 1
-      getStringPart(multiLine = inMultiLineInterpolation)
+      getStringPart(multiLine = inMultiLineInterpolation, escaped = false)
     }
 
     private def isTripleQuote(): Boolean =
