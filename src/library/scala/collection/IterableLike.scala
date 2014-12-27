@@ -218,12 +218,12 @@ self =>
     val b = newBuilder
     b.sizeHintBounded(n, this)
     val lead = this.iterator drop n
-    var go = false
-    for (x <- this) {
-      if (lead.hasNext) lead.next()
-      else go = true
-      if (go) b += x
+    val it = this.iterator
+    while (lead.hasNext) {
+      lead.next()
+      it.next()
     }
+    while (it.hasNext) b += it.next()
     b.result()
   }
 
@@ -283,7 +283,7 @@ self =>
     var i = 0
     for (x <- this) {
       b += ((x, i))
-      i +=1
+      i += 1
     }
     b.result()
   }
