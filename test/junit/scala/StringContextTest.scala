@@ -81,6 +81,20 @@ class StringContextTest {
     assertEquals(expected, res)
   }
 
+  @Test def `SI-6476: escape quotes`(): Unit = {
+    val i = 42
+    assertEquals("""Forty-two is "42"""", s"Forty-two is \"42\"")
+    assertEquals("""dir\""", s"dir\\")
+    assertEquals("""\\""", s"\\\\")
+    // dollar is not escaped
+    assertEquals("""\\\42""", raw"\\\$i")
+    // colon separator, in case we like to escape dollar someday
+    assertEquals("""\\\:42""", raw"\\\:$i")
+    assertThrows[StringContext.InvalidEscapeException] {
+      s"\\\:$i"
+    }
+  }
+
   // Use this method to avoid problems with a locale-dependent decimal mark.
   // The string interpolation is not used here intentionally as this method is used to test string interpolation.
   private def formatUsingCurrentLocale(number: Double, decimalPlaces: Int = 2) = ("%." + decimalPlaces + "f").format(number)
