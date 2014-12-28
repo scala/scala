@@ -12,7 +12,13 @@ import scala.util.{Try,Success,Failure}
 class PromiseTests extends MinimalScalaTest {
   import ExecutionContext.Implicits._
 
-  val defaultTimeout = Inf
+  // There's a tradeoff between setting the timeout high to avoid false
+  // positives, or setting it low to improve test execution time in cases where
+  // a timeout occurs. The tests in PromiseTests only wait on computations that
+  // are trivially short, so it should be safe to pick a short timeout. If this
+  // assumption is wrong, it will result in false positive test failures due to
+  // timeouts, which should be easy to diagnose from the log output.
+  val defaultTimeout = 0.25 seconds
 
   /* promise specification */
 
