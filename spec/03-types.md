@@ -167,8 +167,8 @@ SimpleType      ::=  SimpleType TypeArgs
 TypeArgs        ::=  ‘[’ Types ‘]’
 ```
 
-A parameterized type $T[ U_1 , \ldots , U_n ]$ consists of a type
-designator $T$ and type parameters $U_1 , \ldots , U_n$ where
+A parameterized type $T[ T_1 , \ldots , T_n ]$ consists of a type
+designator $T$ and type parameters $T_1 , \ldots , T_n$ where
 $n \geq 1$. $T$ must refer to a type constructor which takes $n$ type
 parameters $a_1 , \ldots , a_n$.
 
