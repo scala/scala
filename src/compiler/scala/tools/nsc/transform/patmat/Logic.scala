@@ -122,9 +122,20 @@ trait Logic extends Debugging  {
 
     // symbols are propositions
     final class Sym private[PropositionalLogic] (val variable: Var, val const: Const) extends Prop {
+
+      override def equals(other: scala.Any): Boolean = other match {
+        case that: Sym => this.variable == that.variable &&
+          this.const == that.const
+        case _         => false
+      }
+
+      override def hashCode(): Int = {
+        variable.hashCode * 41 + const.hashCode
+      }
+
       private val id: Int = Sym.nextSymId
 
-      override def toString = variable + "=" + const + "#" + id
+      override def toString = s"$variable=$const#$id"
     }
 
     object Sym {
