@@ -478,7 +478,7 @@ trait Scanners extends ScannersCommon {
                   nextRawChar()                        // now eat it
                   offset += 3
                   nextRawChar()
-                  getStringPart(multiLine = true, escaped = false)
+                  getStringPart(multiLine = true)
                   sepRegions = STRINGPART :: sepRegions // indicate string part
                   sepRegions = STRINGLIT :: sepRegions // once more to indicate multi line string part
                 } else {
@@ -488,7 +488,7 @@ trait Scanners extends ScannersCommon {
                 }
               } else {
                 offset += 1
-                getStringPart(multiLine = false, escaped = false)
+                getStringPart(multiLine = false)
                 sepRegions = STRINGLIT :: sepRegions // indicate single line string part
               }
             } else {
@@ -714,30 +714,30 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    @tailrec private def getStringPart(multiLine: Boolean, escaped: Boolean): Unit = {
-      def finishStringPart() = {
+    private def getStringPart(multiLine: Boolean): Unit = {
+      def finishStringPart(): Unit = {
         setStrVal()
         token = STRINGPART
         next.lastOffset = charOffset - 1
         next.offset = charOffset - 1
       }
-      ch match {
+      @tailrec def loop(escaped: Boolean): Unit = ch match {
         case '\\' if !multiLine =>
           putChar(ch)
           nextRawChar()
-          getStringPart(multiLine, escaped = !escaped)
+          loop(escaped = !escaped)
         case '"' if multiLine =>
           nextRawChar()
           if (isTripleQuote()) {
             setStrVal()
             token = STRINGLIT
           } else
-            getStringPart(multiLine, escaped = false)
+            loop(escaped = false)
         case '"' =>
           if (escaped) {
             putChar(ch)
             nextRawChar()
-            getStringPart(multiLine, escaped = false)
+            loop(escaped = false)
           } else {
             nextChar()
             setStrVal()
@@ -748,7 +748,7 @@ trait Scanners extends ScannersCommon {
           if (ch == '$') {
             putChar(ch)
             nextRawChar()
-            getStringPart(multiLine, escaped = false) // ignore escape of dollar?
+            loop(escaped = false) // ignore escape of dollar?
           } else if (ch == '{') {
             finishStringPart()
             nextRawChar()
@@ -781,13 +781,14 @@ trait Scanners extends ScannersCommon {
         case _ =>
           putChar(ch)
           nextRawChar()
-          getStringPart(multiLine, escaped = false)
+          loop(escaped = false)
       }
+      loop(escaped = false)
     }
 
     private def fetchStringPart() = {
       offset = charOffset - 1
-      getStringPart(multiLine = inMultiLineInterpolation, escaped = false)
+      getStringPart(multiLine = inMultiLineInterpolation)
     }
 
     private def isTripleQuote(): Boolean =
