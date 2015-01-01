@@ -5,6 +5,7 @@ import scala.collection.mutable.{ ListBuffer, Stack }
 import scala.reflect.internal.util.Position
 import scala.PartialFunction.cond
 import scala.util.matching.Regex.Match
+import scala.util.Properties.{ lineSeparator => EOL }
 
 import java.util.{ Formatter, Formattable, IllegalFormatException }
 
@@ -85,7 +86,7 @@ abstract class FormatInterpolator {
         // trailing backslash, octal escape, or other
         case e: StringContext.InvalidEscapeException =>
           def errPoint = part.pos withPoint (part.pos.point + e.index)
-          def octalOf(c: Char) = Character.digit(c, 8)
+          def octalOf(ch: Char) = Character.digit(ch, 8)
           def alt = {
             def altOf(i: Int) = i match {
               case '\b' => "\\b"
@@ -121,14 +122,19 @@ abstract class FormatInterpolator {
               try StringContext.treatEscapes(s0) catch escapeHatch
             }
           }
+          def control(ch: Char, i: Int, name: String) = {
+            c.error(errPoint, s"\\$ch is not supported, but for $name use \\u${"%04x" format i};${EOL}${e.getMessage}")
+            s0
+          }
           if (e.index == s0.length - 1) {
             c.error(errPoint, """Trailing '\' escapes nothing.""")
             s0
-          } else if (octalOf(s0(e.index + 1)) >= 0) {
-            badOctal
-          } else {
-            c.error(errPoint, e.getMessage)
-            s0
+          } else s0(e.index + 1) match {
+            case i if octalOf(i) >= 0 => badOctal
+            case 'a' => control('a', 0x7, "alert or BEL")
+            case 'v' => control('v', 0xB, "vertical tab")
+            case 'e' => control('e', 0x1B, "escape")
+            case _   => c.error(errPoint, e.getMessage) ; s0
           }
       }
       val s  = try StringContext.processEscapes(s0) catch escapeHatch
