@@ -127,9 +127,12 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
    *  @since 2.8
    */
   def alphanumeric: Stream[Char] = {
-    def isAlphaNum(c: Char) = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+    def nextAlphaNum: Char = {
+      val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+      chars charAt (self nextInt chars.length)
+    }
 
-    Stream continually nextPrintableChar filter isAlphaNum
+    Stream continually nextAlphaNum
   }
 
 }
