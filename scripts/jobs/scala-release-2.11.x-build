@@ -1,4 +1,9 @@
 #!/bin/bash -e
+# TODO: different scripts for the different phases -- usually we don't need to bootstrap the modules,
+# since we can use the previous version of scala for STARR as well as for compiling the modules (assuming it's binary compatible)
+# We should move away from the complicated bootstrap and set up our release schedule so we always have a previous build that satisfies these criteria.
+# (Potentially trivially, by splitting up this script, and publishing locker as if it were a real release.)
+
 # requirements:
 # sbtCmd must point to sbt from sbt-extras (this is the standard on the Scala jenkins, so we only support that one)
 # - ~/.sonatype-curl that consists of user = USER:PASS
