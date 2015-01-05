@@ -94,9 +94,9 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
   def unapply(x: Double)  : Option[T] = unapplyImpl(x, classOf[Double])
   def unapply(x: Boolean) : Option[T] = unapplyImpl(x, classOf[Boolean])
   def unapply(x: Unit)    : Option[T] = unapplyImpl(x, classOf[Unit])
-  
+
   private[this] def unapplyImpl(x: Any, alternative: jClass[_] = null): Option[T] = {
-    val conforms = runtimeClass.isAssignableFrom(x.getClass) || (alternative != null && runtimeClass.isAssignableFrom(alternative))
+    val conforms = runtimeClass.isInstance(x) || (alternative != null && runtimeClass.isAssignableFrom(alternative))
     if (conforms) Some(x.asInstanceOf[T]) else None
   }
 
