@@ -8,7 +8,7 @@ package typechecker
 
 import scala.collection.{ immutable, mutable }
 import scala.annotation.tailrec
-import scala.reflect.internal.util.shortClassOfInstance
+import scala.reflect.internal.util.{ FakePos, shortClassOfInstance }
 import scala.tools.nsc.reporters.Reporter
 
 /**
@@ -265,6 +265,7 @@ trait Contexts { self: Analyzer =>
     def inSecondTry_=(value: Boolean)         = this(SecondTry) = value
     def inReturnExpr                          = this(ReturnExpr)
     def inTypeConstructorAllowed              = this(TypeConstructorAllowed)
+    def inTuplingEnabled                      = this(TuplingAllowed)
 
     def defaultModeForTyped: Mode = if (inTypeConstructorAllowed) Mode.NOmode else Mode.EXPRmode
 
@@ -398,7 +399,11 @@ trait Contexts { self: Analyzer =>
      *  adapt should then check kind-arity based on the prototypical type's kind
      *  arity. Type arguments should not be inferred.
      */
-    @inline final def withinTypeConstructorAllowed[T](op: => T): T = withMode(enabled = TypeConstructorAllowed)(op)
+    @inline final def withinTypeConstructorAllowed[T](op: => T): T         = withMode(enabled = TypeConstructorAllowed)(op)
+
+    /** "Autotupling" or "tupling conversion" for applicability. */
+    @inline final def withinTuplingEnabled[T](op: => T): T                 = withMode(enabled = TuplingAllowed)(op)
+    @inline final def withinTuplingDisabled[T](op: => T): T                = withMode(disabled = TuplingAllowed)(op)
 
     /* TODO - consolidate returnsSeen (which seems only to be used by checkDead)
      * and ReturnExpr.
@@ -569,14 +574,21 @@ trait Contexts { self: Analyzer =>
     // Error and warning issuance
     //
 
+    def withIssueDebug(issue: => Unit) = {
+      if (settings.Yissuedebug) {
+        val m = s"Issuing at:\n${ new Throwable().getStackTrace.mkString("\n  ") }\n"
+        reporter.echo(FakePos("DEBUG"), m)
+      }
+      issue
+    }
     /** Issue/buffer/throw the given type error according to the current mode for error reporting. */
-    private[typechecker] def issue(err: AbsTypeError)                        = reporter.issue(err)(this)
+    private[typechecker] def issue(err: AbsTypeError)                        = withIssueDebug(reporter.issue(err)(this))
     /** Issue/buffer/throw the given implicit ambiguity error according to the current mode for error reporting. */
-    private[typechecker] def issueAmbiguousError(err: AbsAmbiguousTypeError) = reporter.issueAmbiguousError(err)(this)
+    private[typechecker] def issueAmbiguousError(err: AbsAmbiguousTypeError) = withIssueDebug(reporter.issueAmbiguousError(err)(this))
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def error(pos: Position, msg: String)                                    = reporter.error(fixPosition(pos), msg)
+    def error(pos: Position, msg: String)                                    = withIssueDebug(reporter.error(fixPosition(pos), msg))
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def warning(pos: Position, msg: String)                                  = reporter.warning(fixPosition(pos), msg)
+    def warning(pos: Position, msg: String)                                  = withIssueDebug(reporter.warning(fixPosition(pos), msg))
     def echo(pos: Position, msg: String)                                     = reporter.echo(fixPosition(pos), msg)
     def fixPosition(pos: Position): Position = pos match {
       case NoPosition => nextEnclosing(_.tree.pos != NoPosition).tree.pos
@@ -1510,6 +1522,9 @@ object ContextMode {
   /** Are unapplied type constructors allowed here? Formerly HKmode. */
   final val TypeConstructorAllowed: ContextMode   = 1 << 16
 
+  /** Are we allowing tupling conversions during applicability tests? */
+  final val TuplingAllowed: ContextMode           = 1 << 17
+
   /** TODO: The "sticky modes" are EXPRmode, PATTERNmode, TYPEmode.
    *  To mimic the sticky mode behavior, when captain stickyfingers
    *  comes around we need to propagate those modes but forget the other
@@ -1533,7 +1548,8 @@ object ContextMode {
     StarPatterns           -> "StarPatterns",
     SuperInit              -> "SuperInit",
     SecondTry              -> "SecondTry",
-    TypeConstructorAllowed -> "TypeConstructorAllowed"
+    TypeConstructorAllowed -> "TypeConstructorAllowed",
+    TuplingAllowed         -> "TuplingAllowed"
   )
 }
 

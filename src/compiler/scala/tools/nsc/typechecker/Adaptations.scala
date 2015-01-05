@@ -26,20 +26,25 @@ trait Adaptations {
 
     import runDefinitions._
 
+    /** True to keep this adapted tree. */
     def checkValidAdaptation(t: Tree, args: List[Tree]): Boolean = {
       def applyArg = t match {
         case Apply(_, arg :: Nil) => arg
         case _                    => EmptyTree
       }
-      def callString = (
-        ( if (t.symbol.isConstructor) "new " else "" ) +
-        ( t.symbol.owner.decodedName ) +
-        ( if (t.symbol.isConstructor || t.symbol.name == nme.apply) "" else "." + t.symbol.decodedName )
-      )
-      def sigString = t.symbol.owner.decodedName + (
-        if (t.symbol.isConstructor) t.symbol.signatureString
-        else "." + t.symbol.decodedName + t.symbol.signatureString
-      )
+      def callString = s"${
+          if (t.symbol.isConstructor) "new " else ""
+        }${
+          t.symbol.owner.decodedName
+        }${
+          if (t.symbol.isConstructor || t.symbol.name == nme.apply) "" else s".${ t.symbol.decodedName }"
+        }"
+      def sigString = s"${
+          t.symbol.owner.decodedName
+        }${
+          if (t.symbol.isConstructor) t.symbol.signatureString
+          else s".${t.symbol.decodedName}${t.symbol.signatureString}"
+        }"
       def givenString = if (args.isEmpty) "<none>" else args.mkString(", ")
       def adaptedArgs = if (args.isEmpty) "(): Unit" else args.mkString("(", ", ", "): " + applyArg.tpe)
 
@@ -68,22 +73,29 @@ trait Adaptations {
         )
       }
 
-      if (settings.noAdaptedArgs)
-        context.warning(t.pos, adaptWarningMessage("No automatic adaptation here: use explicit parentheses."))
+      def error(msg: String) = { context.error(t.pos, adaptWarningMessage(msg)) ; false }
+      def short(msg: String) = { context.error(t.pos, adaptWarningMessage(msg, showAdaptation = false)) ; false }
+      def scare(msg: String) = { context.warning(t.pos, adaptWarningMessage(msg)) ; false }
+      def warn (msg: String) = { context.warning(t.pos, adaptWarningMessage(msg)) ; true }
+      def depp (msg: String) = { context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(msg)) ; true }
+
+      if (settings.YnoTupling)
+        error("Tupling of arguments is disabled: use explicit parentheses.")
+      else if (t.symbol.isJavaDefined && settings.YnoJavaTupling)
+        error("No adaptation of argument list for Java method.")
+      else if (settings.noAdaptedArgs)
+        scare("No automatic adaptation here: use explicit parentheses.")
       else if (args.isEmpty) {
         if (settings.future)
-          context.error(t.pos, adaptWarningMessage("Adaptation of argument list by inserting () has been removed.", showAdaptation = false))
-        else {
-          val msg = "Adaptation of argument list by inserting () has been deprecated: " + (
-          if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous."
-          else "this is unlikely to be what you want.")
-          context.deprecationWarning(t.pos, t.symbol, adaptWarningMessage(msg))
-        }
+          short("Adaptation of argument list by inserting () has been removed.")
+        else
+          depp(s"Adaptation of argument list by inserting () has been deprecated: ${
+            if (isLeakyTarget) "leaky (Object-receiving) target makes this especially dangerous."
+            else "this is unlikely to be what you want."
+          }")
       } else if (settings.warnAdaptedArgs)
-        context.warning(t.pos, adaptWarningMessage(s"Adapting argument list by creating a ${args.size}-tuple: this may not be what you want."))
-
-      // return `true` if the adaptation should be kept
-      !(settings.noAdaptedArgs || (args.isEmpty && settings.future))
+        warn(s"Adapting argument list by creating a ${args.size}-tuple: this may not be what you want.")
+      else true
     }
   }
 }
