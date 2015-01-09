@@ -23,11 +23,11 @@ abstract class INodeBase<K, V> extends BasicNode {
     public final Gen gen;
 
     public INodeBase(Gen generation) {
-	gen = generation;
+        gen = generation;
     }
 
     public BasicNode prev() {
-	return null;
+        return null;
     }
 
 }
