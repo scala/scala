@@ -1,0 +1,153 @@
+# This is for forcibly stopping the job from a subshell (see test
+# below).
+trap "exit 1" TERM
+export TOP_PID=$$
+set -e
+
+# Known problems : does not fare well with interrupted, partial
+# compilations. We should perhaps have a multi-dependency version
+# of do_i_have below
+
+LOGGINGDIR="$WORKSPACE/logs"
+mkdir -p $LOGGINGDIR
+
+unset SBT_HOME
+SBT_HOME="$WORKSPACE/.sbt"
+mkdir -p $SBT_HOME
+IVY_CACHE="$WORKSPACE/.ivy2"
+mkdir -p $IVY_CACHE
+rm -rf $IVY_CACHE/cache/org.scala-lang
+
+# temp dir where all 'non-build' operation are performed
+TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
+TMP_DIR="${TMP_ROOT_DIR}/tmp"
+mkdir "${TMP_DIR}"
+
+
+# detect sed version and how to enable extended regexes
+SEDARGS="-n$(if (echo "a" | sed -nE "s/a/b/" &> /dev/null); then echo E; else echo r; fi)"
+
+
+
+# :docstring test:
+# Usage: test <argument ..>
+# Executes <argument ..>, logging the launch of the command to the
+# main log file, and kills global script execution with the TERM
+# signal if the commands ends up failing.
+# DO NOT USE ON FUNCTIONS THAT DECLARE VARIABLES,
+# AS YOU'LL BE RUNNING IN A SUBSHELL AND VARIABLE DECLARATIONS WILL BE LOST
+# :end docstring:
+
+function test() {
+    echo "### $@"
+    "$@"
+    status=$?
+    if [ $status -ne 0 ]; then
+        say "### ERROR with $1"
+        kill -s TERM $TOP_PID
+    fi
+}
+
+# :docstring say:
+# Usage: say <argument ..>
+# Prints <argument ..> to both console and the main log file.
+# :end docstring:
+
+function say(){
+    (echo "$@") | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
+}
+
+# General debug logging
+# $* - message
+function debug () {
+  echo "----- $*"
+}
+
+function parseScalaProperties(){
+  propFile="$baseDir/$1"
+  if [ ! -f $propFile ]; then
+    echo "Property file $propFile not found."
+    exit 1
+  else
+    awk -f "$scriptsDir/readproperties.awk" "$propFile" > "$propFile.sh"
+    . "$propFile.sh" # yeah yeah, not that secure, improvements welcome (I tried, but bash made me cry again)
+  fi
+}
+
+
+## TAKEN FROM UBER-BUILD, except that it "returns" (via $RES) true/false
+# Check if an artifact is available
+# $1 - groupId
+# $2 - artifacId
+# $3 - version
+# $4 - extra repository to look in (optional)
+# return value in $RES
+function checkAvailability () {
+  pushd "${TMP_DIR}"
+  rm -rf *
+
+# pom file for the test project
+  cat > pom.xml << EOF
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.typesafe</groupId>
+  <artifactId>typesafeDummy</artifactId>
+  <packaging>war</packaging>
+  <version>1.0-SNAPSHOT</version>
+  <name>Dummy</name>
+  <url>http://127.0.0.1</url>
+  <dependencies>
+    <dependency>
+      <groupId>$1</groupId>
+      <artifactId>$2</artifactId>
+      <version>$3</version>
+    </dependency>
+  </dependencies>
+  <repositories>
+    <repository>
+      <id>sonatype.snapshot</id>
+      <name>Sonatype maven snapshot repository</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <snapshots>
+        <updatePolicy>daily</updatePolicy>
+      </snapshots>
+    </repository>
+EOF
+
+  if [ -n "$4" ]
+  then
+# adds the extra repository
+    cat >> pom.xml << EOF
+    <repository>
+      <id>extrarepo</id>
+      <name>extra repository</name>
+      <url>$4</url>
+    </repository>
+EOF
+  fi
+
+  cat >> pom.xml << EOF
+  </repositories>
+</project>
+EOF
+
+  set +e
+  mvn "${MAVEN_ARGS[@]}" compile &> "${TMP_DIR}/mvn.log"
+  RES=$?
+  # Quiet the maven, but allow diagnosing problems.
+  grep -i downloading "${TMP_DIR}/mvn.log"
+  grep -i exception "${TMP_DIR}/mvn.log"
+  grep -i error "${TMP_DIR}/mvn.log"
+  set -e
+
+# log the result
+  if [ ${RES} == 0 ]
+  then
+    debug "$1:$2:jar:$3 found !"
+    RES=true
+  else
+    debug "$1:$2:jar:$3 not found !"
+    RES=false
+  fi
+  popd
+}
