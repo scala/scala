@@ -810,12 +810,7 @@ trait Contexts { self: Analyzer =>
       val qual = imp.qual
 
       val qualSym = qual.tpe.typeSymbol
-      val pre =
-        if (qualSym.isPackageClass)
-          // SI-6225 important if the imported symbol is inherited by the the package object.
-          qualSym.packageObject.typeOfThis
-        else
-          qual.tpe
+      val pre = qual.tpe
       def collect(sels: List[ImportSelector]): List[ImplicitInfo] = sels match {
         case List() =>
           List()

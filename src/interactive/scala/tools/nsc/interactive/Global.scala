@@ -159,18 +159,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   override def forInteractive = true
   override protected def synchronizeNames = true
 
-  override def newAsSeenFromMap(pre: Type, clazz: Symbol): AsSeenFromMap =
-    new InteractiveAsSeenFromMap(pre, clazz)
-
-  class InteractiveAsSeenFromMap(pre: Type, clazz: Symbol) extends AsSeenFromMap(pre, clazz) {
-    /** The method formerly known as 'instParamsRelaxed' goes here if it's still necessary,
-     *  which it is currently supposed it is not.
-     *
-     *  If it is, change AsSeenFromMap method correspondingTypeArgument to call an overridable
-     *  method rather than aborting in the failure case.
-     */
-  }
-
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
   val unitOfFile = mapAsScalaMapConverter(new ConcurrentHashMap[AbstractFile, RichCompilationUnit] {
