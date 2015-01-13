@@ -743,8 +743,11 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
 
       // Example input: $line3.$read$$iw$$iw$
       val classNameRegex = (naming.lineRegex + ".*").r
+      // $line8.$read$$iw$.<init>                                          // object or class
+      // $line8.$read$$iw$.delayedEndpoint$$line8$$read$$iw$1(<console>:7) // for App
       def isWrapperInit(x: StackTraceElement) = cond(x.getClassName) {
-        case classNameRegex() if x.getMethodName == nme.CONSTRUCTOR.decoded => true
+        case classNameRegex() if (x.getMethodName == nme.CONSTRUCTOR.decoded)
+                              || (x.getMethodName startsWith "delayedEndpoint") => true
       }
       val stackTrace = unwrapped stackTracePrefixString (!isWrapperInit(_))
 
@@ -875,7 +878,7 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       * append to objectName to access anything bound by request.
       */
     lazy val ComputedImports(importsPreamble, importsTrailer, accessPath) =
-      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode))
+      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, ComputationWrapper))
 
     /** the line of code to compute */
     def toCompute = line
@@ -919,6 +922,10 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       def postwrap = "}\n"
     }
 
+    private class AppBasedWrapper extends ObjectBasedWrapper {
+      override def preambleHeader = "object %s extends App {"
+    }
+
     private class ClassBasedWrapper extends Wrapper {
       def preambleHeader = "class %s extends Serializable {"
 
@@ -934,8 +941,18 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
       def postwrap = s"}\nval $iw = new $iw\n"
     }
 
-    private lazy val ObjectSourceCode: Wrapper =
-      if (settings.Yreplclassbased) new ClassBasedWrapper else new ObjectBasedWrapper
+    /** Template for scoping imports from history. */
+    private lazy val ObjectSourceCode: Wrapper = settings.YreplWrap.value match {
+      case "class" => new ClassBasedWrapper
+      case _       => new ObjectBasedWrapper
+    }
+
+    /** Template in which the user computation is immediately embedded. */
+    private lazy val ComputationWrapper: Wrapper = settings.YreplWrap.value match {
+      case "class"  => new ClassBasedWrapper
+      case "object" => new ObjectBasedWrapper
+      case _        => new AppBasedWrapper
+    }
 
     private object ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
       /** We only want to generate this code when the result
@@ -943,19 +960,23 @@ class IMain(@BeanProperty val factory: ScriptEngineFactory, initialSettings: Set
        */
       val evalResult = Request.this.value match {
         case NoSymbol => ""
-        case sym      => "lazy val %s = %s".format(lineRep.resultName, originalPath(sym))
+        case sym      => "lazy val %s = { compute ; %s }".format(lineRep.resultName, originalPath(sym))
       }
       // first line evaluates object to make sure constructor is run
+      val initLine = settings.YreplWrap.value match {
+        case "app" => s"($fullAccessPath main null)"
+        case _     => fullAccessPath
+      }
       // initial "" so later code can uniformly be: + etc
       val preamble = """
       |object %s {
+      |  lazy val compute: Unit = %s
       |  %s
       |  lazy val %s: String = %s {
-      |    %s
+      |    compute
       |    (""
       """.stripMargin.format(
-        lineRep.evalName, evalResult, lineRep.printName,
-        executionWrapper, fullAccessPath
+        lineRep.evalName, initLine, evalResult, lineRep.printName, executionWrapper
       )
 
       val postamble = """

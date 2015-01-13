@@ -13,24 +13,24 @@ f: Nothing
 
 scala> f
 java.lang.Exception: Uh-oh
-  at .f(<console>:7)
-  ... 69 elided
+  at .f(<console>:6)
+  ... 42 elided
 
 scala> def f = throw new Exception("")
 f: Nothing
 
 scala> f
 java.lang.Exception:
-  at .f(<console>:7)
-  ... 69 elided
+  at .f(<console>:6)
+  ... 42 elided
 
 scala> def f = throw new Exception
 f: Nothing
 
 scala> f
 java.lang.Exception
-  at .f(<console>:7)
-  ... 69 elided
+  at .f(<console>:6)
+  ... 42 elided
 
 scala> :quit"""
 
