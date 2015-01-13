@@ -92,7 +92,7 @@ trait Imports {
    * last one imported is actually usable.
    */
   case class ComputedImports(prepend: String, append: String, access: String)
-  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper): ComputedImports = {
+  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, innermost: Request#Wrapper): ComputedImports = {
     /** Narrow down the list of requests from which imports
      *  should be taken.  Removes requests which cannot contribute
      *  useful imports for the specified set of wanted names.
@@ -128,24 +128,29 @@ trait Imports {
     val code, trailingBraces, accessPath = new StringBuilder
     val currentImps = mutable.HashSet[Name]()
 
+    // true if there are no dangling imports in the current scope of wrappers
+    var wrapped = true
+
     // add code for a new object to hold some imports
-    def addWrapper() {
+    def addWrapper(w: Request#Wrapper) {
       import nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
-      code append (wrapper.prewrap format iw)
-      trailingBraces append wrapper.postwrap
+      code append (w.prewrap format iw)
+      trailingBraces.insert(0, w.postwrap)
       accessPath append s".$iw"
       currentImps.clear()
+      wrapped = true
     }
 
-    def maybeWrap(names: Name*) = if (names exists currentImps) addWrapper()
+    def maybeWrap(names: Name*) = if (names exists currentImps) addWrapper(wrapper)
 
+    // wrap off any imports in current scope, then add code, then wrap off again
     def wrapBeforeAndAfter[T](op: => T): T = {
-      addWrapper()
-      try op finally addWrapper()
+      if (!wrapped) addWrapper(wrapper)
+      try op finally addWrapper(wrapper)
     }
 
     // loop through previous requests, adding imports for each one
-    wrapBeforeAndAfter {
+    def addImports(reqsToUse: List[ReqAndHandler]): Unit =
       for (ReqAndHandler(req, handler) <- reqsToUse) {
         handler match {
           // If the user entered an import, then just use it; add an import wrapping
@@ -156,6 +161,7 @@ trait Imports {
             maybeWrap(x.importedNames: _*)
             code append (x.member + "\n")
             currentImps ++= x.importedNames
+            wrapped = false
 
           // For other requests, import each defined name.
           // import them explicitly instead of with _, so that
@@ -167,10 +173,17 @@ trait Imports {
               maybeWrap(sym.name)
               code append s"import ${x.path}\n"
               currentImps += sym.name
+              wrapped = false
             }
         }
       }
+
+    val reqs = reqsToUse
+    if (reqs.nonEmpty) {
+      addWrapper(wrapper)
+      addImports(reqs)
     }
+    addWrapper(innermost)
 
     ComputedImports(code.toString, trailingBraces.toString, accessPath.toString)
   }
