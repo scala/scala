@@ -546,10 +546,11 @@ trait Printers extends api.Printers { self: SymbolTable =>
       import Chars._
       val decName = name.decoded
       val bslash = '\\'
+      val isDot = (x: Char) => x == '.'
       val brackets = List('[',']','(',')','{','}')
 
       def addBackquotes(s: String) =
-        if (decoded && (decName.exists(ch => brackets.contains(ch) || isWhitespace(ch)) ||
+        if (decoded && (decName.exists(ch => brackets.contains(ch) || isWhitespace(ch) || isDot(ch)) ||
           (name.isOperatorName && decName.exists(isOperatorPart) && decName.exists(isScalaLetter) && !decName.contains(bslash))))
           s"`$s`" else s
 
