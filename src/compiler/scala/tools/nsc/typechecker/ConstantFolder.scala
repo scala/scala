@@ -75,7 +75,7 @@ abstract class ConstantFolder {
     case nme.AND  => Constant(x.booleanValue & y.booleanValue)
     case nme.EQ   => Constant(x.booleanValue == y.booleanValue)
     case nme.NE   => Constant(x.booleanValue != y.booleanValue)
-    case _ => null
+    case _        => null
   }
   private def foldSubrangeOp(op: Name, x: Constant, y: Constant): Constant = op match {
     case nme.OR  => Constant(x.intValue | y.intValue)
@@ -95,14 +95,20 @@ abstract class ConstantFolder {
     case nme.MUL => Constant(x.intValue * y.intValue)
     case nme.DIV => Constant(x.intValue / y.intValue)
     case nme.MOD => Constant(x.intValue % y.intValue)
-    case _ => null
+    case _       => null
   }
   private def foldLongOp(op: Name, x: Constant, y: Constant): Constant = op match {
     case nme.OR  => Constant(x.longValue | y.longValue)
     case nme.XOR => Constant(x.longValue ^ y.longValue)
     case nme.AND => Constant(x.longValue & y.longValue)
-    case nme.LSL => Constant(x.longValue << y.longValue)
+    case nme.LSL if x.tag <= IntTag
+                 => Constant(x.intValue << y.longValue)
+    case nme.LSL => Constant(x.longValue <<  y.longValue)
+    case nme.LSR if x.tag <= IntTag
+                 => Constant(x.intValue >>> y.longValue)
     case nme.LSR => Constant(x.longValue >>> y.longValue)
+    case nme.ASR if x.tag <= IntTag
+                 => Constant(x.intValue >> y.longValue)
     case nme.ASR => Constant(x.longValue >> y.longValue)
     case nme.EQ  => Constant(x.longValue == y.longValue)
     case nme.NE  => Constant(x.longValue != y.longValue)
@@ -115,7 +121,7 @@ abstract class ConstantFolder {
     case nme.MUL => Constant(x.longValue * y.longValue)
     case nme.DIV => Constant(x.longValue / y.longValue)
     case nme.MOD => Constant(x.longValue % y.longValue)
-    case _ => null
+    case _       => null
   }
   private def foldFloatOp(op: Name, x: Constant, y: Constant): Constant = op match {
     case nme.EQ  => Constant(x.floatValue == y.floatValue)
@@ -129,7 +135,7 @@ abstract class ConstantFolder {
     case nme.MUL => Constant(x.floatValue * y.floatValue)
     case nme.DIV => Constant(x.floatValue / y.floatValue)
     case nme.MOD => Constant(x.floatValue % y.floatValue)
-    case _ => null
+    case _       => null
   }
   private def foldDoubleOp(op: Name, x: Constant, y: Constant): Constant = op match {
     case nme.EQ  => Constant(x.doubleValue == y.doubleValue)
@@ -143,7 +149,7 @@ abstract class ConstantFolder {
     case nme.MUL => Constant(x.doubleValue * y.doubleValue)
     case nme.DIV => Constant(x.doubleValue / y.doubleValue)
     case nme.MOD => Constant(x.doubleValue % y.doubleValue)
-    case _ => null
+    case _       => null
   }
 
   private def foldBinop(op: Name, x: Constant, y: Constant): Constant = {
@@ -162,7 +168,7 @@ abstract class ConstantFolder {
       case _                                        => null
     }
     catch {
-      case ex: ArithmeticException => null
+      case _: ArithmeticException => null
     }
   }
 }
