@@ -365,7 +365,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         def handleUnknown(tm: TreeMaker) = handler(tm)
       }
 
-      // used for CSE -- rewrite all unknowns to False (the most conserative option)
+      // used for CSE -- rewrite all unknowns to False (the most conservative option)
       object conservative extends TreeMakerToProp {
         def handleUnknown(tm: TreeMaker) = False
       }

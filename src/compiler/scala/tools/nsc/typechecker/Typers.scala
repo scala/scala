@@ -946,7 +946,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
       // We have lift crashing in 2.9 with an adapt failure in the pattern matcher.
-      // Here's my hypothsis why this happens. The pattern matcher defines a variable of type
+      // Here's my hypothesis why this happens. The pattern matcher defines a variable of type
       //
       //   val x: T = expr
       //

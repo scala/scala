@@ -73,7 +73,7 @@ trait ContextErrors {
   // 2) provide the type of the implicit parameter for which we got diverging expansion
   //    (pt at the point of divergence gives less information to the user)
   // Note: it is safe to delay error message generation in this case
-  // becasue we don't modify implicits' infos.
+  // because we don't modify implicits' infos.
   case class DivergentImplicitTypeError(underlyingTree: Tree, pt0: Type, sym: Symbol)
     extends TreeTypeError {
     def errMsg: String   = errMsgForPt(pt0)

@@ -19,16 +19,16 @@ import scala.tools.nsc.settings.ScalaSettings
  * Optimizations within a single method.
  *
  * unreachable code
- *   - removes instrucions of basic blocks to which no branch instruction points
+ *   - removes instructions of basic blocks to which no branch instruction points
  *   + enables eliminating some exception handlers and local variable descriptors
  *     > eliminating them is required for correctness, as explained in `removeUnreachableCode`
  *
  * empty exception handlers
  *   - removes exception handlers whose try block is empty
  *   + eliminating a handler where the try block is empty and reachable will turn the catch block
- *     unreachble. in this case "unreachable code" is invoked recursively until reaching a fixpiont.
+ *     unreachable. in this case "unreachable code" is invoked recursively until reaching a fixpoint.
  *     > for try blocks that are unreachable, "unreachable code" removes also the instructions of the
- *       catch block, and the recrusive invocation is not necessary.
+ *       catch block, and the recursive invocation is not necessary.
  *
  * simplify jumps
  *   - various simplifications, see doc domments of individual optimizations
@@ -52,7 +52,7 @@ class LocalOpt(settings: ScalaSettings) {
    * cleanups to the bytecode.
    *
    * @param clazz The class whose methods are optimized
-   * @return      `true` if unreachable code was elminated in some method, `false` otherwise.
+   * @return      `true` if unreachable code was eliminated in some method, `false` otherwise.
    */
   def methodOptimizations(clazz: ClassNode): Boolean = {
     !settings.YoptNone && clazz.methods.asScala.foldLeft(false) {
@@ -66,7 +66,7 @@ class LocalOpt(settings: ScalaSettings) {
    * We rely on dead code elimination provided by the ASM framework, as described in the ASM User
    * Guide (http://asm.ow2.org/index.html), Section 8.2.1. It runs a data flow analysis, which only
    * computes Frame information for reachable instructions. Instructions for which no Frame data is
-   * available after the analyis are unreachable.
+   * available after the analysis are unreachable.
    *
    * Also simplifies branching instructions, removes unused local variable descriptors, empty
    * exception handlers, unnecessary label declarations and empty line number nodes.
@@ -240,7 +240,7 @@ class LocalOpt(settings: ScalaSettings) {
   }
 
   /**
-   * The number of local varialbe slots used for parameters and for the `this` reference.
+   * The number of local variable slots used for parameters and for the `this` reference.
    */
   private def parametersSize(method: MethodNode): Int = {
     // Double / long fields occupy two slots, so we sum up the sizes. Since getSize returns 0 for
@@ -322,7 +322,7 @@ class LocalOpt(settings: ScalaSettings) {
    * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
    * framework only computes these values during bytecode generation.
    *
-   * Sicne there's currently no better way, we run a bytecode generator on the method and extract
+   * Since there's currently no better way, we run a bytecode generator on the method and extract
    * the computed values. This required changes to the ASM codebase:
    *   - the [[MethodWriter]] class was made public
    *   - accessors for maxLocals / maxStack were added to the MethodWriter class
@@ -345,7 +345,7 @@ class LocalOpt(settings: ScalaSettings) {
    * Removes LineNumberNodes that don't describe any executable instructions.
    *
    * This method expects (and asserts) that the `start` label of each LineNumberNode is the
-   * lexically preceeding label declaration.
+   * lexically preceding label declaration.
    */
   def removeEmptyLineNumbers(method: MethodNode): Boolean = {
     def isEmpty(node: AbstractInsnNode): Boolean = node.getNext match {
@@ -510,7 +510,7 @@ class LocalOpt(settings: ScalaSettings) {
    *      CondJump l;         [nops, no labels];  GOTO m;  [nops];  l: [...]
    *   => NegatedCondJump m;  [nops, no labels];           [nops];  l: [...]
    *
-   * Note that no label definitions are allowed in the first [nops] section. Otherwsie, there could
+   * Note that no label definitions are allowed in the first [nops] section. Otherwise, there could
    * be some other jump to the GOTO, and eliminating it would change behavior.
    *
    * For technical reasons, we cannot remove the GOTO here (*).Instead this method returns an Option
@@ -542,7 +542,7 @@ class LocalOpt(settings: ScalaSettings) {
    *   => xRETURN/ATHROW;    [any ops];  l: xRETURN/ATHROW
    *
    * inlining is only done if the GOTO instruction is not part of a try block, otherwise the
-   * rewrite might change the behavior. For xRETURN, the reason is that return insructions may throw
+   * rewrite might change the behavior. For xRETURN, the reason is that return instructions may throw
    * an IllegalMonitorStateException, as described here:
    *   http://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html#jvms-6.5.return
    */

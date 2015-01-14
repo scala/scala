@@ -4,7 +4,7 @@ package io
 import java.text.MessageFormat
 
 /** private[scala] because this is not functionality we should be providing
- *  in the standard library, at least not in this idiosyncractic form.
+ *  in the standard library, at least not in this idiosyncratic form.
  *  Factored into trait because it is better code structure regardless.
  */
 private[scala] trait StdIn {

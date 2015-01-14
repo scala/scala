@@ -609,7 +609,7 @@ case class If[T](c: Term[Boolean],
 
 There are terms to represent numeric literals, incrementation, a zero
 test, and a conditional. Every term carries as a type parameter the
-type of the expression it representes (either `Int` or `Boolean`).
+type of the expression it represents (either `Int` or `Boolean`).
 
 A type-safe evaluator for such terms can be written as follows.
 

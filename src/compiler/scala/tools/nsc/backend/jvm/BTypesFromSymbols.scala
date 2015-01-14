@@ -10,7 +10,7 @@ import scala.tools.asm
 
 /**
  * This class mainly contains the method classBTypeFromSymbol, which extracts the necessary
- * information from a symbol and its type to create the correpsonding ClassBType. It requires
+ * information from a symbol and its type to create the corresponding ClassBType. It requires
  * access to the compiler (global parameter).
  *
  * The mixin CoreBTypes defines core BTypes that are used in the backend. Building these BTypes

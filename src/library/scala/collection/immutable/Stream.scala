@@ -944,7 +944,7 @@ self =>
    *
    * @param p the test predicate.
    * @return A new `Stream` representing the results of applying `p` to the
-   * oringal `Stream`.
+   * original `Stream`.
    *
    * @example {{{
    * // Assume we have a Stream that takes the first 20 natural numbers

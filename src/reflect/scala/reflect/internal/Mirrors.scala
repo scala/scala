@@ -277,7 +277,7 @@ trait Mirrors extends api.Mirrors {
 
     // TODO - having these as objects means they elude the attempt to
     // add synchronization in SynchronizedSymbols.  But we should either
-    // flip on object overrides or find some other accomodation, because
+    // flip on object overrides or find some other accommodation, because
     // lazy vals are unnecessarily expensive relative to objects and it
     // is very beneficial for a handful of bootstrap symbols to have
     // first class identities

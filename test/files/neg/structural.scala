@@ -11,13 +11,13 @@ object Test extends App {
     def f2[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: B): Object; val x: B }) = x.m[Tata](x.x) //fail
     def f3[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: C): Object; val x: C }) = x.m[Tata](x.x) //fail
     def f4[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: D): Object; val x: D }) = x.m[Tata](x.x) //fail
-    def f5[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: E): Object; val x: Tata }) = x.m[Tata](x.x) //suceed
+    def f5[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: E): Object; val x: Tata }) = x.m[Tata](x.x) //succeeds
 
-    def f6[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: Object): A }) = x.m[Tata](null) //suceed
-    def f7[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: Object): B }) = x.m[Tata](null) //suceed
-    def f8[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: Object): C }) = x.m[Tata](null) //suceed
+    def f6[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: Object): A }) = x.m[Tata](null) //succeeds
+    def f7[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: Object): B }) = x.m[Tata](null) //succeeds
+    def f8[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: Object): C }) = x.m[Tata](null) //succeeds
     def f9[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: Object): D }) = x.m[Tata](null) //fail
-    def f0[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: Object): E }) = x.m[Tata](null) //suceed
+    def f0[C <: Object](x: Object{ type D <: Object; def m[E >: Null <: Object](x: Object): E }) = x.m[Tata](null) //succeeds
 
   }
 

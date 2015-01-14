@@ -43,8 +43,8 @@ class TraversableOnceTest {
   def testReturnTheFirstMatch() = {
     val d = List(1, 2, 3, 4, 5, 6, 7, 8)
     def f(x: Int) = x % 3;
-    assert(d.maxBy(f) == 2, "If multiple elements evaluted to the largest value, maxBy should return the first one.")
-    assert(d.minBy(f) == 3, "If multiple elements evaluted to the largest value, minBy should return the first one.")
+    assert(d.maxBy(f) == 2, "If multiple elements evaluated to the largest value, maxBy should return the first one.")
+    assert(d.minBy(f) == 3, "If multiple elements evaluated to the largest value, minBy should return the first one.")
   }
 
   // Make sure it evaluates f no more than list.length times.
@@ -56,7 +56,7 @@ class TraversableOnceTest {
       evaluatedCountOfMaxBy += 1
       x * 10
     })
-    assert(evaluatedCountOfMaxBy == list.length, s"maxBy: should evaluate f only ${list.length} times, but it evaluted $evaluatedCountOfMaxBy times.")
+    assert(evaluatedCountOfMaxBy == list.length, s"maxBy: should evaluate f only ${list.length} times, but it evaluated $evaluatedCountOfMaxBy times.")
 
     var evaluatedCountOfMinBy = 0
 
@@ -64,7 +64,7 @@ class TraversableOnceTest {
       evaluatedCountOfMinBy += 1
       x * 10
     })
-    assert(evaluatedCountOfMinBy == list.length, s"minBy: should evaluate f only ${list.length} times, but it evaluted $evaluatedCountOfMinBy times.")
+    assert(evaluatedCountOfMinBy == list.length, s"minBy: should evaluate f only ${list.length} times, but it evaluated $evaluatedCountOfMinBy times.")
   }
 
 }

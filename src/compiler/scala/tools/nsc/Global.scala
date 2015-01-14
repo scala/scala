@@ -234,7 +234,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
 
   /** Called by ScalaDocAnalyzer when a doc comment has been parsed. */
   def signalParsedDocComment(comment: String, pos: Position) = {
-    // TODO: this is all very borken (only works for scaladoc comments, not regular ones)
+    // TODO: this is all very broken (only works for scaladoc comments, not regular ones)
     //       --> add hooks to parser and refactor Interactive global to handle comments directly
     //       in any case don't use reporter for parser hooks
     reporter.comment(pos, comment)
@@ -1461,7 +1461,7 @@ class Global(var currentSettings: Settings, var reporter: Reporter)
     }
 
 
-    /** Caching member symbols that are def-s in Defintions because they might change from Run to Run. */
+    /** Caching member symbols that are def-s in Definitions because they might change from Run to Run. */
     val runDefinitions: definitions.RunDefinitions = new definitions.RunDefinitions
 
     /** Compile list of source files,

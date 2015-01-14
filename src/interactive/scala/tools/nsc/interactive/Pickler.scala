@@ -6,7 +6,7 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 /** An abstract class for writing and reading Scala objects to and
- *  from a legible representation. The presesentation follows the following grammar:
+ *  from a legible representation. The representation follows the following grammar:
  *  {{{
  *  Pickled = `true` | `false` | `null` | NumericLit | StringLit |
  *            Labelled | Pickled `,` Pickled
@@ -85,7 +85,7 @@ abstract class Pickler[T] {
 
 object Pickler {
   /** A base class representing unpickler result. It has two subclasses:
-   *  `UnpickleSucess` for successful unpicklings and `UnpickleFailure` for failures,
+   *  `UnpickleSuccess` for successful unpicklings and `UnpickleFailure` for failures,
    *  where a value of the given type `T` could not be unpickled from input.
    *  @tparam  T the type of unpickled values in case of success.
    */
@@ -154,7 +154,7 @@ object Pickler {
    */
   def pkl[T: Pickler] = implicitly[Pickler[T]]
 
-  /** A class represenenting `~`-pairs */
+  /** A class representing `~`-pairs */
   case class ~[+S, +T](fst: S, snd: T)
 
   /** A wrapper class to be able to use `~` s an infix method */

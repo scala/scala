@@ -47,7 +47,7 @@ trait Enclosures {
 
   /** Tries to guess a position for the enclosing application.
    *  But that is simple, right? Just dereference `pos` of `macroApplication`? Not really.
-   *  If we're in a synthetic macro expansion (no positions), we must do our best to infer the position of something that triggerd this expansion.
+   *  If we're in a synthetic macro expansion (no positions), we must do our best to infer the position of something that triggered this expansion.
    *  Surprisingly, quite often we can do this by navigation the `enclosingMacros` stack.
    */
   def enclosingPosition: Position

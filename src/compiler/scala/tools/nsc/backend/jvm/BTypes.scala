@@ -11,7 +11,7 @@ import asm.Opcodes
 
 /**
  * The BTypes component defines The BType class hierarchy. BTypes encapsulates all type information
- * that is required after building the ASM nodes. This includes optimizations, geneartion of
+ * that is required after building the ASM nodes. This includes optimizations, generation of
  * InnerClass attributes and generation of stack map frames.
  *
  * This representation is immutable and independent of the compiler data structures, hence it can
@@ -49,7 +49,7 @@ abstract class BTypes {
   import coreBTypes._
 
   /**
-   * A BType is either a primitve type, a ClassBType, an ArrayBType of one of these, or a MethodType
+   * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
    * referring to BTypes.
    */
   /*sealed*/ trait BType { // Not sealed for now due to SI-8546
@@ -369,7 +369,7 @@ abstract class BTypes {
    *
    *  - Initializer block (JLS 8.6 / 8.7): block of statements in a java class
    *    - static initializer: executed before constructor body
-   *    - instance initializer: exectued when class is initialized (instance creation, static
+   *    - instance initializer: executed when class is initialized (instance creation, static
    *      field access, ...)
    *
    *  - A static nested class can be defined as
@@ -540,7 +540,7 @@ abstract class BTypes {
    *
    *   class A {
    *     void f()        { class B {} }
-   *     static void g() { calss C {} }
+   *     static void g() { class C {} }
    *   }
    *
    * B has an outer pointer, C doesn't. Both B and C are NOT marked static in the InnerClass table.
@@ -820,7 +820,7 @@ abstract class BTypes {
    *
    * (*) Note that the STATIC flag in ClassInfo.flags, obtained through javaFlags(classSym), is not
    * correct for the InnerClass entry, see javaFlags. The static flag in the InnerClass describes
-   * a source-level propety: if the class is in a static context (does not have an outer pointer).
+   * a source-level property: if the class is in a static context (does not have an outer pointer).
    * This is checked when building the NestedInfo.
    */
   case class NestedInfo(enclosingClass: ClassBType,

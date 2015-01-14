@@ -406,7 +406,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
           // create a new HashSet1 with the hash we already know
           new HashSet1(ks1.head, hash)
         case _ =>
-          // create a new HashSetCollison with the hash we already know and the new keys
+          // create a new HashSetCollision with the hash we already know and the new keys
           new HashSetCollision1(hash, ks1)
       }
     }
@@ -426,7 +426,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
           // create a new HashSet1 with the hash we already know
           new HashSet1(ks1.head, hash)
         case _ =>
-          // create a new HashSetCollison with the hash we already know and the new keys
+          // create a new HashSetCollision with the hash we already know and the new keys
           new HashSetCollision1(hash, ks1)
       }
     }
@@ -445,7 +445,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
             // Should only have HSC1 if size > 1
             this
           case _ =>
-            // create a new HashSetCollison with the hash we already know and the new keys
+            // create a new HashSetCollision with the hash we already know and the new keys
             new HashSetCollision1(hash, ks1)
         }
       } else this

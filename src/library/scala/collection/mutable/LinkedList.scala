@@ -76,7 +76,7 @@ import generic._
   *  }}}
   */
 @SerialVersionUID(-7308240733518833071L)
-@deprecated("Low-level linked lists are deprecated due to idiosyncracies in interface and incomplete features.", "2.11.0")
+@deprecated("Low-level linked lists are deprecated due to idiosyncrasies in interface and incomplete features.", "2.11.0")
 class LinkedList[A]() extends AbstractSeq[A]
                          with LinearSeq[A]
                          with GenericTraversableTemplate[A, LinkedList]

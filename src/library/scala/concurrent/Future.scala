@@ -485,7 +485,7 @@ object Future {
   *  The result becomes available once the asynchronous computation is completed.
   *
   *  @tparam T       the type of the result
-  *  @param body     the asychronous computation
+  *  @param body     the asynchronous computation
   *  @param executor  the execution context on which the future is run
   *  @return         the `Future` holding the result of the computation
   */

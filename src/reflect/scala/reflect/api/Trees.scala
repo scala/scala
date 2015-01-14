@@ -158,7 +158,7 @@ trait Trees { self: Universe =>
     /** Do all parts of this tree satisfy predicate `p`? */
     def forAll(p: Tree => Boolean): Boolean
 
-    /** Tests whether two trees are structurall equal.
+    /** Tests whether two trees are structurally equal.
      *  Note that `==` on trees is reference equality.
      */
     def equalsStructure(that : Tree): Boolean

@@ -430,7 +430,7 @@ abstract class Erasure extends AddInterfaces
      *  a name clash. The present method guards against these name clashes.
      *
      *  @param  member   The original member
-     *  @param  other    The overidden symbol for which the bridge was generated
+     *  @param  other    The overridden symbol for which the bridge was generated
      *  @param  bridge   The bridge
      */
     def checkBridgeOverrides(member: Symbol, other: Symbol, bridge: Symbol): Seq[(Position, String)] = {
@@ -1153,7 +1153,7 @@ abstract class Erasure extends AddInterfaces
       }
     }
 
-    /** The main transform function: Pretransfom the tree, and then
+    /** The main transform function: Pretransform the tree, and then
      *  re-type it at phase erasure.next.
      */
     override def transform(tree: Tree): Tree = {

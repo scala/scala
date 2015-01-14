@@ -39,7 +39,7 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
      *  Reasons for that differ from artifact to artifact. In some cases it's quite bad (e.g. types use a number
      *  of non-concurrent compiler caches, so we need to serialize certain operations on types in order to make
      *  sure that things stay deterministic). However, in case of symbols there's hope, because it's only during
-     *  initializaton that symbols are thread-unsafe. After everything's set up, symbols become immutable
+     *  initialization that symbols are thread-unsafe. After everything's set up, symbols become immutable
      *  (sans a few deterministic caches that can be populated simultaneously by multiple threads) and therefore thread-safe.
      *
      *  Note that by saying "symbols become immutable" I mean literally that. In a very common case of PackageClassSymbol's,
@@ -102,10 +102,10 @@ private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: Symb
      *
      *  Just a volatile var is fine, because:
      *    1) Status can only be changed in a single-threaded fashion (this is enforced by gilSynchronized
-     *       that effecively guards `Symbol.initialize`), which means that there can't be update conflicts.
+     *       that effectively guards `Symbol.initialize`), which means that there can't be update conflicts.
      *    2) If someone reads a stale value of status, then the worst thing that might happen is that this someone
-     *       is going to spuriously call `initialize`, which is either a gil-protected operation (if the symbol isn't inited yet)
-     *       or a no-op (if the symbol is already inited), and that is fine in both cases.
+     *       is going to spuriously call `initialize`, which is either a gil-protected operation (if the symbol isn't initialized yet)
+     *       or a no-op (if the symbol is already initialized), and that is fine in both cases.
      *
      *  upd. It looks like we also need to keep track of a mask of initialized flags to make sure
      *  that normal symbol initialization routines don't trigger auto-init in Symbol.flags-related routines (e.g. Symbol.getFlag).

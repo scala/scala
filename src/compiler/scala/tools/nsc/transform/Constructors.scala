@@ -535,7 +535,7 @@ abstract class Constructors extends Statics with Transform with ast.TreeDSL {
        * whether `sym` denotes a param-accessor (ie a field) that fulfills all of:
        *   (a) has stationary value, ie the same value provided via the corresponding ctor-arg; and
        *   (b) isn't subject to specialization. We might be processing statements for:
-       *         (b.1) the constructur in the generic   (super-)class; or
+       *         (b.1) the constructor in the generic   (super-)class; or
        *         (b.2) the constructor in the specialized (sub-)class.
        *   (c) isn't part of a DelayedInit subclass.
        */

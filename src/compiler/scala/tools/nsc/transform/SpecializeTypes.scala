@@ -1291,7 +1291,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *     // even in the specialized variant, the local X class
    *     // doesn't extend Parent$mcI$sp, since its symbol has
    *     // been created after specialization and was not seen
-   *     // by specialzation's info transformer.
+   *     // by specialization's info transformer.
    *     ...
    *   }
    * }

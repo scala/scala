@@ -144,7 +144,7 @@ trait BaseTypeSeqs {
         "\n --- because ---\n"+msg)
   }
 
-  /** A merker object for a base type sequence that's no yet computed.
+  /** A marker object for a base type sequence that's no yet computed.
    *  used to catch inheritance cycles
    */
   val undetBaseTypeSeq: BaseTypeSeq = newBaseTypeSeq(List(), Array())
@@ -152,7 +152,7 @@ trait BaseTypeSeqs {
   /** Create a base type sequence consisting of a single type */
   def baseTypeSingletonSeq(tp: Type): BaseTypeSeq = newBaseTypeSeq(List(), Array(tp))
 
-  /** Create the base type sequence of a compound type wuth given tp.parents */
+  /** Create the base type sequence of a compound type with given tp.parents */
   def compoundBaseTypeSeq(tp: Type): BaseTypeSeq = {
     val tsym = tp.typeSymbol
     val parents = tp.parents
