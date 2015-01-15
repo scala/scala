@@ -687,7 +687,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
           null
         else {
           val outerName = javaName(innerSym.rawowner)
-          if (isTopLevelModule(innerSym.rawowner)) "" + nme.stripModuleSuffix(newTermName(outerName))
+          if (isTopLevelModule(innerSym.rawowner)) "" + newTermName(outerName).dropModule
           else outerName
         }
       }
@@ -2024,7 +2024,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
                 seen ::= LocVarEntry(lv, start, end)
               case _ =>
                 // TODO SI-6049 track down the cause for these.
-                debugwarn(s"$iPos: Visited SCOPE_EXIT before visiting corresponding SCOPE_ENTER. SI-6191")
+                devWarning(s"$iPos: Visited SCOPE_EXIT before visiting corresponding SCOPE_ENTER. SI-6191")
             }
           }
 
@@ -2394,7 +2394,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
                 // SI-6102: Determine whether eliding this JUMP results in an empty range being covered by some EH.
                 // If so, emit a NOP in place of the elided JUMP, to avoid "java.lang.ClassFormatError: Illegal exception table range"
               else if (newNormal.isJumpOnly(b) && m.exh.exists(eh => eh.covers(b))) {
-                debugwarn("Had a jump only block that wasn't collapsed")
+                devWarning("Had a jump only block that wasn't collapsed")
                 emit(asm.Opcodes.NOP)
               }
 
@@ -2853,8 +2853,8 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       var fieldList = List[String]()
 
       for (f <- clasz.fields if f.symbol.hasGetter;
-	         g = f.symbol.getter(clasz.symbol);
-	         s = f.symbol.setter(clasz.symbol)
+	         g = f.symbol.getterIn(clasz.symbol);
+	         s = f.symbol.setterIn(clasz.symbol)
            if g.isPublic && !(f.symbol.name startsWith "$")
           ) {
              // inserting $outer breaks the bean
@@ -3106,13 +3106,13 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         val (remappings, cycles) = detour partition {case (source, target) => source != target}
         for ((source, target) <- remappings) {
 		   debuglog(s"Will elide jump only block $source because it can be jumped around to get to $target.")
-		   if (m.startBlock == source) debugwarn("startBlock should have been re-wired by now")
+		   if (m.startBlock == source) devWarning("startBlock should have been re-wired by now")
         }
         val sources = remappings.keySet
         val targets = remappings.values.toSet
         val intersection = sources intersect targets
 
-        if (intersection.nonEmpty) debugwarn(s"contradiction: we seem to have some source and target overlap in blocks ${intersection.mkString}. Map was ${detour.mkString}")
+        if (intersection.nonEmpty) devWarning(s"contradiction: we seem to have some source and target overlap in blocks ${intersection.mkString}. Map was ${detour.mkString}")
 
         for ((source, _) <- cycles) {
           debuglog(s"Block $source is in a do-nothing infinite loop. Did the user write 'while(true){}'?")

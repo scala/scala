@@ -8,6 +8,7 @@ package transform
 
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.util.ListOfNil
 import symtab.Flags._
 
 /** This phase converts classes with parameters into Java-like classes with

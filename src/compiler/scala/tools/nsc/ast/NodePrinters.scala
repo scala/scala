@@ -9,6 +9,7 @@ package ast
 import scala.compat.Platform.EOL
 import symtab.Flags._
 import scala.language.postfixOps
+import scala.reflect.internal.util.ListOfNil
 
 /** The object `nodePrinter` converts the internal tree
  *  representation to a string.

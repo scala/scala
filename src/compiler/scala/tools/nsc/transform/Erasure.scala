@@ -1036,7 +1036,7 @@ abstract class Erasure extends AddInterfaces
                 //    See SI-5568.
                 tree setSymbol Object_getClass
               } else {
-                debugwarn(s"The symbol '${fn.symbol}' was interecepted but didn't match any cases, that means the intercepted methods set doesn't match the code")
+                devWarning(s"The symbol '${fn.symbol}' was interecepted but didn't match any cases, that means the intercepted methods set doesn't match the code")
                 tree
               }
             } else qual match {

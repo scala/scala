@@ -301,8 +301,8 @@ abstract class TreeCheckers extends Analyzer {
                   checkSym(tree)
                   /* XXX: lots of syms show up here with accessed == NoSymbol. */
                   if (accessed != NoSymbol) {
-                    val agetter = accessed.getter(sym.owner)
-                    val asetter = accessed.setter(sym.owner)
+                    val agetter = accessed.getterIn(sym.owner)
+                    val asetter = accessed.setterIn(sym.owner)
 
                     assertFn(agetter == sym || asetter == sym,
                       sym + " is getter or setter, but accessed sym " + accessed + " shows " + agetter + " and " + asetter
@@ -312,7 +312,7 @@ abstract class TreeCheckers extends Analyzer {
             }
           case ValDef(_, _, _, _) =>
             if (sym.hasGetter && !sym.isOuterField && !sym.isOuterAccessor) {
-              assertFn(sym.getter(sym.owner) != NoSymbol, ownerstr(sym) + " has getter but cannot be found. " + sym.ownerChain)
+              assertFn(sym.getterIn(sym.owner) != NoSymbol, ownerstr(sym) + " has getter but cannot be found. " + sym.ownerChain)
             }
           case Apply(fn, args) =>
             if (args exists (_ == EmptyTree))

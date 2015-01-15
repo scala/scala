@@ -142,7 +142,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       object ConstantArg {
         def enumToSymbol(enum: Enum[_]): Symbol = {
           val staticPartOfEnum = classToScala(enum.getClass).companionSymbol
-          staticPartOfEnum.info.declaration(enum.name: TermName)
+          staticPartOfEnum.info.declaration(TermName(enum.name))
         }
 
         def unapply(schemaAndValue: (jClass[_], Any)): Option[Any] = schemaAndValue match {
@@ -172,7 +172,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       // currently I'm simply sorting the methods to guarantee stability of the output
       override lazy val assocs: List[(Name, ClassfileAnnotArg)] = (
         jann.annotationType.getDeclaredMethods.sortBy(_.getName).toList map (m =>
-          (m.getName: TermName) -> toAnnotArg(m.getReturnType -> m.invoke(jann))
+          TermName(m.getName) -> toAnnotArg(m.getReturnType -> m.invoke(jann))
         )
       )
     }
@@ -937,7 +937,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val ownerModule: ModuleSymbol =
         if (split > 0) packageNameToScala(fullname take split) else this.RootPackage
       val owner = ownerModule.moduleClass
-      val name = (fullname: TermName) drop split + 1
+      val name = TermName(fullname) drop split + 1
       val opkg = owner.info decl name
       if (opkg.hasPackageFlag)
         opkg.asModule
@@ -988,7 +988,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
               if (name.startsWith(nme.NAME_JOIN_STRING)) coreLookup(name drop 1) else NoSymbol
             }
           if (nme.isModuleName(simpleName))
-            coreLookup(nme.stripModuleSuffix(simpleName).toTermName) map (_.moduleClass)
+            coreLookup(simpleName.dropModule.toTermName) map (_.moduleClass)
           else
             coreLookup(simpleName)
         }

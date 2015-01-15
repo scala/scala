@@ -718,7 +718,7 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
 
           // Check the remainder for invalid absoverride.
           for (member <- rest ; if (member.isAbstractOverride && member.isIncompleteIn(clazz))) {
-            val other = member.superSymbol(clazz)
+            val other = member.superSymbolIn(clazz)
             val explanation =
               if (other != NoSymbol) " and overrides incomplete superclass member " + infoString(other)
               else ", but no concrete implementation could be found in a base class"
@@ -1684,9 +1684,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
               case _ =>
             }
             if (skipBounds) {
-              tree.tpe = tree.tpe.map {
+              tree.setType(tree.tpe.map {
                 _.filterAnnotations(_.symbol != UncheckedBoundsClass)
-              }
+              })
             }
 
             tree
