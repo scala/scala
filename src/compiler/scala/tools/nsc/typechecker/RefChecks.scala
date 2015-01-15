@@ -1684,9 +1684,9 @@ abstract class RefChecks extends InfoTransform with scala.reflect.internal.trans
               case _ =>
             }
             if (skipBounds) {
-              tree.tpe = tree.tpe.map {
+              tree.setType(tree.tpe.map {
                 _.filterAnnotations(_.symbol != UncheckedBoundsClass)
-              }
+              })
             }
 
             tree

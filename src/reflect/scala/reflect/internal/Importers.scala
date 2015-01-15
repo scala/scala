@@ -301,7 +301,7 @@ trait Importers { to: SymbolTable =>
           case (their: from.TypeTree, my: to.TypeTree) =>
             if (their.wasEmpty) my.defineType(importType(their.tpe)) else my.setType(importType(their.tpe))
           case (_, _) =>
-            my.tpe = importType(their.tpe)
+            my.setType(importType(their.tpe))
         }
       }
     }
