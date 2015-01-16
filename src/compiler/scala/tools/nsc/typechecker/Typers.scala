@@ -2519,7 +2519,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val default = methodSym newValueParameter (newTermName("default"), tree.pos.focus, SYNTHETIC) setInfo functionType(List(A1.tpe), B1.tpe)
 
         val paramSyms = List(x, default)
-        methodSym setInfo polyType(List(A1, B1), MethodType(paramSyms, B1.tpe))
+        methodSym setInfo genPolyType(List(A1, B1), MethodType(paramSyms, B1.tpe))
 
         val methodBodyTyper = newTyper(context.makeNewScope(context.tree, methodSym))
         if (!paramSynthetic) methodBodyTyper.context.scope enter x
