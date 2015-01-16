@@ -151,7 +151,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
 
     def getter: Symbol = getterIn(owner)
-    def setter: Symbol = setter(owner)
+    def setter: Symbol = setterIn(owner)
 
     def companion: Symbol = {
       if (isModule && !hasPackageFlag) companionSymbol
@@ -2837,7 +2837,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         }
         else if (hasGetter) {
           getterIn(owner).expandName(base)
-          setter(owner).expandName(base)
+          setterIn(owner).expandName(base)
         }
         name = nme.expandedName(name.toTermName, base)
       }

@@ -448,7 +448,7 @@ trait MethodSynthesis {
       def flagsMask  = SetterFlags
       def flagsExtra = ACCESSOR
 
-      override def derivedSym = basisSym.setter(enclClass)
+      override def derivedSym = basisSym.setterIn(enclClass)
     }
     case class Field(tree: ValDef) extends DerivedFromValDef {
       def name       = tree.localName

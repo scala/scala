@@ -302,7 +302,7 @@ abstract class TreeCheckers extends Analyzer {
                   /* XXX: lots of syms show up here with accessed == NoSymbol. */
                   if (accessed != NoSymbol) {
                     val agetter = accessed.getterIn(sym.owner)
-                    val asetter = accessed.setter(sym.owner)
+                    val asetter = accessed.setterIn(sym.owner)
 
                     assertFn(agetter == sym || asetter == sym,
                       sym + " is getter or setter, but accessed sym " + accessed + " shows " + agetter + " and " + asetter

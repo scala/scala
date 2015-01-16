@@ -733,12 +733,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               debuglog("override case field accessor %s -> %s".format(m.name.decode, cfaGetter.name.decode))
             }
 
-            if (specVal.isVariable && m.setter(clazz) != NoSymbol) {
+            if (specVal.isVariable && m.setterIn(clazz) != NoSymbol) {
               val specSetter = mkAccessor(specVal, specGetter.setterName)
                 .resetFlag(STABLE)
               specSetter.setInfo(MethodType(specSetter.newSyntheticValueParams(List(specVal.info)),
                                             UnitTpe))
-              val origSetter = overrideIn(sClass, m.setter(clazz))
+              val origSetter = overrideIn(sClass, m.setterIn(clazz))
               info(origSetter) = Forward(specSetter)
               enterMember(specSetter)
               enterMember(origSetter)
