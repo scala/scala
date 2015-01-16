@@ -958,7 +958,7 @@ trait Contexts { self: Analyzer =>
      *  it selected from a prefix with `pkg` as its type symbol?
      */
     def isInPackageObject(sym: Symbol, pkg: Symbol): Boolean =
-      pkg.isPackage && sym.owner != pkg
+      pkg.hasPackageFlag && sym.owner != pkg
 
     def isNameInScope(name: Name) = lookupSymbol(name, _ => true).isSuccess
 

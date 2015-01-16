@@ -154,7 +154,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def setter: Symbol = setter(owner)
 
     def companion: Symbol = {
-      if (isModule && !isPackage) companionSymbol
+      if (isModule && !hasPackageFlag) companionSymbol
       else if (isModuleClass && !isPackageClass) sourceModule.companionSymbol
       else if (isClass && !isModuleClass && !isPackageClass) companionSymbol
       else NoSymbol
@@ -813,7 +813,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The package object symbol corresponding to this package or package class symbol, or NoSymbol otherwise */
     def packageObject: Symbol =
       if (isPackageClass) tpe.packageObject
-      else if (isPackage) moduleClass.packageObject
+      else if (hasPackageFlag) moduleClass.packageObject
       else NoSymbol
 
     /** If this is a constructor, its owner: otherwise this.
@@ -2522,7 +2522,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isInstanceOf[FreeTermSymbol]) ("free term", "free term", "FTE")
         else if (isInstanceOf[FreeTypeSymbol]) ("free type", "free type", "FTY")
         else if (isPackageClass) ("package class", "package", "PKC")
-        else if (isPackage) ("package", "package", "PK")
+        else if (hasPackageFlag) ("package", "package", "PK")
         else if (isPackageObject) ("package object", "package", "PKO")
         else if (isPackageObjectClass) ("package object class", "package", "PKOC")
         else if (isAnonymousClass) ("anonymous class", "anonymous class", "AC")
