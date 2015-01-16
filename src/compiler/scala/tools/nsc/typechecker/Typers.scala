@@ -5268,7 +5268,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def runTyper(): Tree = {
         if (retypingOk) {
           tree.tpe = null
-          if (tree.hasSymbol) tree.symbol = NoSymbol
+          if (tree.hasSymbolField) tree.symbol = NoSymbol
         }
         val alreadyTyped = tree.tpe ne null
         val shouldPrint = !alreadyTyped && !phase.erasedTypes
