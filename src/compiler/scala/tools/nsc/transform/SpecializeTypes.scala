@@ -894,7 +894,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
 
       val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
-      owner.info.decls.enter(specMember)
       typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
       wasSpecializedForTypeVars(specMember) ++= spec collect { case (s, tp) if s.tpe == tp => s }
 
