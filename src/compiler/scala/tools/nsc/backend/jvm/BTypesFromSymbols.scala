@@ -7,7 +7,9 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
-import opt.CodeRepository
+import opt.ByteCodeRepository
+import scala.tools.asm.tree.ClassNode
+import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository.Source
 import BTypes.InternalName
 
 /**
@@ -34,15 +36,13 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   val coreBTypes = new CoreBTypesProxy[this.type](this)
   import coreBTypes._
 
-  val codeRepository = new CodeRepository(global.classPath)
+  val byteCodeRepository = new ByteCodeRepository(global.classPath, recordPerRunCache(collection.concurrent.TrieMap.empty[InternalName, (ClassNode, Source)]))
 
   final def initializeCoreBTypes(): Unit = {
     coreBTypes.setBTypes(new CoreBTypes[this.type](this))
   }
 
-  val classBTypeFromInternalName = {
-    global.perRunCaches.recordCache(collection.concurrent.TrieMap.empty[InternalName, ClassBType])
-  }
+  def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T = perRunCaches.recordCache(cache)
 
   // helpers that need access to global.
   // TODO @lry create a separate component, they don't belong to BTypesFromSymbols

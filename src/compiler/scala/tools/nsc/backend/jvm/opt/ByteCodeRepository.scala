@@ -13,22 +13,32 @@ import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.ClassFileLookup
 import OptimizerReporting._
+import ByteCodeRepository._
+import BTypes.InternalName
 
-class CodeRepository(val classPath: ClassFileLookup[AbstractFile]) {
-  import BTypes.InternalName
-
+/**
+ * The ByteCodeRepository provides utilities to read the bytecode of classfiles from the compilation
+ * classpath. Parsed classes are cached in the `classes` map.
+ *
+ * @param classPath The compiler classpath where classfiles are searched and read from.
+ * @param classes   Cache for parsed ClassNodes. Also stores the source of the bytecode:
+ *                  [[Classfile]] if read from `classPath`, [[CompilationUnit]] if the bytecode
+ *                  corresponds to a class being compiled.
+ */
+class ByteCodeRepository(val classPath: ClassFileLookup[AbstractFile], val classes: collection.concurrent.Map[InternalName, (ClassNode, Source)]) {
   /**
-   * Cache for parsed ClassNodes.
+   * The class node and source for an internal name. If the class node is not yet available, it is
+   * parsed from the classfile on the compile classpath.
    */
-  val classes: collection.concurrent.Map[InternalName, ClassNode] = collection.concurrent.TrieMap.empty[InternalName, ClassNode]
+  def classNodeAndSource(internalName: InternalName): (ClassNode, Source) = {
+    classes.getOrElseUpdate(internalName, (parseClass(internalName), Classfile))
+  }
 
   /**
    * The class node for an internal name. If the class node is not yet available, it is parsed from
    * the classfile on the compile classpath.
    */
-  def classNode(internalName: InternalName): ClassNode = {
-    classes.getOrElseUpdate(internalName, parseClass(internalName))
-  }
+  def classNode(internalName: InternalName) = classNodeAndSource(internalName)._1
 
   /**
    * The field node for a field matching `name` and `descriptor`, accessed in class `classInternalName`.
@@ -74,7 +84,6 @@ class CodeRepository(val classPath: ClassFileLookup[AbstractFile]) {
       //   http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.11
       //   https://jcp.org/aboutJava/communityprocess/final/jsr045/index.html
       removeLineNumberNodes(classNode)
-      classes(internalName) = classNode
       classNode
     } getOrElse {
       inlineFailure(s"Class file for class $fullName not found.")
@@ -90,4 +99,14 @@ class CodeRepository(val classPath: ClassFileLookup[AbstractFile]) {
       }
     }
   }
+}
+
+object ByteCodeRepository {
+  /**
+   * The source of a ClassNode in the ByteCodeRepository. Can be either [[CompilationUnit]] if the
+   * class is being compiled or [[Classfile]] if the class was parsed from the compilation classpath.
+   */
+  sealed trait Source
+  object CompilationUnit extends Source
+  object Classfile extends Source
 }

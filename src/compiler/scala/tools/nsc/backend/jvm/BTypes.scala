@@ -9,7 +9,7 @@ package backend.jvm
 import scala.tools.asm
 import asm.Opcodes
 import scala.tools.asm.tree.{InnerClassNode, ClassNode}
-import opt.CodeRepository
+import opt.ByteCodeRepository
 import scala.collection.convert.decorateAsScala._
 
 /**
@@ -32,7 +32,10 @@ abstract class BTypes {
   /**
    * Tools for parsing classfiles, used by the inliner.
    */
-  val codeRepository: CodeRepository
+  val byteCodeRepository: ByteCodeRepository
+
+  // Allows to define per-run caches here and in the CallGraph component, which don't have a global
+  def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T
 
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
@@ -45,13 +48,13 @@ abstract class BTypes {
    * Concurrent because stack map frames are computed when in the class writer, which might run
    * on multiple classes concurrently.
    */
-  val classBTypeFromInternalName: collection.concurrent.Map[InternalName, ClassBType]
+  val classBTypeFromInternalName: collection.concurrent.Map[InternalName, ClassBType] = recordPerRunCache(collection.concurrent.TrieMap.empty[InternalName, ClassBType])
 
   /**
    * Parse the classfile for `internalName` and construct the [[ClassBType]].
    */
   def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
-    classBTypeFromClassNode(codeRepository.classNode(internalName))
+    classBTypeFromClassNode(byteCodeRepository.classNode(internalName))
   }
 
   /**
@@ -90,7 +93,7 @@ abstract class BTypes {
      */
     def nestedInCurrentClass(innerClassNode: InnerClassNode): Boolean = {
       (innerClassNode.outerName != null && innerClassNode.outerName == classNode.name) ||
-      (innerClassNode.outerName == null && codeRepository.classNode(innerClassNode.name).outerClass == classNode.name)
+      (innerClassNode.outerName == null && byteCodeRepository.classNode(innerClassNode.name).outerClass == classNode.name)
     }
 
     val nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({
