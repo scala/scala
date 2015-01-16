@@ -284,6 +284,9 @@ object Ordering extends LowPriorityOrderingImplicits {
       override def gteq(x: Float, y: Float): Boolean = outer.gteq(y, x)
       override def lt(x: Float, y: Float): Boolean = outer.lt(y, x)
       override def gt(x: Float, y: Float): Boolean = outer.gt(y, x)
+      override def min(x: Float, y: Float): Float = outer.max(x, y)
+      override def max(x: Float, y: Float): Float = outer.min(x, y)
+
     }
   }
   implicit object Float extends FloatOrdering
@@ -309,6 +312,8 @@ object Ordering extends LowPriorityOrderingImplicits {
       override def gteq(x: Double, y: Double): Boolean = outer.gteq(y, x)
       override def lt(x: Double, y: Double): Boolean = outer.lt(y, x)
       override def gt(x: Double, y: Double): Boolean = outer.gt(y, x)
+      override def min(x: Double, y: Double): Double = outer.max(x, y)
+      override def max(x: Double, y: Double): Double = outer.min(x, y)
     }
   }
   implicit object Double extends DoubleOrdering
