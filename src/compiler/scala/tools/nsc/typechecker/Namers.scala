@@ -841,7 +841,7 @@ trait Namers extends MethodSynthesis {
     private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
       val getter =
         if (sym.isValue && sym.owner.isClass && sym.isPrivate)
-          sym.getter(sym.owner)
+          sym.getterIn(sym.owner)
         else sym
       def isHidden(tp: Type): Boolean = tp match {
         case SingleType(pre, sym) =>

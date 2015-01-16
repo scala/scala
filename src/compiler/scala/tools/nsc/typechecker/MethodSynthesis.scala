@@ -381,7 +381,7 @@ trait MethodSynthesis {
       }
     }
     case class Getter(tree: ValDef) extends BaseGetter(tree) {
-      override def derivedSym = if (mods.isDeferred) basisSym else basisSym.getter(enclClass)
+      override def derivedSym = if (mods.isDeferred) basisSym else basisSym.getterIn(enclClass)
       private def derivedRhs  = if (mods.isDeferred) EmptyTree else fieldSelection
       private def derivedTpt = {
         // For existentials, don't specify a type for the getter, even one derived

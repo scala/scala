@@ -882,8 +882,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       var fieldList = List[String]()
 
       for (f <- fieldSymbols if f.hasGetter;
-	         g = f.getter(cls);
-	         s = f.setter(cls);
+	         g = f.getterIn(cls);
+	         s = f.getterIn(cls);
 	         if g.isPublic && !(f.name startsWith "$")
           ) {
              // inserting $outer breaks the bean
