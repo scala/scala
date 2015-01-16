@@ -893,7 +893,7 @@ trait Implicits {
               try improves(firstPending, alt)
               catch {
                 case e: CyclicReference =>
-                  debugwarn(s"Discarding $firstPending during implicit search due to cyclic reference.")
+                  devWarning(s"Discarding $firstPending during implicit search due to cyclic reference.")
                   true
               }
             )

@@ -267,7 +267,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
     /* Mix in members of implementation class mixinClass into class clazz */
     def mixinImplClassMembers(mixinClass: Symbol, mixinInterface: Symbol) {
-      if (!mixinClass.isImplClass) debugwarn ("Impl class flag is not set " +
+      if (!mixinClass.isImplClass) devWarning ("Impl class flag is not set " +
         ((mixinClass.debugLocationString, mixinInterface.debugLocationString)))
 
       for (member <- mixinClass.info.decls ; if isForwarded(member)) {
