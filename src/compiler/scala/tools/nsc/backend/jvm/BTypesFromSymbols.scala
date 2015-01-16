@@ -7,6 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
+import BTypes.InternalName
 
 /**
  * This class mainly contains the method classBTypeFromSymbol, which extracts the necessary
@@ -37,7 +38,7 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   protected val classBTypeFromInternalNameMap = {
-    global.perRunCaches.recordCache(collection.concurrent.TrieMap.empty[String, ClassBType])
+    global.perRunCaches.recordCache(collection.concurrent.TrieMap.empty[InternalName, ClassBType])
   }
 
   /**

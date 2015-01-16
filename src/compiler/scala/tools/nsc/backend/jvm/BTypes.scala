@@ -10,7 +10,7 @@ import scala.tools.asm
 import asm.Opcodes
 
 /**
- * The BTypes component defines The BType class hierarchy. BTypes encapsulates all type information
+ * The BTypes component defines The BType class hierarchy. BTypes encapsulate all type information
  * that is required after building the ASM nodes. This includes optimizations, generation of
  * InnerClass attributes and generation of stack map frames.
  *
@@ -18,6 +18,8 @@ import asm.Opcodes
  * be queried by concurrent threads.
  */
 abstract class BTypes {
+  import BTypes.InternalName
+
   /**
    * A map from internal names to ClassBTypes. Every ClassBType is added to this map on its
    * construction.
@@ -29,12 +31,12 @@ abstract class BTypes {
    * Concurrent because stack map frames are computed when in the class writer, which might run
    * on multiple classes concurrently.
    */
-  protected val classBTypeFromInternalNameMap: collection.concurrent.Map[String, ClassBType]
+  protected val classBTypeFromInternalNameMap: collection.concurrent.Map[InternalName, ClassBType]
 
   /**
    * Obtain a previously constructed ClassBType for a given internal name.
    */
-  def classBTypeFromInternalName(internalName: String) = classBTypeFromInternalNameMap(internalName)
+  def classBTypeFromInternalName(internalName: InternalName) = classBTypeFromInternalNameMap(internalName)
 
   // Some core BTypes are required here, in class BType, where no Global instance is available.
   // The Global is only available in the subclass BTypesFromSymbols. We cannot depend on the actual
@@ -566,7 +568,7 @@ abstract class BTypes {
    * A ClassBType represents a class or interface type. The necessary information to build a
    * ClassBType is extracted from compiler symbols and types, see BTypesFromSymbols.
    */
-  final case class ClassBType(internalName: String) extends RefBType {
+  final case class ClassBType(internalName: InternalName) extends RefBType {
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
@@ -826,4 +828,13 @@ abstract class BTypes {
    * Used only in assertions. Abstract here because its implementation depends on global.
    */
   def isCompilingPrimitive: Boolean
+}
+
+object BTypes {
+  /**
+   * A marker for strings that represent class internal names.
+   * Ideally the type would be incompatible with String, for example by making it a value class.
+   * But that would create overhead in a Collection[InternalName].
+   */
+  type InternalName = String
 }
