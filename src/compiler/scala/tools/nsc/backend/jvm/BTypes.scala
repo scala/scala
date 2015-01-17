@@ -11,6 +11,7 @@ import scala.tools.asm
 import asm.Opcodes
 import scala.tools.asm.tree.{InnerClassNode, ClassNode}
 import opt.{ByteCodeRepository, Inliner}
+import OptimizerReporting._
 import scala.collection.convert.decorateAsScala._
 
 /**
@@ -273,7 +274,7 @@ abstract class BTypes {
         ObjectReference
 
       case _: MethodBType =>
-        throw new AssertionError(s"unexpected method type when computing maxType: $this")
+        assertionError(s"unexpected method type when computing maxType: $this")
     }
 
     /**
@@ -364,7 +365,7 @@ abstract class BTypes {
      */
     final def maxValueType(other: BType): BType = {
 
-      def uncomparable: Nothing = throw new AssertionError(s"Cannot compute maxValueType: $this, $other")
+      def uncomparable: Nothing = assertionError(s"Cannot compute maxValueType: $this, $other")
 
       if (!other.isPrimitive && !other.isNothingType) uncomparable
 

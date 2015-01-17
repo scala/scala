@@ -10,6 +10,7 @@ package backend.jvm
 import scala.tools.asm
 import scala.collection.mutable
 import scala.tools.nsc.io.AbstractFile
+import GenBCode._
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
