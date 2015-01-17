@@ -988,7 +988,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
               if (name.startsWith(nme.NAME_JOIN_STRING)) coreLookup(name drop 1) else NoSymbol
             }
           if (nme.isModuleName(simpleName))
-            coreLookup(nme.stripModuleSuffix(simpleName).toTermName) map (_.moduleClass)
+            coreLookup(simpleName.dropModule.toTermName) map (_.moduleClass)
           else
             coreLookup(simpleName)
         }
