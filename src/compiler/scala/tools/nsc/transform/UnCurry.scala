@@ -206,7 +206,7 @@ abstract class UnCurry extends InfoTransform
         // (() => Int) { def apply(): Int @typeConstraint }
         case RefinedType(List(funTp), decls) =>
           debuglog(s"eliminate refinement from function type ${fun.tpe}")
-          fun.tpe = funTp
+          fun.setType(funTp)
         case _ =>
           ()
       }

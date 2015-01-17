@@ -2860,7 +2860,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         var issuedMissingParameterTypeError = false
         foreach2(fun.vparams, argpts) { (vparam, argpt) =>
           if (vparam.tpt.isEmpty) {
-            vparam.tpt.tpe =
+            val vparamType =
               if (isFullyDefined(argpt)) argpt
               else {
                 fun match {
@@ -2879,6 +2879,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 issuedMissingParameterTypeError = true
                 ErrorType
               }
+            vparam.tpt.setType(vparamType)
             if (!vparam.tpt.pos.isDefined) vparam.tpt setPos vparam.pos.focus
           }
         }
@@ -5267,7 +5268,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
       def runTyper(): Tree = {
         if (retypingOk) {
-          tree.tpe = null
+          tree.setType(null)
           if (tree.hasSymbolField) tree.symbol = NoSymbol
         }
         val alreadyTyped = tree.tpe ne null
