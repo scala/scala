@@ -7,8 +7,8 @@
 package scala.tools.nsc
 
 import java.net.URL
-import util.ScalaClassLoader
 import util.Exceptional.unwrap
+import scala.reflect.internal.util.ScalaClassLoader
 
 trait CommonRunner {
   /** Run a given object, specified by name, using a

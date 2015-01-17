@@ -150,11 +150,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def toTypeConstructor: Type = typeConstructor
     def setAnnotations(annots: AnnotationInfo*): this.type = { setAnnotations(annots.toList); this }
 
-    def getter: Symbol = getter(owner)
-    def setter: Symbol = setter(owner)
+    def getter: Symbol = getterIn(owner)
+    def setter: Symbol = setterIn(owner)
 
     def companion: Symbol = {
-      if (isModule && !isPackage) companionSymbol
+      if (isModule && !hasPackageFlag) companionSymbol
       else if (isModuleClass && !isPackageClass) sourceModule.companionSymbol
       else if (isClass && !isModuleClass && !isPackageClass) companionSymbol
       else NoSymbol
@@ -813,7 +813,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** The package object symbol corresponding to this package or package class symbol, or NoSymbol otherwise */
     def packageObject: Symbol =
       if (isPackageClass) tpe.packageObject
-      else if (isPackage) moduleClass.packageObject
+      else if (hasPackageFlag) moduleClass.packageObject
       else NoSymbol
 
     /** If this is a constructor, its owner: otherwise this.
@@ -1045,7 +1045,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isIncompleteIn(base: Symbol): Boolean =
       this.isDeferred ||
       (this hasFlag ABSOVERRIDE) && {
-        val supersym = superSymbol(base)
+        val supersym = superSymbolIn(base)
         supersym == NoSymbol || supersym.isIncompleteIn(base)
       }
 
@@ -2522,7 +2522,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         else if (isInstanceOf[FreeTermSymbol]) ("free term", "free term", "FTE")
         else if (isInstanceOf[FreeTypeSymbol]) ("free type", "free type", "FTY")
         else if (isPackageClass) ("package class", "package", "PKC")
-        else if (isPackage) ("package", "package", "PK")
+        else if (hasPackageFlag) ("package", "package", "PK")
         else if (isPackageObject) ("package object", "package", "PKO")
         else if (isPackageObjectClass) ("package object class", "package", "PKOC")
         else if (isAnonymousClass) ("anonymous class", "anonymous class", "AC")
@@ -2806,7 +2806,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def outerSource: Symbol =
       // SI-6888 Approximate the name to workaround the deficiencies in `nme.originalName`
       //         in the face of clases named '$'. SI-2806 remains open to address the deeper problem.
-      if (originalName endsWith (nme.OUTER)) initialize.referenced
+      if (unexpandedName endsWith (nme.OUTER)) initialize.referenced
       else NoSymbol
 
     def setModuleClass(clazz: Symbol): TermSymbol = {
@@ -2836,8 +2836,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           accessed.expandName(base)
         }
         else if (hasGetter) {
-          getter(owner).expandName(base)
-          setter(owner).expandName(base)
+          getterIn(owner).expandName(base)
+          setterIn(owner).expandName(base)
         }
         name = nme.expandedName(name.toTermName, base)
       }

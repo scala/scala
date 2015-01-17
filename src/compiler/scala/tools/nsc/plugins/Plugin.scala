@@ -7,7 +7,7 @@ package scala.tools.nsc
 package plugins
 
 import scala.tools.nsc.io.{ Jar }
-import scala.tools.nsc.util.ScalaClassLoader
+import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.{ Directory, File, Path }
 import java.io.InputStream
 import java.util.zip.ZipException
@@ -60,13 +60,13 @@ abstract class Plugin {
    *  @return true to continue, or false to opt out
    */
   def init(options: List[String], error: String => Unit): Boolean = {
-    processOptions(options, error)
+    if (!options.isEmpty) error(s"Error: $name takes no options")
     true
   }
 
   @deprecated("use Plugin#init instead", since="2.11")
   def processOptions(options: List[String], error: String => Unit): Unit = {
-    if (!options.isEmpty) error(s"Error: $name takes no options")
+    init(options, error)
   }
 
   /** A description of this plugin's options, suitable as a response

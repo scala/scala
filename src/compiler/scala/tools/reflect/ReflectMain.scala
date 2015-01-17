@@ -4,7 +4,7 @@ package reflect
 import scala.tools.nsc.Driver
 import scala.tools.nsc.Global
 import scala.tools.nsc.Settings
-import scala.tools.nsc.util.ScalaClassLoader
+import scala.reflect.internal.util.ScalaClassLoader
 import scala.tools.util.PathResolver
 
 object ReflectMain extends Driver {

@@ -427,7 +427,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
          */
 
         case tp =>
-          currentUnit.warning(tp.typeSymbol.pos,
+          typer.context.warning(tp.typeSymbol.pos,
             s"an unexpected type representation reached the compiler backend while compiling $currentUnit: $tp. " +
             "If possible, please file a bug on issues.scala-lang.org.")
 
@@ -882,8 +882,8 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
       var fieldList = List[String]()
 
       for (f <- fieldSymbols if f.hasGetter;
-	         g = f.getter(cls);
-	         s = f.setter(cls);
+	         g = f.getterIn(cls);
+	         s = f.getterIn(cls);
 	         if g.isPublic && !(f.name startsWith "$")
           ) {
              // inserting $outer breaks the bean

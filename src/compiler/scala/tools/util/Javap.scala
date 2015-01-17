@@ -6,7 +6,7 @@
 package scala.tools
 package util
 
-import scala.tools.nsc.util.ScalaClassLoader
+import scala.reflect.internal.util.ScalaClassLoader
 import java.io.PrintWriter
 
 trait JpResult {

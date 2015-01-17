@@ -16,7 +16,7 @@ import org.apache.tools.ant.taskdefs.Java
 import org.apache.tools.ant.util.{ GlobPatternMapper, SourceFileScanner }
 import org.apache.tools.ant.BuildException
 import scala.tools.nsc.io
-import scala.tools.nsc.util.ScalaClassLoader
+import scala.reflect.internal.util.ScalaClassLoader
 
 /** An Ant task to compile with the new Scala compiler (NSC).
  *

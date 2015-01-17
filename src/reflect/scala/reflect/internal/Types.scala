@@ -209,7 +209,7 @@ trait Types
 
   case object UnmappableTree extends TermTree {
     override def toString = "<unmappable>"
-    super.tpe_=(NoType)
+    super.setType(NoType)
     override def tpe_=(t: Type) = if (t != NoType) {
       throw new UnsupportedOperationException("tpe_=("+t+") inapplicable for <empty>")
     }
@@ -247,7 +247,7 @@ trait Types
 
     def companion = {
       val sym = typeSymbolDirect
-      if (sym.isModule && !sym.isPackage) sym.companionSymbol.tpe
+      if (sym.isModule && !sym.hasPackageFlag) sym.companionSymbol.tpe
       else if (sym.isModuleClass && !sym.isPackageClass) sym.sourceModule.companionSymbol.tpe
       else if (sym.isClass && !sym.isModuleClass && !sym.isPackageClass) sym.companionSymbol.info
       else NoType
