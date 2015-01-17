@@ -439,7 +439,8 @@ trait TypeDiagnostics {
       context.warning(pos, "imported `%s' is permanently hidden by definition of %s".format(hidden, defn.fullLocationString))
 
     object checkUnused {
-      val ignoreNames = Set[TermName]("readResolve", "readObject", "writeObject", "writeReplace")
+      val ignoreNames = Set("readResolve", "readObject", "writeObject", "writeReplace")
+        .map(TermName.apply)
 
       class UnusedPrivates extends Traverser {
         val defnTrees = ListBuffer[MemberDef]()

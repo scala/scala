@@ -132,7 +132,7 @@ trait Holes { self: Quasiquotes =>
     private def mapF(tree: Tree, f: Tree => Tree): Tree =
       if (f(Ident(TermName("x"))) equalsStructure Ident(TermName("x"))) tree
       else {
-        val x: TermName = c.freshName()
+        val x: TermName = TermName(c.freshName())
         // q"$tree.map { $x => ${f(Ident(x))} }"
         Apply(Select(tree, nme.map),
           Function(ValDef(Modifiers(PARAM), x, TypeTree(), EmptyTree) :: Nil,
