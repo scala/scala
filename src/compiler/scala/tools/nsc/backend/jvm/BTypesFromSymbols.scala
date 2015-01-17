@@ -7,9 +7,9 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.tools.asm
-import opt.ByteCodeRepository
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository.Source
+import scala.tools.nsc.backend.jvm.opt.{Inliner, ByteCodeRepository}
 import BTypes.InternalName
 
 /**
@@ -37,6 +37,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   import coreBTypes._
 
   val byteCodeRepository = new ByteCodeRepository(global.classPath, recordPerRunCache(collection.concurrent.TrieMap.empty[InternalName, (ClassNode, Source)]))
+
+  val inliner: Inliner[this.type] = new Inliner(this)
 
   final def initializeCoreBTypes(): Unit = {
     coreBTypes.setBTypes(new CoreBTypes[this.type](this))

@@ -59,12 +59,16 @@ class ByteCodeRepository(val classPath: ClassFileLookup[AbstractFile], val class
    *
    * @return The [[MethodNode]] of the requested method and the [[InternalName]] of its declaring class.
    */
-  def methodNode(classInternalName: InternalName, name: String, descriptor: String): Option[(MethodNode, InternalName)] = {
-    val c = classNode(classInternalName)
-    c.methods.asScala.find(m => m.name == name && m.desc == descriptor).map((_, classInternalName)) orElse {
-      val parents = Option(c.superName) ++ c.interfaces.asScala
-      // `view` to stop at the first result
-      parents.view.flatMap(methodNode(_, name, descriptor)).headOption
+  def methodNode(ownerInternalNameOrArrayDescriptor: String, name: String, descriptor: String): Option[(MethodNode, InternalName)] = {
+    // In a MethodInsnNode, the `owner` field may be an array descriptor, for exmple when invoking `clone`.
+    if (ownerInternalNameOrArrayDescriptor.charAt(0) == '[') None
+    else {
+      val c = classNode(ownerInternalNameOrArrayDescriptor)
+      c.methods.asScala.find(m => m.name == name && m.desc == descriptor).map((_, ownerInternalNameOrArrayDescriptor)) orElse {
+        val parents = Option(c.superName) ++ c.interfaces.asScala
+        // `view` to stop at the first result
+        parents.view.flatMap(methodNode(_, name, descriptor)).headOption
+      }
     }
   }
 
