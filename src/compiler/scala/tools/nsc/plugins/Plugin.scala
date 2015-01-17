@@ -7,7 +7,7 @@ package scala.tools.nsc
 package plugins
 
 import scala.tools.nsc.io.{ Jar }
-import scala.tools.nsc.util.ScalaClassLoader
+import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.{ Directory, File, Path }
 import java.io.InputStream
 import java.util.zip.ZipException
