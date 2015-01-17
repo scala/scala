@@ -3,7 +3,7 @@ package typechecker
 
 import java.lang.Math.min
 import symtab.Flags._
-import scala.tools.nsc.util._
+import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.runtime.ReflectionUtils
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
