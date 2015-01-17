@@ -1045,7 +1045,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isIncompleteIn(base: Symbol): Boolean =
       this.isDeferred ||
       (this hasFlag ABSOVERRIDE) && {
-        val supersym = superSymbol(base)
+        val supersym = superSymbolIn(base)
         supersym == NoSymbol || supersym.isIncompleteIn(base)
       }
 
