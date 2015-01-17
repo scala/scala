@@ -2,12 +2,14 @@ package scala.tools.nsc.backend.jvm
 
 import org.junit.Assert._
 
+import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.BatchSourceFile
 import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, LabelNode, ClassNode, MethodNode}
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.backend.jvm.opt.LocalOpt
+import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.settings.{MutableSettings, ScalaSettings}
 import scala.tools.nsc.{Settings, Global}
 import scala.tools.partest.ASMConverters
@@ -54,7 +56,15 @@ object CodeGenTools {
     val run = new compiler.Run()
     run.compileSources(List(new BatchSourceFile("unitTestSource.scala", code)))
     val outDir = compiler.settings.outputDirs.getSingleOutput.get
-    (for (f <- outDir.iterator if !f.isDirectory) yield (f.name, f.toByteArray)).toList
+    def files(dir: AbstractFile): List[(String, Array[Byte])] = {
+      val res = ListBuffer.empty[(String, Array[Byte])]
+      for (f <- dir.iterator) {
+        if (!f.isDirectory) res += ((f.name, f.toByteArray))
+        else if (f.name != "." && f.name != "..") res ++= files(f)
+      }
+      res.toList
+    }
+    files(outDir)
   }
 
   def compileClasses(compiler: Global)(code: String): List[ClassNode] = {

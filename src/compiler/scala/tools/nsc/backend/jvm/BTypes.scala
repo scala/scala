@@ -6,10 +6,11 @@
 package scala.tools.nsc
 package backend.jvm
 
+import scala.annotation.switch
 import scala.tools.asm
 import asm.Opcodes
 import scala.tools.asm.tree.{InnerClassNode, ClassNode}
-import opt.ByteCodeRepository
+import opt.{ByteCodeRepository, Inliner}
 import scala.collection.convert.decorateAsScala._
 
 /**
@@ -34,6 +35,8 @@ abstract class BTypes {
    */
   val byteCodeRepository: ByteCodeRepository
 
+  val inliner: Inliner[this.type]
+
   // Allows to define per-run caches here and in the CallGraph component, which don't have a global
   def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T
 
@@ -49,6 +52,31 @@ abstract class BTypes {
    * on multiple classes concurrently.
    */
   val classBTypeFromInternalName: collection.concurrent.Map[InternalName, ClassBType] = recordPerRunCache(collection.concurrent.TrieMap.empty[InternalName, ClassBType])
+
+  /**
+   * Obtain the BType for a type descriptor or internal name. For class descriptors, the ClassBType
+   * is constructed by parsing the corresponding classfile.
+   * 
+   * Some JVM operations use either a full descriptor or only an internal name. Example:
+   *   ANEWARRAY java/lang/String    // a new array of strings (internal name for the String class)
+   *   ANEWARRAY [Ljava/lang/String; // a new array of array of string (full descriptor for the String class)
+   *
+   * This method supports both descriptors and internal names.
+   */
+  def bTypeForDescriptorOrInternalNameFromClassfile(desc: String): BType = (desc(0): @switch) match {
+    case 'V'                     => UNIT
+    case 'Z'                     => BOOL
+    case 'C'                     => CHAR
+    case 'B'                     => BYTE
+    case 'S'                     => SHORT
+    case 'I'                     => INT
+    case 'F'                     => FLOAT
+    case 'J'                     => LONG
+    case 'D'                     => DOUBLE
+    case '['                     => ArrayBType(bTypeForDescriptorOrInternalNameFromClassfile(desc.substring(1)))
+    case 'L' if desc.last == ';' => classBTypeFromParsedClassfile(desc.substring(1, desc.length - 1))
+    case _                       => classBTypeFromParsedClassfile(desc)
+  }
 
   /**
    * Parse the classfile for `internalName` and construct the [[ClassBType]].
@@ -702,6 +730,19 @@ abstract class BTypes {
       case None => Nil
       case Some(sc) => sc :: sc.superClassesTransitive
     }
+
+    /**
+     * The prefix of the internal name until the last '/', or the empty string.
+     */
+    def packageInternalName: String = {
+      val name = internalName
+      name.lastIndexOf('/') match {
+        case -1 => ""
+        case i  => name.substring(0, i)
+      }
+    }
+
+    def isPublic = (info.flags & asm.Opcodes.ACC_PUBLIC) != 0
 
     def isNestedClass = info.nestedInfo.isDefined
 
