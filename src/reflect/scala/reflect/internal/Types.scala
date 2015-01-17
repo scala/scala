@@ -3447,6 +3447,18 @@ trait Types
       result
     }
 
+  /** A constructor for types ?{ def/type name: tp }, used in infer view to member
+   *  searches.
+   */
+  def memberWildcardType(name: Name, tp: Type) = {
+    val result = refinedType(List(WildcardType), NoSymbol)
+    name match {
+      case x: TermName => result.typeSymbol.newMethod(x) setInfoAndEnter tp
+      case x: TypeName => result.typeSymbol.newAbstractType(x) setInfoAndEnter tp
+    }
+    result
+  }
+  
   /** The canonical creator for typerefs
    *  todo: see how we can clean this up a bit
    */

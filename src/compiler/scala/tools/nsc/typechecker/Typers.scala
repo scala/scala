@@ -1244,6 +1244,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
     }
 
+   /** An extractor for types of the form ? { name: ? }
+     */
+    private object HasMember {
+      private val hasMemberCache = perRunCaches.newMap[Name, Type]()
+      def apply(name: Name): Type = hasMemberCache.getOrElseUpdate(name, memberWildcardType(name, WildcardType))
+    }
+    
     /** Try to apply an implicit conversion to `qual` so that it contains
      *  a method `name`. If that's ambiguous try taking arguments into
      *  account using `adaptToArguments`.

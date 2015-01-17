@@ -254,25 +254,6 @@ trait Implicits {
     override def hashCode = 1
   }
 
-  /** A constructor for types ?{ def/type name: tp }, used in infer view to member
-   *  searches.
-   */
-  def memberWildcardType(name: Name, tp: Type) = {
-    val result = refinedType(List(WildcardType), NoSymbol)
-    name match {
-      case x: TermName => result.typeSymbol.newMethod(x) setInfoAndEnter tp
-      case x: TypeName => result.typeSymbol.newAbstractType(x) setInfoAndEnter tp
-    }
-    result
-  }
-
-  /** An extractor for types of the form ? { name: ? }
-   */
-  object HasMember {
-    private val hasMemberCache = perRunCaches.newMap[Name, Type]()
-    def apply(name: Name): Type = hasMemberCache.getOrElseUpdate(name, memberWildcardType(name, WildcardType))
-    }
-
   /** An extractor for types of the form ? { name: (? >: argtpe <: Any*)restp }
    */
   object HasMethodMatching {
