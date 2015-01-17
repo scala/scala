@@ -12,6 +12,7 @@ package jvm
 import scala.annotation.switch
 
 import scala.tools.asm
+import GenBCode._
 
 /*
  *
@@ -613,7 +614,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
                  */
                 for (i <- args.length until dims) elemKind = ArrayBType(elemKind)
               }
-              (argsSize : @switch) match {
+              argsSize match {
                 case 1 => bc newarray elemKind
                 case _ =>
                   val descr = ('[' * argsSize) + elemKind.descriptor // denotes the same as: arrayN(elemKind, argsSize).descriptor

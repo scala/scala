@@ -16,6 +16,7 @@ import scala.annotation.switch
 import scala.tools.asm
 import scala.tools.asm.util.{TraceMethodVisitor, ASMifier}
 import java.io.PrintWriter
+import GenBCode._
 
 /*
  *

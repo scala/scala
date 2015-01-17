@@ -8,7 +8,7 @@ package backend.jvm
 package opt
 
 import scala.annotation.switch
-import scala.tools.asm.{Opcodes, MethodWriter, ClassWriter}
+import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.analysis.{Analyzer, BasicValue, BasicInterpreter}
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
@@ -73,7 +73,7 @@ class LocalOpt(settings: ScalaSettings) {
    *
    * Returns `true` if the bytecode of `method` was changed.
    */
-  private def methodOptimizations(method: MethodNode, ownerClassName: String): Boolean = {
+  def methodOptimizations(method: MethodNode, ownerClassName: String): Boolean = {
     if (method.instructions.size == 0) return false // fast path for abstract methods
 
     // unreachable-code also removes unused local variable nodes and empty exception handlers.
@@ -316,29 +316,6 @@ class LocalOpt(settings: ScalaSettings) {
       }
       true
     }
-  }
-
-  /**
-   * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
-   * framework only computes these values during bytecode generation.
-   *
-   * Since there's currently no better way, we run a bytecode generator on the method and extract
-   * the computed values. This required changes to the ASM codebase:
-   *   - the [[MethodWriter]] class was made public
-   *   - accessors for maxLocals / maxStack were added to the MethodWriter class
-   *
-   * We could probably make this faster (and allocate less memory) by hacking the ASM framework
-   * more: create a subclass of MethodWriter with a /dev/null byteVector. Another option would be
-   * to create a separate visitor for computing those values, duplicating the functionality from the
-   * MethodWriter.
-   */
-  private def computeMaxLocalsMaxStack(method: MethodNode) {
-    val cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
-    val excs = method.exceptions.asScala.toArray
-    val mw = cw.visitMethod(method.access, method.name, method.desc, method.signature, excs).asInstanceOf[MethodWriter]
-    method.accept(mw)
-    method.maxLocals = mw.getMaxLocals
-    method.maxStack = mw.getMaxStack
   }
 
   /**

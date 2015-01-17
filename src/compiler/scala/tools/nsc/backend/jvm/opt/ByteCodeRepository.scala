@@ -13,6 +13,7 @@ import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.ClassFileLookup
 import OptimizerReporting._
+import BytecodeUtils._
 import ByteCodeRepository._
 import BTypes.InternalName
 
@@ -91,16 +92,6 @@ class ByteCodeRepository(val classPath: ClassFileLookup[AbstractFile], val class
       classNode
     } getOrElse {
       inlineFailure(s"Class file for class $fullName not found.")
-    }
-  }
-
-  private def removeLineNumberNodes(classNode: ClassNode): Unit = {
-    for (method <- classNode.methods.asScala) {
-      val iter = method.instructions.iterator()
-      while (iter.hasNext) iter.next() match {
-        case _: LineNumberNode => iter.remove()
-        case _ =>
-      }
     }
   }
 }
