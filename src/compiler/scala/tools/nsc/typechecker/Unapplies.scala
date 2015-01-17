@@ -7,6 +7,7 @@ package scala.tools.nsc
 package typechecker
 
 import symtab.Flags._
+import scala.reflect.internal.util.ListOfNil
 
 /*
  *  @author  Martin Odersky

@@ -13,6 +13,7 @@ import symtab.Flags
 import JavaTokens._
 import scala.language.implicitConversions
 import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.ListOfNil
 
 trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
   val global : Global

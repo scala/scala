@@ -10,6 +10,7 @@ package transform
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
 import scala.language.postfixOps
+import scala.reflect.internal.util.ListOfNil
 
 /*<export> */
 /** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
