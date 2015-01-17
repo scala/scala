@@ -427,7 +427,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic with BytecodeWriters {
          */
 
         case tp =>
-          currentUnit.warning(tp.typeSymbol.pos,
+          typer.context.warning(tp.typeSymbol.pos,
             s"an unexpected type representation reached the compiler backend while compiling $currentUnit: $tp. " +
             "If possible, please file a bug on issues.scala-lang.org.")
 
