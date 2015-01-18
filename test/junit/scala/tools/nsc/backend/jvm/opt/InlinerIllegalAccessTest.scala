@@ -17,10 +17,18 @@ import ASMConverters._
 import AsmUtils._
 
 import scala.collection.convert.decorateAsScala._
+import scala.tools.testing.ClearAfterClass
+
+object InlinerIllegalAccessTest extends ClearAfterClass.Clearable {
+  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
+  def clear(): Unit = { compiler = null }
+}
 
 @RunWith(classOf[JUnit4])
-class InlinerIllegalAccessTest {
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
+class InlinerIllegalAccessTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = InlinerIllegalAccessTest
+
+  val compiler = InlinerIllegalAccessTest.compiler
   import compiler.genBCode.bTypes._
 
   def addToRepo(cls: List[ClassNode]): Unit = for (c <- cls) byteCodeRepository.classes(c.name) = (c, ByteCodeRepository.Classfile)

@@ -5,6 +5,7 @@ package opt
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
+import scala.collection.generic.Clearable
 import scala.tools.asm.Opcodes._
 import org.junit.Assert._
 
@@ -19,19 +20,37 @@ import ASMConverters._
 import AsmUtils._
 
 import scala.collection.convert.decorateAsScala._
+import scala.tools.testing.ClearAfterClass
+
+object InlinerTest extends ClearAfterClass.Clearable {
+  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:project")
+
+  // allows inspecting the caches after a compilation run
+  def notPerRun: List[Clearable] = List(compiler.genBCode.bTypes.classBTypeFromInternalName, compiler.genBCode.bTypes.byteCodeRepository.classes)
+  notPerRun foreach compiler.perRunCaches.unrecordCache
+
+  def clear(): Unit = { compiler = null }
+}
 
 @RunWith(classOf[JUnit4])
-class InlinerTest {
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
+class InlinerTest extends ClearAfterClass {
+  ClearAfterClass.stateToClear = InlinerTest
+
+  val compiler = InlinerTest.compiler
   import compiler.genBCode.bTypes._
-  def addToRepo(cls: List[ClassNode]): List[ClassNode] = {
+
+  def compile(code: String): List[ClassNode] = {
+    InlinerTest.notPerRun.foreach(_.clear())
+    val cls = compileClasses(compiler)(code)
+    // the compiler doesn't add classes being compiled to the code repo yet, so we do it manually.
+    // this line is removed in the next commit.
     for (c <- cls) byteCodeRepository.classes(c.name) = (c, ByteCodeRepository.Classfile)
     cls
   }
 
   // inline first invocation of f into g in class C
   def inlineTest(code: String, mod: ClassNode => Unit = _ => ()): (MethodNode, Option[String]) = {
-    val List(cls) = addToRepo(compileClasses(compiler)(code))
+    val List(cls) = compile(code)
     mod(cls)
     val clsBType = classBTypeFromParsedClassfile(cls.name)
 
@@ -165,7 +184,7 @@ class InlinerTest {
         |}
       """.stripMargin
 
-    val List(c, d) = addToRepo(compileClasses(compiler)(code))
+    val List(c, d) = compile(code)
 
     val cTp = classBTypeFromParsedClassfile(c.name)
     val dTp = classBTypeFromParsedClassfile(d.name)
