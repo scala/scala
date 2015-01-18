@@ -19,7 +19,8 @@ import scala.collection.convert.decorateAsScala._
 
 @RunWith(classOf[JUnit4])
 class BTypesFromClassfileTest {
-  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode")
+  // inliner enabled -> inlineInfos are collected (and compared) in ClassBTypes
+  val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global")
 
   import compiler._
   import definitions._
@@ -29,6 +30,7 @@ class BTypesFromClassfileTest {
   def duringBackend[T](f: => T) = compiler.exitingDelambdafy(f)
 
   val run = new compiler.Run() // initializes some of the compiler
+  duringBackend(compiler.scalaPrimitives.init()) // needed: it's only done when running the backend, and we don't actually run the compiler
   duringBackend(bTypes.initializeCoreBTypes())
 
   def clearCache() = bTypes.classBTypeFromInternalName.clear()

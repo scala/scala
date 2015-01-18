@@ -1448,6 +1448,15 @@ TODO:
   <target name="test.junit.comp" depends="pack.done">
     <stopwatch name="test.junit.compiler.timer"/>
     <mkdir dir="${test.junit.classes}"/>
+    <javac
+      debug="true"
+      srcdir="${test.junit.src}"
+      destdir="${test.junit.classes}"
+      classpathref="test.junit.compiler.build.path"
+      target="1.6"
+      source="1.5"
+      compiler="javac1.6"
+      includes="**/*.java"/>
     <scalacfork
       destdir="${test.junit.classes}"
       compilerpathref="quick.compiler.path"
