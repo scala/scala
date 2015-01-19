@@ -216,7 +216,6 @@ trait ScalaSettings extends AbsScalaSettings
   object YoptChoices extends MultiChoiceEnumeration {
     val unreachableCode         = Choice("unreachable-code",          "Eliminate unreachable code, exception handlers protecting no instructions, debug information of eliminated variables.")
     val simplifyJumps           = Choice("simplify-jumps",            "Simplify branching instructions, eliminate unnecessary ones.")
-    val recurseUnreachableJumps = Choice("recurse-unreachable-jumps", "Recursively apply unreachable-code and simplify-jumps (if enabled) until reaching a fixpoint.")
     val emptyLineNumbers        = Choice("empty-line-numbers",        "Eliminate unnecessary line number information.")
     val emptyLabels             = Choice("empty-labels",              "Eliminate and collapse redundant labels in the bytecode.")
     val compactLocals           = Choice("compact-locals",            "Eliminate empty slots in the sequence of local variables.")
@@ -228,7 +227,7 @@ trait ScalaSettings extends AbsScalaSettings
     private val defaultChoices = List(unreachableCode)
     val lDefault        = Choice("l:default",   "Enable default optimizations: "+ defaultChoices.mkString(","),                                    expandsTo = defaultChoices)
 
-    private val methodChoices = List(unreachableCode, simplifyJumps, recurseUnreachableJumps, emptyLineNumbers, emptyLabels, compactLocals)
+    private val methodChoices = List(unreachableCode, simplifyJumps, emptyLineNumbers, emptyLabels, compactLocals)
     val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString(","),                                expandsTo = methodChoices)
 
     private val projectChoices = List(lMethod, inlineProject)
@@ -247,7 +246,6 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptNone                    = Yopt.isSetByUser && Yopt.value.isEmpty
   def YoptUnreachableCode         = !Yopt.isSetByUser || Yopt.contains(YoptChoices.unreachableCode)
   def YoptSimplifyJumps           = Yopt.contains(YoptChoices.simplifyJumps)
-  def YoptRecurseUnreachableJumps = Yopt.contains(YoptChoices.recurseUnreachableJumps)
   def YoptEmptyLineNumbers        = Yopt.contains(YoptChoices.emptyLineNumbers)
   def YoptEmptyLabels             = Yopt.contains(YoptChoices.emptyLabels)
   def YoptCompactLocals           = Yopt.contains(YoptChoices.compactLocals)
