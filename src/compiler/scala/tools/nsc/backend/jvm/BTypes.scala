@@ -105,7 +105,13 @@ abstract class BTypes {
    * Parse the classfile for `internalName` and construct the [[ClassBType]].
    */
   def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
-    classBTypeFromClassNode(byteCodeRepository.classNode(internalName))
+    val classNode = byteCodeRepository.classNode(internalName) getOrElse {
+      // There's no way out, we need the ClassBType. I (lry) only know one case byteCodeRepository.classNode
+      // returns None: for Java classes in mixed compilation. In this case we should not end up here,
+      // because there exists a symbol for that Java class, the ClassBType should be built from the symbol.
+      assertionError(s"Could not find bytecode for class $internalName")
+    }
+    classBTypeFromClassNode(classNode)
   }
 
   /**
@@ -140,11 +146,15 @@ abstract class BTypes {
      * For local and anonymous classes, innerClassNode.outerName is null. Such classes are required
      * to have an EnclosingMethod attribute declaring the outer class. So we keep those local and
      * anonymous classes whose outerClass is classNode.name.
-     *
      */
     def nestedInCurrentClass(innerClassNode: InnerClassNode): Boolean = {
       (innerClassNode.outerName != null && innerClassNode.outerName == classNode.name) ||
-      (innerClassNode.outerName == null && byteCodeRepository.classNode(innerClassNode.name).outerClass == classNode.name)
+      (innerClassNode.outerName == null && {
+        val classNodeForInnerClass = byteCodeRepository.classNode(innerClassNode.name) getOrElse {
+          assertionError(s"Could not find bytecode for class ${innerClassNode.name}")
+        }
+        classNodeForInnerClass.outerClass == classNode.name
+      })
     }
 
     val nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({

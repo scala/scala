@@ -21,6 +21,7 @@ object OptimizerReporting {
     classInternalName + "::" + method.name + method.desc
   }
 
+  // TODO: clean up reporting of the inliner, test inline failure warnings, etc
   def inlineFailure(reason: String): Nothing = MissingRequirementError.signal(reason)
   def assertionError(message: String): Nothing = throw new AssertionError(message)
 }

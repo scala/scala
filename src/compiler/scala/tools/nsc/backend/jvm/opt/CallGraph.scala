@@ -34,27 +34,30 @@ class CallGraph[BT <: BTypes](val btypes: BT) {
     methodNode.instructions.iterator.asScala.collect({
       case call: MethodInsnNode =>
         // TODO: log an inliner warning if the callee method cannot be found in the code repo? eg it's not on the classpath.
-        val callee = byteCodeRepository.methodNode(call.owner, call.name, call.desc) map {
+        val callee = byteCodeRepository.methodNode(call.owner, call.name, call.desc) flatMap {
           case (method, declarationClass) =>
-            val (declarationClassNode, source) = byteCodeRepository.classNodeAndSource(declarationClass)
-            val declarationClassBType          = classBTypeFromClassNode(declarationClassNode)
-            val methodSignature                = method.name + method.desc
-            val (safeToInline, annotatedInline, annotatedNoInline) = declarationClassBType.info.inlineInfos.get(methodSignature) match {
-              case Some(inlineInfo) =>
-                val canInlineFromSource = inlineGlobalEnabled || source == ByteCodeRepository.CompilationUnit
-                // TODO: for now, we consider a callee safeToInline only if it's final
-                // type analysis can render more calls safeToInline (e.g. when the precise receiver type is known)
-                (canInlineFromSource && inlineInfo.effectivelyFinal, Some(inlineInfo.annotatedInline), Some(inlineInfo.annotatedNoInline))
-              case None =>
-                (false, None, None)
+            // TODO: log inliner warning if callee decl class cannot be found?
+            byteCodeRepository.classNodeAndSource(declarationClass) map {
+              case (declarationClassNode, source) =>
+                val declarationClassBType = classBTypeFromClassNode(declarationClassNode)
+                val methodSignature = method.name + method.desc
+                val (safeToInline, annotatedInline, annotatedNoInline) = declarationClassBType.info.inlineInfos.get(methodSignature) match {
+                  case Some(inlineInfo) =>
+                    val canInlineFromSource = inlineGlobalEnabled || source == ByteCodeRepository.CompilationUnit
+                    // TODO: for now, we consider a callee safeToInline only if it's final
+                    // type analysis can render more calls safeToInline (e.g. when the precise receiver type is known)
+                    (canInlineFromSource && inlineInfo.effectivelyFinal, Some(inlineInfo.annotatedInline), Some(inlineInfo.annotatedNoInline))
+                  case None =>
+                    (false, None, None)
+                }
+                Callee(
+                  callee = method,
+                  calleeDeclarationClass = declarationClassBType,
+                  safeToInline = safeToInline,
+                  annotatedInline = annotatedInline,
+                  annotatedNoInline = annotatedNoInline
+                )
             }
-            Callee(
-              callee = method,
-              calleeDeclarationClass = declarationClassBType,
-              safeToInline = safeToInline,
-              annotatedInline = annotatedInline,
-              annotatedNoInline = annotatedNoInline
-            )
         }
 
         val argInfos = if (callee.isEmpty) Nil else {
