@@ -1,0 +1,6 @@
+t9093.scala:3: error: polymorphic expression cannot be instantiated to expected type;
+ found   : [C](f: C)Null
+ required: Unit
+  val x: Unit = apply2(0)/*(0)*/
+                      ^
+one error found
