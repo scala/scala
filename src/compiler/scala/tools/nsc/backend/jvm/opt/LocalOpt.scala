@@ -65,17 +65,25 @@ class LocalOpt(settings: ScalaSettings) {
    *
    * This implementation only removes instructions that are unreachable for an ASM analyzer /
    * interpreter. This ensures that future analyses will not produce `null` frames. The inliner
-   * depends on this property.
+   * and call graph builder depend on this property.
    */
   def minimalRemoveUnreachableCode(method: MethodNode, ownerClassName: InternalName): Boolean = {
     if (method.instructions.size == 0) return false // fast path for abstract methods
 
-    val (codeRemoved, _) = removeUnreachableCodeImpl(method, ownerClassName)
-    if (codeRemoved) {
-      // Required for correctness, see comment in class LocalOpt
-      removeEmptyExceptionHandlers(method)
-      removeUnusedLocalVariableNodes(method)()
+    // For correctness, after removing unreachable code, we have to eliminate empty exception
+    // handlers, see scaladoc of def methodOptimizations. Removing an live handler may render more
+    // code unreachable and therefore requires running another round.
+    def removalRound(): Boolean = {
+      val (codeRemoved, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
+      if (codeRemoved) {
+        val liveHandlerRemoved = removeEmptyExceptionHandlers(method).exists(h => liveLabels(h.start))
+        if (liveHandlerRemoved) removalRound()
+      }
+      codeRemoved
     }
+
+    val codeRemoved = removalRound()
+    if (codeRemoved) removeUnusedLocalVariableNodes(method)()
     codeRemoved
   }
 
@@ -134,9 +142,7 @@ class LocalOpt(settings: ScalaSettings) {
     // This triggers "ClassFormatError: Illegal exception table range in class file C". Similar
     // for local variables in dead blocks. Maybe that's a bug in the ASM framework.
 
-    var recurse = true
-    var codeHandlersOrJumpsChanged = false
-    while (recurse) {
+    def removalRound(): Boolean = {
       // unreachable-code, empty-handlers and simplify-jumps run until reaching a fixpoint (see doc on class LocalOpt)
       val (codeRemoved, handlersRemoved, liveHandlerRemoved) = if (settings.YoptUnreachableCode) {
         val (codeRemoved, liveLabels) = removeUnreachableCodeImpl(method, ownerClassName)
@@ -148,11 +154,14 @@ class LocalOpt(settings: ScalaSettings) {
 
       val jumpsChanged = if (settings.YoptSimplifyJumps) simplifyJumps(method) else false
 
-      codeHandlersOrJumpsChanged ||= (codeRemoved || handlersRemoved || jumpsChanged)
+      // Eliminating live handlers and simplifying jump instructions may render more code
+      // unreachable, so we need to run another round.
+      if (liveHandlerRemoved || jumpsChanged) removalRound()
 
-      // The doc comment of class LocalOpt explains why we recurse if jumpsChanged || liveHandlerRemoved
-      recurse = settings.YoptRecurseUnreachableJumps && (jumpsChanged || liveHandlerRemoved)
+      codeRemoved || handlersRemoved || jumpsChanged
     }
+
+    val codeHandlersOrJumpsChanged = removalRound()
 
     // (*) Removing stale local variable descriptors is required for correctness of unreachable-code
     val localsRemoved =
