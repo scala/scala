@@ -9,7 +9,7 @@ package backend.jvm
 import scala.tools.asm
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.opt.ByteCodeRepository.Source
-import scala.tools.nsc.backend.jvm.opt.{Inliner, ByteCodeRepository}
+import scala.tools.nsc.backend.jvm.opt.{CallGraph, Inliner, ByteCodeRepository}
 import BTypes.InternalName
 
 /**
@@ -40,11 +40,57 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
   val inliner: Inliner[this.type] = new Inliner(this)
 
+  val callGraph: CallGraph[this.type] = new CallGraph(this)
+
+  /**
+   * See doc in [[BTypes.inlineInfosFromSymbolLookup]].
+   * TODO: once the optimzier uses parallelism, lock before symbol table accesses
+   */
+  def inlineInfosFromSymbolLookup(internalName: InternalName): Map[String, InlineInfo] = {
+    val name = internalName.replace('/', '.')
+
+    // TODO: de-mangle more class names
+
+    def inEmptyPackage = name.indexOf('.') == -1
+    def isModule       = name.endsWith("$")
+    def isTopLevel     = {
+      // TODO: this is conservative, there's also $'s introduced by name mangling, e.g., $colon$colon
+      // for this, use NameTransformer.decode
+      if (isModule) name.indexOf('$') == (name.length - 1)
+      else name.indexOf('$') == -1
+    }
+
+    val lookupName = {
+      if (isModule) newTermName(name.substring(0, name.length - 1))
+      else newTypeName(name)
+    }
+
+    // for now we only try classes that look like top-level
+    val classSym = if (!isTopLevel) NoSymbol else {
+      val member = {
+        if (inEmptyPackage) {
+          // rootMirror.getClassIfDefined fails for classes / modules in the empty package.
+          // maybe that should be fixed.
+          rootMirror.EmptyPackageClass.info.member(lookupName)
+        } else {
+          if (isModule) rootMirror.getModuleIfDefined(lookupName)
+          else rootMirror.getClassIfDefined(lookupName)
+        }
+      }
+      if (isModule) member.moduleClass else member
+    }
+
+    if (classSym == NoSymbol) Map.empty
+    else buildInlineInfos(classSym)
+  }
+
   final def initializeCoreBTypes(): Unit = {
     coreBTypes.setBTypes(new CoreBTypes[this.type](this))
   }
 
   def recordPerRunCache[T <: collection.generic.Clearable](cache: T): T = perRunCaches.recordCache(cache)
+
+  def inlineGlobalEnabled: Boolean = settings.YoptInlineGlobal
 
   // helpers that need access to global.
   // TODO @lry create a separate component, they don't belong to BTypesFromSymbols
@@ -78,22 +124,125 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   // end helpers
 
   /**
-   * The ClassBType for a class symbol `sym`.
+   * The ClassBType for a class symbol `classSym`.
+   *
+   * The class symbol scala.Nothing is mapped to the class scala.runtime.Nothing$. Similarly,
+   * scala.Null is mapped to scala.runtime.Null$. This is because there exist no class files
+   * for the Nothing / Null. If used for example as a parameter type, we use the runtime classes
+   * in the classfile method signature.
+   *
+   * Note that the referenced class symbol may be an implementation class. For example when
+   * compiling a mixed-in method that forwards to the static method in the implementation class,
+   * the class descriptor of the receiver (the implementation class) is obtained by creating the
+   * ClassBType.
    */
   final def classBTypeFromSymbol(classSym: Symbol): ClassBType = {
     assert(classSym != NoSymbol, "Cannot create ClassBType from NoSymbol")
     assert(classSym.isClass, s"Cannot create ClassBType from non-class symbol $classSym")
-    assert(
-      (!primitiveTypeMap.contains(classSym) || isCompilingPrimitive) &&
-      (classSym != NothingClass && classSym != NullClass),
-      s"Cannot create ClassBType for special class symbol ${classSym.fullName}")
+    assertClassNotArrayNotPrimitive(classSym)
+    assert(!primitiveTypeMap.contains(classSym) || isCompilingPrimitive, s"Cannot create ClassBType for primitive class symbol $classSym")
+    if (classSym == NothingClass) RT_NOTHING
+    else if (classSym == NullClass) RT_NULL
+    else {
+      val internalName = classSym.javaBinaryName.toString
+      classBTypeFromInternalName.getOrElse(internalName, {
+        // The new ClassBType is added to the map in its constructor, before we set its info. This
+        // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
+        setClassInfo(classSym, ClassBType(internalName))
+      })
+    }
+  }
 
-    val internalName = classSym.javaBinaryName.toString
-    classBTypeFromInternalName.getOrElse(internalName, {
-      // The new ClassBType is added to the map in its constructor, before we set its info. This
-      // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
-      setClassInfo(classSym, ClassBType(internalName))
-    })
+  /**
+   * Builds a [[MethodBType]] for a method symbol.
+   */
+  final def methodBTypeFromSymbol(methodSymbol: Symbol): MethodBType = {
+    assert(methodSymbol.isMethod, s"not a method-symbol: $methodSymbol")
+    val resultType: BType =
+      if (methodSymbol.isClassConstructor || methodSymbol.isConstructor) UNIT
+      else typeToBType(methodSymbol.tpe.resultType)
+    MethodBType(methodSymbol.tpe.paramTypes map typeToBType, resultType)
+  }
+
+  /**
+   * This method returns the BType for a type reference, for example a parameter type.
+   *
+   * If `t` references a class, typeToBType ensures that the class is not an implementation class.
+   * See also comment on classBTypeFromSymbol, which is invoked for implementation classes.
+   */
+  final def typeToBType(t: Type): BType = {
+    import definitions.ArrayClass
+
+    /**
+     * Primitive types are represented as TypeRefs to the class symbol of, for example, scala.Int.
+     * The `primitiveTypeMap` maps those class symbols to the corresponding PrimitiveBType.
+     */
+    def primitiveOrClassToBType(sym: Symbol): BType = {
+      assertClassNotArray(sym)
+      assert(!sym.isImplClass, sym)
+      primitiveTypeMap.getOrElse(sym, classBTypeFromSymbol(sym))
+    }
+
+    /**
+     * When compiling Array.scala, the type parameter T is not erased and shows up in method
+     * signatures, e.g. `def apply(i: Int): T`. A TyperRef to T is replaced by ObjectReference.
+     */
+    def nonClassTypeRefToBType(sym: Symbol): ClassBType = {
+      assert(sym.isType && isCompilingArray, sym)
+      ObjectReference
+    }
+
+    t.dealiasWiden match {
+      case TypeRef(_, ArrayClass, List(arg))  => ArrayBType(typeToBType(arg)) // Array type such as Array[Int] (kept by erasure)
+      case TypeRef(_, sym, _) if !sym.isClass => nonClassTypeRefToBType(sym)  // See comment on nonClassTypeRefToBType
+      case TypeRef(_, sym, _)                 => primitiveOrClassToBType(sym) // Common reference to a type such as scala.Int or java.lang.String
+      case ClassInfoType(_, _, sym)           => primitiveOrClassToBType(sym) // We get here, for example, for genLoadModule, which invokes typeToBType(moduleClassSymbol.info)
+
+      /* AnnotatedType should (probably) be eliminated by erasure. However we know it happens for
+       * meta-annotated annotations (@(ann @getter) val x = 0), so we don't emit a warning.
+       * The type in the AnnotationInfo is an AnnotatedTpe. Tested in jvm/annotations.scala.
+       */
+      case a @ AnnotatedType(_, t) =>
+        debuglog(s"typeKind of annotated type $a")
+        typeToBType(t)
+
+      /* ExistentialType should (probably) be eliminated by erasure. We know they get here for
+       * classOf constants:
+       *   class C[T]
+       *   class T { final val k = classOf[C[_]] }
+       */
+      case e @ ExistentialType(_, t) =>
+        debuglog(s"typeKind of existential type $e")
+        typeToBType(t)
+
+      /* The cases below should probably never occur. They are kept for now to avoid introducing
+       * new compiler crashes, but we added a warning. The compiler / library bootstrap and the
+       * test suite don't produce any warning.
+       */
+
+      case tp =>
+        currentUnit.warning(tp.typeSymbol.pos,
+          s"an unexpected type representation reached the compiler backend while compiling $currentUnit: $tp. " +
+            "If possible, please file a bug on issues.scala-lang.org.")
+
+        tp match {
+          case ThisType(ArrayClass)               => ObjectReference // was introduced in 9b17332f11 to fix SI-999, but this code is not reached in its test, or any other test
+          case ThisType(sym)                      => classBTypeFromSymbol(sym)
+          case SingleType(_, sym)                 => primitiveOrClassToBType(sym)
+          case ConstantType(_)                    => typeToBType(t.underlying)
+          case RefinedType(parents, _)            => parents.map(typeToBType(_).asClassBType).reduceLeft((a, b) => a.jvmWiseLUB(b))
+        }
+    }
+  }
+
+  def assertClassNotArray(sym: Symbol): Unit = {
+    assert(sym.isClass, sym)
+    assert(sym != definitions.ArrayClass || isCompilingArray, sym)
+  }
+
+  def assertClassNotArrayNotPrimitive(sym: Symbol): Unit = {
+    assertClassNotArray(sym)
+    assert(!primitiveTypeMap.contains(sym) || isCompilingPrimitive, sym)
   }
 
   private def setClassInfo(classSym: Symbol, classBType: ClassBType): ClassBType = {
@@ -185,7 +334,9 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     val nestedInfo = buildNestedInfo(classSym)
 
-    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo)
+    val inlineInfos = buildInlineInfos(classSym)
+
+    classBType.info = ClassInfo(superClass, interfaces, flags, nestedClasses, nestedInfo, inlineInfos)
     classBType
   }
 
@@ -237,6 +388,26 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     }
   }
 
+  private def buildInlineInfos(classSym: Symbol): Map[String, InlineInfo] = {
+    if (!settings.YoptInlinerEnabled) Map.empty
+    else {
+      // Primitve methods cannot be inlined, so there's no point in building an InlineInfo. Also, some
+      // primitive methods (e.g., `isInstanceOf`) have non-erased types, which confuses [[typeToBType]].
+      classSym.info.decls.iterator.filter(m => m.isMethod && !scalaPrimitives.isPrimitive(m)).map({
+        case methodSym =>
+          val methodBType = methodBTypeFromSymbol(methodSym)
+          val name        = methodSym.javaSimpleName.toString // same as in genDefDef
+          val signature   = name + methodBType.descriptor
+          val info        = InlineInfo(
+            effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden,
+            annotatedInline   = methodSym.hasAnnotation(ScalaInlineClass),
+            annotatedNoInline = methodSym.hasAnnotation(ScalaNoInlineClass)
+          )
+          (signature, info)
+      }).toMap
+    }
+  }
+
   /**
    * For top-level objects without a companion class, the compilere generates a mirror class with
    * static forwarders (Java compat). There's no symbol for the mirror class, but we still need a
@@ -254,7 +425,8 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         interfaces = Nil,
         flags = asm.Opcodes.ACC_SUPER | asm.Opcodes.ACC_PUBLIC | asm.Opcodes.ACC_FINAL,
         nestedClasses = nested,
-        nestedInfo = None
+        nestedInfo = None,
+        Map.empty // no InlineInfo needed, scala never invokes methods on the mirror class
       )
       c
     })

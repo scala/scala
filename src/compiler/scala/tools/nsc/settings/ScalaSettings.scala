@@ -220,6 +220,8 @@ trait ScalaSettings extends AbsScalaSettings
     val emptyLineNumbers        = Choice("empty-line-numbers",        "Eliminate unnecessary line number information.")
     val emptyLabels             = Choice("empty-labels",              "Eliminate and collapse redundant labels in the bytecode.")
     val compactLocals           = Choice("compact-locals",            "Eliminate empty slots in the sequence of local variables.")
+    val inlineProject           = Choice("inline-project",            "Inline only methods defined in the files being compiled")
+    val inlineGlobal            = Choice("inline-global",             "Inline methods from any source, including classfiles on the compile classpath")
 
     val lNone           = Choice("l:none",      "Don't enable any optimizations.")
 
@@ -229,10 +231,10 @@ trait ScalaSettings extends AbsScalaSettings
     private val methodChoices = List(unreachableCode, simplifyJumps, recurseUnreachableJumps, emptyLineNumbers, emptyLabels, compactLocals)
     val lMethod         = Choice("l:method",    "Enable intra-method optimizations: "+ methodChoices.mkString(","),                                expandsTo = methodChoices)
 
-    private val projectChoices = List(lMethod)
+    private val projectChoices = List(lMethod, inlineProject)
     val lProject        = Choice("l:project",   "Enable cross-method optimizations within the current project: "+ projectChoices.mkString(","),    expandsTo = projectChoices)
 
-    private val classpathChoices = List(lProject)
+    private val classpathChoices = List(lProject, inlineGlobal)
     val lClasspath      = Choice("l:classpath", "Enable cross-method optimizations across the entire classpath: "+ classpathChoices.mkString(","), expandsTo = classpathChoices)
   }
 
@@ -249,6 +251,10 @@ trait ScalaSettings extends AbsScalaSettings
   def YoptEmptyLineNumbers        = Yopt.contains(YoptChoices.emptyLineNumbers)
   def YoptEmptyLabels             = Yopt.contains(YoptChoices.emptyLabels)
   def YoptCompactLocals           = Yopt.contains(YoptChoices.compactLocals)
+
+  def YoptInlineProject           = Yopt.contains(YoptChoices.inlineProject)
+  def YoptInlineGlobal            = Yopt.contains(YoptChoices.inlineGlobal)
+  def YoptInlinerEnabled          = YoptInlineProject || YoptInlineGlobal
 
   private def removalIn212 = "This flag is scheduled for removal in 2.12. If you have a case where you need this flag then please report a bug."
 

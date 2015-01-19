@@ -9,7 +9,7 @@ package opt
 
 import scala.annotation.switch
 import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.analysis.{Analyzer, BasicValue, BasicInterpreter}
+import scala.tools.asm.tree.analysis.{Analyzer, BasicInterpreter}
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
@@ -149,7 +149,7 @@ class LocalOpt(settings: ScalaSettings) {
   def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: String): (Boolean, Set[LabelNode]) = {
     // The data flow analysis requires the maxLocals / maxStack fields of the method to be computed.
     computeMaxLocalsMaxStack(method)
-    val a = new Analyzer[BasicValue](new BasicInterpreter)
+    val a = new Analyzer(new BasicInterpreter)
     a.analyze(ownerClassName, method)
     val frames = a.getFrames
 

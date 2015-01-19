@@ -26,7 +26,7 @@ object InlinerTest extends ClearAfterClass.Clearable {
   var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:project")
 
   // allows inspecting the caches after a compilation run
-  def notPerRun: List[Clearable] = List(compiler.genBCode.bTypes.classBTypeFromInternalName, compiler.genBCode.bTypes.byteCodeRepository.classes)
+  def notPerRun: List[Clearable] = List(compiler.genBCode.bTypes.classBTypeFromInternalName, compiler.genBCode.bTypes.byteCodeRepository.classes, compiler.genBCode.bTypes.callGraph.callsites)
   notPerRun foreach compiler.perRunCaches.unrecordCache
 
   def clear(): Unit = { compiler = null }
@@ -41,11 +41,7 @@ class InlinerTest extends ClearAfterClass {
 
   def compile(code: String): List[ClassNode] = {
     InlinerTest.notPerRun.foreach(_.clear())
-    val cls = compileClasses(compiler)(code)
-    // the compiler doesn't add classes being compiled to the code repo yet, so we do it manually.
-    // this line is removed in the next commit.
-    for (c <- cls) byteCodeRepository.classes(c.name) = (c, ByteCodeRepository.Classfile)
-    cls
+    compileClasses(compiler)(code)
   }
 
   // inline first invocation of f into g in class C
