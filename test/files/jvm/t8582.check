@@ -14,10 +14,10 @@ Reflection can find direct nested classes (A2-B2-C2)
  A2$B2: List(class A2$B2$C2)
  A2$B2$C2: List()
 
-Mirror classes have the same InnerClass attributes as the corresponding module class:
+The InnerClass attribute of a mirror class contains the members of the module class:
  className[p1/p2/Singleton$Singleton$] outerClassName[p1/p2/Singleton] innerName[Singleton$] access[9]
-Module class
- className[p1/p2/Singleton$Singleton$] outerClassName[p1/p2/Singleton] innerName[Singleton$] access[9]
+The module members are not in the InnerClass table of the module class (unless referenced):
+ 
 
 An outer class has a InnerClass attribute for direct nested classes
  className[A1$B1] outerClassName[A1] innerName[B1] access[1]

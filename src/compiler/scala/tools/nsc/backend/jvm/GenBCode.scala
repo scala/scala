@@ -286,7 +286,7 @@ abstract class GenBCode extends BCodeSyncAndTry {
       val initStart = Statistics.startTimer(BackendStats.bcodeInitTimer)
       arrivalPos = 0 // just in case
       scalaPrimitives.init()
-      bTypes.intializeCoreBTypes()
+      bTypes.initializeCoreBTypes()
       Statistics.stopTimer(BackendStats.bcodeInitTimer, initStart)
 
       // initBytecodeWriter invokes fullName, thus we have to run it before the typer-dependent thread is activated.
