@@ -7,6 +7,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import scala.annotation.tailrec
 import scala.tools.asm
 import asm.Opcodes._
 import asm.tree._
@@ -16,10 +17,131 @@ import AsmUtils._
 import BytecodeUtils._
 import OptimizerReporting._
 import scala.tools.asm.tree.analysis._
+import collection.mutable
 
 class Inliner[BT <: BTypes](val btypes: BT) {
   import btypes._
   import callGraph._
+
+  def runInliner(): Unit = {
+    for (request <- collectAndOrderInlineRequests) {
+      val Some(callee) = request.callee
+      inline(request.callsiteInstruction, request.callsiteStackHeight, request.callsiteMethod, request.callsiteClass,
+        callee.callee, callee.calleeDeclarationClass,
+        receiverKnownNotNull = false, keepLineNumbers = false)
+    }
+  }
+
+  /**
+   * Ordering for inline requests. Required to make the inliner deterministic:
+   *   - Always remove the same request when breaking inlining cycles
+   *   - Perform inlinings in a consistent order
+   */
+  object callsiteOrdering extends Ordering[Callsite] {
+    override def compare(x: Callsite, y: Callsite): Int = {
+      val cls = x.callsiteClass.internalName compareTo y.callsiteClass.internalName
+      if (cls != 0) return cls
+
+      val name = x.callsiteMethod.name compareTo y.callsiteMethod.name
+      if (name != 0) return name
+
+      val desc = x.callsiteMethod.desc compareTo y.callsiteMethod.desc
+      if (desc != 0) return desc
+
+      def pos(c: Callsite) = c.callsiteMethod.instructions.indexOf(c.callsiteInstruction)
+      pos(x) - pos(y)
+    }
+  }
+
+  /**
+   * Select callsites from the call graph that should be inlined. The resulting list of inlining
+   * requests is allowed to have cycles, and the callsites can appear in any order.
+   */
+  def selectCallsitesForInlining: List[Callsite] = {
+    callsites.iterator.filter({
+      case (_, callsite) => callsite.callee match {
+        case Some(Callee(callee, _, safeToInline, Some(annotatedInline), _)) =>
+          // TODO: fix inlining from traits.
+          // For trait methods the callee is abstract: "trait T { @inline final def f = 1}".
+          // A callsite (t: T).f is `safeToInline` (effectivelyFinal is true), but the callee is the
+          // abstract method in the interface.
+          !isAbstractMethod(callee) && safeToInline && annotatedInline
+        case _ => false
+      }
+      case _ => false
+    }).map(_._2).toList
+  }
+
+  /**
+   * Returns the callsites that can be inlined. Ensures that the returned inline request graph does
+   * not contain cycles.
+   *
+   * The resulting list is sorted such that the leaves of the inline request graph are on the left.
+   * Once these leaves are inlined, the successive elements will be leaves, etc.
+   */
+  private def collectAndOrderInlineRequests: List[Callsite] = {
+    val requests = selectCallsitesForInlining
+
+    // This map is an index to look up the inlining requests for a method. The value sets are mutable
+    // to allow removing elided requests (to break inlining cycles). The map itself is mutable to
+    // allow efficient building: requests.groupBy would build values as List[Callsite] that need to
+    // be transformed to mutable sets.
+    val inlineRequestsForMethod: mutable.Map[MethodNode, mutable.Set[Callsite]] = mutable.HashMap.empty.withDefaultValue(mutable.HashSet.empty)
+    for (r <- requests) inlineRequestsForMethod.getOrElseUpdate(r.callsiteMethod, mutable.HashSet.empty) += r
+
+    /**
+     * Break cycles in the inline request graph by removing callsites.
+     *
+     * The list `requests` is traversed left-to-right, removing those callsites that are part of a
+     * cycle. Elided callsites are also removed from the `inlineRequestsForMethod` map.
+     */
+    def breakInlineCycles(requests: List[Callsite]): List[Callsite] = {
+      // is there a path of inline requests from start to goal?
+      def isReachable(start: MethodNode, goal: MethodNode): Boolean = {
+        @tailrec def reachableImpl(check: List[MethodNode], visited: Set[MethodNode]): Boolean = check match {
+          case x :: xs =>
+            if (x == goal) true
+            else if (visited(x)) reachableImpl(xs, visited)
+            else {
+              val callees = inlineRequestsForMethod(x).map(_.callee.get.callee)
+              reachableImpl(xs ::: callees.toList, visited + x)
+            }
+
+          case Nil =>
+            false
+        }
+        reachableImpl(List(start), Set.empty)
+      }
+
+      val result = new mutable.ListBuffer[Callsite]()
+      // sort the inline requests to ensure that removing requests is deterministic
+      for (r <- requests.sorted(callsiteOrdering)) {
+        // is there a chain of inlining requests that would inline the callsite method into the callee?
+        if (isReachable(r.callee.get.callee, r.callsiteMethod))
+          inlineRequestsForMethod(r.callsiteMethod) -= r
+        else
+          result += r
+      }
+      result.toList
+    }
+
+    // sort the remaining inline requests such that the leaves appear first, then those requests
+    // that become leaves, etc.
+    def leavesFirst(requests: List[Callsite], visited: Set[Callsite] = Set.empty): List[Callsite] = {
+      if (requests.isEmpty) Nil
+      else {
+        val (leaves, others) = requests.partition(r => {
+          val inlineRequestsForCallee = inlineRequestsForMethod(r.callee.get.callee)
+          inlineRequestsForCallee.forall(visited)
+        })
+        assert(leaves.nonEmpty, requests)
+        leaves ::: leavesFirst(others, visited ++ leaves)
+      }
+    }
+
+    leavesFirst(breakInlineCycles(requests))
+  }
+
 
   /**
    * Copy and adapt the instructions of a method to a callsite.
