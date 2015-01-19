@@ -23,7 +23,7 @@ import scala.collection.convert.decorateAsScala._
 import scala.tools.testing.ClearAfterClass
 
 object InlinerTest extends ClearAfterClass.Clearable {
-  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:project")
+  var compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:classpath")
 
   // allows inspecting the caches after a compilation run
   def notPerRun: List[Clearable] = List(compiler.genBCode.bTypes.classBTypeFromInternalName, compiler.genBCode.bTypes.byteCodeRepository.classes, compiler.genBCode.bTypes.callGraph.callsites)
@@ -42,6 +42,15 @@ class InlinerTest extends ClearAfterClass {
   def compile(code: String): List[ClassNode] = {
     InlinerTest.notPerRun.foreach(_.clear())
     compileClasses(compiler)(code)
+  }
+
+  def checkCallsite(callsite: callGraph.Callsite, callee: MethodNode) = {
+    assert(callsite.callsiteMethod.instructions.contains(callsite.callsiteInstruction), instructionsFromMethod(callsite.callsiteMethod))
+
+    val callsiteClassNode = byteCodeRepository.classNode(callsite.callsiteClass.internalName)
+    assert(callsiteClassNode.methods.contains(callsite.callsiteMethod), callsiteClassNode.methods.asScala.map(_.name).toList)
+
+    assert(callsite.callee.get.callee == callee, callsite.callee.get.callee.name)
   }
 
   // inline first invocation of f into g in class C
@@ -204,5 +213,205 @@ class InlinerTest extends ClearAfterClass {
       keepLineNumbers = true)
 
     assert(r.get contains "would cause an IllegalAccessError", r)
+  }
+
+  @Test
+  def inlineSimpleAtInline(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def f = 0
+        |  final def g = 1
+        |
+        |  def test = f + g
+        |}
+      """.stripMargin
+    val List(cCls) = compile(code)
+    val instructions = instructionsFromMethod(cCls.methods.asScala.find(_.name == "test").get)
+    assert(instructions.contains(Op(ICONST_0)), instructions mkString "\n")
+    assert(!instructions.contains(Op(ICONST_1)), instructions)
+  }
+
+  @Test
+  def cyclicInline(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def f: Int = g
+        |  @inline final def g: Int = f
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    val methods @ List(_, g) = c.methods.asScala.filter(_.name.length == 1).toList
+    val List(fIns, gIns) = methods.map(instructionsFromMethod(_).dropNonOp)
+    val invokeG = Invoke(INVOKEVIRTUAL, "C", "g", "()I", false)
+    assert(fIns contains invokeG, fIns) // no inlining into f, that request is elided
+    assert(gIns contains invokeG, gIns) // f is inlined into g, g invokes itself recursively
+
+    assert(callGraph.callsites.size == 3, callGraph.callsites)
+    for (callsite <- callGraph.callsites.values if methods.contains(callsite.callsiteMethod)) {
+      checkCallsite(callsite, g)
+    }
+  }
+
+  @Test
+  def cyclicInline2(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def h: Int = f
+        |  @inline final def f: Int = g + g
+        |  @inline final def g: Int = h
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    val methods @ List(f, g, h) = c.methods.asScala.filter(_.name.length == 1).sortBy(_.name).toList
+    val List(fIns, gIns, hIns) = methods.map(instructionsFromMethod(_).dropNonOp)
+    val invokeG = Invoke(INVOKEVIRTUAL, "C", "g", "()I", false)
+    assert(fIns.count(_ == invokeG) == 2, fIns) // no inlining into f, these requests are elided
+    assert(gIns.count(_ == invokeG) == 2, gIns)
+    assert(hIns.count(_ == invokeG) == 2, hIns)
+
+    assert(callGraph.callsites.size == 7, callGraph.callsites)
+    for (callsite <- callGraph.callsites.values if methods.contains(callsite.callsiteMethod)) {
+      checkCallsite(callsite, g)
+    }
+  }
+
+  @Test
+  def arraycopy(): Unit = {
+    // also tests inlining of a void-returning method (no return value on the stack)
+    val code =
+      """class C {
+        |  def f(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int): Unit = {
+        |    compat.Platform.arraycopy(src, srcPos, dest, destPos, length)
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    val ins = instructionsFromMethod(c.methods.asScala.find(_.name == "f").get)
+    val invokeSysArraycopy = Invoke(INVOKESTATIC, "java/lang/System", "arraycopy", "(Ljava/lang/Object;ILjava/lang/Object;II)V", false)
+    assert(ins contains invokeSysArraycopy, ins mkString "\n")
+  }
+
+  @Test
+  def arrayMemberMethod(): Unit = {
+    // This used to crash when building the call graph. The `owner` field of the MethodInsnNode
+    // for the invocation of `clone` is not an internal name, but a full array descriptor
+    // [Ljava.lang.Object; - the documentation in the ASM library didn't mention that possibility.
+    val code =
+      """class C {
+        |  def f(a: Array[Object]) = {
+        |    a.clone()
+        |  }
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    assert(callGraph.callsites.values exists (_.callsiteInstruction.name == "clone"))
+  }
+
+  @Test
+  def atInlineInTraitDoesNotCrash(): Unit = {
+    val code =
+      """trait T {
+        |  @inline final def f = 0
+        |}
+        |class C {
+        |  def g(t: T) = t.f
+        |}
+      """.stripMargin
+    val List(c, t, tClass) = compile(code)
+    val ins = instructionsFromMethod(c.methods.asScala.find(_.name == "g").get)
+    val invokeF = Invoke(INVOKEINTERFACE, "T", "f", "()I", true)
+    // no inlining yet
+    assert(ins contains invokeF, ins mkString "\n")
+  }
+
+  @Test
+  def inlinePrivateMethodWithHandler(): Unit = {
+    val code =
+      """class C {
+        |  @inline private def f = try { 0 } catch { case _: Throwable => 1 }
+        |  def g = f
+        |}
+      """.stripMargin
+    val List(c) = compile(code)
+    val ins = instructionsFromMethod(c.methods.asScala.find(_.name == "g").get)
+    println(ins)
+    // no more invoke, f is inlined
+    assert(ins.count(_.isInstanceOf[Invoke]) == 0, ins mkString "\n")
+  }
+
+  @Test
+  def inlineStaticCall(): Unit = {
+    val code =
+      """class C {
+        |  def f = Integer.lowestOneBit(103)
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    val f = c.methods.asScala.find(_.name == "f").get
+    val callsiteIns = f.instructions.iterator().asScala.collect({ case c: MethodInsnNode => c }).next()
+    val clsBType = classBTypeFromParsedClassfile(c.name)
+    val analyzer = new BasicAnalyzer(f, clsBType.internalName)
+
+    val integerClassBType = classBTypeFromInternalName("java/lang/Integer")
+    val lowestOneBitMethod = byteCodeRepository.methodNode(integerClassBType.internalName, "lowestOneBit", "(I)I").get._1
+
+    val r = inliner.inline(
+      callsiteIns,
+      analyzer.frameAt(callsiteIns).getStackSize,
+      f,
+      clsBType,
+      lowestOneBitMethod,
+      integerClassBType,
+      receiverKnownNotNull = false,
+      keepLineNumbers = false)
+
+    assert(r.isEmpty, r)
+    val ins = instructionsFromMethod(f)
+
+    // no invocations, lowestOneBit is inlined
+    assert(ins.count(_.isInstanceOf[Invoke]) == 0, ins mkString "\n")
+
+    // no null check when inlining a static method
+    ins foreach {
+      case Jump(IFNONNULL, _) => assert(false, ins mkString "\n")
+      case _ =>
+    }
+  }
+
+  @Test
+  def maxLocalsMaxStackAfterInline(): Unit = {
+    val code =
+      """class C {
+        |  @inline final def f1(x: Int): Int = {
+        |    val a = x + 1
+        |    math.max(a, math.min(10, a - 1))
+        |  }
+        |
+        |  @inline final def f2(x: Int): Unit = {
+        |    val a = x + 1
+        |    println(math.max(a, 10))
+        |  }
+        |
+        |  def g1 = println(f1(32))
+        |  def g2 = println(f2(32))
+        |}
+      """.stripMargin
+
+    val List(c) = compile(code)
+    val ms @ List(f1, f2, g1, g2) = c.methods.asScala.filter(_.name.length == 2).toList
+
+    // stack height at callsite of f1 is 1, so max of g1 after inlining is max of f1 + 1
+    assert(g1.maxStack == 7 && f1.maxStack == 6, s"${g1.maxStack} - ${f1.maxStack}")
+
+    // locals in f1: this, x, a
+    // locals in g1 after inlining: this, this-of-f1, x, a, return value
+    assert(g1.maxLocals == 5 && f1.maxLocals == 3, s"${g1.maxLocals} - ${f1.maxLocals}")
+
+    // like maxStack in g1 / f1
+    assert(g2.maxStack == 5 && f2.maxStack == 4, s"${g2.maxStack} - ${f2.maxStack}")
+
+    // like maxLocals for g1 / f1, but no return value
+    assert(g2.maxLocals == 4 && f2.maxLocals == 3, s"${g2.maxLocals} - ${f2.maxLocals}")
   }
 }

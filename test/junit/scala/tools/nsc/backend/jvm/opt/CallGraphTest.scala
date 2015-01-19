@@ -23,8 +23,6 @@ import scala.collection.convert.decorateAsScala._
 
 @RunWith(classOf[JUnit4])
 class CallGraphTest {
-  // no need to move the compiler instance to a companion: there's a single test method, so only a
-  // single instance created.
   val compiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:inline-global")
   import compiler.genBCode.bTypes._
 
@@ -72,13 +70,7 @@ class CallGraphTest {
 
     // Get the ClassNodes from the code repo (don't use the unparsed ClassNodes returned by compile).
     // The callGraph.callsites map is indexed by instructions of those ClassNodes.
-    val clss @ List(cCls, cMod, dCls, testCls) = compile(code).map(c => byteCodeRepository.classNode(c.name))
-    clss.foreach(cls => {
-      // add classes to the call graph manually, the compiler doesn't do it yet. the next commit removes these lines.
-      cls.methods.asScala foreach BytecodeUtils.computeMaxLocalsMaxStack
-      callGraph.addClass(cls)
-    })
-
+    val List(cCls, cMod, dCls, testCls) = compile(code).map(c => byteCodeRepository.classNode(c.name))
 
     val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = cCls.methods.iterator.asScala.filter(_.name.startsWith("f")).toList.sortBy(_.name)
     val List(df1, df3) = dCls.methods.iterator.asScala.filter(_.name.startsWith("f")).toList.sortBy(_.name)

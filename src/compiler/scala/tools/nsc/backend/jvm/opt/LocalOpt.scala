@@ -12,6 +12,7 @@ import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.analysis.{Analyzer, BasicInterpreter}
 import scala.tools.asm.tree._
 import scala.collection.convert.decorateAsScala._
+import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 import scala.tools.nsc.settings.ScalaSettings
 
@@ -48,6 +49,37 @@ import scala.tools.nsc.settings.ScalaSettings
  */
 class LocalOpt(settings: ScalaSettings) {
   /**
+   * Remove unreachable code from all methods of `classNode`. See of its overload.
+   *
+   * @param classNode The class to optimize
+   * @return          `true` if unreachable code was removed from any method
+   */
+  def minimalRemoveUnreachableCode(classNode: ClassNode): Boolean = {
+    classNode.methods.asScala.foldLeft(false) {
+      case (changed, method) => minimalRemoveUnreachableCode(method, classNode.name) || changed
+    }
+  }
+
+  /**
+   * Remove unreachable code from a method.
+   *
+   * This implementation only removes instructions that are unreachable for an ASM analyzer /
+   * interpreter. This ensures that future analyses will not produce `null` frames. The inliner
+   * depends on this property.
+   */
+  def minimalRemoveUnreachableCode(method: MethodNode, ownerClassName: InternalName): Boolean = {
+    if (method.instructions.size == 0) return false // fast path for abstract methods
+
+    val (codeRemoved, _) = removeUnreachableCodeImpl(method, ownerClassName)
+    if (codeRemoved) {
+      // Required for correctness, see comment in class LocalOpt
+      removeEmptyExceptionHandlers(method)
+      removeUnusedLocalVariableNodes(method)()
+    }
+    codeRemoved
+  }
+
+  /**
    * Remove unreachable instructions from all (non-abstract) methods and apply various other
    * cleanups to the bytecode.
    *
@@ -73,7 +105,7 @@ class LocalOpt(settings: ScalaSettings) {
    *
    * Returns `true` if the bytecode of `method` was changed.
    */
-  def methodOptimizations(method: MethodNode, ownerClassName: String): Boolean = {
+  def methodOptimizations(method: MethodNode, ownerClassName: InternalName): Boolean = {
     if (method.instructions.size == 0) return false // fast path for abstract methods
 
     // unreachable-code also removes unused local variable nodes and empty exception handlers.
@@ -124,7 +156,7 @@ class LocalOpt(settings: ScalaSettings) {
 
     // (*) Removing stale local variable descriptors is required for correctness of unreachable-code
     val localsRemoved =
-      if (settings.YoptCompactLocals) compactLocalVariables(method)
+      if (settings.YoptCompactLocals) compactLocalVariables(method) // also removes unused
       else if (settings.YoptUnreachableCode) removeUnusedLocalVariableNodes(method)() // (*)
       else false
 
@@ -146,7 +178,7 @@ class LocalOpt(settings: ScalaSettings) {
    *
    * TODO: rewrite, don't use computeMaxLocalsMaxStack (runs a ClassWriter) / Analyzer. Too slow.
    */
-  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: String): (Boolean, Set[LabelNode]) = {
+  def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): (Boolean, Set[LabelNode]) = {
     // The data flow analysis requires the maxLocals / maxStack fields of the method to be computed.
     computeMaxLocalsMaxStack(method)
     val a = new Analyzer(new BasicInterpreter)
