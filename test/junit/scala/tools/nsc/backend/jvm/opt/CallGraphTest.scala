@@ -70,7 +70,7 @@ class CallGraphTest {
 
     // Get the ClassNodes from the code repo (don't use the unparsed ClassNodes returned by compile).
     // The callGraph.callsites map is indexed by instructions of those ClassNodes.
-    val List(cCls, cMod, dCls, testCls) = compile(code).map(c => byteCodeRepository.classNode(c.name))
+    val List(cCls, cMod, dCls, testCls) = compile(code).map(c => byteCodeRepository.classNode(c.name).get)
 
     val List(cf1, cf2, cf3, cf4, cf5, cf6, cf7) = cCls.methods.iterator.asScala.filter(_.name.startsWith("f")).toList.sortBy(_.name)
     val List(df1, df3) = dCls.methods.iterator.asScala.filter(_.name.startsWith("f")).toList.sortBy(_.name)
