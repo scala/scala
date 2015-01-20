@@ -1,9 +1,9 @@
 #Tue Sep 11 19:21:09 CEST 2007
 version.major=2
 version.minor=11
-version.patch=5
+version.patch=6
 # This is the -N part of a version.  if it's 0, it's dropped from maven versions.
 version.bnum=0
 
-# Note: To build a release run ant with -Dbuild.release=true
-# To build an RC, run ant with -Dmaven.version.suffix=-RCN
+# To build a release, see scripts/jobs/scala-release-2.11.x-build
+# (normally run by the eponymous job on scala-ci.typesafe.com).
