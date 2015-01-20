@@ -59,7 +59,7 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
 
     def check(classNode: ClassNode, test: Option[AbstractInsnNode] => Unit) = {
       for (m <- methods)
-        test(inliner.findIllegalAccess(m.instructions, classBTypeFromParsedClassfile(classNode.name)))
+        test(inliner.findIllegalAccess(m.instructions, classBTypeFromParsedClassfile(classNode.name).get))
     }
 
     check(cClass, assertEmpty)
@@ -153,7 +153,7 @@ class InlinerIllegalAccessTest extends ClearAfterClass {
     val List(rbD, rcD, rfD, rgD) = dCl.methods.asScala.toList.filter(_.name(0) == 'r').sortBy(_.name)
 
     def check(method: MethodNode, dest: ClassNode, test: Option[AbstractInsnNode] => Unit): Unit = {
-      test(inliner.findIllegalAccess(method.instructions, classBTypeFromParsedClassfile(dest.name)))
+      test(inliner.findIllegalAccess(method.instructions, classBTypeFromParsedClassfile(dest.name).get))
     }
 
     val cOrDOwner = (_: Option[AbstractInsnNode] @unchecked) match {

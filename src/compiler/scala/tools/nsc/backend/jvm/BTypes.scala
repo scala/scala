@@ -87,32 +87,29 @@ abstract class BTypes {
    *
    * This method supports both descriptors and internal names.
    */
-  def bTypeForDescriptorOrInternalNameFromClassfile(desc: String): BType = (desc(0): @switch) match {
-    case 'V'                     => UNIT
-    case 'Z'                     => BOOL
-    case 'C'                     => CHAR
-    case 'B'                     => BYTE
-    case 'S'                     => SHORT
-    case 'I'                     => INT
-    case 'F'                     => FLOAT
-    case 'J'                     => LONG
-    case 'D'                     => DOUBLE
-    case '['                     => ArrayBType(bTypeForDescriptorOrInternalNameFromClassfile(desc.substring(1)))
+  def bTypeForDescriptorOrInternalNameFromClassfile(desc: String): Option[BType] = (desc(0): @switch) match {
+    case 'V'                     => Some(UNIT)
+    case 'Z'                     => Some(BOOL)
+    case 'C'                     => Some(CHAR)
+    case 'B'                     => Some(BYTE)
+    case 'S'                     => Some(SHORT)
+    case 'I'                     => Some(INT)
+    case 'F'                     => Some(FLOAT)
+    case 'J'                     => Some(LONG)
+    case 'D'                     => Some(DOUBLE)
+    case '['                     => bTypeForDescriptorOrInternalNameFromClassfile(desc.substring(1)) map ArrayBType
     case 'L' if desc.last == ';' => classBTypeFromParsedClassfile(desc.substring(1, desc.length - 1))
     case _                       => classBTypeFromParsedClassfile(desc)
   }
 
   /**
-   * Parse the classfile for `internalName` and construct the [[ClassBType]].
+   * Parse the classfile for `internalName` and construct the [[ClassBType]]. Returns `None` if the
+   * classfile cannot be found in the `byteCodeRepository`.
    */
-  def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
-    val classNode = byteCodeRepository.classNode(internalName) getOrElse {
-      // There's no way out, we need the ClassBType. I (lry) only know one case byteCodeRepository.classNode
-      // returns None: for Java classes in mixed compilation. In this case we should not end up here,
-      // because there exists a symbol for that Java class, the ClassBType should be built from the symbol.
-      assertionError(s"Could not find bytecode for class $internalName")
+  def classBTypeFromParsedClassfile(internalName: InternalName): Option[ClassBType] = {
+    classBTypeFromInternalName.get(internalName) orElse {
+      byteCodeRepository.classNode(internalName) map classBTypeFromClassNode
     }
-    classBTypeFromClassNode(classNode)
   }
 
   /**
@@ -120,20 +117,31 @@ abstract class BTypes {
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
     classBTypeFromInternalName.getOrElse(classNode.name, {
-      setClassInfo(classNode, ClassBType(classNode.name))
+      setClassInfoFromParsedClassfile(classNode, ClassBType(classNode.name))
     })
   }
 
-  private def setClassInfo(classNode: ClassNode, classBType: ClassBType): ClassBType = {
+  private def setClassInfoFromParsedClassfile(classNode: ClassNode, classBType: ClassBType): ClassBType = {
+    def ensureClassBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
+      classBTypeFromParsedClassfile(internalName) getOrElse {
+        // When building a ClassBType from a parsed classfile, we need the ClassBTypes for all
+        // referenced types.
+        // TODO: make this more robust with respect to incomplete classpaths.
+        // Maybe not those parts of the ClassBType that require the missing class are not actually
+        // queried during the backend, so every part of a ClassBType that requires parsing a
+        // (potentially missing) classfile should be computed lazily.
+        assertionError(s"Could not find bytecode for class $internalName")
+      }
+    }
     val superClass = classNode.superName match {
       case null =>
         assert(classNode.name == ObjectReference.internalName, s"class with missing super type: ${classNode.name}")
         None
       case superName =>
-        Some(classBTypeFromParsedClassfile(superName))
+        Some(ensureClassBTypeFromParsedClassfile(superName))
     }
 
-    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(classBTypeFromParsedClassfile)(collection.breakOut)
+    val interfaces: List[ClassBType] = classNode.interfaces.asScala.map(ensureClassBTypeFromParsedClassfile)(collection.breakOut)
 
     val flags = classNode.access
 
@@ -159,7 +167,7 @@ abstract class BTypes {
     }
 
     val nestedClasses: List[ClassBType] = classNode.innerClasses.asScala.collect({
-      case i if nestedInCurrentClass(i) => classBTypeFromParsedClassfile(i.name)
+      case i if nestedInCurrentClass(i) => ensureClassBTypeFromParsedClassfile(i.name)
     })(collection.breakOut)
 
     // if classNode is a nested class, it has an innerClass attribute for itself. in this
@@ -169,11 +177,11 @@ abstract class BTypes {
         val enclosingClass =
           if (innerEntry.outerName != null) {
             // if classNode is a member class, the outerName is non-null
-            classBTypeFromParsedClassfile(innerEntry.outerName)
+            ensureClassBTypeFromParsedClassfile(innerEntry.outerName)
           } else {
             // for anonymous or local classes, the outerName is null, but the enclosing class is
             // stored in the EnclosingMethod attribute (which ASM encodes in classNode.outerClass).
-            classBTypeFromParsedClassfile(classNode.outerClass)
+            ensureClassBTypeFromParsedClassfile(classNode.outerClass)
           }
         val staticFlag = (innerEntry.access & Opcodes.ACC_STATIC) != 0
         NestedInfo(enclosingClass, Option(innerEntry.outerName), Option(innerEntry.innerName), staticFlag)
