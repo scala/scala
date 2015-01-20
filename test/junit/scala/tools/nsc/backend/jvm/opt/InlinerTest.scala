@@ -6,12 +6,15 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 import scala.collection.generic.Clearable
+import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.util.BatchSourceFile
 import scala.tools.asm.Opcodes._
 import org.junit.Assert._
 
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils.BasicAnalyzer
+import scala.tools.nsc.io._
 import scala.tools.testing.AssertUtil._
 
 import CodeGenTools._
@@ -57,7 +60,7 @@ class InlinerTest extends ClearAfterClass {
   def inlineTest(code: String, mod: ClassNode => Unit = _ => ()): (MethodNode, Option[String]) = {
     val List(cls) = compile(code)
     mod(cls)
-    val clsBType = classBTypeFromParsedClassfile(cls.name)
+    val clsBType = classBTypeFromParsedClassfile(cls.name).get
 
     val List(f, g) = cls.methods.asScala.filter(m => Set("f", "g")(m.name)).toList.sortBy(_.name)
     val fCall = g.instructions.iterator.asScala.collect({ case i: MethodInsnNode if i.name == "f" => i }).next()
@@ -191,8 +194,8 @@ class InlinerTest extends ClearAfterClass {
 
     val List(c, d) = compile(code)
 
-    val cTp = classBTypeFromParsedClassfile(c.name)
-    val dTp = classBTypeFromParsedClassfile(d.name)
+    val cTp = classBTypeFromParsedClassfile(c.name).get
+    val dTp = classBTypeFromParsedClassfile(d.name).get
 
     val g = c.methods.asScala.find(_.name == "g").get
     val h = d.methods.asScala.find(_.name == "h").get
@@ -350,7 +353,7 @@ class InlinerTest extends ClearAfterClass {
     val List(c) = compile(code)
     val f = c.methods.asScala.find(_.name == "f").get
     val callsiteIns = f.instructions.iterator().asScala.collect({ case c: MethodInsnNode => c }).next()
-    val clsBType = classBTypeFromParsedClassfile(c.name)
+    val clsBType = classBTypeFromParsedClassfile(c.name).get
     val analyzer = new BasicAnalyzer(f, clsBType.internalName)
 
     val integerClassBType = classBTypeFromInternalName("java/lang/Integer")
@@ -413,5 +416,37 @@ class InlinerTest extends ClearAfterClass {
 
     // like maxLocals for g1 / f1, but no return value
     assert(g2.maxLocals == 4 && f2.maxLocals == 3, s"${g2.maxLocals} - ${f2.maxLocals}")
+  }
+
+  @Test
+  def mixedCompilationNoInline(): Unit = {
+    // The inliner checks if the invocation `A.bar` can be safely inlined. For that it needs to have
+    // the bytecode of the invoked method. In mixed compilation, there's no classfile available for
+    // A, so `flop` cannot be inlined, we cannot check if it's safe.
+
+    val javaCode =
+      """public class A {
+        |  public static final int bar() { return 100; }
+        |}
+      """.stripMargin
+
+    val scalaCode =
+      """class B {
+        |  @inline final def flop = A.bar
+        |  def g = flop
+        |}
+      """.stripMargin
+
+    InlinerTest.notPerRun.foreach(_.clear())
+    compiler.reporter.reset()
+    compiler.settings.outputDirs.setSingleOutput(new VirtualDirectory("(memory)", None))
+    val run = new compiler.Run()
+    run.compileSources(List(new BatchSourceFile("A.java", javaCode), new BatchSourceFile("B.scala", scalaCode)))
+    val outDir = compiler.settings.outputDirs.getSingleOutput.get
+
+    val List(b) = outDir.iterator.map(f => AsmUtils.readClass(f.toByteArray)).toList.sortBy(_.name)
+    val ins = getSingleMethod(b, "g").instructions
+    val invokeFlop = Invoke(INVOKEVIRTUAL, "B", "flop", "()I", false)
+    assert(ins contains invokeFlop, ins mkString "\n")
   }
 }

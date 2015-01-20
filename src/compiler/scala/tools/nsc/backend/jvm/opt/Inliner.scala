@@ -352,6 +352,11 @@ class Inliner[BT <: BTypes](val btypes: BT) {
     }
   }
 
+  /**
+   * Returns the first instruction in the `instructions` list that would cause a
+   * [[java.lang.IllegalAccessError]] when inlined into the `destinationClass`. Returns `None` if
+   * all instructions can be legally transplanted.
+   */
   def findIllegalAccess(instructions: InsnList, destinationClass: ClassBType): Option[AbstractInsnNode] = {
 
     /**
@@ -412,36 +417,50 @@ class Inliner[BT <: BTypes](val btypes: BT) {
       }
     }
 
+    /**
+     * Check if `instruction` can be transplanted to `destinationClass`.
+     *
+     * If the instruction references a class, method or field that cannot be found in the
+     * byteCodeRepository, it is considered as not legal. This is known to happen in mixed
+     * compilation: for Java classes there is no classfile that could be parsed, nor does the
+     * compiler generate any bytecode.
+     */
     def isLegal(instruction: AbstractInsnNode): Boolean = instruction match {
       case ti: TypeInsnNode  =>
         // NEW, ANEWARRAY, CHECKCAST or INSTANCEOF. For these instructions, the reference
         // "must be a symbolic reference to a class, array, or interface type" (JVMS 6), so
         // it can be an internal name, or a full array descriptor.
-        classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(ti.desc))
+        bTypeForDescriptorOrInternalNameFromClassfile(ti.desc).exists(classIsAccessible(_))
 
       case ma: MultiANewArrayInsnNode =>
         // "a symbolic reference to a class, array, or interface type"
-        classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(ma.desc))
+        bTypeForDescriptorOrInternalNameFromClassfile(ma.desc).exists(classIsAccessible(_))
 
       case fi: FieldInsnNode =>
-        val fieldRefClass = classBTypeFromParsedClassfile(fi.owner)
-        val (fieldNode, fieldDeclClass) = byteCodeRepository.fieldNode(fieldRefClass.internalName, fi.name, fi.desc).get
-        memberIsAccessible(fieldNode.access, classBTypeFromParsedClassfile(fieldDeclClass), fieldRefClass)
+        (for {
+          fieldRefClass <- classBTypeFromParsedClassfile(fi.owner)
+          (fieldNode, fieldDeclClassNode) <- byteCodeRepository.fieldNode(fieldRefClass.internalName, fi.name, fi.desc)
+          fieldDeclClass <- classBTypeFromParsedClassfile(fieldDeclClassNode)
+        } yield {
+          memberIsAccessible(fieldNode.access, fieldDeclClass, fieldRefClass)
+        }) getOrElse false
 
       case mi: MethodInsnNode =>
         if (mi.owner.charAt(0) == '[') true // array methods are accessible
-        else {
-          val methodRefClass = classBTypeFromParsedClassfile(mi.owner)
-          val (methodNode, methodDeclClass) = byteCodeRepository.methodNode(methodRefClass.internalName, mi.name, mi.desc).get
-          memberIsAccessible(methodNode.access, classBTypeFromParsedClassfile(methodDeclClass), methodRefClass)
-        }
+        else (for {
+          methodRefClass <- classBTypeFromParsedClassfile(mi.owner)
+          (methodNode, methodDeclClassNode) <- byteCodeRepository.methodNode(methodRefClass.internalName, mi.name, mi.desc)
+          methodDeclClass <- classBTypeFromParsedClassfile(methodDeclClassNode)
+        } yield {
+          memberIsAccessible(methodNode.access, methodDeclClass, methodRefClass)
+        }) getOrElse false
 
       case ivd: InvokeDynamicInsnNode =>
         // TODO @lry check necessary conditions to inline an indy, instead of giving up
         false
 
       case ci: LdcInsnNode => ci.cst match {
-        case t: asm.Type => classIsAccessible(bTypeForDescriptorOrInternalNameFromClassfile(t.getInternalName))
+        case t: asm.Type => bTypeForDescriptorOrInternalNameFromClassfile(t.getInternalName).exists(classIsAccessible(_))
         case _           => true
       }
 
