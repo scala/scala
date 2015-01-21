@@ -59,11 +59,12 @@ object Test extends StoreReporterDirectTest {
     val codeToRun = toCodeInSeparateLines(s":require ${testOutput.path}/$jar", "test.Test.test()")
     val output = ILoop.run(codeToRun, settings)
     val lines  = output.split("\n")
-    val res1   = lines(4).contains("Added") && lines(4).contains("test1.jar")
-    val res2   = lines(lines.length-3).contains("testing...")
-
-    println(s"test1 res1: $res1")
-    println(s"test1 res2: $res2")
+    assert {
+      lines(4).contains("Added") && lines(4).contains("test1.jar")
+    }
+    assert {
+      lines(lines.length-3).contains("testing...")
+    }
   }
 
   def test2(): Unit = {
@@ -75,11 +76,12 @@ object Test extends StoreReporterDirectTest {
     val codeToRun = toCodeInSeparateLines(s":require ${testOutput.path}/$jar1", s":require ${testOutput.path}/$jar2")
     val output = ILoop.run(codeToRun, settings)
     val lines  = output.split("\n")
-    val res1   = lines(4).contains("Added") && lines(4).contains("test1.jar")
-    val res2   = lines(lines.length-3).contains("test2.jar") && lines(lines.length-3).contains("existing classpath entries conflict")
-
-    println(s"test2 res1: $res1")
-    println(s"test2 res2: $res2")
+    assert {
+      lines(4).contains("Added") && lines(4).contains("test1.jar")
+    }
+    assert {
+      lines(lines.length-3).contains("test2.jar") && lines(lines.length-3).contains("existing classpath entries conflict")
+    }
   }
 
   def test3(): Unit = {
@@ -91,11 +93,12 @@ object Test extends StoreReporterDirectTest {
     val codeToRun = toCodeInSeparateLines(s":require ${testOutput.path}/$jar1", s":require ${testOutput.path}/$jar3", "test.Test3.test()")
     val output = ILoop.run(codeToRun, settings)
     val lines  = output.split("\n")
-    val res1   = lines(4).contains("Added") && lines(4).contains("test1.jar")
-    val res2   = lines(lines.length-3).contains("new object in existing package")
-
-    println(s"test3 res1: $res1")
-    println(s"test3 res2: $res2")
+    assert {
+      lines(4).contains("Added") && lines(4).contains("test1.jar")
+    }
+    assert {
+      lines(lines.length-3).contains("new object in existing package")
+    }
   }
 
   def test4(): Unit = {
@@ -104,11 +107,12 @@ object Test extends StoreReporterDirectTest {
     val codeToRun = toCodeInSeparateLines(s":require ${testOutput.path}/$jar1", s":require ${testOutput.path}/$jar1")
     val output = ILoop.run(codeToRun, settings)
     val lines  = output.split("\n")
-    val res1   = lines(4).contains("Added") && lines(4).contains("test1.jar")
-    val res2   = lines(lines.length-3).contains("test1.jar") && lines(lines.length-3).contains("existing classpath entries conflict")
-
-    println(s"test4 res1: $res1")
-    println(s"test4 res2: $res2")
+    assert {
+      lines(4).contains("Added") && lines(4).contains("test1.jar")
+    }
+    assert {
+      lines(lines.length-3).contains("test1.jar") && lines(lines.length-3).contains("existing classpath entries conflict")
+    }
   }
 
   def test5(): Unit = {
@@ -138,5 +142,5 @@ object Test extends StoreReporterDirectTest {
     test6()
   }
 
-  def toCodeInSeparateLines(lines: String*): String = lines.map(_ + "\n").mkString
+  def toCodeInSeparateLines(lines: String*): String = lines mkString "\n"
 }
