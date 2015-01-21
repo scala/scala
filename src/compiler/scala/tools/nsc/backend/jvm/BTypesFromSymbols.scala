@@ -227,7 +227,9 @@ class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       }
 
       val innerName: Option[String] = {
-        if (innerClassSym.isAnonymousClass || innerClassSym.isAnonymousFunction) None
+        // phase travel necessary: after flatten, the name includes the name of outer classes.
+        // if some outer name contains $anon, a non-anon class is considered anon.
+        if (exitingPickler(innerClassSym.isAnonymousClass || innerClassSym.isAnonymousFunction)) None
         else Some(innerClassSym.rawname + innerClassSym.moduleSuffix) // moduleSuffix for module classes
       }
 

@@ -185,3 +185,41 @@ trait A24 extends A24Base {
     override object Conc extends A24Sym
   }
 }
+
+class SI_9105 {    
+  // the EnclosingMethod attributes depend on the delambdafy strategy (inline vs method)
+
+                                       //  outerClass-inline   enclMeth-inline   outerClass-method   enclMeth-method                    
+  val fun = () => {
+    class A                            //     closure             null (*)            SI_9105           null
+    def m: Object = { class B; new B } //     closure              m$1                SI_9105            m$1
+    val f: Object = { class C; new C } //     closure             null (*)            SI_9105           null
+  }
+  def met = () => {
+    class D                            //     closure             null (*)            SI_9105            met
+    def m: Object = { class E; new E } //     closure              m$1                SI_9105            m$1
+    val f: Object = { class F; new F } //     closure             null (*)            SI_9105            met
+  }
+
+  // (*) the originalOwner chain of A (similar for D) is: SI_9105.fun.$anonfun-value.A
+  //     we can get to the anonfun-class (created by uncurry), but not to the apply method.
+  //
+  //     for C and F, the originalOwner chain is fun.$anonfun-value.f.C. at later phases, the rawowner of f is
+  //     an apply$sp method of the closure class. we could use that as enclosing method, but it would be unsystematic
+  //     (A / D don't have an encl meth either), and also strange to use the $sp, which is a compilation artifact.
+  //     So using `null` looks more like the situation in the source code: C / F are nested classes of the anon-fun, and
+  //     there's no method in between.
+
+  def byName[T](op: => T) = 0
+
+  val bnV = byName {
+    class G                            //     closure             null (*)            SI_9105           null
+    def m: Object = { class H; new H } //     closure              m$1                SI_9105            m$1
+    val f: Object = { class I; new I } //     closure             null (*)            SI_9105           null
+  }
+  def bnM = byName {
+    class J                            //     closure             null (*)            SI_9105            bnM
+    def m: Object = { class K; new K } //     closure              m$1                SI_9105            m$1
+    val f: Object = { class L; new L } //     closure             null (*)            SI_9105            bnM
+  }
+}

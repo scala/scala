@@ -25,9 +25,9 @@ trait CompilationUnits { global: Global =>
   class CompilationUnit(val source: SourceFile) extends CompilationUnitContextApi { self =>
 
     /** the fresh name creator */
-    implicit val fresh: FreshNameCreator     = new FreshNameCreator
-    def freshTermName(prefix: String = "x$") = global.freshTermName(prefix)
-    def freshTypeName(prefix: String)        = global.freshTypeName(prefix)
+    implicit val fresh: FreshNameCreator                           = new FreshNameCreator
+    def freshTermName(prefix: String = nme.FRESH_TERM_NAME_PREFIX) = global.freshTermName(prefix)
+    def freshTypeName(prefix: String)                              = global.freshTypeName(prefix)
 
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree
