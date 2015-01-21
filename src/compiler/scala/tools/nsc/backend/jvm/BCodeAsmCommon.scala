@@ -22,6 +22,23 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
   }
 
   /**
+   * Cache the value of delambdafy == "inline" for each run. We need to query this value many
+   * times, so caching makes sense.
+   */
+  object delambdafyInline {
+    private var runId = -1
+    private var value = false
+
+    def apply(): Boolean = {
+      if (runId != global.currentRunId) {
+        runId = global.currentRunId
+        value = settings.Ydelambdafy.value == "inline"
+      }
+      value
+    }
+  }
+
+  /**
    * True if `classSym` is an anonymous class or a local class. I.e., false if `classSym` is a
    * member class. This method is used to decide if we should emit an EnclosingMethod attribute.
    * It is also used to decide whether the "owner" field in the InnerClass attribute should be
@@ -29,10 +46,59 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
    */
   def isAnonymousOrLocalClass(classSym: Symbol): Boolean = {
     assert(classSym.isClass, s"not a class: $classSym")
-    // Here used to be an `assert(!classSym.isDelambdafyFunction)`: delambdafy lambda classes are
-    // always top-level. However, SI-8900 shows an example where the weak name-based implementation
-    // of isDelambdafyFunction failed (for a function declared in a package named "lambda").
-    classSym.isAnonymousClass || !classSym.originalOwner.isClass
+    val r = exitingPickler(classSym.isAnonymousClass) || !classSym.originalOwner.isClass
+    if (r && settings.Ybackend.value == "GenBCode") {
+      // this assertion only holds in GenBCode. lambda lift renames symbols and may accidentally
+      // introduce `$lambda` into a class name, making `isDelambdafyFunction` true. under GenBCode
+      // we prevent this, see `nonAnon` in LambdaLift.
+      // phase travel necessary: after flatten, the name includes the name of outer classes.
+      // if some outer name contains $lambda, a non-lambda class is considered lambda.
+      assert(exitingPickler(!classSym.isDelambdafyFunction), classSym.name)
+    }
+    r
+  }
+
+  /**
+   * The next enclosing definition in the source structure. Includes anonymous function classes
+   * under delambdafy:inline, even though they are only generated during UnCurry.
+   */
+  def nextEnclosing(sym: Symbol): Symbol = {
+    val origOwner = sym.originalOwner
+    // phase travel necessary: after flatten, the name includes the name of outer classes.
+    // if some outer name contains $anon, a non-anon class is considered anon.
+    if (delambdafyInline() && sym.rawowner.isAnonymousFunction) {
+      // SI-9105: special handling for anonymous functions under delambdafy:inline.
+      //
+      //   class C { def t = () => { def f { class Z } } }
+      //
+      //   class C { def t = byNameMethod { def f { class Z } } }
+      //
+      // In both examples, the method f lambda-lifted into the anonfun class.
+      //
+      // In both examples, the enclosing method of Z is f, the enclosing class is the anonfun.
+      // So nextEnclosing needs to return the following chain:  Z - f - anonFunClassSym - ...
+      //
+      // In the first example, the initial owner of f is a TermSymbol named "$anonfun" (note: not the anonFunClassSym!)
+      // In the second, the initial owner of f is t (no anon fun term symbol for by-name args!).
+      //
+      // In both cases, the rawowner of class Z is the anonFunClassSym. So the check in the `if`
+      // above makes sure we don't jump over the anonymous function in the by-name argument case.
+      //
+      // However, we cannot directly return the rawowner: if `sym` is Z, we need to include method f
+      // in the result. This is done by comparing the rawowners (read: lambdalift-targets) of `sym`
+      // and `sym.originalOwner`: if they are the same, then the originalOwner is "in between", and
+      // we need to return it.
+      // If the rawowners are different, the symbol was not in between. In the first example, the
+      // originalOwner of `f` is the anonfun-term-symbol, whose rawowner is C. So the nextEnclosing
+      // of `f` is its rawowner, the anonFunClassSym.
+      //
+      // In delambdafy:method we don't have that problem. The f method is lambda-lifted into C,
+      // not into the anonymous function class. The originalOwner chain is Z - f - C.
+      if (sym.originalOwner.rawowner == sym.rawowner) sym.originalOwner
+      else sym.rawowner
+    } else {
+      origOwner
+    }
   }
 
   /**
@@ -63,9 +129,9 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
     def enclosingMethod(sym: Symbol): Option[Symbol] = {
       if (sym.isClass || sym == NoSymbol) None
       else if (sym.isMethod) Some(sym)
-      else enclosingMethod(sym.originalOwner)
+      else enclosingMethod(nextEnclosing(sym))
     }
-    enclosingMethod(classSym.originalOwner)
+    enclosingMethod(nextEnclosing(classSym))
   }
 
   /**
@@ -76,9 +142,9 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
     assert(classSym.isClass, classSym)
     def enclosingClass(sym: Symbol): Symbol = {
       if (sym.isClass) sym
-      else enclosingClass(sym.originalOwner)
+      else enclosingClass(nextEnclosing(sym))
     }
-    enclosingClass(classSym.originalOwner)
+    enclosingClass(nextEnclosing(classSym))
   }
 
   final case class EnclosingMethodEntry(owner: String, name: String, methodDescriptor: String)

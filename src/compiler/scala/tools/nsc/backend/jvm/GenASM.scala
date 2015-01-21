@@ -692,11 +692,12 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         }
       }
 
-      def innerName(innerSym: Symbol): String =
-        if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
-          null
-        else
-          innerSym.rawname + innerSym.moduleSuffix
+      def innerName(innerSym: Symbol): String = {
+        // phase travel necessary: after flatten, the name includes the name of outer classes.
+        // if some outer name contains $anon, a non-anon class is considered anon.
+        if (exitingPickler(innerSym.isAnonymousClass || innerSym.isAnonymousFunction)) null
+        else innerSym.rawname + innerSym.moduleSuffix
+      }
 
       innerClassBuffer ++= {
         val members = exitingPickler(memberClassesOf(csym))

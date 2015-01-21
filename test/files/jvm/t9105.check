@@ -1,0 +1,18 @@
+#partest !-Ydelambdafy:method
+(class C$$anonfun$1$A$1,class C$$anonfun$1,null)
+(class C$$anonfun$1$B$1,class C$$anonfun$1,private final java.lang.Object C$$anonfun$1.m$1())
+(class C$$anonfun$1$C$1,class C$$anonfun$1,null)
+(class C$$anonfun$1$$anonfun$2$D$1,class C$$anonfun$1$$anonfun$2,null)
+(class C$$anonfun$met$1$E$1,class C$$anonfun$met$1,null)
+(class C$$anonfun$met$1$F$1,class C$$anonfun$met$1,private final java.lang.Object C$$anonfun$met$1.m$2())
+(class C$$anonfun$met$1$G$1,class C$$anonfun$met$1,null)
+(class C$$anonfun$met$1$$anonfun$3$H$1,class C$$anonfun$met$1$$anonfun$3,null)
+#partest -Ydelambdafy:method
+(class C$A$1,class C,null)
+(class C$B$1,class C,private final java.lang.Object C.m$1())
+(class C$C$1,class C,null)
+(class C$D$1,class C,null)
+(class C$E$1,class C,public scala.Function0 C.met())
+(class C$F$1,class C,private final java.lang.Object C.m$2())
+(class C$G$1,class C,public scala.Function0 C.met())
+(class C$H$1,class C,public scala.Function0 C.met())
