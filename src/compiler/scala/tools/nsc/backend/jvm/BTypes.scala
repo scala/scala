@@ -11,7 +11,7 @@ import scala.tools.asm
 import asm.Opcodes
 import scala.tools.asm.tree.{InnerClassNode, ClassNode}
 import scala.tools.nsc.backend.jvm.opt.{CallGraph, ByteCodeRepository, Inliner}
-import OptimizerReporting._
+import opt.OptimizerReporting._
 import scala.collection.convert.decorateAsScala._
 
 /**
@@ -713,8 +713,10 @@ abstract class BTypes {
   /**
    * A ClassBType represents a class or interface type. The necessary information to build a
    * ClassBType is extracted from compiler symbols and types, see BTypesFromSymbols.
+   *
+   * Currently non-final due to SI-9111
    */
-  final case class ClassBType(internalName: InternalName) extends RefBType {
+  /*final*/ case class ClassBType(internalName: InternalName) extends RefBType {
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
      * nested classes. Example: for the definition `class A { class B }` we have
