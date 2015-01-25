@@ -859,16 +859,25 @@ trait Iterator[+A] extends TraversableOnce[A] {
   }
 
   /** Returns the index of the first occurrence of the specified
-   *  object in this iterable object.
-   *  $mayNotTerminateInf
-   *
-   *  @param  elem  element to search for.
-   *  @return the index of the first occurrence of `elem` in the values produced by this iterator,
-   *          or -1 if such an element does not exist until the end of the iterator is reached.
-   *  @note   Reuse: $consumesIterator
-   */
-  def indexOf[B >: A](elem: B): Int = {
+    *  object in this iterable object after or at some start index.
+    *
+    *  @param   elem   the element value to search for.
+    *  @tparam  B      the type of the element `elem`.
+    *  @param   from   the start index
+    *  @return  the index `>= from` of the first element of this iterable object that is equal (as determined by `==`)
+    *           to `elem`, or `-1`, if none exists.
+    *
+    *  @note   Reuse: $consumesIterator
+    *  @usecase def indexOf(elem: A, from: Int): Int
+    *    @inheritdoc
+    *
+    *    $mayNotTerminateInf
+    *
+    */
+  def indexOf[B >: A](elem: B, from: Int): Int = {
     var i = 0
+    while (i < from && hasNext) next()
+
     var found = false
     while (!found && hasNext) {
       if (next() == elem) {
@@ -879,6 +888,17 @@ trait Iterator[+A] extends TraversableOnce[A] {
     }
     if (found) i else -1
   }
+
+  /** Returns the index of the first occurrence of the specified
+   *  object in this iterable object.
+   *  $mayNotTerminateInf
+   *
+   *  @param  elem  element to search for.
+   *  @return the index of the first occurrence of `elem` in the values produced by this iterator,
+   *          or -1 if such an element does not exist until the end of the iterator is reached.
+   *  @note   Reuse: $consumesIterator
+   */
+  def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
 
   /** Creates a buffered iterator from this iterator.
    *
