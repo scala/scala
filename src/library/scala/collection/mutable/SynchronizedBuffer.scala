@@ -12,8 +12,6 @@ package scala
 package collection
 package mutable
 
-import script._
-
 /** This class should be used as a mixin. It synchronizes the `Buffer`
  *  methods of the class into which it is mixed in.
  *
@@ -160,11 +158,6 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    */
   abstract override def clear(): Unit = synchronized {
     super.clear()
-  }
-
-  @deprecated("Scripting is deprecated.", "2.11.0")
-  override def <<(cmd: Message[A]): Unit = synchronized {
-    super.<<(cmd)
   }
 
   /** Return a clone of this buffer.

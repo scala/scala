@@ -96,7 +96,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.EmptyTree
     this.noSelfType
     this.pendingSuperCall
-    this.emptyValDef
     this.EmptyTreeTypeSubstituter
     this.UnmappableAnnotArg
     this.LiteralAnnotArg

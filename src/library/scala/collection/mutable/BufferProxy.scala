@@ -10,8 +10,6 @@ package scala
 package collection
 package mutable
 
-import script._
-
 /** This is a simple proxy class for <a href="Buffer.html"
  *  target="contentFrame">`scala.collection.mutable.Buffer`</a>.
  *  It is most useful for assembling customized set abstractions
@@ -125,13 +123,6 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
   /** Clears the buffer contents.
    */
   def clear() { self.clear() }
-
-  /** Send a message to this scriptable object.
-   *
-   *  @param cmd  the message to send.
-   */
-  @deprecated("Scripting is deprecated.", "2.11.0")
-  override def <<(cmd: Message[A]) { self << cmd }
 
   /** Return a clone of this buffer.
    *

@@ -11,8 +11,6 @@ package scala
 package collection
 package mutable
 
-import script._
-
 /** This class should be used as a mixin. It synchronizes the `Set`
  *  functions of the class into which it is mixed in.
  *
@@ -92,11 +90,6 @@ trait SynchronizedSet[A] extends Set[A] {
 
   override def toString = synchronized {
     super.toString
-  }
-
-  @deprecated("Scripting is deprecated.", "2.11.0")
-  override def <<(cmd: Message[A]): Unit = synchronized {
-    super.<<(cmd)
   }
 
   override def clone(): Self = synchronized {

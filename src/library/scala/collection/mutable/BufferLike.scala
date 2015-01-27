@@ -13,7 +13,6 @@ package collection
 package mutable
 
 import generic._
-import script._
 import scala.annotation.{migration, bridge}
 
 /** A template trait for buffers of type `Buffer[A]`.
@@ -62,7 +61,6 @@ import scala.annotation.{migration, bridge}
 trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
                 extends Growable[A]
                    with Shrinkable[A]
-                   with Scriptable[A]
                    with Subtractable[A, This]
                    with SeqLike[A, This]
                    with scala.Cloneable
@@ -179,31 +177,6 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *            of this buffer.
    */
   def trimEnd(n: Int) { remove(length - n max 0, n) }
-
-  /** Send a message to this scriptable object.
-   *
-   *  @param cmd  the message to send.
-   */
-  @deprecated("Scripting is deprecated.", "2.11.0")
-  def <<(cmd: Message[A]): Unit = cmd match {
-    case Include(Start, x)      => prepend(x)
-    case Include(End, x)        => append(x)
-    case Include(Index(n), x)   => insert(n, x)
-    case Include(NoLo, x)       => this += x
-
-    case Update(Start, x)       => update(0, x)
-    case Update(End, x)         => update(length - 1, x)
-    case Update(Index(n), x)    => update(n, x)
-
-    case Remove(Start, x)       => if (this(0) == x) remove(0)
-    case Remove(End, x)         => if (this(length - 1) == x) remove(length - 1)
-    case Remove(Index(n), x)    => if (this(n) == x) remove(n)
-    case Remove(NoLo, x)        => this -= x
-
-    case Reset()                => clear()
-    case s: Script[_]           => s.iterator foreach <<
-    case _                      => throw new UnsupportedOperationException("message " + cmd + " not understood")
-  }
 
   /** Defines the prefix of this object's `toString` representation.
    *  @return  a string representation which starts the result of `toString` applied to this set.
