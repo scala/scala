@@ -280,7 +280,7 @@ TODO:
 
       <!-- Pax runner -->
       <property name="pax.exam.version" value="3.5.0"/><!-- Last version which supports Java 6 -->
-      <property name="osgi.felix.version" value="4.0.3"/>
+      <property name="osgi.felix.version" value="4.4.0"/>
       <property name="osgi.equinox.version" value="3.7.1"/>
       <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset">
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}">
@@ -294,6 +294,7 @@ TODO:
         <dependency groupId="ch.qos.logback" artifactId="logback-classic" version="1.1.2"/>
         <dependency groupId="junit" artifactId="junit" version="${junit.version}"/>
       </artifact:dependencies>
+      <copy-deps project="pax.exam"/>
 
       <artifact:dependencies pathId="osgi.framework.felix">
         <dependency groupId="org.apache.felix" artifactId="org.apache.felix.framework" version="${osgi.felix.version}"/>
@@ -1375,8 +1376,8 @@ TODO:
   </target>
 
   <target name="test.osgi" depends="test.osgi.comp">
-    <if><isset property="has.java8"/><then>
-      <echo message="Skipping OSGi JUnit tests on Java 8. See SI-8642"/>
+    <if><isset property="test.osgi.skip"/><then>
+      <echo message="Skipping OSGi JUnit tests"/>
     </then><else>
       <echo message="Running OSGi JUnit tests. Output in ${build-osgi.dir}"/>
       <stopwatch name="test.osgi.timer"/>

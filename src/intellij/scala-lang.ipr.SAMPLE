@@ -218,6 +218,7 @@
       <module fileurl="file://$PROJECT_DIR$/scalap.iml" filepath="$PROJECT_DIR$/scalap.iml" />
       <module fileurl="file://$PROJECT_DIR$/test.iml" filepath="$PROJECT_DIR$/test.iml" />
       <module fileurl="file://$PROJECT_DIR$/test-junit.iml" filepath="$PROJECT_DIR$/test-junit.iml" />
+      <module fileurl="file://$PROJECT_DIR$/test-osgi.iml" filepath="$PROJECT_DIR$/test-osgi.iml" />
     </modules>
   </component>
   <component name="ProjectResources">
