@@ -280,7 +280,7 @@ TODO:
 
       <!-- Pax runner -->
       <property name="pax.exam.version" value="3.5.0"/><!-- Last version which supports Java 6 -->
-      <property name="osgi.felix.version" value="4.0.3"/>
+      <property name="osgi.felix.version" value="4.4.0"/>
       <property name="osgi.equinox.version" value="3.7.1"/>
       <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset">
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}">
