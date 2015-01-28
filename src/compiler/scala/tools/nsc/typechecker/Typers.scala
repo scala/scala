@@ -1104,7 +1104,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           adaptConstant(value)
         case OverloadedType(pre, alts) if !mode.inFunMode => // (1)
           inferExprAlternative(tree, pt)
-          adapt(tree, mode, pt, original)
+          adaptAfterOverloadResolution(tree, mode, pt, original)
         case NullaryMethodType(restpe) => // (2)
           adapt(tree setType restpe, mode, pt, original)
         case TypeRef(_, ByNameParamClass, arg :: Nil) if mode.inExprMode => // (2)
@@ -1135,6 +1135,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _ =>
           vanillaAdapt(tree)
       }
+    }
+
+    // This just exists to help keep track of the spots where we have to adapt a tree after
+    // overload resolution. These proved hard to find during the fix for SI-8267.
+    def adaptAfterOverloadResolution(tree: Tree, mode: Mode, pt: Type = WildcardType, original: Tree = EmptyTree): Tree = {
+      adapt(tree, mode, pt, original)
     }
 
     def instantiate(tree: Tree, mode: Mode, pt: Type): Tree = {
@@ -1724,7 +1730,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if ((clazz isNonBottomSubClass ClassfileAnnotationClass) && (clazz != ClassfileAnnotationClass)) {
         if (!clazz.owner.isPackageClass)
           context.error(clazz.pos, "inner classes cannot be classfile annotations")
-        else restrictionWarning(cdef.pos, unit,
+        // Ignore @SerialVersionUID, because it is special-cased and handled completely differently.
+        // It only extends ClassfileAnnotationClass instead of StaticAnnotation to get the enforcement
+        // of constant argument values "for free". Related to SI-7041.
+        else if (clazz != SerialVersionUIDAttr) restrictionWarning(cdef.pos, unit,
           """|subclassing Classfile does not
              |make your annotation visible at runtime.  If that is what
              |you want, you must write the annotation class in Java.""".stripMargin)
@@ -3175,7 +3184,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (sym1 != NoSymbol) sym = sym1
           }
           if (sym == NoSymbol) fun
-          else adapt(fun setSymbol sym setType pre.memberType(sym), mode.forFunMode, WildcardType)
+          else adaptAfterOverloadResolution(fun setSymbol sym setType pre.memberType(sym), mode.forFunMode)
         } else fun
       }
 
@@ -3220,7 +3229,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               setError(tree)
             else {
               inferMethodAlternative(fun, undetparams, argTpes, pt)
-              doTypedApply(tree, adapt(fun, mode.forFunMode, WildcardType), args1, mode, pt)
+              doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args1, mode, pt)
             }
           }
           handleOverloaded
@@ -3803,7 +3812,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     protected def typedTypeApply(tree: Tree, mode: Mode, fun: Tree, args: List[Tree]): Tree = fun.tpe match {
       case OverloadedType(pre, alts) =>
         inferPolyAlternatives(fun, mapList(args)(treeTpe))
-        val tparams = fun.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
+
+        // SI-8267 `memberType` can introduce existentials *around* a PolyType/MethodType, see AsSeenFromMap#captureThis.
+        //         If we had selected a non-overloaded symbol, `memberType` would have been called in `makeAccessible`
+        //         and the resulting existential type would have been skolemized in `adapt` *before* we typechecked
+        //         the enclosing type-/ value- application.
+        //
+        //         However, if the selection is overloaded, we defer calling `memberType` until we can select a single
+        //         alternative here. It is therefore necessary to skolemize the existential here.
+        //
+        val fun1 = adaptAfterOverloadResolution(fun, mode.forFunMode | TAPPmode)
+
+        val tparams = fun1.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
         val args1 = if (sameLength(args, tparams)) {
           //@M: in case TypeApply we can't check the kind-arities of the type arguments,
           // as we don't know which alternative to choose... here we do
@@ -3817,7 +3837,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
          // ...actually this was looping anyway, see bug #278.
           return TypedApplyWrongNumberOfTpeParametersError(fun, fun)
 
-        typedTypeApply(tree, mode, fun, args1)
+        typedTypeApply(tree, mode, fun1, args1)
       case SingleType(_, _) =>
         typedTypeApply(tree, mode, fun setType fun.tpe.widen, args)
       case PolyType(tparams, restpe) if tparams.nonEmpty =>

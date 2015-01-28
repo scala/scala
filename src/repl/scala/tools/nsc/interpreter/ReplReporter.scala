@@ -32,6 +32,24 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.i
   override def warning(pos: Position, msg: String): Unit = withoutTruncating(super.warning(pos, msg))
   override def error(pos: Position, msg: String): Unit   = withoutTruncating(super.error(pos, msg))
 
+  import scala.io.AnsiColor.{ RED, YELLOW, RESET }
+
+  def severityColor(severity: Severity): String = severity match {
+    case ERROR   => RED
+    case WARNING => YELLOW
+    case INFO    => RESET
+  }
+
+  override def print(pos: Position, msg: String, severity: Severity) {
+    val prefix = (
+      if (replProps.colorOk)
+        severityColor(severity) + clabel(severity) + RESET
+      else
+        clabel(severity)
+    )
+    printMessage(pos, prefix + msg)
+  }
+
   override def printMessage(msg: String) {
     // Avoiding deadlock if the compiler starts logging before
     // the lazy val is complete.

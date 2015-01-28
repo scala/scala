@@ -1,12 +1,11 @@
 import scala.annotation.switch
 
 object Test extends App {
-  // TODO: should not emit a switch
-  // def noSwitch(ch: Char, eof: Boolean) = (ch: @switch) match {
-  //   case 'a' if eof => println("a with oef") // then branch
-  // }
+  def noSwitch(ch: Char, eof: Boolean) = ch match {
+    case 'a' if eof => println("a with oef") // then branch
+  }
 
-  def onlyThen(ch: Char, eof: Boolean) = (ch: @switch) match {
+  def onlyThen(ch: Char, eof: Boolean) = ch match {
     case 'a' if eof => println("a with oef") // then branch
     case 'c' =>
   }
@@ -18,7 +17,7 @@ object Test extends App {
     case 'c' =>
   }
 
-  def defaultUnguarded(ch: Char, eof: Boolean) = (ch: @switch) match {
+  def defaultUnguarded(ch: Char, eof: Boolean) = ch match {
     case ' ' if eof => println("spacey oef")
     case _ => println("default")
   }
@@ -44,7 +43,7 @@ object Test extends App {
   //   case 'c' =>
   // }
 
-  // noSwitch('a', true)
+  noSwitch('a', true)
   onlyThen('a', true)       // 'a with oef'
   ifThenElse('a', true)     // 'a with oef'
   ifThenElse('a', false)    // 'a'

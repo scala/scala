@@ -260,7 +260,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
         val captureProxies2 = new LinkedHashMap[Symbol, TermSymbol]
         captures foreach {capture =>
-          val sym = lambdaClass.newVariable(capture.name.toTermName, capture.pos, SYNTHETIC)
+          val sym = lambdaClass.newVariable(unit.freshTermName(capture.name.toString + "$"), capture.pos, SYNTHETIC)
           sym setInfo capture.info
           captureProxies2 += ((capture, sym))
         }

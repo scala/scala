@@ -14,6 +14,13 @@ import PartialFunction._
  */
 final class BCodeAsmCommon[G <: Global](val global: G) {
   import global._
+  import definitions._
+
+  val ExcludedForwarderFlags = {
+    import scala.tools.nsc.symtab.Flags._
+    // Should include DEFERRED but this breaks findMember.
+    ( SPECIALIZED | LIFTED | PROTECTED | STATIC | EXPANDEDNAME | BridgeAndPrivateFlags | MACRO )
+  }
 
   /**
    * True if `classSym` is an anonymous class or a local class. I.e., false if `classSym` is a
@@ -124,4 +131,29 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
       assert(r != NoSymbol, sym.fullLocationString)
       r
   })(collection.breakOut)
+
+  lazy val AnnotationRetentionPolicyModule       = AnnotationRetentionPolicyAttr.companionModule
+  lazy val AnnotationRetentionPolicySourceValue  = AnnotationRetentionPolicyModule.tpe.member(TermName("SOURCE"))
+  lazy val AnnotationRetentionPolicyClassValue   = AnnotationRetentionPolicyModule.tpe.member(TermName("CLASS"))
+  lazy val AnnotationRetentionPolicyRuntimeValue = AnnotationRetentionPolicyModule.tpe.member(TermName("RUNTIME"))
+
+  /** Whether an annotation should be emitted as a Java annotation
+    * .initialize: if 'annot' is read from pickle, atp might be un-initialized
+    */
+  def shouldEmitAnnotation(annot: AnnotationInfo) = {
+    annot.symbol.initialize.isJavaDefined &&
+      annot.matches(ClassfileAnnotationClass) &&
+      retentionPolicyOf(annot) != AnnotationRetentionPolicySourceValue &&
+      annot.args.isEmpty
+  }
+
+  def isRuntimeVisible(annot: AnnotationInfo): Boolean =
+    annot.atp.typeSymbol.getAnnotation(AnnotationRetentionAttr)
+      .exists(_.assocs.contains((nme.value -> LiteralAnnotArg(Constant(AnnotationRetentionPolicyRuntimeValue)))))
+
+  private def retentionPolicyOf(annot: AnnotationInfo): Symbol =
+    annot.atp.typeSymbol.getAnnotation(AnnotationRetentionAttr).map(_.assocs).map(assoc =>
+      assoc.collectFirst {
+        case (`nme`.value, LiteralAnnotArg(Constant(value: Symbol))) => value
+      }).flatten.getOrElse(AnnotationRetentionPolicyClassValue)
 }

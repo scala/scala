@@ -9,7 +9,6 @@ package scala.tools.nsc.transform.patmat
 import scala.language.postfixOps
 import scala.collection.mutable
 import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.util.Position
 
 trait TreeAndTypeAnalysis extends Debugging {
   import global._
@@ -173,7 +172,6 @@ trait TreeAndTypeAnalysis extends Debugging {
     // a type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)
     // we consider tuple types with at least one component of a checkable type as a checkable type
     def uncheckableType(tp: Type): Boolean = {
-      def tupleComponents(tp: Type) = tp.normalize.typeArgs
       val checkable = (
            (isTupleType(tp) && tupleComponents(tp).exists(tp => !uncheckableType(tp)))
         || enumerateSubtypes(tp).nonEmpty)
@@ -400,6 +398,7 @@ trait MatchAnalysis extends MatchApproximation {
   trait MatchAnalyzer extends MatchApproximator  {
     def uncheckedWarning(pos: Position, msg: String) = currentRun.reporting.uncheckedWarning(pos, msg)
     def warn(pos: Position, ex: AnalysisBudget.Exception, kind: String) = uncheckedWarning(pos, s"Cannot check match for $kind.\n${ex.advice}")
+    def reportWarning(message: String) = global.reporter.warning(typer.context.tree.pos, message)
 
   // TODO: model dependencies between variables: if V1 corresponds to (x: List[_]) and V2 is (x.hd), V2 cannot be assigned when V1 = null or V1 = Nil
     // right now hackily implement this by pruning counter-examples
@@ -524,9 +523,11 @@ trait MatchAnalysis extends MatchApproximation {
           val matchFailModels = findAllModelsFor(propToSolvable(matchFails))
 
           val scrutVar = Var(prevBinderTree)
-          val counterExamples = matchFailModels.map(modelToCounterExample(scrutVar))
-
-          val pruned = CounterExample.prune(counterExamples).map(_.toString).sorted
+          val counterExamples = matchFailModels.flatMap(modelToCounterExample(scrutVar))
+          // sorting before pruning is important here in order to
+          // keep neg/t7020.scala stable
+          // since e.g. List(_, _) would cover List(1, _)
+          val pruned = CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString)
 
           if (Statistics.canEnable) Statistics.stopTimer(patmatAnaExhaust, start)
           pruned
@@ -616,7 +617,7 @@ trait MatchAnalysis extends MatchApproximation {
     // (the variables don't take into account type information derived from other variables,
     //  so, naively, you might try to construct a counter example like _ :: Nil(_ :: _, _ :: _),
     //  since we didn't realize the tail of the outer cons was a Nil)
-    def modelToCounterExample(scrutVar: Var)(model: Model): CounterExample = {
+    def modelToCounterExample(scrutVar: Var)(model: Model): Option[CounterExample] = {
       // x1 = ...
       // x1.hd = ...
       // x1.tl = ...
@@ -674,6 +675,7 @@ trait MatchAnalysis extends MatchApproximation {
         private val fields: mutable.Map[Symbol, VariableAssignment] = mutable.HashMap.empty
         // need to prune since the model now incorporates all super types of a constant (needed for reachability)
         private lazy val uniqueEqualTo = equalTo filterNot (subsumed => equalTo.exists(better => (better ne subsumed) && instanceOfTpImplies(better.tp, subsumed.tp)))
+        private lazy val inSameDomain = uniqueEqualTo forall (const => variable.domainSyms.exists(_.exists(_.const.tp =:= const.tp)))
         private lazy val prunedEqualTo = uniqueEqualTo filterNot (subsumed => variable.staticTpCheckable <:< subsumed.tp)
         private lazy val ctor       = (prunedEqualTo match { case List(TypeConst(tp)) => tp case _ => variable.staticTpCheckable }).typeSymbol.primaryConstructor
         private lazy val ctorParams = if (ctor.paramss.isEmpty) Nil else ctor.paramss.head
@@ -694,13 +696,13 @@ trait MatchAnalysis extends MatchApproximation {
         // NoExample if the constructor call is ill-typed
         // (thus statically impossible -- can we incorporate this into the formula?)
         // beBrief is used to suppress negative information nested in tuples -- it tends to get too noisy
-        def toCounterExample(beBrief: Boolean = false): CounterExample =
-          if (!allFieldAssignmentsLegal) NoExample
+        def toCounterExample(beBrief: Boolean = false): Option[CounterExample] =
+          if (!allFieldAssignmentsLegal) Some(NoExample)
           else {
             debug.patmat("describing "+ ((variable, equalTo, notEqualTo, fields, cls, allFieldAssignmentsLegal)))
             val res = prunedEqualTo match {
               // a definite assignment to a value
-              case List(eq: ValueConst) if fields.isEmpty => ValueExample(eq)
+              case List(eq: ValueConst) if fields.isEmpty => Some(ValueExample(eq))
 
               // constructor call
               // or we did not gather any information about equality but we have information about the fields
@@ -713,30 +715,50 @@ trait MatchAnalysis extends MatchApproximation {
                   // figure out the constructor arguments from the field assignment
                   val argLen = (caseFieldAccs.length min ctorParams.length)
 
-                  (0 until argLen).map(i => fields.get(caseFieldAccs(i)).map(_.toCounterExample(brevity)) getOrElse WildcardExample).toList
+                  val examples = (0 until argLen).map(i => fields.get(caseFieldAccs(i)).map(_.toCounterExample(brevity)) getOrElse Some(WildcardExample)).toList
+                  sequence(examples)
                 }
 
                 cls match {
-                  case ConsClass               => ListExample(args())
-                  case _ if isTupleSymbol(cls) => TupleExample(args(brevity = true))
-                  case _ => ConstructorExample(cls, args())
+                  case ConsClass                                =>
+                    args().map {
+                      case List(NoExample, l: ListExample) =>
+                        // special case for neg/t7020.scala:
+                        // if we find a counter example `??::*` we report `*::*` instead
+                        // since the `??` originates from uniqueEqualTo containing several instanced of the same type
+                        List(WildcardExample, l)
+                      case args                            => args
+                    }.map(ListExample)
+                  case _ if isTupleSymbol(cls)                  => args(brevity = true).map(TupleExample)
+                  case _ if cls.isSealed && cls.isAbstractClass =>
+                    // don't report sealed abstract classes, since
+                    // 1) they can't be instantiated
+                    // 2) we are already reporting any missing subclass (since we know the full domain)
+                    // (see patmatexhaust.scala)
+                    None
+                  case _                                        => args().map(ConstructorExample(cls, _))
                 }
 
               // a definite assignment to a type
-              case List(eq) if fields.isEmpty => TypeExample(eq)
+              case List(eq) if fields.isEmpty => Some(TypeExample(eq))
 
               // negative information
               case Nil if nonTrivialNonEqualTo.nonEmpty =>
                 // negation tends to get pretty verbose
-                if (beBrief) WildcardExample
+                if (beBrief) Some(WildcardExample)
                 else {
                   val eqTo = equalTo.headOption getOrElse TypeConst(variable.staticTpCheckable)
-                  NegativeExample(eqTo, nonTrivialNonEqualTo)
+                  Some(NegativeExample(eqTo, nonTrivialNonEqualTo))
                 }
 
+              // if uniqueEqualTo contains more than one symbol of the same domain
+              // then we can safely ignore these counter examples since we will eventually encounter
+              // both counter examples separately
+              case _ if inSameDomain => None
+                
               // not a valid counter-example, possibly since we have a definite type but there was a field mismatch
               // TODO: improve reasoning -- in the mean time, a false negative is better than an annoying false positive
-              case _ => NoExample
+              case _ => Some(NoExample)
             }
             debug.patmatResult("described as")(res)
           }

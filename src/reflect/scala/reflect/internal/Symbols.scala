@@ -735,31 +735,31 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     final def hasGetter = isTerm && nme.isLocalName(name)
 
-    /** A little explanation for this confusing situation.
-     *  Nested modules which have no static owner when ModuleDefs
-     *  are eliminated (refchecks) are given the lateMETHOD flag,
-     *  which makes them appear as methods after refchecks.
-     *  Here's an example where one can see all four of FF FT TF TT
-     *  for (isStatic, isMethod) at various phases.
+    /**
+     * Nested modules which have no static owner when ModuleDefs are eliminated (refchecks) are
+     * given the lateMETHOD flag, which makes them appear as methods after refchecks.
      *
-     *    trait A1 { case class Quux() }
-     *    object A2 extends A1 { object Flax }
-     *    // --  namer         object Quux in trait A1
-     *    // -M  flatten       object Quux in trait A1
-     *    // S-  flatten       object Flax in object A2
-     *    // -M  posterasure   object Quux in trait A1
-     *    // -M  jvm           object Quux in trait A1
-     *    // SM  jvm           object Quux in object A2
+     * Note: the lateMETHOD flag is added lazily in the info transformer of the RefChecks phase.
+     * This means that forcing the `sym.info` may change the value of `sym.isMethod`. Forcing the
+     * info is in the responsability of the caller. Doing it eagerly here was tried (0ccdb151f) but
+     * has proven to lead to bugs (SI-8907).
      *
-     *  So "isModuleNotMethod" exists not for its achievement in
-     *  brevity, but to encapsulate the relevant condition.
+     * Here's an example where one can see all four of FF FT TF TT for (isStatic, isMethod) at
+     * various phases.
+     *
+     *   trait A1 { case class Quux() }
+     *   object A2 extends A1 { object Flax }
+     *   // --  namer         object Quux in trait A1
+     *   // -M  flatten       object Quux in trait A1
+     *   // S-  flatten       object Flax in object A2
+     *   // -M  posterasure   object Quux in trait A1
+     *   // -M  jvm           object Quux in trait A1
+     *   // SM  jvm           object Quux in object A2
+     *
+     * So "isModuleNotMethod" exists not for its achievement in brevity, but to encapsulate the
+     * relevant condition.
      */
-    def isModuleNotMethod = {
-      if (isModule) {
-        if (phase.refChecked) this.info // force completion to make sure lateMETHOD is there.
-        !isMethod
-      } else false
-    }
+    def isModuleNotMethod = isModule && !isMethod
 
     // After RefChecks, the `isStatic` check is mostly redundant: all non-static modules should
     // be methods (and vice versa). There's a corner case on the vice-versa with mixed-in module
@@ -2029,12 +2029,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       info.decls.filter(sym => !sym.isMethod && sym.isParamAccessor).toList
 
     /** The symbol accessed by this accessor (getter or setter) function. */
-    final def accessed: Symbol = accessed(owner.info)
-
-    /** The symbol accessed by this accessor function, but with given owner type. */
-    final def accessed(ownerTp: Type): Symbol = {
+    final def accessed: Symbol = {
       assert(hasAccessorFlag, this)
-      ownerTp decl localName
+      val localField = owner.info decl localName
+
+      if (localField == NoSymbol && this.hasFlag(MIXEDIN)) {
+        // SI-8087: private[this] fields don't have a `localName`. When searching the accessed field
+        // for a mixin accessor of such a field, we need to look for `name` instead.
+        // The phase travel ensures that the field is found (`owner` is the trait class symbol, the
+        // field gets removed from there in later phases).
+        enteringPhase(picklerPhase)(owner.info).decl(name).suchThat(!_.isAccessor)
+      } else {
+        localField
+      }
     }
 
     /** The module corresponding to this module class (note that this

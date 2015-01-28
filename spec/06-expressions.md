@@ -1571,7 +1571,7 @@ $T$ is a value type; if it is a method type we apply
 means finding a substitution $\sigma$ of types $T_i$ for the type
 parameters $a_i$ such that
 
-- None of inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
+- None of the inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
 - All type parameter bounds are respected, i.e.
   $\sigma L_i <: \sigma a_i$ and $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
 - The expression's type conforms to the expected type, i.e.
@@ -1608,7 +1608,7 @@ constraint system means
 finding a substitution $\sigma$ of types $T_i$ for the type parameters
 $a_i$ such that
 
-- None of inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
+- None of the inferred types $T_i$ is a [singleton type](03-types.html#singleton-types)
 - All type parameter bounds are respected, i.e. $\sigma L_i <: \sigma a_i$ and
   $\sigma a_i <: \sigma U_i$ for $i = 1 , \ldots , n$.
 - The method's result type $T'$ conforms to the expected type, i.e. $\sigma T' <: \sigma \mathit{pt}$.
@@ -1750,7 +1750,7 @@ a sub-expression of parameterless method type, is not evaluated in the expanded 
 ### Dynamic Member Selection
 
 The standard Scala library defines a trait `scala.Dynamic` which defines a member
-\@invokeDynamic@ as follows:
+`applyDynamic` as follows:
 
 ```scala
 package scala

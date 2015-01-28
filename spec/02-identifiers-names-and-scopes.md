@@ -71,7 +71,7 @@ The type of $e.x$ is the member type of the referenced entity in $T$.
 
 ### Example
 
-Assume the following two definitions of a objects named `X` in packages `P` and `Q`.
+Assume the following two definitions of objects named `X` in packages `P` and `Q`.
 
 ```scala
 package P {

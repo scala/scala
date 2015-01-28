@@ -75,6 +75,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   def history = in.history
 
   // classpath entries added via :cp
+  @deprecated("Use reset, replay or require to update class path", since = "2.11")
   var addedClasspath: String = ""
 
   /** A reverse list of commands to replay if the user requests a :replay */
@@ -207,7 +208,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
 
   /** Standard commands **/
   lazy val standardCommands = List(
-    cmd("cp", "<path>", "add a jar or directory to the classpath", addClasspath),
     cmd("edit", "<id>|<line>", "edit history", editCommand),
     cmd("help", "[command]", "print this summary or command-specific help", helpCommand),
     historyCommand,
@@ -220,11 +220,12 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     cmd("paste", "[-raw] [path]", "enter paste mode or paste a file", pasteCommand),
     nullary("power", "enable power user mode", powerCmd),
     nullary("quit", "exit the interpreter", () => Result(keepRunning = false, None)),
-    nullary("replay", "reset execution and replay all previous commands", replay),
-    nullary("reset", "reset the repl to its initial state, forgetting all session entries", resetCommand),
+    cmd("replay", "[options]", "reset the repl and replay all previous commands", replayCommand),
+    //cmd("require", "<path>", "add a jar or directory to the classpath", require),  // TODO
+    cmd("reset", "[options]", "reset the repl to its initial state, forgetting all session entries", resetCommand),
     cmd("save", "<path>", "save replayable session to a file", saveCommand),
     shCommand,
-    cmd("settings", "[+|-]<options>", "+enable/-disable flags, set compiler options", changeSettings),
+    cmd("settings", "<options>", "update compiler options, if possible; see reset", changeSettings),
     nullary("silent", "disable/enable automatic printing of results", verbosity),
     cmd("type", "[-v] <expr>", "display the type of an expression without evaluating it", typeCommand),
     cmd("kind", "[-v] <expr>", "display the kind of expression's type", kindCommand),
@@ -304,57 +305,23 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
   }
 
-  private def changeSettings(args: String): Result = {
-    def showSettings() = {
-      for (s <- settings.userSetSettings.toSeq.sorted) echo(s.toString)
-    }
-    def updateSettings() = {
-      // put aside +flag options
-      val (pluses, rest) = (args split "\\s+").toList partition (_.startsWith("+"))
-      val tmps = new Settings
-      val (ok, leftover) = tmps.processArguments(rest, processAll = true)
-      if (!ok) echo("Bad settings request.")
-      else if (leftover.nonEmpty) echo("Unprocessed settings.")
-      else {
-        // boolean flags set-by-user on tmp copy should be off, not on
-        val offs = tmps.userSetSettings filter (_.isInstanceOf[Settings#BooleanSetting])
-        val (minuses, nonbools) = rest partition (arg => offs exists (_ respondsTo arg))
-        // update non-flags
-        settings.processArguments(nonbools, processAll = true)
-        // also snag multi-value options for clearing, e.g. -Ylog: and -language:
-        for {
-          s <- settings.userSetSettings
-          if s.isInstanceOf[Settings#MultiStringSetting] || s.isInstanceOf[Settings#PhasesSetting]
-          if nonbools exists (arg => arg.head == '-' && arg.last == ':' && (s respondsTo arg.init))
-        } s match {
-          case c: Clearable => c.clear()
-          case _ =>
-        }
-        def update(bs: Seq[String], name: String=>String, setter: Settings#Setting=>Unit) = {
-          for (b <- bs)
-            settings.lookupSetting(name(b)) match {
-              case Some(s) =>
-                if (s.isInstanceOf[Settings#BooleanSetting]) setter(s)
-                else echo(s"Not a boolean flag: $b")
-              case _ =>
-                echo(s"Not an option: $b")
-            }
-        }
-        update(minuses, identity, _.tryToSetFromPropertyValue("false"))  // turn off
-        update(pluses, "-" + _.drop(1), _.tryToSet(Nil))                 // turn on
-      }
-    }
-    if (args.isEmpty) showSettings() else updateSettings()
+  private def changeSettings(line: String): Result = {
+    def showSettings() = for (s <- settings.userSetSettings.toSeq.sorted) echo(s.toString)
+    if (line.isEmpty) showSettings() else { updateSettings(line) ; () }
+  }
+  private def updateSettings(line: String) = {
+    val (ok, rest) = settings.processArguments(words(line), processAll = false)
+    ok && rest.isEmpty
   }
 
   private def javapCommand(line: String): Result = {
     if (javap == null)
-      ":javap unavailable, no tools.jar at %s.  Set JDK_HOME.".format(jdkHome)
+      s":javap unavailable, no tools.jar at $jdkHome.  Set JDK_HOME."
     else if (line == "")
       ":javap [-lcsvp] [path1 path2 ...]"
     else
       javap(words(line)) foreach { res =>
-        if (res.isError) return "Failed: " + res.value
+        if (res.isError) return s"Failed: ${res.value}"
         else res.show()
       }
   }
@@ -428,7 +395,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   // return false if repl should exit
   def processLine(line: String): Boolean = {
     import scala.concurrent.duration._
-    Await.ready(globalFuture, 60.seconds)
+    Await.ready(globalFuture, 10.minutes) // Long timeout here to avoid test failures under heavy load.
 
     if (line eq null) {
       // SI-4563: this means the console was properly interrupted (Ctrl+D usually)
@@ -445,8 +412,14 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   private def readOneLine() = {
+    import scala.io.AnsiColor.{ MAGENTA, RESET }
     out.flush()
-    in readLine prompt
+    in readLine (
+      if (replProps.colorOk)
+        MAGENTA + prompt + RESET
+      else
+        prompt
+    )
   }
 
   /** The main read-eval-print loop for the repl.  It calls
@@ -472,8 +445,16 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
   }
 
   /** create a new interpreter and replay the given commands */
-  def replay() {
-    reset()
+  def replayCommand(line: String): Unit = {
+    def run(destructive: Boolean): Unit = {
+      if (destructive) createInterpreter() else reset()
+      replay()
+    }
+    if (line.isEmpty) run(destructive = false)
+    else if (updateSettings(line)) run(destructive = true)
+  }
+  /** Announces as it replays. */
+  def replay(): Unit = {
     if (replayCommandStack.isEmpty)
       echo("Nothing to replay.")
     else for (cmd <- replayCommands) {
@@ -482,21 +463,28 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       echo("")
     }
   }
-  def resetCommand() {
-    echo("Resetting interpreter state.")
-    if (replayCommandStack.nonEmpty) {
-      echo("Forgetting this session history:\n")
-      replayCommands foreach echo
-      echo("")
-      replayCommandStack = Nil
+  /** `reset` the interpreter in an attempt to start fresh.
+   *  Supplying settings creates a new compiler.
+   */
+  def resetCommand(line: String): Unit = {
+    def run(destructive: Boolean): Unit = {
+      echo("Resetting interpreter state.")
+      if (replayCommandStack.nonEmpty) {
+        echo("Forgetting this session history:\n")
+        replayCommands foreach echo
+        echo("")
+        replayCommandStack = Nil
+      }
+      if (intp.namedDefinedTerms.nonEmpty)
+        echo("Forgetting all expression results and named terms: " + intp.namedDefinedTerms.mkString(", "))
+      if (intp.definedTypes.nonEmpty)
+        echo("Forgetting defined types: " + intp.definedTypes.mkString(", "))
+      if (destructive) createInterpreter() else reset()
     }
-    if (intp.namedDefinedTerms.nonEmpty)
-      echo("Forgetting all expression results and named terms: " + intp.namedDefinedTerms.mkString(", "))
-    if (intp.definedTypes.nonEmpty)
-      echo("Forgetting defined types: " + intp.definedTypes.mkString(", "))
-
-    reset()
+    if (line.isEmpty) run(destructive = false)
+    else if (updateSettings(line)) run(destructive = true)
   }
+  /** Resets without announcements. */
   def reset() {
     intp.reset()
     unleashAndSetPhase()
@@ -619,6 +607,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     else File(filename).printlnAll(replayCommands: _*)
   )
 
+  @deprecated("Use reset, replay or require to update class path", since = "2.11")
   def addClasspath(arg: String): Unit = {
     val f = File(arg).normalize
     if (f.exists) {

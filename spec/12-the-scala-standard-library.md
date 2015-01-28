@@ -332,7 +332,7 @@ The `toString` method returns `"()"`.
 ## Standard Reference Classes
 
 This section presents some standard Scala reference classes which are
-treated in a special way in Scala compiler -- either Scala provides
+treated in a special way by the Scala compiler -- either Scala provides
 syntactic sugar for them, or the Scala compiler generates special code
 for their operations. Other classes in the standard Scala library are
 documented in the Scala library documentation by HTML pages.

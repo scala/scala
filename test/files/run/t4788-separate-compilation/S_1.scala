@@ -1,0 +1,2 @@
+@SAnnotation
+class S
