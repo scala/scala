@@ -122,9 +122,20 @@ trait Logic extends Debugging  {
 
     // symbols are propositions
     final class Sym private[PropositionalLogic] (val variable: Var, val const: Const) extends Prop {
+
+      override def equals(other: scala.Any): Boolean = other match {
+        case that: Sym => this.variable == that.variable &&
+          this.const == that.const
+        case _         => false
+      }
+
+      override def hashCode(): Int = {
+        variable.hashCode * 41 + const.hashCode
+      }
+
       private val id: Int = Sym.nextSymId
 
-      override def toString = variable + "=" + const + "#" + id
+      override def toString = s"$variable=$const#$id"
     }
 
     object Sym {
@@ -370,9 +381,11 @@ trait Logic extends Debugging  {
     val EmptyModel: Model
     val NoModel: Model
 
+    final case class Solution(model: Model, unassigned: List[Sym])
+
     def findModelFor(solvable: Solvable): Model
 
-    def findAllModelsFor(solvable: Solvable): List[Model]
+    def findAllModelsFor(solvable: Solvable): List[Solution]
   }
 }
 
@@ -622,7 +635,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
         if (!t.symbol.isStable) {
           // Create a fresh type for each unstable value, since we can never correlate it to another value.
-          // For example `case X => case X =>` should not complaing about the second case being unreachable,
+          // For example `case X => case X =>` should not complain about the second case being unreachable,
           // if X is mutable.
           freshExistentialSubtype(t.tpe)
         }

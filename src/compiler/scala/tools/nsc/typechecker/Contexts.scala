@@ -145,7 +145,7 @@ trait Contexts { self: Analyzer =>
    *   - A variety of bits that track the current error reporting policy (more on this later);
    *     whether or not implicits/macros are enabled, whether we are in a self or super call or
    *     in a constructor suffix. These are represented as bits in the mask `contextMode`.
-   *   - Some odds and ends: undetermined type pararameters of the current line of type inference;
+   *   - Some odds and ends: undetermined type parameters of the current line of type inference;
    *     contextual augmentation for error messages, tracking of the nesting depth.
    *
    * And behaviour:
@@ -154,19 +154,19 @@ trait Contexts { self: Analyzer =>
    *     to buffer these for use in 'silent' type checking, when some recovery might be possible.
    *  -  `Context` is something of a Zipper for the tree were are typechecking: it `enclosingContextChain`
    *     is the path back to the root. This is exactly what we need to resolve names (`lookupSymbol`)
-   *     and to collect in-scope implicit defintions (`implicitss`)
+   *     and to collect in-scope implicit definitions (`implicitss`)
    *     Supporting these are `imports`, which represents all `Import` trees in in the enclosing context chain.
-   *  -  In a similar vein, we can assess accessiblity (`isAccessible`.)
+   *  -  In a similar vein, we can assess accessibility (`isAccessible`.)
    *
    * More on error buffering:
    *     When are type errors recoverable? In quite a few places, it turns out. Some examples:
    *     trying to type an application with/without the expected type, or with/without implicit views
    *     enabled. This is usually mediated by `Typer.silent`, `Inferencer#tryTwice`.
    *
-   *     Intially, starting from the `typer` phase, the contexts either buffer or report errors;
+   *     Initially, starting from the `typer` phase, the contexts either buffer or report errors;
    *     afterwards errors are thrown. This is configured in `rootContext`. Additionally, more
    *     fine grained control is needed based on the kind of error; ambiguity errors are often
-   *     suppressed during exploraratory typing, such as determining whether `a == b` in an argument
+   *     suppressed during exploratory typing, such as determining whether `a == b` in an argument
    *     position is an assignment or a named argument, when `Infererencer#isApplicableSafe` type checks
    *     applications with and without an expected type, or whtn `Typer#tryTypedApply` tries to fit arguments to
    *     a function type with/without implicit views.

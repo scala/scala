@@ -25,7 +25,7 @@ $(document).ready(function()
 	$(".diagram-container").css("display", "block");
 
 	$(".diagram").each(function() {
-		// store inital dimensions
+		// store initial dimensions
 		$(this).data("width", $("svg", $(this)).width());
 		$(this).data("height", $("svg", $(this)).height());
 		// store unscaled clone of SVG element

@@ -74,7 +74,7 @@ class MethodLevelOpts {
       """.stripMargin
     val m = singleMethod(methodOptCompiler)(code)
     assertTrue(m.handlers.length == 2)
-    assertSameCode(m.instructions.dropNonOp, // drop line numbers and lables that are only used by line numbers
+    assertSameCode(m.instructions.dropNonOp, // drop line numbers and labels that are only used by line numbers
 
       // one single label left :-)
       List(Op(ICONST_1), VarOp(ISTORE, 2), Jump(GOTO, Label(20)), Op(POP), Op(ICONST_2), VarOp(ISTORE, 2), Jump(GOTO, Label(20)), VarOp(ASTORE, 3), Op(ICONST_2), Op(IRETURN), Label(20), Op(ICONST_2), Op(IRETURN))

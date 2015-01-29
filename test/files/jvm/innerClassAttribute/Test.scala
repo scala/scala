@@ -84,17 +84,15 @@ object Test extends BytecodeTest {
   }
 
   def testA3() = {
-    def t(c: String) = {
-      val List(b1, b2) = innerClassNodes(c)
-      // the outer class for classes nested inside top-level modules is not the module class, but the mirror class.
-      // this is a hack for java interop, handled in the backend. see BTypes.scala, comment on "Java Compatibility".
-      assertMember(b1, "A3", "B1", flags = publicStatic)
-      assertMember(b2, "A3", "B2$", flags = publicStatic)
-    }
-    t("A3$")
-    // the mirror class has the same inner class attributes as the module
-    // class (added when the mirror is created in the backend)
-    t("A3")
+    // the inner class entries for top-level object members are in the companion class, so nothing in the module class
+    val List() = innerClassNodes("A3$")
+
+    // inner class entries in the companion class (a backend-generated mirror class in this case)
+    val List(b1, b2) = innerClassNodes("A3")
+    // the outer class for classes nested inside top-level modules is not the module class, but the mirror class.
+    // this is a hack for java interop, handled in the backend. see BTypes.scala, comment on "Java Compatibility".
+    assertMember(b1, "A3", "B1", flags = publicStatic)
+    assertMember(b2, "A3", "B2$", flags = publicStatic)
   }
 
   def testA4() = {
@@ -164,7 +162,10 @@ object Test extends BytecodeTest {
   }
 
   def testA15() = {
-    val List(b) = innerClassNodes("A15")
+    // no member classes, only anonymous / local. these are nested in the module class, not the companion.
+    val List() = innerClassNodes("A15")
+
+    val List(b) = innerClassNodes("A15$")
     assertLocal(b, "A15$B$3", "B$3")
 
     val List(_, c) = innerClassNodes("A15$B$3")
@@ -283,9 +284,7 @@ object Test extends BytecodeTest {
     assertMember(i3c, "A21", "I3$", flags = publicStatic)
     assertLocal(j1, "A21$J1$1", "J1$1")
 
-    val List(i2m, i3m, j3, j4, j5) = innerClassNodes("A21$")
-    assertMember(i2m, "A21", "I2", flags = publicStatic)
-    assertMember(i3m, "A21", "I3$", flags = publicStatic)
+    val List(j3, j4, j5) = innerClassNodes("A21$")
     assertLocal(j3, "A21$J3$1", "J3$1")
     assertLocal(j4, "A21$J4$1", "J4$1")
     assertLocal(j5, "A21$J5$1", "J5$1") // non-static!

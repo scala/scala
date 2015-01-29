@@ -950,7 +950,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       // Ignore type errors raised in later phases that are due to mismatching types with existential skolems
       // We have lift crashing in 2.9 with an adapt failure in the pattern matcher.
-      // Here's my hypothsis why this happens. The pattern matcher defines a variable of type
+      // Here's my hypothesis why this happens. The pattern matcher defines a variable of type
       //
       //   val x: T = expr
       //
@@ -3285,6 +3285,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
           handleOverloaded
 
+        case _ if isPolymorphicSignature(fun.symbol) =>
+          // Mimic's Java's treatment of polymorphic signatures as described in
+          // https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.3
+          //
+          // One can think of these methods as being infinitely overloaded. We create
+          // a ficticious new cloned method symbol for each call site that takes on a signature
+          // governed by a) the argument types and b) the expected type
+          val args1 = typedArgs(args, forArgMode(fun, mode))
+          val pts = args1.map(_.tpe.deconst)
+          val clone = fun.symbol.cloneSymbol
+          val cloneParams = pts map (pt => clone.newValueParameter(currentUnit.freshTermName()).setInfo(pt))
+          val resultType = if (isFullyDefined(pt)) pt else ObjectTpe
+          clone.modifyInfo(mt => copyMethodType(mt, cloneParams, resultType))
+          val fun1 = fun.setSymbol(clone).setType(clone.info)
+          doTypedApply(tree, fun1, args1, mode, resultType).setType(resultType)
+
         case mt @ MethodType(params, _) =>
           val paramTypes = mt.paramTypes
           // repeat vararg as often as needed, remove by-name
@@ -3780,8 +3796,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case TypeRef(pre, sym, args) =>
             if (sym.isAliasType && containsLocal(tp) && (tp.dealias ne tp)) apply(tp.dealias)
             else {
-              if (pre.isVolatile)
-                InferTypeWithVolatileTypeSelectionError(tree, pre)
+              if (pre.isVolatile) pre match {
+                case SingleType(_, sym) if sym.isSynthetic && isPastTyper =>
+                  debuglog(s"ignoring volatility of prefix in pattern matcher generated inferred type: $tp") // See pos/t7459c.scala
+                case _ =>
+                  InferTypeWithVolatileTypeSelectionError(tree, pre)
+              }
               mapOver(tp)
             }
           case _ =>

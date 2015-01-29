@@ -93,7 +93,7 @@ class SyncVar[A] {
   // [Heather] the reason why: it doesn't take into consideration
   // whether or not the SyncVar is already defined. So, set has been
   // deprecated in order to eventually be able to make "setting" private
-  @deprecated("Use `put` instead, as `set` is potentionally error-prone", "2.10.0")
+  @deprecated("Use `put` instead, as `set` is potentially error-prone", "2.10.0")
   // NOTE: Used by SBT 0.13.0-M2 and below
   def set(x: A): Unit = setVal(x)
 
@@ -113,7 +113,7 @@ class SyncVar[A] {
   // [Heather] the reason why: it doesn't take into consideration
   // whether or not the SyncVar is already defined. So, unset has been
   // deprecated in order to eventually be able to make "unsetting" private
-  @deprecated("Use `take` instead, as `unset` is potentionally error-prone", "2.10.0")
+  @deprecated("Use `take` instead, as `unset` is potentially error-prone", "2.10.0")
   // NOTE: Used by SBT 0.13.0-M2 and below
   def unset(): Unit = synchronized {
     isDefined = false

@@ -168,7 +168,7 @@ trait ScalaSettings extends AbsScalaSettings
   val termConflict    = ChoiceSetting     ("-Yresolve-term-conflict", "strategy", "Resolve term conflicts", List("package", "object", "error"), "error")
   val inline          = BooleanSetting    ("-Yinline", "Perform inlining when possible.")
   val inlineHandlers  = BooleanSetting    ("-Yinline-handlers", "Perform exception handler inlining when possible.")
-  val YinlinerWarnings= BooleanSetting    ("-Yinline-warnings", "Emit inlining warnings. (Normally surpressed due to high volume)")
+  val YinlinerWarnings= BooleanSetting    ("-Yinline-warnings", "Emit inlining warnings. (Normally suppressed due to high volume)")
   val Xlinearizer     = ChoiceSetting     ("-Ylinearizer", "which", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo")
   val log             = PhasesSetting     ("-Ylog", "Log operations during")
   val Ylogcp          = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
@@ -199,7 +199,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Yreplsync       = BooleanSetting    ("-Yrepl-sync", "Do not use asynchronous code for repl startup")
   val Yreplclassbased = BooleanSetting    ("-Yrepl-class-based", "Use classes to wrap REPL snippets instead of objects")
   val Yreploutdir     = StringSetting     ("-Yrepl-outdir", "path", "Write repl-generated classfiles to given output directory (use \"\" to generate a temporary dir)" , "")
-  val YmethodInfer    = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overriden methods.")
+  val YmethodInfer    = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overridden methods.")
   val etaExpandKeepsStar = BooleanSetting ("-Yeta-expand-keeps-star", "Eta-expand varargs methods to T* rather than Seq[T].  This is a temporary option to ease transition.").withDeprecationMessage(removalIn212)
   val inferByName     = BooleanSetting    ("-Yinfer-by-name", "Allow inference of by-name types. This is a temporary option to ease transition. See SI-7899.").withDeprecationMessage(removalIn212)
   val YclasspathImpl  = ChoiceSetting     ("-YclasspathImpl", "implementation", "Choose classpath scanning method.", List(ClassPathRepresentationType.Recursive, ClassPathRepresentationType.Flat), ClassPathRepresentationType.Recursive)
@@ -215,7 +215,7 @@ trait ScalaSettings extends AbsScalaSettings
 
   object YoptChoices extends MultiChoiceEnumeration {
     val unreachableCode         = Choice("unreachable-code",          "Eliminate unreachable code, exception handlers protecting no instructions, debug information of eliminated variables.")
-    val simplifyJumps           = Choice("simplify-jumps",            "Simplify branching instructions, eliminate unnecessery ones.")
+    val simplifyJumps           = Choice("simplify-jumps",            "Simplify branching instructions, eliminate unnecessary ones.")
     val recurseUnreachableJumps = Choice("recurse-unreachable-jumps", "Recursively apply unreachable-code and simplify-jumps (if enabled) until reaching a fixpoint.")
     val emptyLineNumbers        = Choice("empty-line-numbers",        "Eliminate unnecessary line number information.")
     val emptyLabels             = Choice("empty-labels",              "Eliminate and collapse redundant labels in the bytecode.")
@@ -242,6 +242,7 @@ trait ScalaSettings extends AbsScalaSettings
     descr = "Enable optimizations",
     domain = YoptChoices)
 
+  def YoptNone                    = Yopt.isSetByUser && Yopt.value.isEmpty
   def YoptUnreachableCode         = !Yopt.isSetByUser || Yopt.contains(YoptChoices.unreachableCode)
   def YoptSimplifyJumps           = Yopt.contains(YoptChoices.simplifyJumps)
   def YoptRecurseUnreachableJumps = Yopt.contains(YoptChoices.recurseUnreachableJumps)

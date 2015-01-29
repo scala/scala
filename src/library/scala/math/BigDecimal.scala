@@ -364,7 +364,7 @@ object BigDecimal {
  *  to a decimal text representation, and build a `BigDecimal` based on that.
  *  `BigDecimal.binary` will expand the binary fraction to the requested or default
  *  precision.  `BigDecimal.exact` will expand the binary fraction to the
- *  full number of digits, thus producing the exact decimal value corrsponding to
+ *  full number of digits, thus producing the exact decimal value corresponding to
  *  the binary fraction of that floating-point number.  `BigDecimal` equality
  *  matches the decimal expansion of `Double`: `BigDecimal.decimal(0.1) == 0.1`.
  *  Note that since `0.1f != 0.1`, the same is not true for `Float`.  Instead,

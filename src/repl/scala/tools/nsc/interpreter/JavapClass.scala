@@ -656,7 +656,7 @@ object JavapClass {
   // FunFinder.funs(ks) finds anonfuns
   class FunFinder(loader: ScalaClassLoader, intp: Option[IMain]) {
 
-    // manglese for closure: typename, $anonfun or lamba, opt method, digits
+    // manglese for closure: typename, $anonfun or lambda, opt method, digits
     val closure = """(.*)\$(\$anonfun|lambda)(?:\$+([^$]+))?\$(\d+)""".r
 
     // manglese for closure
@@ -743,7 +743,7 @@ object JavapClass {
             case _                  => Nil
           }
       val res = fs map (_.to[Seq]) getOrElse Seq()
-      // on second thought, we don't care about lamba method classes, just the impl methods
+      // on second thought, we don't care about lambda method classes, just the impl methods
       val rev =
       res flatMap {
         case x @ closure(_, "lambda", _, _) => labdaMethod(x, target)
@@ -787,7 +787,7 @@ object JavapClass {
       }
     }
     /** Translate the supplied targets to patterns for anonfuns.
-     *  Pattern is typename $ label [[$]$func] $n where label is $anonfun or lamba,
+     *  Pattern is typename $ label [[$]$func] $n where label is $anonfun or lambda,
      *  and lambda includes the extra dollar, func is a method name, and n is an int.
      *  The typename for a nested class is dollar notation, Betty$Bippy.
      *

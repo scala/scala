@@ -208,7 +208,7 @@ trait MatchTranslation {
         case _                                                    => (cases, None)
       }
 
-      checkMatchVariablePatterns(nonSyntheticCases)
+      if (!settings.XnoPatmatAnalysis) checkMatchVariablePatterns(nonSyntheticCases)
 
       // we don't transform after uncurry
       // (that would require more sophistication when generating trees,
@@ -248,7 +248,10 @@ trait MatchTranslation {
       if (caseDefs forall treeInfo.isCatchCase) caseDefs
       else {
         val swatches = { // switch-catches
-          val bindersAndCases = caseDefs map { caseDef =>
+          // SI-7459 must duplicate here as we haven't commited to switch emission, and just figuring out
+          //         if we can ends up mutating `caseDefs` down in the use of `substituteSymbols` in
+          //         `TypedSubstitution#Substitution`. That is called indirectly by `emitTypeSwitch`.
+          val bindersAndCases = caseDefs.map(_.duplicate) map { caseDef =>
             // generate a fresh symbol for each case, hoping we'll end up emitting a type-switch (we don't have a global scrut there)
             // if we fail to emit a fine-grained switch, have to do translateCase again with a single scrutSym (TODO: uniformize substitution on treemakers so we can avoid this)
             val caseScrutSym = freshSym(pos, pureType(ThrowableTpe))
@@ -518,7 +521,7 @@ trait MatchTranslation {
       // reference the (i-1)th case accessor if it exists, otherwise the (i-1)th tuple component
       override protected def tupleSel(binder: Symbol)(i: Int): Tree = {
         val accessors = binder.caseFieldAccessors
-        if (accessors isDefinedAt (i-1)) REF(binder) DOT accessors(i-1)
+        if (accessors isDefinedAt (i-1)) gen.mkAttributedStableRef(binder) DOT accessors(i-1)
         else codegen.tupleSel(binder)(i) // this won't type check for case classes, as they do not inherit ProductN
       }
     }
@@ -580,7 +583,7 @@ trait MatchTranslation {
             // duplicated with the extractor Unapplied
             case Apply(x, List(i @ Ident(nme.SELECTOR_DUMMY))) =>
               treeCopy.Apply(t, x, binderRef(i.pos) :: Nil)
-            // SI-7868 Account for numeric widening, e.g. <unappplySelector>.toInt
+            // SI-7868 Account for numeric widening, e.g. <unapplySelector>.toInt
             case Apply(x, List(i @ (sel @ Select(Ident(nme.SELECTOR_DUMMY), name)))) =>
               treeCopy.Apply(t, x, treeCopy.Select(sel, binderRef(i.pos), name) :: Nil)
             case _ =>

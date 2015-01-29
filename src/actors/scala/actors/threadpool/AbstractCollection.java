@@ -1,6 +1,6 @@
 /*
  * Written by Dawid Kurzyniec, based on public domain code written by Doug Lea
- * and publictly available documentation, and released to the public domain, as
+ * and publicly available documentation, and released to the public domain, as
  * explained at http://creativecommons.org/licenses/publicdomain
  */
 

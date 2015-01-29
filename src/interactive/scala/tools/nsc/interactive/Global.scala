@@ -80,7 +80,11 @@ trait InteractiveAnalyzer extends Analyzer {
         val owningInfo = sym.owner.info
         val existingDerivedSym = owningInfo.decl(sym.name.toTermName).filter(sym => sym.isSynthetic && sym.isMethod)
         existingDerivedSym.alternatives foreach (owningInfo.decls.unlink)
-        enterImplicitWrapper(tree.asInstanceOf[ClassDef])
+        val defTree = tree match {
+          case dd: DocDef => dd.definition // See SI-9011, Scala IDE's presentation compiler incorporates ScalaDocGlobal with InterativeGlobal, so we have to unwrap DocDefs.
+          case _ => tree
+        }
+        enterImplicitWrapper(defTree.asInstanceOf[ClassDef])
       }
       super.enterExistingSym(sym, tree)
     }
@@ -523,7 +527,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
   /** The current presentation compiler runner */
   @volatile private[interactive] var compileRunner: Thread = newRunnerThread()
 
-  /** Check that the currenyly executing thread is the presentation compiler thread.
+  /** Check that the currently executing thread is the presentation compiler thread.
    *
    *  Compiler initialization may happen on a different thread (signalled by globalPhase being NoPhase)
    */
@@ -1189,7 +1193,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
   }
 
-  /** Parses and enters given source file, stroring parse tree in response */
+  /** Parses and enters given source file, storing parse tree in response */
   private def getParsedEnteredNow(source: SourceFile, response: Response[Tree]) {
     respond(response) {
       onUnitOf(source) { unit =>

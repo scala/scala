@@ -12,7 +12,7 @@ import TypesStats._
 trait FindMembers {
   this: SymbolTable =>
 
-  /** Implementatation of `Type#{findMember, findMembers}` */
+  /** Implementation of `Type#{findMember, findMembers}` */
   private[internal] abstract class FindMemberBase[T](tpe: Type, name: Name, excludedFlags: Long, requiredFlags: Long) {
     protected val initBaseClasses: List[Symbol] = tpe.baseClasses
 

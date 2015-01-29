@@ -75,7 +75,7 @@ private[internal] trait TypeConstraints {
     /*  Syncnote: Type constraints are assumed to be used from only one
      *  thread. They are not exposed in api.Types and are used only locally
      *  in operations that are exposed from types. Hence, no syncing of any
-     *  variables should be ncessesary.
+     *  variables should be necessary.
      */
 
     /** Guard these lists against AnyClass and NothingClass appearing,

@@ -514,6 +514,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
 
+    lazy val MethodHandle = getClassIfDefined("java.lang.invoke.MethodHandle")
+
     // Option classes
     lazy val OptionClass: ClassSymbol   = requiredClass[Option[_]]
     lazy val OptionModule: ModuleSymbol = requiredModule[scala.Option.type]
@@ -931,7 +933,7 @@ trait Definitions extends api.StandardDefinitions {
 
     // members of class scala.Any
 
-    // TODO these aren't final! They are now overriden in AnyRef/Object. Prior to the fix
+    // TODO these aren't final! They are now overridden in AnyRef/Object. Prior to the fix
     //      for SI-8129, they were actually *overloaded* by the members in AnyRef/Object.
     //      We should unfinalize these, override in AnyValClass, and make the overrides final.
     //      Refchecks never actually looks at these, so its just for consistency.
@@ -1508,6 +1510,9 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val PartialManifestClass  = getTypeMember(ReflectPackage, tpnme.ClassManifest)
       lazy val ManifestSymbols = Set[Symbol](PartialManifestClass, FullManifestClass, OptManifestClass)
+
+      def isPolymorphicSignature(sym: Symbol) = PolySigMethods(sym)
+      private lazy val PolySigMethods: Set[Symbol] = Set[Symbol](MethodHandle.info.decl(sn.Invoke), MethodHandle.info.decl(sn.InvokeExact)).filter(_.exists)
     }
   }
 }

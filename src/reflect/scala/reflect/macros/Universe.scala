@@ -44,7 +44,7 @@ abstract class Universe extends scala.reflect.api.Universe {
      *  it is imperative that you either call `untypecheck` or do `changeOwner(tree, x, y)`.
      *
      *  Since at the moment `untypecheck` has fundamental problem that can sometimes lead to tree corruption,
-     *  `changeOwner` becomes an indispensible tool in building 100% robust macros.
+     *  `changeOwner` becomes an indispensable tool in building 100% robust macros.
      *  Future versions of the reflection API might obviate the need in taking care of
      *  these low-level details, but at the moment this is what we've got.
      */

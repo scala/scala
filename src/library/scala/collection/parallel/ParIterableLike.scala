@@ -744,7 +744,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
    *  The index flag is initially set to maximum integer value.
    *
    *  @param pred   the predicate used to test the elements
-   *  @return       the longest prefix of this $coll of elements that satisy the predicate `pred`
+   *  @return       the longest prefix of this $coll of elements that satisfy the predicate `pred`
    */
   def takeWhile(pred: T => Boolean): Repr = {
     val cbf = combinerFactory

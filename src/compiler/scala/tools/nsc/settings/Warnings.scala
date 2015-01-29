@@ -30,7 +30,7 @@ trait Warnings {
   // Experimental lint warnings that are turned off, but which could be turned on programmatically.
   // These warnings are said to blind those who dare enable them.
   // They are not activated by -Xlint and can't be enabled on the command line.
-  val warnValueOverrides = { // currently turned off as experimental. creaded using constructor (new BS), so not available on the command line.
+  val warnValueOverrides = { // Currently turned off as experimental. Created using constructor (new BS), so not available on the command line.
   val flag = new BooleanSetting("value-overrides", "Generated value class method overrides an implementation")
     flag.value = false
     flag

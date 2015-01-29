@@ -410,6 +410,19 @@ The final result of the transformation is a block of the form
 }
 ```
 
+### Signature Polymorphic Methods
+
+For invocations of signature polymorphic methods of the target platform `$f$($e_1 , \ldots , e_m$)`,
+the invoked function has a different method type `($p_1$:$T_1 , \ldots , p_n$:$T_n$)$U$` at each call
+site. The parameter types `$T_ , \ldots , T_n$` are the types of the argument expressions
+`$e_1 , \ldots , e_m$` and `$U$` is the expected type at the call site. If the expected type is
+undefined then `$U$` is `scala.AnyRef`. The parameter names `$p_1 , \ldots , p_n$` are fresh.
+
+###### Note
+
+On the Java platform version 7 and later, the methods `invoke` and `invokeExact` in class
+`java.lang.invoke.MethodHandle` are signature polymorphic.
+
 ## Method Values
 
 ```ebnf
@@ -666,7 +679,7 @@ followed by operators starting with ``|`', etc.
 
 There's one exception to this rule, which concerns
 [_assignment operators_](#assignment-operators).
-The precedence of an assigment operator is the same as the one
+The precedence of an assignment operator is the same as the one
 of simple assignment `(=)`. That is, it is lower than the
 precedence of any other operator.
 
@@ -1761,7 +1774,7 @@ trait Dynamic {
 ```
 
 Assume a selection of the form $e.x$ where the type of $e$ conforms to `scala.Dynamic`.
-Further assuming the selection is not followed by any function arguments, such an expression can be rewitten under the conditions given [here](#implicit-conversions) to:
+Further assuming the selection is not followed by any function arguments, such an expression can be rewritten under the conditions given [here](#implicit-conversions) to:
 
 ```scala
 $e$.applyDynamic("$x$")

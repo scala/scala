@@ -153,7 +153,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def thatCast(eqmeth: Symbol): Tree =
       gen.mkCast(Ident(eqmeth.firstParam), clazz.tpe)
 
-    /* The equality method core for case classes and inline clases.
+    /* The equality method core for case classes and inline classes.
      * 1+ args:
      *   (that.isInstanceOf[this.C]) && {
      *       val x$1 = that.asInstanceOf[this.C]

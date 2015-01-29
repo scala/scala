@@ -80,7 +80,7 @@ trait LoopCommands {
     def recording(line: String) = Result(keepRunning = true, Option(line))
 
     // most commands do not want to micromanage the Result, but they might want
-    // to print something to the console, so we accomodate Unit and String returns.
+    // to print something to the console, so we accommodate Unit and String returns.
     implicit def resultFromUnit(x: Unit): Result = default
     implicit def resultFromString(msg: String): Result = {
       echoCommandMessage(msg)

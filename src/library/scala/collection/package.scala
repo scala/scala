@@ -18,7 +18,7 @@ package scala
  *
  * == Using Collections ==
  *
- * It is convienient to treat all collections as either
+ * It is convenient to treat all collections as either
  * a [[scala.collection.Traversable]] or [[scala.collection.Iterable]], as
  * these traits define the vast majority of operations
  * on a collection.

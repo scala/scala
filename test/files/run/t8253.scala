@@ -10,5 +10,5 @@ object Test extends App {
   show("<sample xmlns:foo={identity(ns1)}/>", q"<sample xmlns:foo={ns1}/>")
 
   // `identity(foo)` used to match the overly permissive match in SymbolXMLBuilder
-  // which was intented to more specifically match `_root_.scala.xml.Text(...)`
+  // which was intended to more specifically match `_root_.scala.xml.Text(...)`
 }

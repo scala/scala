@@ -27,7 +27,7 @@ trait StdAttachments {
     def importAttachment(importer: Importer): this.type
   }
 
-  /** Attachment that doesn't contain any reflection artificats and can be imported as-is. */
+  /** Attachment that doesn't contain any reflection artifacts and can be imported as-is. */
   trait PlainAttachment extends ImportableAttachment {
     def importAttachment(importer: Importer): this.type = this
   }
@@ -42,7 +42,7 @@ trait StdAttachments {
    */
   case object BackquotedIdentifierAttachment extends PlainAttachment
 
-  /** Identifies trees are either result or intermidiate value of for loop desugaring.
+  /** Identifies trees are either result or intermediate value of for loop desugaring.
    */
   case object ForAttachment extends PlainAttachment
 

@@ -384,7 +384,7 @@ trait NamesDefaults { self: Analyzer =>
    * of arguments.
    *
    * @param args    The list of arguments
-   * @param params  The list of parameter sybols of the invoked method
+   * @param params  The list of parameter symbols of the invoked method
    * @param argName A function that extracts the name of an argument expression, if it is a named argument.
    */
   def missingParams[T](args: List[T], params: List[Symbol], argName: T => Option[Name]): (List[Symbol], Boolean) = {

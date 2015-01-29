@@ -518,7 +518,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
     }
   }
 
-  /** Produces a collection containing cummulative results of applying the
+  /** Produces a collection containing cumulative results of applying the
    *  operator going left to right.
    *
    *  $willNotTerminateInf
@@ -541,8 +541,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
     } else Iterator.empty.next()
   }
 
-  /** Produces a collection containing cummulative results of applying the operator going right to left.
-   *  The head of the collection is the last cummulative result.
+  /** Produces a collection containing cumulative results of applying the operator going right to left.
+   *  The head of the collection is the last cumulative result.
    *
    *  $willNotTerminateInf
    *  $orderDependent

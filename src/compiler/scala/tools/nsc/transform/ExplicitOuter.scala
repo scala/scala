@@ -441,7 +441,7 @@ abstract class ExplicitOuter extends InfoTransform
           else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
 
         case Select(qual, name) =>
-          // make not private symbol acessed from inner classes, as well as
+          // make not private symbol accessed from inner classes, as well as
           // symbols accessed from @inline methods
           //
           // See SI-6552 for an example of why `sym.owner.enclMethod hasAnnotation ScalaInlineClass`

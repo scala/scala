@@ -677,7 +677,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
     def isDeprecated(sym: Symbol): Boolean = { sym.annotations exists (_ matches definitions.DeprecatedAttr) }
 
-    def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor) {
+    def addInnerClasses(csym: Symbol, jclass: asm.ClassVisitor, isMirror: Boolean = false) {
       /* The outer name for this inner class. Note that it returns null
        * when the inner class should not get an index in the constant pool.
        * That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
@@ -698,11 +698,19 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         else
           innerSym.rawname + innerSym.moduleSuffix
 
-      // This collects all inner classes of csym, including local and anonymous: lambdalift makes
-      // them members of their enclosing class.
-      innerClassBuffer ++= exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(csym))
+      innerClassBuffer ++= {
+        val members = exitingPickler(memberClassesOf(csym))
+        // lambdalift makes all classes (also local, anonymous) members of their enclosing class
+        val allNested = exitingPhase(currentRun.lambdaliftPhase)(memberClassesOf(csym))
 
-      // Add members of the companion object (if top-level). why, see comment in BTypes.scala.
+        // for the mirror class, we take the members of the companion module class (Java compat,
+        // see doc in BTypes.scala). for module classes, we filter out those members.
+        if (isMirror)  members
+        else if (isTopLevelModule(csym)) allNested diff members
+        else allNested
+      }
+
+      // If this is a top-level class, add members of the companion object.
       val linkedClass = exitingPickler(csym.linkedClassOfClass) // linkedCoC does not work properly in late phases
       if (isTopLevelModule(linkedClass)) {
         // phase travel to exitingPickler: this makes sure that memberClassesOf only sees member classes,
@@ -1206,22 +1214,6 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
     def serialVUID: Option[Long] = genBCode.serialVUID(clasz.symbol)
 
-    private def getSuperInterfaces(c: IClass): Array[String] = {
-
-        // Additional interface parents based on annotations and other cues
-        def newParentForAttr(ann: AnnotationInfo): Symbol = ann.symbol match {
-          case RemoteAttr       => RemoteInterfaceClass
-          case _                => NoSymbol
-        }
-
-      val ps = c.symbol.info.parents
-      val superInterfaces0: List[Symbol] = if(ps.isEmpty) Nil else c.symbol.mixinClasses
-      val superInterfaces = existingSymbols(superInterfaces0 ++ c.symbol.annotations.map(newParentForAttr)).distinct
-
-      if(superInterfaces.isEmpty) EMPTY_STRING_ARRAY
-      else mkArray(erasure.minimizeInterfaces(superInterfaces.map(_.info)).map(t => javaName(t.typeSymbol)))
-    }
-
     var clasz:    IClass = _           // this var must be assigned only by genClass()
     var jclass:   asm.ClassWriter = _  // the classfile being emitted
     var thisName: String = _           // the internal name of jclass
@@ -1242,7 +1234,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
       val ps = c.symbol.info.parents
       val superClass: String = if(ps.isEmpty) JAVA_LANG_OBJECT.getInternalName else javaName(ps.head.typeSymbol)
 
-      val ifaces = getSuperInterfaces(c)
+      val ifaces: Array[String] = implementedInterfaces(c.symbol).map(javaName)(collection.breakOut)
 
       val thisSignature = getGenericSignature(c.symbol, c.symbol.owner)
       val flags = mkFlags(
@@ -2812,7 +2804,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
 
       addForwarders(isRemote(modsym), mirrorClass, mirrorName, modsym)
 
-      addInnerClasses(modsym, mirrorClass)
+      addInnerClasses(modsym, mirrorClass, isMirror = true)
       mirrorClass.visitEnd()
       writeIfNotTooBig("" + modsym.name, mirrorName, mirrorClass, modsym)
     }
@@ -2947,7 +2939,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
   } // end of class JBeanInfoBuilder
 
   /** A namespace for utilities to normalize the code of an IMethod, over and beyond what IMethod.normalize() strives for.
-   * In particualr, IMethod.normalize() doesn't collapseJumpChains().
+   * In particular, IMethod.normalize() doesn't collapseJumpChains().
    *
    * TODO Eventually, these utilities should be moved to IMethod and reused from normalize() (there's nothing JVM-specific about them).
    */
@@ -3162,7 +3154,7 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
         }
       }
 
-      // remove the unusued exception handler references
+      // remove the unused exception handler references
       if (settings.debug)
         for (exh <- unusedExceptionHandlers) debuglog(s"eliding exception handler $exh because it does not cover any reachable blocks")
       m.exh = m.exh filterNot unusedExceptionHandlers

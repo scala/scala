@@ -894,7 +894,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
 
       val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
-      owner.info.decls.enter(specMember)
       typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
       wasSpecializedForTypeVars(specMember) ++= spec collect { case (s, tp) if s.tpe == tp => s }
 
@@ -1291,7 +1290,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *     // even in the specialized variant, the local X class
    *     // doesn't extend Parent$mcI$sp, since its symbol has
    *     // been created after specialization and was not seen
-   *     // by specialzation's info transformer.
+   *     // by specialization's info transformer.
    *     ...
    *   }
    * }

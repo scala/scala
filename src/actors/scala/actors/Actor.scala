@@ -205,7 +205,7 @@ object Actor extends Combinators {
    * Actions in `f` have to contain the rest of the computation of `self`,
    * as this method will never return.
    *
-   * A common method of continuting the computation is to send a message
+   * A common method of continuing the computation is to send a message
    * to another actor:
    * {{{
    * react {

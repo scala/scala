@@ -339,7 +339,7 @@ trait Symbols { self: Universe =>
     @deprecated("Use `overrides` instead", "2.11.0")
     def allOverriddenSymbols: List[Symbol]
 
-    /** Returns all symbols overriden by this symbol.
+    /** Returns all symbols overridden by this symbol.
      *
      *  @group Basics
      */

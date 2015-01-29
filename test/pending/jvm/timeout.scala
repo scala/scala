@@ -1,4 +1,4 @@
-// Test is in pending because although it suceeds locally,
+// Test is in pending because although it succeeds locally,
 // it takes too long on the machine which runs nightly tests.
 //
 // [partest] EXPECTED: 100 < x < 900

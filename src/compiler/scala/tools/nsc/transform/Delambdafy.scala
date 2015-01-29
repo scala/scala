@@ -9,7 +9,7 @@ import scala.reflect.internal.Symbols
 import scala.collection.mutable.LinkedHashMap
 
 /**
- * This transformer is responisble for turning lambdas into anonymous classes.
+ * This transformer is responsible for turning lambdas into anonymous classes.
  * The main assumption it makes is that a lambda {args => body} has been turned into
  * {args => liftedBody()} where lifted body is a top level method that implements the body of the lambda.
  * Currently Uncurry is responsible for that transformation.
@@ -17,7 +17,7 @@ import scala.collection.mutable.LinkedHashMap
  * From a lambda, Delambdafy will create
  * 1) a static forwarder at the top level of the class that contained the lambda
  * 2) a new top level class that
-      a) has fields and a constructor taking the captured environment (including possbily the "this"
+      a) has fields and a constructor taking the captured environment (including possibly the "this"
  *       reference)
  *    b) an apply method that calls the static forwarder
  *    c) if needed a bridge method for the apply method
@@ -99,7 +99,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
         super.transform(newExpr)
       // when we encounter a template (basically the thing that holds body of a class/trait)
-      // we need to updated it to include newly created accesor methods after transforming it
+      // we need to updated it to include newly created accessor methods after transforming it
       case Template(_, _, _) =>
         try {
           // during this call accessorMethods will be populated from the Function case
@@ -249,7 +249,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
           else "$" + funOwner.name + "$"
         )
         val oldClassPart = oldClass.name.decode
-        // make sure the class name doesn't contain $anon, otherwsie isAnonymousClass/Function may be true
+        // make sure the class name doesn't contain $anon, otherwise isAnonymousClass/Function may be true
         val name = unit.freshTypeName(s"$oldClassPart$suffix".replace("$anon", "$nestedInAnon"))
 
         val lambdaClass = pkg newClassSymbol(name, originalFunction.pos, FINAL | SYNTHETIC) addAnnotation SerialVersionUIDAnnotation
@@ -434,7 +434,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   }
 
   /**
-   * Get the symbol of the target lifted lambad body method from a function. I.e. if
+   * Get the symbol of the target lifted lambda body method from a function. I.e. if
    * the function is {args => anonfun(args)} then this method returns anonfun's symbol
    */
   private def targetMethod(fun: Function): Symbol = fun match {

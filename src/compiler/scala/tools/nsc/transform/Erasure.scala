@@ -185,22 +185,22 @@ abstract class Erasure extends AddInterfaces
 
   private def isErasedValueType(tpe: Type) = tpe.isInstanceOf[ErasedValueType]
 
-  /* Drop redundant interfaces (ones which are implemented by some other parent) from the immediate parents.
+  /* Drop redundant types (ones which are implemented by some other parent) from the immediate parents.
    * This is important on Android because there is otherwise an interface explosion.
    */
-  def minimizeInterfaces(lstIfaces: List[Type]): List[Type] = {
-    var rest   = lstIfaces
-    var leaves = List.empty[Type]
-    while(!rest.isEmpty) {
+  def minimizeParents(parents: List[Type]): List[Type] = {
+    var rest   = parents
+    var leaves = collection.mutable.ListBuffer.empty[Type]
+    while(rest.nonEmpty) {
       val candidate = rest.head
       val nonLeaf = leaves exists { t => t.typeSymbol isSubClass candidate.typeSymbol }
       if(!nonLeaf) {
-        leaves = candidate :: (leaves filterNot { t => candidate.typeSymbol isSubClass t.typeSymbol })
+        leaves = leaves filterNot { t => candidate.typeSymbol isSubClass t.typeSymbol }
+        leaves += candidate
       }
       rest = rest.tail
     }
-
-    leaves.reverse
+    leaves.toList
   }
 
 
@@ -220,7 +220,7 @@ abstract class Erasure extends AddInterfaces
         case _ => tps
       }
 
-      val minParents = minimizeInterfaces(parents)
+      val minParents = minimizeParents(parents)
       val validParents =
         if (isTraitSignature)
           // java is unthrilled about seeing interfaces inherit from classes
@@ -430,7 +430,7 @@ abstract class Erasure extends AddInterfaces
      *  a name clash. The present method guards against these name clashes.
      *
      *  @param  member   The original member
-     *  @param  other    The overidden symbol for which the bridge was generated
+     *  @param  other    The overridden symbol for which the bridge was generated
      *  @param  bridge   The bridge
      */
     def checkBridgeOverrides(member: Symbol, other: Symbol, bridge: Symbol): Seq[(Position, String)] = {
@@ -1153,7 +1153,7 @@ abstract class Erasure extends AddInterfaces
       }
     }
 
-    /** The main transform function: Pretransfom the tree, and then
+    /** The main transform function: Pretransform the tree, and then
      *  re-type it at phase erasure.next.
      */
     override def transform(tree: Tree): Tree = {

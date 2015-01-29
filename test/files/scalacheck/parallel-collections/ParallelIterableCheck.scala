@@ -36,7 +36,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
 
   // used to check if constructed collection is valid
   def checkDataStructureInvariants(orig: Traversable[T], cf: AnyRef) = {
-    // can be overriden in subclasses
+    // can be overridden in subclasses
     true
   }
 

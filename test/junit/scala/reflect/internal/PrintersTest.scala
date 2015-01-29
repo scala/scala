@@ -125,6 +125,8 @@ trait BasePrintTests {
   @Test def testName19 = assertPrintedCode("""class `class`""")
 
   @Test def testName20 = assertPrintedCode("""class `test name`""")
+  
+  @Test def testName21 = assertPrintedCode("""class `test.name`""")
 
   @Test def testIfExpr1 = assertResultCode(code = sm"""
     |val a = 1

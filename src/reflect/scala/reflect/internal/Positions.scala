@@ -204,7 +204,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
   /** Set position of all children of a node
    *  @param  pos   A target position.
    *                Uses the point of the position as the point of all positions it assigns.
-   *                Uses the start of this position as an Offset position for unpositioed trees
+   *                Uses the start of this position as an Offset position for unpositioned trees
    *                without children.
    *  @param  trees  The children to position. All children must be positionable.
    */

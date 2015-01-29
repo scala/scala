@@ -55,9 +55,9 @@ object Test extends BytecodeTest {
     println(nested(classOf[A2#B2]))
     println(nested(classOf[A2#B2#C2]))
 
-    nprintln("Mirror classes have the same InnerClass attributes as the corresponding module class:")
+    nprintln("The InnerClass attribute of a mirror class contains the members of the module class:")
     printInner("p1.p2.Singleton") // mirror class
-    println("Module class")
+    println("The module members are not in the InnerClass table of the module class (unless referenced):")
     printInner("p1.p2.Singleton$")
 
     nprintln("An outer class has a InnerClass attribute for direct nested classes")

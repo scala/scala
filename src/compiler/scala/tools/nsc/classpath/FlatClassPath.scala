@@ -23,8 +23,8 @@ trait FlatClassPath extends ClassFileLookup[AbstractFile] {
   /** Allows to get entries for packages and classes merged with sources possibly in one pass. */
   private[nsc] def list(inPackage: String): FlatClassPathEntries
 
-  // A default implementation which should be overriden, if we can create more efficient
-  // solution for given type of FlatClassPath
+  // A default implementation which should be overridden, if we can create the more efficient
+  // solution for a given type of FlatClassPath
   override def findClass(className: String): Option[ClassRepresentation[AbstractFile]] = {
     val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
 

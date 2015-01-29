@@ -290,7 +290,7 @@ abstract class Inliners extends SubComponent {
 
     /**
      * A transformation local to the body of the IMethod received as argument.
-     * An linining decision consists in replacing a callsite with the body of the callee.
+     * An inlining decision consists in replacing a callsite with the body of the callee.
      * Please notice that, because `analyzeMethod()` itself may modify a method body,
      * the particular callee bodies that end up being inlined depend on the particular order in which methods are visited
      * (no topological sorting over the call-graph is attempted).

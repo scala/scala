@@ -479,7 +479,7 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
 
   /** Tests if a file exists and prints a warning in case it doesn't. Always
    *  returns the file, even if it doesn't exist.
-   *  @param file A file to test for existance.
+   *  @param file A file to test for existence.
    *  @return     The same file. */
   protected def existing(file: File): File = {
     if (!file.exists)

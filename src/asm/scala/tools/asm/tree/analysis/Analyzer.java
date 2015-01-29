@@ -375,7 +375,7 @@ public class Analyzer<V extends Value> implements Opcodes {
      *         instruction of the method. The size of the returned array is
      *         equal to the number of instructions (and labels) of the method. A
      *         given frame is <tt>null</tt> if the corresponding instruction
-     *         cannot be reached, or if an error occured during the analysis of
+     *         cannot be reached, or if an error occurred during the analysis of
      *         the method.
      */
     public Frame<V>[] getFrames() {
@@ -435,7 +435,7 @@ public class Analyzer<V extends Value> implements Opcodes {
 
     /**
      * Creates a control flow graph edge. The default implementation of this
-     * method does nothing. It can be overriden in order to construct the
+     * method does nothing. It can be overridden in order to construct the
      * control flow graph of a method (this method is called by the
      * {@link #analyze analyze} method during its visit of the method's code).
      *
