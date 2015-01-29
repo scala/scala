@@ -1,6 +1,7 @@
 #
 #Java HotSpot(TM) 64-Bit Server VM warning: Failed to reserve shared memory (errno = 28).
 Java HotSpot\(TM\) .* warning:
+OpenJDK .* warning:
 # Hotspot receiving VM options through the $_JAVA_OPTIONS
 # env variable outputs them on stderr
 Picked up _JAVA_OPTIONS:
