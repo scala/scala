@@ -30,7 +30,6 @@ import scala.collection.mutable.LinkedHashMap
 abstract class Delambdafy extends Transform with TypingTransformers with ast.TreeDSL with TypeAdaptingTransformer {
   import global._
   import definitions._
-  import CODE._
 
   val analyzer: global.analyzer.type = global.analyzer
 

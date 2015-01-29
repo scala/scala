@@ -60,7 +60,7 @@ package api
  *
  *  object Test extends App {
  *    val jann = typeOf[JavaAnnottee].typeSymbol.annotations(0).javaArgs
- *    def jarg(name: String) = jann(newTermName(name)).asInstanceOf[LiteralArgument].value
+ *    def jarg(name: String) = jann(TermName(name)).asInstanceOf[LiteralArgument].value
  *
  *    val classRef = jarg("classRef").typeValue
  *    println(showRaw(classRef))             // TypeRef(ThisType(<empty>), JavaAnnottee, List())
@@ -150,7 +150,7 @@ trait Constants {
    *
    *  object Test extends App {
    *    val jann = typeOf[JavaAnnottee].typeSymbol.annotations(0).javaArgs
-   *    def jarg(name: String) = jann(newTermName(name)) match {
+   *    def jarg(name: String) = jann(TermName(name)) match {
    *      // Constant is always wrapped into a Literal or LiteralArgument tree node
    *      case LiteralArgument(ct: Constant) => value
    *      case _ => sys.error("Not a constant")

@@ -47,8 +47,8 @@ package object concurrent {
    *  Blocking on an [[Awaitable]] should be done using [[Await.result]] instead of `blocking`.
    *
    *  @param body         A piece of code which contains potentially blocking or long running calls.
-   *  @throws `CancellationException` if the computation was cancelled
-   *  @throws `InterruptedException` in the case that a wait within the blocking `body` was interrupted
+   *  @throws CancellationException if the computation was cancelled
+   *  @throws InterruptedException in the case that a wait within the blocking `body` was interrupted
    */
   @throws(classOf[Exception])
   def blocking[T](body: =>T): T = BlockContext.current.blockOn(body)(scala.concurrent.AwaitPermission)

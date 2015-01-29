@@ -58,7 +58,7 @@ abstract class Mirror[U <: Universe with Singleton] {
    *    scala> cm.staticPackage("scala")
    *    res2: scala.reflect.runtime.universe.ModuleSymbol = package scala
    *
-   *    scala> res2.moduleClass.info member newTypeName("List")
+   *    scala> res2.moduleClass.info member TypeName("List")
    *    res3: scala.reflect.runtime.universe.Symbol = type List
    *
    *    scala> res3.fullName

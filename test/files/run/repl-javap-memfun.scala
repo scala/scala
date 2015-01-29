@@ -1,6 +1,10 @@
 import scala.tools.partest.JavapTest
+import scala.tools.nsc.Settings
 
+// see repl-javap-lambdas.scala for the complementary version
 object Test extends JavapTest {
+  // asserting the default
+  override def transformSettings(s: Settings) = { s.Ydelambdafy.value = "inline" ; s }
   def code = """
     |object Betty {
     | List(1,2,3) count (_ % 2 != 0)

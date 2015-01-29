@@ -22,6 +22,8 @@ import immutable.StringLike
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.7
+ *  @define Coll `mutable.IndexedSeq`
+ *  @define coll string builder
  *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html# "Scala's Collection Library overview"]]
  *  section on `StringBuilders` for more information.
  */

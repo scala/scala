@@ -81,7 +81,7 @@ extends AbstractMap[Long, V]
   private def toIndex(k: Long): Int = {
     // Part of the MurmurHash3 32 bit finalizer
     val h = ((k ^ (k >>> 32)) & 0xFFFFFFFFL).toInt
-    var x = (h ^ (h >>> 16)) * 0x85EBCA6B
+    val x = (h ^ (h >>> 16)) * 0x85EBCA6B
     (x ^ (x >>> 13)) & mask
   }
   
@@ -311,7 +311,7 @@ extends AbstractMap[Long, V]
       }
     }
     else {
-      var i = seekEntryOrOpen(key)
+      val i = seekEntryOrOpen(key)
       if (i < 0) {
         val j = i & IndexMask
         _keys(j) = key

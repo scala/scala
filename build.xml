@@ -272,28 +272,36 @@ TODO:
       </artifact:dependencies>
 
       <!-- JUnit -->
-      <property name="junit.version" value="4.10"/>
+      <property name="junit.version" value="4.11"/>
       <artifact:dependencies pathId="junit.classpath" filesetId="junit.fileset">
         <dependency groupId="junit" artifactId="junit" version="${junit.version}"/>
       </artifact:dependencies>
       <copy-deps project="junit"/>
 
       <!-- Pax runner -->
-      <property name="pax.exam.version" value="2.6.0"/>
+      <property name="pax.exam.version" value="3.5.0"/><!-- Last version which supports Java 6 -->
+      <property name="osgi.felix.version" value="4.0.3"/>
+      <property name="osgi.equinox.version" value="3.7.1"/>
       <artifact:dependencies pathId="pax.exam.classpath" filesetId="pax.exam.fileset">
-        <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}"/>
+        <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-container-native" version="${pax.exam.version}">
+          <exclusion groupId="org.osgi" artifactId="org.osgi.core"/><!-- Avoid dragging in a dependency which requires Java >6 -->
+        </dependency>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-junit4" version="${pax.exam.version}"/>
         <dependency groupId="org.ops4j.pax.exam" artifactId="pax-exam-link-assembly" version="${pax.exam.version}"/>
-        <!-- upgraded to 1.6.0 to get fix for https://ops4j1.jira.com/browse/PAXURL-217
-      https://ops4j1.jira.com/browse/PAXURL-138 is still unresolved... -->
-        <dependency groupId="org.ops4j.pax.url" artifactId="pax-url-aether" version="1.6.0"/>
-        <dependency groupId="org.ops4j.pax.swissbox" artifactId="pax-swissbox-framework" version="1.5.1"/>
-        <dependency groupId="ch.qos.logback" artifactId="logback-core" version="0.9.20"/>
-        <dependency groupId="ch.qos.logback" artifactId="logback-classic" version="0.9.20"/>
+        <dependency groupId="org.ops4j.pax.url" artifactId="pax-url-aether" version="2.2.0"/>
+        <dependency groupId="org.ops4j.pax.swissbox" artifactId="pax-swissbox-tracker" version="1.8.0"/>
+        <dependency groupId="ch.qos.logback" artifactId="logback-core" version="1.1.2"/>
+        <dependency groupId="ch.qos.logback" artifactId="logback-classic" version="1.1.2"/>
         <dependency groupId="junit" artifactId="junit" version="${junit.version}"/>
-        <dependency groupId="org.apache.felix" artifactId="org.apache.felix.framework" version="3.2.2"/>
       </artifact:dependencies>
 
+      <artifact:dependencies pathId="osgi.framework.felix">
+        <dependency groupId="org.apache.felix" artifactId="org.apache.felix.framework" version="${osgi.felix.version}"/>
+      </artifact:dependencies>
+
+      <artifact:dependencies pathId="osgi.framework.equinox">
+        <dependency groupId="org.eclipse.osgi" artifactId="org.eclipse.osgi" version="${osgi.equinox.version}"/>
+      </artifact:dependencies>
 
       <artifact:remoteRepository id="sonatype-release" url="https://oss.sonatype.org/content/repositories/releases"/>
       <artifact:remoteRepository id="extra-repo" url="${extra.repo.url}"/>
@@ -840,8 +848,7 @@ TODO:
     -->
 
     <path id="pack.reflect.files">    <fileset dir="${build-quick.dir}/classes/reflect"/> </path>
-    <path id="pack.scalap.files">     <fileset dir="${build-quick.dir}/classes/scalap"/>
-                                      <fileset file="${src.dir}/scalap/decoder.properties"/> </path>
+    <path id="pack.scalap.files">     <fileset dir="${build-quick.dir}/classes/scalap"/>  </path>
 
     <path id="pack.partest-extras.files"> <fileset dir="${build-quick.dir}/classes/partest-extras"/> </path>
     <path id="pack.partest-javaagent.files"> <fileset dir="${build-quick.dir}/classes/partest-javaagent"/> </path>
@@ -982,6 +989,16 @@ TODO:
       <pathelement location="${build-osgi.dir}/org.scala-lang.scala-actors.jar"/>
       <path refid="pax.exam.classpath"/>
       <path refid="forkjoin.classpath"/>
+    </path>
+
+    <path id="test.osgi.compiler.build.path.felix">
+      <path refid="test.osgi.compiler.build.path"/>
+      <path refid="osgi.framework.felix"/>
+    </path>
+
+    <path id="test.osgi.compiler.build.path.equinox">
+      <path refid="test.osgi.compiler.build.path"/>
+      <path refid="osgi.framework.equinox"/>
     </path>
 
     <path id="test.positions.sub.build.path" path="${build-quick.dir}/classes/library"/>
@@ -1351,7 +1368,7 @@ TODO:
       srcdir="${test.osgi.src}"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <compilationpath refid="test.osgi.compiler.build.path"/>
+      <compilationpath refid="test.osgi.compiler.build.path.felix"/>
     </scalacfork>
     <touch file="${build-osgi.dir}/test-compile.complete" verbose="no"/>
     <stopwatch name="test.osgi.compiler.timer" action="total"/>
@@ -1365,8 +1382,22 @@ TODO:
       <stopwatch name="test.osgi.timer"/>
       <mkdir dir="${test.osgi.classes}"/>
 
+      <echo message="Test pass 1 of 2 using Apache Felix ${osgi.felix.version}"/>
       <junit fork="yes" haltonfailure="yes">
-        <classpath refid="test.osgi.compiler.build.path"/>
+        <classpath refid="test.osgi.compiler.build.path.felix"/>
+        <jvmarg value="-Duser.home=${user.home}"/>
+        <batchtest fork="yes" todir="${build-osgi.dir}">
+          <fileset dir="${test.osgi.classes}">
+            <include name="**/*Test.class"/>
+          </fileset>
+        </batchtest>
+        <formatter type="xml" />
+      </junit>
+
+      <echo message="Test pass 2 of 2 using Eclipse Equinox ${osgi.equinox.version}"/>
+      <junit fork="yes" haltonfailure="yes">
+        <classpath refid="test.osgi.compiler.build.path.equinox"/>
+        <jvmarg value="-Duser.home=${user.home}"/>
         <batchtest fork="yes" todir="${build-osgi.dir}">
           <fileset dir="${test.osgi.classes}">
             <include name="**/*Test.class"/>

@@ -347,7 +347,9 @@ private[internal] trait GlbLubs {
           def lubsym(proto: Symbol): Symbol = {
             val prototp = lubThisType.memberInfo(proto)
             val syms = narrowts map (t =>
-              t.nonPrivateMember(proto.name).suchThat(sym =>
+              // SI-7602 With erroneous code, we could end up with overloaded symbols after filtering
+              //         so `suchThat` unsuitable.
+              t.nonPrivateMember(proto.name).filter(sym =>
                 sym.tpe matches prototp.substThis(lubThisType.typeSymbol, t)))
 
             if (syms contains NoSymbol) NoSymbol

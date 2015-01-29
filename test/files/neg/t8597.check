@@ -1,0 +1,21 @@
+t8597.scala:2: warning: abstract type T in type pattern Some[T] is unchecked since it is eliminated by erasure
+  def nowarn[T] = (null: Any) match { case _: Some[T]      => } // warn (did not warn due to SI-8597)
+                                              ^
+t8597.scala:5: warning: abstract type pattern T is unchecked since it is eliminated by erasure
+  def warn1[T]  = (null: Any) match { case _: T            => } // warn
+                                              ^
+t8597.scala:6: warning: non-variable type argument String in type pattern Some[String] is unchecked since it is eliminated by erasure
+  def warn2     = (null: Any) match { case _: Some[String] => } // warn
+                                              ^
+t8597.scala:7: warning: non-variable type argument Unchecked.this.C in type pattern Some[Unchecked.this.C] is unchecked since it is eliminated by erasure
+                  (null: Any) match { case _: Some[C]      => } // warn
+                                              ^
+t8597.scala:18: warning: abstract type T in type pattern Array[T] is unchecked since it is eliminated by erasure
+  def warnArray[T] = (null: Any) match { case _: Array[T] => } // warn (did not warn due to SI-8597)
+                                                 ^
+t8597.scala:26: warning: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
+  def warnArrayErasure2   = (null: Any) match {case Some(_: Array[Array[List[String]]]) => } // warn
+                                                            ^
+error: No warnings can be incurred under -Xfatal-warnings.
+6 warnings found
+one error found

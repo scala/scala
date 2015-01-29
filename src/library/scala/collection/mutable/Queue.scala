@@ -58,7 +58,7 @@ extends MutableList[A]
   /** Returns the first element in the queue, and removes this element
    *  from the queue.
    *
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    *  @return the first element of the queue.
    */
   def dequeue(): A =

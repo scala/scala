@@ -1,6 +1,8 @@
 import scala.tools.partest.JavapTest
 
 object Test extends JavapTest {
+  // note the '-fun': it makes :javap search for some anonfun.
+  // for that reason, this test has a flags file that forces delambdafy:inline (doesn't allow :method)
   def code = """
     |:javap -fun disktest/Foo.class
   """.stripMargin
@@ -11,7 +13,8 @@ object Test extends JavapTest {
     if (scala.tools.partest.utils.Properties.isAvian)
       true
     else {
-      def filtered = res filter (_ contains "public final class disktest.Foo")
+      val r = "public final class disktest.Foo.*extends scala.runtime.AbstractFunction1".r
+      def filtered = res filter (r.findFirstIn(_).nonEmpty)
       1 == filtered.size
     }
 }

@@ -8,8 +8,8 @@ package reflect
 package internal
 
 import Flags._
-import pickling.PickleFormat._
 import scala.collection.{ mutable, immutable }
+import scala.reflect.macros.Attachments
 import util.Statistics
 
 trait Trees extends api.Trees {
@@ -1074,6 +1074,13 @@ trait Trees extends api.Trees {
     override def pos_=(pos: Position) = setPos(pos)
     override def setType(t: Type) = { requireLegal(t, NoType, "tpe"); this }
     override def tpe_=(t: Type) = setType(t)
+
+    // We silently ignore attempts to add attachments to `EmptyTree`. See SI-8947 for an
+    // example of a bug in macro expansion that this solves.
+    override def setAttachments(attachments: Attachments {type Pos = Position}): this.type = attachmentWarning()
+    override def updateAttachment[T: ClassTag](attachment: T): this.type = attachmentWarning()
+    override def removeAttachment[T: ClassTag]: this.type = attachmentWarning()
+    private def attachmentWarning(): this.type = {devWarning(s"Attempt to mutate attachments on $self ignored"); this}
 
     private def requireLegal(value: Any, allowed: Any, what: String) = (
       if (value != allowed) {

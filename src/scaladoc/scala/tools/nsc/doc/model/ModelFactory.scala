@@ -313,7 +313,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     /* Subclass cache */
     private lazy val subClassesCache = (
-      if (sym == AnyRefClass) null
+      if (sym == AnyRefClass || sym == AnyClass) null
       else mutable.ListBuffer[DocTemplateEntity]()
     )
     def registerSubClass(sc: DocTemplateEntity): Unit = {
@@ -753,8 +753,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         })
       }
       else if (bSym.isConstructor)
-        if (conversion.isDefined)
-          None // don't list constructors inherted by implicit conversion
+        if (conversion.isDefined || (bSym.enclClass.isAbstract && (bSym.enclClass.isSealed || bSym.enclClass.isFinal)))
+          // don't list constructors inherited by implicit conversion
+          // and don't list constructors of abstract sealed types (they cannot be accessed anyway)
+          None
         else
           Some(new NonTemplateParamMemberImpl(bSym, conversion, useCaseOf, inTpl) with Constructor {
             override def isConstructor = true

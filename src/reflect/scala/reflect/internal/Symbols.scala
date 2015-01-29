@@ -173,7 +173,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
              with HasFlags
              with Annotatable[Symbol]
              with Attachable {
-
     // makes sure that all symbols that runtime reflection deals with are synchronized
     private def isSynchronized = this.isInstanceOf[scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol]
     private def isAprioriThreadsafe = isThreadsafe(AllOps)
@@ -182,7 +181,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     type AccessBoundaryType = Symbol
     type AnnotationType     = AnnotationInfo
 
-    // TODO - don't allow names to be renamed in this unstructured a fashion.
+    // TODO - don't allow names to be renamed in this unstructured fashion.
     // Rename as little as possible.  Enforce invariants on all renames.
     type TypeOfClonedSymbol >: Null <: Symbol { type NameType = Symbol.this.NameType }
 
@@ -792,6 +791,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isDelambdafyFunction = isSynthetic && (name containsName tpnme.DELAMBDAFY_LAMBDA_CLASS_NAME)
     final def isDefinedInPackage  = effectiveOwner.isPackageClass
     final def needsFlatClasses    = phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass
+
+    // TODO introduce a flag for these?
+    final def isPatternTypeVariable: Boolean =
+      isAbstractType && !isExistential && !isTypeParameterOrSkolem && isLocalToBlock
 
     /** change name by appending $$<fully-qualified-name-of-class `base`>
      *  Do the same for any accessed symbols or setters/getters.
@@ -1464,11 +1467,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def info: Type = try {
       var cnt = 0
       while (validTo == NoPeriod) {
-        //if (settings.debug.value) System.out.println("completing " + this);//DEBUG
         assert(infos ne null, this.name)
         assert(infos.prev eq null, this.name)
         val tp = infos.info
-        //if (settings.debug.value) System.out.println("completing " + this.rawname + tp.getClass());//debug
 
         if ((_rawflags & LOCKED) != 0L) { // rolled out once for performance
           lock {
@@ -1477,6 +1478,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           }
         } else {
           _rawflags |= LOCKED
+          // TODO another commented out lines - this should be solved in one way or another
 //          activeLocks += 1
  //         lockedSyms += this
         }
@@ -1598,13 +1600,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       assert(isCompilerUniverse)
       if (infos == null || runId(infos.validFrom) == currentRunId) {
         infos
-      } else if (isPackageClass) {
-        // SI-7801 early phase package scopes are mutated in new runs (Namers#enterPackage), so we have to
-        //         discard transformed infos, rather than just marking them as from this run.
-        val oldest = infos.oldest
-        oldest.validFrom = validTo
-        this.infos = oldest
-        oldest
+      } else if (infos ne infos.oldest) {
+        // SI-8871 Discard all but the first element of type history. Specialization only works in the resident
+        // compiler / REPL if re-run its info transformer in this run to correctly populate its
+        // per-run caches, e.g. typeEnv
+        adaptInfos(infos.oldest)
       } else {
         val prev1 = adaptInfos(infos.prev)
         if (prev1 ne infos.prev) prev1
@@ -2162,6 +2162,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       if (isTopLevel) {
         if (isClass) this else moduleClass
       } else owner.enclosingTopLevelClass
+
+    /** The top-level class or local dummy symbol containing this symbol. */
+    def enclosingTopLevelClassOrDummy: Symbol =
+      if (isTopLevel) {
+        if (isClass) this else moduleClass.orElse(this)
+      } else owner.enclosingTopLevelClassOrDummy
 
     /** Is this symbol defined in the same scope and compilation unit as `that` symbol? */
     def isCoDefinedWith(that: Symbol) = (
@@ -3427,10 +3433,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   trait StubSymbol extends Symbol {
     devWarning("creating stub symbol to defer error: " + missingMessage)
 
-    protected def missingMessage: String
+    def missingMessage: String
 
     /** Fail the stub by throwing a [[scala.reflect.internal.MissingRequirementError]]. */
-    override final def failIfStub() = {MissingRequirementError.signal(missingMessage)} //
+    override final def failIfStub() =
+      MissingRequirementError.signal(missingMessage)
 
     /** Fail the stub by reporting an error to the reporter, setting the IS_ERROR flag
       * on this symbol, and returning the dummy value `alt`.
@@ -3455,8 +3462,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def rawInfo         = fail(NoType)
     override def companionSymbol = fail(NoSymbol)
   }
-  class StubClassSymbol(owner0: Symbol, name0: TypeName, protected val missingMessage: String) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
-  class StubTermSymbol(owner0: Symbol, name0: TermName, protected val missingMessage: String) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
+  class StubClassSymbol(owner0: Symbol, name0: TypeName, val missingMessage: String) extends ClassSymbol(owner0, owner0.pos, name0) with StubSymbol
+  class StubTermSymbol(owner0: Symbol, name0: TermName, val missingMessage: String) extends TermSymbol(owner0, owner0.pos, name0) with StubSymbol
 
   trait FreeSymbol extends Symbol {
     def origin: String
@@ -3507,6 +3514,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def enclClassChain = Nil
     override def enclClass: Symbol = this
     override def enclosingTopLevelClass: Symbol = this
+    override def enclosingTopLevelClassOrDummy: Symbol = this
     override def enclosingPackageClass: Symbol = this
     override def enclMethod: Symbol = this
     override def associatedFile = NoAbstractFile

@@ -90,7 +90,7 @@ trait Parsers { self: Quasiquotes =>
           case _ => super.makePatDef(mods, pat, rhs)
         }
       }
-      import treeBuilder.{global => _, unit => _, _}
+      import treeBuilder.{global => _, unit => _}
 
       // q"def foo($x)"
       override def param(owner: Name, implicitmod: Int, caseParam: Boolean): ValDef =

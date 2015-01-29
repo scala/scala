@@ -41,7 +41,7 @@ idrest           ::=  {letter | digit} [‘_’ op]
 
 integerLiteral   ::=  (decimalNumeral | hexNumeral) [‘L’ | ‘l’]
 decimalNumeral   ::=  ‘0’ | nonZeroDigit {digit}
-hexNumeral       ::=  ‘0’ ‘x’ hexDigit {hexDigit}
+hexNumeral       ::=  ‘0’ (‘x’ | ‘X’) hexDigit {hexDigit}
 digit            ::=  ‘0’ | nonZeroDigit
 nonZeroDigit     ::=  ‘1’ | … | ‘9’
 
@@ -210,7 +210,7 @@ grammar.
   ClassParams       ::=  ClassParam {‘,’ ClassParam}
   ClassParam        ::=  {Annotation} {Modifier} [(`val' | `var')]
                          id ‘:’ ParamType [‘=’ Expr]
-  Bindings          ::=  ‘(’ Binding {‘,’ Binding ‘)’
+  Bindings          ::=  ‘(’ Binding {‘,’ Binding} ‘)’
   Binding           ::=  (id | ‘_’) [‘:’ Type]
 
   Modifier          ::=  LocalModifier

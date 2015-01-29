@@ -417,7 +417,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
   private final def computeHashCode(): Unit = {
     computedHashCode =
       if (isWhole && (precision - scale) < BigDecimal.maximumHashScale) toBigInt.hashCode
-      else if (isValidDouble) doubleValue.##
+      else if (isDecimalDouble) doubleValue.##
       else {
         val temp = bigDecimal.stripTrailingZeros
         scala.util.hashing.MurmurHash3.mixLast( temp.scaleByPowerOfTen(temp.scale).toBigInteger.hashCode, temp.scale )
@@ -477,7 +477,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable {
     * `isExactDouble`, `isBinaryDouble`, or `isDecimalDouble`, depending on the intended meaning.
     * By default, `decimal` creation is used, so `isDecimalDouble` is probably what you want.
     */
-  @deprecated("Validity has two distinct meanings.  Use `isExactBinaryDouble` or `equivalentToDouble` instead.", "2.11")
+  @deprecated("Validity has distinct meanings.  Use `isExactDouble`, `isBinaryDouble`, or `isDecimalDouble` instead.", "2.11")
   def isValidDouble = {
     val d = toDouble
     !d.isInfinity && bigDecimal.compareTo(new BigDec(d)) == 0

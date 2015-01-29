@@ -46,16 +46,16 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         val cond = test.prop
 
         def simplify(c: Prop): Set[Prop] = c match {
-          case And(a, b)                  => simplify(a) ++ simplify(b)
-          case Or(_, _)                   => Set(False) // TODO: make more precise
-          case Not(Eq(Var(_), NullConst)) => Set(True)  // not worth remembering
+          case And(ops)                   => ops.toSet flatMap simplify
+          case Or(ops)                    => Set(False) // TODO: make more precise
+          case Not(Eq(Var(_), NullConst)) => Set(True) // not worth remembering
           case _                          => Set(c)
         }
         val conds = simplify(cond)
 
         if (conds(False)) false // stop when we encounter a definite "no" or a "not sure"
         else {
-          val nonTrivial = conds filterNot (_ == True)
+          val nonTrivial = conds - True
           if (nonTrivial nonEmpty) {
             tested ++= nonTrivial
 

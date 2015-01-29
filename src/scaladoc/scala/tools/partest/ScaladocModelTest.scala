@@ -182,14 +182,16 @@ abstract class ScaladocModelTest extends DirectTest {
       }
     }
 
-    def countLinks(c: Comment, p: EntityLink => Boolean) = {
-      def countLinks(body: Any): Int = body match {
+    def countLinks(c: Comment, p: EntityLink => Boolean): Int = countLinksInBody(c.body, p)
+
+    def countLinksInBody(body: Body, p: EntityLink => Boolean): Int = {
+      def countLinks(b: Any): Int = b match {
         case el: EntityLink if p(el) => 1
         case s: Seq[_]  => s.toList.map(countLinks(_)).sum
         case p: Product => p.productIterator.toList.map(countLinks(_)).sum
         case _          => 0
       }
-      countLinks(c.body)
+      countLinks(body)
     }
 
     def testDiagram(doc: DocTemplateEntity, diag: Option[Diagram], nodes: Int, edges: Int) = {

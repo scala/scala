@@ -222,7 +222,7 @@ self =>
    *  but it might be overridden in subclasses.
    *
    *  @param key the given key value for which a binding is missing.
-   *  @throws `NoSuchElementException`
+   *  @throws NoSuchElementException
    */
   def default(key: A): B =
     throw new NoSuchElementException("key not found: " + key)

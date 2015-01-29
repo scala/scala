@@ -73,9 +73,7 @@ trait ScalacPatternExpanders {
      *  Unfortunately the MethodType does not carry the information of whether
      *  it was unapplySeq, so we have to funnel that information in separately.
      */
-    def unapplyMethodTypes(method: Type, isSeq: Boolean): Extractor = {
-      val whole    = firstParamType(method)
-      val result   = method.finalResultType
+    def unapplyMethodTypes(whole: Type, result: Type, isSeq: Boolean): Extractor = {
       val expanded = (
         if (result =:= BooleanTpe) Nil
         else typeOfMemberNamedGet(result) match {
@@ -124,11 +122,11 @@ trait ScalacPatternExpanders {
         case _             => sel
       }
       val patterns  = newPatterns(args)
-      val isSeq = sel.symbol.name == nme.unapplySeq
       val isUnapply = sel.symbol.name == nme.unapply
+
       val extractor = sel.symbol.name match {
-        case nme.unapply    => unapplyMethodTypes(fn.tpe, isSeq = false)
-        case nme.unapplySeq => unapplyMethodTypes(fn.tpe, isSeq = true)
+        case nme.unapply    => unapplyMethodTypes(firstParamType(fn.tpe), sel.tpe, isSeq = false)
+        case nme.unapplySeq => unapplyMethodTypes(firstParamType(fn.tpe), sel.tpe, isSeq = true)
         case _              => applyMethodTypes(fn.tpe)
       }
 

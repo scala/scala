@@ -22,14 +22,19 @@ extends InteractiveReader
 
   def reset() = ()
   def redrawLine() = ()
-  def readOneLine(prompt: String): String = {
-    if (interactive) {
-      out.print(prompt)
-      out.flush()
-    }
-    in.readLine()
+
+  // InteractiveReader internals
+  protected def readOneLine(prompt: String): String = {
+    echo(prompt)
+    readOneLine()
   }
-  def readOneKey(prompt: String)  = sys.error("No char-based input in SimpleReader")
+  protected def readOneKey(prompt: String) = sys.error("No char-based input in SimpleReader")
+
+  protected def readOneLine(): String = in.readLine()
+  protected def echo(s: String): Unit = if (interactive) {
+    out.print(s)
+    out.flush()
+  }
 }
 
 object SimpleReader {
@@ -38,4 +43,14 @@ object SimpleReader {
 
   def apply(in: BufferedReader = defaultIn, out: JPrintWriter = defaultOut, interactive: Boolean = true): SimpleReader =
     new SimpleReader(in, out, interactive)
+}
+
+// pretend we are a console for verbose purposes
+trait EchoReader extends SimpleReader {
+  // if there is more input, then maybe echo the prompt and the input
+  override def readOneLine(prompt: String) = {
+    val input = readOneLine()
+    if (input != null) echo(f"$prompt$input%n")
+    input
+  }
 }

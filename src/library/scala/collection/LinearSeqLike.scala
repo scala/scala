@@ -14,21 +14,9 @@ import scala.annotation.tailrec
 
 /** A template trait for linear sequences of type `LinearSeq[A]`.
  *
- *  $linearSeqInfo
- *
- *  This trait just implements `iterator` in terms of `isEmpty, ``head`, and `tail`.
- *  However, see `LinearSeqOptimized` for an implementation trait that overrides operations
+ *  This trait just implements `iterator` and `corresponds` in terms of `isEmpty, ``head`, and `tail`.
+ *  However, see `LinearSeqOptimized` for an implementation trait that overrides many more operations
  *  to make them run faster under the assumption of fast linear access with `head` and `tail`.
- *
- *  @define  linearSeqInfo
- *  Linear sequences are defined in terms of three abstract methods, which are assumed
- *  to have efficient implementations. These are:
- *  {{{
- *     def isEmpty: Boolean
- *     def head: A
- *     def tail: Repr
- *  }}}
- *  Here, `A` is the type of the sequence elements and `Repr` is the type of the sequence itself.
  *
  *  Linear sequences do not add any new methods to `Seq`, but promise efficient implementations
  *  of linear access patterns.
@@ -58,12 +46,18 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
         val result = these.head; these = these.tail; result
       } else Iterator.empty.next()
 
-    /** Have to clear `these` so the iterator is exhausted like
-     *  it would be without the optimization.
-     */
     override def toList: List[A] = {
+      /* Have to clear `these` so the iterator is exhausted like
+       * it would be without the optimization.
+       *
+       * Calling "newBuilder.result()" in toList method
+       * prevents original seq from garbage collection,
+       * so we use these.take(0) here.
+       *
+       * Check SI-8924 for details
+       */
       val xs = these.toList
-      these = newBuilder.result()
+      these = these.take(0)
       xs
     }
   }

@@ -15,7 +15,6 @@ import scala.language.postfixOps
 /** AnnotationInfo and its helpers */
 trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   import definitions._
-  import treeInfo._
 
   // Common annotation code between Symbol and Type.
   // For methods altering the annotation list, on Symbol it mutates

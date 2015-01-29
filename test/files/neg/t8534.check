@@ -1,0 +1,4 @@
+t8534.scala:6: error: MyTrait is not an enclosing class
+  class BugTest {def isTheBugHere(in: MyTrait.this.type#SomeData) = false}
+                                      ^
+one error found

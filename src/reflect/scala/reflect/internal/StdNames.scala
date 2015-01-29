@@ -129,6 +129,7 @@ trait StdNames {
     final val AnyRef: NameType        = "AnyRef"
     final val Array: NameType         = "Array"
     final val List: NameType          = "List"
+    final val Option: NameType        = "Option"
     final val Seq: NameType           = "Seq"
     final val Symbol: NameType        = "Symbol"
     final val WeakTypeTag: NameType   = "WeakTypeTag"
@@ -248,6 +249,7 @@ trait StdNames {
     final val Unliftable: NameType          = "Unliftable"
     final val Name: NameType                = "Name"
     final val Tree: NameType                = "Tree"
+    final val Text: NameType                = "Text"
     final val TermName: NameType            = "TermName"
     final val Type : NameType               = "Type"
     final val TypeName: NameType            = "TypeName"
@@ -778,6 +780,7 @@ trait StdNames {
     val values : NameType              = "values"
     val wait_ : NameType               = "wait"
     val withFilter: NameType           = "withFilter"
+    val xml: NameType                  = "xml"
     val zero: NameType                 = "zero"
 
     // quasiquote interpolators:

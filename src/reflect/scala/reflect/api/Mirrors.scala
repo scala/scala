@@ -292,7 +292,7 @@ trait Mirrors { self: Universe =>
      *  that can be used to create instances of the class, inspect its companion object or perform further reflections.
      *
      *  To get a class symbol by the name of the class you would like to reflect,
-     *  use `<this mirror>.symbol.info.member(newTypeName(<name of the class>)).asClass`.
+     *  use `<this mirror>.symbol.info.member(TypeName(<name of the class>)).asClass`.
      *  For further information about member lookup refer to `Symbol.info`.
      *
      *  The input symbol can be either private or non-private (Scala reflection transparently deals with visibility).

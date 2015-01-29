@@ -229,7 +229,8 @@ class MutableSettings(val errorFn: String => Unit)
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String) = add(new StringSetting(name, arg, descr, default))
-  def ScalaVersionSetting(name: String, arg: String, descr: String, default: ScalaVersion) = add(new ScalaVersionSetting(name, arg, descr, default))
+  def ScalaVersionSetting(name: String, arg: String, descr: String, initial: ScalaVersion, default: Option[ScalaVersion] = None) =
+    add(new ScalaVersionSetting(name, arg, descr, initial, default))
   def PathSetting(name: String, descr: String, default: String): PathSetting = {
     val prepend = StringSetting(name + "/p", "", "", "").internalOnly()
     val append = StringSetting(name + "/a", "", "", "").internalOnly()
@@ -506,27 +507,34 @@ class MutableSettings(val errorFn: String => Unit)
     withHelpSyntax(name + " <" + arg + ">")
   }
 
-  /** A setting represented by a Scala version, (`default` unless set) */
+  /** A setting represented by a Scala version.
+    * The `initial` value is used if the setting is not specified.
+    * The `default` value is used if the option is specified without argument (e.g., `-Xmigration`).
+    */
   class ScalaVersionSetting private[nsc](
     name: String,
     val arg: String,
     descr: String,
-    default: ScalaVersion)
+    initial: ScalaVersion,
+    default: Option[ScalaVersion])
   extends Setting(name, descr) {
     type T = ScalaVersion
-    protected var v: T = NoScalaVersion
+    protected var v: T = initial
 
+    // This method is invoked if there are no colonated args. In this case the default value is
+    // used. No arguments are consumed.
     override def tryToSet(args: List[String]) = {
-      value = default
+      default match {
+        case Some(d) => value = d
+        case None => errorFn(s"$name requires an argument, the syntax is $helpSyntax")
+      }
       Some(args)
     }
 
     override def tryToSetColon(args: List[String]) = args match {
-      case Nil      => value = default; Some(Nil)
-      case x :: xs  => value = ScalaVersion(x, errorFn) ; Some(xs)
+      case x :: xs  => value = ScalaVersion(x, errorFn); Some(xs)
+      case nil      => Some(nil)
     }
-
-    override def tryToSetFromPropertyValue(s: String) = tryToSet(List(s))
 
     def unparse: List[String] = if (value == NoScalaVersion) Nil else List(s"${name}:${value.unparse}")
 

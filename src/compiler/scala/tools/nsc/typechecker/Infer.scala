@@ -295,11 +295,17 @@ trait Infer extends Checkable {
         && !isByNameParamType(tp)
         && isCompatible(tp, dropByName(pt))
       )
+      def isCompatibleSam(tp: Type, pt: Type): Boolean = {
+        val samFun = typer.samToFunctionType(pt)
+        (samFun ne NoType) && isCompatible(tp, samFun)
+      }
+
       val tp1 = normalize(tp)
 
       (    (tp1 weak_<:< pt)
         || isCoercible(tp1, pt)
         || isCompatibleByName(tp, pt)
+        || isCompatibleSam(tp, pt)
       )
     }
     def isCompatibleArgs(tps: List[Type], pts: List[Type]) = (tps corresponds pts)(isCompatible)

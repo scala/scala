@@ -1214,30 +1214,12 @@ abstract class GenASM extends SubComponent with BytecodeWriters { self =>
           case _                => NoSymbol
         }
 
-        /* Drop redundant interfaces (ones which are implemented by some other parent) from the immediate parents.
-         * This is important on Android because there is otherwise an interface explosion.
-         */
-        def minimizeInterfaces(lstIfaces: List[Symbol]): List[Symbol] = {
-          var rest   = lstIfaces
-          var leaves = List.empty[Symbol]
-          while(!rest.isEmpty) {
-            val candidate = rest.head
-            val nonLeaf = leaves exists { lsym => lsym isSubClass candidate }
-            if(!nonLeaf) {
-              leaves = candidate :: (leaves filterNot { lsym => candidate isSubClass lsym })
-            }
-            rest = rest.tail
-          }
-
-          leaves
-        }
-
       val ps = c.symbol.info.parents
       val superInterfaces0: List[Symbol] = if(ps.isEmpty) Nil else c.symbol.mixinClasses
       val superInterfaces = existingSymbols(superInterfaces0 ++ c.symbol.annotations.map(newParentForAttr)).distinct
 
       if(superInterfaces.isEmpty) EMPTY_STRING_ARRAY
-      else mkArray(minimizeInterfaces(superInterfaces) map javaName)
+      else mkArray(erasure.minimizeInterfaces(superInterfaces.map(_.info)).map(t => javaName(t.typeSymbol)))
     }
 
     var clasz:    IClass = _           // this var must be assigned only by genClass()

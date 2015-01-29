@@ -13,7 +13,7 @@ trait Parsers {
 
   /** Parses a string with a Scala expression into an abstract syntax tree.
    *  Only works for expressions, i.e. parsing a package declaration will fail.
-   *  @throws [[scala.reflect.macros.ParseException]]
+   *  @throws scala.reflect.macros.ParseException
    */
   def parse(code: String): Tree
 }

@@ -346,12 +346,11 @@ trait MarkupParsers {
 
         // parse more XML ?
         if (charComingAfter(xSpaceOpt()) == '<') {
-          xSpaceOpt()
-          while (ch == '<') {
+          do {
+            xSpaceOpt()
             nextch()
             ts append element
-            xSpaceOpt()
-          }
+          } while (charComingAfter(xSpaceOpt()) == '<')
           handle.makeXMLseq(r2p(start, start, curOffset), ts)
         }
         else {

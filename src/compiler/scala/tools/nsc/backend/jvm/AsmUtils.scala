@@ -5,7 +5,7 @@
 
 package scala.tools.nsc.backend.jvm
 
-import scala.tools.asm.tree.{ClassNode, MethodNode}
+import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, MethodNode}
 import java.io.PrintWriter
 import scala.tools.asm.util.{TraceClassVisitor, TraceMethodVisitor, Textifier}
 import scala.tools.asm.ClassReader
@@ -57,5 +57,10 @@ object AsmUtils {
     val node = new ClassNode()
     new ClassReader(bytes).accept(node, 0)
     node
+  }
+
+  def instructionString(instruction: AbstractInsnNode): String = instruction.getOpcode match {
+    case -1 => instruction.toString
+    case op => scala.tools.asm.util.Printer.OPCODES(op)
   }
 }

@@ -354,6 +354,13 @@ trait ClassPrintTests {
     |  def y = "test"
     |}""")
 
+  @Test def testClassConstructorModifiers = assertPrintedCode("class X private (x: scala.Int)")
+
+  @Test def testClassConstructorModifierVisibility = assertPrintedCode(sm"""
+    |object A {
+    |  class X protected[A] (x: scala.Int)
+    |}""")
+
   @Test def testClassWithPublicParams = assertPrintedCode("class X(val x: scala.Int, val s: scala.Predef.String)")
 
   @Test def testClassWithParams1 = assertPrintedCode("class X(x: scala.Int, s: scala.Predef.String)")

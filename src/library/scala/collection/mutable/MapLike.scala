@@ -18,6 +18,8 @@ import scala.collection.parallel.mutable.ParMap
 /** A template trait for mutable maps.
  *  $mapNote
  *  $mapTags
+ *  @define Coll `mutable.Map`
+ *  @define coll mutable map
  *  @since   2.8
  *
  * @define mapNote

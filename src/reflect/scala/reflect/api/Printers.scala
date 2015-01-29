@@ -46,15 +46,15 @@ import java.io.{ PrintWriter, StringWriter }
  * {{{
  *  scala> showRaw(tree)
  *  res1: String = Block(List(
- *    ClassDef(Modifiers(FINAL), newTypeName("C"), List(), Template(
- *      List(Ident(newTypeName("AnyRef"))),
+ *    ClassDef(Modifiers(FINAL), TypeName("C"), List(), Template(
+ *      List(Ident(TypeName("AnyRef"))),
  *      noSelfType,
  *      List(
  *        DefDef(Modifiers(), nme.CONSTRUCTOR, List(), List(List()), TypeTree(),
  *          Block(List(
  *            Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())),
  *            Literal(Constant(())))),
- *        DefDef(Modifiers(), newTermName("x"), List(), List(), TypeTree(),
+ *        DefDef(Modifiers(), TermName("x"), List(), List(), TypeTree(),
  *          Literal(Constant(2))))))),
  *    Literal(Constant(())))
  * }}}
@@ -70,23 +70,23 @@ import java.io.{ PrintWriter, StringWriter }
  *
  *  scala> showRaw(cm.mkToolBox().typecheck(tree), printTypes = true)
  *  res2: String = Block[1](List(
- *    ClassDef[2](Modifiers(FINAL), newTypeName("C"), List(), Template[3](
- *      List(Ident[4](newTypeName("AnyRef"))),
+ *    ClassDef[2](Modifiers(FINAL), TypeName("C"), List(), Template[3](
+ *      List(Ident[4](TypeName("AnyRef"))),
  *      noSelfType,
  *      List(
  *        DefDef[2](Modifiers(), nme.CONSTRUCTOR, List(), List(List()), TypeTree[3](),
  *          Block[1](List(
- *            Apply[4](Select[5](Super[6](This[3](newTypeName("C")), tpnme.EMPTY), ...))),
+ *            Apply[4](Select[5](Super[6](This[3](TypeName("C")), tpnme.EMPTY), ...))),
  *            Literal[1](Constant(())))),
- *        DefDef[2](Modifiers(), newTermName("x"), List(), List(), TypeTree[7](),
+ *        DefDef[2](Modifiers(), TermName("x"), List(), List(), TypeTree[7](),
  *          Literal[8](Constant(2))))))),
  *    Literal[1](Constant(())))
  *  [1] TypeRef(ThisType(scala), scala.Unit, List())
  *  [2] NoType
- *  [3] TypeRef(NoPrefix, newTypeName("C"), List())
+ *  [3] TypeRef(NoPrefix, TypeName("C"), List())
  *  [4] TypeRef(ThisType(java.lang), java.lang.Object, List())
  *  [5] MethodType(List(), TypeRef(ThisType(java.lang), java.lang.Object, List()))
- *  [6] SuperType(ThisType(newTypeName("C")), TypeRef(... java.lang.Object ...))
+ *  [6] SuperType(ThisType(TypeName("C")), TypeRef(... java.lang.Object ...))
  *  [7] TypeRef(ThisType(scala), scala.Int, List())
  *  [8] ConstantType(Constant(2))
  *  }}}
@@ -112,10 +112,10 @@ import java.io.{ PrintWriter, StringWriter }
  *  // showRaw has already been discussed above
  *  scala> showRaw(tpe)
  *  res1: String = RefinedType(
- *    List(TypeRef(ThisType(scala), newTypeName("AnyRef"), List())),
+ *    List(TypeRef(ThisType(scala), TypeName("AnyRef"), List())),
  *    Scope(
- *      newTermName("x"),
- *      newTermName("y")))
+ *      TermName("x"),
+ *      TermName("y")))
  * }}}
  *
  * `printIds` and/or `printKinds` can additionally be supplied as arguments in a call to
@@ -124,10 +124,10 @@ import java.io.{ PrintWriter, StringWriter }
  * {{{
  *  scala> showRaw(tpe, printIds = true, printKinds = true)
  *  res2: String = RefinedType(
- *    List(TypeRef(ThisType(scala#2043#PK), newTypeName("AnyRef")#691#TPE, List())),
+ *    List(TypeRef(ThisType(scala#2043#PK), TypeName("AnyRef")#691#TPE, List())),
  *    Scope(
- *      newTermName("x")#2540#METH,
- *      newTermName("y")#2541#GET))
+ *      TermName("x")#2540#METH,
+ *      TermName("y")#2541#GET))
  * }}}
  *
  * For more details about `Printer`s and other aspects of Scala reflection, see the

@@ -126,7 +126,7 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
   /** Returns the element with the highest priority in the queue,
    *  and removes this element from the queue.
    *
-   *  @throws Predef.NoSuchElementException
+   *  @throws java.util.NoSuchElementException
    *  @return   the element with the highest priority.
    */
   def dequeue(): A =
@@ -247,13 +247,6 @@ class PriorityQueue[A](implicit val ord: Ordering[A])
    *  @return  a priority queue with the same elements.
    */
   override def clone(): PriorityQueue[A] = new PriorityQueue[A] ++= this.iterator
-
-  // def printstate() {
-  //   println("-----------------------")
-  //   println("Size: " + resarr.p_size0)
-  //   println("Internal array: " + resarr.p_array.toList)
-  //   println(toString)
-  // }
 }
 
 

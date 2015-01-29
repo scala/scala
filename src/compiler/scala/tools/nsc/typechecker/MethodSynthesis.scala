@@ -212,7 +212,9 @@ trait MethodSynthesis {
             List(cd, mdef)
           case _ =>
             // Shouldn't happen, but let's give ourselves a reasonable error when it does
-            abort("No synthetics for " + meth + ": synthetics contains " + context.unit.synthetics.keys.mkString(", "))
+            context.error(cd.pos, s"Internal error: Symbol for synthetic factory method not found among ${context.unit.synthetics.keys.mkString(", ")}")
+            // Soldier on for the sake of the presentation compiler
+            List(cd)
         }
       case _ =>
         stat :: Nil
@@ -355,8 +357,9 @@ trait MethodSynthesis {
       def derivedSym: Symbol = {
         // Only methods will do! Don't want to pick up any stray
         // companion objects of the same name.
-        val result = enclClass.info decl name suchThat (x => x.isMethod && x.isSynthetic)
-        assert(result != NoSymbol, "not found: "+name+" in "+enclClass+" "+enclClass.info.decls)
+        val result = enclClass.info decl name filter (x => x.isMethod && x.isSynthetic)
+        if (result == NoSymbol || result.isOverloaded)
+          context.error(tree.pos, s"Internal error: Unable to find the synthetic factory method corresponding to implicit class $name in $enclClass / ${enclClass.info.decls}")
         result
       }
       def derivedTree: DefDef          =

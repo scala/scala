@@ -2,15 +2,16 @@
 #
 # Library to push and pull binary artifacts from a remote repository using CURL.
 
-
 remote_urlget="http://repo.typesafe.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
 remote_urlpush="http://private-repo.typesafe.com/typesafe/scala-sha-bootstrap/org/scala-lang/bootstrap"
 libraryJar="$(pwd)/lib/scala-library.jar"
 desired_ext=".desired.sha1"
 push_jar="$(pwd)/tools/push.jar"
+
 if [[ "$OSTYPE" == *Cygwin* || "$OSTYPE" == *cygwin* ]]; then push_jar="$(cygpath -m "$push_jar")"; fi
 # Cache dir has .sbt in it to line up with SBT build.
-cache_dir="${HOME}/.sbt/cache/scala"
+SCALA_BUILD_REPOS_HOME=${SCALA_BUILD_REPOS_HOME:=$HOME}
+cache_dir="${SCALA_BUILD_REPOS_HOME}/.sbt/cache/scala"
 
 # Checks whether or not curl is installed and issues a warning on failure.
 checkCurl() {

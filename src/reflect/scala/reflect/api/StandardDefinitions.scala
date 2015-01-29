@@ -128,7 +128,7 @@ trait StandardDefinitions {
      *  scala> import scala.reflect.runtime.universe._
      *  import scala.reflect.runtime.universe._
      *
-     *  scala> val m = typeOf[C].member(newTermName("m")).asMethod
+     *  scala> val m = typeOf[C].member(TermName("m")).asMethod
      *  m: reflect.runtime.universe.MethodSymbol = method m
      *
      *  scala> m.params(0)(0).info
@@ -156,7 +156,7 @@ trait StandardDefinitions {
      *  scala> import scala.reflect.runtime.universe._
      *  import scala.reflect.runtime.universe._
      *
-     *  scala> val m = typeOf[C].member(newTermName("m")).asMethod
+     *  scala> val m = typeOf[C].member(TermName("m")).asMethod
      *  m: reflect.runtime.universe.MethodSymbol = method m
      *
      *  scala> m.params(0)(0).info
@@ -181,7 +181,7 @@ trait StandardDefinitions {
      *  scala> import scala.reflect.runtime.universe._
      *  import scala.reflect.runtime.universe._
      *
-     *  scala> val m = typeOf[C].member(newTermName("m")).asMethod
+     *  scala> val m = typeOf[C].member(TermName("m")).asMethod
      *  m: reflect.runtime.universe.MethodSymbol = method m
      *
      *  scala> m.params(0)(0).info

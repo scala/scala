@@ -345,12 +345,28 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           Map.empty[String, Body] ++ pairs
         }
 
+        def linkedExceptions: Map[String, Body] = {
+          val m = allSymsOneTag(SimpleTagKey("throws"))
+
+          m.map { case (name,body) =>
+            val link = memberLookup(pos, name, site)
+            val newBody = body match {
+              case Body(List(Paragraph(Chain(content)))) =>
+                val descr = Text(" ") +: content
+                val entityLink = EntityLink(Monospace(Text(name)), link)
+                Body(List(Paragraph(Chain(entityLink +: descr))))
+              case _ => body
+            }
+            (name, newBody)
+          }
+        }
+
         val com = createComment (
           body0           = Some(parseWikiAtSymbol(docBody.toString, pos, site)),
           authors0        = allTags(SimpleTagKey("author")),
           see0            = allTags(SimpleTagKey("see")),
           result0         = oneTag(SimpleTagKey("return")),
-          throws0         = allSymsOneTag(SimpleTagKey("throws")),
+          throws0         = linkedExceptions,
           valueParams0    = allSymsOneTag(SimpleTagKey("param")),
           typeParams0     = allSymsOneTag(SimpleTagKey("tparam")),
           version0        = oneTag(SimpleTagKey("version")),

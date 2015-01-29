@@ -11,7 +11,6 @@ trait Tags {
     self: Typer =>
 
     private val runDefinitions = currentRun.runDefinitions
-    import runDefinitions._
 
     private def resolveTag(pos: Position, taggedTp: Type, allowMaterialization: Boolean) = enteringTyper {
       def wrapper (tree: => Tree): Tree = if (allowMaterialization) (context.withMacrosEnabled[Tree](tree)) else (context.withMacrosDisabled[Tree](tree))
@@ -66,7 +65,7 @@ trait Tags {
       // if someone requests a type tag, but scala-reflect.jar isn't on the library classpath, then bail
       if (pre == NoType && ApiUniverseClass == NoSymbol) EmptyTree
       else {
-        val tagSym = if (concrete) TypeTagClass else WeakTypeTagClass
+        val tagSym = if (concrete) runDefinitions.TypeTagClass else runDefinitions.WeakTypeTagClass
         val tagTp =  if (pre == NoType) TypeRef(ApiUniverseClass.toTypeConstructor, tagSym, List(tp)) else singleType(pre, pre member tagSym.name)
         val taggedTp = appliedType(tagTp, List(tp))
         resolveTag(pos, taggedTp, allowMaterialization)

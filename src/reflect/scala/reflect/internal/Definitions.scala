@@ -790,7 +790,7 @@ trait Definitions extends api.StandardDefinitions {
      * The class defining the method is a supertype of `tp` that
      * has a public no-arg primary constructor.
      */
-    def samOf(tp: Type): Symbol = {
+    def samOf(tp: Type): Symbol = if (!settings.Xexperimental) NoSymbol else {
       // if tp has a constructor, it must be public and must not take any arguments
       // (not even an implicit argument list -- to keep it simple for now)
       val tpSym  = tp.typeSymbol
@@ -905,12 +905,14 @@ trait Definitions extends api.StandardDefinitions {
         )
     }
 
-    def EnumType(sym: Symbol) =
+    def EnumType(sym: Symbol) = {
       // given (in java): "class A { enum E { VAL1 } }"
       //  - sym: the symbol of the actual enumeration value (VAL1)
       //  - .owner: the ModuleClassSymbol of the enumeration (object E)
       //  - .linkedClassOfClass: the ClassSymbol of the enumeration (class E)
-      sym.owner.linkedClassOfClass.tpe
+      // SI-6613 Subsequent runs of the resident compiler demand the phase discipline here.
+      enteringPhaseNotLaterThan(picklerPhase)(sym.owner.linkedClassOfClass).tpe
+    }
 
     /** Given a class symbol C with type parameters T1, T2, ... Tn
      *  which have upper/lower bounds LB1/UB1, LB1/UB2, ..., LBn/UBn,
@@ -1116,7 +1118,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ScalaInlineClass           = requiredClass[scala.inline]
     lazy val ScalaNoInlineClass         = requiredClass[scala.noinline]
     lazy val SerialVersionUIDAttr       = requiredClass[scala.SerialVersionUID]
-    lazy val SerialVersionUIDAnnotation = AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
+    lazy val SerialVersionUIDAnnotation = AnnotationInfo(SerialVersionUIDAttr.tpe, List(), List(nme.value -> LiteralAnnotArg(Constant(0))))
     lazy val SpecializedClass           = requiredClass[scala.specialized]
     lazy val ThrowsClass                = requiredClass[scala.throws[_]]
     lazy val TransientAttr              = requiredClass[scala.transient]
@@ -1436,6 +1438,10 @@ trait Definitions extends api.StandardDefinitions {
       lazy val unboxMethod      = classesMap(x => valueCompanionMember(x, nme.unbox))
       lazy val isUnbox          = unboxMethod.values.toSet[Symbol]
       lazy val isBox            = boxMethod.values.toSet[Symbol]
+
+      lazy val Boolean_and = definitions.Boolean_and
+      lazy val Boolean_or = definitions.Boolean_or
+      lazy val Boolean_not = definitions.Boolean_not
 
       lazy val Option_apply = getMemberMethod(OptionModule, nme.apply)
       lazy val List_apply = DefinitionsClass.this.List_apply

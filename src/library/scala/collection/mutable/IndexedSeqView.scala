@@ -50,7 +50,7 @@ self =>
   trait Sliced extends super.Sliced with Transformed[A] {
     override def length = endpoints.width
     def update(idx: Int, elem: A) =
-      if (idx + from < until) self.update(idx + from, elem)
+      if (idx >= 0 && idx + from < until) self.update(idx + from, elem)
       else throw new IndexOutOfBoundsException(idx.toString)
   }
 

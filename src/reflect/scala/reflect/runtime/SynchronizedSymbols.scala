@@ -2,8 +2,7 @@ package scala
 package reflect
 package runtime
 
-import scala.reflect.io.AbstractFile
-import scala.collection.{ immutable, mutable }
+import scala.collection.immutable
 import scala.reflect.internal.Flags._
 
 private[reflect] trait SynchronizedSymbols extends internal.Symbols { self: SymbolTable =>

@@ -1,0 +1,7 @@
+newSource:10: warning: Could not find any member to link for "SomeUnknownException".
+  /**
+  ^
+newSource:10: warning: Could not find any member to link for "IOException".
+  /**
+  ^
+Done.

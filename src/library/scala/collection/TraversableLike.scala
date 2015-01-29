@@ -419,7 +419,7 @@ trait TraversableLike[+A, +Repr] extends Any
   /** Selects the first element of this $coll.
    *  $orderDependent
    *  @return  the first element of this $coll.
-   *  @throws `NoSuchElementException` if the $coll is empty.
+   *  @throws NoSuchElementException if the $coll is empty.
    */
   def head: A = {
     var result: () => A = () => throw new NoSuchElementException
@@ -473,7 +473,7 @@ trait TraversableLike[+A, +Repr] extends Any
    *  $orderDependent
    *  @return  a $coll consisting of all elements of this $coll
    *           except the last one.
-   *  @throws `UnsupportedOperationException` if the $coll is empty.
+   *  @throws UnsupportedOperationException if the $coll is empty.
    */
   def init: Repr = {
     if (isEmpty) throw new UnsupportedOperationException("empty.init")

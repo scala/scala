@@ -104,7 +104,7 @@ trait Contexts { self: Analyzer =>
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)
-      reporter.error(unit.firstXmlPos, "To compile XML syntax, the scala.xml package must be on the classpath.\nPlease see http://docs.scala-lang.org/overviews/core/scala-2.11.html#scala-xml.")
+      reporter.error(unit.firstXmlPos, "To compile XML syntax, the scala.xml package must be on the classpath.\nPlease see https://github.com/scala/scala-xml for details.")
 
     // scala-xml needs `scala.xml.TopScope` to be in scope globally as `$scope`
     // We detect `scala-xml` by looking for `scala.xml.TopScope` and
@@ -330,7 +330,7 @@ trait Contexts { self: Analyzer =>
 
     // if set, errors will not be reporter/thrown
     def bufferErrors = reporter.isBuffering
-    def reportErrors = !bufferErrors
+    def reportErrors = !(bufferErrors || reporter.isThrowing)
 
     // whether to *report* (which is separate from buffering/throwing) ambiguity errors
     def ambiguousErrors = this(AmbiguousErrors)
@@ -480,7 +480,8 @@ trait Contexts { self: Analyzer =>
       // SI-8245 `isLazy` need to skip lazy getters to ensure `return` binds to the right place
       c.enclMethod         = if (isDefDef && !owner.isLazy) c else enclMethod
 
-      if (tree != outer.tree) c(TypeConstructorAllowed) = false
+      if (tree != outer.tree)
+        c(TypeConstructorAllowed) = false
 
       registerContext(c.asInstanceOf[analyzer.Context])
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
@@ -798,7 +799,7 @@ trait Contexts { self: Analyzer =>
       isAccessible(sym, pre) &&
       !(imported && {
         val e = scope.lookupEntry(name)
-        (e ne null) && (e.owner == scope)
+        (e ne null) && (e.owner == scope) && (!settings.isScala212 || e.sym.exists)
       })
 
     private def collectImplicits(syms: Scope, pre: Type, imported: Boolean = false): List[ImplicitInfo] =
@@ -1208,6 +1209,7 @@ trait Contexts { self: Analyzer =>
     def makeImmediate: ContextReporter = this
     def makeBuffering: ContextReporter = this
     def isBuffering: Boolean           = false
+    def isThrowing: Boolean            = false
 
     /** Emit an ambiguous error according to context.ambiguousErrors
      *
@@ -1345,6 +1347,7 @@ trait Contexts { self: Analyzer =>
    * TODO: get rid of it, use ImmediateReporter and a check for reporter.hasErrors where necessary
    */
   private[typechecker] class ThrowingReporter extends ContextReporter {
+    override def isThrowing = true
     protected def handleError(pos: Position, msg: String): Unit = throw new TypeError(pos, msg)
   }
 

@@ -25,7 +25,7 @@ import scala.language.higherKinds
  *  @author Martin Odersky
  *  @since 2.8
  *  @define coll  collection
- *  @define Coll  CC
+ *  @define Coll  Traversable
  */
 trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
 
@@ -45,7 +45,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
   /** Selects the first element of this $coll.
    *
    *  @return  the first element of this $coll.
-   *  @throws `NoSuchElementException` if the $coll is empty.
+   *  @throws NoSuchElementException if the $coll is empty.
    */
   def head: A
 
@@ -202,7 +202,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] extends HasNew
    *          element type of this $coll is a `Traversable`.
    *  @return a two-dimensional $coll of ${coll}s which has as ''n''th row
    *          the ''n''th column of this $coll.
-   *  @throws `IllegalArgumentException` if all collections in this $coll
+   *  @throws IllegalArgumentException if all collections in this $coll
    *          are not of the same size.
    */
   @migration("`transpose` throws an `IllegalArgumentException` if collections are not uniformly sized.", "2.9.0")

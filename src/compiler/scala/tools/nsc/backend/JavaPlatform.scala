@@ -7,7 +7,10 @@ package scala.tools.nsc
 package backend
 
 import io.AbstractFile
-import util.{ClassPath,MergedClassPath,DeltaClassPath}
+import scala.tools.nsc.classpath.FlatClassPath
+import scala.tools.nsc.settings.ClassPathRepresentationType
+import scala.tools.nsc.util.{ ClassPath, DeltaClassPath, MergedClassPath }
+import scala.tools.util.FlatClassPathResolver
 import scala.tools.util.PathResolver
 
 trait JavaPlatform extends Platform {
@@ -16,11 +19,21 @@ trait JavaPlatform extends Platform {
   import global._
   import definitions._
 
-  private var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
+  private[nsc] var currentClassPath: Option[MergedClassPath[AbstractFile]] = None
 
   def classPath: ClassPath[AbstractFile] = {
+    assert(settings.YclasspathImpl.value == ClassPathRepresentationType.Recursive,
+      "To use recursive classpath representation you must enable it with -YclasspathImpl:recursive compiler option.")
+
     if (currentClassPath.isEmpty) currentClassPath = Some(new PathResolver(settings).result)
     currentClassPath.get
+  }
+
+  private[nsc] lazy val flatClassPath: FlatClassPath = {
+    assert(settings.YclasspathImpl.value == ClassPathRepresentationType.Flat,
+      "To use flat classpath representation you must enable it with -YclasspathImpl:flat compiler option.")
+
+    new FlatClassPathResolver(settings).result
   }
 
   /** Update classpath with a substituted subentry */

@@ -14,7 +14,12 @@ import scala.collection.{ TraversableLike, IterableLike }
 import scala.collection.generic.{ CanBuildFrom => CBF }
 import scala.language.{ higherKinds, implicitConversions }
 
-/** See comment on ZippedTraversable2. */
+/** See comment on ZippedTraversable2
+ *  @define Coll `ZippedTraversable3`
+ *  @define coll collection
+ *  @define collectExample
+ *  @define willNotTerminateInf
+ */
 trait ZippedTraversable3[+El1, +El2, +El3] extends Any {
   def foreach[U](f: (El1, El2, El3) => U): Unit
 }

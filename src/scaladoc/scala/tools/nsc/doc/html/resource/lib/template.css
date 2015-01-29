@@ -397,6 +397,18 @@ div.members > ol > li:last-child {
   margin-bottom: 5px;
 }
 
+#definition .morelinks {
+  text-align: right;
+  position: absolute;
+  top: 40px;
+  right: 10px;
+  width: 450px;
+}
+
+#definition .morelinks a {
+  color: #EBEBEB;
+}
+
 #template .members li .permalink {
   position: absolute;
   top: 5px;

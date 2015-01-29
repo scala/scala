@@ -364,7 +364,14 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *           it omits the first `n` values.
    *  @note    Reuse: $consumesAndProducesIterator
    */
-  def drop(n: Int): Iterator[A] = sliceIterator(n, -1)
+  def drop(n: Int): Iterator[A] = {
+    var j = 0
+    while (j < n && hasNext) {
+      next()
+      j += 1
+    }
+    this
+  }
 
   /** Creates an iterator returning an interval of the values produced by this iterator.
    *
