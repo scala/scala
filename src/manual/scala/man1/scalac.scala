@@ -148,12 +148,9 @@ object scalac extends Command {
           CmdOption("sourcepath", Argument("path")),
           "Specify location(s) of source files."),
         Definition(
-          CmdOptionBound("target:", "{jvm-1.5,jvm-1.6,jvm-1.7,jvm-1.8}"),
-          SeqPara(
-            Mono("\"jvm-1.5\"") & " target JVM 1.5 (deprecated),",
-            Mono("\"jvm-1.6\"") & " target JVM 1.6 (default),",
-            Mono("\"jvm-1.7\"") & " target JVM 1.7,",
-            Mono("\"jvm-1.8\"") & " target JVM 1.8,")),
+          CmdOptionBound("target:", "{jvm-1.8}"),
+	  SeqPara(
+            Mono("\"jvm-1.8\"") & " target JVM 1.8 (default)")),
         Definition(
           CmdOption("toolcp", Argument("path")),
           "Add to the runner classpath."),

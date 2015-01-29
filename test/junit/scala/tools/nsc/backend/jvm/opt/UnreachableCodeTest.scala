@@ -18,18 +18,14 @@ import scala.tools.testing.ClearAfterClass
 object UnreachableCodeTest extends ClearAfterClass.Clearable {
   // jvm-1.6 enables emitting stack map frames, which impacts the code generation wrt dead basic blocks,
   // see comment in BCodeBodyBuilder
-  var methodOptCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:method")
-  var dceCompiler       = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:unreachable-code")
-  var noOptCompiler     = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:none")
-
-  // jvm-1.5 disables computing stack map frames, and it emits dead code as-is. note that this flag triggers a deprecation warning
-  var noOptNoFramesCompiler = newCompiler(extraArgs = "-target:jvm-1.5 -Ybackend:GenBCode -Yopt:l:none -deprecation")
+  var methodOptCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:method")
+  var dceCompiler       = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:unreachable-code")
+  var noOptCompiler     = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:none")
 
   def clear(): Unit = {
     methodOptCompiler = null
     dceCompiler = null
     noOptCompiler = null
-    noOptNoFramesCompiler = null
   }
 }
 
@@ -40,7 +36,6 @@ class UnreachableCodeTest extends ClearAfterClass {
   val methodOptCompiler     = UnreachableCodeTest.methodOptCompiler
   val dceCompiler           = UnreachableCodeTest.dceCompiler
   val noOptCompiler         = UnreachableCodeTest.noOptCompiler
-  val noOptNoFramesCompiler = UnreachableCodeTest.noOptNoFramesCompiler
 
   def assertEliminateDead(code: (Instruction, Boolean)*): Unit = {
     val method = genMethod()(code.map(_._1): _*)
@@ -152,11 +147,6 @@ class UnreachableCodeTest extends ClearAfterClass {
     // Finally, instructions in the dead basic blocks are replaced by ATHROW, as explained in
     // a comment in BCodeBodyBuilder.
     assertSameCode(noDce.dropNonOp, List(Op(ICONST_1), Op(IRETURN), Op(ATHROW), Op(ATHROW)))
-
-    // when NOT computing stack map frames, ASM's ClassWriter does not replace dead code by NOP/ATHROW
-    val warn = "target:jvm-1.5 is deprecated"
-    val noDceNoFrames = singleMethodInstructions(noOptNoFramesCompiler)(code, allowMessage = _.msg contains warn)
-    assertSameCode(noDceNoFrames.dropNonOp, List(Op(ICONST_1), Op(IRETURN), Op(ICONST_2), Op(IRETURN)))
   }
 
   @Test

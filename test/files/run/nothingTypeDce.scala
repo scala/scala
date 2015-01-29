@@ -1,7 +1,6 @@
 // See comment in BCodeBodyBuilder
 
-// -target:jvm-1.6 -Ybackend:GenBCode -Yopt:unreachable-code
-// target enables stack map frames generation
+// -Ybackend:GenBCode -Yopt:unreachable-code
 
 class C {
   // can't just emit a call to ???, that returns value of type Nothing$ (not Int).

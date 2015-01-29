@@ -16,7 +16,7 @@ import ASMConverters._
 import scala.tools.testing.ClearAfterClass
 
 object MethodLevelOpts extends ClearAfterClass.Clearable {
-  var methodOptCompiler = newCompiler(extraArgs = "-target:jvm-1.6 -Ybackend:GenBCode -Yopt:l:method")
+  var methodOptCompiler = newCompiler(extraArgs = "-Ybackend:GenBCode -Yopt:l:method")
   def clear(): Unit = { methodOptCompiler = null }
 }
 

@@ -193,7 +193,7 @@ TODO:
 
   <!-- if ANT_OPTS is already set by the environment, it will be unaltered,
        but if it is unset it will take this default value. -->
-  <property name="env.ANT_OPTS"            value="-Xms1536M -Xmx1536M -Xss1M -XX:MaxPermSize=192M -XX:+UseParallelGC" />
+  <property name="env.ANT_OPTS"            value="-Xms1536M -Xmx1536M -Xss1M -XX:+UseParallelGC" />
 
   <property name="scalacfork.jvmargs"      value="${env.ANT_OPTS} ${jvm.opts}"/>
 
@@ -492,20 +492,12 @@ TODO:
     <!-- some default in case something went wrong getting the revision -->
     <property name="version.number"       value="-unknown-"/>
 
-    <condition property="has.java6">
-        <equals arg1="${ant.java.version}" arg2="1.6"/>
-    </condition>
-    <condition property="has.java7">
-        <equals arg1="${ant.java.version}" arg2="1.7"/>
-    </condition>
     <condition property="has.java8">
         <equals arg1="${ant.java.version}" arg2="1.8"/>
     </condition>
     <condition property="has.unsupported.jdk">
        <not><or>
          <isset property="has.java8" />
-         <isset property="has.java7" />
-         <isset property="has.java6" />
        </or></not>
     </condition>
 
