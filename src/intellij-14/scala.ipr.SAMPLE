@@ -233,14 +233,14 @@
     <library name="starr" type="Scala">
       <properties>
         <compiler-classpath>
-          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-compiler-2.11.2.jar" />
-          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-library-2.11.2.jar" />
-          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-reflect-2.11.2.jar" />
+          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-compiler-#scala-version#.jar" />
+          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-library-#scala-version#.jar" />
+          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-reflect-#scala-version#.jar" />
         </compiler-classpath>
       </properties>
       <CLASSES>
-        <root url="jar://$PROJECT_DIR$/../../build/deps/starr/scala-library-2.11.2.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../build/deps/starr/scala-reflect-2.11.2.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../build/deps/starr/scala-library-#scala-version#.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../build/deps/starr/scala-reflect-#scala-version#.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -248,9 +248,9 @@
     <library name="starr-no-deps" type="Scala">
       <properties>
         <compiler-classpath>
-          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-compiler-2.11.2.jar" />
-          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-library-2.11.2.jar" />
-          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-reflect-2.11.2.jar" />
+          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-compiler-#scala-version#.jar" />
+          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-library-#scala-version#.jar" />
+          <root url="file://$PROJECT_DIR$/../../build/deps/starr/scala-reflect-#scala-version#.jar" />
         </compiler-classpath>
       </properties>
       <CLASSES />
