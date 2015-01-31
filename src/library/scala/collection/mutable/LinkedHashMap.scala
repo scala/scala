@@ -160,6 +160,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
   override def clear() {
     clearTable()
     firstEntry = null
+    lastEntry = null
   }
 
   private def writeObject(out: java.io.ObjectOutputStream) {
