@@ -5181,13 +5181,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def suspiciousExpr                = InterpolatorCodeRegex findFirstIn s
           def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(s drop 1))
 
-          // heuristics - no warning on e.g. a string with only "$asInstanceOf"
-          if (s contains ' ') (
-            if (suspiciousExpr.nonEmpty)
-              warn("detected an interpolated expression") // "${...}"
-            else
-              suspiciousIdents find isPlausible foreach (sym => warn(s"detected interpolated identifier `$$${sym.name}`")) // "$id"
-          )
+          if (suspiciousExpr.nonEmpty)
+            warn("detected an interpolated expression") // "${...}"
+          else
+            suspiciousIdents find isPlausible foreach (sym => warn(s"detected interpolated identifier `$$${sym.name}`")) // "$id"
         }
         lit match {
           case Literal(Constant(s: String)) if !isRecognizablyNotForInterpolation => maybeWarn(s)
