@@ -132,19 +132,25 @@ override def companion: GenericCompanion[Vector] = Vector
       throw new IndexOutOfBoundsException(index.toString)
   }
 
-
+  // If we have a default builder, there are faster ways to perform some operations
+  @inline private[this] def isDefaultCBF[A, B, That](bf: CanBuildFrom[Vector[A], B, That]): Boolean =
+    (bf eq IndexedSeq.ReusableCBF) || (bf eq collection.immutable.Seq.ReusableCBF) || (bf eq collection.Seq.ReusableCBF)
+    
   // SeqLike api
 
   override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
-    if (bf eq IndexedSeq.ReusableCBF) updateAt(index, elem).asInstanceOf[That] // just ignore bf
+    if (isDefaultCBF[A, B, That](bf))
+      updateAt(index, elem).asInstanceOf[That] // ignore bf--it will just give a Vector, and slowly
     else super.updated(index, elem)(bf)
 
   override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
-    if (bf eq IndexedSeq.ReusableCBF) appendFront(elem).asInstanceOf[That] // just ignore bf
+    if (isDefaultCBF[A, B, That](bf))
+      appendFront(elem).asInstanceOf[That] // ignore bf--it will just give a Vector, and slowly
     else super.+:(elem)(bf)
 
   override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That =
-    if (bf eq IndexedSeq.ReusableCBF) appendBack(elem).asInstanceOf[That] // just ignore bf
+    if (isDefaultCBF(bf))
+      appendBack(elem).asInstanceOf[That] // ignore bf--it will just give a Vector, and slowly
     else super.:+(elem)(bf)
 
   override def take(n: Int): Vector[A] = {
@@ -211,7 +217,8 @@ override def companion: GenericCompanion[Vector] = Vector
 
   // concat (suboptimal but avoids worst performance gotchas)
   override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
-    if (bf eq IndexedSeq.ReusableCBF) {
+    if (isDefaultCBF(bf)) {
+      // We are sure we will create a Vector, so let's do it efficiently
       import Vector.{Log2ConcatFaster, TinyAppendFaster}
       if (that.isEmpty) this.asInstanceOf[That]
       else {
