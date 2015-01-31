@@ -5,6 +5,9 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.ref.WeakReference
+import scala.util.Try
+
 @RunWith(classOf[JUnit4])
 class StreamTest {
 
@@ -15,4 +18,66 @@ class StreamTest {
     assertTrue(Stream(1,2,3,4,5).filter(_ < 4) == Seq(1,2,3))
     assertTrue(Stream(1,2,3,4,5).filterNot(_ > 4) == Seq(1,2,3,4))
   }
+
+  /** Test helper to verify that the given Stream operation allows
+    * GC of the head during processing of the tail.
+    */
+  def assertStreamOpAllowsGC(op: (=> Stream[Int], Int => Unit) => Any, f: Int => Unit): Unit = {
+    val msgSuccessGC = "GC success"
+    val msgFailureGC = "GC failure"
+
+    // A stream of 500 elements at most. We will test that the head can be collected
+    // while processing the tail. After each element we will GC and wait 10 ms, so a
+    // failure to collect will take roughly 5 seconds.
+    val ref = WeakReference( Stream.from(1).take(500) )
+
+    def gcAndThrowIfCollected(n: Int): Unit = {
+      System.gc()                                                   // try to GC
+      Thread.sleep(10)                                              // give it 10 ms
+      if (ref.get.isEmpty) throw new RuntimeException(msgSuccessGC) // we're done if head collected
+      f(n)
+    }
+
+    val res = Try { op(ref(), gcAndThrowIfCollected) }.failed       // success is indicated by an
+    val msg = res.map(_.getMessage).getOrElse(msgFailureGC)         // exception with expected message 
+                                                                    // failure is indicated by no
+    assertTrue(msg == msgSuccessGC)                                 // exception, or one with different message
+  }
+
+  @Test
+  def foreach_allows_GC() {
+    assertStreamOpAllowsGC(_.foreach(_), _ => ())
+  }
+
+  @Test
+  def filter_all_foreach_allows_GC() {
+    assertStreamOpAllowsGC(_.filter(_ => true).foreach(_), _ => ())
+  }
+
+  @Test // SI-8990
+  def withFilter_after_first_foreach_allows_GC: Unit = {
+    assertStreamOpAllowsGC(_.withFilter(_ > 1).foreach(_), _ => ())
+  }
+
+  @Test // SI-8990
+  def withFilter_after_first_withFilter_foreach_allows_GC: Unit = {
+    assertStreamOpAllowsGC(_.withFilter(_ > 1).withFilter(_ < 100).foreach(_), _ => ())
+  }
+
+  @Test // SI-8990
+  def withFilter_can_retry_after_exception_thrown_in_filter: Unit = {
+    // use mutable state to control an intermittent failure in filtering the Stream
+    var shouldThrow = true
+
+    val wf = Stream.from(1).take(10).withFilter { n =>
+      if (shouldThrow && n == 5) throw new RuntimeException("n == 5") else n > 5
+    }
+
+    assertTrue( Try { wf.map(identity) }.isFailure ) // throws on n == 5
+
+    shouldThrow = false                              // won't throw next time
+
+    assertTrue( wf.map(identity).length == 5 )       // success instead of NPE
+  }
+
 }
