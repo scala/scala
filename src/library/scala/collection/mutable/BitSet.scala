@@ -121,8 +121,10 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
    *  @return  the bitset itself.
    */
   def &= (other: BitSet): this.type = {
-    ensureCapacity(other.nwords - 1)
-    for (i <- 0 until other.nwords)
+    // Different from other operations: no need to ensure capacity because
+    // anything beyond the capacity is 0.  Since we use other.word which is 0
+    // off the end, we also don't need to make sure we stay in bounds there.
+    for (i <- 0 until nwords)
       elems(i) = elems(i) & other.word(i)
     this
   }
