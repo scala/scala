@@ -527,6 +527,8 @@ self =>
   /** A lazier implementation of WithFilter than TraversableLike's.
    */
   final class StreamWithFilter(p: A => Boolean) extends WithFilter(p) {
+    private[this] var original = self
+    private[this] def refOnce() = { val s = original; original = null; s }
 
     override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
       def tailMap(coll: Stream[A]): Stream[B] = {
@@ -566,9 +568,7 @@ self =>
       else super.flatMap(f)(bf)
     }
 
-    override def foreach[B](f: A => B) =
-      for (x <- self)
-        if (p(x)) f(x)
+    override def foreach[B](f: A => B) = refOnce().filter(p).foreach(f)
 
     override def withFilter(q: A => Boolean): StreamWithFilter =
       new StreamWithFilter(x => p(x) && q(x))
