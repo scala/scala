@@ -20,15 +20,11 @@ class StreamTest {
 
   @Test
   def foreachAllowsGC() {
-    // NOTE: Uncomment to demonstrate that StreamWithFilter closes over head of stream,
-    //   preventing garbage collection below.
-    //val wf = ref().withFilter(_ => true)
     Try { ref().foreach(gcAndThrowIfCollected) }
     assert( ref.get.isEmpty )
   }
 
-  /** SI-8990: Fix lazy evaluation of StreamWithFilter#foreach */
-  @Ignore("Pending a fix for SI-8990")
+  /** SI-8990: Fix StreamWithFilter#foreach to allow GC of head as tail is processed */
   @Test
   def withFilterForeachAllowsGC() {
     Try { ref().withFilter(_ => true).foreach(gcAndThrowIfCollected) }
