@@ -128,7 +128,11 @@ final class BCodeAsmCommon[G <: Global](val global: G) {
     assert(classSym.isClass, classSym)
     def enclosingMethod(sym: Symbol): Option[Symbol] = {
       if (sym.isClass || sym == NoSymbol) None
-      else if (sym.isMethod) Some(sym)
+      else if (sym.isMethod) {
+        // SI-9124, some trait methods don't exist in the generated interface. see comment in BTypes.
+        if (sym.owner.isTrait && sym.isImplOnly) None
+        else Some(sym)
+      }
       else enclosingMethod(nextEnclosing(sym))
     }
     enclosingMethod(nextEnclosing(classSym))
